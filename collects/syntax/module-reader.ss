@@ -48,30 +48,36 @@
             body ...
             (#%provide (rename *read read) (rename *read-syntax read-syntax))
             (define-values (*read *read-syntax)
-              (let* ([rd  -read]
-                     [rds -read-syntax]
-                     [w1  -wrapper1]
-                     [w1-extra? (and w1 (procedure-arity-includes? w1 2))]
-                     [w1r (if w1-extra? (lambda (t) (w1 t #f)) w1)]
-                     [w1s (if w1-extra? (lambda (t) (w1 t #t)) w1)]
-                     [w2  (or -wrapper2 (lambda (in r) (r in)))])
+              (let ([rd  -read]
+                    [rds -read-syntax]
+                    [w1  -wrapper1]
+                    [w2  (let ([w -wrapper2])
+                           (cond [(not w) (lambda (in r _) (r in))]
+                                 [(procedure-arity-includes? w 3) w]
+                                 [else (lambda (in r _) (w in r))]))])
                 (values
                  (lambda (in modpath line col pos)
-                   (w2 in (lambda (in)
-                            (wrap-internal 'lib in rd w1r modpath #f
-                                           line col pos))))
+                   (w2 in
+                       (lambda (in)
+                         (wrap-internal 'lib in rd w1 #f modpath #f
+                                        line col pos))
+                       #f))
                  (lambda (src in modpath line col pos)
-                   (w2 in (lambda (in)
-                            (wrap-internal 'lib in (lambda (in) (rds src in))
-                                           w1s modpath src
-                                           line col pos)))))))))))]))
+                   (w2 in
+                       (lambda (in)
+                         (wrap-internal 'lib in (lambda (in) (rds src in))
+                                        w1 #t modpath src
+                                        line col pos))
+                       #t)))))))))]))
 
-(define (wrap-internal lib port read wrapper modpath src line col pos)
+(define (wrap-internal lib port read wrapper stx? modpath src line col pos)
   (let* ([body (lambda ()
                  (let loop ([a null])
                    (let ([v (read port)])
                      (if (eof-object? v) (reverse a) (loop (cons v a))))))]
-         [body (if wrapper (wrapper body) (body))]
+         [body (cond [(not wrapper) (body)]
+                     [(procedure-arity-includes? wrapper 2) (wrapper body stx?)]
+                     [else (wrapper body)])]
          [p-name (object-name port)]
          [name (if (path? p-name)
                  (let-values ([(base name dir?) (split-path p-name)])
@@ -79,20 +85,17 @@
                     (path->string (path-replace-suffix name #""))))
                  'page)]
          [tag-src (lambda (v)
-                    (if (syntax? modpath)
-                      (datum->syntax #f v
-                                     (vector src line col pos
-                                             (- (or (syntax-position modpath)
-                                                    (add1 pos))
-                                                pos)))
+                    (if stx?
+                      (datum->syntax
+                       #f v (vector src line col pos
+                                    (- (or (syntax-position modpath) (add1 pos))
+                                       pos)))
                       v))]
-         [lib-src (lambda (v)
-                    (if (syntax? modpath)
-                      (datum->syntax #f lib modpath modpath)
-                      v))])
-    `(,(tag-src 'module) ,(tag-src name) ,(lib-src lib) . ,body)))
+         [lib (if stx? (datum->syntax #f lib modpath modpath) lib)]
+         [r `(,(tag-src 'module) ,(tag-src name) ,lib . ,body)])
+    (if stx? (datum->syntax #f r) r)))
 
 (define (wrap lib port read modpath src line col pos)
-  (wrap-internal lib port read #f modpath src line col pos))
+  (wrap-internal lib port read #f #f modpath src line col pos))
 
 )

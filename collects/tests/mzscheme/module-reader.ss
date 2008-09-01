@@ -43,6 +43,22 @@
   #:wrapper2 (lambda (in rd)
                (if (syntax? (rd in)) #'(module page zzz) '(module page zzz))))
 
+;; a module that uses the scribble syntax with a specified language
+(module r9 syntax/module-reader -ignored-
+  #:wrapper2
+  (lambda (in rd stx?)
+    (let* ([lang (read in)]
+           [mod  (parameterize ([current-readtable (make-at-readtable)])
+                   (rd in))]
+           [mod  (if stx? mod (datum->syntax #f mod))]
+           [r (syntax-case mod ()
+                [(module name lang* . body)
+                 (with-syntax ([lang (datum->syntax
+                                      #'lang* lang #'lang*)])
+                   (syntax/loc mod (module name lang . body)))])])
+      (if stx? r (syntax->datum r))))
+  (require scribble/reader))
+
 (define (from-string read str)
   (parameterize ([read-accept-reader #t])
     (read (open-input-string str))))
@@ -67,6 +83,11 @@
 
 (test-both "#reader 'r6 (define foo #:bar)"
            '(module page zzz))
+
+(test-both "#reader 'r9 scheme/base (define foo 1)"
+           '(module page scheme/base (define foo 1)))
+(test-both "#reader 'r9 scheme/base @define[foo]{one}"
+           '(module page scheme/base (define foo "one")))
 
 ;; ----------------------------------------
 

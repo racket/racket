@@ -5,8 +5,9 @@
                     scheme/contract))
 
 (provide (all-from-out scribble/manual)
-         (for-label (all-from-out scheme/base
-                                  scheme/contract))
+         (for-label (except-out (all-from-out scheme/base
+                                              scheme/contract)
+                                #%module-begin))
          refman)
 
 (define refman '(lib "scribblings/reference/reference.scrbl"))
