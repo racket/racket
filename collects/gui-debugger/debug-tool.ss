@@ -547,10 +547,10 @@
           (define/public (set-tab t) (set! tab t))
           
           (define/private (stx-source->breakpoints src)
-            (send (send (if src (filename->defs src) this) get-tab) get-breakpoints))
+            (send (send (or (and src (filename->defs src)) this) get-tab) get-breakpoints))
           
           (define/private (stx-source->pos-vec src)
-            (send (send (if src (filename->defs src) this) get-tab) get-pos-vec))
+            (send (send (or (and src (filename->defs src)) this) get-tab) get-pos-vec))
           
           ;; make-debug-eval-handler : (sexp -> value) -> sexp -> value
           ;; adds debugging information to `sexp' and calls `oe'
