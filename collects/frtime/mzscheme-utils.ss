@@ -307,6 +307,9 @@
      [(null? lst) 0]
      [else (error 'length (format "expects list, given ~a" lst))]))
   
+  (define (frp:list->string lst)
+    (lift #t list->string (raise-reactivity lst)))
+
   (define (reverse lst)
     (let loop ([lst lst] [acc ()])
       (if (pair? lst)
@@ -347,6 +350,7 @@
            (rename frp:case case)
            (rename frp:apply apply)
            (rename frp:length length)
+           (rename frp:list->string list->string)
            reverse
            
            (lifted + - * / = 
@@ -361,7 +365,7 @@
                    string-locale-ci<? string-locale-ci=? atan asin acos exact? magnitude imag-part
                    real-part numerator abs log lcm gcd arithmetic-shift integer-sqrt make-rectangular
                    complex? char>? char<? char=?
-                   char-numeric? date-time-zone-offset list->string substring string->list
+                   char-numeric? date-time-zone-offset substring string->list
                    string-ci<? string-ci>=? string<=? string-ci<=? string>? string-locale<? string=?
                    string-length string-ref
                    floor angle round
