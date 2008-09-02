@@ -9,6 +9,7 @@ profile todo:
 |#
 
 (require scheme/unit
+         scheme/contract
          errortrace/stacktrace
          scheme/class
          scheme/path
@@ -19,6 +20,9 @@ profile todo:
          "embedded-snip-utils.ss"
          "drsig.ss"
          "bindings-browser.ss"
+         net/sendurl
+         net/url
+         scheme/match
          (for-syntax scheme/base))
 
 (define orig (current-output-port))
@@ -186,6 +190,7 @@ profile todo:
   (define bug-note% (make-note% "stop-multi.png" 'png/mask))
   (define mf-note% (make-note% "mf.gif" 'gif))
   (define file-note% (make-note% "stop-22x22.png" 'png/mask))
+  (define planet-note% (make-note% "small-planet.png" 'png/mask))
   
   ;; display-stats : (syntax -> syntax)
   ;; count the number of syntax expressions & number of with-continuation-marks in an 
@@ -278,6 +283,7 @@ profile todo:
                          (if (null? stack)
                              '()
                              (list (car stack))))])
+      (print-planet-icon-to-stderr exn)
       (unless (null? stack)
         (print-bug-to-stderr msg stack))
       (display-srclocs-in-error src-locs)
@@ -296,6 +302,47 @@ profile todo:
                ;; need to make sure that the user's eventspace is still the same
                ;; and still running here?
                (send rep highlight-errors src-locs stack))))))))
+  
+  (define (print-planet-icon-to-stderr exn)
+    (when (exn:fail:contract2? exn)
+      (let ([gp-url (parse-gp exn (guilty-party exn))])
+        (when gp-url
+          (when planet-note%
+            (when (port-writes-special? (current-error-port))
+              (let ([note (new planet-note%)])
+                (send note set-callback (λ () (send-url (url->string gp-url))))
+                (write-special note (current-error-port))
+                (display #\space (current-error-port)))))))))
+  
+  (define (parse-gp exn gp)
+    (match gp
+      [`(planet ,fn (,user ,package ,version ...))
+       (make-url 
+        "http"
+        #f
+        "planet.plt-scheme.org"
+        #f
+        #t
+        (list (make-path/param "trac" '())
+              (make-path/param "newticket" '()))
+        (list (cons 'component (format "~a/~a" user package))
+              (cons 'keywords "contract violation")
+              (cons 'planetversion
+                    (cond
+                      [(null? version) ""]
+                      [(null? (cdr version))
+                       (format "~s" `(,(car version) ?))]
+                      [else
+                       (format "~s" `(,(car version) ,(cadr version)))]))
+              (cons 'description (exn->trace exn)))
+        #f)]
+      [else #f]))
+  
+  (define (exn->trace exn)
+    (let ([sp (open-output-string)])
+      (parameterize ([current-error-port sp])
+        (drscheme:init:original-error-display-handler (exn-message exn) exn))
+      (get-output-string sp)))
   
   (define (print-bug-to-stderr msg cms)
     (when (port-writes-special? (current-error-port))

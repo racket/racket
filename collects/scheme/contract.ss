@@ -39,6 +39,9 @@ differences from v3:
          make-none/c 
          
          guilty-party
+         exn:fail:contract2?
+         exn:fail:contract2-srclocs
+                
          contract-violation->string
          
          contract?

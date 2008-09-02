@@ -8,6 +8,9 @@
 
 (provide raise-contract-error
          guilty-party
+         exn:fail:contract2?
+         exn:fail:contract2-srclocs
+                
          contract-violation->string
          coerce-contract
          
