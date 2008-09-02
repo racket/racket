@@ -49,9 +49,7 @@
         (if (eof-object? c)
           ;; flush extra bits
           (begin
-            (printf "1 width = ~s\n" width)
             (let ([width (if (> bits 0) (write-char) width)])
-              (printf "2 width = ~s\n" width)
               (when (> width 0)
                 (for ([i (in-range (modulo (- width) 4))])
                   (write-byte =byte out))
