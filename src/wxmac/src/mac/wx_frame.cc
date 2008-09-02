@@ -387,6 +387,8 @@ wxFrame::~wxFrame(void)
 {
   CWindowPtr theMacWindow;
 
+  cFocusWindow = NULL; /* don't try to de-focus while hiding */
+
   if (IsVisible()) 
     Show(FALSE);
 
@@ -1099,6 +1101,10 @@ void wxFrame::Show(Bool show)
 {
   WindowPtr theMacWindow;
   wxChildList *tlw;
+
+  /* WARNING: Show(FALSE) might called when the frame is being destroyed.
+     Don't issue any callbacks at all in that case, because it may be
+     that a custodian is shutting down an eventspace, etc. */
 
   if (!show == cUserHidden) {
     if (show) {
