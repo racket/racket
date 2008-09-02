@@ -16,7 +16,7 @@
          (let loop ([body (syntax->list #'(body ...))])
            (if (not (and (pair? body)
                          (pair? (cdr body))
-                         (not (keyword? (car body)))))
+                         (keyword? (syntax-e (car body)))))
              (datum->syntax stx body stx)
              (let* ([k (car body)] [k* (syntax-e k)] [v (cadr body)])
                (cond
