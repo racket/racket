@@ -686,12 +686,12 @@ void wxFrame::CreateStatusLine(int number, char *WXUNUSED(name))
   nb_status = number;
 
   if (!wxSTATUS_LINE_FONT) {
-	wxFont *f;
-	HDC dc;
-	f = wxTheFontList->FindOrCreateFont(8, wxSYSTEM, wxNORMAL, wxNORMAL, FALSE);
-	dc = ::GetDC(NULL);
+    wxFont *f;
+    HDC dc;
+    f = wxTheFontList->FindOrCreateFont(8, wxSYSTEM, wxNORMAL, wxNORMAL, FALSE);
+    dc = ::GetDC(NULL);
     wxSTATUS_LINE_FONT = f->GetInternalFont(dc);
-	::ReleaseDC(NULL, dc);
+    ::ReleaseDC(NULL, dc);
   }
 
   dc = GetDC(cframe->handle);
