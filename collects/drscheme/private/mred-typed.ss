@@ -97,7 +97,7 @@
 (define-type-alias Bitmap-Message% (Class () 
                                           ([parent Any])
                                           ([set-bm ((Instance Bitmap%) -> Void)])))
-               
+
 
 (require/typed "bitmap-message.ss"
                [bitmap-message% Bitmap-Message%])
