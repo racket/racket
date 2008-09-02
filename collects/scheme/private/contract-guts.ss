@@ -199,6 +199,7 @@
     (string-append (format "~a~a broke the contract ~a~a; "
                            blame-src
                            (cond
+                             [(not to-blame) "<<unknown>>"]
                              [(and (pair? to-blame)
                                    (pair? (cdr to-blame))
                                    (null? (cddr to-blame))
@@ -251,7 +252,7 @@
             (string-append src-loc-str  ": ")
             ""))
       ""))
-
+       
 ;                                                      
 ;                                                      
 ;                                                      

@@ -987,7 +987,7 @@ name @scheme[sexp-name] when signaling a contract violation.}
 
 @defparam[contract-violation->string 
           proc 
-          (-> any/c any/c any/c any/c string? string?)]{
+          (-> any/c any/c (or/c false/c any/c) any/c string? string?)]{
 
 This is a parameter that is used when constructing a
 contract violation error. Its value is procedure that
@@ -996,7 +996,7 @@ accepts five arguments:
 @item{the value that the contract applies to,}
 @item{a syntax object representing the source location where
 the contract was established, }
-@item{the name of the party that violated the contract, }
+@item{the name of the party that violated the contract (@scheme[#f] indicates that the party is not known, not that the party's name is @scheme[#f]), }
 @item{an sexpression representing the contract, and }
 @item{a message indicating the kind of violation.
 }}

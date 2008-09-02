@@ -62,7 +62,7 @@ improve method arity mismatch contract violation error messages?
 (define-for-syntax (make-define/contract-transformer contract-id id)
   (make-set!-transformer
    (λ (stx)
-     (with-syntax ([neg-blame-str (or (a:build-src-loc-string stx) "")]
+     (with-syntax ([neg-blame-str (a:build-src-loc-string stx)]
                    [contract-id contract-id]
                    [id id])
        (syntax-case stx (set!)
@@ -76,7 +76,7 @@ improve method arity mismatch contract violation error messages?
             ((-contract contract-id
                         id
                         (syntax->datum (quote-syntax f))
-                        (string->symbol neg-blame-str)
+                        neg-blame-str
                         (quote-syntax f))
              arg
              ...))]
@@ -86,7 +86,7 @@ improve method arity mismatch contract violation error messages?
             (-contract contract-id
                        id
                        (syntax->datum (quote-syntax ident)) 
-                       (string->symbol neg-blame-str)
+                       neg-blame-str
                        (quote-syntax ident)))])))))
 
 ;; id->contract-src-info : identifier -> syntax

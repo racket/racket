@@ -290,10 +290,16 @@
                                       '((1 1) (1 1)) 
                                       none)))
     
+    (test-empty '((variable_1 variable_1) ...)
+                '((x y))
+                #f)
+    
+    
     (test-empty '(number ...) '()
                 (list (make-test-mtch (make-bindings (list (make-bind 'number '()))) '() none)))
     (test-ab '(aa ...) '()
              (list (make-test-mtch (make-bindings (list (make-bind 'aa '()))) '() none)))
+    
     
     ;; testing block-in-hole
     (test-empty '(hide-hole a) 'b #f)
