@@ -9,72 +9,68 @@
 (define-syntax (provide-module-reader stx)
   (syntax-case stx ()
     [(_ lib body ...)
-     (let ([-read        #f]
-           [-read-syntax #f]
-           [-wrapper1    #f]
-           [-wrapper2    #f])
+     (let ([key-args '()])
+       (define (err str [sub #f])
+         (raise-syntax-error 'syntax/module-reader str sub))
        (define -body
-         (let loop ([body #'(body ...)])
-           (define (err str)
-             (raise-syntax-error 'syntax/module-reader str
-                                 (car (syntax->list body))))
-           (syntax-case body ()
-             [(#:read r body ...)
-              (if -read
-                (err "got two #:read keywords")
-                (begin (set! -read #'r) (loop #'(body ...))))]
-             [(#:read-syntax r body ...)
-              (if -read-syntax
-                (err "got two #:read-syntax keywords")
-                (begin (set! -read-syntax #'r) (loop #'(body ...))))]
-             [(#:wrapper1 w body ...)
-              (if -wrapper1
-                (err "got two #:wrapper1 keywords")
-                (begin (set! -wrapper1 #'w) (loop #'(body ...))))]
-             [(#:wrapper2 w body ...)
-              (if -wrapper2
-                (err "got two #:wrapper2 keywords")
-                (begin (set! -wrapper2 #'w) (loop #'(body ...))))]
-             [(k . b) (keyword? (syntax-e #'k))
-              (err "got an unknown keyword")]
-             [_ body])))
-       (with-syntax ([-read        (or -read        #'read)]
-                     [-read-syntax (or -read-syntax #'read-syntax)]
-                     [-wrapper1    (or -wrapper1    #'#f)]
-                     [-wrapper2    (or -wrapper2    #'#f)]
-                     [(body ...)   -body])
-         (syntax/loc stx
-           (#%module-begin
-            body ...
-            (#%provide (rename *read read) (rename *read-syntax read-syntax))
-            (define-values (*read *read-syntax)
-              (let ([rd  -read]
-                    [rds -read-syntax]
-                    [w1  -wrapper1]
-                    [w2  (let ([w -wrapper2])
-                           (cond [(not w) (lambda (in r _) (r in))]
-                                 [(procedure-arity-includes? w 3) w]
-                                 [else (lambda (in r _) (w in r))]))])
-                (values
-                 (lambda (in modpath line col pos)
-                   (w2 in
-                       (lambda (in)
-                         (wrap-internal 'lib in rd w1 #f modpath #f
-                                        line col pos))
-                       #f))
-                 (lambda (src in modpath line col pos)
-                   (w2 in
-                       (lambda (in)
-                         (wrap-internal 'lib in (lambda (in) (rds src in))
-                                        w1 #t modpath src
-                                        line col pos))
-                       #t)))))))))]))
+         (let loop ([body (syntax->list #'(body ...))])
+           (if (not (and (pair? body)
+                         (pair? (cdr body))
+                         (not (keyword? (car body)))))
+             (datum->syntax stx body stx)
+             (let* ([k (car body)] [k* (syntax-e k)] [v (cadr body)])
+               (cond
+                 [(assq k* key-args) (err (format "got two ~s keywords" k*) k)]
+                 [(not (memq k* '(#:read #:read-syntax #:wrapper1 #:wrapper2
+                                  #:whole-body-readers?)))
+                  (err "got an unknown keyword" (car body))]
+                 [else (set! key-args (cons (cons k* v) key-args))
+                       (loop (cddr body))])))))
+       (define (get kwd [dflt #f])
+         (cond [(assq kwd key-args) => cdr] [else dflt]))
+       (unless (equal? (and (assq '#:read key-args) #t)
+                       (and (assq '#:read-syntax key-args) #t))
+         (err "must specify either both #:read and #:read-syntax, or none"))
+       (when (and (assq '#:whole-body-readers? key-args)
+                  (not (assq '#:read key-args)))
+         (err "got a #:whole-body-readers? without #:read and #:read-syntax"))
+       (quasisyntax/loc stx
+         (#%module-begin
+          #,@-body
+          (#%provide (rename *read read) (rename *read-syntax read-syntax))
+          (define-values (*read *read-syntax)
+            (let* ([rd  #,(get '#:read #'read)]
+                   [rds #,(get '#:read-syntax #'read-syntax)]
+                   [w1  #,(get '#:wrapper1 #'#f)]
+                   [w2  #,(get '#:wrapper2 #'#f)]
+                   [w2  (cond [(not w2) (lambda (in r _) (r in))]
+                              [(procedure-arity-includes? w2 3) w2]
+                              [else (lambda (in r _) (w2 in r))])]
+                   [base 'lib]
+                   [whole? #,(get '#:whole-body-readers? #'#f)])
+              (values
+               (lambda (in modpath line col pos)
+                 (w2 in
+                     (lambda (in)
+                       (wrap-internal base in rd whole?
+                                      w1 #f modpath #f line col pos))
+                     #f))
+               (lambda (src in modpath line col pos)
+                 (w2 in
+                     (lambda (in)
+                       (wrap-internal
+                        base in (lambda (in) (rds src in)) whole?
+                        w1 #t modpath src line col pos))
+                     #t))))))))]))
 
-(define (wrap-internal lib port read wrapper stx? modpath src line col pos)
+(define-syntax-rule (wrap-internal lib port read whole? wrapper stx?
+                                   modpath src line col pos)
   (let* ([body (lambda ()
-                 (let loop ([a null])
-                   (let ([v (read port)])
-                     (if (eof-object? v) (reverse a) (loop (cons v a))))))]
+                 (if whole?
+                   (read port)
+                   (let loop ([a null])
+                     (let ([v (read port)])
+                       (if (eof-object? v) (reverse a) (loop (cons v a)))))))]
          [body (cond [(not wrapper) (body)]
                      [(procedure-arity-includes? wrapper 2) (wrapper body stx?)]
                      [else (wrapper body)])]
@@ -96,6 +92,6 @@
     (if stx? (datum->syntax #f r) r)))
 
 (define (wrap lib port read modpath src line col pos)
-  (wrap-internal lib port read #f #f modpath src line col pos))
+  (wrap-internal lib port read #f #f #f modpath src line col pos))
 
 )

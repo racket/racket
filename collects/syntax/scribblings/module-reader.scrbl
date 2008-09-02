@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@(require (for-label syntax/module-reader))
+@(require (for-label syntax/module-reader
+                     (only-in scribble/reader read-syntax-inside read-inside)))
 
 @title[#:tag "module-reader"]{Module Reader}
 
@@ -19,7 +20,8 @@ customized in a number of ways.
                ([reader-option (code:line #:read        read-expr)
                                (code:line #:read-syntax read-syntax-expr)
                                (code:line #:wrapper1    wrapper1-expr)
-                               (code:line #:wrapper2    wrapper2-expr)])]{
+                               (code:line #:wrapper2    wrapper2-expr)
+                               (code:line #:whole-body-readers? whole?-expr)])]{
 
 Causes a module written in the @schememodname[syntax/module-reader]
 language to define and provide @schemeidfont{read} and
@@ -118,6 +120,12 @@ using this option:
                (parameterize ([read-case-sensitive #f])
                  (r in))))
 ]
+
+In some cases, the reader functions read the whole file, so there is
+no need to iterate them (e.g., @scheme[read-inside] and
+@scheme[read-syntax-inside]).  In these cases you can specify
+@scheme[#:whole-body-readers?] as @scheme[#t] --- the readers are
+expected to return a list of expressions in this case.
 
 Finally, note that the two wrappers can return a different value than
 the wrapped function.  This introduces two more customization points
