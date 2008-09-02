@@ -20,7 +20,7 @@ will be found automatically when loading the source file.
 
 Outside of a module, top-level @scheme[define-syntaxes],
 @scheme[module], @scheme[#%require],
-@scheme[define-values-for-syntaxes], and and @scheme[begin]
+@scheme[define-values-for-syntax], and and @scheme[begin]
 expressions are handled specially by @exec{mzc --zo}: the compile-time
 portion of the expression is evaluated, because it might affect later
 expressions. (The @Flag{m} or @DFlag{module} flag turns off this
