@@ -53,7 +53,7 @@
     (make-debug-error-display-handler
      make-debug-eval-handler
      error-display-handler/stacktrace
-     
+     bug-info->ticket-url
      test-coverage-enabled
      profiling-enabled
 
@@ -157,6 +157,8 @@
      find-symbol
      get-program-editor-mixin
      add-to-program-editor-mixin
+     forget-saved-bug-report
+     record-saved-bug-report
      (struct teachpack-callbacks (get-names remove add))))
   
   (define-signature drscheme:frame-cm^

@@ -28,7 +28,11 @@ module browser threading seems wrong.
            "insert-large-letters.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
-
+           mrlib/include-bitmap
+           
+           net/sendurl
+           net/url
+           
            (prefix-in drscheme:arrow: "../arrow.ss")
            
            mred
@@ -58,7 +62,8 @@ module browser threading seems wrong.
             [prefix drscheme:eval: drscheme:eval^]
             [prefix drscheme:init: drscheme:init^]
             [prefix drscheme:module-language: drscheme:module-language^]
-            [prefix drscheme:modes: drscheme:modes^])
+            [prefix drscheme:modes: drscheme:modes^]
+            [prefix drscheme:debug: drscheme:debug^])
     (export (rename drscheme:unit^
                     [-frame% frame%]
                     [-frame<%> frame<%>]))
@@ -847,20 +852,24 @@ module browser threading seems wrong.
     
     
     
-    ;      ;           ;; ;                             
-    ;       ;          ;                                 
-    ;       ;          ;                                 
-    ;    ;;; ;   ;;;   ;;;  ;   ; ;;;    ;;;              
-    ;   ;   ;;  ;   ;   ;   ;   ;;   ;  ;   ;             
-    ;   ;    ;  ;   ;   ;   ;   ;    ;  ;   ;             
-    ;   ;    ;  ;;;;;   ;   ;   ;    ;  ;;;;;             
-    ;   ;    ;  ;       ;   ;   ;    ;  ;                 
-    ;   ;   ;;  ;       ;   ;   ;    ;  ;                 
-    ;   ;;; ;   ;;;;   ;   ;   ;    ;   ;;;;  ;   ;   ;  
-    ;                                                    
-    ;                                                   
-    
-    
+
+;                                                       
+;                                                       
+;                                                       
+;                                                       
+;      ;;;          ;;;;;;;                             
+;      ;;;         ;;;                                  
+;   ;; ;;;   ;;;; ;;;;; ;;; ;;; ;;    ;;;;              
+;  ;;;;;;;  ;; ;;;;;;;; ;;; ;;;;;;;  ;; ;;;             
+;  ;;; ;;; ;;; ;;; ;;;  ;;; ;;; ;;; ;;; ;;;             
+;  ;;; ;;; ;;;;;;; ;;;  ;;; ;;; ;;; ;;;;;;;             
+;  ;;; ;;; ;;;     ;;;  ;;; ;;; ;;; ;;;     ;;; ;;; ;;; 
+;  ;;;;;;;  ;;;;;; ;;;  ;;; ;;; ;;;  ;;;;;; ;;; ;;; ;;; 
+;   ;; ;;;   ;;;;  ;;;  ;;; ;;; ;;;   ;;;;  ;;; ;;; ;;; 
+;                                                       
+;                                                       
+;                                                       
+;                                                       
     
     ;; get-pos : text mouse-event% -> (union #f number)
     (define (get-pos text event)
@@ -1120,19 +1129,25 @@ module browser threading seems wrong.
     
     
     
-    ;;                               
-    ;                                 
-    ;                                 
-    ;;;  ; ;;  ;;;   ; ;;; ;;     ;;;  
-    ;   ;;   ;   ;  ;;  ;;  ;   ;   ; 
-    ;   ;        ;  ;   ;   ;   ;   ; 
-    ;   ;     ;;;;  ;   ;   ;   ;;;;; 
-    ;   ;    ;   ;  ;   ;   ;   ;     
-    ;   ;    ;   ;  ;   ;   ;   ;     
-    ;   ;     ;;;;; ;   ;   ;    ;;;; 
-    
-    
-    
+
+;                                        
+;                                        
+;                                        
+;                                        
+;   ;;;;                                 
+;  ;;;                                   
+;  ;;;; ;;; ;;;;;;;  ;;; ;; ;;;    ;;;;  
+;  ;;;; ;;;;;;;;;;;; ;;;;;;;;;;;  ;; ;;; 
+;  ;;;  ;;;  ;;  ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;    ;;;;; ;;; ;;; ;;; ;;;;;;; 
+;  ;;;  ;;;  ;;; ;;; ;;; ;;; ;;; ;;;     
+;  ;;;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;;;;;; 
+;  ;;;  ;;;   ;;;;;; ;;; ;;; ;;;   ;;;;  
+;                                        
+;                                        
+;                                        
+;                                        
+
     (define dragable/def-int-mixin
       (mixin (panel:dragable<%>) ()
         (init-field unit-frame)
@@ -1331,6 +1346,8 @@ module browser threading seems wrong.
         get-language-menu
         register-toolbar-button
         get-tabs))
+    
+    
     
     (define frame-mixin
       (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1841,6 +1858,7 @@ module browser threading seems wrong.
             [else (send definitions-text clear)])
           (send definitions-canvas focus))
         
+     
         
         
         
@@ -2262,6 +2280,7 @@ module browser threading seems wrong.
           (when logging
             (stop-logging))
           (remove-show-status-line-callback)
+          (remove-bug-icon-callback)
           (send interactions-text on-close))
         
         ;; execute-callback : -> void
@@ -3568,6 +3587,30 @@ module browser threading seems wrong.
         (define running-canvas
           (new running-canvas% [parent (get-info-panel)]))
         
+        (define bug-icon
+          (let* ([info-panel (get-info-panel)]
+                 [btn 
+                  (new switchable-button%
+                       [parent info-panel]
+                       [callback (λ (x) (show-saved-bug-reports-window))]
+                       [bitmap very-small-planet-bitmap]
+                       [vertical-tight? #t]
+                       [label (string-constant show-planet-contract-violations)])])
+            (send btn set-label-visible #f)
+            (send info-panel change-children 
+                  (λ (l)
+                    (cons btn (remq* (list btn) l))))
+            btn))
+        (define/private (set-bug-label v)
+          (if (null? v)
+              (send bug-icon show #f)
+              (send bug-icon show #t)))
+        (set-bug-label (preferences:get 'drscheme:saved-bug-reports))
+        (define remove-bug-icon-callback
+          (preferences:add-callback
+           'drscheme:saved-bug-reports
+           (λ (p v)
+             (set-bug-label v))))
         
         [define func-defs-canvas (new func-defs-canvas% 
                                       (parent name-panel)
@@ -3639,6 +3682,26 @@ module browser threading seems wrong.
         (set-label-prefix (string-constant drscheme))
         (set! newest-frame this)
         (send definitions-canvas focus)))
+    
+    
+;                                                   
+;                                                   
+;                                                   
+;                                                   
+;                               ;;;                 
+;                                                   
+;  ;;; ;;;; ;;; ;;; ;;  ;;; ;;  ;;; ;;; ;;   ;; ;;; 
+;  ;;;;;;;; ;;; ;;;;;;; ;;;;;;; ;;; ;;;;;;; ;;;;;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;;;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;;;;; 
+;  ;;;   ;; ;;; ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;; ;;; 
+;                                               ;;; 
+;                                           ;;;;;;  
+;                                                   
+;                                                   
+
     
     (define running-bitmap (include-bitmap (lib "icons/b-run.png")))
     (define waiting-bitmap (include-bitmap (lib "icons/b-wait.png")))
@@ -3901,6 +3964,166 @@ module browser threading seems wrong.
                 
         (inherit set-allow-shrinking)
         (set-allow-shrinking 100)))
+    
+    
+    
+;                                                                            
+;                                                                            
+;                                                                            
+;                                                                            
+;  ;;;                                                             ;         
+;  ;;;                                                           ;;;         
+;  ;;; ;;  ;;; ;;;  ;; ;;;     ;;; ;; ;;;;  ;;; ;;    ;;;   ;;; ;;;;;  ;;;;  
+;  ;;;;;;; ;;; ;;; ;;;;;;;     ;;;;; ;; ;;; ;;;;;;;  ;;;;;  ;;;;;;;;; ;;; ;; 
+;  ;;; ;;; ;;; ;;; ;;; ;;;     ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;;  ;;;    
+;  ;;; ;;; ;;; ;;; ;;; ;;;     ;;;  ;;;;;;; ;;; ;;; ;;; ;;; ;;;  ;;;   ;;;;  
+;  ;;; ;;; ;;; ;;; ;;; ;;;     ;;;  ;;;     ;;; ;;; ;;; ;;; ;;;  ;;;     ;;; 
+;  ;;;;;;; ;;;;;;; ;;;;;;;     ;;;   ;;;;;; ;;;;;;;  ;;;;;  ;;;  ;;;; ;; ;;; 
+;  ;;; ;;   ;; ;;;  ;; ;;;     ;;;    ;;;;  ;;; ;;    ;;;   ;;;   ;;;  ;;;;  
+;                      ;;;                  ;;;                              
+;                  ;;;;;;                   ;;;                              
+;                                                                            
+;                                                                            
+
+    
+    ;; record-saved-bug-report : (listof (cons symbol string)) -> void
+    ;; =Kernel= =Handler=
+    (define (record-saved-bug-report table)
+      (let ([recorded (preferences:get 'drscheme:saved-bug-reports)])
+        (unless (member table recorded)
+          (preferences:set 'drscheme:saved-bug-reports (shorten-to (cons table recorded) 15)))))
+    
+    ;; shorten-to : (listof X) number -> (listof X)
+    ;; drops items from the end of the list to bring it back down to `n' items
+    (define (shorten-to l n)
+      (let loop ([l l]
+                 [n n])
+        (cond
+          [(zero? n) '()]
+          [(null? l) '()]
+          [else (cons (car l) (loop (cdr l) (- n 1)))])))
+
+    (define very-small-planet-bitmap (include-bitmap (lib "icons/very-small-planet.png") 'png/mask))
+    
+    (define saved-bug-reports-window #f)
+    (define saved-bug-reports-panel #f)
+    (define (init-saved-bug-reports-window)
+      (unless saved-bug-reports-window
+        (let ()
+          (define stupid-internal-define-syntax1
+            (set! saved-bug-reports-window (new frame:basic% [label (string-constant drscheme)] [width 600])))
+          (define stupid-internal-define-syntax2
+            (set! saved-bug-reports-panel
+                  (new vertical-panel% [parent (send saved-bug-reports-window get-area-container)])))
+          (define hp (new horizontal-panel% 
+                          [parent (send saved-bug-reports-window get-area-container)] 
+                          [stretchable-width #f] 
+                          [alignment '(right center)]))
+          (define forget-all (new button% 
+                                  [label (string-constant bug-track-forget-all)] 
+                                  [callback 
+                                   (λ (_1 _2)
+                                     (send saved-bug-reports-window show #f)
+                                     (preferences:set 'drscheme:saved-bug-reports '()))]
+                                  [parent hp]))
+          (void))))
+    
+    (preferences:add-callback
+     'drscheme:saved-bug-reports
+     (λ (p v)
+       (when saved-bug-reports-window
+         (when (send saved-bug-reports-window is-shown?)
+           (cond
+             [(null? v)
+              (send saved-bug-reports-window show #f)]
+             [else
+              (refresh-saved-bug-reports-window v)])))))
+    
+    (define (refresh-saved-bug-reports-window pref)
+      (send saved-bug-reports-window begin-container-sequence)
+      (send saved-bug-reports-panel change-children (λ (l) '()))
+      (for-each
+       (λ (item)
+         (let ()
+           (define (lookup k [default ""])
+             (let loop ([item item])
+               (cond
+                 [(null? item) default]
+                 [else (let ([rib (car item)])
+                         (if (eq? (car rib) k)
+                             (cdr rib)
+                             (loop (cdr item))))])))
+           (define vp
+             (new vertical-panel% 
+                  [style '(border)]
+                  [parent saved-bug-reports-panel]
+                  [stretchable-height #f]))
+           (define hp
+             (new horizontal-panel% 
+                  [parent vp]
+                  [stretchable-height #f]))
+           (define first-line-msg 
+             (let ([desc (lookup 'description #f)])
+               (and desc
+                    (new message%
+                         [label (read-line (open-input-string desc))]
+                         [parent vp]
+                         [stretchable-width #t]
+                         [font (send (send (editor:get-standard-style-list) find-named-style "Standard") get-font)]))))
+           (define msg (new message% 
+                            [stretchable-width #t]
+                            [label (string-append (lookup 'component "<<unknown component>>")
+                                                  (let ([v (lookup 'version #f)])
+                                                    (if v
+                                                        (string-append " " v)
+                                                        "")))]
+                            [parent hp]))
+           (define forget (new button% 
+                                [parent hp] 
+                                [callback (λ (x y) (forget-saved-bug-report item))]
+                                [label (string-constant bug-track-forget)]))
+           (define report (new button% 
+                               [parent hp] 
+                               [callback (λ (x y) 
+                                           (forget-saved-bug-report item)
+                                           (send-url
+                                            (url->string
+                                             (drscheme:debug:bug-info->ticket-url item))))]
+                               [label (string-constant bug-track-report)]))
+           (void)))
+       pref) ;; reverse list so first elements end up on top of list
+      (send saved-bug-reports-window reflow-container)
+      (send saved-bug-reports-window end-container-sequence))
+    
+    (define (forget-saved-bug-report item)
+      (preferences:set 'drscheme:saved-bug-reports (remove item (preferences:get 'drscheme:saved-bug-reports))))
+    
+    (define (show-saved-bug-reports-window)
+      (init-saved-bug-reports-window)
+      (unless (send saved-bug-reports-window is-shown?)
+        (refresh-saved-bug-reports-window (preferences:get 'drscheme:saved-bug-reports)))
+      (send saved-bug-reports-window show #t))
+    
+    
+    
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+;   ;;;;                                   ;;    ;   
+;  ;;;                                    ;  ;  ;    
+;  ;;;; ;;; ;;;;;;;  ;;; ;; ;;;    ;;;;   ;  ;  ;    
+;  ;;;; ;;;;;;;;;;;; ;;;;;;;;;;;  ;; ;;;  ;  ; ;     
+;  ;;;  ;;;  ;;  ;;; ;;; ;;; ;;; ;;; ;;;   ;; ;; ;;  
+;  ;;;  ;;;    ;;;;; ;;; ;;; ;;; ;;;;;;;      ; ;  ; 
+;  ;;;  ;;;  ;;; ;;; ;;; ;;; ;;; ;;;         ;  ;  ; 
+;  ;;;  ;;;  ;;; ;;; ;;; ;;; ;;;  ;;;;;;     ;  ;  ; 
+;  ;;;  ;;;   ;;;;;; ;;; ;;; ;;;   ;;;;     ;    ;;  
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+
     
     (define -frame% (frame-mixin super-frame%))
     

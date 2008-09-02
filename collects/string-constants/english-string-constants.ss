@@ -1406,4 +1406,16 @@ please adhere to these guidelines:
   (gui-tool-show-gui-toolbar "Show GUI Toolbar")
   (gui-tool-hide-gui-toolbar "Hide GUI Toolbar")
   (gui-tool-insert-gui "Insert GUI")
+
+  ;; contract violation tracking
+  
+  ; tooltip for new planet icon in drscheme window (must have a planet violation logged to see it)
+  (show-planet-contract-violations "Show PLaneT contract violations")
+
+  ; buttons in the dialog that lists the recorded bug reports
+  (bug-track-report "File Ticket")
+  (bug-track-forget "Forget")
+  (bug-track-forget-all "Forget All")
+    
+
   )

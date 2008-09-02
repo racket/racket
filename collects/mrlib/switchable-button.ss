@@ -53,7 +53,8 @@
     (init-field label 
                 bitmap
                 callback
-                [alternate-bitmap bitmap])
+                [alternate-bitmap bitmap]
+                [vertical-tight? #f])
     
     (define/override (get-label) label)
     
@@ -70,7 +71,7 @@
     (define down? #f)
     (define in? #f)
     (define disabled? #f)
-    (define with-label? #t)
+    (define with-label? (string? label))
   
     (define/override (enable e?)
       (unless (equal? disabled? (not e?))
@@ -122,47 +123,48 @@
     (define timer-running? #f)
     
     (define/private (update-float new-value?)
-      (cond
-        [with-label?
-         (when float-window
-           (send float-window show #f))]
-        [else
-         (unless (and float-window
-                      (equal? new-value? (send float-window is-shown?)))
-           (cond
-             [in?
-              (unless float-window
-                (set! float-window (new frame% 
-                                        [label ""]
-                                        [style '(no-caption no-resize-border float)]
-                                        [stretchable-width #f]
-                                        [stretchable-height #f]))
-                (new yellow-message% [parent float-window] [label label]))
-
-              (send float-window reflow-container)
-
-              ;; position the floating window
-	      (let-values ([(dw dh) (get-display-size)]
-			   [(x y) (client->screen (floor (get-width))
-						  (floor
-						   (- (/ (get-height) 2)
-                                                      (/ (send float-window get-height) 2))))]
-                           [(dx dy) (get-display-left-top-inset)])
-		(let ([rhs-x (- x dx)]
-		      [rhs-y (- y dy)])
-		  (cond
-		    [(< (+ rhs-x (send float-window get-width)) dw)
-		     (send float-window move rhs-x rhs-y)]
-		    [else
-		     (send float-window move
-			   (- rhs-x (send float-window get-width) (get-width))
-			   rhs-y)])))
-              (unless timer-running?
-                (set! timer-running? #t)
-                (send timer start 500 #t))]
-             [else
-              (when float-window
-                (send float-window show #f))]))]))
+      (when label
+        (cond
+          [with-label?
+           (when float-window
+             (send float-window show #f))]
+          [else
+           (unless (and float-window
+                        (equal? new-value? (send float-window is-shown?)))
+             (cond
+               [in?
+                (unless float-window
+                  (set! float-window (new frame% 
+                                          [label ""]
+                                          [style '(no-caption no-resize-border float)]
+                                          [stretchable-width #f]
+                                          [stretchable-height #f]))
+                  (new yellow-message% [parent float-window] [label (or label "")]))
+                
+                (send float-window reflow-container)
+                
+                ;; position the floating window
+                (let-values ([(dw dh) (get-display-size)]
+                             [(x y) (client->screen (floor (get-width))
+                                                    (floor
+                                                     (- (/ (get-height) 2)
+                                                        (/ (send float-window get-height) 2))))]
+                             [(dx dy) (get-display-left-top-inset)])
+                  (let ([rhs-x (- x dx)]
+                        [rhs-y (- y dy)])
+                    (cond
+                      [(< (+ rhs-x (send float-window get-width)) dw)
+                       (send float-window move rhs-x rhs-y)]
+                      [else
+                       (send float-window move
+                             (- rhs-x (send float-window get-width) (get-width))
+                             rhs-y)])))
+                (unless timer-running?
+                  (set! timer-running? #t)
+                  (send timer start 500 #t))]
+               [else
+                (when float-window
+                  (send float-window show #f))]))])))
     
     (define/private (update-in evt)
       (let-values ([(cw ch) (get-client-size)])
@@ -260,7 +262,8 @@
       (let ([w (floor (inexact->exact w))]
             [h (floor (inexact->exact h))])
         (min-width (+ w w-circle-space margin margin))
-        (min-height (+ h h-circle-space margin margin))))
+        (min-height (+ h h-circle-space margin margin 
+                       (if vertical-tight? -6 0)))))
     
     (super-new [style '(transparent no-focus)])
     (send (get-dc) set-smoothing 'aligned)

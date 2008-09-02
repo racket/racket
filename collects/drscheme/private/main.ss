@@ -53,6 +53,19 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drscheme:saved-bug-reports 
+                         '() 
+                         (λ (ll) 
+                           (and (list? ll)
+                                (andmap
+                                 (λ (l)
+                                   (and (list? l)
+                                        (andmap (λ (x) (and (pair? x)
+                                                            (symbol? (car x))
+                                                            (string? (cdr x))))
+                                                l)))
+                                 ll))))
+
 (preferences:set-default 'drscheme:module-language-first-line-special? #t boolean?)
 
 (preferences:set-default 'drscheme:defns-popup-sort-by-name? #f boolean?)
