@@ -128,6 +128,16 @@
 
 (test-cmp (build-path 'same "x.ss") "x.ss" (build-path 'same))
 
+(test '(lib "bar/foo.ss")
+      collapse-module-path-index 
+      (module-path-index-join '(lib "foo.ss" "bar") (make-resolved-module-path 'nowhere))
+      (current-directory))
+(test (build-path (find-system-path 'temp-dir) "data.ss")
+      collapse-module-path-index 
+      (module-path-index-join '"data.ss" (make-resolved-module-path
+                                          (build-path (find-system-path 'temp-dir) "prog.ss")))
+      (current-directory))
+
 ;; Try path cases that don't fit UTF-8 (and therefore would go wrong as a string):
 (let ([dir (build-path (current-directory) (bytes->path #"\xFF"))])
   (test-cmp (build-path dir "x.ss")
