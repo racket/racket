@@ -31,7 +31,7 @@
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction]
                      [#%plain-lambda lambda]
-                     [#%plain-app #%app]
+                     [#%app #%app]
                      [require require]))
 
 (define-for-syntax catch-errors? #f)

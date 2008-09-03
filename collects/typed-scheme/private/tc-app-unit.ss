@@ -429,7 +429,8 @@
                              "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                              (length argtypes))])]
         ;; single clause functions
-        [(tc-result: (and t (Function: (list (arr: dom rng rest #f '() latent-thn-effs latent-els-effs))))
+        ;; FIXME - error on non-optional keywords
+        [(tc-result: (and t (Function: (list (arr: dom rng rest #f _ latent-thn-effs latent-els-effs))))
                      thn-eff els-eff)
          (let-values ([(thn-eff els-eff)
                        (tc-args argtypes arg-thn-effs arg-els-effs dom rest 
@@ -566,6 +567,32 @@
         [(tc-result: t)
          (tc-error/expr #:return (ret (Un)) "expected a class value for object creation, got: ~a" t)]))))
 
+(define (tc-keywords form arities kws kw-args pos-args expected)
+  (match arities
+    [(list (arr: dom rng rest #f (list (and ktys (cons formal-kws formal-kw-tys)) ...) _ _))
+     (for ([k kws]
+           [ty (map tc-expr/t (syntax->list kw-args))])
+       (cond [(assq k ktys)
+              =>
+              (match-lambda [(cons k kty)
+                             (unless (subtype ty kty)
+                               (tc-error/delayed 
+                                #:stx form
+                                "Wrong function argument type, expected ~a, got ~a for keyword argument ~a" 
+                                kty ty k))])]
+             [else
+              (tc-error/expr #:return (ret (Un))
+                             "function does not accept keyword argument ~a" k)]))
+     (tc/funapp #'form #'form (ret (make-Function arities)) (map tc-expr (syntax->list pos-args)) expected)]
+    [_ (int-err "case-lambda w/ keywords not supported")]))
+
+
+(define (type->list t)
+  (match t
+    [(Pair: (Value: (? keyword? k)) b) (cons k (type->list b))]
+    [(Value: '()) null]
+    [_ (int-err "bad value in type->list: ~a" t)]))
+
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
     (values apply not list list* call-with-values do-make-object make-object cons
@@ -621,11 +648,23 @@
        [(tc-result: t thn-eff els-eff)
         (ret B (map var->type-eff els-eff) (map var->type-eff thn-eff))])]
     ;; special case for `apply'
-    [(#%plain-app apply f . args) (tc/apply #'f #'args)]    
+    [(#%plain-app apply f . args) (tc/apply #'f #'args)]
+    ;; special case for keywords
+    [(#%plain-app
+      (#%plain-app kpe kws num fn)
+      kw-list
+      (#%plain-app list . kw-arg-list)
+      . pos-args)
+     (eq? (syntax-e #'kpe) 'keyword-procedure-extract)
+     (match (tc-expr #'fn)
+       [(tc-result: (Function: arities)) 
+        (tc-keywords form arities (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected)]
+       [t (tc-error/expr #:return (ret (Un))
+                         "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
      (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*))
-     (let-loop-check #'form #'lp #'actuals #'args #'body expected)]
+     (let-loop-check form #'lp #'actuals #'args #'body expected)]
     ;; or/andmap of ... argument
     [(#%plain-app or/andmap f arg)
      (and 

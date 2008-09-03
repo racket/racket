@@ -41,7 +41,7 @@
     [(null? v) (-val null)]
     [(symbol? v) (-val v)]
     [(string? v) -String]
-    [(keyword? v) -Keyword]
+    [(keyword? v) (-val v)]
     [(bytes? v) -Bytes]
     [(list? v) (-Tuple (map tc-literal v))]
     [(vector? v) (make-Vector (types-of-literals (vector->list v)))]

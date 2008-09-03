@@ -70,7 +70,7 @@
        (unless (null? stxs)
          (raise-typecheck-error (format "Summary: ~a errors encountered" (length stxs)) (apply append stxs))))]))
 
-(define delay-errors? (make-parameter #t))
+(define delay-errors? (make-parameter #f))
 
 (define (tc-error/delayed msg #:stx [stx* (current-orig-stx)] . rest)
   (let ([stx (locate-stx stx*)])
