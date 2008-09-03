@@ -37,9 +37,8 @@ To do a better job of not generating programs with free variables,
     (cond [(symbol? pat) (process-pattern (symbol->string pat) lits)]
           [(string? pat) (hash-set lits pat (void))]
           [(number? pat) (process-pattern (number->string pat) lits)]
-          [(or (procedure? pat) (boolean? pat) (null? pat)) lits]
           [(pair? pat) (foldl process-pattern lits pat)]
-          [else (error 'lang-literals "unexpected pattern ~s" pat)]))
+          [else lits]))
   (define (process-non-terminal nt chars)
     (foldl (λ (rhs chars) (process-pattern (rhs-pattern rhs) chars)) 
            chars (nt-rhs nt)))
@@ -128,10 +127,7 @@ To do a better job of not generating programs with free variables,
 
 (define (generation-failure pat)
   (error 'generate "unable to generate pattern ~s in ~s attempts" 
-         pat generation-retries))
-
-;; used in generating the `any' pattern
-(define-language sexp (sexp variable string number hole (sexp ...)))
+         (unparse-pattern pat) generation-retries))
 
 (define (generate* lang pat size attempt [decisions@ random-decisions@])
   (define-values/invoke-unit decisions@
@@ -141,7 +137,7 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt fvt-id bound-vars size in-hole env)
+  (define (generate-nt nt fvt-id bound-vars size in-hole state)
     (let loop ([nts (compiled-lang-lang lang)])
       (cond
         [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
@@ -151,186 +147,231 @@ To do a better job of not generating programs with free variables,
                ((next-non-terminal-decision) 
                 (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))
                 bound-vars size)]
-              [(term _) 
-               (((generate-pat 
-                  (append (extract-bound-vars fvt-id env) bound-vars)
-                  (max 0 (sub1 size)))
-                 (rhs-pattern rhs) in-hole)
-                (make-environment (map fvt-entry (rhs-var-info rhs)) #hasheq() #hasheq()))])
-           (values term (extend-found-vars fvt-id term env)))]
+              [(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
+              [(nt-state) (make-state (map fvt-entry (rhs-var-info rhs)) #hash())]
+              [(term _)
+               (generate/pred 
+                (rhs-pattern rhs)
+                (λ (pat) (((generate-pat bound-vars (max 0 (sub1 size))) pat in-hole) nt-state))
+                (λ (_ env) (mismatches-satisfied? env)))])
+           (values term (extend-found-vars fvt-id term state)))]
         [else (loop (cdr nts))])))
   
-  (define-struct environment (fvt matches mismatches))
+  (define (generate-sequence ellipsis generate state length)
+    (define (split-environment env)
+      (foldl (λ (var seq-envs)
+               (let ([vals (hash-ref env var #f)])
+                 (if vals
+                     (map (λ (seq-env val) (hash-set seq-env var val)) seq-envs vals)
+                     seq-envs)))
+             (build-list length (λ (_) #hash())) (ellipsis-vars ellipsis)))
+    (define (merge-environments seq-envs)
+      (foldl (λ (var env)
+               (hash-set env var (map (λ (seq-env) (hash-ref seq-env var)) seq-envs)))
+             (state-env state) (ellipsis-vars ellipsis)))
+    (let-values
+        ([(seq envs fvt)
+          (let recur ([fvt (state-fvt state)]
+                      [envs (split-environment (state-env state))])
+            (if (null? envs)
+                (values null null fvt)
+                (let*-values 
+                    ([(term state) ((generate (ellipsis-pattern ellipsis) the-hole) 
+                                    (make-state fvt (car envs)))]
+                     [(terms envs fvt) (recur (state-fvt state) (cdr envs))])
+                  (values (cons term terms) (cons (state-env state) envs) fvt))))])
+      (values seq (make-state fvt (merge-environments envs)))))
+  
+  (define (generate/pred pat gen pred)
+    (let retry ([remaining generation-retries])
+      (if (zero? remaining)
+          (generation-failure pat)
+          (let-values ([(term state) (gen pat)])
+            (if (pred term (state-env state))
+                (values term state)
+                (retry (sub1 remaining)))))))
+  
+  (define (mismatches-satisfied? env)
+    (let ([groups (make-hasheq)])
+      (define (get-group group)
+        (hash-ref groups group
+                  (λ ()
+                    (let ([vals (make-hash)])
+                      (hash-set! groups group vals)
+                      vals))))
+      (for/and ([(name val) env])
+        (or (not (mismatch? name))
+            (let ([prior (get-group (mismatch-group name))])
+              (and (not (hash-ref prior val #f))
+                   (hash-set! prior val #t)))))))
+  
+  (define-struct state (fvt env))
+  (define (set-env state name value)
+    (make-state (state-fvt state) (hash-set (state-env state) name value)))
   
   (define-struct found-vars (nt source bound-vars found-nt?))
   (define (fvt-entry binds)
     (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
-
-  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) env)
+  
+  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) state)
     (define recur (generate-pat bound-vars size))
-    (define (recur/pat pat) ((recur pat in-hole) env))
-    (define (generate/pred pred pat [gen (λ () (recur/pat pat))])
-      (let retry ([remaining generation-retries])
-        (if (zero? remaining)
-            (generation-failure pat)
-            (let-values ([(term env) (gen)])
-              (if (pred term (environment-matches env))
-                  (values term env)
-                  (retry (sub1 remaining)))))))
+    (define (recur/pat pat) ((recur pat in-hole) state))
+    
     (match pat
-      [`number (values ((next-number-decision) random-numbers) env)]
+      [`number (values ((next-number-decision) random-numbers) state)]
       [`(variable-except ,vars ...)
-       (generate/pred (λ (var _) (not (memq var vars))) 'variable)]
-      [`variable (values ((next-variable-decision) lang-chars lang-lits bound-vars attempt) env)]
+       (generate/pred 'variable recur/pat (λ (var _) (not (memq var vars))))]
+      [`variable (values ((next-variable-decision) lang-chars lang-lits bound-vars attempt) state)]
       [`variable-not-otherwise-mentioned
-       (generate/pred (λ (var _) (not (memq var (compiled-lang-literals lang)))) 'variable)]
+       (generate/pred 'variable recur/pat (λ (var _) (not (memq var (compiled-lang-literals lang)))))]
       [`(variable-prefix ,prefix) 
        (define (symbol-append prefix suffix)
          (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
-       (let-values ([(term env) (recur/pat 'variable)])
-         (values (symbol-append prefix term) env))]
-      [`string (values ((next-string-decision) lang-chars lang-lits attempt) env)]
+       (let-values ([(term state) (recur/pat 'variable)])
+         (values (symbol-append prefix term) state))]
+      [`string (values ((next-string-decision) lang-chars lang-lits attempt) state)]
       [`(side-condition ,pat ,(? procedure? condition))
-       ;; `matches' includes bindings beyond those bound in `pat',
+       (define (bindings env)
+         (make-bindings
+          (for/fold ([bindings null]) ([(name value) env])
+            (if (symbol? name) (cons (make-bind name value) bindings) bindings))))
+       ;; `env' includes bindings beyond those bound in `pat',
        ;; but compiled side-conditions ignore these.
-       (generate/pred (λ (_ matches) (condition (make-bindings (hash-map matches make-bind)))) pat)]
+       (generate/pred pat recur/pat (λ (_ env) (condition (bindings env))))]
       [`(name ,(? symbol? id) ,p)
-       (let-values ([(term env) (recur/pat p)])
-         (values term (make-environment (environment-fvt env)
-                                        (hash-set (environment-matches env) id term)
-                                        (environment-mismatches env))))]
-      [`hole (values in-hole env)]
+       (let-values ([(term state) (recur/pat p)])
+         (values term (set-env state id term)))]
+      [`hole (values in-hole state)]
       [`(in-hole ,context ,contractum)
-       (let-values ([(term env) (recur/pat contractum)])
-         ((recur context term) env))]
-      [`(hide-hole ,pattern) ((recur pattern the-hole) env)]
+       (let-values ([(term state) (recur/pat contractum)])
+         ((recur context term) state))]
+      [`(hide-hole ,pattern) ((recur pattern the-hole) state)]
       [`any
        (let-values ([(lang nt) ((next-any-decision) lang)])
-         (values (generate* lang nt size attempt decisions@) env))]
+         (values (generate* lang nt size attempt decisions@) state))]
       [(? (λ (p) (is-nt? lang p)))
-       (generate-nt pat fvt-id bound-vars size in-hole env)]
+       (generate-nt pat fvt-id bound-vars size in-hole state)]
       [(and (? symbol?) (app symbol->string (regexp named-nt-rx (list _ nt))))
        (let* ([undecorated (string->symbol nt)]
               [none (gensym)]
-              [prior (hash-ref (environment-matches env) pat none)])
+              [prior (hash-ref (state-env state) pat none)])
          (if (eq? prior none)
              (let-values 
-                 ([(term env) ((recur undecorated in-hole pat) env)])
-               (values term (make-environment (environment-fvt env)
-                                              (hash-set (environment-matches env) pat term)
-                                              (environment-mismatches env))))
-             (values prior env)))]
-      [(and (? symbol?) (app symbol->string (regexp mismatch-nt-rx (list _ nt))))
-       (let*-values 
-           ([(undecorated) (string->symbol nt)]
-            [(prior) (hash-ref (environment-mismatches env) pat null)]
-            [(generate-mismatch)
-             (λ () ((recur undecorated in-hole pat) env))]
-            [(term env) 
-             (generate/pred (λ (t _) (not (member t prior))) undecorated generate-mismatch)])
-         (values term (make-environment (environment-fvt env)
-                                        (environment-matches env)
-                                        (hash-set (environment-mismatches env) pat (cons term prior)))))]
-      [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat env)]
-      [(list-rest pat '... rest)
-       (recur/pat (append (build-list ((next-sequence-decision)) (λ (_) pat)) rest))]
+                 ([(term state) ((recur undecorated in-hole pat) state)])
+               (values term (set-env state pat term)))
+             (values prior state)))]
+      [(struct mismatch (name group))
+       (let ([nt (string->symbol (cadr (regexp-match mismatch-nt-rx (symbol->string group))))])
+         (let-values ([(term state) ((recur nt in-hole name) state)])
+           (values term (set-env state pat term))))]
+      [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
+      [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
+       (let*-values ([(length) (let ([prior (hash-ref (state-env state) class #f)])
+                                 (if prior prior ((next-sequence-decision))))]
+                     [(seq state) (generate-sequence ellipsis recur state length)]
+                     [(rest state) ((recur rest in-hole) 
+                                    (set-env (set-env state class length) name length))])
+         (values (append seq rest) state))]
       [(list-rest pat rest)
        (let*-values 
-           ([(pat-term env) (recur/pat pat)]
-            [(rest-term env) ((recur rest in-hole) env)])
-         (values (cons pat-term rest-term) env))]
+           ([(pat-term state) (recur/pat pat)]
+            [(rest-term state) ((recur rest in-hole) state)])
+         (values (cons pat-term rest-term) state))]
       [else
        (error 'generate "unknown pattern ~s\n" pat)]))
   
-  (define (extract-bound-vars pat env)
-    (let loop ([found-vars-table (environment-fvt env)])
+  (define (extract-bound-vars pat state)
+    (let loop ([found-vars-table (state-fvt state)])
       (cond
         [(null? found-vars-table) '()]
         [else (let ([found-vars (car found-vars-table)])
                 (if (eq? pat (found-vars-nt found-vars))
                     (found-vars-bound-vars found-vars)
                     (loop (cdr found-vars-table))))])))
-    
-  (define (extend-found-vars pat res env)
-    (make-environment
-      (map
-       (λ (found-vars)
-         (cond
-           [(eq? (found-vars-source found-vars) pat)
-            (let ([new-found-vars
-                   (make-found-vars (found-vars-nt found-vars)
-                                    (found-vars-source found-vars)
-                                    (cons res (found-vars-bound-vars found-vars))
-                                    #f)])
-              (when (found-vars-found-nt? found-vars)
-                (error 'generate "kludge in #:binds was exposed! #:binds ~s ~s" 
-                       (found-vars-nt found-vars)
-                       (found-vars-source found-vars)))
-              new-found-vars)]
-           [(eq? (found-vars-nt found-vars) pat)
-            (make-found-vars (found-vars-nt found-vars)
-                             (found-vars-source found-vars)
-                             (found-vars-bound-vars found-vars)
-                             #t)]
-           [else found-vars]))
-       (environment-fvt env))
-      (environment-matches env)
-      (environment-mismatches env)))
-
-  (let ([initial-state (make-environment null #hasheq() #hasheq())])
-    (let-values ([(term _) (((generate-pat null size) pat the-hole) initial-state)])
-      term)))
+  
+  (define (extend-found-vars pat res state)
+    (make-state
+     (map
+      (λ (found-vars)
+        (cond
+          [(eq? (found-vars-source found-vars) pat)
+           (let ([new-found-vars
+                  (make-found-vars (found-vars-nt found-vars)
+                                   (found-vars-source found-vars)
+                                   (cons res (found-vars-bound-vars found-vars))
+                                   #f)])
+             (when (found-vars-found-nt? found-vars)
+               (error 'generate "kludge in #:binds was exposed! #:binds ~s ~s" 
+                      (found-vars-nt found-vars)
+                      (found-vars-source found-vars)))
+             new-found-vars)]
+          [(eq? (found-vars-nt found-vars) pat)
+           (make-found-vars (found-vars-nt found-vars)
+                            (found-vars-source found-vars)
+                            (found-vars-bound-vars found-vars)
+                            #t)]
+          [else found-vars]))
+      (state-fvt state))
+     (state-env state)))
+  
+  (let-values ([(term _) 
+                (generate/pred pat
+                               (λ (pat) 
+                                 (((generate-pat null size) pat the-hole)
+                                  (make-state null #hash())))
+                               (λ (_ env) (mismatches-satisfied? env)))])
+      term))
 
 ;; find-base-cases : compiled-language -> hash-table
-(define (find-base-cases lang)
-  (define nt-table (make-hasheq))
-  (define changed? #f)
-  (define (nt-get nt) (hash-ref nt-table nt 'inf))
-  (define (nt-set nt new) 
-    (let ([old (nt-get nt)])
-      (unless (equal? new old)
-        (set! changed? #t)
-        (hash-set! nt-table nt new))))
-  
-  (define (process-nt nt)
-    (nt-set (nt-name nt) (apply min/f (map process-rhs (nt-rhs nt)))))
-  
-  (define (process-rhs rhs)
-    (let ([nts (rhs->nts (rhs-pattern rhs))])
-      (if (null? nts) 
-          0
-          (add1/f (apply max/f (map nt-get nts))))))
-  
-  ;; rhs->path : pattern -> (listof symbol)
-  ;; determines all of the non-terminals in a pattern
-  (define (rhs->nts pat)
-    (let ([nts '()])
-      (let loop ([pat pat])
-        (match pat
-          [(? symbol? pat)
-           (when (is-nt? lang (symbol->nt pat))
-             (set! nts (cons (symbol->nt pat) nts)))]
-          [(or (? number?) (? string?) (? procedure?) (? boolean?)) (void)]
-          [`() (void)]
-          [`(,a ,'... . ,b) 
-           (loop a)
-           (loop b)]
-          [`(,a . ,b)
-           (loop a)
-           (loop b)]))
-      nts))
-  
-  (let loop ()
-    (set! changed? #f)
-    (for-each process-nt (compiled-lang-lang lang))
-    (when changed?
-      (loop)))
-  
-  (let ([ht (make-hash)])
-    (for-each
-     (λ (nt) (hash-set! ht (nt-name nt) (map process-rhs (nt-rhs nt))))
-     (compiled-lang-lang lang))
-    ht))
+  (define (find-base-cases lang)
+    (define nt-table (make-hasheq))
+    (define changed? #f)
+    (define (nt-get nt) (hash-ref nt-table nt 'inf))
+    (define (nt-set nt new) 
+      (let ([old (nt-get nt)])
+        (unless (equal? new old)
+          (set! changed? #t)
+          (hash-set! nt-table nt new))))
+    
+    (define (process-nt nt)
+      (nt-set (nt-name nt) (apply min/f (map process-rhs (nt-rhs nt)))))
+    
+    (define (process-rhs rhs)
+      (let ([nts (rhs->nts (rhs-pattern rhs))])
+        (if (null? nts) 
+            0
+            (add1/f (apply max/f (map nt-get nts))))))
+    
+    ;; rhs->path : pattern -> (listof symbol)
+    ;; determines all of the non-terminals in a pattern
+    (define (rhs->nts pat)
+      (let ([nts '()])
+        (let loop ([pat pat])
+          (match pat
+            [(? symbol? pat)
+             (when (is-nt? lang (symbol->nt pat))
+               (set! nts (cons (symbol->nt pat) nts)))]
+            [`() (void)]
+            [`(,a ,'... . ,b) 
+             (loop a)
+             (loop b)]
+            [`(,a . ,b)
+             (loop a)
+             (loop b)]
+            [_ (void)]))
+        nts))
+    
+    (let loop ()
+      (set! changed? #f)
+      (for-each process-nt (compiled-lang-lang lang))
+      (when changed?
+        (loop)))
+    
+    (let ([ht (make-hash)])
+      (for-each
+       (λ (nt) (hash-set! ht (nt-name nt) (map process-rhs (nt-rhs nt))))
+       (compiled-lang-lang lang))
+      ht))
 
 (define min/f
   (case-lambda
@@ -358,125 +399,136 @@ To do a better job of not generating programs with free variables,
 
 (define named-nt-rx #rx"^([^_]+)_[^_]*$")
 (define mismatch-nt-rx #rx"([^_]+)_!_[^_]*$")
-(define named-ellipsis-rx #rx"^..._[^_]*$")
-(define mismatch-ellipsis-rx #rx"^..._!_[^_]*$")
+(define named-ellipsis-rx #rx"^\\.\\.\\._[^_]*$")
+(define mismatch-ellipsis-rx #rx"^\\.\\.\\._!_[^_]*$")
 
-(define-struct ellipsis (name pattern constraints))
-(define-struct (named-ellipsis ellipsis) (src-name))
-(define-struct (mismatch-ellipsis ellipsis) ())
+(define-struct class (id) #:inspector (make-inspector))
+(define-struct mismatch (id group) #:inspector (make-inspector))
+
+;; name: (or/c symbol? mismatch?)
+;;   The generator records `name' in the environment when generating an ellipsis,
+;;   to collect bindings (for side-condition evaluation) and check mismatch satisfaction.
+;; class: class?
+;;   When one binding appears under two (non-nested) ellipses, the sequences generated
+;;   must have the same length; `class' groups ellipses to reflect this constraint.
+;; var: (list/c (or/c symbol? class? mismatch?))
+;;   the bindings within an ellipses, used to split and merge the environment before
+;;   and after generating an ellipsis
+(define-struct ellipsis (name pattern class vars) #:inspector (make-inspector))
 
 ;; parse-pattern : pattern -> parsed-pattern
-;; Turns "pat ..." and "pat ..._id" into named-ellipsis structs
-;; and "pat ..._!_id" into mismatch-ellipsis structs.
-(define parse-pattern
+;; Turns "pat ...", "pat ..._id", and "pat ..._!_id" into ellipsis structs
+;; and "nt_!_id" into mismatch structs.
+(define (parse-pattern pattern)
+  (define (recur pat vars)
+    (match pat
+      [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
+       (values pat (cons pat vars))]
+      [(and (? symbol?) (app symbol->string (regexp mismatch-nt-rx)))
+       (let ([mismatch (make-mismatch (gensym) pat)])
+         (values mismatch (cons mismatch vars)))]
+      [`(name ,name ,sub-pat)
+       (let-values ([(parsed vars) (recur sub-pat vars)])
+         (values `(name ,name ,parsed) (cons name vars)))]
+      [(list-rest sub-pat (and (? symbol?) (app symbol->string (regexp named-ellipsis-rx)) name) rest)
+       (let*-values ([(sub-pat-parsed sub-pat-vars) (recur sub-pat null)]
+                     [(seq) (make-ellipsis name sub-pat-parsed (make-class name) sub-pat-vars)]
+                     [(vars) (append (list* name (make-class name) sub-pat-vars) vars)]
+                     [(rest-parsed vars) (recur rest vars)])
+         (values (cons seq rest-parsed) vars))]
+      [(list-rest sub-pat '... rest)
+       (let*-values ([(sub-pat-parsed sub-pat-vars) (recur sub-pat null)]
+                     [(class) (make-class (gensym))]
+                     [(seq) (make-ellipsis '... sub-pat-parsed class sub-pat-vars)]
+                     [(rest-parsed vars) (recur rest (cons class (append sub-pat-vars vars)))])
+         (values (cons seq rest-parsed) vars))]
+      [(list-rest sub-pat (and (? symbol?) (app symbol->string (regexp mismatch-ellipsis-rx)) name) rest)
+       (let*-values ([(sub-pat-parsed sub-pat-vars) (recur sub-pat null)]
+                     [(mismatch) (make-mismatch (gensym) name)]
+                     [(class) (make-class (gensym))]
+                     [(seq) (make-ellipsis mismatch sub-pat-parsed class sub-pat-vars)]
+                     [(vars) (append (list* class mismatch sub-pat-vars) vars)]
+                     [(rest-parsed vars) (recur rest vars)])
+         (values (cons seq rest-parsed) vars))]
+      [(cons first rest)
+       (let-values ([(first-parsed vars) (recur first vars)])
+         (let-values ([(rest-parsed vars) (recur rest vars)])
+           (values (cons first-parsed rest-parsed) vars)))]
+      [_ (values pat vars)]))
+  (let-values ([(parsed _) (recur pattern null)])
+    parsed))
+
+;; parse-language: compiled-lang -> compiled-lang
+(define (parse-language lang)
+  (struct-copy 
+   compiled-lang lang
+   [lang
+    (map (λ (nt) 
+           (make-nt (nt-name nt)
+                    (map (λ (rhs) 
+                           (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs))) 
+                                     (rhs-var-info rhs)))
+                         (nt-rhs nt))))
+         (compiled-lang-lang lang))]))
+
+;; unparse-pattern: parsed-pattern -> pattern
+(define unparse-pattern
   (match-lambda
-    [(list-rest pat (and (? symbol?) (app symbol->string (regexp named-ellipsis-rx)) name) rest)
-     (cons (make-named-ellipsis name (parse-pattern pat) null name) (parse-pattern rest))]
-    [(list-rest pat '... rest)
-     (cons (make-named-ellipsis (gensym '..._) (parse-pattern pat) null '...) (parse-pattern rest))]
-    [(list-rest pat (and (? symbol?) (app symbol->string (regexp mismatch-ellipsis-rx)) name) rest)
-     (cons (make-mismatch-ellipsis name (parse-pattern pat) null) (parse-pattern rest))]
-    [(cons first rest) (cons (parse-pattern first) (parse-pattern rest))]
+    [(struct mismatch (_ group)) group]
+    [(list-rest (struct ellipsis (name sub-pat _ _)) rest)
+     (let ([ellipsis (if (mismatch? name) (mismatch-group name) name)])
+       (list* (unparse-pattern sub-pat) ellipsis (unparse-pattern rest)))]
+    [(cons first rest) 
+     (cons (unparse-pattern first) (unparse-pattern rest))]
     [else else]))
 
-(define (hash-cons hash key val)
-  (hash-set hash key (cons val (hash-ref hash key null))))
-
-;; An ellipsis-context (listof ellipsis?) records the ellipses above a
-;; a position in a pattern.
-;;
-;; ellipsis-context-sets : parsed-pattern -> (listof (listof contexts))
-;; Extracts ellipsis-context-sets for each named non-teminal (e.g., x_1).
-(define (ellipsis-context-sets pattern)
-  (hash-map
-   (let recur ([pattern pattern] [under null] [contexts #hasheq()])
-     (match pattern
-       [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
-        (if (null? under) contexts (hash-cons contexts pattern under))]
-       [(struct ellipsis (_ sub-pattern _))
-        (recur sub-pattern (cons pattern under) contexts)]
-       [(? list?)
-        (foldl (λ (p n) (recur p under n)) contexts pattern)]
-       [_ contexts]))
-   (λ (named-nt contexts) contexts)))
-
-;; representative-context 
-;;   (cons/c ellipsis-context (listof ellipses-context)) -> ellipses-context
-;; Merges a (non-empty) list of ellipsis-contexts of common depth into a 
-;; single "representative" context in which ...
-(define (representative-context contexts)
-  (foldl (λ (current representative)
-           (map (λ (c r) (if (named-ellipsis? c) c r))
-                current representative)) 
-         (car contexts) (cdr contexts)))
-
-;; ellipsis-names-rewrites : parsed-pattern -> hash[sym -o> sym]
-;; Produces a hash mapping ellipsis names to new names, for use in
-;; `rewrite-named-ellipsis'
-(define (ellipsis-names-rewrites pat)
-  ; union-find w/o balancing or path compression (for now)
+;; class-reassignments : parsed-pattern -> hash[sym -o> sym]
+(define (class-reassignments pattern)
+  ; union-find w/o balancing or path compression (at least for now)
   (define (union e f sets)
     (hash-set sets (find f sets) (find e sets)))
   (define (find e sets)
     (let recur ([chd e] [par (hash-ref sets e #f)])
       (if (and par (not (eq? chd par))) (recur par (hash-ref sets par #f)) chd)))
   
-  (define (context-set-equivalence contexts classes)
-    (let ([representative (representative-context contexts)])
-      (foldl 
-       (λ (context classes)
-         (foldl 
-          (λ (cur rep classes)
-            (if (or (mismatch-ellipsis? cur) (mismatch-ellipsis? rep))
-                classes
-                (union (ellipsis-name rep) (ellipsis-name cur) classes)))
-          classes context representative))
-       classes contexts)))
-  
-  (let ([classes (foldl context-set-equivalence #hasheq() (ellipsis-context-sets pat))])
-    (make-immutable-hasheq 
-     (hash-map classes (λ (named-ellip _) (cons named-ellip (find named-ellip classes)))))))
+  (let* ([last-contexts (make-hasheq)]
+         [assignments
+          (let recur ([pat pattern] [under null] [assignments #hasheq()])
+            (match pat
+              ;; `(name ,id ,sub-pat) not considered, since bindings introduced
+              ;; by name must be unique.
+              [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
+               (if (null? under) 
+                   assignments
+                   (let ([last (hash-ref last-contexts pat #f)])
+                     (if last
+                         (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)
+                         (begin
+                           (hash-set! last-contexts pat under)
+                           assignments))))]
+              [(struct ellipsis (_ sub-pat (struct class (cls)) _))
+               (recur sub-pat (cons cls under) assignments)]
+              [(? list?)
+               (foldl (λ (pat asgns) (recur pat under asgns)) assignments pat)]
+              [_ assignments]))])
+    (make-immutable-hasheq (hash-map assignments (λ (cls _) (cons cls (find cls assignments)))))))
 
-(define (rewrite-named-ellipses pat rewrites)
-  (match pat
-    [(struct named-ellipsis (name sub-pat constraints src-name))
-     (let ([rewritten (rewrite-named-ellipses sub-pat rewrites)])
-       (make-named-ellipsis (hash-ref rewrites name name) rewritten constraints src-name))]
-    [(struct mismatch-ellipsis (name sub-pat constraints))
-     (make-mismatch-ellipsis name (rewrite-named-ellipses sub-pat rewrites) constraints)]
-    [(? list?) (map (λ (p) (rewrite-named-ellipses p rewrites)) pat)]
-    [_ pat]))
+(define (reassign-classes pattern)
+  (let* ([reassignments (class-reassignments pattern)]
+         [rewrite (λ (c) (make-class (hash-ref reassignments (class-id c) (class-id c))))])
+    (let recur ([pat pattern])
+      (match pat
+        [(struct ellipsis (name sub-pat class vars))
+         (make-ellipsis name (recur sub-pat) (rewrite class)
+                        (map (λ (v) (if (class? v) (rewrite v) v)) vars))]
+        [(? list?) (map (λ (p) (recur p)) pat)]
+        [_ pat]))))
 
-;; sequence-length-constraints : parsed-pattern -> hash[symbol -> (listof symbol)]
-;; Produces a hash mapping ellipsis names to the names of the ellipses that cannot
-;; have the same sequence length.
-(define (sequence-length-constraints pat)
-  (define empty-set #hasheq())
-  (define (extend member set) (hash-set set member #t))
-  (define (member? element set) (hash-ref set element #f))
-  (define (set->list set) (hash-map set (λ (elem _) elem)))
-  
-  (define (exclude ellip from constraints)
-    (hash-set constraints (ellipsis-name from) 
-              (extend (ellipsis-name ellip)
-                      (hash-ref constraints (ellipsis-name from) empty-set))))
-  
-  (define (context-set-constraints contexts constraints)
-    (let ([representative (representative-context contexts)])
-      (foldl
-       (λ (context constraints)
-         (foldl 
-          (λ (cur rep constraints)
-            (if (or (mismatch-ellipsis? rep) (named-ellipsis? cur))
-                constraints
-                (exclude cur rep (exclude rep cur constraints))))
-          constraints context representative))
-       constraints contexts)))
-  
-  (make-immutable-hash
-   (hash-map
-    (foldl context-set-constraints #hasheq() (ellipsis-context-sets pat))
-    (λ (ellip-name exclusion-set) (cons ellip-name (set->list exclusion-set))))))
+;; used in generating the `any' pattern
+(define sexp
+  (let ()
+    (define-language sexp (sexp variable string number hole (sexp ...)))
+    (parse-language sexp)))
 
 (define-syntax check
   (syntax-rules ()
@@ -500,13 +552,15 @@ To do a better job of not generating programs with free variables,
     [(_ lang pat size attempt)
      (syntax (generate lang pat size attempt random-decisions@))]
     [(_ lang pat size attempt decisions@)
-     (with-syntax ([rewritten 
+     (with-syntax ([pattern 
                     (rewrite-side-conditions/check-errs 
                      (language-id-nts #'lang 'generate)
-                     'generate
-                     #f
-                     #'pat)])
-       (syntax (generate* lang `rewritten size attempt decisions@)))]))
+                     'generate #f #'pat)])
+       (syntax 
+        (generate* 
+         (parse-language lang)
+         (reassign-classes (parse-pattern`pattern))
+         size attempt decisions@)))]))
 
 (define-signature decisions^
   (next-variable-decision
@@ -528,8 +582,8 @@ To do a better job of not generating programs with free variables,
 (provide pick-from-list pick-var pick-length min-prods decisions^ 
          is-nt? lang-literals pick-char random-string pick-string
          check pick-nt unique-chars pick-any sexp generate parse-pattern
-         ellipsis-context-sets ellipsis-names-rewrites sequence-length-constraints
-         (struct-out ellipsis) (struct-out named-ellipsis) (struct-out mismatch-ellipsis))
+         class-reassignments reassign-classes unparse-pattern
+         (struct-out ellipsis) (struct-out mismatch) (struct-out class))
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])

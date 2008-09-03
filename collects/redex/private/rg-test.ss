@@ -101,11 +101,6 @@
     (test (pick-char 0 chars (make-random '(65))) #\a)
     (test (random-string chars lits 1 0 (make-random '(65))) "a")))
 
-(define (rhs-matching pat prods)
-  (cond [(null? prods) (error 'rhs-matching "no rhs matching ~s" pat)]
-        [(equal? (rhs-pattern (car prods)) pat) (car prods)]
-        [else (rhs-matching pat (cdr prods))]))
-
 (define-syntax exn:fail-message
   (syntax-rules ()
     [(_ expr)
@@ -116,17 +111,8 @@
            (define-struct exn-not-raised ())
            (make-exn-not-raised))))]))
 
-(let ()
-  (define-language l (a (a b) (a b c) c))
-  (test (rhs-matching '(a b c) (nt-rhs (car (compiled-lang-lang l))))
-        (cadr (nt-rhs (car (compiled-lang-lang l)))))
-  (test (exn:fail-message (rhs-matching '(a c) (nt-rhs (car (compiled-lang-lang l)))))
-        #rx"no rhs matching"))
-
-(define (select-pattern pat)
-  (λ (prods . _) (rhs-matching pat prods)))
-
-(define (patterns . ps) (map select-pattern ps))
+(define (patterns . selectors) 
+  (map (λ (selector) (λ (prods . _) (selector prods))) selectors))
 
 (define (iterator name items)
   (let ([bi (box items)])
@@ -159,7 +145,7 @@
 
 (let ()
   (define-language lc
-    (e (e e) x (λ (x) e) #:binds x e)
+    (e (e e) x (λ (x) e))
     (x (variable-except λ)))
   
   ;; Generate (λ (x) x)
@@ -167,10 +153,7 @@
    (generate 
     lc e 1 0
     (decisions #:var (list (λ _ 'x) (λ _'x))
-               #:nt (patterns '(λ (x) e)
-                              '(variable-except λ)
-                              'x
-                              '(variable-except λ)))) 
+               #:nt (patterns third first first first)))
    '(λ (x) x))
   
   ;; Generate pattern that's not a non-terminal
@@ -194,8 +177,22 @@
      (let/ec k
        (generate 
         lc e size 0
-        (decisions #:nt (list (select-pattern 'x) (λ (p b s) (k s)))))) 
+        (decisions #:nt (list (λ (prods . _) (cadr prods)) (λ (p b s) (k s)))))) 
      (sub1 size))))
+
+;; #:binds
+(let ()
+  (define-language lang
+    (a (b c d) #:binds b c #:binds b d)
+    (b variable)
+    (c variable)
+    (d variable))
+  (let* ([x null]
+         [prepend! (λ (c l b a) (begin (set! x (cons (car b) x)) 'x))])
+    (test (begin
+            (generate lang a 5 0 (decisions #:var (list (λ _ 'x) prepend! prepend!)))
+            x)
+          '(x x))))
 
 ;; Detection of binding kludge
 (let ()
@@ -207,10 +204,7 @@
      (generate 
       postfix e 2 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y))
-                 #:nt (patterns '(e (x) λ)
-                                'x
-                                '(variable-except λ)
-                                '(variable-except λ)))))
+                 #:nt (patterns third second first first))))
    #rx"kludge"))
 
 ;; variable-except pattern
@@ -220,19 +214,42 @@
   (test
    (generate
     var e 2 0
-    (decisions #:nt (patterns '(variable-except x y))
-               #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
+    (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
    'z))
 
 (let ()
   (define-language lang
-    (e (number number ... "foo" ... "bar" #t ...)))
+    (a (number number ... "foo" ... "bar" #t ...))
+    (b (number_1 ..._!_1 number_1 ..._1))
+    (c (variable_1 ..._1 number_2 ..._1))
+    (d (z_1 ... z_2 ..._!_1 (z_1 z_2) ...))
+    (e (n_1 ..._!_1 n_2 ..._!_1 (n_1 n_2) ..._3))
+    (f (n_1 ..._1 n_2 ..._2 n_2 ..._1))
+    (g (z_1 ..._!_1 z_2 ... (z_1 z_2) ...))
+    (n number)
+    (z 4))
   (test
    (generate 
-    lang e 2 0
+    lang a 2 0
     (decisions #:num (build-list 3 (λ (n) (λ (_) n)))
                #:seq (list (λ () 2) (λ () 3) (λ () 1))))
-   `(0 1 2 "foo" "foo" "foo" "bar" #t)))
+   `(0 1 2 "foo" "foo" "foo" "bar" #t))
+  (test (generate lang b 5 0 (decisions #:seq (list (λ () 0))))
+        null)
+  (test (generate lang c 5 0 (decisions #:seq (list (λ () 0))))
+        null)
+  (test (generate lang d 5 0 (decisions #:seq (list (λ () 2))))
+        '(4 4 4 4 (4 4) (4 4)))
+  (test (exn:fail-message (generate lang e 5 0)) 
+        #rx"generate: unable to generate pattern \\(n_1 ..._!_1 n_2 ..._!_1 \\(n_1 n_2\\) ..._3\\)")
+  (test (generate lang f 5 0 (decisions #:seq (list (λ () 0)))) null)
+  (test (generate lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+                  (decisions #:seq (list (λ () 2) (λ () 3) (λ () 4) (λ () 2) (λ () 3) (λ () 4)
+                                         (λ () 2) (λ () 3) (λ () 4) (λ () 1) (λ () 3))))
+        '((0 0 0) (0 0 0 0) (1 1 1)))
+  (test (generate lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+                  (decisions #:seq (list (λ () 2) (λ () 3) (λ () 4) (λ () 2) (λ () 3) (λ () 5))))
+        '((0 0 0) (0 0 0 0) (1 1 1) (1 1 1 1 1))))
 
 (let ()
   (define-language lc
@@ -247,11 +264,7 @@
      (generate 
       lc e 10 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b)))
-                 #:nt (patterns '(λ (x ...) e)
-                                '(variable-except λ)
-                                '(variable-except λ)
-                                'x
-                                '(variable-except λ))
+                 #:nt (patterns first first first third first)
                  #:seq (list (λ () 2)))))
    '(y x)))
 
@@ -260,8 +273,7 @@
   (test 
    (generate
     lang e 5 0
-    (decisions #:var (list (λ _ 'x))
-               #:nt (patterns '(variable-prefix pf))))
+    (decisions #:var (list (λ _ 'x))))
    'pfx))
 
 (let ()
@@ -275,18 +287,9 @@
   (test
    (generate
     lang e 5 0
-    (decisions #:nt (patterns '(e_1 e_2 e e_1 e_2) 
-                              'number
-                              'number
-                              'number)
+    (decisions #:nt (patterns second first first first)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
-   '(2 3 4 2 3))
-  #;(test
-   (generate 
-    lang (variable_1 ...) 5 0
-    (decisions #:seq (list (λ () 2))
-               #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
-   '(x y)))
+   '(2 3 4 2 3)))
 
 (let ()
   (define-language lang
@@ -296,46 +299,27 @@
    (let/ec k
      (generate
       lang e 5 0
-      (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b)))
-                 #:nt (patterns '(x x_1 x_1) 
-                                'variable
-                                'variable))))
+      (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
    '(x)))
 
 (let ()
   (define-language lang
-    (e (number_!_1 number_!_2 number_!_1 number_!_2)))
+    (a (number_!_1 number_!_2 number_!_1))
+    (b (c_!_1 c_!_1 c_!_1))
+    (c 1 2))
   (test
    (generate
-    lang e 5 0
-    (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2) (λ _ 3))))
-   '(1 1 2 3)))
-
-(let ()
-  (define-language lang
-    (a (b_!_1 b_!_1 b_!_1))
-    (b 1 2))
+    lang a 5 0
+    (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
+   '(1 1 2))
   (test
-   (exn:fail-message (generate lang a 5000 0))
+   (generate
+    lang (number_!_1 number_!_2 number_!_1) 5 0
+    (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
+   '(1 1 2))
+  (test
+   (exn:fail-message (generate lang b 5000 0))
    #rx"unable"))
-
-(let ()
-  (define-language lang
-    (e (x_!_1 ...))
-    (x variable))
-  (test
-   (generate
-    lang e 5 0
-    (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'y) (λ _ 'z))
-               #:nt (patterns '(x_!_1 ...)
-                              'variable
-                              'variable
-                              'variable
-                              'variable
-                              'variable
-                              'variable)
-               #:seq (list (λ _ 3))))
-   '(x y z)))
 
 (let ()
   (define-language lang
@@ -373,7 +357,13 @@
   (test ; generate compiles side-conditions in pattern
    (generate lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
              (decisions #:var (list (λ _ 'x) (λ _ 'y))))
-   'y))
+   'y)
+  (test ; bindings within ellipses collected properly
+   (let/ec k
+     (generate lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
+               (decisions #:seq (list (λ () 2) (λ () 3) (λ () 4))
+                          #:num (build-list 7 (λ (n) (λ (_) n))))))
+   '((0 1 2) (3 4 5 6))))
 
 (let ()
   (define-language lang
@@ -405,7 +395,7 @@
    (generate 
     lang (in-hole A number ) 5 0
     (decisions 
-     #:nt (patterns '(+ a A) '(+ a a) 'number 'number '(+ A a) 'hole '(+ a a) 'number 'number)
+     #:nt (patterns second second first first third first second first first)
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 1 2) (+ 0 (+ 3 4))))
   
@@ -414,9 +404,9 @@
   (test (generate lang (variable_1 (in-hole C variable_1)) 5 0
                   (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
         '(x x))
-  (test (generate lang (variable_!_1 (in-hole C variable_!_1) variable_!_1) 5 0
-                  (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'z))))
-        '(x y z))
+  (test (generate lang (variable_!_1 (in-hole C variable_!_1)) 5 0
+                  (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'x) (λ _ 'y))))
+        '(x y))
   (test (let/ec k (generate lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
         '(x))
   (test (generate lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
@@ -447,10 +437,7 @@
   (test (generate four any 5 0 (decisions #:any (list (λ _ (values four 'e))))) 4)
   (test (generate four any 5 0 
                   (decisions #:any (list (λ _ (values sexp 'sexp)))
-                             #:nt (list (select-pattern '(sexp ...))
-                                        (select-pattern 'string)
-                                        (select-pattern 'string)
-                                        (select-pattern 'string))
+                             #:nt (patterns fifth second second second)
                              #:seq (list (λ _ 3))
                              #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
         '("foo" "bar" "baz")))
@@ -460,16 +447,6 @@
   (define-language lang
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
   (test (generate lang e 5 0) (term (hole 1))))
-
-;; named ellipses
-#;(let ()
-  (define-language empty)
-  (test 
-   (generate empty (number ..._1 variable ..._2 number ..._1) 5 0
-             (decisions #:seq (list (λ () 2) (λ () 3))
-                        #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'z))
-                        #:num (build-list 4 (λ (x) (λ (_) x)))))
-   '(0 1 x y z 2 3)))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
@@ -488,78 +465,72 @@
   (test (exn:fail-message (check lang ([x d]) 2 0 (error 'pred-raised)))
         #rx"term \\(\\(x 5\\)\\) raises"))
 
-;; parse-pattern
+;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
-  (test-match 
-   (list (struct named-ellipsis (_ 1 null '...)) 
-         (struct named-ellipsis ('..._1 2 null '..._1)))
-   (parse-pattern '(1 ... 2 ..._1)))
-  (test-match
-   (list 1 (struct mismatch-ellipsis ('..._!_1 2 null)))
-   (parse-pattern '(1 2 ..._!_1))))
-
-;; ellipsis-context-sets
-(test (sort (map (λ (contexts) (map (λ (nesting) (map ellipsis-name nesting)) contexts))
-                 (ellipsis-context-sets (parse-pattern '(x_1 x_1 ..._1 (x_1 x_2 ..._2) ..._3))))
-            (λ (m n) (string<=? (format "~s" m) (format "~s" n))))
-      '(((..._2 ..._3))
-        ((..._3) (..._1))))
+  (let ([pattern '((x_1 x_2) ... 3)])
+    (test-match (list (struct ellipsis ('... '(x_1 x_2) _ '(x_2 x_1))) 3)
+                (parse-pattern pattern))
+    (test (unparse-pattern (parse-pattern pattern)) pattern))
+  (let ([pattern '((x_1 ..._1 x_2) ..._!_1)])
+    (test-match (struct ellipsis 
+                        ((struct mismatch (i_1 '..._!_1)) 
+                         (list (struct ellipsis ('..._1 'x_1 (struct class ('..._1)) '(x_1))) 'x_2)
+                         _ `(x_2 ..._1 ,(struct class ('..._1)) x_1)))
+                (car (parse-pattern pattern)))
+    (test (unparse-pattern (parse-pattern pattern)) pattern))
+  (let ([pattern '((name x_1 x_!_2) ...)])
+    (test-match (struct ellipsis 
+                        ('... `(name x_1 ,(struct mismatch (i_2 'x_!_2))) _ 
+                              (list 'x_1 (struct mismatch (i_2 'x_!_2)))))
+                (car (parse-pattern pattern)))
+    (test (unparse-pattern (parse-pattern pattern)) pattern))
+  (let ([pattern '((x_1 ...) ..._1)])
+    (test-match (struct ellipsis 
+                        ('..._1
+                         (list (struct ellipsis ('... 'x_1 (struct class (c_1)) '(x_1))))
+                         _
+                         `(,(struct class (c_1)) x_1)))
+                (car (parse-pattern pattern)))
+    (test (unparse-pattern (parse-pattern pattern)) pattern))
+  (let ([pattern '((x_1 ..._!_1) ...)])
+    (test-match (struct ellipsis 
+                        ('...
+                         (list 
+                          (struct ellipsis ((struct mismatch (i_1 '..._!_1)) 'x_1 (struct class (c_1)) '(x_1))))
+                         _
+                         (list  (struct class (c_1)) (struct mismatch (i_1 '..._!_1)) 'x_1)))
+                (car (parse-pattern pattern)))
+    (test (unparse-pattern (parse-pattern pattern)) pattern)))
 
 (let ()
-  (define-syntax test-ellipsis-names-rewrites
+  (define-syntax test-class-reassignments
     (syntax-rules ()
       [(_ pattern expected)
-       (test (to-table (ellipsis-names-rewrites (parse-pattern pattern))) expected)]))
+       (test (to-table (class-reassignments (parse-pattern pattern))) expected)]))
   
-  (test-ellipsis-names-rewrites 
+  (test-class-reassignments 
    '(x_1 ..._1 x_2 ..._2 x_2 ..._1)
-   '((..._1 . ..._2) (..._2 . ..._2)))
-  (test-ellipsis-names-rewrites
+   '((..._2 . ..._1)))
+  (test-class-reassignments
    '((x_1 ..._1 x_1 ..._2) (x_2 ..._1 x_2 ..._2) x_3 ..._2)
-   '((..._1 . ..._1) (..._2 . ..._1)))
-  (test-ellipsis-names-rewrites
+   '((..._1 . ..._2) (..._2 . ..._2)))
+  (test-class-reassignments
    '(x_1 ..._1 x ..._2 x_1 ..._2)
-   '((..._1 . ..._1) (..._2 . ..._1)))
-  (test-ellipsis-names-rewrites
+   '((..._1 . ..._2)))
+  (test-class-reassignments
    '(x_1 ..._1 x_2 ..._2 (x_1 x_2) ..._3)
-   '((..._1 . ..._2) (..._2 . ..._2) (..._3 . ..._2)))
-  (test-ellipsis-names-rewrites
+   '((..._1 . ..._3) (..._2 . ..._3)))
+  (test-class-reassignments
    '((x_1 ..._1) ..._2 x_2 ..._3 (x_1 ..._4 x_2) ..._5)
-   '((..._1 . ..._1) (..._2 . ..._3) (..._3 . ..._3) (..._4 . ..._1) (..._5 . ..._3)))
-  (test-ellipsis-names-rewrites
-   '((x_1 ..._1) ..._!_2 (x_1 ..._3) ..._4)
-   '((..._1 . ..._1) (..._3 . ..._1) (..._4 . ..._4)))
-  (test-ellipsis-names-rewrites
-   '((x_1 ..._!_1) ..._2 (x_1 ..._3) ..._4 (x_1 ..._5) ..._6)
-   '((..._2 . ..._2) (..._3 . ..._3) (..._4 . ..._2) (..._5 . ..._3) (..._6 . ..._2)))
-  (test-ellipsis-names-rewrites
+   '((..._1 . ..._4) (..._2 . ..._5) (..._3 . ..._5)))
+  (test-class-reassignments
+   '((x_1 ..._1) ..._2 (x_1 ..._3) ..._4 (x_1 ..._5) ..._6)
+   '((..._1 . ..._5) (..._2 . ..._6) (..._3 . ..._5) (..._4 . ..._6)))
+  (test-class-reassignments
    '(x_1 ..._1 x_1 ..._2 x_2 ..._1 x_2 ..._4 x_2 ..._3)
-   '((..._1 . ..._1) (..._2 . ..._1) (..._3 . ..._1) (..._4 . ..._1))))
-
-(let ()
-  (define (make-table constraints)
-    (sort (hash-map constraints cons) (λ (x y) (string<=? (format "~s" x) (format "~s" y)))))
-  
-  (define-syntax test-sequence-constraints
-    (syntax-rules ()
-      [(_ pattern expected)
-       (test (make-table (sequence-length-constraints (parse-pattern pattern)))
-             expected)]))
-  
-  (test-sequence-constraints 
-   '(x_3 ..._3 x_1 ..._!_1 x_2 ..._3 x_2 ..._!_1)
-   '((..._!_1 ..._3) (..._3 ..._!_1)))
-  (test-sequence-constraints
-   '(x_1 ..._!_1 x_2 ..._2 x_2 ..._!_1)
-   '((..._!_1 ..._2) (..._2 ..._!_1)))
-  (test-sequence-constraints
-   '(x_2 ..._2 x_1 ..._!_1 x_2 ..._!_1)
-   '((..._!_1 ..._2) (..._2 ..._!_1)))
-  (test-sequence-constraints 
-   '(x_1 ..._1 x_1 ..._!_1 x_3 ..._!_1 x_2 ..._2 x_2 ..._!_1)
-   '((..._!_1 ..._1 ..._2) (..._1 ..._!_1) (..._2 ..._!_1)))
-  (test-sequence-constraints
-   '((x_1 ..._1 x_2 ..._!_1 x_2 ..._1) ...)
-   '((..._!_1 ..._1) (..._1 ..._!_1))))
+   '((..._1 . ..._3) (..._2 . ..._3) (..._4 . ..._3)))
+  (test (hash-map (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1))) 
+                  (λ (_ cls) cls))
+        '(..._1 ..._1)))
 
 (print-tests-passed 'rg-test.ss)
