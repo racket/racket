@@ -2026,7 +2026,6 @@
                                 (lambda () (error 'descendent-Runtime "Internal Error: class record is not in table")))))
         (member `("java" "lang" "RuntimeException") (class-record-parents class-record)))))
   
-  ;Converted
   ;translate-switch: syntax (list CaseStatements) src type-records -> syntax
   (define translate-switch
     (lambda (expr cases src type-recs)
@@ -2042,7 +2041,6 @@
                              cases))
                    (build-src src))))
   
-  ;Converted
   ;translate-block: (list (U Statement (U var-decl var-init))) src type-recs -> syntax
   (define translate-block
     (lambda (statements src type-recs)
@@ -2414,7 +2412,7 @@
                          'javaRuntime:divide-dynamic)
                         (else
                          'javaRuntime:divide-int))))
-                 (make-syntax #f `(,(create-syntax #f div-op key-src) ,left ,right) source)))
+                 (make-syntax #f `(,(create-syntax #f div-op key-src) ,left ,right (current-continuation-marks)) source)))
               ((%) (make-syntax #f `(,(create-syntax #f 'javaRuntime:mod key-src) ,left ,right) source))
               ;Shift operations
               ((<< >> >>>) 

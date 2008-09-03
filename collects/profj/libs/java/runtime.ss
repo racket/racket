@@ -69,29 +69,29 @@
           ((or) (or left right)))))
 
   ;divide-dynamic: number number -> number
-  (define (divide-dynamic left right)
+  (define (divide-dynamic left right marks)
     (if (or (inexact? left) (inexact? right))
         (divide-float left right)
         (divide-int left right)))
   
   ;divide-int: int int -> int
-  (define (divide-int left right)
+  (define (divide-int left right marks)
     (when (zero? right)
       (raise (create-java-exception ArithmeticException
                                     "Illegal division by zero"
                                     (lambda (exn msg)
                                       (send exn ArithmeticException-constructor-java.lang.String msg))
-                                    (current-continuation-marks))))
+                                    marks)))
     (quotient left right))
   
   ;divide-float: float float -> float
-  (define (divide-float left right)
+  (define (divide-float left right marks)
     (when (zero? right)
       (raise (create-java-exception ArithmeticException
                                     "Illegal division by zero"
                                     (lambda (exn msg)
                                       (send exn ArithmeticException-constructor-java.lang.String msg))
-                                    (current-continuation-marks))))
+                                    marks)))
     (if (and (exact? left) (exact? right))
         (exact->inexact (/ left right))
         (/ left right)))

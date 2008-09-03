@@ -174,7 +174,7 @@
       (when current-testcase
         (set-tc-stat-checks!
          current-testcase
-         (cons (make-failed-check src msg)
+         (cons (make-failed-check src msg exn)
                (tc-stat-checks current-testcase))))
       (inner (void) check-failed msg src exn))
 

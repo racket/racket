@@ -760,7 +760,7 @@
                         (set! compiled? #t)
                         (set! modules (order compilation-units))
                         (when rep (send rep set-user-types execute-types))
-                        (set! extras (process-extras (send execute-types get-interactions-boxes) execute-types))
+                        #;(set! extras (process-extras (send execute-types get-interactions-boxes) execute-types))
                         (set! tests examples))
                       (datum->syntax #f '(void) #f)]
                      [else
@@ -836,15 +836,16 @@
                     eof
                     (begin
                       (set! executed? #t)
-                      (syntax-as-top
-                       (compile-interactions-ast 
-                        (parse-interactions port name level)
-                        name level types  #t)
-                       
+                      (errortrace-annotate 
+                       (syntax-as-top
+                         (compile-interactions-ast 
+                          (parse-interactions port name level)
+                          name level types  #t)
+                        
                        #;(datum->syntax
                         #f
                         `(parse-java-interactions ,(parse-interactions port name level) ,name)
-                        #f)))))))
+                        #f))))))))
           (define/public (front-end/finished-complete-program settings) (void))
           
           (define (get-defn-editor port-name)
