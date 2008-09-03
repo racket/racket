@@ -2728,8 +2728,6 @@ void scheme_out_of_string_range(const char *name, const char *which,
 
 const char *scheme_number_suffix(int);
 
-void scheme_reset_prepared_error_buffer(void);
-
 const char *scheme_hostname_error(int err);
 
 char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, long *olen);

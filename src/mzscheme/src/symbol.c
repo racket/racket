@@ -338,7 +338,6 @@ make_a_symbol(const char *name, unsigned int len, int kind)
 
   if (len > scheme_max_found_symbol_name) {
     scheme_max_found_symbol_name = len;
-    scheme_reset_prepared_error_buffer();
   }
 
   return (Scheme_Object *) sym;
