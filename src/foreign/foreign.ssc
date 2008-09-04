@@ -810,7 +810,7 @@ static int ctype_sizeof(Scheme_Object *type)
     {:(cmake-object "type" ctype "argv[0]" "argv[1]" "argv[2]"):}
     return (Scheme_Object*)type;
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* see below */
@@ -820,7 +820,41 @@ void free_libffi_type(void *ignored, void *p)
   free(p);
 }
 
-/* (make-cstruct-type types) -> ctype */
+/*****************************************************************************/
+/* ABI spec */
+
+{:(defsymbols default stdcall sysv):}
+
+ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
+{
+  if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
+    return FFI_DEFAULT_ABI;
+  else if (SAME_OBJ(sym, sysv_sym)) {
+#ifdef FFI_SYSV
+    return FFI_SYSV;
+#else
+    scheme_signal_error("%s: ABI unimplemented: %V", who, sym);
+#endif
+  } else if (SAME_OBJ(sym, stdcall_sym)) {
+#ifdef FFI_STDCALL
+    return FFI_STDCALL;
+#else
+    scheme_signal_error("%s: ABI unimplemented: %V", who, sym);
+#endif
+  } else {
+    scheme_signal_error("%s: unknown ABI: %V", who, sym);
+  }
+  return 0; /* hush the compiler */
+}
+
+/* helper macro */
+#define GET_ABI(name,n) \
+  ((argc > (n)) ? sym_to_abi((name),argv[n]) : FFI_DEFAULT_ABI)
+
+/*****************************************************************************/
+/* cstruct types */
+
+/* (make-cstruct-type types [abi]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
  * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
@@ -834,9 +868,10 @@ void free_libffi_type(void *ignored, void *p)
   ctype_struct *type;
   ffi_cif cif;
   int i, nargs;
+  ffi_abi abi;
   nargs = scheme_proper_list_length(argv[0]);
-  if (nargs < 0)
-    scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
+  if (nargs < 0) scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
+  abi = GET_ABI(MYNAME,1);
   /* allocate the type elements */
   elements = malloc((nargs+1) * sizeof(ffi_type*));
   elements[nargs] = NULL;
@@ -855,7 +890,7 @@ void free_libffi_type(void *ignored, void *p)
   libffi_type->elements  = elements;
   /* use ffi_prep_cif to set the size and alignment information */
   dummy = &libffi_type;
-  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 1, &ffi_type_void, dummy) != FFI_OK)
+  if (ffi_prep_cif(&cif, abi, 1, &ffi_type_void, dummy) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   {:(cmake-object "type" ctype "NULL"
                   "(Scheme_Object*)libffi_type"
@@ -963,7 +998,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
            return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 #undef REF_CTYPE
 
@@ -1050,7 +1085,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
                   (~ "    "x" = tmp; return NULL;"))
                 (~ "  } else {" \\
                    "    "(wrong-type "val" stype) \\
-                   "    return NULL; /* shush the compiler */" \\
+                   "    return NULL; /* hush the compiler */" \\
                    "  }"))
               (if ptr?
                 (error 'scheme->c "unhandled pointer type: ~s" ctype)
@@ -1081,7 +1116,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       }
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 #undef SET_CTYPE
 
@@ -1095,7 +1130,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
   size = ctype_sizeof(argv[0]);
   if (size >= 0) return scheme_make_integer(size);
   else scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* (ctype-alignof type) -> int, returns 0 for void, error if not a C type */
@@ -1105,7 +1140,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
   type = get_ctype_base(argv[0]);
   if (type == NULL) scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
   else return scheme_make_integer(CTYPE_PRIMTYPE(type)->alignment);
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* (compiler-sizeof symbols) -> int, where symbols name some C type.
@@ -1275,7 +1310,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
   else {
     scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
-    return NULL; /* shush the compiler */
+    return NULL; /* hush the compiler */
   }
   if (failok) res = scheme_malloc_fail_ok(mf,size); else res = mf(size);
   if (((from != NULL) || (foff != 0)) && (res != NULL))
@@ -1670,11 +1705,13 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* object, the finalizer will be invoked when the pointer itself is */
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
-/* *** Calling Scheme code while the GC is working leads to subtle bugs, so */
-/* *** this is implemented now in Scheme using will executors. */
 /*
-{:#;(defsymbols pointer):}
-{:#;(cdefine register-finalizer 2 3):}
+
+  *** Calling Scheme code while the GC is working leads to subtle bugs, so
+  *** this is implemented now in Scheme using will executors.
+
+{:"(defsymbols pointer)":}
+{:"(cdefine register-finalizer 2 3)":}
 {
   void *ptr, *old = NULL;
   int ptrsym = (argc == 3 && argv[2] == pointer_sym);
@@ -1821,14 +1858,15 @@ void free_fficall_data(void *ignored, void *p)
   free(p);
 }
 
-/* (ffi-call ffi-obj in-types out-type) -> (in-types -> out-value) */
+/* (ffi-call ffi-obj in-types out-type [abi]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
-{:(cdefine ffi-call 3 3):}
+{:(cdefine ffi-call 3 4):}
 {
   static Scheme_Object *ffi_name_prefix = NULL;
   Scheme_Object *itypes = argv[1];
   Scheme_Object *otype  = argv[2];
   Scheme_Object *obj, *data, *p, *base;
+  ffi_abi abi;
   long ooff;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
@@ -1848,6 +1886,7 @@ void free_fficall_data(void *ignored, void *p)
   if (NULL == (base = get_ctype_base(otype)))
     scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   rtype = CTYPE_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
   atypes = malloc(nargs * sizeof(ffi_type*));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
@@ -1857,7 +1896,7 @@ void free_fficall_data(void *ignored, void *p)
     atypes[i] = CTYPE_PRIMTYPE(base);
   }
   cif = malloc(sizeof(ffi_cif));
-  if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype, atypes) != FFI_OK)
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   data = scheme_make_vector(6, NULL);
   p = scheme_append_byte_string
@@ -1933,15 +1972,16 @@ void free_cl_cif_args(void *ignored, void *p)
   free(p);
 }
 
-/* (ffi-callback scheme-proc in-types out-type) -> ffi-callback */
+/* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
 /* the treatment of in-types and out-types is similar to that in ffi-call */
 /* the real work is done by ffi_do_callback above */
-{:(cdefine ffi-callback 3 3):}
+{:(cdefine ffi-callback 3 4):}
 {
   ffi_callback_struct *data;
   Scheme_Object *itypes = argv[1];
   Scheme_Object *otype = argv[2];
   Scheme_Object *p, *base;
+  ffi_abi abi;
   int nargs, i;
   /* ffi_closure objects are problematic when used with a moving GC.  The
    * problem is that memory that is GC-visible can move at any time.  The
@@ -1984,6 +2024,7 @@ void free_cl_cif_args(void *ignored, void *p)
   if (NULL == (base = get_ctype_base(otype)))
     scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   rtype = CTYPE_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
   /* malloc space for everything needed, so a single free gets rid of this */
   cl_cif_args = malloc(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
@@ -1996,7 +2037,7 @@ void free_cl_cif_args(void *ignored, void *p)
       scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
     atypes[i] = CTYPE_PRIMTYPE(base);
   }
-  if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype, atypes) != FFI_OK)
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   {:(cmake-object "data" ffi-callback
                   "cl_cif_args" "argv[0]" "argv[1]" "argv[2]"):}

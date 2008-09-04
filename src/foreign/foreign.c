@@ -956,7 +956,7 @@ static Scheme_Object *foreign_make_ctype(int argc, Scheme_Object *argv[])
     type->c_to_scheme = (argv[2]);
     return (Scheme_Object*)type;
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* see below */
@@ -966,7 +966,43 @@ void free_libffi_type(void *ignored, void *p)
   free(p);
 }
 
-/* (make-cstruct-type types) -> ctype */
+/*****************************************************************************/
+/* ABI spec */
+
+static Scheme_Object *default_sym;
+static Scheme_Object *stdcall_sym;
+static Scheme_Object *sysv_sym;
+
+ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
+{
+  if (SCHEME_FALSEP(sym) || SAME_OBJ(sym, default_sym))
+    return FFI_DEFAULT_ABI;
+  else if (SAME_OBJ(sym, sysv_sym)) {
+#ifdef FFI_SYSV
+    return FFI_SYSV;
+#else
+    scheme_signal_error("%s: ABI unimplemented: %V", who, sym);
+#endif
+  } else if (SAME_OBJ(sym, stdcall_sym)) {
+#ifdef FFI_STDCALL
+    return FFI_STDCALL;
+#else
+    scheme_signal_error("%s: ABI unimplemented: %V", who, sym);
+#endif
+  } else {
+    scheme_signal_error("%s: unknown ABI: %V", who, sym);
+  }
+  return 0; /* hush the compiler */
+}
+
+/* helper macro */
+#define GET_ABI(name,n) \
+  ((argc > (n)) ? sym_to_abi((name),argv[n]) : FFI_DEFAULT_ABI)
+
+/*****************************************************************************/
+/* cstruct types */
+
+/* (make-cstruct-type types [abi]) -> ctype */
 /* This creates a new primitive type that is a struct.  This type can be used
  * with cpointer objects, except that the contents is used rather than the
  * pointer value.  Marshaling to lists or whatever should be done in Scheme. */
@@ -982,9 +1018,10 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   ctype_struct *type;
   ffi_cif cif;
   int i, nargs;
+  ffi_abi abi;
   nargs = scheme_proper_list_length(argv[0]);
-  if (nargs < 0)
-    scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
+  if (nargs < 0) scheme_wrong_type(MYNAME, "proper list", 0, argc, argv);
+  abi = GET_ABI(MYNAME,1);
   /* allocate the type elements */
   elements = malloc((nargs+1) * sizeof(ffi_type*));
   elements[nargs] = NULL;
@@ -1003,7 +1040,7 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
   libffi_type->elements  = elements;
   /* use ffi_prep_cif to set the size and alignment information */
   dummy = &libffi_type;
-  if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 1, &ffi_type_void, dummy) != FFI_OK)
+  if (ffi_prep_cif(&cif, abi, 1, &ffi_type_void, dummy) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   type = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   type->so.type = ctype_tag;
@@ -1170,7 +1207,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
            return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 #undef REF_CTYPE
 
@@ -1229,7 +1266,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tsint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int8",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_uint8:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1244,7 +1281,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tuint8*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint8",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_int16:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1259,7 +1296,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tsint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","int16",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_uint16:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1274,7 +1311,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tuint16*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","uint16",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_int32:
       if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) scheme_wrong_type("Scheme->C","int32",0,1,&(val));
@@ -1301,7 +1338,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixint",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_ufixint:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1316,7 +1353,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixint",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_fixnum:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1331,7 +1368,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","fixnum",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_ufixnum:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1346,7 +1383,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((unsigned long*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","ufixnum",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_float:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1361,7 +1398,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","float",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_double:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1376,7 +1413,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_doubleS:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1391,7 +1428,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","double*",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_bool:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1406,7 +1443,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
         scheme_wrong_type("Scheme->C","bool",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_string_ucs_4:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1427,7 +1464,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","string/ucs-4",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_string_utf_16:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1448,7 +1485,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","string/utf-16",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_bytes:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1469,7 +1506,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","bytes",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_path:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1490,7 +1527,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","path",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_symbol:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1511,7 +1548,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","symbol",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_pointer:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1534,7 +1571,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","pointer",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_scheme:
 #ifdef SCHEME_BIG_ENDIAN
@@ -1555,7 +1592,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","scheme",0,1,&(val));
-        return NULL; /* shush the compiler */
+        return NULL; /* hush the compiler */
       }
     case FOREIGN_fpointer:
       scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
@@ -1583,7 +1620,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       }
     default: scheme_signal_error("corrupt foreign type: %V", type);
   }
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 #undef SET_CTYPE
 
@@ -1599,7 +1636,7 @@ static Scheme_Object *foreign_ctype_sizeof(int argc, Scheme_Object *argv[])
   size = ctype_sizeof(argv[0]);
   if (size >= 0) return scheme_make_integer(size);
   else scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* (ctype-alignof type) -> int, returns 0 for void, error if not a C type */
@@ -1611,7 +1648,7 @@ static Scheme_Object *foreign_ctype_alignof(int argc, Scheme_Object *argv[])
   type = get_ctype_base(argv[0]);
   if (type == NULL) scheme_wrong_type(MYNAME, "C-type", 0, argc, argv);
   else return scheme_make_integer(CTYPE_PRIMTYPE(type)->alignment);
-  return NULL; /* shush the compiler */
+  return NULL; /* hush the compiler */
 }
 
 /* (compiler-sizeof symbols) -> int, where symbols name some C type.
@@ -1792,7 +1829,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
   else {
     scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
-    return NULL; /* shush the compiler */
+    return NULL; /* hush the compiler */
   }
   if (failok) res = scheme_malloc_fail_ok(mf,size); else res = mf(size);
   if (((from != NULL) || (foff != 0)) && (res != NULL))
@@ -2224,9 +2261,13 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* object, the finalizer will be invoked when the pointer itself is */
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
-/* *** Calling Scheme code while the GC is working leads to subtle bugs, so */
-/* *** this is implemented now in Scheme using will executors. */
 /*
+
+  *** Calling Scheme code while the GC is working leads to subtle bugs, so
+  *** this is implemented now in Scheme using will executors.
+
+(defsymbols pointer)
+(cdefine register-finalizer 2 3)
 {
   void *ptr, *old = NULL;
   int ptrsym = (argc == 3 && argv[2] == pointer_sym);
@@ -2373,7 +2414,7 @@ void free_fficall_data(void *ignored, void *p)
   free(p);
 }
 
-/* (ffi-call ffi-obj in-types out-type) -> (in-types -> out-value) */
+/* (ffi-call ffi-obj in-types out-type [abi]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
 #undef MYNAME
 #define MYNAME "ffi-call"
@@ -2383,6 +2424,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   Scheme_Object *itypes = argv[1];
   Scheme_Object *otype  = argv[2];
   Scheme_Object *obj, *data, *p, *base;
+  ffi_abi abi;
   long ooff;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
@@ -2402,6 +2444,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   if (NULL == (base = get_ctype_base(otype)))
     scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   rtype = CTYPE_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
   atypes = malloc(nargs * sizeof(ffi_type*));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
@@ -2411,7 +2454,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
     atypes[i] = CTYPE_PRIMTYPE(base);
   }
   cif = malloc(sizeof(ffi_cif));
-  if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype, atypes) != FFI_OK)
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   data = scheme_make_vector(6, NULL);
   p = scheme_append_byte_string
@@ -2487,7 +2530,7 @@ void free_cl_cif_args(void *ignored, void *p)
   free(p);
 }
 
-/* (ffi-callback scheme-proc in-types out-type) -> ffi-callback */
+/* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
 /* the treatment of in-types and out-types is similar to that in ffi-call */
 /* the real work is done by ffi_do_callback above */
 #undef MYNAME
@@ -2498,6 +2541,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   Scheme_Object *itypes = argv[1];
   Scheme_Object *otype = argv[2];
   Scheme_Object *p, *base;
+  ffi_abi abi;
   int nargs, i;
   /* ffi_closure objects are problematic when used with a moving GC.  The
    * problem is that memory that is GC-visible can move at any time.  The
@@ -2540,6 +2584,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   if (NULL == (base = get_ctype_base(otype)))
     scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   rtype = CTYPE_PRIMTYPE(base);
+  abi = GET_ABI(MYNAME,3);
   /* malloc space for everything needed, so a single free gets rid of this */
   cl_cif_args = malloc(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
@@ -2552,7 +2597,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
       scheme_wrong_type(MYNAME, "list-of-non-void-C-types", 1, argc, argv);
     atypes[i] = CTYPE_PRIMTYPE(base);
   }
-  if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, nargs, rtype, atypes) != FFI_OK)
+  if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   data = (ffi_callback_struct*)scheme_malloc_tagged(sizeof(ffi_callback_struct));
   data->so.type = ffi_callback_tag;
@@ -2598,6 +2643,12 @@ void scheme_init_foreign(Scheme_Env *env)
 #endif
   MZ_REGISTER_STATIC(opened_libs);
   opened_libs = scheme_make_hash_table(SCHEME_hash_string);
+  MZ_REGISTER_STATIC(default_sym);
+  default_sym = scheme_intern_symbol("default");
+  MZ_REGISTER_STATIC(stdcall_sym);
+  stdcall_sym = scheme_intern_symbol("stdcall");
+  MZ_REGISTER_STATIC(sysv_sym);
+  sysv_sym = scheme_intern_symbol("sysv");
   MZ_REGISTER_STATIC(nonatomic_sym);
   nonatomic_sym = scheme_intern_symbol("nonatomic");
   MZ_REGISTER_STATIC(atomic_sym);
@@ -2693,9 +2744,9 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-sized-byte-string",
     scheme_make_prim_w_arity(foreign_make_sized_byte_string, "make-sized-byte-string", 2, 2), menv);
   scheme_add_global("ffi-call",
-    scheme_make_prim_w_arity(foreign_ffi_call, "ffi-call", 3, 3), menv);
+    scheme_make_prim_w_arity(foreign_ffi_call, "ffi-call", 3, 4), menv);
   scheme_add_global("ffi-callback",
-    scheme_make_prim_w_arity(foreign_ffi_callback, "ffi-callback", 3, 3), menv);
+    scheme_make_prim_w_arity(foreign_ffi_callback, "ffi-callback", 3, 4), menv);
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
   t->basetype = (NULL);
