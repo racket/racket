@@ -4,17 +4,25 @@
          "gl-vectors.ss")
 
 (unsafe!)
-(define gl-lib (case (system-type)
+
+(define stype (system-type))
+
+(define gl-lib (case stype
                  [(windows) (ffi-lib "opengl32")]
                  [(macosx) (ffi-lib "/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL")]
                  [else (ffi-lib "libGL")]))
-(define glu-lib (case (system-type)
+(define glu-lib (case stype
                   [(windows) (ffi-lib "glu32")]
                   [(macosx) (ffi-lib "/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU")]
                   [else (ffi-lib "libGLU")]))
 
 (define (unavailable name)
   (lambda () (lambda x (error name "unavailable on this system"))))
+
+(define-syntax _fun*
+  (syntax-rules ()
+    [(_fun x ...)
+     (if (eq? 'windows stype) (_fun #:abi 'stdcall x ...) (_fun x ...))]))
 
 (define-syntax define-foreign-lib
   (syntax-rules (->)
