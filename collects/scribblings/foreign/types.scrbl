@@ -267,6 +267,7 @@ Otherwise, @scheme[_cprocedure] should be used (it is based on
 
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
+                      [abi (or/c symbol/c false/c) #f]
                       [wrapper (or false/c (procedure? . -> . procedure?)) #f]) any]{
 
 A type constructor that creates a new function type, which is
@@ -285,6 +286,13 @@ function pointer that calls the given Scheme procedure when it is
 used.  There are no restrictions on the Scheme procedure; in
 particular, its lexical context is properly preserved.
 
+The optional @scheme[abi] argument determines the foreign ABI that is
+used.  @scheme[#f] or @scheme['default] will use a platform-dependent
+default; other possible values are @scheme['stdcall] and
+@scheme['sysv] (the latter corresponds to ``cdecl'').  This is
+especially important on Windows, where most system functions are
+@scheme['stdcall], which is not the default.
+
 The optional @scheme[wrapper-proc], if provided, is expected to be a function that
 can change a callout procedure: when a callout is generated, the wrapper is
 applied on the newly created primitive procedure, and its result is used as the
@@ -296,8 +304,10 @@ additional layer that tweaks arguments from the foreign code before they reach
 the Scheme procedure, and possibly changes the result values too.}
 
 @defform/subs[#:literals (-> :: :)
-              (_fun maybe-args type-spec ... -> type-spec maybe-wrapper)
-              ([maybe-args code:blank
+              (_fun fun-option ... maybe-args type-spec ... -> type-spec
+                    maybe-wrapper)
+              ([fun-option (code:line #:abi abi-expr)]
+               [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)
                            (code:line (id ... . id) ::)]
@@ -336,7 +346,7 @@ wrapper's argument list can be specified as @scheme[args], in any form (includin
 a `rest' argument).  Identifiers in this place are related to type labels, so
 if an argument is there is no need to use an expression.
 
-For example, 
+For example,
 
 @schemeblock[
 (_fun (n s) :: (s : _string) (n : _int) -> _int)

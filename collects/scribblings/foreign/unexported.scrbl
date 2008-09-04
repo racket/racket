@@ -43,15 +43,25 @@ Accessors for the components of a C type object, made by
 @scheme[#f] for primitive types (including cstruct types).}
 
 
-@defproc[(ffi-call [ptr any/c][in-types (listof ctype?)][out-type ctype?]) any]{
+@defproc[(ffi-call [ptr any/c] [in-types (listof ctype?)] [out-type ctype?]
+                   [abi (or/c symbol/c false/c) #f])
+         any]{
 
 The primitive mechanism that creates Scheme ``callout'' values.  The
 given @scheme[ptr] (any pointer value, including @scheme[ffi-obj]
 values) is wrapped in a Scheme-callable primitive function that uses
-the types to specify how values are marshaled.}
+the types to specify how values are marshaled.
+
+The optional @scheme[abi] argument determines the foreign ABI that is
+used.  @scheme[#f] or @scheme['default] will use a platform-dependent
+default; other possible values are @scheme['stdcall] and
+@scheme['sysv] (the latter corresponds to ``cdecl'').  This is
+especially important on Windows, where most system functions are
+@scheme['stdcall], which is not the default.}
 
 
-@defproc[(ffi-callback [proc any/c][in-types any/c][out-type any/c])
+@defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
+                       [abi (or/c symbol/c false/c) #f])
          ffi-callback?]{
 
 The symmetric counterpart of @scheme[ffi-call].  It receives a Scheme
