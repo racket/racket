@@ -583,7 +583,7 @@
              [else
               (tc-error/expr #:return (ret (Un))
                              "function does not accept keyword argument ~a" k)]))
-     (tc/funapp #'form #'form (ret (make-Function arities)) (map tc-expr (syntax->list pos-args)) expected)]
+     (tc/funapp (car (syntax-e form)) kw-args (ret (make-Function arities)) (map tc-expr (syntax->list pos-args)) expected)]
     [_ (int-err "case-lambda w/ keywords not supported")]))
 
 
