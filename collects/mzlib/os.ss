@@ -25,7 +25,7 @@
   
   (define windows-getcomputername
     (delay-ffi-obj "GetComputerNameExA" (force kernel32)
-		   (_fun _int _bytes _cvector -> _int)))
+		   (_fun #:abi 'stdcall _int _bytes _cvector -> _int)))
 
   (define (gethostname)
     (case (system-type)
@@ -53,12 +53,11 @@
   ;; getpid
 
   (define unix-getpid
-    (delay-ffi-obj "getpid" #f 
-		   (_fun -> _int)))
+    (delay-ffi-obj "getpid" #f (_fun -> _int)))
 
   (define windows-getpid
-    (delay-ffi-obj "GetCurrentProcessId" (force kernel32) 
-		   (_fun -> _int)))
+    (delay-ffi-obj "GetCurrentProcessId" (force kernel32)
+                   (_fun #:abi 'stdcall -> _int)))
 
   (define (getpid)
     (case (system-type)
