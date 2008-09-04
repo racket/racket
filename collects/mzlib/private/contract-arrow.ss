@@ -148,7 +148,7 @@
       [(null? lst) (list x)]
       [else
        (let ([fst-kwd (syntax-e (car (car lst)))])
-         (printf "comparing ~s to ~s\n" (car x) fst-kwd)
+         #;(printf "comparing ~s to ~s\n" (car x) fst-kwd)
          (cond
            [(equal? (syntax-e (car x)) fst-kwd)
             (raise-syntax-error #f 
