@@ -569,12 +569,13 @@
 
 (define (tc-keywords form arities kws kw-args pos-args expected)
   (match arities
-    [(list (arr: dom rng rest #f (list (and ktys (cons formal-kws formal-kw-tys)) ...) _ _))
+    [(list (arr: dom rng rest #f (list (and ktys (Keyword: formal-kws formal-kw-tys (and #f required?))) ...) _ _))
      (for ([k kws]
            [ty (map tc-expr/t (syntax->list kw-args))])
-       (cond [(assq k ktys)
+       (cond [(for/or ([e ktys])
+               (and (eq? (Keyword-kw e) k) e))
               =>
-              (match-lambda [(cons k kty)
+              (match-lambda [(Keyword: k kty req?)
                              (unless (subtype ty kty)
                                (tc-error/delayed 
                                 #:stx form

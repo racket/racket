@@ -90,18 +90,26 @@
                          pred-id
                          cert)])
 
+;; kw : keyword?
+;; ty : Type
+;; required? : Boolean
+(dt Keyword (kw ty required?)
+    [#:frees (free-vars* ty)
+             (free-idxs* ty)]
+    [#:fold-rhs (*Keyword kw (type-rec-id ty))])
+
 ;; dom : Listof[Type]
 ;; rng : Type
 ;; rest : Option[Type]
 ;; drest : Option[Cons[Type,Name or nat]]
-;; kws : Listof[Cons[Kw, Type]]
+;; kws : Listof[Keyword]
 ;; rest and drest NOT both true
 ;; thn-eff : Effect
 ;; els-eff : Effect
 ;; arr is NOT a Type
 (dt arr (dom rng rest drest kws thn-eff els-eff)
     [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null)
-                                                                                (map cdr kws)
+                                                                                (map Keyword-ty kws)
                                                                                 dom)))
                                     (match drest
                                       [(cons t (? symbol? bnd))
@@ -112,7 +120,7 @@
                                     (map make-invariant
                                          (map free-vars* (append thn-eff els-eff)))))
              (combine-frees (append (map flip-variances (map free-idxs* (append (if rest (list rest) null)
-                                                                                (map cdr kws)
+                                                                                (map Keyword-ty kws)
                                                                                 dom)))
                                     (match drest
                                       [(cons t (? number? bnd))
@@ -127,7 +135,7 @@
                       (and rest (type-rec-id rest))
                       (and drest (cons (type-rec-id (car drest)) (cdr drest)))
                       (for/list ([kw kws])
-                        (cons (car kw) (type-rec-id (cdr kw))))
+                        (cons (Keyword-kw kw) (type-rec-id (Keyword-ty kw)) (Keyword-require? kw)))
                       (map effect-rec-id thn-eff)
                       (map effect-rec-id els-eff))])
 
