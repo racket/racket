@@ -90,9 +90,9 @@ before the pattern compiler is invoked.
   ;;               #f means we're not in a `in-hole' context
   ;;               none means we're looking for a hole
   
-  (define-struct compiled-lang (lang ht list-ht across-ht across-list-ht has-hole-ht
-                                     cache bind-names-cache pict-builder literals
-                                     nt-map))
+  (define-struct compiled-lang (lang cclang ht list-ht across-ht across-list-ht
+                                     has-hole-ht cache bind-names-cache pict-builder
+                                     literals nt-map))
   
   ;; lookup-binding : bindings (union sym (cons sym sym)) [(-> any)] -> any
   (define (lookup-binding bindings
@@ -118,7 +118,7 @@ before the pattern compiler is invoked.
            [cache (make-hash)]
            [bind-names-cache (make-hash)]
            [literals (extract-literals lang)]
-           [clang (make-compiled-lang lang clang-ht clang-list-ht 
+           [clang (make-compiled-lang lang #f clang-ht clang-list-ht 
                                       across-ht across-list-ht
                                       has-hole-ht 
                                       cache bind-names-cache
@@ -140,13 +140,15 @@ before the pattern compiler is invoked.
                                (hash-set!
                                 ht
                                 (nt-name nt)
-                                (cons compiled-pattern (hash-ref ht (nt-name nt)))))])
-                        (when (may-be-non-list-pattern? (rhs-pattern rhs)
-                                                        non-list-nt-table)
-                          (add-to-ht ht))
-                        (when (may-be-list-pattern? (rhs-pattern rhs) 
-                                                    list-nt-table)
-                          (add-to-ht list-ht)))))
+                                (cons compiled-pattern (hash-ref ht (nt-name nt)))))]
+                            [may-be-non-list? (may-be-non-list-pattern? (rhs-pattern rhs) non-list-nt-table)]
+                            [may-be-list? (may-be-list-pattern? (rhs-pattern rhs) list-nt-table)])
+                        (when may-be-non-list? (add-to-ht ht))
+                        (when may-be-list? (add-to-ht list-ht))
+                        (unless (or may-be-non-list? may-be-list?)
+                          (error 'compile-language 
+                                 "unable to determine whether pattern matches lists, non-lists, or both: ~s"
+                                 (rhs-pattern rhs))))))
                   (nt-rhs nt)))
                lang))]
            [init-ht
@@ -171,7 +173,7 @@ before the pattern compiler is invoked.
                   compatible-context-language)
         (do-compilation clang-ht clang-list-ht lang #t)
         (do-compilation across-ht across-list-ht compatible-context-language #f)
-        clang)))
+        (struct-copy compiled-lang clang [cclang compatible-context-language]))))
   
   ;; extract-literals : (listof nt) -> (listof symbol)
   (define (extract-literals nts)
@@ -495,7 +497,7 @@ before the pattern compiler is invoked.
       [`number #t]
       [`string #t]
       [`variable #t] 
-      [`(variable-except vars ...) #t]
+      [`(variable-except ,vars ...) #t]
       [`variable-not-otherwise-mentioned #t]
       [`(variable-prefix ,prefix) #t]
       [`hole #t]

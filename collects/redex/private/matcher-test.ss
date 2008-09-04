@@ -42,6 +42,8 @@
     (test-empty '(variable-except x) 1 #f)
     (test-empty '(variable-except x) 'x #f)
     (test-empty '(variable-except x) 'y (list (make-test-mtch (make-bindings null) 'y none)))
+    (test-lang 'x 'y (list (make-mtch (make-bindings (list (make-bind 'x 'y))) 'y none))
+               (list (make-nt 'x (list (make-rhs '(variable-except x) '())))))
     (test-empty '(variable-prefix x:) 'x: (list (make-test-mtch (make-bindings null) 'x: none)))
     (test-empty '(variable-prefix x:) 'x:x (list (make-test-mtch (make-bindings null) 'x:x none)))
     (test-empty '(variable-prefix x:) ': #f)
@@ -615,6 +617,17 @@
       (compile-pattern (compile-language 'pict-stuff-not-used '() '()) pat #t)
       exp)
      ans))
+  
+  ;; test-lang : sexp[pattern] sexp[term] answer (list/c nt) -> void
+  ;; returns #t if pat matching exp with the language defined by the given nts
+  (define (test-lang pat exp ans nts)
+    (let ([nt-map (map (λ (x) (list (nt-name x))) nts)])
+      (run-match-test
+       `(match-pattern (compile-pattern (compile-language 'pict-stuff-not-used ',nts ',nt-map) ',pat #t) ',exp)
+       (match-pattern 
+        (compile-pattern (compile-language 'pict-stuff-not-used nts nt-map) pat #t)
+        exp)
+       ans)))
   
   (define xab-lang #f)
   ;; test-xab : sexp[pattern] sexp[term] answer -> void
