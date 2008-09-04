@@ -381,7 +381,7 @@
                  expr
                  (rebuild expr (list (cons #'rhs marked)))))]
 
-             [(module name init-import (#%plain-module-begin body ...))
+             [(module name init-import (__plain-module-begin body ...))
               ;; Just wrap body expressions
               (let ([bodys (syntax->list (syntax (body ...)))]
 		    [mb (list-ref (syntax->list expr) 3)])

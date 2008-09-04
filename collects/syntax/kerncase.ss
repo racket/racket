@@ -3,10 +3,6 @@
   (require (for-syntax scheme/base)
            (for-template scheme/base))
 
-  (define-for-syntax anchor #f)
-  (define-for-syntax (quick-phase?)
-    (= 1 (variable-reference->phase (#%variable-reference anchor))))
-
   (define-syntax kernel-syntax-case-internal
     (lambda (stx)
       (syntax-case stx ()
@@ -32,19 +28,19 @@
                                             #%variable-reference)))))
                         (let ([p phase])
                           (cond
-                           [(and #,(or (syntax-e #'rel?) (quick-phase?)) (= p 0)) 
+                           [(and #,(syntax-e #'rel?) (= p 0)) 
                             free-identifier=?]
-                           [(and #,(or (syntax-e #'rel?) (quick-phase?)) (= p 1)) 
+                           [(and #,(syntax-e #'rel?) (= p 1)) 
                             free-transformer-identifier=?]
                            [else (let ([id (namespace-module-identifier p)])
                                    (lambda (a b)
                                      (free-identifier=? (datum->syntax id 
-                                                                       (let ([s (syntax-e a)])
+                                                                       (let ([s (syntax-e b)])
                                                                          (case s
                                                                            [(#%plain-app) '#%app]
                                                                            [(#%plain-lambda) 'lambda]
                                                                            [else s])))
-                                                        b
+                                                        a
                                                         p)))]))
 	    clause ...))])))
   

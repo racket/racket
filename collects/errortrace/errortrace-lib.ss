@@ -323,7 +323,7 @@
                (syntax-case top-e (#%plain-module-begin)
                  [(mod name init-import (#%plain-module-begin body ...))
                   (normal
-                   #`(module name init-import
+                   #`(#,(namespace-module-identifier) name init-import
                        #,(syntax-recertify
 			  #`(#%plain-module-begin
 			     #,((make-syntax-introducer)
