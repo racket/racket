@@ -569,21 +569,35 @@
 
 (define (tc-keywords form arities kws kw-args pos-args expected)
   (match arities
-    [(list (arr: dom rng rest #f (list (and ktys (Keyword: formal-kws formal-kw-tys (and #f required?))) ...) _ _))
-     (for ([k kws]
-           [ty (map tc-expr/t (syntax->list kw-args))])
-       (cond [(for/or ([e ktys])
-               (and (eq? (Keyword-kw e) k) e))
-              =>
-              (match-lambda [(Keyword: k kty req?)
-                             (unless (subtype ty kty)
-                               (tc-error/delayed 
-                                #:stx form
-                                "Wrong function argument type, expected ~a, got ~a for keyword argument ~a" 
-                                kty ty k))])]
-             [else
-              (tc-error/expr #:return (ret (Un))
-                             "function does not accept keyword argument ~a" k)]))
+    [(list (arr: dom rng rest #f ktys _ _))
+     ;; assumes that everything is in sorted order
+     (let loop ([actual-kws kws]
+                [actuals (map tc-expr/t (syntax->list kw-args))]
+                [formals ktys])
+       (match* (actual-kws formals)
+         [('() '())
+          (void)]
+         [(_ '())
+          (tc-error/expr #:return (ret (Un))
+                         "Unexpected keyword argument ~a" (car actual-kws))]
+         [('() (cons fst rst))
+          (match fst
+            [(Keyword: k _ #t)
+             (tc-error/expr #:return (ret (Un))
+                            "Missing keyword argument ~a" k)]
+            [_ (loop actual-kws actuals rst)])]
+         [((cons k kws-rest) (cons (Keyword: k* t req?) form-rest))
+          (cond [(eq? k k*) ;; we have a match
+                 (unless (subtype (car actuals) t)
+                   (tc-error/delayed
+                    "Wrong function argument type, expected ~a, got ~a for keyword argument ~a"
+                    t (car actuals) k))
+                 (loop kws-rest (cdr actuals) form-rest)]
+                [req? ;; this keyword argument was required
+                 (tc-error/delayed "Missing keyword argument ~a" k*)
+                 (loop kws-rest (cdr actuals) form-rest)]
+                [else ;; otherwise, ignore this formal param, and continue
+                 (loop actual-kws actuals form-rest)])]))
      (tc/funapp (car (syntax-e form)) kw-args (ret (make-Function arities)) (map tc-expr (syntax->list pos-args)) expected)]
     [_ (int-err "case-lambda w/ keywords not supported")]))
 

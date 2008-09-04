@@ -50,7 +50,11 @@
        (fp "(")
        (for-each (lambda (t) (fp "~a " t)) dom)
        (for ([kw kws])
-         (fp "~a ~a " (car kw) (cdr kw)))
+         (match kw
+           [(Keyword: k t req?)
+            (if req?
+                (fp "~a ~a " k t)
+                (fp "[~a ~a] " k t))]))
        (when rest
          (fp "~a* " rest))
        (when drest
