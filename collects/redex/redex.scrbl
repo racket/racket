@@ -945,7 +945,7 @@ that just get stuck when viewed in a `traces' window.
 The best way to debug such programs is to find an expression
 that looks like it should reduce but doesn't and try to find
 out what pattern is failing to match. To do so, use the
-redex-match special form, described above.
+@scheme[redex-match] special form, described above.
 
 In particular, first ceck to see if the term matches the
 main non-terminal for your system (typically the expression
