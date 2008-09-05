@@ -531,8 +531,8 @@
                                                   stx
                                                   #'field))]
                            [_
-                            (raise-syntax-error #f 
-                                                "expected a field update fo the form (<field-id> <expr>)" 
+                            (raise-syntax-error #f
+                                                "expected a field update of the form (<field-id> <expr>)"
                                                 stx
                                                 an)]))
                        ans)
