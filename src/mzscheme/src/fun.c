@@ -8236,6 +8236,9 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
   /* If the body is simple enough, write it directly.
      Otherwise, create a delay indirection so that the body
      is loaded on demand. */
+  if (SCHEME_RPAIRP(data->code)) {
+    scheme_delay_load_closure(data);
+  }
   code = data->code;
   switch (SCHEME_TYPE(code)) {
   case scheme_toplevel_type:
