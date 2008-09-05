@@ -5,7 +5,7 @@
 
 (provide (except-out (all-from-out scheme/base) #%module-begin)
          (rename-out [module-begin #%module-begin])
-         (all-from-out scheme/promise "../text.ss"))
+         (except-out (all-from-out scheme/promise "../text.ss") #%module-begin))
 
 (begin-for-syntax
   (define definition-ids ; ids that don't require forcing
