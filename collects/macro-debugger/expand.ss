@@ -1,7 +1,8 @@
 #lang scheme/base
-(require "model/trace.ss")
+(require "model/trace.ss"
+         "model/reductions-config.ss"
+         "model/reductions.ss")
 
-#|
 (provide expand-only
          expand/hide)
 
@@ -21,6 +22,7 @@
   (let-values ([(result deriv) (trace/result stx)])
     (when (exn? result)
       (raise result))
-    (let-values ([(_d estx) (hide*/policy deriv show?)])
-      estx)))
-|#
+    (let-values ([(_steps _uses stx _exn)
+                  (parameterize ((macro-policy show?))
+                    (reductions+ deriv))])
+      stx)))
