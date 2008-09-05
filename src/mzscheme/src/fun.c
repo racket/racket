@@ -8233,12 +8233,17 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
     svec_size += (data->num_params + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
   }
 
+  if (SCHEME_RPAIRP(data->code)) {
+    /* This can happen if loaded bytecode is printed out and the procedure
+       body has never been needed before.
+       It's also possible in non-JIT mode if an empty closure is embedded 
+       as a 3-D value in compiled code. */
+    scheme_delay_load_closure(data);
+  }
+
   /* If the body is simple enough, write it directly.
      Otherwise, create a delay indirection so that the body
      is loaded on demand. */
-  if (SCHEME_RPAIRP(data->code)) {
-    scheme_delay_load_closure(data);
-  }
   code = data->code;
   switch (SCHEME_TYPE(code)) {
   case scheme_toplevel_type:
