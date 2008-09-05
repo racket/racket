@@ -4,7 +4,7 @@
 
 @title{More Port Constructors and Events}
 
-@note-lib[scheme/port]
+@note-lib-only[scheme/port]
 
 @; ----------------------------------------------------------------------
 
