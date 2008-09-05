@@ -57,6 +57,9 @@
               [qq-append qq-append-ty]
               [id ty] ...)))]))
 
+(define-for-syntax (one-of/c . args)
+  (apply Un (map -val args)))
+
 
 (define-initial-env initial-env
   ;; make-promise
@@ -145,9 +148,13 @@
      [string-append (->* null -String -String)]
      [open-input-string (-> -String -Input-Port)]
      [open-output-file 
-      (cl->
-       [(-Pathlike) -Port]
-       [(-Pathlike Sym) -Port])]
+      (->key -Pathlike
+             #:mode (one-of/c 'binary 'text) #f
+             #:exists (one-of/c 'error 'append 'update 'can-update                                
+                                'replace 'truncate                                
+                                'must-truncate 'truncate/replace) 
+             #f
+             -Output-Port)]
      [read (cl-> 
             [(-Port) -Sexp]
             [() -Sexp])]
@@ -205,9 +212,7 @@
      [remove* (-poly (a b)
                      (cl-> [((-lst a) (-lst a)) (-lst a)]
                            [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
-     
-     [call-with-values (-poly (a b) (-> (-> a) (-> a b) b))]
-     
+          
      (error 
       (make-Function (list 
                       (make-arr null (Un))
@@ -246,7 +251,6 @@
      (- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N)))
      (max (->* (list N) N N))
      (min (->* (list N) N N))
-     [values  (make-Poly '(a) (-> (-v a) (-v a)))]
      [vector-ref 
       (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
      [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (make-Vector a)))]
@@ -467,7 +471,7 @@
                 [(-Bytes N) -Bytes]
                 [(-Bytes N N) -Bytes])]
      [bytes-length (-> -Bytes N)]
-     [open-input-file (-> -Pathlike -Input-Port)]
+     [open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
      [close-input-port (-> -Input-Port -Void)]
      [close-output-port (-> -Output-Port -Void)]   
      [read-line (cl->
@@ -553,10 +557,10 @@
      [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                         (-> (-Syntax Univ) Univ Univ)))]
      
-     [values* (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
-     [call-with-values* (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
+     [values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
+     [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
   
-     [foo (make-Function (list (make-arr (list N) B #f #f (list (make-Keyword '#:bar B #f)) null null)))]
+     [foo (N #:bar B #f . ->key . B)]
      )
 
 (begin-for-syntax 
