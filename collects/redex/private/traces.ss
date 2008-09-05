@@ -270,12 +270,15 @@
        (send reduce-button enable #f)
        (send font-size enable #f)]
       [else
-       (send graph-pb mobilize)
-       (send graph-pb set-dot-callback #f)
-       (send graph-pb invalidate-bitmap-cache)
-       (send dot set-label "Fix Layout")
-       (send reduce-button enable #t)
-       (send font-size enable #t)]))
+       (out-of-dot-state)]))
+  
+  (define (out-of-dot-state)
+    (send graph-pb mobilize)
+    (send graph-pb set-dot-callback #f)
+    (send graph-pb invalidate-bitmap-cache)
+    (send dot set-label "Fix Layout")
+    (send reduce-button enable #t)
+    (send font-size enable #t))
   
   ;; reduce-button-callback : -> void
   ;; =eventspace main thread=
@@ -362,7 +365,7 @@
           (if (preferences:get 'plt-reducer:show-bottom)
               (list bottom-panel)
               null)))
-  (dot-callback) ;; make sure the state is initialized right
+  (out-of-dot-state) ;; make sure the state is initialized right
   (insert-into init-rightmost-x 0 graph-pb frontier)
   (set-font-size (initial-font-size))
   (reduce-button-callback)
