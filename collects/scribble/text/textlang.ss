@@ -96,4 +96,4 @@
     [(_ expr ...)
      ;; add a dummy define and throw it away, to get rid of initial newlines
      (with-syntax ([(_ expr ...) (process-body #'((define) expr ...))])
-       #'(#%module-begin expr ...))]))
+       #'(#%plain-module-begin expr ...))]))
