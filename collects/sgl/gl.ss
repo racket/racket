@@ -21,7 +21,7 @@
 
 (define-syntax _fun*
   (syntax-rules ()
-    [(_fun x ...)
+    [(_fun* x ...)
      (if (eq? 'windows stype) (_fun #:abi 'stdcall x ...) (_fun x ...))]))
 
 (define-syntax define-foreign-lib
@@ -33,7 +33,7 @@
        ;; (printf "~a~n" 'name)
        (provide name)
        (define name
-         (get-ffi-obj 'name lib (_fun type ...) (unavailable 'name))))]))
+         (get-ffi-obj 'name lib (_fun* type ...) (unavailable 'name))))]))
 
 (define-syntax define-foreign
   (syntax-rules ()
@@ -762,11 +762,11 @@
                      (lambda x
                        (error 'gluDeleteQuadric
                               "unavailable on this system")))])
-    (get-ffi-obj 'gluDeleteQuadric glu-lib (_fun _glu-quadric -> _void))))
+    (get-ffi-obj 'gluDeleteQuadric glu-lib (_fun* _glu-quadric -> _void))))
 
 ;; 6.2
 ;;(define-foreignu gluQuadricCallback
-;;                 _glu-quadric [_gl-enum = GLU_ERROR] (_fun _gl-enum -> _void) ->)
+;;                 _glu-quadric [_gl-enum = GLU_ERROR] (_fun* _gl-enum -> _void) ->)
 
 ;; 6.3
 (define-foreignu gluQuadricNormals _glu-quadric _gl-enum ->)
