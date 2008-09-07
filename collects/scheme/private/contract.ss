@@ -1277,6 +1277,7 @@ improve method arity mismatch contract violation error messages?
            (null? x)
            (number? x)
            (regexp? x)
+           (prefab-struct-key x) ;; this cannot be last, since it doesn't return just #t
            (and (pair? x)
                 (printable? (car x))
                 (printable? (cdr x)))
