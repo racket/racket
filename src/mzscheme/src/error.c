@@ -45,6 +45,7 @@ Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
 Scheme_Logger *scheme_main_logger;
+static void init_logger_config();
 
 #ifdef MEMORY_COUNTING_ON
 long scheme_misc_count;
@@ -669,8 +670,8 @@ void scheme_init_error(Scheme_Env *env)
     scheme_main_logger = make_a_logger(NULL, NULL);
     scheme_main_logger->syslog_level = init_syslog_level;
     scheme_main_logger->stderr_level = init_stderr_level;
-    scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
   }
+  init_logger_config();
 
   REGISTER_SO(arity_property);
   {
@@ -687,8 +688,15 @@ void scheme_init_error(Scheme_Env *env)
   scheme_init_error_config();
 }
 
+static void init_logger_config()
+{
+  scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
+}
+
 void scheme_init_error_config(void)
 {
+  init_logger_config();
+
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_exit_proc);
   
   REGISTER_SO(default_display_handler);
