@@ -877,31 +877,34 @@ converting from the computer's coordinates, we get:
 (define (image->color-list i-raw)
   (check-image 'image->color-list i-raw "first")
   (let* ([cis (coerce-to-cache-image-snip i-raw)]
-         [i (send cis get-bitmap)]
-         [iw (send i get-width)]
-         [ih (send i get-height)]
-         [new-bitmap (make-object bitmap% iw ih)]
-         [bdc (make-object bitmap-dc% new-bitmap)])
-    (send bdc clear)
-    (send bdc draw-bitmap i 0 0 'solid 
-          (send the-color-database find-color "black")
-          (send i get-loaded-mask))
-    (let ([is (make-bytes (* 4 iw ih))]
-          [cols (make-vector (* iw ih))])
-      (send bdc get-argb-pixels 0 0 iw ih is)
-      (let yloop ([y 0][pos 0])
-        (unless (= y ih)
-          (let xloop ([x 0][pos pos])
-            (if (= x iw)
-                (yloop (add1 y) pos)
-                (begin
-                  (vector-set! cols (+ x (* y iw))
-                               (make-color (bytes-ref is (+ 1 pos))
-                                           (bytes-ref is (+ 2 pos))
-                                           (bytes-ref is (+ 3 pos))))
-                  (xloop (add1 x) (+ pos 4)))))))
-      (send bdc set-bitmap #f)
-      (vector->list cols))))
+         [i (send cis get-bitmap)])
+    (cond
+      [(not i) '()]
+      [else
+       (let* ([iw (send i get-width)]
+              [ih (send i get-height)]
+              [new-bitmap (make-object bitmap% iw ih)]
+              [bdc (make-object bitmap-dc% new-bitmap)])
+         (send bdc clear)
+         (send bdc draw-bitmap i 0 0 'solid 
+               (send the-color-database find-color "black")
+               (send i get-loaded-mask))
+         (let ([is (make-bytes (* 4 iw ih))]
+               [cols (make-vector (* iw ih))])
+           (send bdc get-argb-pixels 0 0 iw ih is)
+           (let yloop ([y 0][pos 0])
+             (unless (= y ih)
+               (let xloop ([x 0][pos pos])
+                 (if (= x iw)
+                     (yloop (add1 y) pos)
+                     (begin
+                       (vector-set! cols (+ x (* y iw))
+                                    (make-color (bytes-ref is (+ 1 pos))
+                                                (bytes-ref is (+ 2 pos))
+                                                (bytes-ref is (+ 3 pos))))
+                       (xloop (add1 x) (+ pos 4)))))))
+           (send bdc set-bitmap #f)
+           (vector->list cols)))])))
 
 (define (image->alpha-color-list i)
   (check-image 'image->alpha-color-list i "first")

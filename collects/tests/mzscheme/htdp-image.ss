@@ -503,14 +503,6 @@
       'image-height
       (image-height (rectangle 5 7 'solid 'red)))
 
-(test 10 image-width (rectangle 10 0 'solid 'red))
-(test 0 image-height (rectangle 10 0 'solid 'red))
-(test 0 image-width (rectangle 0 10 'solid 'red))
-(test 10 image-height (rectangle 0 10 'solid 'red))
-
-(test 0 image-width (text "" 12 'black))
-(test #t 'not-zero-empty-string-height (not (zero? (image-height (text "" 12 'black)))))
-
 (test 1 'color-red (color-red (make-color 1 2 3)))
 (test 2 'color-green (color-green (make-color 1 2 3)))
 (test 3 'color-blue (color-blue (make-color 1 2 3)))
@@ -918,6 +910,29 @@
                  (shrink (shrink (rectangle 11 11 'solid 'red)
                                  5 5 5 5)
                          1 1 1 1))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  test images with zero width or zero height 
+;;  for various things
+;;
+
+
+(test 10 image-width (rectangle 10 0 'solid 'red))
+(test 0 image-height (rectangle 10 0 'solid 'red))
+(test 0 image-width (rectangle 0 10 'solid 'red))
+(test 10 image-height (rectangle 0 10 'solid 'red))
+
+(test 0 image-width (text "" 12 'black))
+(test #t 'not-zero-empty-string-height (not (zero? (image-height (text "" 12 'black)))))
+
+(test '() image->color-list (rectangle 0 10 'solid 'red))
+(test '() image->color-list (rectangle 10 0 'solid 'red))
+(test '() image->color-list (rectangle 0 0 'solid 'red))
+
+(test '() image->alpha-color-list (rectangle 0 10 'solid 'red))
+(test '() image->alpha-color-list (rectangle 10 0 'solid 'red))
+(test '() image->alpha-color-list (rectangle 0 0 'solid 'red))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
