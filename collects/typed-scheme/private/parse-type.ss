@@ -213,7 +213,7 @@
           ;(printf "found a type name ~a~n" #'id)
           (make-Name #'id)]
          [else
-          (tc-error/delayed "unbound type ~a" (syntax-e #'id))
+          (tc-error/delayed "unbound type name ~a" (syntax-e #'id))
           Univ])]
 
       [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]

@@ -75,7 +75,7 @@
 (define (tc-error/delayed msg #:stx [stx* (current-orig-stx)] . rest)
   (let ([stx (locate-stx stx*)])
     (unless (syntax? stx)
-      (int-err "erroneous syntax was not a syntax object" stx (syntax->datum stx*)))
+      (int-err "erroneous syntax was not a syntax object: ~a ~a" stx (syntax->datum stx*)))
     (if (delay-errors?)
         (set! delayed-errors (cons (make-err (apply format msg rest) (list stx)) delayed-errors))
         (raise-typecheck-error (apply format msg rest) (list stx)))))

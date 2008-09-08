@@ -422,7 +422,7 @@
   (match t
     [(Poly: n scope)
      (unless (= (length names) n)
-       (error "Wrong number of names"))
+       (int-err "Wrong number of names: expected ~a got ~a" n (length names)))
      (instantiate-many (map *F names) scope)]))
 
 ;; the 'smart' constructor
@@ -437,7 +437,7 @@
   (match t
     [(PolyDots: n scope)
      (unless (= (length names) n)
-       (error "Wrong number of names"))
+       (int-err "Wrong number of names: expected ~a got ~a" n (length names)))
      (instantiate-many (map *F names) scope)]))
 
 (print-struct #t)

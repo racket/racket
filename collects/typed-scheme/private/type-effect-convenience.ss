@@ -34,7 +34,7 @@
     [(Latent-Remove-Effect: t) (make-Remove-Effect t v)]
     [(True-Effect:) eff]
     [(False-Effect:) eff]
-    [_ (error 'internal-tc-error "can't add var to effect ~a" eff)]))
+    [_ (int-err "can't add var ~a to effect ~a" v eff)]))
 
 (define-syntax (-> stx)
   (syntax-case* stx (:) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
