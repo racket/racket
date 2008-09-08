@@ -100,6 +100,17 @@
     (define (x) 1)
     (define (y) 2)))
 
+(define to-override2-class%
+  (class to-augment-class%
+    (augride x y)
+    (define (x) 1)
+    (define (y) 1)))
+(define to-augment2-class%
+  (class to-override-class%
+    (overment x y)
+    (define (x) 1)
+    (define (y) 1)))
+
 (define (test-method basic? public object% over? aug? super-ok? inner-ok? over-ok? aug-ok?)
   (when basic?
     (teval #`(test #t class? (class #,object% (#,public))))
@@ -168,19 +179,23 @@
 (test-method #t #'public #'object% #f #f #f #f #f #f)
 (test-method #t #'public-final #'object% #f #f #f #f #f #f)
 (test-method #t #'pubment #'object% #f #f #f #t #f #f)
-(test-method #t #'override #'to-override-class% #t #f #t #f #t #f)
-(test-method #f #'override #'to-augment-class% #t #f #t #f #f #t)
-(test-method #t #'override-final #'to-override-class% #t #f #t #f #t #f)
-(test-method #f #'override-final #'to-augment-class% #t #f #t #f #f #t)
-(test-method #t #'overment #'to-override-class% #t #f #t #t #t #f)
-(test-method #f #'overment #'to-augment-class% #t #f #t #t #f #t)
-(test-method #t #'augment #'to-override-class% #f #t #f #t #t #f)
-(test-method #f #'augment #'to-augment-class% #f #t #f #t #f #t)
-(test-method #t #'augment-final #'to-override-class% #f #t #f #f #t #f)
-(test-method #f #'augment-final #'to-augment-class% #f #t #f #f #f #t)
-(test-method #t #'augride #'to-override-class% #f #t #f #f #t #f)
-(test-method #f #'augride #'to-augment-class% #f #t #f #f #f #t)
 (test-method #t #'private #'object% #f #f #f #f #f #f)
+(define (test-over/aug to-override-class% to-augment-class%)
+  (test-method #t #'override to-override-class% #t #f #t #f #t #f)
+  (test-method #f #'override to-augment-class% #t #f #t #f #f #t)
+  (test-method #t #'override-final to-override-class% #t #f #t #f #t #f)
+  (test-method #f #'override-final to-augment-class% #t #f #t #f #f #t)
+  (test-method #t #'overment to-override-class% #t #f #t #t #t #f)
+  (test-method #f #'overment to-augment-class% #t #f #t #t #f #t)
+  (test-method #t #'augment to-override-class% #f #t #f #t #t #f)
+  (test-method #f #'augment to-augment-class% #f #t #f #t #f #t)
+  (test-method #t #'augment-final to-override-class% #f #t #f #f #t #f)
+  (test-method #f #'augment-final to-augment-class% #f #t #f #f #f #t)
+  (test-method #t #'augride to-override-class% #f #t #f #f #t #f)
+  (test-method #f #'augride to-augment-class% #f #t #f #f #f #t))
+
+(test-over/aug #'to-override-class% #'to-augment-class%)
+(test-over/aug #'to-override2-class% #'to-augment2-class%)
 
 (define (test-rename rename object%)
   (teval #`(test #t class? (class #,object% (#,rename))))
