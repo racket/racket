@@ -645,7 +645,7 @@ determine the number of variables generated and var2 must be
 bound by the left-hand side of the rule.
 
 The side-conditions are expected to all hold, and have the
-format of the second argument to the side-condition pattern,
+format of the second argument to the @pattech[side-condition] pattern,
 described above.
 
 Each @scheme[where] clauses binds a variable and the side-conditions
