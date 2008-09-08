@@ -56,6 +56,13 @@ location.
 
 @defmodule[macro-debugger/expand]
 
+This module provides @scheme[expand]-like procedures that allow the
+user to specify macros whose expansions should be hidden.
+
+Warning: because of limitations in the way macro expansion is
+selectively hidden, the resulting syntax may not evaluate to the same
+thing as the original syntax.
+
 @defproc[(expand-only [stx any/c] [transparent-macros (listof identifier?)])
          syntax?]{
 
@@ -67,9 +74,6 @@ location.
               (expand-only #'(let ([x 1] [y 2]) (or (even? x) (even? y)))
                            (list #'or))))
 
-  Warning: because of limitations in syntax, expansion, and hiding,
-  the resulting syntax may not evaluate to the same thing as the
-  original syntax.
 }
 
 @defproc[(expand/hide [stx any/c] [hidden-macros (listof identifier?)])
@@ -82,10 +86,19 @@ location.
              (syntax->datum
               (expand/hide #'(let ([x 1] [y 2]) (or (even? x) (even? y)))
                            (list #'or))))
+}
 
-  Warning: because of limitations in syntax, expansion, and hiding,
-  the resulting syntax may not evaluate to the same thing as the
-  original syntax.
+@defproc[(expand/show-predicate [stx any/c] [show? (-> identifier? boolean?)])
+         syntax?]{
+
+  Expands the given syntax @scheme[stx], but only shows the expansion of macros
+  whose names satisfy the predicate @scheme[show?].
+
+  @(examples #:eval the-eval
+             (syntax->datum
+              (expand/show-predicate
+               #'(let ([x 1] [y 2]) (or (even? x) (even? y)))
+               (lambda (id) (memq (syntax-e id) '(or #%app))))))
 }
 
 @section{Macro stepper text interface}
@@ -93,25 +106,28 @@ location.
 @defmodule[macro-debugger/stepper-text]
 
 @defproc[(expand/step-text [stx any/c]
-                           [macro-policy (or/c (-> identifier? boolean?)
-                                               (listof identifier?))
-                                         null])
+                           [show? (or/c (-> identifier? boolean?)
+                                        (listof identifier?))
+                                  (lambda (x) #t)])
          void?]{
 
   Expands the syntax and prints the macro expansion steps. If the
   identifier predicate is given, it determines which macros are shown
-  (if absent, no macros are hidden). A list of identifiers is also
+  (if absent, all macros are shown). A list of identifiers is also
   accepted.
 
   @(examples #:eval the-eval
-             (expand/step-text #'(let ([x 1]) (even? x)))
+             (expand/step-text #'(let ([x 1] [y 2]) (or (even? x) (even? y)))
+                               (list #'or))
+             #;(expand/step-text #'(let ([x 1]) (even? x)))
              #;(expand/step-text #'(let ([x 1] [y 2]) (or (even? x) (even? y)))
                                (lambda (id) (eq? (syntax-e id) 'or))))
 }
 
 @defproc[(stepper-text [stx any/c]
-                       [macro-policy (or/c (-> identifier? boolean?)
-                                           (listof identifier?))])
+                       [show? (or/c (-> identifier? boolean?)
+                                    (listof identifier?))
+                              (lambda (x) #t)])
          (symbol? -> void?)]{
 
   Returns a procedure that can be called on the symbol
