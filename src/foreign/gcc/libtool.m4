@@ -319,7 +319,7 @@ m4_bpatsubst([m4_bpatsubst([$1], [^ *], [# ])],
 # VALUE may be 0, 1 or 2 for a computed quote escaped value based on
 # VARNAME.  Any other value will be used directly.
 m4_define([_LT_DECL],
-[lt_if_append_uniq([lt_decl_varnames], [$2], [[, ]],
+[lt_if_append_uniq([lt_decl_varnames], [$2], [, ],
     [lt_dict_add_subkey([lt_decl_dict], [$2], [libtool_name],
 	[m4_ifval([$1], [$1], [$2])])
     lt_dict_add_subkey([lt_decl_dict], [$2], [value], [$3])
@@ -3419,7 +3419,8 @@ m4_if([$1], [CXX], [
       # built for inclusion in a dll (and should export symbols for example).
       # Although the cygwin gcc ignores -fPIC, still need this for old-style
       # (--disable-auto-import) libraries
-      _LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'
+      m4_if([$1], [GCJ], [],
+	[_LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'])
       ;;
     darwin* | rhapsody*)
       # PIC is the default on this platform
@@ -3715,7 +3716,8 @@ m4_if([$1], [CXX], [
       # built for inclusion in a dll (and should export symbols for example).
       # Although the cygwin gcc ignores -fPIC, still need this for old-style
       # (--disable-auto-import) libraries
-      _LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'
+      m4_if([$1], [GCJ], [],
+	[_LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'])
       ;;
 
     darwin* | rhapsody*)
@@ -3791,7 +3793,8 @@ m4_if([$1], [CXX], [
     mingw* | cygwin* | pw32* | os2*)
       # This hack is so that the source file can tell whether it is being
       # built for inclusion in a dll (and should export symbols for example).
-      _LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'
+      m4_if([$1], [GCJ], [],
+	[_LT_TAGVAR(lt_prog_compiler_pic, $1)='-DDLL_EXPORT'])
       ;;
 
     hpux9* | hpux10* | hpux11*)

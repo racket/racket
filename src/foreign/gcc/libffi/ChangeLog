@@ -1,3 +1,90 @@
+2008-08-25  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* src/powerpc/ffitarget.h (ffi_abi): Add FFI_LINUX and
+	FFI_LINUX_SOFT_FLOAT to the POWERPC_FREEBSD enum.
+	Add note about flag bits used for FFI_SYSV_TYPE_SMALL_STRUCT.
+	Adjust copyright notice.
+	* src/powerpc/ffi.c: Add two new flags to indicate if we have one
+	register or two register to use for FFI_SYSV structs.
+	(ffi_prep_cif_machdep): Pass the right register flag introduced above.
+	(ffi_closure_helper_SYSV): Fix the return type for
+	FFI_SYSV_TYPE_SMALL_STRUCT. Comment.
+	Adjust copyright notice.
+
+2008-07-16  Kaz Kojima  <kkojima@gcc.gnu.org>
+
+	* src/sh/ffi.c (ffi_prep_closure_loc): Turn INSN into an unsigned
+	int.
+
+2008-06-17  Ralf Wildenhues  <Ralf.Wildenhues@gmx.de>
+
+	* configure: Regenerate.
+	* include/Makefile.in: Regenerate.
+	* testsuite/Makefile.in: Regenerate.
+
+2008-06-07  Joseph Myers  <joseph@codesourcery.com>
+
+	* configure.ac (parisc*-*-linux*, powerpc-*-sysv*,
+	powerpc-*-beos*): Remove.
+	* configure: Regenerate.
+
+2008-05-09  Julian Brown  <julian@codesourcery.com>
+
+	* Makefile.am (LTLDFLAGS): New.
+	(libffi_la_LDFLAGS): Use above.
+	* Makefile.in: Regenerate.
+
+2008-04-18  Paolo Bonzini  <bonzini@gnu.org>
+
+	PR bootstrap/35457
+	* aclocal.m4: Regenerate.
+	* configure: Regenerate.
+
+2008-03-26  Kaz Kojima  <kkojima@gcc.gnu.org>
+
+	* src/sh/sysv.S: Add .note.GNU-stack on Linux.
+	* src/sh64/sysv.S: Likewise.
+
+2008-03-26  Daniel Jacobowitz  <dan@debian.org>
+
+	* src/arm/sysv.S: Fix ARM comment marker.
+
+2008-03-26  Jakub Jelinek  <jakub@redhat.com>
+
+	* src/alpha/osf.S: Add .note.GNU-stack on Linux.
+	* src/s390/sysv.S: Likewise.
+	* src/powerpc/ppc_closure.S: Likewise.
+	* src/powerpc/sysv.S: Likewise.
+	* src/x86/unix64.S: Likewise.
+	* src/x86/sysv.S: Likewise.
+	* src/sparc/v8.S: Likewise.
+	* src/sparc/v9.S: Likewise.
+	* src/m68k/sysv.S: Likewise.
+	* src/arm/sysv.S: Likewise.
+
+2008-03-16  Ralf Wildenhues  <Ralf.Wildenhues@gmx.de>
+
+	* aclocal.m4: Regenerate.
+	* configure: Likewise.
+	* Makefile.in: Likewise.
+	* include/Makefile.in: Likewise.
+	* testsuite/Makefile.in: Likewise.
+
+2008-02-12  Bjoern Koenig  <bkoenig@alpha-tierchen.de>
+	    Andreas Tobler  <a.tobler@schweiz.org>
+
+	* configure.ac: Add amd64-*-freebsd* target.
+	* configure: Regenerate.
+
+2008-01-30  H.J. Lu  <hongjiu.lu@intel.com>
+
+	PR libffi/34612
+	* src/x86/sysv.S (ffi_closure_SYSV): Pop 4 byte from stack when
+	returning struct.
+
+	* testsuite/libffi.call/call.exp: Add "-O2 -fomit-frame-pointer"
+	tests.
+
 2008-01-24  David Edelsohn  <edelsohn@gnu.org>
 
 	* configure: Regenerate.

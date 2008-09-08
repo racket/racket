@@ -51,6 +51,10 @@ case "$host" in
 	TARGET=ARM; TARGETDIR=arm
 	;;
 
+  amd64-*-freebsd*)
+	TARGET=X86_64; TARGETDIR=x86
+	;;
+
   cris-*-*)
 	TARGET=LIBFFI_CRIS; TARGETDIR=cris
 	;;
@@ -59,7 +63,7 @@ case "$host" in
 	TARGET=FRV; TARGETDIR=frv
 	;;
 
-  hppa*-*-linux* | parisc*-*-linux*)
+  hppa*-*-linux*)
 	TARGET=PA_LINUX; TARGETDIR=pa
 	;;
   hppa*64-*-hpux*)
@@ -101,10 +105,7 @@ case "$host" in
 	TARGET=MIPS; TARGETDIR=mips
 	;;
 
-  powerpc*-*-linux* | powerpc-*-sysv*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-  powerpc-*-beos*)
+  powerpc*-*-linux*)
 	TARGET=POWERPC; TARGETDIR=powerpc
 	;;
   powerpc-*-darwin*)
