@@ -111,6 +111,17 @@
     (define (x) 1)
     (define (y) 1)))
 
+(define to-override3-class%
+  (class to-override2-class%
+    (oevrride x y)
+    (define (x) 1)
+    (define (y) 1)))
+(define to-augment3-class%
+  (class to-augment2-class%
+    (augment x y)
+    (define (x) 1)
+    (define (y) 1)))
+
 (define (test-method basic? public object% over? aug? super-ok? inner-ok? over-ok? aug-ok?)
   (when basic?
     (teval #`(test #t class? (class #,object% (#,public))))
@@ -139,7 +150,6 @@
 	(begin
 	  (teval #`(err/rt-test (class #,object% (#,public (x x)) (define (x) 1)) exn:fail:object?))
 	  (teval #`(err/rt-test (class #,object% (#,public (x y) (y x)) (define (x) 1) (define (y) 2)) exn:fail:object?)))))
-	
 
   ;; Use of external name for super/inner is always wrong (but
   ;; maybe because super/inner isn't allowed):
@@ -196,6 +206,7 @@
 
 (test-over/aug #'to-override-class% #'to-augment-class%)
 (test-over/aug #'to-override2-class% #'to-augment2-class%)
+(test-over/aug #'to-override3-class% #'to-augment3-class%)
 
 (define (test-rename rename object%)
   (teval #`(test #t class? (class #,object% (#,rename))))

@@ -1837,7 +1837,7 @@
 	   [no-method-changes? (and (null? public-names)
 				    (null? override-names)
 				    (null? augride-names)
-                                    (null? overment-names))]
+                                    (null? final-names))]
 	   [no-new-fields? (null? public-field-names)]
 	   [xappend (lambda (a b) (if (null? b) a (append a b)))])
 
@@ -2193,7 +2193,8 @@
 					  (let ([v (list->vector (vector->list v))])
 					    (vector-set! v (sub1 (vector-length v)) method)
 					    (vector-set! beta-methods index v))))
-				    (vector-set! meth-flags index (not make-struct:prim)))
+                                    (when (not (vector-ref meth-flags index))
+                                      (vector-set! meth-flags index (not make-struct:prim))))
 				  (append replace-augonly-indices replace-final-indices replace-normal-indices
 					  refine-augonly-indices refine-final-indices refine-normal-indices)
 				  (append override-methods augride-methods)
@@ -2205,7 +2206,7 @@
                                     (append overment-names pubment-names))
                           (for-each (lambda (id)
                                       (vector-set! meth-flags (hash-ref method-ht id) #t))
-                                    augride-names))
+                                    augride-normal-names))
                         ;; Expand `rename-inner' vector, adding a #f to indicate that
 			;;  no rename-inner function is available, so far
 			(for-each (lambda (id)

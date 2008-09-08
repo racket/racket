@@ -1,22 +1,25 @@
 
-(module runtime-path mzscheme
+(module runtime-path scheme/base
   (require mzlib/etc
            syntax/modcollapse
 	   setup/dirs
-           (only "private/runtime-path-table.ss" table))
+           scheme/list
+           scheme/string
+           (only-in "private/runtime-path-table.ss" table)
+           (for-syntax scheme/base))
 
   (provide define-runtime-path
            define-runtime-paths
            define-runtime-path-list
            runtime-paths)
   
-  (define-for-syntax ext-file-table (make-hash-table))
+  (define-for-syntax ext-file-table (make-hasheq))
 
   (define (lookup-in-table tag-stx p)
     ;; This function is designed to cooperate with a table embedded
     ;; in an executable by create-embedding-executable.
     (let ([mpi (syntax-source-module tag-stx)])
-      (let ([p (hash-table-get
+      (let ([p (hash-ref
                 table
                 (cons (cond
                         [(module-path-index? mpi)
@@ -71,10 +74,16 @@
 		      ((length p) . > . 1)
 		      (eq? 'lib (car p))
 		      (andmap string? (cdr p)))
-		 (let ([dir (if (null? (cddr p))
-                                (collection-path "mzlib")
-                                (apply collection-path (cddr p)))])
-                   (build-path dir (cadr p)))]
+		 (let* ([strs (regexp-split #rx"/" 
+                                            (let ([s (cadr p)])
+                                              (if (regexp-match? #rx"[./]" s)
+                                                  s
+                                                  (string-append s "/main.ss"))))]
+                        [dir (if (and (null? (cddr p))
+                                      (null? (cdr strs)))
+                                 (collection-path "mzlib")
+                                 (apply collection-path (append (cddr p) (drop-right strs 1))))])
+                   (build-path dir (last strs)))]
                 [else (error 'runtime-path "unknown form: ~e" p)])))
            paths)))
   
@@ -85,8 +94,8 @@
                        [(symbol? mpi) mpi]
                        [else (error 'register-ext-files
                                     "cannot determine source")])])
-        (let ([files (hash-table-get ext-file-table modname null)])
-          (hash-table-put! ext-file-table modname (append paths files))))))
+        (let ([files (hash-ref ext-file-table modname null)])
+          (hash-set! ext-file-table modname (append paths files))))))
     
   (define-syntax (-define-runtime-path stx)
     (syntax-case stx ()
@@ -101,12 +110,12 @@
                         #'orig-stx
                         id)))
                    ids)
-         (let ([tag (datum->syntax-object #'orig-stx 'tag #'orig-stx)])
+         (let ([tag (datum->syntax #'orig-stx 'tag #'orig-stx)])
            #`(begin
                (define-values (id ...)
                  (let-values ([(id ...) expr])
                    (let ([get-dir (lambda ()
-                                    #,(datum->syntax-object
+                                    #,(datum->syntax
                                        tag
                                        `(,#'this-expression-source-directory)
                                        tag))])
@@ -135,10 +144,10 @@
     (syntax-case stx ()
       [(_ mp)
        #`(quote
-          #,(hash-table-get
+          #,(hash-ref
              ext-file-table
              (module-path-index-resolve (module-path-index-join
-                                         (syntax-object->datum #'mp)
+                                         (syntax->datum #'mp)
                                          (syntax-source-module stx)))
              null))]))
 
