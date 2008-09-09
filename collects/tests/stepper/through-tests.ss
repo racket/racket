@@ -101,7 +101,7 @@
       (for-each (lambda (fn) (apply fn args)) level-fns)))
 
   (define test-mz-sequence
-    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #t #f))
+    (lang-level-test-sequence 'scheme/base fake-mz-render-settings #t #f))
   (define test-beginner-sequence
     (lang-level-test-sequence `(lib "htdp-beginner.ss" "lang")
                               fake-beginner-render-settings #f #t))
@@ -1709,6 +1709,3 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect check-within check-within-bad check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
       (run-all-tests)))
-  
-
-
