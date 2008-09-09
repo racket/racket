@@ -56,6 +56,7 @@ Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
 mzrt_rwlock *symbol_table_lock;
 #else
 # define mzrt_rwlock_rdlock(l) /* empty */
+# define mzrt_rwlock_wrlock(l) /* empty */
 # define mzrt_rwlock_unlock(l) /* empty */
 #endif
 
@@ -376,7 +377,7 @@ scheme_intern_exact_symbol_in_table(Scheme_Hash_Table *symbol_table, int kind, c
   if (!sym) {
     sym = make_a_symbol(name, len, kind);
 
-    mzrt_rwlock_rdlock(symbol_table_lock);
+    mzrt_rwlock_wrlock(symbol_table_lock);
     symbol_bucket(symbol_table, name, len, sym);
     mzrt_rwlock_unlock(symbol_table_lock);
   }
