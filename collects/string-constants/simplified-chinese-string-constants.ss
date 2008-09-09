@@ -855,7 +855,9 @@
   (whole-part "整数部分")
   (numerator "分子")
   (denominator "分母")
-  (invalid-number "无效的输入：必须输入一个精确的、不是整数的实数")
+  (insert-number/bad-whole-part "必须输入一个整数")
+  (insert-number/bad-numerator "分子必须是非负整数")
+  (insert-number/bad-denominator "分母必须是正整数")
   (insert-fraction-menu-item-label "插入分数...")
   
   ;; number snip popup menu
@@ -1183,4 +1185,16 @@
   (gui-tool-show-gui-toolbar "显示GUI工具栏")
   (gui-tool-hide-gui-toolbar "隐藏GUI工具栏")
   (gui-tool-insert-gui "插入GUI")
+
+  ;; contract violation tracking
+  
+  ; tooltip for new planet icon in drscheme window (must have a planet violation logged to see it)
+  (show-planet-contract-violations "显示PLaneT中的违背contract")
+
+  (ml-always-show-#lang-line "在Module语言中,总是显示#lang行")
+  
+  ; buttons in the dialog that lists the recorded bug reports
+  (bug-track-report "File Ticket")
+  (bug-track-forget "Forget")
+  (bug-track-forget-all "Forget All")
   )
