@@ -92,7 +92,7 @@
     (format "the teachpack '~a' was not found" name)))
 
 ;; rewrite-module : settings syntax (is-a?/c interactions-text<%>) -> syntax
-;; rewrites te module to print out results of non-definitions
+;; rewrites the module to print out results of non-definitions
 (define (rewrite-module stx rep)
   (syntax-case stx (module #%plain-module-begin)
     [(module name lang (#%plain-module-begin bodies ...))
