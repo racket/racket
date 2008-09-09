@@ -375,10 +375,14 @@ scheme_intern_exact_symbol_in_table(Scheme_Hash_Table *symbol_table, int kind, c
   mzrt_rwlock_unlock(symbol_table_lock);
 
   if (!sym) {
-    sym = make_a_symbol(name, len, kind);
-
+    Scheme_Object *newsymbol;
+    newsymbol = make_a_symbol(name, len, kind);
+    
+    /* we must return the result of this symbol bucket call because another
+     * thread could have inserted the same symbol between the first
+     * :qsymbol_bucket call above and this one */
     mzrt_rwlock_wrlock(symbol_table_lock);
-    symbol_bucket(symbol_table, name, len, sym);
+    sym = symbol_bucket(symbol_table, name, len, newsymbol);
     mzrt_rwlock_unlock(symbol_table_lock);
   }
 
