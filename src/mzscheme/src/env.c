@@ -316,6 +316,9 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_thread_memory();
 #endif
 
+#ifndef MZ_PRECISE_GC
+  scheme_init_ephemerons();
+#endif
   
   place_instance_init_pre_kernel(stack_base);
   make_kernel_env();
@@ -334,7 +337,6 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 
 #ifndef MZ_PRECISE_GC
   scheme_init_setjumpup();
-  scheme_init_ephemerons();
 #endif
 
   scheme_init_stack_check();
