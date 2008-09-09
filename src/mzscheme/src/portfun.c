@@ -138,9 +138,11 @@ static int pipe_out_ready(Scheme_Output_Port *p);
 static void register_traversers(void);
 #endif
 
-static Scheme_Object *any_symbol, *any_one_symbol;
-static Scheme_Object *cr_symbol, *lf_symbol, *crlf_symbol;
-
+static Scheme_Object *any_symbol;
+static Scheme_Object *any_one_symbol;
+static Scheme_Object *cr_symbol;
+static Scheme_Object *lf_symbol;
+static Scheme_Object *crlf_symbol;
 static Scheme_Object *module_symbol;
 
 static Scheme_Object *default_read_handler;
@@ -150,9 +152,12 @@ static Scheme_Object *default_print_handler;
 
 Scheme_Object *scheme_default_global_print_handler;
 
-Scheme_Object *scheme_write_proc, *scheme_display_proc, *scheme_print_proc;
+Scheme_Object *scheme_write_proc;
+Scheme_Object *scheme_display_proc;
+Scheme_Object *scheme_print_proc;
 
-static Scheme_Object *dummy_input_port, *dummy_output_port;
+static Scheme_Object *dummy_input_port;
+static Scheme_Object *dummy_output_port;
 
 #define fail_err_symbol scheme_false
 
@@ -183,560 +188,142 @@ scheme_init_port_fun(Scheme_Env *env)
   REGISTER_SO(cr_symbol);
   REGISTER_SO(lf_symbol);
   REGISTER_SO(crlf_symbol);
-
-  any_symbol = scheme_intern_symbol("any");
-  any_one_symbol = scheme_intern_symbol("any-one");
-  cr_symbol = scheme_intern_symbol("return");
-  lf_symbol = scheme_intern_symbol("linefeed");
-  crlf_symbol = scheme_intern_symbol("return-linefeed");
-
   REGISTER_SO(module_symbol);
 
-  module_symbol = scheme_intern_symbol("module");
+  any_symbol      = scheme_intern_symbol("any");
+  any_one_symbol  = scheme_intern_symbol("any-one");
+  cr_symbol       = scheme_intern_symbol("return");
+  lf_symbol       = scheme_intern_symbol("linefeed");
+  crlf_symbol     = scheme_intern_symbol("return-linefeed");
+  module_symbol   = scheme_intern_symbol("module");
 
-  scheme_write_proc = scheme_make_noncm_prim(sch_write,
-					     "write",
-					     1, 2);
-  scheme_display_proc = scheme_make_noncm_prim(display,
-					       "display",
-					       1, 2);
-  scheme_print_proc = scheme_make_noncm_prim(sch_print,
-					     "print",
-					     1, 2);
+  scheme_write_proc   = scheme_make_noncm_prim(sch_write, "write",    1, 2);
+  scheme_display_proc = scheme_make_noncm_prim(display,   "display",  1, 2);
+  scheme_print_proc   = scheme_make_noncm_prim(sch_print, "print",    1, 2);
 
   /* Made as a closed prim so we can get the arity right: */
-  default_read_handler = scheme_make_closed_prim_w_arity(sch_default_read_handler,
-							 NULL,
-							 "default-port-read-handler",
-							 1, 2);
+  default_read_handler = scheme_make_closed_prim_w_arity(sch_default_read_handler, NULL, "default-port-read-handler", 1, 2);
 
-
-  default_display_handler = scheme_make_prim_w_arity(sch_default_display_handler,
-						     "default-port-display-handler",
-						     2, 2);
-  default_write_handler = scheme_make_prim_w_arity(sch_default_write_handler,
-						   "default-port-write-handler",
-						   2, 2);
-  default_print_handler = scheme_make_prim_w_arity(sch_default_print_handler,
-						   "default-port-print-handler",
-						   2, 2);
+  default_display_handler = scheme_make_prim_w_arity(sch_default_display_handler, "default-port-display-handler", 2, 2);
+  default_write_handler   = scheme_make_prim_w_arity(sch_default_write_handler,   "default-port-write-handler",   2, 2);
+  default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 2);
 
   scheme_init_port_fun_config();
 
   scheme_add_global_constant("eof", scheme_eof, env);
+  
+  GLOBAL_PARAMETER("current-input-port",                current_input_port,         MZCONFIG_INPUT_PORT,  env);
+  GLOBAL_PARAMETER("current-output-port",               current_output_port,        MZCONFIG_OUTPUT_PORT, env);
+  GLOBAL_PARAMETER("current-error-port",                current_error_port,         MZCONFIG_ERROR_PORT,  env); 
+  GLOBAL_PARAMETER("current-load",                      current_load,               MZCONFIG_LOAD_HANDLER,          env);
+  GLOBAL_PARAMETER("current-load/use-compiled",         current_load_use_compiled,  MZCONFIG_LOAD_COMPILED_HANDLER, env);
+  GLOBAL_PARAMETER("current-load-relative-directory",   current_load_directory,     MZCONFIG_LOAD_DIRECTORY,        env);
+  GLOBAL_PARAMETER("current-write-relative-directory",  current_write_directory,    MZCONFIG_WRITE_DIRECTORY,       env);
+  GLOBAL_PARAMETER("global-port-print-handler",         global_port_print_handler,  MZCONFIG_PORT_PRINT_HANDLER,    env);
+#ifdef LOAD_ON_DEMAND
+  GLOBAL_PARAMETER("load-on-demand-enabled",            load_on_demand_enabled,     MZCONFIG_LOAD_DELAY_ENABLED,    env);
+#endif
+  GLOBAL_PARAMETER("port-count-lines-enabled",          global_port_count_lines,    MZCONFIG_PORT_COUNT_LINES,      env);
 
-  scheme_add_global_constant("input-port?",
-			     scheme_make_folding_prim(input_port_p,
-						      "input-port?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("output-port?",
-			     scheme_make_folding_prim(output_port_p,
-						      "output-port?",
-						      1, 1, 1),
-			     env);
+  GLOBAL_FOLDING_PRIM("input-port?",            input_port_p,               1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("output-port?",           output_port_p,              1, 1, 1, env); 
+  GLOBAL_FOLDING_PRIM("file-stream-port?",      scheme_file_stream_port_p,  1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
 
-  scheme_add_global_constant("file-stream-port?",
-			     scheme_make_folding_prim(scheme_file_stream_port_p,
-						      "file-stream-port?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("terminal-port?",
-			     scheme_make_folding_prim(scheme_terminal_port_p,
-						      "terminal-port?",
-						      1, 1, 1),
-			     env);
+  GLOBAL_PRIM_W_ARITY("port-closed?",           port_closed_p,          1, 1, env); 
+  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 2, env);
+  GLOBAL_PRIM_W_ARITY("open-input-bytes",       open_input_byte_string, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("open-input-string",      open_input_char_string, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("open-output-file",       open_output_file,       1, 3, env);
+  GLOBAL_PRIM_W_ARITY("open-output-bytes",      open_output_string,     0, 1, env);
+  GLOBAL_PRIM_W_ARITY("open-output-string",     open_output_string,     0, 1, env);
+  GLOBAL_PRIM_W_ARITY("get-output-bytes",       get_output_byte_string, 1, 4, env);
+  GLOBAL_PRIM_W_ARITY("get-output-string",      get_output_char_string, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("open-input-output-file", open_input_output_file, 1, 3, env);
+  GLOBAL_PRIM_W_ARITY("close-input-port",       close_input_port,       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("close-output-port",      close_output_port,      1, 1, env);
+  GLOBAL_PRIM_W_ARITY("make-input-port",        make_input_port,        4, 10, env);
+  GLOBAL_PRIM_W_ARITY("make-output-port",       make_output_port,       4, 11, env);
+  
+  GLOBAL_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 4, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("call-with-input-file",  call_with_input_file,   2, 3, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("with-output-to-file",   with_output_to_file,    2, 4, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("with-input-from-file",  with_input_from_file,   2, 3, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("load",                  load,                   1, 1, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
+  GLOBAL_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
 
-  scheme_add_global_constant("port-closed?",
-			     scheme_make_prim_w_arity(port_closed_p,
-						      "port-closed?",
-						      1, 1),
-			     env);
 
-  scheme_add_global_constant("current-input-port",
-			     scheme_register_parameter(current_input_port,
-						       "current-input-port",
-						       MZCONFIG_INPUT_PORT),
-			     env);
-  scheme_add_global_constant("current-output-port",
-			     scheme_register_parameter(current_output_port,
-						       "current-output-port",
-						       MZCONFIG_OUTPUT_PORT),
-			     env);
-  scheme_add_global_constant("current-error-port",
-			     scheme_register_parameter(current_error_port,
-						       "current-error-port",
-						       MZCONFIG_ERROR_PORT),
-			     env);
-
-  scheme_add_global_constant("open-input-file",
-			     scheme_make_prim_w_arity(open_input_file,
-						      "open-input-file",
-						      1, 2),
-			     env);
-  scheme_add_global_constant("open-input-bytes",
-			     scheme_make_prim_w_arity(open_input_byte_string,
-						      "open-input-bytes",
-						      1, 2),
-			     env);
-  scheme_add_global_constant("open-input-string",
-			     scheme_make_prim_w_arity(open_input_char_string,
-						      "open-input-string",
-						      1, 2),
-			     env);
-  scheme_add_global_constant("open-output-file",
-			     scheme_make_prim_w_arity(open_output_file,
-						      "open-output-file",
-						      1, 3),
-			     env);
-  scheme_add_global_constant("open-output-bytes",
-			     scheme_make_prim_w_arity(open_output_string,
-						      "open-output-bytes",
-						      0, 1),
-			     env);
-  scheme_add_global_constant("open-output-string",
-			     scheme_make_prim_w_arity(open_output_string,
-						      "open-output-string",
-						      0, 1),
-			     env);
-  scheme_add_global_constant("get-output-bytes",
-			     scheme_make_prim_w_arity(get_output_byte_string,
-						      "get-output-bytes",
-						      1, 4),
-			     env);
-  scheme_add_global_constant("get-output-string",
-			     scheme_make_prim_w_arity(get_output_char_string,
-						      "get-output-string",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("open-input-output-file",
-			     scheme_make_prim_w_arity(open_input_output_file,
-						      "open-input-output-file",
-						      1, 3),
-			     env);
-  scheme_add_global_constant("close-input-port",
-			     scheme_make_prim_w_arity(close_input_port,
-						      "close-input-port",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("close-output-port",
-			     scheme_make_prim_w_arity(close_output_port,
-						      "close-output-port",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("call-with-output-file",
-			     scheme_make_prim_w_arity2(call_with_output_file,
-						       "call-with-output-file",
-						       2, 4,
-						       0, -1),
-			     env);
-  scheme_add_global_constant("call-with-input-file",
-			     scheme_make_prim_w_arity2(call_with_input_file,
-						       "call-with-input-file",
-						       2, 3,
-						       0, -1),
-			     env);
-  scheme_add_global_constant("with-output-to-file",
-			     scheme_make_prim_w_arity2(with_output_to_file,
-						       "with-output-to-file",
-						       2, 4,
-						       0, -1),
-			     env);
-  scheme_add_global_constant("with-input-from-file",
-			     scheme_make_prim_w_arity2(with_input_from_file,
-						       "with-input-from-file",
-						       2, 3,
-						       0, -1),
-			     env);
-  scheme_add_global_constant("make-input-port",
-			     scheme_make_prim_w_arity(make_input_port,
-						      "make-input-port",
-						      4, 10),
-			     env);
-  scheme_add_global_constant("make-output-port",
-			     scheme_make_prim_w_arity(make_output_port,
-						      "make-output-port",
-						      4, 11),
-			     env);
-
-  scheme_add_global_constant("read",
-			     scheme_make_noncm_prim(read_f,
-						    "read",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read/recursive",
-			     scheme_make_noncm_prim(read_recur_f,
-						    "read/recursive",
-						    0, 4),
-			     env);
-  scheme_add_global_constant("read-syntax",
-			     scheme_make_noncm_prim(read_syntax_f,
-						    "read-syntax",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("read-syntax/recursive",
-			     scheme_make_noncm_prim(read_syntax_recur_f,
-						    "read-syntax/recursive",
-						    0, 5),
-			     env);
-  scheme_add_global_constant("read-honu",
-			     scheme_make_noncm_prim(read_honu_f,
-						    "read-honu",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-honu/recursive",
-			     scheme_make_noncm_prim(read_honu_recur_f,
-						    "read-honu/recursive",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-honu-syntax",
-			     scheme_make_noncm_prim(read_honu_syntax_f,
-						    "read-honu-syntax",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("read-honu-syntax/recursive",
-			     scheme_make_noncm_prim(read_honu_syntax_recur_f,
-						    "read-honu-syntax/recursive",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("read-char",
-			     scheme_make_noncm_prim(read_char,
-						    "read-char",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-char-or-special",
-			     scheme_make_noncm_prim(read_char_spec,
-						    "read-char-or-special",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-byte",
-			     scheme_make_noncm_prim(read_byte,
-						    "read-byte",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-byte-or-special",
-			     scheme_make_noncm_prim(read_byte_spec,
-						    "read-byte-or-special",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("read-bytes-line",
-			     scheme_make_noncm_prim(read_byte_line,
-						    "read-bytes-line",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("read-line",
-			     scheme_make_noncm_prim(read_line,
-						    "read-line",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("read-string",
-			     scheme_make_noncm_prim(sch_read_string,
-						    "read-string",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("read-string!",
-			     scheme_make_noncm_prim(sch_read_string_bang,
-						    "read-string!",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("peek-string",
-			     scheme_make_noncm_prim(sch_peek_string,
-						    "peek-string",
-						    2, 3),
-			     env);
-  scheme_add_global_constant("peek-string!",
-			     scheme_make_noncm_prim(sch_peek_string_bang,
-						    "peek-string!",
-						    2, 5),
-			     env);
-  scheme_add_global_constant("read-bytes",
-			     scheme_make_noncm_prim(sch_read_bytes,
-						    "read-bytes",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("read-bytes!",
-			     scheme_make_noncm_prim(sch_read_bytes_bang,
-						    "read-bytes!",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("peek-bytes",
-			     scheme_make_noncm_prim(sch_peek_bytes,
-						    "peek-bytes",
-						    2, 3),
-			     env);
-  scheme_add_global_constant("peek-bytes!",
-			     scheme_make_noncm_prim(sch_peek_bytes_bang,
-						    "peek-bytes!",
-						    2, 5),
-			     env);
-  scheme_add_global_constant("read-bytes-avail!",
-			     scheme_make_noncm_prim(read_bytes_bang,
-						    "read-bytes-avail!",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("read-bytes-avail!*",
-			     scheme_make_noncm_prim(read_bytes_bang_nonblock,
-						    "read-bytes-avail!*",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("read-bytes-avail!/enable-break",
-			     scheme_make_noncm_prim(read_bytes_bang_break,
-						    "read-bytes-avail!/enable-break",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("peek-bytes-avail!",
-			     scheme_make_noncm_prim(peek_bytes_bang,
-						    "peek-bytes-avail!",
-						    2, 6),
-			     env);
-  scheme_add_global_constant("peek-bytes-avail!*",
-			     scheme_make_noncm_prim(peek_bytes_bang_nonblock,
-						    "peek-bytes-avail!*",
-						    2, 6),
-			     env);
-  scheme_add_global_constant("peek-bytes-avail!/enable-break",
-			     scheme_make_noncm_prim(peek_bytes_bang_break,
-						    "peek-bytes-avail!/enable-break",
-						    2, 6),
-			     env);
-  scheme_add_global_constant("port-provides-progress-evts?",
-			     scheme_make_noncm_prim(can_provide_progress_evt,
-						    "port-provides-progress-evts?",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("write-bytes",
-			     scheme_make_noncm_prim(write_bytes,
-						    "write-bytes",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("write-string",
-			     scheme_make_noncm_prim(write_string,
-						    "write-string",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("write-bytes-avail",
-			     scheme_make_noncm_prim(write_bytes_avail,
-						    "write-bytes-avail",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("write-bytes-avail*",
-			     scheme_make_noncm_prim(write_bytes_avail_nonblock,
-						    "write-bytes-avail*",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("write-bytes-avail/enable-break",
-			     scheme_make_noncm_prim(write_bytes_avail_break,
-						    "write-bytes-avail/enable-break",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("port-writes-atomic?",
-			     scheme_make_noncm_prim(can_write_atomic,
-						    "port-writes-atomic?",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("port-writes-special?",
-			     scheme_make_noncm_prim(can_write_special,
-						    "port-writes-special?",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("write-special",
-			     scheme_make_noncm_prim(scheme_write_special,
-						    "write-special",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("write-special-avail*",
-			     scheme_make_noncm_prim(scheme_write_special_nonblock,
-						    "write-special-avail*",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("peek-char",
-			     scheme_make_noncm_prim(peek_char,
-						    "peek-char",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("peek-char-or-special",
-			     scheme_make_noncm_prim(peek_char_spec,
-						    "peek-char-or-special",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("peek-byte",
-			     scheme_make_noncm_prim(peek_byte,
-						    "peek-byte",
-						    0, 2),
-			     env);
-  scheme_add_global_constant("peek-byte-or-special",
-			     scheme_make_noncm_prim(peek_byte_spec,
-						    "peek-byte-or-special",
-						    0, 3),
-			     env);
-
+  GLOBAL_NONCM_PRIM("read",                           read_f,                         0, 1, env);
+  GLOBAL_NONCM_PRIM("read/recursive",                 read_recur_f,                   0, 4, env);
+  GLOBAL_NONCM_PRIM("read-syntax",                    read_syntax_f,                  0, 2, env);
+  GLOBAL_NONCM_PRIM("read-syntax/recursive",          read_syntax_recur_f,            0, 5, env);
+  GLOBAL_NONCM_PRIM("read-honu",                      read_honu_f,                    0, 1, env);
+  GLOBAL_NONCM_PRIM("read-honu/recursive",            read_honu_recur_f,              0, 1, env);
+  GLOBAL_NONCM_PRIM("read-honu-syntax",               read_honu_syntax_f,             0, 2, env);
+  GLOBAL_NONCM_PRIM("read-honu-syntax/recursive",     read_honu_syntax_recur_f,       0, 2, env);
+  GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
+  GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 1, env);
+  GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
+  GLOBAL_NONCM_PRIM("read-byte-or-special",           read_byte_spec,                 0, 1, env);
+  GLOBAL_NONCM_PRIM("read-bytes-line",                read_byte_line,                 0, 2, env);
+  GLOBAL_NONCM_PRIM("read-line",                      read_line,                      0, 2, env);
+  GLOBAL_NONCM_PRIM("read-string",                    sch_read_string,                1, 2, env);
+  GLOBAL_NONCM_PRIM("read-string!",                   sch_read_string_bang,           1, 4, env);
+  GLOBAL_NONCM_PRIM("peek-string",                    sch_peek_string,                2, 3, env);
+  GLOBAL_NONCM_PRIM("peek-string!",                   sch_peek_string_bang,           2, 5, env);
+  GLOBAL_NONCM_PRIM("read-bytes",                     sch_read_bytes,                 1, 2, env);
+  GLOBAL_NONCM_PRIM("read-bytes!",                    sch_read_bytes_bang,            1, 4, env);
+  GLOBAL_NONCM_PRIM("peek-bytes",                     sch_peek_bytes,                 2, 3, env);
+  GLOBAL_NONCM_PRIM("peek-bytes!",                    sch_peek_bytes_bang,            2, 5, env);
+  GLOBAL_NONCM_PRIM("read-bytes-avail!",              read_bytes_bang,                1, 4, env);
+  GLOBAL_NONCM_PRIM("read-bytes-avail!*",             read_bytes_bang_nonblock,       1, 4, env);
+  GLOBAL_NONCM_PRIM("read-bytes-avail!/enable-break", read_bytes_bang_break,          1, 4, env);
+  GLOBAL_NONCM_PRIM("peek-bytes-avail!",              peek_bytes_bang,                2, 6, env);
+  GLOBAL_NONCM_PRIM("peek-bytes-avail!*",             peek_bytes_bang_nonblock,       2, 6, env);
+  GLOBAL_NONCM_PRIM("peek-bytes-avail!/enable-break", peek_bytes_bang_break,          2, 6, env);
+  GLOBAL_NONCM_PRIM("port-provides-progress-evts?",   can_provide_progress_evt,       1, 1, env);
+  GLOBAL_NONCM_PRIM("write-bytes",                    write_bytes,                    1, 4, env);
+  GLOBAL_NONCM_PRIM("write-string",                   write_string,                   1, 4, env);
+  GLOBAL_NONCM_PRIM("write-bytes-avail",              write_bytes_avail,              1, 4, env);
+  GLOBAL_NONCM_PRIM("write-bytes-avail*",             write_bytes_avail_nonblock,     1, 4, env);
+  GLOBAL_NONCM_PRIM("write-bytes-avail/enable-break", write_bytes_avail_break,        1, 4, env);
+  GLOBAL_NONCM_PRIM("port-writes-atomic?",            can_write_atomic,               1, 1, env);
+  GLOBAL_NONCM_PRIM("port-writes-special?",           can_write_special,              1, 1, env);
+  GLOBAL_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
+  GLOBAL_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
+  GLOBAL_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
+  GLOBAL_NONCM_PRIM("peek-char-or-special",           peek_char_spec,                 0, 2, env);
+  GLOBAL_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
+  GLOBAL_NONCM_PRIM("peek-byte-or-special",           peek_byte_spec,                 0, 3, env);
+  GLOBAL_NONCM_PRIM("byte-ready?",                    byte_ready_p,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("char-ready?",                    char_ready_p,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("newline",                        newline,                        0, 1, env);
+  GLOBAL_NONCM_PRIM("write-char",                     write_char,                     1, 2, env);
+  GLOBAL_NONCM_PRIM("write-byte",                     write_byte,                     1, 2, env);
+  GLOBAL_NONCM_PRIM("port-commit-peeked",             peeked_read,                    3, 4, env);
+  GLOBAL_NONCM_PRIM("port-progress-evt",              progress_evt,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("write-bytes-avail-evt",          write_bytes_avail_evt,          1, 4, env);
+  GLOBAL_NONCM_PRIM("write-special-evt",              write_special_evt,              2, 2, env);
+  GLOBAL_NONCM_PRIM("port-read-handler",              port_read_handler,              1, 2, env);
+  GLOBAL_NONCM_PRIM("port-display-handler",           port_display_handler,           1, 2, env);
+  GLOBAL_NONCM_PRIM("port-write-handler",             port_write_handler,             1, 2, env);
+  GLOBAL_NONCM_PRIM("port-print-handler",             port_print_handler,             1, 2, env);
+  GLOBAL_NONCM_PRIM("flush-output",                   flush_output,                   0, 1, env);
+  GLOBAL_NONCM_PRIM("file-position",                  scheme_file_position,           1, 2, env);
+  GLOBAL_NONCM_PRIM("file-stream-buffer-mode",        scheme_file_buffer,             1, 2, env);
+  GLOBAL_NONCM_PRIM("port-file-identity",             scheme_file_identity,           1, 1, env);
+  GLOBAL_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
+          
   p = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("eof-object?", p, env);
 
-  scheme_add_global_constant("byte-ready?",
-			     scheme_make_noncm_prim(byte_ready_p,
-						    "byte-ready?",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("char-ready?",
-			     scheme_make_noncm_prim(char_ready_p,
-						    "char-ready?",
-						    0, 1),
-			     env);
+  scheme_add_global_constant("write",   scheme_write_proc,    env);
+  scheme_add_global_constant("display", scheme_display_proc,  env);
+  scheme_add_global_constant("print",   scheme_print_proc,    env);
 
-  scheme_add_global_constant("write", scheme_write_proc, env);
-  scheme_add_global_constant("display", scheme_display_proc, env);
-  scheme_add_global_constant("print", scheme_print_proc, env);
-  scheme_add_global_constant("newline",
-			     scheme_make_noncm_prim(newline,
-						    "newline",
-						    0, 1),
-			     env);
-
-  scheme_add_global_constant("write-char",
-			     scheme_make_noncm_prim(write_char,
-						    "write-char",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("write-byte",
-			     scheme_make_noncm_prim(write_byte,
-						    "write-byte",
-						    1, 2),
-			     env);
-
-  scheme_add_global_constant("port-commit-peeked",
-			     scheme_make_noncm_prim(peeked_read,
-						    "port-commit-peeked",
-						    3, 4),
-			     env);
-  scheme_add_global_constant("port-progress-evt",
-			     scheme_make_noncm_prim(progress_evt,
-						    "port-progress-evt",
-						    0, 1),
-			     env);
-
-  scheme_add_global_constant("write-bytes-avail-evt",
-			     scheme_make_noncm_prim(write_bytes_avail_evt,
-						    "write-bytes-avail-evt",
-						    1, 4),
-			     env);
-  scheme_add_global_constant("write-special-evt",
-			     scheme_make_noncm_prim(write_special_evt,
-						    "write-special-evt",
-						    2, 2),
-			     env);
-
-  scheme_add_global_constant("port-read-handler",
-			     scheme_make_noncm_prim(port_read_handler,
-						    "port-read-handler",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("port-display-handler",
-			     scheme_make_noncm_prim(port_display_handler,
-						    "port-display-handler",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("port-write-handler",
-			     scheme_make_noncm_prim(port_write_handler,
-						    "port-write-handler",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("port-print-handler",
-			     scheme_make_noncm_prim(port_print_handler,
-						    "port-print-handler",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("global-port-print-handler",
-			     scheme_register_parameter(global_port_print_handler,
-						       "global-port-print-handler",
-						       MZCONFIG_PORT_PRINT_HANDLER),
-			     env);
-
-  scheme_add_global_constant("load",
-			     scheme_make_prim_w_arity2(load,
-						       "load",
-						       1, 1,
-						       0, -1),
-			     env);
-  scheme_add_global_constant("current-load",
-			     scheme_register_parameter(current_load,
-						       "current-load",
-						       MZCONFIG_LOAD_HANDLER),
-			     env);
-  scheme_add_global_constant("current-load/use-compiled",
-			     scheme_register_parameter(current_load_use_compiled,
-						       "current-load/use-compiled",
-						       MZCONFIG_LOAD_COMPILED_HANDLER),
-			     env);
-  scheme_add_global_constant("current-load-relative-directory",
-			     scheme_register_parameter(current_load_directory,
-						       "current-load-relative-directory",
-						       MZCONFIG_LOAD_DIRECTORY),
-			     env);
-  scheme_add_global_constant("current-write-relative-directory",
-			     scheme_register_parameter(current_write_directory,
-						       "current-write-relative-directory",
-						       MZCONFIG_WRITE_DIRECTORY),
-			     env);
-#ifdef LOAD_ON_DEMAND
-  scheme_add_global_constant("load-on-demand-enabled",
-			     scheme_register_parameter(load_on_demand_enabled,
-						       "load-on-demand-enabled",
-						       MZCONFIG_LOAD_DELAY_ENABLED),
-			     env);
-#endif
-
-  scheme_add_global_constant("flush-output",
-			     scheme_make_noncm_prim(flush_output,
-						    "flush-output",
-						    0, 1),
-			     env);
-  scheme_add_global_constant("file-position",
-			     scheme_make_noncm_prim(scheme_file_position,
-						    "file-position",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("file-stream-buffer-mode",
-			     scheme_make_noncm_prim(scheme_file_buffer,
-						    "file-stream-buffer-mode",
-						    1, 2),
-			     env);
-  scheme_add_global_constant("port-file-identity",
-			     scheme_make_noncm_prim(scheme_file_identity,
-						    "port-file-identity",
-						    1, 1),
-			     env);
-
-  scheme_add_global_constant("make-pipe",
-			     scheme_make_prim_w_arity2(sch_pipe,
-						       "make-pipe",
-						       0, 3,
-						       2, 2),
-			     env);
-  scheme_add_global_constant("pipe-content-length", 
-			     scheme_make_immed_prim(pipe_length, 
-						    "pipe-content-length", 
-						    1, 1), 
-			     env);
-  
-
-  scheme_add_global_constant("port-count-lines!",
-			     scheme_make_noncm_prim(port_count_lines,
-						    "port-count-lines!",
-						    1, 1),
-			     env);
-  scheme_add_global_constant("port-next-location",
-			     scheme_make_prim_w_arity2(port_next_location,
-						       "port-next-location",
-						       1, 1,
-						       3, 3),
-			     env);
-  scheme_add_global_constant("port-count-lines-enabled",
-			     scheme_register_parameter(global_port_count_lines,
-						       "port-count-lines-enabled",
-						       MZCONFIG_PORT_COUNT_LINES),
-			     env);
+  GLOBAL_IMMED_PRIM("pipe-content-length",              pipe_length,                1, 1, env);
 }
 
 
@@ -744,30 +331,19 @@ void scheme_init_port_fun_config(void)
 {
   scheme_set_root_param(MZCONFIG_LOAD_DIRECTORY, scheme_false);
   scheme_set_root_param(MZCONFIG_WRITE_DIRECTORY, scheme_false);
-  scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND,
-			scheme_make_pair(scheme_make_path("compiled"),
-                                         scheme_null));
-  scheme_set_root_param(MZCONFIG_USE_USER_PATHS, 
-			(scheme_ignore_user_paths 
-			 ? scheme_false
-			 : scheme_true));
+  scheme_set_root_param(MZCONFIG_USE_COMPILED_KIND, scheme_make_pair(scheme_make_path("compiled"), scheme_null));
+  scheme_set_root_param(MZCONFIG_USE_USER_PATHS, (scheme_ignore_user_paths ? scheme_false : scheme_true));
 
   {
     Scheme_Object *dlh;
-    dlh = scheme_make_prim_w_arity2(default_load,
-				    "default-load-handler",
-				    2, 2,
-				    0, -1);
+    dlh = scheme_make_prim_w_arity2(default_load, "default-load-handler", 2, 2, 0, -1);
     scheme_set_root_param(MZCONFIG_LOAD_HANDLER, dlh);
   }
 
   REGISTER_SO(scheme_default_global_print_handler);
   scheme_default_global_print_handler
-    = scheme_make_prim_w_arity(sch_default_global_port_print_handler,
-			       "default-global-port-print-handler",
-			       2, 2);
-  scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER,
-			scheme_default_global_print_handler);
+    = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 2);
+  scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER, scheme_default_global_print_handler);
 }
 
 /*========================================================================*/

@@ -2606,11 +2606,13 @@ void scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *v, Sch
 void scheme_add_global_constant(const char *name, Scheme_Object *v, Scheme_Env *env);
 void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Scheme_Env *env);
 
-#define GLOBAL_FOLDING_PRIM(name, func, a1, a2, a3, env) scheme_add_global_constant(name, scheme_make_folding_prim(func, name, a1, a2, a3), env)
-#define GLOBAL_IMMED_PRIM(name, func, a1, a2, env) scheme_add_global_constant(name, scheme_make_immed_prim(func, name, a1, a2), env)
-#define GLOBAL_PARAMETER(name, func, constant, env)   scheme_add_global_constant(name, scheme_register_parameter(func, name, constant), env)
-#define GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env) scheme_add_global_constant(name, scheme_make_prim_w_arity(func, name, a1, a2), env)
+#define GLOBAL_FOLDING_PRIM(name, func, a1, a2, a3, env)      scheme_add_global_constant(name, scheme_make_folding_prim(func, name, a1, a2, a3), env)
+#define GLOBAL_IMMED_PRIM(name, func, a1, a2, env)            scheme_add_global_constant(name, scheme_make_immed_prim(func, name, a1, a2), env)
+#define GLOBAL_PARAMETER(name, func, constant, env)           scheme_add_global_constant(name, scheme_register_parameter(func, name, constant), env)
+#define GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)          scheme_add_global_constant(name, scheme_make_prim_w_arity(func, name, a1, a2), env)
 #define GLOBAL_PRIM_W_ARITY2(name, func, a1, a2, a3, a4, env) scheme_add_global_constant(name, scheme_make_prim_w_arity2(func, name, a1, a2, a3, a4), env)
+#define GLOBAL_NONCM_PRIM(name, func, a1, a2, env)            scheme_add_global_constant(name, scheme_make_noncm_prim(func, name, a1, a2), env)
+
 
 
 Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, Scheme_Object *phase);

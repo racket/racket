@@ -529,141 +529,55 @@ void scheme_init_error(Scheme_Env *env)
 
   REGISTER_SO(scheme_raise_arity_error_proc);
 
-  scheme_add_global_constant("error",
-			     scheme_make_noncm_prim(error,
-                                                    "error",
-                                                    1, -1),
-			     env);
-  scheme_add_global_constant("raise-user-error",
-			     scheme_make_noncm_prim(raise_user_error,
-                                                    "raise-user-error",
-                                                    1, -1),
-			     env);
-  scheme_add_global_constant("raise-syntax-error",
-			     scheme_make_noncm_prim(raise_syntax_error,
-                                                    "raise-syntax-error",
-                                                    2, 4),
-			     env);
-  scheme_add_global_constant("raise-type-error",
-			     scheme_make_noncm_prim(raise_type_error,
-                                                    "raise-type-error",
-                                                    3, -1),
-			     env);
-  scheme_add_global_constant("raise-mismatch-error",
-			     scheme_make_noncm_prim(raise_mismatch_error,
-                                                    "raise-mismatch-error",
-                                                    3, 3),
-			     env);
-  scheme_raise_arity_error_proc = scheme_make_noncm_prim(raise_arity_error,
-                                                         "raise-arity-error",
-                                                         2, -1);
-  scheme_add_global_constant("raise-arity-error",
-			     scheme_raise_arity_error_proc,
-			     env);
-  scheme_add_global_constant("error-display-handler",
-			     scheme_register_parameter(error_display_handler,
-						       "error-display-handler",
-						       MZCONFIG_ERROR_DISPLAY_HANDLER),
-			     env);
-  scheme_add_global_constant("error-value->string-handler",
-			     scheme_register_parameter(error_value_string_handler,
-						       "error-value->string-handler",
-						       MZCONFIG_ERROR_PRINT_VALUE_HANDLER),
-			     env);
-  scheme_add_global_constant("error-escape-handler",
-			     scheme_register_parameter(error_escape_handler,
-						      "error-escape-handler",
-						       MZCONFIG_ERROR_ESCAPE_HANDLER),
-			     env);
-  scheme_add_global_constant("exit-handler",
-			     scheme_register_parameter(exit_handler,
-						       "exit-handler",
-						       MZCONFIG_EXIT_HANDLER),
-			     env);
-  scheme_add_global_constant("error-print-width",
-			     scheme_register_parameter(error_print_width,
-						       "error-print-width",
-						       MZCONFIG_ERROR_PRINT_WIDTH),
-			     env);
-  scheme_add_global_constant("error-print-context-length",
-			     scheme_register_parameter(error_print_context_length,
-						       "error-print-context-length",
-						       MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH),
-			     env);
-  scheme_add_global_constant("error-print-source-location",
-			     scheme_register_parameter(error_print_srcloc,
-						       "error-print-source-location",
-						       MZCONFIG_ERROR_PRINT_SRCLOC),
-			     env);
-  scheme_add_global_constant("exit",
-			     scheme_make_noncm_prim(scheme_do_exit,
-                                                    "exit",
-                                                    0, 1),
-			     env);
+  /* errors */
+  GLOBAL_NONCM_PRIM("error",                      error,                 1, -1, env);
+  GLOBAL_NONCM_PRIM("raise-user-error",           raise_user_error,      1, -1, env);
+  GLOBAL_NONCM_PRIM("raise-syntax-error",         raise_syntax_error,    2,  4, env);
+  GLOBAL_NONCM_PRIM("raise-type-error",           raise_type_error,      3, -1, env);
+  GLOBAL_NONCM_PRIM("raise-mismatch-error",       raise_mismatch_error,  3,  3, env);
 
-  scheme_add_global_constant("log-message",
-			     scheme_make_prim_w_arity(log_message,
-                                                      "log-message",
-                                                      4, 4),
-			     env);
-  scheme_add_global_constant("log-level?",
-			     scheme_make_noncm_prim(log_level_p,
-                                                    "log-level?",
-                                                    2, 2),
-			     env);
-  scheme_add_global_constant("make-logger",
-			     scheme_make_noncm_prim(make_logger,
-                                                    "make-logger",
-                                                    0, 2),
-			     env);
-  scheme_add_global_constant("logger?",
-			     scheme_make_folding_prim(logger_p,
-                                                      "logger?",
-                                                      1, 1, 1),
-			     env);
-  scheme_add_global_constant("logger-name",
-			     scheme_make_folding_prim(logger_name,
-                                                      "logger-name",
-                                                      1, 1, 1),
-			     env);
-  scheme_add_global_constant("make-log-receiver",
-			     scheme_make_noncm_prim(make_log_reader,
-                                                    "make-log-receiver",
-                                                    2, 2),
-			     env);
-  scheme_add_global_constant("log-receiver?",
-			     scheme_make_folding_prim(log_reader_p,
-                                                      "log-receiver?",
-                                                      1, 1, 1),
-			     env);
-  scheme_add_global_constant("current-logger",
-			     scheme_register_parameter(current_logger,
-						       "current-logger",
-						       MZCONFIG_LOGGER),
-			     env);
+  scheme_raise_arity_error_proc =                  scheme_make_noncm_prim(raise_arity_error, "raise-arity-error", 2, -1);
+  scheme_add_global_constant("raise-arity-error",  scheme_raise_arity_error_proc, env);
+
+  GLOBAL_PARAMETER("error-display-handler",       error_display_handler,      MZCONFIG_ERROR_DISPLAY_HANDLER,       env);
+  GLOBAL_PARAMETER("error-value->string-handler", error_value_string_handler, MZCONFIG_ERROR_PRINT_VALUE_HANDLER,   env);
+  GLOBAL_PARAMETER("error-escape-handler",        error_escape_handler,       MZCONFIG_ERROR_ESCAPE_HANDLER,        env);
+  GLOBAL_PARAMETER("exit-handler",                exit_handler,               MZCONFIG_EXIT_HANDLER,                env);
+  GLOBAL_PARAMETER("error-print-width",           error_print_width,          MZCONFIG_ERROR_PRINT_WIDTH,           env);
+  GLOBAL_PARAMETER("error-print-context-length",  error_print_context_length, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH,  env);
+  GLOBAL_PARAMETER("error-print-source-location", error_print_srcloc,         MZCONFIG_ERROR_PRINT_SRCLOC,          env);
+
+  /* logging */
+  GLOBAL_NONCM_PRIM("exit",              scheme_do_exit,  0, 1, env);
+  GLOBAL_NONCM_PRIM("log-level?",        log_level_p,     2, 2, env);
+  GLOBAL_NONCM_PRIM("make-logger",       make_logger,     0, 2, env);
+  GLOBAL_NONCM_PRIM("make-log-receiver", make_log_reader, 2, 2, env);
+
+  GLOBAL_PRIM_W_ARITY("log-message",    log_message,   4, 4, env);
+  GLOBAL_FOLDING_PRIM("logger?",        logger_p,      1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("logger-name",    logger_name,   1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("log-receiver?",  log_reader_p,  1, 1, 1, env);
+
+  GLOBAL_PARAMETER("current-logger",    current_logger, MZCONFIG_LOGGER, env);
 
   scheme_add_evt(scheme_log_reader_type, (Scheme_Ready_Fun)log_reader_get, NULL, NULL, 1);
 
   REGISTER_SO(scheme_def_exit_proc);
-  scheme_def_exit_proc = scheme_make_prim_w_arity(def_exit_handler_proc,
-						  "default-exit-handler",
-						  1, 1);
+  scheme_def_exit_proc = scheme_make_prim_w_arity(def_exit_handler_proc, "default-exit-handler", 1, 1);
 
   REGISTER_SO(def_err_val_proc);
-  def_err_val_proc = scheme_make_prim_w_arity(def_error_value_string_proc,
-					      "default-error-value->string-handler",
-					      2, 2);
+  def_err_val_proc = scheme_make_prim_w_arity(def_error_value_string_proc, "default-error-value->string-handler", 2, 2);
 
   REGISTER_SO(fatal_symbol);
   REGISTER_SO(error_symbol);
   REGISTER_SO(warning_symbol);
   REGISTER_SO(info_symbol);
   REGISTER_SO(debug_symbol);
-  fatal_symbol = scheme_intern_symbol("fatal");
-  error_symbol = scheme_intern_symbol("error");
-  warning_symbol = scheme_intern_symbol("warning");
-  info_symbol = scheme_intern_symbol("info");
-  debug_symbol = scheme_intern_symbol("debug");
+  fatal_symbol    = scheme_intern_symbol("fatal");
+  error_symbol    = scheme_intern_symbol("error");
+  warning_symbol  = scheme_intern_symbol("warning");
+  info_symbol     = scheme_intern_symbol("info");
+  debug_symbol    = scheme_intern_symbol("debug");
 
   {
     REGISTER_SO(scheme_main_logger);
@@ -676,11 +590,8 @@ void scheme_init_error(Scheme_Env *env)
   REGISTER_SO(arity_property);
   {
     Scheme_Object *guard;
-    guard = scheme_make_prim_w_arity(check_arity_property_value_ok,
-				     "guard-for-prop:arity-string",
-				     2, 2);
-    arity_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("arity-string"),
-                                                              guard);
+    guard = scheme_make_prim_w_arity(check_arity_property_value_ok, "guard-for-prop:arity-string", 2, 2);
+    arity_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("arity-string"), guard);
   }
                                                             
   scheme_add_global_constant("prop:arity-string", arity_property, env);
@@ -701,17 +612,12 @@ void scheme_init_error_config(void)
   
   REGISTER_SO(default_display_handler);
   REGISTER_SO(emergency_display_handler);
-  default_display_handler = scheme_make_prim_w_arity(def_error_display_proc,
-						     "default-error-display-handler",
-						     2, 2);
-  emergency_display_handler = scheme_make_prim_w_arity(emergency_error_display_proc,
-						       "emergency-error-display-handler",
-						       2, 2);
+
+  default_display_handler = scheme_make_prim_w_arity(def_error_display_proc, "default-error-display-handler", 2, 2);
+  emergency_display_handler = scheme_make_prim_w_arity(emergency_error_display_proc, "emergency-error-display-handler", 2, 2);
   
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
-
-  scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER,
-			def_err_val_proc);
+  scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
 }
 
 static void
