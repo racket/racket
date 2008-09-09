@@ -1,5 +1,5 @@
 #!/usr/bin/mzscheme -qu
-;; The Great Computer Language Shootout
+;; The Computer Language Benchmarks Game
 ;; http://shootout.alioth.debian.org/
 ;;
 ;; Imperative-style implementation based on the SBCL implementation by
@@ -71,78 +71,76 @@ Correct output N = 1000 is
 
 ;; -------------------------------
 (define (offset-momentum system)
-  (let loop-i ((i system) (px 0.0) (py 0.0) (pz 0.0))
+  (let loop-i ([i system] [px 0.0] [py 0.0] [pz 0.0])
     (if (null? i)
-        (begin
-          (set-body-vx! (car system) (/ (- px) +solar-mass+))
-          (set-body-vy! (car system) (/ (- py) +solar-mass+))
-          (set-body-vz! (car system) (/ (- pz) +solar-mass+)))
-        (let ([i1 (car i)])
-          (loop-i (cdr i)
-                  (+ px (* (body-vx i1) (body-mass i1)))
-                  (+ py (* (body-vy i1) (body-mass i1)))
-                  (+ pz (* (body-vz i1) (body-mass i1))))))))
+      (begin
+        (set-body-vx! (car system) (/ (- px) +solar-mass+))
+        (set-body-vy! (car system) (/ (- py) +solar-mass+))
+        (set-body-vz! (car system) (/ (- pz) +solar-mass+)))
+      (let ([i1 (car i)])
+        (loop-i (cdr i)
+                (+ px (* (body-vx i1) (body-mass i1)))
+                (+ py (* (body-vy i1) (body-mass i1)))
+                (+ pz (* (body-vz i1) (body-mass i1))))))))
 
 ;; -------------------------------
 (define (energy system)
-  (let loop-o ((o system) (e 0.0))
+  (let loop-o ([o system] [e 0.0])
     (if (null? o)
-        e
-        (let* ([o1 (car o)]
-               [e (+ e (* (* 0.5 (body-mass o1))
-                         (+ (+ (* (body-vx o1) (body-vx o1))
-                               (* (body-vy o1) (body-vy o1)))
-                            (* (body-vz o1) (body-vz o1)))))])
-          
-          (let loop-i ((i (cdr o)) (e e))
-            (if (null? i)
-                (loop-o (cdr o) e)
-                (let* ((i1 (car i))
-                       (dx (- (body-x o1) (body-x i1)))
-                       (dy (- (body-y o1) (body-y i1)))
-                       (dz (- (body-z o1) (body-z i1)))
-                       (distance (sqrt (+ (+ (* dx dx) (* dy dy)) (* dz dz)))))
-                  (let ([e  (- e (/ (* (body-mass o1) (body-mass i1)) distance))])
-                    (loop-i (cdr i) e)))))))))
+      e
+      (let* ([o1 (car o)]
+             [e (+ e (* (* 0.5 (body-mass o1))
+                        (+ (+ (* (body-vx o1) (body-vx o1))
+                              (* (body-vy o1) (body-vy o1)))
+                           (* (body-vz o1) (body-vz o1)))))])
+        (let loop-i ([i (cdr o)] [e e])
+          (if (null? i)
+            (loop-o (cdr o) e)
+            (let* ([i1 (car i)]
+                   [dx (- (body-x o1) (body-x i1))]
+                   [dy (- (body-y o1) (body-y i1))]
+                   [dz (- (body-z o1) (body-z i1))]
+                   [distance (sqrt (+ (+ (* dx dx) (* dy dy)) (* dz dz)))])
+              (let ([e  (- e (/ (* (body-mass o1) (body-mass i1)) distance))])
+                (loop-i (cdr i) e)))))))))
 
 ;; -------------------------------
 (define (advance system dt)
-  (let loop-o ((o system))
+  (let loop-o ([o system])
     (unless (null? o)
-      (let* ((o1 (car o))
-             (o1x (body-x o1))
-             (o1y (body-y o1))
-             (o1z (body-z o1))
-             (om (body-mass o1)))
-        (let loop-i ((i (cdr o))
-                     (vx (body-vx o1))
-                     (vy (body-vy o1))
-                     (vz (body-vz o1)))
+      (let* ([o1 (car o)]
+             [o1x (body-x o1)]
+             [o1y (body-y o1)]
+             [o1z (body-z o1)]
+             [om (body-mass o1)])
+        (let loop-i ([i (cdr o)]
+                     [vx (body-vx o1)]
+                     [vy (body-vy o1)]
+                     [vz (body-vz o1)])
           (if (null? i)
-              (begin
-                (set-body-vx! o1 vx)
-                (set-body-vy! o1 vy)
-                (set-body-vz! o1 vz))
-              (let* ((i1 (car i))
-                     (dx (- o1x (body-x i1)))
-                     (dy (- o1y (body-y i1)))
-                     (dz (- o1z (body-z i1)))
-                     (distance (sqrt (+ (+ (* dx dx) (* dy dy)) (* dz dz))))
-                     (mag (/ dt (* (* distance distance) distance)))
-                     (dxmag (* dx mag))
-                     (dymag (* dy mag))
-                     (dzmag (* dz mag))
-                     (im (body-mass i1)))
-                (let ([vx (- vx (* dxmag im))]
-                      [vy (- vy (* dymag im))]
-                      [vz (- vz (* dzmag im))])
-                  (set-body-vx! i1 (+ (body-vx i1) (* dxmag om)))
-                  (set-body-vy! i1 (+ (body-vy i1) (* dymag om)))
-                  (set-body-vz! i1 (+ (body-vz i1) (* dzmag om)))
-                  (loop-i (cdr i) vx vy vz))))))
+            (begin (set-body-vx! o1 vx)
+                   (set-body-vy! o1 vy)
+                   (set-body-vz! o1 vz))
+            (let* ([i1 (car i)]
+                   [dx (- o1x (body-x i1))]
+                   [dy (- o1y (body-y i1))]
+                   [dz (- o1z (body-z i1))]
+                   [distance (sqrt (+ (+ (* dx dx) (* dy dy)) (* dz dz)))]
+                   [mag (/ dt (* (* distance distance) distance))]
+                   [dxmag (* dx mag)]
+                   [dymag (* dy mag)]
+                   [dzmag (* dz mag)]
+                   [im (body-mass i1)])
+              (let ([vx (- vx (* dxmag im))]
+                    [vy (- vy (* dymag im))]
+                    [vz (- vz (* dzmag im))])
+                (set-body-vx! i1 (+ (body-vx i1) (* dxmag om)))
+                (set-body-vy! i1 (+ (body-vy i1) (* dymag om)))
+                (set-body-vz! i1 (+ (body-vz i1) (* dzmag om)))
+                (loop-i (cdr i) vx vy vz))))))
       (loop-o (cdr o))))
-  
-  (let loop-o ((o system))
+
+  (let loop-o ([o system])
     (unless (null? o)
       (let ([o1 (car o)])
         (set-body-x! o1 (+ (body-x o1) (* dt (body-vx o1))))
@@ -152,14 +150,14 @@ Correct output N = 1000 is
 
 ;; -------------------------------
 
-(let ((n (command-line #:args (n) (string->number n)))
-      (system (list *sun* *jupiter* *saturn* *uranus* *neptune*)))
-  
+(let ([n (command-line #:args (n) (string->number n))]
+      [system (list *sun* *jupiter* *saturn* *uranus* *neptune*)])
+
   (offset-momentum system)
-  
+
   (printf "~a~%" (real->decimal-string (energy system) 9))
 
   (for ([i (in-range 0 n)])
     (advance system 0.01))
-  
+
   (printf "~a~%" (real->decimal-string (energy system) 9)))
