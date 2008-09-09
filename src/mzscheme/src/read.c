@@ -50,13 +50,47 @@
 #define MAX_QUICK_SYMBOL_SIZE 64
 
 /* Init options for embedding: */
+/* these are used to set initial config parameterizations */
 int scheme_square_brackets_are_parens = 1;
 int scheme_curly_braces_are_parens = 1;
 
+/* performance counter */ /* FIXME should be atomically incremented or not shared */
 int scheme_num_read_syntax_objects;
 
-/* local function prototypes */
+/* global flag set from environment variable */
+static int use_perma_cache = 1;
 
+/* read-only global symbols */
+static char *builtin_fast;  /* FIXME possible init race condition */
+static unsigned char delim[128];
+/* Table of built-in variable refs for .zo loading: */
+static Scheme_Object **variable_references;
+static Scheme_Object *quote_symbol;
+static Scheme_Object *quasiquote_symbol;
+static Scheme_Object *unquote_symbol;
+static Scheme_Object *unquote_splicing_symbol;
+static Scheme_Object *syntax_symbol;
+static Scheme_Object *unsyntax_symbol;
+static Scheme_Object *unsyntax_splicing_symbol;
+static Scheme_Object *quasisyntax_symbol;
+static Scheme_Object *paren_shape_symbol;
+static Scheme_Object *terminating_macro_symbol;
+static Scheme_Object *non_terminating_macro_symbol;
+static Scheme_Object *dispatch_macro_symbol;
+static Scheme_Object *honu_comma;
+static Scheme_Object *honu_semicolon;
+static Scheme_Object *honu_parens;
+static Scheme_Object *honu_braces;
+static Scheme_Object *honu_brackets;
+static Scheme_Object *honu_angles;
+/* For matching angle brackets in Honu mode: */
+static Scheme_Object *honu_angle_open;
+static Scheme_Object *honu_angle_close;
+/* For recoginizing unresolved hash tables and commented-out graph introductions: */
+static Scheme_Object *unresolved_uninterned_symbol;
+static Scheme_Object *tainted_uninterned_symbol;
+
+/* local function prototypes */
 static Scheme_Object *read_case_sensitive(int, Scheme_Object *[]);
 static Scheme_Object *read_bracket_as_paren(int, Scheme_Object *[]);
 static Scheme_Object *read_brace_as_paren(int, Scheme_Object *[]);
@@ -144,8 +178,6 @@ typedef struct ReadParams {
 #define THREAD_FOR_LOCALS scheme_current_thread
 #define local_list_stack (THREAD_FOR_LOCALS->list_stack)
 #define local_list_stack_pos (THREAD_FOR_LOCALS->list_stack_pos)
-
-static int use_perma_cache = 1;
 
 static Scheme_Object *read_list(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
@@ -291,33 +323,6 @@ typedef struct {
 			    is on a different line */
 } Scheme_Indent;
 
-static Scheme_Object *quote_symbol;
-static Scheme_Object *quasiquote_symbol;
-static Scheme_Object *unquote_symbol;
-static Scheme_Object *unquote_splicing_symbol;
-static Scheme_Object *syntax_symbol;
-static Scheme_Object *unsyntax_symbol;
-static Scheme_Object *unsyntax_splicing_symbol;
-static Scheme_Object *quasisyntax_symbol;
-
-static Scheme_Object *honu_comma, *honu_semicolon;
-static Scheme_Object *honu_parens, *honu_braces, *honu_brackets, *honu_angles;
-
-static Scheme_Object *paren_shape_symbol;
-
-static Scheme_Object *terminating_macro_symbol, *non_terminating_macro_symbol, *dispatch_macro_symbol;
-static char *builtin_fast;
-
-/* For matching angle brackets in Honu mode: */
-static Scheme_Object *honu_angle_open, *honu_angle_close;
-
-/* For recoginizing unresolved hash tables and commented-out graph introductions: */
-static Scheme_Object *an_uninterned_symbol, *another_uninterned_symbol;
-
-/* Table of built-in variable refs for .zo loading: */
-static Scheme_Object **variable_references;
-
-static unsigned char delim[128];
 #define SCHEME_OK          0x1
 #define HONU_OK            0x2
 #define HONU_SYM_OK        0x4
@@ -355,23 +360,24 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(unsyntax_symbol);
   REGISTER_SO(unsyntax_splicing_symbol);
   REGISTER_SO(quasisyntax_symbol);
-  REGISTER_SO(an_uninterned_symbol);
-  REGISTER_SO(another_uninterned_symbol);
   REGISTER_SO(paren_shape_symbol);
 
-  quote_symbol = scheme_intern_symbol("quote");
-  quasiquote_symbol = scheme_intern_symbol("quasiquote");
-  unquote_symbol = scheme_intern_symbol("unquote");
-  unquote_splicing_symbol = scheme_intern_symbol("unquote-splicing");
-  syntax_symbol = scheme_intern_symbol("syntax");
-  unsyntax_symbol = scheme_intern_symbol("unsyntax");
-  unsyntax_splicing_symbol = scheme_intern_symbol("unsyntax-splicing");
-  quasisyntax_symbol = scheme_intern_symbol("quasisyntax");
+  REGISTER_SO(unresolved_uninterned_symbol);
+  REGISTER_SO(tainted_uninterned_symbol);
 
-  an_uninterned_symbol = scheme_make_symbol("unresolved");
-  another_uninterned_symbol = scheme_make_symbol("tainted");
+  quote_symbol                  = scheme_intern_symbol("quote");
+  quasiquote_symbol             = scheme_intern_symbol("quasiquote");
+  unquote_symbol                = scheme_intern_symbol("unquote");
+  unquote_splicing_symbol       = scheme_intern_symbol("unquote-splicing");
+  syntax_symbol                 = scheme_intern_symbol("syntax");
+  unsyntax_symbol               = scheme_intern_symbol("unsyntax");
+  unsyntax_splicing_symbol      = scheme_intern_symbol("unsyntax-splicing");
+  quasisyntax_symbol            = scheme_intern_symbol("quasisyntax");
+  paren_shape_symbol            = scheme_intern_symbol("paren-shape");
 
-  paren_shape_symbol = scheme_intern_symbol("paren-shape");
+  unresolved_uninterned_symbol  = scheme_make_symbol("unresolved");
+  tainted_uninterned_symbol     = scheme_make_symbol("tainted");
+
   
   REGISTER_SO(honu_comma);
   REGISTER_SO(honu_semicolon);
@@ -382,14 +388,14 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(honu_angle_open);
   REGISTER_SO(honu_angle_close);
 
-  honu_comma = scheme_intern_symbol(",");
-  honu_semicolon = scheme_intern_symbol(";");
-  honu_parens = scheme_intern_symbol("#%parens");
-  honu_braces = scheme_intern_symbol("#%braces");
-  honu_brackets = scheme_intern_symbol("#%brackets");
-  honu_angles = scheme_intern_symbol("#%angles");
-  honu_angle_open = scheme_make_symbol("<"); /* uninterned */
-  honu_angle_close = scheme_make_symbol(">"); /* uninterned */
+  honu_comma        = scheme_intern_symbol(",");
+  honu_semicolon    = scheme_intern_symbol(";");
+  honu_parens       = scheme_intern_symbol("#%parens");
+  honu_braces       = scheme_intern_symbol("#%braces");
+  honu_brackets     = scheme_intern_symbol("#%brackets");
+  honu_angles       = scheme_intern_symbol("#%angles");
+  honu_angle_open   = scheme_make_symbol("<"); /* uninterned */
+  honu_angle_close  = scheme_make_symbol(">"); /* uninterned */
 
   {
     int i;
@@ -436,147 +442,36 @@ void scheme_init_read(Scheme_Env *env)
   register_traversers();
 #endif
 
-  scheme_add_global_constant("current-readtable",
-			     scheme_register_parameter(current_readtable,
-						       "current-readtable",
-						       MZCONFIG_READTABLE),
-			     env);
-  scheme_add_global_constant("current-reader-guard",
-			     scheme_register_parameter(current_reader_guard,
-						       "current-reader-guard",
-						       MZCONFIG_READER_GUARD),
-			     env);
-
-  scheme_add_global_constant("read-case-sensitive",
-			     scheme_register_parameter(read_case_sensitive,
-						       "read-case-sensitive",
-						       MZCONFIG_CASE_SENS),
-			     env);
-  scheme_add_global_constant("read-square-bracket-as-paren",
-			     scheme_register_parameter(read_bracket_as_paren,
-						       "read-square-bracket-as-paren",
-						       MZCONFIG_SQUARE_BRACKETS_ARE_PARENS),
-			     env);
-  scheme_add_global_constant("read-curly-brace-as-paren",
-			     scheme_register_parameter(read_brace_as_paren,
-						       "read-curly-brace-as-paren",
-						       MZCONFIG_CURLY_BRACES_ARE_PARENS),
-			     env);
-  scheme_add_global_constant("read-accept-graph",
-			     scheme_register_parameter(read_accept_graph,
-						       "read-accept-graph",
-						       MZCONFIG_CAN_READ_GRAPH),
-			     env);
-  scheme_add_global_constant("read-accept-compiled",
-			     scheme_register_parameter(read_accept_compiled,
-						       "read-accept-compiled",
-						       MZCONFIG_CAN_READ_COMPILED),
-			     env);
-  scheme_add_global_constant("read-accept-box",
-			     scheme_register_parameter(read_accept_box,
-						       "read-accept-box",
-						       MZCONFIG_CAN_READ_BOX),
-			     env);
-  scheme_add_global_constant("read-accept-bar-quote",
-			     scheme_register_parameter(read_accept_pipe_quote,
-						       "read-accept-bar-quote",
-						       MZCONFIG_CAN_READ_PIPE_QUOTE),
-			     env);
-  scheme_add_global_constant("read-decimal-as-inexact",
-			     scheme_register_parameter(read_decimal_as_inexact,
-						       "read-decimal-as-inexact",
-						       MZCONFIG_READ_DECIMAL_INEXACT),
-			     env);
-  scheme_add_global_constant("read-accept-dot",
-			     scheme_register_parameter(read_accept_dot,
-						       "read-accept-dot",
-						       MZCONFIG_CAN_READ_DOT),
-			     env);
-  scheme_add_global_constant("read-accept-infix-dot",
-			     scheme_register_parameter(read_accept_infix_dot,
-						       "read-accept-infix-dot",
-						       MZCONFIG_CAN_READ_INFIX_DOT),
-			     env);
-  scheme_add_global_constant("read-accept-quasiquote",
-			     scheme_register_parameter(read_accept_quasi,
-						       "read-accept-quasiquote",
-						       MZCONFIG_CAN_READ_QUASI),
-			     env);
-  scheme_add_global_constant("read-accept-reader",
-			     scheme_register_parameter(read_accept_reader,
-						       "read-accept-reader",
-						       MZCONFIG_CAN_READ_READER),
-			     env);
+  GLOBAL_PARAMETER("current-readtable",             current_readtable,      MZCONFIG_READTABLE,                   env);
+  GLOBAL_PARAMETER("current-reader-guard",          current_reader_guard,   MZCONFIG_READER_GUARD,                env);
+  GLOBAL_PARAMETER("read-case-sensitive",           read_case_sensitive,    MZCONFIG_CASE_SENS,                   env);
+  GLOBAL_PARAMETER("read-square-bracket-as-paren",  read_bracket_as_paren,  MZCONFIG_SQUARE_BRACKETS_ARE_PARENS,  env);
+  GLOBAL_PARAMETER("read-curly-brace-as-paren",     read_brace_as_paren,    MZCONFIG_CURLY_BRACES_ARE_PARENS,     env);
+  GLOBAL_PARAMETER("read-accept-graph",             read_accept_graph,      MZCONFIG_CAN_READ_GRAPH,              env);
+  GLOBAL_PARAMETER("read-accept-compiled",          read_accept_compiled,   MZCONFIG_CAN_READ_COMPILED,           env);
+  GLOBAL_PARAMETER("read-accept-box",               read_accept_box,        MZCONFIG_CAN_READ_BOX,                env);
+  GLOBAL_PARAMETER("read-accept-bar-quote",         read_accept_pipe_quote, MZCONFIG_CAN_READ_PIPE_QUOTE,         env);
+  GLOBAL_PARAMETER("read-decimal-as-inexact",       read_decimal_as_inexact,MZCONFIG_READ_DECIMAL_INEXACT,        env);
+  GLOBAL_PARAMETER("read-accept-dot",               read_accept_dot,        MZCONFIG_CAN_READ_DOT,                env);
+  GLOBAL_PARAMETER("read-accept-infix-dot",         read_accept_infix_dot,  MZCONFIG_CAN_READ_INFIX_DOT,          env);
+  GLOBAL_PARAMETER("read-accept-quasiquote",        read_accept_quasi,      MZCONFIG_CAN_READ_QUASI,              env);
+  GLOBAL_PARAMETER("read-accept-reader",            read_accept_reader,     MZCONFIG_CAN_READ_READER,             env);
 #ifdef LOAD_ON_DEMAND
-  scheme_add_global_constant("read-on-demand-source",
-			     scheme_register_parameter(read_delay_load,
-						       "read-on-demand-source",
-						       MZCONFIG_DELAY_LOAD_INFO),
-			     env);
+  GLOBAL_PARAMETER("read-on-demand-source",         read_delay_load,        MZCONFIG_DELAY_LOAD_INFO,             env);
 #endif
-  scheme_add_global_constant("print-graph",
-			     scheme_register_parameter(print_graph,
-						       "print-graph",
-						       MZCONFIG_PRINT_GRAPH),
-			     env);
-  scheme_add_global_constant("print-struct",
-			     scheme_register_parameter(print_struct,
-						       "print-struct",
-						       MZCONFIG_PRINT_STRUCT),
-			     env);
-  scheme_add_global_constant("print-box",
-			     scheme_register_parameter(print_box,
-						       "print-box",
-						       MZCONFIG_PRINT_BOX),
-			     env);
-  scheme_add_global_constant("print-vector-length",
-			     scheme_register_parameter(print_vec_shorthand,
-						       "print-vector-length",
-						       MZCONFIG_PRINT_VEC_SHORTHAND),
-			     env);
-  scheme_add_global_constant("print-hash-table",
-			     scheme_register_parameter(print_hash_table,
-						       "print-hash-table",
-						       MZCONFIG_PRINT_HASH_TABLE),
-			     env);
-  scheme_add_global_constant("print-unreadable",
-			     scheme_register_parameter(print_unreadable,
-						       "print-unreadable",
-						       MZCONFIG_PRINT_UNREADABLE),
-			     env);
-  scheme_add_global_constant("print-pair-curly-braces",
-			     scheme_register_parameter(print_pair_curly,
-						       "print-pair-curly-braces",
-						       MZCONFIG_PRINT_PAIR_CURLY),
-			     env);
-  scheme_add_global_constant("print-mpair-curly-braces",
-			     scheme_register_parameter(print_mpair_curly,
-						       "print-mpair-curly-braces",
-						       MZCONFIG_PRINT_MPAIR_CURLY),
-			     env);
+  GLOBAL_PARAMETER("print-graph",                   print_graph,            MZCONFIG_PRINT_GRAPH,                 env);
+  GLOBAL_PARAMETER("print-struct",                  print_struct,           MZCONFIG_PRINT_STRUCT,                env);
+  GLOBAL_PARAMETER("print-box",                     print_box,              MZCONFIG_PRINT_BOX,                   env);
+  GLOBAL_PARAMETER("print-vector-length",           print_vec_shorthand,    MZCONFIG_PRINT_VEC_SHORTHAND,         env);
+  GLOBAL_PARAMETER("print-hash-table",              print_hash_table,       MZCONFIG_PRINT_HASH_TABLE,            env);
+  GLOBAL_PARAMETER("print-unreadable",              print_unreadable,       MZCONFIG_PRINT_UNREADABLE,            env);
+  GLOBAL_PARAMETER("print-pair-curly-braces",       print_pair_curly,       MZCONFIG_PRINT_PAIR_CURLY,            env);
+  GLOBAL_PARAMETER("print-mpair-curly-braces",      print_mpair_curly,      MZCONFIG_PRINT_MPAIR_CURLY,           env);
+  GLOBAL_PARAMETER("print-honu",                    print_honu,             MZCONFIG_HONU_MODE,                   env);
 
-  scheme_add_global_constant("print-honu",
-			     scheme_register_parameter(print_honu,
-						       "print-honu",
-						       MZCONFIG_HONU_MODE),
-			     env);
-
-  scheme_add_global_constant("make-readtable",
-			     scheme_make_prim_w_arity(make_readtable,
-						      "make-readtable",
-						      1, -1),
-			     env);
-  scheme_add_global_constant("readtable?",
-			     scheme_make_folding_prim(readtable_p,
-						      "readtable?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("readtable-mapping",
-			     scheme_make_prim_w_arity2(readtable_mapping,
-						       "readtable-mapping",
-						       2, 2,
-						       3, 3),
-			     env);
+  GLOBAL_PRIM_W_ARITY("make-readtable",     make_readtable,     1, -1,      env);
+  GLOBAL_FOLDING_PRIM("readtable?",         readtable_p,        1, 1, 1,    env);
+  GLOBAL_PRIM_W_ARITY2("readtable-mapping", readtable_mapping,  2, 2, 3, 3, env);
 
   if (getenv("PLT_DELAY_FROM_ZO")) {
     use_perma_cache = 0;
@@ -830,7 +725,7 @@ static void set_need_copy(Scheme_Hash_Table **ht)
     tht = scheme_make_hash_table(SCHEME_hash_ptr);
     *ht = tht;
   }
-  scheme_hash_set(*ht, another_uninterned_symbol, scheme_true);
+  scheme_hash_set(*ht, tainted_uninterned_symbol, scheme_true);
 }
 
 static Scheme_Object *read_inner_inner_k(void)
@@ -1105,11 +1000,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    /* For resolving graphs introduced in #; : */
 	    if (*ht) {
 	      Scheme_Object *v;
-	      v = scheme_hash_get(*ht, an_uninterned_symbol);
+	      v = scheme_hash_get(*ht, unresolved_uninterned_symbol);
 	      if (!v)
 		v = scheme_null;
 	      v = scheme_make_pair(skipped, v);
-	      scheme_hash_set(*ht, an_uninterned_symbol, v);
+	      scheme_hash_set(*ht, unresolved_uninterned_symbol, v);
 	    }
 
 	    if ((comment_mode & RETURN_FOR_HASH_COMMENT)
@@ -2300,7 +2195,7 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int c
   if (recur) {
     /* Check whether this is really a recursive call. If so,
        we get a pointer to a hash table for cycles: */
-    v = scheme_extract_one_cc_mark(NULL, an_uninterned_symbol);
+    v = scheme_extract_one_cc_mark(NULL, unresolved_uninterned_symbol);
     if (v && SCHEME_RPAIRP(v)) {
       if (SCHEME_FALSEP(SCHEME_CDR(v)) == !stxsrc)
 	ht = (Scheme_Hash_Table **)SCHEME_CAR(v);
@@ -2334,7 +2229,7 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int c
 
       /* If we ever called an external reader, 
          then we need to clone everything. */
-      if (scheme_hash_get(*ht, another_uninterned_symbol))
+      if (scheme_hash_get(*ht, tainted_uninterned_symbol))
         clone = 1;
 
       dht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -2344,7 +2239,7 @@ _scheme_internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int c
 	v = resolve_references(v, port, NULL, dht, tht, clone, 0);
 
       /* In case some placeholders were introduced by #;: */
-      v2 = scheme_hash_get(*ht, an_uninterned_symbol);
+      v2 = scheme_hash_get(*ht, unresolved_uninterned_symbol);
       if (v2)
 	resolve_references(v2, port, NULL, dht, tht, clone, 0);
 
@@ -4167,11 +4062,11 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
     /* For resolving graphs introduced in #; : */
     if (*ht) {
       Scheme_Object *v;
-      v = scheme_hash_get(*ht, an_uninterned_symbol);
+      v = scheme_hash_get(*ht, unresolved_uninterned_symbol);
       if (!v)
 	v = scheme_null;
       v = scheme_make_pair(skipped, v);
-      scheme_hash_set(*ht, an_uninterned_symbol, v);
+      scheme_hash_set(*ht, unresolved_uninterned_symbol, v);
     }
 
     goto start_over;
@@ -5729,7 +5624,7 @@ void scheme_set_in_read_mark(Scheme_Object *src, Scheme_Hash_Table **ht)
 			     (src ? scheme_true : scheme_false));
   else
     v = scheme_false;
-  scheme_set_cont_mark(an_uninterned_symbol, v);
+  scheme_set_cont_mark(unresolved_uninterned_symbol, v);
 }
 
 static Scheme_Object *readtable_handle(Readtable *t, int *_ch, int *_use_default, ReadParams *params,
