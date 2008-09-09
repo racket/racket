@@ -118,7 +118,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
 
   rc = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
   
-  return args[0];
+  return scheme_void;
 }
 
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
@@ -177,7 +177,7 @@ static void *place_start_proc(void *data_arg) {
 
   stack_base = NULL;
 
-  return NULL;
+  return scheme_true;
 }
 
 
