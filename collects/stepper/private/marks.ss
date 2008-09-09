@@ -1,4 +1,4 @@
-(module marks mzscheme
+(module marks scheme/base
 
   (require mzlib/list
 	   mzlib/contract
@@ -38,10 +38,10 @@
    #;lookup-binding-list
    debug-key
    extract-mark-list
-   (struct normal-breakpoint-info (mark-list kind))
-   (struct error-breakpoint-info (message))
-   (struct breakpoint-halt ())
-   (struct expression-finished (returned-value-list)))
+   (struct-out normal-breakpoint-info)
+   (struct-out error-breakpoint-info)
+   (struct-out breakpoint-halt)
+   (struct-out expression-finished))
   
   ; BREAKPOINT STRUCTURES
   
@@ -72,7 +72,7 @@
   
   ; see module top for type
   (define (make-full-mark location label bindings)
-    (datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs location label bindings)
+    (datum->syntax #'here `(lambda () (,(make-make-full-mark-varargs location label bindings)
                                               ,@(map make-mark-binding-stx bindings)))))
   
   (define (mark-source mark)
@@ -109,7 +109,7 @@
   (define (display-mark mark)
     (apply
      string-append
-     (format "source: ~a\n" (syntax-object->datum (mark-source mark)))
+     (format "source: ~a\n" (syntax->datum (mark-source mark)))
      (format "label: ~a\n" (mark-label mark))
      (format "bindings:\n")
      (map (lambda (binding)
@@ -135,11 +135,11 @@
   
   (define (lookup-binding mark-list id)
     (mark-binding-value
-     (lookup-first-binding (lambda (id2) (module-identifier=? id id2)) 
+     (lookup-first-binding (lambda (id2) (free-identifier=? id id2)) 
                            mark-list 
                            (lambda ()
                              (error 'lookup-binding "variable not found in environment: ~a~n" (if (syntax? id) 
-                                                                                                  (syntax-object->datum id)
+                                                                                                  (syntax->datum id)
                                                                                                   id))))))
   
   (define (all-bindings mark)

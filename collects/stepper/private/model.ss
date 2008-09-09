@@ -36,20 +36,19 @@
 ;  late-let(x) : ERROR
 
 
-(module model mzscheme
-  (require mzlib/contract
-           mzlib/etc
+(module model scheme/base
+  (require scheme/contract
            scheme/match
-           mzlib/class
+           scheme/class
            scheme/list
-           (prefix a: "annotate.ss")
-           (prefix r: "reconstruct.ss")
+           (prefix-in a: "annotate.ss")
+           (prefix-in r: "reconstruct.ss")
            "shared.ss"
            "marks.ss"
            "model-settings.ss"
            "macro-unwind.ss"
            "lifting.ss"
-           (prefix test-engine: test-engine/scheme-tests)
+           (prefix-in test-engine: test-engine/scheme-tests)
            #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            ;; for breakpoint display
            ;; (commented out to allow nightly testing)
@@ -156,7 +155,7 @@
     (define steps-received 0)
 
     (define break
-      (opt-lambda (mark-set break-kind [returned-value-list #f])
+      (lambda (mark-set break-kind [returned-value-list #f])
 
         (set! steps-received (+ steps-received 1))
         ;; have to be careful else this won't be looked up right away:

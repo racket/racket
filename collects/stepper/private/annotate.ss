@@ -1116,9 +1116,6 @@
         [(require module-name) exp]
         ; the 'dynamic-require' form is used by the actual expander 
         
-        ;; RIGHT HERE, basically: the test harness breaks because of multiple definitions of identifiers. Probably we want
-        ;; to mangle the output of run-teaching-program so that the module is required with some kind of temporary prefix?
-        
         [(let-values ([(done-already?) . rest1])
            (#%plain-app dynamic-wind
                   void
@@ -1192,13 +1189,15 @@
              [(begin .  bodies)
               #`(begin #,@(map annotate/module-top-level (syntax->list #`bodies)))]
              [(#%plain-app call-with-values (#%plain-lambda () body) print-values)
-              #`(call-with-values 
-                 (lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
-                 (lambda vals
-                   (begin
-                     (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () vals))))
-                     (call-with-values (lambda () vals)
-                                       print-values))))]
+              (stepper-recertify 
+               #`(call-with-values 
+                  (lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
+                  (lambda vals
+                    (begin
+                      (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () vals))))
+                      (call-with-values (lambda () vals)
+                                        print-values))))
+               exp)]
              [any
               (stepper-syntax-property exp 'stepper-test-suite-hint)
               (top-level-annotate/inner (top-level-rewrite exp) exp #f)]
