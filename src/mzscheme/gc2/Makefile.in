@@ -254,7 +254,7 @@ list.@LTO@: $(XSRCDIR)/list.c
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
 mzrt.@LTO@: $(SRCDIR)/mzrt.c
-	$(CC) $(CFLAGS) -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
+	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
 numarith.@LTO@: $(XSRCDIR)/numarith.c
