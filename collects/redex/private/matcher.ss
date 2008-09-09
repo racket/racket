@@ -147,7 +147,7 @@ before the pattern compiler is invoked.
                         (when may-be-list? (add-to-ht list-ht))
                         (unless (or may-be-non-list? may-be-list?)
                           (error 'compile-language 
-                                 "unable to determine whether pattern matches lists, non-lists, or both: ~s"
+                                 "internal error: unable to determine whether pattern matches lists, non-lists, or both: ~s"
                                  (rhs-pattern rhs))))))
                   (nt-rhs nt)))
                lang))]
@@ -283,22 +283,52 @@ before the pattern compiler is invoked.
           
   ;; build-compatible-context-language : lang -> lang
   (define (build-compatible-context-language clang-ht lang)
-    (apply
-     append
-     (map 
-      (lambda (nt1)
-        (map
-         (lambda (nt2)
-           (let ([compat-nt (build-compatible-contexts/nt clang-ht (nt-name nt1) nt2)])
-             (if (eq? (nt-name nt1) (nt-name nt2))
-                 (make-nt (nt-name compat-nt)
-                          (cons
-                           (make-rhs 'hole '())
-                           (nt-rhs compat-nt)))
-                 compat-nt)))
-         lang))
-      lang)))
+    (remove-empty-compatible-contexts
+     (apply
+      append
+      (map 
+       (lambda (nt1)
+         (map
+          (lambda (nt2)
+            (let ([compat-nt (build-compatible-contexts/nt clang-ht (nt-name nt1) nt2)])
+              (if (eq? (nt-name nt1) (nt-name nt2))
+                  (make-nt (nt-name compat-nt)
+                           (cons
+                            (make-rhs 'hole '())
+                            (nt-rhs compat-nt)))
+                  compat-nt)))
+          lang))
+       lang))))
+  
+  ;; remove-empty-compatible-contexts : lang -> lang
+  ;; Removes the empty compatible context non-terminals and the 
+  ;; rhss that reference them.
+  (define (remove-empty-compatible-contexts lang)
+    (define (has-cross? pattern crosses)
+      (match pattern
+        [`(cross ,(? symbol? nt)) (memq nt crosses)]
+        [(list-rest p '... rest) (has-cross? rest crosses)]
+        [(cons first rest) (or (has-cross? first crosses)
+                               (has-cross? rest crosses))]
+        [_ #f]))
+    (define (delete-empty nts)
+      (for/fold ([deleted null] [kept null]) ([nt nts])
+                (if (null? (nt-rhs nt))
+                    (values (cons nt deleted) kept)
+                    (values deleted (cons nt kept)))))
+    (define (delete-references deleted-names remaining-nts)
+      (map (λ (nt) 
+             (make-nt (nt-name nt)
+                      (filter (λ (rhs) (not (has-cross? (rhs-pattern rhs) deleted-names))) 
+                              (nt-rhs nt))))
+           remaining-nts))
     
+    (let loop ([nts lang])
+      (let-values ([(deleted kept) (delete-empty nts)])
+        (if (null? deleted)
+            kept
+            (loop (delete-references (map nt-name deleted) kept))))))
+  
   ;; build-compatible-contexts : clang-ht prefix nt -> nt
   ;; constructs the compatible closure evaluation context from nt.
   (define (build-compatible-contexts/nt clang-ht prefix nt)

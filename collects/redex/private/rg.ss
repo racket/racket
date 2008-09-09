@@ -137,25 +137,23 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt fvt-id bound-vars size in-hole state)
-    (let loop ([nts (compiled-lang-lang lang)])
-      (cond
-        [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
-        [(eq? (nt-name (car nts)) nt)
-         (let*-values 
-             ([(rhs) 
-               ((next-non-terminal-decision) 
-                (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))
-                bound-vars size)]
-              [(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
-              [(nt-state) (make-state (map fvt-entry (rhs-var-info rhs)) #hash())]
-              [(term _)
-               (generate/pred 
-                (rhs-pattern rhs)
-                (λ (pat) (((generate-pat bound-vars (max 0 (sub1 size))) pat in-hole) nt-state))
-                (λ (_ env) (mismatches-satisfied? env)))])
-           (values term (extend-found-vars fvt-id term state)))]
-        [else (loop (cdr nts))])))
+  (define (generate-nt name fvt-id bound-vars size in-hole state)
+    (let*-values 
+        ([(nt) (findf (λ (nt) (eq? name (nt-name nt))) 
+                      (append (compiled-lang-lang lang)
+                              (compiled-lang-cclang lang)))]
+         [(rhs) 
+          ((next-non-terminal-decision) 
+           (if (zero? size) (min-prods nt base-table) (nt-rhs nt))
+           bound-vars size)]
+         [(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
+         [(nt-state) (make-state (map fvt-entry (rhs-var-info rhs)) #hash())]
+         [(term _)
+          (generate/pred 
+           (rhs-pattern rhs)
+           (λ (pat) (((generate-pat bound-vars (max 0 (sub1 size))) pat in-hole) nt-state))
+           (λ (_ env) (mismatches-satisfied? env)))])
+      (values term (extend-found-vars fvt-id term state))))
   
   (define (generate-sequence ellipsis generate state length)
     (define (split-environment env)
@@ -213,9 +211,13 @@ To do a better job of not generating programs with free variables,
   (define (fvt-entry binds)
     (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
   
-  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) state)
+  (define (((generate-pat bound-vars size) pat in-hole) state)
     (define recur (generate-pat bound-vars size))
     (define (recur/pat pat) ((recur pat in-hole) state))
+    (define (generate-nt/built-in undecorated decorated)
+      (if ((is-nt? lang) undecorated)
+          (generate-nt undecorated decorated bound-vars size in-hole state)
+          (recur/pat undecorated)))
     
     (match pat
       [`number (values ((next-number-decision) random-numbers) state)]
@@ -249,21 +251,22 @@ To do a better job of not generating programs with free variables,
       [`any
        (let-values ([(lang nt) ((next-any-decision) lang)])
          (values (generate* lang nt size attempt decisions@) state))]
-      [(? (λ (p) (is-nt? lang p)))
-       (generate-nt pat fvt-id bound-vars size in-hole state)]
+      [(? (is-nt? lang))
+       (generate-nt pat pat bound-vars size in-hole state)]
       [(and (? symbol?) (app symbol->string (regexp named-nt-rx (list _ nt))))
        (let* ([undecorated (string->symbol nt)]
               [none (gensym)]
               [prior (hash-ref (state-env state) pat none)])
          (if (eq? prior none)
-             (let-values 
-                 ([(term state) ((recur undecorated in-hole pat) state)])
+             (let-values ([(term state) (generate-nt/built-in undecorated pat)])
                (values term (set-env state pat term)))
              (values prior state)))]
       [(struct mismatch (name group))
-       (let ([nt (string->symbol (cadr (regexp-match mismatch-nt-rx (symbol->string group))))])
-         (let-values ([(term state) ((recur nt in-hole name) state)])
+       (let ([undecorated (string->symbol (cadr (regexp-match mismatch-nt-rx (symbol->string group))))])
+         (let-values ([(term state) (generate-nt/built-in undecorated name)])
            (values term (set-env state pat term))))]
+      [`(cross ,(? symbol? cross-nt))
+       (generate-nt cross-nt #f bound-vars size in-hole state)]
       [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
       [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
        (let*-values ([(length) (let ([prior (hash-ref (state-env state) class #f)])
@@ -323,55 +326,58 @@ To do a better job of not generating programs with free variables,
       term))
 
 ;; find-base-cases : compiled-language -> hash-table
-  (define (find-base-cases lang)
-    (define nt-table (make-hasheq))
-    (define changed? #f)
-    (define (nt-get nt) (hash-ref nt-table nt 'inf))
-    (define (nt-set nt new) 
-      (let ([old (nt-get nt)])
-        (unless (equal? new old)
-          (set! changed? #t)
-          (hash-set! nt-table nt new))))
-    
-    (define (process-nt nt)
-      (nt-set (nt-name nt) (apply min/f (map process-rhs (nt-rhs nt)))))
-    
-    (define (process-rhs rhs)
-      (let ([nts (rhs->nts (rhs-pattern rhs))])
-        (if (null? nts) 
-            0
-            (add1/f (apply max/f (map nt-get nts))))))
-    
-    ;; rhs->path : pattern -> (listof symbol)
-    ;; determines all of the non-terminals in a pattern
-    (define (rhs->nts pat)
-      (let ([nts '()])
-        (let loop ([pat pat])
-          (match pat
-            [(? symbol? pat)
-             (when (is-nt? lang (symbol->nt pat))
-               (set! nts (cons (symbol->nt pat) nts)))]
-            [`() (void)]
-            [`(,a ,'... . ,b) 
-             (loop a)
-             (loop b)]
-            [`(,a . ,b)
-             (loop a)
-             (loop b)]
-            [_ (void)]))
-        nts))
-    
+(define (find-base-cases lang)
+  (define nt-table (make-hasheq))
+  (define changed? #f)
+  (define (nt-get nt) (hash-ref nt-table nt 'inf))
+  (define (nt-set nt new) 
+    (let ([old (nt-get nt)])
+      (unless (equal? new old)
+        (set! changed? #t)
+        (hash-set! nt-table nt new))))
+  
+  (define (process-nt nt)
+    (nt-set (nt-name nt) (apply min/f (map process-rhs (nt-rhs nt)))))
+  
+  (define (process-rhs rhs)
+    (let ([nts (rhs->nts (rhs-pattern rhs))])
+      (if (null? nts) 
+          0
+          (add1/f (apply max/f (map nt-get nts))))))
+  
+  ;; rhs->path : pattern -> (listof symbol)
+  ;; determines all of the non-terminals in a pattern
+  (define (rhs->nts pat)
+    (let ([nts '()])
+      (let loop ([pat pat])
+        (match pat
+          [(? symbol? pat)
+           (when ((is-nt? lang) (symbol->nt pat))
+             (set! nts (cons (symbol->nt pat) nts)))]
+          [`(cross ,(? symbol? x-nt))
+           (set! nts (cons x-nt nts))]
+          [`() (void)]
+          [`(,a ,'... . ,b) 
+           (loop a)
+           (loop b)]
+          [`(,a . ,b)
+           (loop a)
+           (loop b)]
+          [_ (void)]))
+      nts))
+  
+  (let ([nts (append (compiled-lang-lang lang) (compiled-lang-cclang lang))])
     (let loop ()
       (set! changed? #f)
-      (for-each process-nt (compiled-lang-lang lang))
+      (for-each process-nt nts)
       (when changed?
         (loop)))
     
     (let ([ht (make-hash)])
       (for-each
        (λ (nt) (hash-set! ht (nt-name nt) (map process-rhs (nt-rhs nt))))
-       (compiled-lang-lang lang))
-      ht))
+       nts)
+      ht)))
 
 (define min/f
   (case-lambda
@@ -394,7 +400,7 @@ To do a better job of not generating programs with free variables,
 (define (add1/f a) (if (eq? a 'inf) 'inf (+ a 1)))
 
 ;; is-nt? : compiled-lang any -> boolean
-(define (is-nt? lang x)
+(define ((is-nt? lang) x)
   (and (hash-ref (compiled-lang-ht lang) x #f) #t))
 
 (define named-nt-rx #rx"^([^_]+)_[^_]*$")
@@ -419,7 +425,7 @@ To do a better job of not generating programs with free variables,
 ;; parse-pattern : pattern -> parsed-pattern
 ;; Turns "pat ...", "pat ..._id", and "pat ..._!_id" into ellipsis structs
 ;; and "nt_!_id" into mismatch structs.
-(define (parse-pattern pattern)
+(define (parse-pattern pattern [cross? #f])
   (define (recur pat vars)
     (match pat
       [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
@@ -450,6 +456,9 @@ To do a better job of not generating programs with free variables,
                      [(vars) (append (list* class mismatch sub-pat-vars) vars)]
                      [(rest-parsed vars) (recur rest vars)])
          (values (cons seq rest-parsed) vars))]
+      [(and (? (λ (_) (not cross?))) `(cross ,(and (? symbol?) nt)))
+       (let ([nt-str (symbol->string nt)])
+         (values `(cross ,(string->symbol (string-append nt-str "-" nt-str))) vars))]
       [(cons first rest)
        (let-values ([(first-parsed vars) (recur first vars)])
          (let-values ([(rest-parsed vars) (recur rest vars)])
@@ -460,16 +469,15 @@ To do a better job of not generating programs with free variables,
 
 ;; parse-language: compiled-lang -> compiled-lang
 (define (parse-language lang)
+  (define ((parse-nt cross?) nt)
+    (make-nt (nt-name nt) (map (parse-rhs cross?) (nt-rhs nt))))
+  (define ((parse-rhs cross?) rhs)
+    (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) cross?))
+              (rhs-var-info rhs)))
   (struct-copy 
    compiled-lang lang
-   [lang
-    (map (λ (nt) 
-           (make-nt (nt-name nt)
-                    (map (λ (rhs) 
-                           (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs))) 
-                                     (rhs-var-info rhs)))
-                         (nt-rhs nt))))
-         (compiled-lang-lang lang))]))
+   [lang (map (parse-nt #f) (compiled-lang-lang lang))]
+   [cclang (map (parse-nt #t) (compiled-lang-cclang lang))]))
 
 ;; unparse-pattern: parsed-pattern -> pattern
 (define unparse-pattern

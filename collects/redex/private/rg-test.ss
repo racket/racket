@@ -21,20 +21,20 @@
     (e x (e e) (λ (x) e))
     (x variable))
   (test (to-table (find-base-cases lc))
-        '((e . (1 2 2)) (x . (0)))))
+        '((e . (1 2 2)) (e-e . (0 2 2 1)) (x . (0)) (x-e . (1 2 2 2 2)) (x-x . (0)))))
 
 (let ()
-  (define-language lc
+  (define-language lang
     (e (e e)))
-  (test (to-table (find-base-cases lc))
-        '((e . (inf)))))
+  (test (to-table (find-base-cases lang))
+        '((e . (inf)) (e-e . (0 inf inf)))))
 
 (let ()
-  (define-language lc
+  (define-language lang
     (a 1 2 3)
     (b a (a_1 b_!_1)))
-  (test (to-table (find-base-cases lc))
-        '((a . (0 0 0)) (b . (1 2)))))
+  (test (to-table (find-base-cases lang))
+        '((a . (0 0 0)) (a-a . (0)) (a-b . (1)) (b . (1 2)) (b-b . (0)))))
 
 (let ()
   (define-language lc
@@ -46,7 +46,9 @@
        number)
     (x variable))
   (test (to-table (find-base-cases lc))
-        '((e . (2 2 1 1)) (v . (2 0)) (x . (0)))))
+        '((e . (2 2 1 1)) (e-e . (0 2 2 2 2 2)) (e-v . (1))
+          (v . (2 0)) (v-e . (2 2 2 2 1)) (v-v . (0 2))
+          (x . (0)) (x-e . (2 2 2 2 1 3)) (x-v . (2 2)) (x-x . (0)))))
 
 (let ()
   (define-language lang
@@ -278,8 +280,8 @@
 
 (let ()
   (define-language lang (x variable literal))
-  (test (is-nt? lang 'x) #t)
-  (test (is-nt? lang 'y) #f))
+  (test ((is-nt? lang) 'x) #t)
+  (test ((is-nt? lang) 'y) #f))
 
 (let ()
   (define-language lang
@@ -454,6 +456,17 @@
       (thunk))
     (get-output-string port)))
 
+;; `cross' pattern
+(let ()
+  (define-language lang
+    (e x (e e) v)
+    (v (λ (x) e))
+    (x variable-not-otherwise-mentioned))
+  (test (generate lang (cross e) 3 0 
+                  (decisions #:nt (patterns fourth first first second first first first)
+                             #:var (list (λ _ 'x) (λ _ 'y))))
+        (term (λ (x) (hole y)))))
+
 (let ()
   (define-language lang
     (d 5)
@@ -500,7 +513,9 @@
                          _
                          (list  (struct class (c_1)) (struct mismatch (i_1 '..._!_1)) 'x_1)))
                 (car (parse-pattern pattern)))
-    (test (unparse-pattern (parse-pattern pattern)) pattern)))
+    (test (unparse-pattern (parse-pattern pattern)) pattern)
+    (test (parse-pattern '(cross e)) '(cross e-e))
+    (test (parse-pattern '(cross e) #t) '(cross e))))
 
 (let ()
   (define-syntax test-class-reassignments

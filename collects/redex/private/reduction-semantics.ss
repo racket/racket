@@ -1128,27 +1128,37 @@
                                 stx
                                 name)]))])))
 
+;; check-rhss-not-empty : syntax (listof syntax) -> void
+(define-for-syntax (check-rhss-not-empty def-lang-stx nt-def-stxs)
+  (for-each 
+   (λ (nt-def-stx)
+     (when (null? (cdr (syntax-e nt-def-stx)))
+       (raise-syntax-error 'define-language "non-terminal with no productions" def-lang-stx nt-def-stx)))
+   nt-def-stxs))
+
 (define-syntax (define-language stx)
   (syntax-case stx ()
     [(_ name (names rhs ...) ...)
      (identifier? (syntax name))
-     (with-syntax ([((nt-names orig) ...) (pull-out-names 'define-language stx #'(names ...))])
-       (with-syntax ([(subst-names ...) (generate-temporaries (syntax->list #'(nt-names ...)))])
-         (syntax/loc stx
-           (begin
-             (define-syntax name
-               (make-set!-transformer
-                (make-language-id
-                 (case-lambda
-                   [(stx)
-                    (syntax-case stx (set!)
-                      [(set! x e) (raise-syntax-error 'define-language "cannot set! identifier" stx #'e)]
-                      [(x e (... ...)) #'(define-language-name e (... ...))]
-                      [x 
-                       (identifier? #'x)
-                       #'define-language-name])])
-                 '(nt-names ...))))
-             (define define-language-name (language name (names rhs ...) ...))))))]))
+     (begin
+       (check-rhss-not-empty stx (cddr (syntax-e stx)))
+       (with-syntax ([((nt-names orig) ...) (pull-out-names 'define-language stx #'(names ...))])
+         (with-syntax ([(subst-names ...) (generate-temporaries (syntax->list #'(nt-names ...)))])
+           (syntax/loc stx
+             (begin
+               (define-syntax name
+                 (make-set!-transformer
+                  (make-language-id
+                   (case-lambda
+                     [(stx)
+                      (syntax-case stx (set!)
+                        [(set! x e) (raise-syntax-error 'define-language "cannot set! identifier" stx #'e)]
+                        [(x e (... ...)) #'(define-language-name e (... ...))]
+                        [x 
+                         (identifier? #'x)
+                         #'define-language-name])])
+                   '(nt-names ...))))
+               (define define-language-name (language name (names rhs ...) ...)))))))]))
 
 (define-struct binds (source binds))
 
@@ -1328,6 +1338,7 @@
          (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'name))
        (unless (identifier? (syntax orig-lang))
          (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'orig-lang))
+       (check-rhss-not-empty stx (cdddr (syntax-e stx)))
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
          (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-language stx #'(names ...)) 
                                                           (map (λ (x) #`(#,x #f)) old-names))])

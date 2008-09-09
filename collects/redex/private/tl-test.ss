@@ -690,6 +690,11 @@
   (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
   (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
   (test-syn-err (define-language bad-lang3 (x_y x)) #rx"x_y")
+  (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"no productions")
+  (test-syn-err (let ()
+                  (define-language good-lang (a 1 2))
+                  (define-extended-language bad-lang5 good-lang (a) (b 2)))
+                #rx"no productions")
   
   ;; expect union with duplicate names to fail
   (test (with-handlers ((exn? (λ (x) 'passed)))
