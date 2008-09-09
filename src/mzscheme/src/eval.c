@@ -147,29 +147,52 @@
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
 /* globals */
-Scheme_Object *scheme_eval_waiting;
-Scheme_Object *scheme_multiple_values;
-int scheme_continuation_application_count;
-
 volatile int scheme_fuel_counter;
 
 int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
+/* THREAD LOCAL SHARED */
+#ifdef USE_STACK_BOUNDARY_VAR
+THREAD_LOCAL unsigned long scheme_stack_boundary;
+THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
+#endif
+static Scheme_Object *quick_stx;
+
+/* global counters */
+/* FIXME needs to be atomically incremented */
+int scheme_overflow_count;
+int get_overflow_count() { return scheme_overflow_count; }
+int scheme_continuation_application_count;
+
+/* read-only globals */
+Scheme_Object *scheme_eval_waiting;
+Scheme_Object *scheme_multiple_values;
+static Scheme_Object *app_expander;
+static Scheme_Object *datum_expander;
+static Scheme_Object *top_expander;
+static Scheme_Object *stop_expander;
+/* symbols */
 static Scheme_Object *app_symbol;
 static Scheme_Object *datum_symbol;
 static Scheme_Object *top_symbol;
 static Scheme_Object *top_level_symbol;
-
-static Scheme_Object *app_expander;
-static Scheme_Object *datum_expander;
-static Scheme_Object *top_expander;
-
-static Scheme_Object *stop_expander;
-
-static Scheme_Object *quick_stx;
-
+static Scheme_Object *define_values_symbol;
+static Scheme_Object *letrec_values_symbol;
+static Scheme_Object *lambda_symbol;
+static Scheme_Object *unknown_symbol;
+static Scheme_Object *void_link_symbol;
+static Scheme_Object *quote_symbol;
+static Scheme_Object *letrec_syntaxes_symbol;
+static Scheme_Object *begin_symbol;
+static Scheme_Object *let_values_symbol;
+static Scheme_Object *internal_define_symbol;
+static Scheme_Object *module_symbol;
+static Scheme_Object *module_begin_symbol;
+static Scheme_Object *expression_symbol;
+static Scheme_Object *protected_symbol;
 Scheme_Object *scheme_stack_dump_key;
+static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
 
 /* locals */
 static Scheme_Object *eval(int argc, Scheme_Object *argv[]);
@@ -220,22 +243,6 @@ static Scheme_Object *read_syntax(Scheme_Object *obj);
 static Scheme_Object *write_quote_syntax(Scheme_Object *obj);
 static Scheme_Object *read_quote_syntax(Scheme_Object *obj);
 
-static Scheme_Object *define_values_symbol, *letrec_values_symbol, *lambda_symbol;
-static Scheme_Object *unknown_symbol, *void_link_symbol, *quote_symbol;
-static Scheme_Object *letrec_syntaxes_symbol, *begin_symbol;
-static Scheme_Object *let_values_symbol;
-
-static Scheme_Object *internal_define_symbol;
-static Scheme_Object *module_symbol;
-static Scheme_Object *module_begin_symbol;
-static Scheme_Object *expression_symbol;
-
-static Scheme_Object *protected_symbol;
-
-static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
-
-int scheme_overflow_count;
-
 static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env, 
 						 Scheme_Compile_Expand_Info *rec, int drec, 
 						 int app_position);
@@ -245,11 +252,6 @@ static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Schem
 #define cons(x,y) scheme_make_pair(x,y)
 
 typedef void (*DW_PrePost_Proc)(void *);
-
-#ifdef USE_STACK_BOUNDARY_VAR
-THREAD_LOCAL unsigned long scheme_stack_boundary;
-THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
-#endif
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -304,30 +306,29 @@ scheme_init_eval (Scheme_Env *env)
   REGISTER_SO(begin_symbol);
   REGISTER_SO(let_values_symbol);
   
-  define_values_symbol = scheme_intern_symbol("define-values");
-  letrec_values_symbol = scheme_intern_symbol("letrec-values");
-  let_values_symbol = scheme_intern_symbol("let-values");
-  lambda_symbol = scheme_intern_symbol("lambda");
-  unknown_symbol = scheme_intern_symbol("unknown");
-  void_link_symbol = scheme_intern_symbol("-v");
-  quote_symbol = scheme_intern_symbol("quote");
-  letrec_syntaxes_symbol = scheme_intern_symbol("letrec-syntaxes+values");
-  begin_symbol = scheme_intern_symbol("begin");
+  define_values_symbol    = scheme_intern_symbol("define-values");
+  letrec_values_symbol    = scheme_intern_symbol("letrec-values");
+  let_values_symbol       = scheme_intern_symbol("let-values");
+  lambda_symbol           = scheme_intern_symbol("lambda");
+  unknown_symbol          = scheme_intern_symbol("unknown");
+  void_link_symbol        = scheme_intern_symbol("-v");
+  quote_symbol            = scheme_intern_symbol("quote");
+  letrec_syntaxes_symbol  = scheme_intern_symbol("letrec-syntaxes+values");
+  begin_symbol            = scheme_intern_symbol("begin");
   
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
   REGISTER_SO(internal_define_symbol);
   REGISTER_SO(expression_symbol);
   REGISTER_SO(top_level_symbol);
-
-  module_symbol = scheme_intern_symbol("module");
-  module_begin_symbol = scheme_intern_symbol("module-begin");
-  internal_define_symbol = scheme_intern_symbol("internal-define");
-  expression_symbol = scheme_intern_symbol("expression");
-  top_level_symbol = scheme_intern_symbol("top-level");
-
   REGISTER_SO(protected_symbol);
-  protected_symbol = scheme_intern_symbol("protected");
+
+  module_symbol           = scheme_intern_symbol("module");
+  module_begin_symbol     = scheme_intern_symbol("module-begin");
+  internal_define_symbol  = scheme_intern_symbol("internal-define");
+  expression_symbol       = scheme_intern_symbol("expression");
+  top_level_symbol        = scheme_intern_symbol("top-level");
+  protected_symbol        = scheme_intern_symbol("protected");
 
   REGISTER_SO(scheme_stack_dump_key);
   scheme_stack_dump_key = scheme_make_symbol("stk"); /* uninterned! */
@@ -348,164 +349,54 @@ scheme_init_eval (Scheme_Env *env)
   scheme_install_type_reader(scheme_quote_syntax_type, read_quote_syntax);
   scheme_install_type_writer(scheme_syntax_type, write_syntax);
   scheme_install_type_reader(scheme_syntax_type, read_syntax);
-  
   scheme_install_type_writer(scheme_begin0_sequence_type, write_sequence);
   scheme_install_type_reader(scheme_begin0_sequence_type, read_sequence_save_first);
   
-  scheme_add_global_constant("eval", 
-			     scheme_make_prim_w_arity2(eval, 
-						       "eval", 
-						       1, 2,
-						       0, -1), 
-			     env);
-  scheme_add_global_constant("eval-syntax", 
-			     scheme_make_prim_w_arity2(eval_stx, 
-						       "eval-syntax", 
-						       1, 2,
-						       0, -1), 
-			     env);
-  scheme_add_global_constant("compile", 
-			     scheme_make_prim_w_arity(compile, 
-						      "compile", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("compile-syntax", 
-			     scheme_make_prim_w_arity(compile_stx, 
-						      "compile-syntax", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("compiled-expression?",
-			     scheme_make_prim_w_arity(compiled_p, 
-						      "compiled-expression?", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("expand", 
-			     scheme_make_prim_w_arity(expand, 
-						      "expand",
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("expand-syntax", 
-			     scheme_make_prim_w_arity(expand_stx, 
-						      "expand-syntax",
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("local-expand", 
-			     scheme_make_prim_w_arity(local_expand, 
-						      "local-expand",
-						      3, 4), 
-			     env);
-  scheme_add_global_constant("syntax-local-expand-expression", 
-			     scheme_make_prim_w_arity(local_expand_expr, 
-                                                      "syntax-local-expand-expression",
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("syntax-local-bind-syntaxes", 
-			     scheme_make_prim_w_arity(local_eval, 
-						      "syntax-local-bind-syntaxes",
-						      3, 3), 
-			     env);
-  scheme_add_global_constant("local-expand/capture-lifts", 
-			     scheme_make_prim_w_arity(local_expand_catch_lifts, 
-						      "local-expand/capture-lifts",
-						      3, 5), 
-			     env);
-  scheme_add_global_constant("local-transformer-expand", 
-			     scheme_make_prim_w_arity(local_transformer_expand, 
-						      "local-transformer-expand",
-						      3, 4), 
-			     env);
-  scheme_add_global_constant("local-transformer-expand/capture-lifts", 
-			     scheme_make_prim_w_arity(local_transformer_expand_catch_lifts, 
-						      "local-transformer-expand/capture-lifts",
-						      3, 5), 
-			     env);
-  scheme_add_global_constant("expand-once", 
-			     scheme_make_prim_w_arity(expand_once, 
-						      "expand-once", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("expand-syntax-once", 
-			     scheme_make_prim_w_arity(expand_stx_once, 
-						      "expand-syntax-once", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("expand-to-top-form", 
-			     scheme_make_prim_w_arity(expand_to_top_form, 
-						      "expand-to-top-form", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("expand-syntax-to-top-form", 
-			     scheme_make_prim_w_arity(expand_stx_to_top_form, 
-						      "expand-syntax-to-top-form", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("namespace-syntax-introduce", 
-			     scheme_make_prim_w_arity(top_introduce_stx, 
-						      "namespace-syntax-introduce", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("break-enabled", 
-			     scheme_make_prim_w_arity(enable_break, 
-						      "break-enabled",
-						      0, 1), 
-			     env);
-  scheme_add_global_constant("current-eval",
-			     scheme_register_parameter(current_eval, 
-						       "current-eval",
-						       MZCONFIG_EVAL_HANDLER),
-			     env);
-  scheme_add_global_constant("current-compile",
-			     scheme_register_parameter(current_compile, 
-						       "current-compile",
-						       MZCONFIG_COMPILE_HANDLER),
-			     env);
+  GLOBAL_PRIM_W_ARITY2("eval",        eval,     1, 2, 0, -1, env);
+  GLOBAL_PRIM_W_ARITY2("eval-syntax", eval_stx, 1, 2, 0, -1, env);
 
-  scheme_add_global_constant("compile-allow-set!-undefined", 
-			     scheme_register_parameter(allow_set_undefined, 
-						       "compile-allow-set!-undefined",
-						       MZCONFIG_ALLOW_SET_UNDEFINED), 
-			     env);
-  scheme_add_global_constant("compile-enforce-module-constants", 
-			     scheme_register_parameter(compile_module_constants, 
-						       "compile-enforce-module-constants",
-						       MZCONFIG_COMPILE_MODULE_CONSTS), 
-			     env);
+  GLOBAL_PRIM_W_ARITY("compile",                                 compile,                               1, 1, env);
+  GLOBAL_PRIM_W_ARITY("compile-syntax",                          compile_stx,                           1, 1, env);
+  GLOBAL_PRIM_W_ARITY("compiled-expression?",                    compiled_p,                            1, 1, env);
+  GLOBAL_PRIM_W_ARITY("expand",                                  expand,                                1, 1, env);
+  GLOBAL_PRIM_W_ARITY("expand-syntax",                           expand_stx,                            1, 1, env);
+  GLOBAL_PRIM_W_ARITY("local-expand",                            local_expand,                          3, 4, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-expand-expression",          local_expand_expr,                     1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-bind-syntaxes",              local_eval,                            3, 3, env);
+  GLOBAL_PRIM_W_ARITY("local-expand/capture-lifts",              local_expand_catch_lifts,              3, 5, env);
+  GLOBAL_PRIM_W_ARITY("local-transformer-expand",                local_transformer_expand,              3, 4, env);
+  GLOBAL_PRIM_W_ARITY("local-transformer-expand/capture-lifts",  local_transformer_expand_catch_lifts,  3, 5, env);
+  GLOBAL_PRIM_W_ARITY("expand-once",                             expand_once,                           1, 1, env);
+  GLOBAL_PRIM_W_ARITY("expand-syntax-once",                      expand_stx_once,                       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("expand-to-top-form",                      expand_to_top_form,                    1, 1, env);
+  GLOBAL_PRIM_W_ARITY("expand-syntax-to-top-form",               expand_stx_to_top_form,                1, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-syntax-introduce",              top_introduce_stx,                     1, 1, env);
+  GLOBAL_PRIM_W_ARITY("break-enabled",                           enable_break,                          0, 1, env);
 
-  scheme_add_global_constant("eval-jit-enabled", 
-			     scheme_register_parameter(use_jit, 
-						       "eval-jit-enabled",
-						       MZCONFIG_USE_JIT), 
-			     env);
-
+  GLOBAL_PARAMETER("current-eval",                      current_eval,             MZCONFIG_EVAL_HANDLER,          env);
+  GLOBAL_PARAMETER("current-compile",                   current_compile,          MZCONFIG_COMPILE_HANDLER,       env);
+  GLOBAL_PARAMETER("compile-allow-set!-undefined",      allow_set_undefined,      MZCONFIG_ALLOW_SET_UNDEFINED,   env);
+  GLOBAL_PARAMETER("compile-enforce-module-constants",  compile_module_constants, MZCONFIG_COMPILE_MODULE_CONSTS, env);
+  GLOBAL_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
+  
   REGISTER_SO(app_symbol);
   REGISTER_SO(datum_symbol);
   REGISTER_SO(top_symbol);
 
-  app_symbol = scheme_intern_symbol("#%app");
-  datum_symbol = scheme_intern_symbol("#%datum");
-  top_symbol = scheme_intern_symbol("#%top");
+  app_symbol    = scheme_intern_symbol("#%app");
+  datum_symbol  = scheme_intern_symbol("#%datum");
+  top_symbol    = scheme_intern_symbol("#%top");
 
   REGISTER_SO(app_expander);
   REGISTER_SO(datum_expander);
   REGISTER_SO(top_expander);
 
-  app_expander = scheme_make_compiled_syntax(app_syntax,
-					     app_expand);
-  scheme_add_global_keyword("#%app", 
-			    app_expander, 
-			    env);
-
-  datum_expander = scheme_make_compiled_syntax(datum_syntax,
-					       datum_expand);
-  scheme_add_global_keyword("#%datum", 
-			    datum_expander, 
-			    env);
-
-  top_expander = scheme_make_compiled_syntax(top_syntax,
-					     top_expand);
-  scheme_add_global_keyword("#%top", 
-			    top_expander, 
-			    env);
+  app_expander    = scheme_make_compiled_syntax(app_syntax,   app_expand);
+  datum_expander  = scheme_make_compiled_syntax(datum_syntax, datum_expand);
+  top_expander    = scheme_make_compiled_syntax(top_syntax,   top_expand);
+  scheme_add_global_keyword("#%app",    app_expander,   env);
+  scheme_add_global_keyword("#%datum",  datum_expander, env);
+  scheme_add_global_keyword("#%top",    top_expander,   env);
 
   REGISTER_SO(quick_stx);
 }
