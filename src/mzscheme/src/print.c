@@ -529,9 +529,7 @@ START_XFORM_SKIP;
    version takes to long, we back out to the general case. (We don't
    even check for stack overflow, so keep the max limit low.) */
 
-static int fast_checker_counter;
-
-static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp)
+static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_checker_counter)
 {
   Scheme_Type t;
   int cycle = 0;
@@ -540,18 +538,18 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp)
   if (t < 0)
     return 1;
 
-  if (fast_checker_counter-- < 0)
+  if ((*fast_checker_counter)-- < 0)
     return -1;
 
   if (SCHEME_PAIRP(obj) || SCHEME_MUTABLE_PAIRP(obj)) {
     obj->type = -t;
-    cycle = check_cycles_fast(SCHEME_CAR(obj), pp);
+    cycle = check_cycles_fast(SCHEME_CAR(obj), pp, fast_checker_counter);
     if (!cycle)
-      cycle = check_cycles_fast(SCHEME_CDR(obj), pp);
+      cycle = check_cycles_fast(SCHEME_CDR(obj), pp, fast_checker_counter);
     obj->type = t;
   } else if (pp->print_box && SCHEME_BOXP(obj)) {
     obj->type = -t;
-    cycle = check_cycles_fast(SCHEME_BOX_VAL(obj), pp);
+    cycle = check_cycles_fast(SCHEME_BOX_VAL(obj), pp, fast_checker_counter);
     obj->type = t;
   } else if (SCHEME_VECTORP(obj)) {
     int i, len;
@@ -559,7 +557,7 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp)
     obj->type = -t;
     len = SCHEME_VEC_SIZE(obj);
     for (i = 0; i < len; i++) {
-      cycle = check_cycles_fast(SCHEME_VEC_ELS(obj)[i], pp);
+      cycle = check_cycles_fast(SCHEME_VEC_ELS(obj)[i], pp, fast_checker_counter);
       if (cycle)
 	break;
     }
@@ -578,7 +576,7 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp)
       obj->type = -t;
       while (i--) {
 	if (scheme_inspector_sees_part(obj, pp->inspector, i)) {
-	  cycle = check_cycles_fast(((Scheme_Structure *)obj)->slots[i], pp);
+	  cycle = check_cycles_fast(((Scheme_Structure *)obj)->slots[i], pp, fast_checker_counter);
 	  if (cycle)
 	    break;
 	}
@@ -840,8 +838,8 @@ print_to_string(Scheme_Object *obj,
   if (params.print_graph)
     cycles = 1;
   else {
-    fast_checker_counter = 50;
-    cycles = check_cycles_fast(obj, (PrintParams *)&params);
+    int fast_checker_counter = 50;
+    cycles = check_cycles_fast(obj, (PrintParams *)&params, &fast_checker_counter);
     if (cycles == -1) {
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
       cycles = check_cycles(obj, ht, (PrintParams *)&params);
