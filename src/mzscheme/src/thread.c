@@ -187,7 +187,7 @@ extern int GC_is_marked(void *);
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
    to the target thread. */
-static Scheme_Thread *swap_target;
+static THREAD_LOCAL Scheme_Thread *swap_target;
 
 static Scheme_Object *scheduled_kills;
 
