@@ -359,6 +359,8 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 static Scheme_Env *place_instance_init_post_kernel() {
   Scheme_Env *env;
 
+  scheme_init_print_buffers_places();
+
   env = scheme_make_empty_env();
 
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 

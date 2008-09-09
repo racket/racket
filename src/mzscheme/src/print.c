@@ -34,6 +34,21 @@
 
 int (*scheme_check_print_is_obj)(Scheme_Object *o);
 
+#define QUICK_ENCODE_BUFFER_SIZE 256
+static THREAD_LOCAL char *quick_buffer = NULL;
+static THREAD_LOCAL char *quick_encode_buffer = NULL;
+
+/* FIXME places possible race condition on growing printer size */
+static Scheme_Type_Printer *printers;
+static int printers_count;
+
+static Scheme_Hash_Table *cache_ht;
+
+/* read-only globals */
+static char compacts[_CPT_COUNT_];
+static Scheme_Hash_Table *global_constants_ht;
+static Scheme_Object *quote_link_symbol = NULL;
+
 /* Flag for debugging compiled code in printed form: */
 #define NO_COMPACT 0
 
@@ -99,18 +114,6 @@ static void custom_write_struct(Scheme_Object *s, Scheme_Hash_Table *ht,
 				PrintParams *pp, int notdisplay);
 static Scheme_Object *writable_struct_subs(Scheme_Object *s, PrintParams *pp);
 
-static Scheme_Object *quote_link_symbol = NULL;
-static char *quick_buffer = NULL;
-static char *quick_encode_buffer = NULL;
-
-static Scheme_Type_Printer *printers;
-static int printers_count;
-
-#define QUICK_ENCODE_BUFFER_SIZE 256
-
-static char compacts[_CPT_COUNT_];
-
-static Scheme_Hash_Table *global_constants_ht;
 
 #define print_compact(pp, v) print_this_string(pp, &compacts[v], 0, 1)
 
@@ -132,17 +135,10 @@ static Scheme_Hash_Table *global_constants_ht;
 #define ssALL(x, isbox) 1
 #define ssALLp(x, isbox) isbox
 
-static Scheme_Hash_Table *cache_ht;
-
 void scheme_init_print(Scheme_Env *env)
 {
   int i;
 
-  REGISTER_SO(quick_buffer);
-  REGISTER_SO(quick_encode_buffer);
-  
-  quick_buffer = (char *)scheme_malloc_atomic(100);
-  quick_encode_buffer = (char *)scheme_malloc_atomic(QUICK_ENCODE_BUFFER_SIZE);
 
   REGISTER_SO(quote_link_symbol);
   
@@ -157,6 +153,15 @@ void scheme_init_print(Scheme_Env *env)
 #endif
 
   REGISTER_SO(cache_ht);
+}
+
+void scheme_init_print_buffers_places() 
+{
+  REGISTER_SO(quick_buffer);
+  REGISTER_SO(quick_encode_buffer);
+  
+  quick_buffer = (char *)scheme_malloc_atomic(100);
+  quick_encode_buffer = (char *)scheme_malloc_atomic(QUICK_ENCODE_BUFFER_SIZE);
 }
 
 Scheme_Object *scheme_make_svector(mzshort c, mzshort *a)
@@ -1051,8 +1056,9 @@ static void do_print_string(int compact, int notdisplay,
     buf = (char *)scheme_malloc_atomic(el);
     reset = 0;
   }
-  el = scheme_utf8_encode(s, offset, offset + l, 
-			  (unsigned char *)buf, 0, 0);
+
+  el = scheme_utf8_encode(s, offset, offset + l, (unsigned char *)buf, 0, 0);
+
   if (compact) {
     print_compact(pp, CPT_CHAR_STRING);
     print_compact_number(pp, el);
@@ -1061,6 +1067,7 @@ static void do_print_string(int compact, int notdisplay,
   } else {
     print_char_string(buf, el, s, offset, l, notdisplay, 0, pp);
   }
+
   if (reset)
     quick_encode_buffer = buf;
 }
