@@ -5576,6 +5576,10 @@ static Scheme_Object *collpaths_p(int argc, Scheme_Object **argv)
   return collpaths_gen_p(argc, argv, 0);
 }
 
+Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]) {
+  return current_library_collection_paths(argc, argv);
+}
+
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[])
 {
   return scheme_param_config("current-library-collection-paths", 

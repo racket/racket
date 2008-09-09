@@ -3063,6 +3063,7 @@ unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 #define SCHEME_SYM_PARALLELP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x2)
 #define SCHEME_SYM_WEIRDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x3)
 
+Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]);
 
 /*========================================================================*/
 /*                           places                                       */

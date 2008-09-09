@@ -63,8 +63,11 @@ void scheme_init_place(Scheme_Env *env)
 /************************************************************************/
 /************************************************************************/
 
+/* FIXME this struct probably will need to be garbage collected as stuff
+ * is added to it */
 typedef struct Place_Start_Data {
   Scheme_Object *thunk;
+  Scheme_Object *current_library_collection_paths;
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -98,6 +101,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   /* pass critical info to new place */
   place_data = (Place_Start_Data*)malloc(sizeof(Place_Start_Data));
   place_data->thunk  = args[0];
+  place_data->current_library_collection_paths = scheme_current_library_collection_paths(0, NULL);
 
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
@@ -148,6 +152,8 @@ static void *place_start_proc(void *data_arg) {
   void *stack_base;
   Scheme_Object *thunk;
   Place_Start_Data *place_data;
+  Scheme_Object *a[1];
+
 
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
@@ -162,6 +168,8 @@ static void *place_start_proc(void *data_arg) {
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
   scheme_place_instance_init();
+  a[0] = place_data->current_library_collection_paths;
+  scheme_current_library_collection_paths(1, a);
 
   load_namespace("scheme/init");
 
