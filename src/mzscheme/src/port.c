@@ -564,8 +564,6 @@ scheme_init_port (Scheme_Env *env)
 # endif
 #endif
 
-  scheme_init_port_config();
-
   register_port_wait();
 
   scheme_add_global_constant("subprocess",
@@ -621,12 +619,9 @@ void scheme_init_port_config(void)
 
   config = scheme_current_config();
 
-  scheme_set_param(config, MZCONFIG_INPUT_PORT,
-		   scheme_orig_stdin_port);
-  scheme_set_param(config, MZCONFIG_OUTPUT_PORT,
-		   scheme_orig_stdout_port);
-  scheme_set_param(config, MZCONFIG_ERROR_PORT,
-		   scheme_orig_stderr_port);
+  scheme_set_param(config, MZCONFIG_INPUT_PORT,   scheme_orig_stdin_port);
+  scheme_set_param(config, MZCONFIG_OUTPUT_PORT,  scheme_orig_stdout_port);
+  scheme_set_param(config, MZCONFIG_ERROR_PORT,   scheme_orig_stderr_port);
 }
 
 Scheme_Object * scheme_make_eof (void)

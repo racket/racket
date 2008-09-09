@@ -157,7 +157,7 @@ void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 THREAD_LOCAL unsigned long scheme_stack_boundary;
 THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
 #endif
-static Scheme_Object *quick_stx;
+static THREAD_LOCAL Scheme_Object *quick_stx;
 
 /* global counters */
 /* FIXME needs to be atomically incremented */
@@ -397,7 +397,10 @@ scheme_init_eval (Scheme_Env *env)
   scheme_add_global_keyword("#%app",    app_expander,   env);
   scheme_add_global_keyword("#%datum",  datum_expander, env);
   scheme_add_global_keyword("#%top",    top_expander,   env);
+}
 
+void scheme_init_eval_places()
+{
   REGISTER_SO(quick_stx);
 }
 

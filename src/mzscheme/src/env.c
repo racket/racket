@@ -358,12 +358,22 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 
 static Scheme_Env *place_instance_init_post_kernel() {
   Scheme_Env *env;
-
+  /* error handling and buffers */
+  scheme_init_error_escape_proc(NULL);
   scheme_init_print_buffers_places();
+  scheme_init_eval_places();
 
   env = scheme_make_empty_env();
-
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
+ 
+  /*initialize config */
+  scheme_init_port_config();
+  scheme_init_port_fun_config();
+  scheme_init_error_config();
+#ifndef NO_SCHEME_EXNS
+  scheme_init_exn_config();
+#endif
+
   scheme_init_memtrace(env);
 #ifndef NO_TCP_SUPPORT
   scheme_init_network(env);
@@ -384,7 +394,6 @@ static Scheme_Env *place_instance_init_post_kernel() {
 
   scheme_save_initial_module_set(env);
 
-  scheme_init_error_escape_proc(NULL);
 
   scheme_starting_up = 0;
 

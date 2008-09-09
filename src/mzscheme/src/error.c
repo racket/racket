@@ -3435,9 +3435,7 @@ void scheme_init_exn_config(void)
 {
   Scheme_Object *h;
 
-  h = scheme_make_prim_w_arity(def_exn_handler,
-			       "default-exception-handler",
-			       1, 1);
+  h = scheme_make_prim_w_arity(def_exn_handler, "default-exception-handler", 1, 1);
 
   scheme_set_root_param(MZCONFIG_INIT_EXN_HANDLER, h);
 }
