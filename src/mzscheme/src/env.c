@@ -361,6 +361,11 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 static Scheme_Env *place_instance_init_post_kernel() {
   Scheme_Env *env;
   /* error handling and buffers */
+  /* this check prevents initializing orig ports twice for the first initial
+   * place.  The kernel initializes orig_ports early. */
+  if (!scheme_orig_stdout_port) {
+    scheme_init_port_places();
+  }
   scheme_init_error_escape_proc(NULL);
   scheme_init_print_buffers_places();
   scheme_init_eval_places();

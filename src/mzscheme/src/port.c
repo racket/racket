@@ -242,9 +242,9 @@ typedef struct Scheme_FD {
 
 /* globals */
 Scheme_Object scheme_eof[1];
-Scheme_Object *scheme_orig_stdout_port;
-Scheme_Object *scheme_orig_stderr_port;
-Scheme_Object *scheme_orig_stdin_port;
+THREAD_LOCAL Scheme_Object *scheme_orig_stdout_port;
+THREAD_LOCAL Scheme_Object *scheme_orig_stderr_port;
+THREAD_LOCAL Scheme_Object *scheme_orig_stdin_port;
 
 Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 Scheme_Object *(*scheme_make_stdout)(void) = NULL;
@@ -284,7 +284,8 @@ Scheme_Object *scheme_redirect_output_port_type;
 
 int scheme_force_port_closed;
 
-static int flush_out, flush_err;
+static int flush_out;
+static int flush_err;
 
 #if defined(FILES_HAVE_FDS)
 static int external_event_fd, put_external_event_fd;
@@ -487,6 +488,57 @@ scheme_init_port (Scheme_Env *env)
   }
 #endif
 
+  scheme_init_port_places();
+
+  flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
+  flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
+
+#ifdef MZ_FDS
+  scheme_add_atexit_closer(flush_if_output_fds);
+  /* Note: other threads might continue to write even after
+     the flush completes, but that's the threads' problem.
+     All writing by the main thread will get flushed on exit
+     (but not, of course, if the thread is shutdown via a
+     custodian). */
+#endif
+
+#if defined(FILES_HAVE_FDS)
+# ifndef USE_OSKIT_CONSOLE
+  /* Set up a pipe for signalling external events: */
+  {
+    int fds[2];
+    if (!pipe(fds)) {
+      external_event_fd = fds[0];
+      put_external_event_fd = fds[1];
+      fcntl(external_event_fd, F_SETFL, MZ_NONBLOCKING);
+      fcntl(put_external_event_fd, F_SETFL, MZ_NONBLOCKING);
+    }
+  }
+# endif
+#endif
+
+  register_port_wait();
+
+  scheme_add_global_constant("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
+  scheme_add_global_constant("subprocess-status", scheme_make_prim_w_arity(subprocess_status, "subprocess-status", 1, 1), env);
+  scheme_add_global_constant("subprocess-kill", scheme_make_prim_w_arity(subprocess_kill, "subprocess-kill", 2, 2), env);
+  scheme_add_global_constant("subprocess-pid", scheme_make_prim_w_arity(subprocess_pid, "subprocess-pid", 1, 1), env);
+  scheme_add_global_constant("subprocess?", scheme_make_prim_w_arity(subprocess_p, "subprocess?", 1, 1), env);
+  scheme_add_global_constant("subprocess-wait", scheme_make_prim_w_arity(subprocess_wait, "subprocess-wait", 1, 1), env);
+
+
+  register_subprocess_wait();
+
+  scheme_add_global_constant("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
+
+  REGISTER_SO(read_string_byte_buffer);
+
+  scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
+  scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
+}
+
+void scheme_init_port_places(void)
+{
   scheme_orig_stdin_port = (scheme_make_stdin
 			    ? scheme_make_stdin()
 #ifdef USE_OSKIT_CONSOLE
@@ -536,81 +588,6 @@ scheme_init_port (Scheme_Env *env)
 			     : scheme_make_file_output_port(stderr)
 #endif
 			     );
-
-  flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
-  flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
-
-#ifdef MZ_FDS
-  scheme_add_atexit_closer(flush_if_output_fds);
-  /* Note: other threads might continue to write even after
-     the flush completes, but that's the threads' problem.
-     All writing by the main thread will get flushed on exit
-     (but not, of course, if the thread is shutdown via a
-     custodian). */
-#endif
-
-#if defined(FILES_HAVE_FDS)
-# ifndef USE_OSKIT_CONSOLE
-  /* Set up a pipe for signalling external events: */
-  {
-    int fds[2];
-    if (!pipe(fds)) {
-      external_event_fd = fds[0];
-      put_external_event_fd = fds[1];
-      fcntl(external_event_fd, F_SETFL, MZ_NONBLOCKING);
-      fcntl(put_external_event_fd, F_SETFL, MZ_NONBLOCKING);
-    }
-  }
-# endif
-#endif
-
-  register_port_wait();
-
-  scheme_add_global_constant("subprocess",
-			     scheme_make_prim_w_arity2(subprocess,
-						       "subprocess",
-						       4, -1,
-						       4, 4),
-			     env);
-  scheme_add_global_constant("subprocess-status",
-			     scheme_make_prim_w_arity(subprocess_status,
-						      "subprocess-status",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("subprocess-kill",
-			     scheme_make_prim_w_arity(subprocess_kill,
-						      "subprocess-kill",
-						      2, 2),
-			     env);
-  scheme_add_global_constant("subprocess-pid",
-			     scheme_make_prim_w_arity(subprocess_pid,
-						      "subprocess-pid",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("subprocess?",
-			     scheme_make_prim_w_arity(subprocess_p,
-						      "subprocess?",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("subprocess-wait",
-			     scheme_make_prim_w_arity(subprocess_wait,
-						      "subprocess-wait",
-						      1, 1),
-			     env);
-
-
-  register_subprocess_wait();
-
-  scheme_add_global_constant("shell-execute",
-			     scheme_make_prim_w_arity(sch_shell_execute,
-						      "shell-execute",
-						      5, 5),
-			     env);
-
-  REGISTER_SO(read_string_byte_buffer);
-
-  scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
-  scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
 }
 
 void scheme_init_port_config(void)

@@ -212,6 +212,7 @@ void scheme_init_place(Scheme_Env *env);
 
 void scheme_init_print_buffers_places(void);
 void scheme_init_eval_places(void);
+void scheme_init_port_places(void);
 
 void scheme_free_dynamic_extensions(void);
 
@@ -274,9 +275,9 @@ extern Scheme_Object *scheme_equal_prim;
 
 extern Scheme_Object *scheme_def_exit_proc;
 
-extern Scheme_Object *scheme_orig_stdout_port;
-extern Scheme_Object *scheme_orig_stdin_port;
-extern Scheme_Object *scheme_orig_stderr_port;
+extern THREAD_LOCAL Scheme_Object *scheme_orig_stdout_port;
+extern THREAD_LOCAL Scheme_Object *scheme_orig_stdin_port;
+extern THREAD_LOCAL Scheme_Object *scheme_orig_stderr_port;
 
 extern Scheme_Object *scheme_arity_at_least, *scheme_make_arity_at_least;
 
