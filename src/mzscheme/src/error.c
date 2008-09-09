@@ -36,16 +36,43 @@
 #define mzVA_ARG(x, y) HIDE_FROM_XFORM(va_arg(x, y))
 #define TMP_CMARK_VALUE scheme_parameterization_key
 
+#ifndef INIT_SYSLOG_LEVEL
+# define INIT_SYSLOG_LEVEL 0
+#endif
+
 /* globals */
 scheme_console_printf_t scheme_console_printf;
 scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
-
-void (*scheme_console_output)(char *str, long len);
 Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
+void (*scheme_console_output)(char *str, long len);
+
+static int init_syslog_level = INIT_SYSLOG_LEVEL;
+static int init_stderr_level = SCHEME_LOG_ERROR;
 Scheme_Logger *scheme_main_logger;
 static void init_logger_config();
+
+/* readonly globals */
+const char *scheme_compile_stx_string = "compile";
+const char *scheme_expand_stx_string = "expand";
+const char *scheme_application_stx_string = "application";
+const char *scheme_set_stx_string = "set!";
+const char *scheme_var_ref_string = "#%variable-reference";
+const char *scheme_begin_stx_string = "begin";
+static Scheme_Object *fatal_symbol;
+static Scheme_Object *error_symbol; 
+static Scheme_Object *warning_symbol;
+static Scheme_Object *info_symbol;
+static Scheme_Object *debug_symbol;
+static Scheme_Object *arity_property;
+static Scheme_Object *def_err_val_proc;
+static Scheme_Object *def_error_esc_proc;
+static Scheme_Object *default_display_handler;
+static Scheme_Object *emergency_display_handler;
+Scheme_Object *scheme_def_exit_proc;
+Scheme_Object *scheme_raise_arity_error_proc;
+
 
 #ifdef MEMORY_COUNTING_ON
 long scheme_misc_count;
@@ -82,29 +109,14 @@ static Scheme_Object *log_reader_p(int argc, Scheme_Object *argv[]);
 static int log_reader_get(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
 
 static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug, int barrier);
-
 static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
 
 static Scheme_Logger *make_a_logger(Scheme_Logger *parent, Scheme_Object *name);
 static void update_want_level(Scheme_Logger *logger);
 
-static Scheme_Object *def_err_val_proc;
-static Scheme_Object *def_error_esc_proc;
-static Scheme_Object *default_display_handler, *emergency_display_handler;
-Scheme_Object *scheme_def_exit_proc;
-
-Scheme_Object *scheme_raise_arity_error_proc;
-
-static Scheme_Object *arity_property;
 static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static char *init_buf(long *len, long *blen);
-
-static Scheme_Object *fatal_symbol, *error_symbol, *warning_symbol, *info_symbol, *debug_symbol;
-#ifndef INIT_SYSLOG_LEVEL
-# define INIT_SYSLOG_LEVEL 0
-#endif
-static int init_syslog_level = INIT_SYSLOG_LEVEL, init_stderr_level = SCHEME_LOG_ERROR;
 void scheme_set_logging(int syslog_level, int stderr_level)
 {
   if (syslog_level > -1)
@@ -745,8 +757,7 @@ static char *init_buf(long *len, long *_size)
   if (len)
     *len = print_width;
 
-  size = (3 * scheme_max_found_symbol_name + 500
-	  + 2 * print_width);
+  size = (3 * scheme_max_found_symbol_name + 500 + 2 * print_width);
   if (_size)
     *_size = size;
 
@@ -1508,13 +1519,6 @@ void scheme_read_err(Scheme_Object *port,
 		   fn, fnlen, ls,
 		   s, slen, suggests);
 }
-
-const char *scheme_compile_stx_string = "compile";
-const char *scheme_expand_stx_string = "expand";
-const char *scheme_application_stx_string = "application";
-const char *scheme_set_stx_string = "set!";
-const char *scheme_var_ref_string = "#%variable-reference";
-const char *scheme_begin_stx_string = "begin";
 
 static void do_wrong_syntax(const char *where,
                             Scheme_Object *detail_form,
