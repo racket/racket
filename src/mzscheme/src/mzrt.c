@@ -240,6 +240,32 @@ int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
   return pthread_rwlock_destroy(&lock->lock);
 }
 
+struct mzrt_mutex {
+  pthread_mutex_t mutex;
+};
+
+int mzrt_mutex_create(mzrt_mutex **mutex) {
+  *mutex = malloc(sizeof(mzrt_mutex));
+  return pthread_mutex_init(&(*mutex)->mutex, NULL);
+}
+
+int mzrt_mutex_lock(mzrt_mutex *mutex) {
+  return pthread_mutex_lock(&mutex->mutex);
+}
+
+int mzrt_mutex_trylock(mzrt_mutex *mutex) {
+  return pthread_mutex_trylock(&mutex->mutex);
+}
+
+int mzrt_mutex_unlock(mzrt_mutex *mutex) {
+  return pthread_mutex_unlock(&mutex->mutex);
+}
+
+int mzrt_mutex_destroy(mzrt_mutex *mutex) {
+  return pthread_mutex_destroy(&mutex->mutex);
+}
+
+
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
 #endif
@@ -351,6 +377,37 @@ int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
   rc &= CloseHandle(lock->readEvent);
   rc &= CloseHandle(lock->writeMutex);
   return rc; 
+}
+
+struct mzrt_mutex {
+  CRITICAL_SECTION critical_section;
+};
+
+int mzrt_mutex_create(mzrt_mutex **mutex) {
+  *mutex = malloc(sizeof(mzrt_mutex));
+  InitializeCriticalSection(&(*mutex)->critical_section);
+  return 0;
+}
+
+int mzrt_mutex_lock(mzrt_mutex *mutex) {
+  EnterCriticalSection(&(*mutex)->critical_section);
+  return 0;
+}
+
+int mzrt_mutex_trylock(mzrt_mutex *mutex) {
+  if (!TryEnterCriticalSection(&(*mutex)->critical_section))
+    return 1;
+  return 0;
+}
+
+int mzrt_mutex_unlock(mzrt_mutex *mutex) {
+  LeaveCriticalSection(&(*mutex)->critical_section);
+  return 0;
+}
+
+int mzrt_mutex_destroy(mzrt_mutex *mutex) {
+  DeleteCriticalSection(&(*mutex)->critical_section);
+  return 0;
 }
 
 #ifdef MZ_XFORM

@@ -36,6 +36,8 @@ void *mz_proc_thread_wait(mz_proc_thread *thread);
 
 void mzrt_sleep(int seconds);
 
+int mz_proc_thread_self();
+int mz_proc_thread_id(mz_proc_thread* thread);
 
 /****************** THREAD RWLOCK ******************************************/
 /* mzrt_rwlock_*.c */
@@ -47,6 +49,14 @@ int mzrt_rwlock_tryrdlock(mzrt_rwlock *lock);
 int mzrt_rwlock_trywrlock(mzrt_rwlock *lock);
 int mzrt_rwlock_unlock(mzrt_rwlock *lock);
 int mzrt_rwlock_destroy(mzrt_rwlock *lock);
+
+/****************** THREAD MUTEX ******************************************/
+typedef struct mzrt_mutex mzrt_mutex; /* OPAQUE DEFINITION */
+int mzrt_mutex_create(mzrt_mutex **mutex);
+int mzrt_mutex_lock(mzrt_mutex *mutex);
+int mzrt_mutex_trylock(mzrt_mutex *mutex);
+int mzrt_mutex_unlock(mzrt_mutex *mutex);
+int mzrt_mutex_destroy(mzrt_mutex *mutex);
 
 
 #endif
