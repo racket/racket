@@ -159,13 +159,8 @@ static void *place_start_proc(void *data_arg) {
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
 
-  /* create a pristine thread */
+  /* create pristine THREAD_LOCAL variables*/
   null_out_runtime_globals();
-
-  REGISTER_SO(scheme_current_thread);
-  REGISTER_SO(scheme_first_thread);
-  REGISTER_SO(scheme_main_thread);
-  REGISTER_SO(scheme_thread_set_top);
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
   scheme_place_instance_init();
