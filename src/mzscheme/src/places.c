@@ -90,7 +90,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   Place_Start_Data      *place_data;
   mz_proc_thread        *proc_thread;
-
+  Scheme_Object         *collection_paths;
 
   /* create place object */
   place = MALLOC_ONE_TAGGED(Scheme_Place);
@@ -101,7 +101,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   /* pass critical info to new place */
   place_data = (Place_Start_Data*)malloc(sizeof(Place_Start_Data));
   place_data->thunk  = args[0];
-  place_data->current_library_collection_paths = scheme_current_library_collection_paths(0, NULL);
+  collection_paths = scheme_current_library_collection_paths(0, NULL);
+  place_data->current_library_collection_paths = collection_paths;
 
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
