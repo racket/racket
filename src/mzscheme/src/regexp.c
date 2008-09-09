@@ -66,44 +66,52 @@ static regexp *regcomp(char *, rxpos, int, int);
 /*
  * Global work variables for regcomp().
  */
-static char *regstr, *regparsestr;
-static int regmatchmin, regmatchmax, regmaxbackposn, regsavepos;
+static THREAD_LOCAL char *regstr;
+static THREAD_LOCAL char *regparsestr;
+static THREAD_LOCAL int regmatchmin;
+static THREAD_LOCAL int regmatchmax;
+static THREAD_LOCAL int regmaxbackposn;
+static THREAD_LOCAL int regsavepos;
 
-static Scheme_Hash_Table *regbackknown; /* known/assumed backreference [non-]empty */
-static Scheme_Hash_Table *regbackdepends; /* backreferences required to be non-empty for the current to be non-empty */
+static THREAD_LOCAL Scheme_Hash_Table *regbackknown; /* known/assumed backreference [non-]empty */
+static THREAD_LOCAL Scheme_Hash_Table *regbackdepends; /* backreferences required to be non-empty for the current to be non-empty */
 
-static rxpos regparse, regparse_end; /* Input-scan pointer. */
-static int regnpar;		/* () count. */
-static int regncounter;          /* {} count */
-static rxpos regcode;		/* Code-emit pointer, if less than regcodesize */
-static rxpos regcodesize;
-static rxpos regcodemax;
-static long regmaxlookback;
+static THREAD_LOCAL rxpos regparse;
+static THREAD_LOCAL rxpos regparse_end; /* Input-scan pointer. */
+static THREAD_LOCAL int regnpar;             /* () count. */
+static THREAD_LOCAL int regncounter;          /* {} count */
+static THREAD_LOCAL rxpos regcode;           /* Code-emit pointer, if less than regcodesize */
+static THREAD_LOCAL rxpos regcodesize;
+static THREAD_LOCAL rxpos regcodemax;
+static THREAD_LOCAL long regmaxlookback;
+
+/* caches to avoid gc */
+static THREAD_LOCAL long rx_buffer_size;
+static THREAD_LOCAL rxpos *startp_buffer_cache;
+static THREAD_LOCAL rxpos *endp_buffer_cache;
+static THREAD_LOCAL rxpos *maybep_buffer_cache;
 
 /*
  * Forward declarations for regcomp()'s friends.
  */
-#ifndef STATIC
-#define	STATIC	static
-#endif
-STATIC rxpos reg(int, int *, int, int, int);
-STATIC rxpos regbranch(int *, int, int);
-STATIC rxpos regpiece(int *, int, int);
-STATIC rxpos regatom(int *, int, int);
-STATIC rxpos regranges(int parse_flags, int at_start);
-STATIC rxpos regunicode(int invert);
-STATIC int regdigit();
-STATIC rxpos regnode(char);
-STATIC void regarg(int);
-STATIC rxpos regnext(rxpos);
-STATIC void regc(char);
-STATIC void reginsert(char, rxpos);
-STATIC rxpos reginsertwithop(char, rxpos, int);
-STATIC rxpos reginsertwithopop(char, rxpos, int, int);
-STATIC void regtail(rxpos, rxpos);
-STATIC void regoptail(rxpos, rxpos);
-STATIC int regstrcspn(char *, char *, char *);
-STATIC unsigned char *extract_regstart(rxpos scan, int *_anch);
+static rxpos reg(int, int *, int, int, int);
+static rxpos regbranch(int *, int, int);
+static rxpos regpiece(int *, int, int);
+static rxpos regatom(int *, int, int);
+static rxpos regranges(int parse_flags, int at_start);
+static rxpos regunicode(int invert);
+static int regdigit();
+static rxpos regnode(char);
+static void regarg(int);
+static rxpos regnext(rxpos);
+static void regc(char);
+static void reginsert(char, rxpos);
+static rxpos reginsertwithop(char, rxpos, int);
+static rxpos reginsertwithopop(char, rxpos, int, int);
+static void regtail(rxpos, rxpos);
+static void regoptail(rxpos, rxpos);
+static int regstrcspn(char *, char *, char *);
+static unsigned char *extract_regstart(rxpos scan, int *_anch);
 
 static int check_and_propagate_depends(void);
 static int merge_tables(Scheme_Hash_Table *dest, Scheme_Hash_Table *src);
@@ -2368,18 +2376,18 @@ static MZ_INLINE int in_ranges_ci(char *str, rxpos a, int l, int c)
 /*
  * Forwards.
  */
-STATIC int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, int, int, int);
-STATIC int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
+static int regtry(regexp *, char *, int, int, rxpos *, rxpos *, rxpos *, int *, Regwork *rw, rxpos, int, int, int);
+static int regtry_port(regexp *, Scheme_Object *, Scheme_Object *, int nonblock,
 		       rxpos *, rxpos *, rxpos *, int *,
 		       char **, rxpos *, rxpos *, rxpos, Scheme_Object*, Scheme_Object*, rxpos, int, int,
 		       int);
-STATIC int regmatch(Regwork *rw, rxpos);
-STATIC int regrepeat(Regwork *rw, rxpos, int);
+static int regmatch(Regwork *rw, rxpos);
+static int regrepeat(Regwork *rw, rxpos, int);
 
 #ifdef DEBUG
 int regnarrate = 0;
 void regdump();
-STATIC char *regprop();
+static char *regprop();
 #endif
 
 #define REGPORT_FLUSH_THRESHOLD 256
@@ -4917,14 +4925,11 @@ static regexp *regcomp_object(Scheme_Object *str)
     return (regexp *)make_utf8_regexp(1, &str);
 }
 
-long rx_buffer_size;
-rxpos *startp_buffer, *endp_buffer, *maybep_buffer;
-
 void scheme_clear_rx_buffers(void)
 {
-  startp_buffer = NULL;
-  endp_buffer = NULL;
-  maybep_buffer = NULL;
+  startp_buffer_cache = NULL;
+  endp_buffer_cache = NULL;
+  maybep_buffer_cache = NULL;
 }
 
 static Scheme_Object *gen_compare(char *name, int pos, 
@@ -5062,11 +5067,11 @@ static Scheme_Object *gen_compare(char *name, int pos,
   } else
     full_s = NULL;
 
-  if (startp_buffer && (r->nsubexp <= rx_buffer_size)) {
-    startp = startp_buffer;
-    maybep = maybep_buffer;
-    endp = endp_buffer;
-    startp_buffer = NULL;
+  if (startp_buffer_cache && (r->nsubexp <= rx_buffer_size)) {
+    startp = startp_buffer_cache;
+    maybep = maybep_buffer_cache;
+    endp = endp_buffer_cache;
+    startp_buffer_cache = NULL;
   } else {
     startp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
     maybep = NULL;
@@ -5152,13 +5157,13 @@ static Scheme_Object *gen_compare(char *name, int pos,
     dropped = scheme_false;
   }
   
-  if (!startp_buffer || (r->nsubexp > rx_buffer_size)) {
+  if (!startp_buffer_cache || (r->nsubexp > rx_buffer_size)) {
     rx_buffer_size = r->nsubexp;
-    startp_buffer = startp;
-    maybep_buffer = maybep;
-    endp_buffer = endp;
-  } else if (maybep && !maybep_buffer && (r->nsubexp == rx_buffer_size)) {
-    maybep_buffer = maybep;
+    startp_buffer_cache = startp;
+    maybep_buffer_cache = maybep;
+    endp_buffer_cache = endp;
+  } else if (maybep && !maybep_buffer_cache && (r->nsubexp == rx_buffer_size)) {
+    maybep_buffer_cache = maybep;
   }
   
   return dropped;
@@ -5545,89 +5550,22 @@ void scheme_regexp_initialize(Scheme_Env *env)
   REGISTER_SO(regbackknown);
   REGISTER_SO(regbackdepends);
   
-  scheme_add_global_constant("byte-regexp", 
-			     scheme_make_prim_w_arity(make_regexp, 
-						      "byte-regexp", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("regexp", 
-			     scheme_make_prim_w_arity(make_utf8_regexp, 
-						      "regexp", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("byte-pregexp", 
-			     scheme_make_prim_w_arity(make_pregexp, 
-						      "byte-pregexp", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("pregexp", 
-			     scheme_make_prim_w_arity(make_utf8_pregexp, 
-						      "pregexp", 
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("regexp-match",
-			     scheme_make_prim_w_arity(compare,
-						      "regexp-match",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match-positions", 
-			     scheme_make_prim_w_arity(positions, 
-						      "regexp-match-positions", 
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match?",
-			     scheme_make_prim_w_arity(compare_bool,
-						      "regexp-match?",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match-peek",
-			     scheme_make_prim_w_arity(compare_peek,
-						      "regexp-match-peek",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match-peek-positions", 
-			     scheme_make_prim_w_arity(positions_peek, 
-						      "regexp-match-peek-positions",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match-peek-immediate",
-			     scheme_make_prim_w_arity(compare_peek_nonblock,
-						      "regexp-match-peek-immediate",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-match-peek-positions-immediate", 
-			     scheme_make_prim_w_arity(positions_peek_nonblock, 
-						      "regexp-match-peek-positions-immediate",
-						      2, 5),
-			     env);
-  scheme_add_global_constant("regexp-replace", 
-			     scheme_make_prim_w_arity(replace, 
-						      "regexp-replace", 
-						      3, 3), 
-			     env);
-  scheme_add_global_constant("regexp-replace*", 
-			     scheme_make_prim_w_arity(replace_star, 
-						      "regexp-replace*", 
-						      3, 3), 
-			     env);
-  scheme_add_global_constant("regexp?", 
-			     scheme_make_folding_prim(regexp_p, 
-						      "regexp?", 
-						      1, 1, 1), 
-			     env);
-  scheme_add_global_constant("byte-regexp?", 
-			     scheme_make_folding_prim(byte_regexp_p, 
-						      "byte-regexp?", 
-						      1, 1, 1), 
-			     env);
-  scheme_add_global_constant("pregexp?", 
-			     scheme_make_folding_prim(pregexp_p, 
-						      "pregexp?", 
-						      1, 1, 1), 
-			     env);
-  scheme_add_global_constant("byte-pregexp?", 
-			     scheme_make_folding_prim(byte_pregexp_p, 
-						      "byte-pregexp?", 
-						      1, 1, 1), 
-			     env);
+  GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 1, env);
+  GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 1, env);
+  GLOBAL_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match",                          compare,                 2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match?",                         compare_bool,            2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek",                     compare_peek,            2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions",           positions_peek,          2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-immediate",           compare_peek_nonblock,   2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-match-peek-positions-immediate", positions_peek_nonblock, 2, 5, env);
+  GLOBAL_PRIM_W_ARITY("regexp-replace",                        replace,                 3, 3, env);
+  GLOBAL_PRIM_W_ARITY("regexp-replace*",                       replace_star,            3, 3, env);
+
+  GLOBAL_FOLDING_PRIM("regexp?",                               regexp_p,        1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("byte-regexp?",                          byte_regexp_p,   1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("pregexp?",                              pregexp_p,       1, 1, 1, env);
+  GLOBAL_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
 }
