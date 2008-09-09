@@ -222,7 +222,7 @@ int mzrt_rwlock_rdlock(mzrt_rwlock *lock) {
 }
 
 int mzrt_rwlock_wrlock(mzrt_rwlock *lock) {
-  return pthread_rwlock_rdlock(&lock->lock);
+  return pthread_rwlock_wrlock(&lock->lock);
 }
 
 int mzrt_rwlock_tryrdlock(mzrt_rwlock *lock) {
