@@ -173,9 +173,9 @@ THREAD_LOCAL MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
 THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 #endif
 
-static Scheme_Custodian *main_custodian;
-static Scheme_Custodian *last_custodian;
-static Scheme_Hash_Table *limited_custodians = NULL;
+static THREAD_LOCAL Scheme_Custodian *main_custodian;
+static THREAD_LOCAL Scheme_Custodian *last_custodian;
+static THREAD_LOCAL Scheme_Hash_Table *limited_custodians = NULL;
 
 static Scheme_Object *initial_inspector;
 

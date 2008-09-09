@@ -167,13 +167,15 @@ static Scheme_Object *abort_continuation_proc;
 static Scheme_Object *internal_call_cc_prim;
 
 /* CACHES NEED TO BE THREAD LOCAL */
-static Scheme_Prompt *available_prompt, *available_cws_prompt, *available_regular_prompt;
-static Scheme_Dynamic_Wind *available_prompt_dw;
-static Scheme_Meta_Continuation *available_prompt_mc;
-static Scheme_Object *cached_beg_stx;
-static Scheme_Object *cached_dv_stx;
-static Scheme_Object *cached_ds_stx;
-static int cached_stx_phase;
+static THREAD_LOCAL Scheme_Prompt *available_prompt;
+static THREAD_LOCAL Scheme_Prompt *available_cws_prompt;
+static THREAD_LOCAL Scheme_Prompt *available_regular_prompt;
+static THREAD_LOCAL Scheme_Dynamic_Wind *available_prompt_dw;
+static THREAD_LOCAL Scheme_Meta_Continuation *available_prompt_mc;
+static THREAD_LOCAL Scheme_Object *cached_beg_stx;
+static THREAD_LOCAL Scheme_Object *cached_dv_stx;
+static THREAD_LOCAL Scheme_Object *cached_ds_stx;
+static THREAD_LOCAL int cached_stx_phase;
 
 /* NEED TO BE THREAD LOCAL */
 static Scheme_Cont *offstack_cont;

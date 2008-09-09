@@ -65,8 +65,8 @@ static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS
 
 /* globals THREAD_LOCAL 
  * if locked theses are probably sharable*/
-static Scheme_Hash_Table *toplevels_ht;
-static Scheme_Hash_Table *locals_ht[2];
+static THREAD_LOCAL Scheme_Hash_Table *toplevels_ht;
+static THREAD_LOCAL Scheme_Hash_Table *locals_ht[2];
 
 /* local functions */
 static void make_kernel_env(void);

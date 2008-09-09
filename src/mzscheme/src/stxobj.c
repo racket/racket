@@ -90,7 +90,9 @@ static Scheme_Hash_Table *empty_hash_table;
 
 static Scheme_Object *last_phase_shift;
 
-static Scheme_Hash_Table *id_marks_ht, *than_id_marks_ht;
+/* caches */
+static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht;
+static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht;
 
 static Scheme_Object *no_nested_inactive_certs;
 
