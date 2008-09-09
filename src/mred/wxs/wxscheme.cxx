@@ -485,6 +485,7 @@ static void release_context_lock(void *c)
 void *wxWithGLContext(wxGL *gl, void *thunk, void *alt_evt, int eb)
 {
   Scheme_Object **a, *wa[3], *glo, *v;
+  Scheme_Thread *thread;
   int evts;
 
   if (!context_sema) {
@@ -494,8 +495,9 @@ void *wxWithGLContext(wxGL *gl, void *thunk, void *alt_evt, int eb)
     context_sema = scheme_make_sema(1);
   }
 
+  thread = scheme_get_current_thread();
   if ((gl == context_lock_holder)
-      && (context_lock_thread == scheme_current_thread)) {
+      && (context_lock_thread == thread)) {
     /* The lock is already held by this GL context. */
     return _scheme_apply_multi((Scheme_Object *)thunk, 0, NULL);
   }
@@ -530,7 +532,7 @@ void *wxWithGLContext(wxGL *gl, void *thunk, void *alt_evt, int eb)
 
   if (v == context_sema) {
     context_lock_holder = gl;
-    context_lock_thread = scheme_current_thread;
+    context_lock_thread = scheme_get_current_thread();
 
     a[0] = (Scheme_Object *)thunk;
     a[1] = glo;
@@ -1384,6 +1386,8 @@ extern void wxPostScriptGetTextExtent(const char *fontname,
 				      int sym_map)
 {
   if (ps_get_text_extent) {
+    long multiple_count;
+    Scheme_Object **multiple_array;
     Scheme_Object *a[5], *v;
 
     v = scheme_make_utf8_string(fontname);
@@ -1399,24 +1403,27 @@ extern void wxPostScriptGetTextExtent(const char *fontname,
 
     v = scheme_apply_multi(ps_get_text_extent, 5, a);
     
+    multiple_count = scheme_get_multiple_count();
+    multiple_array = scheme_get_multiple_array();
     if (SAME_OBJ(v, SCHEME_MULTIPLE_VALUES)
-	&& (scheme_multiple_count == 4)) {
-      if (SCHEME_FLTP(scheme_multiple_array[0]))
-	*x = SCHEME_FLT_VAL(scheme_multiple_array[0]);
-      if (SCHEME_FLTP(scheme_multiple_array[1]))
-	*y = SCHEME_FLT_VAL(scheme_multiple_array[1]);
+	&& (multiple_count == 4)) {
+      if (SCHEME_FLTP(multiple_array[0]))
+	*x = SCHEME_FLT_VAL(multiple_array[0]);
+      if (SCHEME_FLTP(multiple_array[1]))
+	*y = SCHEME_FLT_VAL(multiple_array[1]);
       if (descent)
-	if (SCHEME_FLTP(scheme_multiple_array[2]))
-	  *descent = SCHEME_FLT_VAL(scheme_multiple_array[2]);
+	if (SCHEME_FLTP(multiple_array[2]))
+	  *descent = SCHEME_FLT_VAL(multiple_array[2]);
       if (topSpace)
-	if (SCHEME_FLTP(scheme_multiple_array[3]))
-	  *topSpace = SCHEME_FLT_VAL(scheme_multiple_array[3]);
+	if (SCHEME_FLTP(multiple_array[3]))
+	  *topSpace = SCHEME_FLT_VAL(multiple_array[3]);
     } else {
       *x = 0;
       *y = 0;
       if (descent) *descent = 0;
       if (topSpace) *topSpace = 0;
     }
+    multiple_array = NULL;
   }
 }
 

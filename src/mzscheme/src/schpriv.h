@@ -339,6 +339,15 @@ extern THREAD_LOCAL Scheme_Thread *scheme_main_thread;
 #ifdef MZ_USE_PLACES
 extern THREAD_LOCAL Scheme_Thread *scheme_current_thread;
 extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
+#define scheme_eval_wait_expr (scheme_current_thread->ku.eval.wait_expr)
+#define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
+#define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
+#define scheme_tail_rands (scheme_current_thread->ku.apply.tail_rands)
+#define scheme_overflow_reply (scheme_current_thread->overflow_reply)
+#define scheme_error_buf *(scheme_current_thread->error_buf)
+#define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
+#define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
+#define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
 #endif
 
 typedef struct Scheme_Thread_Set {

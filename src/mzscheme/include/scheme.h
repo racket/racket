@@ -1099,20 +1099,34 @@ typedef struct Scheme_Thread {
 #endif
 
 typedef void (*Scheme_Kill_Action_Func)(void *);
+#define ESCAPE_BLOCK(return_code) \
+    thread = scheme_get_current_thread(); \
+    savebuf = thread->error_buf; \
+    thread->error_buf = &newbuf; \
+    if (scheme_setjmp(newbuf)) \
+    { \
+      thread = scheme_get_current_thread(); \
+      thread->error_buf = savebuf; \
+      scheme_clear_escape(); \
+      return return_code; \
+    }
 
 # define BEGIN_ESCAPEABLE(func, data) \
     { mz_jmp_buf * volatile savebuf, newbuf; \
+      Scheme_Thread *thread; \
+      thread = scheme_get_current_thread(); \
       scheme_push_kill_action((Scheme_Kill_Action_Func)func, (void *)data); \
-      savebuf = scheme_current_thread->error_buf; \
-      scheme_current_thread->error_buf = &newbuf; \
+      savebuf = thread->error_buf; \
+      thread->error_buf = &newbuf; \
       if (scheme_setjmp(newbuf)) { \
         scheme_pop_kill_action(); \
         func(data); \
         scheme_longjmp(*savebuf, 1); \
       } else {
 # define END_ESCAPEABLE() \
+      thread = scheme_get_current_thread(); \
       scheme_pop_kill_action(); \
-      scheme_current_thread->error_buf = savebuf; } }
+      thread->error_buf = savebuf; } }
 
 
 /*========================================================================*/
@@ -1390,6 +1404,7 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 
 #define SCHEME_ASSERT(expr,msg) ((expr) ? 1 : (scheme_signal_error(msg), 0))
 
+#ifndef MZ_USE_PLACES
 #define scheme_eval_wait_expr (scheme_current_thread->ku.eval.wait_expr)
 #define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
 #define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
@@ -1401,6 +1416,7 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 
 #define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
+#endif
 
 #define scheme_setjmpup(b, base, s) scheme_setjmpup_relative(b, base, s, NULL)
 
@@ -1436,11 +1452,21 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 #define _scheme_force_value(v) ((v == SCHEME_TAIL_CALL_WAITING) ? scheme_force_value(v) : v)
 
 #define scheme_tail_apply_buffer_wp(n, p) ((p)->tail_buffer)
-#define scheme_tail_apply_buffer(n) scheme_tail_apply_buffer_wp(n, scheme_current_thread)
+#define scheme_tail_apply_buffer(n) \
+{ \
+  Scheme_Thread *thread; \
+  thread = scheme_get_current_thread(); \
+  scheme_tail_apply_buffer_wp(n, thread);\
+}
 
 #define _scheme_tail_apply_no_copy_wp_tcw(f, n, args, p, tcw) (p->ku.apply.tail_rator = f, p->ku.apply.tail_rands = args, p->ku.apply.tail_num_rands = n, tcw)
 #define _scheme_tail_apply_no_copy_wp(f, n, args, p) _scheme_tail_apply_no_copy_wp_tcw(f, n, args, p, SCHEME_TAIL_CALL_WAITING)
-#define _scheme_tail_apply_no_copy(f, n, args) _scheme_tail_apply_no_copy_wp(f, n, args, scheme_current_thread)
+#define _scheme_tail_apply_no_copy(f, n, args) \
+{ \
+  Scheme_Thread *thread; \
+  thread = scheme_get_current_thread(); \
+  _scheme_tail_apply_no_copy_wp(f, n, args, thread) \
+}
 
 #define scheme_thread_block_w_thread(t,p) scheme_thread_block(t)
 
@@ -1661,6 +1687,11 @@ MZ_EXTERN int scheme_get_allow_set_undefined();
 MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
 MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_first_thread;
 #endif
+MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
+MZ_EXTERN long scheme_get_multiple_count();
+MZ_EXTERN Scheme_Object **scheme_get_multiple_array();
+MZ_EXTERN void scheme_set_current_thread_ran_some();
+
 
 /* Set these global hooks (optionally): */
 typedef void (*Scheme_Exit_Proc)(int v);

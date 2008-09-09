@@ -147,6 +147,9 @@ THREAD_LOCAL Scheme_Thread *scheme_main_thread = NULL;
 THREAD_LOCAL Scheme_Thread *scheme_first_thread = NULL;
 
 Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
+long scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
+Scheme_Object **scheme_get_multiple_array() { return scheme_current_thread->ku.multiple.array; }
+void scheme_set_current_thread_ran_some() { scheme_current_thread->ran_some = 1; }
 
 THREAD_LOCAL Scheme_Thread_Set *scheme_thread_set_top;
 

@@ -1034,18 +1034,23 @@ static int check_eventspace_inactive(void *_c)
 void mred_wait_eventspace(void)
 {
   MrEdContext *c;
+  Scheme_Thread *thread;
   c = MrEdGetContext();
-  if (c && (c->handler_running == scheme_current_thread)) {
+  thread = scheme_get_current_thread();
+  if (c && (c->handler_running == thread)) {
     wxDispatchEventsUntilWaitable(check_eventspace_inactive, c, NULL);
   }
 }
 
 int mred_current_thread_is_handler(void *ctx)
 {
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
+
   if (!ctx)
     ctx = MrEdGetContext();
 
-  return (((MrEdContext *)ctx)->handler_running == scheme_current_thread);
+  return (((MrEdContext *)ctx)->handler_running == thread);
 }
 
 int mred_in_restricted_context()
@@ -1053,7 +1058,7 @@ int mred_in_restricted_context()
 #ifdef NEED_HET_PARAM
   /* see wxHiEventTrampoline for info on mred_het_key: */
   Scheme_Object *v;
-  if (!scheme_current_thread) 
+  if (!scheme_get_current_thread()) 
     return 1;
   
   if (mred_het_key)
@@ -1098,6 +1103,8 @@ static void DoTimer(wxTimer *timer)
 {
   int once;
   mz_jmp_buf *save, newbuf;
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
 
   if (timer->interval == -1)
     return;
@@ -1105,12 +1112,14 @@ static void DoTimer(wxTimer *timer)
   once = timer->one_shot;
   timer->one_shot = -1;
 
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  save = thread->error_buf;
+  thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf))
     timer->Notify();
   scheme_clear_escape();
-  scheme_current_thread->error_buf = save;
+  thread = scheme_get_current_thread();
+  thread->error_buf = save;
+  thread = NULL;
 
   if (!once && (timer->one_shot == -1) && (timer->interval != -1)
       && !((MrEdContext *)timer->context)->killed)
@@ -1159,15 +1168,19 @@ static void GoAhead(MrEdContext *c)
   } else {
     GC_CAN_IGNORE MrEdEvent e;
     mz_jmp_buf *save, newbuf;
+    Scheme_Thread *thread;
+    thread = scheme_get_current_thread();
 
     memcpy(&e, &c->event, sizeof(MrEdEvent));
 
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
+    save = thread->error_buf;
+    thread->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf))
       MrEdDispatchEvent(&e);
     scheme_clear_escape();
-    scheme_current_thread->error_buf = save;
+    thread = scheme_get_current_thread();
+    thread->error_buf = save;
+    thread = NULL;
   }
 }
 
@@ -1199,15 +1212,19 @@ static void DoTheEvent(MrEdContext *c)
   if (p != def_dispatch) {
     Scheme_Object *a[1];
     mz_jmp_buf *save, newbuf;
+    Scheme_Thread *thread;
+    thread = scheme_get_current_thread();
 
     a[0] = (Scheme_Object *)c;
 
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &newbuf;
+    save = thread->error_buf;
+    thread->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf))
       scheme_apply_multi(p, 1, a);
     scheme_clear_escape();
-    scheme_current_thread->error_buf = save;
+    thread = scheme_get_current_thread();
+    thread->error_buf = save;
+    thread = NULL;
 
 #if 0
     if (c->ready_to_go)
@@ -1334,10 +1351,12 @@ static Scheme_Object *MrEdDoNextEvent(MrEdContext *c, wxDispatch_Check_Fun alt, 
 void wxDoNextEvent()
 {
   MrEdContext *c;
+  Scheme_Thread *thread;
   c = MrEdGetContext();
+  thread = scheme_get_current_thread();
 
   if (!c->ready_to_go)
-    if (c->handler_running == scheme_current_thread)
+    if (c->handler_running == thread)
       MrEdDoNextEvent(c, NULL, NULL, NULL);
 }
 
@@ -1362,10 +1381,12 @@ int MrEdEventReady(MrEdContext *c)
 int wxEventReady()
 {
   MrEdContext *c;
+  Scheme_Thread *thread;
   c = MrEdGetContext();
+  thread = scheme_get_current_thread();
 
   return (!c->ready_to_go
-	  && (c->handler_running == scheme_current_thread)
+	  && (c->handler_running == thread)
 	  && MrEdEventReady(c));
 }
 
@@ -1389,7 +1410,7 @@ static void WaitForAnEvent_OrDie(MrEdContext *c)
       c->waiting_for_nested = 0;
 
       scheme_thread_block(0);
-      scheme_current_thread->ran_some = 1;
+      scheme_set_current_thread_ran_some();
 
       /* Go back to sleep: */
       c->ready = 1;
@@ -1435,7 +1456,7 @@ static Scheme_Object *handle_events(void *cx, int, Scheme_Object **)
   fprintf(stderr, "new thread\n");
 #endif
 
-  this_thread = scheme_current_thread;
+  this_thread = scheme_get_current_thread();
   if (!this_thread->name) {
     Scheme_Object *tn;
     tn = scheme_intern_symbol("handler");
@@ -1447,7 +1468,7 @@ static Scheme_Object *handle_events(void *cx, int, Scheme_Object **)
   c->suspended = 0;
   c->ready = 0;
 
-  scheme_current_thread->error_buf = &newbuf;
+  this_thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
     if (!TheMrEdApp->initialized)
       TheMrEdApp->RealInit();
@@ -1512,7 +1533,7 @@ static int try_q_callback(Scheme_Object *do_it, int hi)
       return 1;
 
     if (SCHEME_FALSEP(do_it))
-      scheme_current_thread->ran_some = 1;
+      scheme_set_current_thread_ran_some();
 
     if (c == mred_main_context)
       check_q_callbacks(hi, MrEdSameContext, c, 0);
@@ -1543,7 +1564,7 @@ static int try_dispatch(Scheme_Object *do_it)
     if (!do_it)
       return 1;
     if (SCHEME_FALSEP(do_it))
-      scheme_current_thread->ran_some = 1;
+      scheme_set_current_thread_ran_some();
 
     c = (MrEdContext *)timer->context;
 
@@ -1579,7 +1600,7 @@ static int try_dispatch(Scheme_Object *do_it)
       return 1;
 
     if (SCHEME_FALSEP(do_it))
-      scheme_current_thread->ran_some = 1;
+      scheme_set_current_thread_ran_some();
 
     if (c) {
       memcpy(&c->event, &e, sizeof(MrEdEvent));
@@ -1671,14 +1692,17 @@ void wxDoEvents()
 
   if (!try_dispatch(scheme_true)) {
     do {
-      scheme_current_thread->block_descriptor = -1;
-      scheme_current_thread->blocker = NULL;
-      scheme_current_thread->block_check = CAST_BLKCHK try_dispatch;
-      scheme_current_thread->block_needs_wakeup = CAST_WU wakeup_on_dispatch;
+      Scheme_Thread *thread;
+      thread = scheme_get_current_thread();
+      thread->block_descriptor = -1;
+      thread->blocker = NULL;
+      thread->block_check = CAST_BLKCHK try_dispatch;
+      thread->block_needs_wakeup = CAST_WU wakeup_on_dispatch;
 
       scheme_thread_block(0);
 
-      scheme_current_thread->block_descriptor = 0;
+      thread = scheme_get_current_thread();
+      thread->block_descriptor = 0;
       /* Sets ran_some if it succeeds: */
       if (try_dispatch(scheme_false))
 	break;
@@ -1690,14 +1714,16 @@ Scheme_Object *wxDispatchEventsUntilWaitable(wxDispatch_Check_Fun f, void *data,
 {
   MrEdContext *c;
   Scheme_Object *result = scheme_void;
+  Scheme_Thread *thread;
 
   c = MrEdGetContext();
 #ifdef wx_mac
   wxMouseEventHandled();
 #endif
 
+  thread = scheme_get_current_thread();
   if (c->ready_to_go
-      || (c->handler_running != scheme_current_thread)) {
+      || (c->handler_running != thread)) {
     /* This is not the handler thread or an event still hasn't been
        dispatched. Wait. */
     if (w) {
@@ -1956,13 +1982,16 @@ static void remove_q_callback(Q_Callback_Set *cs, Q_Callback *cb)
 static void call_one_callback(Q_Callback * volatile  cb)
 {
   mz_jmp_buf *save, newbuf;
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
 
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  save = thread->error_buf;
+  thread->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf))
     scheme_apply_multi(cb->callback, 0, NULL);
   scheme_clear_escape();
-  scheme_current_thread->error_buf = save;
+  thread = scheme_get_current_thread();
+  thread->error_buf = save;
 }
 
 static MrEdContext *check_q_callbacks(int hi, int (*test)(MrEdContext *, MrEdContext *),
@@ -2042,7 +2071,7 @@ static void MrEdQueueWindowCallback(wxWindow *wx_window, Scheme_Closed_Prim *scp
   Q_Callback *cb;
   Scheme_Object *p;
 
-  if (!scheme_current_thread) {
+  if (!scheme_get_current_thread()) {
     /* Scheme hasn't started yet, so call directly.
        We might get here for an update to the stdio
        window, for example. */
@@ -2637,25 +2666,30 @@ static Scheme_Object *console_reading;
 
 static void add_console_reading()
 {
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
+
   if (!console_reading) {
     wxREGGLOB(console_reading);
     console_reading = scheme_null;
   }
 
-  console_reading = scheme_make_pair((Scheme_Object *)scheme_current_thread,
+  console_reading = scheme_make_pair((Scheme_Object *)thread,
 				     console_reading);
 }
 
 static void remove_console_reading()
 {
   Scheme_Object *p, *prev = NULL;
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
 
   if (!console_reading)
     return;
 
   p = console_reading;
   while (SCHEME_PAIRP(p)) {
-    if (SAME_OBJ(SCHEME_CAR(p), (Scheme_Object *)scheme_current_thread)) {
+    if (SAME_OBJ(SCHEME_CAR(p), (Scheme_Object *)thread)) {
       if (prev)
 	SCHEME_CDR(prev) = SCHEME_CDR(p);
       else
@@ -3234,7 +3268,11 @@ static Scheme_Env *setup_basic_env()
 
   /* This handler_running pointer gets reset later. Do
      we really need to set it now? */
-  mred_main_context->handler_running = scheme_current_thread;
+  {
+    Scheme_Thread *thread;
+    thread = scheme_get_current_thread();
+    mred_main_context->handler_running = thread;
+  }
 
   mzsleep = scheme_sleep;
   scheme_sleep = CAST_SLEEP MrEdSleep;
@@ -3444,11 +3482,14 @@ static void on_main_killed(Scheme_Thread *p)
 
 void MrEdApp::RealInit(void)
 {
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
+
   initialized = 1;
 
   wxMediaIOCheckLSB(/* scheme_console_printf */);
 
-  scheme_current_thread->on_kill = CAST_TOK on_main_killed;
+  thread->on_kill = CAST_TOK on_main_killed;
 #if WINDOW_STDIO
   if (!wx_in_terminal)
     scheme_exit = CAST_EXIT MrEdExit;
@@ -3463,7 +3504,7 @@ void MrEdApp::RealInit(void)
   if (!exit_val)
     exit_val = mred_finish_cmd_line_run();
 
-  scheme_kill_thread(scheme_current_thread);
+  scheme_kill_thread(thread);
 }
 
 #ifdef wx_mac
@@ -3876,6 +3917,8 @@ static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
   mz_jmp_buf * volatile save, newbuf;
   volatile int block_descriptor;
+  Scheme_Thread *thread;
+  thread = scheme_get_current_thread();
 
   if (!proc) {
     /* Oops --- too early. */
@@ -3885,13 +3928,13 @@ static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
   /* wxDo might be called when MrEd is sleeping (i.e.,
      blocked on WNE in OS X). Since we're hijacking the
      thread, save an restore block information. */
-  block_descriptor = scheme_current_thread->block_descriptor;
-  scheme_current_thread->block_descriptor = 0;
+  block_descriptor = thread->block_descriptor;
+  thread->block_descriptor = 0;
 
   scheme_start_atomic();
 
-  save = scheme_current_thread->error_buf;
-  scheme_current_thread->error_buf = &newbuf;
+  save = thread->error_buf;
+  thread->error_buf = &newbuf;
 
   if (scheme_setjmp(newbuf)) {
     scheme_clear_escape();
@@ -3899,8 +3942,9 @@ static void wxDo(Scheme_Object *proc, int argc, Scheme_Object **argv)
     scheme_apply(proc, argc, argv);
   }
 
-  scheme_current_thread->error_buf = save;
-  scheme_current_thread->block_descriptor = block_descriptor;
+  thread = scheme_get_current_thread();
+  thread->error_buf = save;
+  thread->block_descriptor = block_descriptor;
 
   scheme_end_atomic_no_swap();
 }
