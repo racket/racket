@@ -96,10 +96,8 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   place = MALLOC_ONE_TAGGED(Scheme_Place);
   place->so.type = scheme_place_type;
 
-  scheme_console_printf("Hello creating new place %p\n", place);
-
   /* pass critical info to new place */
-  place_data = (Place_Start_Data*)malloc(sizeof(Place_Start_Data));
+  place_data = MALLOC_ONE(Place_Start_Data);
   place_data->thunk  = args[0];
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   place_data->current_library_collection_paths = collection_paths;
@@ -154,10 +152,14 @@ static void *place_start_proc(void *data_arg) {
   Scheme_Object *thunk;
   Place_Start_Data *place_data;
   Scheme_Object *a[1];
+  int ptid;
+  ptid = mz_proc_thread_self();
 
 
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
+ 
+  printf("Startin place: proc thread id%u\n", ptid);
 
   /* create pristine THREAD_LOCAL variables*/
   null_out_runtime_globals();
@@ -170,8 +172,6 @@ static void *place_start_proc(void *data_arg) {
   load_namespace("scheme/init");
 
   thunk = place_data->thunk;
-
-  scheme_console_printf("Hello in new place %p\n", thunk);
 
   scheme_apply(thunk, 0, NULL);
 
