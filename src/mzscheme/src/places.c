@@ -49,10 +49,10 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place", scheme_place, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place_sleep", scheme_place_sleep, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place_wait", scheme_place_wait, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place?", scheme_place_p, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-sleep", scheme_place_sleep, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-wait",  scheme_place_wait,  1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place?",      scheme_place_p,     1, 1, plenv);
 
   scheme_finish_primitive_module(plenv);
 }
