@@ -162,10 +162,10 @@
       (define (top-level-annotate stx)
         (kernel:kernel-syntax-case/phase
          stx (namespace-base-phase)
-         [(module identifier name (#%plain-module-begin . module-level-exprs))
+         [(module identifier name (plain-module-begin . module-level-exprs))
           (with-syntax ([(module . _) stx])
             (quasisyntax/loc stx (module identifier name
-                                   (#%plain-module-begin 
+                                   (plain-module-begin 
                                     #,@(map (lambda (e) (module-level-expr-iterator
                                                          e (list (syntax-e #'identifier)
                                                                  (syntax-source #'identifier))))
