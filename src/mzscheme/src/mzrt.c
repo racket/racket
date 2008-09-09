@@ -147,6 +147,20 @@ struct mz_proc_thread {
 #endif
 };
 
+int mz_proc_thread_self() {
+#ifdef WIN32
+#error !!!mz_proc_thread_id not implemented!!!
+#else
+  return (int) pthread_self();
+#endif
+}
+
+int mz_proc_thread_id(mz_proc_thread* thread) {
+
+  return (int) thread->threadid;
+}
+
+
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
 #ifdef WIN32
