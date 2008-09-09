@@ -191,6 +191,16 @@ CSTARTUPDEST = cstartup.inc
 startup:
 	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
 
+total_startup:
+	awk '{ if (match($$0, "#define USE_COMPILED_STARTUP 1")) print "#define USE_COMPILED_STARTUP 0"; else print }' src/schminc.h > src/schminc.newh
+	mv src/schminc.newh src/schminc.h
+	$(MAKE) cgc
+	rm -rf $(srcdir)/src/$(CSTARTUPDEST)
+	$(MAKE) $(srcdir)/src/$(CSTARTUPDEST)
+	awk '{ if (match($$0, "#define USE_COMPILED_STARTUP 0")) print "#define USE_COMPILED_STARTUP 1"; else print }' src/schminc.h > src/schminc.newh
+	mv src/schminc.newh src/schminc.h
+	$(MAKE) cgc
+
 mark:
 	$(MAKE) $(srcdir)/src/mzmark.c
 
