@@ -806,14 +806,18 @@ Registers the pointer @var{*p} as a weak pointer; when no other
 (non-weak) pointers reference the same memory as @var{*p} references,
 then @var{*p} will be set to @cpp{NULL} by the garbage collector. The
 value in @var{*p} may change, but the pointer remains weak with
-respect to the value of @var{*p} at the time @var{p} was registered.}
+respect to the value of @var{*p} at the time @var{p} was registered.
+
+This function is not available in 3m.}
 
 @function[(void scheme_weak_reference_indirect
            [void** p]
            [void* v])]{
 
-Like @cppi{scheme_weak_reference}, but @var{*p} is cleared
-(regardless of its value) when there are no references to @var{v}.}
+Like @cppi{scheme_weak_reference}, but @var{*p} is set to @cpp{NULL}
+(regardless of its prior value) when there are no references to @var{v}.
+
+This function is not available in 3m.}
 
 @function[(void scheme_register_finalizer
            [void* p]
