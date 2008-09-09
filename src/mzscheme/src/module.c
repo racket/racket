@@ -25,6 +25,7 @@
    bindings. */
 
 #include "schpriv.h"
+#include "mzrt.h"
 #include "schmach.h"
 #include "schexpobs.h"
 
@@ -32,6 +33,13 @@
 Scheme_Object *scheme_sys_wraps0;
 Scheme_Object *scheme_sys_wraps1;
 Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
+
+#ifdef MZ_USE_PLACES
+mzrt_mutex *modpath_table_mutex;
+#else
+# define mzrt_mutex_lock(l) /* empty */
+# define mzrt_mutex_unlock(l) /* empty */
+#endif
 
 /* locals */
 static Scheme_Object *current_module_name_resolver(int argc, Scheme_Object *argv[]);
@@ -62,11 +70,11 @@ static Scheme_Object *resolved_module_path_name(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv);
 
+/* syntax */
 static Scheme_Object *module_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *module_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *module_begin_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *module_begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-
 static Scheme_Object *require_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -112,16 +120,16 @@ static Scheme_Module_Exports *make_module_exports();
 
 #define cons scheme_make_pair
 
-static Scheme_Object *modbeg_syntax;
 
+/* global read-only kernel stuff */
 static Scheme_Object *kernel_modname;
 static Scheme_Object *kernel_symbol;
 static Scheme_Object *kernel_modidx;
 static Scheme_Module *kernel;
 
+/* global read-only symbols */
 static Scheme_Object *module_symbol;
 static Scheme_Object *module_begin_symbol;
-
 static Scheme_Object *prefix_symbol;
 static Scheme_Object *only_symbol;
 static Scheme_Object *rename_symbol;
@@ -141,24 +149,24 @@ static Scheme_Object *for_template_symbol;
 static Scheme_Object *for_label_symbol;
 static Scheme_Object *for_meta_symbol;
 static Scheme_Object *just_meta_symbol;
-
 static Scheme_Object *quote_symbol;
 static Scheme_Object *lib_symbol;
 static Scheme_Object *planet_symbol;
 static Scheme_Object *file_symbol;
-
 static Scheme_Object *module_name_symbol;
 
+/* global read-only syntax */
 Scheme_Object *scheme_module_stx;
 Scheme_Object *scheme_begin_stx;
 Scheme_Object *scheme_define_values_stx;
 Scheme_Object *scheme_define_syntaxes_stx;
+Scheme_Object *scheme_top_stx;
+static Scheme_Object *modbeg_syntax;
 static Scheme_Object *define_for_syntaxes_stx;
 static Scheme_Object *require_stx;
 static Scheme_Object *provide_stx;
 static Scheme_Object *set_stx;
 static Scheme_Object *app_stx;
-Scheme_Object *scheme_top_stx;
 static Scheme_Object *lambda_stx;
 static Scheme_Object *case_lambda_stx;
 static Scheme_Object *let_values_stx;
@@ -180,8 +188,8 @@ static Scheme_Bucket_Table *initial_toplevel;
 static Scheme_Object *empty_self_modidx;
 static Scheme_Object *empty_self_modname;
 
-static Scheme_Modidx *modidx_caching_chain;
-static Scheme_Object *global_shift_cache;
+static THREAD_LOCAL Scheme_Modidx *modidx_caching_chain;
+static THREAD_LOCAL Scheme_Object *global_shift_cache;
 #define GLOBAL_SHIFT_CACHE_SIZE 40
 #ifdef USE_SENORA_GC
 # define SHIFT_CACHE_NULL scheme_false
@@ -291,6 +299,10 @@ void scheme_init_module(Scheme_Env *env)
 			    scheme_make_compiled_syntax(provide_syntax, 
 							provide_expand), 
 			    env);
+
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_create(&modpath_table_mutex);
+#endif
 
   REGISTER_SO(quote_symbol);
   REGISTER_SO(file_symbol);
@@ -2640,6 +2652,9 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
 {
   Scheme_Object *rmp;
   Scheme_Bucket *b;
+  Scheme_Object *return_value;
+
+  mzrt_mutex_lock(modpath_table_mutex);
 
   if (!modpath_table) {
     REGISTER_SO(modpath_table);
@@ -2654,7 +2669,11 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   if (!b->val)
     b->val = scheme_true;
 
-  return (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+  return_value = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+
+  mzrt_mutex_unlock(modpath_table_mutex);
+
+  return return_value;
 }
 
 static Scheme_Object *resolved_module_path_p(int argc, Scheme_Object *argv[])
