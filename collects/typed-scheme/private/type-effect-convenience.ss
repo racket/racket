@@ -1,13 +1,14 @@
 #lang scheme/base  
-(require "type-rep.ss" 
-         "effect-rep.ss"
+(require "../utils/utils.ss")
+
+(require (rep type-rep effect-rep)
+         (utils tc-utils)
          scheme/match
          "type-comparison.ss"
          "type-effect-printer.ss"
          "union.ss"
          "subtype.ss"
          "type-utils.ss" 
-         "tc-utils.ss"
          scheme/promise
          (for-syntax macro-debugger/stxclass/stxclass)
          (for-syntax scheme/base))

@@ -1,5 +1,9 @@
 #lang scheme/base
-(require "type-rep.ss" "effect-rep.ss" "rep-utils.ss" "tc-utils.ss" "planet-requires.ss" scheme/match)
+
+(require "../utils/utils.ss")
+(require (rep type-rep effect-rep rep-utils)
+	 (utils planet-requires tc-utils)
+	 scheme/match)
 
 ;; do we attempt to find instantiations of polymorphic types to print? 
 ;; FIXME - currently broken

@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "type-rep.ss"
-         "effect-rep.ss"
-         "tc-utils.ss"
-         "rep-utils.ss"
-         (only-in "free-variance.ss" combine-frees)
+(require "../utils/utils.ss")
+
+(require (rep type-rep effect-rep rep-utils)
+         (utils tc-utils)
+         (only-in (rep free-variance) combine-frees)
          mzlib/plt-match
          scheme/list
          mzlib/trace

@@ -3,6 +3,7 @@
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
+ "../utils/utils.ss"
  (only-in scheme/list cons? take drop add-between last filter-map)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
@@ -15,13 +16,12 @@
 ;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
-          "init-envs.ss"
-          "effect-rep.ss"
-          (except-in "type-rep.ss" make-arr)
+          (env init-envs)          
+          (except-in (rep effect-rep type-rep) make-arr)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
           "union.ss"
-          "tc-structs.ss"))
+          (typecheck tc-structs)))
 
 (define-for-syntax (initialize-others) 
   (d-s date 

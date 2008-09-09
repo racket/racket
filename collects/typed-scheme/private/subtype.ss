@@ -1,12 +1,13 @@
 #lang scheme/base
+(require "../utils/utils.ss")
 
-(require (except-in "type-rep.ss" sub-eff) "type-utils.ss"
-         "tc-utils.ss"
-         "effect-rep.ss"
+(require (except-in (rep type-rep effect-rep) sub-eff)
+         (utils tc-utils)
+	 "type-utils.ss"
          "type-comparison.ss"
          "resolve-type.ss"
-         "type-name-env.ss"
-         (only-in "infer-dummy.ss" unify)
+         (env type-name-env)
+         (only-in (infer infer-dummy) unify)
          mzlib/plt-match
          mzlib/trace)
 

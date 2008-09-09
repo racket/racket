@@ -2,14 +2,14 @@
 
 (provide type->contract define/fixup-contract? generate-contract-def change-contract-fixups)
 
+(require (except-in "../utils/utils.ss" extend))
 (require
- "type-rep.ss"   
+ (rep type-rep)
+ (typecheck internal-forms)
+ (utils tc-utils)
+ (env type-name-env)
  "parse-type.ss"
- "utils.ss"      
- "type-name-env.ss"
  "require-contract.ss"
- "internal-forms.ss"
- "tc-utils.ss"
  "resolve-type.ss"
  "type-utils.ss"   
  (only-in "type-effect-convenience.ss" Any-Syntax)
