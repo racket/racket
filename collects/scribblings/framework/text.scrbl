@@ -305,7 +305,17 @@
 @definterface[text:searching<%> (editor:keymap<%> text:basic<%>)]{
   Any object matching this interface can be searched.
 
-@defmethod[(set-searching-str [str (or/c false/c string?)] [cs? boolean? #t]) void?]{
+  Searches using this class has a non-traditional feature
+  for performance reasons. Specifically, multiple adjacent
+  hits are coalesced into a single search results when
+  bubbles are drawn. This means, for example, that searching
+  for a space in a file with 80,000 spaces (as one file in
+  the PLT Scheme code base has) is still tractable, since
+  many of those spaces will be next to each other and thus
+  there will be far fewer bubbles (the file in question has
+  only 20,000 such bubbles).
+
+@defmethod[(set-searching-state [str (or/c false/c string?)] [cs? boolean?] [replace-start (or/c false/c number?)]) void?]{
 
   If @scheme[str] is not @scheme[#f], then this method highlights
   every occurrence of @scheme[str] in the editor. If @scheme[str] is
@@ -313,15 +323,50 @@
 
   If @scheme[cs?] is @scheme[#f], the search is case-insensitive, and
   otherwise it is case-sensitive.
-}
-@defmethod[(get-search-hits) number?]{
-  Returns the number of hits for the search in the buffer, based on the
-  count found last time that a search happened. 
+
+  If the @scheme[replace-start] argument is @scheme[#f],
+  then the search is not in replacement mode. If it is a
+  number, then the first search hit after that position in
+  the editor is where the next replacement will take place.
+
 }
 @defmethod[(set-search-anchor [position (or/c false/c number?)]) void?]{
   Sets the anchor's position in the editor. Only takes effect if
   the @scheme['framework:anchored-search] preference is on.
 }
+@defmethod[(get-search-hit-count) number?]{
+  Returns the number of hits for the search in the buffer, based on the
+  count found last time that a search happened. 
+}
+
+@defmethod[(set-replace-start [pos (or/c false/c number?)]) void?]{
+  Sets the position where replacement next occurs. This is equivalent
+  to calling @method[text:searching<%> set-searching-state] with
+  a new @scheme[replace-start] argument, but the other arguments the same
+  as the last call to @method[text:searching<%> set-searching-state],
+  but is more efficient (since @method[text:searching<%> set-searching-state]
+  will search the entire buffer and re-build all of the bubbles).
+}
+
+@defmethod[(get-search-bubbles) 
+           (listof (list/c (cons/c number number) 
+                           (list/c number number number)))]{
+  Returns information about the search bubbles in the editor. Each
+  item in the outermost list corresponds to a single bubble. The pair
+  of numbers is the range of the bubble and the triple of numbers is
+  the color of the bubble, in RGB coordinates.
+
+  If @tt{replace-start} has been set (via
+  @method[text:searching<%> set-replace-start]) and the
+  closest search hit following @tt{replace-start} does not
+  collapse with an adjacent bubble,the result will include
+  that bubble. If the the closest search hit after
+  @tt{replace-start} is collpased with another bubble, then
+  the search hit is not reflected in the result.
+
+  This method is intended for use in test suites.
+}
+
 }
 @defmixin[text:searching-mixin (editor:keymap<%> text:basic<%>) (text:searching<%>)]{
   This 

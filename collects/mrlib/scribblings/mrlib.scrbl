@@ -8,6 +8,7 @@
 @include-section["aligned-pasteboard/aligned-pasteboard.scrbl"]
 @include-section["bitmap-label.scrbl"]
 @include-section["cache-image-snip.scrbl"]
+@include-section["close-icon.scrbl"]
 @include-section["gif.scrbl"]
 @include-section["graph/graph.scrbl"]
 @include-section["hierlist/hierlist.scrbl"]

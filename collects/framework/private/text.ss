@@ -362,22 +362,29 @@ WARNING: printf is rebound in the body of the unit to always
                      (λ (x) (and (integer? x) (exact? x) (x . >= . 0)))])
                 (and (exact-pos-int? start)
                      (exact-pos-int? end)))
-        (error 'highlight-range "expected first two arguments to be non-negative exact integers, got: ~e ~e"
-               start end))
+        (error 'highlight-range
+               "expected first two arguments to be non-negative exact integers, got: ~e ~e"
+               start
+               end))
       (unless (<= start end)
-        (error 'highlight-range "expected start to be less than end, got ~e ~e" start end))
+        (error 'highlight-range
+               "expected start to be less than end, got ~e ~e" start end))
       (unless (or (eq? priority 'high) (eq? priority 'low))
-        (error 'highlight-range "expected last argument to be either 'high or 'low, got: ~e"
+        (error 'highlight-range
+               "expected priority argument to be either 'high or 'low, got: ~e"
                priority))
       (unless (or (is-a? color color%)
                   (and (string? color)
                        (send the-color-database find-color color)))
-        (error 'highlight-range "expected a color or a string in the the-color-database for the third argument, got ~e" color))
+        (error 'highlight-range
+               "expected a color or a string in the the-color-database for the third argument, got ~e" color))
       (unless (memq style '(rectangle hollow-ellipse ellipse dot))
-        (error 'highlight-range "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))
+        (error 'highlight-range
+               "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))
       (when (eq? style 'dot)
         (unless (= start end)
-          (error 'highlight-range "when the style is 'dot, the start and end regions must be the same")))
+          (error 'highlight-range
+                 "when the style is 'dot, the start and end regions must be the same")))
       
       (let* ([color (if (is-a? color color%)
                         color
@@ -408,19 +415,37 @@ WARNING: printf is rebound in the body of the unit to always
         (invalidate-rectangles (append old-rectangles range-rectangles))))
     
     (define/public (unhighlight-range start end color [caret-space? #f] [style 'rectangle])
-      (let ([new-todo
-             (λ ()
-               (hash-remove! ranges (make-range start end caret-space? style color))
-               (set! ranges-list #f))])
-        (cond
-          [delayed-highlights?
-           (set! todo
-                 (let ([old-todo todo])
-                   (λ ()
-                     (old-todo)
-                     (new-todo))))]
-          [else
-           (redraw-highlights new-todo)])))
+      (let ([candidate (make-range start end 
+                                   caret-space? 
+                                   style 
+                                   (if (is-a? color color%)
+                                       color
+                                       (send the-color-database find-color color)))])
+        (let ([new-todo
+               (λ ()
+                 (unless (hash-ref ranges candidate #f)
+                   (error 'unhighlight-range 
+                          "range not found; start: ~e end: ~e color: ~a caret-space?: ~e style: ~e"
+                          start end 
+                          (if (string? color)
+                              (format "~s" color)
+                              (format "(red: ~a green: ~a blue: ~a)"
+                                      (send color red)
+                                      (send color green)
+                                      (send color blue)))
+                          caret-space? 
+                          style))
+                 (hash-remove! ranges candidate)
+                 (set! ranges-list #f))])
+          (cond
+            [delayed-highlights?
+             (set! todo
+                   (let ([old-todo todo])
+                     (λ ()
+                       (old-todo)
+                       (new-todo))))]
+            [else
+             (redraw-highlights new-todo)]))))
     
     (define/override (on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
       (super on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
@@ -568,8 +593,8 @@ WARNING: printf is rebound in the body of the unit to always
     first-line-currently-drawn-specially?
     is-special-first-line?))
 
-(define dark-color (make-object color% 50 0 50))
-(define dark-wob-color (make-object color% 255 200 255))
+(define dark-first-line-color (make-object color% 50 0 50))
+(define dark-wob-first-line-color (make-object color% 255 200 255))
 
 (define first-line-mixin
   (mixin ((class->interface text%)) (first-line<%>)
@@ -695,7 +720,7 @@ WARNING: printf is rebound in the body of the unit to always
                               [end 0]
                               [steps 10])
                         (send dc set-pen 
-                              (if w-o-b? dark-wob-color dark-color) 
+                              (if w-o-b? dark-wob-first-line-color dark-first-line-color) 
                               1
                               'solid)
                         (let loop ([i steps])
@@ -794,21 +819,139 @@ WARNING: printf is rebound in the body of the unit to always
 
 (define searching<%> 
   (interface (editor:keymap<%> basic<%>)
-    set-searching-str
+    set-searching-state
     set-search-anchor
-    get-search-hits))
+    get-search-bubbles
+    get-search-hit-count))
+
+(define dim-plum
+  (let ([plum (send the-color-database find-color "plum")]
+        [f (λ (x) (+ x (floor (* (- 255 x) 2/3))))])
+    (make-object color% 
+      (f (send plum red))
+      (f (send plum green))
+      (f (send plum blue)))))
+
+(define (get-search-highlight-colors)
+  (values dim-plum
+          "plum"
+          "mediumorchid"))
 
 (define searching-mixin
   (mixin (editor:keymap<%> basic<%>) (searching<%>)
-    (inherit run-after-edit-sequence invalidate-bitmap-cache
-             get-start-position)
-
+    (inherit invalidate-bitmap-cache
+             get-start-position get-end-position
+             unhighlight-range highlight-range
+             run-after-edit-sequence begin-edit-sequence end-edit-sequence
+             find-string)
+    
     (define/override (get-keymaps)
       (cons (keymap:get-search) (super get-keymaps)))
     
     (define searching-str #f)
     (define case-sensitive? #f)
-    (define search-hits 0)
+    
+    ;; replace-start (or/c false/c number?)
+    ;; #f if replace isn't visible, otherwise the position just
+    ;; before a search hit where replacement should start
+    (define replace-start #f)
+    
+    ;; search-bubble-table : hash-table[(cons number number) -o> (or/c color% string)]
+    (define search-bubble-table (make-hash))
+    
+    ;; to-replace-highlight : (or/c false/c (list/c number number (or/c color% string)))
+    (define to-replace-highlight #f)
+    
+    ;; get-replace-search-hit : -> (or/c number #f)
+    ;; returns the nearest search hit after `replace-start'
+    (define/public (get-replace-search-hit) 
+      (and replace-start
+           searching-str
+           (do-search searching-str replace-start 'eof)))
+           
+    (define/public (set-replace-start n)
+      (cond
+        [(and (not n) (not replace-start)) 
+         ;; nothing to do, since it didn't change
+         (void)]
+        [(not searching-str)
+         ;; there is no searching setup, so just do nothing
+         (void)]
+        [(equal? (get-replace-search-hit)
+                 (do-search searching-str n 'eof))
+         ;; the search reference changed, but the nearest search hit didn't.
+         ;; just record the new replace-start and do nothing else
+         ;; (possibly, even recording the new replace-start isn't even useful
+         (set! replace-start n)]
+        [else
+         ;; here the bubbles change
+         (begin-edit-sequence)
+         
+         (let-values ([(light-color normal-color dark-color) (get-search-highlight-colors)])
+         
+           ;; remove search highlight when it was separate from a bubble
+           (when to-replace-highlight
+             (unhighlight-range (list-ref to-replace-highlight 0)
+                                (list-ref to-replace-highlight 1)
+                                (list-ref to-replace-highlight 2)
+                                #f
+                                'hollow-ellipse)
+             (set! to-replace-highlight #f))
+           
+           ;; remove old search highlight when it was a bubble
+           ;; (need to add in the dim color since the bubble needs to stay)
+           (let ([old-search-hit (get-replace-search-hit)])
+             (when old-search-hit
+               (let* ([old-search-hit-end (+ old-search-hit (string-length searching-str))]
+                      [color (hash-ref search-bubble-table (cons old-search-hit old-search-hit-end) #f)])
+                 (when color
+                   (unhighlight-range old-search-hit 
+                                      old-search-hit-end
+                                      color
+                                      #f
+                                      'hollow-ellipse)
+                   (highlight-range old-search-hit 
+                                    old-search-hit-end
+                                    light-color
+                                    #f
+                                    'low
+                                    'hollow-ellipse)
+                   (hash-set! search-bubble-table (cons old-search-hit old-search-hit-end) light-color)))))
+        
+           (set! replace-start n)
+           
+           (let ([new-search-hit (get-replace-search-hit)])
+             (when new-search-hit
+               (let* ([new-search-hit-end (+ new-search-hit (string-length searching-str))]
+                      [color (hash-ref search-bubble-table (cons new-search-hit new-search-hit-end) #f)])
+                 (cond
+                   [color
+                    (unhighlight-range new-search-hit 
+                                       new-search-hit-end
+                                       color
+                                       #f
+                                       'hollow-ellipse)
+                    (hash-set! search-bubble-table (cons new-search-hit new-search-hit-end) dark-color)
+                    (highlight-range new-search-hit 
+                                     new-search-hit-end
+                                     dark-color
+                                     #f
+                                     'low
+                                     'hollow-ellipse)]
+                   [else
+                    (set! to-replace-highlight (list new-search-hit 
+                                                     new-search-hit-end
+                                                     dark-color))
+                    (highlight-range (list-ref to-replace-highlight 0)
+                                     (list-ref to-replace-highlight 1)
+                                     (list-ref to-replace-highlight 2)
+                                     #f
+                                     'low
+                                     'hollow-ellipse)])))))
+         (end-edit-sequence)]))
+    
+    (define search-hit-count 0)
+    (define before-caret-search-hit-count 0)
     
     (define anchor-pos #f)
     (define/public (get-anchor-pos) anchor-pos)
@@ -829,22 +972,38 @@ WARNING: printf is rebound in the body of the unit to always
          (set! clear-anchor void)
          (set! anchor-pos #f)]))
     
-    (define/public (get-search-hits) search-hits)
+    (define/public (get-search-hit-count) (values before-caret-search-hit-count search-hit-count))
     
-    (define/public (set-searching-str s [cs? #t])
+    (define/public (set-searching-state s cs? rs)
       (unless (and (equal? searching-str s)
-                   (equal? case-sensitive? cs?))
+                   (equal? case-sensitive? cs?)
+                   (equal? replace-start rs))
         (set! searching-str s)
         (set! case-sensitive? cs?)
+        (set! replace-start rs)
         (redo-search)))
+    
+    (define/augment (on-insert start len)
+      (begin-edit-sequence)
+      (clear-all-regions) 
+      (update-yellow)
+      (inner (void) on-insert start len))
     (define/augment (after-insert start len)
       (unless updating-search?
         (content-changed))
-      (inner (void) after-insert start len))
+      (inner (void) after-insert start len)
+      (end-edit-sequence))
+    
+    (define/augment (on-delete start len)
+      (begin-edit-sequence)
+      (clear-all-regions)
+      (inner (void) on-delete start len))
     (define/augment (after-delete start len)
       (unless updating-search?
         (content-changed))
-      (inner (void) after-delete start len))
+      (update-yellow)
+      (inner (void) after-delete start len)
+      (end-edit-sequence))
     
     (define updating-search? #f)
     
@@ -863,57 +1022,189 @@ WARNING: printf is rebound in the body of the unit to always
                            (let ([tlw (get-top-level-window)])
                              (when (and tlw
                                         (is-a? tlw frame:searchable<%>))
-                               (send tlw search-results-changed)))
+                               (send tlw search-text-changed)))
                            (set! updating-search? #f))
                          'framework:search-results-changed))]
                      [just-once? #t])))
-        (send timer start 500 #t)))
+        (send timer stop)
+        (send timer start 200 #t)))
     
     (inherit get-top-level-window)
     (define/override (on-focus on?)
       (let ([f (get-top-level-window)])
         (when (is-a? f frame:searchable<%>)
           (when on?
-            (send f set-text-to-search this))))
+            (send f set-text-to-search this)
+            (clear-yellow)
+            (set! clear-yellow void))
+          (set! do-yellow? 
+                (and (not on?)
+                     (eq? (send f get-text-to-search) this)))
+          (update-yellow)))
       (super on-focus on?))
-           
-    (inherit highlight-range begin-edit-sequence end-edit-sequence find-string)
     
-    (define clear-regions void)
+    (define do-yellow? #f)
+    (define clear-yellow void)
+    (define/augment (after-set-position)
+      (update-yellow)
+      
+      (when replace-start
+        (set-replace-start (get-start-position)))
+      
+      (when searching-str
+        (let loop ([pos 0]
+                   [count 0])
+          (cond
+            [(do-search searching-str pos 'eof)
+             =>
+             (λ (next)
+               (cond
+                 [(< next (get-start-position))
+                  (loop (+ next 1)
+                        (+ count 1))]
+                 [else
+                  (update-before-caret-search-hit-count count)]))]
+            [else
+             (update-before-caret-search-hit-count count)])))
+      
+      (inner (void) after-set-position))
+    
+    (define/private (update-before-caret-search-hit-count c)
+      (unless (equal? before-caret-search-hit-count c)
+        (set! before-caret-search-hit-count c)
+        (let ([tlw (get-top-level-window)])
+          (when (is-a? tlw frame:searchable<%>)
+            (send tlw search-hits-changed)))))
+    
+    (define/private (update-yellow)
+      (when do-yellow?
+        (let ([start (get-start-position)]
+              [end (get-end-position)])
+          (unless (= start end)
+            (begin-edit-sequence)
+            (clear-yellow)
+            (set! clear-yellow void)
+            (when searching-str
+              (when (do-search searching-str start end)
+                (set! clear-yellow (highlight-range start end "khaki" #f 'low 'ellipse))))
+            (end-edit-sequence)))))
+
+    (define/public (get-search-bubbles)
+      (sort (hash-map search-bubble-table
+                      (λ (x y) (if (is-a? y color%)
+                                   (list x (list (send y red)
+                                                 (send y green)
+                                                 (send y blue)))
+                                   (list x y))))
+            (λ (x y) (string<=? (format "~s" (car x)) 
+                                (format "~s" (car y))))))
+    
     (define/private (redo-search)
       (begin-edit-sequence)
-      (set! search-hits 0)
-      (clear-regions)
+      (set! search-hit-count 0)
+      (set! before-caret-search-hit-count 0)
+      (clear-all-regions)
       (cond
         [searching-str
-         (let loop ([pos 0]
-                    [n 0])
-           (let ([next (do-search searching-str pos 'eof)])
-             (when next
-               (let-values ([(end counts) (find-end (+ next (string-length searching-str))
-                                                    searching-str)])
-                 (set! search-hits (+ search-hits counts))
-                 (let ([old clear-regions]
-                       [new (highlight-range next end "plum" #f 'low 'hollow-ellipse)])
-                   (set! clear-regions (λ () (old) (new))))
-                 (loop end (+ n 1))))))]
+         (let ([to-replace (get-replace-search-hit)]
+               [found-to-replace? #f]
+               [first-hit (do-search searching-str 0 'eof)])
+           (let-values ([(dim-color regular-color dark-color) (get-search-highlight-colors)])
+             (when first-hit
+               (set! before-caret-search-hit-count 1)
+               (let loop ([bubble-start first-hit]
+                          [bubble-end (+ first-hit (string-length searching-str))]
+                          [pos (+ first-hit 1)])
+                 (set! search-hit-count (+ search-hit-count 1))
+                 (let ([next (do-search searching-str pos 'eof)])
+                   (when (and next (< next (get-start-position)))
+                     (set! before-caret-search-hit-count (+ 1 before-caret-search-hit-count)))
+                   (cond
+                     [(and next ; a
+                           (<= next bubble-end)) ; b 
+                      
+                      ;; continue this bubble when
+                      ;;   a) there is a search hit and
+                      ;;   b) the hit overlaps or touches the previous part of the bubble
+                      (loop bubble-start
+                            (+ next (string-length searching-str))
+                            (+ next 1))]
+                     [else
+                      
+                      ;; end this bubble
+                      (let ([color (if replace-start
+                                       (if (and (equal? bubble-start to-replace)
+                                                (equal? bubble-end (+ to-replace (string-length searching-str))))
+                                           (begin (set! found-to-replace? #t)
+                                                  dark-color)
+                                           dim-color)
+                                       regular-color)])
+                        (highlight-range bubble-start bubble-end color #f 'low 'hollow-ellipse)
+                        (hash-set! search-bubble-table (cons bubble-start bubble-end) color))
+                      
+                      (when next
+                        ;; start a new one if there is another hit
+                        (loop next 
+                              (+ next (string-length searching-str))
+                              (+ next 1)))]))))
+             
+             (unless found-to-replace?
+               (when to-replace
+                 (set! to-replace-highlight (list to-replace 
+                                                  (+ to-replace (string-length searching-str))
+                                                  dark-color))
+                 (highlight-range (list-ref to-replace-highlight 0)
+                                  (list-ref to-replace-highlight 1)
+                                  (list-ref to-replace-highlight 2)
+                                  #f
+                                  'low
+                                  'hollow-ellipse)))))]
         [else
-         (set! clear-regions void)
          (invalidate-bitmap-cache)])
-      (end-edit-sequence))
+      (end-edit-sequence)
+      
+      ;; stopping the timer ensures that when there is both an edit to the buffer *and*
+      ;; there is a call to (something that calls) redo-search during a single edit
+      ;; sequence, that the search is only done once.
+      (when timer (send timer stop)))
     
-    (define/private (find-end pos searching-str)
+    (define/private (clear-all-regions) 
+      (when to-replace-highlight
+        (unhighlight-range (list-ref to-replace-highlight 0)
+                           (list-ref to-replace-highlight 1)
+                           (list-ref to-replace-highlight 2)
+                           #f
+                           'hollow-ellipse)
+        (set! to-replace-highlight #f))
+           
+      ;; this 'unless' is just here to avoid allocation in case this function is called a lot
+      (unless (zero? (hash-count search-bubble-table))
+        (hash-for-each
+         search-bubble-table
+         (λ (k v) (unhighlight-range (car k) (cdr k) v #f 'hollow-ellipse)))
+        (set! search-bubble-table (make-hash))))
+    
+    (define/private (find-end pos to-replace searching-str)
       (let loop ([pos pos]
                  [count 1])
         (cond
-          [(do-search searching-str pos (+ pos (string-length searching-str)))
+          [(do-search searching-str 
+                      pos 
+                      (+ pos (string-length searching-str)))
            =>
-           (λ (pos)
-             ;; if find-string returns #t here, then we know that we've found two of the search strings in a row, so just coalesce them
-             (loop (+ pos (string-length searching-str))
-                   (+ count 1)))]
+           (λ (next-pos)
+             ;; if find-string returns non-#f here, then we know that we've found
+             ;; two of the search strings in a row, so coalesce them (unless
+             ;; we are in replace mode and the next thing to be replaced is here).
+             (cond
+               [(and to-replace
+                     (<= pos to-replace next-pos))
+                (values pos pos count)]
+               [else
+                (loop (+ next-pos (string-length searching-str))
+                      (+ count 1))]))]
           [else
-           (values pos count)])))
+           (values pos pos count)])))
     
     (define/private (do-search str start end) (find-string str 'forward start end #t case-sensitive?))
     

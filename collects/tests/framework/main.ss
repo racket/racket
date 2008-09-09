@@ -80,8 +80,8 @@
                           (lambda (exn)
                             (debug-printf schedule "~a\n"
                                           (if (exn? exn)
-                                            (exn-message exn)
-                                            exn)))])
+                                              (exn->str exn)
+                                              exn)))])
            (debug-printf schedule "beginning ~a test suite\n" x)
            (dynamic-require `(lib ,x "tests" "framework") #f)
            (set! jumped-out-tests (remq x jumped-out-tests))

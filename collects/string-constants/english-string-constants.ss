@@ -501,18 +501,22 @@ please adhere to these guidelines:
   (repl-value-color "Values")
   (repl-error-color "Errors")
   
- ;;; find/replace
- (find-and-replace "Find and Replace")
- (find "Find")
- (replace "Replace")
- (dock "Dock")
- (undock "Undock")
- (replace&find "Replace && Find") ;;; need double & to get a single &
- (forward "Forward")
- (backward "Backward")
- (hide "Hide")
- (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
+  ;;; find/replace
+  (search-next "Next")
+  (search-match "Match")  ;;; this one and the next one are singular/plural variants of each other
+  (search-matches "Matches") 
+  (search-replace "Replace")
+  (search-skip "Skip")
+  (search-show-replace "Show Replace")
+  (search-hide-replace "Hide Replace")
+  (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
   (find-anchor-based "Search using anchors")
+
+  ;; these string constants used to be used by searching,
+  ;; but aren't anymore. They are still used by other tools, tho.
+  (hide "Hide")
+  (dock "Dock")
+  (undock "Undock")
   
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "Search in Files...")

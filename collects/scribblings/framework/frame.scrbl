@@ -884,6 +884,7 @@ framework)) @(require (for-label scheme/gui)) @(require
 }
 @definterface[frame:searchable<%> (frame:basic<%>)]{
   Frames that implement this interface support searching.
+
   @defmethod[(search (direction (symbols 'forward 'backward))) void?]{
     Searches for the text in the search edit in the result of
     @method[frame:searchable<%> get-text-to-search]. 
@@ -891,27 +892,25 @@ framework)) @(require (for-label scheme/gui)) @(require
     If the text is found and it sets the selection to the
     found text. 
   }
-  @defmethod*[(((replace&search) boolean?))]{
-    If the selection is currently active and set to a 
-    region that matches the search string, this method
-    replaces the selected region with the contents of
-    the replace editor and then does another search.
+  @defmethod[(search-replace) boolean?]{
+    If there is a dark purple bubble (ie, if the replace portion
+    of the search bar is visible and there is a search hit after
+    the insertion point), then this will replace it with the 
+    contents of the replace editor and move the insertion point
+    to just after that, or to the end of the editor (if there
+    are no more search hits after the insertion point, but there are
+    search hits before it).
   }
-  @defmethod*[(((replace-all) void?))]{
+  @defmethod[(search-skip) boolean?]{
+    Just like @method[frame:searchable<%> search-replace], 
+    but does not do the replace.
+  }
+  @defmethod[(replace-all) void?]{
     Loops through the text from the beginning to the end, replacing
     all occurrences of the search string with the contents of the replace
     edit. 
   }
-  @defmethod*[(((can-replace?) boolean?))]{
-    Returns @scheme[#t] if a replace command would succeed
-    in replacing the current selection with the replace string.
-
-    Specifically, returns @scheme[#t] when the selected text
-    in the result of @method[frame:searchable<%>
-    get-text-to-search] is the same as the text in the find
-    text and the replace editor is visible.
-  }
-  @defmethod*[(((get-text-to-search) (is-a?/c (subclass?/c text%))))]{
+  @defmethod[(get-text-to-search) (is-a?/c text%)]{
     Returns the last value passed to 
     @method[frame:searchable<%> set-text-to-search].
   }
@@ -921,30 +920,28 @@ framework)) @(require (for-label scheme/gui)) @(require
   @defmethod[(search-hidden?) boolean?]{
     Returns @scheme[#t] if the search subwindow is visiable and @scheme[#f] otherwise.
   }
-  @defmethod*[(((hide-search) void))]{
+  @defmethod[(hide-search) void?]{
     This method hides the searching information on the bottom of the
     frame.
 
   }
-  @defmethod*[(((unhide-search [move-focus? boolean? #f]) void))]{
+  @defmethod[(unhide-search [move-focus? boolean? #f]) void?]{
     When the searching sub window is hidden, makes it visible. If 
     @scheme[move-focus?] is @scheme[#f], the focus is not moved,
     but if it is any other value, the focus is moved to the find
     window.
   }
+
   @defmethod[(get-case-sensitive-search?) boolean?]{
     Returns @scheme[#t] if the search is currently case-sensitive.
     (This method's value depends on the preference 
      @scheme['framework:case-sensitive-search?], but 
      the preference is only consulted when the frame is created.)
   }
-  @defmethod[(search-results-changed) void?]{
 
-    This method is called to notify the frame when the
-    search results have changed somehow. It triggers an
-    update to the red highlighting in the search window (if
-    there are no hits, but yet there is a string to search
-    for) and to the number of matches reported.
+  @defmethod[#:mode public-final (search-hits-changed) void?]{
+    This method is called when the number of search matches changes and
+    it updates the GUI.
   }
 
 }
@@ -979,47 +976,15 @@ framework)) @(require (for-label scheme/gui)) @(require
     returns @scheme[#t].
   }
 
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-callback) boolean?))]{
-    Calls @method[frame:searchable unhide-search] and then 
-    calls @method[frame:searchable<%> replace&search].
-  }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-on-demand (item menu-item%)) void))]{
-
-    Disables @scheme[item] when
-    @method[frame:searchable<%> can-replace?]
-    returns @scheme[#f] and enables it when that method returns
-    @scheme[#t].
-  }
-  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again?) boolean?))]{
-
-    returns @scheme[#t].
-  }
-
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-backwards-callback) boolean?))]{
-    Calls @method[frame:searchable unhide-search] and then 
-    calls @method[frame:searchable<%> replace&search].
-  }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-backwards-on-demand (item menu-item%)) void))]{
-
-    Disables @scheme[item] when
-    @method[frame:searchable<%> can-replace?]
-    returns @scheme[#f] and enables it when that method returns
-    @scheme[#t].
-  }
-  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again-backwards?) boolean?))]{
-
-    returns @scheme[#t].
-  }
-
   @defmethod*[#:mode override (((edit-menu:replace-all-callback) boolean?))]{
     Calls @method[frame:searchable<%> replace-all].
   }
   @defmethod*[#:mode override (((edit-menu:replace-all-on-demand (item menu-item%)) void))]{
 
     Disables @scheme[item] when
-    @method[frame:searchable<%> can-replace?]
-    returns @scheme[#f] and enables it when that method returns
-    @scheme[#t].
+    @method[frame:searchable<%> search-hidden?]
+    returns @scheme[#t] and enables it when that method returns
+    @scheme[#f].
   }
   @defmethod*[#:mode override (((edit-menu:create-replace-all?) boolean?))]{
     returns @scheme[#t].

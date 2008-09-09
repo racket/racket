@@ -27,7 +27,7 @@
 		      (lambda (x)
 			(printf "test suite thread died: ~a\n"
 				(if (exn? x)
-				    (exn-message x)
+				    (exception->string x)
 				    (format "~s" x))))])
        (let ([port (call-with-input-file
                        (build-path (find-system-path 'temp-dir)

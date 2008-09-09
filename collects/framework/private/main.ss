@@ -20,6 +20,7 @@
   
   (application-preferences-handler (λ () (preferences:show-dialog)))
   
+  (preferences:set-default 'framework:replace-visible? #f boolean?)
   (preferences:set-default 'framework:anchored-search #f boolean?)
   
   (let ([search/replace-string-predicate

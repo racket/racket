@@ -31,7 +31,9 @@
    set-section-name!
    set-only-these-tests!
    get-only-these-tests
-   debug-printf)
+   debug-printf
+   
+   exn->str)
   
   (define section-jump void)
   (define (set-section-jump! _s) (set! section-jump _s))
@@ -147,7 +149,7 @@
     (or (regexp-match re:tcp-read-error (exn-message exn))
 	(regexp-match re:tcp-write-error (exn-message exn))))
 
-  (namespace-require 'scheme/base) ;; in order to make the eval below work right.
+  (namespace-require 'scheme) ;; in order to make the eval below work right.
   (define (send-sexp-to-mred sexp)
     (let/ec k
       (let ([show-text
@@ -194,7 +196,7 @@
 				      eof
 				      (list 'cant-read
 					    (string-append
-					     (exn-message x)
+					     (exn->str x)
 					     "; rest of string: "
 					     (format
 					      "~s"
@@ -238,7 +240,7 @@
 		  (with-handlers ([exn:fail?
 				   (lambda (x)
 				     (if (exn? x)
-					 (exn-message x)
+					 (exn->str x)
 					 x))])
 		    (if (procedure? sexp/proc)
 			(sexp/proc)
@@ -249,7 +251,7 @@
 					    (string-append
 					     "passed? test raised exn: "
 					     (if (exn? x)
-						 (exn-message x)
+						 (exn->str x)
 						 (format "~s" x))))])
 			   (not (passed? result)))])
 	    (when failed
@@ -260,6 +262,12 @@
 		[(continue) (void)]
 		[else (jump)])))))]))
 
+  (define (exn->str exn)
+    (let ([sp (open-output-string)])
+      (parameterize ([current-error-port sp])
+        ((error-display-handler) (exn-message exn) exn))
+      (get-output-string sp)))
+  
   (define (wait-for/wrapper wrapper sexp)
     (let ([timeout 10]
 	  [pause-time 1/2])

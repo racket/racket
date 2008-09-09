@@ -57,6 +57,10 @@ signal failures when there aren't any.
 
   | This tests the misc (non-scheme) keybindings
 
+- searching: |# search.ss #|
+
+  | This tests the search results
+
 - group tests: |# group-test.ss #|
 
   | make sure that mred:the-frame-group records frames correctly.
