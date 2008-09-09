@@ -163,7 +163,7 @@ static void *place_start_proc(void *data_arg) {
   null_out_runtime_globals();
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
-  scheme_place_instance_init();
+  scheme_place_instance_init(stack_base);
   a[0] = place_data->current_library_collection_paths;
   scheme_current_library_collection_paths(1, a);
 
