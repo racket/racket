@@ -89,6 +89,52 @@ improve method arity mismatch contract violation error messages?
                        neg-blame-str
                        (quote-syntax ident)))])))))
 
+;; (define/contract id contract expr)
+;; defines `id' with `contract'; initially binding
+;; it to the result of `expr'.  These variables may not be set!'d.
+(define-syntax (define/contract define-stx)
+  (syntax-case define-stx ()
+    [(_ name contract-expr expr)
+     (identifier? (syntax name))
+     (with-syntax ([contract-id 
+                    (a:mangle-id define-stx
+                                 "define/contract-contract-id"
+                                 (syntax name))]
+                   [id (a:mangle-id define-stx
+                                    "define/contract-id"
+                                    (syntax name))])
+       (syntax/loc define-stx 
+         (begin
+           (define contract-id contract-expr)
+           (define-syntax name
+             (make-define/contract-transformer (quote-syntax contract-id)
+                                               (quote-syntax id)))
+           (define id (let ([name expr]) name))  ;; let for procedure naming
+           )))]
+    [(_ name contract-expr expr)
+     (raise-syntax-error 'define/contract "expected identifier in first position"
+                         define-stx
+                         (syntax name))])) 
+
+
+;                                                                                                            
+;                                                                                                            
+;                                                                                                            
+;                               ;       ;             ;                                                      
+;                                       ;             ;                                                      
+;                                       ;            ;                           ;                       ;   
+;   ; ;;    ; ;   ;;;   ;     ; ;    ;; ;    ;;;     ;     ;;;    ;;;    ; ;;   ;;;;  ; ;  ;;;     ;;;  ;;;; 
+;   ;;  ;   ;;   ;   ;   ;   ;  ;   ;  ;;   ;   ;    ;    ;   ;  ;   ;   ;;  ;   ;    ;;  ;   ;   ;   ;  ;   
+;   ;    ;  ;   ;     ;  ;   ;  ;  ;    ;  ;    ;    ;   ;      ;     ;  ;   ;   ;    ;       ;  ;       ;   
+;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;;;;;;   ;    ;      ;     ;  ;   ;   ;    ;    ;;;;  ;       ;   
+;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;        ;    ;      ;     ;  ;   ;   ;    ;   ;   ;  ;       ;   
+;   ;;  ;   ;    ;   ;     ;    ;   ;  ;;   ;       ;     ;   ;  ;   ;   ;   ;   ;    ;   ;   ;   ;   ;  ;   
+;   ; ;;    ;     ;;;      ;    ;    ;; ;    ;;;;  ;       ;;;    ;;;    ;   ;    ;;  ;    ;;;;;   ;;;    ;; 
+;   ;                                              ;                                                         
+;   ;                                              ;                                                         
+;   ;                                                                                                        
+
+
 ;; id->contract-src-info : identifier -> syntax
 ;; constructs the last argument to the -contract, given an identifier
 (define-for-syntax (id->contract-src-info id)
@@ -135,51 +181,6 @@ improve method arity mismatch contract violation error messages?
            ;; In case of partial expansion for module-level and internal-defn contexts,
            ;; delay expansion until it's a good time to lift expressions:
            (quasisyntax/loc stx (#%expression #,stx)))))))
-
-;; (define/contract id contract expr)
-;; defines `id' with `contract'; initially binding
-;; it to the result of `expr'.  These variables may not be set!'d.
-(define-syntax (define/contract define-stx)
-  (syntax-case define-stx ()
-    [(_ name contract-expr expr)
-     (identifier? (syntax name))
-     (with-syntax ([contract-id 
-                    (a:mangle-id define-stx
-                                 "define/contract-contract-id"
-                                 (syntax name))]
-                   [id (a:mangle-id define-stx
-                                    "define/contract-id"
-                                    (syntax name))])
-       (syntax/loc define-stx 
-         (begin
-           (define contract-id contract-expr)
-           (define-syntax name
-             (make-define/contract-transformer (quote-syntax contract-id)
-                                               (quote-syntax id)))
-           (define id (let ([name expr]) name))  ;; let for procedure naming
-           )))]
-    [(_ name contract-expr expr)
-     (raise-syntax-error 'define/contract "expected identifier in first position"
-                         define-stx
-                         (syntax name))])) 
-
-
-;                                                                                                            
-;                                                                                                            
-;                                                                                                            
-;                               ;       ;             ;                                                      
-;                                       ;             ;                                                      
-;                                       ;            ;                           ;                       ;   
-;   ; ;;    ; ;   ;;;   ;     ; ;    ;; ;    ;;;     ;     ;;;    ;;;    ; ;;   ;;;;  ; ;  ;;;     ;;;  ;;;; 
-;   ;;  ;   ;;   ;   ;   ;   ;  ;   ;  ;;   ;   ;    ;    ;   ;  ;   ;   ;;  ;   ;    ;;  ;   ;   ;   ;  ;   
-;   ;    ;  ;   ;     ;  ;   ;  ;  ;    ;  ;    ;    ;   ;      ;     ;  ;   ;   ;    ;       ;  ;       ;   
-;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;;;;;;   ;    ;      ;     ;  ;   ;   ;    ;    ;;;;  ;       ;   
-;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;        ;    ;      ;     ;  ;   ;   ;    ;   ;   ;  ;       ;   
-;   ;;  ;   ;    ;   ;     ;    ;   ;  ;;   ;       ;     ;   ;  ;   ;   ;   ;   ;    ;   ;   ;   ;   ;  ;   
-;   ; ;;    ;     ;;;      ;    ;    ;; ;    ;;;;  ;       ;;;    ;;;    ;   ;    ;;  ;    ;;;;;   ;;;    ;; 
-;   ;                                              ;                                                         
-;   ;                                              ;                                                         
-;   ;                                                                                                        
 
 
 ;; (provide/contract p/c-ele ...)
