@@ -785,7 +785,7 @@
                  [bitmap handin-icon]
                  [parent client-panel]                 
                  [callback
-                  (lambda (button evt)
+                  (lambda (button)
                     (let ([content (editors->string
                                     (list (get-definitions-text)
                                           (get-interactions-text)))])
