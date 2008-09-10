@@ -9,7 +9,7 @@ under the MIT License.
 
 ========== gcc directory =============================================
 
-The directory is synced from the GCC repository, revision 131816.
+The directory is synced from the GCC repository, revision 140226.
 
 Our copy of libffi for PLT Scheme has been changed in a few small
 ways:
@@ -27,6 +27,11 @@ Local changes:
 
  * Removed +live_support in src/powerpc/darwin_closure.S so it builds
    with Mac OS X 10.3 (r8436)
+
+Note: recreating "configure" with autoconf 2.61 does not work as is,
+since the scripts require 2.59.  To allow this, the two requirements
+in "libffi/configure.ac" and "config/override.m4" were temporarily
+changed.
 
 ========== libffi_msvc directory =====================================
 

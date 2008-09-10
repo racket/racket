@@ -1902,11 +1902,12 @@ fi
 # Check that the precious variables saved in the cache have kept the same
 # value.
 ac_cache_corrupted=false
-for ac_var in $ac_precious_vars; do
+for ac_var in `(set) 2>&1 |
+	       sed -n 's/^ac_env_\([a-zA-Z_0-9]*\)_set=.*/\1/p'`; do
   eval ac_old_set=\$ac_cv_env_${ac_var}_set
   eval ac_new_set=\$ac_env_${ac_var}_set
-  eval ac_old_val=\$ac_cv_env_${ac_var}_value
-  eval ac_new_val=\$ac_env_${ac_var}_value
+  eval ac_old_val="\$ac_cv_env_${ac_var}_value"
+  eval ac_new_val="\$ac_env_${ac_var}_value"
   case $ac_old_set,$ac_new_set in
     set,)
       { echo "$as_me:$LINENO: error: \`$ac_var' was set to \`$ac_old_val' in the previous run" >&5
@@ -1919,19 +1920,29 @@ echo "$as_me: error: \`$ac_var' was not set in the previous run" >&2;}
     ,);;
     *)
       if test "x$ac_old_val" != "x$ac_new_val"; then
-	{ echo "$as_me:$LINENO: error: \`$ac_var' has changed since the previous run:" >&5
+        # differences in whitespace do not lead to failure.
+        ac_old_val_w=`echo x $ac_old_val`
+        ac_new_val_w=`echo x $ac_new_val`
+        if test "$ac_old_val_w" != "$ac_new_val_w"; then
+          { echo "$as_me:$LINENO: error: \`$ac_var' has changed since the previous run:" >&5
 echo "$as_me: error: \`$ac_var' has changed since the previous run:" >&2;}
-	{ echo "$as_me:$LINENO:   former value:  $ac_old_val" >&5
-echo "$as_me:   former value:  $ac_old_val" >&2;}
-	{ echo "$as_me:$LINENO:   current value: $ac_new_val" >&5
-echo "$as_me:   current value: $ac_new_val" >&2;}
-	ac_cache_corrupted=:
+          ac_cache_corrupted=:
+        else
+          { echo "$as_me:$LINENO: warning: ignoring whitespace changes in \`$ac_var' since the previous run:" >&5
+echo "$as_me: warning: ignoring whitespace changes in \`$ac_var' since the previous run:" >&2;}
+          eval $ac_var=\$ac_old_val
+        fi
+        { echo "$as_me:$LINENO:   former value:  \`$ac_old_val'" >&5
+echo "$as_me:   former value:  \`$ac_old_val'" >&2;}
+        { echo "$as_me:$LINENO:   current value: \`$ac_new_val'" >&5
+echo "$as_me:   current value: \`$ac_new_val'" >&2;}
       fi;;
   esac
   # Pass precious variables to config.status.
   if test "$ac_new_set" = set; then
     case $ac_new_val in
-    *\'*) ac_arg=$ac_var=`echo "$ac_new_val" | sed "s/'/'\\\\\\\\''/g"` ;;
+    *" "*|*"	"*|*[\[\]\~\#\$\^\&\*\(\)\{\}\\\|\;\<\>\?\"\']*)
+      ac_arg=$ac_var=`echo "$ac_new_val" | sed "s/'/'\\\\\\\\''/g"` ;;
     *) ac_arg=$ac_var=$ac_new_val ;;
     esac
     case " $ac_configure_args " in
@@ -1941,6 +1952,8 @@ echo "$as_me:   current value: $ac_new_val" >&2;}
   fi
 done
 if $ac_cache_corrupted; then
+  { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
   { echo "$as_me:$LINENO: error: changes in the environment can compromise the build" >&5
 echo "$as_me: error: changes in the environment can compromise the build" >&2;}
   { { echo "$as_me:$LINENO: error: run \`make distclean' and/or \`rm $cache_file' and start over" >&5
@@ -1977,6 +1990,9 @@ ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+
 
 
 ac_config_headers="$ac_config_headers fficonfig.h"
@@ -2198,6 +2214,7 @@ am__api_version="1.9"
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # OS/2's system install, which has a completely different semantic
 # ./install, which can be erroneously created by make from ./install.sh.
+# Reject install programs that cannot install multiple files.
 { echo "$as_me:$LINENO: checking for a BSD-compatible install" >&5
 echo $ECHO_N "checking for a BSD-compatible install... $ECHO_C" >&6; }
 if test -z "$INSTALL"; then
@@ -2231,8 +2248,18 @@ case $as_dir/ in
 	    # program-specific install script used by HP pwplus--don't use.
 	    :
 	  else
-	    ac_cv_path_install="$as_dir/$ac_prog$ac_exec_ext -c"
-	    break 3
+	    rm -rf conftest.one conftest.two conftest.dir
+	    echo one > conftest.one
+	    echo two > conftest.two
+	    mkdir conftest.dir
+	    if "$as_dir/$ac_prog$ac_exec_ext" -c conftest.one conftest.two "`pwd`/conftest.dir" &&
+	      test -s conftest.one && test -s conftest.two &&
+	      test -s conftest.dir/conftest.one &&
+	      test -s conftest.dir/conftest.two
+	    then
+	      ac_cv_path_install="$as_dir/$ac_prog$ac_exec_ext -c"
+	      break 3
+	    fi
 	  fi
 	fi
       done
@@ -2242,6 +2269,7 @@ esac
 done
 IFS=$as_save_IFS
 
+rm -rf conftest.one conftest.two conftest.dir
 
 fi
   if test "${ac_cv_path_install+set}" = set; then
@@ -2930,11 +2958,13 @@ fi
 fi
 
 
-test -z "$CC" && { { echo "$as_me:$LINENO: error: no acceptable C compiler found in \$PATH
+test -z "$CC" && { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: no acceptable C compiler found in \$PATH
 See \`config.log' for more details." >&5
 echo "$as_me: error: no acceptable C compiler found in \$PATH
 See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+   { (exit 1); exit 1; }; }; }
 
 # Provide some information about the compiler.
 echo "$as_me:$LINENO: checking for C compiler version" >&5
@@ -3064,11 +3094,13 @@ if test -z "$ac_file"; then
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
+{ { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
 { { echo "$as_me:$LINENO: error: C compiler cannot create executables
 See \`config.log' for more details." >&5
 echo "$as_me: error: C compiler cannot create executables
 See \`config.log' for more details." >&2;}
-   { (exit 77); exit 77; }; }
+   { (exit 77); exit 77; }; }; }
 fi
 
 ac_exeext=$ac_cv_exeext
@@ -3095,13 +3127,15 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
     if test "$cross_compiling" = maybe; then
 	cross_compiling=yes
     else
-	{ { echo "$as_me:$LINENO: error: cannot run C compiled programs.
+	{ { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot run C compiled programs.
 If you meant to cross compile, use \`--host'.
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot run C compiled programs.
 If you meant to cross compile, use \`--host'.
 See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+   { (exit 1); exit 1; }; }; }
     fi
   fi
 fi
@@ -3143,11 +3177,13 @@ for ac_file in conftest.exe conftest conftest.*; do
   esac
 done
 else
-  { { echo "$as_me:$LINENO: error: cannot compute suffix of executables: cannot compile and link
+  { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot compute suffix of executables: cannot compile and link
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute suffix of executables: cannot compile and link
 See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+   { (exit 1); exit 1; }; }; }
 fi
 
 rm -f conftest$ac_cv_exeext
@@ -3200,11 +3236,13 @@ else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
+{ { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
 { { echo "$as_me:$LINENO: error: cannot compute suffix of object files: cannot compile
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute suffix of object files: cannot compile
 See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+   { (exit 1); exit 1; }; }; }
 fi
 
 rm -f conftest.$ac_cv_objext conftest.$ac_ext
@@ -4643,13 +4681,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4646: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4684: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4649: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4687: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4652: output\"" >&5)
+  (eval echo "\"\$as_me:4690: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5753,7 +5791,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5756 "configure"' > conftest.$ac_ext
+  echo '#line 5794 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6153,11 +6191,13 @@ rm -f conftest.err conftest.$ac_ext
 if $ac_preproc_ok; then
   :
 else
-  { { echo "$as_me:$LINENO: error: C preprocessor \"$CPP\" fails sanity check
+  { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: C preprocessor \"$CPP\" fails sanity check
 See \`config.log' for more details." >&5
 echo "$as_me: error: C preprocessor \"$CPP\" fails sanity check
 See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+   { (exit 1); exit 1; }; }; }
 fi
 
 ac_ext=c
@@ -6848,11 +6888,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6851: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6891: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6855: \$? = $ac_status" >&5
+   echo "$as_me:6895: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7170,11 +7210,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7173: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7213: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7177: \$? = $ac_status" >&5
+   echo "$as_me:7217: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7275,11 +7315,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7278: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7318: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7282: \$? = $ac_status" >&5
+   echo "$as_me:7322: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7330,11 +7370,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7333: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7373: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7337: \$? = $ac_status" >&5
+   echo "$as_me:7377: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10086,7 +10126,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10089 "configure"
+#line 10129 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10186,7 +10226,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10189 "configure"
+#line 10229 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11086,6 +11126,10 @@ case "$host" in
 	TARGET=ARM; TARGETDIR=arm
 	;;
 
+  amd64-*-freebsd*)
+	TARGET=X86_64; TARGETDIR=x86
+	;;
+
   cris-*-*)
 	TARGET=LIBFFI_CRIS; TARGETDIR=cris
 	;;
@@ -11094,7 +11138,7 @@ case "$host" in
 	TARGET=FRV; TARGETDIR=frv
 	;;
 
-  hppa*-*-linux* | parisc*-*-linux*)
+  hppa*-*-linux*)
 	TARGET=PA_LINUX; TARGETDIR=pa
 	;;
   hppa*64-*-hpux*)
@@ -11136,10 +11180,7 @@ case "$host" in
 	TARGET=MIPS; TARGETDIR=mips
 	;;
 
-  powerpc*-*-linux* | powerpc-*-sysv*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-  powerpc-*-beos*)
+  powerpc*-*-linux*)
 	TARGET=POWERPC; TARGETDIR=powerpc
 	;;
   powerpc-*-darwin*)
@@ -12352,11 +12393,13 @@ done
 case $ac_lo in
 ?*) ac_cv_sizeof_double=$ac_lo;;
 '') if test "$ac_cv_type_double" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (double)
+     { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (double)
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute sizeof (double)
 See \`config.log' for more details." >&2;}
-   { (exit 77); exit 77; }; }
+   { (exit 77); exit 77; }; }; }
    else
      ac_cv_sizeof_double=0
    fi ;;
@@ -12429,11 +12472,13 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
 if test "$ac_cv_type_double" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (double)
+     { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (double)
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute sizeof (double)
 See \`config.log' for more details." >&2;}
-   { (exit 77); exit 77; }; }
+   { (exit 77); exit 77; }; }; }
    else
      ac_cv_sizeof_double=0
    fi
@@ -12757,11 +12802,13 @@ done
 case $ac_lo in
 ?*) ac_cv_sizeof_long_double=$ac_lo;;
 '') if test "$ac_cv_type_long_double" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (long double)
+     { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (long double)
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute sizeof (long double)
 See \`config.log' for more details." >&2;}
-   { (exit 77); exit 77; }; }
+   { (exit 77); exit 77; }; }; }
    else
      ac_cv_sizeof_long_double=0
    fi ;;
@@ -12834,11 +12881,13 @@ sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
 if test "$ac_cv_type_long_double" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (long double)
+     { { echo "$as_me:$LINENO: error: in \`$ac_pwd':" >&5
+echo "$as_me: error: in \`$ac_pwd':" >&2;}
+{ { echo "$as_me:$LINENO: error: cannot compute sizeof (long double)
 See \`config.log' for more details." >&5
 echo "$as_me: error: cannot compute sizeof (long double)
 See \`config.log' for more details." >&2;}
-   { (exit 77); exit 77; }; }
+   { (exit 77); exit 77; }; }; }
    else
      ac_cv_sizeof_long_double=0
    fi
