@@ -1,6 +1,6 @@
-(module client-gui mzscheme
-  (require mzlib/class mzlib/unit mzlib/file net/sendurl mred
-           mrlib/bitmap-label drscheme/tool framework
+(module client-gui scheme/base
+  (require mzlib/class mzlib/unit mzlib/file mrlib/switchable-button
+           mrlib/bitmap-label net/sendurl mred drscheme/tool framework
            "info.ss" "client.ss" "this-collection.ss")
 
   (provide tool@)
@@ -522,7 +522,7 @@
            (when (is-shown?)
              (message-box
               "Server Error"
-              (if (exn? exn)
+              (when (exn? exn)
                 (let ([s (exn-message exn)])
                   (if (string? s) s (format "~e" s))))
               this)
@@ -776,28 +776,36 @@
 			       (send-url web-address)))))
             (super help-menu:after-about menu))
 
-	  (define button
-            (new button%
-              [label (tool-button-label this)]
-              [parent (get-button-panel)]
-              [style '(deleted)]
-              [callback
-               (lambda (button evt)
-                 (let ([content (editors->string
-                                 (list (get-definitions-text)
-                                       (get-interactions-text)))])
-                   (new handin-frame%
-                     [parent this]
-                     [content content]
-                     [on-retrieve
-                      (lambda (buf)
-                        (string->editor!
-                         buf
-                         (send (drscheme:unit:open-drscheme-window)
-                               get-editor)))])))]))
-
-	  (send (get-button-panel) change-children
-		(lambda (l) (cons button l)))))
+          (define client-panel
+            (new vertical-pane% (parent (get-button-panel))))
+          
+	  (define client-button
+            (new switchable-button%
+                 [label button-label/h]
+                 [bitmap handin-icon]
+                 [parent client-panel]                 
+                 [callback
+                  (lambda (button evt)
+                    (let ([content (editors->string
+                                    (list (get-definitions-text)
+                                          (get-interactions-text)))])
+                      (new handin-frame%
+                           [parent this]
+                           [content content]
+                           [on-retrieve
+                            (lambda (buf)
+                              (string->editor!
+                               buf
+                               (send (drscheme:unit:open-drscheme-window)
+                                     get-editor)))])))]))
+          
+          (inherit register-toolbar-button)
+          (register-toolbar-button client-button)
+          
+          (send (get-button-panel) change-children
+              (lambda (_)
+                (cons client-panel
+                      (remq client-panel _))))))
 
       (when (and server port-no)
         (drscheme:get/extend:extend-unit-frame make-new-unit-frame% #f)))))
