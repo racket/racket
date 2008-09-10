@@ -201,14 +201,13 @@ void os_wxsGauge::OnDropFile(epathname x0)
     SET_VAR_STACK();
     READY_TO_RETURN; ASSELF wxsGauge::OnDropFile(x0);
   } else {
-  mz_jmp_buf *savebuf, newbuf;
-  Scheme_Thread *thread;
+  mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_pathname((char *)x0));
   ESCAPE_BLOCK(/*empty*/)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
-  thread->error_buf = savebuf;
+  { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
   
      READY_TO_RETURN;
   }
@@ -239,15 +238,14 @@ Bool os_wxsGauge::PreOnEvent(class wxWindow* x0, class wxMouseEvent* x1)
     SET_VAR_STACK();
     return FALSE;
   } else {
-  mz_jmp_buf *savebuf, newbuf;
-  Scheme_Thread *thread;
+  mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxWindow(x0));
   p[POFFSET+1] = WITH_VAR_STACK(objscheme_bundle_wxMouseEvent(x1));
   ESCAPE_BLOCK(1)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+2, p));
-  thread->error_buf = savebuf;
+  { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
   
   {
      Bool resval;
@@ -283,15 +281,14 @@ Bool os_wxsGauge::PreOnChar(class wxWindow* x0, class wxKeyEvent* x1)
     SET_VAR_STACK();
     return FALSE;
   } else {
-  mz_jmp_buf *savebuf, newbuf;
-  Scheme_Thread *thread;
+  mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxWindow(x0));
   p[POFFSET+1] = WITH_VAR_STACK(objscheme_bundle_wxKeyEvent(x1));
   ESCAPE_BLOCK(1)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+2, p));
-  thread->error_buf = savebuf;
+  { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
   
   {
      Bool resval;
@@ -361,13 +358,12 @@ void os_wxsGauge::OnSetFocus()
     SET_VAR_STACK();
     READY_TO_RETURN; ASSELF wxsGauge::OnSetFocus();
   } else {
-  mz_jmp_buf *savebuf, newbuf;
-  Scheme_Thread *thread;
+  mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   ESCAPE_BLOCK(/*empty*/)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
-  thread->error_buf = savebuf;
+  { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
   
      READY_TO_RETURN;
   }
@@ -396,13 +392,12 @@ void os_wxsGauge::OnKillFocus()
     SET_VAR_STACK();
     READY_TO_RETURN; ASSELF wxsGauge::OnKillFocus();
   } else {
-  mz_jmp_buf *savebuf, newbuf;
-  Scheme_Thread *thread;
+  mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   ESCAPE_BLOCK(/*empty*/)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
-  thread->error_buf = savebuf;
+  { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
   
      READY_TO_RETURN;
   }

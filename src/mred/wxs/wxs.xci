@@ -20,7 +20,7 @@
 
 @MACRO CHECKOKFORDC[p.who] = if (x<p>) { if (!x<p>->Ok()) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bad bitmap: ", p[POFFSET+<p>])); if (BM_SELECTED(x<p>)) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bitmap is already installed into a bitmap-dc%: ", p[POFFSET+<p>])); if (BM_IN_USE(x<p>)) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bitmap is currently installed as a control label or pen/brush stipple: ", p[POFFSET+<p>])); }
 
-@MACRO JMPDECL = mz_jmp_buf *savebuf, newbuf;
-@MACRO SETJMP = savebuf = scheme_current_thread->error_buf; scheme_current_thread->error_buf = &newbuf; if (scheme_setjmp(newbuf)) { scheme_current_thread->error_buf = savebuf; scheme_clear_escape(); return; }
-@MACRO SETJMPV[rv] = savebuf = scheme_current_thread->error_buf; scheme_current_thread->error_buf = &newbuf; if (scheme_setjmp(newbuf)) { scheme_current_thread->error_buf = savebuf; scheme_clear_escape(); return <rv>; }
-@MACRO RESETJMP = scheme_current_thread->error_buf = savebuf;
+@MACRO JMPDECL = mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
+@MACRO SETJMP = ESCAPE_BLOCK(/*empty*/)
+@MACRO SETJMPV[rv] = ESCAPE_BLOCK(<rv>)
+@MACRO RESETJMP = { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }

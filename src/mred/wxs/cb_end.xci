@@ -4,6 +4,7 @@ static void CB_TOSCHEME(CB_REALCLASS *realobj, wxCommandEvent *event)
   Scheme_Object *p[2];
   Scheme_Class_Object *obj;
   mz_jmp_buf savebuf;
+  Scheme_Thread *thread;
   SETUP_VAR_STACK(4);
   VAR_STACK_PUSH(0, obj);
   VAR_STACK_PUSH(1, event);
@@ -23,12 +24,14 @@ static void CB_TOSCHEME(CB_REALCLASS *realobj, wxCommandEvent *event)
   p[0] = (Scheme_Object *)obj;
   p[1] = WITH_VAR_STACK(objscheme_bundle_wxCommandEvent(event));
 
-  COPY_JMPBUF(savebuf, scheme_error_buf);
+  thread = scheme_get_current_thread();
+  COPY_JMPBUF(savebuf, *(thread->error_buf));
 
-  if (!scheme_setjmp(scheme_error_buf))
+  if (!scheme_setjmp(*(thread->error_buf)))
     WITH_VAR_STACK(scheme_apply_multi(((CALLBACKCLASS *)obj->primdata)->callback_closure, 2, p));
 
-  COPY_JMPBUF(scheme_error_buf, savebuf);
+  thread = scheme_get_current_thread();
+  COPY_JMPBUF(*(thread->error_buf), savebuf);
 
   READY_TO_RETURN;
 }

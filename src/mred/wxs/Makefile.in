@@ -210,7 +210,7 @@ $(srcdir)/wxs_snip.cxx : $(srcdir)/wxs_snip.xc  $(srcdir)/wxs_snip.xci $(srcdir)
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/wxs_snip.cxx ; else $(XCTOCXX) $(srcdir)/wxs_snip.xc ; fi
 $(srcdir)/wxs_styl.cxx : $(srcdir)/wxs_styl.xc  $(XCDEPEND)
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/wxs_styl.cxx ; else $(XCTOCXX) $(srcdir)/wxs_styl.xc ; fi
-$(srcdir)/wxs_tabc.cxx : $(srcdir)/wxs_tabc.xc $(srcdir)/range.xci $(srcdir)/wxs_item.xci $(LIST_DEPEND) $(XCDEPEND)
+$(srcdir)/wxs_tabc.cxx : $(srcdir)/wxs_tabc.xc $(srcdir)/range.xci $(srcdir)/wxs_item.xci $(LIST_DEPEND) $(CB_DEPEND) $(XCDEPEND)
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/wxs_tabc.cxx ; else $(XCTOCXX) $(srcdir)/wxs_tabc.xc ; fi
 $(srcdir)/wxs_win.cxx : $(srcdir)/wxs_win.xc $(srcdir)/wxs_win.xci $(XCDEPEND)
 	if [ "$(PERL)" = '' ] ; then touch $(srcdir)/wxs_win.cxx ; else $(XCTOCXX) $(srcdir)/wxs_win.xc ; fi

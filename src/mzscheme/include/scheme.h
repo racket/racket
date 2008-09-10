@@ -1099,10 +1099,12 @@ typedef struct Scheme_Thread {
 #endif
 
 typedef void (*Scheme_Kill_Action_Func)(void *);
+
 #define ESCAPE_BLOCK(return_code) \
     thread = scheme_get_current_thread(); \
     savebuf = thread->error_buf; \
     thread->error_buf = &newbuf; \
+    thread = NULL; \
     if (scheme_setjmp(newbuf)) \
     { \
       thread = scheme_get_current_thread(); \
@@ -1118,6 +1120,7 @@ typedef void (*Scheme_Kill_Action_Func)(void *);
       scheme_push_kill_action((Scheme_Kill_Action_Func)func, (void *)data); \
       savebuf = thread->error_buf; \
       thread->error_buf = &newbuf; \
+      thread = NULL; \
       if (scheme_setjmp(newbuf)) { \
         scheme_pop_kill_action(); \
         func(data); \
@@ -1126,7 +1129,8 @@ typedef void (*Scheme_Kill_Action_Func)(void *);
 # define END_ESCAPEABLE() \
       thread = scheme_get_current_thread(); \
       scheme_pop_kill_action(); \
-      thread->error_buf = savebuf; } }
+      thread->error_buf = savebuf; \
+      thread = NULL; } }
 
 
 /*========================================================================*/
