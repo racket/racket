@@ -1,16 +1,17 @@
-#lang mzscheme
+#lang scheme/base
 
-(require "utils.ss" mzlib/file mzlib/list mzlib/class mred)
+(require (for-syntax scheme/base) "utils.ss" scheme/file scheme/list scheme/class mred)
 
-(provide (all-from-except mzscheme #%module-begin) (all-from "utils.ss"))
+(provide (except-out (all-from-out scheme/base) #%module-begin)
+         (all-from-out "utils.ss"))
 
-(provide (rename module-begin~ #%module-begin))
+(provide (rename-out [module-begin~ #%module-begin]))
 (define-syntax (module-begin~ stx)
   (let ([e (if (syntax? stx) (syntax-e stx) stx)])
     (if (pair? e)
-      (with-syntax ([user-pre (datum->syntax-object stx 'user-pre stx)]
-                    [user-post (datum->syntax-object stx 'user-post stx)])
-        (datum->syntax-object
+      (with-syntax ([user-pre (datum->syntax stx 'user-pre stx)]
+                    [user-post (datum->syntax stx 'user-post stx)])
+        (datum->syntax
          (quote-syntax here)
          (list* (quote-syntax #%plain-module-begin)
                 #'(define user-pre #f)
@@ -104,7 +105,7 @@
            (format "~a" (or (send x get-text 0 (send x get-count) #t) x))]
           [(special-comment? x)
            (format "#| ~a |#" (special-comment-value x))]
-          [(syntax? x) (syntax-object->datum x)]
+          [(syntax? x) (syntax->datum x)]
           [else x]))
   (let-values ([(filter) (if (pair? filter) (car filter) item->text)]
                [(in out) (make-pipe 4096)])
@@ -317,7 +318,7 @@
 (define submission-eval (make-parameter #f))
 
 ;; without this the primitive eval is not available
-(provide (rename eval prim-eval))
+(provide (rename-out [eval prim-eval]))
 
 ;; for adding lines in the checker
 (define added-lines (make-thread-cell #f))
@@ -344,7 +345,7 @@
 
 (provide check:)
 (define-syntax (check: stx)
-  (define (id s) (datum->syntax-object stx s stx))
+  (define (id s) (datum->syntax stx s stx))
   (let loop ([stx (syntax-case stx () [(_ x ...) #'(x ...)])]
              [keyvals '()]
              [got null])
@@ -473,7 +474,7 @@
                      (prefix-line (subst str generic-substs)))
                    (define (write-text)
                      (set-run-status "creating text file")
-                     (with-output-to-file text-file
+                     (with-output-to-file text-file #:exists 'truncate
                        (lambda ()
                          (for-each (lambda (user)
                                      (prefix-line
@@ -482,8 +483,7 @@
                          (for-each prefix-line/substs extra-lines)
                          (for-each prefix-line/substs
                                    (or (thread-cell-ref added-lines) '()))
-                         (display submission-text))
-                       'truncate))
+                         (display submission-text))))
                    (define submission-text
                      (and create-text?
                           (begin (set-run-status "reading submission")
@@ -557,7 +557,7 @@
     [(_ get (var ...) body ...)
      (with-syntax ([(>var ...)
                     (map (lambda (v)
-                           (datum->syntax-object
+                           (datum->syntax
                             v
                             (string->symbol
                              (string-append
@@ -572,7 +572,7 @@
   (let ([make-pre/post:
          (lambda (what)
            (lambda (stx)
-             (define (id s) (datum->syntax-object stx s stx))
+             (define (id s) (datum->syntax stx s stx))
              (syntax-case stx ()
                [(_ body ...)
                 (with-syntax ([users      (id 'users)]
