@@ -2807,7 +2807,7 @@ module browser threading seems wrong.
                     (remq module-browser-panel l)))))
         
         (define/private (can-browse-language?)
-          (let* ([lang/config (preferences:get (drscheme:language-configuration:get-settings-preferences-symbol))]
+          (let* ([lang/config (send (get-definitions-text) get-next-settings)]
                  [lang (drscheme:language-configuration:language-settings-language lang/config)]
                  [strs (send lang get-language-position)]
                  [can-browse?
