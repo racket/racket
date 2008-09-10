@@ -4,49 +4,55 @@
 ;; Based on a Python version:
 ;;   contributed by Olof Kraigher
 ;;    modified by Tupteq
+;;   contributed by Matthew Flatt
+;;   optimized by Eli Barzilay
 
 #lang scheme/base
-(require scheme/cmdline)
+(require scheme/cmdline scheme/list)
 
 (define width 5)
 (define height 10)
+(define size (* width height))
 
-(define (rotate dir)
-  (case dir
-    [(E) 'NE]
-    [(NE) 'NW]
-    [(NW) 'W]
-    [(W) 'SW]
-    [(SW) 'SE]
-    [(SE) 'E]))
-
-(define (flip dir)
-  (case dir
-    [(E) 'W]
-    [(NE) 'NW]
-    [(NW) 'NE]
-    [(W) 'E]
-    [(SW) 'SE]
-    [(SE) 'SW]))
-
-(define move
-  (make-immutable-hash
-   (list
-    (cons 'E (lambda (x y) (values (add1 x) y)))
-    (cons 'W (lambda (x y) (values (sub1 x) y)))
-    (cons 'NE (lambda (x y) (values (+ x (bitwise-and y 1)) (sub1 y))))
-    (cons 'NW (lambda (x y) (values (sub1 (+ x (bitwise-and y 1))) (sub1 y))))
-    (cons 'SE (lambda (x y) (values (+ x (bitwise-and y 1)) (add1 y))))
-    (cons 'SW (lambda (x y) (values (sub1 (+ x (bitwise-and y 1))) (add1 y)))))))
-
-(define move-procs
-  (hash-map move (lambda (k v) v)))
-
-(define (valid? x y)
+(define (valid-xy? x y)
   (and (0 . <= . x)
        (x . < . width)
        (0 . <= . y)
        (y . < . height)))
+
+(define (mover fun)
+  (let ([t (make-vector size)])
+    (for ([p (in-range size)])
+      (vector-set! t p (let*-values ([(y x) (quotient/remainder p width)]
+                                     [(x y) (fun x y)])
+                         (if (valid-xy? x y) (+ x (* y width)) -1))))
+    t))
+
+(define E
+  (mover (lambda (x y) (values (add1 x) y))))
+(define W
+  (mover (lambda (x y) (values (sub1 x) y))))
+(define NE
+  (mover (lambda (x y) (values (+ x (bitwise-and y 1)) (sub1 y)))))
+(define NW
+  (mover (lambda (x y) (values (sub1 (+ x (bitwise-and y 1))) (sub1 y)))))
+(define SE
+  (mover (lambda (x y) (values (+ x (bitwise-and y 1)) (add1 y)))))
+(define SW
+  (mover (lambda (x y) (values (sub1 (+ x (bitwise-and y 1))) (add1 y)))))
+
+(define rotate-list (list E NE NW W SW SE E))
+(define (rotate dir)
+  (cadr (memq dir rotate-list)))
+
+(define flip-alist (list (cons E W) (cons NE NW) (cons NW NE)
+                         (cons W E) (cons SW SE) (cons SE SW)))
+(define (flip dir) (cdr (assq dir flip-alist)))
+
+(define movers (list E W NE NW SE SW))
+
+(define (valid? p)
+  (p . >= . 0))
 
 (define (clear? board pos)
   (not (bitwise-bit-set? board pos)))
@@ -54,107 +60,87 @@
   (bitwise-ior board (arithmetic-shift 1 pos)))
 
 (define (zero-count board)
-  (for/fold ([count 0])
-            ([i (in-range (* width height))])
-    (if (clear? board i)
-        (add1 count)
-        count)))
+  (for/fold ([count 0]) ([i (in-range size)])
+    (if (clear? board i) (add1 count) count)))
 
 (define (find-free-cell board)
-  (let yloop ([y 0])
-    (let xloop ([x 0])
-      (if (= x width)
-          (yloop (add1 y))
-          (if (clear? board (+ x (* width y)))
-              (values x y)
-              (xloop (add1 x)))))))
+  (for/or ([p (in-range 0 size)])
+    (and (clear? board p) p)))
 
-(define (flood-fill board x y)
-  (if (valid? x y)
-      (let ([pos (+ x (* y width))])
-        (if (clear? board pos)
-            (for/fold ([board (set board pos)])
-                      ([move-proc move-procs])
-              (let-values ([(x y) (move-proc x y)])
-                (flood-fill board x y)))
-            board))
-      board))
+(define (flood-fill board p)
+  (for/fold ([board (set board p)]) ([mover (in-list movers)])
+    (let ([p (vector-ref mover p)])
+      (if (and (valid? p) (clear? board p))
+        (flood-fill board p)
+        board))))
 
 (define (no-islands? mask)
   (let ([zeros (zero-count mask)])
-    (if (zeros . < . 5)
-        #f
-        (let loop ([mask mask][zeros zeros])
-          (if (= mask #x3FFFFFFFFFFFF)
-              #t
-              (let*-values ([(x y) (find-free-cell mask)]
-                            [(mask) (flood-fill mask x y)]
-                            [(new-zeros) (zero-count mask)])
-                (if ((- zeros new-zeros) . < . 5)
-                    #f
+    (and (zeros . >= . 5)
+         (let loop ([mask mask] [zeros zeros])
+           (if (= mask #x3FFFFFFFFFFFF)
+             #t
+             (let* ([p (find-free-cell mask)]
+                    [mask (flood-fill mask p)]
+                    [new-zeros (zero-count mask)])
+               (and ((- zeros new-zeros) . >= . 5)
                     (loop mask new-zeros))))))))
 
-(define (get-bitmask x y piece)
-  (let ([mask (arithmetic-shift 1 (+ x (* y width)))])
-    (let loop ([x x][y y][cells piece][mask mask])
+(define (get-bitmask p piece)
+  (let ([mask (arithmetic-shift 1 p)])
+    (let loop ([p p] [cells piece] [mask mask])
       (if (null? cells)
-          mask
-          (let-values ([(x y) ((hash-ref move (car cells)) x y)])
-            (if (valid? x y)
-                (loop x y (cdr cells) (set mask (+ x (* width y))))
-                #f))))))
+        mask
+        (let ([p (vector-ref (car cells) p)])
+          (and (valid? p) (loop p (cdr cells) (set mask p))))))))
 
 (define (all-bitmasks piece color)
   (let ([pieces
          (let-values ([(accum piece)
                        (for/fold ([accum null] [piece piece])
-                           ([orientations (in-range 2)])
+                                 ([orientations (in-range 2)])
                          (let-values ([(accum piece)
                                        (for/fold ([accum accum] [piece piece])
-                                           ([orientations (in-range (- 6 (* 3 (if (= color 4)
-                                                                                  1
-                                                                                  0))))])
+                                                 ([orientations (in-range (- 6 (* 3 (if (= color 4) 1 0))))])
                                          (values (cons piece accum)
                                                  (map rotate piece)))])
                            (values accum (map flip piece))))])
            accum)])
-    (for*/list ([piece (in-list pieces)]
-                [y (in-range height)]
-                [x (in-range width)]
-                [mask (:do-in ([(mask) (get-bitmask x y piece)]) ; should be in-value
-                              #t () #t () #t #f ())]
-                #:when (and mask (no-islands? mask)))
-      mask)))
+    (reverse
+     (for*/fold ([accum null])
+                ([piece (in-list pieces)]
+                 [p (in-range 0 size)])
+       (let ([mask (get-bitmask p piece)])
+         (if (and mask (no-islands? mask)) (cons mask accum) accum))))))
 
+(define generate-bitmasks-pieces
+  (list (list E  E  E  SE)
+        (list SE SW W  SW)
+        (list W  W  SW SE)
+        (list E  E  SW SE)
+        (list NW W  NW SE SW)
+        (list E  E  NE W)
+        (list NW NE NE W)
+        (list NE SE E  NE)
+        (list SE SE E  SE)
+        (list E  NW NW NW)))
 (define (generate-bitmasks)
-  (let ([pieces '((E E E SE)
-                  (SE SW W SW)
-                  (W W SW SE)
-                  (E E SW SE)
-                  (NW W NW SE SW)
-                  (E E NE W)
-                  (NW NE NE W)
-                  (NE SE E NE)
-                  (SE SE E SE)
-                  (E NW NW NW))]
-        [masks-at-cell
+  (let ([masks-at-cell
          (list->vector
-          (for/list ([i (in-range (* width height))])
-            (list->vector
-             (for/list ([j (in-range 10)])
-               null))))])
-    (for ([piece (in-list pieces)]
+          (for/list ([i (in-range size)])
+            (list->vector (for/list ([j (in-range 10)]) null))))])
+    (for ([piece (in-list generate-bitmasks-pieces)]
           [color (in-naturals)])
       (let loop ([masks (sort (all-bitmasks piece color) >)]
-                 [cell-bit (sub1 (* width height))]
-                 [cell-counter (sub1 (* width height))])
+                 [cell-bit (sub1 size)]
+                 [cell-counter (sub1 size)])
         (if (null? masks)
-            masks-at-cell
-            (if (bitwise-bit-set? (car masks) cell-bit)
-                (let ([vec (vector-ref masks-at-cell cell-counter)])
-                  (vector-set! vec color (cons (car masks) (vector-ref vec color)))
-                  (loop (cdr masks) cell-bit cell-counter))
-                (loop masks (sub1 cell-bit) (sub1 cell-counter))))))
+          masks-at-cell
+          (if (bitwise-bit-set? (car masks) cell-bit)
+            (let ([vec (vector-ref masks-at-cell cell-counter)])
+              (vector-set! vec color (cons (car masks) (vector-ref vec color)))
+              (loop (cdr masks) cell-bit cell-counter))
+            (loop masks (sub1 cell-bit) (sub1 cell-counter))))))
     (for ([v (in-vector masks-at-cell)])
       (for ([j (in-naturals)]
             [val (in-vector v)])
@@ -165,71 +151,70 @@
 
 (define masks (make-vector 10 0))
 (define to-go 0)
-(define solutions null)
+(define solutions (mcons #f #f)) ; keeps (min max) solutions
 
 (define (solve-cell! cell board)
-  (when (and (positive? to-go)
-             (not (negative? cell)))
+  (when (and (positive? to-go) (not (negative? cell)))
     ;; Need solutions and not off board
-    (cond
-     [(= board #x3FFFFFFFFFFFF)
-      ;; Solved
-      (add-solutions!)]
-     [(not (clear? board cell))
-      ;; Cell full, so try next
-      (solve-cell! (sub1 cell) board)]
-     [else
-      ;; Recur
-      (for ([color (in-range 10)])
-        (when (zero? (vector-ref masks color))
-          (for ([mask (in-list (vector-ref
-                                (vector-ref masks-at-cell cell)
-                                color))])
-            (when (zero? (bitwise-and mask board))
-              (vector-set! masks color mask)
-              (solve-cell! (sub1 cell) (bitwise-ior board mask))
-              (vector-set! masks color 0)))))])))
+    (cond [(= board #x3FFFFFFFFFFFF)
+           ;; Solved
+           (add-solutions!)]
+          [(not (clear? board cell))
+           ;; Cell full, so try next
+           (solve-cell! (sub1 cell) board)]
+          [else
+           ;; Recur
+           (for* ([color (in-range 10)]
+                  #:when (zero? (vector-ref masks color))
+                  [mask (in-list (vector-ref (vector-ref masks-at-cell cell)
+                                             color))]
+                  #:when (zero? (bitwise-and mask board)))
+             (vector-set! masks color mask)
+             (solve-cell! (sub1 cell) (bitwise-ior board mask))
+             (vector-set! masks color 0))])))
 
 (define (add-solutions!)
-  (let ([digits
-         (for/list ([pos (in-range (* width height))])
-           (for/or ([color (in-range 10)])
-                   (and (not (clear? (vector-ref masks color) pos))
-                        color)))])
-    (let ([s (list->string
-              (map (lambda (digit)
-                     (if digit
-                         (integer->char (+ digit (char->integer #\0)))
-                         #\.))
-                   digits))]
-          [ns (make-string (* width height))])
-      ;; Inverse
-      (for* ([y (in-range height)]
-             [x (in-range width)])
-            (string-set! ns (+ x (* y width))
-                         (string-ref s (+ (- width (+ x 1))
-                                          (* width (- height (+ y 1)))))))
-      ;; Append
-      (set! solutions (cons s solutions))
-      (set! solutions (cons ns solutions))
-      (set! to-go (- to-go 2)))))
+  (define (add! solution)
+    (cond [(not (mcar solutions))
+           (set-mcar! solutions solution)
+           (set-mcdr! solutions solution)]
+          [(bytes<? solution (mcar solutions))
+           (set-mcar! solutions solution)]
+          [(bytes>? solution (mcdr solutions))
+           (set-mcdr! solutions solution)]))
+  (let* ([s (list->bytes
+             (for/list ([pos (in-range size)])
+               (for/or ([color (in-range 10)])
+                       (and (not (clear? (vector-ref masks color) pos))
+                            (+ color (char->integer #\0))))))]
+         [ns (make-bytes size)])
+    ;; Inverse
+    (for* ([y (in-range height)]
+           [x (in-range width)])
+      (bytes-set! ns (+ x (* y width))
+                  (bytes-ref s (+ (- width (+ x 1))
+                                  (* width (- height (+ y 1)))))))
+    ;; Keep first and last only
+    (add! s)
+    (add! ns)
+    (set! to-go (- to-go 2))))
 
 (define (print-solution solution)
-  (for ([y (in-range height)])
-    (for ([x (in-range width)])
-      (display (string-ref solution (+ x (* y width))))
-      (display " "))
-    (display "\n")
-    (when (even? y)
-      (display " ")))
-  (newline))
+  (let ([solution (bytes->string/utf-8 solution)])
+    (for ([y (in-range height)])
+      (when (odd? y) (display " "))
+      (for ([x (in-range width)])
+        (printf "~a " (string-ref solution (+ x (* y width)))))
+      (printf "\n"))
+    (newline)))
 
 (define (solve! n)
   (set! to-go n)
-  (solve-cell! (sub1 (* width height)) 0))
+  (solve-cell! (sub1 size) 0))
 
-(command-line #:args (n) (solve! (string->number n)))
-(let ([solutions (sort solutions string<?)])
-  (printf "~a solutions found\n\n" (length solutions))
-  (print-solution (car solutions))
-  (print-solution (list-ref solutions (sub1 (length solutions)))))
+(command-line #:args (n)
+  (let ([n (string->number n)])
+    (solve! n)
+    (printf "~a solutions found\n\n" (- n to-go))
+    (print-solution (mcar solutions))
+    (print-solution (mcdr solutions))))
