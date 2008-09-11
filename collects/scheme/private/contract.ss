@@ -124,34 +124,63 @@ improve method arity mismatch contract violation error messages?
                        pos-blame-id
                        'neg-blame-id
                        (quote-syntax ident)))])))))
-  
+
+(define-for-syntax (check-and-split-with-contract-args args)
+  (let loop ([args args]
+             [unprotected null]
+             [protected null]
+             [protections null])
+    (cond
+      [(null? args)
+       (values unprotected protected protections)]
+      [(identifier? (car args))
+       (loop (cdr args)
+             (cons (car args) unprotected)
+             protected
+             protections)]
+      [(let ([lst (syntax->list (car args))])
+         (and (list? lst)
+              (= (length lst) 2)
+              lst))
+       =>
+       (lambda (l)
+         (loop (cdr args)
+               unprotected
+               (cons (first l) protected)
+               (cons (second l) protections)))]
+      [else
+       (raise-syntax-error 'with-contract
+                           "expected an identifier or (identifier contract)"
+                           (car args))])))
+
 (define-syntax (with-contract stx)
   (let ([introducer (make-syntax-introducer)])
     (syntax-case stx ()
-      [(_ blame ([name contract-expr] ...) body0 body ...)
-       (and (identifier? (syntax blame))
-            (andmap identifier? (syntax->list (syntax (name ...)))))
-       (with-syntax ([(id ...)
+      [(_ blame (arg ...) body0 body ...)
+       (identifier? (syntax blame))
+       (let-values ([(unprotected protected protections)
+                     (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
+       (with-syntax ([((protected-id id contract-id) ...)
                       (map (lambda (n)
-                             (a:mangle-id stx "with-contract-id" n))
-                           (syntax->list (syntax (name ...))))]
-                     [(contract-id ...)
-                      (map (lambda (n)
-                             (a:mangle-id stx "with-contract-contract-id" n))
-                           (syntax->list (syntax (name ...))))])
+                             (list n
+                                   (a:mangle-id stx "with-contract-id" n)
+                                   (a:mangle-id stx "with-contract-contract-id" n)))
+                           protected)]
+                     [(contract-expr ...) protections]
+                     [(unprotected-id ...) unprotected])
          (syntax/loc stx
            (begin 
-             (define-values (id ...)
+             (define-values (unprotected-id ... id ...)
                (syntax-parameterize ([current-contract-region (quote blame)])
                  (begin-with-definitions
                    body0 body ...
-                   (values name ...))))
+                   (values unprotected-id ... protected-id ...))))
              (define contract-id contract-expr) ...
-             (define-syntax name
+             (define-syntax protected-id
                (make-with-contract-transformer 
                 (quote-syntax contract-id)
                 (quote-syntax id)
-                (quote-syntax (quote blame)))) ...)))])))
+                (quote-syntax (quote blame)))) ...))))])))
 
 ;                                                                                                            
 ;                                                                                                            
