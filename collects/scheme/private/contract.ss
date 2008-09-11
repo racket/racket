@@ -60,6 +60,10 @@ improve method arity mismatch contract violation error messages?
      #'(with-contract name
          ([name contract-expr])
          (define name expr))]
+    [(_ (name arg ...) contract body)
+     (identifier? (syntax name))
+     #'(define/contract name contract
+         (lambda (arg ...) body))]
     [(_ name contract-expr expr)
      (raise-syntax-error 'define/contract "expected identifier in first position"
                          define-stx
