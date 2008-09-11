@@ -14,12 +14,11 @@
   ;; syntax -> void
   (define (fmv/list lstx)
     (for-each find-mutated-vars (syntax->list lstx)))
-  ;(printf "called with ~a~n" (syntax->datum form))
+  ;(when (and (pair? (syntax->datum form))) (printf "called with ~a~n" (syntax->datum form)))
   (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal require/typed-internal)     
     ;; what we care about: set!
     [(set! v e)
      (begin
-       ;(printf "mutated var found: ~a~n" (syntax-e #'v))
        (module-identifier-mapping-put! table #'v #t))]
     [(define-values (var ...) expr)
      (find-mutated-vars #'expr)]
@@ -28,15 +27,13 @@
     [(begin0 . rest) (fmv/list #'rest)]
     [(#%plain-lambda _ . rest) (fmv/list #'rest)]
     [(case-lambda (_ . rest) ...) (for-each fmv/list (syntax->list #'(rest ...)))]
-    [(if e1 e2) (begin (find-mutated-vars #'e1) (find-mutated-vars #'e2))]
-    [(if e1 e2 e3) (begin (find-mutated-vars #'e1) (find-mutated-vars #'e1) (find-mutated-vars #'e3))]
-    [(with-continuation-mark e1 e2 e3) (begin (find-mutated-vars #'e1) 
-                                              (find-mutated-vars #'e1)
-                                              (find-mutated-vars #'e3))]
+    [(if . es) (fmv/list #'es)]
+    [(with-continuation-mark . es) (fmv/list #'es)]
     [(let-values ([_ e] ...) . b) (begin (fmv/list #'(e ...))
                                          (fmv/list #'b))]
     [(letrec-values ([_ e] ...) . b) (begin (fmv/list #'(e ...))
-                                            (fmv/list #'b))]  
+                                            (fmv/list #'b))]
+    [(#%expression e) (find-mutated-vars #'e)]
     ;; all the other forms don't have any expression subforms (like #%top)
     [_ (void)]))
 

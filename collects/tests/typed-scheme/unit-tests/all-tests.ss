@@ -12,7 +12,7 @@
  "subst-tests.ss"
  "infer-tests.ss")
 
-(require (private planet-requires infer infer-dummy))
+(require (utils planet-requires) (r:infer infer infer-dummy))
 
 (require (schemeunit))
 

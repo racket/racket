@@ -1,9 +1,10 @@
 #lang scheme/base
 
+(require (except-in "../utils/utils.ss" extend))
 (require (for-syntax
           scheme/base
-          "init-envs.ss"
-          (except-in "type-rep.ss" make-arr)
+          (env init-envs)
+          (except-in (rep type-rep) make-arr)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
           "union.ss"))

@@ -2,8 +2,12 @@
 
 (require "test-utils.ss")
 
-(require (private subtype type-rep type-effect-convenience 
-                  planet-requires init-envs type-environments union infer infer-dummy))
+(require (private subtype type-effect-convenience union)
+	 (rep type-rep)
+	 (utils planet-requires)
+	 (env init-envs type-environments)
+	 (r:infer infer infer-dummy))
+
 
 (require (schemeunit)
          (for-syntax scheme/base))
