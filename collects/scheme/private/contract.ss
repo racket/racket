@@ -12,7 +12,8 @@ improve method arity mismatch contract violation error messages?
 (provide (rename-out [-contract contract])
          recursive-contract
          provide/contract
-         define/contract)
+         define/contract
+         with-contract)
 
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
@@ -116,6 +117,85 @@ improve method arity mismatch contract violation error messages?
                          define-stx
                          (syntax name))])) 
 
+
+
+;                                                                                         
+;                                                                                         
+;              ;       ;                                                                  
+;                  ;   ;                                     ;                         ;  
+;                  ;   ;                                     ;                         ;  
+;  ;    ;    ; ;  ;;;; ; ;;;          ;;;     ;;;    ; ;;;  ;;;; ; ;;   ;;;;     ;;;  ;;;;
+;  ;    ;    ; ;   ;   ;;   ;        ;   ;   ;   ;   ;;   ;  ;   ;;    ;    ;   ;   ;  ;  
+;   ;  ; ;  ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;   ;  ; ;  ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;        ;;;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;     ;;;  ;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ; ;;;;  ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;    ;     ;   ;   ;   ;    ;        ;   ;   ;   ;   ;    ;  ;   ;    ;    ;;   ;   ;  ;  
+;    ;     ;   ;   ;;; ;    ;         ;;;     ;;;    ;    ;  ;;; ;     ;;;; ;    ;;;   ;;;
+;                                                                                         
+;                                                                                         
+;                                                                                         
+
+(define-for-syntax current-contract-region (make-parameter #f))
+
+(define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
+  (make-set!-transformer
+   (lambda (stx)
+     (with-syntax ([neg-blame-id #`(if #,(current-contract-region)
+				       #,(current-contract-region)
+				       (module-source-as-symbol #'#,id))]
+		   [pos-blame-id #`(quote #,(syntax-e pos-blame-id))]
+                   [contract-id contract-id]
+                   [id id])
+       (syntax-case stx (set!)
+         [(set! id arg)
+          (raise-syntax-error 'with-contract
+                              "cannot set! a with-contract variable"
+                              stx
+                              (syntax id))]
+         [(f arg ...)
+          (syntax/loc stx
+            ((-contract contract-id
+                        id
+                        pos-blame-id
+			neg-blame-id
+                        (quote-syntax f))
+             arg ...))]
+         [ident
+          (identifier? (syntax ident))
+          (syntax/loc stx
+            (-contract contract-id
+                       id
+                       pos-blame-id
+		       neg-blame-id
+                       (quote-syntax ident)))])))))
+
+(define-syntax (with-contract stx)
+  (let ([introducer (make-syntax-introducer)])
+    (syntax-case stx ()
+      [(_ blame ([name contract-expr] ...) body0 body ...)
+       (and (identifier? (syntax blame))
+            (andmap identifier? (syntax->list (syntax (name ...)))))
+       (parameterize ([current-contract-region (syntax-e (syntax blame))])
+         (with-syntax ([(id ...)
+			(map introducer (syntax->list (syntax (name ...))))]
+		       [(contract-id ...)
+			(map (lambda (n)
+			       (a:mangle-id stx "with-contract-contract-id" n))
+			     (syntax->list (syntax (name ...))))]
+		       [(new-body ...)
+			(map introducer
+			     (syntax->list (syntax (body0 body ...))))])
+	    (syntax/loc stx
+	      (begin
+		(define contract-id contract-expr) ...
+		(define-syntax name
+		  (make-with-contract-transformer 
+		   (quote-syntax contract-id)
+		   (quote-syntax id)
+		   (quote-syntax blame))) ...
+		new-body ...))))])))
 
 ;                                                                                                            
 ;                                                                                                            
