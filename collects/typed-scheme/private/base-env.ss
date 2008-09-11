@@ -560,7 +560,8 @@
      [values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
      [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
   
-     [foo (N #:bar B #f . ->key . B)]
+     [eof (-val eof)]
+     [read-accept-reader (-Param B B)]
      )
 
 (begin-for-syntax 

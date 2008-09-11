@@ -30,16 +30,18 @@
 	    (syntax-case stx ()
 	      [(_ id ...)
 	       (andmap identifier? (syntax->list #'(id ...)))
-	       (with-syntax ([(id* ...) (map (lambda (id) (datum->syntax 
-							   id 
-							   (string->symbol
-							    (string-append 
-							     "typed-scheme/"
-							     #,(symbol->string (syntax-e #'nm))
-							     "/" 
-							     (symbol->string (syntax-e id))))
-							   id id))
-					     (syntax->list #'(id ...)))])
+	       (with-syntax ([(id* ...) 
+                              (map (lambda (id) 
+                                     (datum->syntax 
+                                      id 
+                                      (string->symbol
+                                       (string-append 
+                                        "typed-scheme/"
+                                        #,(symbol->string (syntax-e #'nm))
+                                        "/" 
+                                        (symbol->string (syntax-e id))))
+                                      id id))
+                                   (syntax->list #'(id ...)))])
 			    (syntax/loc stx (combine-in id* ...)))]))))]))
 
 
