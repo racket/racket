@@ -23,7 +23,8 @@ improve method arity mismatch contract violation error messages?
          (for-syntax syntax/define)
          scheme/promise
          scheme/stxparam
-         scheme/stxparam-exptime)
+         scheme/stxparam-exptime
+         mzlib/etc)
 
 (require "contract-arrow.ss"
          "contract-guts.ss"
@@ -56,14 +57,14 @@ improve method arity mismatch contract violation error messages?
 ;; it to the result of `expr'.  These variables may not be set!'d.
 (define-syntax (define/contract define-stx)
   (syntax-case define-stx ()
-    [(_ name contract-expr expr)
+    [(_ name contract-expr expr0 expr ...)
      (identifier? (syntax name))
      #'(with-contract name
          ([name contract-expr])
-         (define name expr))]
-    [(_ name+arg-list contract body)
+         (define name expr0 expr ...))]
+    [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
-                   (normalize-definition (datum->syntax #'stx (list 'define #'name+arg-list #'body))
+                   (normalize-definition (datum->syntax #'stx (list* 'define #'name+arg-list #'body0 #'(body ...)))
                                          #'lambda #f #t)])
        #`(define/contract #,name contract #,lam-expr))]
     [(_ name contract-expr expr)
@@ -142,8 +143,9 @@ improve method arity mismatch contract violation error messages?
            (begin 
              (define-values (id ...)
                (syntax-parameterize ([current-contract-region (quote blame)])
-                 body0 body ...
-                 (values name ...)))
+                 (begin-with-definitions
+                   body0 body ...
+                   (values name ...))))
              (define contract-id contract-expr) ...
              (define-syntax name
                (make-with-contract-transformer 
