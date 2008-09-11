@@ -50,19 +50,6 @@ improve method arity mismatch contract violation error messages?
 ;                                          ;                                                         
 ;                                                                                                    
 
-;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
-(define-for-syntax (lookup-struct-info stx provide-stx)
-  (let ([id (syntax-case stx ()
-              [(a b) (syntax a)]
-              [_ stx])])
-    (let ([v (syntax-local-value id (λ () #f))])
-      (if (struct-info? v)
-          (extract-struct-info v)
-          (raise-syntax-error 'provide/contract
-                              "expected a struct name" 
-                              provide-stx
-                              id)))))
-
 (define-for-syntax (make-define/contract-transformer contract-id id)
   (make-set!-transformer
    (λ (stx)
@@ -218,6 +205,19 @@ improve method arity mismatch contract violation error messages?
 ;   ;                                              ;                                                         
 ;   ;                                                                                                        
 
+
+;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
+(define-for-syntax (lookup-struct-info stx provide-stx)
+  (let ([id (syntax-case stx ()
+              [(a b) (syntax a)]
+              [_ stx])])
+    (let ([v (syntax-local-value id (λ () #f))])
+      (if (struct-info? v)
+          (extract-struct-info v)
+          (raise-syntax-error 'provide/contract
+                              "expected a struct name" 
+                              provide-stx
+                              id)))))
 
 ;; id->contract-src-info : identifier -> syntax
 ;; constructs the last argument to the -contract, given an identifier
