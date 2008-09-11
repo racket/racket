@@ -13,12 +13,15 @@ improve method arity mismatch contract violation error messages?
          recursive-contract
          provide/contract
          define/contract
-         with-contract)
+         with-contract
+         current-contract-region)
 
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
          (for-syntax scheme/struct-info)
          (for-syntax scheme/list)
+         scheme/stxparam
+         scheme/stxparam-exptime
          scheme/promise)
 
 (require "contract-arrow.ss"
@@ -137,40 +140,39 @@ improve method arity mismatch contract violation error messages?
 ;                                                                                         
 ;                                                                                         
 
-(define-for-syntax current-contract-region (make-parameter #f))
+(define-syntax-parameter current-contract-region #f)
 
 (define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
   (make-set!-transformer
    (lambda (stx)
-     (let ([neg-blame-id (cond
-                           [(current-contract-region) => values]
-                           [else #`(module-source-as-symbol #'#,id)])])
-       (with-syntax ([neg-blame-id neg-blame-id]
-                     [pos-blame-id #`(quote #,(syntax-e pos-blame-id))]
-                     [contract-id contract-id]
-                     [id id])
-         (syntax-case stx (set!)
-           [(set! id arg)
-            (raise-syntax-error 'with-contract
-                                "cannot set! a with-contract variable"
-                                stx
-                                (syntax id))]
-           [(f arg ...)
-            (syntax/loc stx
-              ((-contract contract-id
-                          id
-                          pos-blame-id
-                          neg-blame-id
-                          (quote-syntax f))
-               arg ...))]
-           [ident
-            (identifier? (syntax ident))
-            (syntax/loc stx
-              (-contract contract-id
-                         id
-                         pos-blame-id
-                         neg-blame-id
-                         (quote-syntax ident)))]))))))
+     #;(printf "~a\n" (syntax-parameter-value #'current-contract-region))
+     (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
+                                     (a:module-source-as-symbol id))]
+                   [pos-blame-id pos-blame-id]
+                   [contract-id contract-id]
+                   [id id])
+       (syntax-case stx (set!)
+         [(set! id arg)
+          (raise-syntax-error 'with-contract
+                              "cannot set! a with-contract variable"
+                              stx
+                              (syntax id))]
+         [(f arg ...)
+          (quasisyntax/loc stx
+            ((-contract contract-id
+                        id
+                        pos-blame-id
+                        'neg-blame-id
+                        (quote-syntax f))
+             arg ...))]
+         [ident
+          (identifier? (syntax ident))
+          (quasisyntax/loc stx
+            (-contract contract-id
+                       id
+                       pos-blame-id
+                       'neg-blame-id
+                       (quote-syntax ident)))])))))
   
 (define-syntax (with-contract stx)
   (let ([introducer (make-syntax-introducer)])
@@ -178,25 +180,26 @@ improve method arity mismatch contract violation error messages?
       [(_ blame ([name contract-expr] ...) body0 body ...)
        (and (identifier? (syntax blame))
             (andmap identifier? (syntax->list (syntax (name ...)))))
-       (parameterize ([current-contract-region (syntax-e (syntax blame))])
-         (with-syntax ([(id ...)
-			(map introducer (syntax->list (syntax (name ...))))]
-		       [(contract-id ...)
-			(map (lambda (n)
-			       (a:mangle-id stx "with-contract-contract-id" n))
-			     (syntax->list (syntax (name ...))))]
-		       [(new-body ...)
-			(map introducer
-			     (syntax->list (syntax (body0 body ...))))])
-	    (syntax/loc stx
-	      (begin
-		(define contract-id contract-expr) ...
-		(define-syntax name
-		  (make-with-contract-transformer 
-		   (quote-syntax contract-id)
-		   (quote-syntax id)
-		   (quote-syntax blame))) ...
-		new-body ...))))])))
+       (with-syntax ([(id ...)
+                      (map (lambda (n)
+                             (a:mangle-id stx "with-contract-id" n))
+                           (syntax->list (syntax (name ...))))]
+                     [(contract-id ...)
+                      (map (lambda (n)
+                             (a:mangle-id stx "with-contract-contract-id" n))
+                           (syntax->list (syntax (name ...))))])
+         (syntax/loc stx
+           (begin 
+             (define-values (id ...)
+               (syntax-parameterize ([current-contract-region (quote blame)])
+                 body0 body ...
+                 (values name ...)))
+             (define contract-id contract-expr) ...
+             (define-syntax name
+               (make-with-contract-transformer 
+                (quote-syntax contract-id)
+                (quote-syntax id)
+                (quote-syntax (quote blame)))) ...)))])))
 
 ;                                                                                                            
 ;                                                                                                            
