@@ -1368,6 +1368,21 @@
          (before-after (9 (list 'check-expect-failed 7 17) (list 'check-expect-passed 2 2) (check-expect (hilite (+ 2 2)) 4))
                        (9 (list 'check-expect-failed 7 17) (list 'check-expect-passed 2 2) (check-expect (hilite 4) 4))))))
   
+  (t1 check-expect-2
+      (test-upto-int/lam
+       "(check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-expect (+ 3 4) (hilite (+ 8 9))))
+                       (9 (check-expect (+ 3 4) (hilite 17))))
+         (before-after (9 (check-expect (hilite (+ 3 4)) 17))
+                       (9 (check-expect (hilite 7) 17)))
+         (before-after (9 (check-expect (hilite (+ 3 1)) 4))
+                       (9 (check-expect (hilite 4) 4))))))
+  
+  
+  
+  
   (t1 check-within
       (test-bwla-to-int/lam
        "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (check-expect (+ 1 1) 2)(+ 4 5)"
