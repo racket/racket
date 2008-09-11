@@ -20,9 +20,10 @@ improve method arity mismatch contract violation error messages?
          (for-syntax "contract-opt-guts.ss")
          (for-syntax scheme/struct-info)
          (for-syntax scheme/list)
+         (for-syntax syntax/define)
+         scheme/promise
          scheme/stxparam
-         scheme/stxparam-exptime
-         scheme/promise)
+         scheme/stxparam-exptime)
 
 (require "contract-arrow.ss"
          "contract-guts.ss"
@@ -60,10 +61,11 @@ improve method arity mismatch contract violation error messages?
      #'(with-contract name
          ([name contract-expr])
          (define name expr))]
-    [(_ (name arg ...) contract body)
-     (identifier? (syntax name))
-     #'(define/contract name contract
-         (lambda (arg ...) body))]
+    [(_ name+arg-list contract body)
+     (let-values ([(name lam-expr)
+                   (normalize-definition (datum->syntax #'stx (list 'define #'name+arg-list #'body))
+                                         #'lambda #f #t)])
+       #`(define/contract #,name contract #,lam-expr))]
     [(_ name contract-expr expr)
      (raise-syntax-error 'define/contract "expected identifier in first position"
                          define-stx
