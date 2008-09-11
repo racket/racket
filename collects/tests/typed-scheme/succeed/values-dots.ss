@@ -5,16 +5,16 @@
 
 (call-with-values (lambda () (values 1 2)) (lambda: ([x : Number] [y : Number]) (+ x y)))
 
-(#{call-with-values* @ Integer Integer Integer} (lambda () (values 1 2)) (lambda: ([x : Integer] [y : Integer]) (+ x y)))
+(#{call-with-values @ Integer Integer Integer} (lambda () (values 1 2)) (lambda: ([x : Integer] [y : Integer]) (+ x y)))
 
 
-(call-with-values* (lambda () (values 1 2)) (lambda: ([x : Integer] [y : Integer]) (+ x y)))
+(call-with-values (lambda () (values 1 2)) (lambda: ([x : Integer] [y : Integer]) (+ x y)))
 
 (: map-with-funcs (All (b ...) ((b ... b -> b) ... b -> (b ... b -> (values b ... b)))))
 (define (map-with-funcs . fs)
   (lambda bs
-    (apply values* (map (lambda: ([f : (b ... b -> b)])
-                          (apply f bs)) fs))))
+    (apply values (map (lambda: ([f : (b ... b -> b)])
+                         (apply f bs)) fs))))
 
 (map-with-funcs + - * /)
 

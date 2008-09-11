@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require "test-utils.ss" (for-syntax scheme/base))
-(require (private planet-requires type-rep type-comparison type-effect-convenience union subtype))
+(require (utils planet-requires) (rep type-rep)
+	 (private type-comparison type-effect-convenience union subtype))
 (require (schemeunit))
 
 (provide type-equal-tests)
