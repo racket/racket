@@ -1,3 +1,5 @@
+
+#lang scheme/load
 #|
 
 This file started out as a copy of contract-test.ss.
@@ -1591,14 +1593,7 @@ of the contract library does not change over time.
    '(let ()
       (define/contract i (-> integer? integer?) (lambda (x) 1))
       (i #f))
-   "<<unknown>>")
-  
-  (test/spec-failed
-   'define/contract5
-   '(let ()
-      (define/contract i (-> integer? integer?) (lambda (x) (i #t)))
-      (i 1))
-   "<<unknown>>")
+   "top-level")
   
   (test/spec-passed
    'define/contract6
