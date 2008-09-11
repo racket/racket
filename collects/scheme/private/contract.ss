@@ -142,35 +142,36 @@ improve method arity mismatch contract violation error messages?
 (define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
   (make-set!-transformer
    (lambda (stx)
-     (with-syntax ([neg-blame-id #`(if #,(current-contract-region)
-				       #,(current-contract-region)
-				       (module-source-as-symbol #'#,id))]
-		   [pos-blame-id #`(quote #,(syntax-e pos-blame-id))]
-                   [contract-id contract-id]
-                   [id id])
-       (syntax-case stx (set!)
-         [(set! id arg)
-          (raise-syntax-error 'with-contract
-                              "cannot set! a with-contract variable"
-                              stx
-                              (syntax id))]
-         [(f arg ...)
-          (syntax/loc stx
-            ((-contract contract-id
-                        id
-                        pos-blame-id
-			neg-blame-id
-                        (quote-syntax f))
-             arg ...))]
-         [ident
-          (identifier? (syntax ident))
-          (syntax/loc stx
-            (-contract contract-id
-                       id
-                       pos-blame-id
-		       neg-blame-id
-                       (quote-syntax ident)))])))))
-
+     (let ([neg-blame-id (cond
+                           [(current-contract-region) => values]
+                           [else #`(module-source-as-symbol #'#,id)])])
+       (with-syntax ([neg-blame-id neg-blame-id]
+                     [pos-blame-id #`(quote #,(syntax-e pos-blame-id))]
+                     [contract-id contract-id]
+                     [id id])
+         (syntax-case stx (set!)
+           [(set! id arg)
+            (raise-syntax-error 'with-contract
+                                "cannot set! a with-contract variable"
+                                stx
+                                (syntax id))]
+           [(f arg ...)
+            (syntax/loc stx
+              ((-contract contract-id
+                          id
+                          pos-blame-id
+                          neg-blame-id
+                          (quote-syntax f))
+               arg ...))]
+           [ident
+            (identifier? (syntax ident))
+            (syntax/loc stx
+              (-contract contract-id
+                         id
+                         pos-blame-id
+                         neg-blame-id
+                         (quote-syntax ident)))]))))))
+  
 (define-syntax (with-contract stx)
   (let ([introducer (make-syntax-introducer)])
     (syntax-case stx ()
