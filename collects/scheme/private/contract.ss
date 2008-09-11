@@ -38,14 +38,14 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
-    [(_ x) (a:known-good-contract? #'x) #'x]
-    [(_ x) #'(verify-contract/proc x)]))
+    [(_ name x) (a:known-good-contract? #'x) #'x]
+    [(_ name x) #'(verify-contract/proc name x)]))
 
-(define (verify-contract/proc x)
+(define (verify-contract/proc name x)
   (unless (or (contract? x)
               (and (procedure? x)
                    (procedure-arity-includes? x 1)))
-    (error 'provide/contract "expected a contract or a procedure of arity one, got ~e" x))
+    (error name "expected a contract or a procedure of arity one, got ~e" x))
   x)
 
 ;                                                                                                    
@@ -73,7 +73,7 @@ improve method arity mismatch contract violation error messages?
     [(_ name contract-expr expr0 expr ...)
      (identifier? (syntax name))
      #'(with-contract name
-         ([name (verify-contract contract-expr)])
+         ([name (verify-contract 'define/contract contract-expr)])
          (define name expr0 expr ...))]
     [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
@@ -189,7 +189,7 @@ improve method arity mismatch contract violation error messages?
                  (begin-with-definitions
                    body0 body ...
                    (values unprotected-id ... protected-id ...))))
-             (define contract-id (verify-contract contract-expr)) ...
+             (define contract-id (verify-contract 'with-contract contract-expr)) ...
              (define-syntax protected-id
                (make-with-contract-transformer 
                 (quote-syntax contract-id)
@@ -572,7 +572,7 @@ improve method arity mismatch contract violation error messages?
                                                     #f
                                                     (with-syntax ([field-contract-id field-contract-id]
                                                                   [field-contract field-contract])
-                                                      #'(define field-contract-id (verify-contract field-contract)))))
+                                                      #'(define field-contract-id (verify-contract 'provide/contract field-contract)))))
                                               field-contract-ids
                                               field-contracts))]
                          [(field-contracts ...) field-contracts]
@@ -760,7 +760,7 @@ improve method arity mismatch contract violation error messages?
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
-                                          (list #'(define contract-id (verify-contract ctrct))))
+                                          (list #'(define contract-id (verify-contract 'provide/contract ctrct))))
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (quote-syntax id)
