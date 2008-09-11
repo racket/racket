@@ -1,5 +1,5 @@
 #lang scheme/base
-(provide assert call-with-values* values*)
+(provide assert call-with-values* values* foo)
 
 (define (assert v)
   (unless v
@@ -16,3 +16,6 @@
 
 (define call-with-values* call-with-values)
 (define values* values)
+
+(define (foo x #:bar [bar #f])
+  bar)

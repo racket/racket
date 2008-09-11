@@ -31,7 +31,8 @@
 (define tests
   '([load "mzscheme/quiet.ss" (lib "scheme/init")]
     [require "typed-scheme/main.ss"]
-    [require "match/plt-match-tests.ss"]))
+    [require "match/plt-match-tests.ss"]
+    [require "stepper/automatic-tests.ss"]))
 
 
 (require scheme/runtime-path)

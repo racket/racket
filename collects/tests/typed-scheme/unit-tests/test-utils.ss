@@ -3,25 +3,12 @@
 
 (require scheme/require-syntax
          scheme/match
+	 typed-scheme/utils/utils
          (for-syntax scheme/base))
 
-(define-require-syntax private
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ id ...)
-       (andmap identifier? (syntax->list #'(id ...)))
-       (with-syntax ([(id* ...) (map (lambda (id) (datum->syntax 
-                                                   id 
-                                                   (string->symbol 
-                                                    (string-append 
-                                                     "typed-scheme/private/" 
-                                                     (symbol->string (syntax-e id))))
-                                                   id id))
-                                     (syntax->list #'(id ...)))])
-         (syntax/loc stx (combine-in id* ...)))])))
 
-(require (private planet-requires type-comparison utils type-utils))
-
+(require (utils planet-requires) (private type-comparison type-utils))
+(provide private typecheck (rename-out [infer r:infer]) utils env rep)
 (require (schemeunit))
 
 (define (mk-suite ts)
