@@ -77,8 +77,8 @@ improve method arity mismatch contract violation error messages?
          (define name expr0 expr ...))]
     [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
-                   (normalize-definition (datum->syntax #'stx (list* 'define #'name+arg-list #'body0 #'(body ...)))
-                                         #'lambda #f #t)])
+                   (normalize-definition (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list #'body0 #'(body ...)))
+                                         #'lambda #t #t)])
        #`(define/contract #,name contract #,lam-expr))]
     [(_ name contract-expr expr)
      (raise-syntax-error 'define/contract "expected identifier in first position"
