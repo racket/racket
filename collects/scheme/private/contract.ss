@@ -34,6 +34,19 @@ improve method arity mismatch contract violation error messages?
          (for-syntax (prefix-in a: "contract-helpers.ss")))
 
 
+;; These are useful for all below.
+
+(define-syntax (verify-contract stx)
+  (syntax-case stx ()
+    [(_ x) (a:known-good-contract? #'x) #'x]
+    [(_ x) #'(verify-contract/proc x)]))
+
+(define (verify-contract/proc x)
+  (unless (or (contract? x)
+              (and (procedure? x)
+                   (procedure-arity-includes? x 1)))
+    (error 'provide/contract "expected a contract or a procedure of arity one, got ~e" x))
+  x)
 
 ;                                                                                                    
 ;                                                                                                    
@@ -60,7 +73,7 @@ improve method arity mismatch contract violation error messages?
     [(_ name contract-expr expr0 expr ...)
      (identifier? (syntax name))
      #'(with-contract name
-         ([name contract-expr])
+         ([name (verify-contract contract-expr)])
          (define name expr0 expr ...))]
     [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
@@ -141,6 +154,7 @@ improve method arity mismatch contract violation error messages?
       [(let ([lst (syntax->list (car args))])
          (and (list? lst)
               (= (length lst) 2)
+              (identifier? (first lst))
               lst))
        =>
        (lambda (l)
@@ -175,7 +189,7 @@ improve method arity mismatch contract violation error messages?
                  (begin-with-definitions
                    body0 body ...
                    (values unprotected-id ... protected-id ...))))
-             (define contract-id contract-expr) ...
+             (define contract-id (verify-contract contract-expr)) ...
              (define-syntax protected-id
                (make-with-contract-transformer 
                 (quote-syntax contract-id)
@@ -765,19 +779,6 @@ improve method arity mismatch contract violation error messages?
          (syntax 
           (begin
             bodies ...))))]))
-
-(define-syntax (verify-contract stx)
-  (syntax-case stx ()
-    [(_ x) (a:known-good-contract? #'x) #'x]
-    [(_ x) #'(verify-contract/proc x)]))
-
-(define (verify-contract/proc x)
-  (unless (or (contract? x)
-              (and (procedure? x)
-                   (procedure-arity-includes? x 1)))
-    (error 'provide/contract "expected a contract or a procedure of arity one, got ~e" x))
-  x)
-
 
 (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
   (let-values ([(struct:struct-name _make _pred _get _set)
