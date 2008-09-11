@@ -194,7 +194,19 @@ improve method arity mismatch contract violation error messages?
                (make-with-contract-transformer 
                 (quote-syntax contract-id)
                 (quote-syntax id)
-                (quote-syntax (quote blame)))) ...))))])))
+                (quote-syntax (quote blame)))) ...))))]
+      [(_ blame (arg ...) body0 body ...)
+       (raise-syntax-error 'with-contract
+			   "expected identifier"
+			   #'blame)]
+      [(_ blame (arg ...))
+       (raise-syntax-error 'with-contract
+			   "empty body"
+			   stx)]
+      [(_ blame bad-args body0 body ...)
+       (raise-syntax-error 'with-contract
+			   "expected list of identifier and/or (identifier contract)"
+			   #'bad-args)])))
 
 ;                                                                                                            
 ;                                                                                                            
