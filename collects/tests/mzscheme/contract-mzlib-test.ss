@@ -1595,13 +1595,19 @@ of the contract library does not change over time.
       (i #f))
    "top-level")
   
+  (test/spec-failed
+   'define/contract5
+   '(let ()
+      (define/contract (i x) (-> integer? integer?) 1)
+      (i #f))
+   "top-level")
+  
   (test/spec-passed
    'define/contract6
    '(let ()
-      (define/contract contracted-func
+      (define/contract (contracted-func label t)
                        (string?  string? . -> . string?)
-                       (lambda (label t)
-                         t))
+                       t)
       (contracted-func
        "I'm a string constant with side effects"
        "ans")))
