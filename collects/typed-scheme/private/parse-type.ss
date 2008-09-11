@@ -2,15 +2,16 @@
 
 (provide parse-type parse-type/id)
 
-(require (except-in "../utils/utils.ss" extend))
-(require (except-in (rep type-rep) make-arr)
+(require (except-in "type-rep.ss" make-arr)
          "type-effect-convenience.ss"
          (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-         (utils tc-utils)
+         "tc-utils.ss"
          "union.ss"
          syntax/stx
-         (env type-environments type-name-env type-alias-env)
-	 "type-utils.ss"
+         (except-in "type-environments.ss")
+         "type-name-env.ss"
+         "type-alias-env.ss"
+         "type-utils.ss"
          scheme/match)
 
 (define enable-mu-parsing (make-parameter #t))
@@ -212,7 +213,7 @@
           ;(printf "found a type name ~a~n" #'id)
           (make-Name #'id)]
          [else
-          (tc-error/delayed "unbound type name ~a" (syntax-e #'id))
+          (tc-error/delayed "unbound type ~a" (syntax-e #'id))
           Univ])]
 
       [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]

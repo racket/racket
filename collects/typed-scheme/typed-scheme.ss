@@ -1,18 +1,22 @@
 #lang scheme/base
 
-(require (rename-in "utils/utils.ss" [infer r:infer]))
-
-(require (private base-env base-types)
+(require "private/base-env.ss"
+         "private/base-types.ss"
          (for-syntax 
           scheme/base
-	  (private type-utils type-contract type-effect-convenience)
-	  (typecheck typechecker provide-handling)
-	  (env type-environments type-name-env type-alias-env)
-	  (r:infer infer)
-	  (utils tc-utils)
-	  (rep type-rep)
-	  (except-in (utils utils) infer extend)
-          (only-in (r:infer infer-dummy) infer-param)
+          "private/type-utils.ss"
+          "private/typechecker.ss"
+          "private/type-rep.ss"
+          "private/provide-handling.ss"
+          "private/type-environments.ss" 
+          "private/tc-utils.ss"
+          "private/type-name-env.ss"
+          "private/type-alias-env.ss"
+          (except-in "private/utils.ss" extend)
+          (only-in "private/infer-dummy.ss" infer-param)
+          "private/infer.ss"
+          "private/type-effect-convenience.ss"
+          "private/type-contract.ss"
           scheme/nest
           syntax/kerncase
           scheme/match))
@@ -27,7 +31,7 @@
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction]
                      [#%plain-lambda lambda]
-                     [#%app #%app]
+                     [#%plain-app #%app]
                      [require require]))
 
 (define-for-syntax catch-errors? #f)

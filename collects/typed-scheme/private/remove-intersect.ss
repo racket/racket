@@ -1,8 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep)
-	 (private union subtype resolve-type type-effect-convenience type-utils)
+(require "type-rep.ss" "union.ss" "subtype.ss"
+         "type-utils.ss" "resolve-type.ss" "type-effect-convenience.ss"         
          mzlib/plt-match mzlib/trace)
 
 (provide (rename-out [*remove remove]) overlap)

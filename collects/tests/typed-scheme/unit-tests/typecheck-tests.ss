@@ -3,16 +3,14 @@
 (require "test-utils.ss" 
          (for-syntax scheme/base)
          (for-template scheme/base))
-(require (private base-env mutated-vars type-utils union prims type-effect-convenience type-annotation)
-	 (typecheck typechecker)
-	 (rep type-rep effect-rep)
-         (utils tc-utils planet-requires)
-         (env type-name-env type-environments init-envs))
+(require (private base-env))
 
-(require (for-syntax (utils tc-utils)
-                     (typecheck typechecker)
-	             (env type-env)
-	             (private base-env))
+(require (private planet-requires typechecker
+                  type-rep type-effect-convenience type-env
+                  prims type-environments tc-utils union
+                  type-name-env init-envs mutated-vars
+                  effect-rep type-annotation type-utils)
+         (for-syntax (private tc-utils typechecker base-env type-env))
          (for-template (private base-env base-types)))
 (require (schemeunit))
 
@@ -671,7 +669,7 @@
    (tc-l #t (-val #t))
    (tc-l "foo" -String)
    (tc-l foo (-val 'foo))
-   (tc-l #:foo (-val '#:foo))
+   (tc-l #:foo -Keyword)
    (tc-l #f (-val #f))
    (tc-l #"foo" -Bytes)
    [tc-l () (-val null)]

@@ -1,11 +1,7 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
-
-(require (rep type-rep rep-utils)
-	 (utils tc-utils)
-	 "subtype.ss" 
-         "type-effect-printer.ss" 
+(require "type-rep.ss" "subtype.ss" "tc-utils.ss"
+         "type-effect-printer.ss" "rep-utils.ss"
          "type-comparison.ss"
          scheme/match mzlib/trace)
 

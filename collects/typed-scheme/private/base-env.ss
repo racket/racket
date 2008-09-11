@@ -3,7 +3,6 @@
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
- "../utils/utils.ss"
  (only-in scheme/list cons? take drop add-between last filter-map)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
@@ -16,12 +15,13 @@
 ;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
-          (env init-envs)          
-          (except-in (rep effect-rep type-rep) make-arr)
+          "init-envs.ss"
+          "effect-rep.ss"
+          (except-in "type-rep.ss" make-arr)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
           "union.ss"
-          (typecheck tc-structs)))
+          "tc-structs.ss"))
 
 (define-for-syntax (initialize-others) 
   (d-s date 
@@ -56,9 +56,6 @@
               [language language-ty]
               [qq-append qq-append-ty]
               [id ty] ...)))]))
-
-(define-for-syntax (one-of/c . args)
-  (apply Un (map -val args)))
 
 
 (define-initial-env initial-env
@@ -148,13 +145,9 @@
      [string-append (->* null -String -String)]
      [open-input-string (-> -String -Input-Port)]
      [open-output-file 
-      (->key -Pathlike
-             #:mode (one-of/c 'binary 'text) #f
-             #:exists (one-of/c 'error 'append 'update 'can-update                                
-                                'replace 'truncate                                
-                                'must-truncate 'truncate/replace) 
-             #f
-             -Output-Port)]
+      (cl->
+       [(-Pathlike) -Port]
+       [(-Pathlike Sym) -Port])]
      [read (cl-> 
             [(-Port) -Sexp]
             [() -Sexp])]
@@ -212,7 +205,9 @@
      [remove* (-poly (a b)
                      (cl-> [((-lst a) (-lst a)) (-lst a)]
                            [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
-          
+     
+     [call-with-values (-poly (a b) (-> (-> a) (-> a b) b))]
+     
      (error 
       (make-Function (list 
                       (make-arr null (Un))
@@ -251,6 +246,7 @@
      (- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N)))
      (max (->* (list N) N N))
      (min (->* (list N) N N))
+     [values  (make-Poly '(a) (-> (-v a) (-v a)))]
      [vector-ref 
       (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
      [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (make-Vector a)))]
@@ -471,7 +467,7 @@
                 [(-Bytes N) -Bytes]
                 [(-Bytes N N) -Bytes])]
      [bytes-length (-> -Bytes N)]
-     [open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
+     [open-input-file (-> -Pathlike -Input-Port)]
      [close-input-port (-> -Input-Port -Void)]
      [close-output-port (-> -Output-Port -Void)]   
      [read-line (cl->
@@ -557,11 +553,8 @@
      [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                         (-> (-Syntax Univ) Univ Univ)))]
      
-     [values (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
-     [call-with-values (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
-  
-     [eof (-val eof)]
-     [read-accept-reader (-Param B B)]
+     [values* (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
+     [call-with-values* (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
      )
 
 (begin-for-syntax 

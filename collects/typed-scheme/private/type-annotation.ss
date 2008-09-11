@@ -1,11 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep)
-	 (utils tc-utils)
-	 (env type-env)
-	 "parse-type.ss" "subtype.ss"
-         "type-effect-convenience.ss" "resolve-type.ss" "union.ss"
+(require "type-rep.ss" "parse-type.ss" "tc-utils.ss" "subtype.ss" "utils.ss"
+         "type-env.ss" "type-effect-convenience.ss" "resolve-type.ss" "union.ss"
          scheme/match mzlib/trace)
 (provide type-annotation
          get-type

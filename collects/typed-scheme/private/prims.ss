@@ -22,20 +22,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (provide (all-defined-out)
 	 (rename-out [define-typed-struct define-struct:]))
 
-(require (except-in "../utils/utils.ss" extend))
 (require (for-syntax 
           scheme/base
-          (rep type-rep)
+          "type-rep.ss"
           mzlib/match
           "parse-type.ss"
           syntax/struct
           syntax/stx
-	  (utils utils tc-utils)
-          (env type-name-env)
+          "utils.ss"
+          "tc-utils.ss"
+          "type-name-env.ss"
           "type-contract.ss"))
 
 (require "require-contract.ss"
-         (typecheck internal-forms)
+         "internal-forms.ss"
          (except-in mzlib/contract ->)
          (only-in mzlib/contract [-> c->])
          mzlib/struct
