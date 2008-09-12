@@ -1673,7 +1673,6 @@
 (define searchable<%> (interface (basic<%>)
                         search
                         search-replace
-                        search-skip
                         replace-all
                         
                         get-text-to-search
@@ -1985,6 +1984,8 @@
 
 (define searchable-mixin
   (mixin (standard-menus<%>) (searchable<%>)
+    (inherit edit-menu:get-show/hide-replace-item)
+    
     (define super-root 'unitiaialized-super-root)
     
     (define case-sensitive-search? (preferences:get 'framework:case-sensitive-search?))
@@ -2006,12 +2007,26 @@
       #t)
     (define/override (edit-menu:create-find?) #t)
     
-    (define/override (edit-menu:find-again-callback menu evt) (search 'forward) #t)
-    (define/override (edit-menu:create-find-again?) #t)
+    (define/override (edit-menu:find-next-callback menu evt) (search 'forward) #t)
+    (define/override (edit-menu:create-find-next?) #t)
     
-    (define/override (edit-menu:find-again-backwards-callback menu evt) (search 'backward) #t)
-    (define/override (edit-menu:create-find-again-backwards?) #t)
+    (define/override (edit-menu:find-previous-callback menu evt) (search 'backward) #t)
+    (define/override (edit-menu:create-find-previous?) #t)
     
+    (define/override (edit-menu:create-show/hide-replace?) #t)
+    (define/override (edit-menu:show/hide-replace-callback a b) (set-replace-visible? (not replace-visible?)))
+    (define/override (edit-menu:show/hide-replace-string)
+      (if replace-visible?
+          (string-constant hide-replace-menu-item)
+          (string-constant show-replace-menu-item)))
+    (define/override (edit-menu:show/hide-replace-on-demand item) 
+      (send item enable (not hidden?)))
+    
+    (define/override (edit-menu:replace-callback a b) (search-replace))
+    (define/override (edit-menu:create-replace?) #t)
+    (define/override (edit-menu:replace-on-demand item) 
+      (send item enable (and (not hidden?) replace-visible?)))
+
     (define/override (edit-menu:find-case-sensitive-callback menu evt) 
       (set! case-sensitive-search? (not case-sensitive-search?))
       (preferences:set 'framework:case-sensitive-search? case-sensitive-search?)
@@ -2100,10 +2115,7 @@
       (unhide-search #f)
       (send find-edit search searching-direction #t))
     
-    (define/public (search-replace) (skip/replace #t))
-    (define/public (search-skip) (skip/replace #f))
-      
-    (define/private (skip/replace replace?)
+    (define/public (search-replace) 
       (let ([text-to-search (get-text-to-search)])
         (when text-to-search
           (let ([replacee-start (send text-to-search get-replace-search-hit)])
@@ -2111,9 +2123,8 @@
               (let ([replacee-end (+ replacee-start (send find-edit last-position))])
                 (send text-to-search begin-edit-sequence)
                 (send text-to-search set-position replacee-end replacee-end)
-                (when replace?
-                  (send text-to-search delete replacee-start replacee-end)
-                  (copy-over replace-edit 0 (send replace-edit last-position) text-to-search replacee-start))
+                (send text-to-search delete replacee-start replacee-end)
+                (copy-over replace-edit 0 (send replace-edit last-position) text-to-search replacee-start)
                 (let ([str (send find-edit get-text)])
                   (send text-to-search set-searching-state
                         (if (equal? str "") #f str)
@@ -2123,18 +2134,18 @@
                         ;; if a relacement has happened.
                         (send text-to-search get-start-position))
                   
-                  ;; move the insertion point to the start of the editor if there are 
-                  ;; more replacements to do starting there
+
+                  ;; set the selection to the next place to replace
                   (let-values ([(before-caret-hits hits) (send text-to-search get-search-hit-count)])
                     (unless (zero? hits)
-                      (unless (send text-to-search get-replace-search-hit)
-                        (send text-to-search set-position 0 0))))
+                      (unless (send text-to-search get-replace-search-hit) 
+                        (send text-to-search set-position 0 0))
+                      (let ([next-start (send text-to-search get-replace-search-hit)])
+                        (when next-start ;; this shouldn't ever matter ...?
+                          (send text-to-search set-position next-start (+ next-start (send find-edit last-position)))))))
                   
                   (search-hits-changed))
                 (send text-to-search end-edit-sequence)
-                (let ([next-hit (send text-to-search get-replace-search-hit)])
-                  (when next-hit
-                    (send text-to-search scroll-to-position next-hit)))
                 #t))))))
       
     (define/private (copy-over src-txt src-start src-end dest-txt dest-pos)
@@ -2215,7 +2226,14 @@
       (unless (equal? replace-visible? r?)
         (set! replace-visible? r?)
         (preferences:set 'framework:replace-visible? r?)
+        (show/hide-replace)
+        (send (edit-menu:get-show/hide-replace-item) set-label
+              (if replace-visible?
+                  (string-constant hide-replace-menu-item)
+                  (string-constant show-replace-menu-item)))
         (search-parameters-changed)))
+    
+    (define show/hide-replace void)
     
     (define/private (build-search-gui-in-frame)
       (unless search-gui-built?
@@ -2258,6 +2276,12 @@
                                      [parent search-panel]
                                      [callback (λ (x y) (search 'forward))]
                                      [font small-control-font]))
+          (define search-prev-button (new button% 
+                                          [label (string-constant search-previous)]
+                                          [vert-margin 0]
+                                          [parent search-panel]
+                                          [callback (λ (x y) (search 'backward))]
+                                          [font small-control-font]))
           
           (define hits-panel (new vertical-panel%
                                   [parent search-panel]
@@ -2303,35 +2327,33 @@
                  [vert-margin 0]
                  [parent replace-panel]
                  [font small-control-font]
-                 [callback (λ (x y) (search-skip))]))
+                 [callback (λ (x y) (search 'forward))]))
           
           (define show-replace-button
             (new button%
                  [label (string-constant search-show-replace)]
                  [font small-control-font]
-                 [callback (λ (a b) 
-                             (set-replace-visible? #t)
-                             (show/hide-replace))]
+                 [callback (λ (a b) (set-replace-visible? #t))]
                  [parent replace-panel]))
           (define hide-replace-button
             (new button%
                  [label (string-constant search-hide-replace)]
                  [font small-control-font]
-                 [callback (λ (a b) 
-                             (set-replace-visible? #f)
-                             (show/hide-replace))]
+                 [callback (λ (a b) (set-replace-visible? #f))]
                  [parent replace-panel]))
           
-          (define (show/hide-replace)
-            (send replace-panel begin-container-sequence)
-            (cond
-              [replace-visible?
-               (send replace-panel change-children (λ (l) all-replace-children))
-               (send replace-panel stretchable-width #t)]
-              [else
-               (send replace-panel change-children (λ (l) (list show-replace-button)))
-               (send replace-panel stretchable-width #f)])
-            (send replace-panel end-container-sequence))
+          (define stupid-internal-definitions-syntax2
+            (set! show/hide-replace
+                  (λ ()
+                    (send replace-panel begin-container-sequence)
+                    (cond
+                      [replace-visible?
+                       (send replace-panel change-children (λ (l) all-replace-children))
+                       (send replace-panel stretchable-width #t)]
+                      [else
+                       (send replace-panel change-children (λ (l) (list show-replace-button)))
+                       (send replace-panel stretchable-width #f)])
+                    (send replace-panel end-container-sequence))))
           
           (define all-replace-children
             (list replace-canvas

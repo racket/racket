@@ -901,10 +901,6 @@ framework)) @(require (for-label scheme/gui)) @(require
     are no more search hits after the insertion point, but there are
     search hits before it).
   }
-  @defmethod[(search-skip) boolean?]{
-    Just like @method[frame:searchable<%> search-replace], 
-    but does not do the replace.
-  }
   @defmethod[(replace-all) void?]{
     Loops through the text from the beginning to the end, replacing
     all occurrences of the search string with the contents of the replace

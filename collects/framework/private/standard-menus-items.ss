@@ -360,37 +360,37 @@
                       edit-menu:edit-target-on-demand
                       #f)
         
-        (make-an-item 'edit-menu 'find-again
-                      '(string-constant find-again-info)
+        (make-an-item 'edit-menu 'find-next
+                      '(string-constant find-next-info)
                       '(λ (item control) (void))
                       #\g
                       '(get-default-shortcut-prefix)
-                      '(string-constant find-again-menu-item)
+                      '(string-constant find-next-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
-        (make-an-item 'edit-menu 'find-again-backwards
-                      '(string-constant find-again-backwards-info)
+        (make-an-item 'edit-menu 'find-previous
+                      '(string-constant find-previous-info)
                       '(λ (item control) (void))
                       #\g
                       '(cons 'shift (get-default-shortcut-prefix))
-                      '(string-constant find-again-backwards-menu-item)
+                      '(string-constant find-previous-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
-        (make-an-item 'edit-menu 'replace-and-find-again
-                      '(string-constant replace-and-find-again-info)
-                      '(λ (item control) (void))
-                      #\r
-                      '(get-default-shortcut-prefix)
-                      '(string-constant replace-and-find-again-menu-item)
-                      edit-menu:edit-target-on-demand
-                      #f)
-        (make-an-item 'edit-menu 'replace-and-find-again-backwards 
-                      '(string-constant replace-and-find-again-backwards-info)
+        (make-an-item 'edit-menu 'show/hide-replace
+                      '(string-constant show/hide-replace-info)
                       '(λ (item control) (void))
                       #\r
                       '(cons 'shift (get-default-shortcut-prefix))
-                      '(string-constant replace-and-find-again-backwards-menu-item)
-                      edit-menu:edit-target-on-demand
+                      '(string-constant show-replace-menu-item)
+                      on-demand-do-nothing
+                      #f)
+        (make-an-item 'edit-menu 'replace
+                      '(string-constant replace-info)
+                      '(λ (item control) (void))
+                      #\r
+                      '(get-default-shortcut-prefix)
+                      '(string-constant replace-menu-item)
+                      on-demand-do-nothing
                       #f)
         (make-an-item 'edit-menu 'replace-all 
                       '(string-constant replace-all-info)
@@ -398,7 +398,7 @@
                       #f
                       '(get-default-shortcut-prefix)
                       '(string-constant replace-all-menu-item)
-                      edit-menu:edit-target-on-demand
+                      on-demand-do-nothing
                       #f)
 
         (make-a-checkable-item 'edit-menu 'find-case-sensitive
