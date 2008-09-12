@@ -20,20 +20,28 @@ You can use the reader via MzScheme's @schemefont{#reader} form:
 
 @schemeblock[
  #, @schemefont|{
-      #reader(lib "reader.ss" "scribble")@{This is free-form text!}
+      #reader scribble/reader @foo{This is free-form text!}
 }|]
 
-Note that the reader will only read @"@"-forms as S-expressions.  The
-meaning of these S-expressions depends on the rest of your own code.
+Note that the Scribble reader reads @"@"-forms as S-expressions.  This
+means that it is up to you to give meanings for these expressions in
+the usual way: use Scheme functions, define your functions, or require
+functions.  For example, typing the above into MzScheme is likely
+going to produce a ``reference to undefined identifier'' error --- you
+can use @scheme[string-append] instead, or you can define @scheme[foo]
+as a function (with variable arity).
 
-A PLT Scheme manual more likely starts with
+A common use of the Scribble @"@"-reader is when using Scribble as a
+documentation system for producing manuals.  In this case, the manual
+text is likely to start with
 
 @schememod[scribble/doc]
 
-which installs a reader, wraps the file content afterward into a
-MzScheme module, and parses the body into a document using
-@schememodname[scribble/decode].  See @secref["docreader"] for more
-information.
+which installs the @"@" reader starting in ``text mode'', wraps the
+file content afterward into a MzScheme module where many useful Scheme
+and documentation related functions are available, and parses the body
+into a document using @schememodname[scribble/decode].  See
+@secref["docreader"] for more information.
 
 Another way to use the reader is to use the @scheme[use-at-readtable]
 function to switch the current readtable to a readtable that parses
@@ -43,6 +51,8 @@ function to switch the current readtable to a readtable that parses
 
 @;--------------------------------------------------------------------
 @section{Concrete Syntax}
+
+@subsection{The Scribble Syntax at a Glance}
 
 Informally, the concrete syntax of @"@"-forms is
 
@@ -55,50 +65,136 @@ Informally, the concrete syntax of @"@"-forms is
 
 where all three parts after @litchar["@"] are optional, but at least
 one should be present.  (Note that spaces are not allowed between the
-three parts.)  @litchar["@"] is set as a non-terminating reader macro,
-so it can be used as usual in Scheme identifiers unless you want to
-use it as a first character of an identifier; in this case you need to
-quote with a backslash (@schemefont["\\@foo"]) or quote the whole
-identifier with bars (@schemefont["|@foo|"]).
+three parts.)  Roughly, a form matching the above grammar is read as
 
 @schemeblock[
-  #, @schemefont|!{
-       (define |@foo| '\@bar@baz)
-}!|]
-
-Of course, @litchar["@"] is not treated specially in Scheme strings,
-character constants, etc.
-
-Roughly, a form matching the above grammar is read as
-
-@schemeblock[
-  (#, @nonterm{cmd}
-   #, @kleenestar{@nonterm{datum}}
-   #, @kleenestar{@nonterm{parsed-body}})
+  (#, @nonterm{cmd} #, @kleenestar{@nonterm{datum}} #, @kleenestar{@nonterm{parsed-body}})
 ]
 
 where @nonterm{parsed-body} is the translation of each
 @nonterm{text-body} in the input.  Thus, the initial @nonterm{cmd}
 determines the Scheme code that the input is translated into.  The
-common case is when @nonterm{cmd} is a Scheme identifier, which
-generates a plain Scheme form.
-
-A @nonterm{text-body} is made of text, newlines, and nested
-@"@"-forms.  Note that the syntax for @"@"-forms is the same in a
-@nonterm{text-body} context as in a Scheme context.  A
-@nonterm{text-body} that isn't an @"@"-form is converted to a string
-expression for its @nonterm{parsed-body}, and newlines are converted
-to @scheme["\n"] expressions.
+common case is when @nonterm{cmd} is a Scheme identifier, which reads
+as a plain Scheme form, with datum arguments and/or string arguments.
 
 @scribble-examples|==={
-  @foo{bar baz
-       blah}
-  @foo{bar @baz[3]
-       blah}
+  @foo{blah blah blah}
+  @foo{blah "blah" (`blah'?)}
+  @foo[1 2]{3 4}
+  @foo[1 2 3 4]
+  @foo[#:width 2]{blah blah}
+  @foo{blah blah
+       yada yada}
+  @foo{
+    blah blah
+    yada yada
+  }
+}===|
+
+(Note that these examples show how an input syntax is read as Scheme
+syntax, not what it evaluates to.)
+
+As seen in the last example, multiple lines and the newlines that
+separate them are parsed to multiple Scheme strings.  More generally,
+a @nonterm{text-body} is made of text, newlines, and nested
+@"@"-forms, where the syntax for @"@"-forms is the same whether it's
+in a @nonterm{text-body} context as in a Scheme context.  A
+@nonterm{text-body} that isn't an @"@"-form is converted to a string
+expression for its @nonterm{parsed-body}; newlines and following
+indentations are converted to @scheme["\n"] and all-space string
+expressions.
+
+@scribble-examples|==={
   @foo{bar @baz{3}
        blah}
-  @foo{bar @baz[2 3]{4 5}
+  @foo{@b{@u[3] @u{4}}
        blah}
+  @C{while (*(p++))
+       *p = '\n';}
+}===|
+
+The command part of an @"@"-form is optional as well, which is read as
+a list, usually a function application, but also useful when quoted
+with the usual Scheme @scheme[quote]:
+
+@scribble-examples|==={
+  @{blah blah}
+  @{blah @[3]}
+  '@{foo
+     bar
+     baz}
+}===|
+
+But we can also drop the datum and text parts, which leaves us with
+only the command --- which is read as is, not within a parenthesized
+form.  This is not useful when reading Scheme code, but it can be used
+inside a text block to escape a Scheme identifier.  A vertical bar
+(@litchar{|}) can be used to delimit the escaped identifier when
+needed.
+
+@scribble-examples|==={
+  @foo
+  @{blah @foo blah}
+  @{blah @foo: blah}
+  @{blah @|foo|: blah}
+}===|
+
+Actually, the command part can be any Scheme expression, which is
+particularly useful with such escapes since they can be used with any
+expression.
+
+@scribble-examples|==={
+  @foo{(+ 1 2) -> @(+ 1 2)!}
+  @foo{A @"string" escape}
+}===|
+
+Note that an escaped Scheme string is merged with the surrounding text
+as a special case.  This is useful if you want to use the special
+characters in your string (but note that escaping braces is not
+necessary if they are balanced).
+
+@scribble-examples|==={
+  @foo{eli@"@"barzilay.org}
+  @foo{A @"{" begins a block}
+  @C{while (*(p++)) {
+       *p = '\n';
+     }}
+}===|
+
+In some cases a @"@"-rich text can become cumbersome to quote.  For
+this, the braces have an alternative syntax --- a block of text can
+begin with a ``@litchar["|{"]'' and terminated accordingly with a
+``@litchar["}|"]''.  Furthermore, any nested @"@" forms must begin
+with a ``@litchar["|@"]''.
+
+@scribble-examples|==={
+  @foo|{bar}@{baz}|
+  @foo|{bar |@x{X} baz}|
+  @foo|{bar |@x|{@}| baz}|
+}===|
+
+In cases when even this is not convenient enough, punctuation
+characters can be added between the @litchar{|} and the braces and the
+@"@" in nested forms.  (The punctuation is mirrored for parentheses
+and @litchar{<>}s.)  With this, the Scribble syntax can be used as a
+here-string replacement.
+
+@scribble-examples|==={
+  @foo|--{bar}@|{baz}--|
+  @foo|<<{bar}@|{baz}>>|
+}===|
+
+The flip side of this is: how can an @"@" sign be used in Scheme code?
+This is almost never an issue, because Scheme strings and characters
+are still read the same, and because @litchar["@"] is set as a
+non-terminating reader macro so it can be used in Scheme identifiers
+as usual except when it is the first character of an identifier.  In
+the last case, you need to quote the identifier like other
+non-standard characters --- with a backslash or with vertical bars:
+
+@scribble-examples|==={
+  (define \@email "foo@bar.com")
+  (define |@atchar| #\@)
 }===|
 
 Note that spaces are not allowed before a @litchar{[} or a
@@ -109,9 +205,13 @@ code).  (More on using braces in body texts below.)
   @foo{bar @baz[2 3] {4 5}}
 }===|
 
-When the above @"@"-forms appear in a Scheme expression context, the
-lexical environment must provide bindings for @scheme[foo] (as a procedure or
-a macro).
+Finally, remember that the Scribble is just an alternate for
+S-expressions --- identifiers still get their meaning, as in any
+Scheme code, through the lexical context in which they appear.
+Specifically, when the above @"@"-form appears in a Scheme expression
+context, the lexical environment must provide bindings for
+@scheme[foo] as a procedure or a macro; it can be defined, required,
+or bound locally (with @scheme[let], for example).
 
 @; FIXME: unfortunate code duplication
 @interaction[
@@ -132,12 +232,16 @@ a macro).
     @text{@it{Note}: @bf{This is @ul{not} a pipe}.}))
 ]
 
-If you want to see the expression that is actually being read, you can
-use Scheme's @scheme[quote].
+When you first experiment with the Scribble syntax, it is often useful
+to use Scheme's @scheme[quote] to inspect how some concrete syntax is
+being read.
 
-@scribble-examples|==={
-  '@foo{bar}
-}===|
+@; FIXME: unfortunate code duplication
+@interaction[
+(eval:alts
+  #,(tt "'@foo{bar}")
+  '@foo{bar})
+]
 
 @;--------------------------------------------------------------------
 @subsection{The Command Part}
