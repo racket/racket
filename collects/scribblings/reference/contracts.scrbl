@@ -642,8 +642,8 @@ only used in the contract for the sub-struct's maker, and the selector
 or mutators for the super-struct are not provided.}
 
 @defform/subs[
-(with-contract blame-id (wc-exports) body ...+)
-([wc-exports
+(with-contract blame-id (wc-export ...) body ...+)
+([wc-export
   id
   (id contract-expr)])]{
 Generates a local contract boundary.  The @scheme[contract-expr]
