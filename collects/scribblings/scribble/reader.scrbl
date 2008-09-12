@@ -188,9 +188,9 @@ The flip side of this is: how can an @"@" sign be used in Scheme code?
 This is almost never an issue, because Scheme strings and characters
 are still read the same, and because @litchar["@"] is set as a
 non-terminating reader macro so it can be used in Scheme identifiers
-as usual except when it is the first character of an identifier.  In
-the last case, you need to quote the identifier like other
-non-standard characters --- with a backslash or with vertical bars:
+as usual, except when it is the first character of an identifier.  In
+this case, you need to quote the identifier like other non-standard
+characters --- with a backslash or with vertical bars:
 
 @scribble-examples|==={
   (define \@email "foo@bar.com")
