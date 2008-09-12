@@ -1678,14 +1678,42 @@ of the contract library does not change over time.
   (test/spec-failed
    'define/contract13
    '(begin
-      (eval '(module foo scheme/base
-	       (require scheme/contract)
-	       (define/contract (foo n)
+      (eval '(module foo-dc13 mzscheme
+	       (require mzlib/contract)
+	       (define/contract (foo-dc13 n)
 		 (-> number? number?)
 		 (+ n 1))
-	       (foo #t)))
-      (eval '(require 'foo)))
-   "module foo")
+	       (foo-dc13 #t)))
+      (eval '(require 'foo-dc13)))
+   "module foo-dc13")
+  
+  (test/spec-failed
+   'define/contract14
+   '(begin
+      (eval '(module foo-dc14 mzscheme
+	       (require mzlib/contract)
+	       (provide foo-dc14)
+	       (define/contract (foo-dc14 n)
+		 (-> number? number?)
+		 (+ n 1))))
+      (eval '(module bar-dc14 mzscheme
+	       (require 'foo-dc14)
+	       (foo-dc14 #t)))
+      (eval '(require 'bar-dc14)))
+   "module bar-dc14")
+
+  (test/spec-failed
+   'define/contract15
+   '(begin
+      (eval '(module foo-dc15 mzscheme
+	       (require mzlib/contract)
+	       (provide foo-dc15)
+	       (define/contract (foo-dc15 n)
+		 (-> number? number?)
+		 (+ n 1))))
+      (eval '(require 'foo-dc15))
+      (eval '(foo-dc15 #t)))
+   "the top level")
   
   (test/spec-passed
    'with-contract1
