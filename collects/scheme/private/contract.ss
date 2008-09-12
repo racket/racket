@@ -138,7 +138,7 @@ improve method arity mismatch contract violation error messages?
   (make-set!-transformer
    (lambda (stx)
      (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
-                                     (a:module-source-as-string id))]
+                                     (a:module-source-as-string stx))]
                    [pos-blame-id pos-blame-id]
                    [contract-id contract-id]
                    [id id])

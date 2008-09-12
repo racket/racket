@@ -1674,6 +1674,18 @@ of the contract library does not change over time.
         (if b (f m) (f #t)))
       (g #f 3))
    "function g")
+
+  (test/spec-failed
+   'define/contract13
+   '(begin
+      (eval '(module foo scheme/base
+	       (require scheme/contract)
+	       (define/contract (foo n)
+		 (-> number? number?)
+		 (+ n 1))
+	       (foo #t)))
+      (eval '(require 'foo)))
+   "module foo")
   
   (test/spec-passed
    'with-contract1
