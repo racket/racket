@@ -139,21 +139,21 @@ improve method arity mismatch contract violation error messages?
                               stx
                               (syntax id))]
          [(f arg ...)
-          (quasisyntax/loc stx
+          (syntax/loc stx
             ((-contract contract-id
                         id
                         pos-blame-id
                         'neg-blame-id
-                        (quote-syntax f))
+                        #'f)
              arg ...))]
          [ident
           (identifier? (syntax ident))
-          (quasisyntax/loc stx
+          (syntax/loc stx
             (-contract contract-id
                        id
                        pos-blame-id
                        'neg-blame-id
-                       (quote-syntax ident)))])))))
+                       #'ident))])))))
 
 (define-for-syntax (check-and-split-with-contract-args args)
   (let loop ([args args]
