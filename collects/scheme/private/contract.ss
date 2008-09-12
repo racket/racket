@@ -96,9 +96,11 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
-                   (normalize-definition (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list #'body0 #'(body ...)))
-                                         #'lambda #t #t)])
-       #`(define/contract #,name contract #,lam-expr))])) 
+                   (normalize-definition
+                    (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
+                                                       #'body0 #'(body ...)))
+                    #'lambda #t #t)])
+       #`(define/contract #,name contract #,lam-expr))]))
 
 
 
