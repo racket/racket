@@ -1621,7 +1621,52 @@ of the contract library does not change over time.
                x))
       (eval '(require 'contract-test-suite-define1))))
   
-
+  (test/spec-failed
+   'define/contract8
+   '(let ()
+      (define/contract (a n)
+        (-> number? number?)
+        (define/contract (b m)
+          (-> number? number?)
+          (+ m 1))
+        (b (zero? n)))
+      (a 5))
+   "a")
+  
+  (test/spec-failed
+   'define/contract8
+   '(let ()
+      (define/contract (a n)
+        (-> number? number?)
+        (define/contract (b m)
+          (-> number? number?)
+          #t)
+        (b (add1 n)))
+      (a 5))
+   "b")
+  
+  (test/spec-passed
+   'define/contract9
+   '(let ()
+      (define/contract (f n)
+        (-> number? number?)
+        (+ n 1))
+      (define/contract (g b m)
+        (-> boolean? number? number?)
+        (if b (f m) (f #t)))
+      (g #t 3)))
+  
+  (test/spec-failed
+   'define/contract9
+   '(let ()
+      (define/contract (f n)
+        (-> number? number?)
+        (+ n 1))
+      (define/contract (g b m)
+        (-> boolean? number? number?)
+        (if b (f m) (f #t)))
+      (g #f 3))
+   "g")
   
 ;                                                                                                     
 ;                                                                                                     
