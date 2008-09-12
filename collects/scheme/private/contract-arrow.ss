@@ -112,10 +112,8 @@ v4 todo:
 ;;        and it produces a wrapper-making function.
 (define-struct/prop -> (doms/c optional-doms/c dom-rest/c mandatory-kwds/c mandatory-kwds optional-kwds/c optional-kwds rngs/c rng-any? func)
   ((proj-prop (λ (ctc) 
-                (let* ([doms-proj (map (λ (x) ((proj-get x) x)) 
-                                       (if (->-dom-rest/c ctc)
-                                           (append (->-doms/c ctc) (list (->-dom-rest/c ctc)))
-                                           (->-doms/c ctc)))]
+                (let* ([doms-proj (map (λ (x) ((proj-get x) x)) (->-doms/c ctc))]
+                       [rest-proj ((λ (x) (and x ((proj-get x) x))) (->-dom-rest/c ctc))]
                        [doms-optional-proj (map (λ (x) ((proj-get x) x)) (->-optional-doms/c ctc))]
                        [rngs-proj (map (λ (x) ((proj-get x) x)) (->-rngs/c ctc))]
                        [mandatory-kwds-proj (map (λ (x) ((proj-get x) x)) (->-mandatory-kwds/c ctc))]
@@ -124,25 +122,41 @@ v4 todo:
                        [optional-keywords (->-optional-kwds ctc)]
                        [func (->-func ctc)]
                        [dom-length (length (->-doms/c ctc))]
-                       [optionals-length (length (->-optional-doms/c ctc))]
-                       [has-rest? (and (->-dom-rest/c ctc) #t)])
+                       [optionals-length (length (->-optional-doms/c ctc))])
                   (λ (pos-blame neg-blame src-info orig-str)
-                    (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
-                                             doms-proj)]
-                          [partial-optional-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
-                                                      doms-optional-proj)]
-                          [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str))
-                                               rngs-proj)]
-                          [partial-mandatory-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
-                                                       mandatory-kwds-proj)]
-                          [partial-optional-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
-                                                      optional-kwds-proj)])
+                    (let ([partial-doms (for/list ([dom doms-proj]
+                                                   [n (in-naturals 1)]) 
+                                          (dom neg-blame pos-blame src-info
+                                               (format "required argument ~a of ~a" n orig-str)))]
+                          [partial-rest (if rest-proj
+                                            (list (rest-proj neg-blame pos-blame src-info
+                                                             (format "rest argument of ~a" orig-str)))
+                                            null)]
+                          [partial-optional-doms (for/list ([dom doms-optional-proj]
+                                                            [n (in-naturals 1)])
+                                                   (dom neg-blame pos-blame src-info
+                                                        (format "optional argument ~a of ~a"
+                                                                n orig-str)))]
+                          [partial-ranges (for/list ([rng rngs-proj]
+                                                     [n (in-naturals 1)])
+                                            (rng pos-blame neg-blame src-info
+                                                 (format "result ~a of ~a" n orig-str)))]
+                          [partial-mandatory-kwds (for/list ([kwd mandatory-kwds-proj]
+                                                             [kwd-lit mandatory-keywords])
+                                                    (kwd neg-blame pos-blame src-info
+                                                         (format "keyword argument ~a of ~a"
+                                                                 kwd-lit orig-str)))]
+                          [partial-optional-kwds (for/list ([kwd optional-kwds-proj]
+                                                            [kwd-lit optional-keywords])
+                                                   (kwd neg-blame pos-blame src-info
+                                                        (format "keyword argument ~a of ~a"
+                                                                kwd-lit orig-str)))])
                       (apply func
                              (λ (val mtd?)
-                               (if has-rest?
+                               (if rest-proj
                                    (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords src-info pos-blame orig-str)
                                    (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords src-info pos-blame orig-str)))
-                             (append partial-doms partial-optional-doms 
+                             (append partial-doms partial-rest partial-optional-doms 
                                      partial-mandatory-kwds partial-optional-kwds
                                      partial-ranges)))))))
    (name-prop (λ (ctc) (single-arrow-name-maker 
