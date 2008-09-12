@@ -245,53 +245,53 @@
 
 @(defmethod (edit-menu:find-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant find-info)) ".")
 
-@(defmethod (edit-menu:get-find-again-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-find-again?) ").")
+@(defmethod (edit-menu:get-find-next-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-find-next?) ").")
 
-@(defmethod (edit-menu:create-find-again?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
+@(defmethod (edit-menu:create-find-next?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
 
-@(defmethod (edit-menu:find-again-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
+@(defmethod (edit-menu:find-next-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
 
-@(defmethod (edit-menu:find-again-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+@(defmethod (edit-menu:find-next-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
 
-@(defmethod (edit-menu:find-again-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant find-again-menu-item)) ".")
+@(defmethod (edit-menu:find-next-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant find-next-menu-item)) ".")
 
-@(defmethod (edit-menu:find-again-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant find-again-info)) ".")
+@(defmethod (edit-menu:find-next-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant find-next-info)) ".")
 
-@(defmethod (edit-menu:get-find-again-backwards-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-find-again-backwards?) ").")
+@(defmethod (edit-menu:get-find-previous-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-find-previous?) ").")
 
-@(defmethod (edit-menu:create-find-again-backwards?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
+@(defmethod (edit-menu:create-find-previous?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
 
-@(defmethod (edit-menu:find-again-backwards-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
+@(defmethod (edit-menu:find-previous-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
 
-@(defmethod (edit-menu:find-again-backwards-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+@(defmethod (edit-menu:find-previous-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
 
-@(defmethod (edit-menu:find-again-backwards-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant find-again-backwards-menu-item)) ".")
+@(defmethod (edit-menu:find-previous-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant find-previous-menu-item)) ".")
 
-@(defmethod (edit-menu:find-again-backwards-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant find-again-backwards-info)) ".")
+@(defmethod (edit-menu:find-previous-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant find-previous-info)) ".")
 
-@(defmethod (edit-menu:get-replace-and-find-again-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-replace-and-find-again?) ").")
+@(defmethod (edit-menu:get-show/hide-replace-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-show/hide-replace?) ").")
 
-@(defmethod (edit-menu:create-replace-and-find-again?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
+@(defmethod (edit-menu:create-show/hide-replace?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
 
-@(defmethod (edit-menu:replace-and-find-again-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
+@(defmethod (edit-menu:show/hide-replace-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
 
-@(defmethod (edit-menu:replace-and-find-again-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+@(defmethod (edit-menu:show/hide-replace-on-demand (menu-item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (void)))
 
-@(defmethod (edit-menu:replace-and-find-again-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant replace-and-find-again-menu-item)) ".")
+@(defmethod (edit-menu:show/hide-replace-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant show-replace-menu-item)) ".")
 
-@(defmethod (edit-menu:replace-and-find-again-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant replace-and-find-again-info)) ".")
+@(defmethod (edit-menu:show/hide-replace-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant show/hide-replace-info)) ".")
 
-@(defmethod (edit-menu:get-replace-and-find-again-backwards-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-replace-and-find-again-backwards?) ").")
+@(defmethod (edit-menu:get-replace-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-replace?) ").")
 
-@(defmethod (edit-menu:create-replace-and-find-again-backwards?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
+@(defmethod (edit-menu:create-replace?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
 
-@(defmethod (edit-menu:replace-and-find-again-backwards-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
+@(defmethod (edit-menu:replace-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
 
-@(defmethod (edit-menu:replace-and-find-again-backwards-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+@(defmethod (edit-menu:replace-on-demand (menu-item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (void)))
 
-@(defmethod (edit-menu:replace-and-find-again-backwards-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant replace-and-find-again-backwards-menu-item)) ".")
+@(defmethod (edit-menu:replace-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant replace-menu-item)) ".")
 
-@(defmethod (edit-menu:replace-and-find-again-backwards-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant replace-and-find-again-backwards-info)) ".")
+@(defmethod (edit-menu:replace-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant replace-info)) ".")
 
 @(defmethod (edit-menu:get-replace-all-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-replace-all?) ").")
 
@@ -299,7 +299,7 @@
 
 @(defmethod (edit-menu:replace-all-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
 
-@(defmethod (edit-menu:replace-all-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+@(defmethod (edit-menu:replace-all-on-demand (menu-item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (void)))
 
 @(defmethod (edit-menu:replace-all-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant replace-all-menu-item)) ".")
 
