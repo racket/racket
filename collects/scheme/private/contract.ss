@@ -79,6 +79,10 @@ improve method arity mismatch contract violation error messages?
 ;; defines `id' with `contract'; initially binding
 ;; it to the result of `expr'.  These variables may not be set!'d.
 (define-syntax (define/contract define-stx)
+  (when (eq? (syntax-local-context) 'expression)
+    (raise-syntax-error 'define/contract
+                        "used in expression context"
+                        define-stx))
   (syntax-case define-stx ()
     [(_ name contract-expr)
      (raise-syntax-error 'define/contract
@@ -185,6 +189,10 @@ improve method arity mismatch contract violation error messages?
                            (car args))])))
 
 (define-syntax (with-contract stx)
+  (when (eq? (syntax-local-context) 'expression)
+    (raise-syntax-error 'with-contract
+                        "used in expression context"
+                        stx))
   (syntax-case stx ()
     [(_ blame (arg ...) body0 body ...)
      (identifier? (syntax blame))
