@@ -185,12 +185,11 @@ improve method arity mismatch contract violation error messages?
                            (car args))])))
 
 (define-syntax (with-contract stx)
-  (let ([introducer (make-syntax-introducer)])
-    (syntax-case stx ()
-      [(_ blame (arg ...) body0 body ...)
-       (identifier? (syntax blame))
-       (let-values ([(unprotected protected protections)
-                     (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
+  (syntax-case stx ()
+    [(_ blame (arg ...) body0 body ...)
+     (identifier? (syntax blame))
+     (let-values ([(unprotected protected protections)
+                   (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
        (with-syntax ([((protected-id id contract-id) ...)
                       (map (lambda (n)
                              (list n
@@ -212,18 +211,18 @@ improve method arity mismatch contract violation error messages?
                 (quote-syntax contract-id)
                 (quote-syntax id)
                 (quote-syntax (quote blame)))) ...))))]
-      [(_ blame (arg ...) body0 body ...)
-       (raise-syntax-error 'with-contract
-			   "expected identifier"
-			   #'blame)]
-      [(_ blame (arg ...))
-       (raise-syntax-error 'with-contract
-			   "empty body"
-			   stx)]
-      [(_ blame bad-args body0 body ...)
-       (raise-syntax-error 'with-contract
-			   "expected list of identifier and/or (identifier contract)"
-			   #'bad-args)])))
+    [(_ blame (arg ...) body0 body ...)
+     (raise-syntax-error 'with-contract
+                         "expected identifier"
+                         #'blame)]
+    [(_ blame (arg ...))
+     (raise-syntax-error 'with-contract
+                         "empty body"
+                         stx)]
+    [(_ blame bad-args body0 body ...)
+     (raise-syntax-error 'with-contract
+                         "expected list of identifier and/or (identifier contract)"
+                         #'bad-args)]))
 
 ;                                                                                                            
 ;                                                                                                            
