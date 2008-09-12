@@ -466,16 +466,14 @@
                      (internal-error 'dispatcher))]
           [(stx) (let ([ds (and datums (length datums))]
                        [ls (and lines  (length lines))])
-                   (if (or ds ls)
-                     (syntax-property
-                      (if (syntax? stx)
-                        stx
-                        (datum->syntax #f stx
-                          (vector source-name line-num col-num position
-                                  (span-from position))
-                          orig-stx))
-                      'scribble (list 'form ds ls))
-                     stx))]
+                   (syntax-property
+                    (if (syntax? stx)
+                      stx
+                      (datum->syntax #f stx
+                        (vector source-name line-num col-num position
+                                (span-from position))
+                        orig-stx))
+                    'scribble (list 'form ds ls)))]
           [(stx) (syntax-post-processor stx)]
           [(stx)
            ;; wrap the prefixes around the result
