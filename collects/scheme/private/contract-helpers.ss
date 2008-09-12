@@ -118,7 +118,7 @@
   (let ([mpi (syntax-source-module stx)])
     (cond
       [(not mpi) 
-       "tthe top level"]
+       "the top level"]
       [else
        ;; note: the directory passed to collapse-module-path-index should be irrelevant
        (let ([collapsed 
