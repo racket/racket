@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require mzlib/class mzlib/unit mzlib/file mred net/sendurl
+(require scheme/class scheme/unit scheme/file mred net/sendurl
          mrlib/switchable-button mrlib/bitmap-label drscheme/tool framework
          "info.ss" "client.ss" "this-collection.ss")
 
@@ -256,9 +256,9 @@
     (define interface-widgets
       (list ok username passwd assignment retrieve?))
     (define (disable-interface)
-      (for-each (lambda (x) (send x enable #f)) interface-widgets))
+      (for ([x interface-widgets]) (send x enable #f)))
     (define (enable-interface)
-      (for-each (lambda (x) (send x enable #t)) interface-widgets))
+      (for ([x interface-widgets]) (send x enable #t) ))
     (define (done-interface)
       (send cancel set-label "Close")
       (send cancel focus))
@@ -309,8 +309,7 @@
                    (handin-disconnect h)
                    (error 'handin "there are no active assignments"))
                  (set! connection h)
-                 (for-each (lambda (assign) (send assignment append assign))
-                           l)
+                 (for ([assign l]) (send assignment append assign))
                  (send assignment enable #t)
                  (set! ok-can-enable? #t)
                  (activate-ok)
@@ -576,9 +575,9 @@
              "Password Error"
              (format "The \"~a\" and \"~a\" passwords are not the same." l1 l2))
             (k (void))))
-        (for-each (lambda (t f) (check-length t 100 f k))
-                  (if new? add-user-fields change-user-fields)
-                  (or user-fields '()))
+        (for ([t (if new? add-user-fields change-user-fields)]
+              [f (or user-fields '())])
+          (check-length t 100 f k))
         (send tabs enable #f)
         (parameterize ([current-custodian comm-cust])
           (thread
@@ -625,8 +624,9 @@
                  (let ([vals (run retrieve-user-info username old-passwd)])
                    (send status set-label "Success, you can now edit fields.")
                    (send tabs enable #t)
-                   (for-each (lambda (f val) (send f set-value val))
-                             change-user-fields vals)
+                   (for ([f change-user-fields]
+                         [val vals])
+                     (send f set-value val))
                    (activate-change)))))))))
 
     (send new-user-box show #f)
@@ -716,7 +716,7 @@
          [stream (make-object editor-stream-out% base)])
     (write-editor-version stream base)
     (write-editor-global-header stream)
-    (for-each (lambda (ed) (send ed write-to-file stream)) editors)
+    (for ([ed editors]) (send ed write-to-file stream))
     (write-editor-global-footer stream)
     (send base get-bytes)))
 
