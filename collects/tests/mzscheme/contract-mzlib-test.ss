@@ -1668,6 +1668,63 @@ of the contract library does not change over time.
       (g #f 3))
    "g")
   
+  (test/spec-passed
+   'with-contract1
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) #f (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? 5)))
+  
+  (test/spec-failed
+   'with-contract2
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) #f (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? #t))
+   "top-level")
+  
+  (test/spec-failed
+   'with-contract3
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) n (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? 4))
+   "odd-even")
+  
+  ;; Functions within the same with-contract region can call
+  ;; each other however they want, so here we have even?
+  ;; call odd? with a boolean, even though its contract in
+  ;; the odd-even contract says it only takes numbers.
+  (test/spec-passed
+   'with-contract4
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (cond
+            [(not (number? n)) #f]
+            [(zero? n) #f]
+            [else (even? (sub1 n))]))
+        (define (even? n)
+          (if (zero? n) #t (odd? (zero? n)))))
+      (odd? 5)))
+  
 ;                                                                                                     
 ;                                                                                                     
 ;                                                                                                     
