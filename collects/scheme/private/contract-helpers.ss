@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide module-source-as-symbol build-src-loc-string 
+(provide module-source-as-string build-src-loc-string 
          mangle-id mangle-id-for-maker
          build-struct-names
          nums-up-to
@@ -111,27 +111,27 @@
 
 (define o (current-output-port))
 
-;; module-source-as-symbol : syntax -> symbol
-;; constructs a symbol for use in the blame error messages
+;; module-source-as-string : syntax -> symbol
+;; constructs a string for use in the blame error messages
 ;; when blaming the module where stx's occurs.
-(define (module-source-as-symbol stx)
+(define (module-source-as-string stx)
   (let ([mpi (syntax-source-module stx)])
     (cond
       [(not mpi) 
-       'top-level]
+       "tthe top level"]
       [else
        ;; note: the directory passed to collapse-module-path-index should be irrelevant
        (let ([collapsed 
-              (with-handlers ((exn:fail? (λ (x) 'top-level)))  ;; this with-handlers works around a bug elsewhere
+              (with-handlers ((exn:fail? (λ (x) "the top level")))  ;; this with-handlers works around a bug elsewhere
                 (collapse-module-path-index mpi (current-directory)))])
          (cond
            [(path? collapsed)
             (let ([resolved (resolved-module-path-name (module-path-index-resolve mpi))])
               (cond
-                [(symbol? resolved) resolved]
-                [else `(file ,(path->string resolved))]))]
+                [(symbol? resolved) (format "module ~a" resolved)]
+                [else (format "module ~a" `(file ,(path->string resolved)))]))]
            [else
-            collapsed]))])))
+            (format "module ~a" collapsed)]))])))
 
 (define build-struct-names
   (lambda (name-stx fields omit-sel? omit-set? srcloc-stx)

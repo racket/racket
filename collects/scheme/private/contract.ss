@@ -132,7 +132,7 @@ improve method arity mismatch contract violation error messages?
   (make-set!-transformer
    (lambda (stx)
      (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
-                                     #`(quote #,(a:module-source-as-symbol id)))]
+                                     (a:module-source-as-string id))]
                    [pos-blame-id pos-blame-id]
                    [contract-id contract-id]
                    [id id])
@@ -303,7 +303,7 @@ improve method arity mismatch contract violation error messages?
                             #`(-contract contract-id
                                          id
                                          pos-module-source
-                                         (module-source-as-symbol #'name)
+                                         (module-source-as-string #'name)
                                          #,(id->contract-src-info #'id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
@@ -802,7 +802,7 @@ improve method arity mismatch contract violation error messages?
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                   (define pos-module-source (module-source-as-string #'pos-stx))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
