@@ -70,11 +70,20 @@ improve method arity mismatch contract violation error messages?
 ;; it to the result of `expr'.  These variables may not be set!'d.
 (define-syntax (define/contract define-stx)
   (syntax-case define-stx ()
-    [(_ name contract-expr expr0 expr ...)
+    [(_ name contract-expr)
+     (raise-syntax-error 'define/contract
+                         "no body after contract"
+                         define-stx)]
+    [(_ name contract-expr expr)
      (identifier? (syntax name))
      #'(with-contract name
          ([name (verify-contract 'define/contract contract-expr)])
-         (define name expr0 expr ...))]
+         (define name expr))]
+    [(_ name contract-expr expr0 expr ...)
+     (identifier? (syntax name))
+     (raise-syntax-error 'define/contract
+                         "multiple expressions after identifier and contract"
+                         define-stx)]
     [(_ name+arg-list contract body0 body ...)
      (let-values ([(name lam-expr)
                    (normalize-definition (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list #'body0 #'(body ...)))
