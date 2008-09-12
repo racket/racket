@@ -237,7 +237,8 @@ improve method arity mismatch contract violation error messages?
                          "expected identifier for blame"
                          #'blame)]
     [(_ blame (arg ...) body0 body ...)
-     #'(with-contract #:type region blame (arg ...) body0 body ...)]
+     (syntax/loc stx
+       (with-contract #:type region blame (arg ...) body0 body ...))]
     [(_ blame (arg ...))
      (identifier? #'blame)
      (raise-syntax-error 'with-contract
