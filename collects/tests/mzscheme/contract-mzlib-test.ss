@@ -1,5 +1,3 @@
-
-#lang scheme/load
 #|
 
 This file started out as a copy of contract-test.ss.
