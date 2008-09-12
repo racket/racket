@@ -1603,6 +1603,15 @@ of the contract library does not change over time.
   (test/spec-passed
    'define/contract6
    '(let ()
+      (define/contract (i x) (-> integer? integer?)
+        (cond
+          [(not (integer? x)) 1]
+          [else (i #f)]))
+      (i 1)))
+  
+  (test/spec-passed
+   'define/contract7
+   '(let ()
       (define/contract (contracted-func label t)
                        (string?  string? . -> . string?)
                        t)
@@ -1611,7 +1620,7 @@ of the contract library does not change over time.
        "ans")))
 
   (test/spec-passed
-   'define/contract7
+   'define/contract8
    '(let ()
       (eval '(module contract-test-suite-define1 mzscheme
                (require mzlib/contract)
@@ -1620,7 +1629,7 @@ of the contract library does not change over time.
       (eval '(require 'contract-test-suite-define1))))
   
   (test/spec-failed
-   'define/contract8
+   'define/contract9
    '(let ()
       (define/contract (a n)
         (-> number? number?)
@@ -1632,7 +1641,7 @@ of the contract library does not change over time.
    "a")
   
   (test/spec-failed
-   'define/contract8
+   'define/contract10
    '(let ()
       (define/contract (a n)
         (-> number? number?)
@@ -1644,7 +1653,7 @@ of the contract library does not change over time.
    "b")
   
   (test/spec-passed
-   'define/contract9
+   'define/contract11
    '(let ()
       (define/contract (f n)
         (-> number? number?)
@@ -1655,7 +1664,7 @@ of the contract library does not change over time.
       (g #t 3)))
   
   (test/spec-failed
-   'define/contract9
+   'define/contract12
    '(let ()
       (define/contract (f n)
         (-> number? number?)
