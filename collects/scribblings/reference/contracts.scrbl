@@ -657,10 +657,10 @@ exported without a contract.
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken
 within the @scheme[with-contract] @scheme[body] will use the
-@scheme[blame-id] for their negative position.
+@scheme[blame-id] for their negative position.}
 
-@defform*[(define/contract id contract-expr init-value-expr)
-          (define/contract (head args) contract-expr body ...+]{
+@defform*[[(define/contract id contract-expr init-value-expr)
+           (define/contract (head args) contract-expr body ...+)]]{
 
 Works like @scheme[define], except that the contract
 @scheme[contract-expr] is attached to the bound value.
