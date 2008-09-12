@@ -142,7 +142,7 @@ improve method arity mismatch contract violation error messages?
                         id
                         pos-blame-id
                         'neg-blame-id
-                        (quote-syntax #,(id->contract-src-info #'f)))
+                        (quote-syntax f))
              arg ...))]
          [ident
           (identifier? (syntax ident))
@@ -151,7 +151,7 @@ improve method arity mismatch contract violation error messages?
                        id
                        pos-blame-id
                        'neg-blame-id
-                       (quote-syntax #,(id->contract-src-info #'ident))))])))))
+                       (quote-syntax ident)))])))))
 
 (define-for-syntax (check-and-split-with-contract-args args)
   (let loop ([args args]
