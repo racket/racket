@@ -34,10 +34,14 @@
              lazy-depth-to-look)
  
  (except-out (all-from-out scheme/private/contract)
+             old-define/contract
+             define/contract
+             with-contract
              check-between/c
              string-len/c
              check-unary-between/c)
- (rename-out [string-len/c string/len]))
+ (rename-out [string-len/c string/len]
+             [old-define/contract define/contract]))
 
 ;; from contract-guts.ss
 

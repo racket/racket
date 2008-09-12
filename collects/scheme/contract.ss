@@ -27,6 +27,7 @@ differences from v3:
              check-procedure
              check-procedure/more)
  (except-out (all-from-out "private/contract.ss")
+             old-define/contract
              check-between/c
              check-unary-between/c))
 
