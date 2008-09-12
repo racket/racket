@@ -63,8 +63,8 @@
                         w1 #t modpath src line col pos))
                      #t))))))))]))
 
-(define-syntax-rule (wrap-internal lib port read whole? wrapper stx?
-                                   modpath src line col pos)
+(define (wrap-internal lib port read whole? wrapper stx?
+                       modpath src line col pos)
   (let* ([body (lambda ()
                  (if whole?
                    (read port)

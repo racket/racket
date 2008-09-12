@@ -1,11 +1,7 @@
 #lang scheme/base
 
-(require scheme/list
-         scheme/class
-         mred
-         lang/posn
+(require scheme/class mred lang/posn scheme/pretty
          (prefix-in pc: mzlib/pconvert)
-         scheme/pretty
          (only-in "main.ss" timeout-control)
          "private/run-status.ss"
          "private/config.ss"
@@ -13,29 +9,29 @@
          "sandbox.ss")
 
 (provide (all-from-out "sandbox.ss")
-         
+
          get-conf
          log-line
-         
+
          unpack-submission
-         
+
          make-evaluator/submission
          evaluate-all
          evaluate-submission
-         
+
          call-with-evaluator
          call-with-evaluator/submission
          reraise-exn-as-submission-problem
          set-run-status
          message
          current-value-printer
-         
+
          check-proc
          check-defined
          look-for-tests
          user-construct
          test-history-enabled
-         
+
          timeout-control)
 
 (define (unpack-submission str)
@@ -76,8 +72,8 @@
 (define (reraise-exn-as-submission-problem thunk)
   (with-handlers ([void (lambda (exn)
                           (error (if (exn? exn)
-                                     (exn-message exn)
-                                     (format "exception: ~e" exn))))])
+                                   (exn-message exn)
+                                   (format "exception: ~e" exn))))])
     (thunk)))
 
 ;; ----------------------------------------
@@ -98,10 +94,10 @@
 
 (define (format-history one-test)
   (if (test-history-enabled)
-      (format "(begin~a)"
-              (apply string-append (map (lambda (s) (format " ~a" s))
-                                        (reverse (test-history)))))
-      one-test))
+    (format "(begin~a)"
+            (apply string-append (map (lambda (s) (format " ~a" s))
+                                      (reverse (test-history)))))
+    one-test))
 
 (define (check-proc e result equal? f . args)
   (let ([test (format "(~a~a)" f
@@ -125,9 +121,7 @@
       (unless ok?
         (error
          (format "instructor-supplied test ~a should have produced ~e, instead produced ~e"
-                 (format-history test)
-                 result
-                 val)))
+                 (format-history test) result val)))
       val)))
 
 (define (user-construct e func . args)
@@ -138,18 +132,14 @@
     (let loop ([found 0])
       (let ([e (read p)])
         (if (eof-object? e)
-            (when (found . < . count)
-              (error (format "found ~a test~a for ~a, need at least ~a test~a"
-                             found
-                             (if (= found 1) "" "s")
-                             name
-                             count
-                             (if (= count 1) "" "s"))))
-            (loop (+ found
-                     (if (and (pair? e)
-                              (eq? (car e) name))
-                         1
-                         0))))))))
+          (when (found . < . count)
+            (error (format "found ~a test~a for ~a, need at least ~a test~a"
+                           found
+                           (if (= found 1) "" "s")
+                           name
+                           count
+                           (if (= count 1) "" "s"))))
+          (loop (+ found (if (and (pair? e) (eq? (car e) name)) 1 0))))))))
 
 (define list-abbreviation-enabled (make-parameter #f))
 

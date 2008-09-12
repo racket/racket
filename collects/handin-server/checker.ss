@@ -191,10 +191,8 @@
 ;; This code will hack textualization of text boxes
 
 (define (insert-to-editor editor . xs)
-  (for-each (lambda (x)
-              (send editor insert
-                    (if (string? x) x (make-object editor-snip% x))))
-            xs))
+  (for ([x xs])
+    (send editor insert (if (string? x) x (make-object editor-snip% x)))))
 
 ;; support for "text-box%"
 (define text-box-sc
@@ -284,10 +282,9 @@
                                 '(ok-cancel caution)))))
         (error* "Aborting...")))
     ;; This will create copies of the original files
-    ;; (for-each (lambda (file)
-    ;;             (with-output-to-file (car file)
-    ;;               (lambda () (display (cadr file)) (flush-output))))
-    ;;           files)
+    ;; (for ([file files])
+    ;;   (with-output-to-file (car file)
+    ;;     (lambda () (display (cadr file)) (flush-output))))
     (let* ([pfx-len  (string-length markup-prefix)]
            [line-len (- maxwidth pfx-len)]
            [=s       (lambda (n) (if (<= 0 n) (make-string n #\=) ""))]
@@ -301,14 +298,12 @@
         (display ===)
         (newline))
       (parameterize ([current-output-port (open-output-bytes)])
-        (for-each (lambda (file)
-                    (sep (car file))
-                    (parameterize ([current-input-port
-                                    (open-input-bytes (cadr file))]
-                                   [current-processed-file (car file)])
-                      (input->process->output
-                       maxwidth textualize? untabify? prefix-re)))
-                  files)
+        (for ([file files])
+          (sep (car file))
+          (parameterize ([current-input-port (open-input-bytes (cadr file))]
+                         [current-processed-file (car file)])
+            (input->process->output
+             maxwidth textualize? untabify? prefix-re)))
         (get-output-bytes (current-output-port))))))
 
 ;; ============================================================================
@@ -394,10 +389,9 @@
             [user-post      (id 'user-post)]
             [(body ...) (syntax-case #'(body ...) ()
                           [() #'(void)] [_ #'(body ...)])])
-         (for-each (lambda (x)
-                     (unless (memq (car x) got)
-                       (raise-syntax-error #f "unknown keyword" stx (cadr x))))
-                   keyvals)
+         (for ([x keyvals])
+           (unless (memq (car x) got)
+             (raise-syntax-error #f "unknown keyword" stx (cadr x))))
          #'(begin
              (provide checker)
              (define checker
@@ -476,10 +470,8 @@
                      (set-run-status "creating text file")
                      (with-output-to-file text-file #:exists 'truncate
                        (lambda ()
-                         (for-each (lambda (user)
-                                     (prefix-line
-                                      (user-substs user student-line)))
-                                   users)
+                         (for ([user users])
+                           (prefix-line (user-substs user student-line)))
                          (for-each prefix-line/substs extra-lines)
                          (for-each prefix-line/substs
                                    (or (thread-cell-ref added-lines) '()))
