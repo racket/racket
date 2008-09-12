@@ -24,7 +24,7 @@
   (error (apply format fmt args)))
 
 (define (write+flush port . xs)
-  (for-each (lambda (x) (write x port) (newline port)) xs)
+  (for ([x xs]) (write x port) (newline port))
   (flush-output port))
 
 (define-struct alist (name [l #:mutable]))
@@ -87,20 +87,18 @@
       ;; SUCCESS, or things that are newer in the main submission
       ;; directory are kept (but subdirs in SUCCESS will are copied as
       ;; is))
-      (for-each
-       (lambda (f)
-         (define dir/f (build-path dir f))
-         (cond [(not (or (file-exists? f) (directory-exists? f)))
-                ;; f is in dir but not in the working directory
-                (copy-directory/files dir/f f)]
-               [(or (<= (file-or-directory-modify-seconds f)
-                        (file-or-directory-modify-seconds dir/f))
-                    (and (file-exists? f) (file-exists? dir/f)
-                         (not (= (file-size f) (file-size dir/f)))))
-                ;; f is newer in dir than in the working directory
-                (delete-directory/files f)
-                (copy-directory/files dir/f f)]))
-       (directory-list dir)))))
+      (for ([f (directory-list dir)])
+        (define dir/f (build-path dir f))
+        (cond [(not (or (file-exists? f) (directory-exists? f)))
+               ;; f is in dir but not in the working directory
+               (copy-directory/files dir/f f)]
+              [(or (<= (file-or-directory-modify-seconds f)
+                       (file-or-directory-modify-seconds dir/f))
+                   (and (file-exists? f) (file-exists? dir/f)
+                        (not (= (file-size f) (file-size dir/f)))))
+               ;; f is newer in dir than in the working directory
+               (delete-directory/files f)
+               (copy-directory/files dir/f f)])))))
 
 (define cleanup-sema (make-semaphore 1))
 (define (cleanup-submission dir)
@@ -118,14 +116,12 @@
 
 (define (cleanup-all-submissions)
   (log-line "Cleaning up all submission directories")
-  (for-each (lambda (pset)
-              (when (directory-exists? pset) ; just in case
-                (parameterize ([current-directory pset])
-                  (for-each (lambda (sub)
-                              (when (directory-exists? sub) ; filter non-dirs
-                                (cleanup-submission sub)))
-                            (directory-list)))))
-            (get-conf 'all-dirs)))
+  (for ([pset (get-conf 'all-dirs)]
+        #:when (directory-exists? pset)) ; just in case
+    (parameterize ([current-directory pset])
+      (for ([sub (directory-list)]
+            #:when (directory-exists? sub)) ; filter non-dirs
+        (cleanup-submission sub)))))
 
 ;; On startup, we scan all submissions, then repeat at random intervals (only
 ;; if clients connected in that time), and check often for changes in the
@@ -193,15 +189,11 @@
       ;; we have a submission, need to create a directory if needed, make
       ;; sure that no users submitted work with someone else
       (unless (directory-exists? dirname)
-        (for-each
-         (lambda (dir)
-           (for-each
-            (lambda (d)
-              (when (member d users)
-                (error* "bad submission: ~a has an existing submission (~a)"
-                        d dir)))
-            (regexp-split #rx" *[+] *" (path->string dir))))
-         (directory-list))
+        (for* ([dir (directory-list)]
+               [d (regexp-split #rx" *[+] *" (path->string dir))])
+          (when (member d users)
+            (error* "bad submission: ~a has an existing submission (~a)"
+                    d dir)))
         (make-directory dirname))
       (parameterize ([current-directory dirname]
                      [current-messenger
@@ -378,9 +370,9 @@
     (error* "the username \"checker.ss\" is reserved"))
   (when (get-user-data username)
     (error* "username already exists: `~a'" username))
-  (for-each (lambda (str info)
-              (check-field str (cadr info) (car info) (caddr info)))
-            extra-fields (get-conf 'extra-fields))
+  (for ([str extra-fields]
+        [info (get-conf 'extra-fields)])
+    (check-field str (cadr info) (car info) (caddr info)))
   (wait-for-lock "+newuser+")
   (log-line "create user: ~a" username)
   (hook 'user-create `([username ,username] [fields ,extra-fields]))
@@ -405,9 +397,9 @@
       (error* "changing information not allowed: ~a" username))
     (when (equal? new-data old-data)
       (error* "no fields changed: ~a" username))
-    (for-each (lambda (str info)
-                (check-field str (cadr info) (car info) (caddr info)))
-              (cdr new-data) (get-conf 'extra-fields))
+    (for ([str (cdr new-data)]
+          [info (get-conf 'extra-fields)])
+      (check-field str (cadr info) (car info) (caddr info)))
     (log-line "change info for ~a ~s -> ~s" username old-data new-data)
     (unless (equal? (cdr new-data) (cdr old-data)) ; not for password change
       (hook 'user-change `([username ,username]
