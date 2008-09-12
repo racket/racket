@@ -204,8 +204,9 @@
                                    (pair? (cdr to-blame))
                                    (null? (cddr to-blame))
                                    (equal? 'quote (car to-blame)))
-                              (format "'~s" (cadr to-blame))]
-                             [else (format "~s" to-blame)])
+                              (format "module '~s" (cadr to-blame))]
+                             [(string? to-blame) to-blame]
+                             [else (format "module ~s" to-blame)])
                            formatted-contract-sexp
                            specific-blame)
                    msg)))

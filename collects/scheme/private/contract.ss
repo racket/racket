@@ -90,7 +90,7 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name contract-expr expr)
      (identifier? (syntax name))
-     #'(with-contract name
+     #'(with-contract #:type function name
          ([name (verify-contract 'define/contract contract-expr)])
          (define name expr))]
     [(_ name contract-expr expr0 expr ...)
@@ -132,7 +132,7 @@ improve method arity mismatch contract violation error messages?
   (make-set!-transformer
    (lambda (stx)
      (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
-                                     (a:module-source-as-symbol id))]
+                                     #`(quote #,(a:module-source-as-symbol id)))]
                    [pos-blame-id pos-blame-id]
                    [contract-id contract-id]
                    [id id])
@@ -147,7 +147,7 @@ improve method arity mismatch contract violation error messages?
             ((-contract contract-id
                         id
                         pos-blame-id
-                        'neg-blame-id
+                        neg-blame-id
                         #'f)
              arg ...))]
          [ident
@@ -156,7 +156,7 @@ improve method arity mismatch contract violation error messages?
             (-contract contract-id
                        id
                        pos-blame-id
-                       'neg-blame-id
+                       neg-blame-id
                        #'ident))])))))
 
 (define-for-syntax (check-and-split-with-contract-args args)
@@ -194,8 +194,9 @@ improve method arity mismatch contract violation error messages?
                         "used in expression context"
                         stx))
   (syntax-case stx ()
-    [(_ blame (arg ...) body0 body ...)
-     (identifier? (syntax blame))
+    [(_ #:type type blame (arg ...) body0 body ...)
+     (and (identifier? #'blame)
+          (identifier? #'type))
      (let-values ([(unprotected protected protections)
                    (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
        (with-syntax ([((protected-id id contract-id) ...)
@@ -204,12 +205,13 @@ improve method arity mismatch contract violation error messages?
                                    (a:mangle-id stx "with-contract-id" n)
                                    (a:mangle-id stx "with-contract-contract-id" n)))
                            protected)]
+                     [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
                      [(contract-expr ...) protections]
                      [(unprotected-id ...) unprotected])
          (syntax/loc stx
            (begin 
              (define-values (unprotected-id ... id ...)
-               (syntax-parameterize ([current-contract-region (quote blame)])
+               (syntax-parameterize ([current-contract-region blame-str])
                  (begin-with-definitions
                    body0 body ...
                    (values unprotected-id ... protected-id ...))))
@@ -218,19 +220,30 @@ improve method arity mismatch contract violation error messages?
                (make-with-contract-transformer 
                 (quote-syntax contract-id)
                 (quote-syntax id)
-                (quote-syntax (quote blame)))) ...))))]
-    [(_ blame (arg ...) body0 body ...)
+                blame-str)) ...))))]
+    [(_ #:type type blame (arg ...) body0 body ...)
+     (identifier? #'blame)
      (raise-syntax-error 'with-contract
-                         "expected identifier"
+                         "expected identifier for type"
+                         #'type)]
+    [(_ #:type type blame (arg ...) body0 body ...)
+     (raise-syntax-error 'with-contract
+                         "expected identifier for blame"
                          #'blame)]
+    [(_ blame (arg ...) body0 body ...)
+     #'(with-contract #:type region blame (arg ...) body0 body ...)]
     [(_ blame (arg ...))
      (raise-syntax-error 'with-contract
                          "empty body"
                          stx)]
-    [(_ blame bad-args body0 body ...)
+    [(_ blame bad-args etc ...)
      (raise-syntax-error 'with-contract
                          "expected list of identifier and/or (identifier contract)"
-                         #'bad-args)]))
+                         #'bad-args)]
+    [(_ blame)
+     (raise-syntax-error 'with-contract
+                         "only blame"
+                         stx)]))
 
 ;                                                                                                            
 ;                                                                                                            
