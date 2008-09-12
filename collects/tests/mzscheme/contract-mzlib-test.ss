@@ -81,7 +81,7 @@ of the contract library does not change over time.
         (equal?
          blame
          (cond
-           [(regexp-match #rx"(^| )([^ ]*) broke" msg) 
+           [(regexp-match #rx"(^| )(.*) broke" msg) 
             =>
             (λ (x) (caddr x))]
            [else (format "no blame in error message: \"~a\"" msg)])))
@@ -103,8 +103,8 @@ of the contract library does not change over time.
                (and (exn? exn)
                     (,has-proper-blame? (exn-message exn))))))))))
   
-  (define (test/pos-blame name expression) (test/spec-failed name expression "pos"))
-  (define (test/neg-blame name expression) (test/spec-failed name expression "neg"))
+  (define (test/pos-blame name expression) (test/spec-failed name expression "module pos"))
+  (define (test/neg-blame name expression) (test/spec-failed name expression "module neg"))
   
   (define (test/well-formed stx)
     (contract-eval
@@ -126,7 +126,7 @@ of the contract library does not change over time.
         (contract-eval `(,test #t flat-contract? ,contract))
         (test/spec-failed (format "~a fail" name)
                           `(contract ,contract ',fail 'pos 'neg)
-                          "pos")
+                          "module pos")
         (test/spec-passed/result
          (format "~a pass" name)
          `(contract ,contract ',pass 'pos 'neg)
@@ -1577,28 +1577,28 @@ of the contract library does not change over time.
    '(let ()
       (define/contract i integer? #t)
       i)
-   "i")
+   "definition i")
   
   (test/spec-failed
    'define/contract3
    '(let ()
       (define/contract i (-> integer? integer?) (lambda (x) #t))
       (i 1))
-   "i")
+   "definition i")
   
   (test/spec-failed
    'define/contract4
    '(let ()
       (define/contract i (-> integer? integer?) (lambda (x) 1))
       (i #f))
-   "top-level")
+   "the top level")
   
   (test/spec-failed
    'define/contract5
    '(let ()
       (define/contract (i x) (-> integer? integer?) 1)
       (i #f))
-   "top-level")
+   "the top level")
   
   (test/spec-passed
    'define/contract6
@@ -1638,7 +1638,7 @@ of the contract library does not change over time.
           (+ m 1))
         (b (zero? n)))
       (a 5))
-   "a")
+   "function a")
   
   (test/spec-failed
    'define/contract10
@@ -1650,7 +1650,7 @@ of the contract library does not change over time.
           #t)
         (b (add1 n)))
       (a 5))
-   "b")
+   "function b")
   
   (test/spec-passed
    'define/contract11
@@ -1673,7 +1673,7 @@ of the contract library does not change over time.
         (-> boolean? number? number?)
         (if b (f m) (f #t)))
       (g #f 3))
-   "g")
+   "function g")
   
   (test/spec-passed
    'with-contract1
@@ -1698,7 +1698,7 @@ of the contract library does not change over time.
         (define (even? n)
           (if (zero? n) #t (odd? (sub1 n)))))
       (odd? #t))
-   "top-level")
+   "the top level")
   
   (test/spec-failed
    'with-contract3
@@ -1711,7 +1711,7 @@ of the contract library does not change over time.
         (define (even? n)
           (if (zero? n) #t (odd? (sub1 n)))))
       (odd? 4))
-   "odd-even")
+   "region odd-even")
   
   ;; Functions within the same with-contract region can call
   ;; each other however they want, so here we have even?
@@ -4753,7 +4753,7 @@ so that propagation occurs.
                (provide/contract (x integer?))))
       (eval '(require 'contract-test-suite3))
       (eval 'x))
-   "'contract-test-suite3")
+   "module 'contract-test-suite3")
   
   (test/spec-passed
    'provide/contract4
@@ -4930,7 +4930,7 @@ so that propagation occurs.
                             (make-s 1 2)
                             [s-a #f])))
       (eval '(require 'pc11b-n)))
-   'n)
+   "module 'n")
 |#
   
   (test/spec-passed
@@ -4998,7 +4998,7 @@ so that propagation occurs.
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'pos)))
-   "'pos")
+   "module 'pos")
   
   ;; this is really a positive violation, but name the module `neg' just for an addl test
   (test/spec-failed
@@ -5009,7 +5009,7 @@ so that propagation occurs.
                (define i #f)
                (provide/contract [i integer?])))
       (eval '(require 'neg)))
-   "'neg")
+   "module 'neg")
   
   ;; this test doesn't pass yet ... waiting for support from define-struct
   

@@ -130,6 +130,11 @@
               (cond
                 [(symbol? resolved) (format "module ~a" resolved)]
                 [else (format "module ~a" `(file ,(path->string resolved)))]))]
+           [(and (pair? collapsed)
+                 (pair? (cdr collapsed))
+                 (null? (cddr collapsed))
+                 (eq? (car collapsed) 'quote))
+            (format "module '~a" (cadr collapsed))]
            [else
             (format "module ~a" collapsed)]))])))
 

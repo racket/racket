@@ -90,9 +90,10 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name contract-expr expr)
      (identifier? (syntax name))
-     #'(with-contract #:type function name
+     (syntax/loc define-stx
+       (with-contract #:type definition name
          ([name (verify-contract 'define/contract contract-expr)])
-         (define name expr))]
+         (define name expr)))]
     [(_ name contract-expr expr0 expr ...)
      (identifier? (syntax name))
      (raise-syntax-error 'define/contract
@@ -104,7 +105,12 @@ improve method arity mismatch contract violation error messages?
                     (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
                                                        #'body0 #'(body ...)))
                     #'lambda #t #t)])
-       #`(define/contract #,name contract #,lam-expr))]))
+       (with-syntax ([name name]
+                     [lam-expr lam-expr])
+         (syntax/loc define-stx
+           (with-contract #:type function name
+             ([name (verify-contract 'define/contract contract)])
+             (define name lam-expr)))))]))
 
 
 
