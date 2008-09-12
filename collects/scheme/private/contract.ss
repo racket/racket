@@ -274,8 +274,7 @@ improve method arity mismatch contract violation error messages?
                             #`(-contract contract-id
                                          id
                                          pos-module-source
-                                         (or '#,(syntax-parameter-value #'current-contract-region)
-                                             (module-source-as-symbol #'name))
+                                         (module-source-as-symbol #'name)
                                          #,(id->contract-src-info #'id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
