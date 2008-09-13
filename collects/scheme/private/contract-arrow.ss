@@ -124,7 +124,7 @@ v4 todo:
                        [dom-length (length (->-doms/c ctc))]
                        [optionals-length (length (->-optional-doms/c ctc))])
                   (λ (pos-blame neg-blame src-info orig-str)
-                    (let ([partial-doms (for/list ([dom doms-proj]
+                    (let ([partial-doms (for/list ([dom (in-list doms-proj)]
                                                    [n (in-naturals 1)]) 
                                           (dom neg-blame pos-blame src-info
                                                (format "required argument ~a of ~a" n orig-str)))]
@@ -132,22 +132,22 @@ v4 todo:
                                             (list (rest-proj neg-blame pos-blame src-info
                                                              (format "rest argument of ~a" orig-str)))
                                             null)]
-                          [partial-optional-doms (for/list ([dom doms-optional-proj]
+                          [partial-optional-doms (for/list ([dom (in-list doms-optional-proj)]
                                                             [n (in-naturals 1)])
                                                    (dom neg-blame pos-blame src-info
                                                         (format "optional argument ~a of ~a"
                                                                 n orig-str)))]
-                          [partial-ranges (for/list ([rng rngs-proj]
+                          [partial-ranges (for/list ([rng (in-list rngs-proj)]
                                                      [n (in-naturals 1)])
                                             (rng pos-blame neg-blame src-info
                                                  (format "result ~a of ~a" n orig-str)))]
-                          [partial-mandatory-kwds (for/list ([kwd mandatory-kwds-proj]
-                                                             [kwd-lit mandatory-keywords])
+                          [partial-mandatory-kwds (for/list ([kwd (in-list mandatory-kwds-proj)]
+                                                             [kwd-lit (in-list mandatory-keywords)])
                                                     (kwd neg-blame pos-blame src-info
                                                          (format "keyword argument ~a of ~a"
                                                                  kwd-lit orig-str)))]
-                          [partial-optional-kwds (for/list ([kwd optional-kwds-proj]
-                                                            [kwd-lit optional-keywords])
+                          [partial-optional-kwds (for/list ([kwd (in-list optional-kwds-proj)]
+                                                            [kwd-lit (in-list optional-keywords)])
                                                    (kwd neg-blame pos-blame src-info
                                                         (format "keyword argument ~a of ~a"
                                                                 kwd-lit orig-str)))])
