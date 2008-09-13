@@ -7,6 +7,8 @@
    (*twocolumns (list (scheme id) ...)))
 @(define (*twocolumns l)
    (let* ([len (length l)]
+          [l (if (odd? len) (append l (list #f)) l)]
+          [len (length l)]
           [half (quotient len 2)]
           [a (for/list ([i (in-range half)]
                         [e l])
@@ -16,10 +18,12 @@
           [to-flow (compose make-flow list make-paragraph list)])
      (make-table #f
                  (map (lambda (a b)
-                        (list (to-flow spacer)
-                              (to-flow a)
-                              (to-flow spacer)
-                              (to-flow  b)))
+                        (append (list (to-flow spacer)
+                                      (to-flow a))
+                                (if b
+                                    (list (to-flow spacer)
+                                          (to-flow  b))
+                                    null)))
                       a b))))
 
 @mzlib[#:mode title contract]
@@ -47,7 +51,6 @@ from @schememodname[scheme/contract]:
  contract-violation->string
  contract?
  define-contract-struct
- define/contract
  false/c
  flat-contract
  flat-contract-predicate
