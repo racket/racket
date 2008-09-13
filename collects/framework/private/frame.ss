@@ -1933,6 +1933,12 @@
       (λ (text evt)
         (send (send text get-top-level-window) search 'forward)))
 
+(send search/replace-keymap map-function "c:return" "insert-return")
+(send search/replace-keymap map-function "a:return" "insert-return")
+(send search/replace-keymap add-function "insert-return"
+      (λ (text evt)
+        (send text insert "\n")))
+
 (send search/replace-keymap map-function "esc" "hide-search")
 (send search/replace-keymap add-function "hide-search"
       (λ (text evt)
