@@ -61,8 +61,11 @@ differences from v3:
          
          contract-stronger?
          
-         coerce-contract 
-         flat-contract/predicate?
+         coerce-contract/f
+         coerce-contract
+         coerce-contracts
+         coerce-flat-contract
+         coerce-flat-contracts
          
          build-compound-type-name
          raise-contract-error

@@ -79,3 +79,10 @@
          flat-prop flat-pred? flat-get
          first-order-prop first-order-get
          (rename-out [or/c union]))
+
+
+;; copied here because not provided by scheme/contract anymore
+(define (flat-contract/predicate? pred)
+  (or (flat-contract? pred)
+      (and (procedure? pred)
+           (procedure-arity-includes? pred 1))))

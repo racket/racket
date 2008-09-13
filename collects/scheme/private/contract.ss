@@ -690,15 +690,7 @@ improve method arity mismatch contract violation error messages?
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
     [(_ x) (a:known-good-contract? #'x) #'x]
-    [(_ x) #'(verify-contract/proc x)]))
-
-(define (verify-contract/proc x)
-  (unless (or (contract? x)
-              (and (procedure? x)
-                   (procedure-arity-includes? x 1)))
-    (error 'provide/contract "expected a contract or a procedure of arity one, got ~e" x))
-  x)
-
+    [(_ x) #'(coerce-contract 'provide/contract x)]))
 
 (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
   (let-values ([(struct:struct-name _make _pred _get _set)
@@ -726,19 +718,6 @@ improve method arity mismatch contract violation error messages?
                                                   ctcs
                                                   vals)))))])
     struct:struct-name))
-
-(define (test-proc/flat-contract f x)
-  (if (flat-contract? f)
-      ((flat-contract-predicate f) x)
-      (f x)))
-
-(define (proc/ctc->ctc f)
-  (if (contract? f)
-      f
-      (flat-named-contract
-       (or (object-name f)
-           (string->symbol (format "contract:~e" f)))
-       f)))
 
 (define-syntax (-contract stx)
   (syntax-case stx ()
@@ -891,53 +870,40 @@ improve method arity mismatch contract violation error messages?
 (define or/c
   (case-lambda 
     [() (make-none/c '(or/c))]
-    [args
-     (for-each
-      (λ (x) 
-        (unless (or (contract? x)
-                    (and (procedure? x)
-                         (procedure-arity-includes? x 1)))
-          (error 'or/c "expected procedures of arity 1 or contracts, given: ~e" x)))
-      args)
-     (let-values ([(ho-contracts fc/predicates)
-                   (let loop ([ho-contracts '()]
-                              [fc/predicates null]
-                              [args args])
-                     (cond
-                       [(null? args) (values ho-contracts (reverse fc/predicates))]
-                       [else 
-                        (let ([arg (car args)])
-                          (cond
-                            [(and (contract? arg)
-                                  (not (flat-contract? arg)))
-                             (loop (cons arg ho-contracts) fc/predicates (cdr args))]
-                            [else
-                             (loop ho-contracts (cons arg fc/predicates) (cdr args))]))]))])
-       (let ([flat-contracts (map (λ (x) (if (flat-contract? x)
-                                             x
-                                             (flat-contract x)))
-                                  fc/predicates)]
-             [pred 
-              (cond
-                [(null? fc/predicates) not]
-                [else
-                 (let loop ([fst (car fc/predicates)]
-                            [rst (cdr fc/predicates)])
-                   (let ([fst-pred (if (flat-contract? fst)
-                                       ((flat-get fst) fst)
-                                       fst)])
-                     (cond
-                       [(null? rst) fst-pred]
-                       [else 
-                        (let ([r (loop (car rst) (cdr rst))])
-                          (λ (x) (or (fst-pred x) (r x))))])))])])
-         (cond
-           [(null? ho-contracts)
-            (make-flat-or/c pred flat-contracts)]
-           [(null? (cdr ho-contracts))
-            (make-or/c pred flat-contracts (car ho-contracts))]
-           [else
-            (make-multi-or/c flat-contracts ho-contracts)])))]))
+    [raw-args
+     (let ([args (coerce-contracts 'or/c raw-args)])
+       (let-values ([(ho-contracts flat-contracts)
+                     (let loop ([ho-contracts '()]
+                                [flat-contracts '()]
+                                [args args])
+                       (cond
+                         [(null? args) (values ho-contracts (reverse flat-contracts))]
+                         [else 
+                          (let ([arg (car args)])
+                            (cond
+                              [(flat-contract? arg)
+                               (loop ho-contracts (cons arg flat-contracts) (cdr args))]
+                              [else
+                               (loop (cons arg ho-contracts) flat-contracts (cdr args))]))]))])
+         (let ([pred 
+                (cond
+                  [(null? flat-contracts) not]
+                  [else
+                   (let loop ([fst (car flat-contracts)]
+                              [rst (cdr flat-contracts)])
+                     (let ([fst-pred (flat-contract-predicate fst)])
+                       (cond
+                         [(null? rst) fst-pred]
+                         [else 
+                          (let ([r (loop (car rst) (cdr rst))])
+                            (λ (x) (or (fst-pred x) (r x))))])))])])
+           (cond
+             [(null? ho-contracts)
+              (make-flat-or/c pred flat-contracts)]
+             [(null? (cdr ho-contracts))
+              (make-or/c pred flat-contracts (car ho-contracts))]
+             [else
+              (make-multi-or/c flat-contracts ho-contracts)]))))]))
 
 (define-struct or/c (pred flat-ctcs ho-ctc)
   #:omit-define-syntaxes
@@ -962,11 +928,11 @@ improve method arity mismatch contract violation error messages?
   
   #:property first-order-prop
   (λ (ctc)
-    (let ([flats (map (λ (x) ((flat-get x) x)) (or/c-flat-ctcs ctc))]
+    (let ([pred (or/c-pred ctc)]
           [ho ((first-order-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))])
       (λ (x)
         (or (ho x)
-            (ormap (λ (f) (f x)) flats)))))
+            (pred x)))))
    
   #:property stronger-prop
   (λ (this that)
@@ -983,8 +949,7 @@ improve method arity mismatch contract violation error messages?
   (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
          [c-procs (map (λ (x) ((proj-get x) x)) ho-contracts)]
          [first-order-checks (map (λ (x) ((first-order-get x) x)) ho-contracts)]
-         [predicates (map (λ (x) ((flat-get x) x))
-                          (multi-or/c-flat-ctcs ctc))])
+         [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
     (λ (pos-blame neg-blame src-info orig-str)
       (let ([partial-contracts (map (λ (c-proc) (c-proc pos-blame neg-blame src-info orig-str)) c-procs)])
         (λ (val)
@@ -1033,7 +998,7 @@ improve method arity mismatch contract violation error messages?
   
   #:property first-order-prop
   (λ (ctc)
-    (let ([flats (map (λ (x) ((flat-get x) x)) (multi-or/c-flat-ctcs ctc))]
+    (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
           [hos (map (λ (x) ((first-order-get x) x)) (multi-or/c-ho-ctcs ctc))])
       (λ (x)
         (or (ormap (λ (f) (f x)) hos)
@@ -1196,10 +1161,7 @@ improve method arity mismatch contract violation error messages?
     [(or/c p ...)
      (opt/or-ctc (syntax->list (syntax (p ...))))]))
 
-(define false/c
-  (flat-named-contract
-   'false/c
-   (λ (x) (not x))))
+(define false/c #f)
 
 (define (string-len/c n)
   (unless (number? n)
@@ -1527,11 +1489,11 @@ improve method arity mismatch contract violation error messages?
           (<= start x end)))))
 
 (define (not/c f)
-  (unless (flat-contract/predicate? f)
-    (error 'not/c "expected a procedure of arity 1 or <flat-named-contract>, given: ~e" f))
-  (build-flat-contract
-   (build-compound-type-name 'not/c (proc/ctc->ctc f))
-   (λ (x) (not (test-proc/flat-contract f x)))))
+  (let* ([ctc (coerce-flat-contract 'not/c f)]
+         [pred (flat-contract-predicate ctc)])
+    (build-flat-contract
+     (build-compound-type-name 'not/c ctc)
+     (λ (x) (not (pred x))))))
 
 (define-syntax (*-immutableof stx)
   (syntax-case stx ()
@@ -1577,43 +1539,35 @@ improve method arity mismatch contract violation error messages?
                  vector-immutableof))
 
 (define (vectorof p)
-  (unless (flat-contract/predicate? p)
-    (error 'vectorof "expected a flat contract or procedure of arity 1 as argument, got: ~e" p))
-  (build-flat-contract
-   (build-compound-type-name 'vectorof (proc/ctc->ctc p))
-   (λ (v)
-     (and (vector? v)
-          (andmap (λ (ele) (test-proc/flat-contract p ele))
-                  (vector->list v))))))
+  (let* ([ctc (coerce-flat-contract 'vectorof p)]
+         [pred (flat-contract-predicate ctc)])
+    (build-flat-contract
+     (build-compound-type-name 'vectorof ctc)
+     (λ (v)
+       (and (vector? v)
+            (andmap pred (vector->list v)))))))
 
 (define (vector/c . args)
-  (unless (andmap flat-contract/predicate? args)
-    (error 'vector/c "expected flat contracts as arguments, got: ~a"
-           (let loop ([args args])
-             (cond
-               [(null? args) ""]
-               [(null? (cdr args)) (format "~e" (car args))]
-               [else (string-append
-                      (format "~e " (car args))
-                      (loop (cdr args)))]))))
-  (let ([largs (length args)])
+  (let* ([ctcs (coerce-flat-contracts 'vector/c args)]
+         [largs (length args)]
+         [procs (map flat-contract-predicate ctcs)])
     (build-flat-contract
-     (apply build-compound-type-name 'vector/c (map proc/ctc->ctc args))
+     (apply build-compound-type-name 'vector/c ctcs)
      (λ (v)
        (and (vector? v)
             (= (vector-length v) largs)
-            (andmap test-proc/flat-contract
-                    args
+            (andmap (λ (p? x) (p? x))
+                    procs
                     (vector->list v)))))))
 
 (define (box/c pred)
-  (unless (flat-contract/predicate? pred)
-    (error 'box/c "expected a flat contract or a procedure of arity 1, got: ~e" pred))
-  (build-flat-contract
-   (build-compound-type-name 'box/c (proc/ctc->ctc pred))
-   (λ (x)
-     (and (box? x)
-          (test-proc/flat-contract pred (unbox x))))))
+  (let* ([ctc (coerce-flat-contract 'box/c pred)]
+         [p? (flat-contract-predicate ctc)])
+    (build-flat-contract
+     (build-compound-type-name 'box/c ctc)
+     (λ (x)
+       (and (box? x)
+            (p? (unbox x)))))))
 
 ;;
 ;; cons/c opter
@@ -1680,6 +1634,13 @@ improve method arity mismatch contract violation error messages?
     [(cons/c hdp tlp)
      (opt/cons-ctc #'hdp #'tlp)]))
 
+;; only used by the opters
+(define (flat-contract/predicate? pred)
+  (or (flat-contract? pred)
+      (and (procedure? pred)
+           (procedure-arity-includes? pred 1))))
+
+
 (define-syntax (*-immutable/c stx)
   (syntax-case stx ()
     [(_ predicate? constructor (arb? selectors ...) type-name name)
@@ -1708,7 +1669,7 @@ improve method arity mismatch contract violation error messages?
                                ...))))
                      (let ([procs (contract-proc ctc-x)] ...)
                        (make-proj-contract
-                        (build-compound-type-name 'name (proc/ctc->ctc params) ...)
+                        (build-compound-type-name 'name ctc-x ...)
                         (λ (pos-blame neg-blame src-info orig-str)
                           (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
                             (λ (v)
@@ -1738,7 +1699,7 @@ improve method arity mismatch contract violation error messages?
           (let ([ctcs (map (λ (param) (coerce-contract 'name param)) params)])
             (let ([procs (map contract-proc ctcs)])
               (make-proj-contract
-               (apply build-compound-type-name 'name (map proc/ctc->ctc params))
+               (apply build-compound-type-name 'name ctcs)
                (λ (pos-blame neg-blame src-info orig-str)
                  (let ([p-apps (map (λ (proc) (proc pos-blame neg-blame src-info orig-str)) procs)]
                        [count (length params)])
@@ -1821,19 +1782,7 @@ improve method arity mismatch contract violation error messages?
     [(_ hdp tlp) (opt/cons-ctc #'hdp #'tlp)]))
 
 (define (list/c . args)
-  (unless (andmap (λ (x) (or (contract? x)
-                             (and (procedure? x)
-                                  (procedure-arity-includes? x 1))))
-                  args)
-    (error 'list/c "expected contracts or procedures of arity 1, got: ~a"
-           (let loop ([args args]) 
-             (cond
-               [(null? args) ""]
-               [(null? (cdr args)) (format "~e" (car args))]
-               [else (string-append
-                      (format "~e " (car args))
-                      (loop (cdr args)))]))))
-  (let loop ([args args])
+  (let loop ([args (coerce-contracts 'list/c args)])
     (cond
       [(null? args) (flat-contract null?)]
       [else (cons/c (car args) (loop (cdr args)))])))

@@ -14,6 +14,11 @@ expectations of one party are met by another party.  The
 @scheme[provide/contract] form is the primary mechanism for
 associating a contract with a binding.
 
+Note that all of the combinators that accept contracts as arguments
+use @scheme[coerce-contract], meaning that symbols, booleans, strings,
+characters, numbers, regular expressions, and predicates are all
+implicitly converted into contracts.
+
 @note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
                                          scheme/private/contract
                                          scheme/private/contract-guts)]
@@ -33,7 +38,7 @@ Constructs a @tech{flat contract} from @scheme[predicate]. A value
 satisfies the contract if the predicate returns a true value.}
 
 
-@defproc[(flat-named-contract [type-name string?][predicate (any/c . -> . any/c)])
+@defproc[(flat-named-contract [type-name string?][predicate (any/c . -> . any)])
          flat-contract?]{
 
 Like @scheme[flat-contract], but the first argument must be a string
@@ -154,7 +159,7 @@ Returns a flat contract that recognizes strings that have fewer than
 
 @defthing[false/c flat-contract?]{
 
-A flat contract that recognizes @scheme[#f].}
+This is just @scheme[#f]. It is here for backwards compatibility.}
 
 
 @defthing[printable/c flat-contract?]{
@@ -898,18 +903,44 @@ for a contract. The arguments should be either contracts or
 symbols. It wraps parenthesis around its arguments and
 extracts the names from any contracts it is supplied with.}
 
-@defform[(coerce-contract id expr)]{
+@defproc[(coerce-contract [id symbol?] [x any/c]) contract?]{
 
-Evaluates @scheme[expr] and, if the result is a
-contract, just returns it. If the result is a procedure of arity
-one, it converts that into a contract. If the result is neither, it
+If @scheme[x] is a contract, it returns it. If it is a procedure of
+arity one, it converts that into a contract by treating the result as
+a predicate. If it is a symbol, boolean, or character, it makes a
+contract that accepts values that are @scheme[eq?] to @scheme[x]. If
+@scheme[x] is a string, it makes a contract that accespts values that
+are @scheme[equal?] to @scheme[x]. If @scheme[x] is a regular
+expression or a byte regular expression, it makes a contract that
+accepts strings and bytes, as long as they match the regular
+expression.
+
+If @scheme[x] is none of the above, @scheme[coerce-contract]
 signals an error, using the first argument in the error
-message. The message says that a contract or a procedure of
-arity one was expected.}
+message.}
 
-@defproc[(flat-contract/predicate? [val any/c]) boolean?]{
+@defproc[(coerce-contracts [id symbol?] [xs (listof any/c)]) (listof contract?)]{
 
-A predicate that indicates when @scheme[coerce-contract] will fail.}
+Coerces all of the arguments in 'xs' into contracts (via
+@scheme[coerce-contract/f]) and signals an error if any of them are not
+contracts.  The error messages assume that the function named by
+@scheme[id] got @scheme[xs] as its entire argument list.
+}
+
+@defproc[(coerce-flat-contract [id symbol?] [x any/c]) flat-contract?]{
+  Like @scheme[coerce-contract], but requires the result
+  to be a flat contract, not an arbitrary contract.
+}
+
+@defproc[(coerce-flat-contracts [id symbol?] [x (listof any/c)]) (listof/c flat-contract?)]{
+  Like @scheme[coerce-contracts], but requires the results
+  to be flat contracts, not arbitrary contracts.
+}
+
+@defproc[(coerce-contract/f [x any/c]) (or/c contract? #f)]{
+  Like @scheme[coerce-contract], but returns @scheme[#f] if
+  the value cannot be coerced to a contract.
+}
 
 @defproc[(raise-contract-error [val any/c]
                                [src-info any/c]
@@ -987,7 +1018,7 @@ name @scheme[sexp-name] when signaling a contract violation.}
 
 @defparam[contract-violation->string 
           proc 
-          (-> any/c any/c (or/c false/c any/c) any/c string? string?)]{
+          (-> any/c any/c (or/c #f any/c) any/c string? string?)]{
 
 This is a parameter that is used when constructing a
 contract violation error. Its value is procedure that

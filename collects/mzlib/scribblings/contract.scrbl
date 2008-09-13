@@ -51,7 +51,6 @@ from @schememodname[scheme/contract]:
  false/c
  flat-contract
  flat-contract-predicate
- flat-contract/predicate?
  flat-contract?
  flat-murec-contract
  flat-named-contract
@@ -81,4 +80,5 @@ from @schememodname[scheme/contract]:
  vector-immutable/c
  vector-immutableof
  vector/c
- vectorof]
+ ]
+@scheme[vectorof]
