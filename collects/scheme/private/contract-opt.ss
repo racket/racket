@@ -175,16 +175,17 @@
 (define-values (orig-ctc-prop orig-ctc-pred? orig-ctc-get)
   (make-struct-type-property 'original-contract))
 
-(define-struct/prop opt-contract (proj orig-ctc stronger stronger-vars stamp)
-  ((proj-prop (λ (ctc) ((opt-contract-proj ctc) ctc)))
+(define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp)
+  #:property proj-prop (λ (ctc) ((opt-contract-proj ctc) ctc))
    ;; I think provide/contract and contract calls this, so we are in effect allocating
    ;; the original once 
-   (name-prop (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc))))
-   (orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc))))
-   (stronger-prop (λ (this that)
-                    (and (opt-contract? that)
-                         (eq? (opt-contract-stamp this) (opt-contract-stamp that))
-                         ((opt-contract-stronger this) this that))))))
+  #:property name-prop (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc)))
+  #:property orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc)))
+  #:property stronger-prop
+  (λ (this that)
+    (and (opt-contract? that)
+         (eq? (opt-contract-stamp this) (opt-contract-stamp that))
+         ((opt-contract-stronger this) this that))))
 
 ;; opt-stronger-vars-ref : int opt-contract -> any
 (define (opt-stronger-vars-ref i ctc)
