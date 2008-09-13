@@ -23,7 +23,6 @@ improve method arity mismatch contract violation error messages?
          (for-syntax syntax/define)
          scheme/promise
          scheme/stxparam
-         scheme/stxparam-exptime
          mzlib/etc)
 
 (require "contract-arrow.ss"

@@ -32,12 +32,6 @@
   
   (define bm (make-object bitmap% semicolon-bitmap-path))
   
-  (define (editor-keymap-mixin %)
-    (class %
-      (define/override (get-keymaps)
-        (cons (keymap:get-file) (super get-keymaps)))
-      (super-instantiate ())))
-  
   (define scheme+copy-self% #f)
   (define (get-scheme+copy-self%)
     (unless scheme+copy-self%
@@ -48,7 +42,9 @@
                 (let ([ed (new scheme+copy-self%)])
                   (copy-self-to ed)
                   ed))
-              (super-new))))
+              (super-new)
+              (inherit set-max-undo-history)
+              (set-max-undo-history 'forever))))
     scheme+copy-self%)
   
   (define -snip%

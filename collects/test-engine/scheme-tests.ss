@@ -166,12 +166,8 @@
           (send (send test-info get-info) check-failed
                 (check->message result) (check-fail-src result)
                 (and (incorrect-error? result) (incorrect-error-exn result)))
-          (list 'check-error-failed 
-                (if (expected-error? result)
-                    (expected-error-message result)
-                    (incorrect-error-message result))
-                error))
-        (list 'check-error-succeeded error error))))
+          #f)
+        #t)))
 
 
 (define (error-check pred? actual fmt)
@@ -201,31 +197,10 @@
                           (list (maker src test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
            (send (send test-info get-info) check-failed (check->message result) (check-fail-src result) exn?)
-           (render-for-stepper/fail result expect range kind)]
-          [else 
-           ;; I'd like to pass the actual, but I don't have it.
-           (render-for-stepper/pass result-val expect range kind)])))
+           #f]
+          [else
+           #t])))
 
-;; render-for-stepper/fail : test-fail? any/c any/c symbol? -> any/c
-;; arrange the fail-result as a value that will look tolerable
-;;  in the stepper's list of completed expressions
-(define (render-for-stepper/fail check-fail expected range kind)
-  (let ([displayed-result (cond [(unexpected-error? check-fail) 'error]
-                                ;; I really want actual here, but I'm using test because the thing is 
-                                ;; created backward, afaict.
-                                [(unequal? check-fail) (unequal-test check-fail)]
-                                [(outofrange? check-fail) (outofrange-test check-fail)])])
-    (case kind
-      [(check-expect) (list 'check-expect-failed displayed-result expected)]
-      [(check-within) (list 'check-within-failed displayed-result expected range)]
-      [else (error 'render-for-stepper/fail "internal error 2008052801")])))
-
-;; render-for-stepper/pass : any/c any/c any/c symbol? -> any/c
-(define (render-for-stepper/pass actual expected range kind)
-  (case kind
-    [(check-expect) (list 'check-expect-passed actual expected)]
-    [(check-within) (list 'check-within-passed actual expected range)]
-    [else (error 'render-for-stepper/pass "internal error 2008052802")]))
 
 (define (check->message fail)
   (cond

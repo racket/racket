@@ -15,12 +15,25 @@
       ((null? acc) (cons (car s) (chunk-string (cdr s) null)))
       (else (cons (list->string (reverse acc)) (cons (car s) (chunk-string (cdr s) null))))))
               
-  (define icon
-    (let* ((x (make-object bitmap% 10 10))
-           (y (make-object bitmap-dc% x)))
-      (send y set-font (make-object font% 24 'default 'normal 'normal ))
-      (send y draw-text "\"" 0 0)
-      x))
+  (define get-icon
+    (let ([icon #f])
+      (λ ()
+        (unless icon
+          (let ()
+            (define str "“”")
+            (define bdc (make-object bitmap-dc% (make-object bitmap% 1 1)))
+            (define font (send the-font-list find-or-create-font 24 'default 'normal 'normal))
+            (define-values (w h _1 _2) (send bdc get-text-extent str font))
+            (define bmp (make-object bitmap% (floor (inexact->exact w)) (floor (inexact->exact h))))
+            (send bdc set-bitmap bmp)
+            (send bdc set-smoothing 'aligned)
+            (send bdc set-font font)
+            (send bdc clear)
+            (send bdc draw-text str 0 0)
+            (send bdc set-bitmap #f)
+            (set! icon bmp)))
+        icon)))
+        
   
   ;; marshall: writable -> string
   (define (marshall s)
@@ -46,13 +59,15 @@
 
   (define text-box%
     (class* decorated-editor-snip% (readable-snip<%>)          
-      (define/override (make-editor) (new text:keymap%))
+      (define/override (make-editor) (let ([e (new text:keymap%)])
+                                       (send e set-max-undo-history 'forever)
+                                       e))
       (define/override (make-snip) (make-object text-box%))
       (inherit get-editor get-admin)
       
       
       (define/override (get-corner-bitmap)
-        icon)
+        (get-icon))
 
       (define/override (get-menu)
         (let ([menu (new popup-menu%)])

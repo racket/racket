@@ -203,7 +203,9 @@
                     (let ([t (new scheme-box-text%)])
                       (copy-self-to t)
                       t))
-                  (super-new))))
+                  (super-new)
+                  (inherit set-max-undo-history)
+                  (set-max-undo-history 'forever))))
         scheme-box-text%)
         
       (define (add-file-keymap-mixin %)
@@ -311,7 +313,9 @@
                                   (let ([t (new xml-text%)])
                                     (copy-self-to t)
                                     t))
-                                (super-new))))
+                                (super-new)
+                                (inherit set-max-undo-history)
+                                (set-max-undo-history 'forever))))
             xml-text%)))
 
       ;; matching-xml : (is-a?/c text) -> void
