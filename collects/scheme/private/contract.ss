@@ -1073,41 +1073,45 @@ improve method arity mismatch contract violation error messages?
            [else
             (make-multi-or/c flat-contracts ho-contracts)])))]))
 
-(define-struct/prop or/c (pred flat-ctcs ho-ctc)
-  ((proj-prop (λ (ctc)
-                (let ([c-proc ((proj-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))]
-                      [pred (or/c-pred ctc)])
-                  (λ (pos-blame neg-blame src-info orig-str)
-                    (let ([partial-contract (c-proc pos-blame neg-blame src-info orig-str)])
-                      (λ (val)
-                        (cond
-                          [(pred val) val]
-                          [else
-                           (partial-contract val)])))))))
+(define-struct or/c (pred flat-ctcs ho-ctc)
+  #:omit-define-syntaxes
+  #:property proj-prop
+  (λ (ctc)
+    (let ([c-proc ((proj-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))]
+          [pred (or/c-pred ctc)])
+      (λ (pos-blame neg-blame src-info orig-str)
+        (let ([partial-contract (c-proc pos-blame neg-blame src-info orig-str)])
+          (λ (val)
+            (cond
+              [(pred val) val]
+              [else
+               (partial-contract val)]))))))
+  
+  #:property name-prop
+  (λ (ctc)
+    (apply build-compound-type-name 
+           'or/c 
+           (or/c-ho-ctc ctc)
+           (or/c-flat-ctcs ctc)))
+  
+  #:property first-order-prop
+  (λ (ctc)
+    (let ([flats (map (λ (x) ((flat-get x) x)) (or/c-flat-ctcs ctc))]
+          [ho ((first-order-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))])
+      (λ (x)
+        (or (ho x)
+            (ormap (λ (f) (f x)) flats)))))
    
-   (name-prop (λ (ctc)
-                (apply build-compound-type-name 
-                       'or/c 
-                       (or/c-ho-ctc ctc)
-                       (or/c-flat-ctcs ctc))))     
-   (first-order-prop
-    (λ (ctc)
-      (let ([flats (map (λ (x) ((flat-get x) x)) (or/c-flat-ctcs ctc))]
-            [ho ((first-order-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))])
-        (λ (x)
-          (or (ho x)
-              (ormap (λ (f) (f x)) flats))))))
-   
-   (stronger-prop
-    (λ (this that)
-      (and (or/c? that)
-           (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
-           (let ([this-ctcs (or/c-flat-ctcs this)]
-                 [that-ctcs (or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs))))))))
+  #:property stronger-prop
+  (λ (this that)
+    (and (or/c? that)
+         (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
+         (let ([this-ctcs (or/c-flat-ctcs this)]
+               [that-ctcs (or/c-flat-ctcs that)])
+           (and (= (length this-ctcs) (length that-ctcs))
+                (andmap contract-stronger?
+                        this-ctcs
+                        that-ctcs))))))
 
 (define (multi-or/c-proj ctc)
   (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
@@ -1151,54 +1155,59 @@ improve method arity mismatch contract violation error messages?
                         candidate-proc
                         candidate-contract)]))]))))))
 
-(define-struct/prop multi-or/c (flat-ctcs ho-ctcs)
-  ((proj-prop multi-or/c-proj)
-   (name-prop (λ (ctc)
-                (apply build-compound-type-name 
-                       'or/c 
-                       (append
-                        (multi-or/c-flat-ctcs ctc)
-                        (reverse (multi-or/c-ho-ctcs ctc))))))
-   (first-order-prop
-    (λ (ctc)
-      (let ([flats (map (λ (x) ((flat-get x) x)) (multi-or/c-flat-ctcs ctc))]
-            [hos (map (λ (x) ((first-order-get x) x)) (multi-or/c-ho-ctcs ctc))])
-        (λ (x)
-          (or (ormap (λ (f) (f x)) hos)
-              (ormap (λ (f) (f x)) flats))))))
-   
-   (stronger-prop
-    (λ (this that)
-      (and (multi-or/c? that)
-           (let ([this-ctcs (multi-or/c-ho-ctcs this)]
-                 [that-ctcs (multi-or/c-ho-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs)))
-           (let ([this-ctcs (multi-or/c-flat-ctcs this)]
-                 [that-ctcs (multi-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs))))))))
+(define-struct multi-or/c (flat-ctcs ho-ctcs)
+  #:property proj-prop multi-or/c-proj
+  #:property name-prop
+  (λ (ctc)
+    (apply build-compound-type-name 
+           'or/c 
+           (append
+            (multi-or/c-flat-ctcs ctc)
+            (reverse (multi-or/c-ho-ctcs ctc)))))
+  
+  #:property first-order-prop
+  (λ (ctc)
+    (let ([flats (map (λ (x) ((flat-get x) x)) (multi-or/c-flat-ctcs ctc))]
+          [hos (map (λ (x) ((first-order-get x) x)) (multi-or/c-ho-ctcs ctc))])
+      (λ (x)
+        (or (ormap (λ (f) (f x)) hos)
+            (ormap (λ (f) (f x)) flats)))))
+  
+  #:property stronger-prop
+  (λ (this that)
+    (and (multi-or/c? that)
+         (let ([this-ctcs (multi-or/c-ho-ctcs this)]
+               [that-ctcs (multi-or/c-ho-ctcs that)])
+           (and (= (length this-ctcs) (length that-ctcs))
+                (andmap contract-stronger?
+                        this-ctcs
+                        that-ctcs)))
+         (let ([this-ctcs (multi-or/c-flat-ctcs this)]
+               [that-ctcs (multi-or/c-flat-ctcs that)])
+           (and (= (length this-ctcs) (length that-ctcs))
+                (andmap contract-stronger?
+                        this-ctcs
+                        that-ctcs))))))
 
-(define-struct/prop flat-or/c (pred flat-ctcs)
-  ((proj-prop flat-proj)
-   (name-prop (λ (ctc)
-                (apply build-compound-type-name 
-                       'or/c 
-                       (flat-or/c-flat-ctcs ctc))))
-   (stronger-prop
-    (λ (this that)
-      (and (flat-or/c? that)
-           (let ([this-ctcs (flat-or/c-flat-ctcs this)]
-                 [that-ctcs (flat-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs))))))
-   (flat-prop (λ (ctc) (flat-or/c-pred ctc)))))
+(define-struct flat-or/c (pred flat-ctcs)
+  #:property proj-prop flat-proj
+  #:property name-prop
+  (λ (ctc)
+    (apply build-compound-type-name 
+           'or/c 
+           (flat-or/c-flat-ctcs ctc)))
+  #:property stronger-prop
+  (λ (this that)
+    (and (flat-or/c? that)
+         (let ([this-ctcs (flat-or/c-flat-ctcs this)]
+               [that-ctcs (flat-or/c-flat-ctcs that)])
+           (and (= (length this-ctcs) (length that-ctcs))
+                (andmap contract-stronger?
+                        this-ctcs
+                        that-ctcs)))))
+
+  #:property flat-prop
+  (λ (ctc) (flat-or/c-pred ctc)))
 
 ;;
 ;; or/c opter
@@ -1374,29 +1383,32 @@ improve method arity mismatch contract violation error messages?
     [else (error 'one-of-pc "undef ~s" x)]))
 
 
-(define-struct/prop one-of/c (elems)
-  ((proj-prop flat-proj)
-   (name-prop (λ (ctc) 
-                (let ([elems (one-of/c-elems ctc)])
-                  `(,(cond
-                       [(andmap symbol? elems)
-                        'symbols]
-                       [else
-                        'one-of/c])
-                    ,@(map one-of-pc elems)))))
-   (stronger-prop
-    (λ (this that)
-      (and (one-of/c? that)
-           (let ([this-elems (one-of/c-elems this)]
-                 [that-elems (one-of/c-elems that)])
-             (and 
-              (andmap (λ (this-elem) (memv this-elem that-elems))
-                      this-elems)
-              #t)))))
-   (flat-prop 
-    (λ (ctc) 
-      (let ([elems (one-of/c-elems ctc)])
-        (λ (x) (memv x elems)))))))
+(define-struct one-of/c (elems)
+  #:omit-define-syntaxes
+  #:property proj-prop flat-proj
+  #:property name-prop
+  (λ (ctc) 
+    (let ([elems (one-of/c-elems ctc)])
+      `(,(cond
+           [(andmap symbol? elems)
+            'symbols]
+           [else
+            'one-of/c])
+        ,@(map one-of-pc elems))))
+  
+  #:property stronger-prop
+  (λ (this that)
+    (and (one-of/c? that)
+         (let ([this-elems (one-of/c-elems this)]
+               [that-elems (one-of/c-elems that)])
+           (and 
+            (andmap (λ (this-elem) (memv this-elem that-elems))
+                    this-elems)
+            #t))))
+  #:property flat-prop 
+  (λ (ctc) 
+    (let ([elems (one-of/c-elems ctc)])
+      (λ (x) (memv x elems)))))
 
 (define printable/c
   (flat-named-contract
@@ -1420,27 +1432,32 @@ improve method arity mismatch contract violation error messages?
            (and (box? x)
                 (printable? (unbox x))))))))
 
-(define-struct/prop between/c (low high)
-  ((proj-prop flat-proj)
-   (name-prop (λ (ctc) 
-                (let ([n (between/c-low ctc)]
-                      [m (between/c-high ctc)])
-                  (cond
-                    [(= n -inf.0) `(<=/c ,m)]
-                    [(= m +inf.0) `(>=/c ,n)]
-                    [(= n m) `(=/c ,n)]
-                    [else `(between/c ,n ,m)]))))
-   (stronger-prop
-    (λ (this that)
-      (and (between/c? that)
-           (<= (between/c-low that) (between/c-low this))
-           (<= (between/c-high this) (between/c-high that)))))
-   (flat-prop (λ (ctc) 
-                (let ([n (between/c-low ctc)]
-                      [m (between/c-high ctc)])
-                  (λ (x) 
-                    (and (number? x)
-                         (<= n x m))))))))
+(define-struct between/c (low high)
+  #:omit-define-syntaxes
+  #:property proj-prop flat-proj
+  #:property name-prop
+  (λ (ctc) 
+    (let ([n (between/c-low ctc)]
+          [m (between/c-high ctc)])
+      (cond
+        [(= n -inf.0) `(<=/c ,m)]
+        [(= m +inf.0) `(>=/c ,n)]
+        [(= n m) `(=/c ,n)]
+        [else `(between/c ,n ,m)])))
+
+  #:property stronger-prop
+  (λ (this that)
+    (and (between/c? that)
+         (<= (between/c-low that) (between/c-low this))
+         (<= (between/c-high this) (between/c-high that))))
+  
+  #:property flat-prop
+  (λ (ctc) 
+    (let ([n (between/c-low ctc)]
+          [m (between/c-high ctc)])
+      (λ (x) 
+        (and (number? x)
+             (<= n x m))))))
 
 (define-syntax (check-unary-between/c stx)
   (syntax-case stx ()
@@ -2056,37 +2073,40 @@ improve method arity mismatch contract violation error messages?
 (define (parameter/c x)
   (make-parameter/c (coerce-contract 'parameter/c x)))
 
-(define-struct/prop parameter/c (ctc)
-  ((proj-prop (λ (ctc)
-                (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
-                  (λ (pos-blame neg-blame src-info orig-str)
-                    (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str)]
-                          [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str)])
-                      (λ (val)
-                        (cond
-                          [(parameter? val)
-                           (make-derived-parameter 
-                            val 
-                            partial-neg-contract
-                            partial-pos-contract)]
-                          [else
-                           (raise-contract-error val src-info pos-blame orig-str 
-                                                 "expected a parameter")])))))))
-   (name-prop (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc))))
-   (first-order-prop
-    (λ (ctc)
-      (let ([tst ((first-order-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
-        (λ (x)
-          (and (parameter? x)
-               (tst (x)))))))
+(define-struct parameter/c (ctc)
+  #:omit-define-syntaxes
+  #:property proj-prop
+  (λ (ctc)
+    (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
+      (λ (pos-blame neg-blame src-info orig-str)
+        (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str)]
+              [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str)])
+          (λ (val)
+            (cond
+              [(parameter? val)
+               (make-derived-parameter 
+                val 
+                partial-neg-contract
+                partial-pos-contract)]
+              [else
+               (raise-contract-error val src-info pos-blame orig-str 
+                                     "expected a parameter")]))))))
+  
+  #:property name-prop (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc)))
+  #:property first-order-prop
+  (λ (ctc)
+    (let ([tst ((first-order-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
+      (λ (x)
+        (and (parameter? x)
+             (tst (x))))))
    
-   (stronger-prop
-    (λ (this that)
-      ;; must be invariant (because the library doesn't currently split out pos/neg contracts
-      ;; which could be tested individually ....)
-      (and (parameter/c? that)
-           (contract-stronger? (parameter/c-ctc this) 
-                               (parameter/c-ctc that))
-           (contract-stronger? (parameter/c-ctc that) 
-                               (parameter/c-ctc this)))))))
+  #:property stronger-prop
+  (λ (this that)
+    ;; must be invariant (because the library doesn't currently split out pos/neg contracts
+    ;; which could be tested individually ....)
+    (and (parameter/c? that)
+         (contract-stronger? (parameter/c-ctc this) 
+                             (parameter/c-ctc that))
+         (contract-stronger? (parameter/c-ctc that) 
+                             (parameter/c-ctc this)))))
 

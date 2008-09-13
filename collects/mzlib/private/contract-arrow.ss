@@ -62,62 +62,66 @@
 ;; func : the wrapper function maker. It accepts a procedure for
 ;;        checking the first-order properties and the contracts
 ;;        and it produces a wrapper-making function.
-(define-struct/prop -> (rng-any? doms dom-rest rngs kwds quoted-kwds func)
-  ((proj-prop (λ (ctc) 
-                (let* ([doms/c (map (λ (x) ((proj-get x) x)) 
-                                    (if (->-dom-rest ctc)
-                                        (append (->-doms ctc) (list (->-dom-rest ctc)))
-                                        (->-doms ctc)))]
-                       [rngs/c (map (λ (x) ((proj-get x) x)) (->-rngs ctc))]
-                       [kwds/c (map (λ (x) ((proj-get x) x)) (->-kwds ctc))]
-                       [mandatory-keywords (->-quoted-kwds ctc)]
-                       [func (->-func ctc)]
-                       [dom-length (length (->-doms ctc))]
-                       [has-rest? (and (->-dom-rest ctc) #t)])
-                  (lambda (pos-blame neg-blame src-info orig-str)
-                    (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
-                                             doms/c)]
-                          [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str))
-                                               rngs/c)]
-                          [partial-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
-                                             kwds/c)])
-                      (apply func
-                             (λ (val)
-                               (if has-rest?
-                                   (check-procedure/more val dom-length '() mandatory-keywords src-info pos-blame orig-str)
-                                   (check-procedure val dom-length 0 '() mandatory-keywords src-info pos-blame orig-str)))
-                             (append partial-doms partial-ranges partial-kwds)))))))
-   (name-prop (λ (ctc) (single-arrow-name-maker 
-                        (->-doms ctc)
-                        (->-dom-rest ctc)
-                        (->-kwds ctc)
-                        (->-quoted-kwds ctc)
-                        (->-rng-any? ctc)
-                        (->-rngs ctc))))
-   (first-order-prop
-    (λ (ctc)
-      (let ([l (length (->-doms ctc))])
-        (if (->-dom-rest ctc)
-            (λ (x)
-              (and (procedure? x) 
-                   (procedure-accepts-and-more? x l)))
-            (λ (x)
-              (and (procedure? x) 
-                   (procedure-arity-includes? x l)
-                   (no-mandatory-keywords? x)))))))
-   (stronger-prop
-    (λ (this that)
-      (and (->? that)
-           (= (length (->-doms that))
-              (length (->-doms this)))
-           (andmap contract-stronger?
-                   (->-doms that)
-                   (->-doms this))
-           (= (length (->-rngs that))
-              (length (->-rngs this)))
-           (andmap contract-stronger?
-                   (->-rngs this) 
-                   (->-rngs that)))))))
+(define-struct -> (rng-any? doms dom-rest rngs kwds quoted-kwds func)
+  #:omit-define-syntaxes
+  #:property proj-prop
+  (λ (ctc) 
+    (let* ([doms/c (map (λ (x) ((proj-get x) x)) 
+                        (if (->-dom-rest ctc)
+                            (append (->-doms ctc) (list (->-dom-rest ctc)))
+                            (->-doms ctc)))]
+           [rngs/c (map (λ (x) ((proj-get x) x)) (->-rngs ctc))]
+           [kwds/c (map (λ (x) ((proj-get x) x)) (->-kwds ctc))]
+           [mandatory-keywords (->-quoted-kwds ctc)]
+           [func (->-func ctc)]
+           [dom-length (length (->-doms ctc))]
+           [has-rest? (and (->-dom-rest ctc) #t)])
+      (lambda (pos-blame neg-blame src-info orig-str)
+        (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
+                                 doms/c)]
+              [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str))
+                                   rngs/c)]
+              [partial-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
+                                 kwds/c)])
+          (apply func
+                 (λ (val)
+                   (if has-rest?
+                       (check-procedure/more val dom-length '() mandatory-keywords src-info pos-blame orig-str)
+                       (check-procedure val dom-length 0 '() mandatory-keywords src-info pos-blame orig-str)))
+                 (append partial-doms partial-ranges partial-kwds))))))
+   
+  #:property name-prop
+  (λ (ctc) (single-arrow-name-maker 
+            (->-doms ctc)
+            (->-dom-rest ctc)
+            (->-kwds ctc)
+            (->-quoted-kwds ctc)
+            (->-rng-any? ctc)
+            (->-rngs ctc)))
+  #:property first-order-prop
+  (λ (ctc)
+    (let ([l (length (->-doms ctc))])
+      (if (->-dom-rest ctc)
+          (λ (x)
+            (and (procedure? x) 
+                 (procedure-accepts-and-more? x l)))
+          (λ (x)
+            (and (procedure? x) 
+                 (procedure-arity-includes? x l)
+                 (no-mandatory-keywords? x))))))
+  #:property stronger-prop
+  (λ (this that)
+    (and (->? that)
+         (= (length (->-doms that))
+            (length (->-doms this)))
+         (andmap contract-stronger?
+                 (->-doms that)
+                 (->-doms this))
+         (= (length (->-rngs that))
+            (length (->-rngs this)))
+         (andmap contract-stronger?
+                 (->-rngs this) 
+                 (->-rngs that)))))
 
 (define (single-arrow-name-maker doms/c doms-rest kwds/c kwds rng-any? rngs)
   (cond
