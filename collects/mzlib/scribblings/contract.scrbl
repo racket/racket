@@ -24,7 +24,7 @@
 
 @mzlib[#:mode title contract]
 
-The @schememodname[mzlib/list] library re-exports many bindings
+The @schememodname[mzlib/contract] library re-exports many bindings
 from @schememodname[scheme/contract]:
 
 @twocolumns[

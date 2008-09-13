@@ -15,6 +15,13 @@
 (require "private/contract-object.ss")
 (provide (all-from-out "private/contract-object.ss"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; old-style define/contract
+;;
+
+(require "private/contract-define.ss")
+(provide (all-from-out "private/contract-define.ss"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -22,7 +29,9 @@
 ;; except the arrow contracts
 ;;
 
-(require scheme/private/contract
+(require (except-in scheme/private/contract
+                    define/contract
+                    with-contract)
          scheme/private/contract-guts
          scheme/private/contract-ds
          scheme/private/contract-opt
@@ -34,14 +43,10 @@
              lazy-depth-to-look)
  
  (except-out (all-from-out scheme/private/contract)
-             old-define/contract
-             define/contract
-             with-contract
              check-between/c
              string-len/c
              check-unary-between/c)
- (rename-out [string-len/c string/len]
-             [old-define/contract define/contract]))
+ (rename-out [string-len/c string/len]))
 
 ;; from contract-guts.ss
 
