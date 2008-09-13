@@ -97,7 +97,7 @@ improve method arity mismatch contract violation error messages?
           (syntax/loc stx
             ((-contract contract-id
                         id
-                        (syntax->datum (quote-syntax f))
+                        (format "definition ~a" (syntax->datum (quote-syntax f)))
                         neg-blame-str
                         (quote-syntax f))
              arg
@@ -107,7 +107,7 @@ improve method arity mismatch contract violation error messages?
           (syntax/loc stx
             (-contract contract-id
                        id
-                       (syntax->datum (quote-syntax ident))
+                       (format "definition ~a" (syntax->datum (quote-syntax ident)))
                        neg-blame-str
                        (quote-syntax ident)))])))))
 
