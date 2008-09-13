@@ -997,10 +997,11 @@ profile todo:
       (super-new)))
   
   (define test-covered-style-delta (make-object style-delta%))
-  (send test-covered-style-delta set-delta-foreground "forest green")
-  
   (define test-not-covered-style-delta (make-object style-delta%))
-  (send test-not-covered-style-delta set-delta-foreground "firebrick")
+  
+  ;; test colors chosen to try to be color-blindness friendly
+  (send test-covered-style-delta set-delta-foreground "forest green")
+  (send test-not-covered-style-delta set-delta-foreground "maroon")
   
   (define erase-test-coverage-style-delta (make-object style-delta% 'change-normal-color))
   

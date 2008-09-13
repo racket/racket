@@ -27,7 +27,7 @@
   (let/ec return
     (parameterize ([current-output-port (open-output-bytes)])
       (printf "~a\n" magic)
-      (for ([file files])
+      (for ([file (in-list files)])
         (let ([size (and (file-exists? file) (file-size file))])
           (unless size (return #f))
           (let ([buf (with-input-from-file file
@@ -71,7 +71,7 @@
                                     (string? (car x)) (bytes? (cadr x))))
                              files))
           (error* "Error in retrieved content: bad format"))
-        (for ([file files])
+        (for ([file (in-list files)])
           (let ([file (car file)] [buf (cadr file)])
             (when (write? file)
               (with-output-to-file file

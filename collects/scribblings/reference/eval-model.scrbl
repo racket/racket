@@ -651,9 +651,9 @@ escape-continuation aborts can cross continuation barriers.
 @section[#:tag "thread-model"]{Threads}
 
 Scheme supports multiple, pre-emptive @deftech{threads} of
-evaluation. In terms of the evaluation model, this means that each
-step in evaluation actually consists of multiple concurrent
-expressions, rather than a single expression. The expressions all
+evaluation. Threads are created explicitly by functions such as @scheme[thread]. 
+In terms of the evaluation model, each step in evaluation actually consists of multiple concurrent
+expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
 communicate through shared state. Most evaluation steps involve a
 single step in a single expression, but certain synchronization

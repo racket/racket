@@ -30,6 +30,7 @@
    ports. */
 
 #include "schpriv.h"
+#include "schmach.h"
 #ifdef UNISTD_INCLUDE
 # include <unistd.h>
 #endif
@@ -6635,15 +6636,55 @@ scheme_make_null_output_port(int can_write_special)
 /*                         redirect output ports                          */
 /*========================================================================*/
 
+static Scheme_Object *redirect_write_bytes_k(void);
+
 static long
 redirect_write_bytes(Scheme_Output_Port *op,
 		     const char *str, long d, long len,
 		     int rarely_block, int enable_break)
 {
+  /* arbitrary nesting means we can overflow the stack */
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+    Scheme_Object *n;
+
+    p->ku.k.p1 = (void *)op;
+    p->ku.k.p2 = (void *)str;
+    p->ku.k.i1 = d;
+    p->ku.k.i2 = len;
+    p->ku.k.i3 = rarely_block;
+    p->ku.k.i4 = enable_break;
+
+    n = scheme_handle_stack_overflow(redirect_write_bytes_k);
+    return SCHEME_INT_VAL(n);
+  }
+#endif
+
   return scheme_put_byte_string("redirect-output",
 				(Scheme_Object *)op->port_data,
 				str, d, len,
 				rarely_block);
+}
+
+static Scheme_Object *redirect_write_bytes_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Output_Port *op = (Scheme_Output_Port *)p->ku.k.p1;
+  const char *str = (const char *)p->ku.k.p2;
+  long d = p->ku.k.i1;
+  long len = p->ku.k.i2;
+  int rarely_block = p->ku.k.i3;
+  int enable_break = p->ku.k.i4;
+  long n;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  n = redirect_write_bytes(op, str, d, len, rarely_block, enable_break);
+
+  return scheme_make_integer(n);
 }
 
 static void

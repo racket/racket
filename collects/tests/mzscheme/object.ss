@@ -1375,6 +1375,44 @@
 (let ([c% (class object% (define foo (lambda () 10)) (define/public (get) foo) (super-new))])
   (test 'foo object-name (send (new c%) get)))
 
+;; ----------------------------------------
+;; Implementing printable<%>
+
+(let ()
+  (define (check w-cycle? d-cycle?)
+    (define c% (class* object% (printable<%>) 
+                 (define/public (custom-write p)
+                   (if w-cycle?
+                       (write this p)
+                       (display "hi" p)))
+                 (define/public (custom-display p) 
+                   (if d-cycle?
+                       (display this p)
+                       (display "HI" p)))
+                 (super-new)))
+
+    (let ([p (open-output-bytes)])
+      (write (new c%) p)
+      (test (if w-cycle? #"#0=#0#" #"hi")
+            get-output-bytes p))
+    (let ([p (open-output-bytes)])
+      (display (new c%) p)
+      (test (if d-cycle? #"#0=#0#" #"HI")
+            get-output-bytes p))
+
+    (let ([p (open-output-bytes)])
+      (write (new (class c%
+                    (define/override (custom-write p)
+                      (write 777 p))
+                    (super-new)))
+             p)
+      (test #"777" get-output-bytes p)))
+
+  (check #f #f)
+  (check #t #f)
+  (check #f #t)
+  (check #t #t))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

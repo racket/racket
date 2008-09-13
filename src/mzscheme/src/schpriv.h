@@ -804,7 +804,6 @@ int scheme_stx_proper_list_length(Scheme_Object *list);
 Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx);
 
 Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj);
-Scheme_Hash_Table *scheme_setup_datum_graph(Scheme_Object *o, void *for_print);
 
 Scheme_Object *scheme_stx_strip_module_context(Scheme_Object *stx);
 

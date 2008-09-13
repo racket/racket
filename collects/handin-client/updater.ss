@@ -17,7 +17,7 @@
 (define (update!)
   (let* ([in   (file->inport package-filename)]
          [outf (make-temporary-file "tmp~a.plt")]
-         [out  (open-output-file outf 'binary 'truncate)])
+         [out  (open-output-file outf #:mode 'binary #:exists 'truncate)])
     (dynamic-wind
       void
       (lambda () (copy-port in out))

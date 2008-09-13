@@ -24,7 +24,7 @@
   (error (apply format fmt args)))
 
 (define (write+flush port . xs)
-  (for ([x xs]) (write x port) (newline port))
+  (for ([x (in-list xs)]) (write x port) (newline port))
   (flush-output port))
 
 (define-struct alist (name [l #:mutable]))
@@ -87,7 +87,7 @@
       ;; SUCCESS, or things that are newer in the main submission
       ;; directory are kept (but subdirs in SUCCESS will are copied as
       ;; is))
-      (for ([f (directory-list dir)])
+      (for ([f (in-list (directory-list dir))])
         (define dir/f (build-path dir f))
         (cond [(not (or (file-exists? f) (directory-exists? f)))
                ;; f is in dir but not in the working directory
@@ -116,10 +116,10 @@
 
 (define (cleanup-all-submissions)
   (log-line "Cleaning up all submission directories")
-  (for ([pset (get-conf 'all-dirs)]
+  (for ([pset (in-list (get-conf 'all-dirs))]
         #:when (directory-exists? pset)) ; just in case
     (parameterize ([current-directory pset])
-      (for ([sub (directory-list)]
+      (for ([sub (in-list (directory-list))]
             #:when (directory-exists? sub)) ; filter non-dirs
         (cleanup-submission sub)))))
 
@@ -370,7 +370,7 @@
     (error* "the username \"checker.ss\" is reserved"))
   (when (get-user-data username)
     (error* "username already exists: `~a'" username))
-  (for ([str extra-fields]
+  (for ([str (in-list extra-fields)]
         [info (get-conf 'extra-fields)])
     (check-field str (cadr info) (car info) (caddr info)))
   (wait-for-lock "+newuser+")
@@ -397,8 +397,8 @@
       (error* "changing information not allowed: ~a" username))
     (when (equal? new-data old-data)
       (error* "no fields changed: ~a" username))
-    (for ([str (cdr new-data)]
-          [info (get-conf 'extra-fields)])
+    (for ([str (in-list (cdr new-data))]
+          [info (in-list (get-conf 'extra-fields))])
       (check-field str (cadr info) (car info) (caddr info)))
     (log-line "change info for ~a ~s -> ~s" username old-data new-data)
     (unless (equal? (cdr new-data) (cdr old-data)) ; not for password change

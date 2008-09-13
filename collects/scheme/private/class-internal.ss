@@ -30,7 +30,7 @@
              class?
              mixin
              interface interface?
-             object% object? externalizable<%>
+             object% object? externalizable<%> printable<%>
              object=?
              new make-object instantiate
              send send/apply send* class-field-accessor class-field-mutator with-method
@@ -2041,6 +2041,13 @@
 						   ;; Map object property to class:
 						   (append
 						    (list (cons prop:object c))
+                                                    (if (interface-extension? i printable<%>)
+                                                        (list (cons prop:custom-write
+                                                                    (lambda (obj port write?)
+                                                                      (if write?
+                                                                          (send obj custom-write port)
+                                                                          (send obj custom-display port)))))
+                                                        null)
 						    (if deserialize-id
 							(list
 							 (cons prop:serializable
@@ -3694,6 +3701,9 @@
   (define externalizable<%>
     (_interface () externalize internalize))
 
+  (define printable<%>
+    (_interface () custom-write custom-display))
+
   ;; Providing traced versions:
   (provide class-traced
            class*-traced
@@ -3735,7 +3745,7 @@
            class?
            mixin
 	   (rename-out [_interface interface]) interface?
-	   object% object? object=? externalizable<%>
+	   object% object? object=? externalizable<%> printable<%>
            new make-object instantiate
            get-field field-bound? field-names
 	   send send/apply send* class-field-accessor class-field-mutator with-method
