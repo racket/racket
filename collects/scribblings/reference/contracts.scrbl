@@ -16,8 +16,8 @@ associating a contract with a binding.
 
 Note that all of the combinators that accept contracts as arguments
 use @scheme[coerce-contract], meaning that symbols, booleans, strings,
-characters, numbers, regular expressions, and predicates are all
-implicitly converted into contracts.
+bytess, characters, numbers, regular expressions, and predicates
+are all implicitly converted into contracts.
 
 @note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
                                          scheme/private/contract
@@ -909,11 +909,11 @@ If @scheme[x] is a contract, it returns it. If it is a procedure of
 arity one, it converts that into a contract by treating the result as
 a predicate. If it is a symbol, boolean, or character, it makes a
 contract that accepts values that are @scheme[eq?] to @scheme[x]. If
-@scheme[x] is a string, it makes a contract that accespts values that
-are @scheme[equal?] to @scheme[x]. If @scheme[x] is a regular
-expression or a byte regular expression, it makes a contract that
-accepts strings and bytes, as long as they match the regular
-expression.
+@scheme[x] is a string or a bytes, it makes a contract that
+accespts values that are @scheme[equal?] to @scheme[x]. If @scheme[x]
+is a regular expression or a byte regular expression, it makes a
+contract that accepts strings and bytes, as long as they match the
+regular expression.
 
 If @scheme[x] is none of the above, @scheme[coerce-contract]
 signals an error, using the first argument in the error
