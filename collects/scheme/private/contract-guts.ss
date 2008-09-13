@@ -146,7 +146,7 @@
     [(and (procedure? x) (procedure-arity-includes? x 1)) 
      (make-predicate-contract (or (object-name x) '???) x)]
     [(or (symbol? x) (boolean? x) (char? x)) (make-eq-contract x)]
-    [(or (byte-string? x) (string? x) (make-equal-contract x)]
+    [(or (bytes? x) (string? x)) (make-equal-contract x)]
     [(number? x) (make-=-contract x)]
     [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
     [else #f]))
