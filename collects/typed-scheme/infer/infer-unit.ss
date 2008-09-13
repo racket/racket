@@ -466,7 +466,7 @@
 
 ;; like infer, but dotted-var is the bound on the ...
 ;; and T-dotted is the repeated type
-(define (infer/dots X dotted-var S T T-dotted R must-vars [expected #f])
+(define (infer/dots X dotted-var S T T-dotted R must-vars #:expected [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])
     (let* ([short-S (take S (length T))]
            [rest-S (drop S (length T))]

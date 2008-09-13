@@ -276,6 +276,23 @@ scheme
 ]
 
 
+@ctc-section[#:tag "coercion"]{Contracts coerced from other values}
+
+The contract library treates a number of Scheme values as if they are
+contracts directly. We've already seen one main use of that: predicates. Every
+function that accepts one argument can be treated as a predicate
+and thus used as a contract.
+
+But many other values also play double duty as contracts.
+For example, if your function accepts a number or @scheme[#f],
+@scheme[(or/c number? #f)] sufficies. Similarly, the @scheme[result/c] contract
+could have been written with a @scheme[0] in place of @scheme[zero?].
+
+Even better, if you use a regular expression as a contract, the contract
+accepts strings that match the regular expression. For example, 
+the @scheme[is-decimal-string?] predicate could have been written
+@scheme[#rx"[0-9]*\\.[0-9][0-9][0-9]"].
+
 @ctc-section{Contracts on Higher-order Functions}
 
 Function contracts are not just restricted to having simple

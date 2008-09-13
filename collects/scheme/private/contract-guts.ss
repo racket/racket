@@ -12,13 +12,18 @@
          exn:fail:contract2-srclocs
                 
          contract-violation->string
-         coerce-contract
          
-         flat-contract/predicate?
+         coerce-contract
+         coerce-contracts
+         coerce-flat-contract
+         coerce-flat-contracts
+         coerce-contract/f
+         
          flat-contract?
          flat-contract
          flat-contract-predicate
          flat-named-contract
+         build-flat-contract
          
          build-compound-type-name
          
@@ -31,7 +36,6 @@
          contract-name
          contract-proc
          make-proj-contract
-         build-flat-contract
          
          contract-stronger?
          
@@ -66,15 +70,11 @@
   (make-struct-type-property 'contract-first-order))
 
 (define (contract-first-order-passes? c v)
-  (cond
-    [(first-order-pred? c) (((first-order-get c) c) v)]
-    [(and (procedure? c)
-          (procedure-arity-includes? c 1))
-     ;; flat contract as a predicate
-     (c v)]
-    [(flat-pred? c) (((flat-get c) c) v)]
-    [else (error 'contract-first-order-passes? 
-                 "expected a contract as first argument, got ~e, other arg ~e" c v)]))
+  (let ([ctc (coerce-contract 'contract-first-order-passes? c)])
+    (cond
+      [(first-order-pred? ctc) (((first-order-get ctc) ctc) v)]
+      [(flat-pred? c) (((flat-get c) c) v)]
+      [else #t])))
 
 (define (proj-get ctc)
   (cond
@@ -90,25 +90,66 @@
         [b-ctc (coerce-contract 'contract-stronger? b)])
     ((stronger-get a-ctc) a-ctc b-ctc)))
 
+;; coerce-flat-contract : symbol any/c -> contract
+(define (coerce-flat-contract name x)
+  (let ([ctc (coerce-contract/f x)])
+    (unless (flat-pred? ctc)
+      (error name 
+             "expected a flat contract or a value that can be coerced into one, got ~e"
+             x))
+    ctc))
 
-;; coerce-contract : id (union contract? procedure-arity-1) -> contract
-;; contract-proc = sym sym stx -> alpha -> alpha
-;; returns the procedure for the contract after extracting it from the
-;; struct. Coerces the argument to a flat contract if it is procedure, but first.
+;; coerce-flat-contacts : symbol (listof any/c) -> (listof flat-contract)
+;; like coerce-contracts, but insists on flat-contracts
+(define (coerce-flat-contracts name xs) 
+  (let loop ([xs xs]
+             [i 1])
+    (cond
+      [(null? xs) '()]
+      [else
+       (let ([fst (coerce-contract/f (car xs))])
+         (unless (flat-pred? fst)
+           (error name 
+                  "expected all of the arguments to be flat contracts, but argument ~a was not, got ~e" 
+                  i
+                  (car xs)))
+         (cons fst (loop (cdr xs) (+ i 1))))])))
+
+;; coerce-contract : symbol any/c -> contract
 (define (coerce-contract name x)
+  (or (coerce-contract/f x)
+      (error name 
+             "expected contract or a value that can be coerced into one, got ~e"
+             x)))
+
+;; coerce-contracts : symbols (listof any) -> (listof contract)
+;; turns all of the arguments in 'xs' into contracts
+;; the error messages assume that the function named by 'name'
+;; got 'xs' as it argument directly
+(define (coerce-contracts name xs) 
+  (let loop ([xs xs]
+             [i 1])
+    (cond
+      [(null? xs) '()]
+      [(coerce-contract/f (car xs)) => (λ (x) (cons x (loop (cdr xs) (+ i 1))))]
+      [else
+       (error name 
+              "expected all of the arguments to be contracts, but argument ~a was not, got ~e" 
+              i
+              (car xs))])))
+
+;; coerce-contract/f : any -> (or/c #f contract?)
+;; returns #f if the argument could not be coerced to a contract
+(define (coerce-contract/f x)
   (cond
     [(contract? x) x]
-    [(and (procedure? x) (procedure-arity-includes? x 1))
-     (flat-contract x)]
-    ;[(symbol? x) (symbol-contract x)]
-    ;[(char? x) (char-contract x)]
-    ;[(boolean? x) (boolean-contract x)]
-    ;[(regexp? x) (regexp-contract x)]
-    ;[(string? x) (string-contract x)]
-    [else
-     (error name 
-            "expected contract or a value that can be coerced into one, got ~e"
-            x)]))
+    [(and (procedure? x) (procedure-arity-includes? x 1)) 
+     (make-predicate-contract (or (object-name x) '???) x)]
+    [(or (symbol? x) (boolean? x) (char? x)) (make-eq-contract x)]
+    [(or (bytes? x) (string? x)) (make-equal-contract x)]
+    [(number? x) (make-=-contract x)]
+    [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x)]
+    [else #f]))
 
 (define-values (make-exn:fail:contract2 
                 exn:fail:contract2?
@@ -275,8 +316,7 @@
 (define (double-any-curred-proj2 pos-blame neg-blame src-info orig-str) values)
 
 
-(define-values (make-flat-contract
-                make-proj-contract)
+(define-values (make-proj-contract)
   (let ()
     (define-struct proj-contract (the-name proj first-order-proc)
       #:property proj-prop
@@ -295,56 +335,30 @@
               (proj-contract-proj this)
               (proj-contract-proj that)))))
     
-    (define-struct flat-contract (the-name predicate)
-      #:property proj-prop flat-proj
-      #:property stronger-prop
-      (λ (this that) 
-        (and (flat-contract? that)
-             (procedure-closure-contents-eq? (flat-contract-predicate this)
-                                             (flat-contract-predicate that))))
-      #:property name-prop (λ (ctc) (flat-contract-the-name ctc))
-      #:property flat-prop (λ (ctc) (flat-contract-predicate ctc)))
-    
-    (values make-flat-contract
-            make-proj-contract)))
+    (values make-proj-contract)))
 
 (define (flat-contract-predicate x) 
-  (unless (flat-contract? x)
-    (error 'flat-contract-predicate "expected a flat contract, got ~e" x))
-  ((flat-get x) x))
-(define (flat-contract? x) (flat-pred? x))
+  (let ([ctc (coerce-flat-contract 'flat-contract-predicate x)])
+    ((flat-get ctc) ctc)))
+
+(define (flat-contract? x) 
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (flat-pred? c))))
+
 (define (contract-name ctc)
-  (if (and (procedure? ctc)
-           (procedure-arity-includes? ctc 1))
-      (or (object-name ctc)
-          'unknown)
-      ((name-get ctc) ctc)))
+  (let ([ctc (coerce-contract 'contract-name ctc)])
+    ((name-get ctc) ctc)))
+
 (define (contract? x) (proj-pred? x))
 (define (contract-proc ctc) ((proj-get ctc) ctc))
 
-(define (check-flat-contract predicate)
-  (unless (and (procedure? predicate)
-               (procedure-arity-includes? predicate 1))
-    (error 'flat-contract
-           "expected procedure of arity 1 as argument, given ~e"
-           predicate)))
-(define (flat-contract predicate)
-  (check-flat-contract predicate)
-  (let ([pname (object-name predicate)])
-    (if pname
-        (flat-named-contract pname predicate)
-        (flat-named-contract '??? predicate))))
-(define (check-flat-named-contract predicate)
-  (unless (and (procedure? predicate)
-               (procedure-arity-includes? predicate 1))
-    (error 'flat-named-contract
-           "expected procedure of arity 1 as second argument, given ~e"
-           predicate)))
+(define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
+(define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
+(define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (flat-named-contract name predicate)
-  (check-flat-named-contract predicate)
-  (build-flat-contract name predicate))
-
-(define (build-flat-contract name predicate) (make-flat-contract name predicate))
+  (coerce-flat-contract 'flat-named-contract predicate)
+  (make-predicate-contract name predicate))
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
@@ -391,37 +405,23 @@
                         this-ctcs
                         that-ctcs))))))
 
-(define (and/c . fs)
-  (for-each
-   (lambda (x) 
-     (unless (or (contract? x)
-                 (and (procedure? x)
-                      (procedure-arity-includes? x 1)))
-       (error 'and/c "expected procedures of arity 1 or <contract>s, given: ~e" x)))
-   fs)
-  (cond
-    [(null? fs) any/c]
-    [(andmap flat-contract/predicate? fs)
-     (let* ([to-predicate
-             (lambda (x)
-               (if (flat-contract? x)
-                   (flat-contract-predicate x)
-                   x))]
-            [contracts (map (lambda (x) (if (contract? x) x (flat-contract x))) fs)]
-            [pred
-             (let loop ([pred (to-predicate (car fs))]
-                        [preds (cdr fs)])
-               (cond
-                 [(null? preds) pred]
-                 [else
-                  (let* ([fst (to-predicate (car preds))])
-                    (loop (let ([and/c-contract? (lambda (x) (and (pred x) (fst x)))])
-                            and/c-contract?)
-                          (cdr preds)))]))])
-       (flat-named-contract (apply build-compound-type-name 'and/c contracts) pred))]
-    [else
-     (let ([contracts (map (lambda (x) (if (contract? x) x (flat-contract x))) fs)])
-       (make-and/c contracts))]))
+(define (and/c . raw-fs)
+  (let ([contracts (coerce-contracts 'and/c raw-fs)])
+    (cond
+      [(null? contracts) any/c]
+      [(andmap flat-contract? contracts)
+       (let* ([pred
+               (let loop ([pred (flat-contract-predicate (car contracts))]
+                          [preds (cdr contracts)])
+                 (cond
+                   [(null? preds) pred]
+                   [else
+                    (let* ([fst (flat-contract-predicate (car preds))])
+                      (loop (let ([and/c-contract? (lambda (x) (and (pred x) (fst x)))])
+                              and/c-contract?)
+                            (cdr preds)))]))])
+         (flat-named-contract (apply build-compound-type-name 'and/c contracts) pred))]
+      [else (make-and/c contracts)])))
 
 (define-struct any/c ()
   #:omit-define-syntaxes
@@ -455,7 +455,63 @@
 
 (define none/c (make-none/c 'none/c))
 
-(define (flat-contract/predicate? pred)
-  (or (flat-contract? pred)
-      (and (procedure? pred)
-           (procedure-arity-includes? pred 1))))
+
+;                                                                                                                 
+;                                                                                                                 
+;                                                                                                                 
+;                                                                                                                 
+;            ;                      ;;;                                       ;                         ;         
+;          ;;;                                                              ;;;                       ;;;         
+;   ;;;;; ;;;;;   ;;;   ;;; ;; ;;;  ;;;   ;;;         ;;;     ;;;   ;;; ;; ;;;;; ;;; ;;;;;;;    ;;;  ;;;;;  ;;;;  
+;  ;;;;;;;;;;;;  ;;;;;  ;;;;;;;;;;; ;;;  ;;;;;       ;;;;;   ;;;;;  ;;;;;;;;;;;; ;;;;;;;;;;;;  ;;;;; ;;;;; ;;; ;; 
+;  ;;  ;;; ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;     ;;;  ;; ;;; ;;; ;;; ;;; ;;;  ;;;  ;;  ;;; ;;;  ;; ;;;  ;;;    
+;    ;;;;; ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;         ;;;     ;;; ;;; ;;; ;;; ;;;  ;;;    ;;;;; ;;;     ;;;   ;;;;  
+;  ;;; ;;; ;;;  ;;; ;;; ;;; ;;; ;;; ;;; ;;;  ;;     ;;;  ;; ;;; ;;; ;;; ;;; ;;;  ;;;  ;;; ;;; ;;;  ;; ;;;     ;;; 
+;  ;;; ;;; ;;;;  ;;;;;  ;;; ;;; ;;; ;;;  ;;;;;       ;;;;;   ;;;;;  ;;; ;;; ;;;; ;;;  ;;; ;;;  ;;;;;  ;;;; ;; ;;; 
+;   ;;;;;;  ;;;   ;;;   ;;; ;;; ;;; ;;;   ;;;         ;;;     ;;;   ;;; ;;;  ;;; ;;;   ;;;;;;   ;;;    ;;;  ;;;;  
+;                                                                                                                 
+;                                                                                                                 
+;                                                                                                                 
+;                                                                                                                 
+
+(define-struct eq-contract (val)
+  #:property proj-prop flat-proj
+  #:property flat-prop (λ (ctc) (λ (x) (eq? (eq-contract-val ctc) x)))
+  #:property name-prop (λ (ctc) 
+                         (if (symbol? (eq-contract-val ctc))
+                             `',(eq-contract-val ctc)
+                             (eq-contract-val ctc)))
+  #:property stronger-prop (λ (this that) (and (eq-contract? that) (eq? (eq-contract-val this) (eq-contract-val that)))))
+
+(define-struct equal-contract (val)
+  #:property proj-prop flat-proj
+  #:property flat-prop (λ (ctc) (λ (x) (equal? (equal-contract-val ctc) x)))
+  #:property name-prop (λ (ctc) (equal-contract-val ctc))
+  #:property stronger-prop (λ (this that) (and (equal-contract? that) (equal? (equal-contract-val this) (equal-contract-val that)))))
+
+(define-struct =-contract (val)
+  #:property proj-prop flat-proj
+  #:property flat-prop (λ (ctc) (λ (x) (and (number? x) (= (=-contract-val ctc) x))))
+  #:property name-prop (λ (ctc) (=-contract-val ctc))
+  #:property stronger-prop (λ (this that) (and (=-contract? that) (= (=-contract-val this) (=-contract-val that)))))
+
+(define-struct regexp/c (reg)
+  #:property proj-prop flat-proj
+  #:property flat-prop (λ (ctc) (λ (x) (and (or (string? x) (bytes? x))
+                                            (regexp-match (regexp/c-reg ctc) x)
+                                            #t)))
+  #:property name-prop (λ (ctc) (regexp/c-reg ctc))
+  #:property stronger-prop (λ (this that) (and (regexp/c? that) (eq? (regexp/c-reg this) (regexp/c-reg that)))))
+
+
+(define-struct predicate-contract (name pred)
+  #:property proj-prop flat-proj
+  #:property stronger-prop
+  (λ (this that) 
+    (and (predicate-contract? that)
+         (procedure-closure-contents-eq? (predicate-contract-pred this)
+                                         (predicate-contract-pred that))))
+  #:property name-prop (λ (ctc) (predicate-contract-name ctc))
+  #:property flat-prop (λ (ctc) (predicate-contract-pred ctc)))
+
+(define (build-flat-contract name pred) (make-predicate-contract name pred))

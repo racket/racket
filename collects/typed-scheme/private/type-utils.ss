@@ -19,7 +19,8 @@
          ret
          instantiate-poly
          instantiate-poly-dotted
-         tc-result: 
+         tc-result:
+         tc-result?
          tc-result-equal? 
          effects-equal?
          tc-result-t

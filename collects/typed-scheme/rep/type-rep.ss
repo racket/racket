@@ -97,7 +97,7 @@
 (dt Keyword (kw ty required?)
     [#:frees (free-vars* ty)
              (free-idxs* ty)]
-    [#:fold-rhs (*Keyword kw (type-rec-id ty))])
+    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
 
 ;; dom : Listof[Type]
 ;; rng : Type

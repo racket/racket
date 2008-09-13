@@ -436,13 +436,16 @@ The following base types are parameteric in their type arguments.
 @defform*[#:id -> #:literals (* ...)
 	       [(dom ... -> rng)
 	        (dom ... rest * -> rng)
-		(dom ... rest ... bound -> rng)]]{is the type of functions from the (possibly-empty)
+		(dom ... rest ... bound -> rng)
+                (dom -> rng : pred)]]{is the type of functions from the (possibly-empty)
   sequence @scheme[dom ...] to the @scheme[rng] type.  The second form
   specifies a uniform rest argument of type @scheme[rest], and the
   third form specifies a non-uniform rest argument of type
   @scheme[rest] with bound @scheme[bound].  In the third form, the
   second occurrence of @scheme[...] is literal, and @scheme[bound]
-  must be an identifier denoting a type variable.}
+  must be an identifier denoting a type variable. In the fourth form, 
+  there must be only one @scheme[dom] and @scheme[pred] is the type 
+  checked by the predicate.}
 @defform[(U t ...)]{is the union of the types @scheme[t ...]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
   the @scheme[fun-ty]s.  The @scheme[fun-ty]s must all be function
