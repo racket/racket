@@ -191,7 +191,7 @@
 ;; This code will hack textualization of text boxes
 
 (define (insert-to-editor editor . xs)
-  (for ([x xs])
+  (for ([x (in-list xs)])
     (send editor insert (if (string? x) x (make-object editor-snip% x)))))
 
 ;; support for "text-box%"
@@ -282,7 +282,7 @@
                                 '(ok-cancel caution)))))
         (error* "Aborting...")))
     ;; This will create copies of the original files
-    ;; (for ([file files])
+    ;; (for ([file (in-list files)])
     ;;   (with-output-to-file (car file)
     ;;     (lambda () (display (cadr file)) (flush-output))))
     (let* ([pfx-len  (string-length markup-prefix)]
@@ -298,7 +298,7 @@
         (display ===)
         (newline))
       (parameterize ([current-output-port (open-output-bytes)])
-        (for ([file files])
+        (for ([file (in-list files)])
           (sep (car file))
           (parameterize ([current-input-port (open-input-bytes (cadr file))]
                          [current-processed-file (car file)])
@@ -389,7 +389,7 @@
             [user-post      (id 'user-post)]
             [(body ...) (syntax-case #'(body ...) ()
                           [() #'(void)] [_ #'(body ...)])])
-         (for ([x keyvals])
+         (for ([x (in-list keyvals)])
            (unless (memq (car x) got)
              (raise-syntax-error #f "unknown keyword" stx (cadr x))))
          #'(begin
@@ -470,7 +470,7 @@
                      (set-run-status "creating text file")
                      (with-output-to-file text-file #:exists 'truncate
                        (lambda ()
-                         (for ([user users])
+                         (for ([user (in-list users)])
                            (prefix-line (user-substs user student-line)))
                          (for-each prefix-line/substs extra-lines)
                          (for-each prefix-line/substs

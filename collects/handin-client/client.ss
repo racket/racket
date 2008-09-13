@@ -19,7 +19,7 @@
   (error (apply format fmt args)))
 
 (define (write+flush port . xs)
-  (for ([x xs]) (write x port) (newline port))
+  (for ([x (in-list xs)]) (write x port) (newline port))
   (flush-output port))
 
 (define (close-handin-ports h)

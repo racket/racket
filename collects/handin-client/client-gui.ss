@@ -256,9 +256,9 @@
     (define interface-widgets
       (list ok username passwd assignment retrieve?))
     (define (disable-interface)
-      (for ([x interface-widgets]) (send x enable #f)))
+      (for ([x (in-list interface-widgets)]) (send x enable #f)))
     (define (enable-interface)
-      (for ([x interface-widgets]) (send x enable #t) ))
+      (for ([x (in-list interface-widgets)]) (send x enable #t) ))
     (define (done-interface)
       (send cancel set-label "Close")
       (send cancel focus))
@@ -309,7 +309,7 @@
                    (handin-disconnect h)
                    (error 'handin "there are no active assignments"))
                  (set! connection h)
-                 (for ([assign l]) (send assignment append assign))
+                 (for ([assign (in-list l)]) (send assignment append assign))
                  (send assignment enable #t)
                  (set! ok-can-enable? #t)
                  (activate-ok)
@@ -575,8 +575,8 @@
              "Password Error"
              (format "The \"~a\" and \"~a\" passwords are not the same." l1 l2))
             (k (void))))
-        (for ([t (if new? add-user-fields change-user-fields)]
-              [f (or user-fields '())])
+        (for ([t (in-list (if new? add-user-fields change-user-fields))]
+              [f (in-list (or user-fields '()))])
           (check-length t 100 f k))
         (send tabs enable #f)
         (parameterize ([current-custodian comm-cust])
@@ -716,7 +716,7 @@
          [stream (make-object editor-stream-out% base)])
     (write-editor-version stream base)
     (write-editor-global-header stream)
-    (for ([ed editors]) (send ed write-to-file stream))
+    (for ([ed (in-list editors)]) (send ed write-to-file stream))
     (write-editor-global-footer stream)
     (send base get-bytes)))
 
