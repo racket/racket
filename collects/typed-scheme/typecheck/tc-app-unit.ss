@@ -11,6 +11,7 @@
          (only-in srfi/1 alist-delete)
          (only-in scheme/private/class-internal make-object do-make-object)
          mzlib/trace mzlib/pretty syntax/kerncase scheme/match
+         (prefix-in c: scheme/contract)
          (for-syntax scheme/base)
          (for-template 
           "internal-forms.ss" scheme/base 
@@ -474,7 +475,8 @@
          (handle-clauses (doms dtys dbounds rngs) f-stx
                          (lambda (dom dty dbound rng) (and (<= (length dom) (length argtypes))
                                                            (eq? dotted-var dbound)))
-                         (lambda (dom dty dbound rng) (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) expected))
+                         (lambda (dom dty dbound rng) 
+                           (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) #:expected expected))
                          t argtypes expected)]
         ;; Union of function types works if we can apply all of them
         [(tc-result: (Union: (list (and fs (Function: _)) ...)) e1 e2)
@@ -486,12 +488,14 @@
 
 ;(trace tc/funapp)
 
-(define (tc/app form) (tc/app/internal form #f))
 
+
+(define (tc/app form) (tc/app/internal form #f))  
+  
 (define (tc/app/check form expected)
-  (define t (tc/app/internal form expected))
-  (check-below t expected)
-  (ret expected))
+    (define t (tc/app/internal form expected))
+    (check-below t expected)
+    (ret expected))
 
 ;; expr id -> type or #f
 ;; if there is a binding in stx of the form:
