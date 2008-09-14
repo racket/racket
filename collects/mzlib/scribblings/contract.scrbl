@@ -5,8 +5,9 @@
 
 @(define-syntax-rule (twocolumns id ...)
    (*twocolumns (list (scheme id) ...)))
-@(define (*twocolumns l)
-   (let* ([len (length l)]
+@(define (*twocolumns uneven-l)
+   (let* ([l (if (zero? (modulo (length uneven-l) 2)) uneven-l (append uneven-l (list #f)))]
+          [len (length l)]
           [half (quotient len 2)]
           [a (for/list ([i (in-range half)]
                         [e l])
@@ -17,12 +18,20 @@
      (make-table #f
                  (map (lambda (a b)
                         (list (to-flow spacer)
-			      (to-flow a)
-			      (to-flow spacer)
-			      (to-flow  b)))
+                              (to-flow a)
+                              (to-flow spacer)
+                              (to-flow (or b ""))))
                       a b))))
 
 @mzlib[#:mode title contract]
+
+This library is designed as a backwards compatible library
+for old uses of contracts. It should not be used for new
+libraries; use @schememodname[scheme/contract] instead.
+
+The main differences: the function contract syntax is more
+regular and function contracts now support keywords, and
+@tt{union} is now @scheme[or/c].
 
 The @schememodname[mzlib/contract] library re-exports many bindings
 from @schememodname[scheme/contract]:
