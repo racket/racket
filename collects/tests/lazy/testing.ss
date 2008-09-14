@@ -81,7 +81,10 @@
                [(list* y '<= x r)      (cons (try t2 x y) r)]
                [(list* x '=error> y r) (cons (try te x y) r)]
                [(list* y '<error= x r) (cons (try te x y) r)]
-               [(list* x r)            (cons (try t1 x) r)]
+               [(list* x r) ; if x = (test ...), then it's implicitly in a `do'
+                (syntax-case x (test)
+                  [(test x0 x1 ...) (cons (tb x) r)]
+                  [_ (cons (try t1 x) r)])]
                [(list) '()])])
       (if (pair? t)
         (loop (cdr t) (cons (car t) r))
