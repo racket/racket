@@ -1,5 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
+          scheme/sandbox
+          scribble/eval
           scribble/struct
           (for-label mzlib/contract))
 
@@ -108,4 +110,34 @@ provided by @scheme[provide/contract], because
 @scheme[define/contract] cannot detect the name of the definition
 where the reference to the defined variable occurs. Instead, it uses
 the source location of the reference to the variable as the name of
-that definition.}
+that definition.
+
+@interaction[#:eval (parameterize ([sandbox-output 'string]
+                                   [sandbox-error-output 'string]
+                                   [sandbox-eval-limits #f])
+                      (make-evaluator 'mzscheme))
+                    (require mzlib/contract)
+                    (define/contract f
+                      (-> number? number?)
+                      (lambda (x) (+ x 1)))
+                    (define/contract g
+                      (-> number? number?)
+                      (lambda (x) (f #t)))
+                    (f 4)
+                    (f #t)
+                    (g 4)]
+
+This is as opposed to the @scheme[define/contract] form from
+@schememodname[scheme/contract], which gives more precise error
+messages:
+
+@interaction[(require scheme/contract)
+             (define/contract f
+               (-> number? number?)
+               (lambda (x) (+ x 1)))
+             (define/contract g
+               (-> number? number?)
+               (lambda (x) (f #t)))
+             (f 4)
+             (f #t)
+             (g 4)]}
