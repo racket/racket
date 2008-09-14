@@ -986,7 +986,6 @@ WARNING: printf is rebound in the body of the unit to always
     (define/augment (on-insert start len)
       (begin-edit-sequence)
       (clear-all-regions) 
-      (update-yellow)
       (inner (void) on-insert start len))
     (define/augment (after-insert start len)
       (unless updating-search?
@@ -1001,7 +1000,6 @@ WARNING: printf is rebound in the body of the unit to always
     (define/augment (after-delete start len)
       (unless updating-search?
         (content-changed))
-      (update-yellow)
       (inner (void) after-delete start len)
       (end-edit-sequence))
     
@@ -1033,17 +1031,16 @@ WARNING: printf is rebound in the body of the unit to always
     (define/override (on-focus on?)
       (let ([f (get-top-level-window)])
         (when (is-a? f frame:searchable<%>)
-          (when on?
-            (send f set-text-to-search this)
-            (clear-yellow)
-            (set! clear-yellow void))
-          (set! do-yellow? 
-                (and (not on?)
-                     (eq? (send f get-text-to-search) this)))
-          (update-yellow)))
+          (set! has-focus? on?)
+          (cond
+            [on?
+             ;; this triggers a call to update-yellow
+             (send f set-text-to-search this)]
+            [else
+             (update-yellow)])))
       (super on-focus on?))
     
-    (define do-yellow? #f)
+    (define has-focus? #f)
     (define clear-yellow void)
     (define/augment (after-set-position)
       (update-yellow)
@@ -1077,17 +1074,29 @@ WARNING: printf is rebound in the body of the unit to always
             (send tlw search-hits-changed)))))
     
     (define/private (update-yellow)
-      (when do-yellow?
-        (let ([start (get-start-position)]
-              [end (get-end-position)])
-          (unless (= start end)
-            (begin-edit-sequence)
-            (clear-yellow)
-            (set! clear-yellow void)
-            (when searching-str
-              (when (do-search searching-str start end)
-                (set! clear-yellow (highlight-range start end "khaki" #f 'low 'ellipse))))
-            (end-edit-sequence)))))
+      (cond
+        [has-focus?
+         (unless (eq? clear-yellow void)
+           (clear-yellow)
+           (set! clear-yellow void))]
+        [searching-str
+         (let ([start (get-start-position)]
+               [end (get-end-position)])
+           (cond
+             [(= start end)
+              (clear-yellow)
+              (set! clear-yellow void)]
+             [else
+              (begin-edit-sequence)
+              (clear-yellow)
+              (set! clear-yellow void)
+              (when (and searching-str (= (string-length searching-str) (- end start)))
+                (when (do-search searching-str start end)
+                  (set! clear-yellow (highlight-range start end "khaki" #f 'low 'ellipse))))
+              (end-edit-sequence)]))]
+        [else
+         (clear-yellow)
+         (set! clear-yellow void)]))
 
     (define/public (get-search-bubbles)
       (sort (hash-map search-bubble-table
@@ -1161,6 +1170,8 @@ WARNING: printf is rebound in the body of the unit to always
                                   'hollow-ellipse)))))]
         [else
          (invalidate-bitmap-cache)])
+      
+      (update-yellow) 
       (end-edit-sequence)
       
       ;; stopping the timer ensures that when there is both an edit to the buffer *and*
