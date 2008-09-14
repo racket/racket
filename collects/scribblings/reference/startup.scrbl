@@ -14,7 +14,7 @@
 @(define eventspace
    @tech[#:doc '(lib "scribblings/gui/gui.scrbl")]{eventspace})
 
-@title[#:tag "running-sa"]{Starting MzScheme or MrEd}
+@title[#:tag "running-sa"]{Running MzScheme or MrEd}
 
 The core PLT Scheme run-time system is available in two main variants:
 
@@ -90,11 +90,20 @@ timers to stop, @|etc| in the main @|eventspace| by evaluating
 @scheme[(scheme 'yield)]. This waiting step can be suppressed with the
 @Flag{V}/@DFlag{no-yield} command-line flag.
 
-The exit status for the MzScheme or MrEd process indicates an error if
-an error occurs during a command-line @scheme[eval], @scheme[load], or
-@scheme[require] when no read-eval-print loop is started. Otherwise,
-the exit status is @scheme[0] or determined by a call to
-@scheme[exit].
+@; ----------------------------------------------------------------------
+
+@section[#:tag "exit-status"]{Exit Status}
+
+The default exit status for a MzScheme or MrEd process is non-zero if
+an error occurs during a command-line @scheme[eval] (via @Flag{e},
+etc.), @scheme[load] (via @Flag{f}, @Flag{r}, etc.), or
+@scheme[require] (via @Flag{-l}, @Flag{t}, etc.), but only when no
+read-eval-print loop is started. Otherwise, the default exit status is
+@scheme[0].
+
+In all cases, a call to @scheme[exit] (when the default @tech{exit
+handler} is in place) can end the process with a specific status
+value.
 
 @; ----------------------------------------------------------------------
 
