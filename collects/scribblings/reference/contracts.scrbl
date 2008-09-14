@@ -664,6 +664,29 @@ contracts paired with exported @scheme[id]s.  Contracts broken
 within the @scheme[with-contract] @scheme[body] will use the
 @scheme[blame-id] for their negative position.}
 
+@interaction[(require scheme/contract)
+             (with-contract odd-even
+               ([odd? (-> number? boolean?)]
+                [even? (-> number? boolean?)])
+               (define (odd? n)
+                 (if (zero? n) #f (even? (sub1 n))))
+               (define (even? n)
+                 (if (zero? n) #t (odd? (sub1 n)))))
+             (even? 4)
+             (odd? "foo")
+             (with-contract bad-internal-call
+               ([f (-> number? number?)]
+                [g (-> number? number?)])
+               (define (f x)
+                 (+ x 1))
+               (define (g x)
+                 (if (zero? x) #t (f #t))))
+             (f 4)
+             (f 'a)
+             (g "foo")
+             (g 0)
+             (g 3)]
+
 @defform*[[(define/contract id contract-expr init-value-expr)
            (define/contract (head args) contract-expr body ...+)]]{
 
@@ -676,7 +699,27 @@ units of blame. The definition itself is responsible for positive
 @scheme[id] outside of the definition must meet the negative positions
 of the contract.  It is equivalent to wrapping a single @scheme[define]
 with a @scheme[with-contract] form that pairs the @scheme[contract-expr]
-with the bound identifier.}
+with the bound identifier.
+
+@interaction[(require scheme/contract)
+             (define/contract a number? #t)
+             a
+             (define/contract (f x)
+               (-> number? number?)
+               (+ x 1))
+             (f 4)
+             (f #t)
+             (define/contract (g #:foo [x 3] . y)
+               (->* () (#:foo number?) #:rest (listof number?) number?)
+               (+ x (apply + y)))
+             (g)
+             (g #:foo #t)
+             (g 1 2 3 'a)
+             (define/contract i
+               (-> number? number?)
+               (lambda (x)
+                 (if (number? x) (i #t) 0)))
+             (i 3)]}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)

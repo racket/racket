@@ -123,21 +123,11 @@ that definition.
                     (define/contract g
                       (-> number? number?)
                       (lambda (x) (f #t)))
+                    (define/contract i
+                      (-> number? number?)
+                      (lambda (x)
+                        (if (number? x) (i #t) 0)))
                     (f 4)
                     (f #t)
-                    (g 4)]
-
-This is as opposed to the @scheme[define/contract] form from
-@schememodname[scheme/contract], which gives more precise error
-messages:
-
-@interaction[(require scheme/contract)
-             (define/contract f
-               (-> number? number?)
-               (lambda (x) (+ x 1)))
-             (define/contract g
-               (-> number? number?)
-               (lambda (x) (f #t)))
-             (f 4)
-             (f #t)
-             (g 4)]}
+                    (g 4)
+                    (i 3)]}
