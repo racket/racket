@@ -350,4 +350,3 @@
 	  (vi vertical-inset))
 	(unless (or (eq? horizontal-inset 5))
 	  (hi horizontal-inset))))))
-
