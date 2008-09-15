@@ -117,7 +117,10 @@
 		      [(edit) (l edit #t)]
 		      [(edit redraw?)
 		       (let ([old-edit (get-editor)])
-			 (super set-editor edit redraw?)
+                         ;; An exception here means we end up in a bad state:
+			 (as-exit (lambda () 
+                                    ;; set-editor can invoke callbacks:
+                                    (super set-editor edit redraw?)))
 			 
 			 (let ([mred (wx->mred this)])
 			   (when mred
