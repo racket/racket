@@ -26,6 +26,8 @@
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #include "wxscheme.h"
 #include "wxs_fram.h"
@@ -258,7 +260,7 @@ void os_wxFrame::OnDropFile(epathname x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_pathname((char *)x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -414,7 +416,7 @@ void os_wxFrame::OnSetFocus()
     READY_TO_RETURN; ASSELF wxFrame::OnSetFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -448,7 +450,7 @@ void os_wxFrame::OnKillFocus()
     READY_TO_RETURN; ASSELF wxFrame::OnKillFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -660,7 +662,7 @@ void os_wxFrame::OnActivate(Bool x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = (x0 ? scheme_true : scheme_false);
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));

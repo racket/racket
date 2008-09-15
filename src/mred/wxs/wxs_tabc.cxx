@@ -28,6 +28,8 @@
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #ifdef wx_xt
 /* This calls won't be instantiated, but it must compile. */
@@ -339,7 +341,7 @@ void os_wxTabChoice::OnDropFile(epathname x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_pathname((char *)x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -495,7 +497,7 @@ void os_wxTabChoice::OnSetFocus()
     READY_TO_RETURN; ASSELF wxTabChoice::OnSetFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -529,7 +531,7 @@ void os_wxTabChoice::OnKillFocus()
     READY_TO_RETURN; ASSELF wxTabChoice::OnKillFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -1188,7 +1190,7 @@ void os_wxGroupBox::OnDropFile(epathname x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_pathname((char *)x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -1344,7 +1346,7 @@ void os_wxGroupBox::OnSetFocus()
     READY_TO_RETURN; ASSELF wxGroupBox::OnSetFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -1378,7 +1380,7 @@ void os_wxGroupBox::OnKillFocus()
     READY_TO_RETURN; ASSELF wxGroupBox::OnKillFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));

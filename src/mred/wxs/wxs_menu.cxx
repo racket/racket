@@ -32,6 +32,8 @@ START_XFORM_SKIP;
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #ifdef wx_mac
 # define MAC_UNUSED(x) /**/

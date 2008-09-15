@@ -66,6 +66,8 @@ void wxGL::ThisContextCurrent(void) { }
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #include "wxscheme.h"
 #include "wxs_dc.h"

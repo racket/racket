@@ -96,6 +96,8 @@ wxMouseEvent_ext::wxMouseEvent_ext(int et, int ld, int mdd, int rd, int xv, int 
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #include "wxscheme.h"
 #include "wxs_evnt.h"

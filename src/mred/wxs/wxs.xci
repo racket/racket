@@ -20,7 +20,9 @@
 
 @MACRO CHECKOKFORDC[p.who] = if (x<p>) { if (!x<p>->Ok()) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bad bitmap: ", p[POFFSET+<p>])); if (BM_SELECTED(x<p>)) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bitmap is already installed into a bitmap-dc%: ", p[POFFSET+<p>])); if (BM_IN_USE(x<p>)) WITH_VAR_STACK(scheme_arg_mismatch(<who>, "bitmap is currently installed as a control label or pen/brush stipple: ", p[POFFSET+<p>])); }
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 @MACRO JMPDECL = mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-@MACRO SETJMP = ESCAPE_BLOCK(/*empty*/)
+@MACRO SETJMP = ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
 @MACRO SETJMPV[rv] = ESCAPE_BLOCK(<rv>)
 @MACRO RESETJMP = { thread = scheme_get_current_thread(); thread->error_buf = savebuf; }
