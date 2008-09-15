@@ -27,6 +27,8 @@
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #include "wxscheme.h"
 #include "wxs_madm.h"
@@ -309,7 +311,7 @@ void os_wxMediaCanvas::OnChar(class wxKeyEvent* x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxKeyEvent(x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -345,7 +347,7 @@ void os_wxMediaCanvas::OnEvent(class wxMouseEvent* x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxMouseEvent(x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -379,7 +381,7 @@ void os_wxMediaCanvas::OnPaint()
     READY_TO_RETURN; ASSELF wxMediaCanvas::OnPaint();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -415,7 +417,7 @@ void os_wxMediaCanvas::OnDropFile(epathname x0)
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
   p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_pathname((char *)x0));
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+1, p));
@@ -571,7 +573,7 @@ void os_wxMediaCanvas::OnSetFocus()
     READY_TO_RETURN; ASSELF wxMediaCanvas::OnSetFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
@@ -605,7 +607,7 @@ void os_wxMediaCanvas::OnKillFocus()
     READY_TO_RETURN; ASSELF wxMediaCanvas::OnKillFocus();
   } else {
   mz_jmp_buf *savebuf, newbuf; Scheme_Thread *thread;
-  ESCAPE_BLOCK(/*empty*/)
+  ESCAPE_BLOCK(ESCAPE_NO_RET_VAL)
   p[0] = (Scheme_Object *) ASSELF __gc_external;
 
   v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));

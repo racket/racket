@@ -322,6 +322,8 @@ void (*GC_register_traversers)(short tag, Size_Proc size, Mark_Proc mark, Fixup_
 void *(*GC_resolve)(void *p);
 void (*GC_mark)(const void *p);
 void (*GC_fixup)(void *p);
+void *(*GC_fixup_self)(void *p);
+void *(*GC_resolve)(void *p);
 #endif
 void **(*scheme_malloc_immobile_box)(void *p);
 void (*scheme_free_immobile_box)(void **b);

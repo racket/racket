@@ -351,6 +351,11 @@ improve method arity mismatch contract violation error messages?
                    [name
                     (identifier? (syntax name))
                     (syntax saved-id)]
+                   [(set! id arg) 
+                    (raise-syntax-error 'provide/contract
+                                        "cannot set! a provide/contract variable" 
+                                        stx 
+                                        (syntax id))]
                    [(name . more)
                     (with-syntax ([app (datum->syntax stx '#%app)])
                       (syntax/loc stx (app saved-id . more)))]))))

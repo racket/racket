@@ -26,6 +26,8 @@
 
 
 
+#define ESCAPE_NO_RET_VAL /*empty*/
+
 
 #include "wxscheme.h"
 #include "wxs_styl.h"

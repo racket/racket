@@ -3344,7 +3344,9 @@ wxGL *wxMemoryDC::GetGL()
 
 #include <gl/gl.h>
 #include <gl/glu.h>
-#include <gl/glaux.h>
+#if _MSC_VER < 1500
+# include <gl/glaux.h>
+#endif
 #include "wx_wglext.h"
 
 #include "../../../wxcommon/wxGLConfig.cxx"

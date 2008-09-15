@@ -1173,7 +1173,7 @@
      (and (pretty-print-abbreviate-read-macros)
           (let ((head (car l)) (tail (cdr l)))
             (case head
-              ((quote quasiquote unquote unquote-splicing syntax)
+              ((quote quasiquote unquote unquote-splicing syntax unsyntax unsyntax-splicing)
                (length1? tail))
               (else #f)))))
    

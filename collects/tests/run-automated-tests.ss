@@ -27,12 +27,16 @@
 ;;   Each should be a list with a mode symbol (`load' or `require'),
 ;;   the path to the test file (relative to this script) and module
 ;;   specifications for things to require into the initial namespace
-;;   for the test before the test is loaded.
+;;   for the test before the test is loaded.  ('no-handler is a
+;;   special flag that means that errors raised by the test suite are
+;;   ignored, and should only be used by the mzscheme tests.)
 (define tests
-  '([load "mzscheme/quiet.ss" (lib "scheme/init")]
+  '([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
     [require "typed-scheme/main.ss"]
     [require "match/plt-match-tests.ss"]
-    [require "stepper/automatic-tests.ss" (lib "scheme/base")]))
+    ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
+    [require "lazy/main.ss"]
+    ))
 
 
 (require scheme/runtime-path)
@@ -42,11 +46,11 @@
 (define exit-code 0)
 
 (for ([t tests])
+  (define no-handler? (and (eq? 'no-handler (car t)) (set! t (cdr t))))
   (define name (cadr t))
   (define stderr (current-error-port))
   (define (echo fmt . args)
     (fprintf stderr "*** ~a: ~a\n" name (apply format fmt args)))
-  (define orig-exn-handler (uncaught-exception-handler))
   (newline stderr)
   (echo "running...")
   (let/ec break
@@ -60,14 +64,16 @@
               (lambda () (sleep 900) (echo "Timeout!") (break-thread th))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
-                    [uncaught-exception-handler
-                     (lambda (exn)
-                       (when (eq? orig-exn-handler (uncaught-exception-handler))
-                         (abort 1 "error: ~a" (exn-message exn))))]
                     [current-namespace (make-base-empty-namespace)])
       (for-each namespace-require (cddr t))
-      ((case (car t) [(load) load] [(require) namespace-require])
-       (build-path here name))
+      (let ([thunk (lambda ()
+                     ((case (car t) [(load) load] [(require) namespace-require])
+                      (build-path here name)))])
+        (if no-handler?
+          (thunk)
+          (with-handlers ([void (lambda (exn)
+                                  (abort 1 "error: ~a" (exn-message exn)))])
+            (thunk))))
       (echo "all tests passed."))))
 
 (exit exit-code)
