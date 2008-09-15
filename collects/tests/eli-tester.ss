@@ -95,8 +95,8 @@
                                     (reverse exns))))))))))))
 
 (provide test test*)
-(define-syntax-rule (test  x ...) (run-tests (test-thunk x ...) #f))
-(define-syntax-rule (test* x ...) (run-tests (test-thunk x ...) #t))
+(define-syntax-rule (test  x0 x ...) (run-tests (test-thunk x0 x ...) #f))
+(define-syntax-rule (test* x0 x ...) (run-tests (test-thunk x0 x ...) #t))
 
 #; ;; test the `test' macro
 
