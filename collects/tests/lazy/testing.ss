@@ -6,45 +6,32 @@
 (define-syntax (safe stx)
   (syntax-case stx ()
     [(_ expr)
+     ;; catch syntax errors while expanding, turn them into runtime errors
      (with-handlers ([exn? (lambda (e) #`(list 'error #,(exn-message e)))])
-       (let-values ([(_ x) (syntax-local-expand-expression
-                            #'(with-handlers ([exn? (lambda (e)
-                                                      (list 'error
-                                                            (exn-message e)))])
-                                (cons 'values
-                                      (call-with-values (lambda () expr)
-                                          list))))])
-         x))]))
+       (define-values (_ opaque)
+         (syntax-local-expand-expression
+          #'(with-handlers ([exn? (lambda (e) (list 'error (exn-message e)))])
+              (cons 'values (call-with-values (lambda () expr) list)))))
+       opaque)]))
 
-(define (show value)
-  (match value
-    [(list 'error msg) (format "error: ~a" msg)]
-    [(list 'values x)  (format "~e" x)]
-    [(list 'values xs ...) (format "~e" value)]))
+(define show
+  (match-lambda [(list 'error msg) (format "error: ~a" msg)]
+                [(list 'values x)  (format "~e" x)]
+                [(list 'values xs ...) (format "~e" (cons 'values xs))]))
 
-(define test-context
-  (make-parameter
-   (lambda (num exns)
-     (if (null? exns)
-       (printf "~a tests passed\n" num)
-       (error 'test "~a/~a test failures:~a" (length exns) num
-              (string-append*
-               (append-map (lambda (e) (list "\n" (exn-message e)))
-                           (reverse exns))))))))
+(define test-context (make-parameter #f))
 
-(define-for-syntax (loc stx)
-  (string->symbol
-   (format "~a:~a" (syntax-source stx)
-           (let ([l (syntax-line stx)] [c (syntax-column stx)])
-             (cond [(and l c) (format "~a:~a" l c)]
-                   [l l]
-                   [(syntax-position stx) => (lambda (p) (format "#~a" p))]
-                   [else "?"])))))
-
-(provide test)
-(define-syntax (test stx)
+(define-syntax (test-thunk stx)
   (define (blame e fmt . args)
-    (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc (loc e)])
+    (define loc
+      (string->symbol
+       (format "~a:~a" (or (syntax-source e) "(unknown)")
+               (let ([l (syntax-line e)] [c (syntax-column e)])
+                 (cond [(and l c) (format "~a:~a" l c)]
+                       [l l]
+                       [(syntax-position e) => (lambda (p) (format "#~a" p))]
+                       [else "?"])))))
+    (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
       #'(error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
@@ -62,14 +49,11 @@
                #,(blame x "expected ~a; got: ~a" #'(show y) #'(show x))])))
   (define (te x y) (t2 x #`(error #,y)))
   (define (try t . args)
-    #`(with-handlers ([exn? (lambda (e) (set! exns (cons e exns)))])
-        (set! num (add1 num))
-        #,(apply t args)))
-  (define (tb x)
-    #`(parameterize ([test-context (lambda (n es)
-                                     (set! num (+ n num))
-                                     (set! exns (append es exns)))])
-        #,x))
+    #`(let ([c (test-context)])
+        (with-handlers ([exn? (lambda (e) (set-mcdr! c (cons e (mcdr c))))])
+          (set-mcar! c (add1 (mcar c)))
+          #,(apply t args))))
+  (define (tb x) x)
   (let loop ([xs (map (lambda (x)
                         (if (memq (syntax-e x) '(do => <= =error> <error=))
                           (syntax-e x) x))
@@ -81,16 +65,38 @@
                [(list* y '<= x r)      (cons (try t2 x y) r)]
                [(list* x '=error> y r) (cons (try te x y) r)]
                [(list* y '<error= x r) (cons (try te x y) r)]
-               [(list* x r) ; if x = (test ...), then it's implicitly in a `do'
+               [(list* x r)
+                ;; if x = (test ...), then it's implicitly in a `do'
+                ;; (not really needed, but avoids an extra count of tests)
                 (syntax-case x (test)
                   [(test x0 x1 ...) (cons (tb x) r)]
                   [_ (cons (try t1 x) r)])]
                [(list) '()])])
       (if (pair? t)
         (loop (cdr t) (cons (car t) r))
-        #`(let ([num 0] [exns '()])
-            #,@(reverse r)
-            ((test-context) num exns))))))
+        #`(lambda () #,@(reverse r))))))
+
+(define (run-tests thunk force-new-context?)
+  (if (and (test-context) (not force-new-context?))
+    (thunk)
+    (let ([c (mcons 0 '())])
+      (parameterize ([test-context c])
+        (dynamic-wind
+          void
+          thunk
+          (lambda ()
+            (test-context #f)
+            (let ([num (mcar c)] [exns (mcdr c)])
+              (if (null? exns)
+                (printf "~a tests passed\n" num)
+                (error 'test "~a/~a test failures:~a" (length exns) num
+                       (string-append*
+                        (append-map (lambda (e) (list "\n" (exn-message e)))
+                                    (reverse exns))))))))))))
+
+(provide test test*)
+(define-syntax-rule (test  x ...) (run-tests (test-thunk x ...) #f))
+(define-syntax-rule (test* x ...) (run-tests (test-thunk x ...) #t))
 
 #; ;; test the `test' macro
 
@@ -112,10 +118,10 @@
  (if 1) =error> "if: bad syntax"
 
  ;; test `test' errors
- (test (/ 0)) =error> "expected non-#f single value"
- (test 1 => 2) =error> "expected 2"
- (test 1 =error> "") =error> "expected an error"
- (test (/ 0) =error> "zzz") =error> "bad error message"
+ (test* (/ 0)) =error> "expected non-#f single value"
+ (test* 1 => 2) =error> "expected 2"
+ (test* 1 =error> "") =error> "expected an error"
+ (test* (/ 0) =error> "zzz") =error> "bad error message"
  )
 
 ;; SchemeUnit stuff
