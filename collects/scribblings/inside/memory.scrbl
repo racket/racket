@@ -939,6 +939,7 @@ See @cpp{scheme_dont_gc_ptr}.}
 
 Forces an immediate garbage-collection.}
 
+
 @function[(void GC_register_traversers
            [short tag]
            [Size_Proc s]
@@ -961,6 +962,30 @@ Each of the three procedures takes a pointer and returns an integer:
 If the result of the size procedure is a constant, then pass a
  non-zero value for @var{is_const_size}. If the mark and fixup
  procedures are no-ops, then pass a non-zero value
- for @var{is_atomic}.
+ for @var{is_atomic}.}
 
-}
+
+@function[(void* GC_resolve [void* p])]{
+
+3m only. Can be called by a size, mark, or fixup procedure that is registered
+with @cpp{GC_register_traversers}. It returns the current address of
+an object @var{p} that might have been moved already, where @var{p}
+corresponds to an object that is referenced directly by the object
+being sized, marked, or fixed. This translation is necessary, for
+example, if the size or structure of an object depends on the content
+of an object it references. For example, the size of a class instance
+usually depends on a field count that is stored in the class. A fixup
+procedure should call this function on a reference @emph{before}
+fixing it.}
+
+
+@function[(void* GC_fixup_self [void* p])]{
+
+3m only. Can be called by a fixup procedure that is registered with
+@cpp{GC_register_traversers}. It returns the final address of @var{p},
+which must be the pointer passed to the fixup procedure. For some
+implementations of the memory manager, the result is the same as
+@var{p}, either because objects are not moved or because the object is
+moved before it is fixed. With other implementations, an object might
+be moved after the fixup process, and the result is the location that
+the object will have after garbage collection finished.}

@@ -18,7 +18,7 @@
 #include "wx_utils.h"
 
 #include "fafa.h"
-#include "fafapriv.h" //added by Chubraev 
+#include "fafabuf.h"
 
 #define STATIC_CLASS     "STATIC"
 #define LSTATIC_CLASS    L"STATIC"

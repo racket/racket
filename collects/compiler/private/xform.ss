@@ -2676,7 +2676,7 @@
                                                           (eq? semi (tok-n (cadr e))))
                                                       (tok-n (car e))
                                                       (loop (cdr e))))])
-                                       (unless (eq? '|::| (tok-n (cadar body)))
+                                       (unless (or (eq? '|::| type) (eq? '|::| (tok-n (cadar body)))) ;; $patch vs2008 - goetter
                                          (log-error "[DECL] ~a in ~a: Variable declaration (~a ~a) not at the beginning of a block."
                                                     (tok-line (caar body)) (tok-file (caar body))
                                                     type var))))

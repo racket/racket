@@ -396,6 +396,8 @@ MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 MZ_EXTERN void *GC_resolve(void *p);
 MZ_EXTERN void GC_mark(const void *p);
 MZ_EXTERN void GC_fixup(void *p);
+MZ_EXTERN void *GC_fixup_self(void *p);
+MZ_EXTERN void *GC_resolve(void *p);
 #endif
 
 MZ_EXTERN void **scheme_malloc_immobile_box(void *p);
