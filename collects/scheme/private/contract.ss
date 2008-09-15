@@ -255,11 +255,6 @@ improve method arity mismatch contract violation error messages?
                   (quote-syntax id)
                   blame-str)) ...)))))]
     [(_ #:type type blame (arg ...) body0 body ...)
-     (identifier? #'blame)
-     (raise-syntax-error 'with-contract
-                         "expected identifier for type"
-                         #'type)]
-    [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
                          #'blame)]
@@ -278,6 +273,11 @@ improve method arity mismatch contract violation error messages?
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
                          #'args)]
+    [(_ #:type type etc ...)
+     (not (identifier? #'type))
+     (raise-syntax-error 'with-contract
+                         "expected identifier for type"
+                         #'type)]
     [(_ #:type type blame)
      (raise-syntax-error 'with-contract
                          "only blame"
