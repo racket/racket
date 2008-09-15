@@ -79,18 +79,22 @@ improve method arity mismatch contract violation error messages?
                         "used in expression context"
                         define-stx))
   (syntax-case define-stx ()
+    [(_ name)
+     (raise-syntax-error 'define/contract
+                         "no contract or body"
+                         define-stx)]
     [(_ name contract-expr)
      (raise-syntax-error 'define/contract
                          "no body after contract"
                          define-stx)]
     [(_ name contract-expr expr)
-     (identifier? (syntax name))
+     (identifier? #'name)
      (syntax/loc define-stx
        (with-contract #:type definition name
          ([name (verify-contract 'define/contract contract-expr)])
          (define name expr)))]
     [(_ name contract-expr expr0 expr ...)
-     (identifier? (syntax name))
+     (identifier? #'name)
      (raise-syntax-error 'define/contract
                          "multiple expressions after identifier and contract"
                          define-stx)]
