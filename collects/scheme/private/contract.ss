@@ -21,6 +21,7 @@ improve method arity mismatch contract violation error messages?
          (for-syntax scheme/struct-info)
          (for-syntax scheme/list)
          (for-syntax syntax/define)
+         (for-syntax syntax/kerncase)
          scheme/promise
          scheme/stxparam
          mzlib/etc)
@@ -159,6 +160,28 @@ improve method arity mismatch contract violation error messages?
                        neg-blame-id
                        #'ident))])))))
 
+(define-for-syntax (head-expand-all body-stxs)
+  (for/list ([stx body-stxs])
+    (local-expand stx
+                  (syntax-local-context)
+                  (kernel-form-identifier-list))))
+
+(define-for-syntax (check-exports ids body-stxs)
+  (let ([defd-ids (for/fold ([id-list null])
+                            ([stx body-stxs])
+                    (kernel-syntax-case stx #f
+                      [(define-values ids expr)
+                       (append (syntax->list #'ids)
+                               id-list)]
+                      [_ id-list]))])
+    (for ([id (in-list ids)])
+         (unless (findf (lambda (s)
+                          (bound-identifier=? s id))
+                        defd-ids)
+           (raise-syntax-error 'with-contract
+                               "identifier not defined in body"
+                               id)))))
+
 (define-for-syntax (check-and-split-with-contract-args args)
   (let loop ([args args]
              [unprotected null]
@@ -198,29 +221,33 @@ improve method arity mismatch contract violation error messages?
      (and (identifier? #'blame)
           (identifier? #'type))
      (let-values ([(unprotected protected protections)
-                   (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
-       (with-syntax ([((protected-id id contract-id) ...)
-                      (map (lambda (n)
-                             (list n
-                                   (a:mangle-id stx "with-contract-id" n)
-                                   (a:mangle-id stx "with-contract-contract-id" n)))
-                           protected)]
-                     [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
-                     [(contract-expr ...) protections]
-                     [(unprotected-id ...) unprotected])
-         (syntax/loc stx
-           (begin 
-             (define-values (unprotected-id ... id ...)
-               (syntax-parameterize ([current-contract-region blame-str])
-                 (begin-with-definitions
-                   body0 body ...
-                   (values unprotected-id ... protected-id ...))))
-             (define contract-id (verify-contract 'with-contract contract-expr)) ...
-             (define-syntax protected-id
-               (make-with-contract-transformer 
-                (quote-syntax contract-id)
-                (quote-syntax id)
-                blame-str)) ...))))]
+                   (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
+                  [(expanded-bodies) (head-expand-all (cons #'body0
+                                                            (syntax->list #'(body ...))))])
+       (begin
+         (check-exports (append unprotected protected) expanded-bodies)
+         (with-syntax ([((protected-id id contract-id) ...)
+                        (map (lambda (n)
+                               (list n
+                                     (a:mangle-id stx "with-contract-id" n)
+                                     (a:mangle-id stx "with-contract-contract-id" n)))
+                             protected)]
+                       [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
+                       [(contract-expr ...) protections]
+                       [(unprotected-id ...) unprotected])
+           (quasisyntax/loc stx
+             (begin 
+               (define-values (unprotected-id ... id ...)
+                 (syntax-parameterize ([current-contract-region blame-str])
+                   (begin-with-definitions
+                     #,@expanded-bodies
+                     (values unprotected-id ... protected-id ...))))
+               (define contract-id (verify-contract 'with-contract contract-expr)) ...
+               (define-syntax protected-id
+                 (make-with-contract-transformer 
+                  (quote-syntax contract-id)
+                  (quote-syntax id)
+                  blame-str)) ...)))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (identifier? #'blame)
      (raise-syntax-error 'with-contract
