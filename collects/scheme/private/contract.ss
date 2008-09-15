@@ -225,7 +225,13 @@ improve method arity mismatch contract violation error messages?
                   [(expanded-bodies) (head-expand-all (cons #'body0
                                                             (syntax->list #'(body ...))))])
        (begin
-         (check-exports (append unprotected protected) expanded-bodies)
+         (let* ([all-ids (append unprotected protected)]
+                [dupd-id (check-duplicate-identifier all-ids)])
+           (when dupd-id
+             (raise-syntax-error 'with-contract
+                                 "identifier appears twice in exports"
+                                 dupd-id))
+           (check-exports (append unprotected protected) expanded-bodies))
          (with-syntax ([((protected-id id contract-id) ...)
                         (map (lambda (n)
                                (list n
