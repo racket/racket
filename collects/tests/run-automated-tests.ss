@@ -32,7 +32,9 @@
   '([load "mzscheme/quiet.ss" (lib "scheme/init")]
     [require "typed-scheme/main.ss"]
     [require "match/plt-match-tests.ss"]
-    [require "stepper/automatic-tests.ss" (lib "scheme/base")]))
+    ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
+    [require "lazy/main.ss"]
+    ))
 
 
 (require scheme/runtime-path)
@@ -62,8 +64,9 @@
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [uncaught-exception-handler
                      (lambda (exn)
-                       (when (eq? orig-exn-handler (uncaught-exception-handler))
-                         (abort 1 "error: ~a" (exn-message exn))))]
+                       (if (eq? orig-exn-handler (uncaught-exception-handler))
+                         (abort 1 "error: ~a" (exn-message exn))
+                         (orig-exn-handler exn)))]
                     [current-namespace (make-base-empty-namespace)])
       (for-each namespace-require (cddr t))
       ((case (car t) [(load) load] [(require) namespace-require])

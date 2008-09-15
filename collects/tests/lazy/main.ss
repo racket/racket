@@ -1,6 +1,8 @@
 #lang scheme/base
 
-(require "testing.ss" lazy/force)
+(require tests/eli-tester lazy/force)
+
+(test
 
 ;; lazy/force behavior
 (test
@@ -46,4 +48,4 @@
    => "#0=#s(foo 1 #0#)"
    ))
 
-(printf "All tests passed.\n")
+)
