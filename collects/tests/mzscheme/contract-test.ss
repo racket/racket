@@ -5778,6 +5778,19 @@ so that propagation occurs.
      (and (exn? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
+  (contract-error-test
+   #'(begin
+       (eval '(module pce7-bug scheme/base
+                (require scheme/contract)
+                (define x 1)
+                (provide/contract [x integer?])))
+       (eval '(module pce7-bug2 scheme/base
+                (require 'pce7-bug)
+                (set! x 5))))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"cannot set!" (exn-message x)))))
+  
   (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)
