@@ -8,13 +8,13 @@ DrScheme supports two forms of extension to the programming
  environment:
 
 @itemize[
-  
+
 @item{@index['("languages" "extending")]{@index['("DrScheme
   Teachpacks")]{A @deftech{teachpack}}} extends the set of procedures
   that are built into a language in DrScheme.  For example, a
   teachpack might extend the Beginning Student language with a
   procedure for playing sounds.
-  
+
   Teachpacks are particularly useful in a classroom setting, where an
   instructor can provide a teachpack that is designed for a specific
   exercise. To use the teachpack, each student must download the
@@ -22,7 +22,7 @@ DrScheme supports two forms of extension to the programming
   Teachpack..."]  menu item.
 
   See @secref["teachpacks"] for information in creating teachpacks.}
-  
+
 @item{A @deftech{tool} extends the set of utilities within the
   DrScheme environment. For example, DrScheme's @onscreen{Check
   Syntax} button starts a syntax-checking tool. For information on
@@ -41,11 +41,11 @@ example, to enable students to play hangman, we supply a teachpack that
 
 @itemize{
 
- @item{implements the random choosing of a word, } 
+ @item{implements the random choosing of a word,}
 
- @item{maintains the state variable of how many guesses have gone wrong, and} 
+ @item{maintains the state variable of how many guesses have gone wrong, and}
 
- @item{manages the GUI.} 
+ @item{manages the GUI.}
 
 }
 
@@ -70,7 +70,7 @@ implementation. To test it, be sure to save it in a file named
 @schememod[
 scheme
 
-(provide (rename-out :lcons lcons) lcar lcdr)
+(provide (rename-out [:lcons lcons]) lcar lcdr)
 
 (define-struct lcons (hd tl))
 
