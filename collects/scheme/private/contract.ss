@@ -263,28 +263,28 @@ improve method arity mismatch contract violation error messages?
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
                          #'blame)]
-    [(_ blame (arg ...) body0 body ...)
-     (syntax/loc stx
-       (with-contract #:type region blame (arg ...) body0 body ...))]
-    [(_ blame (arg ...))
+    [(_ #:type type blame (arg ...))
      (identifier? #'blame)
      (raise-syntax-error 'with-contract
                          "empty body"
                          stx)]
-    [(_ blame bad-args etc ...)
+    [(_ #:type type blame bad-args etc ...)
      (identifier? #'blame)
      (raise-syntax-error 'with-contract
                          "expected list of identifier and/or (identifier contract)"
                          #'bad-args)]
-    [(_ args etc ...)
+    [(_ #:type type args etc ...)
      (not (identifier? #'args))
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
                          #'args)]
-    [(_ blame)
+    [(_ #:type type blame)
      (raise-syntax-error 'with-contract
                          "only blame"
-                         stx)]))
+                         stx)]
+    [(_ etc ...)
+     (syntax/loc stx
+       (with-contract #:type region etc ...))]))
 
 ;                                                                                                            
 ;                                                                                                            
