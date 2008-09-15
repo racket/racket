@@ -74,6 +74,12 @@
          [body (cond [(not wrapper) (body)]
                      [(procedure-arity-includes? wrapper 2) (wrapper body stx?)]
                      [else (wrapper body)])]
+         [all-loc (vector src line col pos
+                          (let-values ([(l c p) (port-next-location port)])
+                            (and p (- p pos))))]
+         [body (if (and stx? (not (syntax? body)))
+                 (datum->syntax #f body all-loc)
+                 body)]
          [p-name (object-name port)]
          [name (if (path? p-name)
                  (let-values ([(base name dir?) (split-path p-name)])
@@ -89,7 +95,7 @@
                       v))]
          [lib (if stx? (datum->syntax #f lib modpath modpath) lib)]
          [r `(,(tag-src 'module) ,(tag-src name) ,lib . ,body)])
-    (if stx? (datum->syntax #f r) r)))
+    (if stx? (datum->syntax #f r all-loc) r)))
 
 (define (wrap lib port read modpath src line col pos)
   (wrap-internal lib port read #f #f #f modpath src line col pos))
