@@ -429,7 +429,9 @@ void wxMediaEdit::OnEvent(wxMouseEvent *event)
   if (!admin)
     return;
 
-  if (!event->Moving())
+  if (!event->Moving()
+      && !event->Entering()
+      && !event->Leaving())
     EndStreaks(wxSTREAK_EXCEPT_KEY_SEQUENCE | wxSTREAK_EXCEPT_CURSOR | wxSTREAK_EXCEPT_DELAYED);
 
   if (event->ButtonDown() || caretSnip) {
