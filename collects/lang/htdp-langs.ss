@@ -48,8 +48,6 @@
   (define o (current-output-port))
   (define (oprintf . args) (apply fprintf o args))
   
-  (define init-eventspace (current-eventspace))
-  
   (define user-installed-teachpacks-collection "installed-teachpacks")
   (define teachpack-installation-dir (build-path (find-user-collects-dir) user-installed-teachpacks-collection))
   
@@ -981,7 +979,7 @@
                               '()))]
                        [else '()])])
                 
-                (parameterize ([current-eventspace init-eventspace])
+                (parameterize ([current-eventspace drs-eventspace])
                   (queue-callback
                    (lambda ()
                      ;; need to make sure that the user's eventspace is still the same
@@ -1033,16 +1031,22 @@
             (thread-cell-set! current-test-coverage-info ht)
             (let ([rep (drscheme:rep:current-rep)])
               (when rep
-                (let ([on-sd (make-object style-delta%)]
-                      [off-sd (make-object style-delta%)])
-                  (cond
-                    [(preferences:get 'framework:white-on-black?)
-                     (send on-sd set-delta-foreground "white")
-                     (send off-sd set-delta-foreground "indianred")]
-                    [else
-                     (send on-sd set-delta-foreground "black")
-                     (send off-sd set-delta-foreground "firebrick")])
-                  (send rep set-test-coverage-info ht on-sd off-sd #f))))))
+                (let ([s (make-semaphore 0)])
+                  (parameterize ([current-eventspace drs-eventspace])
+                    (queue-callback
+                     (λ ()
+                       (let ([on-sd (make-object style-delta%)]
+                             [off-sd (make-object style-delta%)])
+                         (cond
+                           [(preferences:get 'framework:white-on-black?)
+                            (send on-sd set-delta-foreground "white")
+                            (send off-sd set-delta-foreground "indianred")]
+                           [else
+                            (send on-sd set-delta-foreground "black")
+                            (send off-sd set-delta-foreground "firebrick")])
+                         (send rep set-test-coverage-info ht on-sd off-sd #f))
+                       (semaphore-post s))))
+                  (semaphore-wait s))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
             (hash-set! ht key (mcons #f expr)))))
