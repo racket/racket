@@ -428,6 +428,9 @@ The following base types are parameteric in their type arguments.
 @defform[(Boxof t)]{A @gtech{box} of @scheme[t]}
 @defform[(Vectorof t)]{Homogenous @gtech{vectors} of @scheme[t]}
 @defform[(Option t)]{Either @scheme[t] of @scheme[#f]}
+@defform*[[(Parameter t)
+           (Parameter s t)]]{A @rtech{parameter} of @scheme[t].  If two type arguments are supplied, 
+                               the first is the type the parameter accepts, and the second is the type returned.}
 @defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
   and @scheme[t] as the @scheme[cdr]}
 
