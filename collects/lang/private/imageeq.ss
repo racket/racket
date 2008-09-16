@@ -32,9 +32,13 @@
     (let ([a (coerce-to-cache-image-snip a-raw)]
           [b (coerce-to-cache-image-snip b-raw)])
       (let-values ([(aw ah) (snip-size a)]
-                   [(bw bh) (snip-size b)])
+                   [(bw bh) (snip-size b)]
+                   [(apx apy) (send a get-pinhole)]
+                   [(bpx bpy) (send b get-pinhole)])
         (and (= aw bw)
              (= ah bh)
+             (= apx bpx)
+             (= apy bpy)
              (same/alpha? (argb-vector (send a get-argb))
                           (argb-vector (send b get-argb)))))))
   
