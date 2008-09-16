@@ -222,7 +222,6 @@
   scheme_extension_table->GC_mark = GC_mark;
   scheme_extension_table->GC_fixup = GC_fixup;
   scheme_extension_table->GC_fixup_self = GC_fixup_self;
-  scheme_extension_table->GC_resolve = GC_resolve;
 #endif
   scheme_extension_table->scheme_malloc_immobile_box = scheme_malloc_immobile_box;
   scheme_extension_table->scheme_free_immobile_box = scheme_free_immobile_box;
