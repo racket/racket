@@ -34,7 +34,7 @@ That is, a module @scheme[_something]@scheme[/lang/reader] implemented
 as
 
 @schemeblock[
-(module reader module-syntax/module-reader
+(module reader syntax/module-reader
   module-path)
 ]
 
@@ -52,7 +52,7 @@ the reader.
 For example, @scheme[scheme/base/lang/reader] is implemented as
 
 @schemeblock[
-(module reader module-syntax/module-reader
+(module reader syntax/module-reader
   scheme/base)
 ]
 
@@ -65,7 +65,7 @@ reading.  For example, you can implement a
 using:
 
 @schemeblock[
-(module reader module-syntax/module-reader
+(module reader syntax/module-reader
   honu
   #:read read-honu
   #:read-syntax read-honu-syntax)
