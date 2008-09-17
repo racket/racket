@@ -89,10 +89,13 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name contract-expr expr)
      (identifier? #'name)
-     (syntax/loc define-stx
-       (with-contract #:type definition name
-         ([name (verify-contract 'define/contract contract-expr)])
-         (define name expr)))]
+     (let ([contract (if (a:known-good-contract? #'contract-expr)
+                         #'contract-expr
+                         #'(verify-contract 'define/contract contract-expr))])
+       (quasisyntax/loc define-stx
+         (with-contract #:type definition name
+           ([name #,contract])
+           (define name expr))))]
     [(_ name contract-expr expr0 expr ...)
      (identifier? #'name)
      (raise-syntax-error 'define/contract
@@ -224,10 +227,22 @@ improve method arity mismatch contract violation error messages?
     [(_ #:type type blame (arg ...) body0 body ...)
      (and (identifier? #'blame)
           (identifier? #'type))
-     (let-values ([(unprotected protected protections)
-                   (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
-                  [(expanded-bodies) (head-expand-all (cons #'body0
-                                                            (syntax->list #'(body ...))))])
+     (let*-values ([(unprotected protected protections)
+                    (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
+                   [(expanded-bodies) (head-expand-all (cons #'body0
+                                                             (syntax->list #'(body ...))))]
+                   [(protected-ids ids contracts contract-defs)
+                    (for/lists (protected-ids ids contracts contract-defs)
+                      ([n protected]
+                       [c protections])
+                      (let ([new-id (a:mangle-id stx "with-contract-id" n)])
+                        (if (a:known-good-contract? c)
+                            (values n new-id c #f)
+                            (let ([contract-id (a:mangle-id stx "with-contract-contract-id" n)])
+                              (values n new-id contract-id
+                                      (quasisyntax/loc stx
+                                        (define-values (#,contract-id)
+                                          (verify-contract 'with-contract #,c))))))))])
        (begin
          (let* ([all-ids (append unprotected protected)]
                 [dupd-id (check-duplicate-identifier all-ids)])
@@ -236,14 +251,10 @@ improve method arity mismatch contract violation error messages?
                                  "identifier appears twice in exports"
                                  dupd-id))
            (check-exports (append unprotected protected) expanded-bodies))
-         (with-syntax ([((protected-id id contract-id) ...)
-                        (map (lambda (n)
-                               (list n
-                                     (a:mangle-id stx "with-contract-id" n)
-                                     (a:mangle-id stx "with-contract-contract-id" n)))
-                             protected)]
+         (with-syntax ([((protected-id id contract) ...)
+                        (map list protected-ids ids contracts)]
+                       [(contract-def ...) (filter values contract-defs)]
                        [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
-                       [(contract-expr ...) protections]
                        [(unprotected-id ...) unprotected])
            (quasisyntax/loc stx
              (begin 
@@ -252,10 +263,10 @@ improve method arity mismatch contract violation error messages?
                    (begin-with-definitions
                      #,@expanded-bodies
                      (values unprotected-id ... protected-id ...))))
-               (define contract-id (verify-contract 'with-contract contract-expr)) ...
+               contract-def ...
                (define-syntax protected-id
                  (make-with-contract-transformer 
-                  (quote-syntax contract-id)
+                  (quote-syntax contract)
                   (quote-syntax id)
                   blame-str)) ...)))))]
     [(_ #:type type blame (arg ...) body0 body ...)
