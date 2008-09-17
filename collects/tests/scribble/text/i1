@@ -1,0 +1,3 @@
+#lang scribble/text
+
+foo

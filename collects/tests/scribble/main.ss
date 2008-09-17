@@ -1,6 +1,8 @@
 #lang scheme/base
 
-(require tests/eli-tester scribble/text/syntax-utils)
+(require tests/eli-tester scribble/text/syntax-utils scheme/runtime-path)
+
+(define-runtime-path text-dir "text")
 
 (test
 
@@ -75,5 +77,18 @@
                 (f #:< "[" 2)
                 (f 3 #:> "]" #:< "["))
  => '(1 ("<" 1 ">") ("[" 2 ">") ("[" 3 "]"))
+
+ ;; preprocessor functionality
+ (parameterize ([current-directory text-dir])
+   (for ([ifile (map path->string (directory-list))]
+         #:when (and (file-exists? ifile)
+                     (regexp-match? #rx"^i[0-9]+$" ifile)))
+     (define ofile (regexp-replace #rx"^i" ifile "o"))
+     (define expected (call-with-input-file ofile
+                        (lambda (i) (read-bytes (file-size ofile) i))))
+     (define o (open-output-bytes))
+     (parameterize ([current-output-port o])
+       (dynamic-require (path->complete-path ifile) #f))
+     (test (get-output-bytes o) => expected)))
 
  )
