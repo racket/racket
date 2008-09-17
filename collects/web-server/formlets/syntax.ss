@@ -48,7 +48,4 @@
        (cross (pure (match-lambda [#,(cross-of #'q) e]))
               #,(circ-of #'q)))]))
 
-(provide formlet
-         formlet/c
-         formlet-display
-         formlet-process)
+(provide formlet)
