@@ -202,7 +202,6 @@ GC_resolve
 GC_mark
 GC_fixup
 GC_fixup_self
-GC_resolve
 scheme_malloc_immobile_box
 scheme_free_immobile_box
 scheme_make_bucket_table

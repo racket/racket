@@ -382,7 +382,7 @@ all of the names in the tools library, for use defining keybindings
   
   (proc-doc/names
    drscheme:debug:open-and-highlight-in-file
-   (srcloc? . -> . void?)
+   ((or/c srcloc? (listof srcloc?)) . -> . void?)
    (debug-info)
    @{This function opens a DrScheme to display
      @scheme[debug-info]. Only the src the position

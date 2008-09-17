@@ -816,9 +816,10 @@ profile todo:
           (or (send editor get-filename) 
               untitled))))
   
-  ;; open-and-highlight-in-file : srcloc -> void
-  (define (open-and-highlight-in-file srclocs)
-    (let ([sources (filter values (map srcloc-source srclocs))])
+  ;; open-and-highlight-in-file : (or/c srcloc (listof srcloc)) -> void
+  (define (open-and-highlight-in-file raw-srcloc)
+    (let* ([srclocs (if (srcloc? raw-srcloc) (list raw-srcloc) raw-srcloc)]
+           [sources (filter values (map srcloc-source srclocs))])
       (unless (null? sources)
         (let* ([debug-source (car sources)]
                [same-src-srclocs
