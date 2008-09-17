@@ -1,5 +1,5 @@
 #lang scheme
-(require web-server/formlets/formlets)
+(require web-server/formlets)
 
 (define-struct date (month day))
 (define (date->xml d)
@@ -53,8 +53,6 @@
                                      (make-binding:form #"input_3" #"10")
                                      (make-binding:form #"input_4" #"8"))
                                #f "127.0.0.1" 80 "127.0.0.1"))
-
-(require web-server/formlets/servlet)
 
 (define (start request)
   (display-itinernary

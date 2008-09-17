@@ -58,14 +58,6 @@
     (let-values ([(x p i) (f i)])
       (values (list (list* t ats x))  p i))))
 
-(define (next-name i)
-  (values (format "input_~a" i) (add1 i)))
-(define (input i)
-  (let-values ([(w i) (next-name i)])
-    (values (list `(input ([name ,w])))
-            (lambda (env) (bindings-assq (string->bytes/utf-8 w) env))
-            i)))
-
 ; Helpers
 (define (formlet-display f)
   (let-values ([(x p i) (f 0)])
@@ -74,23 +66,6 @@
 (define (formlet-process f r)
   (let-values ([(x p i) (f 0)])
     (p (request-bindings/raw r))))
-
-; Input Formlets
-(define input-string
-  (cross 
-   (pure (lambda (bf)
-           (bytes->string/utf-8 (binding:form-value bf))))
-   input))
-         
-(define input-int
-  (cross
-   (pure string->number)
-   input-string))
-
-(define input-symbol
-  (cross
-   (pure string->symbol)
-   input-string))
 
 ; Contracts
 (define xexpr-forest/c
@@ -119,8 +94,5 @@
  [xml-forest (xexpr-forest/c . -> . (formlet/c procedure?))]
  [text (string? . -> . (formlet/c procedure?))]
  [tag-xexpr (symbol? (listof (list/c symbol? string?)) (formlet/c alpha) . -> . (formlet/c alpha))]
- [input-string (formlet/c string?)]
- [input-int (formlet/c integer?)]
- [input-symbol (formlet/c symbol?)]
  [formlet-display ((formlet/c alpha) . -> . xexpr-forest/c)]
  [formlet-process ((formlet/c alpha) request? . -> . alpha)])

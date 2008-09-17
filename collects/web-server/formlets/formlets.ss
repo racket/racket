@@ -48,5 +48,7 @@
        (cross (pure (match-lambda [#,(cross-of #'q) e]))
               #,(circ-of #'q)))]))
 
-(provide (all-defined-out)
-         (all-from-out "lib.ss"))
+(provide formlet
+         formlet/c
+         formlet-display
+         formlet-process)
