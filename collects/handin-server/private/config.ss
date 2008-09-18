@@ -4,7 +4,11 @@
 
 ;; This module should be invoked when we're in the server directory
 (provide server-dir)
-(define server-dir (or (getenv "PLT_HANDINSERVER_DIR") (current-directory)))
+(define server-dir
+  (let ([dir (or (getenv "PLT_HANDINSERVER_DIR") (current-directory))])
+    (if (directory-exists? dir)
+      dir
+      (error 'config "handin server directory does not exist: ~e" dir))))
 
 (define config-file (path->complete-path "config.ss" server-dir))
 
