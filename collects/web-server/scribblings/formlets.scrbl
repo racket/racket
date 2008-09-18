@@ -160,7 +160,7 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
 
 @defproc[(xml-forest [r xexpr-forest/c])
          (formlet/c procedure?)]{
- Constructs a @tech{formlet} with the rendering @scheme[r] and the identitiy procedure as the processing step.
+ Constructs a @tech{formlet} with the rendering @scheme[r] and the identity procedure as the processing step.
 }
 
 @defproc[(xml [r xexpr?])
