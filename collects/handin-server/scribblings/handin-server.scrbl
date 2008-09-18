@@ -88,7 +88,7 @@ server and each user's password.
 @item{Create a file @filepath{config.ss} with the following content:
   @schemeblock[((active-dirs ("test")))]}
 
-@item{In your new directory, run @commandline{mred -l handin-server}}
+@item{In your new directory, run @commandline{mred -il handin-server}}
 
 @item{In the @filepath{handin-client} collection, edit
   @filepath{info.ss} and uncomment the lines that define
