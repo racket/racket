@@ -1,27 +1,13 @@
 #lang scribble/doc
-@(require scribble/manual
-          (for-label scheme)
-          #;(for-label scheme/sandbox)
-          (for-label handin-server/sandbox
-                     handin-server/utils
-                     (only-in handin-server/checker
-                              pre: post: submission-eval user-data
-                              user-substs pairs-or-singles-with-warning
-                              teams-in-file add-header-line! procedure/arity?
-                              !defined !procedure !procedure* !integer !integer*
-                              check:
-                              !test !all-covered)
-                     mred))
+@(require "common.ss")
 
-@(require (for-label handin-server/scribblings/hook-dummy))
-
-@(define (comment . args) "")
-
-@comment{Is there an existing mechanism for comments?}
-@comment{There's no enumerate?}
-@comment{commandline _and_ exec?}
-@comment{using commandline for stand-alone URLs?}
-@comment{TO-DO: sandbox docs, create index, TOC?}
+@;{John's comments:
+   - There's no enumerate?
+   - commandline _and_ exec?
+   - using commandline for stand-alone URLs?
+   - TO-DO: sandbox docs, create index, TOC?
+   More comments labeled with `JBC' below
+;}
 
 @title{@bold{Handin Server}}
 
@@ -63,7 +49,7 @@ server and each user's password.
 
 @section{Quick Start for a Test Drive}
 
-@itemize{
+@itemize[
 @item{Create a new directory.}
 
 @item{Copy @filepath{server-cert.pem} from the
@@ -97,10 +83,11 @@ server and each user's password.
 
 @item{Run @commandline{setup-plt -l handin-client}
 
-  NOTE: Under Windows, the executable is ``@tt{Setup PLT}'' instead of
-  ``@tt{setup-plt}''.
+  NOTE: Under Windows, the executable is @exec{Setup PLT} instead of
+  @exec{setup-plt}.
 
-  NOTE: The command line arguments are optional.}
+  NOTE: The command line arguments are optional, it restricts the
+  setup work to the specified collection.}
 
 @item{Start DrScheme, click @onscreen{Handin} to run the client,
   submit with username ``@tt{tester}'' and password ``@tt{pw}''.
@@ -111,7 +98,7 @@ server and each user's password.
   @tt{https://localhost:7980/servlets/status.ss}.  Note the ``s'' in
   ``https''. Use the ``@tt{tester}'' username and ``@tt{pw}''
   password, as before.}
-}
+]
 
 
 @section[#:tag "wheres-the-collection"]{Where is the collection?}
@@ -337,7 +324,7 @@ This directory contains the following files and sub-directories:
     The order of these fields will be used both on the client GUI side
     and in the @filepath{users.ss} file (see below).
 
-    @comment{a hyperlink here for users.ss?}
+    @; JBC: a hyperlink here for users.ss?
 
     The second item in a field description can also be the symbol
     @scheme['-], which marks this field as one that is hidden from the
@@ -540,7 +527,7 @@ This directory contains the following files and sub-directories:
 @item{@filepath{<active-assignment>/checker.ss} (optional): a module
   that exports a @scheme[checker] function.  This function receives
   two
-  @; use defproc here?
+  @; JBC: use defproc here?
   arguments: a username list and a submission as a byte string.  (See
   also @scheme[unpack-submission], etc. from
   @schememodname[handin-server/utils].)  To
@@ -684,8 +671,6 @@ order):
 
 @itemize{
 
-@comment{scheme/sandbox or mzlib/sandbox?}
-
 @item{@schememodname[scheme/sandbox]: contains basic sandbox
   evaluation utilities.  This is in MzLib since it can be used
   independently.}
@@ -717,7 +702,7 @@ configures it for use with the handin server.
 
 @defmodule[handin-server/utils]
 
-@comment{have eli verify these contracts?}
+@; JBC: have eli verify these contracts?
 
 @defproc[(get-conf [key symbol?]) any/c]{
 
@@ -773,8 +758,8 @@ configures it for use with the handin server.
   supplied as a byte string.  The byte string is opened for reading,
   with line-counting enabled.}
 
-@comment{this contract is probably wrong}
-@comment{does this eval accept an optional namespace?}
+@; JBC: this contract is probably wrong
+@; JBC: does this eval accept an optional namespace?
 @defproc[(evaluate-all [source any]
                        [input-port port?]
                        [eval (any/c . -> . any)]) any]{
@@ -812,7 +797,7 @@ Every exception or result mismatch during the call to
   returned.  Warning: in the beginner language level, procedure
   definitions are bound as syntax.}
 
-@comment{returns what? signals error?}
+@; JBC: returns what? signals error?
 
 @defproc[(look-for-tests [text (is-a?/c text%)] [name symbol?] [n number?])
          any]{
@@ -1119,7 +1104,7 @@ code.}
   Holds an evaluation procedure for evaluating code in the submission
   context.}
 
-@comment{is this always just a list of strings?}
+@; JBC: is this always just a list of strings?
 @defproc[(user-data [user string?]) (listof string?)]{
 
   Returns a user information given a username.  The returned
