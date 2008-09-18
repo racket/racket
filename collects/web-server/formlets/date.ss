@@ -21,7 +21,7 @@
 
 (define travel-formlet
   (formlet
-   (#%#
+   (div
     "Name:" ,{input-string . => . name}
     (div
      "Arrive:" ,{date-formlet . => . arrive}
