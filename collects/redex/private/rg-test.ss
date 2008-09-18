@@ -546,6 +546,9 @@
    '((..._1 . ..._3) (..._2 . ..._3) (..._4 . ..._3)))
   (test (hash-map (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1))) 
                   (λ (_ cls) cls))
-        '(..._1 ..._1)))
+        '(..._1 ..._1))
+  (test-class-reassignments
+   '((3 ..._1) ..._2 (4 ..._1) ..._3)
+   '((..._2 . ..._3))))
 
 (print-tests-passed 'rg-test.ss)

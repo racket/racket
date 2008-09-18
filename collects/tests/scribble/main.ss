@@ -82,8 +82,8 @@
  (parameterize ([current-directory text-dir])
    (for ([ifile (map path->string (directory-list))]
          #:when (and (file-exists? ifile)
-                     (regexp-match? #rx"^i[0-9]+$" ifile)))
-     (define ofile (regexp-replace #rx"^i" ifile "o"))
+                     (regexp-match? #rx"^i[0-9]+\\.ss$" ifile)))
+     (define ofile (regexp-replace #rx"^i([0-9]+)\\..*$" ifile "o\\1.txt"))
      (define expected (call-with-input-file ofile
                         (lambda (i) (read-bytes (file-size ofile) i))))
      (define o (open-output-bytes))

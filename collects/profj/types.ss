@@ -863,8 +863,10 @@
               (lambda (input)
                 (and (= (length input) type-length)
                      (equal? type-version (list-ref input 9))
-                     (or (equal? (version) (list-ref input 10))
-                         (equal? "ignore" (list-ref input 10)))
+                     (or (equal? "ignore" (list-ref input 10))
+                         (and (equal? (version) (list-ref input 10))
+                              (>= (file-or-directory-modify-seconds (build-path filename))
+                                  (file-or-directory-modify-seconds (build-path (collection-path "mzlib") "contract.ss")))))
                      (make-class-record (list-ref input 1)
                                         (list-ref input 2)
                                         (symbol=? 'class (car input))
@@ -904,7 +906,10 @@
                    (make-array-type (parse-type (cadr input)) (car input)))
                   (else
                    (make-ref-type (car input) (cdr input)))))))
-        (parse-class/iface (call-with-input-file filename read))))
+      #;(printf "~a ~a ~n" filename 
+              (>= (file-or-directory-modify-seconds (build-path filename))
+                  (file-or-directory-modify-seconds (build-path (collection-path "mzlib") "contract.ss"))))
+      (parse-class/iface (call-with-input-file filename read))))
   
   ;; write-record: class-record port->
   (define (write-record rec port)

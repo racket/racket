@@ -395,7 +395,8 @@ This directory contains the following files and sub-directories:
              "course-staff@university.edu"
              (format "[server] ~a (~a)" what session)
              '("course-staff@university.edu") '() '()
-             (map (lambda (key+val) (apply format "~a: ~s" key+val))
+             (map (lambda (key+val)
+                    (apply format "~a: ~s" key+val))
                   alist))))]}}}
 
   Changes to @filepath{config.ss} are detected, the file will be
@@ -416,14 +417,14 @@ This directory contains the following files and sub-directories:
   (actually the MD5 hash of the password), and extra string fields as
   specified by the 'extra-fields configuration entry (in the same
   order).  The file format is
-  @schemeblock{
+  @schemeblock[
     ((<username-sym> (<pw-md5-str> <extra-field> ...))
-     ...)}
+     ...)]
 
   For example, the default @scheme['extra-field] setting will make this:
-  @schemeblock{
+  @schemeblock[
     ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
-      ...)}
+      ...)]
 
   Usernames that begin with ``solution'' are special.  They are used
   by the HTTPS status server.  Independent of the

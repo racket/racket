@@ -500,22 +500,28 @@ To do a better job of not generating programs with free variables,
       (if (and par (not (eq? chd par))) (recur par (hash-ref sets par #f)) chd)))
   
   (let* ([last-contexts (make-hasheq)]
+         [record-binder
+          (λ (pat under assignments)
+            (if (null? under) 
+                assignments
+                (let ([last (hash-ref last-contexts pat #f)])
+                  (if last
+                      (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)
+                      (begin
+                        (hash-set! last-contexts pat under)
+                        assignments)))))]
          [assignments
           (let recur ([pat pattern] [under null] [assignments #hasheq()])
             (match pat
               ;; `(name ,id ,sub-pat) not considered, since bindings introduced
               ;; by name must be unique.
               [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
-               (if (null? under) 
-                   assignments
-                   (let ([last (hash-ref last-contexts pat #f)])
-                     (if last
-                         (foldl (λ (cur last asgns) (union cur last asgns)) assignments under last)
-                         (begin
-                           (hash-set! last-contexts pat under)
-                           assignments))))]
-              [(struct ellipsis (_ sub-pat (struct class (cls)) _))
-               (recur sub-pat (cons cls under) assignments)]
+               (record-binder pat under assignments)]
+              [(struct ellipsis (name sub-pat (struct class (cls)) _))
+               (recur sub-pat (cons cls under)
+                 (if (and (symbol? name) (regexp-match named-ellipsis-rx (symbol->string name)))
+                     (record-binder name under assignments)
+                     assignments))]
               [(? list?)
                (foldl (λ (pat asgns) (recur pat under asgns)) assignments pat)]
               [_ assignments]))])
