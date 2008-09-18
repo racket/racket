@@ -58,14 +58,6 @@
   (test (min-prods (car (compiled-lang-lang lang)) (find-base-cases lang))
         (list (car (nt-rhs (car (compiled-lang-lang lang)))))))
 
-(let ()
-  (define-language lang
-    (a (side-condition "strin_g" #t) 1/2 #t))
-  (let* ([literals (sort (lang-literals lang) string<=?)]
-         [chars (sort (unique-chars literals) char<=?)])
-    (test literals '("1/2" "side-condition" "strin_g"))
-    (test chars '(#\- #\/ #\1 #\2 #\c #\d #\e #\g #\i #\n #\o #\r #\s #\t))))
-
 (define (make-random nums)
   (let ([nums (box nums)])
     (λ (m)
@@ -77,31 +69,23 @@
 
 (test (pick-length (make-random '(1 1 1 0))) 3)
 
-(let ()
-  (define-language lang
-    (a bcd cbd))
-  (let* ([lits (sort (lang-literals lang) string<=?)]
-         [chars (sort (unique-chars lits) char<=?)])
-    (test (pick-char 0 chars (make-random '(1))) #\c)
-    (test (pick-char 50 chars (make-random '(1 1))) #\c)
-    (test (pick-char 50 chars (make-random '(0 65))) #\a)
-    (test (pick-char 500 chars (make-random '(0 1 65))) #\a)
-    (test (pick-char 500 chars (make-random '(0 0 3))) #\⇒)
-    (test (pick-char 2000 chars (make-random '(0 0 1 3))) #\⇒)
-    (test (pick-char 2000 chars (make-random '(0 0 0 1))) (integer->char #x4E01))
-    (test (pick-char 50 chars (make-random `(0 ,(- (char->integer #\_) #x20)))) #\`)
-    (test (random-string chars lits 3 0 (make-random '(0 1))) "cbd")
-    (test (random-string chars lits 3 0 (make-random '(1 2 1 0))) "dcb")
-    (test (pick-string chars lits 0 (make-random '(1 1 1 0 1 2 1 0))) "dcb")
-    (test (pick-var chars lits null 0 (make-random '(0 0 1 1 2 1 0))) 'dcb)
-    (test (pick-var chars lits '(x) 0 (make-random '(1 0))) 'x)))
-
-(let ()
-  (define-language empty)
-  (let* ([lits (sort (lang-literals empty) string<=?)]
-         [chars (sort (unique-chars lits) char<=?)])
-    (test (pick-char 0 chars (make-random '(65))) #\a)
-    (test (random-string chars lits 1 0 (make-random '(65))) "a")))
+(let* ([lits '("bcd" "cbd")]
+       [chars (sort (unique-chars lits) char<=?)])
+  (test (pick-char 0 chars (make-random '(1))) #\c)
+  (test (pick-char 50 chars (make-random '(1 1))) #\c)
+  (test (pick-char 50 chars (make-random '(0 65))) #\a)
+  (test (pick-char 500 chars (make-random '(0 1 65))) #\a)
+  (test (pick-char 500 chars (make-random '(0 0 3))) #\⇒)
+  (test (pick-char 2000 chars (make-random '(0 0 1 3))) #\⇒)
+  (test (pick-char 2000 chars (make-random '(0 0 0 1))) (integer->char #x4E01))
+  (test (pick-char 50 chars (make-random `(0 ,(- (char->integer #\_) #x20)))) #\`)
+  (test (random-string chars lits 3 0 (make-random '(0 1))) "cbd")
+  (test (random-string chars lits 3 0 (make-random '(1 2 1 0))) "dcb")
+  (test (pick-string chars lits 0 (make-random '(1 1 1 0 1 2 1 0))) "dcb")
+  (test (pick-var chars lits null 0 (make-random '(0 0 1 1 2 1 0))) 'dcb)
+  (test (pick-var chars lits '(x) 0 (make-random '(1 0))) 'x)
+  (test (pick-char 0 null (make-random '(65))) #\a)
+  (test (random-string null null 1 0 (make-random '(65))) "a"))
 
 (define-syntax exn:fail-message
   (syntax-rules ()
@@ -161,9 +145,9 @@
   ;; Generate pattern that's not a non-terminal
   (test 
    (generate 
-    lc (x_1 x_1) 1 0
-    (decisions #:var (list (λ _ 'x)))) 
-   '(x x))
+    lc (x x x_1 x_1) 1 0
+    (decisions #:var (list (λ _ 'x) (λ _ 'y)))) 
+   '(x x y y))
   
   ;; Minimum rhs is chosen with zero size
   (test 
@@ -325,14 +309,15 @@
 
 (let ()
   (define-language lang
-    (e string))
+    (e string)
+    (f foo bar))
   (test
    (let/ec k 
      (generate 
       lang e 5 0 
       (decisions #:str (list (λ (c l a) (k (cons (sort c char<=?) (sort l string<=?))))))))
-   (cons '(#\g #\i #\n #\r #\s #\t)
-         '("string"))))
+   (cons '(#\a #\b #\f #\o #\r)
+         '("bar" "foo"))))
 
 (let ()
   (define-language lang
@@ -343,6 +328,7 @@
     (e (side-condition (x_1 x_!_2 x_!_2) (not (eq? (term x_1) 'x))))
     (x variable))
   (test (generate lang b 5 0) 43)
+  (test (generate lang (side-condition a (odd? (term a))) 5 0) 43)
   (test (exn:fail-message (generate lang c 5 0))
         #rx"unable to generate")
   (test ; binding works for with side-conditions failure/retry
@@ -467,61 +453,99 @@
                              #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
 
+;; current-error-port-output : (-> (-> any) string)
+(define (current-error-port-output thunk)
+  (let ([p (open-output-string)])
+    (parameterize ([current-error-port p])
+      (thunk))
+    (begin0
+      (get-output-string p)
+      (close-output-port p))))
+
 (let ()
   (define-language lang
     (d 5)
     (e e 4))
-  (test (check lang () 2 0 #f) "failed after 1 attempts: ()")
+  (test (current-error-port-output (λ () (check lang () 2 0 #f))) 
+        "failed after 1 attempts: ()")
   (test (check lang () 2 0 #t) #t)
   (test (check lang ([x d] [y e]) 2 0 (and (eq? (term x) 5) (eq? (term y) 4))) #t)
-  (test (check lang ([x d] [y e]) 2 0 #f) "failed after 1 attempts: ((x 5) (y 4))")
+  (test (current-error-port-output (λ () (check lang ([x d] [y e]) 2 0 #f)))
+        "failed after 1 attempts: ((x 5) (y 4))")
   (test (exn:fail-message (check lang ([x d]) 2 0 (error 'pred-raised)))
         #rx"term \\(\\(x 5\\)\\) raises"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
-  (let ([pattern '((x_1 x_2) ... 3)])
-    (test-match (list (struct ellipsis ('... '(x_1 x_2) _ '(x_2 x_1))) 3)
-                (parse-pattern pattern))
-    (test (unparse-pattern (parse-pattern pattern)) pattern))
-  (let ([pattern '((x_1 ..._1 x_2) ..._!_1)])
-    (test-match (struct ellipsis 
-                        ((struct mismatch (i_1 '..._!_1)) 
-                         (list (struct ellipsis ('..._1 'x_1 (struct class ('..._1)) '(x_1))) 'x_2)
-                         _ `(x_2 ..._1 ,(struct class ('..._1)) x_1)))
-                (car (parse-pattern pattern)))
-    (test (unparse-pattern (parse-pattern pattern)) pattern))
-  (let ([pattern '((name x_1 x_!_2) ...)])
-    (test-match (struct ellipsis 
-                        ('... `(name x_1 ,(struct mismatch (i_2 'x_!_2))) _ 
-                              (list 'x_1 (struct mismatch (i_2 'x_!_2)))))
-                (car (parse-pattern pattern)))
-    (test (unparse-pattern (parse-pattern pattern)) pattern))
-  (let ([pattern '((x_1 ...) ..._1)])
-    (test-match (struct ellipsis 
-                        ('..._1
-                         (list (struct ellipsis ('... 'x_1 (struct class (c_1)) '(x_1))))
-                         _
-                         `(,(struct class (c_1)) x_1)))
-                (car (parse-pattern pattern)))
-    (test (unparse-pattern (parse-pattern pattern)) pattern))
-  (let ([pattern '((x_1 ..._!_1) ...)])
-    (test-match (struct ellipsis 
-                        ('...
-                         (list 
-                          (struct ellipsis ((struct mismatch (i_1 '..._!_1)) 'x_1 (struct class (c_1)) '(x_1))))
-                         _
-                         (list  (struct class (c_1)) (struct mismatch (i_1 '..._!_1)) 'x_1)))
-                (car (parse-pattern pattern)))
-    (test (unparse-pattern (parse-pattern pattern)) pattern)
-    (test (parse-pattern '(cross e)) '(cross e-e))
-    (test (parse-pattern '(cross e) #t) '(cross e))))
+      (define-language lang (x variable))
+      (let ([pattern '((x_1 number) ... 3)])
+        (test-match (list 
+                     (struct ellipsis 
+                             ('... 
+                              (list (struct binder ('x_1)) (struct binder ('number)))
+                              _
+                              (list (struct binder ('number)) (struct binder ('x_1)))))
+                     3)
+                    (parse-pattern pattern lang 'top-level))
+        (test (unparse-pattern (parse-pattern pattern lang 'top-level)) pattern))
+      (let ([pattern '((x_1 ..._1 x_2) ..._!_1)])
+        (test-match (struct ellipsis 
+                            ((struct mismatch (i_1 '..._!_1)) 
+                             (list 
+                              (struct ellipsis 
+                                      ('..._1 
+                                       (struct binder ('x_1))
+                                       (struct class ('..._1))
+                                       (list (struct binder ('x_1)))))
+                              (struct binder ('x_2)))
+                             _ 
+                             (list (struct binder ('x_2)) '..._1 (struct class ('..._1)) (struct binder ('x_1)))))
+                    (car (parse-pattern pattern lang 'grammar)))
+        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
+      (let ([pattern '((name x_1 x_!_2) ...)])
+        (test-match (struct ellipsis 
+                            ('... `(name x_1 ,(struct mismatch (i_2 'x_!_2))) _ 
+                                  (list (struct binder ('x_1)) (struct mismatch (i_2 'x_!_2)))))
+                    (car (parse-pattern pattern lang 'grammar)))
+        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
+      (let ([pattern '((x ...) ..._1)])
+        (test-match (struct ellipsis 
+                            ('..._1
+                             (list 
+                              (struct ellipsis 
+                                      ('...
+                                       (struct binder ('x))
+                                       (struct class (c_1))
+                                       (list (struct binder ('x))))))
+                             _
+                             (list (struct class (c_1)) (struct binder ('x)))))
+                    (car (parse-pattern pattern lang 'top-level)))
+        (test (unparse-pattern (parse-pattern pattern lang 'top-level)) pattern))
+      (let ([pattern '((variable_1 ..._!_1) ...)])
+        (test-match (struct ellipsis 
+                            ('...
+                             (list 
+                              (struct ellipsis 
+                                      ((struct mismatch (i_1 '..._!_1))
+                                       (struct binder ('variable_1))
+                                       (struct class (c_1))
+                                       (list (struct binder ('variable_1))))))
+                             _
+                             (list (struct class (c_1)) (struct mismatch (i_1 '..._!_1)) (struct binder ('variable_1)))))
+                    (car (parse-pattern pattern lang 'grammar)))
+        (test (unparse-pattern (parse-pattern pattern lang 'grammar)) pattern))
+      (test (parse-pattern '(cross x) lang 'grammar) '(cross x-x))
+      (test (parse-pattern '(cross x) lang 'cross) '(cross x))
+      (test (parse-pattern 'x lang 'grammar) 'x)
+      (test (parse-pattern 'variable lang 'grammar) 'variable))
 
 (let ()
+  (define-language lang (x variable))
   (define-syntax test-class-reassignments
     (syntax-rules ()
       [(_ pattern expected)
-       (test (to-table (class-reassignments (parse-pattern pattern))) expected)]))
+       (test (to-table (class-reassignments (parse-pattern pattern lang 'top-level)))
+             expected)]))
   
   (test-class-reassignments 
    '(x_1 ..._1 x_2 ..._2 x_2 ..._1)
@@ -544,11 +568,16 @@
   (test-class-reassignments
    '(x_1 ..._1 x_1 ..._2 x_2 ..._1 x_2 ..._4 x_2 ..._3)
    '((..._1 . ..._3) (..._2 . ..._3) (..._4 . ..._3)))
-  (test (hash-map (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1))) 
-                  (λ (_ cls) cls))
-        '(..._1 ..._1))
+  (test 
+   (hash-map 
+    (class-reassignments (parse-pattern '(x_1 ... x_1 ..._!_1 x_1 ..._1) lang 'top-level)) 
+    (λ (_ cls) cls))
+   '(..._1 ..._1))
   (test-class-reassignments
    '((3 ..._1) ..._2 (4 ..._1) ..._3)
-   '((..._2 . ..._3))))
+   '((..._2 . ..._3)))
+  (test-class-reassignments
+   '(x ..._1 x ..._2 variable ..._2 variable ..._3 variable_1 ..._3 variable_1 ..._4)
+   '((..._1 . ..._4) (..._2 . ..._4) (..._3 . ..._4))))
 
 (print-tests-passed 'rg-test.ss)

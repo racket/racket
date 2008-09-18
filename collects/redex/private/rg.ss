@@ -30,28 +30,13 @@ To do a better job of not generating programs with free variables,
 (define (use-lang-literal? [random random]) (= 0 (random 20)))
 (define (try-to-introduce-binder?) (= 0 (random 2)) #f)
 
-(define (hash->keys hash) (hash-map hash (λ (k v) k)))
-
-(define (lang-literals lang)
-  (define (process-pattern pat lits)
-    (cond [(symbol? pat) (process-pattern (symbol->string pat) lits)]
-          [(string? pat) (hash-set lits pat (void))]
-          [(number? pat) (process-pattern (number->string pat) lits)]
-          [(pair? pat) (foldl process-pattern lits pat)]
-          [else lits]))
-  (define (process-non-terminal nt chars)
-    (foldl (λ (rhs chars) (process-pattern (rhs-pattern rhs) chars)) 
-           chars (nt-rhs nt)))
-  (hash->keys 
-   (foldl process-non-terminal 
-          (make-immutable-hash null) (compiled-lang-lang lang))))
-
+;; unique-chars : (listof string) -> (listof char)
 (define (unique-chars strings)
-  (define (record-chars char chars)
-    (if (char=? char #\_) chars (hash-set chars char (void))))
-  (hash->keys
-   (foldl (λ (s c) (foldl record-chars c (string->list s)))
-          (make-immutable-hash null) strings)))
+  (let ([uniq (make-hasheq)])
+    (for ([lit strings])
+         (for ([char lit])
+              (hash-set! uniq char #t)))
+    (hash-map uniq (λ (k v) k))))
 
 (define generation-retries 100)
 (define ascii-chars-threshold 50)
@@ -133,7 +118,7 @@ To do a better job of not generating programs with free variables,
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
-  (define lang-lits (lang-literals lang))
+  (define lang-lits (map symbol->string (compiled-lang-literals lang)))
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
@@ -189,6 +174,14 @@ To do a better job of not generating programs with free variables,
                 (values term state)
                 (retry (sub1 remaining)))))))
   
+  (define (generate/prior name state generate)
+    (let* ([none (gensym)]
+           [prior (hash-ref (state-env state) name none)])
+      (if (eq? prior none)
+          (let-values ([(term state) (generate)])
+            (values term (set-env state name term)))
+          (values prior state))))
+  
   (define (mismatches-satisfied? env)
     (let ([groups (make-hasheq)])
       (define (get-group group)
@@ -214,10 +207,6 @@ To do a better job of not generating programs with free variables,
   (define (((generate-pat bound-vars size) pat in-hole) state)
     (define recur (generate-pat bound-vars size))
     (define (recur/pat pat) ((recur pat in-hole) state))
-    (define (generate-nt/built-in undecorated decorated)
-      (if ((is-nt? lang) undecorated)
-          (generate-nt undecorated decorated bound-vars size in-hole state)
-          (recur/pat undecorated)))
     
     (match pat
       [`number (values ((next-number-decision) random-numbers) state)]
@@ -235,14 +224,14 @@ To do a better job of not generating programs with free variables,
       [`(side-condition ,pat ,(? procedure? condition))
        (define (bindings env)
          (make-bindings
-          (for/fold ([bindings null]) ([(name value) env])
-            (if (symbol? name) (cons (make-bind name value) bindings) bindings))))
-       ;; `env' includes bindings beyond those bound in `pat',
-       ;; but compiled side-conditions ignore these.
+          (for/fold ([bindings null]) ([(key val) env])
+                    (if (binder? key) 
+                        (cons (make-bind (binder-name key) val) bindings)
+                        bindings))))
        (generate/pred pat recur/pat (λ (_ env) (condition (bindings env))))]
       [`(name ,(? symbol? id) ,p)
        (let-values ([(term state) (recur/pat p)])
-         (values term (set-env state id term)))]
+         (values term (set-env state (make-binder id) term)))]
       [`hole (values in-hole state)]
       [`(in-hole ,context ,contractum)
        (let-values ([(term state) (recur/pat contractum)])
@@ -253,18 +242,16 @@ To do a better job of not generating programs with free variables,
          (values (generate* lang nt size attempt decisions@) state))]
       [(? (is-nt? lang))
        (generate-nt pat pat bound-vars size in-hole state)]
-      [(and (? symbol?) (app symbol->string (regexp named-nt-rx (list _ nt))))
-       (let* ([undecorated (string->symbol nt)]
-              [none (gensym)]
-              [prior (hash-ref (state-env state) pat none)])
-         (if (eq? prior none)
-             (let-values ([(term state) (generate-nt/built-in undecorated pat)])
-               (values term (set-env state pat term)))
-             (values prior state)))]
-      [(struct mismatch (name group))
-       (let ([undecorated (string->symbol (cadr (regexp-match mismatch-nt-rx (symbol->string group))))])
-         (let-values ([(term state) (generate-nt/built-in undecorated name)])
-           (values term (set-env state pat term))))]
+      [(struct binder ((and name (or (? (is-nt? lang) nt) (app (symbol-match named-nt-rx) (? (is-nt? lang) nt))))))
+       (generate/prior pat state (λ () (generate-nt nt name bound-vars size in-hole state)))]
+      [(struct binder ((or (? built-in? b) (app (symbol-match named-nt-rx) (? built-in? b)))))
+       (generate/prior pat state (λ () (recur/pat b)))]
+      [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? (is-nt? lang) nt)))))
+       (let-values ([(term state) (generate-nt nt pat bound-vars size in-hole state)])
+         (values term (set-env state pat term)))]
+      [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? built-in? b)))))
+       (let-values ([(term state) (recur/pat b)])
+         (values term (set-env state pat term)))]
       [`(cross ,(? symbol? cross-nt))
        (generate-nt cross-nt #f bound-vars size in-hole state)]
       [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
@@ -403,39 +390,55 @@ To do a better job of not generating programs with free variables,
 (define ((is-nt? lang) x)
   (and (hash-ref (compiled-lang-ht lang) x #f) #t))
 
+;; built-in? : any -> boolean
+(define (built-in? x)
+  (and (memq x underscore-allowed) #t))
+
 (define named-nt-rx #rx"^([^_]+)_[^_]*$")
 (define mismatch-nt-rx #rx"([^_]+)_!_[^_]*$")
 (define named-ellipsis-rx #rx"^\\.\\.\\._[^_]*$")
 (define mismatch-ellipsis-rx #rx"^\\.\\.\\._!_[^_]*$")
 
+;; symbol-match : regexp -> any -> (or/c false symbol)
+;; Returns the sub-symbol matching the sub-pattern inside
+;; the first capturing parens.
+(define ((symbol-match rx) x)
+  (and (symbol? x) 
+       (let ([match (regexp-match rx (symbol->string x))])
+         (and match (cadr match) (string->symbol (cadr match))))))
+
 (define-struct class (id) #:inspector (make-inspector))
 (define-struct mismatch (id group) #:inspector (make-inspector))
+(define-struct binder (name) #:inspector (make-inspector))
 
 ;; name: (or/c symbol? mismatch?)
 ;;   The generator records `name' in the environment when generating an ellipsis,
-;;   to collect bindings (for side-condition evaluation) and check mismatch satisfaction.
+;;   to enforce sequence length constraints.
 ;; class: class?
 ;;   When one binding appears under two (non-nested) ellipses, the sequences generated
 ;;   must have the same length; `class' groups ellipses to reflect this constraint.
-;; var: (list/c (or/c symbol? class? mismatch?))
+;; var: (list/c (or/c symbol? class? mismatch? binder?))
 ;;   the bindings within an ellipses, used to split and merge the environment before
 ;;   and after generating an ellipsis
 (define-struct ellipsis (name pattern class vars) #:inspector (make-inspector))
 
-;; parse-pattern : pattern -> parsed-pattern
-;; Turns "pat ...", "pat ..._id", and "pat ..._!_id" into ellipsis structs
-;; and "nt_!_id" into mismatch structs.
-(define (parse-pattern pattern [cross? #f])
+;; parse-pattern : pattern compiled-lang (or/c 'cross 'top-level 'grammar) -> parsed-pattern
+;; Turns "pat ...", "pat ..._id", and "pat ..._!_id" into ellipsis structs,
+;; "nt_!_id" into mismatch structs, "nt_id" into binder structs, and
+;; "nt/underscore-allowed" in top-level patterns into binder structs.
+(define (parse-pattern pattern lang mode)
   (define (recur pat vars)
     (match pat
-      [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
-       (values pat (cons pat vars))]
-      [(and (? symbol?) (app symbol->string (regexp mismatch-nt-rx)))
+      [(or (app (symbol-match named-nt-rx) (or (? (is-nt? lang)) (? built-in?)))
+           (and (? (λ (_) (eq? mode 'top-level))) (or (? (is-nt? lang)) (? built-in?))))
+       (let ([b (make-binder pat)])
+         (values b (cons b vars)))]
+      [(app (symbol-match mismatch-nt-rx) (or (? (is-nt? lang)) (? built-in?)))
        (let ([mismatch (make-mismatch (gensym) pat)])
          (values mismatch (cons mismatch vars)))]
       [`(name ,name ,sub-pat)
        (let-values ([(parsed vars) (recur sub-pat vars)])
-         (values `(name ,name ,parsed) (cons name vars)))]
+         (values `(name ,name ,parsed) (cons (make-binder name) vars)))]
       [(list-rest sub-pat (and (? symbol?) (app symbol->string (regexp named-ellipsis-rx)) name) rest)
        (let*-values ([(sub-pat-parsed sub-pat-vars) (recur sub-pat null)]
                      [(seq) (make-ellipsis name sub-pat-parsed (make-class name) sub-pat-vars)]
@@ -456,7 +459,7 @@ To do a better job of not generating programs with free variables,
                      [(vars) (append (list* class mismatch sub-pat-vars) vars)]
                      [(rest-parsed vars) (recur rest vars)])
          (values (cons seq rest-parsed) vars))]
-      [(and (? (λ (_) (not cross?))) `(cross ,(and (? symbol?) nt)))
+      [(and (? (λ (_) (not (eq? mode 'cross)))) `(cross ,(and (? (is-nt? lang)) nt)))
        (let ([nt-str (symbol->string nt)])
          (values `(cross ,(string->symbol (string-append nt-str "-" nt-str))) vars))]
       [(cons first rest)
@@ -469,19 +472,20 @@ To do a better job of not generating programs with free variables,
 
 ;; parse-language: compiled-lang -> compiled-lang
 (define (parse-language lang)
-  (define ((parse-nt cross?) nt)
-    (make-nt (nt-name nt) (map (parse-rhs cross?) (nt-rhs nt))))
-  (define ((parse-rhs cross?) rhs)
-    (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) cross?))
+  (define ((parse-nt mode) nt)
+    (make-nt (nt-name nt) (map (parse-rhs mode) (nt-rhs nt))))
+  (define ((parse-rhs mode) rhs)
+    (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) lang mode))
               (rhs-var-info rhs)))
   (struct-copy 
    compiled-lang lang
-   [lang (map (parse-nt #f) (compiled-lang-lang lang))]
-   [cclang (map (parse-nt #t) (compiled-lang-cclang lang))]))
+   [lang (map (parse-nt 'grammar) (compiled-lang-lang lang))]
+   [cclang (map (parse-nt 'top-level) (compiled-lang-cclang lang))]))
 
 ;; unparse-pattern: parsed-pattern -> pattern
 (define unparse-pattern
   (match-lambda
+    [(struct binder (name)) name]
     [(struct mismatch (_ group)) group]
     [(list-rest (struct ellipsis (name sub-pat _ _)) rest)
      (let ([ellipsis (if (mismatch? name) (mismatch-group name) name)])
@@ -515,8 +519,8 @@ To do a better job of not generating programs with free variables,
             (match pat
               ;; `(name ,id ,sub-pat) not considered, since bindings introduced
               ;; by name must be unique.
-              [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
-               (record-binder pat under assignments)]
+              [(struct binder (name))
+               (record-binder name under assignments)]
               [(struct ellipsis (name sub-pat (struct class (cls)) _))
                (recur sub-pat (cons cls under)
                  (if (and (symbol? name) (regexp-match named-ellipsis-rx (symbol->string name)))
@@ -558,7 +562,8 @@ To do a better job of not generating programs with free variables,
                         ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" generated exn))])
                       property)
                     (loop (sub1 remaining))
-                    (format "failed after ~s attempts: ~s" 
+                    (fprintf (current-error-port) 
+                             "failed after ~s attempts: ~s" 
                             attempt generated)))))))]))
 
 (define-syntax (generate stx)
@@ -569,11 +574,11 @@ To do a better job of not generating programs with free variables,
      (with-syntax ([pattern 
                     (rewrite-side-conditions/check-errs 
                      (language-id-nts #'lang 'generate)
-                     'generate #f #'pat)])
+                     'generate #t #'pat)])
        (syntax 
         (generate* 
          (parse-language lang)
-         (reassign-classes (parse-pattern`pattern))
+         (reassign-classes (parse-pattern `pattern lang 'top-level))
          size attempt decisions@)))]))
 
 (define-signature decisions^
@@ -594,10 +599,11 @@ To do a better job of not generating programs with free variables,
         (define (next-string-decision) pick-string)))
 
 (provide pick-from-list pick-var pick-length min-prods decisions^ 
-         is-nt? lang-literals pick-char random-string pick-string
-         check pick-nt unique-chars pick-any sexp generate parse-pattern
+         is-nt? pick-char random-string pick-string check
+         pick-nt unique-chars pick-any sexp generate parse-pattern
          class-reassignments reassign-classes unparse-pattern
-         (struct-out ellipsis) (struct-out mismatch) (struct-out class))
+         (struct-out ellipsis) (struct-out mismatch) (struct-out class)
+         (struct-out binder))
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])
