@@ -3,37 +3,22 @@
 (require (for-syntax scheme/base
                      scheme/struct-info)
          syntax/boundmap
+         syntax/kerncase
          syntax/stx)
+
 (provide make
 
          chunk-kw-seq/no-dups
          chunk-kw-seq
          reject-duplicate-chunks
          check-id
-#|
-         monomap?
-         monomap-get
-         monomap-put!
-         monomap-map
-         monomap-for-each
-         monomap-domain
-         monomap-range
+         check-nat/f
+         check-string
+         check-idlist
 
-         isomap?
-         isomap-get
-         isomap-reverse-get
-         isomap-put!
-         isomap-map
-         isomap-for-each
-         isomap-domain
-         isomap-range
-         
-         make-bound-id-monomap
-         make-free-id-monomap
-         make-hash-monomap
-         (rename-out [-make-isomap make-isomap])
-|#
-         )
+         head-local-expand-and-categorize-syntaxes
+         categorize-expanded-syntaxes
+         head-local-expand-syntaxes)
 
 (define-syntax (make stx)
   (syntax-case stx ()
@@ -80,7 +65,8 @@
               [arity (cdr (assq kw-value kws))]
               [args+rest (stx-split #'more arity)])
          (if args+rest
-             (loop (cdr args+rest) (cons (list* kw-value #'kw (car args+rest)) rchunks))
+             (loop (cdr args+rest)
+                   (cons (list* kw-value #'kw (car args+rest)) rchunks))
              (raise-syntax-error #f "too few arguments for keyword" #'kw ctx)))]
       [(kw . more)
        (keyword? (syntax-e #'kw))
@@ -90,13 +76,14 @@
   (loop stx null))
 
 (define (reject-duplicate-chunks chunks #:context [ctx #f])
+  (define kws (make-hasheq))
   (define (loop chunks)
     (when (pair? chunks)
-      (let* ([kw (caar chunks)]
-             [dup (assq kw (cdr chunks))])
-        (when dup
-          (raise-syntax-error #f "duplicate keyword argument" (cadr dup) ctx))
-        (loop (cdr chunks)))))
+      (let ([kw (caar chunks)])
+        (when (hash-ref kws kw #f)
+          (raise-syntax-error #f "duplicate keyword argument" (cadar chunks) ctx))
+        (hash-set! kws kw #t))
+      (loop (cdr chunks))))
   (loop chunks))
 
 ;; stx-split : stx nat -> (cons (listof stx) stx)
@@ -114,6 +101,104 @@
   (unless (identifier? stx)
     (raise-syntax-error 'pattern "expected identifier" stx))
   stx)
+
+(define (check-string stx)
+  (unless (string? (syntax-e stx))
+    (raise-syntax-error #f "expected string" stx))
+  stx)
+
+;; nat/f : any -> boolean
+(define (nat/f x)
+  (or (not x) (exact-nonnegative-integer? x)))
+
+(define (check-nat/f stx)
+  (let ([d (syntax-e stx)])
+    (unless (nat/f d)
+      (raise-syntax-error #f "expected exact nonnegative integer or #f" stx))
+    stx))
+
+(define (check-idlist stx)
+  (unless (and (stx-list? stx) (andmap identifier? (stx->list stx)))
+    (raise-syntax-error #f "expected list of identifiers" stx))
+  (stx->list stx))
+
+
+;; head-local-expand-syntaxes : syntax boolean boolean -> stxs ^ 6
+;; Setting allow-def-after-expr? allows def/expr interleaving.
+(define (head-local-expand-and-categorize-syntaxes x allow-def-after-expr?)
+  (define estxs (head-local-expand-syntaxes x allow-def-after-expr?))
+  (define-values (defs vdefs sdefs exprs)
+    (categorize-expanded-syntaxes estxs))
+  (values estxs estxs defs vdefs sdefs exprs))
+
+(define (categorize-expanded-syntaxes estxs0)
+  (let loop ([estxs estxs0] [defs null] [vdefs null] [sdefs null] [exprs null])
+    (cond [(pair? estxs)
+           (let ([ee (car estxs)])
+             (syntax-case ee (begin define-values define-syntaxes)
+               [(define-values . _)
+                (loop (cdr estxs)
+                      (cons ee defs)
+                      (cons ee vdefs)
+                      sdefs
+                      exprs)]
+               [(define-syntaxes (var ...) rhs)
+                (loop (cdr estxs)
+                      (cons ee defs)
+                      vdefs
+                      (cons ee sdefs)
+                      exprs)]
+               [_
+                (loop (cdr estxs)
+                      defs
+                      vdefs
+                      sdefs
+                      (cons ee exprs))]))]
+          [(null? estxs)
+           (values (reverse defs)
+                   (reverse vdefs)
+                   (reverse sdefs)
+                   (reverse exprs))])))
+
+;; head-local-expand-syntaxes : syntax boolean -> (listof syntax)
+(define (head-local-expand-syntaxes x allow-def-after-expr?)
+  (let ([intdef (syntax-local-make-definition-context)]
+        [ctx '(block)])
+    (let loop ([x x] [ex null] [expr? #f])
+      (cond [(stx-pair? x)
+             (let ([ee (local-expand (stx-car x)
+                                     ctx
+                                     (kernel-form-identifier-list)
+                                     intdef)])
+               (syntax-case ee (begin define-values define-syntaxes)
+                 [(begin e ...)
+                  (loop (append (syntax->list #'(e ...)) (stx-cdr x)) ex expr?)]
+                 [(begin . _)
+                  (raise-syntax-error #f "bad begin form" ee)]
+                 [(define-values (var ...) rhs)
+                  (andmap identifier? (syntax->list #'(var ...)))
+                  (begin
+                    (when (and expr? (not allow-def-after-expr?))
+                      (raise-syntax-error #f "definition after expression" ee))
+                    (syntax-local-bind-syntaxes (syntax->list #'(var ...)) #f intdef)
+                    (loop (stx-cdr x) (cons ee ex) expr?))]
+                 [(define-values . _)
+                  (raise-syntax-error #f "bad define-values form" ee)]
+                 [(define-syntaxes (var ...) rhs)
+                  (andmap identifier? (syntax->list #'(var ...)))
+                  (begin
+                    (when (and expr? (not allow-def-after-expr?))
+                      (raise-syntax-error #f "definition after expression" ee))
+                    (syntax-local-bind-syntaxes (syntax->list #'(var ...))
+                                                #'rhs
+                                                intdef)
+                    (loop (stx-cdr x) (cons ee ex) expr?))]
+                 [(define-syntaxes . _)
+                  (raise-syntax-error #f "bad define-syntaxes form" ee)]
+                 [_
+                  (loop (stx-cdr x) (cons ee ex) #t)]))]
+            [(stx-null? x)
+             (reverse ex)]))))
 
 
 #|

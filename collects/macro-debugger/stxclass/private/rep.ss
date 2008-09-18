@@ -31,7 +31,7 @@
          format-symbol)
 
 ;; An SC is one of (make-sc symbol (listof symbol) (list-of SAttr) identifier)
-(define-struct sc (name inputs attrs parser-name)
+(define-struct sc (name inputs attrs parser-name description)
   #:property prop:procedure (lambda (self stx) (sc-parser-name self))
   #:transparent)
 
@@ -44,13 +44,19 @@
 (define-struct attr (name depth inner)
   #:transparent)
 
-;; A RHS is one of
-;;   (make-rhs:union <RHS> (listof RHS))
-;;   (make-rhs:pattern <RHS> Pattern Env Env (listof SideClause))
-;; where <RHS> is stx (listof SAttr)
-(define-struct rhs (orig-stx attrs) #:transparent)
-(define-struct (rhs:union rhs) (rhss) #:transparent)
-(define-struct (rhs:pattern rhs) (pattern decls remap wheres) #:transparent)
+;; RHSBase is stx (listof SAttr)
+(define-struct rhs (orig-stx attrs)
+  #:transparent)
+
+;; A RHS is 
+;;   (make-rhs:union <RHSBase> (listof RHS))
+(define-struct (rhs:union rhs) (transparent? description patterns)
+  #:transparent)
+
+;; An RHSPattern is
+;;   (make-rhs:pattern <RHSBase> Pattern Env Env (listof SideClause))
+(define-struct (rhs:pattern rhs) (pattern decls remap wheres)
+  #:transparent)
 
 ;; A Pattern is one of
 ;;   (make-pat:id <Pattern> identifier SC/#f (listof stx))
@@ -88,7 +94,7 @@
 ;; make-empty-sc : identifier => SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-empty-sc name)
-  (make sc (syntax-e name) null null #f))
+  (make sc (syntax-e name) null null #f #f))
 
 (define (iattr? a)
   (and (attr? a) (identifier? (attr-name a))))
@@ -101,8 +107,8 @@
  [sattr? (any/c . -> . boolean?)]
  [reorder-iattrs
   ((listof sattr?) (listof iattr?) (identifier? . -> . symbol?) . -> . (listof iattr?))]
- [parse-rhs (syntax? boolean? . -> . rhs?)]
- [parse-splice-rhs (syntax? boolean? . -> . rhs?)]
+ [parse-rhs (syntax? boolean? syntax? . -> . rhs?)]
+ [parse-splice-rhs (syntax? boolean? syntax? . -> . rhs?)]
  [flatten-sattrs
   ([(listof sattr?)] [exact-integer? (or/c symbol? false/c)] . ->* . (listof sattr?))]
 
@@ -208,25 +214,51 @@
 
 (define allow-unbound-stxclasses (make-parameter #f))
 
-;; parse-rhs : stx(SyntaxClassRHS) boolean -> RHS
+;; parse-rhs : stx(SyntaxClassRHS) boolean stx -> RHS
 ;; If allow-unbound? is true, then unbound stxclass acts as if it has no attrs.
 ;; Used for pass1 (attr collection); parser requires stxclasses to be bound.
-(define (parse-rhs stx allow-unbound?)
-  (parse-rhs* stx allow-unbound? #f))
+(define (parse-rhs stx allow-unbound? ctx)
+  (parse-rhs* stx allow-unbound? #f ctx))
 
-;; parse-splice-rhs : stx(SyntaxClassRHS) boolean -> RHS
+;; parse-splice-rhs : stx(SyntaxClassRHS) boolean stx -> RHS
 ;; If allow-unbound? is true, then unbound stxclass acts as if it has no attrs.
 ;; Used for pass1 (attr collection); parser requires stxclasses to be bound.
-(define (parse-splice-rhs stx allow-unbound?)
-  (parse-rhs* stx allow-unbound? #t))
+(define (parse-splice-rhs stx allow-unbound? ctx)
+  (parse-rhs* stx allow-unbound? #t ctx))
 
 ;; parse-rhs* : stx boolean boolean -> RHS
-(define (parse-rhs* stx allow-unbound? splice?)
-  (syntax-case stx (pattern union)
+(define (parse-rhs* stx allow-unbound? splice? ctx)
+  (define-values (chunks rest)
+    (chunk-kw-seq stx rhs-directive-table #:context ctx))
+  (define lits (assq '#:literals chunks))
+  (define desc (assq '#:description chunks))
+  (define trans (assq '#:transparent chunks))
+  (define literals (if lits (caddr lits) null))
+  (define (gather-patterns stx)
+    (syntax-case stx (pattern)
+      [((pattern . _) . rest)
+       (cons (parse-rhs-pattern (stx-car stx) allow-unbound? splice? literals)
+             (gather-patterns #'rest))]
+      [()
+       null]))
+  (define patterns (gather-patterns rest))
+  (when (null? patterns)
+        (raise-syntax-error #f "syntax class has no variants" ctx))
+  (let ([sattrs (intersect-attrss (map rhs-attrs patterns) ctx)])
+    (make rhs:union stx sattrs 
+          (and desc (caddr desc)) 
+          (and trans #t)
+          patterns)))
+
+;; parse-rhs-pattern : stx boolean boolean (listof identifier) -> RHS
+(define (parse-rhs-pattern stx allow-unbound? splice? literals)
+  (syntax-case stx (pattern)
     [(pattern p . rest)
      (parameterize ((allow-unbound-stxclasses allow-unbound?))
        (let-values ([(rest decls remap clauses)
-                     (parse-pattern-directives #'rest #:sc? #t)])
+                     (parse-pattern-directives #'rest
+                                               #:literals literals
+                                               #:sc? #t)])
          (unless (stx-null? rest)
            (raise-syntax-error #f "unexpected terms after pattern directives"
                                (if (pair? rest) (car rest) rest)))
@@ -241,25 +273,16 @@
                               (map pattern-attrs with-patterns))
                         stx)]
                 [sattrs (iattrs->sattrs attrs remap)])
-           (make rhs:pattern stx sattrs pattern decls remap clauses))))]
-    [(union p ...)
-     (let* ([rhss (for/list ([rhs (syntax->list #'(p ...))])
-                    (parse-rhs* rhs allow-unbound? splice?))]
-            [sattrs (intersect-attrss (map rhs-attrs rhss) stx)])
-       (make rhs:union stx sattrs rhss))]
-    [(id arg ...)
-     (identifier? #'id)
-     (parse-rhs* (syntax/loc stx (pattern || #:declare || (id arg ...)))
-                 allow-unbound?
-                 splice?)]
-    [id
-     (identifier? #'id)
-     (parse-rhs* (syntax/loc stx (pattern || #:declare || id))
-                 allow-unbound?
-                 splice?)]))
+           (make rhs:pattern stx sattrs pattern decls remap clauses))))]))
+
+;; rhs-directive-table
+(define rhs-directive-table
+  (list (list '#:literals check-idlist)
+        (list '#:description check-string)
+        (list '#:transparent)))
 
 ;; parse-pattern : stx(Pattern) env number -> Pattern
-(define (parse-pattern stx [decls (lambda _ #f)] [depth 0] [allow-splice? #f])
+(define (parse-pattern stx decls depth [allow-splice? #f])
   (syntax-case stx ()
     [dots
      (or (dots? #'dots)
@@ -354,12 +377,6 @@
      (raise-syntax-error 'pattern "expected sequence of patterns or sequence directive"
                          (if (pair? stx) (car stx) stx))]))
 
-(define (check-nat/f stx)
-  (let ([d (syntax-e stx)])
-    (unless (nat/f d)
-      (raise-syntax-error #f "expected exact nonnegative integer or #f" stx))
-    stx))
-
 (define head-directive-table
   (list (list '#:min check-nat/f)
         (list '#:max check-nat/f)
@@ -369,7 +386,7 @@
         (list '#:mand)))
 
 (define (parse-heads-k stx heads heads-attrs heads-depth k)
-  (define-values (chunks rest) (chunk-kw-seq stx head-directive-table))
+  (define-values (chunks rest) (chunk-kw-seq/no-dups stx head-directive-table))
   (reject-duplicate-chunks chunks)
   (let* ([min-row (assq '#:min chunks)]
          [max-row (assq '#:max chunks)]
@@ -411,10 +428,6 @@
        (not (or opt-row mand-row))
        (and occurs-row (caddr occurs-row))
        (and default-row (caddr default-row)))))
-
-;; nat/f : any -> boolean
-(define (nat/f x)
-  (or (not x) (exact-nonnegative-integer? x)))
 
 ;; append-attrs : (listof (listof IAttr)) stx -> (listof IAttr)
 (define (append-attrs attrss stx)

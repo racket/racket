@@ -2,7 +2,6 @@
 (require scheme/stxparam
          (for-syntax scheme/base))
 (provide pattern
-         union
          ...*
 
          try
@@ -15,13 +14,15 @@
          current-expression
          current-macro-name)
 
-;; (define-syntax-class name SyntaxClassRHS)
-;; (define-syntax-class (name id ...) SyntaxClassRHS)
+;; (define-syntax-class name SyntaxClassDirective* SyntaxClassRHS*)
+;; (define-syntax-class (name id ...) SyntaxClassDirective* SyntaxClassRHS*)
 
-;; A SyntaxClassRHS is one of
+;; A SCDirective is one of
+;;   #:description String
+;;   #:transparent
+
+;; A SyntaxClassRHS is
 ;;   (pattern Pattern PatternDirective ...)
-;;   (union SyntaxClassRHS ...)
-;;   syntax-class-id
 
 ;; A Pattern is one of
 ;;   name:syntaxclass
@@ -56,7 +57,6 @@
       (raise-syntax-error #f "keyword used out of context" stx))))
 
 (define-keyword pattern)
-(define-keyword union)
 (define-keyword ...*)
 (define-keyword ...**)
 
@@ -75,8 +75,13 @@
 (define (current-macro-name)
   (let ([expr (current-expression)])
     (and expr
-         (syntax-case expr ()
+         (syntax-case expr (set!)
+           [(set! kw . _)
+            #'kw]
            [(kw . _)
+            (identifier? #'kw)
+            #'kw]
+           [kw
             (identifier? #'kw)
             #'kw]
            [_ #f]))))
@@ -113,7 +118,8 @@
   (let loop ([f1 frontier1] [f2 frontier2])
     (cond [(and (null? f1) (null? f2))
            ;; FIXME: merge
-           (k x1 `(union ,p1 ,p2) #f frontier1)]
+           (let ([p (and p1 p2 (format "~a; or ~a" p1 p2))])
+             (k x1 p #f frontier1))]
           [(and (pair? f1) (null? f2)) (go1)]
           [(and (null? f1) (pair? f2)) (go2)]
           [(and (pair? f1) (pair? f2))
