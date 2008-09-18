@@ -26,7 +26,8 @@
 @item{Make a @filepath{test} subdirectory in your new directory.}
 
 @item{Create a file @filepath{config.ss} with the following content:
-  @schemeblock[((active-dirs ("test")))]}
+  @schemeblock[((active-dirs ("test"))
+                (https-port-number 9780))]}
 
 @item{In your new directory, run @commandline{mred -l handin-server}}
 
@@ -51,5 +52,9 @@
 @item{Check the status of your submission by pointing a web browser at
   @tt{https://localhost:7980/servlets/status.ss}.  Note the ``s'' in
   ``https''. Use the ``@tt{tester}'' username and ``@tt{pw}''
-  password, as before.}
+  password, as before.
+
+  NOTE: The @scheme[https-port-number] line in the
+  @filepath{config.ss} file enables the embedded secure server.  You
+  can remove it if you don't want it.}
 ]
