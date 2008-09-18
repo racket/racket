@@ -86,7 +86,8 @@ Keywords for configuring @scheme[check:]:
 @item{@indexed-scheme[:maxwidth]---a number that specifies maximum
   line lengths for submissions (a helpful feature for reading student
   code).  Defaults to 79.  This feature can be disabled if set to
-  @scheme[#f].}
+  @scheme[#f].  (This is effective only when saving a textual version
+  of the submission files.)}
 
 @item{@indexed-scheme[:output]---the name of the original handin file
   (unrelated to the text-converted files).  Defaults to
