@@ -32,7 +32,8 @@ This directory contains the following files and sub-directories:
     absolute; the last path element for each of these (and
     @scheme[inactive-dirs] below) should be unique, and is used to
     identify the submission (for example, in the client's submission
-    dialog and in the status servlet).}
+    dialog and in the status servlet).  If a specified directory does
+    not exist, it will be created.}
 
   @item{@indexed-scheme[inactive-dirs] --- a list of inactive
     submission directories (see above for details).}

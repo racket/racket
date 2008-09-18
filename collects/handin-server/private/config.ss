@@ -100,10 +100,11 @@
 (define (paths->map dirs)
   (define (path->name dir)
     (unless (directory-exists? dir)
-      (error 'get-conf
-             "directory entry for an inexistent directory: ~e" dir))
+      (if (file-exists? dir)
+        (error 'get-conf "directory entry points at a file: ~e" dir)
+        (make-directory* dir)))
     (let-values ([(_1 name _2) (split-path dir)])
-      (bytes->string/locale (path-element->bytes name))))
+      (path-element->string name)))
   (let ([names (map path->name dirs)])
     (append (map list names dirs) (map list dirs names))))
 

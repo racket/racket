@@ -35,11 +35,7 @@
 ;; output the line on the output port
 (define (make-logger-port out log)
   (if (and (not out) (not log))
-    ;; /dev/null-like output port
-    (make-output-port 'nowhere
-                      always-evt
-                      (lambda (buf start end imm? break?) (- end start))
-                      void)
+    (open-output-nowhere)
     (let ([prompt? #t]
           [sema (make-semaphore 1)]
           [outp (cond [(not log) out]
