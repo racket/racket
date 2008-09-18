@@ -200,6 +200,13 @@ To do a better job of not generating programs with free variables,
   (define (set-env state name value)
     (make-state (state-fvt state) (hash-set (state-env state) name value)))
   
+  (define (bindings env)
+    (make-bindings
+     (for/fold ([bindings null]) ([(key val) env])
+               (if (binder? key) 
+                   (cons (make-bind (binder-name key) val) bindings)
+                   bindings))))
+  
   (define-struct found-vars (nt source bound-vars found-nt?))
   (define (fvt-entry binds)
     (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
@@ -222,12 +229,6 @@ To do a better job of not generating programs with free variables,
          (values (symbol-append prefix term) state))]
       [`string (values ((next-string-decision) lang-chars lang-lits attempt) state)]
       [`(side-condition ,pat ,(? procedure? condition))
-       (define (bindings env)
-         (make-bindings
-          (for/fold ([bindings null]) ([(key val) env])
-                    (if (binder? key) 
-                        (cons (make-bind (binder-name key) val) bindings)
-                        bindings))))
        (generate/pred pat recur/pat (λ (_ env) (condition (bindings env))))]
       [`(name ,(? symbol? id) ,p)
        (let-values ([(term state) (recur/pat p)])
@@ -238,8 +239,9 @@ To do a better job of not generating programs with free variables,
          ((recur context term) state))]
       [`(hide-hole ,pattern) ((recur pattern the-hole) state)]
       [`any
-       (let-values ([(lang nt) ((next-any-decision) lang)])
-         (values (generate* lang nt size attempt decisions@) state))]
+       (let*-values ([(lang nt) ((next-any-decision) lang)]
+                     [(term _) (generate* lang nt size attempt decisions@)])
+         (values term state))]
       [(? (is-nt? lang))
        (generate-nt pat pat bound-vars size in-hole state)]
       [(struct binder ((and name (or (? (is-nt? lang) nt) (app (symbol-match named-nt-rx) (? (is-nt? lang) nt))))))
@@ -304,13 +306,14 @@ To do a better job of not generating programs with free variables,
       (state-fvt state))
      (state-env state)))
   
-  (let-values ([(term _) 
-                (generate/pred pat
-                               (λ (pat) 
-                                 (((generate-pat null size) pat the-hole)
-                                  (make-state null #hash())))
-                               (λ (_ env) (mismatches-satisfied? env)))])
-      term))
+  (let-values ([(term state)
+                (generate/pred 
+                 pat
+                 (λ (pat) 
+                   (((generate-pat null size) pat the-hole)
+                    (make-state null #hash())))
+                 (λ (_ env) (mismatches-satisfied? env)))])
+    (values term (bindings (state-env state)))))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -548,28 +551,39 @@ To do a better job of not generating programs with free variables,
     (define-language sexp (sexp variable string number hole (sexp ...)))
     (parse-language sexp)))
 
-(define-syntax check
-  (syntax-rules ()
-    [(_ lang ([id pat] ...) attempts size property)
-     (let loop ([remaining attempts])
-       (if (zero? remaining)
-           #t
-           (let ([attempt (add1 (- attempts remaining))])
-             (term-let 
-              ([id (generate lang pat size attempt)] ...)
-              (let ([generated (term ((,'id id) ...))])
-                (if (with-handlers 
-                        ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" generated exn))])
-                      property)
-                    (loop (sub1 remaining))
-                    (fprintf (current-error-port) 
-                             "failed after ~s attempts: ~s" 
-                            attempt generated)))))))]))
+(define-syntax (check stx)
+  (syntax-case stx ()
+    [(_ lang pat attempts size property)
+     (let-values ([(names names/ellipses) 
+                   (extract-names (language-id-nts #'lang 'generate) 'check #t #'pat)])
+       (with-syntax ([(name ...) names]
+                     [(name/ellipses ...) names/ellipses])
+         (syntax/loc stx
+           (let loop ([remaining attempts])
+             (if (zero? remaining)
+                 #t
+                 (let ([attempt (add1 (- attempts remaining))])
+                   (let-values ([(term bindings) (generate/bindings lang pat size attempt)])
+                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
+                               (if (with-handlers 
+                                       ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" term exn))])
+                                     property)
+                                   (loop (sub1 remaining))
+                                   (fprintf (current-error-port) 
+                                            "failed after ~s attempts: ~s" 
+                                            attempt term))))))))))]))
 
 (define-syntax (generate stx)
   (syntax-case stx ()
+    [(_ . args)
+     (quasisyntax
+      (let-values ([(term bindings) (generate/bindings #,@#'args)])
+        term))]))
+
+(define-syntax (generate/bindings stx)
+  (syntax-case stx ()
     [(_ lang pat size attempt)
-     (syntax (generate lang pat size attempt random-decisions@))]
+     (syntax (generate/bindings lang pat size attempt random-decisions@))]
     [(_ lang pat size attempt decisions@)
      (with-syntax ([pattern 
                     (rewrite-side-conditions/check-errs 

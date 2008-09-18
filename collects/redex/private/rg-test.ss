@@ -466,14 +466,15 @@
   (define-language lang
     (d 5)
     (e e 4))
-  (test (current-error-port-output (λ () (check lang () 2 0 #f))) 
-        "failed after 1 attempts: ()")
-  (test (check lang () 2 0 #t) #t)
-  (test (check lang ([x d] [y e]) 2 0 (and (eq? (term x) 5) (eq? (term y) 4))) #t)
-  (test (current-error-port-output (λ () (check lang ([x d] [y e]) 2 0 #f)))
-        "failed after 1 attempts: ((x 5) (y 4))")
-  (test (exn:fail-message (check lang ([x d]) 2 0 (error 'pred-raised)))
-        #rx"term \\(\\(x 5\\)\\) raises"))
+  (test (current-error-port-output (λ () (check lang d 2 0 #f))) 
+        "failed after 1 attempts: 5")
+  (test (check lang d 2 0 #t) #t)
+  (test (check lang (d e) 2 0 (and (eq? (term d) 5) (eq? (term e) 4))) #t)
+  (test (check lang (d ...) 2 0 (zero? (modulo (foldl + 0 (term (d ...))) 5))) #t)
+  (test (current-error-port-output (λ () (check lang (d e) 2 0 #f)))
+        "failed after 1 attempts: (5 4)")
+  (test (exn:fail-message (check lang d 2 0 (error 'pred-raised)))
+        #rx"term 5 raises"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
