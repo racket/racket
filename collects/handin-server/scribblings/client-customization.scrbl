@@ -22,7 +22,7 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
 
   @item{Uncomment the definitions of @scheme[tools],
     @scheme[tool-names], and @scheme[tool-icons].  (But leave the
-    latter field's definition to @filepath{icon.png}.)}
+    latter field's definition as @filepath{icon.png}.)}
 
   @item{For @scheme[server:port], uncomment the line, and use the
     hostname and port where the server will be running to accept
@@ -35,10 +35,10 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
 @item{Replace @filepath{icon.png} in your renamed directory with a new
   32x32 icon.  This icon is displayed on startup with DrScheme's
   splash screen, and it is included at half size on the
-  @onscreen{Handin} button.  Again, choose a distinct icon for the
-  benefit of students who install multiple handin tools.  A school
-  logo is typically useful, as it provides a recognizably local visual
-  cue.}
+  @onscreen{Handin} button.  A school logo is typically useful, as it
+  provides a recognizably local visual cue.  If students might use
+  multiple installed handin tools, then make sure to vary the icon
+  according to the course.}
 
 @item{Replace @filepath{server-cert.pem} in your renamed directory
   with a server certificate.  The file @filepath{server-cert.pem} in
