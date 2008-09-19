@@ -21,7 +21,8 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
     button and menu names.}
 
   @item{Uncomment the definitions of @scheme[tools],
-    @scheme[tool-names], and @scheme[tool-icons].}
+    @scheme[tool-names], and @scheme[tool-icons].  (But leave the
+    latter field's definition to @filepath{icon.png}.)}
 
   @item{For @scheme[server:port], uncomment the line, and use the
     hostname and port where the server will be running to accept
