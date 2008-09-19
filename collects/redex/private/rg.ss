@@ -114,7 +114,7 @@ To do a better job of not generating programs with free variables,
   (error 'generate "unable to generate pattern ~s in ~s attempts" 
          (unparse-pattern pat) generation-retries))
 
-(define (generate* lang pat size attempt [decisions@ random-decisions@])
+(define (generate* lang pat size [decisions@ random-decisions@])
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -122,7 +122,7 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt name fvt-id bound-vars size in-hole state)
+  (define (generate-nt name fvt-id bound-vars size attempt in-hole state)
     (let*-values 
         ([(nt) (findf (λ (nt) (eq? name (nt-name nt))) 
                       (append (compiled-lang-lang lang)
@@ -136,7 +136,7 @@ To do a better job of not generating programs with free variables,
          [(term _)
           (generate/pred 
            (rhs-pattern rhs)
-           (λ (pat) (((generate-pat bound-vars (max 0 (sub1 size))) pat in-hole) nt-state))
+           (λ (pat) (((generate-pat bound-vars (max 0 (sub1 size)) attempt) pat in-hole) nt-state))
            (λ (_ env) (mismatches-satisfied? env)))])
       (values term (extend-found-vars fvt-id term state))))
   
@@ -211,8 +211,8 @@ To do a better job of not generating programs with free variables,
   (define (fvt-entry binds)
     (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
   
-  (define (((generate-pat bound-vars size) pat in-hole) state)
-    (define recur (generate-pat bound-vars size))
+  (define (((generate-pat bound-vars size attempt) pat in-hole) state)
+    (define recur (generate-pat bound-vars size attempt))
     (define (recur/pat pat) ((recur pat in-hole) state))
     
     (match pat
@@ -240,22 +240,22 @@ To do a better job of not generating programs with free variables,
       [`(hide-hole ,pattern) ((recur pattern the-hole) state)]
       [`any
        (let*-values ([(lang nt) ((next-any-decision) lang)]
-                     [(term _) (generate* lang nt size attempt decisions@)])
+                     [(term _) ((generate* lang nt size decisions@) attempt)])
          (values term state))]
       [(? (is-nt? lang))
-       (generate-nt pat pat bound-vars size in-hole state)]
+       (generate-nt pat pat bound-vars size attempt in-hole state)]
       [(struct binder ((and name (or (? (is-nt? lang) nt) (app (symbol-match named-nt-rx) (? (is-nt? lang) nt))))))
-       (generate/prior pat state (λ () (generate-nt nt name bound-vars size in-hole state)))]
+       (generate/prior pat state (λ () (generate-nt nt name bound-vars size attempt in-hole state)))]
       [(struct binder ((or (? built-in? b) (app (symbol-match named-nt-rx) (? built-in? b)))))
        (generate/prior pat state (λ () (recur/pat b)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? (is-nt? lang) nt)))))
-       (let-values ([(term state) (generate-nt nt pat bound-vars size in-hole state)])
+       (let-values ([(term state) (generate-nt nt pat bound-vars size attempt in-hole state)])
          (values term (set-env state pat term)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? built-in? b)))))
        (let-values ([(term state) (recur/pat b)])
          (values term (set-env state pat term)))]
       [`(cross ,(? symbol? cross-nt))
-       (generate-nt cross-nt #f bound-vars size in-hole state)]
+       (generate-nt cross-nt #f bound-vars size attempt in-hole state)]
       [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
       [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
        (let*-values ([(length) (let ([prior (hash-ref (state-env state) class #f)])
@@ -306,14 +306,15 @@ To do a better job of not generating programs with free variables,
       (state-fvt state))
      (state-env state)))
   
-  (let-values ([(term state)
-                (generate/pred 
-                 pat
-                 (λ (pat) 
-                   (((generate-pat null size) pat the-hole)
-                    (make-state null #hash())))
-                 (λ (_ env) (mismatches-satisfied? env)))])
-    (values term (bindings (state-env state)))))
+  (λ (attempt)
+    (let-values ([(term state)
+                  (generate/pred 
+                   pat
+                   (λ (pat) 
+                     (((generate-pat null size attempt) pat the-hole)
+                      (make-state null #hash())))
+                   (λ (_ env) (mismatches-satisfied? env)))])
+      (values term (bindings (state-env state))))))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -559,41 +560,46 @@ To do a better job of not generating programs with free variables,
        (with-syntax ([(name ...) names]
                      [(name/ellipses ...) names/ellipses])
          (syntax/loc stx
-           (let loop ([remaining attempts])
-             (if (zero? remaining)
-                 #t
-                 (let ([attempt (add1 (- attempts remaining))])
-                   (let-values ([(term bindings) (generate/bindings lang pat size attempt)])
-                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                               (if (with-handlers 
-                                       ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" term exn))])
-                                     property)
-                                   (loop (sub1 remaining))
-                                   (fprintf (current-error-port) 
-                                            "failed after ~s attempts: ~s" 
-                                            attempt term))))))))))]))
+           (let ([generator (term-generator lang pat size random-decisions@)])
+             (let loop ([remaining attempts])
+               (if (zero? remaining)
+                   #t
+                   (let ([attempt (add1 (- attempts remaining))])
+                     (let-values ([(term bindings) (generator attempt)])
+                       (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
+                                 (if (with-handlers 
+                                         ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" term exn))])
+                                       property)
+                                     (loop (sub1 remaining))
+                                     (fprintf (current-error-port) 
+                                              "failed after ~s attempts: ~s" 
+                                              attempt term)))))))))))]))
 
-(define-syntax (generate stx)
-  (syntax-case stx ()
-    [(_ . args)
-     (quasisyntax
-      (let-values ([(term bindings) (generate/bindings #,@#'args)])
-        term))]))
-
-(define-syntax (generate/bindings stx)
-  (syntax-case stx ()
+(define-syntax generate
+  (syntax-rules ()
     [(_ lang pat size attempt)
-     (syntax (generate/bindings lang pat size attempt random-decisions@))]
+     (let-values ([(term _) ((term-generator lang pat size random-decisions@) attempt)])
+       term)]
+    [(_ lang pat size) (generate lang pat size 0)]))
+
+(define-syntax generate/decisions
+  (syntax-rules ()
     [(_ lang pat size attempt decisions@)
+     (let-values ([(term _) ((term-generator lang pat size decisions@) attempt)])
+       term)]))
+
+(define-syntax (term-generator stx)
+  (syntax-case stx ()
+    [(_ lang pat size decisions@)
      (with-syntax ([pattern 
                     (rewrite-side-conditions/check-errs 
                      (language-id-nts #'lang 'generate)
                      'generate #t #'pat)])
-       (syntax 
+       (syntax/loc stx 
         (generate* 
          (parse-language lang)
          (reassign-classes (parse-pattern `pattern lang 'top-level))
-         size attempt decisions@)))]))
+         size decisions@)))]))
 
 (define-signature decisions^
   (next-variable-decision
@@ -617,7 +623,7 @@ To do a better job of not generating programs with free variables,
          pick-nt unique-chars pick-any sexp generate parse-pattern
          class-reassignments reassign-classes unparse-pattern
          (struct-out ellipsis) (struct-out mismatch) (struct-out class)
-         (struct-out binder))
+         (struct-out binder) generate/decisions)
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])
