@@ -965,9 +965,9 @@
                               [else 9])))]
                      [(char? v)
                       (case v
-                        [(#\x7) 7] ; #\alarm
-                        [(#\x1B) 5] ; #\esc
-                        [(#\x7F) 8] ; #\delete
+                        [(#\u7) 7] ; #\alarm
+                        [(#\u1B) 5] ; #\esc
+                        [(#\u7F) 8] ; #\delete
                         [else (and (not (char-graphic? v))
                                    (+ 3
                                       (if ((char->integer v) . < . #x10000)
@@ -1014,9 +1014,9 @@
                       (write-char #\" p)]
                      [(char? v)
                       (case v
-                        [(#\x7) (display "#\\alarm" p)]
-                        [(#\x1B) (display "#\\esc" p)]
-                        [(#\x7F) (display "#\\delete" p)]
+                        [(#\u7) (display "#\\alarm" p)]
+                        [(#\u1B) (display "#\\esc" p)]
+                        [(#\u7F) (display "#\\delete" p)]
                         [else 
                          (display "#\\x" p)
                          (let ([n (number->string (char->integer v) 16)])
