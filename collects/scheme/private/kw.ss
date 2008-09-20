@@ -280,6 +280,13 @@
               "missing argument identifier after keyword"
               stx
               #'kw))]
+          [(kw bad . rest)
+           (keyword? (syntax-e #'kw))
+           (raise-syntax-error
+            #f
+            "after keyword, not an identifier or identifier with default"
+            stx
+            (syntax bad))]
           [(bad . rest)
            (raise-syntax-error
             #f
