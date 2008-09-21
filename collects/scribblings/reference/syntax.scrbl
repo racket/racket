@@ -161,7 +161,18 @@ are evaluated in order as they appear within the module; accessing a
 @tech{module-level variable} before it is defined signals a run-time
 error, just like accessing an undefined global variable.
 
-See also @secref["module-eval-model"] and @secref["mod-parse"].}
+See also @secref["module-eval-model"] and @secref["mod-parse"].
+
+When a @tech{syntax object} representing a @scheme[module] form has a
+@indexed-scheme['module-language] @tech{syntax property} attached, and
+when the property value is a vector of three elements where the first
+is a module path (in the sense of @scheme[module-path?]) and the
+second is a symbol, then the property value is preserved in the
+corresponding compiled and/or declared module. The third component of
+the vector should be printable and @scheme[read]able, so that it can
+be preserved in marshaled bytecode. See also
+@scheme[module-compiled-language-info] and
+@scheme[module->language-info].}
 
 @defform[(#%module-begin form ...)]{
 

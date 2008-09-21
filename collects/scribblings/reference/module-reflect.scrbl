@@ -293,6 +293,25 @@ explicitly the import, the import @tech{phase level} shift (where
 name of the re-exported binding, and the @tech{phase level} of the
 import.}
 
+@defproc[(module-compiled-language-info [compiled-module-code compiled-module-expression?])
+         (or/c false/c (vector/c module-path? symbol? any/c))]{
+
+Returns information intended to reflect the ``language'' of the
+module's implementation as originally attached to the syntax of the
+module's declaration though the @indexed-scheme['module-language]
+@tech{syntax property}. See also @scheme[module].
+
+If no information is available for the module, the result is
+@scheme[#f]. Otherwise, the result is @scheme[(vector _mp _name _val)]
+such that @scheme[((dynamic-require _mp _name) _val)] should return
+function that takes a single argument. The function's argument is a
+key for reflected information, and the result is a value associated
+with that key.  Acceptable keys and the interpretation of results is
+up to external tools, such as DrScheme.  If no information is
+available for a given key, the result should be @scheme[#f].
+
+See also @scheme[module->language-info].}
+
 
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
@@ -329,3 +348,14 @@ If @scheme[provided] is @|void-const|, then the module is
          any]{
 
 Like @scheme[dynamic-require], but in @tech{phase} 1.}
+
+
+@defproc[(module->language-info [mod module-path?])
+         (or/c false/c (vector/c module-path? symbol? any/c))]{
+
+Returns information intended to reflect the ``language'' of the
+implementation of @scheme[mod], which must be declared (but not
+necessarily @tech{instantiate}d or @tech{visit}ed) in the current
+namespace. The information is the same as would have been returned by
+@scheme[module-compiled-language-info] applied to the module's
+implementation as compiled code.}

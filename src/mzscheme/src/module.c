@@ -55,7 +55,9 @@ static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
@@ -334,8 +336,8 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
   GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
 
-  GLOBAL_PRIM_W_ARITY("dynamic-require",                  scheme_dynamic_require,     2, 2, env);
-  GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("dynamic-require",                  scheme_dynamic_require,     2, 3, env);
+  GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("namespace-require",                namespace_require,          1, 1, env);
   GLOBAL_PRIM_W_ARITY("namespace-attach-module",          namespace_attach_module,    2, 3, env);
   GLOBAL_PRIM_W_ARITY("namespace-unprotect-module",       namespace_unprotect_module, 2, 3, env);
@@ -346,6 +348,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("module-compiled-name",             module_compiled_name,       1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-compiled-imports",          module_compiled_imports,    1, 1, env);
   GLOBAL_PRIM_W_ARITY2("module-compiled-exports",         module_compiled_exports,    1, 1, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("module-compiled-language-info",    module_compiled_lang_info,  1, 1, env);
   GLOBAL_FOLDING_PRIM("module-path-index?",               module_path_index_p,        1, 1, 1, env); 
   GLOBAL_PRIM_W_ARITY("module-path-index-resolve",        module_path_index_resolve,  1, 1, env); 
   GLOBAL_PRIM_W_ARITY2("module-path-index-split",         module_path_index_split,    1, 1, 2, 2, env); 
@@ -355,6 +358,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("resolved-module-path-name",        resolved_module_path_name,  1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
 }
 
@@ -788,7 +792,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 				       int position)
 {
   Scheme_Object *modname, *modidx;
-  Scheme_Object *name, *srcname, *srcmname;
+  Scheme_Object *name, *srcname, *srcmname, *fail_thunk;
   Scheme_Module *m, *srcm;
   Scheme_Env *menv, *lookup_env = NULL;
   int i, count, protected = 0;
@@ -797,6 +801,10 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 
   modname = argv[0];
   name = argv[1];
+  if (argc > 2)
+    fail_thunk = argv[2];
+  else
+    fail_thunk = NULL;
 
   errname = (phase 
 	     ? ((phase < 0)
@@ -808,6 +816,9 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     scheme_wrong_type(errname, "symbol, #f, or void", 1, argc, argv);
     return NULL;
   }
+
+  if (fail_thunk)
+    scheme_check_proc_arity(errname, 0, 2, argc, argv);
 
   if (SAME_TYPE(SCHEME_TYPE(modname), scheme_module_index_type))
     modidx = modname;
@@ -943,11 +954,14 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	}
 
 	if (i == count) {
-	  if (fail_with_error)
+	  if (fail_with_error) {
+            if (fail_thunk)
+              return scheme_tail_apply(fail_thunk, 0, NULL);
 	    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			     "%s: name is not provided: %V by module: %V",
 			     errname,
 			     name, srcm->modname);
+          }
 	  return NULL;
 	}
       }
@@ -992,8 +1006,11 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
         if (!menv->ran)
           scheme_run_module(menv, 1);
       }
-      if (!b->val && fail_with_error)
+      if (!b->val && fail_with_error) {
+        if (fail_thunk)
+          return scheme_tail_apply(fail_thunk, 0, NULL);
 	scheme_unbound_global(b);
+      }
       return b->val;
     }
   } else
@@ -2459,6 +2476,31 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
   return scheme_module_to_namespace(argv[0], env);
 }
 
+static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *env;
+  Scheme_Object *name;
+  Scheme_Module *m;
+
+  env = scheme_get_env(NULL);
+
+  if (!SCHEME_PATHP(argv[0])
+      && !scheme_is_module_path(argv[0]))
+    scheme_wrong_type("module->language-info", "path or module-path", 0, argc, argv);
+
+  name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
+
+  env = scheme_get_env(NULL);
+  m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+
+  if (!m)
+    scheme_arg_mismatch("module->laguage-info",
+                        "unknown module in the current namespace: ",
+                        name);
+
+  return (m->lang_info ? m->lang_info : scheme_false);
+}
+
 
 static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[])
 {
@@ -2593,6 +2635,20 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[])
   }
 
   scheme_wrong_type("module-compiled-exports", "compiled module declaration", 0, argc, argv);
+  return NULL;
+}
+
+static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[])
+{
+  Scheme_Module *m;
+
+  m = scheme_extract_compiled_module(argv[0]);
+
+  if (m) {
+    return (m->lang_info ? m->lang_info : scheme_false);
+  }
+
+  scheme_wrong_type("module-compiled-language-info", "compiled module declaration", 0, argc, argv);
   return NULL;
 }
 
@@ -5193,7 +5249,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   if (rec[drec].comp) {
-    Scheme_Object *dummy;
+    Scheme_Object *dummy, *pv;
 
     dummy = scheme_make_environment_dummy(env);
     m->dummy = dummy;
@@ -5210,6 +5266,15 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       m->modname = kernel_modname;
 
     m->ii_src = NULL;
+
+    pv = scheme_stx_property(form, scheme_intern_symbol("module-lanuage"), NULL);
+    if (pv) {
+      if (SCHEME_VECTORP(pv)
+          && (3 == SCHEME_VEC_SIZE(pv))
+          && scheme_is_module_path(SCHEME_VEC_ELS(pv)[0])
+          && SCHEME_SYMBOLP(SCHEME_VEC_ELS(pv)[1]))
+        m->lang_info = pv;
+    }
 
     fm = scheme_make_syntax_compiled(MODULE_EXPD, (Scheme_Object *)m);
   } else {
@@ -8900,6 +8965,11 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   l = cons(m->et_functional ? scheme_true : scheme_false, l);
   l = cons(m->functional ? scheme_true : scheme_false, l);
 
+  if (m->lang_info)
+    l = cons(m->lang_info, l);
+  else
+    l = cons(scheme_false, l);
+
   l = cons(m->me->src_modidx, l);
   l = cons(SCHEME_PTR_VAL(m->modname), l);
 
@@ -8950,6 +9020,18 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   obj = SCHEME_CDR(obj);
   ((Scheme_Modidx *)m->me->src_modidx)->resolved = m->modname;
   m->self_modidx = m->me->src_modidx;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  e = SCHEME_CAR(obj);
+  if (SCHEME_FALSEP(e))
+    e = NULL;
+  else if (!(SCHEME_VECTORP(e)
+             && (3 == SCHEME_VEC_SIZE(e))
+             && scheme_is_module_path(SCHEME_VEC_ELS(e)[0])
+             && SCHEME_SYMBOLP(SCHEME_VEC_ELS(e)[1])))
+    return_NULL();
+  m->lang_info = e;
+  obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   m->functional = SCHEME_TRUEP(SCHEME_CAR(obj));

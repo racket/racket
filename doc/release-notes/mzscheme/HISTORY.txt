@@ -1,3 +1,8 @@
+Version 4.1.0.4
+Added read-language
+Added module-compiled-language-info, module->language-info,
+ and 'module-language property support
+
 Version 4.1, August 2008
 Changed namespaces to have a base phase; for example, calling
  eval at compile-time uses a phase-1 namespace
