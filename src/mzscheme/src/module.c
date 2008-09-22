@@ -5267,8 +5267,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     m->ii_src = NULL;
 
-    pv = scheme_stx_property(form, scheme_intern_symbol("module-lanuage"), NULL);
-    if (pv) {
+    pv = scheme_stx_property(form, scheme_intern_symbol("module-language"), NULL);
+    if (pv && SCHEME_TRUEP(pv)) {
       if (SCHEME_VECTORP(pv)
           && (3 == SCHEME_VEC_SIZE(pv))
           && scheme_is_module_path(SCHEME_VEC_ELS(pv)[0])

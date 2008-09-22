@@ -4715,7 +4715,7 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
 	     module's language take over. */
 	  d = SCHEME_STX_CDR(form);
 	  a = scheme_make_pair(a, d);
-	  form = scheme_datum_to_syntax(a, form, form, 1, 0);
+	  form = scheme_datum_to_syntax(a, form, form, 0, 1);
 	  return form;
 	}
       }
@@ -9282,7 +9282,7 @@ static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int c
                                                       scheme_sys_wraps(NULL), 
                                                       0, 0),
                                SCHEME_CDR(m));
-          expr = scheme_datum_to_syntax(m, expr, expr, 0, 0);
+          expr = scheme_datum_to_syntax(m, expr, expr, 0, 1);
         }
       }
     }
