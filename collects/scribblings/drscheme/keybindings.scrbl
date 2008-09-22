@@ -124,6 +124,8 @@ window to the interactions window (or the search window, if it is open).}
 
 @keybinding["C-c C-o"]{the sexpression following the
   insertion point is put in place of its containing sexpression}
+@keybinding["C-c C-e"]{the first and last characters (usually parentheses)
+  of the containing expression are removed}
 @keybinding["C-c C-l"]{wraps a let around the
   sexpression following the insertion point and puts a printf in at
   that point (useful for debugging).}
