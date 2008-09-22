@@ -71,7 +71,7 @@ pinholes are at position @scheme[(0,0)].
    for describing students work.  
 }
 
-In addition,
+Example:
 @schemeblock[
 (define (create-UFO-scene height)
   (place-image UFO 50 height (empty-scene 100 100)))
@@ -173,6 +173,23 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    drawn. If this call produces @scheme[true], the clock is stopped; no more
    tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
    the respective handlers. As a result, the canvas isn't updated either.} 
+
+Example: The following examples shows that @scheme[(run-simulation 100 100
+(/ 1 28) create-UFO-scene)] is a short-hand for three lines of code:
+@schemeblock[
+(define (create-UFO-scene height)
+  (place-image UFO 50 height (empty-scene 100 100)))
+
+(define UFO
+  (overlay (circle 10 'solid 'green)
+           (rectangle 40 4 'solid 'green)))
+
+(big-bang 100 100 (/1 28) 0)
+(on-tick-event add1)
+(on-redraw create-UFO-scene)
+]
+Exercise: Add a condition for stopping the flight of the UFO when it
+reaches the bottom. 
 
 @section{Scenes and Images}
 
