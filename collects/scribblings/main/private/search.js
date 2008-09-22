@@ -455,6 +455,22 @@ function Search(data, term, is_pre, K) {
   else { progress(0); t = setTimeout(DoChunk,15); return killer; }
 }
 
+function GetContextHTML() {
+  // useful only when a context is set
+  return (((pre_query_label != "") && pre_query_label)
+          ? SanitizeHTML(pre_query_label)
+          : ('&ldquo;' + SanitizeHTML(pre_query) + '&rdquo;'));
+}
+function GetContextClearerHTML(text) {
+  return ('<a href="?hq=" tabIndex="5"'
+           +' title="Clear pre-filter context"'
+           +' style="text-decoration: none; color: #444;'
+                  +' font-size: 82%; font-weight: bold;"'
+           +' onclick="return new_query(this,\'\');">'
+          + text
+          + '</a>');
+}
+
 var search_data; // pre-filtered searchable index data
 function PreFilter() {
   pre_query = NormalizeSpaces(pre_query);
@@ -469,23 +485,15 @@ function PreFilter() {
        +'[set context]</a>';
   } else {
     pre_query_label_line.innerHTML =
-      'Context:&nbsp;'
-      + (((pre_query_label != "") && pre_query_label)
-         ? SanitizeHTML(pre_query_label)
-         : ('&ldquo;' + SanitizeHTML(pre_query) + '&rdquo;'))
-      + '&nbsp;<a href="?hq=" tabIndex="5"'
-                  +' title="Clear pre-filter context"'
-                  +' style="text-decoration: none; color: #444;'
-                         +' font-size: 82%; font-weight: bold;"'
-                  +' onclick="return new_query(this,\'\');">'
-               +'[clear</a>'
-             +'/'
-             +'<a href="#" tabIndex="5"'
-                  +' title="Edit pre-filter context"'
-                  +' style="text-decoration: none; color: #444;'
-                         +' font-size: 82%; font-weight: bold;"'
-                  +' onclick="toggle_panel(\'contexts\'); return false;">'
-               +'modify]</a>';
+      'Context:&nbsp;' + GetContextHTML()
+      + '&nbsp;'
+      + GetContextClearerHTML('[clear')
+      + '/<a href="#" tabIndex="5"'
+          +' title="Edit pre-filter context"'
+          +' style="text-decoration: none; color: #444;'
+                 +' font-size: 82%; font-weight: bold;"'
+          +' onclick="toggle_panel(\'contexts\'); return false;">'
+          +'modify]</a>';
   }
   last_search_term = null;
   last_search_term_raw = null;
@@ -604,8 +612,12 @@ function UpdateResults() {
             + ' exact</span>)';
   if (search_results.length == 0) {
     if (last_search_term == "") status_line.innerHTML = "";
-    else status_line.innerHTML = 'No matches found '
-           + '<div style="color: black; font-size: 82%;">'
+    else status_line.innerHTML = 'No matches found'
+           + ((pre_query != "")
+              ? (' in '+GetContextHTML()
+                 +' '+GetContextClearerHTML('<small>[clear]</small>'))
+              : '')
+           + '<br><div style="color: black; font-size: 82%;">'
            + '(Make sure your spelling is correct'
            + (last_search_term.search(/ /)>=0 ? ', or try fewer keywords' : '')
            + ((pre_query != "") ? ', or clear the search context' : '')
