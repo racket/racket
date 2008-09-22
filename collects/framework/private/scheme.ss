@@ -369,7 +369,8 @@
     set-tab-size
     
     introduce-let-ans
-    move-sexp-out))
+    move-sexp-out
+    kill-enclosing-parens))
 
 (define init-wordbreak-map
   (λ (map)
@@ -1042,6 +1043,21 @@
           [else (bell)]))
       (end-edit-sequence))
     
+    (define/public (kill-enclosing-parens begin-inner)
+      (begin-edit-sequence)
+      (let ([begin-outer (find-up-sexp begin-inner)])
+        (cond
+          [begin-outer
+           (let ([end-outer (get-forward-sexp begin-outer)])
+             (cond
+               [(and end-outer (> (- end-outer begin-outer) 2))
+                (delete (- end-outer 1) end-outer)
+                (delete begin-outer (+ begin-outer 1))
+                (tabify-selection begin-outer (- end-outer 2))]
+               [else (bell)]))]
+          [else (bell)]))
+      (end-edit-sequence))
+    
     (inherit get-fixed-style)
     (define/public (mark-matching-parenthesis pos)
       (let ([open-parens (map car (scheme-paren:get-paren-pairs))]
@@ -1238,6 +1254,8 @@
                       (λ (e p) (send e introduce-let-ans p)))
     (add-pos-function "move-sexp-out"
                       (λ (e p) (send e move-sexp-out p)))
+    (add-pos-function "kill-enclosing-parens"
+                      (lambda (e p) (send e kill-enclosing-parens p)))
     
     (let ([add-edit-function
            (λ (name call-method)
@@ -1359,7 +1377,8 @@
       )
     (send keymap map-function "c:c;c:b" "remove-parens-forward")
     (send keymap map-function "c:c;c:l" "introduce-let-ans")
-    (send keymap map-function "c:c;c:o" "move-sexp-out")))
+    (send keymap map-function "c:c;c:o" "move-sexp-out")
+    (send keymap map-function "c:c;c:e" "kill-enclosing-parens")))
 
 (define keymap (make-object keymap:aug-keymap%))
 (setup-keymap keymap)
