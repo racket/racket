@@ -163,7 +163,8 @@
   (match t
     [(PolyDots: (list fixed ... dotted) body)
      (unless (= (length fixed) (length types))
-       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a" (length fixed) (length types)))
+       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a, types were ~a" 
+                (length fixed) (length types) types))
      (let ([body* (subst-all (map list fixed types) body)])
        (substitute-dotted image var dotted body*))]
     [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))

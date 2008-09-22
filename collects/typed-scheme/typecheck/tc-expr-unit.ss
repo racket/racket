@@ -74,13 +74,16 @@
              [(cons last-ty-stx (? identifier? last-id-stx))
               (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
                 (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-              (let* ([last-id (syntax-e last-id-stx)]
-                     [last-ty
-                      (parameterize ([current-tvars (extend-env (list last-id)
-                                                                (list (make-DottedBoth (make-F last-id)))
-                                                                (current-tvars))])
-                        (parse-type last-ty-stx))])
-                (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))]
+              (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
+                  (let* ([last-id (syntax-e last-id-stx)]
+                         [last-ty
+                          (parameterize ([current-tvars (extend-env (list last-id)
+                                                                    (list (make-DottedBoth (make-F last-id)))
+                                                                    (current-tvars))])
+                            (parse-type last-ty-stx))])
+                    (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
+                  (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                                 ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
              [_
               (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
         [else
