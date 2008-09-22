@@ -2348,6 +2348,8 @@ static int module_val_MARK(void *p) {
 
   gcMARK(m->insp);
 
+  gcMARK(m->lang_info);
+
   gcMARK(m->hints);
   gcMARK(m->ii_src);
 
@@ -2389,6 +2391,8 @@ static int module_val_FIXUP(void *p) {
   gcFIXUP(m->et_accessible);
 
   gcFIXUP(m->insp);
+
+  gcFIXUP(m->lang_info);
 
   gcFIXUP(m->hints);
   gcFIXUP(m->ii_src);

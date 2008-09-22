@@ -943,6 +943,8 @@ module_val {
 
   gcMARK(m->insp);
 
+  gcMARK(m->lang_info);
+
   gcMARK(m->hints);
   gcMARK(m->ii_src);
 

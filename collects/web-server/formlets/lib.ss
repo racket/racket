@@ -42,13 +42,12 @@
                   (apply fe gs-e)))
               gs-i))))
 
-(define (xml x)
-  (lambda (i)
-    (values (list x) (const id) i)))
-
 (define (xml-forest x)
   (lambda (i)
     (values x (const id) i)))
+
+(define (xml x)
+  (xml-forest (list x)))
 
 (define (text x)
   (xml x))
@@ -81,6 +80,7 @@
 (define beta any/c)
 
 (provide/contract
+ [xexpr-forest/c contract?]
  [formlet/c (any/c . -> . contract?)]
  [pure (alpha
         . -> . (formlet/c alpha))]
@@ -90,8 +90,8 @@
  [cross* (((formlet/c (() () #:rest (listof alpha) . ->* . beta)))
           () #:rest (listof (formlet/c alpha))
           . ->* . (formlet/c beta))]
- [xml (xexpr? . -> . (formlet/c procedure?))]
  [xml-forest (xexpr-forest/c . -> . (formlet/c procedure?))]
+ [xml (xexpr? . -> . (formlet/c procedure?))] 
  [text (string? . -> . (formlet/c procedure?))]
  [tag-xexpr (symbol? (listof (list/c symbol? string?)) (formlet/c alpha) . -> . (formlet/c alpha))]
  [formlet-display ((formlet/c alpha) . -> . xexpr-forest/c)]

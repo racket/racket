@@ -2,14 +2,14 @@
 
 @(require scribble/manual
           scribble/struct
-          (for-label stxclass/stxclass))
+          (for-label macro-debugger/stxclass/stxclass))
 
 @title{Parsing Syntax and Syntax Classes}
 
-@defmodule[stxclass/stxclass]
+@defmodule[macro-debugger/stxclass/stxclass]
 
 @section{Parsing Syntax}
-@declare-exporting[stxclass/stxclass]
+@declare-exporting[macro-debugger/stxclass/stxclass]
 
 @defform/subs[(syntax-parse stx-expr maybe-literals clause ...)
               ([maybe-literals code:blank
@@ -222,7 +222,7 @@ generalized sequences. It may not be used as an expression.
 }
 
 @section{Syntax Classes}
-@declare-exporting[stxclass/stxclass]
+@declare-exporting[macro-debugger/stxclass/stxclass]
 
 Syntax classes provide an abstraction mechanism for the specification
 of syntax. Basic syntax classes include @scheme[identifier] and
@@ -239,30 +239,43 @@ syntax. While the values of the attributes depend on the matched
 syntax, the set of attributes and each attribute's ellipsis nesting
 depth is fixed for each syntax class.
 
-@defform*/subs[#:literals (union pattern)
-               [(define-syntax-class name-id stxclass-body)
-                (define-syntax-class (name-id arg-id ...) stxclass-body)]
-               ([stxclass-body 
-                 (union stxclass-body ...)
+@defform*/subs[#:literals (pattern)
+               [(define-syntax-class name-id stxclass-option ...
+                  stxclass-variant ...)
+                (define-syntax-class (name-id arg-id ...) stxclass-option ... 
+                  stxclass-variant ...)]
+               ([stxclass-options
+                 (code:line #:description string)
+                 (code:line #:transparent)]
+                [stxclass-variant 
                  (pattern syntax-pattern pattern-directive ...)])]{
 
 Defines @scheme[name-id] as a syntax class. When the @scheme[arg-id]s
 are present, they are bound as variables (not pattern variables) in
 the body.
 
-The body of the syntax-class definition specifies the syntax it
-accepts and determines the attributes it provides.
+The body of the syntax-class definition contains one or more variants
+that specify the syntax it accepts and determines the attributes it
+provides. The syntax class provides only those attributes which are
+present in every variant. Each such attribute must be defined with the
+same ellipsis nesting depth and the same sub-attributes in each
+component.
 
-@specsubform[#:literals (union)
-             (union stxclass-body ...)]{
+@specsubform[(code:line #:description string)]{
 
-Accepts any syntax accepted by one of the component bodies.
+Specifies a string to use in error messages involving the syntax
+class. For example, if a term is rejected by the syntax class, an
+error of the form @scheme["expected <description>"] may be generated.
 
-Provides only those attributes which are present in every component
-body. Each such attribute must be defined with the same ellipsis
-nesting depth and the same sub-attributes in each component.
-
+If absent, the name of the syntax class is used instead.
 }
+
+@specsubform[#:transparent]{
+
+Indicates that errors may be reported with respect to the internal
+structure of the syntax class.
+}
+
 @specsubform/subs[#:literals (pattern)
                   (pattern syntax-pattern pattern-directive ...)
                   ([stxclass-pattern-directive
@@ -320,16 +333,11 @@ match only proper lists:
 
 }
 
-@deftogether[(
-@defidform[union]
-@defidform[pattern]
-)]{
+@defidform[pattern]{
 
-Keywords recognized by @scheme[define-syntax-class]. They may not be
-used as expressions.
-
+Keyword recognized by @scheme[define-syntax-class]. It may not be
+used as an expression.
 }
-
 
 @defform[(define-basic-syntax-class (name-id arg-id ...)
            ([attr-id attr-depth] ...)
@@ -390,7 +398,7 @@ the @scheme[arg-expr]s) on the syntax object produced by
 
 
 @section{Library syntax classes}
-@declare-exporting[stxclass/stxclass]
+@declare-exporting[macro-debugger/stxclass/stxclass]
 
 @(define-syntax-rule (defstxclass name . pre-flows)
    (defidform name . pre-flows))

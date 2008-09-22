@@ -1716,6 +1716,8 @@ void scheme_internal_display(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_write(Scheme_Object *obj, Scheme_Object *port);
 void scheme_internal_print(Scheme_Object *obj, Scheme_Object *port);
 
+Scheme_Object *scheme_read_language(Scheme_Object *port, int nonlang_ok);
+
 #define _scheme_eval_linked_expr(obj) scheme_do_eval(obj,-1,NULL,1)
 #define _scheme_eval_linked_expr_multi(obj) scheme_do_eval(obj,-1,NULL,-1)
 #define _scheme_eval_linked_expr_wp(obj, p) scheme_do_eval_w_thread(obj,-1,NULL,1,p)
@@ -2541,6 +2543,8 @@ typedef struct Scheme_Module
   Scheme_Hash_Table *et_accessible;
   Scheme_Object *insp; /* declaration-time inspector, for creating certificates
 			  and for module instantiation */
+
+  Scheme_Object *lang_info; /* NULL or vector */
 
   Scheme_Object *hints; /* set by expansion; moved to properties */
   Scheme_Object *ii_src; /* set by compile, temporary */

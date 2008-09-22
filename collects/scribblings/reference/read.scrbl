@@ -105,6 +105,52 @@ See @secref["readtables"] for an extended example that uses
 @scheme[read-syntax/recursive].}
 
 
+@defproc[(read-language [in input-port? (current-input-port)]
+                        [fail-thunk (-> any) (lambda () (error ...))])
+         any]{
+
+Reads @scheme[in] in the same way as @scheme[read], but stopping as
+soon as a @tech{reader language} (or its absence) is determined.
+
+A @deftech{reader language} is specified by @litchar{#lang} or
+@litchar{#!} (see @secref["parse-reader"]) at the beginning of the
+input, though possibly after comment forms. Instead of dispatching to
+a @schemeidfont{read} or @schemeidfont{read-syntax} form as
+@scheme[read] and @scheme[read-syntax] do, @scheme[read-language]
+dispatches to a @schemeidfont{get-info} function (if any) exported by
+the same module. The result of the @schemeidfont{get-info} function is
+the result of @scheme[read-language] if it is a function of one
+argument; if @schemeidfont{get-info} produces any other kind of
+result, the @exnraise[exn:fail:contract].
+
+The function produced by @schemeidfont{get-info} reflects information
+about the expected syntax of the input stream. The argument to the
+function serves as a key on such information; acceptable keys and the
+interpretation of results is up to external tools, such as DrScheme.
+If no information is available for a given key, the result should be
+@scheme[#f].
+
+The @schemeidfont{get-info} function itself is applied to five
+arguments: the input port being read, the module path from which the
+@schemeidfont{get-info} function was extracted, and the source line
+(positive exact integer or @scheme[#f]), column (non-negative exact
+integer or @scheme[#f]), and position (positive exact integer or
+@scheme[#f]) of the start of the @litchar{#lang} or @litchar{#!}
+form. The @schemeidfont{get-info} function may further read from the
+given input port to determine its result, but it should read no
+further than necessary.
+
+If @scheme[in] starts with a @tech{reader language} specification but
+the relevant module does not export @schemeidfont{get-info} (but
+perhaps does export @schemeidfont{read} and
+@schemeidfont{read-syntax}), then the result of @scheme[read-language]
+is @scheme[#f].
+
+If @scheme[in] does not specify a @tech{reader language}, then
+@scheme[fail-thunk] is called. The default @scheme[fail-thunk] raises
+@scheme[exn:fail:contract].}
+
+
 @defboolparam[read-case-sensitive on?]{
 
 A parameter that controls parsing and printing of symbols. When this

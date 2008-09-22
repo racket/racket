@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require "sc.ss"
+         "util.ss"
          syntax/stx
          syntax/kerncase
          scheme/struct-info
@@ -49,8 +50,8 @@
 (define-syntax-class define-syntaxes-form
   (pattern (kw:define-syntaxes-kw (var:identifier ...) rhs)))
 (define-syntax-class definition-form
-  (union define-values-form
-         define-syntaxes-form))
+  (pattern :define-values-form)
+  (pattern :define-syntaxes-form))
 
 (define-basic-syntax-class static
   ([datum 0] [value 0])
@@ -123,7 +124,7 @@
    [expr 1])
   (lambda (x)
     (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
-                  (head-local-expand-syntaxes x #f #t)])
+                  (head-local-expand-and-categorize-syntaxes x #f #; #t)])
       (list ex1 ex2 defs vdefs sdefs exprs))))
 
 (define-basic-syntax-class internal-definitions
@@ -135,71 +136,8 @@
    [expr 1])
   (lambda (x)
     (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
-                  (head-local-expand-syntaxes x #t #f)])
+                  (head-local-expand-and-categorize-syntaxes x #t #; #f)])
       (list ex1 ex2 defs vdefs sdefs exprs))))
-
-;; head-local-expand-syntaxes : syntax boolean boolean -> stxs ^ 6
-;; Setting allow-def-after-expr? allows def/expr interleaving.
-;; Setting need-expr? requires at least one expr to be present.
-(define (head-local-expand-syntaxes x allow-def-after-expr? need-expr?)
-  (let ([intdef (syntax-local-make-definition-context)]
-        [ctx '(block)])
-    (let loop ([x x] [ex null] [defs null] [vdefs null] [sdefs null] [exprs null])
-      (cond [(stx-pair? x)
-             (let ([ee (local-expand (stx-car x)
-                                     ctx
-                                     (kernel-form-identifier-list)
-                                     intdef)])
-               (syntax-case ee (begin define-values define-syntaxes)
-                 [(begin e ...)
-                  (loop (append (syntax->list #'(e ...)) (stx-cdr x)) ex defs vdefs sdefs exprs)]
-                 [(begin . _)
-                  (raise-syntax-error #f "bad begin form" ee)]
-                 [(define-values (var ...) rhs)
-                  (andmap identifier? (syntax->list #'(var ...)))
-                  (begin
-                    (when (and (pair? exprs) (not allow-def-after-expr?))
-                      (raise-syntax-error #f "definition after expression" ee))
-                    (syntax-local-bind-syntaxes (syntax->list #'(var ...)) #f intdef)
-                    (loop (stx-cdr x)
-                          (cons ee ex)
-                          (cons ee defs)
-                          (cons ee vdefs)
-                          sdefs
-                          exprs))]
-                 [(define-values . _)
-                  (raise-syntax-error #f "bad define-values form" ee)]
-                 [(define-syntaxes (var ...) rhs)
-                  (andmap identifier? (syntax->list #'(var ...)))
-                  (begin
-                    (when (and (pair? exprs) (not allow-def-after-expr?))
-                      (raise-syntax-error #f "definition after expression" ee))
-                    (syntax-local-bind-syntaxes (syntax->list #'(var ...))
-                                                #'rhs
-                                                intdef)
-                    (loop (stx-cdr x)
-                          (cons ee ex)
-                          (cons ee defs)
-                          vdefs
-                          (cons ee sdefs)
-                          exprs))]
-                 [(define-syntaxes . _)
-                  (raise-syntax-error #f "bad define-syntaxes form" ee)]
-                 [_
-                  (loop (stx-cdr x)
-                        (cons ee ex)
-                        defs
-                        vdefs
-                        sdefs
-                        (cons ee exprs))]))]
-            [(stx-null? x)
-             (let ([ex (reverse ex)])
-               (values ex
-                       ex
-                       (reverse defs)
-                       (reverse vdefs)
-                       (reverse sdefs)
-                       (reverse exprs)))]))))
 
 (define-syntax-rule (define-contract-stxclass name c)
   (define-basic-syntax-class* (name)

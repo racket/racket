@@ -53,6 +53,7 @@ static Scheme_Object *read_syntax_f (int, Scheme_Object *[]);
 static Scheme_Object *read_syntax_recur_f (int, Scheme_Object *[]);
 static Scheme_Object *read_honu_syntax_f (int, Scheme_Object *[]);
 static Scheme_Object *read_honu_syntax_recur_f (int, Scheme_Object *[]);
+static Scheme_Object *read_language (int, Scheme_Object *[]);
 static Scheme_Object *read_char (int, Scheme_Object *[]);
 static Scheme_Object *read_char_spec (int, Scheme_Object *[]);
 static Scheme_Object *read_byte (int, Scheme_Object *[]);
@@ -262,6 +263,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("read-honu/recursive",            read_honu_recur_f,              0, 1, env);
   GLOBAL_NONCM_PRIM("read-honu-syntax",               read_honu_syntax_f,             0, 2, env);
   GLOBAL_NONCM_PRIM("read-honu-syntax/recursive",     read_honu_syntax_recur_f,       0, 2, env);
+  GLOBAL_NONCM_PRIM("read-language",                  read_language,                  0, 2, env);
   GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
   GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 1, env);
   GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
@@ -2854,6 +2856,30 @@ static Scheme_Object *read_honu_syntax_f(int argc, Scheme_Object *argv[])
 static Scheme_Object *read_honu_syntax_recur_f(int argc, Scheme_Object *argv[])
 {
   return do_read_syntax_f("read-honu-syntax/recursive", argc, argv, 1, 1);
+}
+
+static Scheme_Object *read_language(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *port, *v, *fail_thunk = NULL;
+
+  if (argc > 0) {
+    port = argv[0];
+    if (!SCHEME_INPUT_PORTP(port))
+      scheme_wrong_type("read-language", "input-port", 0, argc, argv);
+    if (argc > 1) {
+      scheme_check_proc_arity("read-language", 0, 1, argc, argv);
+      fail_thunk = argv[1];
+    }
+  } else {
+    port = CURRENT_INPUT_PORT(scheme_current_config());
+  }
+  
+  v = scheme_read_language(port, !!fail_thunk);
+
+  if (SCHEME_VOIDP(v))
+    return _scheme_tail_apply(fail_thunk, 0, NULL);
+  
+  return v;
 }
 
 static Scheme_Object *

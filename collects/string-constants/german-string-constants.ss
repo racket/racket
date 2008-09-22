@@ -399,18 +399,23 @@
  (repl-value-color "Werte")
  (repl-error-color "Fehler")
  
- ;;; find/replace
- (find-and-replace "Suchen und Ersetzen")
- (find "Suchen")
- (replace "Ersetzen")
+  ;;; find/replace
+ (search-next "Weiter")
+ (search-next "Zurück")
+ (search-match "Fundort")  ;;; this one and the next one are singular/plural variants of each other
+ (search-matches "Fundorte") 
+ (search-replace "Ersetzen")
+ (search-skip "Überspringen")
+ (search-show-replace "Ersetzen einblenden")
+ (search-hide-replace "Ersetzen ausblenden")
+ (find-case-sensitive "Groß-/Kleinschreibung beachten")  ;; the check box in both the docked & undocked search
+ (find-anchor-based "Suchen mit Ankern")
+ 
+ ;; these string constants used to be used by searching,
+ ;; but aren't anymore. They are still used by other tools, tho.
+ (hide "Ausblenden")
  (dock "Andocken")
  (undock "Ablegen")
- (replace&find "Ersetzen && Suchen") ;;; need double & to get a single &
- (forward "Vorwärts")
- (backward "Rückwärts")
- (hide "Ausblenden")
- (find-case-sensitive "Groß-/Kleinschreibung beachten")
- (find-anchor-based "Suchen mit Ankern")
  
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "In Dateien suchen...")
@@ -547,17 +552,18 @@
  (find-info "Zum nächsten Vorkommen der Zeichenkette aus dem Such-Fenster springen")
  (find-menu-item "Suchen")
 
- (find-again-info "Die gleiche Zeichenkette nochmal suchen")
- (find-again-menu-item "Nochmal suchen")
+ (find-next-info "Zum nächsten Fundort der Zeichenkette im Suchfenster springen")
+ (find-next-menu-item "Weitersuchen")
 
- (find-again-backwards-info "Zum vorherigen Vorkommen der Zeichenkette aus dem Such-Fenster springen")
- (find-again-backwards-menu-item "Rückwärts nochmal suchen")
+ (find-previous-info "Zum vorherigen Vorkommen der Zeichenkette aus dem Such-Fenster springen")
+ (find-previous-menu-item "Rückwärts weitersuchen")
 
- (replace-and-find-again-info "Den aktuellen Text ersetzen und dann nochmal suchen")
- (replace-and-find-again-menu-item "Ersetzen && nochmal suchen")
-
- (replace-and-find-again-backwards-info "Den aktuellen Text ersetzen und dann nochmal rückwärtssuchen")
- (replace-and-find-again-backwards-menu-item "Ersetzen && rückwärts nochmal suchen")
+ (show-replace-menu-item "Ersetzen einblenden")
+ (hide-replace-menu-item "Ersetzen ausblenden")
+ (show/hide-replace-info "Wechselt die Sichtbarkeit des Ersetzen-Panels")
+ 
+ (replace-menu-item "Ersetzen")
+ (replace-info " Suchtext im dunklen Kreis ersetzen")
 
  (replace-all-info "Alle Vorkommen der Such-Zeichenkette ersetzen")
  (replace-all-menu-item "Alle ersetzen")
@@ -828,7 +834,10 @@
  (whole-part "Ganzzahliger Anteil")
  (numerator "Zähler")
  (denominator "Nenner")
- (invalid-number "Unzulässige Zahl: muss exakt, reell und nicht ganz sein.")
+ (insert-number/bad-whole-part "Der ganzzahlige Anteil muß eine ganze Zahl sein")
+ (insert-number/bad-numerator "Der Zähler einer Zahl muß eine nichtnegative ganze Zahl sein")
+ (insert-number/bad-denominator "Der Nenner einer Zahl muß eine nichtnegative ganze Zahl sein")
+
  (insert-fraction-menu-item-label "Bruch einfügen...")
 
  ;; number snip popup menu
@@ -1166,6 +1175,8 @@
   (ml-cp-raise "Höher")
   (ml-cp-lower "Tiefer")
 
+  (ml-always-show-#lang-line "#lang-Zeile in der `module'-Sprache immer anzeigen")
+
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java-Modus")
@@ -1303,4 +1314,16 @@
   (gui-tool-show-gui-toolbar "GUI-Toolbar einblenden")
   (gui-tool-hide-gui-toolbar "GUI-Toolbar ausblenden")
   (gui-tool-insert-gui "GUI einfügen")
-  )
+
+  
+  ;; contract violation tracking
+  
+  ; tooltip for new planet icon in drscheme window (must have a planet violation logged to see it)
+  (show-planet-contract-violations "PLaneT-Vertragsverletzungen anzeigen")
+
+  ; buttons in the dialog that lists the recorded bug reports
+  (bug-track-report "Ticket einreichen")
+  (bug-track-forget "Vergessen")
+  (bug-track-forget-all "Alles vergessen")
+
+ )

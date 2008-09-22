@@ -10,7 +10,6 @@
          syntax/stx
          "kws.ss")
 (provide define-syntax-class
-         define-syntax-splice-class
          define-basic-syntax-class
          define-basic-syntax-class*
          parse-sc
@@ -24,7 +23,6 @@
          with-patterns
 
          pattern
-         union
          ...*
 
          fail-sc
@@ -35,27 +33,32 @@
 
 (define-syntax (define-syntax-class stx)
   (syntax-case stx ()
-    [(define-syntax-class (name arg ...) rhs)
-     #'(begin (define-syntax name
-                (make sc 'name
-                         '(arg ...)
-                         (rhs-attrs (parse-rhs (quote-syntax rhs) #t))
-                         ((syntax-local-certifier) #'parser)))
-              (define parser (rhs->parser name rhs (arg ...))))]
-    [(define-syntax-class name rhs)
-     #'(define-syntax-class (name) rhs)]))
+    [(define-syntax-class (name arg ...) . rhss)
+     #`(begin (define-syntax name
+                (let ([the-rhs (parse-rhs (quote-syntax rhss) #t (quote-syntax #,stx))])
+                  (make sc 'name
+                        '(arg ...)
+                        (rhs-attrs the-rhs)
+                        ((syntax-local-certifier) #'parser)
+                        (rhs:union-description the-rhs))))
+              (define parser (rhs->parser name rhss (arg ...) #,stx)))]
+    [(define-syntax-class name . rhss)
+     (syntax/loc stx
+       (define-syntax-class (name) . rhss))]))
 
+#;
 (define-syntax (define-syntax-splice-class stx)
   (syntax-case stx ()
-    [(define-syntax-splice-class (name arg ...) rhs)
-     #'(begin (define-syntax name
+    [(define-syntax-splice-class (name arg ...) . rhss)
+     #`(begin (define-syntax name
                 (make ssc 'name
                       '(arg ...)
-                      (rhs-attrs (parse-splice-rhs (quote-syntax rhs) #t))
+                      (rhs-attrs
+                       (parse-splice-rhs (quote-syntax rhss) #t (quote-syntax #,stx)))
                       ((syntax-local-certifier) #'parser)))
-              (define parser (splice-rhs->parser name rhs (arg ...))))]
-    [(define-syntax-splice-class name rhs)
-     #'(define-syntax-splice-class (name) rhs)]))
+              (define parser (splice-rhs->parser name rhss (arg ...) #,stx)))]
+    [(define-syntax-splice-class name . rhss)
+     (syntax/loc stx (define-syntax-splice-class (name) . rhss))]))
 
 (define-syntax define-basic-syntax-class
   (syntax-rules ()
@@ -89,12 +92,13 @@
               (make sc 'name
                     '(arg ...)
                     (list (make-attr 'attr-name 'attr-depth null) ...)
-                    ((syntax-local-certifier) #'parser))))]))
+                    ((syntax-local-certifier) #'parser)
+                    #f)))]))
 
 (define-syntax (rhs->parser stx)
   (syntax-case stx ()
-    [(rhs->parser name rhs (arg ...))
-     (let ([rhs (parse-rhs #'rhs #f)]
+    [(rhs->parser name rhss (arg ...) ctx)
+     (let ([rhs (parse-rhs #'rhss #f #'ctx)]
            [sc (syntax-local-value #'name)])
        (parse:rhs rhs
                   (sc-attrs sc)
@@ -182,7 +186,7 @@
            [_
             (err "expected end of list" x)])]
         [expected
-         (err (format "expected ~s~a"
+         (err (format "~a~a"
                       expected
                       (cond [(zero? n) ""]
                             [(= n +inf.0) " after matching main pattern"]
@@ -204,3 +208,6 @@
 
 (define (fail-sc stx #:pattern [pattern #f] #:reason [reason #f])
   (make-failed stx pattern reason))
+
+(define (syntax-class-fail stx #:reason [reason #f])
+  (make-failed stx #f reason))

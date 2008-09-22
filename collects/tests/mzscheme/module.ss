@@ -408,5 +408,32 @@
 (test #t module-path? '(planet "foo%2e.ss" ("robby%2e" "redex%2e.plt") "sub%2e" "%2edeeper"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check 'module-language, `module-compiled-language-info', and `module->language-info'
+
+(let ([mk (lambda (val)
+            (compile (syntax-property #'(module m scheme/base)
+                                      'module-language
+                                      val)))])
+  (test #f 'info (module-compiled-language-info (mk 10)))
+  (test '#(scheme x "whatever") 'info (module-compiled-language-info (mk '#(scheme x "whatever"))))
+  (let ([ns (make-base-namespace)])
+    (parameterize ([current-namespace ns])
+      (eval mk ns)
+      (eval (mk '#(scheme x "whatever")))
+      (test '#(scheme x "whatever") module->language-info ''m)
+      (let ([path (build-path (collection-path "tests" "mzscheme")
+                              "langm.ss")])
+        (parameterize ([read-accept-reader #t]
+                       [current-module-declare-name (module-path-index-resolve
+                                                     (module-path-index-join path #f))])
+          (eval
+           (read-syntax path
+                        (open-input-string "#lang tests/mzscheme (provide x) (define x 1)"
+                                           path)))
+          ((current-module-name-resolver) (current-module-declare-name))))
+      (test '#(tests/mzscheme/lang/getinfo get-info closure-data)
+            module->language-info 'tests/mzscheme/langm))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

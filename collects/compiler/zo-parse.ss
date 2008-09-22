@@ -194,7 +194,7 @@
 
 (define (read-module v)
   (match v
-    [`(,name ,self-modidx ,functional? ,et-functional?
+    [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
              ,prefix ,kernel-exclusion ,reprovide-kernel?
              ,indirect-provides ,num-indirect-provides ,protects

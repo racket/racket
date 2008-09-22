@@ -72,8 +72,12 @@
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
   (match rhs
-    [(struct rhs:union (orig-stx attrs rhss))
-     (for*/list ([rhs rhss] [pk (rhs->pks rhs relsattrs main-var)]) pk)]
+    [(struct rhs:union (orig-stx attrs transparent? description patterns))
+     (for*/list ([rhs patterns] [pk (rhs-pattern->pks rhs relsattrs main-var)]) 
+       pk)]))
+
+(define (rhs-pattern->pks rhs relsattrs main-var)
+  (match rhs
     [(struct rhs:pattern (orig-stx attrs pattern decls remap sides))
      (list (make-pk (list pattern)
                     (expr:convert-sides sides
@@ -143,7 +147,7 @@
                                                #:literals literals)])
          (syntax-case rest ()
            [(b)
-            (let* ([pattern (parse-pattern #'p decls)])
+            (let* ([pattern (parse-pattern #'p decls 0)])
               (make-pk (list pattern)
                        (expr:convert-sides sides
                                            (pattern-attrs pattern)
@@ -202,6 +206,55 @@
                #`(let-syntax ([failvar (make-rename-transformer (quote-syntax #,failid))])
                    (try failvar (expr ...))))))]))
 
+(define (report-stxclass stxclass)
+  (and stxclass
+       (format "expected ~a"
+               (or (sc-description stxclass)
+                   (sc-name stxclass)))))
+
+(define (report-constants pairs? data literals)
+  (cond [pairs? #f]
+        [(null? data)
+         (format "expected ~a" (report-choices-literals literals))]
+        [(null? literals)
+         (format "expected ~a" (report-choices-data data))]
+        [else
+         (format "expected ~a; or ~a"
+                 (report-choices-data data)
+                 (report-choices-literals literals))]))
+
+(define (report-choices-literals literals0)
+  (define literals
+    (sort (map syntax-e literals0) 
+          string<? 
+          #:key symbol->string
+          #:cache-keys? #t))
+  (case (length literals)
+    [(1) (format "the literal identifier ~s" (car literals))]
+    [else (format "one of the following literal identifiers: ~a"
+                  (comma-list literals))]))
+
+(define (report-choices-data data)
+  (case (length data)
+    [(1) (format "the datum ~s" (car data))]
+    [else (format "one of the following literals: ~a"
+                  (comma-list data))]))
+
+(define (comma-list items0)
+  (define items (for/list ([item items0]) (format "~s" item)))
+  (define (loop items)
+    (cond [(null? items)
+           null]
+          [(null? (cdr items))
+           (list ", or " (car items))]
+          [else
+           (list* ", " (car items) (loop (cdr items)))]))
+  (case (length items)
+    [(2) (format "~a or ~a" (car items) (cadr items))]
+    [else (let ([strings (list* (car items) (loop (cdr items)))])
+            (apply string-append strings))]))
+
+
 ;; parse:extpk : (listof identifier) (listof FC) ExtPK identifier -> stx
 ;; Pre: vars is not empty
 (define (parse:extpk vars fcs extpk failid)
@@ -217,7 +270,7 @@
            (if (ok? r)
                #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'r) failid)
                #,(fail failid (car vars)
-                       #:pattern (and stxclass (sc-name stxclass))
+                       #:pattern (report-stxclass stxclass)
                        #:fc (car fcs)))))]
     [(struct cpks (pairpks datumpkss literalpkss))
      (with-syntax ([var0 (car vars)]
@@ -270,13 +323,13 @@
                           #'())
                    [datum-test datum-rhs] ...
                    [else
-                    #,(let ([ps #'(pair-pattern ... datum-pattern ...)])
-                        (with-syntax ([ep (if (= (length (syntax->list ps)) 1)
-                                              (car (syntax->list ps))
-                                              #`(union #,@ps))])
-                          (fail failid (car vars)
-                                #:pattern #'ep
-                                #:fc (car fcs))))]))))]
+                    #,(fail failid (car vars)
+                            #:pattern (report-constants (pair? pairpks)
+                                                        (for/list ([d datumpkss])
+                                                                  (datumpks-datum d))
+                                                        (for/list ([l literalpkss])
+                                                                  (literalpks-literal l)))
+                            #:fc (car fcs))]))))]
     #;
     [(struct pk ((cons (struct pat:splice (orig-stx attrs depth head tail))
                        rest-ps)
