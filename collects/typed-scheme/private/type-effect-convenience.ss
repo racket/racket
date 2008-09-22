@@ -104,8 +104,10 @@
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #f (cons dty dbound) null null))
 
-(define (make-promise-ty t)
-  (make-Struct (string->uninterned-symbol "Promise") #f (list t) #f #f #'promise? values))
+(define make-promise-ty
+  (let ([s (string->uninterned-symbol "Promise")])
+    (lambda (t)
+      (make-Struct s #f (list t) #f #f #'promise? values))))
 
 (define N (make-Base 'Number))
 (define -Integer (make-Base 'Integer))
