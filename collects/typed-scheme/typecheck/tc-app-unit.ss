@@ -606,10 +606,27 @@
     [(Value: '()) null]
     [_ (int-err "bad value in type->list: ~a" t)]))
 
+;; id: identifier
+;; sym: a symbol
+;; mod: a quoted require spec like 'scheme/base
+;; is id the name sym defined in mod?
+(define (id-from? id sym mod)
+  (and (eq? (syntax-e id) sym)
+       (eq? (module-path-index-resolve (syntax-source-module id))
+            ((current-module-name-resolver) mod #f #f #f))))
+
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
     (values apply not list list* call-with-values do-make-object make-object cons
-            andmap ormap) ;; the special-cased functions   
+            andmap ormap) ;; the special-cased functions
+    ;; special case for delay
+    [(#%plain-app 
+      mp1 
+      (#%plain-lambda () 
+        (#%plain-app mp2 (#%plain-app call-with-values (#%plain-lambda () e) list))))
+     (and (id-from? #'mp1 'make-promise 'scheme/promise)
+          (id-from? #'mp2 'make-promise 'scheme/promise))
+     (ret (-Promise (tc-expr/t #'e)))]
     ;; special cases for classes
     [(#%plain-app make-object cl . args)     
      (check-do-make-object #'cl #'args #'() #'())]

@@ -338,16 +338,17 @@ profile todo:
   ;; =User=
   (define (parse-gp exn gp)
     (match gp
-      [`(planet ,fn (,user ,package ,version ...))
+      [`(planet ,fn (,user ,package ,planet-version ...))
        (list (cons 'component (format "~a/~a" user package))
              (cons 'keywords "contract violation")
+             (cons 'pltversion (version))
              (cons 'planetversion
                    (cond
-                     [(null? version) ""]
-                     [(null? (cdr version))
-                      (format "~s" `(,(car version) ?))]
+                     [(null? planet-version) ""]
+                     [(null? (cdr planet-version))
+                      (format "~s" `(,(car planet-version) ?))]
                      [else
-                      (format "~s" `(,(car version) ,(cadr version)))]))
+                      (format "~s" `(,(car planet-version) ,(cadr planet-version)))]))
              (cons 'description (exn->trace exn)))]
       [else #f]))
   

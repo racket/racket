@@ -43,7 +43,7 @@
                    (if (eof-object? x)
                      (reverse r)
                      (let* ([x (and (list? x) (= 7 (length x)) (list-ref x 4))]
-                            [x (and (bytes? x) (bytes->path x))])
+                            [x (and (bytes? x) (simplify-path (bytes->path x)))])
                        (loop (if x (cons x r) r)))))))))))))
 
 ;; if `x' has `y' as a prefix, return the tail,

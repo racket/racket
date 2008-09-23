@@ -14,6 +14,18 @@
          [path (if (file-exists? path) path (build-path (find-doc-dir) sub))])
     (send-url/file path #:fragment fragment #:query query)))
 
+;; This is an example of changing this code to use the online manuals.
+;; Useful in cases like schools that use systems that have problems
+;; running a browser on local files (like NEU).  If you use this, then
+;; it is a good idea to put the documentation tree somewhere local, to
+;; have better interaction times and not overload the PLT server.
+;; (define doc-url "http://download.plt-scheme.org/doc/4.1/html/")
+;; (define (send-main-page #:sub [sub "index.html"]
+;;                         #:fragment [fragment #f] #:query [query #f])
+;;   (define (part pfx x) (if x (list pfx x) '()))
+;;   (send-url (apply string-append doc-url sub
+;;                    (append (part "#" fragment) (part "?" query)))))
+
 (define (perform-search str [context #f])
   ;; `context' can be a pre-filter query string to use for a context,
   ;; optionally a list of one and a label to display for that context.
