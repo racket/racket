@@ -183,7 +183,7 @@
                       (input-port->text-input-port (open-input-text-editor
                                                     defs 0 'end snip->text))
                       (open-input-text-editor defs))]
-                   [current-output-port (open-output-string)])
+                   [current-output-port (open-output-bytes)])
       (input->process->output maxwidth textualize? untabify? bad-re)
       (get-output-bytes (current-output-port)))))
 
