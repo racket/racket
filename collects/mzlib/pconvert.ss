@@ -363,6 +363,7 @@
                                                           `(,(recur k) ,(recur v)))))]
                                [(vector? expr) `(vector ,@(map recur (vector->list expr)))]
                                [(symbol? expr) `',expr]
+                               [(keyword? expr) `',expr]
                                [(string? expr) expr]
                                [(primitive? expr) (object-name expr)]
                                [(procedure? expr)
