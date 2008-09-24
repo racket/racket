@@ -13,7 +13,12 @@
          (for-syntax macro-debugger/stxclass/stxclass)
          (for-syntax scheme/base))
 
-(provide (all-defined-out))
+(provide (all-defined-out) 
+         ;; these should all eventually go away
+         make-Name make-ValuesDots make-Function make-top-arr make-Latent-Restrict-Effect make-Latent-Remove-Effect)
+
+(define (one-of/c . args)
+  (apply Un (map -val args)))
 
 (define (-vet id) (make-Var-True-Effect id))
 (define (-vef id) (make-Var-False-Effect id))
@@ -206,6 +211,8 @@
 
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
+(define -box make-Box)
+(define -vec make-Vector)
 
 (define Any-Syntax 
   (-mu x

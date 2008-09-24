@@ -5,7 +5,7 @@
 
 (require (for-syntax scheme/base))
 
-(define-for-syntax ts-mod "typed-scheme.ss")
+(define-for-syntax ts-mod 'typed-scheme/typed-scheme)
 
 (define-syntax (providing stx)
   (syntax-case stx (libs from basics except)
