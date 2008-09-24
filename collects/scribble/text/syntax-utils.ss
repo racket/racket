@@ -126,10 +126,8 @@
            (andmap identifier? (syntax->list #'(id ...)))
            (if (null? es)
              (let ([ids (syntax->list #'(id ...))])
-               (define (registrar ctx)
-                 (syntax-local-bind-syntaxes
-                  ids (local-transformer-expand #'rhs 'expression '()) ctx))
-               (registrar (car ctx))
+               (syntax-local-bind-syntaxes
+                ids (local-transformer-expand #'rhs 'expression '()) (car ctx))
                (loop (cdr exprs) (cons expr* ds) es))
              ;; return the unexpanded expr, to be re-expanded later, in the
              ;; right contexts
