@@ -71,18 +71,36 @@ Keywords for configuring @scheme[check:]:
   printouts and grading, and is in a subdirectory so students will not
   see it on the status web server.  Defaults to @scheme[#t].}
 
+@item{@indexed-scheme[:textualize?]---if true, then all submissions
+  are converted to text, trying to convert objects like images and
+  comment boxes to some form of text.  Defaults to @scheme[#f],
+  meaning that an exception is raised for submissions that are not all
+  text. (Effective only when saving a textual version of the
+  submission files: when @scheme[:create-text?] is on.)
+
+  This flag is effective only when saving a textual version of the
+  submission files --- when @scheme[:create-text?] is on.  The
+  possible configurations are:
+  @itemize[
+  @item{@scheme[:create-text?] is on and @scheme[:textualize?] is off
+    (the default) --- in this case a text version of submissions is
+    created, and submissions must contain only plain text.  The text
+    file has the same semantics of the submission and can be used to
+    run student code.}
+  @item{@scheme[:create-text?] is off --- allowing submissions that
+    contain non-textual objects, but no text file is created so
+    grading and testing must be done using DrScheme (because the saved
+    submission is always in binary format).}
+  @item{Both flags are on --- allowing submission with non-textual
+    objects and generating text files, but these files will not be
+    usable as code since objects like images cannot be represented in
+    plain text.}]}
+
 @item{@indexed-scheme[:untabify?]---if true, then tabs are converted
   to spaces, assuming a standard tab width of 8 places.  This is
   needed for a correct computation of line lengths, but note that
   DrScheme does not insert tabs in Scheme mode.  Defaults to
   @scheme[#t].  (Effective only when saving a textual version of the
-  submission files: when @scheme[:create-text?] is on.)}
-
-@item{@indexed-scheme[:textualize?]---if true, then all submissions
-  are converted to text, trying to convert objects like comment boxes
-  and test cases to some form of text.  Defaults to @scheme[#f],
-  meaning that an exception is raised for submissions that are not all
-  text. (Effective only when saving a textual version of the
   submission files: when @scheme[:create-text?] is on.)}
 
 @item{@indexed-scheme[:maxwidth]---a number that specifies maximum
@@ -95,7 +113,8 @@ Keywords for configuring @scheme[check:]:
   (unrelated to the text-converted files).  Defaults to
   @filepath{hw.scm}.  (The suffix changes the defaults of
   @scheme[:markup-prefix] and @scheme[:prefix-re].)  Can be
-  @scheme[#f] for removing the original file after processing.}
+  @scheme[#f] for removing the original file after processing.  The
+  file is always stored in MrEd's binary format.}
 
 @item{@indexed-scheme[:multi-file]---by default, this is set to
   @scheme[#f], which means that only DrScheme is used to send
