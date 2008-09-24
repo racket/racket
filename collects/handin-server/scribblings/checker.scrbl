@@ -75,19 +75,21 @@ Keywords for configuring @scheme[check:]:
   to spaces, assuming a standard tab width of 8 places.  This is
   needed for a correct computation of line lengths, but note that
   DrScheme does not insert tabs in Scheme mode.  Defaults to
-  @scheme[#t].}
+  @scheme[#t].  (Effective only when saving a textual version of the
+  submission files: when @scheme[:create-text?] is on.)}
 
 @item{@indexed-scheme[:textualize?]---if true, then all submissions
   are converted to text, trying to convert objects like comment boxes
   and test cases to some form of text.  Defaults to @scheme[#f],
   meaning that an exception is raised for submissions that are not all
-  text.}
+  text. (Effective only when saving a textual version of the
+  submission files: when @scheme[:create-text?] is on.)}
 
 @item{@indexed-scheme[:maxwidth]---a number that specifies maximum
   line lengths for submissions (a helpful feature for reading student
   code).  Defaults to 79.  This feature can be disabled if set to
-  @scheme[#f].  (This is effective only when saving a textual version
-  of the submission files.)}
+  @scheme[#f].  (Effective only when saving a textual version of the
+  submission files: when @scheme[:create-text?] is on.)}
 
 @item{@indexed-scheme[:output]---the name of the original handin file
   (unrelated to the text-converted files).  Defaults to
