@@ -112,6 +112,7 @@
     (list
      (make-same-test "abc" "abc")
      (make-same-test 'a ''a)
+     (make-same-test '#:abc ''#:abc)
      
      (make-same-test 8 8)
      (make-same-test 1/2 1/2)
