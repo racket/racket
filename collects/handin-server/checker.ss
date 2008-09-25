@@ -684,7 +684,7 @@
 (define-syntax-rule (!integer* expr)
   (unless (integer? ((submission-eval) `expr))
     (error* "~a is expected to be bound to an integer" (->disp 'expr))))
-(define-syntax (!integer id)
+(define-syntax-rule (!integer id)
   (begin (!defined id) (!integer* id)))
 
 (provide !eval)
