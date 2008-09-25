@@ -1,8 +1,9 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@define[textoption]{(Effective only when saving a textual version of
-  the submission files: when @scheme[:create-text?] is on.)}
+@(define textoption
+   @t{(Effective only when saving a textual version of
+      the submission files: when @scheme[:create-text?] is on.)})
 
 @title{checker}
 
