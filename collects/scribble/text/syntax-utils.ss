@@ -163,7 +163,7 @@
 (define-syntax (begin/text stx)
   (syntax-case stx ()
     [(begin/text expr ...)
-     #'(process-begin/text begin/collect values expr ...)]))
+     #'(process-begin/text begin/collect begin expr ...)]))
 
 ;; include for templates
 (require (for-syntax scheme/base (prefix-in scribble: "../reader.ss"))

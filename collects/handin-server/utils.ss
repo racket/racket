@@ -167,7 +167,7 @@
                                                      (eq? lang 'beginner-abbr)))])
     (reraise-exn-as-submission-problem
      (lambda ()
-       (let ([e (make-evaluator lang teachpacks program-port)])
+       (let ([e (make-evaluator lang #:requires teachpacks program-port)])
          (set-run-status "executing your code")
          (go e))))))
 

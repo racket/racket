@@ -55,8 +55,7 @@
             (parameterize ([read-accept-reader #t]
                            [current-load-relative-directory path]
                            [current-directory path])
-              (with-output-to-file "/dev/null" #:exists 'append
-                (lambda () (loader p)))))))))
+              (loader p)))))))
     (apply test-suite dir
            tests)))
 

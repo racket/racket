@@ -29,7 +29,7 @@
   @schemeblock[((active-dirs ("test"))
                 (https-port-number 9780))]}
 
-@item{In your new directory, run @commandline{mred -l handin-server}}
+@item{In your new directory, run @commandline{mred-text -l handin-server}}
 
 @item{In the @filepath{handin-client} collection, edit
   @filepath{info.ss} and uncomment the lines that define

@@ -1,6 +1,9 @@
 #lang scribble/doc
 @(require "common.ss")
 
+@define[textoption]{(Effective only when saving a textual version of
+  the submission files: when @scheme[:create-text?] is on.)}
+
 @title{checker}
 
 @defmodulelang[handin-server/checker]{
@@ -28,10 +31,15 @@ language module---a typical checker that uses it looks like this:
                            (code:line :key val keys-n-vals)])]{
 
 Constructs (and provides) an appropriate checker function, using
-keywords for features that you want, the body of the checker can
-contain arbitrary code, using all utilities from
-@schememodname[handin-server/utils], as well as additional ones (see
-below).}
+keywords to customize features that you want it to have.  The body of
+the checker (following the keywords) can contain arbitrary code, using
+utility functions from @schememodname[handin-server/utils], as well as
+additional ones that are defined below.  Submission files are arriving
+to the handin server in binary form (in the MrEd format that is used
+to store text and other objects like images), and a number of these
+options involve genrating a textual version of this file.  The purpose
+of these options is to have these text files integrate easily into a
+course framework for grading, based on these text files.}
 
 Keywords for configuring @scheme[check:]:
 
@@ -71,29 +79,47 @@ Keywords for configuring @scheme[check:]:
   printouts and grading, and is in a subdirectory so students will not
   see it on the status web server.  Defaults to @scheme[#t].}
 
+@item{@indexed-scheme[:textualize?]---if true, then all submissions
+  are converted to text, trying to convert objects like images and
+  comment boxes to some form of text.  Defaults to @scheme[#f],
+  meaning that an exception is raised for submissions that are not all
+  text. @textoption
+
+  This flag is effective only when saving a textual version of the
+  submission files --- when @scheme[:create-text?] is on.  The
+  possible configurations are:
+  @itemize[
+  @item{@scheme[:create-text?] is on and @scheme[:textualize?] is off
+    (the default) --- in this case a text version of submissions is
+    created, and submissions must contain only plain text.  The text
+    file has the same semantics of the submission and can be used to
+    run student code.}
+  @item{@scheme[:create-text?] is off --- allowing submissions that
+    contain non-textual objects, but no text file is created so
+    grading and testing must be done using DrScheme (because the saved
+    submission is always in binary format).}
+  @item{Both flags are on --- allowing submission with non-textual
+    objects and generating text files, but these files will not be
+    usable as code since objects like images cannot be represented in
+    plain text.}]}
+
 @item{@indexed-scheme[:untabify?]---if true, then tabs are converted
   to spaces, assuming a standard tab width of 8 places.  This is
   needed for a correct computation of line lengths, but note that
   DrScheme does not insert tabs in Scheme mode.  Defaults to
-  @scheme[#t].}
-
-@item{@indexed-scheme[:textualize?]---if true, then all submissions
-  are converted to text, trying to convert objects like comment boxes
-  and test cases to some form of text.  Defaults to @scheme[#f],
-  meaning that an exception is raised for submissions that are not all
-  text.}
+  @scheme[#t].  @textoption}
 
 @item{@indexed-scheme[:maxwidth]---a number that specifies maximum
   line lengths for submissions (a helpful feature for reading student
   code).  Defaults to 79.  This feature can be disabled if set to
-  @scheme[#f].  (This is effective only when saving a textual version
-  of the submission files.)}
+  @scheme[#f].  @textoption}
 
 @item{@indexed-scheme[:output]---the name of the original handin file
   (unrelated to the text-converted files).  Defaults to
   @filepath{hw.scm}.  (The suffix changes the defaults of
   @scheme[:markup-prefix] and @scheme[:prefix-re].)  Can be
-  @scheme[#f] for removing the original file after processing.}
+  @scheme[#f] for removing the original file after processing.  The
+  file is always stored in MrEd's binary format.}
 
 @item{@indexed-scheme[:multi-file]---by default, this is set to
   @scheme[#f], which means that only DrScheme is used to send
@@ -106,13 +132,14 @@ Keywords for configuring @scheme[check:]:
 @item{@indexed-scheme[:markup-prefix]---used as the prefix for
   @scheme[:student-lines] and @scheme[:extra-lines] below.  The
   default is @scheme[";;> "] or @scheme["//> "], depending on the
-  suffix of @scheme[:output] above.  (Note: if you change this, make
-  sure to change @scheme[:prefix-re] too.)}
+  suffix of @scheme[:output] above.  Note: if you change this, make
+  sure to change @scheme[:prefix-re] too.  @textoption}
 
 @item{@indexed-scheme[:prefix-re]---used to identify lines with markup
   (@scheme[";>"] or @scheme["//>"] etc), so students cannot fool the
   system by writing marked-up code.  The default is @scheme[";>"] or
-  @scheme["//>"], depending on the suffix of :output above.}
+  @scheme["//>"], depending on the suffix of :output above.
+  @textoption}
 
 @item{@indexed-scheme[:student-line]---when a submission is converted
   to text, it begins with lines describing the students that have
@@ -122,14 +149,14 @@ Keywords for configuring @scheme[check:]:
   which requires @scheme["Full Name"] and @scheme["Email"] entries in
   the server's extra-fields configuration.  These lines are prefixed
   with @scheme[";;> "] or the prefix specified by
-  @scheme[:makup-prefix] above.}
+  @scheme[:makup-prefix] above.  @textoption}
 
 @item{@indexed-scheme[:extra-lines]---a list of lines to add after the
   student lines, all with a @scheme[";;> "] or :markup-prefix too.
   Defaults to a single line:
   @scheme["Maximum points for this assignment: <+100>"].  (Can use
   @scheme["{submission}"] for the submission directory.)  See also
-  @scheme[add-header-line!].}
+  @scheme[add-header-line!].  @textoption}
 
 @item{@indexed-scheme[:user-error-message]---a string that is used to
   report an error that occurred during evaluation of the submitted

@@ -180,10 +180,10 @@
   (let-values ([(defs inters) (unpack-submission submission)])
     (parameterize ([current-input-port
                     (if textualize?
-                      (input-port->text-input-port (open-input-text-editor
-                                                    defs 0 'end snip->text))
+                      (input-port->text-input-port
+                       (open-input-text-editor defs 0 'end snip->text))
                       (open-input-text-editor defs))]
-                   [current-output-port (open-output-string)])
+                   [current-output-port (open-output-bytes)])
       (input->process->output maxwidth textualize? untabify? bad-re)
       (get-output-bytes (current-output-port)))))
 
@@ -345,14 +345,15 @@
              [keyvals '()]
              [got null])
     (define (get key . default)
-      (cond [(assq key keyvals) => (lambda (x) (set! got (cons x got)) (caddr x))]
+      (cond [(assq key keyvals)
+             => (lambda (x) (set! got (cons x got)) (caddr x))]
             [(pair? default) (car default)]
             [else #f]))
     (syntax-case stx ()
       [(key val x ...)
        (and (identifier? #'key)
             (regexp-match? #rx"^:" (symbol->string (syntax-e #'key))))
-       (loop #'(x ...) 
+       (loop #'(x ...)
              (cons (list (syntax-e #'key) #'key #'val) keyvals)
              (cons (syntax-e #'key) got))]
       [(body ...)
