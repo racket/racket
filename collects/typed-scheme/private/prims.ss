@@ -301,7 +301,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                       (syntax->list #'(pred? ...)))]
                    [(action* ...)
                     (map (lambda (s) (syntax-property s 'typechecker:exn-handler #t)) (syntax->list #'(action ...)))]
-                   [body* (syntax-property #'(begin . body) 'typechecker:exn-body #t)])
+                   [body* (syntax-property #'(let-values () . body) 'typechecker:exn-body #t)])
        (syntax-property #'(with-handlers ([pred?* action*] ...) body*)
                         'typechecker:with-handlers
                         #t))]))

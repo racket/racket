@@ -651,6 +651,9 @@
                     Boolean String Number)
               (N N N . -> . N)]
         
+        [tc-e (assq 'foo #{'((a b) (foo bar)) :: (Listof (List Symbol Symbol))})
+              (Un (-val #f) (-pair Sym (-pair Sym (-val null))))]
+        
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         

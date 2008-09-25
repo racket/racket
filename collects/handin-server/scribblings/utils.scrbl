@@ -22,7 +22,7 @@
           [language (or/c module-path?
                           (list/c (one-of/c 'special) symbol?)
                           (cons/c (one-of/c 'begin) list?))]
-          [teachpack-paths (listof path-string?)]
+          [require-paths (listof path-string?)]
           [content bytes?])
          (any/c . -> . any)]{
 
@@ -34,7 +34,7 @@
           [language (or/c module-path?
                           (list/c (one-of/c 'special) symbol?)
                           (cons/c (one-of/c 'begin) list?))]
-          [teachpack-paths (listof path-string?)]
+          [require-paths (listof path-string?)]
           [input-program any/c]
           [proc (any/c . -> . any)])
          any]{
@@ -52,7 +52,7 @@
           (or/c module-path?
                 (list/c (one-of/c 'special) symbol?)
                 (cons/c (one-of/c 'begin) list?))]
-          [teachpack-paths (listof path-string?)]
+          [require-paths (listof path-string?)]
           [submission bytes?]
           [proc (any/c . -> . any)])
          any]{

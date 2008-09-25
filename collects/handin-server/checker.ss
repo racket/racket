@@ -361,6 +361,7 @@
            ([users*         (get ':users         #'#f)]
             [eval?*         (get ':eval?         #'#t)]
             [language*      (get ':language      #'#f)]
+            [requires*      (get ':requires      #''())]
             [teachpacks*    (get ':teachpacks    #''())]
             [create-text?*  (get ':create-text?  #'#t)]
             [untabify?*     (get ':untabify?     #'#t)]
@@ -406,6 +407,7 @@
                                   us))]
                      [eval?          eval?*]
                      [language       language*]
+                     [requires       requires*]
                      [teachpacks     teachpacks*]
                      [create-text?   create-text?*]
                      [untabify?      untabify?*]
@@ -509,7 +511,8 @@
                                           (error* uem m)]
                                          [else (error* "~a" uem)])))])
                                (call-with-evaluator/submission
-                                language teachpacks submission values))])
+                                language (append requires teachpacks)
+                                submission values))])
                         (set-run-status "running tests")
                         (parameterize ([submission-eval (wrap-evaluator eval)])
                           (let-syntax ([with-submission-bindings
@@ -537,6 +540,8 @@
                                    "`untabify?' without `maxwidth'"]
                                   [(and (not eval?) coverage?)
                                    "`coverage?' without `eval?'"]
+                                  [(and (pair? requires) (pair? teachpacks))
+                                   "`requires' and `teachpacks'"]
                                   ;; [(and textualize? coverage?)
                                   ;;  "`textualize?' and `coverage?'"]
                                   [else #f])])
@@ -648,15 +653,13 @@
   (and (procedure? proc) (procedure-arity-includes? proc arity)))
 
 (provide !defined)
-(define-syntax !defined
-  (syntax-rules ()
-    ;; expected to be used only with identifiers
-    [(_ id ...) (begin (with-handlers
-                           ([exn:fail:contract:variable?
-                             (lambda (_)
-                               (error* "missing binding: ~a" (->disp 'id)))])
-                         ((submission-eval) `id))
-                       ...)]))
+(define-syntax-rule (!defined id ...)
+  ;; expected to be used only with identifiers
+  (begin (with-handlers ([exn:fail:contract:variable?
+                          (lambda (_)
+                            (error* "missing binding: ~a" (->disp 'id)))])
+           ((submission-eval) `id))
+         ...))
 
 (provide !procedure* !procedure)
 (define-syntax !procedure*
@@ -674,18 +677,18 @@
                  (->disp 'expr) ar)))]))
 (define-syntax !procedure
   (syntax-rules ()
-    [(_ expr) (begin (!defined expr) (!procedure* expr))]
-    [(_ expr arity) (begin (!defined expr) (!procedure* expr arity))]))
+    [(_ id) (begin (!defined id) (!procedure* id))]
+    [(_ id arity) (begin (!defined id) (!procedure* id arity))]))
 
 (provide !integer* !integer)
-(define-syntax !integer*
-  (syntax-rules ()
-    [(_ expr)
-     (unless (integer? ((submission-eval) `expr))
-       (error* "~a is expected to be bound to an integer" (->disp 'expr)))]))
-(define-syntax !integer
-  (syntax-rules ()
-    [(_ expr) (begin (!defined expr) (!integer* expr))]))
+(define-syntax-rule (!integer* expr)
+  (unless (integer? ((submission-eval) `expr))
+    (error* "~a is expected to be bound to an integer" (->disp 'expr))))
+(define-syntax-rule (!integer id)
+  (begin (!defined id) (!integer* id)))
+
+(provide !eval)
+(define-syntax-rule (!eval expr) ((submission-eval) `expr))
 
 (provide !test)
 (define-syntax !test

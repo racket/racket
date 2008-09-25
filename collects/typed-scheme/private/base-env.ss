@@ -223,7 +223,7 @@
 [string->path (-> -String -Path)]
 [file-exists? (-> -Pathlike B)]
 
-[assq (-poly (a) (-> Univ (-lst (-pair Univ a)) a))]
+[assq    (-poly (a b) (a (-lst (-pair a b)) . -> . (Un (-pair a b) (-val #f))))]
 
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
 [string->number (-> -String (-opt N))]

@@ -103,16 +103,19 @@
              (match ty
                [(Values: tys) 
                 (if (not (= (length stxs) (length tys)))
-                    (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
+                    (begin
+                      (tc-error/delayed 
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
+                      (map (lambda _ (Un)) stxs))
                     (map (lambda (stx ty a)
                            (cond [a => (lambda (ann) (check-type stx ty ann) #;(log/extra stx ty ann) ann)]
                                  [else #;(log/noann stx ty) ty]))
                          stxs tys anns))]
-               [ty (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
-                                     "Expression should produce ~a values, but produces one values of type "
-                                     (length stxs) ty)]))))]))
+               [ty (tc-error/delayed 
+                    "Expression should produce ~a values, but produces one values of type ~a"
+                    (length stxs) ty)
+                   (map (lambda _ (Un)) stxs)]))))]))
 
 
 ;; check that e-type is compatible with ty in context of stx

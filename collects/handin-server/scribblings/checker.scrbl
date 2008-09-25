@@ -1,8 +1,9 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@define[textoption]{(Effective only when saving a textual version of
-  the submission files: when @scheme[:create-text?] is on.)}
+@(define textoption
+   @t{(Effective only when saving a textual version of
+      the submission files: when @scheme[:create-text?] is on.)})
 
 @title{checker}
 
@@ -66,10 +67,14 @@ Keywords for configuring @scheme[check:]:
   There is no default for this, so it must be set or an error is
   raised.}
 
-@item{@indexed-scheme[:teachpacks]---teachpacks for evaluating
-  submissions, same as the @scheme[_teachpacks] argument for
-  @scheme[make-evaluator] (see @schememodname[handin-server/sandbox]).
-  This defaults to null---no teachpacks.}
+@item{@indexed-scheme[:requires]---paths for additional libraries to
+  require for evaluating the submission, same as the
+  @scheme[_requires] argument for @scheme[make-evaluator] (see
+  @schememodname[handin-server/sandbox]).  This defaults to null---no
+  teachpacks.}
+
+@item{@indexed-scheme[:teachpacks]---an alternative name for
+  @scheme[:requires], kept for legacy checkers.}
 
 @item{@indexed-scheme[:create-text?]---if true, then a textual version
   of the submission is saved as @filepath{text.scm} in a
@@ -208,8 +213,8 @@ Within the body of @scheme[check:], @scheme[users] and
 @scheme[submission] will be bound to the checker arguments---a
 (sorted) list of usernames and the submission as a byte string.  In
 addition to the functionality below, you can use
-@scheme[((submission-eval) expr)] to evaluate expressions in the
-submitted code context, and you can use
+@scheme[(!eval _expr)] (or @scheme[((submission-eval) '_expr)]) to
+evaluate expressions in the submitted code context, and you can use
 @scheme[(with-submission-bindings (id ...) body ...)] to evaluate the
 body when @scheme[id]'s are bound to their values from the submission
 code.}
@@ -349,6 +354,11 @@ code.}
   @scheme[equal?] forms are @italic{not} evaluated in the submission
   context.}
 
+@defform[(!eval expr)]{
+
+  Evaluate an arbitrary expession in the submission context.  This is
+  a simple shorthand for @scheme[((submission-eval) `expr)].}
+
 @defproc*[([(!all-covered) void?]
            [(!all-covered [proc (string? . -> . any)]) void?])]{
 
@@ -372,7 +382,8 @@ code.}
      (lambda (where)
        (case (message (string-append
                        "Incomplete coverage at "where", do you want"
-                       " to save this submission with 10% penalty?"))
+                       " to save this submission with 10% penalty?")
+                      '(yes-no))
          [(yes) (add-header-line! "No full coverage <*90%>")
                 (message "Handin saved with penalty.")]
          [else (error "aborting submission")])))]}

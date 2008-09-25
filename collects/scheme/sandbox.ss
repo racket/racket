@@ -332,16 +332,12 @@
 ;; transitive requires.
 (define (build-program language requires input-program)
   (let* ([body (append (if (and (pair? requires) (eq? 'begin (car requires)))
-                           (cdr requires)
-                           (map (lambda (r) (list #'#%require r))
-                                requires))
+                         (cdr requires)
+                         (map (lambda (r) (list #'#%require r)) requires))
                        (input->code input-program 'program 1))]
          [use-lang (lambda (lang) `(module program ,lang . ,body))])
-    (cond [(decode-language language)
-           => (lambda (l)
-                (use-lang l))]
-          [(module-path? language)
-           (use-lang language)]
+    (cond [(decode-language language) => use-lang]
+          [(module-path? language) (use-lang language)]
           [(and (list? language) (eq? 'begin (car language)))
            (append language body)]
           [else (error 'make-evaluator "bad language spec: ~e" language)])))
