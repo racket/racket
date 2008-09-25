@@ -653,15 +653,13 @@
   (and (procedure? proc) (procedure-arity-includes? proc arity)))
 
 (provide !defined)
-(define-syntax !defined
-  (syntax-rules ()
-    ;; expected to be used only with identifiers
-    [(_ id ...) (begin (with-handlers
-                           ([exn:fail:contract:variable?
-                             (lambda (_)
-                               (error* "missing binding: ~a" (->disp 'id)))])
-                         ((submission-eval) `id))
-                       ...)]))
+(define-syntax-rule (!defined id ...)
+  ;; expected to be used only with identifiers
+  (begin (with-handlers ([exn:fail:contract:variable?
+                          (lambda (_)
+                            (error* "missing binding: ~a" (->disp 'id)))])
+           ((submission-eval) `id))
+         ...))
 
 (provide !procedure* !procedure)
 (define-syntax !procedure*
@@ -679,18 +677,15 @@
                  (->disp 'expr) ar)))]))
 (define-syntax !procedure
   (syntax-rules ()
-    [(_ expr) (begin (!defined expr) (!procedure* expr))]
-    [(_ expr arity) (begin (!defined expr) (!procedure* expr arity))]))
+    [(_ id) (begin (!defined id) (!procedure* id))]
+    [(_ id arity) (begin (!defined id) (!procedure* id arity))]))
 
 (provide !integer* !integer)
-(define-syntax !integer*
-  (syntax-rules ()
-    [(_ expr)
-     (unless (integer? ((submission-eval) `expr))
-       (error* "~a is expected to be bound to an integer" (->disp 'expr)))]))
-(define-syntax !integer
-  (syntax-rules ()
-    [(_ expr) (begin (!defined expr) (!integer* expr))]))
+(define-syntax-rule (!integer* expr)
+  (unless (integer? ((submission-eval) `expr))
+    (error* "~a is expected to be bound to an integer" (->disp 'expr))))
+(define-syntax (!integer id)
+  (begin (!defined id) (!integer* id)))
 
 (provide !eval)
 (define-syntax-rule (!eval expr) ((submission-eval) `expr))
