@@ -66,10 +66,14 @@ Keywords for configuring @scheme[check:]:
   There is no default for this, so it must be set or an error is
   raised.}
 
-@item{@indexed-scheme[:teachpacks]---teachpacks for evaluating
-  submissions, same as the @scheme[_teachpacks] argument for
-  @scheme[make-evaluator] (see @schememodname[handin-server/sandbox]).
-  This defaults to null---no teachpacks.}
+@item{@indexed-scheme[:requires]---paths for additional libraries to
+  require for evaluating the submission, same as the
+  @scheme[_requires] argument for @scheme[make-evaluator] (see
+  @schememodname[handin-server/sandbox]).  This defaults to null---no
+  teachpacks.}
+
+@item{@indexed-scheme[:teachpacks]---an alternative name for
+  @scheme[:requires], kept for legacy checkers.}
 
 @item{@indexed-scheme[:create-text?]---if true, then a textual version
   of the submission is saved as @filepath{text.scm} in a

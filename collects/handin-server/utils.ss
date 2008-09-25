@@ -52,9 +52,10 @@
   (let ([inp (open-input-text-editor str)])
     (port-count-lines! inp) inp))
 
-(define (make-evaluator/submission language teachpacks str)
+(define (make-evaluator/submission language requires str)
   (let-values ([(defs interacts) (unpack-submission str)])
-    (make-evaluator language teachpacks (open-input-text-editor defs))))
+    (make-evaluator language #:requires requires
+                    (open-input-text-editor defs))))
 
 (define (evaluate-all source port eval)
   (let loop ()
@@ -160,17 +161,17 @@
       (regexp-replace #rx"\n$" (get-output-string p) ""))))
 (define current-value-printer (make-parameter default-value-printer))
 
-(define (call-with-evaluator lang teachpacks program-port go)
+(define (call-with-evaluator lang requires program-port go)
   (parameterize ([error-value->string-handler (lambda (v s)
                                                 ((current-value-printer) v))]
                  [list-abbreviation-enabled (not (or (eq? lang 'beginner)
                                                      (eq? lang 'beginner-abbr)))])
     (reraise-exn-as-submission-problem
      (lambda ()
-       (let ([e (make-evaluator lang #:requires teachpacks program-port)])
+       (let ([e (make-evaluator lang #:requires requires program-port)])
          (set-run-status "executing your code")
          (go e))))))
 
-(define (call-with-evaluator/submission lang teachpacks str go)
+(define (call-with-evaluator/submission lang requires str go)
   (let-values ([(defs interacts) (unpack-submission str)])
-    (call-with-evaluator lang teachpacks (open-input-text-editor defs) go)))
+    (call-with-evaluator lang requires (open-input-text-editor defs) go)))

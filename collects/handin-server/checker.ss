@@ -361,6 +361,7 @@
            ([users*         (get ':users         #'#f)]
             [eval?*         (get ':eval?         #'#t)]
             [language*      (get ':language      #'#f)]
+            [requires*      (get ':requires      #''())]
             [teachpacks*    (get ':teachpacks    #''())]
             [create-text?*  (get ':create-text?  #'#t)]
             [untabify?*     (get ':untabify?     #'#t)]
@@ -406,6 +407,7 @@
                                   us))]
                      [eval?          eval?*]
                      [language       language*]
+                     [requires       requires*]
                      [teachpacks     teachpacks*]
                      [create-text?   create-text?*]
                      [untabify?      untabify?*]
@@ -509,7 +511,8 @@
                                           (error* uem m)]
                                          [else (error* "~a" uem)])))])
                                (call-with-evaluator/submission
-                                language teachpacks submission values))])
+                                language (append requires teachpacks)
+                                submission values))])
                         (set-run-status "running tests")
                         (parameterize ([submission-eval (wrap-evaluator eval)])
                           (let-syntax ([with-submission-bindings
@@ -537,6 +540,8 @@
                                    "`untabify?' without `maxwidth'"]
                                   [(and (not eval?) coverage?)
                                    "`coverage?' without `eval?'"]
+                                  [(and (pair? requires) (pair? teachpacks))
+                                   "`requires' and `teachpacks'"]
                                   ;; [(and textualize? coverage?)
                                   ;;  "`textualize?' and `coverage?'"]
                                   [else #f])])
