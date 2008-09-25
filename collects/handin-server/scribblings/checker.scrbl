@@ -213,8 +213,8 @@ Within the body of @scheme[check:], @scheme[users] and
 @scheme[submission] will be bound to the checker arguments---a
 (sorted) list of usernames and the submission as a byte string.  In
 addition to the functionality below, you can use
-@scheme[((submission-eval) expr)] to evaluate expressions in the
-submitted code context, and you can use
+@scheme[(!eval _expr)] (or @scheme[((submission-eval) '_expr)]) to
+evaluate expressions in the submitted code context, and you can use
 @scheme[(with-submission-bindings (id ...) body ...)] to evaluate the
 body when @scheme[id]'s are bound to their values from the submission
 code.}
@@ -353,6 +353,11 @@ code.}
   specifying an equality procedure.  Note that the @scheme[result] and
   @scheme[equal?] forms are @italic{not} evaluated in the submission
   context.}
+
+@defform[(!eval expr)]{
+
+  Evaluate an arbitrary expession in the submission context.  This is
+  a simple shorthand for @scheme[((submission-eval) `expr)].}
 
 @defproc*[([(!all-covered) void?]
            [(!all-covered [proc (string? . -> . any)]) void?])]{

@@ -692,6 +692,9 @@
   (syntax-rules ()
     [(_ expr) (begin (!defined expr) (!integer* expr))]))
 
+(provide !eval)
+(define-syntax-rule (!eval expr) ((submission-eval) `expr))
+
 (provide !test)
 (define-syntax !test
   (syntax-rules ()
