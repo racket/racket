@@ -382,7 +382,8 @@ code.}
      (lambda (where)
        (case (message (string-append
                        "Incomplete coverage at "where", do you want"
-                       " to save this submission with 10% penalty?"))
+                       " to save this submission with 10% penalty?")
+                      '(yes-no))
          [(yes) (add-header-line! "No full coverage <*90%>")
                 (message "Handin saved with penalty.")]
          [else (error "aborting submission")])))]}
