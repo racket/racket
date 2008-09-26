@@ -11,9 +11,6 @@
 (define-higher-order-primitive guess-with-gui-list guess-with-gui-list/proc
   (_ check-guess-list))
 
-(define (convert guesses:vec)
-  (void))
-
 (define (guess-with-gui/proc cg)
   (check-proc 'guess-with-gui cg 2 'first "two arguments")
   (void))
