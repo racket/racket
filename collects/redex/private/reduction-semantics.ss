@@ -1046,39 +1046,47 @@
         [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)])
     (values
      (wrap
-      (letrec ([metafunc
+      (letrec ([cache (make-hash)]
+               [not-in-cache (gensym)]
+               [metafunc
                 (λ (exp)
-                  (when dom-compiled-pattern
-                    (unless (match-pattern dom-compiled-pattern exp)
-                      (redex-error name
-				   "~s is not in my domain"
-				   `(,name ,@exp))))
-                  (let loop ([patterns compiled-patterns]
-                             [rhss (append old-rhss rhss)]
-                             [num (- (length old-cps))])
+                  (let ([cache-ref (hash-ref cache exp not-in-cache)])
                     (cond
-                      [(null? patterns) 
-                       (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
-                      [else
-                       (let ([pattern (car patterns)]
-                             [rhs (car rhss)])
-                         (let ([mtchs (match-pattern pattern exp)])
-                           (cond
-                             [(not mtchs) (loop (cdr patterns)
-                                                (cdr rhss)
-                                                (+ num 1))]
-                             [(not (null? (cdr mtchs)))
-                              (redex-error name "~a matched ~s ~a different ways" 
-					   (if (< num 0)
-					       "a clause from an extended metafunction"
-					       (format "clause ~a" num))
-					   `(,name ,@exp)
-					   (length mtchs))]
-                             [else
-                              (let ([ans (rhs metafunc (mtch-bindings (car mtchs)))])
-                                (unless (match-pattern codom-compiled-pattern ans)
-                                  (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
-                                ans)])))])))])
+                      [(eq? cache-ref not-in-cache)
+                       (when dom-compiled-pattern
+                         (unless (match-pattern dom-compiled-pattern exp)
+                           (redex-error name
+                                        "~s is not in my domain"
+                                        `(,name ,@exp))))
+                       (let loop ([patterns compiled-patterns]
+                                  [rhss (append old-rhss rhss)]
+                                  [num (- (length old-cps))])
+                         (cond
+                           [(null? patterns) 
+                            (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
+                           [else
+                            (let ([pattern (car patterns)]
+                                  [rhs (car rhss)])
+                              (let ([mtchs (match-pattern pattern exp)])
+                                (cond
+                                  [(not mtchs) (loop (cdr patterns)
+                                                     (cdr rhss)
+                                                     (+ num 1))]
+                                  [(not (null? (cdr mtchs)))
+                                   (redex-error name "~a matched ~s ~a different ways" 
+                                                (if (< num 0)
+                                                    "a clause from an extended metafunction"
+                                                    (format "clause ~a" num))
+                                                `(,name ,@exp)
+                                                (length mtchs))]
+                                  [else
+                                   (let ([ans (rhs metafunc (mtch-bindings (car mtchs)))])
+                                     (unless (match-pattern codom-compiled-pattern ans)
+                                       (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
+                                     (hash-set! cache exp ans)
+                                     ans)])))]))]
+                      [else 
+                       cache-ref])))])
         metafunc)
       compiled-patterns
       rhss)
