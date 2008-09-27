@@ -154,7 +154,7 @@
   (parameterize ([pretty-print-show-inexactness #t]
                  [pretty-print-.-symbol-without-bars #t]
                  [pretty-print-exact-as-decimal #t]
-                 [pretty-print-columns +inf.0]
+                 [pretty-print-columns 'infinity]
                  [read-case-sensitive #t])
     (let ([p (open-output-string)])
       (pretty-print (value-converter v) p)
