@@ -1176,40 +1176,36 @@
            [error-str (format "~a`~a' pointer"
                               (if nullable? "" "non-null ") tag)]
            [error* (lambda (p) (raise-type-error tag->C error-str p))])
-      (let-syntax ([tag-or-error
-                    (syntax-rules ()
-                      [(tag-or-error ptr t)
-                       (let ([p ptr])
-                         (if (cpointer? p)
-                           (unless (cpointer-has-tag? p t) (error* p))
-                           (error* p)))])]
-                   [tag-or-error/null
-                    (syntax-rules ()
-                      [(tag-or-error/null ptr t)
-                       (let ([p ptr])
-                         (if (cpointer? p)
-                           (when p (unless (cpointer-has-tag? p t) (error* p)))
-                           (error* p)))])])
-        (make-ctype (or ptr-type _pointer)
-          ;; bad hack: `if's outside the lambda for efficiency
-          (if nullable?
-            (if scheme->c
-              (lambda (p) (tag-or-error/null (scheme->c p) tag) p)
-              (lambda (p) (tag-or-error/null p tag) p))
-            (if scheme->c
-              (lambda (p) (tag-or-error (scheme->c p) tag) p)
-              (lambda (p) (tag-or-error p tag) p)))
-          (if nullable?
-            (if c->scheme
-              (lambda (p) (when p (cpointer-push-tag! p tag)) (c->scheme p))
-              (lambda (p) (when p (cpointer-push-tag! p tag)) p))
-            (if c->scheme
-              (lambda (p)
-                (if p (cpointer-push-tag! p tag) (error* p))
-                (c->scheme p))
-              (lambda (p)
-                (if p (cpointer-push-tag! p tag) (error* p))
-                p))))))]))
+      (define-syntax-rule (tag-or-error ptr t)
+        (let ([p ptr])
+          (if (cpointer? p)
+            (if (cpointer-has-tag? p t) p (error* p))
+            (error* p))))
+      (define-syntax-rule (tag-or-error/null ptr t)
+        (let ([p ptr])
+          (if (cpointer? p)
+            (and p (if (cpointer-has-tag? p t) p (error* p)))
+            (error* p))))
+      (make-ctype (or ptr-type _pointer)
+        ;; bad hack: `if's outside the lambda for efficiency
+        (if nullable?
+          (if scheme->c
+            (lambda (p) (tag-or-error/null (scheme->c p) tag))
+            (lambda (p) (tag-or-error/null p tag)))
+          (if scheme->c
+            (lambda (p) (tag-or-error (scheme->c p) tag))
+            (lambda (p) (tag-or-error p tag))))
+        (if nullable?
+          (if c->scheme
+            (lambda (p) (when p (cpointer-push-tag! p tag)) (c->scheme p))
+            (lambda (p) (when p (cpointer-push-tag! p tag)) p))
+          (if c->scheme
+            (lambda (p)
+              (if p (cpointer-push-tag! p tag) (error* p))
+              (c->scheme p))
+            (lambda (p)
+              (if p (cpointer-push-tag! p tag) (error* p))
+              p)))))]))
 
 ;; This is a kind of a pointer that gets a specific tag when converted to
 ;; Scheme, and accepts only such tagged pointers when going to C.  An optional
