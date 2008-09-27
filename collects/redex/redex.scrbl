@@ -840,6 +840,11 @@ Raises an exception recognized by @scheme[exn:fail:redex?] if
 no clauses match, if one of the clauses matches multiple ways, or
 if the contract is violated.
 
+Note that metafunctions are assumed to always return the same results
+for the same inputs, and their results are cached. Accordingly, if a
+metafunction is called with the same inputs twice, then its body is
+only evaluated a single time.
+
 As an example, these metafunctions finds the free variables in
 an expression in the lc-lang above:
 

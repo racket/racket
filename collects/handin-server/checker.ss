@@ -36,7 +36,7 @@
                          (path->string (current-directory)))])
     (if m
       (cadr m)
-      (error* "internal error: unexpected directory name: ~a"
+      (error* "internal error: unexpected directory name: \"~a\""
               (current-directory)))))
 
 (provide user-data)
@@ -78,7 +78,7 @@
     (let ([line (bytes->string/utf-8 line)])
       (unless (or (< (string-length line) len)
                   (< (string-width line) len))
-        (error* "~a \"~a\" in ~a is longer than ~a characters"
+        (error* "~a \"~a\" in \"~a\" is longer than ~a characters"
                 (if n (format "Line #~a" n) "The line")
                 (regexp-replace #rx"^[ \t]*(.*?)[ \t]*$" line "\\1")
                 (currently-processed-file-name)
@@ -164,7 +164,7 @@
                [line (if (and untabify? (regexp-match? #rx"\t" line))
                        (untabify line) line)])
           (when (and bad-re (regexp-match? bad-re line))
-            (error* "You cannot use \"~a\" in ~a!~a"
+            (error* "You cannot use \"~a\" in \"~a\"!~a"
                     (if (regexp? bad-re) (object-name bad-re) bad-re)
                     (currently-processed-file-name)
                     (if textualize? "" (format " (line ~a)" n))))
@@ -546,7 +546,7 @@
                                   ;;  "`textualize?' and `coverage?'"]
                                   [else #f])])
                    (when bad
-                     (error* "bad checker specifications: ~a" bad)))
+                     (error* "bad checker specifications: ~e" bad)))
                  ;; ========================================
                  (list pre check post)))))])))
 
@@ -657,7 +657,7 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
-                            (error* "missing binding: ~a" (->disp 'id)))])
+                            (error* "missing binding: ~e" (->disp 'id)))])
            ((submission-eval) `id))
          ...))
 
@@ -666,14 +666,14 @@
   (syntax-rules ()
     [(_ expr)
      (unless (procedure? ((submission-eval) `expr))
-       (error* "~a is expected to be bound to a procedure" (->disp 'expr)))]
+       (error* "~e is expected to be bound to a procedure" (->disp 'expr)))]
     [(_ expr arity)
      (let ([ar  arity]
            [val ((submission-eval) `expr)])
        (unless (procedure? val)
-         (error* "~a is expected to be bound to a procedure" (->disp 'expr)))
+         (error* "~e is expected to be bound to a procedure" (->disp 'expr)))
        (unless (procedure-arity-includes? val ar)
-         (error* "~a is expected to be bound to a procedure of ~s arguments"
+         (error* "~e is expected to be bound to a procedure of ~s arguments"
                  (->disp 'expr) ar)))]))
 (define-syntax !procedure
   (syntax-rules ()
@@ -683,7 +683,7 @@
 (provide !integer* !integer)
 (define-syntax-rule (!integer* expr)
   (unless (integer? ((submission-eval) `expr))
-    (error* "~a is expected to be bound to an integer" (->disp 'expr))))
+    (error* "~e is expected to be bound to an integer" (->disp 'expr))))
 (define-syntax-rule (!integer id)
   (begin (!defined id) (!integer* id)))
 
@@ -695,12 +695,12 @@
   (syntax-rules ()
     [(_ expr)
      (unless ((submission-eval) `expr)
-       (error* "your code failed a test: ~a is false" (->disp 'expr)))]
+       (error* "your code failed a test: ~e is false" (->disp 'expr)))]
     [(_ expr result) (!test expr result equal?)]
     [(_ expr result equal?)
      (let ([val ((submission-eval) `expr)])
        (unless (equal? result val)
-         (error* "your code failed a test: ~a evaluated to ~a, expecting ~a"
+         (error* "your code failed a test: ~e evaluated to ~e, expecting ~e"
                  (->disp 'expr) (->disp val) (->disp result))))]))
 
 (provide !all-covered)

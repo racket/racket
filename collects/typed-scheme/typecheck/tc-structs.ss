@@ -89,7 +89,7 @@
                          #:type-wrapper [type-wrapper values]
                          #:mutable [setters? #f]
                          #:proc-ty [proc-ty #f]
-                         #:maker [maker #f]
+                         #:maker [maker* #f]
                          #:constructor-return [cret #f]
                          #:poly? [poly? #f])
   ;; create the approriate names that define-struct will bind
@@ -102,7 +102,7 @@
     (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters? 
                            #:wrapper wrapper
                            #:type-wrapper type-wrapper
-                           #:maker maker
+                           #:maker (or maker* maker)
                            #:constructor-return cret)))
 
 ;; generate names, and register the approriate types give field types and structure type
