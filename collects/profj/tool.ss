@@ -4,26 +4,62 @@
            errortrace/errortrace-lib
            (prefix-in u: scheme/unit)
            scheme/file
-           mrlib/include-bitmap
-           mzlib/etc
+           scheme/runtime-path
            scheme/class
-	   string-constants
-           profj/libs/java/lang/Object profj/libs/java/lang/array
-           profj/libs/java/lang/String)
-  (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss"
+	   string-constants)
+  (require "parameters.ss" 
+           "parsers/lexer.ss"
            (lib "test-engine/test-engine.scm")
            (lib "test-engine/java-tests.scm")
            (lib "test-engine/test-coverage.scm")
            (except-in "ast.ss" for)
            "display-java.ss")
 
-  (require (for-syntax scheme/base
-                       "compile.ss"))
+  (require (for-syntax scheme/base))
+  
+  (define drs-ns (current-namespace))
+  (define-syntax (dr stx)
+    (syntax-case stx ()
+      [(_ fn id ...)
+       #'(begin
+           (define-runtime-path the-file fn)
+           (define (id . x)
+             (let ([orig-fn (parameterize ([current-namespace drs-ns])
+                              (dynamic-require the-file 'id))])
+               (apply orig-fn x)))
+           ...)]))
+  
+  (dr "compile.ss"
+      compile-java compile-interactions compile-files compile-ast compile-interactions-ast
+      compilation-unit-code compilation-unit-contains set-compilation-unit-code!
+      read-record write-record
+      set-syntax-location create-type-record
+      compile-to-ast)
+
+  (dr "parser.ss"
+      parse parse-interactions parse-expression parse-type parse-name)
   
   (provide tool@)
 
   ;Set the default classpath
   (preferences:set-default 'profj:classpath null (lambda (v) (and (list? v) (andmap string? v))))
+  
+  ;; comment gif
+  (define-runtime-path comment-gif-path '(lib "icons/slash-slash.gif"))
+  (define comment-gif #f)
+  (define (get-comment-gif)
+    (unless comment-gif
+      (set! comment-gif (make-object bitmap% comment-gif-path)))
+    comment-gif)
+  
+  ;;Java interactions box
+  (define-runtime-path ji-gif-path '(lib "icons/j.gif"))
+  (define ji-gif #f)
+  (define (get-ji-gif)
+    (unless ji-gif
+      (set! ji-gif (make-object bitmap% ji-gif-path)))
+    ji-gif)
+
   
   (define tool@
     (u:unit
@@ -258,7 +294,7 @@
                                         [else 
                                          (sensitive-indent last-line-indent last-line-start (get-character (sub1 curr-open)) curr-open)
                                          #;(+ single-tab-stop last-line-indent)]))]))])))])
-              (build-string (max indent 0) (λ (x) #\space))))
+              (make-string (max indent 0) #\space)))
           
           (define/public (do-return)
             (let ([start-pos (get-start-position)]
@@ -1203,7 +1239,7 @@
           (define/public (get-mesg) (string-constant profj-convert-to-text-comment))
 
           (define/override get-text
-            (opt-lambda (offset num [flattened? #t])
+            (lambda (offset num [flattened? #t])
               (let* ([super-res (super get-text offset num flattened?)]
                      [replaced (string-append (send this get-comment) 
                                               (regexp-replace* "\n" super-res 
@@ -1266,10 +1302,6 @@
           (super-instantiate ())
           ))
       
-      ;Comment box
-      ;;Comment icon
-      (define comment-gif (include-bitmap (lib "icons/slash-slash.gif")))
-      
       ;;The following code has been taken with small modifications from framework/private/comment-box.ss
       (define snipclass-java-comment%
         (class decorated-editor-snipclass%
@@ -1285,7 +1317,7 @@
         (class* java-box% (readable-snip<%>)
           (define/override (make-editor) (new text:keymap%))
           (define/override (make-snip) (make-object java-comment-box%))
-          (define/override (get-corner-bitmap) comment-gif)
+          (define/override (get-corner-bitmap) (get-comment-gif))
           (define/override (get-position) 'left-top)
 
           (define/public (read-special source line column position)
@@ -1319,10 +1351,7 @@
       
       (drscheme:get/extend:extend-unit-frame java-comment-box-mixin)
       (drscheme:language:register-capability 'profj:special:java-comment-box (flat-contract boolean?) #f)
-      
-      ;;Java interactions box
-      (define ji-gif (include-bitmap (lib "icons/j.gif")))
-      
+            
       (define snipclass-java-interactions%
         (class decorated-editor-snipclass%
           (define/override (make-snip stream-in) (instantiate java-interactions-box% ()))
@@ -1337,7 +1366,7 @@
         (class* java-box% (readable-snip<%>)
           (define/override (make-editor) (new ((drscheme:unit:get-program-editor-mixin) color:text%)))
           (define/override (make-snip) (make-object java-interactions-box%))
-          (define/override (get-corner-bitmap) ji-gif)
+          (define/override (get-corner-bitmap) (get-ji-gif))
           (define/override (get-mesg) (string-constant profj-convert-to-comment))
           (define level 'full)
           (define type-recs (create-type-record))

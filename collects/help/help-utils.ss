@@ -1,15 +1,23 @@
 #lang scheme/base
 
+;; This file provides the utilities that mzscheme's `help' form uses.
+;; It is required dynamically when used from mzscheme, to avoid the
+;; loading overhead, and to have mzscheme independent of having the
+;; documentation system.
+
 (require setup/xref
          scribble/xref
          scribble/manual-struct
-         help/search
          net/uri-codec
          net/sendurl
          scheme/path
-         scheme/list)
+         scheme/list
+         "search.ss")
 
-(provide find-help find-help/lib search-for)
+(provide search-for find-help find-help/lib)
+
+(define (search-for strs)
+  (perform-search (apply string-append (add-between strs " "))))
 
 (define-namespace-anchor anchor)
 
@@ -62,6 +70,3 @@
     (when anchor (printf "  anchor: ~a\n" anchor))
     (unless (send-url/file file #:fragment (and anchor (uri-encode anchor)))
       (error 'help "browser launch failed"))))
-
-(define (search-for strs)
-  (perform-search (apply string-append (add-between strs " "))))

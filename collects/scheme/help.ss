@@ -39,10 +39,30 @@
 (define (open-help-start)
   (find-help #'help))
 
+;; Autoload utilities from help/help-utils; if it does not exists,
+;; suggest using docs.plt-scheme.org.
+
+(define-namespace-anchor anchor)
+(define get-binding
+  (let ([ns #f] [utils #f])
+    (lambda (sym)
+      (unless ns
+        (set! ns (namespace-anchor->empty-namespace anchor))
+        (set! utils (resolved-module-path-name
+                     (module-path-index-resolve
+                      (module-path-index-join 'help/help-utils #f)))))
+      (parameterize ([current-namespace ns])
+        (if (file-exists? utils)
+          (dynamic-require utils sym)
+          (lambda _
+            (error 'help "documentation system unavailable; ~a\n~a"
+                   "try http://docs.plt-scheme.org/"
+                   (format "  (missing file: ~a)" utils))))))))
+
 (define-syntax-rule (define-help-autoload id)
-  (begin
-    (define auto (delay (dynamic-require 'scheme/private/help-autoload 'id)))
-    (define (id . args) (apply (force auto) args))))
+  (define id
+    (let ([proc (delay (get-binding 'id))])
+      (lambda args (apply (force proc) args)))))
 
 (define-help-autoload find-help)
 (define-help-autoload find-help/lib)
