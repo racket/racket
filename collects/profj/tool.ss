@@ -22,9 +22,10 @@
     (syntax-case stx ()
       [(_ fn id ...)
        #'(begin
+           (define-runtime-path the-file fn)
            (define (id . x)
              (let ([orig-fn (parameterize ([current-namespace drs-ns])
-                              (dynamic-require fn 'id))])
+                              (dynamic-require the-file 'id))])
                (apply orig-fn x)))
            ...)]))
   
