@@ -19,8 +19,8 @@ Creates a hierarchical-list control.
 Creates the control.}
 
 
-@defmethod[(selected) (or/c (is-a?/c hierarchical-list-item<%>)
-                            false/c)]{
+@defmethod[(get-selected) (or/c (is-a?/c hierarchical-list-item<%>)
+                                false/c)]{
 
 Returns the currently selected item, if any.}
 
