@@ -79,13 +79,19 @@
           (history-delete (car dup)))))
     (add-history-bytes s)
     (let loop ()
-      (when (< (max-history) (history-length)) (history-delete 0) (loop)))
+      (when ((history-length) . > . (max-history)) (history-delete 0) (loop)))
     (set! local-history (cons s local-history))
     (trim-local-history)))
 
-(define (drop-history n)
-  (for ([i (in-range n)]) (history-delete -1))
-  (set! local-history (drop local-history n)))
+;; remove `l' items from `local-history', ignoring ones that are not
+;; in the front of the history (in the eq? sense)
+(define (drop-from-history l)
+  (let loop ([l l] [h local-history])
+    (if (and (pair? l) (pair? h))
+      (if (eq? (car l) (car h))
+        (begin (history-delete -1) (loop (cdr l) (cdr h)))
+        (loop (cdr l) h))
+      (set! local-history h))))
 
 ;; captured now so we don't flush some other output port
 (define readline-output-port (current-output-port))
@@ -123,7 +129,7 @@
 (define (do-multiline-chunk)
   (let ([chunk (multiline-chunk)])
     (when (pair? chunk)
-      (drop-history (length chunk))
+      (drop-from-history chunk)
       (add-to-history (apply bytes-append (reverse chunk)) #f)
       (multiline-chunk '()))))
 
