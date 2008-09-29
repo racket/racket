@@ -1933,6 +1933,11 @@
       (λ (text evt)
         (send (send text get-top-level-window) search 'forward)))
 
+(send search/replace-keymap map-function "s:return" "prev")
+(send search/replace-keymap add-function "prev"
+      (λ (text evt)
+        (send (send text get-top-level-window) search 'backward)))
+
 (send search/replace-keymap map-function "c:return" "insert-return")
 (send search/replace-keymap map-function "a:return" "insert-return")
 (send search/replace-keymap add-function "insert-return"
