@@ -53,7 +53,7 @@
            (cond [all?   all-files]
                  [batch? (remove* interactive-files all-files)]
                  [else   files]))))
- `("Names of the tests; defaults to all tests"))
+ `("Names of the tests; defaults to all non-interactive tests"))
 
 (when (file-exists? preferences-file)
   (debug-printf admin "  saving preferences file ~s to ~s\n"
