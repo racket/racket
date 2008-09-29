@@ -4464,6 +4464,9 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
 				       Scheme_Comp_Env *env, 
 				       Scheme_Compile_Info *rec, int drec)
 {
+#if 0
+  /* This attempt at a shortcut is wrong, because the sole expression might expand
+     to a `begin' that needs to be spliced into an internal-definition context. */
  try_again:
 
   if (SCHEME_STX_PAIRP(forms) && SCHEME_STX_NULLP(SCHEME_STX_CDR(forms))) {
@@ -4471,7 +4474,7 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
     Scheme_Object *first, *val;
 
     first = SCHEME_STX_CAR(forms);
-    first = scheme_check_immediate_macro(first, env, rec, drec, 0, &val, NULL, NULL);
+    first = scheme_check_immediate_macro(first, env, rec, drec, 1, &val, NULL, NULL);
 
     if (SAME_OBJ(val, scheme_begin_syntax) && SCHEME_STX_PAIRP(first)) {      
       /* Flatten begin: */
@@ -4485,17 +4488,18 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
     }
 
     return scheme_compile_expr(first, env, rec, drec);
+  }
+#endif
+
+  if (scheme_stx_proper_list_length(forms) < 0) {
+    scheme_wrong_syntax(scheme_begin_stx_string, NULL, 
+                        scheme_datum_to_syntax(cons(begin_symbol, forms), forms, forms, 0, 0),
+                        "bad syntax (" IMPROPER_LIST_FORM ")");
+    return NULL;
   } else {
-    if (scheme_stx_proper_list_length(forms) < 0) {
-      scheme_wrong_syntax(scheme_begin_stx_string, NULL, 
-			  scheme_datum_to_syntax(cons(begin_symbol, forms), forms, forms, 0, 0),
-			  "bad syntax (" IMPROPER_LIST_FORM ")");
-      return NULL;
-    } else {
-      Scheme_Object *body;
-      body = scheme_compile_block(forms, env, rec, drec);
-      return scheme_make_sequence_compilation(body, 1);
-    }
+    Scheme_Object *body;
+    body = scheme_compile_block(forms, env, rec, drec);
+    return scheme_make_sequence_compilation(body, 1);
   }
 }
 

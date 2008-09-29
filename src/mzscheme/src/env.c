@@ -2513,10 +2513,19 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
-    if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
-      scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-			  "identifier used out of context");
-    return NULL;
+    if (!env->genv->module && SCHEME_STXP(find_id)) {
+      /* Looks like lexically bound, but double-check that it's not bound via a tl_id: */
+      find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL);
+      if (!SAME_OBJ(find_global_id, SCHEME_STX_VAL(find_id)))
+        modidx = NULL; /* yes, it is bound */
+    }
+    
+    if (modidx) {
+      if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
+        scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
+                            "identifier used out of context");
+      return NULL;
+    }
   }
 
   if (modidx) {

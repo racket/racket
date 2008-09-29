@@ -6399,6 +6399,9 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
           result = scheme_make_pair(result, scheme_null);
           SCHEME_EXPAND_OBSERVE_BLOCK_TO_LETREC(rec[drec].observer, result);
           return scheme_expand_list(result, env, rec, drec);
+        } else {
+          result = scheme_make_pair(result, scheme_null);
+          return scheme_datum_to_syntax(result, forms, forms, 0, 0);
         }
       }
     }
@@ -6420,6 +6423,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     rest = scheme_datum_to_syntax(rest, forms, forms, 0, 0);
 
     first = scheme_compile_expr(first, env, recs, 0);
+
 #if EMBEDDED_DEFINES_START_ANYWHERE
     forms = scheme_compile_expand_block(rest, env, recs, 1);
 #else
