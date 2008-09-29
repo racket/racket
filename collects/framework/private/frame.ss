@@ -1435,29 +1435,7 @@
                                    (send evt get-x)
                                    (send evt get-y))])
                  (send delegate-frame click-in-overview 
-                       (send text find-position editor-x editor-y)))]
-              [(or (send evt entering?)
-                   (send evt moving?))
-               (when (send evt entering?)
-                 (send delegate-frame open-status-line 'plt:delegate))
-               (let-values ([(editor-x editor-y)
-                             (send text dc-location-to-editor-location 
-                                   (send evt get-x)
-                                   (send evt get-y))])
-                 (let* ([b (box #f)]
-                        [pos (send text find-position editor-x editor-y #f b)])
-                   (cond
-                     [(unbox b)
-                      (let* ([para (send text position-paragraph pos)]
-                             [start-pos (send text paragraph-start-position para)]
-                             [end-pos (send text paragraph-end-position para)])
-                        (send delegate-frame update-status-line 'plt:delegate
-                              (at-most-200 (send text get-text start-pos end-pos))))]
-                     [else
-                      (send delegate-frame update-status-line 'plt:delegate #f)])))]
-              [(send evt leaving?)
-               (send delegate-frame update-status-line 'plt:delegate #f)
-               (send delegate-frame close-status-line 'plt:delegate)])))))
+                       (send text find-position editor-x editor-y)))])))))
     (super-new)))
 
 (define (at-most-200 s)
