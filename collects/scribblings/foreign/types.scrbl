@@ -293,12 +293,12 @@ default; other possible values are @scheme['stdcall] and
 especially important on Windows, where most system functions are
 @scheme['stdcall], which is not the default.
 
-The optional @scheme[wrapper-proc], if provided, is expected to be a function that
+The optional @scheme[wrapper], if provided, is expected to be a function that
 can change a callout procedure: when a callout is generated, the wrapper is
 applied on the newly created primitive procedure, and its result is used as the
-new function.  Thus, @scheme[wrapper-proc] is a hook that can perform various argument
+new function.  Thus, @scheme[wrapper] is a hook that can perform various argument
 manipulations before the foreign function is invoked, and return different
-results (for example, grabbing a value stored in an `output' pointer and
+results (for example, grabbing a value stored in an ``output'' pointer and
 returning multiple values).  It can also be used for callbacks, as an
 additional layer that tweaks arguments from the foreign code before they reach
 the Scheme procedure, and possibly changes the result values too.}
