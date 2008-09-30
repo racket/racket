@@ -1129,6 +1129,57 @@
          ((cadr procs) 'x10 'z10))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require scheme/splicing)
+
+(define abcdefg 10)
+(test 12 'splicing-letrec-syntax (splicing-letrec-syntax ([abcdefg (syntax-rules ()
+                                                                     [(_) 12])])
+                                                         (abcdefg)))
+(test 13 'splicing-letrec-syntax (splicing-letrec-syntax ([abcdefg (syntax-rules ()
+                                                                     [(_) (abcdefg 10)]
+                                                                     [(_ x) (+ 3 x)])])
+                                                         (abcdefg)))
+(test 13 'splicing-letrec-syntax (let ([abcdefg 9])
+                                   (splicing-letrec-syntax ([abcdefg (syntax-rules ()
+                                                                       [(_) (abcdefg 10)]
+                                                                       [(_ x) (+ 3 x)])])
+                                                           (abcdefg))))
+(test 12 'splicing-let-syntax (splicing-let-syntax ([abcdefg (syntax-rules ()
+                                                               [(_) 12])])
+                                                   (abcdefg)))
+(test 12 'splicing-let-syntax (let ([abcdefg (lambda () 9)])
+                                (splicing-let-syntax ([abcdefg (syntax-rules ()
+                                                                 [(_) 12])])
+                                                     (abcdefg))))
+(test 11 'splicing-let-syntax (let ([abcdefg (lambda (x) x)])
+                                (splicing-let-syntax ([abcdefg (syntax-rules ()
+                                                                 [(_) (+ 2 (abcdefg 9))]
+                                                                 [(_ ?) 77])])
+                                                     (abcdefg))))
+(splicing-let-syntax ([abcdefg (syntax-rules ()
+                                 [(_) 8])])
+                     (define hijklmn (abcdefg)))
+(test 8 'hijklmn hijklmn)
+(test 30 'local-hijklmn (let ()
+                          (splicing-let-syntax ([abcdefg (syntax-rules ()
+                                                           [(_) 8])])
+                                               (define hijklmn (abcdefg)))
+                          (define other 22)
+                          (+ other hijklmn)))
+(test 8 'local-hijklmn (let ()
+                         (splicing-let-syntax ([abcdefg (syntax-rules ()
+                                                          [(_) 8])])
+                                              (begin
+                                                (define hijklmn (abcdefg))
+                                                hijklmn))))
+
+(test 9 'splicing-letrec-syntax (let ([abcdefg (lambda () 9)])
+                                  (splicing-letrec-syntax ([abcdefg (syntax-rules ()
+                                                                      [(_) 0])])
+                                                          (define x 10))
+                                  (abcdefg)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
 

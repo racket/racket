@@ -3247,6 +3247,35 @@ static Module_Renames *extract_renames(Module_Renames_Set *mrns, Scheme_Object *
     return NULL;
 }
 
+static int nonempty_rib(Scheme_Lexical_Rib *rib)
+{
+  rib = rib->next;
+
+  while (rib) {
+    if (SCHEME_RENAME_LEN(rib->rename))
+      return 1;
+    rib = rib->next;
+  }
+
+  return 0;
+}
+
+static int in_skip_set(Scheme_Object *timestamp, Scheme_Object *skip_ribs)
+{
+  while (skip_ribs) {
+    if (SAME_OBJ(SCHEME_CAR(skip_ribs), timestamp))
+      return 1;
+    skip_ribs = SCHEME_CDR(skip_ribs);
+  }
+
+  return 0;
+}
+
+static Scheme_Object *add_skip_set(Scheme_Object *timestamp, Scheme_Object *skip_ribs)
+{
+  return scheme_make_raw_pair(timestamp, skip_ribs);
+}
+
 #define QUICK_STACK_SIZE 10
 
 #define EXPLAIN_RESOLVE 0
@@ -3275,7 +3304,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
    If neither, result is #f and get_names[0] is either unchanged or NULL. */
 {
   WRAP_POS wraps;
-  Scheme_Object *o_rename_stack = scheme_null;
+  Scheme_Object *o_rename_stack = scheme_null, *recur_skip_ribs = skip_ribs;
   Scheme_Object *mresult = scheme_false;
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
   Scheme_Object *rename_stack[QUICK_STACK_SIZE];
@@ -3286,7 +3315,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *bdg = NULL, *floating = NULL;
   Scheme_Hash_Table *export_registry = NULL;
 
-  EXPLAIN(printf("Resolving %s:\n", SCHEME_SYM_VAL(SCHEME_STX_VAL(a))));
+  EXPLAIN(printf("Resolving %s [skips: %s]:\n", SCHEME_SYM_VAL(SCHEME_STX_VAL(a)),
+                 scheme_write_to_string(skip_ribs ? skip_ribs : scheme_false, NULL)));
 
   if (_wraps) {
     WRAP_POS_COPY(wraps, *_wraps);
@@ -3553,17 +3583,15 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
     } else if (rib || (SCHEME_VECTORP(WRAP_POS_FIRST(wraps))
 		       && !no_lexical)) {
       /* Lexical rename: */
-      Scheme_Object *rename, *renamed, *recur_skip_ribs;
+      Scheme_Object *rename, *renamed;
       int ri, c, istart, iend, is_rib;
 
       if (rib) {
 	rename = rib->rename;
-	recur_skip_ribs = rib->timestamp;
 	rib = rib->next;
 	is_rib = 1;
       } else {
 	rename = WRAP_POS_FIRST(wraps);
-	recur_skip_ribs = skip_ribs;
 	is_rib = 0;
       }
 
@@ -3658,19 +3686,23 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(wraps);
       EXPLAIN(printf("Rib: %p...\n", rib));
       if (skip_ribs) {
-	if (scheme_bin_gt_eq(rib->timestamp, skip_ribs)) {
+	if (in_skip_set(rib->timestamp, skip_ribs)) {
           EXPLAIN(printf("Skip rib\n"));
 	  rib = NULL;
         }
       }
       if (rib) {
-	if (SAME_OBJ(did_rib, rib)) {
-          EXPLAIN(printf("Did rib\n"));
-	  rib = NULL;
-	} else {
-	  did_rib = rib;
-	  rib = rib->next; /* First rib record has no rename */
-	}
+        if (nonempty_rib(rib)) {
+          if (SAME_OBJ(did_rib, rib)) {
+            EXPLAIN(printf("Did rib\n"));
+            rib = NULL;
+          } else {
+            recur_skip_ribs = add_skip_set(rib->timestamp, recur_skip_ribs);
+            did_rib = rib;
+            rib = rib->next; /* First rib record has no rename */
+          }
+        } else
+          rib = NULL;
       }
     } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(wraps))) {
       did_rib = NULL;
@@ -4372,7 +4404,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
   WRAP_POS w;
   WRAP_POS prev;
   WRAP_POS w2;
-  Scheme_Object *stack = scheme_null, *key, *old_key;
+  Scheme_Object *stack = scheme_null, *key, *old_key, *skip_ribs = scheme_null, *orig_skip_ribs;
   Scheme_Object *v, *v2, *v2l, *stx, *name, *svl;
   long size, vsize, psize, i, j, pos;
 
@@ -4380,9 +4412,15 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
      we can simplify it in the context of a particular wrap suffix.
      (But don't mutate the wrap list, because that will stomp on
      tables that might be needed by a propoagation.)
+
+     In addition to depending on the rest of the wraps, a
+     simplifciation can depend on preceding wraps due to rib
+     skipping. So the lex_cache maps a wrap to another hash table that
+     maps a skip list to a simplified rename.
      
      A lex_cache maps wrap starts w to simplified tables. A lex_cache
-     is modified by this function, only. */
+     is modified by this function, only, but it's also read in 
+     datum_to_wraps. */
 
   WRAP_POS_INIT(w, wraps);
   WRAP_POS_INIT_END(prev);
@@ -4396,9 +4434,12 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
       key = WRAP_POS_KEY(w);
       if (!SAME_OBJ(key, old_key)) {
 	v = scheme_hash_get(lex_cache, key);
+        if (v)
+          v = scheme_hash_get((Scheme_Hash_Table *)v, skip_ribs);
       } else
 	v = NULL;
       old_key = key;
+      orig_skip_ribs = skip_ribs;
 
       if (v) {
 	/* Tables here are already simplified. */
@@ -4412,6 +4453,8 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	if (SCHEME_RIBP(v)) {
 	  /* A rib certainly isn't simplified yet. */
 	  add = 1;
+          if (nonempty_rib((Scheme_Lexical_Rib *)v))
+            skip_ribs = scheme_make_pair(((Scheme_Lexical_Rib *)v)->timestamp, skip_ribs);
 	} else {
 	  /* Need to simplify this vector? */
 	  if (SCHEME_VEC_SIZE(v) == 1)
@@ -4425,7 +4468,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 	if (add) {
 	  /* Need to simplify, but do deepest first: */
 	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_CAR(stack), key)) {
-	    stack = CONS(key, stack);
+	    stack = CONS(CONS(key, orig_skip_ribs), stack);
 	  }
 	} else {
 	  /* This is already simplified. Remember it and stop, because
@@ -4442,7 +4485,11 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
   while (!SCHEME_NULLP(stack)) {
     key = SCHEME_CAR(stack);
+    orig_skip_ribs = SCHEME_CDR(key);
+    key = SCHEME_CAR(key);
     v2l = scheme_null;
+
+    skip_ribs = orig_skip_ribs;
 
     WRAP_POS_REVINIT(w, key);
 
@@ -4460,14 +4507,15 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	if (SCHEME_RIBP(v)) {
 	  init_rib = (Scheme_Lexical_Rib *)v;
-	  skip_ribs = init_rib->timestamp;
-	  rib = init_rib->next;
-	  vsize = 0;
-	  while (rib) {
-	    vsize += SCHEME_RENAME_LEN(rib->rename);
-	    rib = rib->next;
-	  }
-	  rib = init_rib->next;
+          if (nonempty_rib(init_rib))
+            skip_ribs = scheme_make_pair(init_rib->timestamp, skip_ribs);
+          rib = init_rib->next;
+          vsize = 0;
+          while (rib) {
+            vsize += SCHEME_RENAME_LEN(rib->rename);
+            rib = rib->next;
+          }
+          rib = init_rib->next;
 	} else
 	  vsize = SCHEME_RENAME_LEN(v);
 
@@ -4611,7 +4659,12 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
       WRAP_POS_DEC(w);
     }
 
-    scheme_hash_set(lex_cache, key, v2l);
+    v = scheme_hash_get(lex_cache, key);
+    if (!v) {
+      v = (Scheme_Object *)scheme_make_hash_table_equal();
+      scheme_hash_set(lex_cache, key, v);
+    }
+    scheme_hash_set((Scheme_Hash_Table *)v, skip_ribs, v2l);
 
     stack = SCHEME_CDR(stack);
   }
@@ -4622,7 +4675,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
                                      Scheme_Hash_Table *rns,
 				     int just_simplify)
 {
-  Scheme_Object *stack, *a, *old_key, *simplifies = scheme_null;
+  Scheme_Object *stack, *a, *old_key, *simplifies = scheme_null, *skip_ribs = scheme_null;
   WRAP_POS w;
   Scheme_Hash_Table *lex_cache, *reverse_map;
   int stack_size = 0;
@@ -4690,8 +4743,13 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	     of simplified tables for the current wrap segment. */
 	  if (SCHEME_NULLP(simplifies)) {
 	    simplifies = scheme_hash_get(lex_cache, old_key);
+            simplifies = scheme_hash_get((Scheme_Hash_Table *)simplifies, skip_ribs);
 	    /* assert: a is not NULL; see the simplify_lex_rename() call above */
 	  }
+          if (SCHEME_RIBP(a)) {
+            if (nonempty_rib((Scheme_Lexical_Rib *)a))
+              skip_ribs = scheme_make_pair(((Scheme_Lexical_Rib *)a)->timestamp, skip_ribs);
+          }
 	  a = SCHEME_CAR(simplifies);
 	  /* used up one simplification: */
 	  simplifies = SCHEME_CDR(simplifies);
