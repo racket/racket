@@ -14,7 +14,8 @@ A path consists of zero or more @deftech{closed sub-paths}, and
  possibly one @deftech{open sub-path}. Some @scheme[dc-path%] methods
  extend the open sub-path, some @scheme[dc-path%] methods close the
  open sub-path, and some @scheme[dc-path%] methods add closed
- sub-paths.
+ sub-paths. This approach to drawing formulation is inherited from
+ PostScript @cite["Adobe99"].
 
 When a path is drawn as a line, a closed sub-path is drawn as a closed
  figure, analogous to a polygon. An open sub-path is drawn with
