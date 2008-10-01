@@ -959,13 +959,13 @@ combination of @scheme[envvar] and @scheme[as-index].}
 Links to a bibliography entry, using @scheme[key] both to indicate the
 bibliography entry and, in square brackets, as the link text.}
 
-@defproc[(bibliography [#:tag string? "doc-bibliography"]
+@defproc[(bibliography [#:tag tag string? "doc-bibliography"]
                        [entry bib-entry?] ...)
          part?]{
 
 Creates a bibliography part containing the given entries, each of
 which is created with @scheme[bib-entry]. The entries are typeset in
-order as given}
+order as given.}
 
 @defproc[(bib-entry [#:key key string?]
                     [#:title title any/c]
