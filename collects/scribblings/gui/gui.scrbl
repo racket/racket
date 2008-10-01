@@ -38,7 +38,8 @@ provides; this library cannot run in MzScheme.}
 
   (bib-entry #:key "Adobe99"
              #:author "Adobe Systems Incorporated"
-             #:title @italic{PostScript Language Reference, third edition}
+             #:title "PostScript Language Reference, third edition"
+             #:is-book? #t
              #:url "http://partners.adobe.com/public/developer/en/ps/PLRM.pdf"
              #:date "1999")
 
