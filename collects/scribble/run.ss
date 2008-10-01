@@ -2,6 +2,7 @@
 (module run mzscheme
   (require "struct.ss"
            "base-render.ss"
+           "xref.ss"
            mzlib/cmdline
            mzlib/class
            mzlib/file
@@ -29,10 +30,20 @@
     (make-parameter #f))
   (define current-info-input-files
     (make-parameter null))
+  (define current-xref-input-modules
+    (make-parameter null))
   (define current-style-file
     (make-parameter #f))
   (define current-redirect
     (make-parameter #f))
+
+  (define (read-one str)
+    (let ([i (open-input-string str)])
+      (with-handlers ([exn:fail:read? (lambda (x) #f)])
+        (let ([v (read i)])
+          (if (eof-object? (read i))
+              v
+              #f)))))
 
   (define (get-command-line-files argv)
     (command-line
@@ -59,9 +70,23 @@
       [("--info-out") file "write format-specific link information to <file>"
        (current-info-output-file file)]]
      [multi
-      [("++info-in") file "load format-specific link information form <file>"
+      [("++info-in") file "load format-specific link information from <file>"
        (current-info-input-files
-        (cons file (current-info-input-files)))]]
+        (cons file (current-info-input-files)))]
+      [("++xref-in") module-path proc-id "load format-specific link information by"
+       "calling <proc-id> as exported by <module-path>"
+       (let ([mod (read-one module-path)]
+             [id (read-one proc-id)])
+         (unless (module-path? mod)
+           (raise-user-error 'scribble
+                             "bad module path for ++ref-in: ~s"
+                             module-path))
+         (unless (symbol? id)
+           (raise-user-error 'scribble
+                             "bad procedure identifier for ++ref-in: ~s"
+                             proc-id))
+         (current-xref-input-modules
+          (cons (cons mod id) (current-xref-input-modules))))]]
      [args (file . another-file) (cons file another-file)]))
 
   (define (build-docs-files files)
@@ -90,19 +115,26 @@
                                    fn))))
                          files)]
                [info (send renderer collect docs fns)])
-          (let ([info (let loop ([info info]
-                                 [files (reverse (current-info-input-files))])
-                        (if (null? files)
-                            info
-                            (loop (let ([s (with-input-from-file (car files) read)])
-                                    (send renderer deserialize-info s info)
-                                    info)
-                                  (cdr files))))])
-            (let ([r-info (send renderer resolve docs fns info)])
-              (send renderer render docs fns r-info)
-              (when (current-info-output-file)
-                (let ([s (send renderer serialize-info r-info)])
-                  (with-output-to-file (current-info-output-file)
-                    (lambda ()
-                      (write s))
-                    'truncate/replace))))))))))
+          (for-each (lambda (file)
+                      (let ([s (with-input-from-file file read)])
+                        (send renderer deserialize-info s info)))
+                    (reverse (current-info-input-files)))
+          (for-each (lambda (mod+id)
+                      (let ([get-xref (dynamic-require (car mod+id) (cdr mod+id))])
+                        (let ([xr (get-xref)])
+                          (unless (xref? xr)
+                            (raise-user-error 'scribble
+                                              "result from `~s' of `~s' is not an xref: ~e"
+                                              (cdr mod+id)
+                                              (car mod+id)
+                                              xr))
+                          (xref-transfer-info renderer info xr))))
+                    (reverse (current-xref-input-modules)))
+          (let ([r-info (send renderer resolve docs fns info)])
+            (send renderer render docs fns r-info)
+            (when (current-info-output-file)
+              (let ([s (send renderer serialize-info r-info)])
+                (with-output-to-file (current-info-output-file)
+                  (lambda ()
+                    (write s))
+                  'truncate/replace)))))))))
