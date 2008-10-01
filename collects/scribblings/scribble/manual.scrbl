@@ -970,9 +970,9 @@ order as given}
 @defproc[(bib-entry [#:key key string?]
                     [#:title title any/c]
                     [#:is-book? is-book? any/c #f]
-                    [#:author author any/c]
-                    [#:location location any/c]
-                    [#:date date any/c] 
+                    [#:author author any/c #f]
+                    [#:location location any/c #f]
+                    [#:date date any/c #f] 
                     [#:url url any/c #f])
          bib-entry?]{
 
@@ -990,18 +990,21 @@ the entry:
        order (as opposed to ``last, first''), and separate multiple
        names with commas using ``and'' before the last name (where
        there are multiple names). The @scheme[author] is typeset in
-       the bibliography as given.}
+       the bibliography as given, or it is omitted if given as
+       @scheme[#f].}
 
  @item{@scheme[location] names the publication venue, such as a
        conference name or a journal with volume, number, and
        pages. The @scheme[location] is typeset in the bibliography as
-       given.}
+       given, or it is omitted if given as @scheme[#f].}
 
  @item{@scheme[date] is a date, usually just a year (as a string). It
-       is typeset in the bibliography as given.}
+       is typeset in the bibliography as given, or it is omitted if
+       given as @scheme[#f].}
 
  @item{@scheme[url] is an optional URL. It is typeset in the
-       bibliography using @scheme[tt] and hyperlinked.}
+       bibliography using @scheme[tt] and hyperlinked, or it is
+       omitted if given as @scheme[#f].}
 
 }}
 
