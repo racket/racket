@@ -741,7 +741,7 @@
                       [body-lines (regexp-split 
 				   #rx"\n" 
 				   (substring message-str (cdar m) (string-length message-str)))])
-		  (validate-header header)
+		  (validate-header (regexp-replace #rx"[^\x0-\xFF]" header "_"))
                   (let* ([to* (sm-extract-addresses (extract-field "To" header))]
                          [to (map encode-for-header (map car to*))]
                          [cc* (sm-extract-addresses (extract-field "CC" header))]
@@ -761,6 +761,8 @@
                          [std-header (standard-message-header from to cc bcc subject)]
                          [new-header (append-headers std-header prop-header)]
                          [tos (map cdr (append to* cc* bcc*))])
+
+                    (validate-header new-header)
 
                     (as-background
                      enable
