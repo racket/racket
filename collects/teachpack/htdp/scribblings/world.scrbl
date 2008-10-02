@@ -18,7 +18,7 @@ have a series of projects available as a small booklet on
 
 The purpose of this documentation is to give experienced Schemers a concise
 overview for using the library and for incorporating it elsewhere. The last
-section presents a working example for an extremely simple domain and is
+section presents @secref["example"] for an extremely simple domain and is
 suited for a novice who knows how to design conditional functions for
 symbols. 
 
