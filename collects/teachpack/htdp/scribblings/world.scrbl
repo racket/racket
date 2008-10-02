@@ -1,6 +1,8 @@
 #lang scribble/doc
 
-@(require scribble/manual "shared.ss"
+@(require scribble/manual
+          "shared.ss"
+	  scribble/struct
           (for-label scheme
                      teachpack/htdp/image
                      teachpack/htdp/world
@@ -10,9 +12,15 @@
 
 @emph{Note}: For a quick and educational introduction to the teachpack, see
 @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
-to Design Programs, Second Edition: Prologue}. The purpose of this
-documentation is to give experienced Schemers a concise overview for using
-the library and for incorporating it elsewhere. 
+to Design Programs, Second Edition: Prologue}. As of August 2008, we also
+have a series of projects available as a small booklet on
+@link["http://world.cs.brown.edu/"]{How to Design Worlds}. 
+
+The purpose of this documentation is to give experienced Schemers a concise
+overview for using the library and for incorporating it elsewhere. The last
+section presents a working example for an extremely simple domain and is
+suited for a novice who knows how to design conditional functions for
+symbols. 
 
 The teachpack provides two sets of tools. The first allows students to
 create and display a series of animated scenes, i.e., a simulation. The
@@ -20,6 +28,7 @@ second one generalizes the first by adding interactive GUI features.
 
 @declare-exporting[teachpack/htdp/world #:use-sources (teachpack/htdp/image)]
 
+@; -----------------------------------------------------------------------------
 @section[#:tag "basics"]{Basics}
 
 The teachpack assumes working knowledge of the basic image manipulation
@@ -48,6 +57,7 @@ pinholes are at position @scheme[(0,0)].
  @scheme[(x,y)] are comp. graph. coordinates, i.e., they count right and
  down from the upper-left corner.}
 
+@; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
 
 @defproc[(run-simulation
@@ -86,13 +96,28 @@ Example:
 @;-----------------------------------------------------------------------------
 @section[#:tag "interactive"]{Interactions}
 
-An animation starts from a given ``world'' and generates new ones in response to events on the
-computer. This teachpack keeps track of the ``current world'' and recognizes three kinds of events:
-clock ticks; keyboard presses and releases; and mouse movements, mouse clicks, etc. Your program may
-deal with such events via the @emph{installation} of @emph{handlers}. The teachpack provides for the
-installation of three event handlers: @scheme[on-tick-event], @scheme[on-key-event], and
-@scheme[on-mouse-event]. In addition, it provides for the installation of a @scheme[draw] handler,
-which is called every time your program should visualize the current world. 
+An animation starts from a given ``world'' and generates new ones in
+ response to events on the computer. This teachpack keeps track of the
+ ``current world'' and recognizes three kinds of events: clock ticks;
+ keyboard presses and releases; and mouse movements, mouse clicks,
+ etc.
+
+Your program may deal with such events via the @emph{installation} of
+ @emph{handlers}.  The teachpack provides for the installation of three
+ event handlers: @scheme[on-tick-event], @scheme[on-key-event], and
+ @scheme[on-mouse-event]. In addition, it provides for the installation of
+ a @scheme[draw] handler, which is called every time your program should
+ visualize the current world.
+
+The following picture provides an intuitive overview of the workings of
+ "world".
+
+@image["world.png"]
+
+ The @scheme[big-bang] function installs @emph{World_0} as the initial
+ world; the callbacks @emph{tock}, @emph{react}, and @emph{click} transform
+ one world into another one; @emph{done} checks each time whether the world
+ is final; and @emph{draw} renders each world as a scene. 
 
 @deftech{World} @scheme[any/c]
 
@@ -191,10 +216,12 @@ Example: The following examples shows that @scheme[(run-simulation 100 100
 Exercise: Add a condition for stopping the flight of the UFO when it
 reaches the bottom. 
 
+@; -----------------------------------------------------------------------------
 @section{Scenes and Images}
 
-For the creation of scenes from the world, use the functions from @secref["image"].  The following two
-functions have turned out to be useful for the creation of scenes, too. 
+For the creation of scenes from the world, use the functions from
+@secref["image"].  The following two functions have turned out to be useful
+for the creation of scenes, too.
 
 
 @defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-filled Mode] [c Color]) image?]{
@@ -209,3 +236,293 @@ functions have turned out to be useful for the creation of scenes, too.
    in contrast to the @scheme[add-line] function, this
    one cuts off those portions of the line that go beyond the boundaries of
    the given @scheme[s].}
+
+@; -----------------------------------------------------------------------------
+
+@(define (table* . stuff)
+  ;; (list paragraph paragraph) *-> Table
+   (define (flow* x) (make-flow (list x)))
+  (make-blockquote 'blockquote
+    (list 
+      (make-table (make-with-attributes 'boxed
+		    '((cellspacing . "6")))
+	;list
+	  (map (lambda (x) (map flow* x)) stuff)
+	  #;(map flow* (map car stuff))
+	  #;(map flow* (map cadr stuff))))))
+
+@; -----------------------------------------------------------------------------
+@section[#:tag "example"]{A First Example} 
+
+
+@subsection{Understanding a Door}
+
+Say we want to represent a door with an automatic door closer. If this kind
+ of door is locked, you can unlock it. While this doesn't open the door per
+ se, it is now possible to do so. That is, an unlocked door is closed and
+ pushing at the door opens it. Once you have passed through the door and
+ you let go, the automatic door closer takes over and closes the door
+ again. Of course, at this point you could lock it again. 
+
+Here is a picture that translates our words into a graphical
+ representation: 
+
+@image["door-real.png"]
+
+The picture displays a so-called "state machine". The three circled words
+ are the states that our informal description of the door identified:
+ locked, closed (and unlocked), and open. The arrows specify how the door
+ can go from one state into another. For example, when the door is open,
+ the automatic door closer shuts the door as time passes. This transition
+ is indicated by the arrow labeled "time passes." The other arrows
+ represent transitions in a similar manner: 
+
+@itemize[
+
+@item{"push" means a person pushes the door open (and let's go);}
+
+@item{"lock" refers to the act of inserting a key into the lock and turning
+it to the locked position; and}
+
+@item{"unlock" is the opposite of "lock".}
+
+]
+
+@; -----------------------------------------------------------------------------
+@subsection{Simulations of the World}
+
+Simulating any dynamic behavior via a program demands two different
+ activities. First, we must tease out those portions of our "world" that
+ change over time or in reaction to actions, and we must develop a data
+ representation @deftech{D} for this information.  Keep in mind that a good data
+ definition makes it easy for readers to map data to information in the
+ real world and vice versa. For all others aspects of the world, we use
+ global constants, including graphical or visual constants that are used in
+ conjunction with the rendering operations.
+
+Second, we must translate the "world" actions---the arrows in the above
+ diagram---into interactions with the computer that the world teachpack can
+ deal with. Once we have decided to use the passing of time for one aspect
+ and mouse movements for another, we must develop functions that map the
+ current state of the world---represented as data---into the next state of
+ the world. Since the data definition @tech{D} describes the class of data
+ that represents the world, these functions have the following general
+ contract and purpose statements: 
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; tick : @tech{D} -> @tech{D}
+;; deal with the passing of time 
+(define (tick w) ...)
+
+;; click : @tech{D} @scheme{Number} @scheme{Number} @tech{MouseEvent} -> @tech{D}
+;; deal with a mouse click at (x,y) of kind @scheme{me} 
+;; in the current world @scheme{w}
+(define (click w x y me) ...)
+
+;; control : @tech{D} @tech{KeyEvent} -> @tech{D}
+;; deal with a key event (symbol, char) @scheme{ke} 
+;; in the current world @scheme{w}
+(define (control w ke) ...)
+))
+
+That is, the contracts of the various hooks dictate what the contracts of
+these functions are once we have defined how to represent the world in
+data. 
+
+A typical program does not use all three of these actions and functions but
+ often just one or two. Furthermore, the design of these functions provides
+ only the top-level, initial design goal. It often demands the design of
+ many auxiliary functions.
+
+@; -----------------------------------------------------------------------------
+@subsection{Simulating a Door: Data}
+
+Our first and immediate goal is to represent the world as data. In this
+ specific example, the world consists of our door and what changes about
+ the door is whether it is locked, unlocked but closed, or open. We use
+ three symbols to represent the three states:
+
+@deftech{SD}
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; DATA DEF.
+;; The state of the door (SD) is one of: 
+;; -- @scheme['locked]
+;; -- @scheme['closed]
+;; -- @scheme['open]
+))
+
+Symbols are particularly well-suited here because they directly express
+ the state of the door. 
+
+Now that we have a data definition, we must also decide which computer
+ actions and interactions should model the various actions on the door.
+ Our pictorial representation of the door's states and transitions,
+ specifically the arrow from "open" to "closed" suggests the use of a
+ function that simulates time. For the other three arrows, we could use
+ either keyboard events or mouse clicks or both. Our solution uses three
+ keystrokes: 
+@scheme{#\u} for unlocking the door, 
+@scheme{#\l} for locking it, and 
+@scheme{#\space} for pushing it open. 
+ We can express these choices graphically by translating the above "state
+ machine" from the world of information into the world of data: 
+
+@image["door-sim.png"]
+
+@; -----------------------------------------------------------------------------
+@subsection{Simulating a Door: Functions}
+
+Our analysis and data definition leaves us with three functions to design: 
+
+@itemize[
+
+@item{@scheme{automatic-closer}, which closes the time during one tick;}
+
+@item{@scheme{door-actions}, which manipulates the time in response to
+pressing a key; and}
+
+@item{@scheme{render}, which translates the current state of the door into
+a visible scene.}
+
+]
+
+Let's start with @scheme{automatic-closer}. We know its contract and it is
+easy to refine the purpose statement, too: 
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; automatic-closer : SD -> SD
+;; closes an open door over the period of one tick 
+(define (automatic-closer state-of-door) ...)
+))
+
+ Making up examples is trivial when the world can only be in one of three
+ states: 
+
+@table*[
+	@list[@t{ given state } @t{ desired state }]
+        @list[@t{ 'locked } @t{ 'locked }]
+        @list[@t{ 'closed } @t{ 'closed }]
+        @list[@t{ 'open } @t{ 'closed }]
+]
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; automatic-closer : SD -> SD
+;; closes an open door over the period of one tick 
+
+(check-expect (automatic-closer 'locked) 'locked)
+(check-expect (automatic-closer 'closed) 'closed)
+(check-expect (automatic-closer 'open) 'closed)
+
+(define (automatic-closer state-of-door) ...)
+))
+
+ The template step demands a conditional with three clauses: 
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+(define (automatic-closer state-of-door)
+  (cond
+    [(symbol=? 'locked state-of-door) ...]
+    [(symbol=? 'closed state-of-door) ...]
+    [(symbol=? 'open state-of-door) ...]))
+))
+
+ The examples basically dictate what the outcomes of the three cases must
+ be:
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+(define (automatic-closer state-of-door)
+  (cond
+    [(symbol=? 'locked state-of-door) 'locked]
+    [(symbol=? 'closed state-of-door) 'closed]
+    [(symbol=? 'open state-of-door) 'closed]))
+))
+
+ Don't forget to run the example-tests. 
+
+For the remaining three arrows of the diagram, we design a function that
+ reacts to the three chosen keyboard events. As mentioned, functions that
+ deal with keyboard events consume both a world and a keyevent:
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; door-actions : SD Keyevent -> SD
+;; key events simulate actions on the door 
+(define (door-actions s k) ...)
+))
+
+@table*[
+	@list[@t{ given state } @t{ given keyevent } @t{ desired state }]
+ 
+@list[ @t{  'locked } @t{ #\u    } @t{ 'closed}]
+@list[ @t{  'closed } @t{ #\l    } @t{ 'locked} ]
+@list[ @t{  'closed } @t{ #\space} @t{ 'open } ]
+@list[ @t{  'open   } @t{ --- }    @t{ 'open } ]]
+
+ The examples combine what the above picture shows and the choices we made
+ about mapping actions to keyboard events. 
+
+From here, it is straightforward to turn this into a complete design:
+ 
+@schemeblock[
+(define (door-actions s k)
+  (cond
+    [(and (symbol=? 'locked s) (key=? #\u k)) 'closed]
+    [(and (symbol=? 'closed s) (key=? #\l k)) 'locked]
+    [(and (symbol=? 'closed s) (key=? #\space k)) 'open]
+    [else s]))
+
+(check-expect (door-actions 'locked #\u) 'closed)
+(check-expect (door-actions 'closed #\l) 'locked)
+(check-expect (door-actions 'closed #\space) 'open)
+(check-expect (door-actions 'open 'any) 'open)
+(check-expect (door-actions 'closed 'any) 'closed)
+]
+
+Last but not least we need a function that renders the current state of the
+world as a scene. For simplicity, let's just use a large enough text for
+this purpose: 
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; render : @tech{SD} -> @scheme{Scene}
+;; translate the current state of the door into a large text 
+(define (render s)
+  (text (symbol->string s) 40 'red))
+
+(check-expecy (render 'closed) (text "closed" 40 'red))
+))
+ The function @scheme{symbol->string} translates a symbol into a string,
+ which is needed because @scheme{text} can deal only with the latter, not
+ the former. A look into the language documentation revealed that this
+ conversion function exists, and so we use it. 
+
+Once everything is properly designed, it is time to @emph{run} the
+program. In the case of the world teachpack, this means we must specify
+which function takes care of tick events, key events, and redraws: 
+
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+(big-bang 100 100 1 'locked)
+(on-tick-event automatic-closer)
+(on-key-event door-actions)
+(on-redraw render)
+))
+ 
+Now it's time for you to collect the pieces and run them in DrScheme to see
+whether it all works. 
