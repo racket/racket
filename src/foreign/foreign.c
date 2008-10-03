@@ -4,6 +4,8 @@
  ** to make changes, edit that file and
  ** run it to generate an updated version
  ** of this file.
+ ** NOTE: This is no longer true, foreign.ssc needs to be updated to work with
+ ** the scribble/text preprocessor instead.
  ********************************************/
 
 
@@ -2233,6 +2235,9 @@ static Scheme_Object *foreign_make_sized_byte_string(int argc, Scheme_Object *ar
                                        len, 0);
 }
 
+/* *** Calling Scheme code while the GC is working leads to subtle bugs, so
+   *** this is implemented now in Scheme using will executors. */
+
 /* internal: apply Scheme finalizer */
 void do_scm_finalizer(void *p, void *finalizer)
 {
@@ -2262,9 +2267,6 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
 /*
-
-  *** Calling Scheme code while the GC is working leads to subtle bugs, so
-  *** this is implemented now in Scheme using will executors.
 
 (defsymbols pointer)
 (cdefine register-finalizer 2 3)
@@ -2519,7 +2521,7 @@ typedef struct closure_and_cif_struct {
 void free_cl_cif_args(void *ignored, void *p)
 {
   /*
-  scheme_warning("Releaseing cl+cif+args %V %V (%d)",
+  scheme_warning("Releasing cl+cif+args %V %V (%d)",
                  ignored,
                  (((closure_and_cif*)p)->data),
                  SAME_OBJ(ignored,(((closure_and_cif*)p)->data)));
@@ -2528,6 +2530,44 @@ void free_cl_cif_args(void *ignored, void *p)
   GC_free_immobile_box((void**)(((closure_and_cif*)p)->data));
 #endif
   free(p);
+}
+
+/* This is a temporary hack to allocate a piece of executable memory, */
+/* it should be removed when mzscheme's core will include a similar function */
+#ifndef WINDOWS_DYNAMIC_LOAD
+#include <sys/mman.h>
+#endif
+void *malloc_exec(size_t size) {
+  static long pagesize = -1;
+  void *p, *pp;
+  if (pagesize == -1) {
+#ifndef WINDOWS_DYNAMIC_LOAD
+    pagesize = getpagesize();
+#else
+    {
+      SYSTEM_INFO info;
+      GetSystemInfo(&info);
+      pagesize = info.dwPageSize;
+    }
+#endif
+  }
+  p = malloc(size);
+  if (p == NULL)
+    scheme_signal_error("internal error: malloc failed (malloc_exec)");
+  /* set pp to the beginning of the page */
+  pp = (void*)(((long)p) & ~(pagesize-1));
+  /* set size to a pagesize multiple, in case the block is more than a page */
+  size = ((((long)p)+size+pagesize-1) & ~(pagesize-1)) - ((long)pp);
+#ifndef WINDOWS_DYNAMIC_LOAD
+  if (mprotect(pp, size, PROT_READ|PROT_WRITE|PROT_EXEC))
+    perror("malloc_exec mprotect failure");
+#else
+  {
+    DWORD old;
+    VirtualProtect(pp, size, PAGE_EXECUTE_READWRITE, &old);
+  }
+#endif
+  return p;
 }
 
 /* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
@@ -2586,7 +2626,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   rtype = CTYPE_PRIMTYPE(base);
   abi = GET_ABI(MYNAME,3);
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args = malloc(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = malloc_exec(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));
