@@ -64,7 +64,25 @@
                                         [paragraph-start-position (Number -> Number)]
                                         [get-start-position (-> Number)]
                                         [get-end-position (-> Number)]
+                                        [get-text (Integer (U Integer 'eof) -> String)]
                                         [insert (String Number Number -> Void)])))
+
+(define-type-alias Text% (Class ()
+                                ()
+                                ([begin-edit-sequence (-> Void)]
+                                 [end-edit-sequence (-> Void)]
+                                 [lock (Boolean -> Void)]
+                                 [last-position (-> Number)]
+                                 [last-paragraph (-> Number)]
+                                 [delete (Number Number -> Void)]
+                                 [auto-wrap (Any -> Void)]
+                                 [paragraph-end-position (Number -> Integer)]
+                                 [paragraph-start-position (Number -> Integer)]
+                                 [get-start-position (-> Integer)]
+                                 [get-end-position (-> Integer)]
+                                 [while-unlocked ((-> Any) -> Any)]
+                                 [get-text (Integer (U Integer 'eof) -> String)]
+                                 [insert (String Number Number -> Void)])))
 
 (require/typed mred/mred
                [the-font-list (Instance Font-List%)]
@@ -78,7 +96,8 @@
                [editor-canvas% Editor-Canvas%]
                [bitmap-dc% Bitmap-DC%]
                [bitmap% Bitmap%]
-               [color% Color%])
+               [color% Color%]
+               [open-input-text-editor ((Instance Text%) Integer (U 'end Integer) (Any -> Any) Any Any -> Input-Port)])
 
 (require/typed framework/framework
                [preferences:set-default (Symbol Any Any -> Void)]
