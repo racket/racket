@@ -150,7 +150,7 @@
            (t 25     'use_grabbed_callback (_fun _int -> _int) 5)
            (collect-garbage)
            (t 81     'use_grabbed_callback (_fun _int -> _int) 9))])
-    (with-kepper #t)
+    (with-keeper #t)
     (with-keeper (box #f)))
   ;; ---
   ;; test exposing internal mzscheme functionality
