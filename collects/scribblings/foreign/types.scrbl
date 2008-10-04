@@ -271,9 +271,8 @@ Otherwise, @scheme[_cprocedure] should be used (it is based on
                       [#:wrapper wrapper (or/c false/c
                                                (procedure? . -> . procedure?))
                                          #f]
-                      [#:holder holder (or/c boolean? box?
-                                             (any/c . -> . any/c))
-                                       #t])
+                      [#:keep keep (or/c boolean? box? (any/c . -> . any/c))
+                                   #t])
          any]{
 
 A type constructor that creates a new function type, which is
@@ -316,10 +315,9 @@ translating them to a foreign ``closure'', which foreign code can call
 as plain C functions.  Additional care must be taken in case the
 foreign code might hold on to the callback function.  In these cases
 you must arrange for the callback value to not be garbage-collected,
-or the held callback will become invalid.  The optional
-@scheme[holder] keyword argument is used to achieve this.  It can have
-the following values:
-@itemize[
+or the held callback will become invalid.  The optional @scheme[keep]
+keyword argument is used to achieve this.  It can have the following
+values: @itemize[
 
 @item{@scheme[#t] makes the callback value stay in memory as long as
   the converted function is.  In order to use this, you need to hold
@@ -355,8 +353,8 @@ the following values:
   when a Scheme function is used in multiple callbacks (that is, sent
   to foreign code to hold onto multiple times).}
 
-@item{Finally, if a one-argument function is provided as the
-  @scheme[holder], it will be invoked with the callback value when it
+@item{Finally, if a one-argument function is provided as
+  @scheme[keep], it will be invoked with the callback value when it
   is generated.  This allows you to grab the value directly and use it
   in any way.}
 
@@ -365,8 +363,8 @@ the following values:
 @defform/subs[#:literals (-> :: :)
               (_fun fun-option ... maybe-args type-spec ... -> type-spec
                     maybe-wrapper)
-              ([fun-option (code:line #:abi abi-expr)
-                           (code:line #:holder holder-expr)]
+              ([fun-option (code:line #:abi  abi-expr)
+                           (code:line #:keep keep-expr)]
                [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)

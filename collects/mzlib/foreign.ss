@@ -468,22 +468,22 @@
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
-                      #:abi [abi #f] #:wrapper [wrapper #f] #:holder [holder #f])
-  (_cprocedure* itypes otype abi wrapper holder))
+                      #:abi [abi #f] #:wrapper [wrapper #f] #:keep [keep #f])
+  (_cprocedure* itypes otype abi wrapper keep))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper holder)
+(define (_cprocedure* itypes otype abi wrapper keep)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
         (let ([cb (ffi-callback (wrap x) itypes otype abi)])
-          (cond [(eq? holder #t) (hash-set! held-callbacks x cb)]
-                [(box? holder)
-                 (let ([x (unbox holder)])
-                   (set-box! holder
+          (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
+                [(box? keep)
+                 (let ([x (unbox keep)])
+                   (set-box! keep
                              (if (or (null? x) (pair? x)) (cons cb x) cb)))]
-                [(procedure? holder) (holder cb)])
+                [(procedure? keep) (keep cb)])
           cb))
       (lambda (x) (wrap (ffi-call x itypes otype abi)))))
   (if wrapper (make-it wrapper) (make-it begin)))
@@ -512,7 +512,7 @@
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
   (define abi    #f)
-  (define holder #f)
+  (define keep   #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -577,9 +577,9 @@
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k) (kwds [#:abi abi] [#:holder holder]))))
-    (unless abi    (set! abi    #'#f))
-    (unless holder (set! holder #'#t))
+        (when (keyword? k) (kwds [#:abi abi] [#:keep keep]))))
+    (unless abi  (set! abi  #'#f))
+    (unless keep (set! keep #'#t))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -670,9 +670,9 @@
                         (string->symbol (string-append "ffi-wrapper:" n)))
                        body))])
         #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                        #,abi (lambda (ffi) #,body) #,holder))
+                        #,abi (lambda (ffi) #,body) #,keep))
       #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                      #,abi #f #,holder)))
+                      #,abi #f #,keep)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 

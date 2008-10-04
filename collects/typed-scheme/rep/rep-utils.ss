@@ -4,7 +4,6 @@
 (require mzlib/struct 
          mzlib/plt-match
          syntax/boundmap
-         (utils planet-requires)
          "free-variance.ss"
          "interning.ss"
          mzlib/etc

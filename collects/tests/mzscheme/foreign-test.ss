@@ -141,17 +141,17 @@
     (t '(255 1)   'charint_swap   (_fun _charint -> _charint) '(1 255)))
   ;; ---
   ;; test sending a callback for C to hold, preventing the callback from GCing
-  (let ([with-holder
-         (lambda (h)
+  (let ([with-keeper
+         (lambda (k)
            (t (void) 'grab_callback
-              (_fun (_fun #:holder h _int  -> _int) -> _void) sqr)
+              (_fun (_fun #:keep k _int  -> _int) -> _void) sqr)
            (t 9      'use_grabbed_callback (_fun _int -> _int) 3)
            (collect-garbage) ; make sure it survives a GC
            (t 25     'use_grabbed_callback (_fun _int -> _int) 5)
            (collect-garbage)
            (t 81     'use_grabbed_callback (_fun _int -> _int) 9))])
-    (with-holder #t)
-    (with-holder (box #f)))
+    (with-kepper #t)
+    (with-keeper (box #f)))
   ;; ---
   ;; test exposing internal mzscheme functionality
   (test '(1 2)
