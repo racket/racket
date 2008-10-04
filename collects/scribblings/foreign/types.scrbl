@@ -267,8 +267,14 @@ Otherwise, @scheme[_cprocedure] should be used (it is based on
 
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
-                      [abi (or/c symbol/c false/c) #f]
-                      [wrapper (or false/c (procedure? . -> . procedure?)) #f]) any]{
+                      [#:abi abi (or/c symbol/c false/c) #f]
+                      [#:wrapper wrapper (or/c false/c
+                                               (procedure? . -> . procedure?))
+                                         #f]
+                      [#:holder holder (or/c boolean? box?
+                                             (any/c . -> . any/c))
+                                       #t])
+         any]{
 
 A type constructor that creates a new function type, which is
 specified by the given @scheme[input-types] list and @scheme[output-type].
@@ -286,27 +292,81 @@ function pointer that calls the given Scheme procedure when it is
 used.  There are no restrictions on the Scheme procedure; in
 particular, its lexical context is properly preserved.
 
-The optional @scheme[abi] argument determines the foreign ABI that is
-used.  @scheme[#f] or @scheme['default] will use a platform-dependent
-default; other possible values are @scheme['stdcall] and
-@scheme['sysv] (the latter corresponds to ``cdecl'').  This is
-especially important on Windows, where most system functions are
-@scheme['stdcall], which is not the default.
+The optional @scheme[abi] keyword argument determines the foreign ABI
+that is used.  @scheme[#f] or @scheme['default] will use a
+platform-dependent default; other possible values are
+@scheme['stdcall] and @scheme['sysv] (the latter corresponds to
+``cdecl'').  This is especially important on Windows, where most
+system functions are @scheme['stdcall], which is not the default.
 
-The optional @scheme[wrapper], if provided, is expected to be a function that
-can change a callout procedure: when a callout is generated, the wrapper is
-applied on the newly created primitive procedure, and its result is used as the
-new function.  Thus, @scheme[wrapper] is a hook that can perform various argument
-manipulations before the foreign function is invoked, and return different
-results (for example, grabbing a value stored in an ``output'' pointer and
-returning multiple values).  It can also be used for callbacks, as an
-additional layer that tweaks arguments from the foreign code before they reach
-the Scheme procedure, and possibly changes the result values too.}
+The optional @scheme[wrapper], if provided, is expected to be a
+function that can change a callout procedure: when a callout is
+generated, the wrapper is applied on the newly created primitive
+procedure, and its result is used as the new function.  Thus,
+@scheme[wrapper] is a hook that can perform various argument
+manipulations before the foreign function is invoked, and return
+different results (for example, grabbing a value stored in an
+``output'' pointer and returning multiple values).  It can also be
+used for callbacks, as an additional layer that tweaks arguments from
+the foreign code before they reach the Scheme procedure, and possibly
+changes the result values too.
+
+Sending Scheme functions as callbacks to foreign code is achieved by
+translating them to a foreign ``closure'', which foreign code can call
+as plain C functions.  Additional care must be taken in case the
+foreign code might hold on to the callback function.  In these cases
+you must arrange for the callback value to not be garbage-collected,
+or the held callback will become invalid.  The optional
+@scheme[holder] keyword argument is used to achieve this.  It can have
+the following values:
+@itemize[
+
+@item{@scheme[#t] makes the callback value stay in memory as long as
+  the converted function is.  In order to use this, you need to hold
+  on to the original function, for example, have a binding for it.
+  Note that each function can hold onto one callback value (it is
+  stored in a weak hash table), so if you need to use a function in
+  multiple callbacks you will need to use one of the the last two
+  options below.  (This is the default, as it is fine in most cases.)}
+
+@item{@scheme[#f] means that the callback value is not held.  This may
+  be useful for a callback that is only used for the duration of the
+  foreign call --- for example, the comparison function argument to
+  the standard C library @tt{qsort} function is only used while
+  @tt{qsort} is working, and no additional references to the
+  comparison function are kept.  Use this option only in such cases,
+  when no holding is necessary and you want to avoid the extra cost.}
+
+@item{A box holding @scheme[#f] (or a callback value) --- in this case
+  the callback value will be stored in the box, overriding any value
+  that was in the box (making it useful for holding a single callback
+  value).  When you know that it is no longer needed, you can
+  `release' the callback value by changing the box contents, or by
+  allowing the box itself to be garbage-collected.  This is can be
+  useful if the box is held for a dynamic extent that corresponds to
+  when the callback is needed; for example, you might encapsulate some
+  foreign functionality in a Scheme class or a unit, and keep the
+  callback box as a field in new instances or instantiations of the
+  unit.}
+
+@item{A box holding @scheme[null] (or any list) -- this is similar to
+  the previous case, except that new callback values are consed onto
+  the contents of the box.  It is therefore useful in (rare) cases
+  when a Scheme function is used in multiple callbacks (that is, sent
+  to foreign code to hold onto multiple times).}
+
+@item{Finally, if a one-argument function is provided as the
+  @scheme[holder], it will be invoked with the callback value when it
+  is generated.  This allows you to grab the value directly and use it
+  in any way.}
+
+]}
 
 @defform/subs[#:literals (-> :: :)
               (_fun fun-option ... maybe-args type-spec ... -> type-spec
                     maybe-wrapper)
-              ([fun-option (code:line #:abi abi-expr)]
+              ([fun-option (code:line #:abi abi-expr)
+                           (code:line #:holder holder-expr)]
                [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)

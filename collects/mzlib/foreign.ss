@@ -467,14 +467,26 @@
 ;; Creates a simple function type that can be used for callouts and callbacks,
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
-(define* (_cprocedure itypes otype [abi #f] [wrapper #f])
-  (if wrapper
+(define* (_cprocedure itypes otype
+                      #:abi [abi #f] #:wrapper [wrapper #f] #:holder [holder #f])
+  (_cprocedure* itypes otype abi wrapper holder))
+
+;; for internal use
+(define held-callbacks (make-weak-hasheq))
+(define (_cprocedure* itypes otype abi wrapper holder)
+  (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
-      (lambda (x) (ffi-callback (wrapper x) itypes otype abi))
-      (lambda (x) (wrapper (ffi-call x itypes otype abi))))
-    (make-ctype _fpointer
-      (lambda (x) (ffi-callback x itypes otype abi))
-      (lambda (x) (ffi-call x itypes otype abi)))))
+      (lambda (x)
+        (let ([cb (ffi-callback (wrap x) itypes otype abi)])
+          (cond [(eq? holder #t) (hash-set! held-callbacks x cb)]
+                [(box? holder)
+                 (let ([x (unbox holder)])
+                   (set-box! holder
+                             (if (or (null? x) (pair? x)) (cons cb x) cb)))]
+                [(procedure? holder) (holder cb)])
+          cb))
+      (lambda (x) (wrap (ffi-call x itypes otype abi)))))
+  (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
 ;; (_fun [{(name ... [. name]) | name} [-> expr] ::]
@@ -500,6 +512,7 @@
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
   (define abi    #f)
+  (define holder #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -557,15 +570,16 @@
     ;; parse keywords
     (let loop ()
       (let ([k (and (pair? xs) (pair? (cdr xs)) (syntax-e (car xs)))])
-        (when (keyword? k)
+        (define-syntax-rule (kwds [key var] ...)
           (case k
-            [(#:abi) (if abi
-                       (err "got a second #:abi keyword" (car xs))
-                       (begin (set! abi (cadr xs))
-                              (set! xs (cddr xs))
-                              (loop)))]
-            [else (err "unknown keyword" (car xs))]))))
-    (unless abi (set! abi #'#f))
+            [(key) (if var
+                     (err (format "got a second ~s keyword") 'key (car xs))
+                     (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
+            ...
+            [else (err "unknown keyword" (car xs))]))
+        (when (keyword? k) (kwds [#:abi abi] [#:holder holder]))))
+    (unless abi    (set! abi    #'#f))
+    (unless holder (set! holder #'#t))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -655,9 +669,10 @@
                         body 'inferred-name
                         (string->symbol (string-append "ffi-wrapper:" n)))
                        body))])
-        #`(_cprocedure (list #,@(filter-map car inputs)) #,(car output) #,abi
-            (lambda (ffi) #,body)))
-      #`(_cprocedure (list #,@(filter-map car inputs)) #,(car output) #,abi)))
+        #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
+                        #,abi (lambda (ffi) #,body) #,holder))
+      #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
+                      #,abi #f #,holder)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
@@ -961,7 +976,7 @@
 
 (define-struct cvector (ptr type length))
 
-(provide* cvector? cvector-length cvector-type
+(provide* cvector? cvector-length cvector-type cvector-ptr
           ;; make-cvector* is a dangerous operation
           (unsafe (rename-out [make-cvector make-cvector*])))
 
@@ -1264,10 +1279,13 @@
 ;; Simple structs: call this with a list of types, and get a type that marshals
 ;; C structs to/from Scheme lists.
 (define* (_list-struct . types)
-  (let ([stype (make-cstruct-type types)]
-        [offsets (compute-offsets types)])
+  (let ([stype   (make-cstruct-type types)]
+        [offsets (compute-offsets types)]
+        [len     (length types)])
     (make-ctype stype
       (lambda (vals)
+        (unless (and (list vals) (= len (length vals)))
+          (raise-type-error 'list-struct (format "list of ~a items" len) vals))
         (let ([block (malloc stype)])
           (for-each (lambda (type ofs val) (ptr-set! block type 'abs ofs val))
                     types offsets vals)
