@@ -22,4 +22,5 @@
 @include-section["jewel.scrbl"]
 @include-section["parcheesi.scrbl"]
 @include-section["checkers.scrbl"]
+@include-section["chat-noir.scrbl"]
 @include-section["gcalc.scrbl"]
