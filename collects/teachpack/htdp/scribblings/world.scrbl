@@ -240,16 +240,15 @@ for the creation of scenes, too.
 @; -----------------------------------------------------------------------------
 
 @(define (table* . stuff)
-  ;; (list paragraph paragraph) *-> Table
+   ;; (list paragraph paragraph) *-> Table
    (define (flow* x) (make-flow (list x)))
-  (make-blockquote 'blockquote
-    (list 
-      (make-table (make-with-attributes 'boxed
-		    '((cellspacing . "6")))
-	;list
-	  (map (lambda (x) (map flow* x)) stuff)
-	  #;(map flow* (map car stuff))
-	  #;(map flow* (map cadr stuff))))))
+   (make-blockquote #f
+    (list
+     (make-table (make-with-attributes 'boxed '((cellspacing . "6")))
+                 ;; list
+                 (map (lambda (x) (map flow* x)) stuff)
+                 #;(map flow* (map car stuff))
+                 #;(map flow* (map cadr stuff))))))
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "example"]{A First Example} 

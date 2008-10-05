@@ -304,9 +304,7 @@
       null)
 
     (define/override (render-blockquote t part ri)
-      (let* ([kind (or (blockquote-style t) "quote")]
-             ;; FIXME temporary hack to avoid a \begin{blockquote}
-             [kind (if (eq? 'blockquote kind) "quote" kind)])
+      (let ([kind (or (blockquote-style t) "quote")])
         (printf "\n\n\\begin{~a}\n" kind)
         (parameterize ([current-table-mode (list "blockquote" t)])
           (for ([e (blockquote-paragraphs t)]) (render-block e part ri #f)))
