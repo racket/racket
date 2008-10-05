@@ -86,7 +86,7 @@
 
 (define (go) (test/gui tests))
 (define (go/text) (test/text-ui tests))
-(go/text)
+
 (when (getenv "PLT_TESTS")
   (unless (parameterize ([current-output-port (open-output-string)])
             (= 0 (go/text)))
