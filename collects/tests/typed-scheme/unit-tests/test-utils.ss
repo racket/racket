@@ -1,15 +1,16 @@
 #lang scheme/base
 (provide (all-defined-out))
 
-(require scheme/require-syntax
+(require "planet-requires.ss"
+         scheme/require-syntax
          scheme/match
 	 typed-scheme/utils/utils
          (for-syntax scheme/base))
 
 
-(require (utils planet-requires) (private type-comparison type-utils))
+(require (private type-comparison type-utils)
+         (schemeunit))
 (provide private typecheck (rename-out [infer r:infer]) utils env rep)
-(require (schemeunit))
 
 (define (mk-suite ts)
   (match (map (lambda (f) (f)) ts)

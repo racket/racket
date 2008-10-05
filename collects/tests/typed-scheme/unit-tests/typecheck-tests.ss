@@ -1,21 +1,20 @@
 #lang scheme/base
 
-(require "test-utils.ss" 
+(require "test-utils.ss" "planet-requires.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
 (require (private base-env mutated-vars type-utils union prims type-effect-convenience type-annotation)
 	 (typecheck typechecker)
 	 (rep type-rep effect-rep)
-         (utils tc-utils planet-requires)
-         (env type-name-env type-environments init-envs))
+         (utils tc-utils)
+         (env type-name-env type-environments init-envs)
+         (schemeunit))
 
 (require (for-syntax (utils tc-utils)
                      (typecheck typechecker)
 	             (env type-env)
 	             (private base-env))
          (for-template (private base-env base-types)))
-(require (schemeunit))
-
 
 
 

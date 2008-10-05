@@ -2,6 +2,7 @@
 
 (require 
  "test-utils.ss"
+ "planet-requires.ss"
  "typecheck-tests.ss"
  "subtype-tests.ss" ;; done
  "type-equal-tests.ss" ;; done
@@ -12,9 +13,8 @@
  "subst-tests.ss"
  "infer-tests.ss")
 
-(require (utils planet-requires) (r:infer infer infer-dummy))
-
-(require (schemeunit))
+(require (r:infer infer infer-dummy)
+         (schemeunit))
 
 (provide unit-tests)
 
