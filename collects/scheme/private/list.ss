@@ -247,13 +247,9 @@
                  (lambda args (f (apply g args))))
              (if (eqv? 1 (procedure-arity g)) ; optimize: single input
                  (lambda (a)
-                   (call-with-values
-                    (lambda () (g a))
-                    f))
+                   (call-with-values (lambda () (g a)) f))
                  (lambda args
-                   (call-with-values
-                    (lambda () (apply g args))
-                    f)))))]
+                   (call-with-values (lambda () (apply g args)) f)))))]
       [(f . more)
        (if (procedure? f)
            (let ([m (apply compose more)])

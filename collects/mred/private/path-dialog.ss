@@ -40,7 +40,8 @@
         (apply simplify-path (regexp-replace*
                               #rx"/" (if (path? p) (path->string p) p) "\\\\")
                more))
-      (compose simplify-path expand-path*)))
+      (lambda (p . more)
+        (apply simplify-path (expand-path* p) more))))
 
   (define directory-exists*? (compose directory-exists? expand-path*))
   (define file-exists*?      (compose file-exists? expand-path*))
