@@ -1,8 +1,7 @@
 #lang scheme/unit
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require (utils planet-requires)
-         "signatures.ss"
+(require "signatures.ss"
          (rep type-rep effect-rep)
          (private type-effect-convenience subtype union type-utils type-comparison mutated-vars)
          (env lexical-env)

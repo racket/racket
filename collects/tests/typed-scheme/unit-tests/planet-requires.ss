@@ -47,18 +47,11 @@
           (splice-requires (map mk (syntax->list #'(files ...)))))]))))
 
 
-(provide galore schemeunit)
+(provide schemeunit)
 ;; why is this neccessary?
 (provide planet/multiple)
 
-(define-module galore
-  (prefix-in table: "tables.ss"))
-
-(require (galore))
-
-(void (table:alist->eq '()))
-
-(define-module schemeunit 
+(define-module schemeunit
   (planet/multiple ("schematics" "schemeunit.plt" 2 3)
                    "test.ss"
                    ;"graphical-ui.ss"

@@ -918,9 +918,11 @@ Matthew
        (define m (mouse-event->symbol e))
        (when (and (<= 0 x WIDTH) (<= 0 y HEIGHT))
 	 (with-handlers ([exn:break? break-handler][exn? exn-handler])
-	   (set! the-world (f the-world x y m))
-	   (add-event MOUSE x y m)
-	   (redraw-callback)))))))
+           (let ([new-world (f the-world x y m)])
+             (unless (eq? new-world the-world)
+               (set! the-world new-world)
+               (add-event MOUSE x y m)
+               (redraw-callback)))))))))
 
 ;; MouseEvent -> MouseEventType
 (define (mouse-event->symbol e)

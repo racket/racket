@@ -1,11 +1,9 @@
 #lang scheme/base
-(require "test-utils.ss" (for-syntax scheme/base))
+(require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (utils planet-requires)
 	 (r:infer infer)
-	 (private type-effect-convenience remove-intersect subtype union))
-
-(require (schemeunit))
+	 (private type-effect-convenience remove-intersect subtype union)
+         (schemeunit))
 
 (define-syntax (restr-tests stx)    
   (syntax-case stx ()

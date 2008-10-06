@@ -133,12 +133,12 @@ This produces an ACK message
            void)
    
    (mktest "("
-           ("{stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)'"
-            "{stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)'")
+           ("{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)' to close `('"
+            "{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)' to close `('")
            'definitions
            #f
            void
@@ -467,12 +467,12 @@ This produces an ACK message
    ;; error in the middle
    (mktest "1 2 ( 3 4"
            
-           ("1\n2\n{stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)'"
-            "1\n2\n{stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)'")
+           ("1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)' to close `('"
+            "1\n2\n{stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)' to close `('"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)' to close `('")
            'definitions
            #f
            void
@@ -1382,10 +1382,10 @@ This produces an ACK message
       
       (let* ([end (- (get-int-pos) 1)]
              [output (fetch-output drscheme-frame start end)]
-             [expected "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"])
-        (unless (equal? output expected)
+             [expected #rx"reference to undefined identifier: x"])
+        (unless (regexp-match expected output)
           (failure)
-          (fprintf (current-error-port) "callcc-test: expected ~s, got ~s\n" expected output)))))
+          (fprintf (current-error-port) "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
   
   (define (random-seed-test)
     (define expression

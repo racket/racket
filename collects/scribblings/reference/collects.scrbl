@@ -87,7 +87,15 @@ Produces a list of paths as follows:
   defined, it is combined with the default list using
   @scheme[path-list-string->path-list]. If it is not defined, the
   default collection path list (as constructed by the first three
-  bullets above) is used directly.}
+  bullets above) is used directly.
+
+  Note that under @|AllUnix|, paths are separated by @litchar{:}, and
+  under Windows by @litchar{;}.  Also,
+  @scheme[path-list-string->path-list] splices the default paths at an
+  empty path, for example, with many Unix shells you can set
+  @envvar{PLTCOLLECTS} to @tt{":`pwd`"}, @tt{"`pwd`:"}, or
+  @tt{"`pwd`"} to specify search the current directory after, before,
+  or instead of the default paths respectively.}
 
 }}
 

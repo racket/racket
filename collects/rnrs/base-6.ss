@@ -3,6 +3,7 @@
 (require (for-syntax (rename-in r6rs/private/base-for-syntax
                                 [syntax-rules r6rs:syntax-rules])
                      scheme/base)
+         scheme/splicing
          r6rs/private/qq-gen
          r6rs/private/exns
          (prefix-in r5rs: r5rs)
@@ -546,54 +547,20 @@
 
 ;; ----------------------------------------
 
-;; let[rec]-syntax needs to be splicing, ad it needs the
+;; let[rec]-syntax needs to be splicing, and it needs the
 ;; same transformer wrapper as in `define-syntax'
 
-(define-for-syntax (do-let-syntax stx rec?)
+(define-syntax (r6rs:let-syntax stx)
   (syntax-case stx ()
     [(_ ([id expr] ...) body ...)
-     (if (eq? 'expression (syntax-local-context))
-         (with-syntax ([let-stx (if rec?
-                                    #'letrec-syntax
-                                    #'let-syntax)])
-           (syntax/loc stx
-             (let-stx ([id (wrap-as-needed expr)] ...)
-               (#%expression body)
-               ...)))
-         (let ([sli (if (list? (syntax-local-context))
-                        syntax-local-introduce
-                        values)])
-           (let ([ids (map sli (syntax->list #'(id ...)))]
-                 [def-ctx (syntax-local-make-definition-context)]
-                 [ctx (list (gensym 'intdef))])
-             (syntax-local-bind-syntaxes ids #f def-ctx)
-             (let* ([add-context
-                     (lambda (expr)
-                       (let ([q (local-expand #`(quote #,expr)
-                                              ctx
-                                              (list #'quote)
-                                              def-ctx)])
-                         (syntax-case q ()
-                           [(_ expr) #'expr])))])
-               (with-syntax ([(id ...)
-                              (map sli (map add-context ids))]
-                             [(expr ...)
-                              (let ([exprs (syntax->list #'(expr ...))])
-                                (if rec?
-                                    (map add-context exprs)
-                                    exprs))]
-                             [(body ...)
-                              (map add-context (syntax->list #'(body ...)))])
-                 #'(begin
-                     (define-syntax id (wrap-as-needed expr))
-                     ...
-                     body ...))))))]))
-
-(define-syntax (r6rs:let-syntax stx)
-  (do-let-syntax stx #f))
+     (syntax/loc stx
+       (splicing-let-syntax ([id (wrap-as-needed expr)] ...) body ...))]))
 
 (define-syntax (r6rs:letrec-syntax stx)
-  (do-let-syntax stx #t))
+  (syntax-case stx ()
+    [(_ ([id expr] ...) body ...)
+     (syntax/loc stx
+       (splicing-letrec-syntax ([id (wrap-as-needed expr)] ...) body ...))]))
 
 ;; ----------------------------------------
 

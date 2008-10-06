@@ -872,8 +872,7 @@
                     eof
                     (begin
                       (set! executed? #t)
-                      (errortrace-annotate 
-                       (syntax-as-top
+                      (syntax-as-top
                          (compile-interactions-ast 
                           (parse-interactions port name level)
                           name level types  #t)
@@ -881,7 +880,7 @@
                        #;(datum->syntax
                         #f
                         `(parse-java-interactions ,(parse-interactions port name level) ,name)
-                        #f))))))))
+                        #f)))))))
           (define/public (front-end/finished-complete-program settings) (void))
           
           (define (get-defn-editor port-name)

@@ -1,4 +1,4 @@
-Version 4.1.0.4
+Version 4.1.1, October 2008
 Added read-language
 Added module-compiled-language-info, module->language-info,
  and 'module-language property support

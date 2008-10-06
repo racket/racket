@@ -2,7 +2,7 @@
 
 (require "../utils/utils.ss")
 (require (rep type-rep effect-rep rep-utils)
-	 (utils planet-requires tc-utils)
+	 (utils tc-utils)
 	 scheme/match)
 
 ;; do we attempt to find instantiations of polymorphic types to print? 

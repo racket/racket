@@ -66,8 +66,8 @@ obtain a tag. The tag is the string form of @schemevarfont{id}.}
 
 @declare-exporting[scribblings/foreign/unsafe-foreign]
 
-@defproc*[([(cpointer-has-tag? [cptr any/c][tag any/c]) boolean?]
-           [(cpointer-push-tag! [cptr any/c][tag any/c]) void])]{
+@defproc*[([(cpointer-has-tag? [cptr any/c] [tag any/c]) boolean?]
+           [(cpointer-push-tag! [cptr any/c] [tag any/c]) void])]{
 
 These two functions treat pointer tags as lists of tags.  As described
 in @secref["foreign:pointer-funcs"], a pointer tag does not have any
@@ -125,7 +125,12 @@ Returns the length of a C vector.}
 Returns the C type object of a C vector.}
 
 
-@defproc[(cvector-ref [cvec cvector?][k exact-nonnegative-integer?]) any]{
+@defproc[(cvector-ptr [cvec cvector?]) cpointer?]{
+
+Returns the pointer that points at the beginning block of the given C vector.}
+
+
+@defproc[(cvector-ref [cvec cvector?] [k exact-nonnegative-integer?]) any]{
 
 References the @scheme[k]th element of the @scheme[cvec] C vector.
 The result has the type that the C vector uses.}
@@ -154,7 +159,9 @@ Converts the list @scheme[lst] to a C vector of the given
 
 @declare-exporting[scribblings/foreign/unsafe-foreign]
 
-@defproc[(make-cvector* [cptr any/c][type ctype?][length exact-nonnegative-integer?]) cvector?]{
+@defproc[(make-cvector* [cptr any/c] [type ctype?]
+                        [length exact-nonnegative-integer?])
+                        cvector?]{
 
 Constructs a C vector using an existing pointer object.  This
 operation is not safe, so it is intended to be used in specific

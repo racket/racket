@@ -57,3 +57,24 @@ X int use_g3(int x) { return ((int(*)(int))g3)(x); }
 X int hoho(int x, int(*(*f)(int))(int)) { return (f(x+1))(x-1); }
 
 X int grab7th(void *p) { return ((char *)p)[7]; }
+
+X int vec4(int x[]) { return x[0]+x[1]+x[2]+x[3]; }
+
+typedef struct _char_int { unsigned char a; int b; } char_int;
+X int charint_to_int(char_int x) { return ((int)x.a) + x.b; }
+X char_int int_to_charint(int x) {
+  char_int result;
+  result.a = (unsigned char)x;
+  result.b = x;
+  return result;
+}
+X char_int charint_swap(char_int x) {
+  char_int result;
+  result.a = (unsigned char)x.b;
+  result.b = (int)x.a;
+  return result;
+}
+
+int(*grabbed_callback)(int) = NULL;
+X void grab_callback(int(*f)(int)) { grabbed_callback = f; }
+X int use_grabbed_callback(int n) { return grabbed_callback(n); }

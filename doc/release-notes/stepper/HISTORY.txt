@@ -1,61 +1,55 @@
 Stepper
 -------
 
-Changes for v101:
+Changes for v4.1.1:
 
-all steps scroll to bottom automatically.
-constants like 'pi' are explicitly expanded in a step.
-stepper uses fewer threads internally.
+Check-expect now reduces to a boolean in the stepper. Also, this history file
+now appears with the most recent entries at the top....
 
-Changes for v102:
-
-Stepper handles intermediate level.
-UI redesigned to use "side-by-side" reduction.
-
-Changes for v103:
-
-PRs fixed: 1564, 1277, 1536, 1500, 1561, 1468, 1599, 1631
-
-Changes for v200:
-
-Total rewrite for new syntax. Addition of test suites.
-Addition of somewhat more systematic macro unwinding.
-Lots of bug fixes.
-
-Changes for v201:
-
-Minor bug fixes.
-
-Changes for v203:
-
-Much more systematic unwinding, intermediate almost ready, redesigned test suite
-
-Changes for v204:
+Changes for v4.1:
 
 none.
 
-Changes for v205:
+Changes for v4.0.1:
 
-v. minor bug fixes.
+none.
 
-Changes for v206:
+Changes for v4.0:
 
-Stepper supports intermediate, minor bug fixes, major rewrite of interface
- between reconstruct and display.
+overhauled support for check-expect, check-within, check-error.
 
-Changes for v206p1:
+Changes for v372:
+
+support for check-expect, check-within, and check-error
+
+Changes for v371:
 
 None.
 
-Changes for v207:
+Changes for v370:
 
-None.
+Added "End" button to stepper interface.
 
-Changes for v208:
+Stepper supports "begin0".  Again, you'll never know it unless you use
+the PLTSTEPPERUNSAFE environment variable.
 
-minor bug fixes.
+There's a known bug with expressions of the form (let <bindings> (begin
+...)). (It's displayed as (let () X) rather than (begin X).)
 
-Changes for v209:
+Changes for v361:
+
+Bug fix for test cases
+
+Changes for v360:
+
+Stepper supports 'begin'.  You'll never know it unless you use the
+PLTSTEPPERUNSAFE environment variable, though.
+
+Changes for v351:
+
+Minor bug fixes
+
+Changes for v350:
 
 None.
 
@@ -72,43 +66,60 @@ presence of mutation, it's no longer the case that the "finished" expressions
 never change, which means that they can't always be shared between the left and
 right hand sides.
 
-Changes for v350:
+Changes for v209:
 
 None.
 
-Changes for v351:
+Changes for v208:
 
-Minor bug fixes
+minor bug fixes.
 
-Changes for v360:
-
-Stepper supports 'begin'.  You'll never know it unless you use the
-PLTSTEPPERUNSAFE environment variable, though.
-
-Changes for v361:
-
-Bug fix for test cases
-
-Changes for v370:
-
-Added "End" button to stepper interface.
-
-Stepper supports "begin0".  Again, you'll never know it unless you use
-the PLTSTEPPERUNSAFE environment variable.
-
-There's a known bug with expressions of the form (let <bindings> (begin
-...)). (It's displayed as (let () X) rather than (begin X).
-
-Changes for v371:
+Changes for v207:
 
 None.
 
-Changes for v372: support for check-expect, check-within, and check-error
+Changes for v206p1:
 
-Changes for v4.0: overhauled support for check-expect, check-within,
-check-error.
+None.
 
-Changes for v4.0.1: none.
+Changes for v206:
 
-Changes for v4.1: none.
+Stepper supports intermediate, minor bug fixes, major rewrite of interface
+ between reconstruct and display.
 
+Changes for v205:
+
+v. minor bug fixes.
+
+Changes for v204:
+
+none.
+
+Changes for v203:
+
+Much more systematic unwinding, intermediate almost ready, redesigned test suite
+
+Changes for v201:
+
+Minor bug fixes.
+
+Changes for v200:
+
+Total rewrite for new syntax. Addition of test suites.
+Addition of somewhat more systematic macro unwinding.
+Lots of bug fixes.
+
+Changes for v103:
+
+PRs fixed: 1564, 1277, 1536, 1500, 1561, 1468, 1599, 1631
+
+Changes for v102:
+
+Stepper handles intermediate level.
+UI redesigned to use "side-by-side" reduction.
+
+Changes for v101:
+
+all steps scroll to bottom automatically.
+constants like 'pi' are explicitly expanded in a step.
+stepper uses fewer threads internally.

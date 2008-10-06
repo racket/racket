@@ -31,6 +31,20 @@ provides; this library cannot run in MzScheme.}
 @include-section["config.scrbl"]
 @include-section["dynamic.scrbl"]
 
+
+@;------------------------------------------------------------------------
+
+@(bibliography
+
+  (bib-entry #:key "Adobe99"
+             #:author "Adobe Systems Incorporated"
+             #:title "PostScript Language Reference, third edition"
+             #:is-book? #t
+             #:url "http://partners.adobe.com/public/developer/en/ps/PLRM.pdf"
+             #:date "1999")
+
+  )
+
 @;------------------------------------------------------------------------
 
 @index-section[]

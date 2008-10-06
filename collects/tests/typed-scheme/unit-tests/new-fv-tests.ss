@@ -1,8 +1,8 @@
 (module new-fv-tests mzscheme
-  (require "test-utils.ss")
-  (require/private type-rep rep-utils planet-requires type-effect-convenience meet-join subtype union)
-  (require-schemeunit)  
-    
+  (require "test-utils.ss" "planet-requires.ss")
+  (require/private type-rep rep-utils type-effect-convenience meet-join subtype union)
+  (require-schemeunit)
+
   (define variance-gen (random-uniform Covariant Contravariant Invariant Constant))
   
   (define alpha-string (random-string (random-char (random-int-between 65 90)) (random-size 1)))

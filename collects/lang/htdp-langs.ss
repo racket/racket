@@ -524,6 +524,9 @@
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
+              #;
+              ;; FIXME: disable context for now, re-enable when it is possible
+              ;; to have the context search the teachpack manual too.
               [(drscheme:help-context-term)
                (let* ([m (get-module)]
                       [m (and m (pair? m) (pair? (cdr m)) (cadr m))]

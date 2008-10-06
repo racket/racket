@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Version 4.1.1				  [Tue Sep 30 10:17:26 EDT 2008]
+
+* world.ss: big-bang can now be re-run after the world has stopped
+
+------------------------------------------------------------------------
 Version 4.1				  [Sun Aug 10 12:56:58 EDT 2008]
 
 * world docs include line to HtDP/2e Prologue 

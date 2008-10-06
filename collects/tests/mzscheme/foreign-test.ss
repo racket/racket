@@ -48,16 +48,19 @@
     (compile-extension #t c o '())
     (link-extension #t (list o) so)))
 
-(let* ([lib (ffi-lib "./foreign-test")]
-       [ffi (lambda (name type) (get-ffi-obj name lib type))]
-       [test* (lambda (expected name type proc)
-                (test expected name (proc (ffi name type))))]
-       [t (lambda (expected name type . args)
-            (test* expected name type (lambda (p) (apply p args))))]
-       [tc (lambda (expected name type arg1 . args)
-             ;; curry first argument
-             (test* expected name type (lambda (p) (apply (p arg1) args))))]
-       [sqr (lambda (x) (* x x))])
+(define test-lib (ffi-lib "./foreign-test"))
+
+(for ([n (in-range 5)])
+  (define (ffi name type) (get-ffi-obj name test-lib type))
+  (define (test* expected name type proc)
+    (test expected name (proc (ffi name type))))
+  (define (t expected name type . args)
+    (test* expected name type (lambda (p) (apply p args))))
+  (define (tc expected name type arg1 . args)
+    ;; curry first argument
+    (test* expected name type (lambda (p) (apply (p arg1) args))))
+  (define (sqr x) (when (zero? (random 4)) (collect-garbage)) (* x x))
+  (define b (box #f))
   ;; ---
   (t  2 'add1_int_int   (_fun _int  -> _int ) 1)
   (t  2 'add1_byte_int  (_fun _byte -> _int ) 1)
@@ -98,7 +101,7 @@
   (test* 14 'ho (_fun (_fun _int -> _int) _int -> (_fun _int -> _int))
          (lambda (p) ((p (ffi 'add1_byte_byte (_fun _byte -> _byte)) 3) 10)))
   ;; ---
-  (set-ffi-obj! "g3" lib (_fun _int -> _int) add1)
+  (set-ffi-obj! "g3" test-lib (_fun _int -> _int) add1)
   (t 4 'use_g3 (_fun _int -> _int) 3)
   (test* 4 'g3 _pointer (lambda (p) ((ptr-ref p (_fun _int -> _int)) 3)))
   ;; ---
@@ -120,11 +123,40 @@
          (lambda (x y)
            (let ([x (ptr-ref x _int)] [y (ptr-ref y _int)])
              (cond [(< x y) -1] [(> x y) +1] [else 0])))))
-
   ;; ---
-  (t  55 'grab7th   (_fun _pointer -> _int ) #"012345678")
-  (t  56 'grab7th   (_fun _pointer -> _int ) (ptr-add #"012345678" 1))
-  (t  52 'grab7th   (_fun _pointer -> _int ) (ptr-add #"012345678" -3))
+  ;; test vectors
+  (t 55 'grab7th (_fun _pointer -> _int ) #"012345678")
+  (t 56 'grab7th (_fun _pointer -> _int ) (ptr-add #"012345678" 1))
+  (t 52 'grab7th (_fun _pointer -> _int ) (ptr-add #"012345678" -3))
+  (t 10 'vec4    (_fun (_list   i _int) -> _int) '(1 2 3 4))
+  (t 10 'vec4    (_fun (_vector i _int) -> _int) '#(1 2 3 4))
+  (t 10 'vec4    (_fun _cvector -> _int) (list->cvector '(1 2 3 4) _int))
+  (t 10 'vec4    (_fun _pointer -> _int)
+                 (cvector-ptr (list->cvector '(1 2 3 4) _int)))
+  ;; ---
+  ;; test passing and receiving structs
+  (let ([_charint (_list-struct _byte _int)])
+    (t 1212       'charint_to_int (_fun _charint -> _int)     '(12 1200))
+    (t '(123 123) 'int_to_charint (_fun _int -> _charint)     123)
+    (t '(255 1)   'charint_swap   (_fun _charint -> _charint) '(1 255)))
+  ;; ---
+  ;; test sending a callback for C to hold, preventing the callback from GCing
+  (let ([with-keeper
+         (lambda (k)
+           (t (void) 'grab_callback
+              (_fun (_fun #:keep k _int  -> _int) -> _void) sqr)
+           (t 9      'use_grabbed_callback (_fun _int -> _int) 3)
+           (collect-garbage) ; make sure it survives a GC
+           (t 25     'use_grabbed_callback (_fun _int -> _int) 5)
+           (collect-garbage)
+           (t 81     'use_grabbed_callback (_fun _int -> _int) 9))])
+    (with-keeper #t)
+    (with-keeper (box #f)))
+  ;; ---
+  ;; test exposing internal mzscheme functionality
+  (test '(1 2)
+        (get-ffi-obj 'scheme_make_pair #f (_fun _scheme _scheme -> _scheme))
+        1 '(2))
   )
 
 ;; test setting vector elements
@@ -184,7 +216,6 @@ The following is some random Scheme and C code, with some things that should be
 added.
 
 -------------------------------------------------------------------------------
-(define _foo (_list-struct (list _byte _int)))
 (define foo-struct1
   (get-ffi-obj "foo_struct1" "junk/foo.so" (_fun _foo -> _int)))
 (define foo-struct2
@@ -285,12 +316,6 @@ added.
 (foo-test "foo_string" '(#f) '(string) 'string)
 
 (newline)
-(printf ">>> scheme_make_pair(1,2) -> ~s\n"
-        ((ffi-call (ffi-obj libself "scheme_make_pair")
-                   '(scheme scheme) 'scheme)
-         1 2))
-
-(newline)
 (printf ">>> sizeof(int) = ~s\n" (ffi-size-of 'int))
 '(let loop ((l '()))
   (eprintf ">>> ~s\n" (length l))
@@ -312,7 +337,6 @@ added.
 (ffi-ptr-set! block1 'ulong 1 22)
 (ffi-ptr-set! block1 'ulong 2 33)
 (ffi-ptr-set! block1 'ulong 3 44)
-(foo-test "foo_vect" (list block1) '(pointer) 'int)
 ;(ffi-ptr-set! block1 'ulong 'abs 1 22)
 (printf ">>> [0] -> ~s\n" (ffi-ptr-ref block1 'ulong 0))
 (printf ">>> [1] -> ~s\n" (ffi-ptr-ref block1 'ulong 1))
@@ -393,26 +417,7 @@ char*   foo_string (char* x) {
   }
 }
 
-int foo_vect(int x[]) {
-  return x[0]+x[1]+x[2]+x[3];
-}
-
 int foo_foo(int x) { return x^1; }
 
-typedef struct _char_int {
-  unsigned char a;
-  int b;
-} char_int;
-
-int foo_struct1(char_int x) {
-  return ((int)x.a) + x.b;
-}
-
-char_int foo_struct2(char_int x) {
-  char_int result;
-  result.a = (unsigned char)x.b;
-  result.b = (int)x.a;
-  return result;
-}
 -------------------------------------------------------------------------------
 |#
