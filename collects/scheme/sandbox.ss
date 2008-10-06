@@ -625,7 +625,8 @@
                              allow)
                      (lambda () (build-program lang reqs input-program)))))
 
-(define (make-module-evaluator input-program #:allow-read [allow null])
+(define (make-module-evaluator
+         input-program #:allow-read [allow null] #:language [reqlang #f])
   ;; this is for a complete module input program
   (let ([prog (input->code (list input-program) 'program #f)])
     (unless (= 1 (length prog))
@@ -635,7 +636,11 @@
                "got more than a single expression")))
     (syntax-case* (car prog) (module) literal-identifier=?
       [(module modname lang body ...)
-       (make-evaluator* void allow (car prog))]
+       (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
+         (make-evaluator* void allow (car prog))
+         (error 'make-evaluator
+                "module code used `~e' for a language, expecting `~e'"
+                (syntax->datum #'lang) reqlang))]
       [_else (error 'make-evaluator "expecting a `module' program; got ~e"
                     (syntax->datum (car prog)))])))
 
