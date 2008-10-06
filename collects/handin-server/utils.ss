@@ -48,14 +48,18 @@
 
 ;; Execution ----------------------------------------
 
+(define (make-evaluator* lang reqs inp)
+  (if (and (list? lang) (= 2 (length lang)) (eq? 'module (car lang)))
+    (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs)
+    (make-evaluator lang inp #:requires reqs)))
+
 (define (open-input-text-editor/lines str)
   (let ([inp (open-input-text-editor str)])
     (port-count-lines! inp) inp))
 
 (define (make-evaluator/submission language requires str)
   (let-values ([(defs interacts) (unpack-submission str)])
-    (make-evaluator language #:requires requires
-                    (open-input-text-editor defs))))
+    (make-evaluator* language requires (open-input-text-editor defs))))
 
 (define (evaluate-all source port eval)
   (let loop ()
@@ -164,11 +168,12 @@
 (define (call-with-evaluator lang requires program-port go)
   (parameterize ([error-value->string-handler (lambda (v s)
                                                 ((current-value-printer) v))]
-                 [list-abbreviation-enabled (not (or (eq? lang 'beginner)
-                                                     (eq? lang 'beginner-abbr)))])
+                 [list-abbreviation-enabled
+                  (not (or (equal? lang '(special beginner))
+                           (equal? lang '(special beginner-abbr))))])
     (reraise-exn-as-submission-problem
      (lambda ()
-       (let ([e (make-evaluator lang #:requires requires program-port)])
+       (let ([e (make-evaluator* lang requires program-port)])
          (set-run-status "executing your code")
          (go e))))))
 

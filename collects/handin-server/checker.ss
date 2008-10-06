@@ -488,6 +488,14 @@
                                     submission->bytes)
                                   submission maxwidth textualize? untabify?
                                   markup-prefix prefix-re))))
+                   (define (uem-handler e)
+                     (let ([m (if (exn? e) (exn-message e) (format "~a" e))])
+                       (cond
+                         [(procedure? uem) (uem m)]
+                         [(not (string? uem))
+                          (error* "badly configured user-error-message")]
+                         [(regexp-match? #rx"~[aesvAESV]" uem) (error* uem m)]
+                         [else (error* "~a" uem)])))
                    (when create-text? (make-directory "grading") (write-text))
                    (when value-printer (current-value-printer value-printer))
                    (when coverage? (sandbox-coverage-enabled #t))
@@ -495,24 +503,10 @@
                    (cond
                      [(not eval?) (let () body ...)]
                      [language
-                      (let ([eval
-                             (with-handlers
-                                 ([void
-                                   (lambda (e)
-                                     (let ([m (if (exn? e)
-                                                (exn-message e)
-                                                (format "~a" e))])
-                                       (cond
-                                         [(procedure? uem) (uem m)]
-                                         [(not (string? uem))
-                                          (error* "badly configured ~a"
-                                                  "user-error-message")]
-                                         [(regexp-match? #rx"~[aesvAESV]" uem)
-                                          (error* uem m)]
-                                         [else (error* "~a" uem)])))])
-                               (call-with-evaluator/submission
-                                language (append requires teachpacks)
-                                submission values))])
+                      (let ([eval (with-handlers ([void uem-handler])
+                                    (call-with-evaluator/submission
+                                     language (append requires teachpacks)
+                                     submission values))])
                         (set-run-status "running tests")
                         (parameterize ([submission-eval (wrap-evaluator eval)])
                           (let-syntax ([with-submission-bindings
