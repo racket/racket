@@ -4,8 +4,6 @@ Hint: include the size of the board in your world structure
 This enables you to make test cases with different size boards,
 making some of the test cases much easier to manage.
 
-figure out why there is an extra board (sometimes)
-
 |#
 
 (define circle-radius 20)
@@ -193,28 +191,6 @@ figure out why there is an extra board (sometimes)
             (make-posn (- board-size 1) (- board-size 1)))]
     (+ (cell-center-y bottommost-posn) circle-radius)))
 (check-expect (world-height 3) 116.208)
-
-
-
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                   ;;;;;;;;;;                                   
-;                     ;;;  ;;;                                   
-;                     ;;;  ;;;                                   
-;    ;;;;;;   ;;;;;   ;;;  ;;;        ; ;;;;    ;;;;;    ;;;;;;  
-;   ;;; ;;;;;;;  ;;;  ;;;  ;;;      ;;;;;;;;;  ;;;;;;; ;;;   ;;; 
-;  ;;; ;;;;;;;;  ;;;  ;;;  ;;;       ;;    ;; ;;;;;;;; ;;;       
-;  ;;;  ;;;;;;;;;;;;  ;;;  ;;;       ;     ;; ;;     ; ;;;;;;;;; 
-;  ;;;      ;;;       ;;   ;;        ;    ;;; ;     ;;      ;;;; 
-;  ;;;    ; ;;; ;;;  ;;;  ;;;        ;;;;;;;  ;;;;;;;; ;;;;; ;;; 
-;   ;;;  ;   ;; ;;;  ;;;; ;;;;       ;; ;;;    ;;;;;;  ;;;;  ;;  
-;    ;;;;     ;;;;                   ;;         ;;;;    ;;;;;;   
-;                                    ;;                          
-;                                   ;                            
-;                                                                
 
 
 ;; cell-center : cell -> number
@@ -445,6 +421,24 @@ figure out why there is an extra board (sometimes)
                     (make-dist-cell (make-posn 3 4) 0)
                     (make-dist-cell (make-posn 4 4) 0)
                     (make-dist-cell (make-posn 3 3) 1)))
+
+
+;; lookup-board : board posn -> cell-or-false
+(define (lookup-board board p)
+  (cond
+    [(empty? board) (error 'lookup-board "did not find posn")]
+    [else
+     (cond
+       [(equal? (cell-p (first board)) p)
+        (first board)]
+       [else
+        (lookup-board (rest board) p)])]))
+
+(check-expect (lookup-board (list (make-cell (make-posn 2 2) false))
+                            (make-posn 2 2))
+              (make-cell (make-posn 2 2) false))
+(check-error (lookup-board '() (make-posn 0 0))
+             "lookup-board: did not find posn")
 
 ;; add-to-table : posn number table -> table
 (define (add-to-table p n t) 
@@ -839,20 +833,27 @@ figure out why there is an extra board (sometimes)
               (list (make-cell (make-posn 0 0) true)
                     (make-cell (make-posn 0 1) false)))
 
-;                      
-;                      
-;                 ;;   
-;                 ;;   
-;   ;;;;  ;;;;   ;;;;; 
-;  ;;  ;     ;;   ;;   
-;  ;;        ;;   ;;   
-;  ;;     ;;;;;   ;;   
-;  ;;    ;;  ;;   ;;   
-;  ;;; ; ;;  ;;   ;;   
-;   ;;;   ;;;;;;   ;;; 
-;                      
-;                      
-;                      
+
+;                                
+;                                
+;                                
+;                                
+;                                
+;                        ;;;;    
+;                        ;;;     
+;                        ;;;   ; 
+;    ;;;;;;   ;;;;   ;;;;;;;;;;; 
+;   ;;; ;;;; ;;;;;;;;;   ;;;   ;;
+;  ;;; ;;;;;;;;;;;;;;;  ;;;      
+;  ;;;  ;;;;;;;    ;;;  ;;; ;;;; 
+;  ;;;      ;;    ;;;;  ;;; ;;;;;
+;  ;;;    ; ;;;;;;;;;;  ;;;  ;;;;
+;   ;;;  ;  ;;;;;;;;;;; ;;;   ;; 
+;    ;;;;    ;;;;;       ;;;;;   
+;                                
+;                                
+;                                
+
 
 ;; cat : symbol -> image
 (define (cat mode)
@@ -918,37 +919,45 @@ figure out why there is an extra board (sometimes)
 (define sad-cat (cat 'sad))
 (define thinking-cat (cat 'thinking))
 
-;                                        
-;  ;;;                              ;;;  
-;   ;;                               ;;  
-;   ;;                               ;;  
-;   ;;;;;   ;;;;   ;;;;   ;;; ;;  ;;;;;  
-;   ;;  ;; ;;  ;;     ;;   ;;;;; ;;  ;;  
-;   ;;  ;; ;;  ;;     ;;   ;;    ;;  ;;  
-;   ;;  ;; ;;  ;;  ;;;;;   ;;    ;;  ;;  
-;   ;;  ;; ;;  ;; ;;  ;;   ;;    ;;  ;;  
-;   ;;  ;; ;;  ;; ;;  ;;   ;;    ;;  ;;  
-;   ;;;;;   ;;;;   ;;;;;; ;;;;    ;;;;;; 
-;                                        
-;                                        
-;                                        
 
-;; lookup-board : board posn -> cell-or-false
-(define (lookup-board board p)
-  (cond
-    [(empty? board) (error 'lookup-board "did not find posn")]
-    [else
-     (cond
-       [(equal? (cell-p (first board)) p)
-        (first board)]
-       [else
-        (lookup-board (rest board) p)])]))
-
-(check-expect (lookup-board (list (make-cell (make-posn 2 2) false))
-                            (make-posn 2 2))
-              (make-cell (make-posn 2 2) false))
-(check-error (lookup-board '() (make-posn 0 0))
-             "lookup-board: did not find posn")
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+;                                                        
+;   ;;;;            ;;;;   ;;;;     ;;;;           ;;;;; 
+;   ;;;;;           ;;;;;  ;;;      ;;;;;            ;;; 
+;                          ;;;   ;                   ;;; 
+;      ;;;;;;  ;;      ; ;;;;;;;;;     ;   ;;;;   ;; ;;; 
+;  ;;;;;  ;;; ;;;; ;;;;;   ;;;   ;;;;;;;  ;;;;;;;;;  ;;; 
+;    ;;;  ;;; ;;;;   ;;;  ;;;        ;;; ;;;;;;;;;;  ;;; 
+;    ;;;  ;;;; ;;;   ;;;  ;;; ;;;;   ;;; ;;;    ;;;  ;;; 
+;    ;;;  ;;;  ;;;   ;;;  ;;; ;;;;;  ;;; ;;    ;;;;  ;;  
+;   ;;;;  ;;;  ;;;  ;;;;  ;;;  ;;;; ;;;; ;;;;;;;;;; ;;;  
+;  ;;;;;;;;;;  ;;; ;;;;;;;;;;   ;; ;;;;;;;;;;;;;;;;;;;;; 
+;             ;;;;         ;;;;;          ;;;;;          
+;               ;;;                                      
+;                                                        
+;                                                        
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+;                                                    
+;  ;;;;;                                           ;;
+;   ;;;;                                        ;;;; 
+;   ;;;                                          ;;; 
+;   ;;; ;;;    ;;;;;    ;;;;   ;;   ; ;;;;   ;;; ;;; 
+;   ;;;;;;;;  ;;;;;;;  ;;;;;;;;;;;;;;; ;;;; ;;;;;;;; 
+;   ;;;;;;;; ;;;;;;;; ;;;;;;;;;;  ;;; ;;;;;;;;;;;;;; 
+;   ;;;   ;; ;;     ; ;;;    ;;;  ;;; ;;;; ;;;   ;;; 
+;   ;;;   ;; ;     ;; ;;    ;;;;  ;;;      ;;   ;;;; 
+;   ;;;;;;;  ;;;;;;;; ;;;;;;;;;;  ;;;      ;;;;;;;;  
+;  ;;;;;;;    ;;;;;;  ;;;;;;;;;;;;;;;;;;    ;;;;;;;;;
+;              ;;;;    ;;;;;                         
+;                                                    
+;                                                    
+;                                                    
 
 ;; append-all : (listof (list X)) -> (listof X)
 (define (append-all ls)
@@ -963,16 +972,12 @@ figure out why there is an extra board (sometimes)
   (local
     [(define board-size 11)
      (define initial-board
-       (foldl
-        (lambda (c l) 
-          (cond
-            [(and (= 0 (posn-x (cell-p c)))
-                  (or (= 0 (posn-y (cell-p c)))
-                      (= (- board-size 1)
-                         (posn-y (cell-p c)))))
-             l]
-            [else (cons c l)]))
-        '()
+       (filter
+        (lambda (c)
+          (not (and (= 0 (posn-x (cell-p c)))
+                    (or (= 0 (posn-y (cell-p c)))
+                        (= (- board-size 1)
+                           (posn-y (cell-p c)))))))
         (append-all
          (build-list
           board-size
@@ -994,6 +999,7 @@ figure out why there is an extra board (sometimes)
     
     (and
      
+     ;; illustrates the speedup for state-based dfs
      ;((lambda (x) true) (time (build-table initial-world)))
      ;((lambda (x) true) (time (build-table/fast initial-world)))
      
