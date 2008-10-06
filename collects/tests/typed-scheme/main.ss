@@ -4,7 +4,7 @@
 
 (require (planet schematics/schemeunit:2/test)
          (planet schematics/schemeunit:2/text-ui)
-         mzlib/etc
+         mzlib/etc scheme/port
          compiler/compiler
          scheme/match
          "unit-tests/all-tests.ss"
@@ -31,7 +31,7 @@
 (define (exn-pred p)
   (let ([sexp (with-handlers
                   ([exn:fail? (lambda _ #f)])
-                (call-with-input-file
+                (call-with-input-file*
                  p
                  (lambda (prt) 
                    (read-line prt 'any) (read prt))))])
@@ -54,7 +54,8 @@
           (lambda ()
             (parameterize ([read-accept-reader #t]
                            [current-load-relative-directory path]
-                           [current-directory path])
+                           [current-directory path]
+                           [current-output-port (open-output-nowhere)])
               (loader p)))))))
     (apply test-suite dir
            tests)))
@@ -87,9 +88,7 @@
 (define (go) (test/gui tests))
 (define (go/text) (test/text-ui tests))
 
-(when (getenv "PLT_TESTS")
-  (unless (parameterize ([current-output-port (open-output-string)])
-            (= 0 (go/text)))
-    (error "Typed Scheme Tests did not pass.")))
+(provide go go/text)
+
 
 
