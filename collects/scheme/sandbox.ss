@@ -57,11 +57,12 @@
                     #| no modules here by default |#)))
 
 (define (default-sandbox-reader source)
-  (let loop ([l '()])
-    (let ([expr (read-syntax source)])
-      (if (eof-object? expr)
+  (parameterize ([read-accept-reader #t])
+    (let loop ([l '()])
+      (let ([expr (read-syntax source)])
+        (if (eof-object? expr)
           (reverse l)
-          (loop (cons expr l))))))
+          (loop (cons expr l)))))))
 
 (define sandbox-reader (make-parameter default-sandbox-reader))
 
