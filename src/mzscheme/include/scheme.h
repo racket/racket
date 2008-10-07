@@ -1749,8 +1749,8 @@ MZ_EXTERN void scheme_wake_up(void);
 MZ_EXTERN int scheme_get_external_event_fd(void);
 
 /* GC registration: */
-MZ_EXTERN void scheme_set_primordial_stack_base(void *base, int no_auto_statics);
-MZ_EXTERN void scheme_set_primordial_stack_bounds(void *base, void *deepest, int no_auto_statics);
+MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
+MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
 /* Stack-preparation start-up: */
 typedef int (*Scheme_Nested_Main)(void *data);

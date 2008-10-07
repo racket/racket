@@ -358,6 +358,13 @@ MZ_EXTERN void *GC_malloc_uncollectable(size_t size_in_bytes);
 # endif
 #endif
 
+MZ_EXTERN void *scheme_malloc_code(long size);
+MZ_EXTERN void scheme_free_code(void *p);
+#ifndef MZ_PRECISE_GC
+MZ_EXTERN void *scheme_malloc_gcable_code(long size);
+#endif
+
+
 MZ_EXTERN void *scheme_malloc_eternal(size_t n);
 MZ_EXTERN void scheme_end_stubborn_change(void *p);
 

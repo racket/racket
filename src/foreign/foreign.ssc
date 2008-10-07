@@ -1969,7 +1969,7 @@ void free_cl_cif_args(void *ignored, void *p)
 #ifdef MZ_PRECISE_GC
   GC_free_immobile_box((void**)(((closure_and_cif*)p)->data));
 #endif
-  free(p);
+  scheme_free_code(p);
 }
 
 /* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
@@ -2026,7 +2026,7 @@ void free_cl_cif_args(void *ignored, void *p)
   rtype = CTYPE_PRIMTYPE(base);
   abi = GET_ABI(MYNAME,3);
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args = malloc(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));

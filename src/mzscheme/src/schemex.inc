@@ -194,6 +194,11 @@
 #  endif
 # endif
 #endif
+  scheme_extension_table->scheme_malloc_code = scheme_malloc_code;
+  scheme_extension_table->scheme_free_code = scheme_free_code;
+#ifndef MZ_PRECISE_GC
+  scheme_extension_table->scheme_malloc_gcable_code = scheme_malloc_gcable_code;
+#endif
   scheme_extension_table->scheme_malloc_eternal = scheme_malloc_eternal;
   scheme_extension_table->scheme_end_stubborn_change = scheme_end_stubborn_change;
   scheme_extension_table->scheme_calloc = scheme_calloc;

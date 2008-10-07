@@ -253,6 +253,9 @@ static void clean_symbol_table(void)
 # ifndef MZ_PRECISE_GC
   scheme_clean_cust_box_list();
 # endif
+# ifndef MZ_PRECISE_GC
+  scheme_notify_code_gc();
+# endif
 }
 #endif
 

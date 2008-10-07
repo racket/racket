@@ -1007,6 +1007,9 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit);
 Scheme_Object *scheme_native_stack_trace(void);
 void scheme_clean_native_symtab(void);
 void scheme_clean_cust_box_list(void);
+#ifndef MZ_PRECISE_GC
+void scheme_notify_code_gc(void);
+#endif
 
 /*========================================================================*/
 /*                              control flow                              */

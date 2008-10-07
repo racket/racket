@@ -695,6 +695,7 @@
 #else
 # define MZ_USE_JIT_I386
 #endif
+# define MZ_JIT_USE_MPROTECT
 
 # define FLAGS_ALREADY_SET
 
