@@ -9367,7 +9367,7 @@ Scheme_Object *scheme_eval_string_multi_with_prompt(const char *str, Scheme_Env 
   return do_eval_string_all(str, env, 0, 1);
 }
 
-void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
+void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *post_dirs)
 {		
   mz_jmp_buf * volatile save, newbuf;
   Scheme_Thread * volatile p;
@@ -9375,18 +9375,24 @@ void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_d
   save = p->error_buf;
   p->error_buf = &newbuf;
   if (!scheme_setjmp(newbuf)) {
-    Scheme_Object *clcp, *flcp, *a[1];
+    Scheme_Object *clcp, *flcp, *a[2];
 
     clcp = scheme_builtin_value("current-library-collection-paths");
     flcp = scheme_builtin_value("find-library-collection-paths");
 
     if (clcp && flcp) {
       a[0] = extra_dirs;
-      a[0] = _scheme_apply(flcp, 1, a);
+      a[1] = post_dirs;
+      a[0] = _scheme_apply(flcp, 2, a);
       _scheme_apply(clcp, 1, a);
     }
   }
   p->error_buf = save;
+}
+
+void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs)
+{
+  scheme_init_collection_paths_post(global_env, extra_dirs, scheme_null);
 }
 
 static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv)

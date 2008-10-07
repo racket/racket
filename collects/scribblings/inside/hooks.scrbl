@@ -57,10 +57,19 @@ Sets the path to be returned by @scheme[(find-system-path
 'collects-dir)].}
 
 
-@function[(void scheme_init_collection_paths
+@function[(void scheme_init_collection_paths_post
            [Scheme_Env* env]
-           [Scheme_Object* extra_paths])]{
+           [Scheme_Object* pre_extra_paths]
+           [Scheme_Object* post_extra_paths])]{
 
 Initializes the @scheme[current-library-collection-paths] parameter
-using @scheme[find-library-collection-paths]. The @var{extra_paths}
-argument is propagated to @scheme[find-library-collection-paths].}
+using @scheme[find-library-collection-paths]. The
+@var{pre_extra_paths} and @var{post_extra-paths} arguments are
+propagated to @scheme[find-library-collection-paths].}
+
+@function[(void scheme_init_collection_paths
+           [Scheme_Env* env]
+           [Scheme_Object* pre_extra_paths])]{
+
+Like @cpp{scheme_init_collection_paths_post}, but with @scheme[null]
+as the last argument.}

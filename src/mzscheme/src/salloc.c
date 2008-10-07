@@ -704,11 +704,8 @@ static long free_list_find_bucket(long size)
 
   if (free_list[hi].size == size)
     return hi;
-  else {
-    if (free_list[lo].size < size)
-      abort();
+  else
     return lo;
-  }
 }
 
 void *scheme_malloc_code(long size)

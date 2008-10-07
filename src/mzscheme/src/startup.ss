@@ -325,8 +325,9 @@
     
   (define-values (find-library-collection-paths)
     (case-lambda
-     [() (find-library-collection-paths null)]
-     [(extra-collects-dirs)
+     [() (find-library-collection-paths null null)]
+     [(extra-collects-dirs) (find-library-collection-paths extra-collects-dirs null)]
+     [(extra-collects-dirs post-collects-dirs)
       (let ([user-too? (use-user-specific-search-paths)]
 	    [cons-if (lambda (f r) (if f (cons f r) r))])
 	(path-list-string->path-list
@@ -340,7 +341,8 @@
 			   "collects"))
 	  (let loop ([l (append
 			 extra-collects-dirs
-			 (list (find-system-path 'collects-dir)))])
+			 (list (find-system-path 'collects-dir))
+                         post-collects-dirs)])
 	    (if (null? l)
 		null
 		(let* ([collects-path (car l)]

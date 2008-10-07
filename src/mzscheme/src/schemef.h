@@ -222,15 +222,15 @@ MZ_EXTERN char *scheme_get_type_name(Scheme_Type type);
 /*========================================================================*/
 
 MZ_EXTERN Scheme_Object scheme_eof[1];
-MZ_EXTERN Scheme_Object *scheme_make_eof(void);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_make_eof(void);
 MZ_EXTERN Scheme_Object scheme_null[1];
-MZ_EXTERN Scheme_Object *scheme_make_null(void);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_make_null(void);
 MZ_EXTERN Scheme_Object scheme_true[1];
-MZ_EXTERN Scheme_Object *scheme_make_true(void);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_make_true(void);
 MZ_EXTERN Scheme_Object scheme_false[1];
-MZ_EXTERN Scheme_Object *scheme_make_false(void);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_make_false(void);
 MZ_EXTERN Scheme_Object scheme_void[1];
-MZ_EXTERN Scheme_Object *scheme_make_void(void);
+XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_make_void(void);
 MZ_EXTERN Scheme_Object scheme_undefined[1];
 MZ_EXTERN Scheme_Object *scheme_tail_call_waiting;
 MZ_EXTERN Scheme_Object *scheme_multiple_values;

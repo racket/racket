@@ -49,11 +49,11 @@ the implemetation of @schememodname[scheme/base], and
 
 The first action of MzScheme or MrEd is to initialize
 @scheme[current-library-collection-paths] to the result of
-@scheme[(find-library-collection-paths _extras)], where
-@scheme[_extras] are extra directory paths provided in order in the
-command line with @Flag{S}/@DFlag{search}. An executable created from
-the MzScheme or MrEd executable can embed additional paths that are
-appended to @scheme[_extras].
+@scheme[(find-library-collection-paths _pre-extras _extras)], where
+@scheme[_pre-extras] is normally @scheme[null] and @scheme[_extras]
+are extra directory paths provided in order in the command line with
+@Flag{S}/@DFlag{search}. An executable created from the MzScheme or
+MrEd executable can embed paths used as @scheme[_pre-extras].
 
 MzScheme and MrEd next @scheme[require] @schememodname[scheme/init]
 and @schememodname[scheme/gui/init], respectively, but only if the
@@ -62,7 +62,7 @@ command line does not specify a @scheme[require] flag
 @Flag{u}/@DFlag{require-script}) before any @scheme[eval],
 @scheme[load], or read-eval-print-loop flag (@Flag{e}/@DFlag{eval},
 @Flag{f}/@DFlag{load}, @Flag{r}/@DFlag{script}, @Flag{m}/@DFlag{main},
-@Flag{i}/@DFlag{repl}, or @Flag{z}/@DFlag{text-repl}). The
+or @Flag{i}/@DFlag{repl}). The
 initialization library can be changed with the @Flag{I}
 @tech{configuration option}.
 
@@ -78,7 +78,7 @@ evaluation if no command line flags are provided other than
 @tech{configuration options}.  If any command-line argument is
 provided that is not a @tech{configuration option}, then the
 read-eval-print-loop is not started, unless the @Flag{i}/@DFlag{repl}
-or @Flag{z}/@DFlag{text-repl} flag is provided on the command line to
+flag is provided on the command line to
 specifically re-enable it. In addition, just before the command line
 is started, MzScheme loads the file @scheme[(find-system-path
 'init-file)] and MrEd loads the file
@@ -184,12 +184,9 @@ flags:
         loop, using either @scheme[read-eval-print-loop] (MzScheme) or
         @scheme[graphical-read-eval-print-loop] (MrEd) after showing
         @scheme[(banner)] and loading @scheme[(find-system-path
-        'init-file)].}
-
-  @item{@FlagFirst{z} or @DFlagFirst{text-repl} : MrEd only; like
-        @Flag{i}/@DFlag{repl}, but uses
-        @scheme[textual-read-eval-print-loop] instead of
-        @scheme[graphical-read-eval-print-loop].}
+        'init-file)]. For MrEd, supply the @Flag{z}/@DFlag{text-repl}
+        configuration option to use @scheme[read-eval-print-loop]
+        instead of @scheme[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
         initialization library (i.e., @schememodname[scheme/init] or
@@ -219,7 +216,12 @@ flags:
 
   @item{@FlagFirst{q} or @DFlagFirst{no-init-file} : Skips loading
         @scheme[(find-system-path 'init-file)] for
-        @Flag{i}/@DFlag{repl} or @Flag{z}/@DFlag{text-repl}.}
+        @Flag{i}/@DFlag{repl}.}
+
+  @item{@FlagFirst{z} or @DFlagFirst{text-repl} : MrEd only; changes
+        @Flag{i}/@DFlag{repl} to use
+        @scheme[textual-read-eval-print-loop] instead of
+        @scheme[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{I} @nonterm{path} : Sets @scheme[(lib #,
         @nontermstr{path})] as the path to @scheme[require] to initialize
@@ -231,12 +233,13 @@ flags:
         'collects-dir)] produce @nonterm{dir}.}
 
   @item{@FlagFirst{S} @nonterm{dir} or @DFlagFirst{search}
-        @nonterm{dir} : Adds @nonterm{dir} to the library collection
-        search path. The @scheme{dir} is added after a user-specific
-        directory, if any, and before the main collection directory.}
+        @nonterm{dir} : Adds @nonterm{dir} to the default library
+        collection search path after the main collection directory. If
+        the @Flag{S}/@DFlag{dir} flag is supplied multiple times, the
+        search order is as supplied.}
 
   @item{@FlagFirst{U} or @DFlagFirst{no-user-path} : Omits
-        user-psecific paths in the search for collections, C
+        user-specific paths in the search for collections, C
         libraries, etc. by initializing the
         @scheme[use-user-specific-search-paths] parameter to
         @scheme[#f].}
