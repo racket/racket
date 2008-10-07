@@ -55,15 +55,17 @@
                           (regexp-match (caddr ent) slc)))
                  (car ent)
                  (loop (cdr table))))]))))
- 
-  
+
+
   ;; language : symbol
-  (define language (get-preference 'plt:human-language (lambda () (default-language))))
-    
+  (define language
+    (with-handlers ([exn:fail? (lambda (_) (default-language))])
+      (get-preference 'plt:human-language (lambda () (default-language)))))
+
   (define-syntax-set (string-constant string-constants this-language all-languages)
     ;; type sc = (make-sc symbol (listof (list symbol string)) (union #f hash-table[symbol -o> #t]))
     (define-struct sc (language-name constants ht))
-    
+
     (define available-string-constant-sets
       (list 
        (make-sc 'english english:string-constants #f)
