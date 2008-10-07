@@ -65,13 +65,16 @@ Keywords for configuring @scheme[check:]:
   evaluating submissions, same as the @scheme[_language] argument for
   @scheme[make-evaluator] (see @schememodname[handin-server/sandbox]).
   There is no default for this, so it must be set or an error is
-  raised.}
+  raised.  (See @scheme[call-with-evaluator/submission] for further
+  details.)}
 
 @item{@indexed-scheme[:requires]---paths for additional libraries to
   require for evaluating the submission, same as the
   @scheme[_requires] argument for @scheme[make-evaluator] (see
   @schememodname[handin-server/sandbox]).  This defaults to null---no
-  teachpacks.}
+  teachpacks.  Note: if a module language is used (See
+  @scheme[call-with-evaluator/submission] for further details), it is
+  passed as the @scheme[_allow-read] argument.}
 
 @item{@indexed-scheme[:teachpacks]---an alternative name for
   @scheme[:requires], kept for legacy checkers.}

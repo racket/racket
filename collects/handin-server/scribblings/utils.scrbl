@@ -36,7 +36,10 @@
   list that begins with @scheme['module].  In this case,
   @scheme[make-module-language] is used to create an evaluator, and
   the module code must be using the the specified language in its
-  language position.}
+  language position.  In this case, the @scheme[requires-paths]
+  argument is used only for paths that are allowed to be accessed (the
+  @scheme[_allow-read] argument to @scheme[make-evaluator], since the
+  submission is expected to be a complete submission.)}
 
 @defproc[(call-with-evaluator
           [language (or/c module-path?
@@ -58,11 +61,11 @@
   submission error.  See @scheme[make-evaluator/submission] for
   further details.}
 
-@defproc[(call-with-evaluator/submission [language
-          (or/c module-path?
-                (list/c (one-of/c 'special) symbol?)
-                (list/c (one-of/c 'module) module-path?)
-                (cons/c (one-of/c 'begin) list?))]
+@defproc[(call-with-evaluator/submission
+          [language (or/c module-path?
+                          (list/c (one-of/c 'special) symbol?)
+                          (list/c (one-of/c 'module) module-path?)
+                          (cons/c (one-of/c 'begin) list?))]
           [require-paths (listof path-string?)]
           [submission bytes?]
           [proc (any/c . -> . any)])
