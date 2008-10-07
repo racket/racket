@@ -820,10 +820,18 @@
                                                                                    (get-lib-search-dirs)))]
                                                                          [(and (list? p)
                                                                                (eq? 'lib (car p)))
-                                                                          (build-path (if (null? (cddr p))
-                                                                                          (collection-path "mzlib")
-                                                                                          (apply collection-path (cddr p)))
-                                                                                      (cadr p))]
+                                                                          (let ([p (if (and (null? (cddr p))
+                                                                                            (regexp-match #rx"^[^/]*[.]" (cadr p)))
+                                                                                       p
+                                                                                       (let ([s (regexp-split #rx"/" (cadr p))])
+                                                                                         (if (null? (cdr s))
+                                                                                             `(lib ,(cadr p) "main.ss")
+                                                                                             (let ([s (reverse s)])
+                                                                                               `(list ,(car s) ,@(reverse (cdr s)))))))])
+                                                                            (build-path (if (null? (cddr p))
+                                                                                            (collection-path "mzlib")
+                                                                                            (apply collection-path (cddr p)))
+                                                                                        (cadr p)))]
                                                                          [else p])])
                                                                  (and p
                                                                       (path->bytes 
