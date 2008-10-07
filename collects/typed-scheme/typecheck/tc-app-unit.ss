@@ -376,21 +376,22 @@
     [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests '() _ _) ...)))
          (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests '() _ _) ...))))
      (let ([fcn-string (if name
-                           (format "function ~a (over ~~a)" (syntax->datum name))
-                           "function over ~a")])
+                           (format "function ~a" (syntax->datum name))
+                           "function")])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
            (tc-error/expr #:return (ret (Un))
                           (string-append 
                            "Could not infer types for applying polymorphic "
                            fcn-string
-                           "\n")
-                          (stringify msg-vars))
+                           "\n"))
            (tc-error/expr #:return (ret (Un))
                           (string-append
                            "Polymorphic " fcn-string " could not be applied to arguments:~n"
-                           (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
-                          (stringify msg-vars))))]))
+                           (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f)
+                           (if (not (for/and ([t (apply append (map fv/list msg-doms))]) (memq t msg-vars)))
+                               (string-append "Type Variables: " (stringify msg-vars) "\n")
+                               "")))))]))
 
 
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
@@ -454,7 +455,7 @@
                                          (Function: (list (arr: doms rngs (and rests #f) (and drests #f) '() thn-effs els-effs) ...))))))
          (handle-clauses (doms rngs) f-stx
                          (lambda (dom _) (= (length dom) (length argtypes)))
-                         (lambda (dom rng) (infer (fv/list (cons rng dom)) argtypes dom rng (fv rng) expected))
+                         (lambda (dom rng) (infer vars argtypes dom rng (fv rng) expected))
                          t argtypes expected)]
         ;; polymorphic varargs
         [(tc-result: (and t
