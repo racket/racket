@@ -16,8 +16,10 @@ of read modules; using keywords, the resulting readers can be
 customized in a number of ways.
 
 @defform*/subs[[(#%module-begin module-path)
-                (#%module-begin module-path reader-option ... body ....)]
-               ([reader-option (code:line #:read        read-expr)
+                (#%module-begin module-path reader-option ... body ....)
+                (#%module-begin             reader-option ... body ....)]
+               ([reader-option (code:line #:language    lang-expr)
+                               (code:line #:read        read-expr)
                                (code:line #:read-syntax read-syntax-expr)
                                (code:line #:wrapper1    wrapper1-expr)
                                (code:line #:wrapper2    wrapper2-expr)
@@ -77,7 +79,7 @@ For example, here is a case-insensitive reader for the
 @scheme[scheme/base] language:
 
 @schemeblock[
-(module insensitive syntax/module-reader
+(module reader syntax/module-reader
   scheme/base
   #:read (wrap read) #:read-syntax (wrap read-syntax)
   (define ((wrap reader) . args)
@@ -94,7 +96,7 @@ alternative definition of the case-insensitive language using
 @scheme[#:wrapper1]:
 
 @schemeblock[
-(module insensitive syntax/module-reader
+(module reader syntax/module-reader
   scheme/base
   #:wrapper1 (lambda (t)
                (parameterize ([read-case-sensitive #f])
@@ -102,7 +104,7 @@ alternative definition of the case-insensitive language using
 ]
 
 Note that using a @tech[#:doc refman]{readtable}, you can implement
-languages that go beyond plain S-expressions.
+languages that are extensions of plain S-expressions.
 
 In addition to this wrapper, there is also @scheme[#:wrapper2] that
 has more control over the resulting reader functions.  If specified,
@@ -114,7 +116,7 @@ that corresponds to a file).  Here is the case-insensitive implemented
 using this option:
 
 @schemeblock[
-(module insensitive syntax/module-reader
+(module reader syntax/module-reader
   scheme/base
   #:wrapper2 (lambda (in r)
                (parameterize ([read-case-sensitive #f])
@@ -122,14 +124,14 @@ using this option:
 ]
 
 In some cases, the reader functions read the whole file, so there is
-no need to iterate them (e.g., @scheme[read-inside] and
+no need to iterate them (e.g., Scribble's @scheme[read-inside] and
 @scheme[read-syntax-inside]).  In these cases you can specify
 @scheme[#:whole-body-readers?] as @scheme[#t] --- the readers are
 expected to return a list of expressions in this case.
 
-Finally, note that the two wrappers can return a different value than
-the wrapped function.  This introduces two more customization points
-for the resulting readers:
+In addition, the two wrappers can return a different value than the
+wrapped function.  This introduces two more customization points for
+the resulting readers:
 @itemize{
   @item{The thunk that is passed to a @scheme[#:wrapper1] function
     reads the file contents and returns a list of read expressions
@@ -157,7 +159,7 @@ scribble syntax, and the first datum in the file determines the actual
 language (which means that the library specification is effectively
 ignored):
 @schemeblock[
-(module scribbled syntax/module-reader
+(module reader syntax/module-reader
   -ignored-
   #:wrapper2
   (lambda (in rd stx?)
@@ -171,6 +173,25 @@ ignored):
                                       #'lang* lang #'lang*)])
                    (syntax/loc mod (module name lang . body)))])])
       (if stx? r (syntax->datum r))))
+  (require scribble/reader))
+]
+
+This ability to change the language position in the resulting module
+expression can be useful in cases such as the above, where the base
+language module is chosen based on the input.  To make this more
+convenient, you can omit the @scheme[module-path] and instead specify
+it via a @scheme[#:language] expression.  This expression can evaluate
+to a datum which is used as a language, or it can evaluate to a thunk.
+In the latter case, the thunk will be invoked to return such a datum
+before reading the module body begins, in a dynamic extent where
+@scheme[current-input-port] is the source input.  Using this, the last
+example above can be written more concisely:
+@schemeblock[
+(module reader syntax/module-reader
+  #:language read
+  #:wrapper2 (lambda (in rd stx?)
+               (parameterize ([current-readtable (make-at-readtable)])
+                 (rd in)))
   (require scribble/reader))
 ]
 }
