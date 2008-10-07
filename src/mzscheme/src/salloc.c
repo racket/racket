@@ -704,8 +704,11 @@ static long free_list_find_bucket(long size)
 
   if (free_list[hi].size == size)
     return hi;
-  else
+  else {
+    if (free_list[lo].size < size)
+      abort();
     return lo;
+  }
 }
 
 void *scheme_malloc_code(long size)
@@ -722,7 +725,13 @@ void *scheme_malloc_code(long size)
 
   page_size = get_page_size();
 
-  if ((2 * size + CODE_HEADER_SIZE) > page_size) {
+  if (!free_list) {
+    free_list = (struct free_list_entry *)malloc_page(page_size);
+    scheme_code_page_total += page_size;
+    init_free_list();
+  }
+
+  if (size > free_list[0].size) {
     /* allocate large object on its own page(s) */
     sz = size + CODE_HEADER_SIZE;
     sz = (sz + page_size - 1) & ~(page_size - 1);
@@ -732,12 +741,6 @@ void *scheme_malloc_code(long size)
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
                               pg, size + CODE_HEADER_SIZE, scheme_code_page_total));
     return ((char *)pg) + CODE_HEADER_SIZE;
-  }
-
-  if (!free_list) {
-    free_list = (struct free_list_entry *)malloc_page(page_size);
-    scheme_code_page_total += page_size;
-    init_free_list();
   }
 
   bucket = free_list_find_bucket(size);
