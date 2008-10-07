@@ -534,8 +534,8 @@ wxBitmap *wxClipboard::GetClipboardBitmap(long time)
   
   bbox = *(Rect *)((char *)pd XFORM_OK_PLUS sizeof(short));
 
-  w = bbox.right - bbox.left;
-  h = bbox.bottom - bbox.top;
+  w = EndianS16_BtoN(bbox.right) - EndianS16_BtoN(bbox.left);
+  h = EndianS16_BtoN(bbox.bottom) - EndianS16_BtoN(bbox.top);
 
   if ((w > 0) && (w <= 10000)
       && (h > 0) && (h <= 10000)) {
@@ -551,6 +551,8 @@ wxBitmap *wxClipboard::GetClipboardBitmap(long time)
     mdc->SelectObject(bm);
     if (mdc->Ok()) {
       Handle h;
+
+      mdc->Clear();
 
       /* Do we have to put it in a real handle?
 	 I'm not sure... */
