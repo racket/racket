@@ -119,27 +119,27 @@ v4 todo:
         (let ([partial-doms (for/list ([dom (in-list doms-proj)]
                                        [n   (in-naturals 1)])
                               (dom neg-blame pos-blame src-info
-				   (format "required argument ~a of ~a" n orig-str)))]
+				   (cons (format "required argument ~a" n) orig-str)))]
               [partial-rest (if rest-proj
                                 (list (rest-proj neg-blame pos-blame src-info
-                                                 (format "rest argument of ~a" orig-str)))
+                                                 (cons "rest argument" orig-str)))
                                 null)]
               [partial-optional-doms (for/list ([dom (in-list doms-optional-proj)]
                                                 [n   (in-naturals 1)])
                                          (dom neg-blame pos-blame src-info
-                                              (format "optional argument ~a of ~a" n orig-str)))]
+                                              (cons (format "optional argument ~a" n) orig-str)))]
               [partial-ranges (for/list ([rng (in-list rngs-proj)]
                                          [n   (in-naturals 1)])
                                   (rng pos-blame neg-blame src-info
-                                       (format "result ~a of ~a" n orig-str)))]
+                                       (cons (format "result ~a" n) orig-str)))]
               [partial-mandatory-kwds (for/list ([kwd     (in-list mandatory-kwds-proj)]
                                                  [kwd-lit (in-list mandatory-keywords)])
                                         (kwd neg-blame pos-blame src-info
-                                             (format "keyword argument ~a of ~a" kwd-lit orig-str)))]
+                                             (cons (format "keyword argument ~a" kwd-lit) orig-str)))]
               [partial-optional-kwds (for/list ([kwd     (in-list optional-kwds-proj)]
                                                 [kwd-lit (in-list optional-keywords)])
                                        (kwd neg-blame pos-blame src-info
-                                            (format "keyword argument ~a of ~a" kwd-lit orig-str)))])
+                                            (cons (format "keyword argument ~a" kwd-lit) orig-str)))])
           (apply func
                  (λ (val mtd?)
                    (if has-rest?
