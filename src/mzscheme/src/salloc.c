@@ -576,7 +576,7 @@ START_XFORM_SKIP;
 
 long scheme_code_page_total;
 
-#ifndef MAP_ANON
+#if defined(MZ_JIT_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
 #endif
 
@@ -618,13 +618,6 @@ static void *malloc_page(long size)
 {
   void *r;
 
-#ifndef MAP_ANON
-  if (!fd_created) {
-    fd_created = 1;
-    fd = open("/dev/zero", O_RDWR);
-  }
-#endif
-
 #ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
   {
     DWORD old;
@@ -641,6 +634,10 @@ static void *malloc_page(long size)
 # ifdef MAP_ANON
   r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
 # else
+  if (!fd_created) {
+    fd_created = 1;
+    fd = open("/dev/zero", O_RDWR);
+  }
   r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd, 0);
 # endif
   if (r  == (void *)-1)
