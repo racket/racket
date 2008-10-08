@@ -2529,45 +2529,7 @@ void free_cl_cif_args(void *ignored, void *p)
 #ifdef MZ_PRECISE_GC
   GC_free_immobile_box((void**)(((closure_and_cif*)p)->data));
 #endif
-  free(p);
-}
-
-/* This is a temporary hack to allocate a piece of executable memory, */
-/* it should be removed when mzscheme's core will include a similar function */
-#ifndef WINDOWS_DYNAMIC_LOAD
-#include <sys/mman.h>
-#endif
-void *malloc_exec(size_t size) {
-  static long pagesize = -1;
-  void *p, *pp;
-  if (pagesize == -1) {
-#ifndef WINDOWS_DYNAMIC_LOAD
-    pagesize = getpagesize();
-#else
-    {
-      SYSTEM_INFO info;
-      GetSystemInfo(&info);
-      pagesize = info.dwPageSize;
-    }
-#endif
-  }
-  p = malloc(size);
-  if (p == NULL)
-    scheme_signal_error("internal error: malloc failed (malloc_exec)");
-  /* set pp to the beginning of the page */
-  pp = (void*)(((long)p) & ~(pagesize-1));
-  /* set size to a pagesize multiple, in case the block is more than a page */
-  size = ((((long)p)+size+pagesize-1) & ~(pagesize-1)) - ((long)pp);
-#ifndef WINDOWS_DYNAMIC_LOAD
-  if (mprotect(pp, size, PROT_READ|PROT_WRITE|PROT_EXEC))
-    perror("malloc_exec mprotect failure");
-#else
-  {
-    DWORD old;
-    VirtualProtect(pp, size, PAGE_EXECUTE_READWRITE, &old);
-  }
-#endif
-  return p;
+  scheme_free_code(p);
 }
 
 /* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
@@ -2626,7 +2588,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   rtype = CTYPE_PRIMTYPE(base);
   abi = GET_ABI(MYNAME,3);
   /* malloc space for everything needed, so a single free gets rid of this */
-  cl_cif_args = malloc_exec(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
+  cl_cif_args = scheme_malloc_code(sizeof(closure_and_cif) + nargs*sizeof(ffi_cif*));
   cl = &(cl_cif_args->closure); /* cl is the same as cl_cif_args */
   cif = &(cl_cif_args->cif);
   atypes = (ffi_type **)(((char*)cl_cif_args) + sizeof(closure_and_cif));

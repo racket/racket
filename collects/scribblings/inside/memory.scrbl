@@ -674,6 +674,17 @@ using @cpp{scheme_free_immobile_box}.}
 
 Frees an immobile box allocated with @cpp{scheme_malloc_immobile_box}.}
 
+@function[(void* scheme_malloc_code [long size])]{
+
+Allocates non-collectable memory to hold executable machine code. Use
+this function instead of @cpp{malloc} to ensure that the allocated
+memory has ``execute'' permissions. Use @cpp{scheme_free_code} to free
+memory allocated by this function.}
+
+@function[(void scheme_free_code [void* p])]{
+
+Frees memory allocated with @cpp{scheme_malloc_code}.}
+
 @function[(void scheme_register_extension_global
            [void* ptr]
            [long size])]{

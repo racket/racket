@@ -21,6 +21,7 @@
 @defproc[(make-evaluator/submission
           [language (or/c module-path?
                           (list/c (one-of/c 'special) symbol?)
+                          (list/c (one-of/c 'module) module-path?)
                           (cons/c (one-of/c 'begin) list?))]
           [require-paths (listof path-string?)]
           [content bytes?])
@@ -28,11 +29,22 @@
 
   Like @scheme[make-evaluator], but the definitions content is
   supplied as a submission byte string.  The byte string is opened for
-  reading, with line-counting enabled.}
+  reading, with line-counting enabled.
+
+  In addition to the language specification for
+  @scheme[make-evaluator], the @scheme[language] argument can be a
+  list that begins with @scheme['module].  In this case,
+  @scheme[make-module-language] is used to create an evaluator, and
+  the module code must be using the the specified language in its
+  language position.  In this case, the @scheme[requires-paths]
+  argument is used only for paths that are allowed to be accessed (the
+  @scheme[_allow-read] argument to @scheme[make-evaluator], since the
+  submission is expected to be a complete submission.)}
 
 @defproc[(call-with-evaluator
           [language (or/c module-path?
                           (list/c (one-of/c 'special) symbol?)
+                          (list/c (one-of/c 'module) module-path?)
                           (cons/c (one-of/c 'begin) list?))]
           [require-paths (listof path-string?)]
           [input-program any/c]
@@ -46,12 +58,14 @@
   suitable for @scheme[language], it initializes
   @scheme[set-run-status] with @scheme["executing your code"], and it
   catches all exceptions to re-raise them in a form suitable as a
-  submission error.}
+  submission error.  See @scheme[make-evaluator/submission] for
+  further details.}
 
-@defproc[(call-with-evaluator/submission [language
-          (or/c module-path?
-                (list/c (one-of/c 'special) symbol?)
-                (cons/c (one-of/c 'begin) list?))]
+@defproc[(call-with-evaluator/submission
+          [language (or/c module-path?
+                          (list/c (one-of/c 'special) symbol?)
+                          (list/c (one-of/c 'module) module-path?)
+                          (cons/c (one-of/c 'begin) list?))]
           [require-paths (listof path-string?)]
           [submission bytes?]
           [proc (any/c . -> . any)])
@@ -59,7 +73,8 @@
 
   Like @scheme[call-with-evaluator], but the definitions content is
   supplied as a byte string.  The byte string is opened for reading,
-  with line-counting enabled.}
+  with line-counting enabled.  See @scheme[call-with-evaluator] and
+  @scheme[make-evaluator/submission] for further details.}
 
 @; JBC: this contract is probably wrong
 @; JBC: does this eval accept an optional namespace?

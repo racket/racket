@@ -32,7 +32,7 @@
 ;;   ignored, and should only be used by the mzscheme tests.)
 (define tests
   '([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
-    [require "typed-scheme/main.ss"]
+    [require "typed-scheme/run.ss"]
     [require "match/plt-match-tests.ss"]
     ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
     [require "lazy/main.ss"]
@@ -50,7 +50,7 @@
   (define name (cadr t))
   (define stderr (current-error-port))
   (define (echo fmt . args)
-    (fprintf stderr "*** ~a: ~a\n" name (apply format fmt args)))
+    (fprintf stderr ">>> ~a: ~a\n" name (apply format fmt args)))
   (newline stderr)
   (echo "running...")
   (let/ec break

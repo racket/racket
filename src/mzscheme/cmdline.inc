@@ -383,6 +383,22 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   return exit_val;
 }
 
+static Scheme_Object *reverse_path_list(Scheme_Object *l, int rel_to_cwd)
+{
+  Scheme_Object *r, *path;
+
+  r = scheme_make_null();
+  while (SCHEME_PAIRP(l)) {
+    path = SCHEME_CAR(l);
+    if (rel_to_cwd)
+      path = scheme_path_to_complete_path(path, NULL);
+    r = scheme_make_pair(path, r);
+    l = SCHEME_CDR(l);
+  }
+  
+  return r;
+}   
+
 static int get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, char *str)
 {
   if (!strcmp(str, "none"))
@@ -747,8 +763,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  --argc;
 	  if (!collects_extra)
 	    collects_extra = scheme_make_null();
-	  collects_extra = scheme_make_pair(scheme_make_path(argv[0]),
-					    collects_extra);
+          collects_extra = scheme_make_pair(scheme_make_path(argv[0]), collects_extra);
           was_config_flag = 1;
 	  break;
         case 'c':
@@ -889,8 +904,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
        	case 'z':
 	  alternate_rep = 1;
 	  no_front = 1;
-          use_repl = 1;
-          init_ns = 1;
+          was_config_flag = 1;
 	  break;
 	case 'K':
 	  no_front = 1;
@@ -1034,31 +1048,29 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
     if (!collects_path)
       collects_path = scheme_make_path(_coldir XFORM_OK_PLUS _coldir_offset);
+    else
+      collects_path = scheme_path_to_complete_path(collects_path, NULL);
     scheme_set_collects_path(collects_path);
 
     /* Make list of additional collection paths: */
-    if (collects_extra) {
-      l = collects_extra;
-    } else {
-      l = scheme_make_null();
-      offset = _coldir_offset;
-      while (1) {
-	len = strlen(_coldir XFORM_OK_PLUS offset);
-	offset += len + 1;
-	if (!_coldir[offset])
-	  break;
-	l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset),
-			     l);
-      }
+    if (collects_extra)
+      r = reverse_path_list(collects_extra, 1);
+    else
+      r = scheme_make_null();
+
+    l = scheme_make_null();
+    offset = _coldir_offset;
+    while (1) {
+      len = strlen(_coldir XFORM_OK_PLUS offset);
+      offset += len + 1;
+      if (!_coldir[offset])
+        break;
+      l = scheme_make_pair(scheme_make_path(_coldir XFORM_OK_PLUS offset),
+                           l);
     }
-    /* Reverse list */
-    r = scheme_make_null();
-    while (SCHEME_PAIRP(l)) {
-      r = scheme_make_pair(SCHEME_CAR(l), r);
-      l = SCHEME_CDR(l);
-    }
-    
-    scheme_init_collection_paths(global_env, r);
+    l = reverse_path_list(l, 0);
+
+    scheme_init_collection_paths_post(global_env, l, r);
   }
 #endif /* NO_FILE_SYSTEM_UTILS */
 
@@ -1093,12 +1105,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 
   return cont_run(fa);
 
-#ifdef CMDLINE_STDIO_FLAG
-# define REPL_FLAGS "-i/-z"
-#else
-# define REPL_FLAGS "-i"
-#endif
-
 #ifndef DONT_PARSE_COMMAND_LINE
  show_help:
   prog =("%s"
@@ -1124,10 +1130,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -m, --main : Call `main' with command-line arguments, print results\n"
 	 " Interaction options:\n"
          "  -i, --repl : Run interactive read-eval-print loop; implies -v\n"
-# ifdef CMDLINE_STDIO_FLAG
-	 "  -z, --text-repl : Like -i, but use text read-eval-print loop\n"
-# endif
-         "  -n, --no-lib : Skip `(require (lib \"<init-lib>\"))' for " REPL_FLAGS "/-e/-f/-r\n"
+         "  -n, --no-lib : Skip `(require (lib \"<init-lib>\"))' for -i/-e/-f/-r\n"
 	 "  -v, --version : Show version\n"
 # ifdef CMDLINE_STDIO_FLAG
 	 "  -K, --back : Don't bring application to the foreground (Mac OS X)\n"
@@ -1137,10 +1140,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 	 " Configuration options:\n"
          "  -c, --no-compiled : Disable loading of compiled files\n"
-	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for " REPL_FLAGS "\n"
+	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for -i\n"
+# ifdef CMDLINE_STDIO_FLAG
+	 "  -z, --text-repl : Use text read-eval-print loop for -i\n"
+# endif
          "  -I <path> : Set <init-lib> to <path>\n"
-	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM "\n"
-	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM "\n"
+	 "  -X <dir>, --collects <dir> : Main collects at <dir>\n"
+	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
 # ifdef MZ_USE_JIT
@@ -1166,10 +1172,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 " Example: `-ifve file expr' is the same as `-i -f file -v -e expr'\n"
          "Start-up sequence:\n"
          " 1. Set `current-library-collection-paths'\n"
-         " 2. Require `(lib \"<init-lib>\")' [when " REPL_FLAGS "/-e/-f/-r, unless -n]\n"
+         " 2. Require `(lib \"<init-lib>\")' [when -i/-e/-f/-r, unless -n]\n"
          " 3. Evaluate/load expressions/files in order, until first error\n"
-         " 4. Load \"" INIT_FILENAME "\" [when " REPL_FLAGS "]\n"
-         " 5. Run read-eval-print loop [when " REPL_FLAGS "]\n"
+         " 4. Load \"" INIT_FILENAME "\" [when -i]\n"
+         " 5. Run read-eval-print loop [when -i]\n"
 # ifdef YIELD_BEFORE_EXIT
          " 6. Run `(yield 'wait)' [unless -V]\n"
 # endif

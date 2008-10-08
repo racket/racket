@@ -39,6 +39,17 @@
 # define MALLOC malloc
 #endif
 
+#ifdef MZ_JIT_USE_MPROTECT
+# include <unistd.h>
+# include <sys/mman.h>
+# ifndef MAP_ANON
+#  include <fcntl.h>
+# endif
+#endif
+#ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+# include <windows.h>
+#endif
+
 static void **dgc_array;
 static int *dgc_count;
 static int dgc_size;
@@ -57,12 +68,16 @@ extern MZ_DLLIMPORT void GC_register_late_disappearing_link(void **link, void *o
 
 static int use_registered_statics;
 
+/************************************************************************/
+/*                           stack setup                                */
+/************************************************************************/
+
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
 extern MZ_DLLIMPORT void GC_init();
 extern MZ_DLLIMPORT unsigned long GC_get_stack_base();
 #endif
 
-void scheme_set_primordial_stack_base(void *base, int no_auto_statics)
+void scheme_set_stack_base(void *base, int no_auto_statics)
 {
 #ifdef MZ_PRECISE_GC
   GC_init_type_tags(_scheme_last_type_, 
@@ -132,7 +147,7 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   void *stack_start;
   int volatile return_code;
 
-  scheme_set_primordial_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
+  scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
 
   return_code = _main(data);
 
@@ -144,9 +159,9 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   return return_code;
 }
 
-void scheme_set_primordial_stack_bounds(void *base, void *deepest, int no_auto_statics)
+void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
 {
-  scheme_set_primordial_stack_base(base, no_auto_statics);
+  scheme_set_stack_base(base, no_auto_statics);
 
 #ifdef USE_STACK_BOUNDARY_VAR
   if (deepest) {
@@ -165,6 +180,9 @@ extern unsigned long scheme_get_stack_base()
     return (unsigned long)GC_get_stack_base();
 }
 
+/************************************************************************/
+/*                           memory utils                               */
+/************************************************************************/
 
 void scheme_dont_gc_ptr(void *p)
 {
@@ -286,6 +304,10 @@ scheme_strdup_eternal(const char *str)
   return naya;
 }
 
+/************************************************************************/
+/*                               cptr                                   */
+/************************************************************************/
+
 Scheme_Object *scheme_make_cptr(void *cptr, Scheme_Object *typetag)
 {
   Scheme_Object *o;
@@ -310,6 +332,10 @@ Scheme_Object *scheme_make_offset_cptr(void *cptr, long offset, Scheme_Object *t
 
   return o;
 }
+
+/************************************************************************/
+/*                            allocation                                */
+/************************************************************************/
 
 #ifndef MZ_PRECISE_GC
 static Scheme_Hash_Table *immobiles;
@@ -530,6 +556,395 @@ void *scheme_malloc_uncollectable_tagged(size_t s)
 }
 
 #endif
+
+/************************************************************************/
+/*                         code allocation                              */
+/************************************************************************/
+
+/* We're not supposed to use mprotect() or VirtualProtect() on memory
+   from malloc(); Posix says that mprotect() only works on memory from
+   mmap(), and VirtualProtect() similarly requires alignment with a
+   corresponding VirtualAlloc. So we implement a little allocator here
+   for code chunks. */
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+/* Max of desired alignment and 2 * sizeof(long): */
+#define CODE_HEADER_SIZE 16
+
+long scheme_code_page_total;
+
+#if defined(MZ_JIT_USE_MPROTECT) && !defined(MAP_ANON)
+static int fd, fd_created;
+#endif
+
+#define LOG_CODE_MALLOC(lvl, s) /* if (lvl > 1) s */
+#define CODE_PAGE_OF(p) ((void *)(((unsigned long)p) & ~(page_size - 1)))
+
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+
+struct free_list_entry {
+  long size; /* size of elements in this bucket */
+  void *elems; /* doubly linked list for free blocks */
+  int count; /* number of items in `elems' */
+};
+
+static struct free_list_entry *free_list;
+static int free_list_bucket_count;
+
+static long get_page_size()
+{
+# ifdef PAGESIZE
+  const long page_size = PAGESIZE;
+# else
+  static unsigned long page_size = -1;
+  if (page_size == -1) {
+#  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    page_size = info.dwPageSize;
+#  else
+    page_size = sysconf (_SC_PAGESIZE);
+#  endif
+  }
+# endif
+
+  return page_size;
+}
+
+static void *malloc_page(long size)
+{
+  void *r;
+
+#ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+  {
+    DWORD old;
+    r = (void *)VirtualAlloc(NULL, size, 
+                             MEM_COMMIT | MEM_RESERVE, 
+                             /* A note in gc/os_dep.c says that VirtualAlloc
+                                doesn't like PAGE_EXECUTE_READWRITE. In case
+                                that's true, we use a separate VirtualProtect step. */
+                             PAGE_READWRITE);
+    if (r)
+      VirtualProtect(r, size, PAGE_EXECUTE_READWRITE, &old);
+  }
+#else
+# ifdef MAP_ANON
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
+# else
+  if (!fd_created) {
+    fd_created = 1;
+    fd = open("/dev/zero", O_RDWR);
+  }
+  r = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE, fd, 0);
+# endif
+  if (r  == (void *)-1)
+    r = NULL;
+#endif
+
+  if (!r)
+    scheme_raise_out_of_memory(NULL, NULL);
+
+  return r;
+}
+
+static void free_page(void *p, long size)
+{
+#ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+  VirtualFree(p, 0, MEM_RELEASE);
+#else
+  munmap(p, size);
+#endif
+}
+
+static void init_free_list()
+{
+  long page_size = get_page_size();
+  int pos = 0;
+  int cnt = 2;
+  long last_v = page_size, v;
+
+  /* Compute size that fits 2 objects per page, then 3 per page, etc.
+     Keeping CODE_HEADER_SIZE alignment gives us a small number of
+     buckets. */
+  while (1) {
+    v = (page_size - CODE_HEADER_SIZE) / cnt;
+    v = (v / CODE_HEADER_SIZE) * CODE_HEADER_SIZE;
+    if (v != last_v) {
+      free_list[pos].size = v;
+      free_list[pos].elems = NULL;
+      free_list[pos].count = 0;
+      last_v = v;
+      pos++;
+      if (v == CODE_HEADER_SIZE)
+        break;
+    }
+    cnt++;
+  }
+
+  free_list_bucket_count = pos;
+}
+
+static long free_list_find_bucket(long size)
+{
+  /* binary search */
+  int lo = 0, hi = free_list_bucket_count - 1, mid;
+
+  while (lo + 1 < hi) {
+    mid = (lo + hi) / 2;
+    if (free_list[mid].size > size) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  if (free_list[hi].size == size)
+    return hi;
+  else
+    return lo;
+}
+#endif
+
+void *scheme_malloc_code(long size)
+{
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  long size2, bucket, sz, page_size;
+  void *p, *pg, *prev;
+
+  if (size < CODE_HEADER_SIZE) {
+    /* ensure CODE_HEADER_SIZE alignment 
+       and room for free-list pointers */
+    size = CODE_HEADER_SIZE;
+  }
+
+  page_size = get_page_size();
+
+  if (!free_list) {
+    free_list = (struct free_list_entry *)malloc_page(page_size);
+    scheme_code_page_total += page_size;
+    init_free_list();
+  }
+
+  if (size > free_list[0].size) {
+    /* allocate large object on its own page(s) */
+    sz = size + CODE_HEADER_SIZE;
+    sz = (sz + page_size - 1) & ~(page_size - 1);
+    pg = malloc_page(sz);
+    scheme_code_page_total += sz;
+    *(long *)pg = sz;
+    LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
+                              pg, size + CODE_HEADER_SIZE, scheme_code_page_total));
+    return ((char *)pg) + CODE_HEADER_SIZE;
+  }
+
+  bucket = free_list_find_bucket(size);
+  size2 = free_list[bucket].size;
+
+  if (!free_list[bucket].elems) {
+    /* add a new page's worth of items to the free list */
+    int i, count = 0;
+    pg = malloc_page(page_size);
+    scheme_code_page_total += page_size;
+    LOG_CODE_MALLOC(2, printf("new page for %ld / %ld at %p [now %ld]\n", 
+                              size2, bucket, pg, scheme_code_page_total));
+    sz = page_size - size2;
+    for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
+      p = ((char *)pg) + i;
+      prev = free_list[bucket].elems;
+      ((void **)p)[0] = prev;
+      ((void **)p)[1] = NULL;
+      if (prev)
+        ((void **)prev)[1] = p;
+      free_list[bucket].elems = p;
+      count++;
+    }
+    ((long *)pg)[0] = bucket; /* first long of page indicates bucket */
+    ((long *)pg)[1] = 0; /* second long indicates number of allocated on page */
+    free_list[bucket].count = count;
+  }
+
+  p = free_list[bucket].elems;
+  prev = ((void **)p)[0];
+  free_list[bucket].elems = prev;
+  --free_list[bucket].count;
+  if (prev)
+    ((void **)prev)[1] = NULL;
+  ((long *)CODE_PAGE_OF(p))[1] += 1;
+  
+  LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
+
+  return p;
+#else
+  return malloc(size); /* good luck! */
+#endif
+}
+
+void scheme_free_code(void *p)
+{
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  long size, size2, bucket, page_size;
+  int per_page, n;
+  void *prev;
+
+  page_size = get_page_size();
+
+  size = *(long *)CODE_PAGE_OF(p);
+  
+  if (size >= page_size) {
+    /* it was a large object on its own page(s) */
+    scheme_code_page_total -= size;
+    LOG_CODE_MALLOC(1, printf("freeing large %p (%ld) [%ld left]\n", 
+                              p, size, scheme_code_page_total));
+    free_page((char *)p - CODE_HEADER_SIZE, size);
+    return;
+  }
+
+  bucket = size;
+
+  if ((bucket < 0) || (bucket >= free_list_bucket_count)) {
+    printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
+    abort();    
+  }
+
+  size2 = free_list[bucket].size;
+
+  LOG_CODE_MALLOC(0, printf("freeing %ld / %ld\n", size2, bucket));
+
+  /* decrement alloc count for this page: */
+  per_page = (page_size - CODE_HEADER_SIZE) / size2;
+  n = ((long *)CODE_PAGE_OF(p))[1];
+  /* double-check: */
+  if ((n < 1) || (n > per_page)) {
+    printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
+    abort();
+  }
+  n--;
+  ((long *)CODE_PAGE_OF(p))[1] = n;
+  
+  /* add to free list: */
+  prev = free_list[bucket].elems;
+  ((void **)p)[0] = prev;
+  ((void **)p)[1] = NULL;
+  if (prev)
+    ((void **)prev)[1] = p;
+  free_list[bucket].elems = p;
+  free_list[bucket].count++;
+
+  /* Free whole page if it's completely on the free list, and if there
+     are enough buckets on other pages. */
+  if ((n == 0) && ((free_list[bucket].count - per_page) >= (per_page / 2))) {
+    /* remove same-page elements from free list, then free page */
+    int i;
+    long sz;
+    void *pg;
+
+    sz = page_size - size2;
+    pg = CODE_PAGE_OF(p);
+    for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
+      p = ((char *)pg) + i;
+      prev = ((void **)p)[1];
+      if (prev)
+        ((void **)prev)[0] = ((void **)p)[0];
+      else
+        free_list[bucket].elems = ((void **)p)[0];
+      prev = ((void **)p)[0];
+      if (prev)
+        ((void **)prev)[1] = ((void **)p)[1];
+      --free_list[bucket].count;
+    }
+    
+    scheme_code_page_total -= page_size;
+    LOG_CODE_MALLOC(2, printf("freeing page at %p [%ld left]\n", 
+                              CODE_PAGE_OF(p), scheme_code_page_total));
+    free_page(CODE_PAGE_OF(p), page_size);
+  }
+#else
+  free(p);
+#endif
+}
+
+#ifndef MZ_PRECISE_GC
+
+/* When using the CGC allocator, we know how GCable memory is
+   allocated, and we expect mprotect(), etc., to work on it. The JIT
+   currently takes advantage of that combination, so we support it
+   with scheme_malloc_gcable_code() --- but only in CGC mode. */
+
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+static unsigned long jit_prev_page = 0, jit_prev_length = 0;
+#endif
+
+void *scheme_malloc_gcable_code(long size)
+{
+  void *p;
+  p = scheme_malloc(size);
+  
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  {
+    /* [This chunk of code moved from our copy of GNU lightning to here.] */
+    unsigned long page, length, page_size;
+    void *end;
+
+    page_size = get_page_size();
+    
+    end = ((char *)p) + size;
+
+    page = (long) p & ~(page_size - 1);
+    length = ((char *) end - (char *) page + page_size - 1) & ~(page_size - 1);
+    
+    /* Simple-minded attempt at optimizing the common case where a single
+       chunk of memory is used to compile multiple functions.  */
+    if (!(page >= jit_prev_page && page + length <= jit_prev_page + jit_prev_length)) {
+      
+# ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
+      {
+        DWORD old;
+        VirtualProtect((void *)page, length, PAGE_EXECUTE_READWRITE, &old);
+      }
+# else
+      mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
+# endif
+
+      /* See if we can extend the previously mprotect'ed memory area towards
+         higher addresses: the starting address remains the same as before.  */
+      if (page >= jit_prev_page && page <= jit_prev_page + jit_prev_length)
+        jit_prev_length = page + length - jit_prev_page;
+      
+      /* See if we can extend the previously mprotect'ed memory area towards
+         lower addresses: the highest address remains the same as before. */
+      else if (page < jit_prev_page && page + length >= jit_prev_page 
+               && page + length <= jit_prev_page + jit_prev_length)
+        jit_prev_length += jit_prev_page - page, jit_prev_page = page;
+      
+      /* Nothing to do, replace the area.  */
+      else
+        jit_prev_page = page, jit_prev_length = length;
+    }
+  }
+#endif
+
+  return p;
+}
+
+void scheme_notify_code_gc()
+{
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+  jit_prev_page = 0;
+  jit_prev_length = 0;
+#endif
+}
+#endif
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+
+/************************************************************************/
+/*                           finalization                               */
+/************************************************************************/
 
 typedef struct Finalization {
   MZTAG_IF_REQUIRED
@@ -812,31 +1227,9 @@ unsigned long scheme_get_deeper_address(void)
   return (unsigned long)vp;
 }
 
-
-
-#ifdef DOS_MEMORY
-
-int scheme_same_pointer(void *a, void *b)
-{
-  long as, ao, bs, bo, areal, breal;
-  
-  as = FP_SEG(a);
-  ao = FP_OFF(a);
-  bs = FP_SEG(b);
-  bo = FP_SEG(b);
-
-  areal = (as << 4) + ao;
-  breal = (bs << 4) + bo;
-
-  return areal == breal;
-}
-
-int scheme_diff_pointer(void *a, void *b)
-{
-  return !scheme_same_pointer(a, b);
-}
-
-#endif
+/************************************************************************/
+/*                             GC_dump                                  */
+/************************************************************************/
 
 #ifndef MZ_PRECISE_GC
 # ifdef __cplusplus

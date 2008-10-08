@@ -98,7 +98,7 @@
   (define dest (if mred? mr-dest mz-dest))
   (define (flags s)
     (string-append "-" s))
-  (define (one-mz-test filename expect)
+  (define (one-mz-test filename expect literal?)
     ;; Try simple mode: one module, launched from cmd line:
     (prepare dest filename)
     (make-embedding-executable 
@@ -129,88 +129,91 @@
       (w/prefix #f)
       (w/prefix 'before:))
 
-    ;; Try full path, and use literal S-exp to start
-    (printf ">>>literal sexp\n")
-    (prepare dest filename)
-    (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
+    (when literal?
+      ;; Try full path, and use literal S-exp to start
+      (printf ">>>literal sexp\n")
+      (prepare dest filename)
+      (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
+        (make-embedding-executable 
+         dest mred? #f
+         `((#t ,path))
+         null
+         (base-compile
+          `(namespace-require '(file ,(path->string path))))
+         `(,(flags ""))))
+      (try-exe dest expect mred?)
+      
+      ;; Use `file' form:
+      (printf ">>>file\n")
+      (prepare dest filename)
+      (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
+        (make-embedding-executable 
+         dest mred? #f
+         `((#t (file ,(path->string path))))
+         null
+         (base-compile
+          `(namespace-require '(file ,(path->string path))))
+         `(,(flags ""))))
+      (try-exe dest expect mred?)
+
+      ;; Use relative path
+      (printf ">>>relative path\n")
+      (prepare dest filename)
+      (parameterize ([current-directory (collection-path "tests" "mzscheme")])
+        (make-embedding-executable 
+         dest mred? #f
+         `((#f ,filename))
+         null
+         (base-compile
+          `(namespace-require '',(string->symbol (regexp-replace #rx"[.].*$" filename ""))))
+         `(,(flags ""))))
+      (try-exe dest expect mred?)
+
+      ;; Try multiple modules
+      (printf ">>>multiple\n")
+      (prepare dest filename)
       (make-embedding-executable 
        dest mred? #f
-       `((#t ,path))
+       `((#t (lib ,filename "tests" "mzscheme"))
+         (#t (lib "embed-me3.ss" "tests" "mzscheme")))
        null
        (base-compile
-        `(namespace-require '(file ,(path->string path))))
-       `(,(flags ""))))
-    (try-exe dest expect mred?)
+        `(begin
+           (namespace-require '(lib "embed-me3.ss" "tests" "mzscheme"))
+           (namespace-require '(lib ,filename "tests" "mzscheme"))))
+       `(,(flags "")))
+      (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
 
-    ;; Use `file' form:
-    (printf ">>>file\n")
-    (prepare dest filename)
-    (let ([path (build-path (collection-path "tests" "mzscheme") filename)])
-      (make-embedding-executable 
-       dest mred? #f
-       `((#t (file ,(path->string path))))
-       null
-       (base-compile
-        `(namespace-require '(file ,(path->string path))))
-       `(,(flags ""))))
-    (try-exe dest expect mred?)
+      ;; Try a literal file
+      (printf ">>>literal\n")
+      (prepare dest filename)
+      (let ([tmp (make-temporary-file)])
+        (with-output-to-file tmp 
+          #:exists 'truncate
+          (lambda ()
+            (write (kernel-compile
+                    '(namespace-require ''#%kernel)))))
+        (make-embedding-executable 
+         dest mred? #f
+         `((#t (lib ,filename "tests" "mzscheme")))
+         (list 
+          tmp
+          (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
+         `(with-output-to-file "stdout"
+            (lambda () (display "... and more!\n"))
+            'append)
+         `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
+        (delete-file tmp))
+      (try-exe dest (string-append 
+                     "This is the literal expression 4.\n" 
+                     "... and more!\n"
+                     expect)
+               mred?)))
 
-    ;; Use relative path
-    (printf ">>>relative path\n")
-    (prepare dest filename)
-    (parameterize ([current-directory (collection-path "tests" "mzscheme")])
-      (make-embedding-executable 
-       dest mred? #f
-       `((#f ,filename))
-       null
-       (base-compile
-        `(namespace-require '',(string->symbol (regexp-replace #rx"[.].*$" filename ""))))
-       `(,(flags ""))))
-    (try-exe dest expect mred?)
-
-    ;; Try multiple modules
-    (printf ">>>multiple\n")
-    (prepare dest filename)
-    (make-embedding-executable 
-     dest mred? #f
-     `((#t (lib ,filename "tests" "mzscheme"))
-       (#t (lib "embed-me3.ss" "tests" "mzscheme")))
-     null
-     (base-compile
-      `(begin
-         (namespace-require '(lib "embed-me3.ss" "tests" "mzscheme"))
-         (namespace-require '(lib ,filename "tests" "mzscheme"))))
-     `(,(flags "")))
-    (try-exe dest (string-append "3 is here, too? #t\n" expect) mred?)
-
-    ;; Try a literal file
-    (printf ">>>literal\n")
-    (prepare dest filename)
-    (let ([tmp (make-temporary-file)])
-      (with-output-to-file tmp 
-        #:exists 'truncate
-        (lambda ()
-          (write (kernel-compile
-                  '(namespace-require ''#%kernel)))))
-      (make-embedding-executable 
-       dest mred? #f
-       `((#t (lib ,filename "tests" "mzscheme")))
-       (list 
-        tmp
-        (build-path (collection-path "tests" "mzscheme") "embed-me4.ss"))
-       `(with-output-to-file "stdout"
-          (lambda () (display "... and more!\n"))
-          'append)
-       `(,(flags "l") ,(string-append "tests/mzscheme/" filename)))
-      (delete-file tmp))
-    (try-exe dest (string-append 
-		      "This is the literal expression 4.\n" 
-		      "... and more!\n"
-		      expect)
-	     mred?))
-
-  (one-mz-test "embed-me1.ss" "This is 1\n")
-  (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n")
+  (one-mz-test "embed-me1.ss" "This is 1\n" #t)
+  (one-mz-test "embed-me1b.ss" "This is 1b\n" #f)
+  (one-mz-test "embed-me1c.ss" "This is 1c\n" #f)
+  (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n" #t)
 
   ;; Try unicode expr and cmdline:
   (prepare dest "unicode")

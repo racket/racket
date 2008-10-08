@@ -63,7 +63,8 @@ is initialized in @exec{mzscheme} to the result of
 @scheme[(find-library-collection-paths)].
 
 
-@defproc[(find-library-collection-paths [extras (listof path-string?) null]) 
+@defproc[(find-library-collection-paths [pre-extras (listof path-string?) null]
+                                        [post-extras (listof path-string?) null]) 
          (listof path?)]{
 
 Produces a list of paths as follows:
@@ -75,13 +76,18 @@ Produces a list of paths as follows:
   default collection path list, unless the value of the
   @scheme[use-user-specific-search-paths] parameter is @scheme[#f].}
 
- @item{Extra directories provided in @scheme[extras] are included next,
-  converted to complete paths relative to the executable.}
+ @item{Extra directories provided in @scheme[pre-extras] are included
+  next to the default collection path list, converted to complete
+  paths relative to the executable.}
 
  @item{If the directory specified by @scheme[(find-system-path
     'collects-dir)] is absolute, or if it is relative (to the
   executable) and it exists, then it is added to the end of the
   default collection path list.}
+
+ @item{Extra directories provided in @scheme[post-extras] are included
+  last in the default collection path list, converted to complete
+  paths relative to the executable.}
 
  @item{If the @indexed-envvar{PLTCOLLECTS} environment variable is
   defined, it is combined with the default list using

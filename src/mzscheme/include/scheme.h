@@ -1734,6 +1734,7 @@ MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
+MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);
 
 /* Initialization */
 MZ_EXTERN Scheme_Env *scheme_basic_env(void);
@@ -1749,8 +1750,8 @@ MZ_EXTERN void scheme_wake_up(void);
 MZ_EXTERN int scheme_get_external_event_fd(void);
 
 /* GC registration: */
-MZ_EXTERN void scheme_set_primordial_stack_base(void *base, int no_auto_statics);
-MZ_EXTERN void scheme_set_primordial_stack_bounds(void *base, void *deepest, int no_auto_statics);
+MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
+MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
 /* Stack-preparation start-up: */
 typedef int (*Scheme_Nested_Main)(void *data);

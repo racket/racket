@@ -32,7 +32,7 @@
 static int page_size; /* OS page size */
 
 #ifndef MAP_ANON
-int fd, fd_created;
+static int fd, fd_created;
 #endif
 
 inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok);

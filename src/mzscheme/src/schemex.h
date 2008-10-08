@@ -291,6 +291,11 @@ void *(*GC_malloc_uncollectable)(size_t size_in_bytes);
 #  endif
 # endif
 #endif
+void *(*scheme_malloc_code)(long size);
+void (*scheme_free_code)(void *p);
+#ifndef MZ_PRECISE_GC
+void *(*scheme_malloc_gcable_code)(long size);
+#endif
 void *(*scheme_malloc_eternal)(size_t n);
 void (*scheme_end_stubborn_change)(void *p);
 void *(*scheme_calloc)(size_t num, size_t size);

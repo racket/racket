@@ -57,11 +57,12 @@
                     #| no modules here by default |#)))
 
 (define (default-sandbox-reader source)
-  (let loop ([l '()])
-    (let ([expr (read-syntax source)])
-      (if (eof-object? expr)
+  (parameterize ([read-accept-reader #t])
+    (let loop ([l '()])
+      (let ([expr (read-syntax source)])
+        (if (eof-object? expr)
           (reverse l)
-          (loop (cons expr l))))))
+          (loop (cons expr l)))))))
 
 (define sandbox-reader (make-parameter default-sandbox-reader))
 
@@ -429,7 +430,7 @@
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 
-(define (make-evaluator* init-hook require-perms program-or-maker)
+(define (make-evaluator* init-hook require-perms program-maker)
   (define cust          (make-custodian))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
@@ -457,7 +458,7 @@
       ((sandbox-init-hook))
       ;; now read and evaluate the input program
       (evaluate-program
-       (if (procedure? program-or-maker) (program-or-maker) program-or-maker)
+       (if (procedure? program-maker) (program-maker) program-maker)
        limits
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
@@ -625,17 +626,24 @@
                              allow)
                      (lambda () (build-program lang reqs input-program)))))
 
-(define (make-module-evaluator input-program #:allow-read [allow null])
+(define (make-module-evaluator
+         input-program #:allow-read [allow null] #:language [reqlang #f])
   ;; this is for a complete module input program
-  (let ([prog (input->code (list input-program) 'program #f)])
-    (unless (= 1 (length prog))
-      (error 'make-evaluator "expecting a single `module' program; ~a"
-             (if (zero? (length prog))
-               "no program expressions given"
-               "got more than a single expression")))
-    (syntax-case* (car prog) (module) literal-identifier=?
-      [(module modname lang body ...)
-       (make-evaluator* void allow (car prog))]
-      [_else (error 'make-evaluator "expecting a `module' program; got ~e"
-                    (syntax->datum (car prog)))])))
+  (define (make-program)
+    (let ([prog (input->code (list input-program) 'program #f)])
+      (unless (= 1 (length prog))
+        (error 'make-evaluator "expecting a single `module' program; ~a"
+               (if (zero? (length prog))
+                 "no program expressions given"
+                 "got more than a single expression")))
+      (syntax-case* (car prog) (module) literal-identifier=?
+        [(module modname lang body ...)
+         (if (or (not reqlang) (equal? reqlang (syntax->datum #'lang)))
+           (car prog)
+           (error 'make-evaluator
+                  "module code used `~e' for a language, expecting `~e'"
+                  (syntax->datum #'lang) reqlang))]
+        [_else (error 'make-evaluator "expecting a `module' program; got ~e"
+                      (syntax->datum (car prog)))])))
+  (make-evaluator* void allow make-program))
 

@@ -66,7 +66,7 @@ picts. The functions @scheme[pict-width], @scheme[pict-height],
 information from a pict.
 
 
-@defstruct[pict ([draw ((is-a?/c dc<%>) real? real? . -> . any)]
+@defstruct[pict ([draw any/c]
                  [width real?]
                  [height real?]
                  [ascent real?]
@@ -79,16 +79,18 @@ A @scheme[pict] structure is normally not created directly with
 @scheme[make-pict]. Instead, functions like @scheme[text],
 @scheme[hline], and @scheme[dc] are used to construct a pict.
 
-The @scheme[draw] field contains the pict's drawing procedure, which
+The @scheme[draw] field contains the pict's drawing information in an
+internal format. Roughly, the drawing information is a procedure that
 takes a @scheme[dc<%>] drawing context and an offset for the pict's
 top-left corner (i.e., it's bounding box's top left corner relative to
 the @scheme[dc<%>] origin). The state of the @scheme[dc<%>] is
 intended to affect the pict's drawing; for example, the pen and brush
 will be set for a suitable default drawing mode, and the
-@scheme[dc<%>] scale will be set to scale the resulting image.
+@scheme[dc<%>] scale will be set to scale the resulting image. Use
+@scheme[draw-pict] (as opposed to @scheme[pict-draw]) to draw the
+picture.
 
-The @scheme[panbox] field is internal, and it should be ininitialized
-to @scheme[#f].
+The @scheme[panbox] field is internal and initialized to @scheme[#f].
 
 The @scheme[last] field indicates a pict within the @scheme[children]
 list (transitively) that can be treated as the last element of the

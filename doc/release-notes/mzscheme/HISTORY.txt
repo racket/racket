@@ -1,3 +1,7 @@
+Version 4.1.1.1
+Changed -X and -S to complete directory relative to pwd, and
+ changed -S to add after main collects
+
 Version 4.1.1, October 2008
 Added read-language
 Added module-compiled-language-info, module->language-info,

@@ -48,8 +48,7 @@
 # define _CALL_DARWIN
 #endif
 
-/* Separate JIT_PRECISE_GC lets us test some 3m support 
-   in non-3m mode: */
+/* Separate JIT_PRECISE_GC lets us test some 3m support in non-3m mode: */
 #ifdef MZ_PRECISE_GC
 # define JIT_PRECISE_GC
 #endif
@@ -396,13 +395,13 @@ static void *generate_one(mz_jit_state *old_jitter,
       padding = 0;
       if (gcable) {
 #ifdef MZ_PRECISE_GC
-	buffer = malloc(size);
+	buffer = scheme_malloc_code(size);
         scheme_jit_malloced += size_pre_retained;
 #else
-	buffer = scheme_malloc(size);
+	buffer = scheme_malloc_gcable_code(size);
 #endif
       } else {
-	buffer = malloc(size);
+        buffer = scheme_malloc_code(size);
       }
       RECORD_CODE_SIZE(size);
     } else if (old_jitter) {
@@ -7880,7 +7879,7 @@ static void release_native_code(void *fnlized, void *p)
   /* Remove name mapping: */
   add_symbol((unsigned long)p, (unsigned long)p + SCHEME_INT_VAL(len), NULL, 0);
   /* Free memory: */
-  free(p);
+  scheme_free_code(p);
   jit_notify_freed_code();
 }
 #endif
