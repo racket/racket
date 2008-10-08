@@ -931,8 +931,10 @@ void *scheme_malloc_gcable_code(long size)
 
 void scheme_notify_code_gc()
 {
+#if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
   jit_prev_page = 0;
   jit_prev_length = 0;
+#endif
 }
 #endif
 
