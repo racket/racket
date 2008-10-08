@@ -50,7 +50,7 @@
   (define name (cadr t))
   (define stderr (current-error-port))
   (define (echo fmt . args)
-    (fprintf stderr "*** ~a: ~a\n" name (apply format fmt args)))
+    (fprintf stderr ">>> ~a: ~a\n" name (apply format fmt args)))
   (newline stderr)
   (echo "running...")
   (let/ec break
