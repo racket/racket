@@ -42,6 +42,9 @@
 #ifdef MZ_JIT_USE_MPROTECT
 # include <unistd.h>
 # include <sys/mman.h>
+# ifndef MAP_ANON
+#  include <fcntl.h>
+# endif
 #endif
 #ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
 # include <windows.h>
