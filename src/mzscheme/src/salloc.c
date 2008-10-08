@@ -658,7 +658,6 @@ static void free_page(void *p, long size)
   munmap(p, size);
 #endif
 }
-#endif
 
 static void init_free_list()
 {
@@ -707,6 +706,7 @@ static long free_list_find_bucket(long size)
   else
     return lo;
 }
+#endif
 
 void *scheme_malloc_code(long size)
 {

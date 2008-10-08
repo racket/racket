@@ -55,8 +55,10 @@ long PTR_TO_LONG(Scheme_Object *o)
 #ifdef OBJHEAD_HAS_HASH_BITS
     /* In 3m mode, we only have 14 bits of hash code in the
        Scheme_Object header. But the GC-level object header has some
-       leftover bits (currently 9 or 41, depending on the platform),
-       so use those, too. */
+       leftover bits (currently 9, 11, 41, or 43, depending on the
+       platform), so use those, too. That only works for GCable
+       objects, so we use 1 of our 14 bits to indicate whether the
+       other bit are present. */
     if (GC_is_allocated(o)) {
       OBJHEAD_HASH_BITS(o) = (keygen >> 16);
       v |= 0x4000;
