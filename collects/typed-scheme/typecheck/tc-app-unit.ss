@@ -451,7 +451,7 @@
         [(tc-result: (and t
                           (or (Poly: vars 
                                      (Function: (list (arr: doms rngs (and rests #f) (and drests #f) '() thn-effs els-effs) ...)))
-                              (PolyDots: (list vars ... _)
+                              (PolyDots: (list vars ...)
                                          (Function: (list (arr: doms rngs (and rests #f) (and drests #f) '() thn-effs els-effs) ...))))))
          (handle-clauses (doms rngs) f-stx
                          (lambda (dom _) (= (length dom) (length argtypes)))
