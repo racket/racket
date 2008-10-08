@@ -48,8 +48,7 @@
 # define _CALL_DARWIN
 #endif
 
-/* Separate JIT_PRECISE_GC lets us test some 3m support 
-   in non-3m mode: */
+/* Separate JIT_PRECISE_GC lets us test some 3m support in non-3m mode: */
 #ifdef MZ_PRECISE_GC
 # define JIT_PRECISE_GC
 #endif
