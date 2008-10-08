@@ -180,7 +180,7 @@
   (define (add-modifiers-to-contract modifiers contract-str)
     (if (null? modifiers)
         contract-str
-        (string-append "from " 
+        (string-append "for " 
                        (apply string-append (add-between modifiers " of "))
                        " in " contract-str)))
   (let ([blame-src (src-info-as-string src-info)]
