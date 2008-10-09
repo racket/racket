@@ -758,7 +758,7 @@
                           (symbol->string (bind-name y))))))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 8 0 #f null (current-inspector) 0))
+  (make-struct-type 'metafunc-proc #f 9 0 #f null (current-inspector) 0))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
 (define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
@@ -766,6 +766,7 @@
 (define metafunc-proc-cps (make-struct-field-accessor metafunc-proc-ref 5))
 (define metafunc-proc-rhss (make-struct-field-accessor metafunc-proc-ref 6))
 (define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 7))
+(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 8))
 (define-struct metafunction (proc))
 
 (define-syntax (in-domain? stx)
@@ -865,14 +866,14 @@
                                   (and dom-ctcs
                                        (rewrite-side-conditions/check-errs
                                         lang-nts
-                                        #t
                                         'define-metafunction
+                                        #f
                                         dom-ctcs))]
                                  [codom-side-conditions-rewritten
                                   (rewrite-side-conditions/check-errs
                                    lang-nts
-                                   #t
                                    'define-metafunction
+                                   #f
                                    codom-contract)]
                                  [(rhs-fns ...)
                                   (map (λ (lhs rhs bindings)
@@ -935,7 +936,8 @@
                                'name
                                cps
                                rhss
-                               (let ([name (lambda (x) (name-predicate x))]) name)))
+                               (let ([name (lambda (x) (name-predicate x))]) name)
+                               `dom-side-conditions-rewritten))
                             `dom-side-conditions-rewritten
                             `codom-side-conditions-rewritten
                             'name))
@@ -1711,6 +1713,7 @@
          metafunc-proc-cps
          metafunc-proc-rhss
          metafunc-proc-in-dom?
+         metafunc-proc-dom-pat
          
          (struct-out binds))
 
