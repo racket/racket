@@ -1,6 +1,6 @@
 #|
 
-Hint: include the size of the board in your world structure
+hint: include the size of the board in your world structure
 This enables you to make test cases with different size boards,
 making some of the test cases much easier to manage.
 
@@ -624,11 +624,15 @@ making some of the test cases much easier to manage.
     [(equal? evt 'button-up)
      (cond
        [(equal? 'playing (world-state world))
-        (move-cat 
-         (make-world (add-obstacle (world-board world) x y)
-                     (world-cat world)
-                     (world-state world)
-                     (world-size world)))]
+        (cond
+          [(point-in-circle? (world-board world) x y)
+           (move-cat 
+            (make-world (add-obstacle (world-board world) x y)
+                        (world-cat world)
+                        (world-state world)
+                        (world-size world)))]
+          [else 
+           world])]
        [else
         world])]
     [else 
@@ -833,6 +837,29 @@ making some of the test cases much easier to manage.
               (list (make-cell (make-posn 0 0) true)
                     (make-cell (make-posn 0 1) false)))
 
+;; point-in-circle? : board number number -> boolean
+(define (point-in-circle? board x y)
+  (cond
+    [(empty? board) false]
+    [else 
+     (local [(define cell (first board))
+             (define center (+ (cell-center-x (cell-p cell))
+                               (* (sqrt -1) (cell-center-y (cell-p cell)))))
+             (define p (+ x (* (sqrt -1) y)))]
+       (or (<= (magnitude (- center p)) circle-radius)
+           (point-in-circle? (rest board) x y)))]))
+(check-expect (point-in-circle? empty 0 0) false)
+(check-expect (point-in-circle? (list (make-cell (make-posn 0 0) false))
+                                (cell-center-x (make-posn 0 0))
+                                (cell-center-y (make-posn 0 0)))
+              true)
+(check-expect (point-in-circle? (list (make-cell (make-posn 0 0) false))
+                                0 0)
+              false)
+                                
+              
+
+
 
 ;                                
 ;                                
@@ -997,12 +1024,7 @@ making some of the test cases much easier to manage.
                    'playing
                    board-size))]
     
-    (and
-     
-     ;; illustrates the speedup for state-based dfs
-     ;((lambda (x) true) (time (build-table initial-world)))
-     ;((lambda (x) true) (time (build-table/fast initial-world)))
-     
+    (and ;((lambda (x) true) (time (build-table initial-world))) ;((lambda (x) true) (time (build-table/fast initial-world)))
      (big-bang (world-width board-size)
                (world-height board-size)
                1 
