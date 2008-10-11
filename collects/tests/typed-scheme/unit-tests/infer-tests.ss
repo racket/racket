@@ -3,7 +3,6 @@
 (require (rep type-rep)
 	 (r:infer infer)
 	 (private type-effect-convenience union type-utils)
-         (prefix-in table: (utils tables))
          (schemeunit))
 
 
