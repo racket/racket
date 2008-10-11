@@ -21,7 +21,7 @@ RANLIB = @RANLIB@
 
 CPPFLAGS = @PREFLAGS@ @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
 CFLAGS = @CFLAGS@ $(CPPFLAGS) @COMPFLAGS@ @PROFFLAGS@
-LIBS = @LIBS@ -lpthread
+LIBS = @LIBS@
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
