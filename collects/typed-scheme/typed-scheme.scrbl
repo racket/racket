@@ -522,11 +522,12 @@ types.  In most cases, use of @scheme[:] is preferred to use of @scheme[define:]
 (define-struct: name ([f : t] ...))
 (define-struct: (name parent) ([f : t] ...))
 (define-struct: (v ...) name ([f : t] ...))
-(define-struct: (v ...) (name parent) ([f : t] ...))]]
-{Defines a @rtech{structure} with the name @scheme[name], where the fields 
-         @scheme[f] have types @scheme[t].  The second and fourth forms define @scheme[name]
-         to be a substructure of @scheme[parent].  The last two forms define structures that 
-         are polymorphic in the type variables @scheme[v].}
+(define-struct: (v ...) (name parent) ([f : t] ...))]]{
+ Defines a @rtech{structure} with the name @scheme[name], where the
+ fields @scheme[f] have types @scheme[t].  The second and fourth forms
+ define @scheme[name] to be a substructure of @scheme[parent].  The
+ last two forms define structures that are polymorphic in the type
+ variables @scheme[v].}
 
 @subsection{Type Aliases}
 @defform*[[(define-type-alias name t)
