@@ -114,8 +114,8 @@ with the output port; when the function returns, the port is closed.
              (begin (define-values (s-in c-out) (make-pipe))
                     (define-values (c-in s-out) (make-pipe))))
   (display "hello\n" c-out)
-  (read-line s-in)
   (close-output-port c-out)
+  (read-line s-in)
   (read-line s-in)
   ]}
 

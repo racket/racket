@@ -1567,8 +1567,7 @@
 (define killer-executor (make-will-executor))
 (define killer-thread #f)
 
-(provide* (unsafe register-finalizer))
-(define (register-finalizer obj finalizer)
+(define* (register-finalizer obj finalizer)
   (unless killer-thread
     (set! killer-thread
           (thread (lambda ()

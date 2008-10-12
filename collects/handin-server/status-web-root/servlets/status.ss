@@ -225,8 +225,10 @@
                      (tr (td ([colspan "2"] [align "center"])
                            (input ([type "submit"] [name "post"]
                                    [value "Login"])))))))))]
-           [user      (clean-str (aget (request-bindings request) 'user))]
-           [passwd    (aget (request-bindings request) 'passwd)]
+           [bindings  (request-bindings request)]
+           [user      (aget bindings 'user)]
+           [passwd    (aget bindings 'passwd)]
+           [user      (and user (clean-str user))]
            [user-data (get-user-data user)])
       (cond [(and user-data
                   (string? passwd)

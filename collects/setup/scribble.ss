@@ -330,11 +330,8 @@
     (for-each (lambda (k) (hash-set! ht k #t)) keys)
     ht))
 
-(define (read-out-sxref)
+(define (read-sxref)
   (fasl->s-exp (current-input-port)))
-
-(define (normalized-read)
-  (with-module-reading-parameterization read))
 
 (define (make-sci-cached sci info-out-file setup-printf)
   (when (verbose)
@@ -348,7 +345,7 @@
                 (void)
                 #;
                 (fprintf (current-error-port) " [Re-load ~a]\n" info-out-file))
-              (let ([v (cadr (with-input-from-file info-out-file read-out-sxref))])
+              (let ([v (cadr (with-input-from-file info-out-file read-sxref))])
                 (set! b (make-weak-box v))
                 v)))))))
 
@@ -381,14 +378,21 @@
          [my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
          [info-out-time (file-or-directory-modify-seconds info-out-file #f (lambda () #f))]
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
+         [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
+         [src-time (max aux-time
+                        (file-or-directory-modify-seconds
+                         src-zo #f (lambda () +inf.0)))]
          [up-to-date?
           (and info-out-time
                info-in-time
                (or (not can-run?)
-                   (my-time . >= . (max aux-time
-                                        (file-or-directory-modify-seconds
-                                         src-zo #f (lambda () +inf.0))))))]
+                   ;; Need to rebuild if output file is older than input:
+                   (my-time . >= . src-time)
+                   ;; But we can use in/out information if they're already built;
+                   ;; this is mostly useful if we interrupt setup-plt after
+                   ;; it runs some documents without rendering them:
+                   (info-time . >= . src-time)))]
          [can-run? (and (or (not latex-dest)
                             (not (omit? (doc-category doc))))
                         (or can-run?
@@ -402,46 +406,48 @@
      (path->name (doc-src-file doc)))
     (if up-to-date?
       ;; Load previously calculated info:
-      (with-handlers ([exn:fail? (lambda (exn)
-                                   (fprintf (current-error-port) "~a\n" (exn-message exn))
-                                   (delete-file info-out-file)
-                                   (delete-file info-in-file)
-                                   ((get-doc-info only-dirs latex-dest auto-main?
-                                                  auto-user? with-record-error
-                                                  setup-printf)
-                                    doc))])
-        (let* ([v-in (with-input-from-file info-in-file normalized-read)]
-               [v-out (with-input-from-file info-out-file read-out-sxref)])
-          (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
-                       (equal? (car v-out) (list vers (doc-flags doc))))
-            (error "old info has wrong version or flags"))
-          (make-info
-           doc
-           (make-sci-cached
-            (list-ref v-out 1) ; sci (leave serialized)
-            info-out-file
-            setup-printf)
-           (let ([v (list-ref v-out 2)])  ; provides
-             (with-my-namespace
-              (lambda ()
-                (deserialize v))))
-           (let ([v (list-ref v-in 1)])  ; undef
-             (with-my-namespace
-              (lambda ()
-                (deserialize v))))
-           (let ([v (list-ref v-in 3)])  ; searches
-             (with-my-namespace
-              (lambda ()
-                (deserialize v))))
-           (map rel->path (list-ref v-in 2)) ; expected deps, in case we don't need to build...
-           null ; known deps (none at this point)
-           can-run?
-           my-time info-out-time
-           (and can-run? (memq 'always-run (doc-flags doc)))
-           #f #f
-           vers
-           #f
-           #f)))
+      (render-time
+       "use"
+       (with-handlers ([exn:fail? (lambda (exn)
+                                    (fprintf (current-error-port) "~a\n" (exn-message exn))
+                                    (delete-file info-out-file)
+                                    (delete-file info-in-file)
+                                    ((get-doc-info only-dirs latex-dest auto-main?
+                                                   auto-user? with-record-error
+                                                   setup-printf)
+                                     doc))])
+         (let* ([v-in (with-input-from-file info-in-file read-sxref)]
+                [v-out (with-input-from-file info-out-file read-sxref)])
+           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
+                        (equal? (car v-out) (list vers (doc-flags doc))))
+             (error "old info has wrong version or flags"))
+           (make-info
+            doc
+            (make-sci-cached
+             (list-ref v-out 1) ; sci (leave serialized)
+             info-out-file
+             setup-printf)
+            (let ([v (list-ref v-out 2)])  ; provides
+              (with-my-namespace
+               (lambda ()
+                 (deserialize v))))
+            (let ([v (list-ref v-in 1)])  ; undef
+              (with-my-namespace
+               (lambda ()
+                 (deserialize v))))
+            (let ([v (list-ref v-in 3)])  ; searches
+              (with-my-namespace
+               (lambda ()
+                 (deserialize v))))
+            (map rel->path (list-ref v-in 2)) ; expected deps, in case we don't need to build...
+            null ; known deps (none at this point)
+            can-run?
+            my-time info-out-time
+            (and can-run? (memq 'always-run (doc-flags doc)))
+            #f #f
+            vers
+            #f
+            #f))))
       (if can-run?
         ;; Run the doc once:
         (with-record-error
@@ -456,7 +462,7 @@
                     [ri (send renderer resolve (list v) (list dest-dir) ci)]
                     [out-v (and info-out-time
                                 (with-handlers ([exn:fail? (lambda (exn) #f)])
-                                  (let ([v (with-input-from-file info-out-file read-out-sxref)])
+                                  (let ([v (with-input-from-file info-out-file read-sxref)])
                                     (unless (equal? (car v) (list vers (doc-flags doc)))
                                       (error "old info has wrong version or flags"))
                                     v)))]
@@ -497,6 +503,10 @@
                    (unless latex-dest 
                      (render-time "xref-out" (write-out info setup-printf)))
                    (set-info-need-out-write?! info #f))
+                 (when (info-need-in-write? info)
+                   (unless latex-dest 
+                     (render-time "xref-in" (write-in info)))
+                   (set-info-need-in-write?! info #f))
                  info))))
          (lambda () #f))
         #f))))
@@ -644,7 +654,7 @@
                                       setup-printf)))
 (define (write-in info)
   (make-directory* (doc-dest-dir (info-doc info)))
-  (write- info "in.sxref" (lambda (o i) (write (i)))))
+  (write- info "in.sxref" (lambda (o i) (write-bytes (s-exp->fasl (i))))))
 
 (define (rel->path r)
   (if (bytes? r)

@@ -414,6 +414,7 @@
   (define-language four 
     (e 4)
     (f 5))
+  (define-language empty)
   
   ;; `any' pattern
   (test (call-with-values (λ () (pick-any four (make-random (list 0 1)))) list)
@@ -426,7 +427,10 @@
                              #:nt (patterns fifth second second second)
                              #:seq (list (λ _ 3))
                              #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
-        '("foo" "bar" "baz")))
+        '("foo" "bar" "baz"))
+  (test (generate/decisions empty any 5 0 (decisions #:nt (patterns first)
+                                                     #:var (list (λ _ 'x))))
+        'x))
 
 ;; `hide-hole' pattern
 (let ()
@@ -460,19 +464,55 @@
       (get-output-string p)
       (close-output-port p))))
 
+;; check
 (let ()
   (define-language lang
     (d 5)
     (e e 4))
-  (test (current-error-port-output (λ () (check lang d 2 0 #f))) 
-        "failed after 1 attempts: 5")
-  (test (check lang d 2 0 #t) #t)
-  (test (check lang (d e) 2 0 (and (eq? (term d) 5) (eq? (term e) 4))) #t)
-  (test (check lang (d ...) 2 0 (zero? (modulo (foldl + 0 (term (d ...))) 5))) #t)
-  (test (current-error-port-output (λ () (check lang (d e) 2 0 #f)))
-        "failed after 1 attempts: (5 4)")
-  (test (exn:fail-message (check lang d 2 0 (error 'pred-raised)))
-        #rx"term 5 raises"))
+  (test (current-error-port-output (λ () (check lang d 2 #f))) 
+        "failed after 1 attempts:\n5\n")
+  (test (check lang d #t) #t)
+  (test (check lang (d e) 2 (and (eq? (term d) 5) (eq? (term e) 4))) #t)
+  (test (check lang (d ...) 2 (zero? (modulo (foldl + 0 (term (d ...))) 5))) #t)
+  (test (current-error-port-output (λ () (check lang (d e) 2 #f)))
+        "failed after 1 attempts:\n(5 4)\n")
+  (test (current-error-port-output (λ () (check lang d 2 (error 'pred-raised))))
+        "failed after 1 attempts:\n5\n"))
+
+;; check-metafunction
+;; TODO: handle no metafunctions with no contract
+(let ()
+  (define-language empty)
+  (define-metafunction empty
+    f : (side-condition number_1 (odd? (term number_1))) -> number
+    [(f 1) 1]
+    [(f 3) 'NaN])
+  
+  (define-metafunction empty
+    g : number ... -> (any ...)
+    [(g number_1 ... 1 number_2 ...) ()])
+  
+  (define-metafunction empty
+    h : number -> number
+    [(h any) any])
+  
+  (define-metafunction empty
+    [(i any ...) (any ...)])
+  
+  ;; Dom(f) < Ctc(f)
+  (test (current-error-port-output (λ () (check-metafunction f (decisions #:num (list (λ _ 2) (λ _ 5))))))
+        "failed after 1 attempts:\n(5)\n")
+  ;; Rng(f) > Codom(f)
+  (test (current-error-port-output (λ () (check-metafunction f (decisions #:num (list (λ _ 3))))))
+        "failed after 1 attempts:\n(3)\n")
+  ;; LHS matches multiple ways
+  (test (current-error-port-output (λ () (check-metafunction g (decisions #:num (list (λ _ 1) (λ _ 1))
+                                                                          #:seq (list (λ _ 2))))))
+        "failed after 1 attempts:\n(1 1)\n")
+  ;; OK -- generated from Dom(h)
+  (test (check-metafunction h) #t)
+  ;; OK -- generated from pattern 'any
+  (test (check-metafunction i) #t))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])

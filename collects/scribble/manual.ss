@@ -376,19 +376,16 @@
                              (hash-ref
                               checkers lib
                               (lambda ()
-                                (let ([ns (make-base-empty-namespace)])
-                                  (parameterize ([current-namespace ns])
-                                    (namespace-require `(for-label ,lib)))
+                                (let ([ns-id 
+                                       (let ([ns (make-base-empty-namespace)])
+                                         (parameterize ([current-namespace ns])
+                                           (namespace-require `(for-label ,lib))
+                                           (namespace-syntax-introduce (datum->syntax #f 'x))))])
                                   (let ([checker
                                          (lambda (id)
-                                           (parameterize ([current-namespace
-                                                           ns])
-                                             (free-label-identifier=?
-                                              (namespace-syntax-introduce
-                                               (datum->syntax
-                                                #f
-                                                (syntax-e id)))
-                                              id)))])
+                                           (free-label-identifier=?
+                                            (datum->syntax ns-id (syntax-e id))
+                                            id))])
                                     (hash-set! checkers lib checker)
                                     checker))))])
                         (and (checker id) lib)))
