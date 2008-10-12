@@ -1912,7 +1912,7 @@
   (make-a-bib-entry
    key
    (make-element
-    #f
+    "bibentry"
     (append
      (if author `(,@(decode-content (list author)) ", ") null)
      (if is-book? null '(ldquo))

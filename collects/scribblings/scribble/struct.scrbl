@@ -362,6 +362,16 @@ the table can span multiple columns by using @scheme['cont] instead of
 a flow in the following columns (i.e., for all but the first in a set
 of cells that contain a single flow).
 
+When a table cell's flow has multiple paragraphs, the rendered output
+starts each paragraph on its own line, but generally doesn't insert
+space between the paragraphs (as it would at the top level). For Latex
+output, individual paragraphs are not automatically line-wrapped; to
+get a line-wrapped paragraph, use an element with a string style and
+define a corresponding Latex macro in terms of @tt{parbox}. For Latex
+output of blocks in the flow that are @scheme[blockquote]s,
+@scheme[itemization]s, or @scheme[delayed-block]s, the block is
+wrapped with @tt{minipage} using @tt{linewidth} as the width.
+
 The @scheme[style] can be any of the following:
 
 @itemize[

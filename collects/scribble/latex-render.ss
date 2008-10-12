@@ -19,7 +19,8 @@
 
 (define (render-mixin %)
   (class %
-    (init-field [style-file #f])
+    (init-field [style-file #f]
+                [style-extra-files null])
 
     (define/override (get-suffix) #".tex")
 
@@ -31,9 +32,12 @@
 
     (define/override (render-one d ri fn)
       (let ([style-file (or style-file scribble-tex)])
-        (with-input-from-file style-file
-          (lambda ()
-            (copy-port (current-input-port) (current-output-port))))
+        (for-each
+         (lambda (style-file)
+           (with-input-from-file style-file
+             (lambda ()
+               (copy-port (current-input-port) (current-output-port)))))
+         (cons style-file style-extra-files))
         (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
           (let ([m (ormap (lambda (v)
@@ -280,7 +284,7 @@
                                           (loop (cdr flows) (add1 n))]
                                          [else n]))])
                         (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                        (render-flow (car flows) part ri #f)
+                        (render-table-flow (car flows) part ri)
                         (unless (= cnt 1) (printf "}"))
                         (unless (null? (list-tail flows cnt)) (printf " &\n"))))
                     (unless (null? (cdr flows)) (loop (cdr flows)))))
@@ -293,6 +297,24 @@
               (printf "~a\n\n\\end{~a}\n"
                       (if (equal? tableform "bigtabular") "\n\\\\" "")
                       tableform)))))
+      null)
+
+    (define/private (render-table-flow p part ri)
+      ;; Emit a \\ between blocks:
+      (let loop ([ps (flow-paragraphs p)])
+        (cond
+         [(null? ps) (void)]
+         [else
+          (let ([minipage? (not (or (paragraph? (car ps))
+                                    (table? (car ps))))])
+            (when minipage?
+              (printf "\\begin{minipage}{\\linewidth}\n"))
+            (render-block (car ps) part ri #f)
+            (when minipage?
+              (printf " \\end{minipage}\n"))
+            (unless (null? (cdr ps))
+              (printf " \\\\\n")
+              (loop (cdr ps))))]))
       null)
 
     (define/override (render-itemization t part ri)

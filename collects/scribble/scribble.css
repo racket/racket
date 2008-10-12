@@ -32,6 +32,14 @@ h3, h4, h5, h6, h7, h8 {
   margin-bottom: 0.5em;
 }
 
+/* Needed for browsers like Opera, and eventually for HTML 4 conformance.
+   This means that multiple paragraphs in a table element do not have a space
+   between them. */
+table p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 /* ---------------------------------------- */
 /* Main */
 

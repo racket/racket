@@ -238,6 +238,7 @@
                 ;; user start page)
                 [up-path #f]
                 [style-file #f]
+                [style-extra-files null]
                 [script-path #f]
                 [script-file #f])
 
@@ -564,6 +565,7 @@
                                           ,(content->string c this d ri)))]
                             [else `(title)])])
           (unless css-path    (install-file style-file))
+          (for-each (lambda (f) (install-file f)) style-extra-files)
           (unless script-path (install-file script-file))
           (printf "<!DOCTYPE html PUBLIC ~s ~s>\n"
                   "-//W3C//DTD HTML 4.0 Transitional//EN"
@@ -576,6 +578,9 @@
                         [content "text-html; charset=utf-8"]))
                  ,title
                  ,(scribble-css-contents style-file  css-path)
+                 ,@(map (lambda (style-file)
+                          (scribble-css-contents style-file  css-path))
+                        style-extra-files)
                  ,(scribble-js-contents  script-file script-path))
                (body ()
                  ,@(render-toc-view d ri)
@@ -974,11 +979,12 @@
                         [as (cdr (or (t-style-get 'alignment)
                                      (cons #f (map (lambda (x) #f) flows))))]
                         [vas (cdr (or (t-style-get 'valignment)
-                                      (cons #f (map (lambda (x) #f) flows))))])
+                                      (cons #f (map (lambda (x) #f) flows))))]
+                        [first? #t])
                (cond
                  [(null? ds) null]
                  [(eq? (car ds) 'cont)
-                  (loop (cdr ds) (cdr as) (cdr vas))]
+                  (loop (cdr ds) (cdr as) (cdr vas) first?)]
                  [else
                   (let ([d (car ds)] [a (car as)] [va (car vas)])
                     (cons
@@ -1003,7 +1009,7 @@
                                             [else n])))])
                                null))
                           ,@(render-flow d part ri #f))
-                     (loop (cdr ds) (cdr as) (cdr vas))))]))))
+                     (loop (cdr ds) (cdr as) (cdr vas) #f)))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline-table; vertical-align: text-top;"])
@@ -1018,10 +1024,12 @@
                     (if (and a (string? (cadr a))) `([class ,(cadr a)]) null))
                 ,@(if (string? t-style) `([class ,t-style]) null)
                 ,@(style->attribs raw-style))
-          ,@(map make-row
-                 (table-flowss t)
-                 (cdr (or (t-style-get 'row-styles)
-                          (cons #f (map (lambda (x) #f) (table-flowss t)))))))))
+          ,@(if (null? (table-flowss t))
+                `((tr (td)))
+                (map make-row
+                     (table-flowss t)
+                     (cdr (or (t-style-get 'row-styles)
+                              (cons #f (map (lambda (x) #f) (table-flowss t))))))))))
 
     (define/override (render-blockquote t part ri)
       `((blockquote ,(if (string? (blockquote-style t))
