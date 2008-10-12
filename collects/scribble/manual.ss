@@ -26,7 +26,7 @@
 (define etc "etc.") ; so we can fix the latex space, one day
 
 (define (to-flow e)
-  (make-flow (list (make-paragraph (list e)))))
+  (make-flow (list (make-omitable-paragraph (list e)))))
 (define spacer (hspace 1))
 (define flow-spacer (to-flow spacer))
 (define flow-empty-line (to-flow (tt 'nbsp)))
@@ -160,7 +160,7 @@
         (list
          (make-flow
           (list
-           (make-paragraph
+           (make-omitable-paragraph
             (cons
              spacer
              (if lang?
@@ -213,7 +213,7 @@
   (define (make-line str)
     (let* ([line (indent (str->elts str))]
            [line (list (make-element 'tt line))])
-      (list (make-flow (list (make-paragraph line))))))
+      (list (make-flow (list (make-omitable-paragraph line))))))
   (make-table #f (map make-line strs)))
 
 (define-syntax-rule (indexed-scheme x)
@@ -850,7 +850,7 @@
     [(_ spec-id desc ...)
      #'(*defforms (quote-syntax/loc spec-id) null
                   '(spec-id)
-                  (list (lambda (x) (make-paragraph (list x))))
+                  (list (lambda (x) (make-omitable-paragraph (list x))))
                   null
                   null
                   (lambda () (list desc ...)))]))
@@ -963,7 +963,7 @@
   (if (= 1 (length content))
     (let ([paras (append-map flow-paragraphs (car content))])
       (if (andmap paragraph? paras)
-        (list (make-paragraph (append-map paragraph-content paras)))
+        (list (make-omitable-paragraph (append-map paragraph-content paras)))
         (list (make-table style content))))
     (list (make-table style content))))
 
@@ -1483,7 +1483,7 @@
                 (if (and (short-width . < . max-proto-width)
                          (not immutable?)
                          (not transparent?))
-                  (make-paragraph
+                  (make-omitable-paragraph
                    (list
                     (to-element
                      `(,(schemeparenfont "struct")
@@ -1595,7 +1595,7 @@
             (list
              (make-flow
               (list
-               (make-paragraph
+               (make-omitable-paragraph
                 (list
                  (let ([target-maker
                         ((if form? id-to-form-target-maker id-to-target-maker)
@@ -1621,7 +1621,7 @@
                  spacer ":" spacer))))
              (make-flow (list (if (block? result-contract)
                                 result-contract
-                                (make-paragraph (list result-contract)))))))))))
+                                (make-omitable-paragraph (list result-contract)))))))))))
       stx-ids names result-contracts))
     (content-thunk))
    null))
@@ -1653,7 +1653,7 @@
              (list
               ((or form-proc
                    (lambda (x)
-                     (make-paragraph
+                     (make-omitable-paragraph
                       (list (to-element `(,x . ,(cdr form)))))))
                (and kw-id
                     (eq? form (car forms))
@@ -1717,7 +1717,7 @@
           (list
            (if form-thunk
              (form-thunk)
-             (make-paragraph (list (to-element form)))))))
+             (make-omitable-paragraph (list (to-element form)))))))
         (if (null? sub-procs)
           null
           (list (list flow-empty-line)
@@ -2112,7 +2112,7 @@
     (list
      (list (make-flow
             (list
-             (make-paragraph
+             (make-omitable-paragraph
               (list (let ([target-maker (id-to-target-maker stx-id #t)]
                           [content (list (annote-exporting-library
                                           (to-element stx-id)))])
@@ -2156,7 +2156,7 @@
                     #f
                     (cons
                      (list (make-flow
-                            (list (make-paragraph
+                            (list (make-omitable-paragraph
                                    (list (hspace 2)
                                          (case kind
                                            [(interface) "implements:"]

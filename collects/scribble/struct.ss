@@ -141,6 +141,7 @@
  [flow ([paragraphs (listof block?)])]
  [paragraph ([content list?])]
  [(styled-paragraph paragraph) ([style any/c])]
+ [(omitable-paragraph paragraph) ()]
  [table ([style any/c]
          [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
  [(auxiliary-table table) ()]

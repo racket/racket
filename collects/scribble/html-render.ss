@@ -1008,7 +1008,10 @@
                                              (loop (+ n 1) (cdr ds))]
                                             [else n])))])
                                null))
-                          ,@(render-flow d part ri #f))
+                          ,@(if (and (= 1 (length (flow-paragraphs d)))
+                                     (omitable-paragraph? (car (flow-paragraphs d))))
+                                (render-content (paragraph-content (car (flow-paragraphs d))) part ri)
+                                (render-flow d part ri #f)))
                      (loop (cdr ds) (cdr as) (cdr vas) #f)))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?

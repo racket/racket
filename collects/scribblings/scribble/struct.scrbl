@@ -334,6 +334,15 @@ A @techlink{paragraph} has a list of @tech{elements}.
 
 }
 
+@defstruct[(omitable-paragraph paragraph) ()]{
+
+Equivalent to a @scheme[paragraph], except that when a table cell
+contains a single @scheme[omitable-paragraph], then when rendering to
+HTML, no @tt{p} tag wraps the cell content.
+
+}
+
+
 @defstruct[(styled-paragraph paragraph) ([style any/c])]{
 
 The @scheme[style] can be
