@@ -357,6 +357,7 @@
          doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
+         [out-file (build-path (doc-dest-dir doc) "index.html")]
          [src-zo (let-values ([(base name dir?) (split-path (doc-src-file doc))])
                    (build-path base "compiled" (path-add-suffix name ".zo")))]
          [renderer (make-renderer latex-dest doc)]
@@ -374,17 +375,24 @@
                          (build-path (collection-path "scribble")
                                      "scribble.css")
                          #f (lambda () +inf.0)))]
+         [my-time (file-or-directory-modify-seconds out-file #f (lambda () -inf.0))]
          [info-out-time (file-or-directory-modify-seconds info-out-file #f (lambda () #f))]
          [info-in-time (file-or-directory-modify-seconds info-in-file #f (lambda () #f))]
-         [my-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
+         [info-time (min (or info-out-time -inf.0) (or info-in-time -inf.0))]
          [vers (send renderer get-serialize-version)]
+         [src-time (max aux-time
+                        (file-or-directory-modify-seconds
+                         src-zo #f (lambda () +inf.0)))]
          [up-to-date?
           (and info-out-time
                info-in-time
                (or (not can-run?)
-                   (my-time . >= . (max aux-time
-                                        (file-or-directory-modify-seconds
-                                         src-zo #f (lambda () +inf.0))))))]
+                   ;; Need to rebuild if output file is older than input:
+                   (my-time . >= . src-time)
+                   ;; But we can use in/out information if they're already built;
+                   ;; this is mostly useful if we interrupt setup-plt after
+                   ;; it runs some documents without rendering them:
+                   (info-time . >= . src-time)))]
          [can-run? (and (or (not latex-dest)
                             (not (omit? (doc-category doc))))
                         (or can-run?
