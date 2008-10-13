@@ -1,7 +1,7 @@
 #lang s-exp "env-lang.ss"
 
 (require
- (only-in scheme/list cons? take drop add-between last filter-map)
+ scheme/list
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  scheme/promise
