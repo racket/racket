@@ -211,8 +211,6 @@
 [string->path (-> -String -Path)]
 [file-exists? (-> -Pathlike B)]
 
-[assq    (-poly (a b) (a (-lst (-pair a b)) . -> . (Un (-pair a b) (-val #f))))]
-
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
 [string->number (-> -String (-opt N))]
 [with-input-from-file
@@ -224,9 +222,10 @@
 
 [random (cl-> [(-Integer) -Integer] [() N])]
 
+[assq  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assv  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
-[assf  (-poly (a b)
-              ((a . -> . B) (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assf  (-poly (a b) ((a . -> . B) (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 
 [list-ref (-poly (a) ((-lst a) -Integer . -> . a))]
 [positive? (-> N B)]
