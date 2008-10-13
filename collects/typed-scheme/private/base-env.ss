@@ -314,6 +314,7 @@
 [denominator (N . -> . -Integer)]
 [rationalize (N N . -> . N)]
 [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
+[sqrt (N . -> . N)]
 [log  (N . -> . N)]
 [exp  (N . -> . N)]
 [cos  (N . -> . N)]
@@ -322,6 +323,8 @@
 [acos (N . -> . N)]
 [asin (N . -> . N)]
 [atan (N . -> . N)]
+[gcd  (null -Integer . ->* . -Integer)]
+[lcm  (null -Integer . ->* . -Integer)]
 
 [arithmetic-shift (-Integer -Integer . -> . -Integer)]
 [bitwise-and (null N . ->* . N)]
@@ -354,7 +357,6 @@
 [round (N . -> . N)]
 [seconds->date (N . -> . (make-Name #'date))]
 [current-seconds (-> N)]
-[sqrt (-> N N)]
 [path->string (-> -Path -String)]
 
 [link-exists? (-> -Pathlike B)]
