@@ -131,11 +131,11 @@
 [remv*   (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]
                             [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
 
-[error
- (make-Function (list (make-arr null (Un))
-                      (make-arr (list Sym -String) (Un) Univ)
-                      (make-arr (list -String) (Un) Univ)
-                      (make-arr (list Sym) (Un))))]
+(error 
+ (make-Function (list 
+                 (make-arr (list Sym -String) (Un) Univ)
+                 (make-arr (list -String) (Un) Univ)
+                 (make-arr (list Sym) (Un)))))
 
 [namespace-variable-value
  (cl-> [(Sym) Univ]
