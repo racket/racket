@@ -359,6 +359,13 @@ WARNING: printf is rebound in the body of the unit to always
         (set! todo void))
       (inner (void) after-edit-sequence))
     
+    (define/augment (after-load-file success?)
+      (inner (void) after-load-file success?)
+      (set! ranges (make-hash))
+      (set! ranges-low 0) 
+      (set! ranges-high 0)
+      (set! ranges-list #f))
+    
     (define/public (highlight-range start end color [caret-space? #f] [priority 'low] [style 'rectangle])
       (unless (let ([exact-pos-int?
                      (λ (x) (and (integer? x) (exact? x) (x . >= . 0)))])
@@ -426,25 +433,14 @@ WARNING: printf is rebound in the body of the unit to always
         (let ([new-todo
                (λ ()
                  (let ([old-val (hash-ref ranges candidate #f)])
-                   (unless old-val
-                     (error 'unhighlight-range 
-                            "range not found; start: ~e end: ~e color: ~a caret-space?: ~e style: ~e"
-                            start end 
-                            (if (string? color)
-                                (format "~s" color)
-                                (format "(red: ~a green: ~a blue: ~a)"
-                                        (send color red)
-                                        (send color green)
-                                        (send color blue)))
-                            caret-space? 
-                            style))
-                   (let ([new-val (cdr old-val)])
-                     (cond
-                       [(null? new-val)
-                        (hash-remove! ranges candidate)]
-                       [else
-                        (hash-set! ranges candidate new-val)]))
-                 (set! ranges-list #f)))])
+                   (when old-val ;; may have been cleared by an earlier call to unhighlight-range
+                     (let ([new-val (cdr old-val)])
+                       (cond
+                         [(null? new-val)
+                          (hash-remove! ranges candidate)]
+                         [else
+                          (hash-set! ranges candidate new-val)]))
+                     (set! ranges-list #f))))])
           (cond
             [delayed-highlights?
              (set! todo
