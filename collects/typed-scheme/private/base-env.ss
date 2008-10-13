@@ -294,8 +294,10 @@
 [list->vector (-poly (a) (-> (-lst a) (-vec a)))]
 [exact? (N . -> . B)]
 [inexact? (N . -> . B)]
+[exact->inexact (N . -> . N)]
+[inexact->exact (N . -> . N)]
+
 [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
-[vector (-poly (a) (->* (list) a (-vec a)))]
 [real? (Univ . -> . B)]
 [real-part (N . -> . N)]
 [imag-part (N . -> . N)]
@@ -303,10 +305,11 @@
 [angle (N . -> . N)]
 [numerator (N . -> . -Integer)]
 [denominator (N . -> . -Integer)]
-[exact->inexact (N . -> . N)]
-[inexact->exact (N . -> . N)]
-[make-string (cl-> [(N) -String] [(N -Char) -String])]
+
 [arithmetic-shift (-Integer -Integer . -> . -Integer)]
+
+[vector (-poly (a) (->* (list) a (-vec a)))]
+[make-string (cl-> [(N) -String] [(N -Char) -String])]
 [abs (N . -> . N)]
 [substring (cl-> [(-String N) -String]
                  [(-String N N) -String])]
