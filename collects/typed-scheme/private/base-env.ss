@@ -225,7 +225,8 @@
 [assq  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assv  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
-[assf  (-poly (a b) ((a . -> . b) (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+[assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
+                     . -> . (-opt (-pair a b))))]
 
 [list-ref (-poly (a) ((-lst a) -Integer . -> . a))]
 [positive? (-> N B)]
