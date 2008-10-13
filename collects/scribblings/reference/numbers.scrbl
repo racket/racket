@@ -9,7 +9,7 @@
 
 @guideintro["numbers"]{numbers}
 
-All numbers are @deftech{complex numbers}. Some of them are
+All @deftech{numbers} are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
 represented are also @deftech{rational numbers}, except for
 @as-index{@scheme[+inf.0]} (positive @as-index{infinity}),

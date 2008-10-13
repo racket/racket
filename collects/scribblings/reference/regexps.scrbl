@@ -14,14 +14,14 @@
 
 @local-table-of-contents[]
 
-Regular expressions are specified as strings or byte strings, using
-the same pattern language as the Unix utility @exec{egrep} or Perl. A
-string-specified pattern produces a character regexp matcher, and a
-byte-string pattern produces a byte regexp matcher. If a character
-regexp is used with a byte string or input port, it matches UTF-8
-encodings (see @secref["encodings"]) of matching character streams;
-if a byte regexp is used with a character string, it matches bytes in
-the UTF-8 encoding of the string.
+@deftech{Regular expressions} are specified as strings or byte
+strings, using the same pattern language as the Unix utility
+@exec{egrep} or Perl. A string-specified pattern produces a character
+regexp matcher, and a byte-string pattern produces a byte regexp
+matcher. If a character regexp is used with a byte string or input
+port, it matches UTF-8 encodings (see @secref["encodings"]) of
+matching character streams; if a byte regexp is used with a character
+string, it matches bytes in the UTF-8 encoding of the string.
 
 Regular expressions can be compiled into a @defterm{regexp value} for
 repeated matches. The @scheme[regexp] and @scheme[byte-regexp]
