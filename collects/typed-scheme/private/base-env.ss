@@ -314,6 +314,10 @@
 [exp (N . -> . N)]
 
 [arithmetic-shift (-Integer -Integer . -> . -Integer)]
+[bitwise-and (null N . ->* . N)]
+[bitwise-ior (null N . ->* . N)]
+[bitwise-not (null N . ->* . N)]
+[bitwise-xor (null N . ->* . N)]
 
 [vector (-poly (a) (->* (list) a (-vec a)))]
 [make-string (cl-> [(N) -String] [(N -Char) -String])]
