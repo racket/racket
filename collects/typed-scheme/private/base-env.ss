@@ -222,7 +222,7 @@
  (-poly (a) (cl-> [(-Pathlike  (-> a))  a]
                   [(-Pathlike (-> a) Sym) a]))]
 
-[random (cl-> [(-Integer) -Integer] [() -Integer])]
+[random (cl-> [(-Integer) -Integer] [() N])]
 
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assf  (-poly (a b)
