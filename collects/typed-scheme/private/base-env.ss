@@ -9,10 +9,8 @@
 
 [raise (Univ . -> . (Un))]
 
-[car (-poly (a b) (cl-> [((-pair a b)) a]
-                        [((make-Listof a)) a]))]
-[first (-poly (a b) (cl-> [((-pair a b)) a]
-                          [((make-Listof a)) a]))]
+[car   (-poly (a b) (cl-> [((-pair a b)) a] [((-lst a)) a]))]
+[first (-poly (a b) (cl-> [((-pair a b)) a] [((-lst a)) a]))]
 [second (-poly (a b c)
                (cl-> [((-pair a (-pair b c))) b]
                      [((-lst a)) a]))]
@@ -28,10 +26,9 @@
                    [((-lst a)) a]))]
 [caddr  (-poly (a) (-> (-lst a) a))]
 [cadddr (-poly (a) (-> (-lst a) a))]
-[cdr   (-poly (a b) (cl-> [((-pair a b)) b]
-                          [((make-Listof a)) (make-Listof a)]))]
-[cddr  (-poly (a) (-> (make-Listof a) (make-Listof a)))]
-[cdddr (-poly (a) (-> (make-Listof a) (make-Listof a)))]
+[cdr   (-poly (a b) (cl-> [((-pair a b)) b] [((-lst a)) (-lst a)]))]
+[cddr  (-poly (a) (-> (-lst a) (-lst a)))]
+[cdddr (-poly (a) (-> (-lst a) (-lst a)))]
 [cons (-poly (a b)
              (cl-> [(a (-lst a)) (-lst a)]
                    [(a b) (-pair a b)]))]
@@ -100,8 +97,8 @@
                                 ((-lst b) b) . ->... . c))]
 [foldl
  (-poly (a b c)
-        (cl-> [((a b . -> . b) b (make-Listof a)) b]
-              [((a b c . -> . c) c (make-Listof a) (make-Listof b)) c]))]
+        (cl-> [((a b . -> . b) b (-lst a)) b]
+              [((a b c . -> . c) c (-lst a) (-lst b)) c]))]
 [foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
 [filter (-poly (a b) (cl->*
                       ((a . -> . B
@@ -170,11 +167,11 @@
 [vector-ref (-poly (a) ((-vec a) N . -> . a))]
 [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (-vec a)))]
 [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]
-[reverse (-poly (a) (-> (make-Listof a) (make-Listof a)))]
+[reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
-[length (-poly (a) (-> (make-Listof a) -Integer))]
-[memq (-poly (a) (-> a (make-Listof a) (-opt (make-Listof a))))]
-[memv (-poly (a) (-> a (make-Listof a) (-opt (make-Listof a))))]
+[length (-poly (a) (-> (-lst a) -Integer))]
+[memq (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
+[memv (-poly (a) (-> a (-lst a) (-opt (-lst a))))]
 [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
 [member (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
 [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
