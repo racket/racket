@@ -4540,6 +4540,7 @@ so that propagation occurs.
   (test-flat-contract #rx#".x." #"axq" #"x")
   (test-flat-contract #rx".x." #"axq" #"x")
   (test-flat-contract #rx#".x." "axq" "x")
+  (test-flat-contract ''() '() #f)
   
   (test/spec-passed 'any/c '(contract any/c 1 'pos 'neg))
   (test-flat-contract 'printable/c (vector (cons 1 (box #f))) (lambda (x) x))
