@@ -11,6 +11,7 @@
 (define current-table-mode (make-parameter #f))
 (define rendering-tt (make-parameter #f))
 (define show-link-page-numbers (make-parameter #f))
+(define done-link-page-numbers (make-parameter #f))
 (define disable-images (make-parameter #f))
 
 (define-struct (toc-paragraph paragraph) ())
@@ -123,7 +124,8 @@
                               (pair? (link-element-tag e))
                               (eq? 'part (car (link-element-tag e)))
                               (null? (element-content e)))])
-        (parameterize ([show-link-page-numbers #f])
+        (parameterize ([done-link-page-numbers (or (done-link-page-numbers)
+                                                   (link-element? e))])
           (when (target-element? e)
             (printf "\\label{t:~a}"
                     (t-encode (tag-key (target-element-tag e) ri))))
@@ -199,7 +201,8 @@
         (when part-label?
           (printf "''"))
         (when (and (link-element? e)
-                   (show-link-page-numbers))
+                   (show-link-page-numbers)
+                   (not (done-link-page-numbers)))
           (printf ", \\pageref{t:~a}"
                   (t-encode (tag-key (link-element-tag e) ri))))
         null))
