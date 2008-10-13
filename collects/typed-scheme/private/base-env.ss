@@ -235,7 +235,8 @@
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
 
-[list-ref (-poly (a) ((-lst a) -Integer . -> . a))]
+[list-ref  (-poly (a) ((-lst a) -Integer . -> . a))]
+[list-tail (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
 [positive? (-> N B)]
 [negative? (-> N B)]
 [odd? (-> N B)]
