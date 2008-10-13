@@ -138,6 +138,8 @@
 
 [match:error (Univ . -> . (Un))]
 [display (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
+[write   (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
+[print   (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
 [void (->* '() Univ -Void)]
 [void? (make-pred-ty -Void)]
 [printf (->* (list -String) Univ -Void)]
@@ -396,7 +398,6 @@
 #;[exn:fail? (-> Univ B)]
 #;[exn:fail:read? (-> Univ B)]
 
-[write (-> -Sexp -Void)]
 [open-output-string (-> -Output-Port)]
 ;; FIXME - wrong
 [get-output-string (-> -Output-Port -String)]
