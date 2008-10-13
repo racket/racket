@@ -15,7 +15,7 @@ These functions get input from the user and/or display
                    [filename (or/c path-string? false/c) #f]
                    [extension (or/c string? false/c) #f]
                    [style (listof (one-of/c 'packages 'enter-packages)) null]
-                   [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c path? false/c)]{
 
 Obtains a file pathname from the user via the platform-specific
