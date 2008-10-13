@@ -121,9 +121,15 @@
 [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
 [last   (-poly (a) ((-lst a) . -> . a))]
 [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
-[remove* (-poly (a b)
-                (cl-> [((-lst a) (-lst a)) (-lst a)]
-                      [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
+[remove  (-poly (a) (a (-lst a) . -> . (-lst a)))]
+[remq    (-poly (a) (a (-lst a) . -> . (-lst a)))]
+[remv    (-poly (a) (a (-lst a) . -> . (-lst a)))]
+[remove* (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]
+                            [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
+[remq*   (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]
+                            [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
+[remv*   (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]
+                            [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
 
 [error
  (make-Function (list (make-arr null (Un))
