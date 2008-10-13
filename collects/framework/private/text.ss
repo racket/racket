@@ -131,7 +131,9 @@ WARNING: printf is rebound in the body of the unit to always
     (define/public-final (get-highlighted-ranges)
       (unless ranges-list
         (set! ranges-list 
-              (map car (sort (hash-map ranges cons) (λ (x y) (> (cdr x) (cdr y))))))
+              (map car (sort (apply append (hash-map ranges (λ (k vs) (map (λ (v) (cons k v)) vs))))
+                             (λ (x y) (> (cdr x) (cdr y))))))
+        (hash-for-each ranges (λ (k v) (hash-remove! ranges k)))
         (let loop ([ranges-list ranges-list]
                    [i 0])
           (cond
@@ -139,7 +141,7 @@ WARNING: printf is rebound in the body of the unit to always
              (set! ranges-low i)
              (set! ranges-high 1)]
             [else
-             (hash-set! ranges (car ranges-list) i)
+             (hash-cons! ranges (car ranges-list) i)
              (loop (cdr ranges-list) (- i 1))])))
       ranges-list)
     (define/public (get-fixed-style)
@@ -393,7 +395,7 @@ WARNING: printf is rebound in the body of the unit to always
              [update-one
               (λ ()
                 (set! ranges-list #f)
-                (hash-set! ranges l (if (eq? priority 'high) (+ ranges-high 1) (- ranges-low 1)))
+                (hash-cons! ranges l (if (eq? priority 'high) (+ ranges-high 1) (- ranges-low 1)))
                 (if (eq? priority 'high) 
                     (set! ranges-high (+ ranges-high 1))
                     (set! ranges-low (- ranges-low 1))))])
@@ -423,20 +425,26 @@ WARNING: printf is rebound in the body of the unit to always
                                        (send the-color-database find-color color)))])
         (let ([new-todo
                (λ ()
-                 (unless (hash-ref ranges candidate #f)
-                   (error 'unhighlight-range 
-                          "range not found; start: ~e end: ~e color: ~a caret-space?: ~e style: ~e"
-                          start end 
-                          (if (string? color)
-                              (format "~s" color)
-                              (format "(red: ~a green: ~a blue: ~a)"
-                                      (send color red)
-                                      (send color green)
-                                      (send color blue)))
-                          caret-space? 
-                          style))
-                 (hash-remove! ranges candidate)
-                 (set! ranges-list #f))])
+                 (let ([old-val (hash-ref ranges candidate #f)])
+                   (unless old-val
+                     (error 'unhighlight-range 
+                            "range not found; start: ~e end: ~e color: ~a caret-space?: ~e style: ~e"
+                            start end 
+                            (if (string? color)
+                                (format "~s" color)
+                                (format "(red: ~a green: ~a blue: ~a)"
+                                        (send color red)
+                                        (send color green)
+                                        (send color blue)))
+                            caret-space? 
+                            style))
+                   (let ([new-val (cdr old-val)])
+                     (cond
+                       [(null? new-val)
+                        (hash-remove! ranges candidate)]
+                       [else
+                        (hash-set! ranges candidate new-val)]))
+                 (set! ranges-list #f)))])
           (cond
             [delayed-highlights?
              (set! todo
@@ -585,6 +593,8 @@ WARNING: printf is rebound in the body of the unit to always
     
     (super-new)
     (set-autowrap-bitmap (initial-autowrap-bitmap))))
+
+(define (hash-cons! h k v) (hash-set! h k (cons v (hash-ref h k '()))))
 
 (define first-line<%>
   (interface ()
