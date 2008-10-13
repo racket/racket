@@ -189,8 +189,8 @@ A parameter that controls printing values in an alternate syntax.  See
 
 
 @defparam*[current-write-relative-directory path 
-                                            (or/c (and/c path-string? complete-path?) false/c)
-                                            (or/c (and/c path? complete-path?) false/c)]{
+                                            (or/c (and/c path-string? complete-path?) #f)
+                                            (or/c (and/c path? complete-path?) #f)]{
 
 A parameter that is used when writing compiled code that contains
 pathname literals, including source-location pathnames for procedure

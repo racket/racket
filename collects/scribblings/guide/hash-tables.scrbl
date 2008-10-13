@@ -22,13 +22,14 @@ the hash table is created with @scheme[make-hash] or
 ]
 
 A literal hash table can be written as an expression by using
-@litchar{#hash} (for an @scheme[equal?]-based table) or
-@litchar{#hasheq} (for an @scheme[eq?]-based table). A parenthesized
-sequence must immediately follow @litchar{#hash} or @litchar{#hasheq},
-where each element is a sequence is a dotted key--value pair. Literal
-hash tables are immutable, but they can be extended functionally
-(producing a new hash table without changing the old one) using
-@scheme[hash-set].
+@litchar{#hash} (for an @scheme[equal?]-based table),
+@litchar{#hasheq} (for an @scheme[eq?]-based table), or
+@litchar{#hasheqv} (for an @scheme[eqv?]-based table). A parenthesized
+sequence must immediately follow @litchar{#hash}, @litchar{#hasheq},
+or @litchar{#hasheqv}, where each element is a sequence is a dotted
+key--value pair. Literal hash tables are immutable, but they can be
+extended functionally (producing a new hash table without changing the
+old one) using @scheme[hash-set].
 
 @examples[
 (define ht #hash(("apple" . red)
@@ -42,8 +43,9 @@ ht2
 
 @refdetails/gory["parse-hashtable"]{the syntax of hash table literals}
 
-A hash table can optionally retain its keys @defterm{weakly}, so each
-mapping is retained only so long as the key is retained elsewhere.
+A non-literal hash table can optionally retain its keys
+@defterm{weakly}, so each mapping is retained only so long as the key
+is retained elsewhere.
 
 @examples[
 (define ht (make-weak-hasheq))

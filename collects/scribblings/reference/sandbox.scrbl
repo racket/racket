@@ -19,14 +19,14 @@ particular way and can have restricted resources (memory and time),
 filesystem access, and network access.
 
 @defproc*[([(make-evaluator [language (or/c module-path? 
-                                            (list/c (one-of/c 'special) symbol?)
-                                            (cons/c (one-of/c 'begin) list?))]
+                                            (list/c 'special symbol?)
+                                            (cons/c 'begin list?))]
                             [input-program any/c] ...
                             [#:requires requires (listof (or/c module-path? path?))]
                             [#:allow-read allow (listof (or/c module-path? path?))])
             (any/c . -> . any)]
            [(make-module-evaluator [module-decl (or/c syntax? pair?)]
-                                   [#:language   lang  (or/c false/c module-path?)]
+                                   [#:language   lang  (or/c #f module-path?)]
                                    [#:allow-read allow (listof (or/c module-path? path?))])
             (any/c . -> . any)])]{
 
@@ -265,10 +265,10 @@ calls @scheme[read-syntax], accumulating results in a list until it
 receives @scheme[eof].}
 
 
-@defparam[sandbox-input in (or/c false/c
+@defparam[sandbox-input in (or/c #f
                                  string? bytes?
                                  input-port?
-                                 (one-of/c 'pipe)
+                                 'pipe
                                  (-> input-port?))]{
 
 A parameter that determines the initial @scheme[current-input-port]
@@ -293,9 +293,11 @@ which creates an empty port.  The following other values are allowed:
 ]}
 
 
-@defparam[sandbox-output in (or/c false/c
+@defparam[sandbox-output in (or/c #f
                                   output-port? 
-                                  (one-of/c 'pipe 'bytes 'string)
+                                  'pipe
+                                  'bytes
+                                  'string
                                   (-> output-port?))]{
 
 A parameter that determines the initial @scheme[current-output-port]
@@ -325,9 +327,11 @@ values are allowed:
 ]}
 
 
-@defparam[sandbox-error-output in (or/c false/c
+@defparam[sandbox-error-output in (or/c #f
                                         output-port? 
-                                        (one-of/c 'pipe 'bytes 'string)
+                                        'pipe
+                                        'bytes
+                                        'string
                                         (-> output-port?))]{
 
 Like @scheme[sandbox-output], but for the initial
@@ -414,8 +418,7 @@ default forbids all filesystem I/O except for things in
 
 
 @defparam[sandbox-path-permissions perms
-          (listof (list/c (one-of/c 'execute 'write 'delete
-                                    'read 'exists)
+          (listof (list/c (or/c 'execute 'write 'delete 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
 A parameter that configures the behavior of the default sandbox
@@ -444,9 +447,9 @@ collection libraries (including
 
 @defparam[sandbox-network-guard proc
           (symbol?
-           (or/c (and/c string? immutable?) false/c)
-           (or/c (integer-in 1 65535) false/c)
-           (one-of/c 'server 'client)
+           (or/c (and/c string? immutable?) #f)
+           (or/c (integer-in 1 65535) #f)
+           (or/c 'server 'client)
            . -> . any)]{
 
 A parameter that specifieds a procedure to be used (as is) by the
@@ -455,9 +458,9 @@ network connection.}
 
 
 @defparam[sandbox-eval-limits limits
-          (or/c (list/c (or/c exact-nonnegative-integer? false/c)
-                        (or/c exact-nonnegative-integer? false/c))
-                false/c)]{
+          (or/c (list/c (or/c exact-nonnegative-integer? #f)
+                        (or/c exact-nonnegative-integer? #f))
+                #f)]{
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
@@ -513,8 +516,8 @@ propagates the break to the evaluator's context.}
 
 
 @defproc[(set-eval-limits [evaluator (any/c . -> . any)]
-                          [secs (or/c exact-nonnegative-integer? false/c)]
-                          [mb (or/c exact-nonnegative-integer? false/c)]) void?]{
+                          [secs (or/c exact-nonnegative-integer? #f)]
+                          [mb (or/c exact-nonnegative-integer? #f)]) void?]{
 
 Changes the per-expression limits that @scheme[evaluator] uses to
 @scheme[sec] seconds and @scheme[mb] megabytes (either one can be
@@ -614,8 +617,8 @@ when the GUI library is available, such as using a new eventspace for
 each evaluator.}
 
 
-@defproc[(call-with-limits [secs (or/c exact-nonnegative-integer? false/c)]
-                           [mb (or/c exact-nonnegative-integer? false/c)]
+@defproc[(call-with-limits [secs (or/c exact-nonnegative-integer? #f)]
+                           [mb (or/c exact-nonnegative-integer? #f)]
                            [thunk (-> any)])
          any]{
 
@@ -642,7 +645,7 @@ A macro version of @scheme[call-with-limits].}
 
 @defproc*[([(exn:fail:resource? [v any/c]) boolean?]
            [(exn:fail:resource-resource [exn exn:fail:resource?])
-            (one-of/c 'time 'memory)])]{
+            (or/c 'time 'memory)])]{
 
 A predicate and accessor for exceptions that are raised by
 @scheme[call-with-limits].  The @scheme[resource] field holds a symbol,

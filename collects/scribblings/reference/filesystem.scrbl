@@ -153,7 +153,7 @@ included in the returned list.}
 
 
 @defproc[(find-executable-path [program-sub path-string?][related-sub path-string?][deepest? any/c #f]) 
-         (or/c path? false/c)]{
+         (or/c path? #f)]{
 
 Finds a path for the executable @scheme[program-sub], returning
 @scheme[#f] if the path cannot be found.
@@ -256,7 +256,7 @@ existing @scheme[new].}
 
 
 @defproc[(file-or-directory-modify-seconds [path path-string?]
-                                           [secs-n (or/c exact-integer? false/c) #f]
+                                           [secs-n (or/c exact-integer? #f) #f]
                                            [fail-thunk (-> any) (lambda () (raise (make-exn:fail:filesystem ....)))])
          any]{
 
@@ -556,7 +556,7 @@ deleted. If @scheme[path] is a directory, then
 directory in @scheme[path] before the directory is deleted.}
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
-                     [start-path (or/c path-string? false/c) #f])
+                     [start-path (or/c path-string? #f) #f])
          (listof path?)]{
 
 Traverses the filesystem starting at @scheme[start-path] and creates a
@@ -604,13 +604,13 @@ directory, returns a list such that
 }}
 
 
-@defproc[(fold-files [proc (and/c (path? (one-of/c 'file 'dir 'link) any/c 
+@defproc[(fold-files [proc (and/c (path? (or/c 'file 'dir 'link) any/c 
                                    . -> . any/c)
                                   (or/c procedure?
-                                        ((path? (one-of/c 'dir) any/c) 
+                                        ((path? 'dir any/c) 
                                          . -> . (values any/c any/c))))]
                      [init-val any/c]
-                     [start-path (or/c path-string? false/c) #f]
+                     [start-path (or/c path-string? #f) #f]
                      [follow-links? any/c #t])
          any]{
 
@@ -670,8 +670,8 @@ directories as necessary.}
 
 
 @defproc[(make-temporary-file [template string? "mztmp~a"]
-                              [copy-from-filename (or/c path-string? false/c (one-of/c 'directory)) #f]
-                              [directory (or/c path-string? false/c) #f])
+                              [copy-from-filename (or/c path-string? #f 'directory) #f]
+                              [directory (or/c path-string? #f) #f])
          path?]{
 
 Creates a new temporary file and returns a pathname string for the
@@ -705,7 +705,7 @@ needed.}
 @defproc[(get-preference [name symbol?]
                          [failure-thunk (-> any) (lambda () #f)]
                          [flush-mode any/c 'timestamp]
-                         [filename (or/c string-path? false/c) #f])
+                         [filename (or/c string-path? #f) #f])
          any]{
 
 Extracts a preference value from the file designated by
@@ -742,7 +742,7 @@ system, see @scheme[preferences:get].}
 @defproc[(put-preferences [names (listof symbol?)]
                           [vals list?]
                           [locked-proc (path? . -> . any) (lambda (p) (error ....))]
-                          [filename (or/c false/c path-string?) #f])
+                          [filename (or/c #f path-string?) #f])
          void?]{
 
 Installs a set of preference values and writes all current values to

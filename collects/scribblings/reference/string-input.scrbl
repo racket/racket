@@ -21,7 +21,7 @@ an end-of-file, then @scheme[eof] is returned.}
 
 
 @defproc[(read-line [in input-port? (current-input-port)]
-                    [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
+                    [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          (or/c string? eof-object?)]{
 
 Returns a string containing the next line of bytes from @scheme[in].
@@ -66,7 +66,7 @@ is opened in text mode, @scheme['linefeed] is usually the appropriate
 @scheme[read-line] mode.}
 
 @defproc[(read-bytes-line [in input-port? (current-input-port)] 
-                    [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
+                    [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'linefeed])
          (or/c bytes? eof-object?)]{
 Like @scheme[read-line], but reads bytes and produces a byte string.}
 
@@ -230,7 +230,7 @@ string, and returns the number of bytes read.}
 
 @defproc[(peek-bytes-avail! [bstr (and/c bytes? (not/c immutable?))]
                             [skip-bytes-amt exact-nonnegative-integer?]
-                            [progress (or/c evt? false/c) #f]
+                            [progress (or/c evt? #f) #f]
                             [in input-port? (current-input-port)]
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -254,7 +254,7 @@ case that @scheme[progress] becomes ready before bytes are peeked.}
 
 @defproc[(peek-bytes-avail!* [bstr (and/c bytes? (not/c immutable?))]
                              [skip-bytes-amt exact-nonnegative-integer?]
-                             [progress (or/c evt? false/c) #f]
+                             [progress (or/c evt? #f) #f]
                              [in input-port? (current-input-port)]
                              [start-pos exact-nonnegative-integer? 0]
                              [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -268,7 +268,7 @@ port.}
 
 @defproc[(peek-bytes-avail!/enable-break [bstr (and/c bytes? (not/c immutable?))]
                                          [skip-bytes-amt exact-nonnegative-integer?]
-                                         [progress (or/c evt? false/c) #f]
+                                         [progress (or/c evt? #f) #f]
                                          [in input-port? (current-input-port)]
                                          [start-pos exact-nonnegative-integer? 0]
                                          [end-pos exact-nonnegative-integer? (bytes-length bstr)])
@@ -316,7 +316,7 @@ value after @scheme[skip-bytes-amt] byte positions, it is returned.}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
                                [skip-bytes-amt exact-nonnegative-integer? 0]
-                               [progress (or/c evt? false/c) #f])
+                               [progress (or/c evt? #f) #f])
          (or/c character? eof-object? any/c)]{
 
 Like @scheme[peek-char-or-special], but reads and returns a byte

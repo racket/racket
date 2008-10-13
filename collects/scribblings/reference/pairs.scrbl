@@ -376,7 +376,7 @@ By default, @scheme[extract-key] is applied to two list elements for
 @section{List Searching}
 
 @defproc[(member [v any/c] [lst list?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Locates the first element of @scheme[lst] that is @scheme[equal?] to
  @scheme[v]. If such an element exists, the tail of @scheme[lst]
@@ -385,19 +385,19 @@ Locates the first element of @scheme[lst] that is @scheme[equal?] to
 
 
 @defproc[(memv [v any/c] [lst list?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Like @scheme[member], but finds an element using @scheme[eqv?].}
 
 
 @defproc[(memq [v any/c] [lst list?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Like @scheme[member], but finds an element using @scheme[eq?].}
 
 
 @defproc[(memf [proc procedure?] [lst list?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Like @scheme[member], but finds an element using the predicate
  @scheme[proc]; an element is found when @scheme[proc] applied to the
@@ -411,7 +411,7 @@ Like @scheme[memf], but returns the element or @scheme[#f]
 
 
 @defproc[(assoc [v any/c] [lst (listof pair?)])
-         (or/c pair? false/c)]{
+         (or/c pair? #f)]{
 
 Locates the first element of @scheme[lst] whose @scheme[car] is
  @scheme[equal?] to @scheme[v]. If such an element exists, the pair
@@ -420,19 +420,19 @@ Locates the first element of @scheme[lst] whose @scheme[car] is
 
 
 @defproc[(assv [v any/c] [lst (listof pair?)])
-         (or/c pair? false/c)]{
+         (or/c pair? #f)]{
 
 Like @scheme[assoc], but finds an element using @scheme[eqv?].}
 
 
 @defproc[(assq [v any/c] [lst (listof pair?)])
-         (or/c pair? false/c)]{
+         (or/c pair? #f)]{
 
 Like @scheme[assoc], but finds an element using @scheme[eq?].}
 
 
 @defproc[(assf [proc procedure?] [lst list?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Like @scheme[assoc], but finds an element using the predicate
  @scheme[proc]; an element is found when @scheme[proc] applied to the

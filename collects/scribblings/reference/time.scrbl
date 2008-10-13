@@ -127,14 +127,14 @@ Converts a date to a string. The returned string contains the time of
 day only if @scheme[time?]. See also @scheme[date-display-format].}
 
 
-@defparam[date-display-format format (one-of/c 'american
-                                               'chinese
-                                               'german
-                                               'indian
-                                               'irish
-                                               'iso-8601
-                                               'rfc2822
-                                               'julian)]{
+@defparam[date-display-format format (or/c 'american
+                                           'chinese
+                                           'german
+                                           'indian
+                                           'irish
+                                           'iso-8601
+                                           'rfc2822
+                                           'julian)]{
 
 Parameter that determines the date string format. The initial format
 is @scheme['american].}

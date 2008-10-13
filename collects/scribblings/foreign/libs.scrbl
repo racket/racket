@@ -22,8 +22,8 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @declare-exporting[scribblings/foreign/unsafe-foreign]
 
 
-@defproc[(ffi-lib [path (or/c path-string? false/c)]
-                  [version (or/c string? (listof string?) false/c) #f]) any]{
+@defproc[(ffi-lib [path (or/c path-string? #f)]
+                  [version (or/c string? (listof string?) #f) #f]) any]{
 
 Returns an foreign-library value. If @scheme[path] is a path, the
 result represents the foreign library, which is opened in an
@@ -63,9 +63,9 @@ relative path (containing slashes, e.g., @filepath{./foo.so}).}
 
 
 @defproc[(get-ffi-obj [objname (or/c string? bytes? symbol?)]
-                      [lib (or/c ffi-lib? path-string? false/c)]
+                      [lib (or/c ffi-lib? path-string? #f)]
                       [type ctype?]
-                      [failure-thunk (or/c (-> any) false/c) #f]) 
+                      [failure-thunk (or/c (-> any) #f) #f]) 
          any]{
 
 Looks for the given object name @scheme[objname] in the given
@@ -96,7 +96,7 @@ raise an exception.}
 
 
 @defproc[(set-ffi-obj! [objname (or/c string? bytes? symbol?)]
-                       [lib (or/c ffi-lib? path-string? false/c)]
+                       [lib (or/c ffi-lib? path-string? #f)]
                        [type ctype?]
                        [new any/c])
          void?]{
@@ -109,7 +109,7 @@ interface, including Scheme callbacks.}
 
 
 @defproc[(make-c-parameter [objname (or/c string? bytes? symbol?)]
-                           [lib (or/c ffi-lib? path-string? false/c)]
+                           [lib (or/c ffi-lib? path-string? #f)]
                            [type ctype?])
          (and/c (-> any)
                 (any/c -> void?))]{
@@ -134,8 +134,8 @@ actually redirected through a parameter-like procedure created by
 binding and for the foreign object's name.}
 
 @defproc[(ffi-obj-ref [objname (or/c string? bytes? symbol?)]
-                      [lib (or/c ffi-lib? path-string? false/c)]
-                      [failure-thunk (or/c (-> any) false/c) #f]) 
+                      [lib (or/c ffi-lib? path-string? #f)]
+                      [failure-thunk (or/c (-> any) #f) #f]) 
          any]{
 
 Returns a pointer object for the specified foreign object.  This

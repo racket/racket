@@ -105,7 +105,7 @@ no source location or properties.}
 Returns the @tech{base phase} of @scheme[namespace].}
 
 
-@defproc[(namespace-module-identifier [where (or/c namespace? exact-integer? false/c)
+@defproc[(namespace-module-identifier [where (or/c namespace? exact-integer? #f)
                                              (current-namespace)])
          identifier?]{
 
@@ -123,7 +123,7 @@ bindings.}
 
 @defproc[(namespace-variable-value [sym symbol?]
                                    [use-mapping? any/c #t]
-                                   [failure-thunk (or/c (-> any) false/c) #f]
+                                   [failure-thunk (or/c (-> any) #f) #f]
                                    [namespace namespace? (current-namespace)])
          any]{
 

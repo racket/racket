@@ -27,7 +27,7 @@ See @secref["reader"] for information on the default reader in
 @scheme[read-syntax] mode.}
 
 @defproc[(read/recursive [in input-port? (current-input-port)]
-                         [start (or/c character? false/c) #f]
+                         [start (or/c character? #f) #f]
                          [readtable readtable? (current-readtable)]
                          [graph? any/c #f])
           any]{
@@ -75,7 +75,7 @@ See @secref["readtables"] for an extended example that uses
 
 @defproc[(read-syntax/recursive [source-name any/c (object-name in)]
                                 [in input-port? (current-input-port)]
-                                [start (or/c character? false/c) #f]
+                                [start (or/c character? #f) #f]
                                 [readtable readtable? (current-readtable)]
                                 [graph? any/c #f])
           any]{
@@ -238,7 +238,7 @@ a module-path datum following @litchar{#reader}. See
 @secref["parse-reader"] for more information.}
 
 
-@defparam[current-readtable readtable (or/c readtable? false/c)]{
+@defparam[current-readtable readtable (or/c readtable? #f)]{
 
 A parameter whose value determines a readtable that
 adjusts the parsing of S-expression input, where @scheme[#f] implies the
@@ -315,7 +315,7 @@ Like @scheme[read-syntax], but for Honu mode (see
 @secref["parse-honu"]).}
 
 @defproc[(read-honu/recursive [in input-port? (current-input-port)]
-                              [start (or/c character? false/c) #f]
+                              [start (or/c character? #f) #f]
                               [readtable readtable? (current-readtable)]
                               [graph? any/c #f])
           any]{
@@ -325,7 +325,7 @@ Like @scheme[read/recursive], but for Honu mode (see
 
 @defproc[(read-honu-syntax/recursive [source-name any/c (object-name in)]
                                      [in input-port? (current-input-port)]
-                                     [start (or/c character? false/c) #f]
+                                     [start (or/c character? #f) #f]
                                      [readtable readtable? (current-readtable)]
                                      [graph? any/c #f])
           any]{

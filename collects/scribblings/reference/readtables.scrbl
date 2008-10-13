@@ -69,10 +69,10 @@ otherwise.
 }
 
 @defproc[(make-readtable [readtable readtable?]
-                         [key (or/c character? false/c)]
-                         [mode (or/c (one-of 'terminating-macro
-                                             'non-terminating-macro
-                                             'dispatch-macro)
+                         [key (or/c character? #f)]
+                         [mode (or/c (or/c 'terminating-macro
+                                           'non-terminating-macro
+                                           'dispatch-macro)
                                      character?)]
                          [action (or/c procedure?
                                        readtable?)]
@@ -161,10 +161,10 @@ character to be treated as whitespace, and it might use
 
 @defproc[(readtable-mapping [readtable readtable?][char character?])
          (values (or/c character? 
-                       (one-of 'terminating-macro
-                               'non-terminating-macro))
-                 (or/c false/c procedure?)
-                 (or/c false/c procedure?))]{
+                       (or/c 'terminating-macro
+                             'non-terminating-macro))
+                 (or/c #f procedure?)
+                 (or/c #f procedure?))]{
 
 Produces information about the mappings in @scheme[readtable] for
 @scheme[char]. The result is three values:

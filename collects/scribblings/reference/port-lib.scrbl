@@ -27,43 +27,43 @@ input ports as it becomes available.}
 @defproc[(make-input-port/read-to-peek 
           [name any/c]
           [read-in (bytes? 
-                    . -> . (one-of/c exact-nonnegative-integer?
-                                     eof-object?
-                                     procedure?
-                                     evt?))]
-          [fast-peek (or/c false/c
+                    . -> . (or/c exact-nonnegative-integer?
+                                 eof-object?
+                                 procedure?
+                                 evt?))]
+          [fast-peek (or/c #f
                            (bytes? exact-nonnegative-integer?
                             (bytes? exact-nonnegative-integer?
-                             . -> . (one-of/c exact-nonnegative-integer?
-                                              eof-object?
-                                              procedure?
-                                              evt?
-                                              false/c))
-                            . -> . (one-of/c exact-nonnegative-integer?
-                                             eof-object?
-                                             procedure?
-                                             evt?
-                                             false/c)))]
+                             . -> . (or/c exact-nonnegative-integer?
+                                          eof-object?
+                                          procedure?
+                                          evt?
+                                          #f))
+                            . -> . (or/c exact-nonnegative-integer?
+                                         eof-object?
+                                         procedure?
+                                         evt?
+                                         #f)))]
           [close (-> any)]
           [get-location (or/c 
                          (->
                           (values
-                           (or/c exact-positive-integer? false/c)
-                           (or/c exact-nonnegative-integer? false/c)
-                           (or/c exact-positive-integer? false/c)))
-                         false/c)
+                           (or/c exact-positive-integer? #f)
+                           (or/c exact-nonnegative-integer? #f)
+                           (or/c exact-positive-integer? #f)))
+                         #f)
                         #f]
           [count-lines! (-> any) void]
           [init-position exact-positive-integer? 1]
-          [buffer-mode (or/c (case-> ((one-of/c 'block 'none) . -> . any)
-                                     (-> (one-of/c 'block 'none #f)))
-                             false/c)
+          [buffer-mode (or/c (case-> ((or/c 'block 'none) . -> . any)
+                                     (-> (or/c 'block 'none #f)))
+                             #f)
                        #f]
           [buffering? any/c #f]
           [on-consume (or/c ((or/c exact-nonnegative-integer? eof-object? 
                                    procedure? evt?) 
                              . -> . any)
-                            false/c)
+                            #f)
                       #f])
          input-port?]{
 
@@ -144,7 +144,7 @@ determine the names of the result ports.}
 
 @defproc[(merge-input [a-in input-port?]
                       [b-in input-port?]
-                      [buffer-limit (or/c exact-nonnegative-integer? false/c) 4096])
+                      [buffer-limit (or/c exact-nonnegative-integer? #f) 4096])
          input-port?]{
 
 Accepts two input ports and returns a new input port. The new port
@@ -196,7 +196,7 @@ it defaults to @scheme[0].}
 
 @defproc[(reencode-input-port [in input-port?]
                               [encoding string?]
-                              [error-bytes (or/c false/c bytes?)]
+                              [error-bytes (or/c #f bytes?)]
                               [close? any/c #t]
                               [name any/c (object-name in)]
                               [convert-newlines? any/c #f]
@@ -230,10 +230,10 @@ incomplete encoding sequence.)}
 
 @defproc[(reencode-output-port [out output-port?]
                                [encoding string?]
-                               [error-bytes (or/c false/c bytes?)]
+                               [error-bytes (or/c #f bytes?)]
                                [close? any/c #t]
                                [name any/c (object-name out)]
-                               [newline-bytes (or/c false/c bytes?) #f]
+                               [newline-bytes (or/c #f bytes?) #f]
                                [enc-error (string? output-port? . -> . any) 
                                           (lambda (msg port) (error ...))])
          output-port?]{
@@ -297,8 +297,8 @@ the result port does not affect writing directly to @scheme[out].}
 
 
 @defproc[(relocate-input-port [in input-port?]
-                              [line (or/c exact-positive-integer? false/c)]
-                              [column (or/c exact-nonnegative-integer? false/c)]
+                              [line (or/c exact-positive-integer? #f)]
+                              [column (or/c exact-nonnegative-integer? #f)]
                               [position exact-positive-integer?]
                               [close? any/c #t])
          input-port?]{
@@ -327,8 +327,8 @@ the resulting port does not close @scheme[in].}
 
 
 @defproc[(relocate-output-port [out output-port?]
-                               [line (or/c exact-positive-integer? false/c)]
-                               [column (or/c exact-nonnegative-integer? false/c)]
+                               [line (or/c exact-positive-integer? #f)]
+                               [column (or/c exact-nonnegative-integer? #f)]
                                [position exact-positive-integer?]
                                [close? any/c #t])
          output-port?]{
@@ -340,10 +340,10 @@ Like @scheme[relocate-input-port], but for output ports.}
                                 [get-location (or/c 
                                                (->
                                                 (values
-                                                 (or/c exact-positive-integer? false/c)
-                                                 (or/c exact-nonnegative-integer? false/c)
-                                                 (or/c exact-positive-integer? false/c)))
-                                               false/c)]
+                                                 (or/c exact-positive-integer? #f)
+                                                 (or/c exact-nonnegative-integer? #f)
+                                                 (or/c exact-positive-integer? #f)))
+                                               #f)]
                                 [init-pos exact-positive-integer?]
                                 [close? any/c #t]
                                 [count-lines! (-> any) void])
@@ -363,10 +363,10 @@ is enabled for the resulting port. The default is @scheme[void].}
                                  [get-location (or/c 
                                                 (->
                                                  (values
-                                                  (or/c exact-positive-integer? false/c)
-                                                  (or/c exact-nonnegative-integer? false/c)
-                                                  (or/c exact-positive-integer? false/c)))
-                                                false/c)]
+                                                  (or/c exact-positive-integer? #f)
+                                                  (or/c exact-nonnegative-integer? #f)
+                                                  (or/c exact-positive-integer? #f)))
+                                                #f)]
                                  [init-pos exact-positive-integer?]
                                  [close? any/c #t]
                                  [count-lines! (-> any) void])
@@ -455,7 +455,7 @@ a byte string.}
 
 
 @defproc[(read-line-evt [in input-port?]
-                        [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one)])
+                        [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one)])
          evt?]{
 
 Returns a @tech{synchronizable event} that is ready when a line of
@@ -470,7 +470,7 @@ bytes in the port's stream.}
 
 
 @defproc[(read-bytes-line-evt [in input-port?]
-                              [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one)])
+                              [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one)])
          evt?]{
  
 Like @scheme[read-line], but returns a byte string instead of a
@@ -479,9 +479,9 @@ string.}
 @defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?][skip exact-nonnegative-integer?]
                             [progress evt?][in input-port?]) evt?]
            [(peek-bytes!-evt [bstr (and/c bytes? (not/c immutable?))][skip exact-nonnegative-integer?]
-                             [progress (or/c evt? false/c)][in input-port?]) evt?]
+                             [progress (or/c evt? #f)][in input-port?]) evt?]
            [(peek-bytes-avail!-evt [bstr (and/c bytes? (not/c immutable?))][skip exact-nonnegative-integer?]
-                                   [progress (or/c evt? false/c)][in input-port?]) evt?]
+                                   [progress (or/c evt? #f)][in input-port?]) evt?]
            [(peek-string-evt [k exact-nonnegative-integer?][in input-port?]) evt?]
            [(peek-string!-evt [str (and/c string? (not/c immutable?))][in input-port?]) evt?])]{
 

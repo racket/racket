@@ -45,7 +45,7 @@ between the application and the current continuation.
 @defproc[(call-with-continuation-prompt 
           [thunk (-> any)]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)]
-          [handler (or/c procedure? false/c) #f])
+          [handler (or/c procedure? #f) #f])
          any]{
 
 Calls @scheme[thunk] with the current continuation extended by a

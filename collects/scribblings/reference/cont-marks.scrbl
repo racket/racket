@@ -101,7 +101,7 @@ only when the marks are for the same continuation frame in
 elements to indicate the lack of a value.}
 
 @defproc[(continuation-mark-set-first 
-          [mark-set (or/c continuation-mark-set? false/c)]
+          [mark-set (or/c continuation-mark-set? #f)]
           [key-v any/c]
           [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
          any]{

@@ -55,8 +55,8 @@ the grammar for @scheme[_module-path] for @scheme[require],
              . -> . 
              any)
             ((or/c module-path? path?)
-             (or/c false/c resolved-module-path?) 
-             (or/c false/c syntax?) 
+             (or/c #f resolved-module-path?) 
+             (or/c #f syntax?) 
              boolean?
              . -> . 
              resolved-module-path?))]{
@@ -128,7 +128,7 @@ tools (such as DrScheme) might call this resolver in this mode to
 avoid redundant module loads.}
 
 
-@defparam[current-module-declare-name name (or/c resolved-module-path? false/c)]{
+@defparam[current-module-declare-name name (or/c resolved-module-path? #f)]{
 
 A parameter that determines a module name that is used when evaluating
 a @scheme[module] declaration (when the parameter value is not
@@ -204,8 +204,8 @@ resolved name can depend on the value of
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])
-         (values (or/c module-path? false/c)
-                 (or/c module-path-index? resolved-module-path? false/c))]{
+         (values (or/c module-path? #f)
+                 (or/c module-path-index? resolved-module-path? #f))]{
 
 Returns two values: a module path, and a base @tech{module path index}
 or @scheme[#f] to which the module path is relative.
@@ -219,8 +219,8 @@ A @scheme[#f] for the first result implies a @scheme[#f] for the
 second result, and means that @scheme[mpi] represents ``self'' (see
 above).}
 
-@defproc[(module-path-index-join [path (or/c module-path? false/c)]
-                                 [mpi (or/c module-path-index? resolved-module-path? false/c)])
+@defproc[(module-path-index-join [path (or/c module-path? #f)]
+                                 [mpi (or/c module-path-index? resolved-module-path? #f)])
          module-path-index?]{
 
 Combines @scheme[path] and @scheme[mpi] to create a new @tech{module
@@ -242,7 +242,7 @@ the module's declared name.}
 
 
 @defproc[(module-compiled-imports [compiled-module-code compiled-module-expression?])
-         (listof (cons/c (or/c exact-integer? false/c) 
+         (listof (cons/c (or/c exact-integer? #f) 
                          (listof module-path-index?)))]{
 
 Takes a module declaration in compiled form and returns an association
@@ -252,8 +252,8 @@ the module's explicit imports.}
 
 
 @defproc[(module-compiled-exports [compiled-module-code compiled-module-expression?])
-         (values (listof (cons/c (or/c exact-integer? false/c) list?))
-                 (listof (cons/c (or/c exact-integer? false/c) list?)))]
+         (values (listof (cons/c (or/c exact-integer? #f) list?))
+                 (listof (cons/c (or/c exact-integer? #f) list?)))]
 
 Returns two association lists mapping @tech{phase level} values (where
 @scheme[#f] corresponds to the @tech{label phase level}) to exports at
@@ -267,9 +267,9 @@ Each associated list more precisely matches the contract
                 (listof 
                  (or/c module-path-index?
                        (list/c module-path-index?
-                               (or/c exact-integer? false/c)
+                               (or/c exact-integer? #f)
                                symbol?
-                               (or/c exact-integer? false/c))))))
+                               (or/c exact-integer? #f))))))
 ]
 
 For each element of the list, the leading symbol is the name of the
@@ -294,7 +294,7 @@ name of the re-exported binding, and the @tech{phase level} of the
 import.}
 
 @defproc[(module-compiled-language-info [compiled-module-code compiled-module-expression?])
-         (or/c false/c (vector/c module-path? symbol? any/c))]{
+         (or/c #f (vector/c module-path? symbol? any/c))]{
 
 Returns information intended to reflect the ``language'' of the
 module's implementation as originally attached to the syntax of the
@@ -316,7 +316,7 @@ See also @scheme[module->language-info].}
 @;------------------------------------------------------------------------
 @section[#:tag "dynreq"]{Dynamic Module Access}
 
-@defproc[(dynamic-require [mod module-path?][provided (or/c symbol? false/c void?)]) 
+@defproc[(dynamic-require [mod module-path?][provided (or/c symbol? #f void?)]) 
          any]{
 
 Dynamically instantiates the module specified by @scheme[mod] for
@@ -344,14 +344,14 @@ If @scheme[provided] is @|void-const|, then the module is
 
 
 @defproc[(dynamic-require-for-syntax [mod module-path?]
-                                     [provided (or/c symbol? false/c)])
+                                     [provided (or/c symbol? #f)])
          any]{
 
 Like @scheme[dynamic-require], but in @tech{phase} 1.}
 
 
 @defproc[(module->language-info [mod module-path?])
-         (or/c false/c (vector/c module-path? symbol? any/c))]{
+         (or/c #f (vector/c module-path? symbol? any/c))]{
 
 Returns information intended to reflect the ``language'' of the
 implementation of @scheme[mod], which must be declared (but not

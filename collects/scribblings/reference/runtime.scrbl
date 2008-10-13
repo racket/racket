@@ -3,7 +3,7 @@
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(getenv [name string?]) (or/c string? false/c)]{
+@defproc[(getenv [name string?]) (or/c string? #f)]{
 
 Gets the value of an operating system environment variable. The
 @scheme[name] argument cannot contain a null character; if an
@@ -18,7 +18,7 @@ contain a null character; the environment variable named by
 @scheme[name] is set to @scheme[value]. The return value is
 @scheme[#t] if the assignment succeeds, @scheme[#f] otherwise.}
 
-@defproc[(system-type [mode (one-of 'os 'gc 'link 'so-suffix 'machine)
+@defproc[(system-type [mode (or/c 'os 'gc 'link 'so-suffix 'machine)
                             'os])
          (or/c symbol? string? bytes?)]{
 
@@ -84,7 +84,7 @@ letters, followed by either nothing or a period). Under Windows and
 Mac OS X, the result is determined by system calls.}
 
 
-@defproc[(system-library-subpath [mode (one-of 'cgc '3m #f)
+@defproc[(system-library-subpath [mode (or/c 'cgc '3m #f)
                                        (system-type 'gc)])
          path?]{
 
@@ -131,7 +131,7 @@ otherwise platform-independent.}
 
 @defproc[(vector-set-performance-stats! [results (and/c vector?
                                                         (not/c immutable?))]
-                                        [thd (or/c thread? false/c) #f])
+                                        [thd (or/c thread? #f) #f])
          void?]{
 
 Sets elements in @scheme[results] to report current performance

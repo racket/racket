@@ -259,7 +259,7 @@ above about concurrent modification.}
 
 
 @defproc[(hash-iterate-first [hash hash?])
-         (or/c false/c exact-nonnegative-integer?)]{
+         (or/c #f exact-nonnegative-integer?)]{
 
 Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
 it returns an integer that is a index to the first element in the hash
@@ -271,7 +271,7 @@ removed from @scheme[hash].}
 
 @defproc[(hash-iterate-next [hash hash?]
                             [pos exact-nonnegative-integer?])
-         (or/c false/c exact-nonnegative-integer?)]{
+         (or/c #f exact-nonnegative-integer?)]{
 
 Returns either an integer that is an index to the element in
 @scheme[hash] after the element indexed by @scheme[pos] (which is not

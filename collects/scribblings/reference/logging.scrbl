@@ -68,14 +68,14 @@ Returns @scheme[#t] if @scheme[v] is a @tech{logger}, @scheme[#f]
 otherwise.}
 
 
-@defproc[(make-logger [name (or/c symbol? false/c) #f]
-                      [parent (or/c logger? false/c) #f])
+@defproc[(make-logger [name (or/c symbol? #f) #f]
+                      [parent (or/c logger? #f) #f])
          logger?]{
 
 Creates a new logger with an optional name and parent.}
 
 
-@defproc[(logger-name [logger logger?]) (or/c symbol? false/c)]{
+@defproc[(logger-name [logger logger?]) (or/c symbol? #f)]{
 
 Reports @scheme[logger]'s name, if any.}
 
@@ -88,7 +88,7 @@ A @tech{parameter} that determines the @tech{current logger}.}
 @section{Logging Events}
 
 @defproc[(log-message [logger logger?]
-                      [level (one-of/c 'fatal 'error 'warning 'info 'debug)]
+                      [level (or/c 'fatal 'error 'warning 'info 'debug)]
                       [message string?]
                       [data any/c])
           void?]{
@@ -104,7 +104,7 @@ receivers.}
 
 
 @defproc[(log-level? [logger logger?]
-                     [level (one-of/c 'fatal 'error 'warning 'info 'debug)])
+                     [level (or/c 'fatal 'error 'warning 'info 'debug)])
          boolean?]{
 
 Reports whether any @tech{log receiver} attached to @scheme[logger] or
@@ -158,7 +158,7 @@ Returns @scheme[#t] if @scheme[v] is a @tech{log receiver}, @scheme[#f]
 otherwise.}
 
 @defproc[(make-log-receiver [logger logger?]
-                            [level (one-of/c 'fatal 'error 'warning 'info 'debug)])
+                            [level (or/c 'fatal 'error 'warning 'info 'debug)])
          log-receiver?]{
 
 Creates a @tech{log receiver} to receive events of importance

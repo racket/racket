@@ -63,7 +63,7 @@ the event does not decrement @scheme[sema]'s internal count.}
 
 @defproc[(call-with-semaphore [sema semaphore?]
                               [proc procedure?]
-                              [try-fail-thunk (or/c (-> any) false/c) #f]
+                              [try-fail-thunk (or/c (-> any) #f) #f]
                               [arg any/c] ...) any]{
 
 Waits on @scheme[sema] using @scheme[semaphore-wait], calls
@@ -78,7 +78,7 @@ wait fails.}
 
 @defproc[(call-with-semaphore/enable-break [sema semaphore?]
                               [proc procedure?]
-                              [try-fail-thunk (or/c (-> any) false/c) #f]
+                              [try-fail-thunk (or/c (-> any) #f) #f]
                               [arg any/c] ...) any]{
 Like @scheme[call-with-semaphore], except that
 @scheme[semaphore-wait/enable-break] is used with @scheme[sema] in

@@ -16,7 +16,7 @@ it exports the following procedures.  If you find any of these useful,
 please let us know.
 
 @defproc[(ffi-obj [objname (or/c string? bytes? symbol?)]
-                  [lib (or/c ffi-lib? path-string? false/c)])
+                  [lib (or/c ffi-lib? path-string? #f)])
          any]{
 
 Pulls out a foreign object from a library, returning a Scheme value
@@ -34,7 +34,7 @@ functions that return its corresponding library object and name.
 These values can also be used as C pointer objects.}
 
 
-@defproc*[([(ctype-basetype [type ctype?]) (or/c ctype? false/c)]
+@defproc*[([(ctype-basetype [type ctype?]) (or/c ctype? #f)]
            [(ctype-scheme->c [type ctype?]) procedure?]
            [(ctype-c->scheme [type ctype?]) procedure?])]{
 
@@ -44,7 +44,7 @@ Accessors for the components of a C type object, made by
 
 
 @defproc[(ffi-call [ptr any/c] [in-types (listof ctype?)] [out-type ctype?]
-                   [abi (or/c symbol/c false/c) #f])
+                   [abi (or/c symbol/c #f) #f])
          any]{
 
 The primitive mechanism that creates Scheme ``callout'' values.  The
@@ -61,7 +61,7 @@ especially important on Windows, where most system functions are
 
 
 @defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
-                       [abi (or/c symbol/c false/c) #f])
+                       [abi (or/c symbol/c #f) #f])
          ffi-callback?]{
 
 The symmetric counterpart of @scheme[ffi-call].  It receives a Scheme

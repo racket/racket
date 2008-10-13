@@ -81,7 +81,7 @@ Returns a sequence equivalent to @scheme[lst].
 
 @defproc[(in-vector [vec vector?]
                     [start exact-nonnegative-integer? 0] 
-                    [stop (or/c exact-nonnegative-integer? false/c) #f] 
+                    [stop (or/c exact-nonnegative-integer? #f) #f] 
                     [step (and/c exact-integer? (not/c zero?)) 1]) 
          sequence?]{
 
@@ -110,7 +110,7 @@ demanded from the sequence.
 
 @defproc[(in-string [str string?]
                     [start exact-nonnegative-integer? 0] 
-                    [stop (or/c exact-nonnegative-integer? false/c) #f] 
+                    [stop (or/c exact-nonnegative-integer? #f) #f] 
                     [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
 Returns a sequence equivalent to @scheme[str] when no optional
@@ -123,7 +123,7 @@ The optional arguments @scheme[start], @scheme[stop], and
 
 @defproc[(in-bytes [bstr bytes?]
                    [start exact-nonnegative-integer? 0] 
-                   [stop (or/c exact-nonnegative-integer? false/c) #f] 
+                   [stop (or/c exact-nonnegative-integer? #f) #f] 
                    [step (and/c exact-integer? (not/c zero?)) 1])
          sequence?]{
 Returns a sequence equivalent to @scheme[bstr] when no optional
@@ -142,7 +142,7 @@ sequence whose elements are read as characters form @scheme[in] (as
 opposed to using @scheme[in] directly as a sequence to get bytes).}
 
 @defproc[(in-lines [in input-port? (current-input-port)]
-                   [mode (one-of 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+                   [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
          sequence?]{
 
 Returns a sequence whose elements are the result of @scheme[(read-line

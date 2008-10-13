@@ -1661,7 +1661,7 @@ not including fields whose names are local (i.e., declared with
 @scheme[define-local-member-names]).}
 
 
-@defproc[(object-info [object any/c]) (values (or/c class? false/c) boolean?)]{
+@defproc[(object-info [object any/c]) (values (or/c class? #f) boolean?)]{
 
 Returns two values, analogous to the return
 values of @scheme[struct-info]:
@@ -1685,7 +1685,7 @@ K%
                  (listof symbol?)
                  (any/c exact-nonnegative-integer? . -> . any/c)
                  (any/c exact-nonnegative-integer? any/c . -> . any/c)
-                 (or/c class? false/c)
+                 (or/c class? #f)
                  boolean?)]{
 
 Returns seven values, analogous to the return

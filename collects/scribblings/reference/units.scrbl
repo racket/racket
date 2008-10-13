@@ -688,9 +688,9 @@ that defines macro with @scheme[define-syntax].
 
 @defproc[(unit-static-signatures [unit-identifier identifier?]
                                  [err-syntax syntax?])
-         (values (list/c (cons/c (or/c symbol? false/c)
+         (values (list/c (cons/c (or/c symbol? #f)
                                  identifier?))
-                 (list/c (cons/c (or/c symbol? false/c)
+                 (list/c (cons/c (or/c symbol? #f)
                                  identifier?)))]{
 
 If @scheme[unit-identifier] is bound to static unit information via
@@ -710,7 +710,7 @@ then the @exnraise[exn:fail:syntax]. In that case, the given
 
 @defproc[(signature-members [sig-identifier identifier?]
                             [err-syntax syntax?])
-         (values (or/c identifier? false/c)
+         (values (or/c identifier? #f)
                  (listof identifier?)
                  (listof identifier?)
                  (listof identifier?))]{

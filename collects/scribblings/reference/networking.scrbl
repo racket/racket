@@ -17,7 +17,7 @@ For information about TCP in general, see @italic{TCP/IP Illustrated,
                                      (integer-in 1 65535))]
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
-                     [hostname (or/c string? false/c) #f]) 
+                     [hostname (or/c string? #f) #f]) 
          tcp-listener?]
 
 Creates a ``listening'' server on the local machine at the port number
@@ -64,10 +64,10 @@ If the server cannot be started by @scheme[tcp-listen], the
 @defproc[(tcp-connect [hostname string?]
                       [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
-                      [local-hostname (or/c string? false/c) #f]
+                      [local-hostname (or/c string? #f) #f]
                       [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
-                                           false/c)
+                                           #f)
                                      #f])
           (values input-port? output-port?)]{
 
@@ -121,10 +121,10 @@ If a connection cannot be established by @scheme[tcp-connect], the
 @defproc[(tcp-connect/enable-break [hostname string?]
                       [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
-                      [local-hostname (or/c string? false/c) #f]
+                      [local-hostname (or/c string? #f) #f]
                       [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
-                                           false/c)])
+                                           #f)])
           (values input-port? output-port?)]{
 
 Like @scheme[tcp-connect], but breaking is enabled (see
@@ -261,8 +261,8 @@ Returns @scheme[#t] if @scheme[v] is a port returned by
 For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.
 
-@defproc[(udp-open-socket [family-hostname (or/c string? false/c) #f]
-                          [family-port-no (or/c string? false/c) #f])
+@defproc[(udp-open-socket [family-hostname (or/c string? #f) #f]
+                          [family-port-no (or/c string? #f) #f])
          udp?]{
 
 Creates and returns a UDP socket to send and receive
@@ -282,7 +282,7 @@ neither @scheme[family-hostname] nor @scheme[family-port-no] is
 non-@scheme[#f], then the socket's protocol family is IPv4.}
 
 @defproc[(udp-bind! [udp-socket udp?]
-                    [hostname-string (or/c string? false/c)]
+                    [hostname-string (or/c string? #f)]
                     [port-no (and/c exact-nonnegative-integer?
                                     (integer-in 1 65535))])
          void?]{
@@ -318,10 +318,10 @@ If @scheme[udp-socket] is already bound or closed, the
 
 
 @defproc[(udp-connect! [udp-socket udp?]
-                       [hostname-string (or/c string? false/c)]
+                       [hostname-string (or/c string? #f)]
                        [port-no (or/c (and/c exact-nonnegative-integer?
                                              (integer-in 1 65535))
-                                      false/c)])
+                                      #f)])
          void?]{
 
 Connects the socket to the indicated remote address and port if
@@ -456,9 +456,9 @@ the length of @scheme[bstr], the @exnraise[exn:fail:contract].}
                        [bstr (and/c bytes? (not immutable?))]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (values (or/c exact-nonnegative-integer? false/c)
-                 (or/c string? false/c)
-                 (or/c (integer-in 1 65535) false/c))]{
+         (values (or/c exact-nonnegative-integer? #f)
+                 (or/c string? #f)
+                 (or/c (integer-in 1 65535) #f))]{
 
 Like @scheme[udp-receive!], except that it never blocks. If no
 datagram is available, the three result values are all @scheme[#f].}

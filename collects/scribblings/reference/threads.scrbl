@@ -102,7 +102,7 @@ manage @scheme[thd] (and none of its subordinates manages
 @scheme[thd]), the @exnraise[exn:fail:contract], and the thread is not
 suspended.}
 
-@defproc[(thread-resume [thd thread?][benefactor (or/c thread? custodian? false/c) #f]) void?]{
+@defproc[(thread-resume [thd thread?][benefactor (or/c thread? custodian? #f) #f]) void?]{
 
 Resumes the execution of @scheme[thd] if it is suspended and has at
 least one custodian (possibly added through @scheme[benefactor], as
@@ -233,7 +233,7 @@ asynchronous channel.
 @margin-note/ref{See also @secref["async-channel"].}
 
 @defproc[(thread-send [thd thread?] [v any/c] 
-                      [fail-thunk (or/c (-> any) false/c)
+                      [fail-thunk (or/c (-> any) #f)
                                   (lambda () (raise-mismatch-error ....))]) 
          any]{
 

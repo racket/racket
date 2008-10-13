@@ -69,7 +69,7 @@ is raised.}
                              [out output-port? (current-output-port)]
                              [start-pos exact-nonnegative-integer? 0]
                              [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         (or/c exact-nonnegative-integer? false/c)]{
+         (or/c exact-nonnegative-integer? #f)]{
 
 Like @scheme[write-bytes-avail], but never blocks, returns @scheme[#f]
 if the port contains buffered data that cannot be written immediately,

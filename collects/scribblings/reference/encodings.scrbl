@@ -75,7 +75,7 @@ to @scheme[#f] makes locale-sensitive operations locale-insensitive,
 which means using the Unicode mapping for case operations and using
 UTF-8 for encoding.
 
-@defparam[current-locale locale (or/c string? false/c)]{
+@defparam[current-locale locale (or/c string? #f)]{
 
 A parameter that determines the current @tech{locale} for
 procedures such as @scheme[string-locale-ci=?].

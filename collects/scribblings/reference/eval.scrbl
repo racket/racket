@@ -74,7 +74,7 @@ and its lexical context is not enriched before it is passed to the
 @tech{evaluation handler}.}
 
 
-@defparam[current-load proc (path? (or/c symbol? false/c) . -> . any)]{
+@defparam[current-load proc (path? (or/c symbol? #f) . -> . any)]{
 
 A parameter that determines the current @deftech{load handler} to load
 top-level forms from a file. The @tech{load handler} is called by
@@ -175,7 +175,7 @@ Like @scheme[load], but @scheme[load/cd] sets both
 handler}.}
 
 
-@defparam[current-load-extension proc (path? (or/c symbol? false/c) . -> . any)]{
+@defparam[current-load-extension proc (path? (or/c symbol? #f) . -> . any)]{
 
 A parameter that determines a @deftech{extension-load handler}, which is
 called by @scheme[load-extension] and the default @tech{compiled-load
@@ -203,7 +203,7 @@ Like @scheme[load-exension], but resolves @scheme[file] using
 @scheme[current-load-relative-directory] like @scheme[load-relative].}
 
 
-@defparam[current-load/use-compiled proc (path? (or/c symbol? false/c) . -> . any)]{
+@defparam[current-load/use-compiled proc (path? (or/c symbol? #f) . -> . any)]{
 
 A parameter that determines the current @deftech{compiled-load
 handler} to load from a file that may have a compiled form. The

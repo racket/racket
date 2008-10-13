@@ -14,7 +14,7 @@ Returns @scheme[#t] if @scheme[v] is an asynchronous channel,
 @scheme[#f] otherwise.}
 
 
-@defproc[(make-async-channel [limit (or/c exact-positive-integer? false/c) #f]) 
+@defproc[(make-async-channel [limit (or/c exact-positive-integer? #f) #f]) 
          async-channel?]{
 
 Returns an asynchronous channel with a buffer limit of @scheme[limit]
