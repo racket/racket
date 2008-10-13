@@ -163,6 +163,43 @@ result:
 
 
 
+@defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
+                       [key any/c]
+                       [updater (any/c . -> . any/c)]
+                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
+
+Composes @scheme[dict-ref] and @scheme[dict-set!] to update an
+existing mapping in @scheme[dict].
+
+@examples[
+#:eval dict-eval
+(define h (make-hash))
+(dict-update! h 'a add1)
+(dict-update! h 'a add1 0)
+h
+(define v (vector #f #f #f))
+(dict-update! v 0 not)
+v
+]}
+
+
+@defproc[(dict-update [dict dict?]
+                      [key any/c]
+                      [updater (any/c . -> . any/c)]
+                      [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+          (and/c dict? immutable?)]{
+
+Composes @scheme[dict-ref] and @scheme[dict-set] to functionally
+update an existing mapping in @scheme[dict].
+
+@examples[
+#:eval dict-eval
+(dict-update #hash() 'a add1)
+(dict-update #hash() 'a add1 0)
+(dict-update #hash((a . "apple") (b . "beer")) 'b string-length)
+]}
+
+
 @defproc[(dict-remove! [dict (and/c dict? (not/c immutable?))]
                        [key any/c])
          void?]{

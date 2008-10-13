@@ -54,12 +54,18 @@
               (make-hash)
               (if (eq? a 'weak)
                   (make-weak-hasheq)
-                  (raise-mismatch-error 'make-hash-table "bad argument: " a)))]
-     [(a b) (if (or (and (eq? a 'equal)
+                  (if (eq? a 'eqv)
+                      (make-hasheqv)
+                      (raise-mismatch-error 'make-hash-table "bad argument: " a))))]
+     [(a b) (if (or (and (or (eq? a 'equal)
+                             (eq? a 'eqv))
                          (eq? b 'weak))
                     (and (eq? a 'weak)
-                         (eq? b 'equal)))
-                (make-weak-hash)
+                         (or (eq? b 'equal)
+                             (eq? b 'eqv))))
+                (if (or (eq? a 'eqv) (eq? b 'eqv))
+                    (make-weak-hasheqv)
+                    (make-weak-hash))
                 (raise-mismatch-error 'make-hash-table "bad arguments: " (list a b)))]))
 
   (define make-immutable-hash-table
@@ -67,23 +73,30 @@
      [(l) (make-immutable-hasheq l)]
      [(l a) (if (eq? a 'equal)
                 (make-immutable-hash l)
-                (raise-mismatch-error 'make-immutable-hash-table "bad argument: " a))]))
+                (if (eq? a 'eqv)
+                    (make-immutable-hasheqv l)
+                    (raise-mismatch-error 'make-immutable-hash-table "bad argument: " a)))]))
   
   (define hash-table?
     (case-lambda
      [(v) (hash? v)]
      [(v a) (if (eq? a 'equal)
                 (and (hash? v)
-                     (not (hash-eq? v)))
+                     (not (hash-eq? v))
+                     (not (hash-eqv? v)))
                 (if (eq? a 'weak)
                     (and (hash? v)
                          (hash-weak? v))
-                    (raise-mismatch-error 'hash-table? "bad argument: " a)))]
-     [(v a b) (if (or (and (eq? a 'equal)
+                    (if (eq? a 'eqv)
+                        (hash-eqv? v)
+                        (raise-mismatch-error 'hash-table? "bad argument: " a))))]
+     [(v a b) (if (or (and (or (eq? a 'equal) (eq? a 'eqv))
                            (eq? b 'weak))
                       (and (eq? a 'weak)
-                           (eq? b 'equal)))
+                           (or (eq? b 'equal) (eq? b 'eqv))))
                   (and (hash? v)
-                       (not (hash-eq? v))
+                       (if (or (eq? a 'eqv) (eq? b 'eqv))
+                           (hash-eqv? v)
+                           (not (or (hash-eq? v) (hash-eqv? v))))
                        (hash-weak? v))
                   (raise-mismatch-error 'hash-table? "bad arguments: " (list a b)))])))

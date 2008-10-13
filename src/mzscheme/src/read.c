@@ -243,7 +243,7 @@ static Scheme_Object *read_box(Scheme_Object *port, Scheme_Object *stxsrc,
 			       ReadParams *params);
 static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
-				int opener, char closer, int eq,
+				int opener, char closer, int kind,
 				Scheme_Hash_Table **ht,
 				Scheme_Object *indentation,
 				ReadParams *params);
@@ -1507,7 +1507,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      return v;
 	    } else {
-	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 0 };
+	      GC_CAN_IGNORE const mzchar str[] = { 's', 'h', 'e', 'q', 'v', 0 };
 	      int scanpos = 0, failed = 0;
 
 	      do {
@@ -1515,7 +1515,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 		if ((mzchar)ch == str[scanpos]) {
 		  scanpos++;
 		} else {
-		  if (scanpos == 2) {
+		  if ((scanpos == 2) || (scanpos == 4)) {
                     int effective_ch;
                     effective_ch = readtable_effective_char(table, ch);
 		    if (!(effective_ch == '(')
@@ -1530,19 +1530,26 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      if (!failed) {
 		/* Found recognized tag. Look for open paren... */
-                int effective_ch;
+                int effective_ch, kind;
 
-		if (scanpos > 2)
+		if (scanpos > 4)
 		  ch = scheme_getc_special_ok(port);
                 
                 effective_ch = readtable_effective_char(table, ch);
 
+                if (scanpos == 4)
+                  kind = 0;
+                else if (scanpos == 2)
+                  kind = 1;
+                else 
+                  kind = 2;
+
 		if (effective_ch == '(')
-		  return read_hash(port, stxsrc, line, col, pos, ch, ')', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, ')', kind, ht, indentation, params);
 		if (effective_ch == '[' && params->square_brackets_are_parens)
-		  return read_hash(port, stxsrc, line, col, pos, ch, ']', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, ']', kind, ht, indentation, params);
 		if (effective_ch == '{' && params->curly_braces_are_parens)
-		  return read_hash(port, stxsrc, line, col, pos, ch, '}', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, '}', kind, ht, indentation, params);
 	      }
 
 	      /* Report an error. So far, we read 'ha', then scanpos chars of str, then ch. */
@@ -2048,11 +2055,16 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
              || SCHEME_HASHTRP(obj)) {
     Scheme_Hash_Tree *t, *base;
     Scheme_Object *a, *key, *val, *lst;
-    int eq;
+    int kind;
 
     if (SCHEME_HASHTRP(obj)) {
       int i;
-      eq = !scheme_is_hash_tree_equal(obj);
+      if (scheme_is_hash_tree_equal(obj))
+        kind = 1;
+      else if (scheme_is_hash_tree_equal(obj))
+        kind = 2;
+      else
+        kind = 0;
       t = (Scheme_Hash_Tree *)obj;
       lst = scheme_null;
       for (i = t->count; i--; ) {
@@ -2060,13 +2072,13 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
         lst = scheme_make_pair(scheme_make_pair(key, val), lst);
       }
     } else {
-      eq = SCHEME_PINT_VAL(obj);
+      kind = SCHEME_PINT_VAL(obj);
       lst = SCHEME_IPTR_VAL(obj);
     }
 
     /* Create `t' to be overwritten, and create `base' to extend. */
-    t = scheme_make_hash_tree(!eq);
-    base = scheme_make_hash_tree(!eq);
+    t = scheme_make_hash_tree(kind);
+    base = scheme_make_hash_tree(kind);
 
     result = (Scheme_Object *)t;
     scheme_hash_set(dht, obj, result);
@@ -3947,7 +3959,7 @@ static Scheme_Object *read_box(Scheme_Object *port,
 /* "(" has been read */
 static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
-				int opener, char closer,  int eq,
+				int opener, char closer,  int kind,
 				Scheme_Hash_Table **ht,
 				Scheme_Object *indentation, ReadParams *params)
 {
@@ -3960,7 +3972,7 @@ static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
     Scheme_Object *key, *val;
     Scheme_Hash_Tree *t;
 
-    t = scheme_make_hash_tree(!eq);
+    t = scheme_make_hash_tree(kind);
 
     l = scheme_syntax_to_datum(l, 0, NULL);
 
@@ -3981,7 +3993,7 @@ static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
     ph = scheme_alloc_object();
     ph->type = scheme_table_placeholder_type;
     SCHEME_IPTR_VAL(ph) = l;
-    SCHEME_PINT_VAL(ph) = eq;
+    SCHEME_PINT_VAL(ph) = kind;
 
     if (!*ht) {
       /* So that resolve_references is called to build the table: */
@@ -4565,9 +4577,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_HASH_TABLE:
       {
 	Scheme_Object *l;
-	int eq, len;
+	int kind, len;
 
-	eq = read_compact_number(port);
+	kind = read_compact_number(port);
 	len = read_compact_number(port);
 	
 	l = scheme_null;
@@ -4590,7 +4602,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	/* Let resolve_references complete the table construction: */
         v = scheme_alloc_object();
         v->type = scheme_table_placeholder_type;
-        SCHEME_PINT_VAL(v) = eq;
+        SCHEME_PINT_VAL(v) = kind;
         SCHEME_IPTR_VAL(v) = l;
       }
       break;

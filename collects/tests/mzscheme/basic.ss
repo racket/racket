@@ -313,6 +313,7 @@
 (test #t immutable? (make-immutable-hasheq '((a . b))))
 (test #t immutable? (make-immutable-hash '((a . b))))
 (test #f immutable? (make-hasheq))
+(test #f immutable? (make-hasheqv))
 (test #f immutable? (make-hash))
 (test #f immutable? (make-weak-hasheq))
 (test #f immutable? (make-weak-hash))
@@ -1904,12 +1905,15 @@
 
 (arity-test make-hash 0 0)
 (arity-test make-hasheq 0 0)
+(arity-test make-hasheqv 0 0)
 (arity-test make-weak-hash 0 0)
 (arity-test make-weak-hasheq 0 0)
+(arity-test make-weak-hasheqv 0 0)
 
-(define (hash-tests make-hash make-hasheq 
-                    make-weak-hash make-weak-hasheq 
-                    hash-ref hash-set! hash-remove! hash-count
+(define (hash-tests make-hash make-hasheq make-hasheqv
+                    make-weak-hash make-weak-hasheq make-weak-hasheqv
+                    hash-ref hash-set! hash-update! 
+                    hash-remove! hash-count
                     hash-map hash-for-each
                     hash-iterate-first hash-iterate-next
                     hash-iterate-value hash-iterate-key
@@ -1932,15 +1936,36 @@
                            (make-hasheq))]
                    [l (list 1 2 3)])
                (test #t eq? (eq-hash-code l) (eq-hash-code l))
+               (test #t eq? (eqv-hash-code l) (eqv-hash-code l))
                (test #t eq? (equal-hash-code l) (equal-hash-code l))
                (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
                (hash-set! h1 l 'ok)
                (test 'ok hash-ref h1 l)
+               (hash-update! h1 l (curry cons 'more))
+               (test '(more . ok) hash-ref h1 l)
+               (hash-update! h1 l cdr)
                (test 'nope hash-ref h1 (list 1 2 3) (lambda () 'nope))
                (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)))
                (hash-remove! h1 l)
-               (test 'nope hash-ref h1 l (lambda () 'nope)))
+               (test 'nope hash-ref h1 l (lambda () 'nope))
+               (err/rt-test (hash-update! h1 l add1))
+               (hash-update! h1 l add1 0)
+               (test 1 hash-ref h1 l)
+               (hash-remove! h1 l))
              
+             (let ([h1 (if weak?
+                           (make-weak-hasheqv)
+                           (make-hasheqv))]
+                   [n (expt 2 500)]
+                   [q (/ 1 2)]
+                   [s (make-string 2 #\q)])
+               (hash-set! h1 n 'power)
+               (hash-set! h1 q 'half)
+               (hash-set! h1 s 'string)
+               (test 'power hash-ref h1 (expt (read (open-input-string "2")) 500))
+               (test 'half hash-ref h1 (/ 1 (read (open-input-string "2"))))
+               (test #f hash-ref h1 (make-string (read (open-input-string "2")) #\q) #f))
+
              (let ([h1 (if weak?
                            (make-weak-hash)
                            (make-hash))]
@@ -2066,9 +2091,10 @@
 
       (save)))) ; prevents gcing of the ht-registered values
 
-(hash-tests make-hash make-hasheq 
-            make-weak-hash make-weak-hasheq 
-            hash-ref hash-set! hash-remove! hash-count
+(hash-tests make-hash make-hasheq make-hasheqv
+            make-weak-hash make-weak-hasheq make-weak-hasheqv
+            hash-ref hash-set! hash-update!
+            hash-remove! hash-count
             hash-map hash-for-each
             hash-iterate-first hash-iterate-next
             hash-iterate-value hash-iterate-key
@@ -2078,9 +2104,13 @@
                    (apply proc (unbox ht) args)))])
   (hash-tests (lambda () (box #hash()))
               (lambda () (box #hasheq()))
-              #f #f
+              (lambda () (box #hasheqv()))
+              #f #f #f
               (ub-wrap hash-ref)
               (lambda (ht k v) (set-box! ht (hash-set (unbox ht) k v)))
+              (case-lambda 
+               [(ht k u) (set-box! ht (hash-update (unbox ht) k u))]
+               [(ht k u def) (set-box! ht (hash-update (unbox ht) k u def))])
               (lambda (ht k) (set-box! ht (hash-remove (unbox ht) k)))
               (ub-wrap hash-count)
               (ub-wrap hash-map)
@@ -2093,17 +2123,34 @@
 
 (test #f hash? 5)
 (test #t hash? (make-hasheq))
+(test #t hash? (make-hasheqv))
 (test #t hash-eq? (make-hasheq))
 (test #f hash-eq? (make-hash))
+(test #f hash-eq? (make-hasheqv))
 (test #t hash-eq? (make-weak-hasheq))
 (test #f hash-eq? (make-weak-hash))
+(test #f hash-eq? (make-weak-hasheqv))
+(test #f hash-eqv? (make-hasheq))
+(test #f hash-eqv? (make-hash))
+(test #t hash-eqv? (make-hasheqv))
+(test #f hash-eqv? (make-weak-hasheq))
+(test #f hash-eqv? (make-weak-hash))
+(test #t hash-eqv? (make-weak-hasheqv))
 (test #f hash-weak? (make-hasheq))
 (test #f hash-weak? (make-hash))
+(test #f hash-weak? (make-hasheqv))
 (test #t hash-weak? (make-weak-hasheq))
 (test #t hash-weak? (make-weak-hash))
+(test #t hash-weak? (make-weak-hasheqv))
 
 (err/rt-test (hash-eq? 5))
+(err/rt-test (hash-eqv? 5))
 (err/rt-test (hash-weak? 5))
+
+(let ([a (expt 2 500)]
+      [b (expt (read (open-input-string "2")) 500)])
+  (test #t equal? (eqv-hash-code a) (eqv-hash-code b))
+  (test #t equal? (equal-hash-code a) (equal-hash-code b)))
 
 ;; Check for proper clearing of weak hash tables
 ;; (internally, value should get cleared along with key):
@@ -2138,6 +2185,28 @@
 (err/rt-test (hash-ref 1 2))
 (err/rt-test (hash-remove! 1 2))
 (err/rt-test (hash-ref (make-hasheq) 2) exn:application:mismatch?)
+
+(let ([mk (lambda (mk)
+            (let ([ht (mk)])
+              (hash-set! ht make-hash 2)
+              ht))])
+  (test #t equal? (mk make-hash) (mk make-hash))
+  (test #t equal? (mk make-hasheq) (mk make-hasheq))
+  (test #t equal? (mk make-hasheqv) (mk make-hasheqv))
+  (test #f equal? (mk make-hash) (mk make-hasheq))
+  (test #f equal? (mk make-hash) (mk make-hasheqv))
+  (test #f equal? (mk make-hasheq) (mk make-hasheqv))
+  (test #f equal? (mk make-hash) (mk make-weak-hash))
+  (test #f equal? (mk make-hasheq) (mk make-weak-hasheq))
+  (test #f equal? (mk make-hasheqv) (mk make-weak-hasheqv)))
+(let ([mk (lambda (mk)
+            (mk `((1 . 2))))])
+  (test #t equal? (mk make-immutable-hash) (mk make-immutable-hash))
+  (test #t equal? (mk make-immutable-hasheq) (mk make-immutable-hasheq))
+  (test #t equal? (mk make-immutable-hasheqv) (mk make-immutable-hasheqv))
+  (test #f equal? (mk make-immutable-hash) (mk make-immutable-hasheq))
+  (test #f equal? (mk make-immutable-hash) (mk make-immutable-hasheqv))
+  (test #f equal? (mk make-immutable-hasheq) (mk make-immutable-hasheqv)))
 
 (define im-t (make-immutable-hasheq null))
 (test #t hash? im-t)

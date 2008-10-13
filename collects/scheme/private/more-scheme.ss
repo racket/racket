@@ -349,10 +349,39 @@
   (define-log log-info info)
   (define-log log-debug debug)
 
+  (define-values (hash-update hash-update!)
+    (let* ([not-there (gensym)]
+           [up (lambda (who mut? ref set ht key xform default)
+                 (unless (and (hash? ht)
+                              (or (not mut?)
+                                  (not (immutable? ht))))
+                   (raise-type-error who (if mut? "mutable hash" "hash") ht))
+                 (unless (and (procedure? xform)
+                              (procedure-arity-includes? xform 1))
+                   (raise-type-error who "procedure (arity 1)" xform))
+                 (let ([v (ref ht key default)])
+                   (if (eq? v not-there)
+                       (raise-mismatch-error who "no value found for key: " key)
+                       (set ht key (xform v)))))])
+      (let ([hash-update
+             (case-lambda
+              [(ht key xform default)
+               (up 'hash-update #f hash-ref hash-set ht key xform default)]
+              [(ht key xform)
+               (hash-update ht key xform not-there)])]
+            [hash-update!
+             (case-lambda
+              [(ht key xform default)
+               (up 'hash-update! #t hash-ref hash-set! ht key xform default)]
+              [(ht key xform)
+               (hash-update! ht key xform not-there)])])
+        (values hash-update hash-update!))))
+
   (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
              with-handlers with-handlers* call-with-exception-handler
              set!-values
              let/cc fluid-let time
-             log-fatal log-error log-warning log-info log-debug))
+             log-fatal log-error log-warning log-info log-debug
+             hash-update hash-update!))

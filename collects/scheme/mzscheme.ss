@@ -23,7 +23,8 @@
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label
              (all-from-except "private/more-scheme.ss" case old-case 
-                              log-fatal log-error log-warning log-info log-debug)
+                              log-fatal log-error log-warning log-info log-debug
+                              hash-update hash-update!)
              (rename old-case case)
              (all-from "private/misc.ss")
              (all-from-except "private/stxcase-scheme.ss" _)

@@ -736,7 +736,9 @@
 		  (lambda ()
 		    (out (if (hash-table? obj 'equal)
                              "#hash"
-                             "#hasheq"))
+                             (if (hash-table? obj 'eqv)
+                                 "#hasheqv"
+                                 "#hasheq")))
 		    (wr-lst (hash-table-map obj (lambda (k v)
                                                   (cons k (make-hide v))))
                             #f depth
@@ -855,7 +857,9 @@
 			  [(hash-table? obj)
 			   (out (if (hash-table? obj 'equal)
                                     "#hash"
-                                    "#hasheq"))
+                                    (if (hash-table? obj 'eqv)
+                                        "#hasheqv"
+                                        "#hasheq")))
 			   (pp-list (hash-table-map obj cons) extra pp-expr #f depth
                                     pair? car cdr pair-open pair-close)]
 			  [(and (box? obj) print-box?)
