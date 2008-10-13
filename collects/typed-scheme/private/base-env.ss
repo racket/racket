@@ -147,6 +147,8 @@
 [fst (-poly (a b) (-> (-pair a b) a))]
 [snd (-poly (a b) (-> (-pair a b) b))]
 
+[sleep (N . -> . -Void)]
+
 [= (->* (list N N) N B)]
 [>= (->* (list N N) N B)]
 [< (->* (list N N) N B)]
@@ -233,7 +235,8 @@
 [odd? (-> N B)]
 [even? (-> N B)]
 
-[apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[apply      (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[time-apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
