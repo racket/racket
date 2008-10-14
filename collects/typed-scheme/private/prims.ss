@@ -160,24 +160,28 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax-property #'arg 'type-ascription #'ty)]))
 
 (define-syntax (: stx)
-  (let ([stx*
-         ;; make it possible to add another colon after the id for clarity
-         (syntax-case stx (:)
-           [(: id : . more) (syntax/loc stx (: id . more))]
-           [_ stx])])
-    (syntax-case stx* ()
-      [(_ id ty)
-       (identifier? #'id)
-       (syntax-property
-        (internal (syntax/loc stx (:-internal id ty)))
-        'disappeared-use #'id)]
-      [(_ id ty)
-       (raise-syntax-error '|type declaration| "can only annotate identifiers with types"
-                           stx #'id)]
-      [(_ _ _ _ . _)
-       (raise-syntax-error '|type declaration| "too many arguments" stx)]
-      [(_ _)
-       (raise-syntax-error '|type declaration| "too few arguments" stx)])))
+  (define stx*
+    ;; make it possible to add another colon after the id for clarity
+    ;; and in that case, a `->' on the RHS does not need to be
+    ;; explicitly parenthesized
+    (syntax-case stx (:)
+      [(: id : first x ... last)
+       (ormap (lambda (x) (eq? '-> (syntax-e x))) (syntax->list #'(x ...)))
+       (syntax/loc stx (: id (first x ... last)))]
+      [(: id : . more) (syntax/loc stx (: id . more))]
+      [_ stx]))
+  (define (err str . sub)
+    (apply raise-syntax-error '|type declaration| str stx sub))
+  (syntax-case stx* ()
+    [(_ id ty)
+     (identifier? #'id)
+     (syntax-property (internal (syntax/loc stx (:-internal id ty)))
+                      'disappeared-use #'id)]
+    [(_ id x ...)
+     (case (length (syntax->list #'(x ...)))
+       [(1)  (err "can only annotate identifiers with types" #'id)]
+       [(0)  (err "missing type")]
+       [else (err "bad syntax (multiple types after identifier)")])]))
 
 (define-syntax (inst stx)
   (syntax-case stx (:)
