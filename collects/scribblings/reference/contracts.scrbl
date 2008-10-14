@@ -4,10 +4,7 @@
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
-This chapter is long on detail and short on the motivation
-and pragmatics of using contracts. See
-@guidesecref["contracts"] in the Guide for more of the
-latter and less of the former.
+@guideintro["contracts"]{contracts}
 
 The contract system guards one part of a program from
 another. Programmers specify the behavior of a module exports via
@@ -16,13 +13,13 @@ constraints.
 
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various
-ordinary Scheme values double as contracts, including 
+ordinary Scheme values that double as contracts, including 
 @itemize{
 @item{@tech{symbols}, @tech{booleans}, @tech{characters}, and
 @scheme[null], which are treated as contracts that recognize
 themselves, using @scheme[eq?], }
 
-@item{@tech{strings} and @tech{bytes strings}, which are treated as contracts
+@item{@tech{strings} and @tech{byte strings}, which are treated as contracts
 that recognize themselves using @scheme[equal?], }
 
 @item{@tech{numbers}, which are treated as contracts
@@ -30,7 +27,7 @@ that recognize themselves using @scheme[=],}
 
 @item{@tech{regular expressions}, which are treated as contracts that recognize @tech{byte strings} and @tech{strings} that match the regular expression, and }
 
-@item{predicates: any procedure whose arity is 1 is treated as a
+@item{predicates: any procedure of arity 1 is treated as a
 predicate. During contract checking, it is applied to the values that
 appear and should return @scheme[#f] to indicate that the contract
 failed, and anything else to indicate it passed.}
@@ -1002,7 +999,8 @@ checked immediately (unlike, say, a function contract).
 
 For example,
 @scheme[flat-contract] constructs flat contracts from predicates, and
-symbols, booleans, numbers, and other ordinary Scheme values are also
+symbols, booleans, numbers, and other ordinary Scheme values
+(that are defined as @tech{contracts}) are also
 flat contracts.}
 
 @defproc[(flat-contract-predicate [v flat-contract?])

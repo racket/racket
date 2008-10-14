@@ -6,8 +6,9 @@
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
 This chapter provides a gentle introduction to PLT Scheme's
-contract system. For the complete details see the
-@refsecref["contracts"] section in the reference manual.
+contract system.
+
+@refdetails["contracts"]{contracts}
 
 @local-table-of-contents[]
 
