@@ -56,8 +56,8 @@ TCP ports, and custom ports (see @secref["customport"]) use
 buffers; when called on a port without a buffer, @scheme[flush-output]
 has no effect.}
 
-@defproc*[([(file-stream-buffer-mode [port port?]) (one-of/c 'none 'line 'block #f)]
-           [(file-stream-buffer-mode [port port?][mode (one-of/c 'none 'line 'block)]) void?])]{
+@defproc*[([(file-stream-buffer-mode [port port?]) (or/c 'none 'line 'block #f)]
+           [(file-stream-buffer-mode [port port?][mode (or/c 'none 'line 'block)]) void?])]{
 
 Gets or sets the buffer mode for @scheme[port], if
 possible. @tech{File-stream ports} support setting the buffer mode,

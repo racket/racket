@@ -11,6 +11,7 @@
 (define current-table-mode (make-parameter #f))
 (define rendering-tt (make-parameter #f))
 (define show-link-page-numbers (make-parameter #f))
+(define done-link-page-numbers (make-parameter #f))
 (define disable-images (make-parameter #f))
 
 (define-struct (toc-paragraph paragraph) ())
@@ -19,7 +20,8 @@
 
 (define (render-mixin %)
   (class %
-    (init-field [style-file #f])
+    (init-field [style-file #f]
+                [style-extra-files null])
 
     (define/override (get-suffix) #".tex")
 
@@ -31,9 +33,12 @@
 
     (define/override (render-one d ri fn)
       (let ([style-file (or style-file scribble-tex)])
-        (with-input-from-file style-file
-          (lambda ()
-            (copy-port (current-input-port) (current-output-port))))
+        (for-each
+         (lambda (style-file)
+           (with-input-from-file style-file
+             (lambda ()
+               (copy-port (current-input-port) (current-output-port)))))
+         (cons style-file style-extra-files))
         (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
           (let ([m (ormap (lambda (v)
@@ -43,11 +48,11 @@
                           (flow-paragraphs (part-flow d)))])
             (when m
               (do-render-paragraph m d ri #t)))
-          (printf "\\titleAndVersion{")
-          (render-content (part-title-content d) d ri)
-          (printf "}{~a}\n"
-                  (or (and (versioned-part? d) (versioned-part-version d))
-                      (version))))
+          (let ([vers (or (and (versioned-part? d) (versioned-part-version d))
+                          (version))])
+            (printf "\\titleAnd~aVersion{" (if (equal? vers "") "Empty" ""))
+            (render-content (part-title-content d) d ri)
+            (printf "}{~a}\n" vers)))
         (render-part d ri)
         (printf "\\postDoc\n\\end{document}\n")))
 
@@ -119,7 +124,8 @@
                               (pair? (link-element-tag e))
                               (eq? 'part (car (link-element-tag e)))
                               (null? (element-content e)))])
-        (parameterize ([show-link-page-numbers #f])
+        (parameterize ([done-link-page-numbers (or (done-link-page-numbers)
+                                                   (link-element? e))])
           (when (target-element? e)
             (printf "\\label{t:~a}"
                     (t-encode (tag-key (target-element-tag e) ri))))
@@ -195,7 +201,8 @@
         (when part-label?
           (printf "''"))
         (when (and (link-element? e)
-                   (show-link-page-numbers))
+                   (show-link-page-numbers)
+                   (not (done-link-page-numbers)))
           (printf ", \\pageref{t:~a}"
                   (t-encode (tag-key (link-element-tag e) ri))))
         null))
@@ -280,7 +287,7 @@
                                           (loop (cdr flows) (add1 n))]
                                          [else n]))])
                         (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                        (render-flow (car flows) part ri #f)
+                        (render-table-flow (car flows) part ri)
                         (unless (= cnt 1) (printf "}"))
                         (unless (null? (list-tail flows cnt)) (printf " &\n"))))
                     (unless (null? (cdr flows)) (loop (cdr flows)))))
@@ -293,6 +300,24 @@
               (printf "~a\n\n\\end{~a}\n"
                       (if (equal? tableform "bigtabular") "\n\\\\" "")
                       tableform)))))
+      null)
+
+    (define/private (render-table-flow p part ri)
+      ;; Emit a \\ between blocks:
+      (let loop ([ps (flow-paragraphs p)])
+        (cond
+         [(null? ps) (void)]
+         [else
+          (let ([minipage? (not (or (paragraph? (car ps))
+                                    (table? (car ps))))])
+            (when minipage?
+              (printf "\\begin{minipage}{\\linewidth}\n"))
+            (render-block (car ps) part ri #f)
+            (when minipage?
+              (printf " \\end{minipage}\n"))
+            (unless (null? (cdr ps))
+              (printf " \\\\\n")
+              (loop (cdr ps))))]))
       null)
 
     (define/override (render-itemization t part ri)

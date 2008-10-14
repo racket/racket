@@ -199,7 +199,7 @@ string.
 @section{Bytes to/from Characters, Decoding and Encoding}
 
 @defproc[(bytes->string/utf-8 [bstr bytes?]
-                              [err-char (or/c false/c char?) #f]
+                              [err-char (or/c #f char?) #f]
                               [start exact-nonnegative-integer? 0]
                               [end exact-nonnegative-integer? (bytes-length bstr)])
          string?]{
@@ -214,7 +214,7 @@ string.
  valid UTF-8 encoding overall, then the @exnraise[exn:fail:contract].}
 
 @defproc[(bytes->string/locale [bstr bytes?]
-                               [err-char (or/c false/c char?) #f]
+                               [err-char (or/c #f char?) #f]
                                [start exact-nonnegative-integer? 0]
                                [end exact-nonnegative-integer? (bytes-length bstr)])
          string?]{
@@ -227,7 +227,7 @@ string.
  encoding overall, then the @exnraise[exn:fail:contract].}
 
 @defproc[(bytes->string/latin-1 [bstr bytes?]
-                                [err-char (or/c false/c char?) #f]
+                                [err-char (or/c #f char?) #f]
                                 [start exact-nonnegative-integer? 0]
                                 [end exact-nonnegative-integer? (bytes-length bstr)])
          string?]{
@@ -240,7 +240,7 @@ string.
  operations.}
 
 @defproc[(string->bytes/utf-8 [str string?]
-                              [err-byte (or/c false/c byte?) #f]
+                              [err-byte (or/c #f byte?) #f]
                               [start exact-nonnegative-integer? 0]
                               [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -250,7 +250,7 @@ string.
  the other operations.}
 
 @defproc[(string->bytes/locale [str string?]
-                               [err-byte (or/c false/c byte?) #f]
+                               [err-byte (or/c #f byte?) #f]
                                [start exact-nonnegative-integer? 0]
                                [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -263,7 +263,7 @@ string.
  then the @exnraise[exn:fail:contract].}
 
 @defproc[(string->bytes/latin-1 [str string?]
-                                [err-byte (or/c false/c byte?) #f]
+                                [err-byte (or/c #f byte?) #f]
                                 [start exact-nonnegative-integer? 0]
                                 [end exact-nonnegative-integer? (string-length str)])
          bytes?]{
@@ -286,7 +286,7 @@ string.
  generating the encoded bytes.}
 
 @defproc[(bytes-utf-8-length [bstr bytes?]
-                             [err-char (or/c false/c char?) #f]
+                             [err-char (or/c #f char?) #f]
                              [start exact-nonnegative-integer? 0]
                              [end exact-nonnegative-integer? (bytes-length bstr)])
          exact-nonnegative-integer?]{
@@ -299,7 +299,7 @@ string.
 
 @defproc[(bytes-utf-8-ref [bstr bytes?]
                           [skip exact-nonnegative-integer? 0]
-                          [err-char (or/c false/c char?) #f]
+                          [err-char (or/c #f char?) #f]
                           [start exact-nonnegative-integer? 0]
                           [end exact-nonnegative-integer? (bytes-length bstr)])
          char?]{
@@ -314,7 +314,7 @@ string.
 
 @defproc[(bytes-utf-8-index [bstr bytes?]
                             [skip exact-nonnegative-integer? 0]
-                            [err-char (or/c false/c char?) #f]
+                            [err-char (or/c #f char?) #f]
                             [start exact-nonnegative-integer? 0]
                             [end exact-nonnegative-integer? (bytes-length bstr)])
          exact-nonnegative-integer?]{
@@ -425,14 +425,14 @@ Closes the given converter, so that it can no longer be used with
                         [src-bstr bytes?]
                         [src-start-pos exact-nonnegative-integer? 0]
                         [src-end-pos exact-nonnegative-integer? (bytes-length src-bstr)]
-                        [dest-bstr (or/c bytes? false/c) #f]
+                        [dest-bstr (or/c bytes? #f) #f]
                         [dest-start-pos exact-nonnegative-integer? 0]
-                        [dest-end-pos (or/c exact-nonnegative-integer? false/c)
+                        [dest-end-pos (or/c exact-nonnegative-integer? #f)
                                       (and dest-bstr
                                            (bytes-length dest-bstr))])
           (values (or/c bytes? exact-nonnegative-integer?)
                   exact-nonnegative-integer?
-                  (one-of 'complete 'continues 'aborts 'error))]{
+                  (or/c 'complete 'continues 'aborts 'error))]{
 
 Converts the bytes from @scheme[src-start-pos] to @scheme[src-end-pos]
 in @scheme[src-bstr].
@@ -498,13 +498,13 @@ sequence and reset the converter, use @scheme[bytes-convert-end].}
 
 
 @defproc[(bytes-convert-end [converter bytes-converter?]
-                            [dest-bstr (or/c bytes? false/c) #f]
+                            [dest-bstr (or/c bytes? #f) #f]
                             [dest-start-pos exact-nonnegative-integer? 0]
-                            [dest-end-pos (or/c exact-nonnegative-integer? false/c)
+                            [dest-end-pos (or/c exact-nonnegative-integer? #f)
                                           (and dest-bstr
                                                (bytes-length dest-bstr))])
           (values (or/c bytes? exact-nonnegative-integer?)
-                  (one-of 'complete 'continues))]{
+                  (or/c 'complete 'continues))]{
 
 Like @scheme[bytes-convert], but instead of converting bytes, this
 procedure generates an ending sequence for the conversion (sometimes

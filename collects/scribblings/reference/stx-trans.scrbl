@@ -83,13 +83,9 @@ create @scheme[transformer].}
 
 
 @defproc[(local-expand [stx syntax?]
-                       [context-v (or/c (one-of 'expression 'top-level 'module
-                                                'module-begin)
-                                        list?)]
-                       [stop-ids (or/c (listof identifier?) false/c)]
-                       [intdef-ctx (or/c internal-definition-context?
-                                         false/c)
-                                          #f])
+                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [stop-ids (or/c (listof identifier?) #f)]
+                       [intdef-ctx (or/c internal-definition-context? #f) #f])
          syntax?]{
 
 Expands @scheme[stx] in the lexical context of the expression
@@ -149,13 +145,9 @@ avoids quadratic expansion times when local expansions are nested.
 
 
 @defproc[(local-transformer-expand [stx syntax?]
-                       [context-v (or/c (one-of 'expression 'top-level 'module 
-                                                'module-begin)
-                                        list?)]
-                       [stop-ids (or/c (listof identifier?) false/c)]
-                       [intdef-ctx (or/c internal-definition-context?
-                                         false/c)
-                                          #f])
+                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [stop-ids (or/c (listof identifier?) #f)]
+                       [intdef-ctx (or/c internal-definition-context? #f) #f])
          syntax?]{
 
 Like @scheme[local-expand], but @scheme[stx] is expanded as a
@@ -163,13 +155,9 @@ transformer expression instead of a run-time expression.}
 
 
 @defproc[(local-expand/capture-lifts [stx syntax?]
-                       [context-v (or/c (one-of 'expression 'top-level 'module
-                                                'module-begin)
-                                        list?)]
-                       [stop-ids (or/c (listof identifier?) false/c)]
-                       [intdef-ctx (or/c internal-definition-context?
-                                         false/c)
-                                          #f]
+                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [stop-ids (or/c (listof identifier?) #f)]
+                       [intdef-ctx (or/c internal-definition-context? #f) #f]
                        [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
@@ -185,13 +173,9 @@ expressions are not expanded, but instead left as provided in the
 
 
 @defproc[(local-transformer-expand/capture-lifts [stx syntax?]
-                       [context-v (or/c (one-of 'expression 'top-level 'module
-                                                'module-begin)
-                                        list?)]
-                       [stop-ids (or/c (listof identifier?) false/c)]
-                       [intdef-ctx (or/c internal-definition-context?
-                                         false/c)
-                                          #f])
+                       [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
+                       [stop-ids (or/c (listof identifier?) #f)]
+                       [intdef-ctx (or/c internal-definition-context? #f) #f])
          syntax?]{
 
 Like @scheme[local-expand/capture-lifts], but @scheme[stx] is expanded
@@ -214,7 +198,7 @@ or @scheme[define-syntaxes] form, use
 
 
 @defproc[(syntax-local-bind-syntaxes [id-list (listof identifier?)]
-                                     [expr (or/c syntax? false/c)]
+                                     [expr (or/c syntax? #f)]
                                      [intdef-ctx internal-definition-context?])
          void?]{
 
@@ -233,10 +217,10 @@ match the number of identifiers, otherwise the
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
-                             [failure-thunk (or/c (-> any) false/c)
+                             [failure-thunk (or/c (-> any) #f)
                                             #f]
                              [intdef-ctx (or/c internal-definition-context?
-                                               false/c)
+                                               #f)
                                          #f])
          any]{
 
@@ -324,7 +308,7 @@ eventually expanded in an expression context.
 @transform-time[]}
 
 
-@defproc[(syntax-local-name) (or/c symbol? false/c)]{
+@defproc[(syntax-local-name) (or/c symbol? #f)]{
 
 Returns an inferred name for the expression position being
 transformed, or @scheme[#f] if no such name is available. See also
@@ -334,8 +318,7 @@ transformed, or @scheme[#f] if no such name is available. See also
 
 
 @defproc[(syntax-local-context)
-         (or/c (one-of 'expression 'top-level 'module 'module-begin)
-               list?)]{
+         (or/c 'expression 'top-level 'module 'module-begin list?)]{
 
 Returns an indication of the context for expansion that triggered a
 @tech{syntax transformer} call. See @secref["expand-context-model"]
@@ -358,7 +341,7 @@ contexts.
 @transform-time[]}
 
 
-@defproc[(syntax-local-phase-level) (or/c exact-integer? false/c)]{
+@defproc[(syntax-local-phase-level) (or/c exact-integer? #f)]{
 
 During the dynamic extent of a @tech{syntax transformer} application
 by the expander, the result is the @tech{phase level} of the form
@@ -403,7 +386,7 @@ and a module-contextless version of @scheme[id-stx] otherwise.
 
 
 @defproc[(syntax-local-certifier [active? boolean? #f])
-         ((syntax?) (any/c (or/c procedure? false/c)) 
+         ((syntax?) (any/c (or/c procedure? #f)) 
           . ->* . syntax?)]{
 
 Returns a procedure that captures any certificates currently available
@@ -482,9 +465,9 @@ for-syntax) definitions.}
 
 
 @defproc[(syntax-local-module-required-identifiers
-          [mod-path (or/c module-path? false/c)]
-          [phase-level (or/c exact-integer? false/c (one-of/c #t))])
-         (listof (cons/c (or/c exact-integer? false/c)
+          [mod-path (or/c module-path? #f)]
+          [phase-level (or/c exact-integer? #f #t)])
+         (listof (cons/c (or/c exact-integer? #f)
                          (listof identifier?)))]{
 
 Can be called only while
@@ -566,9 +549,9 @@ Returns @scheme[#t] if @scheme[v] has the
 @defstruct[import ([local-id identifier?]
                    [src-sym symbol?]
                    [src-mod-path module-path?]
-                   [mode (or/c exact-integer? false/c)]
-                   [req-mode (or/c exact-integer? false/c)]
-                   [orig-mode (or/c exact-integer? false/c)]
+                   [mode (or/c exact-integer? #f)]
+                   [req-mode (or/c exact-integer? #f)]
+                   [orig-mode (or/c exact-integer? #f)]
                    [orig-stx syntax?])]{
 
 A structure representing a single imported identifier:
@@ -602,7 +585,7 @@ A structure representing a single imported identifier:
 @defstruct[import-source ([mod-path-stx (and/c syntax?
                                                (lambda (x)
                                                  (module-path? (syntax->datum x))))]
-                          [mode (or/c exact-integer? false/c)])]{
+                          [mode (or/c exact-integer? #f)])]{
 
 A structure representing an imported module, which must be
 @tech{instantiate}d or @tech{visit}ed even if no binding is imported
@@ -619,7 +602,7 @@ into a module.
 
 
 @defproc[(syntax-local-require-certifier)
-         ((syntax?) (or/c false/c (syntax? . -> . syntax?)) 
+         ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
           . ->* . syntax?)]{
 
 Like @scheme[syntax-local-certifier], but to certify @tech{syntax
@@ -652,7 +635,7 @@ See also @scheme[define-provide-syntax], which supports macro-style
 @scheme[provide] transformers.
 
 
-@defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? false/c))])
+@defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? #f))])
          (listof export?)]{
 
 Expands the given @scheme[_provide-spec] to a list of exports. The
@@ -663,7 +646,7 @@ otherwise. Normally, @scheme[modes] is either empty or contains a
 single element.}
 
 
-@defproc[(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? false/c))
+@defproc[(make-provide-transformer [proc (syntax? (listof (or/c exact-integer? #f))
                                           . -> . (listof export?))])
          provide-transformer?]{
 
@@ -687,7 +670,7 @@ Returns @scheme[#t] if @scheme[v] has the
 
 @defstruct[export ([local-id identifier?]
                    [out-sym symbol?]
-                   [mode (or/c exact-integer? false/c)]
+                   [mode (or/c exact-integer? #f)]
                    [protect? any/c]
                    [orig-stx syntax?])]{
 
@@ -713,7 +696,7 @@ A structure representing a single imported identifier:
 
 
 @defproc[(syntax-local-provide-certifier)
-         ((syntax?) (or/c false/c (syntax? . -> . syntax?)) 
+         ((syntax?) (or/c #f (syntax? . -> . syntax?)) 
           . ->* . syntax?)]{
 
 Like @scheme[syntax-local-certifier], but to certify @tech{syntax

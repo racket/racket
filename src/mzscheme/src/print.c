@@ -1842,18 +1842,29 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_compact(pp, CPT_HASH_TABLE);
 	if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_equal(obj))
             || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_equal(obj)))
-	  print_compact_number(pp, 0);
-	else
 	  print_compact_number(pp, 1);
+	else if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_eqv(obj))
+                 || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_eqv(obj)))
+	  print_compact_number(pp, 2);
+	else
+	  print_compact_number(pp, 0);
       } else {
 	always_scheme(pp, 1);
 	print_utf8_string(pp, "#hash", 0, 5);
         if (SCHEME_HASHTP(obj)) {
-          if (!scheme_is_hash_table_equal(obj))
-            print_utf8_string(pp, "eq", 0, 2);
+          if (!scheme_is_hash_table_equal(obj)) {
+            if (scheme_is_hash_table_eqv(obj))
+              print_utf8_string(pp, "eqv", 0, 3);
+            else
+              print_utf8_string(pp, "eq", 0, 2);
+          }
         } else {
-          if (!scheme_is_hash_tree_equal(obj))
-            print_utf8_string(pp, "eq", 0, 2);
+          if (!scheme_is_hash_tree_equal(obj)) {
+            if (scheme_is_hash_tree_eqv(obj))
+              print_utf8_string(pp, "eqv", 0, 3);
+            else
+              print_utf8_string(pp, "eq", 0, 2);
+          }
         }
 	print_utf8_string(pp, "(", 0, 1);
       }

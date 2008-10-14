@@ -278,7 +278,8 @@
         ;; up-path is #t, which makes it go to the (user's) start page
         ;; (using cookies) -- except when it is the start page itself
         ;; (one of the two)
-        [up-path     (not root?)]))))
+        [up-path     (not root?)]
+        [search-box? #t]))))
 
 (define (pick-dest latex-dest doc)
   (cond [latex-dest

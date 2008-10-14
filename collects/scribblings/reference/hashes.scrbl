@@ -7,10 +7,10 @@
 
 A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
-via @scheme[equal?] or @scheme[eq?], and keys are retained either
-strongly or weakly (see @secref["weakbox"]). A hash table is also
-either mutable or immutable; immutable tables support constant-time
-functional update.
+via @scheme[equal?], @scheme[eqv?], or @scheme[eq?], and keys are
+retained either strongly or weakly (see @secref["weakbox"]). A hash
+table is also either mutable or immutable; immutable tables support
+constant-time functional update.
 
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
@@ -22,13 +22,14 @@ keys and values.  See also @scheme[in-hash], @scheme[in-hash-keys],
 @scheme[in-hash-values], and @scheme[in-hash-pairs].
 
 Two hash tables cannot be @scheme[equal?] unless they use the same
-key-comparison procedure (@scheme[equal?] or @scheme[eq?]), both hold keys
-strongly or weakly, and have the same mutability.
+key-comparison procedure (@scheme[equal?], @scheme[eqv?], or
+@scheme[eq?]), both hold keys strongly or weakly, and have the same
+mutability.
 
 @bold{Caveats concerning concurrent modification:} A mutable hash
 table can be manipulated with @scheme[hash-ref], @scheme[hash-set!],
 and @scheme[hash-remove!] concurrently by multiple threads, and the
-operations are protected by a table-specific semaphore as needed. Two
+operations are protected by a table-specific semaphore as needed. Three
 caveats apply, however:
 
  @itemize{
@@ -50,6 +51,11 @@ caveats apply, however:
   otherwise the traversal skips a deleted key or uses the remapped
   key's new value).}
 
+ @item{The @scheme[hash-update!] function uses a table's semaphore
+ independently for the @scheme[hash-ref] and @scheme[hash-set!] parts
+ of its functionality, which means that the update as a whole is not
+ ``atomic.''}
+
  }
 
 @bold{Caveat concerning mutable keys:} If a key into an
@@ -63,10 +69,15 @@ for insertion and lookup operations becomes unpredictable.
 Returns @scheme[#t] if @scheme[v] is a @tech{hash table}, @scheme[#f]
 otherwise.}
 
+@defproc[(hash-eqv? [hash hash?]) boolean?]{
+
+Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[eqv?],
+@scheme[#f] if it compares with @scheme[equal?] or @scheme[eq?].}
+
 @defproc[(hash-eq? [hash hash?]) boolean?]{
 
 Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[eq?],
-@scheme[#f] if it compares with @scheme[equal?].}
+@scheme[#f] if it compares with @scheme[equal?] or @scheme[eqv?].}
 
 
 @defproc[(hash-weak? [hash hash?]) boolean?]{
@@ -82,6 +93,12 @@ uses @scheme[equal?] to compare keys. See also
 @scheme[make-custom-hash].}
 
 
+@defproc[(make-hasheqv) (and/c hash? hash-eqv?)]{
+
+Creates an empty mutable hash table that holds keys strongly and that
+uses @scheme[eqv?] to compare keys.}
+
+
 @defproc[(make-hasheq) (and/c hash? hash-eq?)]{
 
 Creates an empty mutable hash table that holds keys strongly and that
@@ -93,6 +110,12 @@ uses @scheme[eq?] to compare keys.}
 Creates an empty mutable hash table that holds keys weakly and that
 uses @scheme[equal?] to compare keys.  See also
 @scheme[make-weak-custom-hash].}
+
+
+@defproc[(make-weak-hasheqv) (and/c hash? hash-eqv? hash-weak?)]{
+
+Creates an empty mutable hash table that holds keys weakly and that
+uses @scheme[eqv?] to compare keys.}
 
 
 @defproc[(make-weak-hasheq) (and/c hash? hash-eq? hash-weak?)]{
@@ -110,6 +133,12 @@ of each pair is a key, and the @scheme[cdr] is the corresponding
 value. The mappings are added to the table in the order that they
 appear in @scheme[assocs], so later mappings can hide earlier
 mappings.}
+
+@defproc[(make-immutable-hasheqv [assocs (listof pair?)])
+         (and/c hash? hash-eqv? immutable?)]{
+
+Like @scheme[make-immutable-hash], but the resulting hash table
+compares keys with @scheme[eqv?].}
 
 @defproc[(make-immutable-hasheq [assocs (listof pair?)])
          (and/c hash? hash-eq? immutable?)]{
@@ -154,6 +183,33 @@ result:
  @item{Otherwise, @scheme[failure-result] is returned as the result.}
 
 }}
+
+
+@defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
+                       [key any/c]
+                       [updater (any/c . -> . any/c)]
+                       [failure-result any/c (lambda () 
+                                               (raise (make-exn:fail:contract ....)))])
+         void?]{
+
+Composes @scheme[hash-ref] and @scheme[hash-set!] to update an
+existing mapping in @scheme[hash], where the optional
+@scheme[failure-result] argument is used as in @scheme[hash-ref] when
+no mapping exists for @scheme[key] already. See the caveat above about
+concurrent updates.}
+
+
+@defproc[(hash-update [hash (and/c hash? immutable?)]
+                      [key any/c]
+                      [updater (any/c . -> . any/c)]
+                      [failure-result any/c (lambda () 
+                                              (raise (make-exn:fail:contract ....)))])
+          (and/c hash? immutable?)]{
+
+Composes @scheme[hash-ref] and @scheme[hash-set] to functionally
+update an existing mapping in @scheme[hash], where the optional
+@scheme[failure-result] argument is used as in @scheme[hash-ref] when
+no mapping exists for @scheme[key] already.}
 
 
 @defproc[(hash-remove! [hash (and/c hash? (not/c immutable?))]
@@ -203,7 +259,7 @@ above about concurrent modification.}
 
 
 @defproc[(hash-iterate-first [hash hash?])
-         (or/c false/c exact-nonnegative-integer?)]{
+         (or/c #f exact-nonnegative-integer?)]{
 
 Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
 it returns an integer that is a index to the first element in the hash
@@ -215,7 +271,7 @@ removed from @scheme[hash].}
 
 @defproc[(hash-iterate-next [hash hash?]
                             [pos exact-nonnegative-integer?])
-         (or/c false/c exact-nonnegative-integer?)]{
+         (or/c #f exact-nonnegative-integer?)]{
 
 Returns either an integer that is an index to the element in
 @scheme[hash] after the element indexed by @scheme[pos] (which is not
@@ -254,6 +310,14 @@ key-comparison mode, and same key-holding strength as @scheme[hash].}
 @defproc[(eq-hash-code [v any/c]) exact-integer?]{
 
 Returns an exact integer; for any two @scheme[eq?] values, the
+returned integer is the same. Furthermore, for the result integer
+@scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
+implies @scheme[(eq? k j)].}
+
+
+@defproc[(eqv-hash-code [v any/c]) exact-integer?]{
+
+Returns an exact integer; for any two @scheme[eqv?] values, the
 returned integer is the same. Furthermore, for the result integer
 @scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
 implies @scheme[(eq? k j)].}

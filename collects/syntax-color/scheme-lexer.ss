@@ -136,7 +136,7 @@
    [sharing (:or (:: "#" (make-uinteger digit10) "=")
                  (:: "#" (make-uinteger digit10) "#"))]
 
-   [list-prefix (:or "" "#hash" "#hasheq" "#s" (:: "#" (:* digit10)))])
+   [list-prefix (:or "" "#hash" "#hasheq" "#hasheqv" "#s" (:: "#" (:* digit10)))])
   
   (define-lex-trans make-num
     (syntax-rules ()

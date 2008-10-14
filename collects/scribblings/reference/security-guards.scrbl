@@ -29,16 +29,15 @@ host platform.
 
 @defproc[(make-security-guard [parent security-guard?]
                               [file-guard (symbol? 
-                                           (or/c path? false/c)
+                                           (or/c path? #f)
                                            (listof symbol?) 
                                            . -> . any)]
                               [network-guard (symbol?
-                                              (or/c (and/c string? immutable?) false/c)
-                                              (or/c (integer-in 1 65535) false/c)
-                                              (one-of/c 'server 'client)
+                                              (or/c (and/c string? immutable?) #f)
+                                              (or/c (integer-in 1 65535) #f)
+                                              (or/c 'server 'client)
                                               . -> . any)]
-                              [link (or/c (symbol? path? path? . -> . any)
-                                          false/c)
+                              [link (or/c (symbol? path? path? . -> . any) #f)
                                     #f])
           security-guard?]{
 

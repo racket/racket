@@ -9,7 +9,7 @@
 
 @guideintro["numbers"]{numbers}
 
-All numbers are @deftech{complex numbers}. Some of them are
+All @deftech{numbers} are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
 represented are also @deftech{rational numbers}, except for
 @as-index{@scheme[+inf.0]} (positive @as-index{infinity}),
@@ -687,7 +687,7 @@ generator.}
 @section-index["numbers" "converting"]
 
 @defproc[(number->string [z number?]
-                         [radix (one-of/c 2 8 10 16) 10]) string?]{
+                         [radix (or/c 2 8 10 16) 10]) string?]{
  Returns a string that is the printed form of @scheme[z]
  in the base specific by @scheme[radix]. If @scheme[z] is inexact,
  @scheme[radix] must be @scheme[10], otherwise the
@@ -697,7 +697,7 @@ generator.}
 
 
 @defproc[(string->number [s string?] [radix (integer-in 2 16) 10]) 
-         (or/c number? false/c)]{
+         (or/c number? #f)]{
 
 Reads and returns a number datum from @scheme[s] (see
 @secref["parse-number"]), returning @scheme[#f] if @scheme[s] does not
@@ -750,7 +750,7 @@ least-significant eight bits, and so on.}
 
 
 @defproc[(integer->integer-bytes [n exact-integer?]
-                                 [size-n (one-of/c 2 4 8)]
+                                 [size-n (or/c 2 4 8)]
                                  [signed? any/c]
                                  [big-endian? any/c (system-big-endian?)]
                                  [dest-bstr (and/c bytes? 
@@ -794,7 +794,7 @@ provides the least-significant eight bits, and so on.}
 
 
 @defproc[(real->floating-point-bytes [x real?]
-                                     [size-n (one-of/c 4 8)]
+                                     [size-n (or/c 4 8)]
                                      [big-endian? any/c (system-big-endian?)]
                                      [dest-bstr (and/c bytes? 
                                                        (not/c immutable?))
@@ -838,7 +838,7 @@ diameter: @number->string[pi].}
 
 Returns @scheme[(* z z)].}
 
-@defproc[(sgn [x real?]) (one-of/c 1 0 -1 1.0 0.0 -1.0)]{
+@defproc[(sgn [x real?]) (or/c 1 0 -1 1.0 0.0 -1.0)]{
 
 Returns the sign of @scheme[x] as either @math{-1}, @math{0}, or
 @math{1}.

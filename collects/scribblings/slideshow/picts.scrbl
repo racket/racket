@@ -72,8 +72,8 @@ information from a pict.
                  [ascent real?]
                  [descent real?]
                  [children (listof child?)]
-                 [panbox (or/c false/c any/c)]
-                 [last (or/c false/c pict?)])]{
+                 [panbox (or/c #f any/c)]
+                 [last (or/c #f pict?)])]{
 
 A @scheme[pict] structure is normally not created directly with
 @scheme[make-pict]. Instead, functions like @scheme[text],
@@ -200,15 +200,15 @@ and the ascent is the height.}
 
 
 @defproc*[([(hline [w real?] [h real?] 
-                   [#:segment seg-length (or/c false/c real?) #f]) pict?]
+                   [#:segment seg-length (or/c #f real?) #f]) pict?]
            [(vline [w real?] [h real?] 
-                   [#:segment seg-length (or/c false/c real?) #f]) pict?])]{
+                   [#:segment seg-length (or/c #f real?) #f]) pict?])]{
 
 Straight lines, centered within their bounding boxes.}
 
 @defproc[(frame [pict pict?]
                 [#:segment seg-length (or/c #f real?) #f]
-                [#:color color (or/c false/c string? (is-a?/c color<%>)) #f]
+                [#:color color (or/c #f string? (is-a?/c color<%>)) #f]
                 [#:line-width width (or/c #f real?) #f])
           pict?]{
 
@@ -285,8 +285,8 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
-                      [#:line-width line-width (or/c false/c real?) #f]
-                      [#:color color (or/c false/c string? (is-a/c? color%)) #f]
+                      [#:line-width line-width (or/c #f real?) #f]
+                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
@@ -294,8 +294,8 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
-                      [#:line-width line-width (or/c false/c real?) #f]
-                      [#:color color (or/c false/c string? (is-a/c? color%)) #f]
+                      [#:line-width line-width (or/c #f real?) #f]
+                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t])
             pict?]
@@ -304,8 +304,8 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
-                      [#:line-width line-width (or/c false/c real?) #f]
-                      [#:color color (or/c false/c string? (is-a/c? color%)) #f]
+                      [#:line-width line-width (or/c #f real?) #f]
+                      [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
                       [#:solid? solid? any/c #t]) 
             pict?])]{
@@ -636,9 +636,9 @@ which case true means @scheme["gray"] and false means
 
 @defproc[(standard-fish [w real?]
                         [h real?] 
-                        [#:direction direction (one-of/c 'left 'right) 'left] 
+                        [#:direction direction (or/c 'left 'right) 'left] 
                         [#:color color (or/c string? (is-a?/c color%)) "blue"] 
-                        [#:eye-color eye-color (or/c string? (is-a?/c color%) false/c) "black"]
+                        [#:eye-color eye-color (or/c string? (is-a?/c color%) #f) "black"]
                         [#:open-mouth open-mouth (or/c boolean? real?) #f])
          pict?]{
 
@@ -675,7 +675,7 @@ library provides functions for creating and placing cartoon-speech
 balloons.}
 
 @defproc[(wrap-balloon [pict pict?]
-                       [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
+                       [spike (or/c 'n 's 'e 'w 'ne 'se 'sw 'nw)]
                        [dx real?]
                        [dy real?]
                        [color (or/c string? (is-a?/c color%)) balloon-color]
@@ -707,7 +707,7 @@ extract the location of the spike point. More typically, the
 @scheme[pin-balloon] function is used to add a balloon to a pict.}
 
 @defproc[(pip-wrap-balloon [pict pict?]
-                           [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
+                           [spike (or/c 'n 's 'e 'w 'ne 'se 'sw 'nw)]
                            [dx real?]
                            [dy real?]
                            [color (or/c string? (is-a?/c color%)) balloon-color]
@@ -743,7 +743,7 @@ The resulting pict has the same bounding box, descent, and ascent as
 @defproc[(balloon [w real?]
                   [h real?]
                   [corner-radius (and/c real? (not/c negative?))]
-                  [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
+                  [spike (or/c 'n 's 'e 'w 'ne 'se 'sw 'nw)]
                   [dx real?]
                   [dy real?]
                   [color (or/c string? (is-a?/c color%)) balloon-color])
@@ -803,9 +803,9 @@ follows:
 
 }}
 
-@defproc[(face* [eyebrow-kind (one-of/c 'none 'normal 'worried 'angry)]
-                [mouth-kind (one-of/c 'plain 'smaller 'narrow 'medium 'large 
-                                      'huge 'grimace 'oh 'tongue)]
+@defproc[(face* [eyebrow-kind (or/c 'none 'normal 'worried 'angry)]
+                [mouth-kind (or/c 'plain 'smaller 'narrow 'medium 'large 
+                                  'huge 'grimace 'oh 'tongue)]
                 [frown? any/c]
                 [color (or/c string (is-a?/c color%))]
                 [eye-inset real?]
@@ -941,7 +941,7 @@ exact numbers; the procedure is called with each number from 0 to
 
 @section{Rendering}
 
-@defparam[dc-for-text-size dc (or/c false/c (is-a?/c dc<%>))]{
+@defparam[dc-for-text-size dc (or/c #f (is-a?/c dc<%>))]{
 
 A parameter that is used to determine the @tech{bounding box} of picts
 created with @scheme[text].
@@ -972,8 +972,8 @@ repeated calls to @scheme[draw-pict].}
 
 
 @defproc[(show-pict [pict pict?]
-                    [w (or/c false/c exact-nonnegative-integer?) #f] 
-                    [h (or/c false/c exact-nonnegative-integer?) #f])
+                    [w (or/c #f exact-nonnegative-integer?) #f] 
+                    [h (or/c #f exact-nonnegative-integer?) #f])
          void?]{
 
 Opens a frame that displays @scheme[pict].  The frame adds one method,

@@ -4,7 +4,7 @@
 @title[#:tag "stxcmp"]{Syntax Object Bindings}
 
 @defproc[(bound-identifier=? [a-id syntax?][b-id syntax?]
-                             [phase-level (or/c exact-integer? false/c)
+                             [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)])
          boolean?]{
 
@@ -16,7 +16,7 @@ suitable expression context at the @tech{phase level} indicated by
 
 
 @defproc[(free-identifier=? [a-id syntax?][b-id syntax?]
-                            [phase-level (or/c exact-integer? false/c)
+                            [phase-level (or/c exact-integer? #f)
                                          (syntax-local-phase-level)])
          boolean?]{
 
@@ -46,7 +46,7 @@ Same as @scheme[(free-identifier=? a-id b-id #f)].}
 
 
 @defproc[(check-duplicate-identifier [ids (listof identifier?)])
-         (or/c identifier? false/c)]{
+         (or/c identifier? #f)]{
 
 Compares each identifier in @scheme[ids] with every other identifier
 in the list with @scheme[bound-identifier=?]. If any comparison
@@ -56,16 +56,17 @@ is @scheme[#f].}
 
 
 @defproc[(identifier-binding [id-stx syntax?]
-                             [phase-level (or/c exact-integer? false/c)
+                             [phase-level (or/c exact-integer? #f)
                                           (syntax-local-phase-level)])
-         (or/c (one-of 'lexical #f)
+         (or/c 'lexical
+               #f
                (listof module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
-                       (one-of/c 0 1)
-                       (or/c exact-integer? false/c)
-                       (or/c exact-integer? false/c)))]{
+                       (or/c 0 1)
+                       (or/c exact-integer? #f)
+                       (or/c exact-integer? #f)))]{
 
 Returns one of three kinds of values, depending on the binding of
 @scheme[id-stx] at the @tech{phase level} indicated by
@@ -132,40 +133,43 @@ Returns one of three kinds of values, depending on the binding of
       }}
 
 @defproc[(identifier-transformer-binding [id-stx syntax?])
-         (or/c (one-of 'lexical #f)
+         (or/c 'lexical
+               #f
                (listof module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
-                       (one-of/c 0 1)
-                       (or/c exact-integer? false/c)
-                       (or/c exact-integer? false/c)))]{
+                       (or/c 0 1)
+                       (or/c exact-integer? #f)
+                       (or/c exact-integer? #f)))]{
 
 Same as @scheme[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
 
 
 @defproc[(identifier-template-binding [id-stx syntax?])
-         (or/c (one-of 'lexical #f)
+         (or/c 'lexical
+               #f
                (listof module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
-                       (one-of/c 0 1)
-                       (or/c exact-integer? false/c)
-                       (or/c exact-integer? false/c)))]{
+                       (or/c 0 1)
+                       (or/c exact-integer? #f)
+                       (or/c exact-integer? #f)))]{
 
 Same as @scheme[(identifier-binding id-stx (sub1 (syntax-local-phase-level)))].}
 
 
 @defproc[(identifier-label-binding [id-stx syntax?])
-         (or/c (one-of 'lexical #f)
+         (or/c 'lexical
+               #f
                (listof module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
-                       (one-of/c 0 1)
-                       (or/c exact-integer? false/c)
-                       (or/c exact-integer? false/c)))]{
+                       (or/c 0 1)
+                       (or/c exact-integer? #f)
+                       (or/c exact-integer? #f)))]{
 
 Same as @scheme[(identifier-binding id-stx #f)].}
 

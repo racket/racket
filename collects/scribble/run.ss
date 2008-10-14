@@ -34,6 +34,8 @@
     (make-parameter null))
   (define current-style-file
     (make-parameter #f))
+  (define current-style-extra-files
+    (make-parameter null))
   (define current-redirect
     (make-parameter #f))
 
@@ -63,7 +65,7 @@
        (current-dest-directory dir)]
       [("--dest-name") name "write output as <name>"
        (current-dest-name name)]
-      [("--style") file "use given .css/.tex file"
+      [("--style") file "use given base .css/.tex file"
        (current-style-file file)]
       [("--redirect") url "redirect external tag links to <url>"
        (current-redirect url)]
@@ -86,7 +88,9 @@
                              "bad procedure identifier for ++ref-in: ~s"
                              proc-id))
          (current-xref-input-modules
-          (cons (cons mod id) (current-xref-input-modules))))]]
+          (cons (cons mod id) (current-xref-input-modules))))]
+      [("++style") file "add given .css/.tex file"
+       (current-style-extra-files (cons file (current-style-extra-files)))]]
      [args (file . another-file) (cons file another-file)]))
 
   (define (build-docs-files files)
@@ -102,7 +106,8 @@
 
       (let ([renderer (new ((current-render-mixin) render%)
                            [dest-dir dir]
-                           [style-file (current-style-file)])])
+                           [style-file (current-style-file)]
+                           [style-extra-files (reverse (current-style-extra-files))])])
         (when (current-redirect)
           (send renderer set-external-tag-path (current-redirect)))
         (send renderer report-output!)

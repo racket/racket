@@ -616,7 +616,11 @@ A @as-index{@litchar{#hasheq}} starts a hash table like
 @litchar{#hash}, except that it constructs a hash table based on
 @scheme[eq?] instead of @scheme[equal?].
 
-In either case, the table is constructed by adding each mapping to the
+A @as-index{@litchar{#hasheqv}} starts a hash table like
+@litchar{#hash}, except that it constructs a hash table based on
+@scheme[eqv?] instead of @scheme[equal?].
+
+In all cases, the table is constructed by adding each mapping to the
  hash table from left to right, so later mappings can hide earlier
  mappings if the keys are equivalent.
 

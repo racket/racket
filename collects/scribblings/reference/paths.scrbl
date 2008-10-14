@@ -68,7 +68,7 @@ used instead of @scheme[string->path] when a string represents a
 single path element.}
 
 @defproc[(bytes->path [bstr bytes?]
-                      [type (one-of/c 'unix 'windows) (system-path-convention-type)]) 
+                      [type (or/c 'unix 'windows) (system-path-convention-type)]) 
          path?]{
 
 Produces a path (for some platform) whose byte-string name is
@@ -133,7 +133,7 @@ As for @scheme[path->string], information can be lost from
 
 
 @defproc[(bytes->path-element [bstr bytes?]
-                              [type (one-of/c 'unix 'windows) (system-path-convention-type)]) 
+                              [type (or/c 'unix 'windows) (system-path-convention-type)]) 
          path?]{
 
 Like @scheme[bytes->path], except that @scheme[bstr] corresponds to a
@@ -183,25 +183,24 @@ reassembling the result with @scheme[bytes->path-element] and
 
 
 @defproc[(path-convention-type [path path?])
-         (one-of 'unix 'windows)]{
+         (or/c 'unix 'windows)]{
 
 Accepts a path value (not a string) and returns its convention
 type.}
 
 
 @defproc[(system-path-convention-type)
-         (one-of 'unix 'windows)]{
+         (or/c 'unix 'windows)]{
 
 Returns the path convention type of the current platform:
 @indexed-scheme['unix] for @|AllUnix|, @indexed-scheme['windows] for
 Windows.}
 
 
-@defproc[(build-path [base (or/c path-string?
-                                 (one-of/c 'up 'same))]
+@defproc[(build-path [base (or/c path-string? 'up 'same)]
                      [sub (or/c (and/c path-string? 
                                        (not/c complete-path?))
-                                (one-of/c 'up 'same))] ...)
+                                (or/c 'up 'same))] ...)
          path?]{
 
 Creates a path given a base path and any number of sub-path
@@ -258,10 +257,9 @@ Windows examples.
 ]}
 
 
-@defproc[(build-path/convention-type [type (one-of/c 'unix 'windows)]
+@defproc[(build-path/convention-type [type (or/c 'unix 'windows)]
                                      [base path-string?]
-                                     [sub (or/c path-string? 
-                                                (one-of/c 'up 'same))] ...)
+                                     [sub (or/c path-string? 'up 'same)] ...)
          path?]{
 
 Like @scheme[build-path], except a path convention type is specified
@@ -419,10 +417,8 @@ This procedure does not access the filesystem.}
 
 
 @defproc[(split-path [path path-string?])
-         (values (or/c path?
-                       (one-of/c 'relative #f))
-                 (or/c path?
-                       (one-of/c 'up 'same))
+         (values (or/c path? 'relative #f)
+                 (or/c path? 'up 'same)
                  boolean?)]{
 
 Deconstructs @scheme[path] into a smaller path and an immediate
@@ -499,21 +495,21 @@ to the end.}
 @note-lib[scheme/path]
 
 @defproc[(explode-path [path path-string?]) 
-         (listof (or/c path? (one-of/c 'up 'same)))]{
+         (listof (or/c path? 'up 'same))]{
 
 Returns the list of path element that constitute @scheme[path].  If
 @scheme[path] is simplified in the sense of @scheme[simple-form-path],
 then the result is always a list of paths, and the first element of
 the list is a root.}
 
-@defproc[(file-name-from-path [path path-string?]) (or/c path? false/c)]{
+@defproc[(file-name-from-path [path path-string?]) (or/c path? #f)]{
 
 Returns the last element of @scheme[path]. If @scheme[path]
 syntactically a directory path (see @scheme[split-path]), then then
 result is @scheme[#f].}
 
 @defproc[(filename-extension [path path-string?]) 
-         (or/c bytes? false/c)]{
+         (or/c bytes? #f)]{
 
 Returns a byte string that is the extension part of the filename in
 @scheme[path] without the @litchar{.} separator. If @scheme[path] is
@@ -548,7 +544,7 @@ An error is signaled by @scheme[normalize-path] if the input
 path contains an embedded path for a non-existent directory,
 or if an infinite cycle of soft links is detected.}
 
-@defproc[(path-only [path path-string?]) (or/c path? false/c)]{
+@defproc[(path-only [path path-string?]) (or/c path? #f)]{
 
 If @scheme[path] is a filename, the file's path is returned. If
 @scheme[path] is syntactically a directory, @scheme[#f] is returned.}

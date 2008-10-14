@@ -12,6 +12,8 @@
          dict-ref
          dict-set!
          dict-set
+         dict-update!
+         dict-update
          dict-remove!
          dict-remove
          dict-count
@@ -205,6 +207,20 @@
           (raise-type-error 'dict-set "functional-update dict" 0 d key val)))]
    [else
     (raise-type-error 'dict-set "dict" 0 d key val)]))
+
+(define dict-update!
+  (case-lambda
+   [(d key xform)
+    (dict-set! d key (xform (dict-ref d key)))]
+   [(d key xform default)
+    (dict-set! d key (xform (dict-ref d key default)))]))
+
+(define dict-update
+  (case-lambda
+   [(d key xform)
+    (dict-set d key (xform (dict-ref d key)))]
+   [(d key xform default)
+    (dict-set d key (xform (dict-ref d key default)))]))
 
 (define (dict-remove! d key)
   (cond

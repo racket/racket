@@ -186,7 +186,7 @@
            [line (or (syntax-line first) 0)])
       (define (finish-line!)
         (when multi-line?
-          (set! docs (cons (make-flow (list (make-paragraph (reverse content))))
+          (set! docs (cons (make-flow (list (make-omitable-paragraph (reverse content))))
                            docs))
           (set! content null)))
       (define out

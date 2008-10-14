@@ -200,10 +200,8 @@
         [emptylabel "...search manuals..."]
         [dimcolor   "#888"])
     `(input
-      ([style ,(sa "width: 16em; margin: 0px; padding: 0px;"
-                   " background-color: #eee; color: "dimcolor";"
-                   " border: 1px solid #ddd;"
-                   " text-align: center; vertical-align: middle;")]
+      ([class "searchbox"]
+       [style ,(sa "color: "dimcolor";")]
        [type "text"]
        [value ,emptylabel]
        [title "Enter a search string to search the manuals"]
@@ -238,8 +236,10 @@
                 ;; user start page)
                 [up-path #f]
                 [style-file #f]
+                [style-extra-files null]
                 [script-path #f]
-                [script-file #f])
+                [script-file #f]
+                [search-box? #f])
 
     (define/override (get-suffix) #".html")
 
@@ -554,6 +554,12 @@
                                             d ri))))))))
                          ps))))))))
 
+    (define/public (extract-version d)
+      (if (and (versioned-part? d)
+               (versioned-part-version d))
+          (versioned-part-version d)
+          (current-version)))
+
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
         (let* ([style-file  (or style-file scribble-css)]
@@ -564,6 +570,7 @@
                                           ,(content->string c this d ri)))]
                             [else `(title)])])
           (unless css-path    (install-file style-file))
+          (for-each (lambda (f) (install-file f)) style-extra-files)
           (unless script-path (install-file script-file))
           (printf "<!DOCTYPE html PUBLIC ~s ~s>\n"
                   "-//W3C//DTD HTML 4.0 Transitional//EN"
@@ -576,12 +583,16 @@
                         [content "text-html; charset=utf-8"]))
                  ,title
                  ,(scribble-css-contents style-file  css-path)
+                 ,@(map (lambda (style-file)
+                          (scribble-css-contents style-file  css-path))
+                        style-extra-files)
                  ,(scribble-js-contents  script-file script-path))
                (body ()
                  ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
-                     ,@(render-version d ri)
+                     ,@(parameterize ([current-version (extract-version d)])
+                         (render-version d ri))
                      ,@(navigation d ri #t)
                      ,@(render-part d ri)
                      ,@(navigation d ri #f))))))))))
@@ -611,6 +622,8 @@
     (define sep-element      (make-element #f '(nbsp nbsp)))
 
     (define/public (derive-filename d) "bad.html")
+
+    (define/public (include-navigation?) search-box?)
 
     (define/private (navigation d ri top?)
       (define parent (part-parent d ri))
@@ -674,7 +687,9 @@
          `[onclick . ,(format "return GotoPLTRoot(\"~a\");" (version))]))
       (define navleft
         `(span ([class "navleft"])
-           ,(if up-path search-box top-search-box)
+           ,@(if search-box?
+                 (list (if up-path search-box top-search-box))
+                 null)
            ,@(render
               sep-element
               (and up-path (make-element top-link top-content))
@@ -719,23 +734,27 @@
                  (if next (titled-url "forward" next) "nonavigation")
                  next-content)))))
       (define navbar
-        `(div ([class "navset"]
-               [style ,(let ([v (if top? 'bottom 'top)])
-                         (format "margin-~a: 2em; border-~a: ~a"
-                                 v v "2px solid #e0e0c0;"))])
+        `(div ([class ,(if top? "navsettop" "navsetbottom")])
            ,navleft ,navright nbsp)) ; need nbsp to make the navset bg visible
-      (list navbar))
+      (if (include-navigation?)
+          (list navbar)
+          null))
 
     (define/override (render-one d ri fn)
       (render-one-part d ri fn null))
 
     (define/public (render-version d ri)
-      `((div ([class "versionbox"])
-          ,@(render-content
-             (list (make-element "version"
-                                 (list "Version: " (current-version))))
-             d
-             ri))))
+      (let ([v (current-version)])
+        (if (equal? v "")
+            ;; don't show empty version:
+            null
+            ;; show version:
+            `((div ([class "versionbox"])
+                   ,@(render-content
+                      (list (make-element "version"
+                                          (list "Version: " v)))
+                      d
+                      ri))))))
 
     (define/override (render-part d ri)
       (let ([number (collected-info-number (part-collected-info d ri))])
@@ -974,11 +993,12 @@
                         [as (cdr (or (t-style-get 'alignment)
                                      (cons #f (map (lambda (x) #f) flows))))]
                         [vas (cdr (or (t-style-get 'valignment)
-                                      (cons #f (map (lambda (x) #f) flows))))])
+                                      (cons #f (map (lambda (x) #f) flows))))]
+                        [first? #t])
                (cond
                  [(null? ds) null]
                  [(eq? (car ds) 'cont)
-                  (loop (cdr ds) (cdr as) (cdr vas))]
+                  (loop (cdr ds) (cdr as) (cdr vas) first?)]
                  [else
                   (let ([d (car ds)] [a (car as)] [va (car vas)])
                     (cons
@@ -1002,8 +1022,11 @@
                                              (loop (+ n 1) (cdr ds))]
                                             [else n])))])
                                null))
-                          ,@(render-flow d part ri #f))
-                     (loop (cdr ds) (cdr as) (cdr vas))))]))))
+                          ,@(if (and (= 1 (length (flow-paragraphs d)))
+                                     (omitable-paragraph? (car (flow-paragraphs d))))
+                                (render-content (paragraph-content (car (flow-paragraphs d))) part ri)
+                                (render-flow d part ri #f)))
+                     (loop (cdr ds) (cdr as) (cdr vas) #f)))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline-table; vertical-align: text-top;"])
@@ -1018,10 +1041,12 @@
                     (if (and a (string? (cadr a))) `([class ,(cadr a)]) null))
                 ,@(if (string? t-style) `([class ,t-style]) null)
                 ,@(style->attribs raw-style))
-          ,@(map make-row
-                 (table-flowss t)
-                 (cdr (or (t-style-get 'row-styles)
-                          (cons #f (map (lambda (x) #f) (table-flowss t)))))))))
+          ,@(if (null? (table-flowss t))
+                `((tr (td)))
+                (map make-row
+                     (table-flowss t)
+                     (cdr (or (t-style-get 'row-styles)
+                              (cons #f (map (lambda (x) #f) (table-flowss t))))))))))
 
     (define/override (render-blockquote t part ri)
       `((blockquote ,(if (string? (blockquote-style t))
@@ -1119,6 +1144,8 @@
           (error "file name too long (need a tag):" fn))
         fn))
 
+    (define/override (include-navigation?) #t)
+
     (define/override (collect ds fns)
       (super collect ds (map (lambda (fn) (build-path fn "index.html")) fns)))
 
@@ -1159,14 +1186,11 @@
       (list p))
 
     (inherit render-table
-             render-paragraph)
+             render-paragraph
+             extract-version)
 
     (define/override (render-part d ri)
-      (parameterize ([current-version
-                      (if (and (versioned-part? d)
-                               (versioned-part-version d))
-                        (versioned-part-version d)
-                        (current-version))])
+      (parameterize ([current-version (extract-version d)])
         (let ([number (collected-info-number (part-collected-info d ri))])
           (if (and (not (on-separate-page))
                    (or (= 1 (length number))

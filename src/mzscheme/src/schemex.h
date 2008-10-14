@@ -343,6 +343,7 @@ int (*scheme_bucket_table_equal)(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t
 Scheme_Bucket_Table *(*scheme_clone_bucket_table)(Scheme_Bucket_Table *bt);
 Scheme_Hash_Table *(*scheme_make_hash_table)(int type);
 Scheme_Hash_Table *(*scheme_make_hash_table_equal)();
+Scheme_Hash_Table *(*scheme_make_hash_table_eqv)();
 void (*scheme_hash_set)(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
 Scheme_Object *(*scheme_eq_hash_get)(Scheme_Hash_Table *table, Scheme_Object *key);
@@ -350,14 +351,16 @@ void (*scheme_hash_set_atomic)(Scheme_Hash_Table *table, Scheme_Object *key, Sch
 Scheme_Object *(*scheme_hash_get_atomic)(Scheme_Hash_Table *table, Scheme_Object *key);
 int (*scheme_hash_table_equal)(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 int (*scheme_is_hash_table_equal)(Scheme_Object *o);
+int (*scheme_is_hash_table_eqv)(Scheme_Object *o);
 Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *bt);
-Scheme_Hash_Tree *(*scheme_make_hash_tree)(int eql);
+Scheme_Hash_Tree *(*scheme_make_hash_tree)(int kind);
 Scheme_Hash_Tree *(*scheme_hash_tree_set)(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);
 long (*scheme_hash_tree_next)(Scheme_Hash_Tree *tree, long pos);
 int (*scheme_hash_tree_index)(Scheme_Hash_Tree *tree, long pos, Scheme_Object **_key, Scheme_Object **_val);
 int (*scheme_hash_tree_equal)(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 int (*scheme_is_hash_tree_equal)(Scheme_Object *o);
+int (*scheme_is_hash_tree_eqv)(Scheme_Object *o);
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
 /*========================================================================*/
@@ -839,6 +842,8 @@ long (*scheme_equal_hash_key)(Scheme_Object *o);
 long (*scheme_equal_hash_key2)(Scheme_Object *o);
 long (*scheme_recur_equal_hash_key)(Scheme_Object *o, void *cycle_data);
 long (*scheme_recur_equal_hash_key2)(Scheme_Object *o, void *cycle_data);
+long (*scheme_eqv_hash_key)(Scheme_Object *o);
+long (*scheme_eqv_hash_key2)(Scheme_Object *o);
 void (*scheme_set_type_equality)(Scheme_Type type, 
                                         Scheme_Equal_Proc f,
                                         Scheme_Primary_Hash_Proc hash1,

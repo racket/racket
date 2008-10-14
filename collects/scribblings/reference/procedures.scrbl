@@ -152,8 +152,7 @@ in @scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].
 @defproc[(procedure-keywords [proc procedure?])
          (values
           (listof keyword?)
-          (or/c (listof keyword?)
-                false/c))]{
+          (or/c (listof keyword?) #f))]{
 
 Returns information about the keyword arguments required and accepted
 by a procedure. The first result is a list of keywords (sorted by
@@ -201,7 +200,7 @@ obtains its result from @scheme[plain-proc].
                                          [arity procedure-arity?]
                                          [required-kws (listof keyword?)]
                                          [allowed-kws (or/c (listof keyword?)
-                                                            false/c)])
+                                                            #f)])
          procedure?]{
 
 Like @scheme[procedure-reduce-arity], but constrains the keyword
@@ -326,7 +325,7 @@ Returns @scheme[#t] if instances of the structure type represented by
 @scheme[type] are procedures (according to @scheme[procedure?]),
 @scheme[#f] otherwise.}
 
-@defproc[(procedure-extract-target [proc procedure?]) (or/c false/c procedure?)]{
+@defproc[(procedure-extract-target [proc procedure?]) (or/c #f procedure?)]{
 
 If @scheme[proc] is an instance of a structure type with property
 @scheme[prop:procedure], and if the property value indicates a field

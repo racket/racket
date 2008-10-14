@@ -14,7 +14,7 @@ the management of the current custodian (see
 @secref["custodians"]).
 
 @defproc[(open-input-file [path path-string?]
-                          [#:mode mode-flag (one-of/c 'binary 'text) 'binary])
+                          [#:mode mode-flag (or/c 'binary 'text) 'binary])
          input-port?]{
 
 Opens the file specified by @scheme[path] for input. The
@@ -62,10 +62,10 @@ A @tech{path} value that is the @tech{cleanse}d version of
 @scheme[path] is used as the name of the opened port.}
 
 @defproc[(open-output-file [path path-string?]
-                           [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                           [#:exists exists-flag (one-of/c 'error 'append 'update 'can-update
-                                                           'replace 'truncate 
-                                                           'must-truncate 'truncate/replace) 'error])
+                           [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                           [#:exists exists-flag (or/c 'error 'append 'update 'can-update
+                                                       'replace 'truncate 
+                                                       'must-truncate 'truncate/replace) 'error])
           output-port?]{
 
 Opens the file specified by @scheme[path] for output. The
@@ -142,9 +142,9 @@ A @tech{path} value that is the @tech{cleanse}d version of
 @scheme[path] is used as the name of the opened port.}
 
 @defproc[(open-input-output-file [path path-string?]
-                           [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                           [#:exists exists-flag (one-of/c 'error 'append 'update
-                                                           'replace 'truncate 'truncate/replace) 'error])
+                           [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                           [#:exists exists-flag (or/c 'error 'append 'update
+                                                       'replace 'truncate 'truncate/replace) 'error])
           (values input-port? output-port?)]{
 
 Like @scheme[open-output-file], but producing two values: an input
@@ -160,7 +160,7 @@ to avoid confusion.}
 
 @defproc[(call-with-input-file [path path-string?]
                                [proc (input-port? . -> . any)]
-                               [#:mode mode-flag (one-of/c 'binary 'text) 'binary])
+                               [#:mode mode-flag (or/c 'binary 'text) 'binary])
          any]{
 Calls @scheme[open-input-port] with the @scheme[path] and
 @scheme[mode-flag] arguments, and passes the resulting port
@@ -170,9 +170,9 @@ when @scheme[thunk] return.}
 
 @defproc[(call-with-output-file [path path-string?]
                                 [proc (output-port? . -> . any)]
-                                [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                                [#:exists exists-flag (one-of/c 'error 'append 'update
-                                                                'replace 'truncate 'truncate/replace) 'error])
+                                [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                                [#:exists exists-flag (or/c 'error 'append 'update
+                                                            'replace 'truncate 'truncate/replace) 'error])
          any]{
 Analogous to @scheme[call-with-input-file], but passing @scheme[path],
 @scheme[mode-flag] and @scheme[exists-flag] to
@@ -180,7 +180,7 @@ Analogous to @scheme[call-with-input-file], but passing @scheme[path],
 
 @defproc[(call-with-input-file* [path path-string?]
                                 [proc (input-port? . -> . any)]
-                                [#:mode mode-flag (one-of/c 'binary 'text) 'binary])
+                                [#:mode mode-flag (or/c 'binary 'text) 'binary])
          any]{
 Like @scheme[call-with-input-file], but the newly opened port is
 closed whenever control escapes the the dynamic extent of the
@@ -189,9 +189,9 @@ return, a continuation application, or a prompt-based abort.}
 
 @defproc[(call-with-output-file* [path path-string?]
                                  [proc (output-port? . -> . any)]
-                                 [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                                 [#:exists exists-flag (one-of/c 'error 'append 'update
-                                                                 'replace 'truncate 'truncate/replace) 'error])
+                                 [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                                 [#:exists exists-flag (or/c 'error 'append 'update
+                                                             'replace 'truncate 'truncate/replace) 'error])
          any]{
 Like @scheme[call-with-output-file], but the newly opened port is
 closed whenever control escapes the the dynamic extent of the
@@ -200,7 +200,7 @@ return, a continuation application, or a prompt-based abort.}
 
 @defproc[(with-input-from-file [path path-string?]
                                [thunk (-> any)]
-                               [#:mode mode-flag (one-of/c 'binary 'text) 'binary])
+                               [#:mode mode-flag (or/c 'binary 'text) 'binary])
          any]{
 Like @scheme[call-with-input-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
@@ -209,9 +209,9 @@ the current input port (see @scheme[current-input-port]) using
 
 @defproc[(with-output-to-file [path path-string?]
                               [thunk (-> any)]
-                              [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                              [#:exists exists-flag (one-of/c 'error 'append 'update
-                                                              'replace 'truncate 'truncate/replace) 'error])
+                              [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                              [#:exists exists-flag (or/c 'error 'append 'update
+                                                          'replace 'truncate 'truncate/replace) 'error])
          any]{
 Like @scheme[call-with-output-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as

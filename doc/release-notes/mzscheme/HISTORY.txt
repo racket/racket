@@ -1,3 +1,7 @@
+Version 4.1.1.2
+Added eqv-based hash tables
+Added hash-update and hash-update!
+
 Version 4.1.1.1
 Changed -X and -S to complete directory relative to pwd, and
  changed -S to add after main collects

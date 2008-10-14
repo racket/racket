@@ -204,7 +204,7 @@ pseudo-randomly for the result; the
 random-number generator that controls this choice.}
 
 
-@defproc[(sync/timeout [timeout-secs (or/c nonnegative-number? false/c)]
+@defproc[(sync/timeout [timeout-secs (or/c nonnegative-number? #f)]
                        [evt evt?] ...+) 
           any]{
 
@@ -228,7 +228,7 @@ either all @scheme[evt]s remain unchosen or the @scheme[exn:break]
 exception is raised, but not both.}
 
 
-@defproc[(sync/timeout/enable-break [timeout-secs (or/c nonnegative-number? false/c)]
+@defproc[(sync/timeout/enable-break [timeout-secs (or/c nonnegative-number? #f)]
                                     [evt evt?] ...+) 
          any]{
 

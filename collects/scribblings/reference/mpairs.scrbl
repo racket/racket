@@ -132,37 +132,37 @@ Like @scheme[for-each], but for @tech{mutable lists}.}
 
 
 @defproc[(mmember [v any/c] [mlst mlist?])
-         (or/c mlist? false/c)]{
+         (or/c mlist? #f)]{
 
 Like @scheme[member], but for @tech{mutable lists}.}
 
 
 @defproc[(mmemv [v any/c] [mlst mlist?])
-         (or/c mlist? false/c)]{
+         (or/c mlist? #f)]{
 
 Like @scheme[memv], but for @tech{mutable lists}.}
 
 
 @defproc[(mmemq [v any/c] [mlst mlist?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Like @scheme[memq], but for @tech{mutable lists}.}
 
 
 @defproc[(massoc [v any/c] [mlst (mlistof mpair?)])
-         (or/c mpair? false/c)]{
+         (or/c mpair? #f)]{
 
 Like @scheme[assoc], but for mutable lists of mutable pairs.}
 
 
 @defproc[(massv [v any/c] [mlst (mlistof mpair?)])
-         (or/c mpair? false/c)]{
+         (or/c mpair? #f)]{
 
 Like @scheme[assv], but for mutable lists of mutable pairs.}
 
 
 @defproc[(massq [v any/c] [mlst (mlistof mpair?)])
-         (or/c mpair? false/c)]{
+         (or/c mpair? #f)]{
 
 Like @scheme[assq], but for mutable lists of mutable pairs.}
 

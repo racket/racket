@@ -27,9 +27,21 @@
 
 /* ---------------------------------------- */
 
+h2 { /* per-page main title */
+  margin-top: 0;
+}
+
 h3, h4, h5, h6, h7, h8 {
   margin-top: 1.75em;
   margin-bottom: 0.5em;
+}
+
+/* Needed for browsers like Opera, and eventually for HTML 4 conformance.
+   This means that multiple paragraphs in a table element do not have a space
+   between them. */
+table p {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* ---------------------------------------- */
@@ -58,9 +70,19 @@ table td {
 /* ---------------------------------------- */
 /* Navigation */
 
-.navset {
+.navsettop, .navsetbottom {
   background-color: #f0f0e0;
   padding: 0.25em 0 0.25em 0;
+}
+
+.navsettop { 
+   margin-bottom: 1.5em;
+   border-bottom: 2px solid #e0e0c0;
+}
+
+.navsetbottom { 
+   margin-top: 2em;
+   border-top: 2px solid #e0e0c0;
 }
 
 .navleft {
@@ -77,6 +99,16 @@ table td {
 }
 .nonavigation {
   color: #e0e0e0;
+}
+
+.searchbox {
+  width: 16em;
+  margin: 0px;
+  padding: 0px;
+  background-color: #eee;
+  border: 1px solid #ddd;
+  text-align: center;
+  vertical-align: middle;
 }
 
 /* ---------------------------------------- */

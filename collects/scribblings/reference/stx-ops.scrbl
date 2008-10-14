@@ -19,8 +19,7 @@ object that is marshaled as part of compiled code; see also
 
 
 @defproc[(syntax-line [stx syntax?]) 
-         (or/c exact-positive-integer?
-               false/c)]{
+         (or/c exact-positive-integer? #f)]{
 
 Returns the line number (positive exact integer) for the start of the
 @tech{syntax object} in its source, or @scheme[#f] if the line number or
@@ -31,8 +30,7 @@ about marshaling compiled @tech{syntax object}s.}
 
 
 @defproc[(syntax-column [stx syntax?])
-         (or/c exact-nonnegative-integer?
-               false/c)]{
+         (or/c exact-nonnegative-integer? #f)]{
 
 Returns the column number (non-negative exact integer) for the start
 of the @tech{syntax object} in its source, or @scheme[#f] if the source
@@ -43,8 +41,7 @@ about marshaling compiled @tech{syntax object}s.}
 
 
 @defproc[(syntax-position [stx syntax?])
-         (or/c exact-positive-integer?
-               false/c)]{
+         (or/c exact-positive-integer? #f)]{
 
 Returns the character position (positive exact integer) for the start
 of the @tech{syntax object} in its source, or @scheme[#f] if the source
@@ -54,8 +51,7 @@ position is unknown. See also @secref["linecol"], and see
 
 
 @defproc[(syntax-span [stx syntax?])
-         (or/c exact-nonnegative-integer?
-               false/c)]{
+         (or/c exact-nonnegative-integer? #f)]{
 
 Returns the span (non-negative exact integer) in characters of the
 @tech{syntax object} in its source, or @scheme[#f] if the span is
@@ -77,7 +73,7 @@ opposed to @tech{syntax object}s inserted by macros.}
 
 
 @defproc[(syntax-source-module [stx syntax?])
-         (or/c module-path-index? symbol? false/c)]{
+         (or/c module-path-index? symbol? #f)]{
 
 Returns a module path index or symbol (see @secref["modpathidx"])
 for the module whose source contains @scheme[stx], or @scheme[#f] if
@@ -120,7 +116,7 @@ source. See @secref["parse-pair"] for more information.}
 
 
 @defproc[(syntax->list [stx syntax?])
-         (or/c list? false/c)]{
+         (or/c list? #f)]{
 
 Returns a list of @tech{syntax object}s or @scheme[#f]. The result is a list
 of @tech{syntax object}s when @scheme[(syntax->datum stx)] would produce a
@@ -140,21 +136,21 @@ The stripping operation does not mutate @scheme[stx]; it creates new
 pairs, vectors, boxes, and @tech{prefab} structures as needed to strip lexical and
 source-location information recursively.}
 
-@defproc[(datum->syntax [ctxt (or/c syntax? false/c)]
+@defproc[(datum->syntax [ctxt (or/c syntax? #f)]
                         [v any/c]
-                        [srcloc (or/c syntax? false/c
+                        [srcloc (or/c syntax? #f
                                       (list/c any/c
-                                              (or/c exact-positive-integer? false/c)
-                                              (or/c exact-nonnegative-integer? false/c)
-                                              (or/c exact-nonnegative-integer? false/c)
-                                              (or/c exact-positive-integer? false/c))
+                                              (or/c exact-positive-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-nonnegative-integer? #f)
+                                              (or/c exact-positive-integer? #f))
                                       (vector/c any/c
-                                               (or/c exact-positive-integer? false/c)
-                                               (or/c exact-nonnegative-integer? false/c)
-                                               (or/c exact-nonnegative-integer? false/c)
-                                               (or/c exact-positive-integer? false/c)))]
-                        [prop (or/c syntax? false/c) #f]
-                        [cert (or/c syntax? false/c) #f])
+                                               (or/c exact-positive-integer? #f)
+                                               (or/c exact-nonnegative-integer? #f)
+                                               (or/c exact-nonnegative-integer? #f)
+                                               (or/c exact-positive-integer? #f)))]
+                        [prop (or/c syntax? #f) #f]
+                        [cert (or/c syntax? #f) #f])
           syntax?]{
 
 Converts the @tech{datum} @scheme[v] to a @tech{syntax object}. If

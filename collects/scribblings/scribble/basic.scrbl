@@ -78,7 +78,8 @@ path, it is converted to a string using
 @scheme[module-path-prefix->string].
 
 The @scheme[vers] argument is propagated to the @scheme[title-decl]
-structure.
+structure. Use @scheme[""] as @scheme[vers] to suppress version
+rendering in the output.
 
 The section title is automatically indexed by
 @scheme[decode-part]. For the index key, leading whitespace and a

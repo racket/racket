@@ -4,25 +4,25 @@
 
 @title[#:tag "subprocess"]{Processes}
 
-@defproc*[([(subprocess [stdout (or/c output-port? false/c)]
-                        [stdin (or/c input-port? false/c)]
-                        [stderr (or/c output-port? false/c)]
+@defproc*[([(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
+                        [stdin (or/c (and/c input-port? file-stream-port?) #f)]
+                        [stderr (or/c (and/c output-port? file-stream-port?) #f)]
                         [command path-string?]
                         [arg string?] ...)
             (values subprocess?
-                    (or/c input-port? false/c)
-                    (or/c output-port? false/c)
-                    (or/c input-port? false/c))]
-           [(subprocess [stdout (or/c output-port? false/c)]
-                        [stdin (or/c input-port? false/c)]
-                        [stderr (or/c output-port? false/c)]
+                    (or/c (and/c input-port? file-stream-port?) #f)
+                    (or/c (and/c output-port? file-stream-port?) #f)
+                    (or/c (and/c input-port? file-stream-port?) #f))]
+           [(subprocess [stdout (or/c (and/c output-port? file-stream-port?) #f)]
+                        [stdin (or/c (and/c input-port? file-stream-port?) #f)]
+                        [stderr (or/c (and/c output-port? file-stream-port?) #f)]
                         [command path-string?]
-                        [exact (one-of/c 'exact)]
+                        [exact 'exact]
                         [arg string?])
             (values subprocess?
-                    (or/c input-port? false/c)
-                    (or/c output-port? false/c)
-                    (or/c input-port? false/c))])]{
+                    (or/c (and/c input-port? file-stream-port?) #f)
+                    (or/c (and/c output-port? file-stream-port?) #f)
+                    (or/c (and/c input-port? file-stream-port?) #f))])]{
 
 Creates a new process in the underlying operating system to execute
 @scheme[command] asynchronously. See also @scheme[system] and
@@ -89,7 +89,7 @@ Blocks until the process represented by @scheme[subproc] terminates.}
 
 
 @defproc[(subprocess-status [subproc subprocess?]) 
-         (or/c (one-of/c 'running)
+         (or/c 'running
                exact-nonnegative-integer?)]{
 
 Returns @indexed-scheme['running] if the process represented by
@@ -124,9 +124,9 @@ Returns @scheme[#t] if @scheme[v] is a subprocess value, @scheme[#f]
 otherwise.}
 
 
-@defproc[(shell-execute [verb (or/c string? false/c)]
+@defproc[(shell-execute [verb (or/c string? #f)]
                         [target string?][parameters string?][dir path-string?][show-mode symbol?]) 
-         false/c]
+         #f]
 
 @index['("ShellExecute")]{Performs} the action specified by @scheme[verb]
 on @scheme[target] in Windows. For platforms other than Windows, the
@@ -236,7 +236,7 @@ value is @scheme[#t], @scheme[#f] otherwise.}
 
 
 @defproc*[([(system* [command path-string?][arg string?] ...) boolean?]
-           [(system* [command path-string?][exact (one-of/c 'exact)][arg string?]) boolean?])]{
+           [(system* [command path-string?][exact 'exact][arg string?]) boolean?])]{
 
 Like @scheme[system], except that @scheme[command] is a filename that
 is executed directly (instead of through a shell command), and the
@@ -256,7 +256,7 @@ by the subprocess. A @scheme[0] result normally indicates success.}
 
 
 @defproc*[([(system*/exit-code [command path-string?][arg string?] ...) (integer-in 0 255)]
-           [(system*/exit-code [command path-string?][exact (one-of/c 'exact)][arg string?]) (integer-in 0 255)])]{
+           [(system*/exit-code [command path-string?][exact 'exact][arg string?]) (integer-in 0 255)])]{
 
 Like @scheme[system*], but returns the exit code like
 @scheme[system/exit-code].}
@@ -267,7 +267,7 @@ Like @scheme[system*], but returns the exit code like
                output-port?
                exact-nonnegative-integer?
                input-port?
-               ((one-of/c 'status 'wait 'interrupt 'kill) . -> . any))]{
+               ((or/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 
 Executes a shell command asynchronously. The result is a list of five values:
 
@@ -313,7 +313,7 @@ be explicitly closed with @scheme[close-input-port] or
  
 
 @defproc*[([(process* [command path-string?][arg string?] ...) list?]
-           [(process* [command path-string?][exact (one-of/c 'exact)][arg string?]) list?])]{
+           [(process* [command path-string?][exact 'exact][arg string?]) list?])]{
 
 Like @scheme[process], except that @scheme[command] is a filename that
 is executed directly, and the @scheme[arg]s are the arguments. Under
@@ -321,9 +321,9 @@ Windows, as for @scheme[system*], the first @scheme[arg] can be
 replaced with @scheme['exact].}
 
 
-@defproc[(process/ports [out (or/c false/c output-port?)]
-                        [in (or/c false/c input-port?)]
-                        [error-out (or/c false/c output-port?)]
+@defproc[(process/ports [out (or/c #f output-port?)]
+                        [in (or/c #f input-port?)]
+                        [error-out (or/c #f output-port?)]
                         [command string?])
          list?]{
 
@@ -335,17 +335,17 @@ system pipe is created and returned, as in @scheme[process]. For each
 port that is provided, no pipe is created, and the corresponding value
 in the returned list is @scheme[#f].}
 
-@defproc*[([(process*/ports [out (or/c false/c output-port?)]
-                            [in (or/c false/c input-port?)]
-                            [error-out (or/c false/c output-port?)]
+@defproc*[([(process*/ports [out (or/c #f output-port?)]
+                            [in (or/c #f input-port?)]
+                            [error-out (or/c #f output-port?)]
                             [command path-string?]
                             [arg string?] ...)
             list?]
-           [(process*/ports [out (or/c false/c output-port?)]
-                            [in (or/c false/c input-port?)]
-                            [error-out (or/c false/c output-port?)]
+           [(process*/ports [out (or/c #f output-port?)]
+                            [in (or/c #f input-port?)]
+                            [error-out (or/c #f output-port?)]
                             [command path-string?]
-                            [exact (one-of/c 'exact)]
+                            [exact 'exact]
                             [arg string?])
             list?])]{
 

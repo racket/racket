@@ -135,7 +135,7 @@ conversion handler; see @scheme[error-value->string-handler]); also,
 the number of supplied @scheme[arg-v]s is explicitly mentioned in the
 message.}
 
-@defproc[(raise-syntax-error [name (or/c symbol? false/c)]
+@defproc[(raise-syntax-error [name (or/c symbol? #f)]
                              [message string?]
                              [expr any/c #f]
                              [sub-expr any/c #f])
@@ -526,10 +526,10 @@ Returns the @scheme[srcloc]-getting procedure associated with @scheme[v].}
 
 
 @defstruct[srcloc ([source any/c]
-                   [line (or/c exact-positive-integer? false/c)]
-                   [column (or/c exact-nonnegative-integer? false/c)]
-                   [position (or/c exact-positive-integer? false/c)]
-                   [span (or/c exact-nonnegative-integer? false/c)])
+                   [line (or/c exact-positive-integer? #f)]
+                   [column (or/c exact-nonnegative-integer? #f)]
+                   [position (or/c exact-positive-integer? #f)]
+                   [span (or/c exact-nonnegative-integer? #f)])
                   #:inspector #f]{
 
 The fields of an @scheme[srcloc] instance are as follows:

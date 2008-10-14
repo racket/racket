@@ -530,7 +530,7 @@ Scheme_Bucket *scheme_bucket_or_null_from_table(Scheme_Bucket_Table *table, cons
 
 struct Scheme_Hash_Tree
 {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => equal?-based hashing */
+  Scheme_Inclhash_Object iso; /* 0x1 flag => equal?-based hashing; 0x2 flag => eqv?-based hashing */
   int count;
   struct RBNode *root;
   Scheme_Object *elems_box; /* vector in a weak box */

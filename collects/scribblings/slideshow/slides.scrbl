@@ -20,15 +20,15 @@
 
 @section{Primary Slide Functions}
 
-@defproc[(slide [#:title title (or/c false/c string?) #f]
-                [#:name  name (or/c false/c string?) title]
-                [#:layout layout (one-of-/c 'auto 'center 'top 'tall) 'auto]
+@defproc[(slide [#:title title (or/c #f string?) #f]
+                [#:name  name (or/c #f string?) title]
+                [#:layout layout (or/c 'auto 'center 'top 'tall) 'auto]
                 [#:inset inset slide-inset? (make-slide-inset 0 0 0 0)]
-                [#:timeout secs (or/c false/c real?) #f]
+                [#:timeout secs (or/c #f real?) #f]
                 [#:condense? condense? any/c (and timeout #t)]
                 [element (flat-rec-contract elem/c
                            (or/c pict? 
-                                (one-of/c 'next 'next! 'alts 'alts~ 'nothing)
+                                (or/c 'next 'next! 'alts 'alts~ 'nothing)
                                 comment?
                                 (listof (listof elem/c))))] ...)
           void?]{
@@ -102,7 +102,7 @@ The normal way to make serif text. Returns @scheme[(text str 'roman
 Creates title text. Returns @scheme[((current-titlet) str)].}
 
 @defproc[(para [#:width width real? (current-para-width)]
-               [#:align align (one-of/c 'left 'center 'right) 'left]
+               [#:align align (or/c 'left 'center 'right) 'left]
                [#:fill? fill? any/c #t]
                [#:decode? decode? any/c #t]
                [element (flat-rec-contract elem/c
@@ -141,7 +141,7 @@ See the spacing between lines is determined by the
 
 @defproc[(item [#:width width real? (current-para-width)]
                [#:bullet blt pict? bullet]
-               [#:align align (one-of/c 'left 'center 'right) 'left]
+               [#:align align (or/c 'left 'center 'right) 'left]
                [#:fill? fill? any/c #t]
                [#:decode? decode? any/c #t]
                [element (flat-rec-contract elem/c
@@ -157,7 +157,7 @@ paragraph.}
 
 @defproc[(subitem [#:width width real? (current-para-width)]
                   [#:bullet blt pict? o-bullet]
-                  [#:align align (one-of/c 'left 'center 'right) 'left]
+                  [#:align align (or/c 'left 'center 'right) 'left]
                   [#:fill? fill? any/c #t]
                   [#:decode? decode? any/c #t]
                   [element (flat-rec-contract elem/c
@@ -188,7 +188,7 @@ display.}
 
 @defproc[(make-outline [name (or/c symbol? (listof symbol?))]
                        [title (or/c string? pict?)]
-                       [subitems (or/c false/c null?
+                       [subitems (or/c #f null?
                                        (symbol? . -> . pict?))]
                        ...)
           (symbol? . -> . void?)]{
@@ -306,7 +306,7 @@ argument.
 
 @section{Constants and Layout Variables}
 
-@defthing[gap-size (one-of/c 24)]{
+@defthing[gap-size 24]{
 
 A width commonly used for layout.}
 
@@ -418,7 +418,7 @@ Parameter used by the default @scheme[current-titlet] to colorize the
 title. The default is @scheme["black"].}
 
 
-@defparam[current-slide-assembler proc ((or/c string? false/c)
+@defparam[current-slide-assembler proc ((or/c string? #f)
                                         exact-nonnegative-integer?
                                         pict?
                                         . -> .
@@ -574,7 +574,7 @@ of whether the name fo the last @scheme[id] name ends in @litchar{~}).
                               [width real?]
                               [height real?]
                               [condense? any/c]
-                              [stop-after (or/c false/c exact-nonnegative-integer?) #f])
+                              [stop-after (or/c #f exact-nonnegative-integer?) #f])
          (listof pict?)]{
 
 Executes the Slideshow program indicated by @scheme[path] in a fresh

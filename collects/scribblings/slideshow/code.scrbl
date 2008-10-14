@@ -282,11 +282,11 @@ For backward compatibility, the default values for
 @scheme[current-comment-color], etc.}
 
 @defproc[(code-pict-bottom-line-pict [pict pict?])
-         (or/c pict? false/c)]{
+         (or/c pict? #f)]{
 
 The same as @scheme[pict-last], provided for backward compatibility.}
 
-@defproc[(pict->code-pict [pict pict?] [bl-pict (or/c pict? false/c)]) pict?]{
+@defproc[(pict->code-pict [pict pict?] [bl-pict (or/c pict? #f)]) pict?]{
 
 Mainly for backward compatibility: returns @scheme[(if bl-pict
 (use-last pict (or (pict-last bl-pict) bl-pict)))].}

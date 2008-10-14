@@ -70,6 +70,7 @@
 \newcommand{\smaller}[1]{{\footnotesize #1}}
 \newcommand{\refpara}[1]{\marginpar{\footnotesize #1}}
 
+\newcommand{\titleAndEmptyVersion}[2]{\title{#1}\maketitle}
 \newcommand{\titleAndVersion}[2]{\title{#1\\{\normalsize Version #2}}\maketitle}
 
 \newcommand{\sectionNewpage}{\newpage}
@@ -81,6 +82,8 @@
 
 \newenvironment{leftindent}{\begin{quote}}{\end{quote}}
 \newenvironment{insetpara}{\begin{quote}}{\end{quote}}
+
+\newenvironment{bibentry}[1]{\parbox[t]{0.8\linewidth}{#1}}
 
 \newenvironment{bigtabular}{\begin{longtable}}{\end{longtable}\vspace{-3ex}}
 \newcommand{\bigtabline}{\vspace{-2ex}}

@@ -29,7 +29,7 @@ value originally associated with a parameter through
 reachable, even if the parameter is mutated.
 
 @defproc[(make-parameter [v any/c]
-                         [guard (or/c (any/c . -> . any) false/c) #f]) 
+                         [guard (or/c (any/c . -> . any) #f) #f]) 
          parameter?]{
 
 Returns a new parameter procedure. The value of the parameter is

@@ -51,7 +51,7 @@ structure types.}
 
 
 @defproc[(struct-info [v any/c])
-         (values (or/c struct-type? false/c)
+         (values (or/c struct-type? #f)
                  boolean?)]{
 
 Returns two values:
@@ -77,7 +77,7 @@ Returns two values:
                  struct-accessor-procedure?
                  struct-mutator-procedure?
                  (listof exact-nonnegative-integer?)
-                 (or/c struct-type? false/c)
+                 (or/c struct-type? #f)
                  boolean?)]{
 
 Returns eight values that provide information about the structure type

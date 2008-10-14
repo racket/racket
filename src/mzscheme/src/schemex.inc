@@ -239,6 +239,7 @@
   scheme_extension_table->scheme_clone_bucket_table = scheme_clone_bucket_table;
   scheme_extension_table->scheme_make_hash_table = scheme_make_hash_table;
   scheme_extension_table->scheme_make_hash_table_equal = scheme_make_hash_table_equal;
+  scheme_extension_table->scheme_make_hash_table_eqv = scheme_make_hash_table_eqv;
   scheme_extension_table->scheme_hash_set = scheme_hash_set;
   scheme_extension_table->scheme_hash_get = scheme_hash_get;
   scheme_extension_table->scheme_eq_hash_get = scheme_eq_hash_get;
@@ -246,6 +247,7 @@
   scheme_extension_table->scheme_hash_get_atomic = scheme_hash_get_atomic;
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
+  scheme_extension_table->scheme_is_hash_table_eqv = scheme_is_hash_table_eqv;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_make_hash_tree = scheme_make_hash_tree;
   scheme_extension_table->scheme_hash_tree_set = scheme_hash_tree_set;
@@ -254,6 +256,7 @@
   scheme_extension_table->scheme_hash_tree_index = scheme_hash_tree_index;
   scheme_extension_table->scheme_hash_tree_equal = scheme_hash_tree_equal;
   scheme_extension_table->scheme_is_hash_tree_equal = scheme_is_hash_tree_equal;
+  scheme_extension_table->scheme_is_hash_tree_eqv = scheme_is_hash_tree_eqv;
   scheme_extension_table->scheme_make_prim = scheme_make_prim;
   scheme_extension_table->scheme_make_noneternal_prim = scheme_make_noneternal_prim;
   scheme_extension_table->scheme_make_prim_w_arity = scheme_make_prim_w_arity;
@@ -577,6 +580,8 @@
   scheme_extension_table->scheme_equal_hash_key2 = scheme_equal_hash_key2;
   scheme_extension_table->scheme_recur_equal_hash_key = scheme_recur_equal_hash_key;
   scheme_extension_table->scheme_recur_equal_hash_key2 = scheme_recur_equal_hash_key2;
+  scheme_extension_table->scheme_eqv_hash_key = scheme_eqv_hash_key;
+  scheme_extension_table->scheme_eqv_hash_key2 = scheme_eqv_hash_key2;
   scheme_extension_table->scheme_set_type_equality = scheme_set_type_equality;
   scheme_extension_table->scheme_recur_equal = scheme_recur_equal;
   scheme_extension_table->scheme_build_list = scheme_build_list;

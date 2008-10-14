@@ -314,12 +314,12 @@ during the @techlink{collect pass}, the number is not rendered.
 
 Supplies a version number for this part and its sub-parts (except as
 overridden). A @scheme[#f] version is the same as not supplying a
-version.
+specific version.
 
-The version number may be used when rendering a document. At a
-minimum, a version is rendered when it is attached to a part
-representing the whole document. The default version for a document is
-@scheme[(version)].}
+The version number that is not @scheme[""] may be used when rendering
+a document. At a minimum, a non-@scheme[""] version is rendered when
+it is attached to a part representing the whole document. The default
+version for a document is @scheme[(version)].}
 
 
 @defstruct[flow ([paragraphs (listof flow-element?)])]{
@@ -333,6 +333,15 @@ A @techlink{flow} has a list of @tech{blocks}.
 A @techlink{paragraph} has a list of @tech{elements}.
 
 }
+
+@defstruct[(omitable-paragraph paragraph) ()]{
+
+Equivalent to a @scheme[paragraph], except that when a table cell
+contains a single @scheme[omitable-paragraph], then when rendering to
+HTML, no @tt{p} tag wraps the cell content.
+
+}
+
 
 @defstruct[(styled-paragraph paragraph) ([style any/c])]{
 
@@ -361,6 +370,16 @@ A @techlink{table} has, roughly, a list of list of flows. A cell in
 the table can span multiple columns by using @scheme['cont] instead of
 a flow in the following columns (i.e., for all but the first in a set
 of cells that contain a single flow).
+
+When a table cell's flow has multiple paragraphs, the rendered output
+starts each paragraph on its own line, but generally doesn't insert
+space between the paragraphs (as it would at the top level). For Latex
+output, individual paragraphs are not automatically line-wrapped; to
+get a line-wrapped paragraph, use an element with a string style and
+define a corresponding Latex macro in terms of @tt{parbox}. For Latex
+output of blocks in the flow that are @scheme[blockquote]s,
+@scheme[itemization]s, or @scheme[delayed-block]s, the block is
+wrapped with @tt{minipage} using @tt{linewidth} as the width.
 
 The @scheme[style] can be any of the following:
 

@@ -1304,6 +1304,22 @@ long scheme_equal_hash_key2(Scheme_Object *o)
   return equal_hash_key2(o, &hi);
 }
 
+long scheme_eqv_hash_key(Scheme_Object *o)
+{
+  if (!SCHEME_INTP(o) && SCHEME_NUMBERP(o))
+    return scheme_equal_hash_key(o);
+  else
+    return (PTR_TO_LONG(o) >> 2);
+}
+
+long scheme_eqv_hash_key2(Scheme_Object *o)
+{
+  if (!SCHEME_INTP(o) && SCHEME_NUMBERP(o))
+    return scheme_equal_hash_key2(o);
+  else
+    return (PTR_TO_LONG(o) >> 3);
+}
+
 static Scheme_Object *hash2_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
 {
   long v;
@@ -2116,7 +2132,7 @@ static RBNode *rb_remove(RBNode *s, unsigned long code)
   return remove_aux(s, code, &bh_dec);
 }
 
-Scheme_Hash_Tree *scheme_make_hash_tree(int eql)
+Scheme_Hash_Tree *scheme_make_hash_tree(int kind)
 {
   Scheme_Hash_Tree *tree;
 
@@ -2125,8 +2141,7 @@ Scheme_Hash_Tree *scheme_make_hash_tree(int eql)
   tree->count = 0;
   
   tree->iso.so.type = scheme_hash_tree_type;
-  if (eql)
-    SCHEME_HASHTR_FLAGS(tree) |= 0x1;
+  SCHEME_HASHTR_FLAGS(tree) |= (kind & 0x3);
 
   return tree;
 }
@@ -2138,8 +2153,12 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
   RBNode *root, *added;
   int delta;
 
-  if (SCHEME_HASHTR_FLAGS(tree) & 0x1) {
-    h = (unsigned long)scheme_equal_hash_key(key);
+  if (SCHEME_HASHTR_FLAGS(tree) & 0x3) {
+    if (SCHEME_HASHTR_FLAGS(tree) & 0x1) {
+      h = (unsigned long)scheme_equal_hash_key(key);
+    } else {
+      h = (unsigned long)scheme_eqv_hash_key(key);
+    }
   } else {
     h = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
   }
@@ -2150,10 +2169,12 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     if (!added)
       return tree; /* nothing to remove */
     if (added->key) {
-      int eql = (SCHEME_HASHTR_FLAGS(tree) & 0x1);
+      int kind = (SCHEME_HASHTR_FLAGS(tree) & 0x3);
 
-      if ((eql && scheme_equal(added->key, key))
-          || (!eql && SAME_OBJ(added->key, key))) {
+      if ((kind && ((kind == 1)
+                    ? scheme_equal(added->key, key)
+                    : scheme_eqv(added->key, key)))
+          || (!kind && SAME_OBJ(added->key, key))) {
         /* remove single item */
         root = rb_remove(tree->root, h);
         
@@ -2182,7 +2203,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
   delta = 0;
   
   if (added->val) {
-    int eql = (SCHEME_HASHTR_FLAGS(tree) & 0x1);
+    int kind = (SCHEME_HASHTR_FLAGS(tree) & 0x3);
 
     if (!added->key) {
       /* Have a list of keys and vals. In this case, val can be NULL
@@ -2191,9 +2212,14 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
       int cnt = 0;
       while (prs) {
         a = SCHEME_CAR(prs);
-        if (eql) {
-          if (scheme_equal(SCHEME_CAR(a), key))
-            break;
+        if (kind) {
+          if (kind == 1) {
+            if (scheme_equal(SCHEME_CAR(a), key))
+              break;
+          } else {
+            if (scheme_eqv(SCHEME_CAR(a), key))
+              break;
+          }
         } else {
           if (SAME_OBJ(SCHEME_CAR(a), key))
             break;
@@ -2231,8 +2257,11 @@ Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *ke
     } else {
       /* Currently have one value for this hash code */
       int same;
-      if (eql) {
-        same = scheme_equal(key, added->key);
+      if (kind) {
+        if (kind == 1)
+          same = scheme_equal(key, added->key);
+        else
+          same = scheme_eqv(key, added->key);
       } else {
         same = SAME_OBJ(key, added->key);
       }
@@ -2271,25 +2300,32 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
 {
   unsigned long h;
   RBNode *rb;
+  int kind = (SCHEME_HASHTR_FLAGS(tree) & 0x3);
 
-  if (SCHEME_HASHTR_FLAGS(tree) & 0x1) {
-    h = (unsigned long)scheme_equal_hash_key(key);
+  if (kind) {
+    if (kind == 1)
+      h = (unsigned long)scheme_equal_hash_key(key);
+    else
+      h = (unsigned long)scheme_eqv_hash_key(key);
   } else {
     h = (unsigned long)PTR_TO_LONG((Scheme_Object *)key);
   }
 
   rb = rb_find(h, tree->root);
   if (rb) {
-    int eql = (SCHEME_HASHTR_FLAGS(tree) & 0x1);
-
     if (!rb->key) {
       /* Have list of keys & vals: */
       Scheme_Object *prs = rb->val, *a;
       while (prs) {
         a = SCHEME_CAR(prs);
-        if (eql) {
-          if (scheme_equal(SCHEME_CAR(a), key))
-            return SCHEME_CDR(a);
+        if (kind) {
+          if (kind == 1) {
+            if (scheme_equal(SCHEME_CAR(a), key))
+              return SCHEME_CDR(a);
+          } else {
+            if (scheme_eqv(SCHEME_CAR(a), key))
+              return SCHEME_CDR(a);
+          }
         } else {
           if (SAME_OBJ(SCHEME_CAR(a), key))
             return SCHEME_CDR(a);
@@ -2297,9 +2333,14 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key)
         prs = SCHEME_CDR(prs);
       }
     } else {
-      if (eql) {
-        if (scheme_equal(key, rb->key))
-          return rb->val;
+      if (kind) {
+        if (kind == 1) {
+          if (scheme_equal(key, rb->key))
+            return rb->val;
+        } else {
+          if (scheme_eqv(key, rb->key))
+            return rb->val;
+        }
       } else if (SAME_OBJ(key, rb->key))
         return rb->val;
     }
@@ -2381,7 +2422,7 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
   int i;
 
   if ((t1->count != t2->count)
-      || ((SCHEME_HASHTR_FLAGS(t1) & 0x1) != (SCHEME_HASHTR_FLAGS(t2) & 0x1)))
+      || ((SCHEME_HASHTR_FLAGS(t1) & 0x3) != (SCHEME_HASHTR_FLAGS(t2) & 0x3)))
     return 0;
     
   for (i = t1->count; i--; ) {

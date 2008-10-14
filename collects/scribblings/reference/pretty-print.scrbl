@@ -67,7 +67,7 @@ by @scheme[read-eval-print-loop].}
 
 @section{Basic Pretty-Print Options}
 
-@defparam[pretty-print-columns width (or/c exact-positive-integer? (one-of/c 'infinity))]{
+@defparam[pretty-print-columns width (or/c exact-positive-integer? 'infinity)]{
 
 A parameter that determines the default width for pretty printing.
 
@@ -76,7 +76,7 @@ is never broken into lines, and a newline is not added to the end of
 the output.}
 
 
-@defparam[pretty-print-depth depth (or/c exact-nonnegative-integer? false/c)]{
+@defparam[pretty-print-depth depth (or/c exact-nonnegative-integer? #f)]{
 
 Parameter that controls the default depth for recursive pretty
 printing. Printing to @scheme[depth] means that elements nested more
@@ -177,7 +177,7 @@ so that the output follows popular code-formatting rules:
 
 @defparam[pretty-print-remap-stylable
           proc 
-          (any/c . -> . (or/c symbol? false/c))]{
+          (any/c . -> . (or/c symbol? #f))]{
 
 A parameter that controls remapping for styles. This procedure is
 called with each subexpression that appears as the first element in a
@@ -202,10 +202,10 @@ target column width, typically obtained from
 
 
 @defparam[pretty-print-print-line proc
-          ((or/c exact-nonnegative-integer? false/c)
+          ((or/c exact-nonnegative-integer? #f)
            output-port?
            exact-nonnegative-integer?
-           (or/c exact-nonnegative-integer? (one-of/c 'infinity))
+           (or/c exact-nonnegative-integer? 'infinity)
            . -> .
            exact-nonnegative-integer?)]{
 
@@ -250,7 +250,7 @@ redirected to the port supplied to @scheme[pretty-print] or
 @defparam[pretty-print-size-hook proc
           (any/c boolean? output-port?
            . -> . 
-           (or/c false/c exact-nonnegative-integer?))]{
+           (or/c #f exact-nonnegative-integer?))]{
 
 A parameter that determines a sizing hook for pretty-printing.
 

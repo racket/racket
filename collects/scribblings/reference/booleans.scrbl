@@ -3,9 +3,10 @@
 
 @title[#:tag "booleans"]{Booleans and Equality}
 
-True and false are represented by the values @scheme[#t] and
-@scheme[#f], respectively, though operations that depend a boolean
-value typically treat anything other than @scheme[#f] as true.
+True and false @deftech{booleans} are represented by the values
+@scheme[#t] and @scheme[#f], respectively, though operations that
+depend a boolean value typically treat anything other than @scheme[#f]
+as true.
 
 See also: @scheme[and], @scheme[or], @scheme[andmap], @scheme[ormap].
 

@@ -349,7 +349,7 @@
           null
           (append
            (render-block (car (flow-paragraphs p))
-                                part ri start-inline?)
+                         part ri start-inline?)
            (apply append
                   (map (lambda (p)
                          (render-block p part ri #f))

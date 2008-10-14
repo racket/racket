@@ -81,22 +81,22 @@ structures depends on the current inspector.)
 @section[#:tag "creatingmorestructs"]{Creating Structure Types}
 
 @defproc[(make-struct-type [name symbol?]
-                           [super-type (or/c struct-type? false/c)]
+                           [super-type (or/c struct-type? #f)]
                            [init-field-cnt exact-nonnegative-integer?]
                            [auto-field-cnt exact-nonnegative-integer?]
                            [auto-v any/c #f]
                            [props (listof (cons/c struct-type-property?
                                                   any/c))
                                   null]
-                           [inspector (or/c inspector? false/c (one-of/c 'prefab))
+                           [inspector (or/c inspector? #f 'prefab)
                                       (current-inspector)]
                            [proc-spec (or/c procedure?
                                             exact-nonnegative-integer?
-                                            false/c)
+                                            #f)
                                       #f]
                            [immutables (listof exact-nonnegative-integer?)
                                        null]
-                           [guard (or/c procedure? false/c) #f])
+                           [guard (or/c procedure? #f) #f])
           (values struct-type?
                   struct-constructor-procedure?
                   struct-predicate-procedure?
@@ -278,7 +278,7 @@ A @deftech{structure type property} allows per-type information to be
  property value with a new value.
 
 @defproc[(make-struct-type-property [name symbol?]
-                                    [guard (or/c procedure? false/c) #f]
+                                    [guard (or/c procedure? #f) #f]
                                     [supers (listof (cons/c struct-type-property?
                                                             (any/c . -> . any/c)))
                                             null])
@@ -443,7 +443,7 @@ is inaccessible.)}
  @scheme[define-struct], @scheme[make-struct-type], or
  @scheme[make-struct-field-mutator], @scheme[#f] otherwise.}
 
-@defproc[(prefab-struct-key [v any/c]) (or/c false/c symbol? list?)]{
+@defproc[(prefab-struct-key [v any/c]) (or/c #f symbol? list?)]{
 
 Returns @scheme[#f] if @scheme[v] is not an instance of a
 @tech{prefab} structure type. Otherwise, the result is the shorted key

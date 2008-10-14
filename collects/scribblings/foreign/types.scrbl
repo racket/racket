@@ -16,8 +16,8 @@ along with conversion functions to and from the existing types.
 @section{Type Constructors}
 
 @defproc[(make-ctype [type ctype?]
-                     [scheme-to-c (or/c false/c (any/c . -> . any))]
-                     [c-to-scheme (or/c false/c (any/c . -> . any))])
+                     [scheme-to-c (or/c #f (any/c . -> . any))]
+                     [c-to-scheme (or/c #f (any/c . -> . any))])
          ctype?]{
 
 Creates a new @tech{C type} value, with the given conversions
@@ -267,9 +267,8 @@ Otherwise, @scheme[_cprocedure] should be used (it is based on
 
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
-                      [#:abi abi (or/c symbol/c false/c) #f]
-                      [#:wrapper wrapper (or/c false/c
-                                               (procedure? . -> . procedure?))
+                      [#:abi abi (or/c symbol/c #f) #f]
+                      [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
                       [#:keep keep (or/c boolean? box? (any/c . -> . any/c))
                                    #t])
