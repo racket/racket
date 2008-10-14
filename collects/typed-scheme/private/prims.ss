@@ -165,9 +165,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     ;; and in that case, a `->' on the RHS does not need to be
     ;; explicitly parenthesized
     (syntax-case stx (:)
-      [(: id : first x ... last)
+      [(: id : x ...)
        (ormap (lambda (x) (eq? '-> (syntax-e x))) (syntax->list #'(x ...)))
-       (syntax/loc stx (: id (first x ... last)))]
+       (syntax/loc stx (: id (x ...)))]
       [(: id : . more) (syntax/loc stx (: id . more))]
       [_ stx]))
   (define (err str . sub)
