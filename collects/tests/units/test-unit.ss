@@ -1640,3 +1640,40 @@
     (define x 19))
   (test '(3 4 19 18)
         (invoke-unit (compound-unit/infer (import) (export) (link u2 u1)))))
+
+
+(define-signature sig^ (u-a))
+
+(define unit@
+  (unit
+    (import)
+    (export sig^)
+
+    (define u-a 'zero)))
+
+(define-syntax (use-unit stx)
+  (syntax-case stx ()
+    [(_)
+     #'(let ()
+         (define-values/invoke-unit unit@ (import) (export sig^))
+         u-a)]))
+
+(define-syntax (use-unit-badly1 stx)
+  (syntax-case stx ()
+    [(_ u-a)
+     #'(let ()
+         (define-values/invoke-unit unit@ (import) (export sig^))
+         u-a)]))
+
+(define-syntax (use-unit-badly2 stx)
+  (syntax-case stx ()
+    [(_ sig^)
+     #'(let ()
+         (define-values/invoke-unit unit@ (import) (export sig^))
+         u-a)]))
+
+(test 'zero (use-unit))
+(test-runtime-error exn:fail:contract:variable? "context mismatch; no u-a"
+  (use-unit-badly1 u-a))
+(test-runtime-error exn:fail:contract:variable? "context mismatch; no u-a"
+  (use-unit-badly2 sig^))

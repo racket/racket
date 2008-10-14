@@ -55,6 +55,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_property(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv);
+static Scheme_Object *syntax_transfer_intro(int argc, Scheme_Object **argv);
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv);
 static Scheme_Object *module_eq(int argc, Scheme_Object **argv);
@@ -447,6 +448,12 @@ void scheme_init_stx(Scheme_Env *env)
 			     scheme_make_immed_prim(syntax_track_origin,
 						    "syntax-track-origin",
 						    3, 3),
+			     env);
+
+  scheme_add_global_constant("make-syntax-delta-introducer", 
+			     scheme_make_immed_prim(syntax_transfer_intro,
+						    "make-syntax-delta-introducer",
+						    2, 2),
 			     env);
 
   scheme_add_global_constant("bound-identifier=?", 
@@ -6759,6 +6766,61 @@ static Scheme_Object *syntax_track_origin(int argc, Scheme_Object **argv)
     scheme_wrong_type("syntax-track-origin", "identifier syntax", 2, argc, argv);
   
   return scheme_stx_track(argv[0], argv[1], argv[2]);
+}
+
+static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], Scheme_Object *p)
+{
+  Scheme_Object *r, *delta;
+
+  r = argv[0];
+
+  if (!SCHEME_STXP(r))
+    scheme_wrong_type("delta-introducer", "syntax", 0, argc, argv);
+
+  delta = SCHEME_PRIM_CLOSURE_ELS(p)[0];
+
+  for(; !SCHEME_NULLP(delta); delta = SCHEME_CDR(delta)) {
+    r = scheme_add_remove_mark(r, SCHEME_CAR(delta));
+  }
+
+  return r;
+}
+
+static Scheme_Object *syntax_transfer_intro(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *m1, *m2, *delta, *a[1];
+  int l1, l2;
+
+  if (!SCHEME_STXP(argv[0]))
+    scheme_wrong_type("make-syntax-delta-introducer", "syntax", 0, argc, argv);
+  if (!SCHEME_STXP(argv[1]))
+    scheme_wrong_type("make-syntax-delta-introducer", "syntax", 1, argc, argv);
+
+  m1 = scheme_stx_extract_marks(argv[0]);
+  m2 = scheme_stx_extract_marks(argv[1]);
+
+  l1 = scheme_list_length(m1);
+  l2 = scheme_list_length(m2);
+
+  delta = scheme_null;
+  while (l1 > l2) {
+    delta = CONS(SCHEME_CAR(m1), delta);
+    m1 = SCHEME_CDR(m1);
+    l1--;
+  }
+
+  if (!scheme_equal(m1, m2)) {
+    /* tails don't match, so keep all marks */
+    while (l1) {
+      delta = CONS(SCHEME_CAR(m1), delta);
+      m1 = SCHEME_CDR(m1);
+      l1--;
+    }
+  }
+
+  a[0] = delta;
+
+  return scheme_make_prim_closure_w_arity(delta_introducer, 1, a, "delta-introducer", 1, 1);
 }
 
 static Scheme_Object *bound_eq(int argc, Scheme_Object **argv)

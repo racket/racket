@@ -440,6 +440,20 @@ mark}. Multiple applications of the same
 @scheme[make-syntax-introducer] result procedure use the same mark,
 and different result procedures use distinct marks.}
 
+@defproc[(make-syntax-delta-introducer [ext-stx syntax?] [base-stx syntax?]) 
+         (syntax? . -> . syntax?)]{
+
+Produces a procedure that behaves like
+@scheme[syntax-local-introduce], but using the @tech{syntax
+marks} of @scheme[ext-stx] that are not shared with @scheme[base-stx].
+
+This procedure is useful when @scheme[_m-id] has a transformer binding
+that records some @scheme[_orig-id], and a use of @scheme[_m-id]
+introduces a binding of @scheme[_orig-id]. In that case, the
+@tech{syntax marks} in the use of @scheme[_m-id] since the binding of
+@scheme[_m-id] should be transferred to the binding instance of
+@scheme[_orig-id], so that it captures uses with the same lexical
+context as the use of @scheme[_m-id].}
 
 @defproc[(syntax-local-transforming-module-provides?) boolean?]{
 
