@@ -26,6 +26,26 @@
       (set! drscheme-frame df)
       (set! src-editor ed))
 
+    (define (docked?)
+      (and drscheme-frame
+           (get-preference 'test:test-window:docked? 
+                           (lambda () (put-preferences '(test:test-window:docked?) '(#f)) #f))))
+    
+    (define/public (report-success)
+      (when current-rep
+        (unless current-tab
+          (set! current-tab (send (send current-rep get-definitions-text) get-tab)))
+        (unless drscheme-frame
+          (set! drscheme-frame (send current-rep get-top-level-window)))
+        (let ([curr-win (and current-tab (send current-tab get-test-window))]
+              [content (make-object (editor:standard-style-list-mixin text%))])
+          (send content lock #t)
+          (when curr-win (send curr-win update-editor content))
+          (when current-tab (send current-tab current-test-editor content))
+          (when (docked?)
+            (send drscheme-frame display-test-panel content)
+            (send curr-win show #f)))))
+    
     (define/public (display-results)
       (let* ([curr-win (and current-tab (send current-tab get-test-window))]
              [window (or curr-win (make-object test-window%))]
@@ -48,14 +68,9 @@
                     (send drscheme-frame deregister-test-window window)
                     (send current-tab current-test-window #f)
                     (send current-tab current-test-editor #f)))))
-        (if (and drscheme-frame
-                 (get-preference 'test:test-window:docked? 
-                                 (lambda ()
-                                   (put-preferences '(test:test-window:docked?)
-                                                    '(#f))
-                                   #f)))
-          (send drscheme-frame display-test-panel content)
-          (send window show #t))))
+        (if (docked?)
+            (send drscheme-frame display-test-panel content)
+            (send window show #t))))
 
     (define/pubment (insert-test-results editor test-info src-editor)
       (let* ([style (send test-info test-style)]
