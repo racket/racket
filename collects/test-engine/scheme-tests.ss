@@ -263,7 +263,7 @@
 
 (define (build-test-engine)
   (let ([engine (make-object scheme-test%)])
-    (send engine setup-info 'check-require)
+    (send engine setup-info 'test-check)
     engine))
 
 (define (insert-test test-info test) (send test-info add-test test))
