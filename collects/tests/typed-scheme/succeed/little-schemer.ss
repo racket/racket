@@ -406,7 +406,7 @@
    [else (build 'primitive e)]))
 
 (define: (initial-table [name : atom]) : atom
-  (error))
+  (error 'fail))
 
 (define: (*identifier [e : atom] [tbl : table]) : SExp
   (lookup-in-table e tbl initial-table))
@@ -420,10 +420,10 @@
       [(#t #f cons car cdr null? eq? atom? zero? add1 sub1 number?) *const]
       [else *identifier])]))
 
-(define: (*quote [a : atom] [t : table]) : SExp (error))
-(define: (*lambda [a : atom] [t : table]) : SExp (error))
-(define: (*cond [a : atom] [t : table]) : SExp (error))
-(define: (*application [a : atom] [t : table]) : SExp (error))
+(define: (*quote [a : atom] [t : table]) : SExp (error 'fail))
+(define: (*lambda [a : atom] [t : table]) : SExp (error 'fail))
+(define: (*cond [a : atom] [t : table]) : SExp (error 'fail))
+(define: (*application [a : atom] [t : table]) : SExp (error 'fail))
 
 (define: (list->action [e : (list-of SExp)]) : action
   (cond*
