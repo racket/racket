@@ -314,12 +314,12 @@ during the @techlink{collect pass}, the number is not rendered.
 
 Supplies a version number for this part and its sub-parts (except as
 overridden). A @scheme[#f] version is the same as not supplying a
-version.
+specific version.
 
-The version number may be used when rendering a document. At a
-minimum, a version is rendered when it is attached to a part
-representing the whole document. The default version for a document is
-@scheme[(version)].}
+The version number that is not @scheme[""] may be used when rendering
+a document. At a minimum, a non-@scheme[""] version is rendered when
+it is attached to a part representing the whole document. The default
+version for a document is @scheme[(version)].}
 
 
 @defstruct[flow ([paragraphs (listof flow-element?)])]{

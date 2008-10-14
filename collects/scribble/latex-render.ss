@@ -48,11 +48,11 @@
                           (flow-paragraphs (part-flow d)))])
             (when m
               (do-render-paragraph m d ri #t)))
-          (printf "\\titleAndVersion{")
-          (render-content (part-title-content d) d ri)
-          (printf "}{~a}\n"
-                  (or (and (versioned-part? d) (versioned-part-version d))
-                      (version))))
+          (let ([vers (or (and (versioned-part? d) (versioned-part-version d))
+                          (version))])
+            (printf "\\titleAnd~aVersion{" (if (equal? vers "") "Empty" ""))
+            (render-content (part-title-content d) d ri)
+            (printf "}{~a}\n" vers)))
         (render-part d ri)
         (printf "\\postDoc\n\\end{document}\n")))
 
