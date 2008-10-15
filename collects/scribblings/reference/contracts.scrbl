@@ -989,8 +989,8 @@ raised by the contract system.}
 @defproc[(contract? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if its argument is a contract (ie, constructed
-with one of the combinators described in this section), @scheme[#f]
-otherwise.}
+with one of the combinators described in this section or a value that
+can be used as a contract) and @scheme[#f] otherwise.}
 
 @defproc[(flat-contract? [v any/c]) boolean?]{
 
