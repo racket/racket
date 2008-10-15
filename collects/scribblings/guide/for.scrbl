@@ -391,7 +391,7 @@ fast-clause [id fast-seq]
 ]
 
 @schemegrammar[
-#:literals [in-range in-naturals in-list in-vector in-string in-bytes stop-before stop-after]
+#:literals [in-range in-naturals in-list in-vector in-string in-bytes in-value stop-before stop-after]
 fast-seq (in-range expr expr)
          (in-range expr expr expr)
          (in-naturals)

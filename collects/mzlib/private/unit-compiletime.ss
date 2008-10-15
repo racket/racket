@@ -355,7 +355,7 @@
   (define (process-tagged-import spec)
     (process-tagged-import/export spec #t #t))
   (define (process-tagged-export spec)
-    (process-tagged-import/export spec #f #f))
+    (process-tagged-import/export spec #f #t))
   
   ;; process-spec : syntax-object -> sig
   (define (process-spec spec)

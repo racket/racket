@@ -453,7 +453,8 @@
      (for ([zo-file source-files])
        (let ([zo-file (path->complete-path zo-file)])
          (let-values ([(base name dir?) (split-path zo-file)])
-           (parameterize ([current-load-relative-directory base])
+           (parameterize ([current-load-relative-directory base]
+                          [print-graph #t])
              (pretty-print
               (decompile
                (call-with-input-file*
