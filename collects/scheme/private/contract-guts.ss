@@ -142,7 +142,7 @@
 ;; returns #f if the argument could not be coerced to a contract
 (define (coerce-contract/f x)
   (cond
-    [(contract? x) x]
+    [(proj-pred? x) x]
     [(and (procedure? x) (procedure-arity-includes? x 1)) 
      (make-predicate-contract (or (object-name x) '???) x)]
     [(or (symbol? x) (boolean? x) (char? x) (null? x)) (make-eq-contract x)]
@@ -349,7 +349,7 @@
   (let ([ctc (coerce-contract 'contract-name ctc)])
     ((name-get ctc) ctc)))
 
-(define (contract? x) (proj-pred? x))
+(define (contract? x) (and (coerce-contract/f x) #t))
 (define (contract-proc ctc) ((proj-get ctc) ctc))
 
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
@@ -367,7 +367,7 @@
        '()]
       [else (let ([sub (car subs)])
               (cond
-                [(contract? sub)
+                [(name-pred? sub)
                  (let ([mk-sub-name (contract-name sub)])
                    `(,mk-sub-name ,@(loop (cdr subs))))]
                 [else `(,sub ,@(loop (cdr subs)))]))])))
