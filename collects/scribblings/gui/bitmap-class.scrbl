@@ -25,7 +25,7 @@ Sometimes, a bitmap object creation fails in a low-level manner. In
                         [width (integer-in 1 10000)]
                         [height (integer-in 1 10000)]))]{
 
-When @scheme[with] and @scheme[height] are provided: Creates a new
+When @scheme[width] and @scheme[height] are provided: Creates a new
  bitmap. If @scheme[monochrome?] is @scheme[#f], the bitmap matches
  the display depth of the screen. The initial content of the bitmap is
  undefined.
