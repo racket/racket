@@ -91,7 +91,7 @@ time is a portion of the time reported by
 
 
 @defproc[(time-apply [proc procedure?]
-                     [arg any/c] ...)
+                     [lst list?])
          (values list?
                  exact-integer?
                  exact-integer?

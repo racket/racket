@@ -75,6 +75,8 @@
                    (failed-check-src failed-check))
         (printf "~a" "\n")))
 
+    (define/public (report-success) (void))
+    
     (define/public (next-line) (printf "~a" "\n\t"))
 
     ;; make-link: (listof (U string snip%)) src -> void
@@ -130,24 +132,27 @@
       (when (test-execute)
         (unless test-display (setup-display #f #f))
         (let ([result (send test-info summarize-results)])
+          (send test-display install-info test-info)
           (case result
             [(no-tests) (send this display-untested port)]
-            [(all-passed) (send this display-success port)]
+            [(all-passed) (send this display-success port display-event-space)]
             [(mixed-results)
              (send this display-results display-rep display-event-space)]))))
 
-    (define/public (display-success port)
+    (define/public (display-success port event)
+      (when event
+        (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event])
+          ((dynamic-require 'scheme/gui 'queue-callback)
+            (lambda () (send test-display report-success)))))
       (unless (test-silence)
         (fprintf port "All tests passed!~n")))
     (define/public (display-untested port)
       (unless (test-silence)
         (fprintf port "This program should be tested.~n")))
     (define/public (display-results rep event-space)
-      (send test-display install-info test-info)
       (cond
         [(and rep event-space)
-         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace)
-                         event-space])
+         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
            ((dynamic-require 'scheme/gui 'queue-callback)
             (lambda () (send rep display-test-results test-display))))]
         [event-space 

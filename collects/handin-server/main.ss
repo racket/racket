@@ -542,78 +542,76 @@
   ((current-timeout-control) msg))
 
 (define (with-watcher w proc)
-  (let ([session-cust (make-custodian)]
-        [session-channel (make-channel)]
-        [timeout #f]
-        [status-box (box #f)])
-    (define (timeout-control msg)
-      (if (rational? msg)
-        (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
-        (case msg
-          [(reset) (timeout-control (get-conf 'session-timeout))]
-          [(disable) (set! timeout #f)]
-          [else (error 'timeout-control "bad argument: ~s" msg)])))
-    (current-timeout-control timeout-control)
-    (timeout-control 'reset)
-    (unless no-limit-warning?
-      (with-handlers ([exn:fail:unsupported?
-                       (lambda (x)
-                         (set! no-limit-warning? #t)
-                         (log-line "WARNING: per-session memory limit not supported by MrEd"))])
-        (custodian-limit-memory session-cust
-                                (get-conf 'session-memory-limit)
-                                session-cust)))
-    (let ([watcher
-           (parameterize ([current-custodian orig-custodian])
+  (define session-cust (make-custodian))
+  (define session-channel (make-channel))
+  (define timeout #f)
+  (define status-box (box #f))
+  (define (watch-loop timed-out?)
+    (cond [(sync/timeout 3 session-thread)
+           (let* ([status (unbox status-box)]
+                  [status (if status (format " while ~a" status) "")])
+             (log-line "session killed ~a~a"
+                       (if timed-out? "(timeout) " "(memory)")
+                       status)
+             (write+flush
+              w (format "handin terminated due to ~a ~a~a"
+                        (if timed-out? "time limit" "excessive memory use")
+                        "(program doesn't terminate?)"
+                        status))
+             (close-output-port w)
+             (channel-put session-channel 'done))]
+          [(let ([t timeout]) ; grab value to avoid races
+             (and t ((current-inexact-milliseconds) . > . t)))
+           ;; Shutdown here to get the handin-terminated error
+           ;;  message, instead of relying on a timeout at the
+           ;;  run-server level
+           (custodian-shutdown-all session-cust)
+           (watch-loop #t)]
+          [else (collect-garbage)
+                (log-line "running ~a ~a"
+                          (current-memory-use session-cust)
+                          (if no-limit-warning?
+                            "(total)"
+                            (list (current-memory-use orig-custodian)
+                                  (current-memory-use))))
+           (watch-loop #f)]))
+  (define (timeout-control msg)
+    (if (rational? msg)
+      (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
+      (case msg
+        [(reset) (timeout-control (get-conf 'session-timeout))]
+        [(disable) (set! timeout #f)]
+        [else (error 'timeout-control "bad argument: ~s" msg)])))
+  (current-timeout-control timeout-control)
+  (timeout-control 'reset)
+  (unless no-limit-warning?
+    (with-handlers ([exn:fail:unsupported?
+                     (lambda (x)
+                       (set! no-limit-warning? #t)
+                       (log-line "WARNING: per-session memory limit ~a"
+                                 "not supported by MrEd"))])
+      (custodian-limit-memory
+       session-cust (get-conf 'session-memory-limit) session-cust)))
+  (let ([watcher
+         (parameterize ([current-custodian orig-custodian])
+           (thread
+            (lambda ()
+              (let ([session-thread (channel-get session-channel)])
+                (watch-loop #f)))))])
+    ;; Run proc in a thread under session-cust:
+    (let ([session-thread
+           (parameterize ([current-custodian session-cust]
+                          [current-run-status-box status-box])
              (thread
               (lambda ()
-                (let ([session-thread (channel-get session-channel)])
-                  (let loop ([timed-out? #f])
-                    (cond
-                      [(sync/timeout 3 session-thread)
-                       (let* ([status (unbox status-box)]
-                              [status (if status
-                                        (format " while ~a" status)
-                                        "")])
-                         (log-line "session killed ~a~a"
-                                   (if timed-out? "(timeout) " "(memory)")
-                                   status)
-                         (write+flush
-                          w (format "handin terminated due to ~a (program doesn't terminate?)~a"
-                                    (if timed-out? "time limit" "excessive memory use")
-                                    status))
-                         (close-output-port w)
-                         (channel-put session-channel 'done))]
-                      [(let ([t timeout]) ; grab value to avoid races
-                         (and t ((current-inexact-milliseconds) . > . t)))
-                       ;; Shutdown here to get the handin-terminated error
-                       ;;  message, instead of relying on a timeout at the
-                       ;;  run-server level
-                       (custodian-shutdown-all session-cust)
-                       (loop #t)]
-                      [else
-                       (collect-garbage)
-                       (log-line "running ~a ~a"
-                                 (current-memory-use session-cust)
-                                 (if no-limit-warning?
-                                   "(total)"
-                                   (list (current-memory-use orig-custodian)
-                                         (current-memory-use))))
-                       (loop #f)]))))))])
-      ;; Run proc in a thread under session-cust:
-      (let ([session-thread
-             (parameterize ([current-custodian session-cust]
-                            [current-run-status-box status-box])
-               (thread
-                (lambda ()
-                  (proc (lambda ()
-                          ;; Proc has succeeded...
-                          (parameterize ([current-custodian orig-custodian])
-                            (kill-thread watcher))))
-                  (channel-put session-channel 'done-normal))))])
-        (channel-put session-channel session-thread)
-        ;; Wait until the proc is done or killed (and kill is reported):
-        (channel-get session-channel)))))
+                (proc (lambda ()
+                        ;; Proc has succeeded...
+                        (parameterize ([current-custodian orig-custodian])
+                          (kill-thread watcher))))
+                (channel-put session-channel 'done-normal))))])
+      (channel-put session-channel session-thread)
+      ;; Wait until the proc is done or killed (and kill is reported):
+      (channel-get session-channel))))
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

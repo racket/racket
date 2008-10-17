@@ -110,8 +110,12 @@ basic properties of images.
 For the composition of images, you must know about @emph{pinholes}. Each
 image, including primitive ones, come with a pinhole. For images created
 with the above primitives, the pinhole is at the center of the shape except
-for those created from @scheme[line] and @scheme[text], which have pinholes
-at the top left. The pinhole can be moved, of course, and compositions
+for those created from @scheme[line] and @scheme[text].
+The @scheme[text] function puts the pinhole at the upper left corner of
+the image, and @scheme[line] puts the pinhole at the beginning of the line
+(meaning that if the first two arguments to @scheme[line] are positive,
+the pinhole is also in the upper left corner).
+The pinhole can be moved, of course, and compositions
 locate pinholes according to their own rules. When in doubt you can always
 find out where the pinhole is and place it where convenient.
 

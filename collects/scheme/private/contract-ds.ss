@@ -467,12 +467,12 @@ it around flattened out.
 
 (define (do-contract-name name/c name/dc list-of-subcontracts fields attrs)
   (cond
-    [(and (andmap contract? list-of-subcontracts) (not attrs))
+    [(and (andmap name-pred? list-of-subcontracts) (not attrs))
      (apply build-compound-type-name name/c list-of-subcontracts)]
     [else
      (let ([fields 
             (map (λ (field ctc) 
-                   (if (contract? ctc)
+                   (if (name-pred? ctc)
                        (build-compound-type-name field ctc)
                        (build-compound-type-name field '...)))
                  fields

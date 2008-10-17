@@ -26,6 +26,27 @@
       (set! drscheme-frame df)
       (set! src-editor ed))
 
+    (define (docked?)
+      (and drscheme-frame
+           (get-preference 'test:test-window:docked? 
+                           (lambda () (put-preferences '(test:test-window:docked?) '(#f)) #f))))
+    
+    (define/public (report-success)
+      (when current-rep
+        (unless current-tab
+          (set! current-tab (send (send current-rep get-definitions-text) get-tab)))
+        (unless drscheme-frame
+          (set! drscheme-frame (send current-rep get-top-level-window)))
+        (let ([curr-win (and current-tab (send current-tab get-test-window))]
+              [content (make-object (editor:standard-style-list-mixin text%))])
+          (send this insert-test-results content test-info src-editor)
+          (send content lock #t)
+          (when curr-win (send curr-win update-editor content))
+          (when current-tab (send current-tab current-test-editor content))
+          (when (and curr-win (docked?))
+            (send drscheme-frame display-test-panel content)
+            (send curr-win show #f)))))
+    
     (define/public (display-results)
       (let* ([curr-win (and current-tab (send current-tab get-test-window))]
              [window (or curr-win (make-object test-window%))]
@@ -48,14 +69,9 @@
                     (send drscheme-frame deregister-test-window window)
                     (send current-tab current-test-window #f)
                     (send current-tab current-test-editor #f)))))
-        (if (and drscheme-frame
-                 (get-preference 'test:test-window:docked? 
-                                 (lambda ()
-                                   (put-preferences '(test:test-window:docked?)
-                                                    '(#f))
-                                   #f)))
-          (send drscheme-frame display-test-panel content)
-          (send window show #t))))
+        (if (docked?)
+            (send drscheme-frame display-test-panel content)
+            (send window show #t))))
 
     (define/pubment (insert-test-results editor test-info src-editor)
       (let* ([style (send test-info test-style)]
@@ -79,31 +95,33 @@
                           [(= failed-tests total-tests) "0 tests passed.\n"]
                           [else (format "~a of the ~a tests failed.\n\n" failed-tests total-tests)]))))]
              [check-outcomes
-              (lambda (zero-message)
+              (lambda (zero-message ck)
                 (send editor insert
                       (cond
                         [(zero? total-checks) zero-message]
-                        [(= 1 total-checks) "Ran 1 check.\n"]
-                        [else (format "Ran ~a checks.\n" total-checks)]))
+                        [(= 1 total-checks) (format "Ran 1 ~a.\n" ck)]
+                        [else (format "Ran ~a ~as.\n" total-checks ck)]))
                 (when (> total-checks 0)
                   (send editor insert
                         (cond
                           [(and (zero? failed-checks) (= 1 total-checks))
-                           "Check passed!\n\n"]
-                          [(zero? failed-checks) "All checks passed!\n\n"]
-                          [(= failed-checks total-checks) "0 checks passed.\n"]
-                          [else (format "~a of the ~a checks failed.\n\n"
-                                        failed-checks total-checks)]))))])
+                           (format "The ~a passed!\n\n" ck)]
+                          [(zero? failed-checks) (format "All ~as passed!\n\n" ck)]
+                          [(= failed-checks total-checks) (format "0 ~as passed.\n" ck)]
+                          [else (format "~a of the ~a ~as failed.\n\n"
+                                        failed-checks ck total-checks)]))))])
         (case style
           [(test-require)
            (test-outcomes "This program must be tested!\n")
-           (check-outcomes "This program is unchecked!\n")]
+           (check-outcomes "This program is unchecked!\n" "check")]
           [(check-require)
-           (check-outcomes "This program is unchecked!\n")]
+           (check-outcomes "This program is unchecked!\n" "check")]
           [(test-basic)
            (test-outcomes "")
-           (check-outcomes "")]
-          [else (check-outcomes "")])
+           (check-outcomes "" "check")]
+          [(test-check)
+           (check-outcomes "This program must be tested.\n" "test")]
+          [else (check-outcomes "" "check")])
 
         (unless (and (zero? total-checks) (zero? total-tests))
           (inner (display-check-failures (send test-info failed-checks) 

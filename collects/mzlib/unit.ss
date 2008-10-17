@@ -221,7 +221,8 @@
                        (list (cons (list (quote-syntax sid) ...)
                                    ((syntax-local-certifier)
                                     (quote-syntax sbody)))
-                             ...))))))))
+                             ...)
+                       (quote-syntax #,sigid))))))))
           (else
            (syntax-case (car sig-exprs) (define-values define-syntaxes)
              (x
@@ -1274,7 +1275,8 @@
                     (make-unit-info ((syntax-local-certifier) (quote-syntax u))
                                     (list (cons 'itag (quote-syntax isig)) ...)
                                     (list (cons 'etag (quote-syntax esig)) ...)
-                                    (list (cons 'deptag (quote-syntax deptag)) ...))))))))))
+                                    (list (cons 'deptag (quote-syntax deptag)) ...)
+                                    (quote-syntax name))))))))))
       ((_)
        (raise-stx-err err-msg))))
 
@@ -1356,9 +1358,12 @@
   (define-syntax/err-param (define-values/invoke-unit/infer stx)
     (syntax-case stx ()
       ((_ u) 
-       (let ((ui (lookup-def-unit #'u)))
-         (with-syntax (((sig ...) (map unprocess-tagged-id (unit-info-export-sig-ids ui)))
-                       ((isig ...) (map unprocess-tagged-id (unit-info-import-sig-ids ui))))
+       (let* ((ui (lookup-def-unit #'u))
+              (unprocess (let ([i (make-syntax-delta-introducer #'u (unit-info-orig-binder ui))])
+                           (lambda (p)
+                             (unprocess-tagged-id (cons (car p) (i (cdr p))))))))
+         (with-syntax (((sig ...) (map unprocess (unit-info-export-sig-ids ui)))
+                       ((isig ...) (map unprocess (unit-info-import-sig-ids ui))))
            (quasisyntax/loc stx
              (define-values/invoke-unit u (import isig ...) (export sig ...))))))
       ((_)
@@ -1437,19 +1442,23 @@
          s))
       (apply make-link-record l))
     
-    (define (process-tagged-sigid sid)
-      (make-link-record (car sid) #f (cdr sid) (signature-siginfo (lookup-signature (cdr sid)))))
+    (define ((process-tagged-sigid introducer) sid)
+      (make-link-record (car sid) #f (introducer (cdr sid)) (signature-siginfo (lookup-signature (cdr sid)))))
       
     (syntax-case stx ()
       (((import ...) 
         (export ...)
         (((out ...) u l ...) ...))
-       (let* ([units (map lookup-def-unit (syntax->list #'(u ...)))]
+       (let* ([us (syntax->list #'(u ...))]
+              [units (map lookup-def-unit us)]
               [import-sigs (map process-signature 
                                 (syntax->list #'(import ...)))]
+              [sig-introducers (map (lambda (unit u)
+                                      (make-syntax-delta-introducer u (unit-info-orig-binder unit)))
+                                    units us)]
               [sub-outs
                (map
-                (lambda (outs unit)
+                (lambda (outs unit sig-introducer)
                   (define o
                     (map
                      (lambda (clause)
@@ -1457,10 +1466,11 @@
                        (make-link-record (car c) (cadr c) (cddr c)
                                          (signature-siginfo (lookup-signature (cddr c)))))
                      (syntax->list outs)))
-                  (complete-exports (map process-tagged-sigid (unit-info-export-sig-ids unit))
+                  (complete-exports (map (process-tagged-sigid sig-introducer) (unit-info-export-sig-ids unit))
                                     o))
                 (syntax->list #'((out ...) ...))
-                units)]
+                units
+                sig-introducers)]
               [link-defs (append import-sigs (apply append sub-outs))])
 
          (define lnk-table (make-bound-identifier-mapping))
@@ -1486,7 +1496,7 @@
              
          (let ([sub-ins
                 (map
-                 (lambda (ins unit unit-stx)
+                 (lambda (ins unit sig-introducer unit-stx)
                    (define is (syntax->list ins))
                    (define lrs
                      (map
@@ -1510,12 +1520,13 @@
                     is)
                    (complete-imports sig-table 
                                      lrs
-                                     (map process-tagged-sigid
+                                     (map (process-tagged-sigid sig-introducer)
                                           (unit-info-import-sig-ids unit))
                                      unit-stx))
                  (syntax->list #'((l ...) ...))
                  units
-                 (syntax->list #'(u ...)))]
+                 sig-introducers
+                 us)]
                [exports
                 (map 
                  (lambda (e)

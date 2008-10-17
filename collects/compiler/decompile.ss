@@ -266,6 +266,7 @@
 
 (define (decompile-lam expr globs stack)
   (match expr
+    [(struct closure (lam gen-id)) (decompile-lam lam globs stack)]
     [(struct lam (name flags num-params rest? closure-map max-let-depth body))
      (let ([vars (for/list ([i (in-range num-params)]) 
                    (gensym (format "arg~a-" i)))]

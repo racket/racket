@@ -3942,6 +3942,13 @@
                         f))])
         ((((contract ctc f 'pos 'neg) 1) 2) 3))))
   
+  (test/spec-passed
+   'recursive-contract5
+   '(contract (recursive-contract #f)
+              #f
+              'pos
+              'neg))
+  
   
 
 ;                                                       
@@ -4753,6 +4760,9 @@ so that propagation occurs.
   (ctest #t flat-contract? (let ()
                             (define-struct s (a b))
                             (struct/c s any/c any/c)))
+  
+  (ctest #t contract? 1)
+  (ctest #t contract? (-> 1 1))
   
   (test-flat-contract '(and/c number? integer?) 1 3/2)
 

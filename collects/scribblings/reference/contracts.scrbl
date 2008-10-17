@@ -310,7 +310,7 @@ checking will not terminate.}
 
 @defform[(flat-murec-contract ([id flat-contract-expr ...] ...) body ...+)]{
 
-A generalization of @scheme[flat-rec-contracts] for defining several
+A generalization of @scheme[flat-rec-contract] for defining several
 mutually recursive flat contracts simultaneously. Each @scheme[id] is
 visible in the entire @scheme[flat-murec-contract] form, and the
 result of the final @scheme[body] is the result of the entire form.}
@@ -1045,9 +1045,9 @@ raised by the contract system.}
 
 @defproc[(contract? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if its argument is a contract (ie, constructed
-with one of the combinators described in this section), @scheme[#f]
-otherwise.}
+Returns @scheme[#t] if its argument is a contract (i.e., constructed
+with one of the combinators described in this section or a value that
+can be used as a contract) and @scheme[#f] otherwise.}
 
 @defproc[(flat-contract? [v any/c]) boolean?]{
 

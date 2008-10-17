@@ -306,7 +306,7 @@
   ;; not sure if it's really unsigned
   (integer-bytes->integer (read-bytes 4 p) #f #f))
 
-(define-struct cport ([pos #:mutable] orig-port size bytes symtab shared-offsets))
+(define-struct cport ([pos #:mutable] orig-port size bytes symtab shared-offsets decoded rns))
 
 (define (cp-getc cp)
   (begin-with-definitions
@@ -427,6 +427,124 @@
 (define-struct not-ready ())
 
 ;; ----------------------------------------
+;; Synatx unmarshaling
+
+(define-form-struct wrapped (datum wraps certs))
+
+(define (decode-stx cp v)
+  (if (integer? v)
+      (let-values ([(v2 decoded?) (unmarshal-stx-get cp v)])
+        (if decoded?
+            v2
+            (let ([v2 (decode-stx cp v2)])
+              (unmarshal-stx-set! cp v v2)
+              v2)))
+      (let loop ([v v])
+        (let-values ([(cert-marks v encoded-wraps)
+                      (match v
+                        [`#((,datum . ,wraps) ,cert-marks) (values cert-marks datum wraps)]
+                        [`(,datum . ,wraps) (values #f datum wraps)]
+                        [else (error 'decode-wraps "bad datum+wrap: ~e" v)])])
+          (let* ([wraps (decode-wraps cp encoded-wraps)]
+                 [add-wrap (lambda (v) (make-wrapped v wraps cert-marks))])
+            (cond
+             [(pair? v)
+              (if (eq? #t (car v))
+                  ;; Share decoded wraps with all nested parts.
+                  (let loop ([v (cdr v)])
+                    (cond
+                     [(pair? v) 
+                      (let ploop ([v v])
+                        (cond
+                         [(null? v) null]
+                         [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
+                         [else (loop v)]))]
+                     [(box? v) (add-wrap (box (loop (unbox v))))]
+                     [(vector? v)
+                      (add-wrap (list->vector (map loop (vector->list v))))]
+                     [(prefab-struct-key v)
+                      => (lambda (k)
+                           (add-wrap
+                            (apply
+                             make-prefab-struct 
+                             k
+                             (map loop (cdr (vector->list (struct->vector v)))))))]
+                     [else (add-wrap v)]))
+                  ;; Decode sub-elements that have their own wraps:
+                  (let-values ([(v counter) (if (exact-integer? (car v))
+                                                (values (cdr v) (car v))
+                                                (values v -1))])
+                    (add-wrap
+                     (let ploop ([v v][counter counter])
+                       (cond
+                        [(null? v) null]
+                        [(or (not (pair? v)) (zero? counter)) (loop v)]
+                        [(pair? v) (cons (loop (car v))
+                                         (ploop (cdr v) (sub1 counter)))])))))]
+             [(box? v) (add-wrap (box (loop (unbox v))))]
+             [(vector? v)
+              (add-wrap (list->vector (map loop (vector->list v))))]
+             [(prefab-struct-key v)
+              => (lambda (k)
+                   (add-wrap
+                    (apply
+                     make-prefab-struct 
+                     k
+                     (map loop (cdr (vector->list (struct->vector v)))))))]
+             [else (add-wrap v)]))))))
+
+(define (decode-wraps cp w)
+  (if (integer? w)
+      (let-values ([(w2 decoded?) (unmarshal-stx-get cp w)])
+        (if decoded?
+            w2
+            (let ([w2 (decode-wraps cp w2)])
+              (unmarshal-stx-set! cp w w2)
+              w2)))
+      (map (lambda (a)
+             (let aloop ([a a])
+               (cond
+                [(integer? a) 
+                 (let-values ([(a2 decoded?) (unmarshal-stx-get cp a)])
+                   (if decoded?
+                       a2
+                       (let ([a2 (aloop a2)])
+                         (unmarshal-stx-set! cp a a2)
+                         a2)))]
+                [(and (pair? a) (null? (cdr a)) (number? (car a)))
+                 ;; a mark
+                 (string->symbol (format "mark~a" (car a)))]
+                [(vector? a)
+                 `(#%decode-lexical-rename ,a)]
+                [(pair? a)
+                 `(#%decode-module-rename ,a)]
+                [(boolean? a)
+                 `(#%top-level-rename ,a)]
+                [(symbol? a)
+                 '(#%mark-barrier)]
+                [(box? a)
+                 `(#%phase-shift ,(unbox a))]
+                [else (error 'decode-wraps "bad wrap element: ~e" a)])))
+           w)))
+
+(define (unmarshal-stx-get cp pos)
+  (if (pos . >= . (vector-length (cport-symtab cp)))
+      (values `(#%bad-index ,pos) #t)
+      (let ([v (vector-ref (cport-symtab cp) pos)])
+        (if (not-ready? v)
+            (let ([save-pos (cport-pos cp)])
+              (set-cport-pos! cp (vector-ref (cport-shared-offsets cp) (sub1 pos)))
+              (let ([v (read-compact cp)])
+                (vector-set! (cport-symtab cp) pos v)
+                (set-cport-pos! cp save-pos)
+                (values v #f)))
+            (values v (vector-ref (cport-decoded cp) pos))))))
+
+(define (unmarshal-stx-set! cp pos v)
+  (vector-set! (cport-symtab cp) pos v)
+  (vector-set! (cport-decoded cp) pos #t))
+
+;; ----------------------------------------
 ;; Main parsing loop
 
 (define (read-compact cp)
@@ -535,7 +653,7 @@
           [(marshalled) (read-marshalled (read-compact-number cp) cp)]
           [(stx)
            (let ([v (make-reader-graph (read-compact cp))])
-             (make-stx v))]
+             (make-stx (decode-stx cp v)))]
           [(local local-unbox)
            (let ([c (read-compact-number cp)]
                  [unbox? (eq? cpt-tag 'local-unbox)])
@@ -666,7 +784,7 @@
 
    (define symtab (make-vector symtabsize (make-not-ready)))
 
-   (define cp (make-cport 0 port size* rst symtab so*))
+   (define cp (make-cport 0 port size* rst symtab so* (make-vector symtabsize #f) (make-hash)))
    (for/list ([i (in-range 1 symtabsize)])
      (when (not-ready? (vector-ref symtab i))
        (set-cport-pos! cp (vector-ref so* (sub1 i)))

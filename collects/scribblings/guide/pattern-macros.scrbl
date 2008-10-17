@@ -144,7 +144,8 @@ such macros, the programmer much use the more general
 @scheme[define-syntax] form along with the @scheme[syntax-rules]
 transformer form:
 
-@specform[(define-syntax id
+@specform[#:literals (syntax-rules)
+          (define-syntax id
             (syntax-rules (literal-id ...)
               [pattern template]
               ...))]
@@ -260,7 +261,8 @@ clock 3)] expands to @scheme[(put-clock! 3)].
 The @scheme[syntax-id-rules] form is like @scheme[syntax-rules], but
 it creates a transformer that acts as an identifier macro:
 
-@specform[(define-syntax id
+@specform[#:literals (syntax-id-rules)
+          (define-syntax id
             (syntax-id-rules (literal-id ...)
               [pattern template]
               ...))]

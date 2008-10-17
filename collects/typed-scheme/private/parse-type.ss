@@ -211,8 +211,11 @@
           (add-type-name-reference #'id)
           ;(printf "found a type name ~a~n" #'id)
           (make-Name #'id)]
+         [(eq? '-> (syntax-e #'id))
+          (tc-error/delayed "Incorrect use of -> type constructor")
+          Univ]
          [else
-          (tc-error/delayed "unbound type name ~a" (syntax-e #'id))
+          (tc-error/delayed "Unbound type name ~a" (syntax-e #'id))
           Univ])]
 
       [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]
