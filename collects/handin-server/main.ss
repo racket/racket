@@ -546,35 +546,42 @@
   (define session-channel (make-channel))
   (define timeout #f)
   (define status-box (box #f))
-  (define (watch-loop timed-out?)
-    (cond [(sync/timeout 3 session-thread)
-           (let* ([status (unbox status-box)]
-                  [status (if status (format " while ~a" status) "")])
-             (log-line "session killed ~a~a"
-                       (if timed-out? "(timeout) " "(memory)")
-                       status)
-             (write+flush
-              w (format "handin terminated due to ~a ~a~a"
-                        (if timed-out? "time limit" "excessive memory use")
-                        "(program doesn't terminate?)"
-                        status))
-             (close-output-port w)
-             (channel-put session-channel 'done))]
-          [(let ([t timeout]) ; grab value to avoid races
-             (and t ((current-inexact-milliseconds) . > . t)))
-           ;; Shutdown here to get the handin-terminated error
-           ;;  message, instead of relying on a timeout at the
-           ;;  run-server level
-           (custodian-shutdown-all session-cust)
-           (watch-loop #t)]
-          [else (collect-garbage)
-                (log-line "running ~a ~a"
-                          (current-memory-use session-cust)
-                          (if no-limit-warning?
-                            "(total)"
-                            (list (current-memory-use orig-custodian)
-                                  (current-memory-use))))
-           (watch-loop #f)]))
+  (define (mem m)
+    (let loop ([m m] [q 'B] [qs '(KB MB GB TB)])
+      (if (and (>= m 1024) (pair? qs))
+        (loop (round (/ m 1024)) (car qs) (cdr qs))
+        (format "~a~a" m q))))
+  (define (watch-loop)
+    (define session-thread (channel-get session-channel))
+    (let loop ([timed-out? #f])
+      (cond [(sync/timeout 3 session-thread)
+             (let* ([status (unbox status-box)]
+                    [status (if status (format " while ~a" status) "")])
+               (log-line "session killed ~a~a"
+                         (if timed-out? "(timeout) " "(memory)")
+                         status)
+               (write+flush
+                w (format "handin terminated due to ~a ~a~a"
+                          (if timed-out? "time limit" "excessive memory use")
+                          "(program doesn't terminate?)"
+                          status))
+               (close-output-port w)
+               (channel-put session-channel 'done))]
+            [(let ([t timeout]) ; grab value to avoid races
+               (and t ((current-inexact-milliseconds) . > . t)))
+             ;; Shutdown here to get the handin-terminated error
+             ;;  message, instead of relying on a timeout at the
+             ;;  run-server level
+             (custodian-shutdown-all session-cust)
+             (loop #t)]
+            [else (collect-garbage)
+                  (log-line "running ~a ~a"
+                            (mem (current-memory-use session-cust))
+                            (if no-limit-warning?
+                              "(total)"
+                              (list (mem (current-memory-use orig-custodian))
+                                    (mem (current-memory-use)))))
+                  (loop #f)])))
   (define (timeout-control msg)
     (if (rational? msg)
       (set! timeout (+ (current-inexact-milliseconds) (* 1000 msg)))
@@ -592,12 +599,8 @@
                                  "not supported by MrEd"))])
       (custodian-limit-memory
        session-cust (get-conf 'session-memory-limit) session-cust)))
-  (let ([watcher
-         (parameterize ([current-custodian orig-custodian])
-           (thread
-            (lambda ()
-              (let ([session-thread (channel-get session-channel)])
-                (watch-loop #f)))))])
+  (let ([watcher (parameterize ([current-custodian orig-custodian])
+                   (thread watch-loop))])
     ;; Run proc in a thread under session-cust:
     (let ([session-thread
            (parameterize ([current-custodian session-cust]
