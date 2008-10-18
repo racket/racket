@@ -20,15 +20,15 @@
 (define reductions
   (reduction-relation
    lang
-   (--> (in-hole c_1 (call/cc v_arg))
-        ,(term-let ([v (variable-not-in (term c_1) 'x)])
-           (term (in-hole c_1 (v_arg (lambda (v) (abort (in-hole c_1 v)))))))
-        call/cc)
-   (--> (in-hole c (abort e_1)) 
-        e_1
+   (--> (in-hole c (call/cc v))
+        (in-hole c (v (lambda (x) (abort (in-hole c x)))))
+        call/cc
+        (fresh x))
+   (--> (in-hole c (abort e)) 
+        e
         abort)
-   (--> (in-hole c_1 ((lambda (variable_x) e_body) v_arg))
-        (in-hole c_1 (subst (variable_x v_arg e_body)))
+   (--> (in-hole c ((lambda (x) e) v))
+        (in-hole c (subst (x v e)))
         βv)))
 
 (traces reductions '((lambda (x) (x x)) (lambda (x) (x x))))
