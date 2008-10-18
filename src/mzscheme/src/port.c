@@ -126,6 +126,7 @@ typedef struct Win_FD_Input_Thread {
   HANDLE eof;
   unsigned char *buffer;
   HANDLE checking_sema, ready_sema, you_clean_up_sema;
+  HANDLE thread;
 } Win_FD_Input_Thread;
 
 static HANDLE refcount_sema;
@@ -5130,6 +5131,8 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
 
     h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDReader, th, 0, &id);
 
+    th->thread = h;
+
     scheme_remember_thread(h, 1);
   }
 #endif
@@ -5957,8 +5960,8 @@ static long flush_fd(Scheme_Output_Port *op,
 	    oth->ready_sema = sm;
 	    sm = CreateSemaphore(NULL, 1, 1, NULL);
 	    oth->you_clean_up_sema = sm;
-            if (refcount) {
-              oth->refcount = refcount;
+            if (fop->refcount) {
+              oth->refcount = fop->refcount;
               if (!refcount_sema)
                 refcount_sema = CreateSemaphore(NULL, 1, 1, NULL);
             }
