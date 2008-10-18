@@ -240,7 +240,7 @@ static int dec_refcount(int *refcount)
 {
   if (!refcount)
     return 0;
-  *refcont -= 1;
+  *refcount -= 1;
   return *refcount;
 }
 
