@@ -747,6 +747,8 @@ long wxMediaLine::FindExtraScroll(double y)
 {
   if (y >= h)
     return numscrolls;
+  if (y <= 0)
+    return 0;
   
   if (!scrollSnip)
     return 0;
