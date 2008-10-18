@@ -122,10 +122,13 @@ typedef struct Win_FD_Input_Thread {
   /* This is malloced for use in a Win32 thread */
   HANDLE fd;
   volatile int avail, err, checking;
+  int *refcount;
   HANDLE eof;
   unsigned char *buffer;
   HANDLE checking_sema, ready_sema, you_clean_up_sema;
 } Win_FD_Input_Thread;
+
+static HANDLE refcount_sema;
 
 typedef struct Win_FD_Output_Thread {
   /* This is malloced for use in a Win32 thread */
@@ -144,6 +147,7 @@ typedef struct Win_FD_Output_Thread {
   volatile int done, err_no;
   volatile unsigned int buflen, bufstart, bufend; /* used for blocking, only */
   unsigned char *buffer; /* used for blocking, only */
+  int *refcount;
   HANDLE lock_sema, work_sema, ready_sema, you_clean_up_sema;
   /* lock_sema protects the fields, work_sema starts the flush or
      flush-checking thread to work, ready_sema indicates that a flush
@@ -4532,6 +4536,26 @@ scheme_make_file_input_port(FILE *fp)
 # ifdef WINDOWS_FILE_HANDLES
 static long WindowsFDReader(Win_FD_Input_Thread *th);
 static void WindowsFDICleanup(Win_FD_Input_Thread *th);
+typedef BOOL (WINAPI* CSI_proc)(HANDLE);
+
+static CSI_proc get_csi(void)
+{
+  static int tried_csi = 0;
+  static CSI_proc csi;
+  
+  START_XFORM_SKIP;      
+  if (!tried_csi) {
+    HMODULE hm;
+    hm = LoadLibrary("kernel32.dll");
+    if (hm)
+      csi = (CSI_proc)GetProcAddress(hm, "CancelSynchronousIo");
+    else
+      csi = NULL;
+    tried_csi = 1;
+  }
+  END_XFORM_SKIP;
+  return csi;
+}
 # endif
 
 /* forward decl: */
@@ -4914,11 +4938,10 @@ fd_close_input(Scheme_Input_Port *port)
 
   fip = (Scheme_FD *)port->port_data;
 
-  if (fip->refcount)
-    *fip->refcount -= 1;
-
 #ifdef WINDOWS_FILE_HANDLES
   if (fip->th) {
+    CSI_proc csi;
+
     /* -1 for checking means "shut down" */
     fip->th->checking = -1;
     ReleaseSemaphore(fip->th->checking_sema, 1, NULL);
@@ -4928,18 +4951,29 @@ fd_close_input(Scheme_Input_Port *port)
       fip->th->eof = NULL;
     }
 
+    csi = get_csi();
+    if (csi) {
+      csi(fip->th->thread);
+      /* See note on csi at fd_close_output */
+    }
+
     /* Try to get out of cleaning up the records (since they can't be
        cleaned until the thread is also done: */
     if (WaitForSingleObject(fip->th->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
       /* The other thread exited and left us with clean-up: */
       WindowsFDICleanup(fip->th);
     } /* otherwise, thread is responsible for clean-up */
-  }
-  if (!fip->refcount || !*fip->refcount) {
-    CloseHandle((HANDLE)fip->fd);
-    --scheme_file_open_count;
+  } else {
+    if (fip->refcount)
+      *fip->refcount -= 1;
+    if (!fip->refcount || !*fip->refcount) {
+      CloseHandle((HANDLE)fip->fd);
+      --scheme_file_open_count;
+    }
   }
 #else
+  if (fip->refcount)
+    *fip->refcount -= 1;
   if (!fip->refcount || !*fip->refcount) {
     int cr;
     do {
@@ -5088,6 +5122,11 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
     th->ready_sema = sm;
     sm = CreateSemaphore(NULL, 1, 1, NULL);
     th->you_clean_up_sema = sm;
+    if (refcount) {
+      th->refcount = refcount;
+      if (!refcount_sema)
+        refcount_sema = CreateSemaphore(NULL, 1, 1, NULL);
+    }
 
     h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDReader, th, 0, &id);
 
@@ -5161,9 +5200,21 @@ static long WindowsFDReader(Win_FD_Input_Thread *th)
 
 static void WindowsFDICleanup(Win_FD_Input_Thread *th)
 {
+  int rc;
+
   CloseHandle(th->checking_sema);
   CloseHandle(th->ready_sema);
   CloseHandle(th->you_clean_up_sema);
+
+  if (th->refcount) {
+    WaitForSingleObject(refcount_sema, INFINITE);
+    *th->refcount -= 1;
+    rc = *th->refcount;
+    ReleaseSemaphore(refcount_sema, 1, NULL);
+  } else
+    rc = 0;
+  if (!rc) CloseHandle(th->fd);
+
   free(th->buffer);
   free(th);
 }
@@ -5906,6 +5957,11 @@ static long flush_fd(Scheme_Output_Port *op,
 	    oth->ready_sema = sm;
 	    sm = CreateSemaphore(NULL, 1, 1, NULL);
 	    oth->you_clean_up_sema = sm;
+            if (refcount) {
+              oth->refcount = refcount;
+              if (!refcount_sema)
+                refcount_sema = CreateSemaphore(NULL, 1, 1, NULL);
+            }
 
 	    h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDWriter, oth, 0, &id);
 
@@ -6134,10 +6190,6 @@ fd_write_string(Scheme_Output_Port *port,
   return len;
 }
 
-#ifdef WINDOWS_FILE_HANDLES
-typedef BOOL (WINAPI* CSI_proc)(HANDLE);
-#endif
-
 static void
 fd_close_output(Scheme_Output_Port *port)
 {
@@ -6163,25 +6215,11 @@ fd_close_output(Scheme_Output_Port *port)
   if (port->closed)
     return;
 
-  if (fop->refcount)
-    *fop->refcount -= 1;
-
 #ifdef WINDOWS_FILE_HANDLES
   if (fop->oth) {
-    static int tried_csi = 0;
-    static CSI_proc csi;
+    CSI_proc csi;
 
-    START_XFORM_SKIP;      
-    if (!tried_csi) {
-      HMODULE hm;
-      hm = LoadLibrary("kernel32.dll");
-      if (hm)
-	csi = (BOOL (WINAPI*)(HANDLE))GetProcAddress(hm, "CancelSynchronousIo");
-      else
-	csi = NULL;
-      tried_csi = 1;
-    }
-    END_XFORM_SKIP;
+    csi = get_csi();
 
     if (csi) {
       csi(fop->oth->thread);
@@ -6200,12 +6238,18 @@ fd_close_output(Scheme_Output_Port *port)
       WindowsFDOCleanup(fop->oth);
     } /* otherwise, thread is responsible for clean-up */
     fop->oth = NULL;
-  }
-  if (!fop->refcount || !*fop->refcount) {
-    CloseHandle((HANDLE)fop->fd);
-    --scheme_file_open_count;
+  } else {
+    if (fop->refcount)
+      *fop->refcount -= 1;
+    if (!fop->refcount || !*fop->refcount) {
+      CloseHandle((HANDLE)fop->fd);
+      --scheme_file_open_count;
+    }
   }
 #else
+  if (fop->refcount)
+    *fop->refcount -= 1;
+
   if (!fop->refcount || !*fop->refcount) {
     int cr;
     do {
@@ -6382,9 +6426,21 @@ static long WindowsFDWriter(Win_FD_Output_Thread *oth)
 
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
 {
+  int rc;
+
   CloseHandle(oth->lock_sema);
   CloseHandle(oth->work_sema);
   CloseHandle(oth->you_clean_up_sema);
+  
+  if (oth->refcount) {
+    WaitForSingleObject(refcount_sema, INFINITE);
+    *oth->refcount -= 1;
+    rc = *oth->refcount;
+    ReleaseSemaphore(refcount_sema, 1, NULL);
+  } else
+    rc = 0;
+  if (!rc) CloseHandle(oth->fd);
+
   if (oth->buffer)
     free(oth->buffer);
   free(oth);
