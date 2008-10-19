@@ -58,14 +58,10 @@ When defining a self-referential contract, it is natural to use
 @scheme[define]. For example, one might try to write a contract on
 streams like this:
 
+@(define e (make-base-eval))
+@(interaction-eval #:eval e (require scheme/contract))
 @interaction[
-#:eval 
- (parameterize ([sandbox-security-guard (current-security-guard)]
-                [sandbox-output 'string]
-                [sandbox-error-output 'string]
-                [sandbox-eval-limits #f]
-                [sandbox-make-inspector current-inspector])
-   (make-evaluator '(begin (require scheme))))
+  #:eval e
 (define stream/c
  (promise/c
   (or/c
