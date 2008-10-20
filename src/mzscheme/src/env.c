@@ -1743,7 +1743,8 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
   return val;
 }
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, Scheme_Object *phase)
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, 
+                                Scheme_Object *phase, int *_skipped)
 /* The `env' argument can actually be a hash table. */
 {
   Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm, *abdg;
@@ -1751,6 +1752,9 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
   Scheme_Hash_Table *marked_names;
 
   sym = SCHEME_STX_SYM(id);
+
+  if (_skipped)
+    *_skipped = 0;
 
   if (SCHEME_HASHTP((Scheme_Object *)env))
     marked_names = (Scheme_Hash_Table *)env;
@@ -1951,6 +1955,9 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
         scheme_hash_set(rev_ht, best_match, scheme_true);
       }
     }
+  } else {
+    if (_skipped)
+      *_skipped = best_match_skipped;
   }
 
   return best_match;
@@ -2515,7 +2522,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (SAME_OBJ(modidx, scheme_undefined)) {
     if (!env->genv->module && SCHEME_STXP(find_id)) {
       /* Looks like lexically bound, but double-check that it's not bound via a tl_id: */
-      find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL);
+      find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL, NULL);
       if (!SAME_OBJ(find_global_id, SCHEME_STX_VAL(find_id)))
         modidx = NULL; /* yes, it is bound */
     }
@@ -2582,7 +2589,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     *_menv = genv;
   
   if (!modname && SCHEME_STXP(find_id))
-    find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL);
+    find_global_id = scheme_tl_id_sym(env->genv, find_id, NULL, 0, NULL, NULL);
   else
     find_global_id = find_id;
 

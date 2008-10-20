@@ -3300,7 +3300,7 @@ static int explain_resolves = 0;
 static Scheme_Object *resolve_env(WRAP_POS *_wraps,
                                   Scheme_Object *a, Scheme_Object *orig_phase, 
                                   int w_mod, Scheme_Object **get_names,
-                                  Scheme_Object *skip_ribs)
+                                  Scheme_Object *skip_ribs, int *_binding_marks_skipped)
 /* Module binding ignored if w_mod is 0.
    If module bound, result is module idx, and get_names[0] is set to source name,
      get_names[1] is set to the nominal source module, get_names[2] is set to
@@ -3321,6 +3321,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *phase = orig_phase;
   Scheme_Object *bdg = NULL, *floating = NULL;
   Scheme_Hash_Table *export_registry = NULL;
+  int mresult_skipped = 0;
 
   EXPLAIN(printf("Resolving %s [skips: %s]:\n", SCHEME_SYM_VAL(SCHEME_STX_VAL(a)),
                  scheme_write_to_string(skip_ribs ? skip_ribs : scheme_false, NULL)));
@@ -3370,10 +3371,12 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
         }
 	stack_pos -= 2;
       }
-      if (!did_lexical)
+      if (!did_lexical) {
 	result = mresult;
-      else if (get_names)
-	get_names[0] = scheme_undefined;
+        if (_binding_marks_skipped)
+          *_binding_marks_skipped = mresult_skipped;
+      } else if (get_names)
+        get_names[0] = scheme_undefined;
 
       EXPLAIN(printf("Result: %s\n", scheme_write_to_string(result, 0)));
 
@@ -3383,6 +3386,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
                && w_mod) {
       /* Module rename: */
       Module_Renames *mrn;
+      int skipped;
 
       EXPLAIN(printf("Rename/set\n"));
 	
@@ -3415,7 +3419,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
 	    if (!bdg) {
-	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs);
+	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs, NULL);
               if (SCHEME_FALSEP(bdg)) {
                 if (!floating_checked) {
                   floating = check_floating_id(a);
@@ -3425,7 +3429,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
               }
             }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
-	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
+	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL, &skipped);
 	    if (SCHEME_TRUEP(bdg)
 		&& !SAME_OBJ(glob_id, SCHEME_STX_VAL(a))) {
 	      /* Even if this module doesn't match, the lex-renamed id
@@ -3437,8 +3441,10 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      stack_pos = 0;
 	      o_rename_stack = scheme_null;
 	    }
-	  } else
+	  } else {
+            skipped = 0;
 	    glob_id = SCHEME_STX_VAL(a);
+          }
 
           EXPLAIN(printf(" search %s\n", scheme_write_to_string(glob_id, 0)));
 
@@ -3477,6 +3483,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      mresult = scheme_modidx_shift(mresult,
 					    modidx_shift_from,
 					    modidx_shift_to);
+
+            mresult_skipped = skipped;
 
 	    if (get_names) {
               int no_shift = 0;
@@ -3551,6 +3559,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             }
 	  } else {
 	    mresult = scheme_false;
+            mresult_skipped = 0;
 	    if (get_names)
 	      get_names[0] = NULL;
 	  }
@@ -3647,7 +3656,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	    	      
 	      if (SCHEME_VOIDP(other_env)) {
 		SCHEME_USE_FUEL(1);
-		other_env = resolve_env(NULL, renamed, 0, 0, NULL, recur_skip_ribs);
+		other_env = resolve_env(NULL, renamed, 0, 0, NULL, recur_skip_ribs, NULL);
 		if (!is_rib)
 		  SCHEME_VEC_ELS(rename)[2+c+ri] = other_env;
 		SCHEME_USE_FUEL(1);
@@ -3806,13 +3815,13 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	  if (mrn->needs_unmarshal) {
 	    /* Use resolve_env to trigger unmarshal, so that we
 	       don't have to implement top/from shifts here: */
-	    resolve_env(NULL, a, orig_phase, 1, NULL, NULL);
+	    resolve_env(NULL, a, orig_phase, 1, NULL, NULL, NULL);
 	  }
 
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
 	    if (!bdg)
-	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, NULL);
+	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, NULL, NULL);
             if (SCHEME_FALSEP(bdg))  {
               if (!floating_checked) {
                 floating = check_floating_id(a);
@@ -3821,7 +3830,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
               bdg = floating;
             }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
-	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
+	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL, NULL);
 	  } else
 	    glob_id = SCHEME_STX_VAL(a);
 
@@ -3892,8 +3901,8 @@ int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *pha
   if ((a == asym) || (b == bsym))
     return 1;
   
-  a = resolve_env(NULL, a, phase, 1, NULL, NULL);
-  b = resolve_env(NULL, b, phase, 1, NULL, NULL);
+  a = resolve_env(NULL, a, phase, 1, NULL, NULL, NULL);
+  b = resolve_env(NULL, b, phase, 1, NULL, NULL, NULL);
 
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_module_index_type))
     a = scheme_module_resolve(a, 0);
@@ -3935,7 +3944,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, Scheme_Object *phase,
     names[4] = NULL;
     names[5] = NULL;
 
-    modname = resolve_env(NULL, *a, phase, 1, names, NULL);
+    modname = resolve_env(NULL, *a, phase, 1, names, NULL, NULL);
     
     if (names[0]) {
       if (SAME_OBJ(names[0], scheme_undefined)) {
@@ -3966,7 +3975,7 @@ Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a)
   if (SCHEME_STXP(a)) {
     Scheme_Object *r;
 
-    r = resolve_env(NULL, a, scheme_make_integer(0), 0, NULL, NULL);
+    r = resolve_env(NULL, a, scheme_make_integer(0), 0, NULL, NULL, NULL);
 
     if (SCHEME_FALSEP(r))
       r = check_floating_id(a);
@@ -3998,13 +4007,13 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
   if (!SAME_OBJ(asym, bsym))
     return 0;
 
-  ae = resolve_env(NULL, a, phase, 0, NULL, NULL);
+  ae = resolve_env(NULL, a, phase, 0, NULL, NULL, NULL);
   /* No need to module_resolve ae, because we ignored module renamings. */
 
   if (uid)
     be = uid;
   else {
-    be = resolve_env(NULL, b, phase, 0, NULL, NULL);
+    be = resolve_env(NULL, b, phase, 0, NULL, NULL, NULL);
     /* No need to module_resolve be, because we ignored module renamings. */
   }
 
@@ -4034,7 +4043,7 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 Scheme_Object *scheme_explain_resolve_env(Scheme_Object *a)
 {
   explain_resolves++;
-  a = resolve_env(NULL, a, 0, 0, NULL, NULL);
+  a = resolve_env(NULL, a, 0, 0, NULL, NULL, NULL);
   --explain_resolves;
   return a;
 }
@@ -4567,7 +4576,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	      other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
 	      if (SCHEME_VOIDP(other_env)) {
-		other_env = resolve_env(NULL, stx, 0, 0, NULL, skip_ribs);
+		other_env = resolve_env(NULL, stx, 0, 0, NULL, skip_ribs, NULL);
 		SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
 	      }
 
@@ -6788,7 +6797,7 @@ static Scheme_Object *delta_introducer(int argc, struct Scheme_Object *argv[], S
 
 static Scheme_Object *syntax_transfer_intro(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *m1, *m2, *delta, *a[1];
+  Scheme_Object *orig_m1, *m1, *m2, *delta, *a[1];
   int l1, l2;
 
   if (!SCHEME_STXP(argv[0]))
@@ -6797,6 +6806,7 @@ static Scheme_Object *syntax_transfer_intro(int argc, Scheme_Object **argv)
     scheme_wrong_type("make-syntax-delta-introducer", "syntax", 1, argc, argv);
 
   m1 = scheme_stx_extract_marks(argv[0]);
+  orig_m1 = m1;
   m2 = scheme_stx_extract_marks(argv[1]);
 
   l1 = scheme_list_length(m1);
@@ -6810,11 +6820,32 @@ static Scheme_Object *syntax_transfer_intro(int argc, Scheme_Object **argv)
   }
 
   if (!scheme_equal(m1, m2)) {
-    /* tails don't match, so keep all marks */
-    while (l1) {
-      delta = CONS(SCHEME_CAR(m1), delta);
-      m1 = SCHEME_CDR(m1);
-      l1--;
+    /* tails don't match, so keep all marks --- except those that determine a module binding */
+    int skipped = 0;
+    Scheme_Object *phase;
+    Scheme_Thread *p = scheme_current_thread;
+
+    phase = scheme_make_integer(p->current_local_env
+                                ? p->current_local_env->genv->phase
+                                : 0);
+    resolve_env(NULL, argv[0], phase, 1, NULL, NULL, &skipped);
+
+    if (skipped) {
+      /* Just keep the first `skipped' marks. */
+      delta = scheme_null;
+      m1 = orig_m1;
+      while (skipped) {
+        delta = CONS(SCHEME_CAR(m1), delta);
+        m1 = SCHEME_CDR(m1);
+        skipped--;
+      }
+    } else {
+      /* Keep them all */
+      while (l1) {
+        delta = CONS(SCHEME_CAR(m1), delta);
+        m1 = SCHEME_CDR(m1);
+        l1--;
+      }
     }
   }
 

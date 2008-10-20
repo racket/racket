@@ -3210,7 +3210,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 	supplied (not both). For unprotected access, both prot_insp
 	and stx+certs should be supplied. */
 {
-  symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL);
+  symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL, NULL);
 
   if (scheme_is_kernel_env(env)
       || ((env->module->primitive && !env->module->provide_protects))
@@ -3389,7 +3389,7 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
     if (!menv->et_ran)
       scheme_run_module_exptime(menv, 1);
 
-    name = scheme_tl_id_sym(menv, name, NULL, 0, NULL);
+    name = scheme_tl_id_sym(menv, name, NULL, 0, NULL, NULL);
 
     val = scheme_lookup_in_table(menv->syntax, (char *)name);
 
@@ -5505,7 +5505,7 @@ static int check_already_required(Scheme_Hash_Table *required, Scheme_Object *na
 
 static Scheme_Object *stx_sym(Scheme_Object *name, Scheme_Object *_genv)
 {
-  return scheme_tl_id_sym((Scheme_Env *)_genv, name, NULL, 2, NULL);
+  return scheme_tl_id_sym((Scheme_Env *)_genv, name, NULL, 2, NULL, NULL);
 }
 
 static Scheme_Object *add_a_rename(Scheme_Object *fm, Scheme_Object *post_ex_rn)
@@ -5546,7 +5546,7 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_id, 
   self_modidx = SCHEME_VEC_ELS(data)[1];
   rn = SCHEME_VEC_ELS(data)[2];
   
-  name = scheme_tl_id_sym(env->genv, *_id, scheme_false, 2, NULL);
+  name = scheme_tl_id_sym(env->genv, *_id, scheme_false, 2, NULL, NULL);
 
   /* Create the bucket, indicating that the name will be defined: */
   scheme_add_global_symbol(name, scheme_undefined, env->genv);
@@ -5848,7 +5848,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    /* Remember the original: */
 	    all_defs = scheme_make_pair(name, all_defs);
 	    
-	    name = scheme_tl_id_sym(env->genv, name, NULL, 2, NULL);
+	    name = scheme_tl_id_sym(env->genv, name, NULL, 2, NULL, NULL);
 
 	    /* Check that it's not yet defined: */
 	    if (scheme_lookup_in_table(env->genv->toplevel, (const char *)name)) {
@@ -5925,7 +5925,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
             else
               all_et_defs = scheme_make_pair(name, all_et_defs);
 	    
-	    name = scheme_tl_id_sym(oenv->genv, name, NULL, 2, NULL);
+	    name = scheme_tl_id_sym(oenv->genv, name, NULL, 2, NULL, NULL);
 	    
 	    if (scheme_lookup_in_table(oenv->genv->syntax, (const char *)name)) {
 	      scheme_wrong_syntax("module", orig_name, e, 
@@ -6278,7 +6278,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  /* may be a single shadowed exclusion, now bound to exclude_hint... */
 	  n = SCHEME_CAR(n);
 	  if (SCHEME_STXP(n))
-	    n = scheme_tl_id_sym(env->genv, n, NULL, 0, NULL);
+	    n = scheme_tl_id_sym(env->genv, n, NULL, 0, NULL, NULL);
 	  n = scheme_hash_get(required, n);
 	  if (n && !SAME_OBJ(SCHEME_VEC_ELS(n)[1], kernel_modidx)) {
 	    /* there is a single shadowed exclusion. */
@@ -6814,7 +6814,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
         /* Make sure each excluded name was defined: */
         for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
           a = SCHEME_STX_CAR(exns);
-          name = scheme_tl_id_sym(genv, a, NULL, 0, NULL);
+          name = scheme_tl_id_sym(genv, a, NULL, 0, NULL, NULL);
           if (!scheme_lookup_in_table(genv->toplevel, (const char *)name)
               && !scheme_lookup_in_table(genv->syntax, (const char *)name)) {
             scheme_wrong_syntax("module", a, ree_kw, "excluded identifier was not defined");
@@ -6824,12 +6824,12 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
         for (adl = all_defs; SCHEME_PAIRP(adl); adl = SCHEME_CDR(adl)) {
           name = SCHEME_CAR(adl);
           exname = SCHEME_STX_SYM(name);
-          name = scheme_tl_id_sym(genv, name, NULL, 0, NULL);
+          name = scheme_tl_id_sym(genv, name, NULL, 0, NULL, NULL);
 	
           /* Was this one excluded? */
           for (exns = exl; !SCHEME_STX_NULLP(exns); exns = SCHEME_STX_CDR(exns)) {
             a = SCHEME_STX_CAR(exns);
-            a = scheme_tl_id_sym(genv, a, NULL, 0, NULL);
+            a = scheme_tl_id_sym(genv, a, NULL, 0, NULL, NULL);
             if (SAME_OBJ(a, name))
               break;
           }
@@ -6845,7 +6845,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
                  as if it had ree_kw's context, then comparing that result
                  to the actual tl_id. */
               a = scheme_datum_to_syntax(exname, scheme_false, ree_kw, 0, 0);
-              a = scheme_tl_id_sym(genv, a, NULL, 0, NULL);
+              a = scheme_tl_id_sym(genv, a, NULL, 0, NULL, NULL);
 	    
               if (SAME_OBJ(a, name)) {
                 /* Add prefix, if any */
@@ -7033,7 +7033,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
           prnt_name = name;
           if (SCHEME_STXP(name)) {
             if (genv)
-              name = scheme_tl_id_sym(genv, name, NULL, 0, phase);
+              name = scheme_tl_id_sym(genv, name, NULL, 0, phase, NULL);
             else
               name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
           }
@@ -7106,7 +7106,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
             if (genv
                 && (SAME_OBJ(phase, scheme_make_integer(0))
                     || SAME_OBJ(phase, scheme_make_integer(1))))
-              name = scheme_tl_id_sym(genv, name, NULL, 0, phase);
+              name = scheme_tl_id_sym(genv, name, NULL, 0, phase, NULL);
             else {
               name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
             }
@@ -8040,7 +8040,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
             /* The `require' expression has a set of marks in its
                context, which means that we need to generate a name. */
             iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-            iname = scheme_tl_id_sym(orig_env, iname, scheme_false, 2, to_phase);
+            iname = scheme_tl_id_sym(orig_env, iname, scheme_false, 2, to_phase, NULL);
             if (all_simple)
               *all_simple = 0;
           }
