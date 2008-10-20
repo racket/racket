@@ -539,8 +539,8 @@ byte string into the pipe.  It can also be used with @scheme[eof],
 which closes the pipe.}
 
 
-@defproc*[([(get-output [evaluator (any/c . -> . any)]) (or/c input-port? bytes? string?)]
-           [(get-error-output [evaluator (any/c . -> . any)]) (or/c input-port? bytes? string?)])]{
+@defproc*[([(get-output [evaluator (any/c . -> . any)]) (or/c #f input-port? bytes? string?)]
+           [(get-error-output [evaluator (any/c . -> . any)]) (or/c #f input-port? bytes? string?)])]{
 
 Returns the output or error-output of the @scheme[evaluator],
 in a way that depends on the setting of @scheme[(sandbox-output)] or
