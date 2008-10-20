@@ -304,32 +304,32 @@
     ("Characters"
       (char? (any -> boolean)
 	"to determine whether a value is a character")
-      (char=? (char char ... -> boolean)
+      (char=? (char char char ... -> boolean)
 	"to determine whether two characters are equal")
-      (char<? (char char ... -> boolean)
+      (char<? (char char char ... -> boolean)
 	"to determine whether a character precedes another")
-      (char>? (char char ... -> boolean)
+      (char>? (char char char ... -> boolean)
 	"to determine whether a character succeeds another")
-      (char<=? (char char ... -> boolean)
+      (char<=? (char char char ... -> boolean)
 	"to determine whether a character precedes another"
 	" (or is equal to it)")
-      (char>=? (char char ... -> boolean)
+      (char>=? (char char char ... -> boolean)
 	"to determine whether a character succeeds another"
 	" (or is equal to it)")
     
-      (char-ci=? (char char ... -> boolean)
+      (char-ci=? (char char char ... -> boolean)
 	"to determine whether two characters are equal"
 	" in a case-insensitive manner")
-      (char-ci<? (char char ... -> boolean)
+      (char-ci<? (char char char ... -> boolean)
 	"to determine whether a character precedes another"
 	" in a case-insensitive manner")
-      (char-ci>? (char char ... -> boolean)
+      (char-ci>? (char char char ... -> boolean)
 	"to determine whether a character succeeds another"
 	" in a case-insensitive manner")
-      (char-ci<=? (char char ... -> boolean)
+      (char-ci<=? (char char char ... -> boolean)
 	"to determine whether a character precedes another"
 	" (or is equal to it) in a case-insensitive manner")
-      (char-ci>=? (char char ... -> boolean)
+      (char-ci>=? (char char char ... -> boolean)
 	"to determine whether a character succeeds another"
 	" (or is equal to it) in a case-insensitive manner")
     
