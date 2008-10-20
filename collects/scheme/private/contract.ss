@@ -1463,6 +1463,7 @@ improve method arity mismatch contract violation error messages?
    (λ (x)
      (and (number? x)
           (integer? x)
+          (exact? x)
           (x . >= . 0)))))
 
 (define (integer-in start end)
