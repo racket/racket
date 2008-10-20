@@ -460,8 +460,8 @@ The following base types are parameteric in their type arguments.
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @scheme[t ...].  This can only appear as the return type of a
 function.}
-@defform/none[v]{where @scheme[v] is a number, boolean or string, is the singleton type containing
-only that value}
+@defform/none[v]{where @scheme[v] is a number, boolean or string, is the singleton type containing only that value}
+@defform/none['sym]{where @scheme[sym] is a symbol, is the singleton type containing only that symbol}
 @defform/none[i]{where @scheme[i] is an identifier can be a reference to a type
 name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @scheme[n] is bound to the
