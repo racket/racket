@@ -4,6 +4,7 @@
  scheme/list
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
+ (rename-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in scheme/match/runtime match:error))
 
@@ -239,8 +240,10 @@
 [odd? (-> N B)]
 [even? (-> N B)]
 
-[apply      (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
-[time-apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[time-apply (-poly (a b) (((list) a . ->* . b) (-lst a)
+                          . -> . (-values (list b N N N))))]
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
