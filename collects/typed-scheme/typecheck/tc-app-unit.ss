@@ -108,8 +108,7 @@
           [else
            (tc-error/delayed 
             #:stx (car stxs)
-            "Wrong function argument type to ~a, expected ~a, got ~a for argument ~a" 
-            (syntax->datum (current-orig-stx))
+            "Wrong function argument type, expected ~a, got ~a for argument ~a" 
             (car doms) (car args) arg-count)
            (loop (cdr args) (cdr doms) (cdr stxs) (add1 arg-count))]))))
 
@@ -396,7 +395,6 @@
 
 
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
-  ;(printf "~a~n" (syntax->datum f-stx))
   (match-let* ([(list (tc-result: argtypes arg-thn-effs arg-els-effs) ...) argtys])
     (let outer-loop ([ftype ftype0] 
                      [argtypes argtypes]
@@ -696,9 +694,7 @@
                          "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
-     (begin
-       (printf "got here~n")
-       (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*)))
+     (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*))
      (let-loop-check form #'lp #'actuals #'args #'body expected)]
     ;; or/andmap of ... argument
     [(#%plain-app or/andmap f arg)
@@ -721,7 +717,6 @@
      (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...))) expected)]))
 
 (define (let-loop-check form lp actuals args body expected)
-  (printf "in let-loop-check~n")
   (kernel-syntax-case* #`(#,args #,body #,actuals) #f (null?)
     [((val acc ...)
       ((if (#%plain-app null? val*) thn els))
@@ -735,13 +730,10 @@
                       (or (find-annotation #'(if (#%plain-app null? val*) thn els) a)
                           (generalize (tc-expr/t ac))))]
             [ts (cons ts1 ann-ts)])
-       (printf "in body~n")
        ;; check that the actual arguments are ok here
-       (for-each tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
-       (printf "checked args~n")
+       (map tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
        ;; then check that the function typechecks with the inferred types
-       (values #;debug (tc/rec-lambda/check form args body lp ts expected))
-       (printf "done~n")
+       (tc/rec-lambda/check form args body lp ts expected)
        (ret expected))]
     ;; special case when argument needs inference
     [_
