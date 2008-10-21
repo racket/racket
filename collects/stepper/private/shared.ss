@@ -481,7 +481,8 @@
   ;; traversal argument is 'discard, the result of the transformation is the
   ;; result of this function
   (define (skipto/auto stx traversal transformer)
-    (cond [(stepper-syntax-property stx 'stepper-skipto)
+    (cond [(or (stepper-syntax-property stx 'stepper-skipto)
+	       (stepper-syntax-property stx 'stepper-skipto/discard))
            =>
            (cut update <> stx (cut skipto/auto <> traversal transformer) traversal)]
           [else (transformer stx)]))

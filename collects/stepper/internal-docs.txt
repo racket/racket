@@ -202,6 +202,16 @@ Where it's used: the stepper-skipto label is used by the 2nd-pass
 macro-labeler and the annotator.  Both are in annotate.ss.  In addition
 to skipping inward, a stepper hint
 
+stepper-skipto/discard :
+
+ This is like stepper-skipto, except that it makes the stepper
+ replace the expression the property is attached to by the
+ subexpression indicated by its value.
+
+ (This is used in the contracts implementation for "Die Macht der
+ Abstraktion", where procedures are wrapped in a contract-checking
+ context that has no impact on the reduction semantics.)
+
 stepper-else :
  [ #t ] : Initially applied to the 'true' that the cond macro
   replaces a beginner's 'else' with, it is later transferred
