@@ -237,8 +237,8 @@
 [list-tail (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
 [positive? (-> N B)]
 [negative? (-> N B)]
-[odd? (-> N B)]
-[even? (-> N B)]
+[odd? (-> -Integer B)]
+[even? (-> -Integer B)]
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
