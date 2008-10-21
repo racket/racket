@@ -323,12 +323,37 @@ TODO
   
   (define setup-scheme-interaction-mode-keymap
     (λ (keymap)
+      (define (beginning-of-line text select?)
+        (let* ([para (send text position-line (send text get-start-position))]
+               [para-start (send text line-start-position para)]
+               [prompt (send text get-prompt)]
+               [para-start-text (send text get-text para-start (+ para-start (string-length prompt)))]
+               [new-start 
+                (cond
+                  [(equal? prompt para-start-text)
+                   (+ para-start (string-length prompt))]
+                  [else
+                   para-start])])
+          (if select?
+              (send text set-position new-start (send text get-end-position))
+              (send text set-position new-start new-start))))
+      
+      (send keymap add-function "beginning-of-line/prompt"
+            (λ (text event) (beginning-of-line text #f)))
+      (send keymap add-function "select-to-beginning-of-line/prompt"
+            (λ (text event) (beginning-of-line text #t)))
+      
       (send keymap add-function "put-previous-sexp"
             (λ (text event) 
               (send text copy-prev-previous-expr)))
       (send keymap add-function "put-next-sexp"
             (λ (text event) 
               (send text copy-next-previous-expr)))
+      
+      (send keymap map-function "c:a" "beginning-of-line/prompt")
+      (send keymap map-function "s:c:a" "select-to-beginning-of-line/prompt")
+      (send keymap map-function "home" "beginning-of-line/prompt")
+      (send keymap map-function "s:home" "select-to-beginning-of-line/prompt")
       
       (keymap:send-map-function-meta keymap "p" "put-previous-sexp")
       (keymap:send-map-function-meta keymap "n" "put-next-sexp")
