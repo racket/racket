@@ -4,7 +4,7 @@
  scheme/list
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
- (rename-in '#%kernel [apply kernel:apply])
+ (only-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in scheme/match/runtime match:error))
 

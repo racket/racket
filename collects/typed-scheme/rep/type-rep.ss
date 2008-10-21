@@ -15,6 +15,9 @@
 ;; t must be a Type
 (dt Scope (t))
 
+;; this is ONLY used when a type error ocurrs
+(dt Error () [#:frees #f] [#:fold-rhs #:base])
+
 ;; i is an nat
 (dt B (i)
     [#:frees empty-hash-table (make-immutable-hasheq (list (cons i Covariant)))]

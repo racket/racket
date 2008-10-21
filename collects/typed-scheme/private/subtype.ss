@@ -168,6 +168,9 @@
               [(list t t) A0]              
               ;; univ is top
               [(list _ (Univ:)) A0]
+              ;; error is top and bot
+              [(list _ (Error:)) A0]
+              [(list (Error:) _) A0]
               ;; (Un) is bot
               [(list _ (Union: (list))) (fail! s t)]
               [(list (Union: (list)) _) A0]

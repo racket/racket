@@ -213,10 +213,10 @@
           (make-Name #'id)]
          [(eq? '-> (syntax-e #'id))
           (tc-error/delayed "Incorrect use of -> type constructor")
-          Univ]
+          Err]
          [else
           (tc-error/delayed "Unbound type name ~a" (syntax-e #'id))
-          Univ])]
+          Err])]
 
       [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]
       [(Opaque . rest) (eq? (syntax-e #'Opaque) 'Opqaue) (tc-error "Opaque: bad syntax")]
@@ -239,8 +239,9 @@
               (tc-error "Wrong number of arguments to type ~a, expected ~a but got ~a" rator (length ns) (length args)))
             (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
+           [(Error:) Err]
            [_ (tc-error/delayed "Type ~a cannot be applied, arguments were: ~a" rator args)
-              Univ]))
+              Err]))
        #;
        (let ([ty (parse-type #'id)])
          #;(printf "ty is ~a" ty)
