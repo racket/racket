@@ -306,7 +306,7 @@
   ;; not sure if it's really unsigned
   (integer-bytes->integer (read-bytes 4 p) #f #f))
 
-(define-struct cport ([pos #:mutable] orig-port size bytes symtab shared-offsets decoded rns))
+(define-struct cport ([pos #:mutable] orig-port size bytes symtab shared-offsets decoded rns mpis))
 
 (define (cp-getc cp)
   (begin-with-definitions
@@ -430,6 +430,11 @@
 ;; Synatx unmarshaling
 
 (define-form-struct wrapped (datum wraps certs))
+(define-form-struct lexical-rename (alist))
+(define-form-struct phase-shift (amt src dest))
+(define-form-struct module-rename (phase kind set-id unmarshals renames mark-renames plus-kern?))
+(define-form-struct all-from-module (path phase src-phase exceptions prefix))
+(define-form-struct module-binding (path mod-phase import-phase id nominal-path nominal-phase nominal-id))
 
 (define (decode-stx cp v)
   (if (integer? v)
@@ -515,15 +520,107 @@
                  ;; a mark
                  (string->symbol (format "mark~a" (car a)))]
                 [(vector? a)
-                 `(#%decode-lexical-rename ,a)]
+                 (make-lexical-rename
+                  (let ([top (+ (/ (- (vector-length a) 2) 2) 2)])
+                    (let loop ([i 2])
+                      (if (= i top)
+                          null
+                          (cons (cons (vector-ref a i)
+                                      (vector-ref a (+ (- top 2) i)))
+                                (loop (+ i 1)))))))]
                 [(pair? a)
-                 `(#%decode-module-rename ,a)]
+                 (let-values ([(plus-kern? a) (if (eq? (car a) #t)
+                                                  (values #t (cdr a))
+                                                  (values #f a))])
+                   (match a
+                     [`(,phase ,kind ,set-id ,maybe-unmarshals . ,renames)
+                      (let-values ([(unmarshals renames mark-renames)
+                                    (if (vector? maybe-unmarshals)
+                                        (values null maybe-unmarshals renames)
+                                        (values maybe-unmarshals
+                                                (car renames)
+                                                (cdr renames)))])
+                        (make-module-rename phase 
+                                            (if kind 'marked 'normal)
+                                            set-id
+                                            (map (lambda (u)
+                                                   (let ([just-phase? (number? (cddr u))])
+                                                     (let-values ([(exns prefix)
+                                                                   (if just-phase?
+                                                                       (values null #f)
+                                                                       (let loop ([u (if just-phase? null (cdddr u))]
+                                                                                  [a null])
+                                                                         (if (pair? u)
+                                                                             (loop (cdr u) (cons (car u) a))
+                                                                             (values (reverse a) u))))])
+                                                       (make-all-from-module
+                                                        (parse-module-path-index cp (car u))
+                                                        (cadr u)
+                                                        (if just-phase?
+                                                            (cddr u)
+                                                            (caddr u))
+                                                        exns
+                                                        prefix))))
+                                                 unmarshals)
+                                            (let loop ([i 0])
+                                              (if (= i (vector-length renames))
+                                                  null
+                                                  (cons
+                                                   (let ([key (vector-ref renames i)]
+                                                         [make-mapping
+                                                          (lambda (path mod-phase import-phase id nominal-path nominal-phase nominal-id)
+                                                            (make-module-binding
+                                                             (parse-module-path-index cp path)
+                                                             mod-phase
+                                                             import-phase 
+                                                             id 
+                                                             (parse-module-path-index cp nominal-path)
+                                                             nominal-phase 
+                                                             (if (eq? id nominal-id) #t nominal-id)))])
+                                                     (cons key
+                                                           (let ([m (vector-ref renames (add1 i))]
+                                                                 [parse-nominal-modidx-plus-phase
+                                                                  (lambda (modidx mod-phase exportname nominal-modidx-plus-phase nom-exportname)
+                                                                    (match nominal-modidx-plus-phase
+                                                                      [`(,nominal-modidx ,import-phase-plus-nominal-phase)
+                                                                       (match import-phase-plus-nominal-phase
+                                                                         [`(,import-phase ,nom-phase)
+                                                                          (make-mapping modidx mod-phase import-phase exportname
+                                                                                        nominal-modidx nom-phase nom-exportname)]
+                                                                         [import-phase
+                                                                          (make-mapping modidx mod-phase import-phase exportname
+                                                                                        modidx mod-phase nom-exportname)])]
+                                                                      [nominal-modidx
+                                                                       (make-mapping modidx mod-phase '* exportname
+                                                                                     nominal-modidx mod-phase nom-exportname)]))])
+                                                             (match m
+                                                               [`(,modidx ,mod-phase ,exportname ,nominal-modidx-plus-phase . ,nominal-exportname)
+                                                                (parse-nominal-modidx-plus-phase modidx mod-phase exportname 
+                                                                                                 nominal-modidx-plus-phase nominal-exportname)]
+                                                               [`(,modidx ,exportname ,nominal-modidx-plus-phase . ,nominal-exportname)
+                                                                (parse-nominal-modidx-plus-phase modidx '* exportname 
+                                                                                                 nominal-modidx-plus-phase nominal-exportname)]
+                                                               [`(,modidx ,nominal-modidx)
+                                                                (make-mapping modidx '* '* key nominal-modidx '* key)]
+                                                               [`(,modidx ,exportname)
+                                                                (make-mapping modidx '* '* exportname modidx '* exportname)]
+                                                               [modidx
+                                                                (make-mapping modidx '* '* key modidx '* key)]))))
+                                                   (loop (+ i 2)))))
+                                            mark-renames
+                                            (and plus-kern? 'plus-kern)))]
+                     [else (error "bad module rename: ~e" a)]))]
                 [(boolean? a)
                  `(#%top-level-rename ,a)]
                 [(symbol? a)
                  '(#%mark-barrier)]
                 [(box? a)
-                 `(#%phase-shift ,(unbox a))]
+                 (match (unbox a)
+                   [`#(,amt ,src ,dest #f)
+                    (make-phase-shift amt 
+                                      (parse-module-path-index cp src)
+                                      (parse-module-path-index cp dest))]
+                   [else (error 'parse "bad phase shift: ~e" a)])]
                 [else (error 'decode-wraps "bad wrap element: ~e" a)])))
            w)))
 
@@ -543,6 +640,20 @@
 (define (unmarshal-stx-set! cp pos v)
   (vector-set! (cport-symtab cp) pos v)
   (vector-set! (cport-decoded cp) pos #t))
+
+(define (parse-module-path-index cp s)
+  (cond
+   [(not s) #f]
+   [(module-path-index? s)
+    (hash-ref (cport-mpis cp) s
+              (lambda ()
+                (let-values ([(name base) (module-path-index-split s)])
+                  (let ([v `(module-path-index-join
+                             (quote ,name)
+                             ,(parse-module-path-index cp base))])
+                    (hash-set! (cport-mpis cp) s v)
+                    v))))]
+   [else `(quote ,s)]))
 
 ;; ----------------------------------------
 ;; Main parsing loop
@@ -784,7 +895,7 @@
 
    (define symtab (make-vector symtabsize (make-not-ready)))
 
-   (define cp (make-cport 0 port size* rst symtab so* (make-vector symtabsize #f) (make-hash)))
+   (define cp (make-cport 0 port size* rst symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
    (for/list ([i (in-range 1 symtabsize)])
      (when (not-ready? (vector-ref symtab i))
        (set-cport-pos! cp (vector-ref so* (sub1 i)))

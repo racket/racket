@@ -3518,6 +3518,9 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator)
 {
   if (!info->pass) {
     if (!info->tail_pos) {
+      if (SAME_OBJ(scheme_values_func, rator))
+        /* no need to clear for app of `values' */
+        return;
       if (SCHEME_PRIMP(rator)) {
         int opt;
         opt = ((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_OPT_MASK;

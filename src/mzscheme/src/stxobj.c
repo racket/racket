@@ -5518,7 +5518,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
       scheme_unmarshal_wrap_set(ut, local_key, a);
     } else if (SCHEME_PAIRP(a)) {
       /* A rename table:
-           - ([#t] <index-num> <phase-num> <bool> [unmarshal] #(<table-elem> ...) 
+           - ([#t] <phase-num> <kind-num> <set-identity> [unmarshal] #(<table-elem> ...)
 	       . ((<sym> (<marked-list-or-mark> . <target-gensym>) ...) ...)) ; <- marked_names
 	where a <table-elem> is actually two values, one of:
            - <exname> <modname>
