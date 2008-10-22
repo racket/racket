@@ -167,8 +167,7 @@
                  (namespace-require scheme-test-module-name)
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
-                 (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40))))
-                 )))
+                 (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40)))))))
             (super on-execute settings run-in-user-thread))
           
           (define/private (teaching-languages-error-value->string settings v len)
@@ -1034,22 +1033,19 @@
             (thread-cell-set! current-test-coverage-info ht)
             (let ([rep (drscheme:rep:current-rep)])
               (when rep
-                (let ([s (make-semaphore 0)])
-                  (parameterize ([current-eventspace drs-eventspace])
-                    (queue-callback
-                     (λ ()
-                       (let ([on-sd (make-object style-delta%)]
-                             [off-sd (make-object style-delta%)])
-                         (cond
-                           [(preferences:get 'framework:white-on-black?)
-                            (send on-sd set-delta-foreground "white")
-                            (send off-sd set-delta-foreground "indianred")]
-                           [else
-                            (send on-sd set-delta-foreground "black")
-                            (send off-sd set-delta-foreground "firebrick")])
-                         (send rep set-test-coverage-info ht on-sd off-sd #f))
-                       (semaphore-post s))))
-                  (semaphore-wait s))))))
+                (parameterize ([current-eventspace drs-eventspace])
+                  (queue-callback
+                   (λ ()
+                     (let ([on-sd (make-object style-delta%)]
+                           [off-sd (make-object style-delta%)])
+                       (cond
+                         [(preferences:get 'framework:white-on-black?)
+                          (send on-sd set-delta-foreground "white")
+                          (send off-sd set-delta-foreground "indianred")]
+                         [else
+                          (send on-sd set-delta-foreground "black")
+                          (send off-sd set-delta-foreground "firebrick")])
+                       (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
             (hash-set! ht key (mcons #f expr)))))
@@ -1124,7 +1120,7 @@
                (lambda (exp)
                  (let* ([is-compiled? (compiled-expression? (if (syntax? exp) (syntax-e exp) exp))]
                         [annotated
-                         (if is-compiled?
+                         (if is-compiled? 
                              exp
                              (let* ([et-annotated (et:annotate-top (expand exp) 
                                                                    (namespace-base-phase))]

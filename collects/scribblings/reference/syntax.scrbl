@@ -753,7 +753,7 @@ instead of
                       #rx"-" (string-titlecase name) "")))
               scheme/base))]
   will get the @scheme[scheme/base] bindings that match the regexp,
-  and renamed to use ``caml case''.}
+  and renamed to use ``camel case''.}
 
 @; --------------------
 
@@ -783,7 +783,7 @@ instead of
                       #rx"-" (string-titlecase name) "")))
               (all-defined-out)))]
   will provide all defined bindings that match the regexp, and renamed
-  to use ``caml case''.}
+  to use ``camel case''.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "quote"]{Literals: @scheme[quote] and @scheme[#%datum]}

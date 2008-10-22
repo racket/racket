@@ -1088,11 +1088,13 @@
 
        (define max-call-head-width 5)
 
-       (define (no-sharing? expr count acdr)
-         (if (and found (hash-table-get found (acdr expr) #f))
+       (define (no-sharing? expr count apair? acdr)
+         (if (and found 
+                  (apair? expr)
+                  (hash-table-get found (acdr expr) #f))
              #f
              (or (zero? count)
-                 (no-sharing? (acdr expr) (sub1 count) acdr))))
+                 (no-sharing? (acdr expr) (sub1 count) apair? acdr))))
 
        (define (style head expr apair? acar acdr)
          (case (look-in-style-table head)
@@ -1100,22 +1102,22 @@
 		    syntax-rules
 		    shared
 		    unless when)
-            (and (no-sharing? expr 1 acdr)
+            (and (no-sharing? expr 1 apair? acdr)
                  pp-lambda))
 	   ((if set! set!-values)
-            (and (no-sharing? expr 1 acdr)
+            (and (no-sharing? expr 1 apair? acdr)
                  pp-if))
 	   ((cond case-lambda)
-            (and (no-sharing? expr 0 acdr)
+            (and (no-sharing? expr 0 apair? acdr)
                  pp-cond))
 	   ((case class) 
-            (and (no-sharing? expr 1 acdr)
+            (and (no-sharing? expr 1 apair? acdr)
                  pp-case))
 	   ((and or import export 
 		 require require-for-syntax require-for-template 
 		 provide link
 		 public private override rename inherit field init)
-            (and (no-sharing? expr 0 acdr)
+            (and (no-sharing? expr 0 apair? acdr)
                  pp-and))
 	   ((let letrec let*
 	      let-values letrec-values let*-values
@@ -1126,20 +1128,21 @@
                                        (symbol? (acar (acdr expr))))
                                   2
                                   1)
+                              apair?
                               acdr)
                  pp-let))
 	   ((begin begin0)
-            (and (no-sharing? expr 0 acdr)
+            (and (no-sharing? expr 0 apair? acdr)
                  pp-begin))
 	   ((do letrec-syntaxes+values)
-            (and (no-sharing? expr 2 acdr)
+            (and (no-sharing? expr 2 apair? acdr)
                  pp-do))
 
 	   ((send syntax-case instantiate module)
-            (and (no-sharing? expr 2 acdr)
+            (and (no-sharing? expr 2 apair? acdr)
                  pp-syntax-case))
 	   ((make-object)
-            (and (no-sharing? expr 1 acdr)
+            (and (no-sharing? expr 1 apair? acdr)
                  pp-make-object))
 
 	   (else #f)))

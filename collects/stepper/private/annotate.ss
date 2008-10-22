@@ -387,21 +387,25 @@
                . -> . (vector/p syntax? binding-set?))
     (lambda (exp tail-bound pre-break? procedure-name-info)
       
-      (cond [(stepper-syntax-property exp 'stepper-skipto)
-             (let* ([free-vars-captured #f] ; this will be set!'ed
-                    ;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (stepper-syntax-property expr 'stepper-skipto))]
-                    ; WARNING! I depend on the order of evaluation in application arguments here:
-                    [annotated (skipto/auto
-                                exp
-                                'rebuild
-                                (lambda (subterm)
-                                  (let*-2vals ([(stx free-vars) (annotate/inner subterm tail-bound pre-break? procedure-name-info)])
-                                              (set! free-vars-captured free-vars)
-                                              stx)))])
-               (2vals (wcm-wrap
-                       skipto-mark
-                       annotated)
-                      free-vars-captured))]
+      (cond [(cond
+	      ((stepper-syntax-property exp 'stepper-skipto) 'rebuild)
+	      ((stepper-syntax-property exp 'stepper-skipto/discard) 'discard)
+	      (else #f))
+	     => (lambda (traversal)
+		  (let* ([free-vars-captured #f] ; this will be set!'ed
+			 ;;[dont-care (printf "expr: ~a\nskipto: ~a\n" expr (stepper-syntax-property expr 'stepper-skipto))]
+			 ;; WARNING! I depend on the order of evaluation in application arguments here:
+			 [annotated (skipto/auto
+				     exp
+				     traversal
+				     (lambda (subterm)
+				       (let*-2vals ([(stx free-vars) (annotate/inner subterm tail-bound pre-break? procedure-name-info)])
+						   (set! free-vars-captured free-vars)
+						   stx)))])
+		    (2vals (wcm-wrap
+			    skipto-mark
+			    annotated)
+			   free-vars-captured)))]
             
             [(stepper-syntax-property exp 'stepper-skip-completely)
              (2vals (wcm-wrap 13 exp) null)]

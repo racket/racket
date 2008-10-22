@@ -52,14 +52,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 
 
-(define-syntax (require/typed stx)
-  
+(define-syntax (require/typed stx)  
   (syntax-case* stx (rename) (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(_ lib [nm ty] ...)
      #'(begin (require/typed nm ty lib) ...)]
     [(_ nm ty lib)
      (identifier? #'nm)
-     (with-syntax ([(cnt*) (syntax->datum #'(nm))])
+     (with-syntax ([(cnt*) (generate-temporaries #'(nm))])
        (quasisyntax/loc stx (begin 
                               #,(syntax-property (syntax-property #'(define cnt* #f)
                                                                   'typechecker:contract-def #'ty)

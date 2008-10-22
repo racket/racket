@@ -206,8 +206,8 @@ case-sensitively.
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f])
-         (or/c (listof (or/c (or/c string? bytes?)
-                             #f))
+         (or/c (listof (or/c string? #f))
+               (listof (or/c bytes? #f))
                #f)]{
 
 Attempts to match @scheme[pattern] (a string, byte string, regexp
@@ -304,7 +304,7 @@ bytes. To avoid such interleaving, use @scheme[regexp-match-peek]
                         [input (or/c string? bytes? input-port?)]
                         [start-pos exact-nonnegative-integer? 0]
                         [end-pos (or/c exact-nonnegative-integer? #f) #f])
-         (listof (or/c string? bytes?))]{
+         (or/c (listof string?) (listof bytes?))]{
 
 Like @scheme[regexp-match], but the result is a list of strings or
 byte strings corresponding to a sequence of matches of
@@ -336,8 +336,8 @@ port).
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f])
-         (or/c (listof (or/c (or/c string? bytes?)
-                             #f))
+         (or/c (listof (or/c string? #f))
+               (listof (or/c bytes? #f))
                #f)]{
 
 Like @scheme[regexp-match] on input ports, except that if the match

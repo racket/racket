@@ -144,7 +144,7 @@
               [_ (raise-syntax-error 'contract "internal error.5")])))
 	
 	(define local-expand-stop-list 
-          (list 'contract 'define-values 'define-syntaxes '#%require
+          (list 'contract 'define-values 'define-syntaxes 'define-values-for-syntax '#%require
                 '#%provide 'define-data '#%app '#%datum 'define-struct 'begin 'begin0))
 	
 	;; parse-contract-expressions 

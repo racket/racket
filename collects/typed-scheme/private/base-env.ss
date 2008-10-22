@@ -4,6 +4,7 @@
  scheme/list
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
+ (only-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in scheme/match/runtime match:error))
 
@@ -236,11 +237,13 @@
 [list-tail (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
 [positive? (-> N B)]
 [negative? (-> N B)]
-[odd? (-> N B)]
-[even? (-> N B)]
+[odd? (-> -Integer B)]
+[even? (-> -Integer B)]
 
-[apply      (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
-[time-apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
+[time-apply (-poly (a b) (((list) a . ->* . b) (-lst a)
+                          . -> . (-values (list b N N N))))]
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
@@ -264,20 +267,24 @@
 
 ;; regexp stuff
 [regexp-match
- (cl->
-  [((*Un -String -Regexp) -String) (-opt (-lst (-opt -String)))]
-  [(-Pattern -String) (-opt (-lst (-opt (*Un -Bytes -String))))]
-  [(-Pattern -String N) (-opt (-lst (-opt (*Un -Bytes -String))))]
-  [(-Pattern -String N (-opt N)) (-opt (-lst (-opt (*Un -Bytes -String))))]
-  [(-Pattern -String N (-opt N) (-opt -Output-Port)) (-lst (-opt (*Un -Bytes -String)))]
-  [(-Pattern -String (-opt N) (-opt -Output-Port)) (-lst (-opt (*Un -Bytes -String)))]
-  [(-Pattern -String (-opt -Output-Port)) (-lst (-opt (*Un -Bytes -String)))]
-  [(-Pattern (*Un -Input-Port -Bytes)) (-opt (-lst (-opt -Bytes)))]
-  [(-Pattern (*Un -Input-Port -Bytes) N) (-opt (-lst (-opt -Bytes)))]
-  [(-Pattern (*Un -Input-Port -Bytes) N (-opt N)) (-opt (-lst (-opt -Bytes)))]
-  [(-Pattern (*Un -Input-Port -Bytes) (-opt N)) (-opt (-lst (-opt -Bytes)))]
-  [(-Pattern (*Un -Input-Port -Bytes) N (-opt N) (-opt -Output-Port)) (-lst (-opt -Bytes))])]
-
+ (let ([?outp   (-opt -Output-Port)]
+       [?N      (-opt N)]
+       [optlist (lambda (t) (-opt (-lst (-opt t))))]
+       [-StrRx  (*Un -String -Regexp -PRegexp)]
+       [-BtsRx  (*Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+       [-InpBts (*Un -Input-Port -Bytes)])
+   (cl-> [(-StrRx   -String           ) (optlist -String)]
+         [(-StrRx   -String N         ) (optlist -String)]
+         [(-StrRx   -String N ?N      ) (optlist -String)]
+         [(-StrRx   -String N ?N ?outp) (optlist -String)]
+         [(-BtsRx   -String           ) (optlist -Bytes)]
+         [(-BtsRx   -String N         ) (optlist -Bytes)]
+         [(-BtsRx   -String N ?N      ) (optlist -Bytes)]
+         [(-BtsRx   -String N ?N ?outp) (optlist -Bytes)]
+         [(-Pattern -InpBts           ) (optlist -Bytes)]
+         [(-Pattern -InpBts N         ) (optlist -Bytes)]
+         [(-Pattern -InpBts N ?N      ) (optlist -Bytes)]
+         [(-Pattern -InpBts N ?N ?outp) (optlist -Bytes)]))]
 
 [number->string (N . -> . -String)]
 

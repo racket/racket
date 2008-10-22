@@ -1086,7 +1086,9 @@
      (λ ()
        (with-handlers ([(λ (x) #t)
                         (λ (x)
-                          (display (exn-message x))
+                          (display (if (exn? x) 
+                                       (exn-message x) 
+                                       (format "~s" x)))
                           (newline))])
          (when module-spec
            (if use-copy?

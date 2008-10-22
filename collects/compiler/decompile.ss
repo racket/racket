@@ -75,7 +75,9 @@
                 (if (null? stx-ids) null '(#%stx-array))
                 lift-ids)
                (map (lambda (stx id)
-                      `(define ,id (#%decode-syntax ,(stx-encoded stx))))
+                      `(define ,id ,(if stx
+                                        `(#%decode-syntax ,(stx-encoded stx))
+                                        #f)))
                     stxs stx-ids)))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
 
@@ -304,7 +306,8 @@
                                       + - * / min max bitwise-and bitwise-ior
                                       arithmetic-shift vector-ref string-ref bytes-ref
                                       set-mcar! set-mcdr! cons mcons))]
-             [(4) (memq (car a) '(vector-set! string-set! bytes-set!))]))
+             [(4) (memq (car a) '(vector-set! string-set! bytes-set!))]
+             [else #f]))
       (cons '#%in a)
       a))
 

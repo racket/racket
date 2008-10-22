@@ -40,7 +40,9 @@
       
       ;; require/typed
       [(define-values () (begin (quote-syntax (require/typed-internal nm ty)) (#%plain-app values)))
-       (register-type #'nm (parse-type #'ty))]
+       (let ([t (parse-type #'ty)])
+         (register-type #'nm t)
+         (list (make-def-binding #'nm t)))]
       
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))

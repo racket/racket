@@ -139,6 +139,7 @@
 (define -Promise make-promise-ty)
 
 (define Univ (make-Univ))
+(define Err (make-Error))
 
 (define-syntax -v 
   (syntax-rules ()

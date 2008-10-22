@@ -1102,7 +1102,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
     Scheme_Object *name, *pr, *bucket;
 
     name = SCHEME_STX_CAR(var);
-    name = scheme_tl_id_sym(env->genv, name, NULL, 2, NULL);
+    name = scheme_tl_id_sym(env->genv, name, NULL, 2, NULL, NULL);
 
     if (rec[drec].resolve_module_ids || !env->genv->module) {
       bucket = (Scheme_Object *)scheme_global_bucket(name, env->genv);
@@ -5373,7 +5373,7 @@ static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 {
   Scheme_Env *env = (Scheme_Env *)_env;
 
-  return scheme_tl_id_sym(env, name, NULL, 2, NULL);
+  return scheme_tl_id_sym(env, name, NULL, 2, NULL, NULL);
 }
 
 static Scheme_Object *
