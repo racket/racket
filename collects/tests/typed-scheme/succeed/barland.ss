@@ -6,7 +6,7 @@
 
 (define: (element-of? [elt : top] [s : set]) : top (s elt))
 
-(define: (evens [elt : top]) : top (and (number? elt) (even? elt)))
+(define: (evens [elt : top]) : top (and (integer? elt) (even? elt)))
 
 (define-typed-struct pr ([fst : top] [snd : top]))
 
