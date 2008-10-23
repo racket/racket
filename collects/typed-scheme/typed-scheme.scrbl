@@ -457,6 +457,8 @@ The following base types are parameteric in their type arguments.
   @scheme[t] at types @scheme[t1 t2 ...]}
 @defform[(All (v ...) t)]{is a parameterization of type @scheme[t], with
   type variables @scheme[v ...]}
+@defform[(List t ...)]{is the type of the list with one element, in order, 
+  for each type provided to the @scheme[List] type constructor.}
 @defform[(values t ...)]{is the type of a sequence of multiple values, with
 types @scheme[t ...].  This can only appear as the return type of a
 function.}
