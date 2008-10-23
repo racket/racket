@@ -37,7 +37,9 @@
 
 (define (alpha-version? v)
   (let ([l (version->list v)])
-    (or ((list-ref l 1) . >= . 90) ((list-ref l 2) . >= . 900))))
+    (or ((list-ref l 1) . >= . 90)
+        ((list-ref l 2) . >= . 900)
+        ((list-ref l 3) . >= . 900))))
 
 ;; returns an integer representing the version (XXYYZZZWWW) or #f if invalid
 ;; works for pre v4 versions too

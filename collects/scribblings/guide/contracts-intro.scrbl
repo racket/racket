@@ -193,3 +193,40 @@ services, it also demands the client to deliver
 something. This kind of thing happens when a module exports
 a function, an object, a class or other values that enable
 values to flow in both directions.
+
+@ctc-section{Experimenting with examples}
+
+All of the contracts and module in this chapter (excluding those just
+following) are written using the standard @tt{#lang} syntax for
+describing modules. Thus, if you extract examples from this chapter in
+order to experiment with the behavior of the contract system, you
+would have to make multiple files. 
+
+To rectify this, PLT Scheme provides a special language, called
+@tt{scheme/load}. The contents of such a module is other modules (and
+@scheme[require] statements), using the parenthesized syntax for a
+module. For example, to try the example earlier in this section, you
+would write:
+@schememod[
+scheme/load
+
+(module m scheme
+  (define amount 150)
+  (provide/contract [amount (and/c number? positive?)]))
+
+(module n scheme
+  (require 'm)
+  (+ amount 10))
+
+(require 'n)]
+
+Each of the modules and their contracts are wrapped in parenthesis
+with the @scheme[module] keyword at the front. The first argument to
+@scheme[module] should be the name of the module, so it can be used in
+a subsequent @scheme[require] statement (note that in the
+@scheme[require], the name of the module must be prefixed with a
+quote). The second argument to @scheme[module] is the language (what
+would have come lang @tt{#lang} in the usual notation), and the
+remaining arguments are the body of the module. After all of the
+modules, there must a @scheme[require] to kick things off.
+

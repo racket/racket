@@ -747,11 +747,11 @@
                                           (current-continuation-marks tag)
                                           -loading-filename
                                           tag))]
-                                    [ns (current-namespace)])
+                                    [nsr (namespace-module-registry (current-namespace))])
                                 (for-each
                                  (lambda (s)
                                    (when (and (equal? (cdr s) normal-filename)
-                                              (eq? (car s) ns))
+                                              (eq? (car s) nsr))
                                      (error
                                       'standard-module-name-resolver
                                       "cycle in loading at ~e: ~e"
@@ -762,7 +762,9 @@
                                    (lambda (f) (f))
                                    (lambda (f) (call-with-continuation-prompt f -loading-prompt-tag)))
                                (lambda ()
-                                 (with-continuation-mark -loading-filename (cons (current-namespace) normal-filename)
+                                 (with-continuation-mark -loading-filename (cons 
+                                                                            (namespace-module-registry (current-namespace))
+                                                                            normal-filename)
                                    (parameterize ([current-module-declare-name modname])
                                      ((current-load/use-compiled) 
                                       filename 
