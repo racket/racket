@@ -6785,8 +6785,8 @@ cont_marks(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *prompt_tag;
 
-  if (!SCHEME_CONTP(argv[0]) && !SCHEME_ECONTP(argv[0]))
-    scheme_wrong_type("continuation-marks", "continuation", 0, argc, argv);
+  if (!SCHEME_CONTP(argv[0]) && !SCHEME_ECONTP(argv[0]) && !SCHEME_THREADP(argv[0]))
+    scheme_wrong_type("continuation-marks", "continuation or thread", 0, argc, argv);
 
   if (argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(argv[1]))) {
@@ -6809,6 +6809,38 @@ cont_marks(int argc, Scheme_Object *argv[])
 
       return continuation_marks(scheme_current_thread, NULL, argv[0], mc, prompt_tag, 
                                 "continuation-marks", 0);
+    }
+  } else if (SCHEME_THREADP(argv[0])) {
+    Scheme_Thread *t = (Scheme_Thread *)argv[0];
+    Scheme_Object *m;
+
+    if (SAME_OBJ(t, scheme_current_thread))
+      return scheme_current_continuation_marks(prompt_tag);
+
+    while (t->return_marks_to) {
+      scheme_thread_block(0.0);
+    }
+
+    if (!(t->running & MZTHREAD_RUNNING)) {
+      /* empty marks */
+      Scheme_Cont_Mark_Set *set;
+
+      set = MALLOC_ONE_TAGGED(Scheme_Cont_Mark_Set);
+      set->so.type = scheme_cont_mark_set_type;
+      set->chain = NULL;
+      set->cmpos = 1;
+      set->native_stack_trace = NULL;
+
+      return (Scheme_Object *)set;
+    } else {
+      t->return_marks_to = scheme_current_thread;
+      t->returned_marks = prompt_tag;
+      scheme_swap_thread(t);
+      
+      m = t->returned_marks;
+      t->returned_marks = NULL;
+      
+      return m;
     }
   } else {
     return continuation_marks(NULL, argv[0], NULL, NULL, prompt_tag, 

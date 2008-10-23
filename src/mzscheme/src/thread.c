@@ -2413,8 +2413,19 @@ int scheme_in_main_thread(void)
   return !scheme_current_thread->next;
 }
 
+static void stash_current_marks()
+{
+  Scheme_Object *m;
+  m = scheme_current_continuation_marks(scheme_current_thread->returned_marks);
+  scheme_current_thread->returned_marks = m;
+  swap_target = scheme_current_thread->return_marks_to;
+  scheme_current_thread->return_marks_to = NULL;
+}
+
 static void do_swap_thread()
 {
+ start:
+
   scheme_zero_unneeded_rands(scheme_current_thread);
 
 #if WATCH_FOR_NESTED_SWAPS
@@ -2453,6 +2464,11 @@ static void do_swap_thread()
 	|| (scheme_current_thread->cont_mark_stack_owner
 	    && ((*scheme_current_thread->cont_mark_stack_owner) != scheme_current_thread))) {
       scheme_takeover_stacks(scheme_current_thread);
+    }
+
+    if (scheme_current_thread->return_marks_to) {
+      stash_current_marks();
+      goto start;
     }
   } else {
     Scheme_Thread *new_thread = swap_target;
@@ -2767,6 +2783,11 @@ static void start_child(Scheme_Thread * volatile child,
     if (scheme_current_thread->running & MZTHREAD_KILLED) {
       /* This thread is dead! Give up now. */
       exit_or_escape(scheme_current_thread);
+    }
+
+    if (scheme_current_thread->return_marks_to) {
+      stash_current_marks();
+      do_swap_thread();
     }
 
     {

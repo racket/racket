@@ -127,7 +127,9 @@ If @scheme[#:auto] is supplied as a @scheme[field-option], then the
 argument corresponding to the field. Instead, the structure type's
 automatic value is used for the field, as specified by the
 @scheme[#:auto-value] option, or as defaults to @scheme[#f] when
-@scheme[#:auto-value] is not supplied.
+@scheme[#:auto-value] is not supplied. The field is mutable (e.g.,
+through reflective operations), but a mutator procedure is bound only
+if @scheme[#:mutable] is specified.
 
 If a @scheme[field] includes the @scheme[#:auto] option, then all
 fields after it must also include @scheme[#:auto], otherwise a syntax

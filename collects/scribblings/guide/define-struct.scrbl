@@ -393,8 +393,9 @@ A @scheme[_struct-option] always starts with a keyword:
   Specifies a value to be used for all automatic fields in the
   structure type, where an automatic field is indicated by the
   @scheme[#:auto] field option. The constructor procedure does not
-  accept arguments for automatic fields, and they are implicitly
-  mutable.
+  accept arguments for automatic fields. Automatic fields are
+  implicitly mutable (via reflective operations), but mutator
+  functions are bound only if @scheme[#:mutator] is also specified.
 
   @defexamples[
     (define-struct posn (x y [z #:auto])

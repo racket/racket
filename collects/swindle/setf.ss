@@ -44,7 +44,7 @@
      ;; need to expand place first, in case it is itself a macro
      (with-syntax ([place (local-expand
                            #'place 'expression
-                           (append '(#%app #%top #%datum)
+                           (append (list #'#%app #'#%top #'#%datum)
                                    (map (lambda (s)
                                           (datum->syntax-object #'place s #f))
                                         '(#%app #%top #%datum))))])

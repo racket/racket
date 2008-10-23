@@ -9053,7 +9053,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       Scheme_Object *i;
     
       i = SCHEME_CAR(l);
-      if (!SCHEME_STX_SYMBOLP(i)) {
+      if (!SCHEME_STXP(i) || !SCHEME_STX_SYMBOLP(i)) {
         scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
         return NULL;
       }

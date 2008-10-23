@@ -1007,6 +1007,9 @@ typedef struct Scheme_Thread {
   char ran_some;
   char suspend_to_kill;
 
+  struct Scheme_Thread *return_marks_to;
+  Scheme_Object *returned_marks;
+
   struct Scheme_Overflow *overflow;
 
   struct Scheme_Comp_Env *current_local_env;

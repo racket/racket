@@ -46,18 +46,21 @@ continuation's frames to the marks that were present when
 @scheme[call-with-current-continuation] or
 @scheme[call-with-composable-continuation] was invoked.
 
-@defproc[(continuation-marks [cont continuation?]
+@defproc[(continuation-marks [cont (or/c continuation? thread?)]
                              [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
          continuation-mark-set?]{
 
 Returns an opaque value containing the set of continuation marks for
-all keys in the continuation @scheme[cont] up to the prompt tagged by
-@scheme[prompt-tag].  If @scheme[cont] is an escape continuation (see
-@secref["prompt-model"]), then the current continuation must extend
-@scheme[cont], or the @exnraise[exn:fail:contract]. If @scheme[cont]
-was not captured with respect to @scheme[prompt-tag] and does not
-include a prompt for @scheme[prompt-tag], the
-@exnraise[exn:fail:contract].}
+all keys in the continuation @scheme[cont] (or the current
+continuation of @scheme[cont] if it is a thread) up to the prompt
+tagged by @scheme[prompt-tag].  If @scheme[cont] is an escape
+continuation (see @secref["prompt-model"]), then the current
+continuation must extend @scheme[cont], or the
+@exnraise[exn:fail:contract]. If @scheme[cont] was not captured with
+respect to @scheme[prompt-tag] and does not include a prompt for
+@scheme[prompt-tag], the @exnraise[exn:fail:contract]. If
+@scheme[cont] is a dead thread, the result is an empty set of
+continuation marks.}
 
 @defproc[(current-continuation-marks [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
          continuation-mark-set?]{

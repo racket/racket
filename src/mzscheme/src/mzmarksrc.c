@@ -641,6 +641,9 @@ thread_val {
   
   gcMARK(pr->blocker);
   gcMARK(pr->overflow);
+
+  gcMARK(pr->return_marks_to);
+  gcMARK(pr->returned_marks);
   
   gcMARK(pr->current_local_env);
   gcMARK(pr->current_local_mark);

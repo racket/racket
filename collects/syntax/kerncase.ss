@@ -75,6 +75,7 @@
   (define (kernel-form-identifier-list)
     (syntax-e (quote-syntax
                (begin
+                begin0
                 define-values
                 define-syntaxes
                 define-values-for-syntax
