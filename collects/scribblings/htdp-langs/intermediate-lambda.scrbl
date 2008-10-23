@@ -107,7 +107,7 @@ Like a Beginning @seclink["beginner-call"]{function call}, except that
 the function position can be an arbitrary expression---perhaps a
 @scheme[lambda] expression or a @scheme[_prim-op].}
 
-@defform[(#%app id expr expr ...)]{
+@defform[(#%app expr expr expr ...)]{
 
 A function call can be written with @scheme[#%app], though it's
 practically never written that way.}

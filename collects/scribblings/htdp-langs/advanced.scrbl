@@ -52,7 +52,7 @@
       (begin0 expr expr ...)
       (set! id expr)
       (delay expr)
-      (lambda (id id ...) expr)
+      (lambda (id ...) expr)
       (local [definition ...] expr)
       (letrec ([id expr] ...) expr)
       (shared ([id expr] ...) expr)
@@ -60,7 +60,7 @@
       (let id ([id expr] ...) expr)
       (let* ([id expr] ...) expr)
       (recur id ([id expr] ...) expr)
-      (code:line (expr expr expr ...) (code:comment #, @seclink["intermediate-lambda-call"]{function call}))
+      (code:line (expr expr ...) (code:comment #, @seclink["advanced-call"]{function call}))
       (cond [expr expr] ... [expr expr])
       (cond [expr expr] ... [else expr])
       (case expr [(choice choice ...) expr] ... 
@@ -130,6 +130,21 @@ additional set of operations:
 
 The same as Intermediate with Lambda's @|intm-lambda|, except that a
 function is allowed to accept zero arguments.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "advanced-call"]{Function Calls}
+
+@defform/none[(expr expr ...)]{
+
+A function call in Advanced is the same as an Intermediate with Lambda
+@seclink["intermediate-lambda-call"]{function call}, except that zero
+arguments are allowed.}
+
+@defform[(#%app expr expr ...)]{
+
+A function call can be written with @scheme[#%app], though it's
+practically never written that way.}
 
 @; ----------------------------------------------------------------------
 

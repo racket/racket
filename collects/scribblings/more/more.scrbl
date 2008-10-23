@@ -118,8 +118,8 @@ Back in @exec{mzscheme}, try loading the file and running @scheme[go]:
 (eval:alts (go) 'yep-it-works)
 ]
 
-Try modifying @filepath{serve.ss}, and then running @scheme[(enter!
-"serve.ss")] again to re-load the module, then check your changes.
+Try modifying @filepath{serve.ss}, and then run @scheme[(enter!
+"serve.ss")] again to re-load the module, and then check your changes.
 
 @; ----------------------------------------------------------------------
 @section{``Hello World'' Server}
