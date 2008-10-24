@@ -30,6 +30,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           "parse-type.ss"
           syntax/struct
           syntax/stx
+          scheme/struct-info
 	  (utils utils tc-utils)
           (env type-name-env)
           "type-contract.ss"))
@@ -80,6 +81,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (require/opaque-type stx)
   (syntax-case stx ()
+    [(_ ty pred lib #:name-exists)
+     (begin
+       (unless (identifier? #'ty)
+         (raise-syntax-error #f "opaque type name must be an identifier" stx #'ty))
+       (unless (identifier? #'pred)
+         (raise-syntax-error #f "opaque type predicate must be an identifier" stx #'pred))
+       (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
+       (quasisyntax/loc stx
+         (begin 
+           #,(syntax-property #'(define pred-cnt (any/c . c-> . boolean?))
+                              'typechecker:ignore #t)
+           #,(internal #'(require/typed-internal pred (Any -> Boolean : (Opaque pred))))
+           #,(internal (syntax/loc stx (define-type-alias-internal ty (Opaque pred))))
+           #,(syntax-property #'(require/contract pred pred-cnt lib)
+                              'typechecker:ignore #t))))]
     [(_ ty pred lib)
      (begin
        (unless (identifier? #'ty)
@@ -330,9 +346,19 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ nm ([fld : ty] ...) lib)
      (identifier? #'nm)
      (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
+                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
                     [oty #'(Opaque pred)])
                    #'(begin
-                       (require/opaque-type nm pred lib)
+                       (require (only-in lib struct-info))
+                       (define-syntax nm (make-struct-info 
+                                          (lambda ()
+                                            (list #'struct-info
+                                                  #'maker
+                                                  #'pred
+                                                  (list #'sel ...)
+                                                  (list mut ...)
+                                                  #f))))
+                       (require/opaque-type nm pred lib #:name-exists)
                        (require/typed maker (ty ... -> oty) lib)
                        (require/typed sel (oty -> ty) lib) ...))]))
 
