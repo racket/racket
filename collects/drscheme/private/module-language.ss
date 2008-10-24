@@ -503,7 +503,7 @@
     (when filename (check-filename-matches filename name* stx))
     (let* (;; rewrite the module to use the scheme/base version of `module'
            [mod  (datum->syntax #'here 'module mod)]
-           [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
+           [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx stx)])
       (values name lang expr)))
   
   ;; get-filename : port -> (union string #f)
