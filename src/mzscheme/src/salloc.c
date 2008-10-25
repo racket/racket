@@ -1462,7 +1462,7 @@ static void cons_onto_list(void *p)
 # ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
 #  ifdef DOS_FILE_SYSTEM
-extern void gc_fprintf(int ignored, const char *c, ...);
+extern void gc_fprintf(FILE *ignored, const char *c, ...);
 #   define object_console_printf gc_fprintf
 #  endif
 # endif
@@ -2039,7 +2039,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
         var_stack = (void **)t->jmpup_buf.gc_var_stack;
         delta = (long)t->jmpup_buf.stack_copy - (long)t->jmpup_buf.stack_from;
         /* FIXME: stack direction */
-        limit = (void *)t->jmpup_buf.stack_copy + t->jmpup_buf.stack_size;
+        limit = (char *)t->jmpup_buf.stack_copy + t->jmpup_buf.stack_size;
       }
       GC_dump_variable_stack(var_stack, delta, limit, NULL,
                              scheme_get_type_name,
