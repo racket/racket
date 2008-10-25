@@ -172,6 +172,8 @@ wxWindow::wxWindow(void)
   winEnabled = TRUE;
 
   focusWindow = NULL;
+
+  WXGC_IGNORE(this, focusWindow); // can be a self pointer in a frame
 }
 
 // Destructor
