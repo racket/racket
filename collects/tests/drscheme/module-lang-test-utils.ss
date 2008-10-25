@@ -12,32 +12,39 @@
                      interactions  ; (union #f string)
                      result        ; string
                      all?          ; boolean (#t => compare all of the text between the 3rd and n-1-st line)
-                     error-ranges) ; (or/c 'dont-test
+                     error-ranges  ; (or/c 'dont-test
                                    ;       (-> (is-a?/c text)
                                    ;           (is-a?/c text)
                                    ;           (or/c #f (listof ...))))
                                    ;    fn => called with defs & ints, result must match get-error-ranges method's result
-  
+                      line)        ; number or #f: the line number of the test case
+                      
   #:omit-define-syntaxes)
 
 (define in-here
   (let ([here (this-expression-source-directory)])
-    (lambda (file) (path->string (build-path here file)))))
+    (lambda (file) (format "~s" (path->string (build-path here file))))))
 
 (define tests '())
-(define (test definitions interactions results [all? #f] #:error-ranges [error-ranges 'dont-test])
+(define-syntax (test stx)
+  (syntax-case stx ()
+    [(_  args ...)
+     (with-syntax ([line (syntax-line stx)])
+       #'(test/proc line args ...))]))
+(define (test/proc line definitions interactions results [all? #f] #:error-ranges [error-ranges 'dont-test])
   (set! tests (cons (make-test (if (string? definitions) 
                                    definitions 
                                    (format "~s" definitions))
                                interactions 
                                results 
                                all? 
-                               error-ranges)
+                               error-ranges
+                               line)
                     tests)))
 
 (define temp-files '())
 (define (write-test-modules* name code)
-  (let ([file (in-here (format "~a.ss" name))])
+  (let ([file (build-path (this-expression-source-directory) (format "~a.ss" name))])
     (set! temp-files (cons file temp-files))
     (with-output-to-file file #:exists 'truncate
       (lambda () (printf "~s\n" code)))))
@@ -65,7 +72,8 @@
                      (send interactions-text paragraph-start-position 2)
                      (send interactions-text paragraph-end-position 2))])
           (unless (or (test-all? test) (string=? "> " after-execute-output))
-            (printf "FAILED: ~a\n        ~a\n        expected no output after execution, got: ~s\n"
+            (printf "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
+                    (test-line test)
                     (test-definitions test)
                     (or (test-interactions test) 'no-interactions)
                     after-execute-output)
@@ -96,7 +104,8 @@
                                       [else 'module-lang-test "bad test value: ~e" r])
                                 r text))])
         (unless output-passed?
-          (printf "FAILED: ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+          (printf "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+                  (test-line test)
                   (test-definitions test)
                   (or (test-interactions test) 'no-interactions)
                   (test-result test)
@@ -108,7 +117,8 @@
            (let ([error-ranges-expected
                   ((test-error-ranges test) definitions-text interactions-text)])
              (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
-               (printf "FAILED (ranges): ~a\n  expected: ~s\n       got: ~s\n"
+               (printf "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
+                       (test-line test)
                        (test-definitions test)
                        error-ranges-expected
                        (send interactions-text get-error-ranges))))])))))
