@@ -1,3 +1,9 @@
+Version 4.1.1.3
+Changed binding of identifiers introduced by unit signatures
+ to take into account the signature use's context
+Added make-syntax-delta-introducer
+Changed continuation-marks to accept a thread argument
+
 Version 4.1.1.2
 Added eqv-based hash tables
 Added hash-update and hash-update!

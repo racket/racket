@@ -50,7 +50,7 @@ file. It might a device that is connected through the filesystem, such
 as @filepath{aux} under Windows or @filepath{/dev/null} under Unix. In all
 cases, the port is buffered by default.
 
-The port produced by @scheme[open-input-port] should be explicitly
+The port produced by @scheme[open-input-file] should be explicitly
 closed, either though @scheme[close-input-port] or indirectly via
 @scheme[custodian-shutdown-all], to release the OS-level file
 handle. The input port will not closed automatically if it is
@@ -162,7 +162,7 @@ to avoid confusion.}
                                [proc (input-port? . -> . any)]
                                [#:mode mode-flag (or/c 'binary 'text) 'binary])
          any]{
-Calls @scheme[open-input-port] with the @scheme[path] and
+Calls @scheme[open-input-file] with the @scheme[path] and
 @scheme[mode-flag] arguments, and passes the resulting port
 to @scheme[proc]. The result of @scheme[proc] is the result of the
 @scheme[call-with-input-file] call, but the newly opened port is closed

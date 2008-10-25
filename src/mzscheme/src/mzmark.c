@@ -1626,6 +1626,9 @@ static int thread_val_MARK(void *p) {
   
   gcMARK(pr->blocker);
   gcMARK(pr->overflow);
+
+  gcMARK(pr->return_marks_to);
+  gcMARK(pr->returned_marks);
   
   gcMARK(pr->current_local_env);
   gcMARK(pr->current_local_mark);
@@ -1729,6 +1732,9 @@ static int thread_val_FIXUP(void *p) {
   
   gcFIXUP(pr->blocker);
   gcFIXUP(pr->overflow);
+
+  gcFIXUP(pr->return_marks_to);
+  gcFIXUP(pr->returned_marks);
   
   gcFIXUP(pr->current_local_env);
   gcFIXUP(pr->current_local_mark);

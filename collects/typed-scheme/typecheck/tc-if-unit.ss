@@ -101,18 +101,17 @@
                #;[_ (printf "v is ~a~n" v)]
                #;[c (current-milliseconds)]
                [(tc-result: els-ty els-thn-eff els-els-eff) (tc-expr/eff #f els tst-els-eff #f)])
-    #;(printf "v now is ~a~n" (ret els-ty els-thn-eff els-els-eff))
-    #;
-    (printf "els-ty ~a ~a~n" 
-            els-ty c)
-    (match (list thn-thn-eff thn-els-eff els-thn-eff els-els-eff) 
+    #;(printf "tst thn-eff: ~a~ntst els-eff: ~a~n" tst-thn-eff tst-els-eff)
+    #;(printf "thn ty:~a thn-eff: ~a thn els-eff: ~a~n" thn-ty thn-thn-eff thn-els-eff)
+    #;(printf "els ty:~a thn-eff: ~a els els-eff: ~a~n" els-ty els-thn-eff els-els-eff)
+    (match* (els-ty thn-thn-eff thn-els-eff els-thn-eff els-els-eff)
       ;; this is the case for `or'
       ;; the then branch has to be #t
       ;; the else branch has to be a simple predicate
       ;; FIXME - can something simpler be done by using demorgan's law?
       ;; note that demorgan's law doesn't hold for scheme `and' and `or' because they can produce arbitrary values
       ;; FIXME - mzscheme's or macro doesn't match this!
-      [(list (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
+      [(_ (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
        (=> unmatch)
        #;(printf "or branch~n")
        (match (list tst-thn-eff tst-els-eff)
@@ -133,7 +132,7 @@
          ;; similarly, bail here
          [_ (unmatch)])]
       ;; this is the case for `and'
-      [(list _ _ (list (False-Effect:)) (list (False-Effect:)))
+      [(_ _ _ (list (False-Effect:)) (list (False-Effect:)))
        #;(printf "and branch~n")
        (ret (Un (-val #f) thn-ty) 
             ;; we change variable effects to type effects in the test, 
@@ -142,8 +141,18 @@
             (append (map var->type-eff tst-thn-eff) thn-thn-eff)
             ;; no else effects for and, because any branch could have been false
             (list))]
+      ;; if the else branch can never happen, just use the effect of the then branch
+      [((Union: (list)) _ _ _ _)
+       #;(printf "and branch~n")
+       (ret thn-ty 
+            ;; we change variable effects to type effects in the test, 
+            ;; because only the boolean result of the test is used
+            ;; whereas, the actual value of the then branch is returned, not just the boolean result
+            (append #;(map var->type-eff tst-thn-eff) thn-thn-eff)
+            ;; no else effects for and, because any branch could have been false
+            (append #;(map var->type-eff tst-els-eff) thn-els-eff))]
       ;; otherwise this expression has no effects
-      [_ 
+      [(_ _ _ _ _) 
        #;(printf "if base case:~a ~n" (syntax-object->datum tst))
        #;(printf "els-ty ~a ~a~n" 
                  els-ty c)
@@ -153,6 +162,7 @@
 
 ;; checking version
 (define (tc/if-twoarm/check tst thn els expected)
+  #;(printf "tc-if/twoarm/check~n")
   ;; check in the context of the effects, and return
   (match-let* ([(tc-result: tst-ty tst-thn-eff tst-els-eff) (tc-expr tst)]
                #;[_ (printf "got to here 0~n")]
@@ -165,14 +175,17 @@
     #;(printf "check: v now is ~a~n" (ret els-ty els-thn-eff els-els-eff))
     #;(printf "els-ty ~a ~a~n" 
               els-ty c)
-    (match (list thn-thn-eff thn-els-eff els-thn-eff els-els-eff) 
+    #;(printf "tst/check thn-eff: ~a~ntst els-eff: ~a~n" tst-thn-eff tst-els-eff)
+    #;(printf "thn/check thn-eff: ~a~nthn els-eff: ~a~n" thn-thn-eff thn-els-eff)
+    #;(printf "els/check thn-eff: ~a~nels els-eff: ~a~n" els-thn-eff els-els-eff)
+    (match* (els-ty thn-thn-eff thn-els-eff els-thn-eff els-els-eff) 
       ;; this is the case for `or'
       ;; the then branch has to be #t
       ;; the else branch has to be a simple predicate
       ;; FIXME - can something simpler be done by using demorgan's law?
       ;; note that demorgan's law doesn't hold for scheme `and' and `or' because they can produce arbitrary values
       ;; FIXME - mzscheme's or macro doesn't match this!
-      [(list (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
+      [(_ (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
        (=> unmatch)
        ;(printf "or branch~n")
        (match (list tst-thn-eff tst-els-eff)
@@ -195,8 +208,8 @@
          ;; similarly, bail here
          [_ (unmatch)])]
       ;; this is the case for `and'
-      [(list _ _ (list (False-Effect:)) (list (False-Effect:)))
-       ;(printf "and branch~n")
+      [(_ _ _ (list (False-Effect:)) (list (False-Effect:)))
+       #;(printf "and branch~n")
        (let ([t (Un thn-ty (-val #f))])
          (check-below t expected)              
          (ret t 
@@ -206,8 +219,17 @@
               (append (map var->type-eff tst-thn-eff) thn-thn-eff)
               ;; no else effects for and, because any branch could have been false
               (list)))]
+      ;; if the else branch can never happen, just use the effect of the then branch
+      [((Union: (list)) _ _ _ _)
+       (ret thn-ty 
+            ;; we change variable effects to type effects in the test, 
+            ;; because only the boolean result of the test is used
+            ;; whereas, the actual value of the then branch is returned, not just the boolean result
+            thn-thn-eff
+            ;; no else effects for and, because any branch could have been false
+            thn-els-eff)]
       ;; otherwise this expression has no effects
-      [_ 
+      [(_ _ _ _ _)
        (let ([t (Un thn-ty els-ty)])
          (check-below t expected)
          (ret t))])))

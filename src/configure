@@ -5802,6 +5802,12 @@ case $OS in
     GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
+      #Required for CentOS 4.6
+      x86_64)
+       if test -d /usr/X11R6/lib64 ; then
+         X_LIBS="$X_LIBS -L/usr/X11R6/lib64"
+       fi
+       ;;
       ppc)
        if test -d /usr/X11R6/lib ; then
          X_LIBS="$X_LIBS -L/usr/X11R6/lib"

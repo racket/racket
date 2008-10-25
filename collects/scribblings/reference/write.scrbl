@@ -18,7 +18,15 @@ handler is called. Otherwise, the default printer is used (in
 See @secref["printing"] for more information about the default
 printer. In particular, note that @scheme[write] may require memory
 proportional to the depth of the value being printed, due to the
-initial cycle check.}
+initial cycle check.
+
+@examples[
+(write 'hi)
+(write (lambda (n) n))
+(define o (open-output-string))
+(write "hello" o)
+(get-output-string o)
+]}
 
 @defproc[(display [datum any/c][out output-port? (current-output-port)])
          void?]{

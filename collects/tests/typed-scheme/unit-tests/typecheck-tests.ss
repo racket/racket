@@ -141,6 +141,11 @@
         [tc-e (let: ([x : (Un #f Number) 7])
                     (if x (+ x 1) 3))
               N]
+	[tc-e (let: ([x : Number 1])
+		    (if (and (number? x) #t)
+			(+ x 4)
+			'bc))
+	      N]
         [tc-e (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
         [tc-e (begin 3) -Integer]
         [tc-e (begin #f 3) -Integer]
@@ -173,7 +178,7 @@
         
         [tc-e (let: ([x : Number 3])
                     (when (number? x) #t))
-              (-val #t)]      
+              (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
         [tc-e (let: ([x : Number 3])
                     (when (boolean? x) #t))
               -Void]
@@ -330,8 +335,8 @@
         [tc-e (let: ([x : Any 1])
                     (if (and (list? x) (not (null? x)))
                         x
-                        (error 'foo)))
-              (-pair Univ (-lst Univ))]
+                        'foo))
+              (Un (-val 'foo) (-pair Univ (-lst Univ)))]
         
         [tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) -Integer]
         
@@ -370,7 +375,7 @@
                     (if (if (number? x)
                             #t
                             (boolean? x))
-                        (if (boolean? x) 1 x)
+                        (if (boolean? x) 1 (+ 1 x))
                         4))
               N]
         ;; these don't invoke the or rule

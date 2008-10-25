@@ -161,8 +161,16 @@
           (let ([expr
                  ;; just reading the definitions might be a syntax error,
                  ;; possibly due to bad language (eg, no foo/lang/reader)
-                 (with-handlers ([exn? (λ (e) (raise-hopeless-exception
-                                               e "invalid module text"))])
+                 (with-handlers ([exn? (λ (e)
+                    ;; [Eli] FIXME: use `read-language' on `port' after calling
+                    ;; `file-position' to reset it to the beginning (need to
+                    ;; make sure that it's always a seekable port), then see
+                    ;; the position that we're left at, re-read that part of
+                    ;; the port (a second reset), construct a string holding
+                    ;; the #lang, and read from it an empty module, and extract
+                    ;; the base module from it (ask Matthew about this).
+                                         (raise-hopeless-exception
+                                          e "invalid module text"))])
                    (super-thunk))])
             (when (eof-object? expr) (raise-hopeless-syntax-error))
             (let ([more (super-thunk)])
@@ -495,7 +503,7 @@
     (when filename (check-filename-matches filename name* stx))
     (let* (;; rewrite the module to use the scheme/base version of `module'
            [mod  (datum->syntax #'here 'module mod)]
-           [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
+           [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx stx)])
       (values name lang expr)))
   
   ;; get-filename : port -> (union string #f)

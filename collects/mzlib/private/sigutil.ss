@@ -645,7 +645,9 @@
 					 swapped-renames)
 				  (loop (cdr e))
 				  (cons (car e) (loop (cdr e)))))))]
-		   [local-vars (append renamed-internals filtered-exported-names imported-names)]
+		   [local-vars (map (lambda (s)
+                                      (datum->syntax-object expr s))
+                                    (append renamed-internals filtered-exported-names imported-names))]
 		   [expand-context (generate-expand-context)]
 		   [import-stxes (apply append (map (lambda (i) 
 						      (map

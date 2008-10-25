@@ -334,9 +334,10 @@
        (build (second (first pair))
 	      (second pair))))
 
+;; changed to test for integer? before even? check.
 (define: (collatz [n : number]) : number
   (cond [(one? n) 1]
-	[(even? n) (collatz (/ n 2))]
+	[(and (integer? n) (even? n)) (collatz (/ n 2))]
 	[else (collatz (add1 (* 3 n)))]))
 
 

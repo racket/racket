@@ -14,7 +14,7 @@
                ((if eof?
                     raise-read-eof-error 
                     raise-read-error)
-                (format "bad planet path following language-loder syntax~a~a"
+                (format "bad planet path following language-loader syntax~a~a"
                         (if str ": " "")
                         (or str ""))
                 src line col pos
@@ -37,7 +37,7 @@
               (lambda (spec) (lambda () (lambda (tag) #f)))))
 
 (define (planet-read-fn in read-sym args src mod line col pos)
-  (let ([r (planet-get in "/lang/reader" read-sym src mod line col pos
+  (let ([r (planet-get in "/lang/reader" read-sym src #|mod|# line col pos
                        (lambda (spec) 
                          (lambda ()
                            (error 'planet "cannot find reader for `#lang planet ~a'" spec))))])

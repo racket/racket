@@ -44,5 +44,7 @@ primitive PLT Scheme forms.}
 
 Returns a list of identifiers that are bound normally,
 @scheme[for-syntax], and @scheme[for-template] to the primitive PLT
-Scheme forms for expressions. This function is useful for generating a
-list of stopping points to provide to @scheme[local-expand].}
+Scheme forms for expressions and internal-definition positions (so the
+list does not include @scheme[#%require] or @scheme[#%provide]). This
+function is useful for generating a list of stopping points to provide
+to @scheme[local-expand].}

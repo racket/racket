@@ -18,6 +18,7 @@
  syntax/struct
  syntax/stx
  mzlib/trace
+ scheme/list
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract (only-in scheme/class object% is-a?/c subclass?/c)))
 
@@ -39,6 +40,9 @@
              e
              (generate-contract-def e)))
        (syntax->list forms)))
+
+(define (no-duplicates l)
+  (= (length l) (length (remove-duplicates l))))
 
 
 (define (type->contract ty fail)
@@ -97,6 +101,9 @@
                (if rst
                    #'((dom* ...) () #:rest (listof rst*) . ->* . rng*)
                    #'(dom* ...  . -> . rng*))))
+           (unless (no-duplicates (for/list ([t arrs])
+                                    (match t [(arr: dom _ _ _ _ _ _) (length dom)])))
+             (exit (fail)))
 	   (match (map f arrs)
 	     [(list e) e]
 	     [l #`(case-> #,@l)]))]
