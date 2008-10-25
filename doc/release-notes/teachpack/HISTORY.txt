@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Version 4.1.2				  [Sat Oct 25 10:31:05 EDT 2008]
+
+nothing new to report
+
+------------------------------------------------------------------------
 Version 4.1.1				  [Tue Sep 30 10:17:26 EDT 2008]
 
 * world.ss: big-bang can now be re-run after the world has stopped
