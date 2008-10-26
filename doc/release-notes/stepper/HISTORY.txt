@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for v4.1.2:
+
+None.
+
 Changes for v4.1.1:
 
 Check-expect now reduces to a boolean in the stepper. Also, this history file
