@@ -200,6 +200,31 @@
                               "(Debug) Catch internal errors?"
                               (get-field debug-catch-errors? config)))
 
+    ;; fixup-menu : menu -> void
+    ;; Delete separators at beginning/end and duplicates in middle
+    (define/private (fixup-menu menu)
+      (define items
+        (filter (lambda (i) (not (send i is-deleted?)))
+                (send menu get-items)))
+      (define (delete-seps-loop items)
+        (if (and (pair? items) (is-a? (car items) separator-menu-item%))
+            (begin (send (car items) delete)
+                   (delete-seps-loop (cdr items)))
+            items))
+      (define (middle-loop items)
+        (cond
+         [(and (pair? items) (is-a? (car items) separator-menu-item%))
+          (middle-loop (delete-seps-loop (cdr items)))]
+         [(pair? items)
+          (middle-loop (cdr items))]
+         [else null]))
+      (middle-loop (delete-seps-loop items))
+      (delete-seps-loop (reverse items))
+      (void))
+
+    (for ([menu (send (get-menu-bar) get-items)])
+      (fixup-menu menu))
+    (frame:remove-empty-menus this)
     (frame:reorder-menus this)))
 
 ;; Stolen from stepper
