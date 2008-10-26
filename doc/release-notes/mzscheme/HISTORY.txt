@@ -1,3 +1,6 @@
+Version 4.1.2.1
+Extended continuation-marks to work on a thread argument
+
 Version 4.1.2, October 2008
 Changed binding of identifiers introduced by unit signatures
  to take into account the signature use's context
