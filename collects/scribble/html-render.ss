@@ -191,7 +191,7 @@
 (define search-field
   @`p{Search: @(input ([type "text"] [id "search_box"]
                        [onchange "delayed_search(this.value,event);"]
-                       [onkeyup  "delayed_search(this.value,event);"]))})
+                       [onkeyup  "delayed_search(this.value,event);"])))})
 
 )
 
@@ -199,21 +199,23 @@
   (let ([sa         string-append]
         [emptylabel "...search manuals..."]
         [dimcolor   "#888"])
-    `(input
-      ([class "searchbox"]
-       [style ,(sa "color: "dimcolor";")]
-       [type "text"]
-       [value ,emptylabel]
-       [title "Enter a search string to search the manuals"]
-       [onkeypress ,(format "return DoSearchKey(event, this, ~s, ~s);"
-                            (version) top-path)]
-       [onfocus ,(sa "this.style.color=\"black\"; "
-                     "this.style.textAlign=\"left\"; "
-                     "if (this.value == \""emptylabel"\") this.value=\"\";")]
-       [onblur ,(sa "if (this.value.match(/^ *$/)) {"
-                    " this.style.color=\""dimcolor"\";"
-                    " this.style.textAlign=\"center\";"
-                    " this.value=\""emptylabel"\"; }")]))))
+    `(form
+      ([class "searchform"])
+      (input
+       ([class "searchbox"]
+        [style ,(sa "color: "dimcolor";")]
+        [type "text"]
+        [value ,emptylabel]
+        [title "Enter a search string to search the manuals"]
+        [onkeypress ,(format "return DoSearchKey(event, this, ~s, ~s);"
+                             (version) top-path)]
+        [onfocus ,(sa "this.style.color=\"black\"; "
+                      "this.style.textAlign=\"left\"; "
+                      "if (this.value == \""emptylabel"\") this.value=\"\";")]
+        [onblur ,(sa "if (this.value.match(/^ *$/)) {"
+                     " this.style.color=\""dimcolor"\";"
+                     " this.style.textAlign=\"center\";"
+                     " this.value=\""emptylabel"\"; }")])))))
 (define search-box (make-search-box "../"))
 (define top-search-box (make-search-box ""))
 
