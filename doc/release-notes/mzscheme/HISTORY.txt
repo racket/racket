@@ -1,8 +1,10 @@
-Version 4.1.1.2
+Version 4.1.2, October 2008
+Changed binding of identifiers introduced by unit signatures
+ to take into account the signature use's context
+Added make-syntax-delta-introducer
+Changed continuation-marks to accept a thread argument
 Added eqv-based hash tables
 Added hash-update and hash-update!
-
-Version 4.1.1.1
 Changed -X and -S to complete directory relative to pwd, and
  changed -S to add after main collects
 
