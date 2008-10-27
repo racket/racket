@@ -2165,8 +2165,10 @@ native_unclosed_proc {
   int i;
 
   gcMARK(d->u2.name);
-  for (i = d->retain_count; i--; ) {
-    gcMARK(d->retained[i]);
+  if (d->retained) {
+    for (i = SCHEME_INT_VAL(d->retained[0]); i--; ) {
+      gcMARK(d->retained[i]);
+    }
   }
   if (d->closure_size < 0) {
     gcMARK(d->u.arities);

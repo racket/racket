@@ -62,11 +62,10 @@ scheme_init_vector (Scheme_Env *env)
 						    "vector-immutable", 
 						    0, -1), 
 			     env);
-  scheme_add_global_constant("vector-length", 
-			     scheme_make_folding_prim(vector_length, 
-						      "vector-length", 
-						      1, 1, 1), 
-			     env);
+  
+  p = scheme_make_folding_prim(vector_length, "vector-length", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("vector-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_vector_ref, 
 			     "vector-ref", 
@@ -208,6 +207,13 @@ vector_length (int argc, Scheme_Object *argv[])
     scheme_wrong_type("vector-length", "vector", 0, argc, argv);
 
   return scheme_make_integer(SCHEME_VEC_SIZE(argv[0]));
+}
+
+Scheme_Object *scheme_vector_length(Scheme_Object *v)
+{
+  Scheme_Object *a[1];
+  a[0] = v;
+  return vector_length(1, a);
 }
 
 static Scheme_Object *

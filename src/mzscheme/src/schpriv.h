@@ -1970,7 +1970,6 @@ typedef struct Scheme_Native_Closure_Data {
   } u2;
 #ifdef MZ_PRECISE_GC
   void **retained; /* inside code */
-  mzshort retain_count;
 #endif
 } Scheme_Native_Closure_Data;
 
@@ -3049,6 +3048,7 @@ Scheme_Object *scheme_checked_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_vector_length(Scheme_Object *v);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 

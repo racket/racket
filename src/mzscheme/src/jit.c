@@ -125,6 +125,7 @@ static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
 static void *bad_mcar_code, *bad_mcdr_code;
 static void *bad_set_mcar_code, *bad_set_mcdr_code;
 static void *bad_unbox_code;
+static void *bad_vector_length_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
@@ -445,8 +446,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 #ifdef MZ_PRECISE_GC
       if (ndata) {
 	memset(jitter->retain_start, 0, num_retained * sizeof(void*));
-	ndata->retained = jitter->retain_start;
-	ndata->retain_count = num_retained;
+	ndata->retained = (num_retained ? jitter->retain_start : NULL);
 	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained);
 	GC_set_finalizer(fnl_obj, 1, 3,
 			 release_native_code, buffer,
@@ -464,6 +464,11 @@ static void *generate_one(mz_jit_state *old_jitter,
     jitter->self_pos = 1; /* beyond end of stack */
     jitter->self_toplevel_pos = -1;
     jitter->status_at_ptr = NULL;
+
+    /* Leave room for retained size on first pass, 
+       install it if needed) on second pass:*/
+    if (!known_size || num_retained)
+      mz_retain_it(jitter, (void *)scheme_make_integer(num_retained));
 
     ok = generate(jitter, data);
 
@@ -503,6 +508,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 	  known_size += (JIT_WORD_SIZE - (known_size & (JIT_WORD_SIZE - 1)));
 	}
 	num_retained = jitter->retained;
+        if (num_retained == 1)  num_retained = 0;
 	/* Keep this buffer? Don't if it's too big, or if it's
 	   a part of old_jitter, or if there's already a bigger
 	   cache. */
@@ -3870,6 +3876,36 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "vector-length")) {
+      GC_CAN_IGNORE jit_insn *reffail, *ref;
+
+      LOG_IT(("inlined vector-length\n"));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      __START_TINY_JUMPS__(1);
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      __END_TINY_JUMPS__(1);
+
+      reffail = _jit.x.pc;
+      (void)jit_jmpi(bad_vector_length_code);
+
+      __START_TINY_JUMPS__(1);
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R1, scheme_vector_type);
+      __END_TINY_JUMPS__(1);
+
+      (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
+      jit_lshi_l(JIT_R0, JIT_R0, 1);
+      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unbox")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
 
@@ -6179,6 +6215,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_unbox);
+  CHECK_LIMIT();
+
+  /* *** bad_vector_length_code *** */
+  /* R0 is argument */
+  bad_vector_length_code = jit_get_ip().ptr;
+  jit_prepare(1);
+  jit_pusharg_i(JIT_R0);
+  (void)mz_finish(scheme_vector_length);
   CHECK_LIMIT();
 
   /* *** call_original_unary_arith_code *** */

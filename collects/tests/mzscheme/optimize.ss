@@ -329,6 +329,9 @@
     (bin-exact 'b 'vector-ref #(a b c) 1)
     (bin-exact 'c 'vector-ref #(a b c) 2)
 
+    (un-exact 'a 'unbox (box 'a))
+    (un-exact 3 'vector-length (vector 'a 'b 'c))
+
     (bin-exact #\a 'string-ref "abc\u2001" 0)
     (bin-exact #\b 'string-ref "abc\u2001" 1)
     (bin-exact #\c 'string-ref "abc\u2001" 2)
