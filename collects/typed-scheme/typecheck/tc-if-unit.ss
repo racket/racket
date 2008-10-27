@@ -52,6 +52,8 @@
       (if (null? effs)
           ;; base case
           (let* ([reachable? (not (unbox flag))])
+            (unless reachable?
+              (warn-unreachable expr))
             (cond
               ;; if flag is true, then we don't want to verify that this branch has the appropriate type
               ;; in particular, it might be (void)
