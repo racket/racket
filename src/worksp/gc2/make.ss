@@ -206,13 +206,19 @@
      #f)
 
 (c-compile "../../mzscheme/gc2/gc2.c" "xsrc/gc2.obj"
-	   (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
-		'("gc2.c"
-		  "compact.c"
-		  "newgc.c"
-		  "vm_win.c"
-		  "sighand.c"
-		  "msgprint.c"))
+           (append
+	    (map (lambda (f) (build-path "../../mzscheme/" f))
+		 '("include/scheme.h"
+		   "src/stypes.h"))
+	    (map (lambda (f) (build-path "../../mzscheme/gc2/" f))
+		 '("gc2.c"
+		   "compact.c"
+		   "newgc.c"
+		   "vm_win.c"
+		   "sighand.c"
+		   "msgprint.c"
+		   "gc2.h"
+		   "gc2_obj.h")))
 	   (string-append
 	    "/D GC2_AS_EXPORT "
 	    (if accounting-gc?
