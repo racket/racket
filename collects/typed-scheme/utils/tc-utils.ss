@@ -36,9 +36,8 @@
   (let ([l (current-logger)])
     (when (and (warn-unreachable?)
                (log-level? l 'warning)
-               (printf "~a~n~a~n" (syntax-source-module e) (syntax-source-module (orig-module-stx)))
-               (eq? (syntax-source-module e) (syntax-source-module (orig-module-stx)))               
-               #;(syntax-source-module e))
+               (eq? (syntax-source-module e) (syntax-source-module (orig-module-stx)))
+	       (syntax-source-module e))
       (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~e" (syntax->datum (locate-stx e)))
                    e))))
 
