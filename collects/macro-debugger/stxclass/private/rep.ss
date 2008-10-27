@@ -10,6 +10,7 @@
          (struct-out attr)
          (struct-out rhs)
          (struct-out rhs:union)
+         (struct-out rhs:basic)
          (struct-out rhs:pattern)
          (struct-out pattern)
          (struct-out pat:id)
@@ -44,18 +45,21 @@
 (define-struct attr (name depth inner)
   #:transparent)
 
-;; RHSBase is stx (listof SAttr)
-(define-struct rhs (orig-stx attrs)
+;; RHSBase is stx (listof SAttr) boolean string/#f
+(define-struct rhs (orig-stx attrs transparent? description)
   #:transparent)
 
-;; A RHS is 
+;; A RHS is one of
 ;;   (make-rhs:union <RHSBase> (listof RHS))
-(define-struct (rhs:union rhs) (transparent? description patterns)
+;;   (make-rhs:basic <RHSBase> stx)
+(define-struct (rhs:union rhs) (patterns)
+  #:transparent)
+(define-struct (rhs:basic rhs) (parser)
   #:transparent)
 
 ;; An RHSPattern is
-;;   (make-rhs:pattern <RHSBase> Pattern Env Env (listof SideClause))
-(define-struct (rhs:pattern rhs) (pattern decls remap wheres)
+;;   (make-rhs:pattern stx (listof SAttr) Pattern Env Env (listof SideClause))
+(define-struct rhs:pattern (stx attrs pattern decls remap wheres)
   #:transparent)
 
 ;; A Pattern is one of
@@ -230,25 +234,50 @@
 (define (parse-rhs* stx allow-unbound? splice? ctx)
   (define-values (chunks rest)
     (chunk-kw-seq stx rhs-directive-table #:context ctx))
-  (define lits (assq '#:literals chunks))
-  (define desc (assq '#:description chunks))
-  (define trans (assq '#:transparent chunks))
-  (define literals (if lits (caddr lits) null))
-  (define (gather-patterns stx)
-    (syntax-case stx (pattern)
-      [((pattern . _) . rest)
-       (cons (parse-rhs-pattern (stx-car stx) allow-unbound? splice? literals)
-             (gather-patterns #'rest))]
-      [()
-       null]))
-  (define patterns (gather-patterns rest))
-  (when (null? patterns)
-        (raise-syntax-error #f "syntax class has no variants" ctx))
-  (let ([sattrs (intersect-attrss (map rhs-attrs patterns) ctx)])
-    (make rhs:union stx sattrs 
-          (and desc (caddr desc)) 
-          (and trans #t)
-          patterns)))
+  (define lits0 (assq '#:literals chunks))
+  (define desc0 (assq '#:description chunks))
+  (define trans0 (assq '#:transparent chunks))
+  (define literals (if lits0 (caddr lits0) null))
+  (define description (and desc0 (caddr desc0)))
+  (define transparent? (and trans0 #t))
+
+  (define (parse-rhs*-basic rest)
+    (syntax-case rest (basic-syntax-class)
+      [((basic-syntax-class ([attr depth] ...) parser-expr))
+       (make rhs:basic stx 
+             (for/list ([attr-stx (syntax->list #'([attr depth] ...))])
+               (syntax-case attr-stx ()
+                 [(attr depth)
+                  (begin (unless (and (identifier? #'attr) 
+                                      (exact-nonnegative-integer? (syntax-e #'depth)))
+                           (raise-syntax-error #f "bad attribute declaration" stx attr-stx))
+                         (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]))
+             description
+             transparent?
+             #'parser-expr)]))
+
+  (define (parse-rhs*-patterns rest)
+    (define (gather-patterns stx)
+      (syntax-case stx (pattern)
+        [((pattern . _) . rest)
+         (cons (parse-rhs-pattern (stx-car stx) allow-unbound? splice? literals)
+               (gather-patterns #'rest))]
+        [()
+         null]))
+    (define patterns (gather-patterns rest))
+    (when (null? patterns)
+      (raise-syntax-error #f "syntax class has no variants" ctx))
+    (let ([sattrs (intersect-attrss (map rhs:pattern-attrs patterns) ctx)])
+      (make rhs:union stx sattrs 
+            description
+            transparent?
+            patterns)))
+  
+  (syntax-case rest (pattern basic-syntax-class)
+    [((basic-syntax-class . _))
+     (parse-rhs*-basic rest)]
+    [_
+     (parse-rhs*-patterns rest)]))
 
 ;; parse-rhs-pattern : stx boolean boolean (listof identifier) -> RHS
 (define (parse-rhs-pattern stx allow-unbound? splice? literals)

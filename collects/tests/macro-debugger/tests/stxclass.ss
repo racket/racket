@@ -2,9 +2,8 @@
 
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2 9))
          (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2 9))
-         "sc.ss"
-         "lib.ss"
-         (for-syntax scheme/base "sc.ss" "lib.ss"))
+         macro-debugger/stxclass/stxclass
+         (for-syntax scheme/base macro-debugger/stxclass/stxclass))
 
 ;; Testing stuff
 
@@ -30,17 +29,17 @@
   (pattern (a b c)))
 
 (define-syntax-class two-or-three/flat
-  (union (pattern (a b))
-         (pattern (a b c))))
+  (pattern (a b))
+  (pattern (a b c)))
 
 (define-syntax-class two-or-three/tag
-  (union (pattern a:two)
-         (pattern a:three)))
+  (pattern a:two)
+  (pattern a:three))
 
 (define-syntax-class two-to-four/untagged
-  (union two
-         three
-         (pattern (a b c d))))
+  (pattern :two)
+  (pattern :three)
+  (pattern (a b c d)))
 
 (define-syntax-class xs
   (pattern (x ...)))
@@ -226,18 +225,18 @@
   (loop ns -inf.0))
 
 (define-syntax madd1
-  (syntax-patterns
+  (syntax-parser
    [(_ e:expr/num)
     #'(+ 1 e)]))
 
 (define-syntax mapp-to-1
-  (syntax-patterns
+  (syntax-parser
    [(_ e)
     #:declare e expr/num->num
     #'(e 1)]))
 
 (define-syntax bad-mapp-to-1
-  (syntax-patterns
+  (syntax-parser
    [(_ e:expr/num->num)
     #'(e 'whoa)]))
 
@@ -253,20 +252,18 @@
            #:declare e (expr/c #'number?)))
 
 (define-syntax-class cond-clauses
-  (union
-   (pattern ([#:else answer])
-            #:with tests (list #'#t)
-            #:with answers (list #'answer))
-   (pattern ([test answer] . more:cond-clauses)
-            #:with tests (cons #'test #'more.tests)
-            #:with answers (cons #'answer #'more.answers))
-   (pattern ([test #:=> answer] . more:cond-clauses)
-            #:with tests (cons #'test #'more.tests)
-            #:with answers (cons #'answer #'more.answers))
-   (pattern ()
-            #:with tests null
-            #:with answers null)))
-
+  (pattern ([#:else answer])
+           #:with tests (list #'#t)
+           #:with answers (list #'answer))
+  (pattern ([test answer] . more:cond-clauses)
+           #:with tests (cons #'test #'more.tests)
+           #:with answers (cons #'answer #'more.answers))
+  (pattern ([test #:=> answer] . more:cond-clauses)
+           #:with tests (cons #'test #'more.tests)
+           #:with answers (cons #'answer #'more.answers))
+  (pattern ()
+           #:with tests null
+           #:with answers null))
 
 (define-syntax-class zork
   (pattern f:frob))

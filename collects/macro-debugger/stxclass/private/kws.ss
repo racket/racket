@@ -4,7 +4,6 @@
 (provide pattern
          ...*
 
-         try
          with-enclosing-fail
          enclosing-fail
 
@@ -57,6 +56,7 @@
       (raise-syntax-error #f "keyword used out of context" stx))))
 
 (define-keyword pattern)
+(define-keyword basic-syntax-class)
 (define-keyword ...*)
 (define-keyword ...**)
 
@@ -99,32 +99,3 @@
                          (make-rename-transformer (quote-syntax failvar))))
     expr))
 
-(define-syntax try
-  (syntax-rules ()
-    [(try failvar (expr0))
-     expr0]
-    [(try failvar (expr0 . exprs))
-     (let ([failvar
-            (lambda (x1 p1 r1 f1)
-              (let ([failvar
-                     (lambda (x2 p2 r2 f2)
-                       (choose-error failvar x1 x2 p1 p2 r1 r2 f1 f2))])
-                (try failvar exprs)))])
-       expr0)]))
-
-(define (choose-error k x1 x2 p1 p2 r1 r2 frontier1 frontier2)
-  (define (go1) (k x1 p1 r1 frontier1))
-  (define (go2) (k x2 p2 r2 frontier2))
-  (let loop ([f1 frontier1] [f2 frontier2])
-    (cond [(and (null? f1) (null? f2))
-           ;; FIXME: merge
-           (let ([p (and p1 p2 (format "~a; or ~a" p1 p2))])
-             (k x1 p #f frontier1))]
-          [(and (pair? f1) (null? f2)) (go1)]
-          [(and (null? f1) (pair? f2)) (go2)]
-          [(and (pair? f1) (pair? f2))
-           (let ([c1 (cadr f1)]
-                 [c2 (cadr f2)])
-             (cond [(> c1 c2) (go1)]
-                   [(< c1 c2) (go2)]
-                   [else (loop (cddr f1) (cddr f2))]))])))

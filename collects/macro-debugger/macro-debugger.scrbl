@@ -173,7 +173,7 @@ process, and it gives the user controls to step forward or backwards
 as well as to jump to the beginning or end of the expansion process.
 
 If the macro stepper is showing multiple expansions, then it also
-provides "Previous term" and "Next term" buttons to go up and down in
+provides ``Previous term'' and ``Next term'' buttons to go up and down in
 the list of expansions. Horizontal lines delimit the current expansion
 from the others.
 
@@ -186,8 +186,8 @@ shows the expansion of their subterms.
 
 The bottom panel of the macro stepper controls the macro hiding
 policy. The user changes the policy by selecting an identifier in the
-syntax browser pane and then clicking one of "Hide module", "Hide
-macro", or "Show macro". The new rule appears in the policy display,
+syntax browser pane and then clicking one of ``Hide module'', ``Hide
+macro'', or ``Show macro''. The new rule appears in the policy display,
 and the user may later remove it using the "Delete" button.
 
 The stepper also offers coarser-grained options that can hide
@@ -200,7 +200,9 @@ begin forms are not spliced into module or block bodies, etc.
 
 @section{Using the syntax browser}
 
-@subsection{Selection (bold)}
+@subsection{Selection}
+
+The selection is indicated by bold text.
 
 The user can click on any part of a subterm to select it. To select a
 parenthesized subterm, click on either of the parentheses. The
@@ -213,7 +215,9 @@ object in the properties panel on the right, when that panel is
 shown. The selected syntax also determines the highlighting done by
 the secondary partitioning (see below).
 
-@subsection{Primary partition (foreground color)}
+@subsection{Primary partition}
+
+The primary partition is indicated by foreground color.
 
 The primary partitioning always assigns two syntax subterms the same
 color if they have the same marks. In the absence of unhygienic
@@ -225,13 +229,18 @@ Syntax colored in black always corresponds to unmarked syntax. Such
 syntax may be original, or it may be produced by the expansion of a
 nonhygienic macro.
 
-@subsection{Secondary partitioning (highlight)}
+Note: even terms that have the same marks might not be
+@scheme[bound-identifier=?] to each other, because they might occur in
+different environments.
 
-The user may select a *secondary partitioning* from a drop-down box
-(or in the macro stepper, through the Syntax menu). This partitioning
-applies only to identifiers. When the user selects an identifier, all
-terms in the same equivalence class as the selected term are
-highlighted in yellow.
+@;@example[(bound-identifier=? (let ([x 1]) #'x) #'x)]
+
+@subsection{Secondary partitioning}
+
+The user may select a secondary partitioning through the Syntax
+menu. This partitioning applies only to identifiers. When the user
+selects an identifier, all terms in the same equivalence class as the
+selected term are highlighted in yellow.
 
 The available secondary partitionings are:
 @itemize{
@@ -259,67 +268,25 @@ The available secondary partitionings are:
 @subsection{Properties}
 
 When the properties pane is shown, it displays properties of the
-selected syntax object. The properties pane has three tabbed pages:
+selected syntax object. The properties pane has two tabbed pages:
 
-  - Binding
+@itemize{
+@item{@bold{Term}:
 
       If the selection is an identifier, shows the binding information
-      associated with the syntax object.
+      associated with the syntax object. For more information, see
+      @scheme[identifier-binding], etc.
+}
+@item{@bold{Syntax Object}:
 
-      *Note: See the warning in the section below.
+      Displays source location information and other properties (see
+      @scheme[syntax-property]) carried by the syntax object.
+}
+}
 
-      For more information, look up 'identifier-binding',
-      'identifier-transformer-binding', and
-      'identifier-template-binding' in the Help Desk.
+@subsection{Interpreting syntax}
 
-  - Source
-
-      Displays source location information about the syntax object.
-
-  - Properties
-
-      Displays properties (see 'syntax-property') of the selection
-      when it has properties it knows the keys for.
-
-@subsection{Warnings about interpreting syntax}
-
-The binding information of a *syntax object* may not be the same as
-the binding structure of the *program* it represents. The binding
-structure of a *program* is only determined after macro expansion is
+The binding information of a syntax object may not be the same as
+the binding structure of the program it represents. The binding
+structure of a program is only determined after macro expansion is
 complete.
-
-For example, in @schemeblock[(browse-syntax #'(lambda (foo) foo))]
-the syntax browser will report that the inner 'foo' is unbound, even
-though in the *program* that this syntax represents, the inner 'foo'
-is bound to the outer 'foo'.
-
-@subsection{Notes and Limitations}
-
-The syntax browser does not have a way of extending the set of
-available secondary partitions.
-
-The syntax browser does not have a way of extending the set of known
-properties.
-
-The syntax browser does not preserve the distinction between
-parentheses and square brackets.
-
-
-@section{Notes for DrScheme language implementors}
-
-The macro stepper works "out of the box" only with certain languages
-out of all the languages available from the DrScheme languages
-menu. For example, the macro stepper is disabled for the teaching
-languages.
-
-An implementor of a new DrScheme language can designate their language
-"macro-steppable" by overriding the 'enable-macro-stepper?' method of
-their implementation of 'drscheme:language:language<%>'. The default
-implementation in the mixin provided by
-'drscheme:language:get-default-mixin' returns false; override this
-method to return true if the macro stepper button should be shown for
-this language.
-
-Note: There is currently no way to customize the behavior of the macro
-stepper for different languages. When enabled, the macro stepper sees
-exactly those terms that pass through the 'current-eval' handler.
