@@ -98,11 +98,11 @@
            (require (prefix x: (lib "list.ss")) (lib "list.ss")))}
       @t{x:foldl}
       #rx"foldl>")
-(test @t{(module m (file "@in-here{module-lang-test-tmp1.ss}") x)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) x)}
       @t{x}
       "1")
 ;; + shouldn't be bound in the REPL because it isn't bound in the module.
-(test @t{(module m (file "@in-here{module-lang-test-tmp1.ss}") x)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) x)}
       @t{+}
       ". . reference to an identifier before its definition: +")
 (test @t{(module m mzscheme (provide lambda))}
@@ -138,7 +138,7 @@
       @t{a}
       "78")
 (test @t{(module m mzscheme
-           (require-for-syntax (file "@in-here{module-lang-test-tmp2.ss}"))
+           (require-for-syntax (file @in-here{module-lang-test-tmp2.ss}))
            (provide s)
            (define-syntax (s stx) e))}
       @t{(require m) s}
@@ -160,7 +160,7 @@
       #f
       @rx{. compile: bad syntax; reference to top-level identifier is not
           allowed, because no #%top syntax transformer is bound in: cons})
-(test @t{(module m (file "@in-here{module-lang-test-tmp1.ss}") 1 2 3)}
+(test @t{(module m (file @in-here{module-lang-test-tmp1.ss}) 1 2 3)}
       @t{1} ;; just make sure no errors.
       "1")
 
@@ -195,7 +195,7 @@
           Interactions disabled:
           does not support a REPL \(no #%top-interaction\)}
       #t)
-(test @t{(module xx (file "@in-here{module-lang-test-tmp4.ss}")
+(test @t{(module xx (file @in-here{module-lang-test-tmp4.ss})
            (define x 1)
            (* x 123))}
       #f
@@ -205,7 +205,7 @@
           does not support a REPL \(no #%top-interaction\)
           }
       #t)
-(test @t{(module xx (file "@in-here{this-file-does-not-exist}")
+(test @t{(module xx (file @in-here{this-file-does-not-exist})
            (define x 1)
            (* x 123))}
       #f

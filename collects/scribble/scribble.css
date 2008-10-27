@@ -101,6 +101,12 @@ table td {
   color: #e0e0e0;
 }
 
+.searchform {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
 .searchbox {
   width: 16em;
   margin: 0px;

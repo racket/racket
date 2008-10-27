@@ -943,7 +943,7 @@ static void *get_backtrace(struct mpage *page, void *ptr)
   unsigned long delta;
 
   if (page->big_page)
-    ptr = PTR(page->addr + PREFIX_SIZE + WORD_SIZE);
+    ptr = PTR((char *)page->addr + PREFIX_SIZE + WORD_SIZE);
 
   delta = PPTR(ptr) - PPTR(page->addr);
   return page->backtrace[delta - 1];
