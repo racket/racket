@@ -1041,10 +1041,11 @@
                        (cond
                          [(preferences:get 'framework:white-on-black?)
                           (send on-sd set-delta-foreground "white")
-                          (send off-sd set-delta-foreground "indianred")]
+                          (send off-sd set-delta-background "indianred")]
                          [else
                           (send on-sd set-delta-foreground "black")
-                          (send off-sd set-delta-foreground "firebrick")])
+                          (send off-sd set-delta-foreground "lightgray")
+                          (send off-sd set-delta-background "firebrick")])
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
