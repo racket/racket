@@ -32,7 +32,7 @@
                     (let ([name 
                            (cond
                              [(symbol? (object-name proc))
-                              (format "~a" (object-name proc))]
+                              (format "~a:~a" (object-name proc) counter)]
                              [(and line col)
                               (format "~a:~a.~a:~a" src line col counter)]
                              [else
