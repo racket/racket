@@ -466,7 +466,7 @@
 [datum->syntax (cl->*
                 (-> (-opt (-Syntax Univ)) Sym (-Syntax Sym))
                 (-> (-opt (-Syntax Univ)) Univ (-Syntax Univ)))]
-[syntax->datum (-poly (a) (-> (-Syntax a) Univ))]
+[syntax->datum (-> (-Syntax Univ) Univ)]
 [syntax-e (-poly (a) (-> (-Syntax a) a))]
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [identifier? (make-pred-ty (-Syntax Sym))]
