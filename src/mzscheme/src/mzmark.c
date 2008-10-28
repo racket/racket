@@ -2071,6 +2071,7 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->insp);
 
   gcMARK(e->rename_set);
+  gcMARK(e->temp_marked_names);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
@@ -2105,6 +2106,7 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->insp);
 
   gcFIXUP(e->rename_set);
+  gcFIXUP(e->temp_marked_names);
 
   gcFIXUP(e->syntax);
   gcFIXUP(e->exp_env);

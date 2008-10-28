@@ -1743,31 +1743,36 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
   return val;
 }
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, 
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, 
+                                int mode, /* -1, 0 => lookup; 2, 3 => define
+                                             -1 and 3 => use temp table
+                                             1 would mean define if no match; not currently used */
                                 Scheme_Object *phase, int *_skipped)
 /* The `env' argument can actually be a hash table. */
 {
   Scheme_Object *marks = NULL, *sym, *map, *l, *a, *amarks, *m, *best_match, *cm, *abdg;
   int best_match_skipped, ms, one_mark;
-  Scheme_Hash_Table *marked_names;
+  Scheme_Hash_Table *marked_names, *temp_marked_names, *dest_marked_names;
 
   sym = SCHEME_STX_SYM(id);
 
   if (_skipped)
     *_skipped = 0;
 
-  if (SCHEME_HASHTP((Scheme_Object *)env))
+  if (SCHEME_HASHTP((Scheme_Object *)env)) {
     marked_names = (Scheme_Hash_Table *)env;
-  else {
+    temp_marked_names = NULL;
+  } else {
     /* If there's no table and we're not defining, bail out fast */
-    if (!is_def && !env->rename_set)
+    if ((mode <= 0) && !env->rename_set)
       return sym;
     marked_names = scheme_get_module_rename_marked_names(env->rename_set,
                                                          phase ? phase : scheme_make_integer(env->phase),
                                                          0);
+    temp_marked_names = env->temp_marked_names;
   }
 
-  if (is_def) {
+  if (mode > 0) {
     /* If we're defining, see if we need to create a table.  Getting
        marks is relatively expensive, but we only do this once per
        definition. */
@@ -1784,12 +1789,23 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
                                                          phase ? phase : scheme_make_integer(env->phase),
                                                          1);
   }
+  if (!temp_marked_names && (mode > 2)) {
+    /* The "temp" marked name table is used to correlate marked module
+       requires with similarly marked provides. We don't go through
+       the normal rename table because (for efficiency) the marks in
+       this case are handled more directly in the shared_pes module
+       renamings. */
+    temp_marked_names = scheme_make_hash_table(SCHEME_hash_ptr);
+    env->temp_marked_names = temp_marked_names;
+  }
   
   map = scheme_hash_get(marked_names, sym);
+  if (!map && ((mode < 0) || (mode > 2)) && temp_marked_names)
+    map = scheme_hash_get(temp_marked_names, sym);
 
   if (!map) {
     /* If we're not defining, we can bail out before extracting marks. */
-    if (!is_def)
+    if (mode <= 0)
       return sym;
     else
       map = scheme_null;
@@ -1833,7 +1849,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
       abdg = NULL;
 
     if (SAME_OBJ(abdg, bdg)) {
-      if (is_def) {
+      if (mode > 0) {
 	if (scheme_equal(amarks, marks)) {
 	  best_match = SCHEME_CDR(a);
 	  break;
@@ -1873,7 +1889,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
   }
 
   if (!best_match) {
-    if (!is_def) {
+    if (mode <= 0) {
       return sym;
     }
 
@@ -1883,7 +1899,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        "redundant" module renamings wouldn't be redundant. (See
        simpify in stxobj.c.) So check for a context-determined
        existing rename. */
-    if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (is_def != 2)) {
+    if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (mode < 2)) {
       Scheme_Object *mod, *nm = id;
       mod = scheme_stx_module_name(&nm, scheme_make_integer(env->phase), NULL, NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
@@ -1925,11 +1941,14 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 	best_match = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
 	if (!scheme_stx_parallel_is_used(best_match, id)) {
-	  /* Also check environment's rename tables. This
-	     last check turns out to matter for compiling in
-	     `module->namespace' contexts, because no renaming
-	     is added after expansion to record the rename table. */
-	  if (!scheme_tl_id_is_sym_used(marked_names, best_match)) {
+	  /* Also check environment's rename tables. This last check
+	     includes the temp table. It also turns out to matter for
+	     compiling in `module->namespace' contexts, because no
+	     renaming is added after expansion to record the rename
+	     table. */
+	  if (!scheme_tl_id_is_sym_used(marked_names, best_match)
+              && (!temp_marked_names
+                  || !scheme_tl_id_is_sym_used(temp_marked_names, best_match))) {
 	    /* Ok, no matches, so this name is fine. */
 	    break;
 	  }
@@ -1947,10 +1966,11 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
     a = scheme_make_pair(marks, best_match);
     map = scheme_make_pair(a, map);
     
-    scheme_hash_set(marked_names, sym, map);
+    dest_marked_names = ((mode < 0) || (mode > 2)) ? temp_marked_names : marked_names;
+    scheme_hash_set(dest_marked_names, sym, map);
     {
       Scheme_Hash_Table *rev_ht;
-      rev_ht = (Scheme_Hash_Table *)scheme_hash_get(marked_names, scheme_false);
+      rev_ht = (Scheme_Hash_Table *)scheme_hash_get(dest_marked_names, scheme_false);
       if (rev_ht) {
         scheme_hash_set(rev_ht, best_match, scheme_true);
       }
