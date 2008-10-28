@@ -608,6 +608,8 @@
 		   (if prop
 		       `(,#'stx-prop ,mk 'paren-shape ,prop)
 		       mk)))]
+	      [(null? v) 'null]
+              [(list? v) `(list . ,(map stx->loc-s-expr v))]
 	      [(pair? v) `(cons ,(stx->loc-s-expr (car v))
 				,(stx->loc-s-expr (cdr v)))]
 	      [(vector? v) `(vector ,@(map
@@ -619,7 +621,6 @@
 				       stx->loc-s-expr
 				       (cdr (vector->list (struct->vector v)))))]
 	      [(box? v) `(box ,(stx->loc-s-expr (unbox v)))]
-	      [(null? v) 'null]
 	      [else `(quote ,v)]))
 	   (define (cvt s)
 	     (datum->syntax #'here (stx->loc-s-expr s) #f))
