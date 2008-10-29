@@ -20,9 +20,8 @@
 (define (write-test-passwords!)
   (with-output-to-file test-passwords
     (lambda ()
-      (with-input-from-file default-passwords
-        (lambda ()
-          (write (read)))))
+      (write ''(("secret stuff" "/secret(/.*)?" (bubba "bbq") (|Billy| "BoB")
+                                (aladdin "open sesame")))))
     #:exists 'truncate/replace))
 
 (write-test-passwords!)
