@@ -473,8 +473,8 @@
         [tc-err (call-with-values (lambda () (values 2 1))
                                   (lambda: ([x : String] [y : Number]) (+ x y)))]
         ;; quote-syntax
-        [tc-e #'3 Any-Syntax]
-        [tc-e #'(1 2 3) Any-Syntax]
+        [tc-e #'3 (-Syntax -Integer)]
+        [tc-e #'(1 2 3) (-Syntax (-lst* -Integer -Integer -Integer))]
         
         ;; testing some primitives
         [tc-e (let ([app apply]
@@ -647,6 +647,12 @@
                          (apply y zs))
                        ys)))
               (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
+        
+        [tc-e (lambda: ((x : (All (t) t)))
+                       ((inst (inst x (All (t) (t -> t))) 
+                              (All (t) t))
+                        x))
+              ((-poly (a) a)  . -> . (-poly (a) a))]
         
         ;; We need to make sure that even if a isn't free in the dotted type, that it gets replicated
         ;; appropriately.
