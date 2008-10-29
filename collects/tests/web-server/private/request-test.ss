@@ -41,7 +41,10 @@
     "Headers"
     (test-equal? "Simple" (header-value (headers-assq #"key" (list (make-header #"key" #"val")))) #"val")
     (test-false "Not present" (headers-assq #"key" (list)))
-    (test-equal? "Case" (header-value (headers-assq* #"Key" (list (make-header #"key" #"val")))) #"val"))
+    (test-false "Case (not present)" (headers-assq* #"Key" (list)))
+    (test-equal? "Case" (header-value (headers-assq* #"Key" (list (make-header #"key" #"val")))) #"val")
+    (test-equal? "Case (not first)"
+                 (header-value (headers-assq* #"Key" (list (make-header #"key1" #"val") (make-header #"key" #"val")))) #"val"))
    
    (test-suite
     "Bindings"
