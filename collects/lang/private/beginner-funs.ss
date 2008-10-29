@@ -374,35 +374,35 @@
       (string-append (string ... -> string)
 	"to juxtapose the characters of several strings")
     
-      (string=? (string string ... -> boolean)
+      (string=? (string string string ... -> boolean)
 	"to compare two strings character-wise")
-      (string<? (string string ... -> boolean)
+      (string<? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" precedes another")
-      (string>? (string string ... -> boolean)
+      (string>? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" succeeds another")
-      (string<=? (string string ... -> boolean)
+      (string<=? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" precedes another (or is equal to it)")
-      (string>=? (string string ... -> boolean)
+      (string>=? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" succeeds another (or is equal to it)")
     
-      (string-ci=? (string string ... -> boolean)
+      (string-ci=? (string string string ... -> boolean)
 	"to compare two strings character-wise"
 	" in a case-insensitive manner")
-      (string-ci<? (string string ... -> boolean)
+      (string-ci<? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" precedes another in a case-insensitive manner")
-      (string-ci>? (string string ... -> boolean)
+      (string-ci>? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" succeeds another in a case-insensitive manner")
-      (string-ci<=? (string string ... -> boolean)
+      (string-ci<=? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" precedes another (or is equal to it)"
 	" in a case-insensitive manner")
-      (string-ci>=? (string string ... -> boolean)
+      (string-ci>=? (string string string ... -> boolean)
 	"to determine whether one string alphabetically"
 	" succeeds another (or is equal to it)"
 	" in a case-insensitive manner")
