@@ -157,7 +157,7 @@
                   (url-query uri))
              #f)]
     ['post
-     (define content-type (headers-assq #"Content-Type" headers))
+     (define content-type (headers-assq* #"Content-Type" headers))
      (define in (connection-i-port conn))
      (cond
        [(and content-type (regexp-match FILE-FORM-REGEXP (header-value content-type)))
@@ -166,7 +166,7 @@
               (values
                (map (match-lambda
                       [(struct mime-part (headers contents))
-                       (define rhs (header-value (headers-assq #"Content-Disposition" headers)))
+                       (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
                        (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
                                     (regexp-match #"[^e]name=(\"([^\"]*)\"|([^ ;]*))" rhs))
                          [(list #f #f)
@@ -177,8 +177,8 @@
                           (make-binding:file (or f10 f11) (or f00 f01) (apply bytes-append contents))])])
                     (read-mime-multipart content-boundary in))
                #f)])]
-       [else
-        (match (headers-assq #"Content-Length" headers)
+       [else        
+        (match (headers-assq* #"Content-Length" headers)
           [(struct header (_ value))
            (cond
              [(string->number (bytes->string/utf-8 value))

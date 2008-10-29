@@ -16,7 +16,7 @@
     [(list-rest (and h (struct header (af aw))) hs)
      (if (bytes-ci=? af f)
          h
-         (headers-assq f hs))]))
+         (headers-assq* f hs))]))
 (define (headers-assq f hs)
   (match hs
     [(list)
