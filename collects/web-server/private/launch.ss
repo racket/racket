@@ -1,14 +1,9 @@
 #lang scheme/base
-(require scheme/tcp
-         mzlib/cmdline
-         mzlib/pregexp
-         mzlib/unit
-         net/tcp-sig)
+(require mzlib/cmdline
+         mzlib/pregexp)
 (require "../configuration/configuration-table.ss"
-         "../web-config-unit.ss"
-         "../web-config-sig.ss"
-         "../web-server-unit.ss"
-         "../web-server-sig.ss")
+         (except-in "../web-server.ss" serve)
+         "../web-config-unit.ss")
 
 ; this is used by launchers
 ; extract-flag : sym (listof (cons sym alpha)) alpha -> alpha
@@ -55,16 +50,7 @@
       #:listen-ip (extract-flag 'ip-address flags #f)))
    '()))
 
-(define-compound-unit launch@
-  (import (T : tcp^))
-  (export S)
-  (link 
-   [((C : web-config^)) configuration@]
-   [((S : web-server^)) web-server@ T C]))
-
-(define-values/invoke-unit
-  launch@
-  (import tcp^)
-  (export web-server^))
+(define (serve)
+  (serve/web-config@ configuration@))
 
 (provide serve)

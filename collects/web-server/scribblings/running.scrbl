@@ -102,6 +102,8 @@ Here's an example of a simple web server that serves files
 from a given path:
 
 @(require (for-label web-server/dispatchers/filesystem-map)
+          (for-label web-server/web-config-unit)
+          (for-label web-server/web-config-sig)
           (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @schemeblock[
@@ -137,6 +139,12 @@ from a given path:
  a function that shuts down all of the server instances.
 }
                   
+@defproc[(serve/web-config@ [config@ web-config^])
+         (-> void)]{
+ Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
+        
+ It is very useful to combine this with @scheme[configuration-table->web-config@] and @scheme[configuration-table-sexpr->web-config@].
+}
 
 @defproc[(do-not-return) void]{
  This function does not return. If you are writing a script to load the @web-server
