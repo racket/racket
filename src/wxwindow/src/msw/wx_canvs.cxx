@@ -740,6 +740,7 @@ void wxCanvas::DoPaint()
 
         DeleteObject(paint_rgn);
       } else {
+        /* We ignore the clipping region because... it's simpler? */
         SetRectRgn(need_update, 0, 0, 0, 0);
         if (!(wstyle & wxNO_AUTOCLEAR)) {
           /* The erase through OnEraseBkgnd() was confine to the clipping

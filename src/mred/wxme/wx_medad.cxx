@@ -183,7 +183,7 @@ wxMediaCanvas::wxMediaCanvas(wxWindow *parent,
 	    + wxOVERRIDE_KEY_TRANSLATIONS 
 	    + INIT_SB 
 	    + (style & wxINVISIBLE ? wxINVISIBLE : 0)
-	    + (style & wxTRANSPARENT_WIN ? wxTRANSPARENT_WIN : 0)
+	    + (style & wxTRANSPARENT_WIN ? wxTRANSPARENT_WIN : wxNO_AUTOCLEAR)
 	    + (style & wxCONTROL_BORDER ? wxCONTROL_BORDER : 0)
 	    + (style & wxCOMBO_SIDE ? wxCOMBO_SIDE : 0)
 	    + (style & wxRESIZE_CORNER ? wxRESIZE_CORNER : 0)), 
@@ -352,7 +352,7 @@ void wxMediaCanvas::ResetSize()
   ResetVisual(FALSE);
 
 #if defined(wx_mac)
-  {
+  if (0) {
     wxDC *adc;
     wxColor *bg;
     bg = GetCanvasBackground();
@@ -823,6 +823,37 @@ void wxMediaCanvas::Redraw(double localx, double localy, double fw, double fh)
   wxStartRefreshSequence();
 
   GetView(&x, &y, &w, &h);
+
+  /* Clear the margins */
+  if (xmargin || ymargin) {
+    wxDC *adc;
+    wxColor *bg;
+    bg = GetCanvasBackground();
+    if (bg) {
+      wxBrush *b, *ob;
+      wxPen *p, *op;
+      int cw, ch;
+
+      GetClientSize(&cw, &ch);
+
+      b = wxTheBrushList->FindOrCreateBrush(bg, wxSOLID);
+      p = wxThePenList->FindOrCreatePen("BLACK", 0, wxTRANSPARENT);
+      adc = GetDC();
+
+      ob = adc->GetBrush();
+      op = adc->GetPen();
+      adc->SetBrush(b);
+      adc->SetPen(p);
+
+      adc->DrawRectangle(0, 0, xmargin, ch);
+      adc->DrawRectangle(cw-xmargin, 0, cw, ch);
+      adc->DrawRectangle(0, 0, cw, ymargin);
+      adc->DrawRectangle(0, ch-ymargin, cw, ch);
+
+      adc->SetBrush(ob);
+      adc->SetPen(op);
+    }
+  }  
 
   right = x + w;
   bottom = y + h;
