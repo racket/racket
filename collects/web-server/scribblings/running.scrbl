@@ -11,7 +11,8 @@ There are a number of ways to run the Web Server. They are given in order of sim
 @; ------------------------------------------------------------
 @section[#:tag "insta"]{Instant Servlets}
 @(require (for-label (only-in web-server/insta/insta
-                              no-web-browser static-files-path)))
+                              no-web-browser static-files-path)
+                     web-server/servlet-env))
 @defmodulelang[web-server/insta]
 
 The fastest way to get a servlet running in the Web server is to use the 
@@ -104,6 +105,7 @@ from a given path:
 @(require (for-label web-server/dispatchers/filesystem-map)
           (for-label web-server/web-config-unit)
           (for-label web-server/web-config-sig)
+          (for-label web-server/configuration/configuration-table)
           (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @schemeblock[
@@ -143,7 +145,13 @@ from a given path:
          (-> void)]{
  Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
         
- It is very useful to combine this with @scheme[configuration-table->web-config@] and @scheme[configuration-table-sexpr->web-config@].
+ It is very useful to combine this with @scheme[configuration-table->web-config@] and @scheme[configuration-table-sexpr->web-config@]:
+ 
+ @schemeblock[
+  (serve/web-config@
+   (configuration-table->web-config@ 
+    default-configuration-table-path))
+  (do-not-return)]
 }
 
 @defproc[(do-not-return) void]{

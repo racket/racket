@@ -9,7 +9,7 @@
 
 ; XXX Format better
 (define (warning . x)
-  (apply elem "Warning:" x))
+  (apply elem (bold "Warning: ") x))
 
 ; XXX Actually display link
 (define (href-link url label)
