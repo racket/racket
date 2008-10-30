@@ -17,7 +17,8 @@ static MZ_INLINE Scheme_Object *PRIM_APPLY_NAME_FAST(Scheme_Object *rator,
   prim = (Scheme_Primitive_Proc *)rator;
   
   if (argc < prim->mina || (argc > prim->mu.maxa && prim->mina >= 0)) {
-    scheme_wrong_count(prim->name, prim->mina, prim->mu.maxa, argc, argv);
+    scheme_wrong_count_m(prim->name, prim->mina, prim->mu.maxa, argc, argv,
+                         prim->pp.flags & SCHEME_PRIM_IS_METHOD);
     return NULL; /* Shouldn't get here */
   }
   
