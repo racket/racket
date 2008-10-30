@@ -58,6 +58,7 @@
                            ("provide/contract" 0)
                            ("new" 1)
                            ("case" 1)
+                           ("syntax-rules" 1)
                            ("syntax-case" 2)
                            ("syntax-case*" 3))
                          (λ (x) (and (list? x) (andmap (λ (x) (and (pair? x)
