@@ -1691,7 +1691,7 @@
                                   (loop (send snip next)))]
                            [else (cons snip (loop (send snip next)))]))))
     (define/override (get-keymaps)
-      (cons search/replace-keymap (super get-keymaps)))
+      (append (super get-keymaps) (list search/replace-keymap)))
     (super-new)
     (inherit set-styles-fixed)
     (set-styles-fixed #t)
@@ -1889,7 +1889,7 @@
     (inherit set-styles-fixed)
     (super-new [pref-sym 'framework:replace-string])
     (define/override (get-keymaps)
-      (cons search/replace-keymap (super get-keymaps)))
+      (append (super get-keymaps) (list search/replace-keymap)))
     (set-styles-fixed #t)))
 
 (define search/replace-keymap (new keymap%))

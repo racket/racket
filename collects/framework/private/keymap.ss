@@ -1430,7 +1430,7 @@
   
   (define global (make-object aug-keymap%))
   (define global-main (make-object aug-keymap%))
-  (send global chain-to-keymap global-main #t)
+  (send global chain-to-keymap global-main #f)
   (setup-global global-main)
   (generic-setup global-main)
   (define (get-global) global)

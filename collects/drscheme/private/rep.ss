@@ -312,7 +312,7 @@ TODO
   (define drs-bindings-keymap-mixin
     (mixin (editor:keymap<%>) (editor:keymap<%>)
       (define/override (get-keymaps)
-        (cons drs-bindings-keymap (super get-keymaps)))
+        (append (super get-keymaps) (list drs-bindings-keymap)))
       (super-instantiate ())))
   
   ;; Max length of output queue (user's thread blocks if the
@@ -849,7 +849,7 @@ TODO
       
       (define/override get-keymaps
         (λ ()
-          (cons scheme-interaction-mode-keymap (super get-keymaps))))
+          (append (super get-keymaps) (list scheme-interaction-mode-keymap))))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;;                                            ;;;

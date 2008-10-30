@@ -852,7 +852,7 @@ WARNING: printf is rebound in the body of the unit to always
              find-string)
     
     (define/override (get-keymaps)
-      (cons (keymap:get-search) (super get-keymaps)))
+      (append (super get-keymaps) (list (keymap:get-search))))
     
     (define searching-str #f)
     (define case-sensitive? #f)

@@ -505,7 +505,7 @@
       (define/public (get-can-close-parent) #f)
       
       (define/override (get-keymaps)
-        (cons (keymap:get-file) (super get-keymaps)))
+        (append (super get-keymaps) (list (keymap:get-file))))
       (super-new)))
   
   (define backup-autosave<%>
