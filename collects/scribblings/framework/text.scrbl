@@ -302,6 +302,33 @@
     @method[text:nbsp->space-mixin on-insert].
   }
 }
+
+@definterface[text:normalize-paste<%> (text:basic<%>)]{
+  @defmethod[(ask-normalize?) boolean?]{
+    Prompts the user if the pasted text should be normalized 
+    (and updates various preferences based on the response).
+
+    Override this method in the mixin to avoid all GUI and preferences interactions.
+  }
+  @defmethod[(string-normalize [s string?]) string?]{
+    Normalizes @scheme[s]. Defaults to @scheme[string-normalize-nfkc].
+  }
+
+}
+
+@defmixin[text:normalize-paste-mixin (text:basic<%>) (text:normalize-paste<%>)]{
+  @defmethod[#:mode override (do-paste [start exact-nonnegative-integer?] [time (and/c exact? integer?)]) void?]{
+    Overridden to detect when insertions are due to pasting. Sets some internal state and calls the super.
+  }
+  @defmethod[#:mode augment (on-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
+   Calls @method[editor<%> begin-edit-sequence].
+  }
+  @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
+    Normalizes any next text and calls @method[editor<%> end-edit-sequence].
+  }
+
+}
+
 @definterface[text:searching<%> (editor:keymap<%> text:basic<%>)]{
   Any object matching this interface can be searched.
 

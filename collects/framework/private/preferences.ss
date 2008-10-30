@@ -443,6 +443,10 @@ the state transitions / contracts are:
                                'framework:anchored-search
                                (string-constant find-anchor-based)
                                values values)
+                   (make-check editor-panel
+                               'framework:do-paste-normalization
+                               (string-constant normalize-string-preference)
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

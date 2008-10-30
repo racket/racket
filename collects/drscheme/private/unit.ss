@@ -449,7 +449,8 @@ module browser threading seems wrong.
                       (text:foreground-color-mixin
                        (drscheme:rep:drs-autocomplete-mixin
                         (λ (x) x)
-                        text:info%))))))))))])
+                        (text:normalize-paste-mixin
+                         text:info%)))))))))))])
         (class* definitions-super% (definitions-text<%>)
           (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           

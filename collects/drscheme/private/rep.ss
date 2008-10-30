@@ -847,9 +847,19 @@ TODO
           (reset-highlighting))
         (inner (void) after-delete x y))
       
-      (define/override get-keymaps
-        (λ ()
-          (append (super get-keymaps) (list scheme-interaction-mode-keymap))))
+      (define/override (get-keymaps)
+        (let loop ([old-maps (super get-keymaps)])
+          (cond
+            [(null? old-maps) 
+             (list scheme-interaction-mode-keymap)]
+            [else
+             (cond
+               [(eq? (car old-maps) (keymap:get-global))
+                (list* (car old-maps)
+                       scheme-interaction-mode-keymap
+                       (cdr old-maps))]
+               [else
+                (cons (car old-maps) (loop (cdr old-maps)))])])))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;;                                            ;;;
@@ -1854,4 +1864,5 @@ TODO
              (drs-autocomplete-mixin 
               (λ (txt) (send txt get-definitions-text))
               (text:foreground-color-mixin
-               text:clever-file-format%)))))))))))))
+               (text:normalize-paste-mixin
+                text:clever-file-format%))))))))))))))

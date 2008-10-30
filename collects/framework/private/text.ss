@@ -821,7 +821,83 @@ WARNING: printf is rebound in the body of the unit to always
         (set! rewriting #f))
       (end-edit-sequence)
       (inner (void) after-insert start len))
-    (super-instantiate ())))
+    (super-new)))
+
+(define normalize-paste<%> (interface ((class->interface text%))
+                             ask-normalize?
+                             string-normalize))
+(define normalize-paste-mixin
+  (mixin (basic<%>) (normalize-paste<%>)
+    (inherit begin-edit-sequence end-edit-sequence
+             delete insert split-snip find-snip
+             get-snip-position get-top-level-window find-string)
+    (define pasting? #f)
+    (define rewriting? #f)
+    
+    (define/public (ask-normalize?)
+      (cond
+        [(preferences:get 'framework:ask-about-paste-normalization)
+         (let-values ([(mbr checked?)
+                       (message+check-box/custom
+                        (string-constant drscheme)
+                        (string-constant normalize-string-info)
+                        (string-constant dont-ask-again)
+                        (string-constant normalize)
+                        (string-constant leave-alone)
+                        #f
+                        (get-top-level-window)
+                        (cons (if (preferences:get 'framework:do-paste-normalization)
+                                  'default=1
+                                  'default=2)
+                              '(caution))
+                        2)])
+           (let ([normalize? (not (equal? 2 mbr))])
+             (preferences:set 'framework:ask-about-paste-normalization (not checked?))
+             (preferences:set 'framework:do-paste-normalization normalize?)
+             normalize?))]
+        [else
+         (preferences:get 'framework:do-paste-normalization)]))
+    (define/public (string-normalize s) (string-normalize-nfkc s))
+
+    
+    
+    (define/override (do-paste start time)
+      (dynamic-wind
+       (λ () (set! pasting? #t))
+       (λ () (super do-paste start time))
+       (λ () (set! pasting? #f))))
+    
+    (define/augment (on-insert start len)
+      (inner (void) on-insert start len)
+      (begin-edit-sequence))
+         
+    (define/augment (after-insert start len)
+      (when pasting?
+        (unless rewriting?
+          (set! rewriting? #t)
+          (let/ec abort
+            (define ask? #t)
+            (split-snip start)
+            (split-snip (+ start len))
+            (let loop ([snip (find-snip start 'after-or-none)])
+              (when snip
+                (let ([next (send snip next)])
+                  (when (is-a? snip string-snip%)
+                    (let* ([old (send snip get-text 0 (send snip get-count))]
+                           [new (string-normalize old)])
+                      (unless (equal? new old)
+                        (when ask?
+                          (set! ask? #f)
+                          (unless (ask-normalize?) (abort)))
+                        (let ([snip-pos (get-snip-position snip)])
+                          (delete snip-pos (+ snip-pos (string-length old)))
+                          (insert new snip-pos snip-pos #f)))))
+                  (loop next)))))
+          (set! rewriting? #f)))
+      (end-edit-sequence)
+      (inner (void) after-insert start len))
+    
+    (super-new)))
 
 (define searching<%> 
   (interface (editor:keymap<%> basic<%>)
@@ -3644,6 +3720,7 @@ designates the character that triggers autocompletion
 (define basic% (basic-mixin (editor:basic-mixin text%)))
 (define hide-caret/selection% (hide-caret/selection-mixin basic%))
 (define nbsp->space% (nbsp->space-mixin basic%))
+(define normalize-paste% (normalize-paste-mixin basic%))
 (define delegate% (delegate-mixin basic%))
 (define wide-snip% (wide-snip-mixin basic%))
 (define standard-style-list% (editor:standard-style-list-mixin wide-snip%))

@@ -1423,5 +1423,12 @@ please adhere to these guidelines:
   (bug-track-forget "Forget")
   (bug-track-forget-all "Forget All")
     
-
+  
+  ;; string normalization. To see this, paste some text with a ligature into DrScheme
+  ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
+  (normalize "Normalize")
+  (leave-alone "Leave alone")
+  (normalize-string-info "The string you pasted contains ligatures or other non-normalized characters. Normalize them?")
+  (normalize-string-preference "Normalize pasted strings")
+  
   )
