@@ -489,13 +489,25 @@
     [(_ args . body)
      (syntax/loc stx (r5rs:lambda args (let () . body)))]))
 
+(define-for-syntax (check-label id orig-stx def)
+  (when (eq? 'module (syntax-local-context))
+    (when (identifier-binding id #f)
+      (raise-syntax-error
+       #f
+       "cannot define imported identifier"
+       orig-stx
+       id)))
+  def)
+
 (define-syntax (r6rs:define stx)
   (syntax-case stx ()
     [(_ id) 
      (identifier? #'id)
-     (syntax/loc stx (define id (void)))]
+     (check-label #'id stx (syntax/loc stx (define id (void))))]
     [(_ (name . args) . body)
-     (syntax/loc stx (r5rs:define (name . args) (let () . body)))]
+     (check-label #'name
+                  stx
+                  (syntax/loc stx (r5rs:define (name . args) (let () . body))))]
     [(_ . rest) #'(define . rest)]))
 
 ;; ----------------------------------------
@@ -507,8 +519,10 @@
   (syntax-case stx ()
     [(_ id expr)
      (identifier? #'id)
-     (syntax/loc stx
-       (define-syntax id (wrap-as-needed expr)))]))
+     (check-label #'id
+                  stx
+                  (syntax/loc stx
+                    (define-syntax id (wrap-as-needed expr))))]))
 
 (define-for-syntax (wrap r stx)
   (cond
