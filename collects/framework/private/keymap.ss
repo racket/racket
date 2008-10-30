@@ -1142,6 +1142,7 @@
           (map "m:s:right" "select-to-end-of-line")
           (map "s:end" "select-to-end-of-line")
           (map "s:c:e" "select-to-end-of-line")
+          (map "s:d:right" "select-to-end-of-line")
           
           (map "c:a" "beginning-of-line")
           (map "d:left" "beginning-of-line")
@@ -1150,7 +1151,8 @@
           (map "m:s:left" "select-to-beginning-of-line")
           (map "s:home" "select-to-beginning-of-line")
           (map "s:c:a" "select-to-beginning-of-line")
-          
+          (map "s:d:left" "select-to-beginning-of-line")
+
           (map "c:f" "forward-character")
           (map "right" "forward-character")
           (map "s:c:f" "forward-select")
@@ -1162,18 +1164,14 @@
           (map "s:left" "backward-select")
           
           (map-meta "f" "forward-word")
-          (map "a:right" "forward-word")
           (map "c:right" "forward-word")
           (map-meta "s:f" "forward-select-word")
-          (map "a:s:right" "forward-select-word")
           (map "c:s:right" "forward-select-word")
           
           (map-meta "b" "backward-word")
-          (map "a:left" "backward-word")
           
           (map "c:left" "backward-word")
           (map-meta "s:b" "backward-select-word")
-          (map "a:s:left" "backward-select-word")
           (map "c:s:left" "backward-select-word")
           
           (map-meta "<" "beginning-of-file")
