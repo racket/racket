@@ -187,25 +187,31 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defthing[paren-format format-req/c]{
  Formats a request by:
  @schemeblock[
-  (format "~s~n"
-            (list 'from (request-client-ip req)
-                  'to (request-host-ip req)
-                  'for (url->string (request-uri req)) 'at
-                  (date->string (seconds->date (current-seconds)) #t)))
- ]}
+  (format 
+   "~s~n"
+   (list 'from (request-client-ip req)
+         'to (request-host-ip req)
+         'for (url->string (request-uri req)) 'at
+         (date->string
+          (seconds->date (current-seconds)) #t)))
+  ]}
 
 @defthing[extended-format format-req/c]{
  Formats a request by:
  @schemeblock[
-  (format "~s~n"
-            `((client-ip ,(request-client-ip req))
-              (host-ip ,(request-host-ip req))
-              (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])
-                          (if R
-                              (header-value R)
-                              #f)))
-              (uri ,(url->string (request-uri req)))
-              (time ,(current-seconds))))
+  (format 
+   "~s~n"
+   `((client-ip ,(request-client-ip req))
+     (host-ip ,(request-host-ip req))
+     (referer 
+      ,(let ([R (headers-assq* 
+                 #"Referer"
+                 (request-headers/raw req))])
+         (if R
+             (header-value R)
+             #f)))
+     (uri ,(url->string (request-uri req)))
+     (time ,(current-seconds))))
  ]}
 
 @defthing[apache-default-format format-req/c]{

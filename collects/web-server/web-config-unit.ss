@@ -15,14 +15,14 @@
        (#:port (or/c false/c number?)
                #:listen-ip (or/c false/c string?)
                #:make-servlet-namespace make-servlet-namespace/c)
-      unit?)]
+       unit?)]
  [configuration-table-sexpr->web-config@
   (->* (list?) ; XXX
-      (#:web-server-root path-string?
-      #:port (or/c false/c number?)
-      #:listen-ip (or/c false/c string?)
-      #:make-servlet-namespace make-servlet-namespace/c)
-      unit?)])
+       (#:web-server-root path-string?
+                          #:port (or/c false/c number?)
+                          #:listen-ip (or/c false/c string?)
+                          #:make-servlet-namespace make-servlet-namespace/c)
+       unit?)])
 
 ; configuration-table->web-config@ : path -> configuration
 (define (configuration-table->web-config@ 
@@ -121,12 +121,13 @@
            (if p 
                (build-path-unless-absolute b p)
                #f))])
-    (let ([host-base (build-path-unless-absolute web-server-root (paths-host-base paths))])
+    (let* ([host-base (build-path-unless-absolute web-server-root (paths-host-base paths))]
+           [htdocs-base (build-path-unless-absolute host-base (paths-htdocs paths))])
       (make-paths (build-path-unless-absolute host-base (paths-conf paths))
                   host-base
                   (build-path-unless-absolute host-base (paths-log paths))
-                  (build-path-unless-absolute host-base (paths-htdocs paths))
-                  (build-path-unless-absolute host-base (paths-servlet paths))
+                  htdocs-base
+                  (build-path-unless-absolute htdocs-base (paths-servlet paths))
                   (build-path-unless-absolute host-base (paths-mime-types paths))                    
                   (build-path-unless-absolute host-base (paths-passwords paths))))))
 

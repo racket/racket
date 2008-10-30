@@ -113,7 +113,6 @@ structures.
 
 where a @scheme[host-table-sexpr] is:
 
-@; XXX Allowable log-formats?
 @; XXX Where the paths are resolved relative to
 @schemeblock[
 `(host-table
@@ -141,6 +140,12 @@ where a @scheme[host-table-sexpr] is:
    (servlet-root ,path-string?)
    (mime-types ,path-string?)
    (password-authentication ,path-string?)))]
+
+@(require (for-label web-server/dispatchers/dispatch-log))
+
+Allowable @scheme['log-format]s are those accepted by @scheme[log-format->format].
+
+Note: You almost always want to leave everything in the @scheme['paths] section the default except the @scheme['host-root].
 
 @defproc[(read-configuration-table (path path-string?))
          configuration-table?]{

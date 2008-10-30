@@ -27,7 +27,7 @@
   d)
 
 (define example-servlets 
-  (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
+  (build-path (collection-path "web-server") "default-web-root" "htdocs" "servlets" "examples/"))
 
 (define dispatch-servlets-tests
   (test-suite

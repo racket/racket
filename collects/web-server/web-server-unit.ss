@@ -85,11 +85,9 @@
                              (lambda _
                                (clear-cache!)
                                ((responders-servlets-refreshed (host-responders host-info)))))
-        (filter:make
-         #rx"^/servlets"
-         (sequencer:make
-          (timeout:make (timeouts-servlet-connection (host-timeouts host-info)))
-          servlet-dispatch))))
+        (sequencer:make
+         (timeout:make (timeouts-servlet-connection (host-timeouts host-info)))
+         servlet-dispatch)))
      (files:make #:url->path (fsmap:make-url->path (paths-htdocs (host-paths host-info)))
                  #:path->mime-type (make-path->mime-type (paths-mime-types (host-paths host-info)))
                  #:indices (host-indices host-info))
