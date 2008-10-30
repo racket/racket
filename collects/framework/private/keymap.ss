@@ -724,19 +724,6 @@
                          (+ (send edit last-line) 1)))]))))
               
               #t)]
-           [goto-position
-            (λ (edit event)
-              (let ([num-str
-                     (call/text-keymap-initializer
-                      (λ ()
-                        (get-text-from-user 
-                         (string-constant goto-position)
-                         (string-constant goto-position))))])
-                (when (string? num-str)
-                    (let ([pos (string->number num-str)])
-                      (when pos
-                        (send edit set-position (sub1 pos))))))
-              #t)]
            [repeater
             (λ (n edit)
               (let* ([km (send edit get-keymap)]
@@ -1081,7 +1068,6 @@
           (add-m "select-click-line" select-click-line)
           
           (add "goto-line" goto-line)
-          (add "goto-position" goto-position)
           
           (add "delete-key" delete-key)
           
@@ -1268,7 +1254,6 @@
           (map-meta "o" "toggle-overwrite")
           
           (map-meta "g" "goto-line")
-          (map-meta "p" "goto-position")
           
           (map "c:u" "command-repeat-0")
           (let loop ([n 9])
