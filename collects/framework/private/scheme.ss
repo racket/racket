@@ -1662,6 +1662,7 @@
     
     (define-values (ok-button cancel-button)
       (gui-utils:ok/cancel-buttons bp confirm-callback cancel-callback (string-constant ok) (string-constant cancel)))
+    (send tb focus)
     (send f show #t)
     answers)
   
