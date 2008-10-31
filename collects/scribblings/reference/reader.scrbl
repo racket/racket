@@ -809,8 +809,8 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
 @litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader}, except
-that the terminating whitespace (if any) is consumed before the
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader}. Note
+that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
 
 Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
