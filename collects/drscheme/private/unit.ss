@@ -511,7 +511,7 @@ module browser threading seems wrong.
                    [name-mod (send lang get-reader-module)])
               (when name-mod ;; the reader-module method's result is used a test of whether or not the get-metadata method is used for this language
                 (let ([metadata (send lang get-metadata (filename->modname filename) settings)])
-                  (begin-edit-sequence)
+                  (begin-edit-sequence #f)
                   (begin-metadata-changes)
                   (let ([locked? (is-locked?)])
                     (when locked? (lock #f))
@@ -552,7 +552,7 @@ module browser threading seems wrong.
           
           (define/augment (on-load-file filename format)
             (inner (void) on-load-file filename format)
-            (begin-edit-sequence))
+            (begin-edit-sequence #f))
           (define/augment (after-load-file success?)
             (when success?
               (let-values ([(module-language module-language-settings)
