@@ -465,7 +465,10 @@ the state transitions / contracts are:
                                'framework:verify-exit
                                (string-constant verify-exit)
                                values values)
-                   
+                   (make-check warnings-panel
+                               'framework:ask-about-paste-normalization
+                               (string-constant ask-about-normalizing-strings)
+                               values values)
                    (warnings-panel-procs warnings-panel))))])
       (add-warnings-checkbox-panel)))
   
