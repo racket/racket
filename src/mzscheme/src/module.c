@@ -3919,7 +3919,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
       return;
     }
   } else if (env->phase < base_phase) {
-    if (env->phase == -1) {
+    if (env->phase == base_phase - 1) {
       expstart_module(menv, env, restart, eval_exp, eval_run, base_phase);
     }
     show_done("nrn-", menv, eval_exp, eval_run);
