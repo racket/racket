@@ -235,7 +235,15 @@ Enables or disables the caret in the @techlink{display}'s editor, if
            (on-paint)
            void?]{
 
-Repaints the editor.
+Repaints the editor, or clears the canvas if no editor is being
+displayed.
+
+This method is called after clearing the margin around the editor,
+unless the canvas is created with the @scheme['transparent] style, but
+the editor area is not automatically cleared. In other words,
+@scheme[editor-canvas%] update by default is like @scheme[canvas%]
+update with the @scheme['no-autoclear] style, except that the margin
+around the editor area is always cleared.
 
 }
 

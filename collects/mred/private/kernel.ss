@@ -728,6 +728,7 @@
     set-x-margin
     get-y-margin
     get-x-margin
+    clear-margins
     scroll-to
     set-lazy-refresh
     get-lazy-refresh

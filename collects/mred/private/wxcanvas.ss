@@ -14,12 +14,17 @@
 
   (define (make-canvas-glue% %) ; implies make-window-glue%
     (class100 (make-window-glue% %) (mred proxy . args)
-      (inherit get-mred get-top-level)
+      (inherit get-mred get-top-level clear-margins)
       (public
 	[do-on-char (lambda (e) (super on-char e))]
 	[do-on-event (lambda (e) (super on-event e))]
 	[do-on-scroll (lambda (e) (super on-scroll e))]
 	[do-on-paint (lambda () (super on-paint))])
+      (private
+        [clear-and-on-paint
+         (lambda (mred)
+           (clear-margins)
+           (send mred on-paint))])
       (override
 	[on-char (entry-point
 		  (lambda (e)
@@ -54,9 +59,9 @@
 			       ;; Windows circumvented the event queue; delay
 			       (queue-window-callback
 				this
-				(lambda () (send mred on-paint)))
-			       (as-exit (lambda () (send mred on-paint))))
-			   (as-exit (lambda () (super on-paint)))))))])
+				(lambda () (clear-and-on-paint mred)))
+			       (as-exit (lambda () (clear-and-on-paint mred))))
+			   (as-exit (lambda () (clear-margins) (super on-paint)))))))])
       (sequence (apply super-init mred proxy args))))
 
   (define wx-canvas% 
@@ -66,6 +71,7 @@
        (private-field
 	[tabable? #f])
        (public
+         [clear-margins (lambda () (void))]
 	 [on-tab-in (lambda () (send (wx->mred this) on-tab-in))]
 	 [get-tab-focus (lambda () tabable?)]
 	 [set-tab-focus (lambda (v) (set! tabable? v))])
