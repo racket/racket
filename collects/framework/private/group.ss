@@ -273,12 +273,14 @@
       (or (not (preferences:get 'framework:exit-when-no-frames))
           (exit:exiting?)
           (not (= 1 number-of-frames))
+          (current-eventspace-has-standard-menus?)
           (exit:user-oks-exit))))
 
   (define (on-close-action)
     (when (preferences:get 'framework:exit-when-no-frames)
       (unless (exit:exiting?)
-        (when (null? (send (get-the-frame-group) get-frames))
+        (when (and (null? (send (get-the-frame-group) get-frames))
+                   (not (current-eventspace-has-standard-menus?)))
           (exit:exit)))))
   
   (define (choose-a-frame parent)

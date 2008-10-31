@@ -5,7 +5,7 @@
   (let ([basics (list "Bring Frame to Front..." "Most Recent Window" 
                       #f)])
     (if (eq? (system-type) 'macosx)
-      (list* "Minimize" "Zoom" #f basics)
+      (list* "Minimize" "Zoom" basics)
       basics)))
 (send-sexp-to-mred
  '(define-syntax car*
@@ -14,23 +14,32 @@
                   (car x)
                   (error 'car* "got a non-pair for ~s" 'x))])))
 
+;; this test uses a new eventspace so that the mred function
+;; current-eventspace-has-standard-menus? returns #f and thus
+;; all of the platforms behave the same way.
 (test
  'exit-on
  (lambda (x) (equal? x '("first")))
  (lambda ()
+   (send-sexp-to-mred `(define new-eventspace (make-eventspace)))
    (send-sexp-to-mred
-    '(begin (send (make-object frame:basic% "first") show #t)
+    '(begin (parameterize ([current-eventspace new-eventspace])
+              (send (make-object frame:basic% "first") show #t))
             (preferences:set 'framework:verify-exit #t)))
-   (wait-for-frame "first")
+   (wait-for-frame "first" 'new-eventspace)
    (send-sexp-to-mred
-    `(queue-callback (lambda () (send (get-top-level-focus-window) close))))
-   (wait-for-frame "Warning")
+    `(queue-callback (lambda () 
+                       (parameterize ([current-eventspace new-eventspace])
+                         (send (get-top-level-focus-window) close)))))
+   (wait-for-frame "Warning" 'new-eventspace)
    (send-sexp-to-mred
-    `(test:button-push "Cancel"))
-   (wait-for-frame "first")
+    `(parameterize ([current-eventspace new-eventspace])
+       (test:button-push "Cancel")))
+   (wait-for-frame "first" 'new-eventspace)
    (send-sexp-to-mred
-    `(map (lambda (x) (send x get-label))
-          (send (group:get-the-frame-group) get-frames)))))
+    `(parameterize ([current-eventspace new-eventspace])
+       (map (lambda (x) (send x get-label))
+            (send (group:get-the-frame-group) get-frames))))))
 
 ;; after the first test, we should have one frame that will always
 ;; be in the group.
