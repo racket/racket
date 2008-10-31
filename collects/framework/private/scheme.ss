@@ -1339,13 +1339,17 @@
       
       (map-meta "right" "forward-sexp")
       (map "a:right" "forward-sexp")
+      (map "m:right" "forward-sexp")
       (map-meta "s:right" "select-forward-sexp")
       (map "a:s:right" "select-forward-sexp")
+      (map "m:s:right" "select-forward-sexp")
       
       (map-meta "left" "backward-sexp")
       (map "a:left" "backward-sexp")
+      (map "m:left" "backward-sexp")
       (map-meta "s:left" "select-backward-sexp")
       (map "a:s:left" "select-backward-sexp")
+      (map "m:s:left" "select-backward-sexp")
       
       (map-meta "return" "do-return")
       (map-meta "s:return" "do-return")
