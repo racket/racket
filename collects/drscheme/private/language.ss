@@ -517,7 +517,7 @@
                                                  (use-namespace-require/copy-from-setting? setting)))
       (define/public (extra-repl-information _1 _2) (void))
       (define/public (get-reader-module) #f)
-      (define/public (get-metadata a b c) #f)
+      (define/public (get-metadata a b) #f)
       (define/public (metadata->settings m) #f)
       (define/public (get-metadata-lines) #f)
       
