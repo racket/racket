@@ -631,6 +631,13 @@
         application.})
  
  (proc-doc/names
+  group:add-to-windows-menu
+  (-> (-> (is-a?/c menu%) any) any)
+  (proc)
+  @{Procedures passed to this function are called when the @onscreen{Windows} menu is
+               created. Use it to add additional menu items.})
+ 
+ (proc-doc/names
   handler:handler?
   (any/c . -> . boolean?)
   (obj)

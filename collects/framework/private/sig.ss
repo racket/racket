@@ -294,7 +294,8 @@
   (define-signature group^ extends group-class^
     (get-the-frame-group
      on-close-action
-     can-close-check))
+     can-close-check
+     add-to-windows-menu))
   
   (define-signature handler-class^
     ())

@@ -22,6 +22,14 @@
   
   (define mdi-parent #f)
   
+  (define extra-windows-menus-proc void)
+  (define (add-to-windows-menu f)
+    (let ([old extra-windows-menus-proc])
+      (set! extra-windows-menus-proc
+            (λ (menu)
+              (f menu)
+              (old menu)))))
+  
   (define %
     (class object%
       
@@ -97,8 +105,7 @@
                     [parent menu]
                     [callback (λ (x y) 
                                 (let ([frame (send (send menu get-parent) get-frame)])
-                                  (send frame maximize (not (send frame is-maximized?)))))])
-               (make-object separator-menu-item% menu)) 
+                                  (send frame maximize (not (send frame is-maximized?)))))])) 
              (instantiate menu:can-restore-menu-item% ()
                (label (string-constant bring-frame-to-front...))
                (parent menu)
@@ -110,6 +117,9 @@
                (callback (λ (x y) (most-recent-window-to-front)))
                (shortcut #\'))
              (make-object separator-menu-item% menu)
+             
+             (extra-windows-menus-proc menu)
+             
              (for-each
               (λ (frame)
                 (let ([frame (frame-frame frame)])
