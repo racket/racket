@@ -1187,20 +1187,16 @@
           (map "s:d:down" "select-to-end-of-file")
           
           (map "c:v" "next-page")
-          (map "a:down" "next-page")
           (map "pagedown" "next-page")
           (map "c:down" "next-page")
           (map "s:c:v" "select-page-down")
-          (map "a:s:down" "select-page-down")
           (map "s:pagedown" "select-page-down")
           (map "s:c:down" "select-page-down")
           
           (map-meta "v" "previous-page")
-          (map "a:up" "previous-page")
           (map "pageup" "previous-page")
           (map "c:up" "previous-page")
           (map-meta "s:v" "select-page-up")
-          (map "s:a:up" "select-page-up")
           (map "s:pageup" "select-page-up")
           (map "s:c:up" "select-page-up")
           
