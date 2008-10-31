@@ -1137,18 +1137,14 @@
           
           (map "c:e" "end-of-line")
           (map "d:right" "end-of-line")
-          (map "m:right" "end-of-line")
           (map "end" "end-of-line")
-          (map "m:s:right" "select-to-end-of-line")
           (map "s:end" "select-to-end-of-line")
           (map "s:c:e" "select-to-end-of-line")
           (map "s:d:right" "select-to-end-of-line")
           
           (map "c:a" "beginning-of-line")
           (map "d:left" "beginning-of-line")
-          (map "m:left" "beginning-of-line")
           (map "home" "beginning-of-line")
-          (map "m:s:left" "select-to-beginning-of-line")
           (map "s:home" "select-to-beginning-of-line")
           (map "s:c:a" "select-to-beginning-of-line")
           (map "s:d:left" "select-to-beginning-of-line")
