@@ -1,3 +1,4 @@
 #lang setup/infotab
 
-(define scribblings '(("typed-scheme.scrbl" ())))
+(define scribblings '(("ts-reference.scrbl" ())
+		      ("ts-guide.scrbl" ())))
