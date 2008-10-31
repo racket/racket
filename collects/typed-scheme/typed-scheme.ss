@@ -17,11 +17,7 @@
           syntax/kerncase
           scheme/match))
 
-(provide-tnames)
-(provide-extra-tnames)
-(require-extra-tnames "private/base-types.ss")
-(provide (rename-out [All ∀]
-                     [mu Rec]))
+
 
 
 (provide (rename-out [module-begin #%module-begin]
