@@ -4897,7 +4897,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
           if (mrn->kind == mzMOD_RENAME_MARKED) {
             /* Not useful if there's no marked names. */
             redundant = ((mrn->sealed >= STX_SEAL_ALL)
-                         && (!mrn->marked_names || !mrn->marked_names->count));
+                         && (!mrn->marked_names || !mrn->marked_names->count)
+                         && SCHEME_NULLP(mrn->shared_pes));
             if (!redundant) {
               /* Otherwise, watch out for multiple instances of the same rename: */
               WRAP_POS l;

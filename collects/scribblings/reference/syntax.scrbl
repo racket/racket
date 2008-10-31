@@ -568,7 +568,7 @@ follows.
               (for-meta phase-level provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, but adjusted to apply to @tech{phase level}
  specified by @scheme[phase-level] (where @scheme[#f] corresponds to the
- @tech{label phase level}). In particular, an @scheme[id] or @scheme[rename-out] form as
+ @tech{label phase level}). In particular, an @scheme[_id] or @scheme[rename-out] form as
  a @scheme[provide-spec] refers to a binding at @scheme[phase-level], an
  @scheme[all-define-out] exports only @scheme[phase-level]
  definitions, and an @scheme[all-from-out] exports bindings

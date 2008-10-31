@@ -676,6 +676,37 @@ void wxMediaCanvas::OnPaint(void)
   need_refresh = FALSE;
 
   if (media) {
+    /* Clear the margins */
+    if (xmargin || ymargin) {
+      wxDC *adc;
+      wxColor *bg;
+      bg = GetCanvasBackground();
+      if (bg) {
+        wxBrush *b, *ob;
+        wxPen *p, *op;
+        int cw, ch;
+
+        GetClientSize(&cw, &ch);
+
+        b = wxTheBrushList->FindOrCreateBrush(bg, wxSOLID);
+        p = wxThePenList->FindOrCreatePen("BLACK", 0, wxTRANSPARENT);
+        adc = GetDC();
+
+        ob = adc->GetBrush();
+        op = adc->GetPen();
+        adc->SetBrush(b);
+        adc->SetPen(p);
+
+        adc->DrawRectangle(0, 0, xmargin, ch);
+        adc->DrawRectangle(cw-xmargin, 0, cw, ch);
+        adc->DrawRectangle(0, 0, cw, ymargin);
+        adc->DrawRectangle(0, ch-ymargin, cw, ch);
+
+        adc->SetBrush(ob);
+        adc->SetPen(op);
+      }
+    }  
+
     if (!media->printing) {
       double w, h, x, y;
       GetView(&x, &y, &w, &h);
@@ -823,37 +854,6 @@ void wxMediaCanvas::Redraw(double localx, double localy, double fw, double fh)
   wxStartRefreshSequence();
 
   GetView(&x, &y, &w, &h);
-
-  /* Clear the margins */
-  if (xmargin || ymargin) {
-    wxDC *adc;
-    wxColor *bg;
-    bg = GetCanvasBackground();
-    if (bg) {
-      wxBrush *b, *ob;
-      wxPen *p, *op;
-      int cw, ch;
-
-      GetClientSize(&cw, &ch);
-
-      b = wxTheBrushList->FindOrCreateBrush(bg, wxSOLID);
-      p = wxThePenList->FindOrCreatePen("BLACK", 0, wxTRANSPARENT);
-      adc = GetDC();
-
-      ob = adc->GetBrush();
-      op = adc->GetPen();
-      adc->SetBrush(b);
-      adc->SetPen(p);
-
-      adc->DrawRectangle(0, 0, xmargin, ch);
-      adc->DrawRectangle(cw-xmargin, 0, cw, ch);
-      adc->DrawRectangle(0, 0, cw, ymargin);
-      adc->DrawRectangle(0, ch-ymargin, cw, ch);
-
-      adc->SetBrush(ob);
-      adc->SetPen(op);
-    }
-  }  
 
   right = x + w;
   bottom = y + h;
