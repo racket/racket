@@ -813,6 +813,9 @@ sequence must not start or end with @litchar{/}. A sequence
 that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
 
+@margin-note{The @schememodname[syntax/module-reader] library provides a
+             domain-specific language for writing language readers.}
+
 Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
 followed by a space when @litchar{#!} is followed by alphanumeric
 ASCII, @litchar{+}, @litchar{-}, or @litchar{_}. Use of this synonym
