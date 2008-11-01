@@ -22,7 +22,8 @@
         [prefix comment-box: framework:comment-box^]
         [prefix mode: framework:mode^]
         [prefix color: framework:color^]
-        [prefix color-prefs: framework:color-prefs^])
+        [prefix color-prefs: framework:color-prefs^]
+        [prefix finder: framework:finder^])
 
 (export (rename framework:scheme^
                 [-text-mode<%> text-mode<%>]
@@ -1180,6 +1181,11 @@
           (else
            (values lexeme type paren start end)))))
     
+    (define/override (put-file text sup directory default-name)
+      (parameterize ([finder:default-extension "ss"])
+        ;; don't call the surrogate's super, since it sets the default extension
+        (sup directory default-name)))
+    
     (super-new (get-token (lambda (in) (scheme-lexer-wrapper in)))
                (token-sym->style short-sym->style-name)
                (matches '((|(| |)|)
@@ -1219,18 +1225,7 @@
 (define text-mode% (text-mode-mixin color:text-mode%))
 
 
-;;                                 ;;                                        
-;                                  ;                                        
-;                                  ;                                        
-;;;    ;;;   ; ;;    ;;;  ;;; ;    ;;;          ;  ;;   ;;;  ;;; ;;;;;; ;   ;;;;  ; ;;;  
-;   ;  ;   ;  ;;  ;  ;   ;  ; ; ;  ;   ;         ; ;    ;   ;  ;   ;  ; ; ;      ;  ;   ; 
-;;;   ;      ;   ;  ;;;;;  ; ; ;  ;;;;;         ;;     ;;;;;  ;   ;  ; ; ;   ;;;;  ;   ; 
-;  ;      ;   ;  ;      ; ; ;  ;             ; ;    ;       ; ;   ; ; ;  ;   ;  ;   ; 
-;   ;  ;   ;  ;   ;  ;   ;  ; ; ;  ;   ;         ;  ;   ;   ;   ;;;   ; ; ;  ;   ;  ;   ; 
-;;;    ;;;  ;;; ;;;  ;;;  ;; ; ;;  ;;;         ;;   ;;  ;;;     ;   ;; ; ;;  ;;; ; ;;;;  
-;                  ;     
-;                  ;     
-;;                  ;;;    
+
 (define (setup-keymap keymap)
   (let ([add-pos-function
          (λ (name call-method)
