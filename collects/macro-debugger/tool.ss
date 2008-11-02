@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/base
          scheme/list
@@ -13,6 +12,7 @@
          "model/deriv.ss"
          "model/deriv-util.ss"
          "view/frame.ss"
+         (only-in "view/view.ss" macro-stepper-director%)
          "view/stepper.ss"
          "view/prefs.ss")
 
@@ -23,7 +23,7 @@
   (interface ()
     enable-macro-stepper?))
 
-(define (ext-macro-stepper-frame-mixin %)
+(define (drscheme-macro-stepper-frame-mixin %)
   (class %
     (define/override (get-macro-stepper-widget%)
       (macro-stepper-widget/process-mixin
@@ -31,15 +31,41 @@
     (super-new)))
 
 (define macro-stepper-frame%
-  (ext-macro-stepper-frame-mixin
+  (drscheme-macro-stepper-frame-mixin
    (macro-stepper-frame-mixin
     (frame:standard-menus-mixin
      frame:basic%))))
 
+(define drscheme-macro-stepper-director%
+  (class macro-stepper-director%
+    (init-field filename)
+    (define stepper #f)
+    (inherit new-stepper)
+
+    (define/public (lazy-new-stepper)
+      (unless stepper
+        (set! stepper (new-stepper))))
+
+    (define/override (add-trace events)
+      (lazy-new-stepper)
+      (super add-trace events))
+    (define/override (add-deriv deriv)
+      (lazy-new-stepper)
+      (super add-deriv deriv))
+
+    (define/override (new-stepper-frame)
+      (new macro-stepper-frame%
+           (config (new macro-stepper-config/prefs%))
+           (filename filename)
+           (director this)))
+
+    (super-new)))
+
+
 (define tool@
   (unit (import drscheme:tool^)
         (export drscheme:tool-exports^)
-    
+
     (define (phase1)
       (drscheme:language:extend-language-interface
        language/macro-stepper<%>
@@ -147,18 +173,16 @@
 
         (define debugging? #f)
 
-        (define current-stepper #f)
+        (define current-stepper-director #f)
         
         (define/public (enable-macro-debugging ?)
           (set! debugging? ?))
 
         (define/override (reset-console)
           (super reset-console)
-          (when current-stepper
-            #;(message-box "obsoleting stepper" "before" #f '(ok))
-            (send current-stepper add-obsoleted-warning)
-            #;(message-box "obsoleting stepper" "after" #f '(ok))
-            (set! current-stepper #f))
+          (when current-stepper-director
+            (send current-stepper-director add-obsoleted-warning)
+            (set! current-stepper-director #f))
           (run-in-evaluation-thread
            (lambda ()
              (let-values ([(e mnr) 
@@ -168,23 +192,21 @@
                (current-module-name-resolver mnr)))))
 
         (define/private (make-stepper filename)
-          (let ([frame (new macro-stepper-frame%
-                            (filename filename)
-                            (config (new macro-stepper-config/prefs%)))])
-            (set! current-stepper frame)
-            (send frame show #t)
-            (send frame get-widget)))
+          (new drscheme-macro-stepper-director% (filename filename)))
 
-        (define/private (make-handlers original-eval-handler original-module-name-resolver)
-          (let* ([filename (send (send (get-top-level-window) get-definitions-text)
+        (define/private (make-handlers original-eval-handler
+                                       original-module-name-resolver)
+          (let* ([filename (send (send (get-top-level-window)
+                                       get-definitions-text)
                                  get-filename/untitled-name)]
-                 [stepperp (delay (make-stepper filename))]
+                 [director (make-stepper filename)]
                  [debugging? debugging?])
+            (set! current-stepper-director director)
             (values
              (lambda (expr)
                (if (and debugging? (syntax? expr))
                    (let-values ([(e-expr events derivp) (trace* expr expand)])
-                     (show-deriv stepperp events)
+                     (show-deriv director events)
                      (if (syntax? e-expr)
                          (parameterize ((current-eval original-eval-handler))
                            (original-eval-handler e-expr))
@@ -203,11 +225,11 @@
                        (set! debugging? saved-debugging?)
                        (when eo (current-expand-observe eo)))))))))
 
-        (define/private (show-deriv stepperp events)
+        (define/private (show-deriv director events)
           (parameterize ([current-eventspace drscheme-eventspace])
             (queue-callback
              (lambda ()
-               (send (force stepperp) add-trace events)))))
+               (send director add-trace events)))))
         ))
 
     ;; Borrowed from mztake/debug-tool.ss

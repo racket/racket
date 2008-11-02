@@ -33,6 +33,7 @@
   (class* object% ()
     (init-field parent)
     (init-field config)
+    (init-field director)
 
     ;; Terms
 
@@ -75,6 +76,20 @@
       (cursor:remove-current! terms)
       (trim-navigator)
       (refresh))
+
+    ;; show-in-new-frame : -> void
+    (define/public (show-in-new-frame)
+      (let ([term (focused-term)])
+        (when term
+          (let ([new-stepper (send director new-stepper '(no-new-traces))])
+            (send new-stepper add-deriv (send term get-raw-deriv))
+            (void)))))
+
+    ;; duplicate-stepper : -> void
+    (define/public (duplicate-stepper)
+      (let ([new-stepper (send director new-stepper)])
+        (for ([term (cursor->list terms)])
+          (send new-stepper add-deriv (send term get-raw-deriv)))))
 
     (define/public (get-config) config)
     (define/public (get-controller) sbc)
@@ -414,7 +429,8 @@
                 [(for/or ([x (base-resolves deriv)]) (top-interaction-kw? x))
                  ;; Just mzscheme's top-interaction; strip it out
                  (adjust-deriv/top (mrule-next deriv))]
-                [(equal? (map syntax-e (base-resolves deriv)) '(#%top-interaction))
+                [(equal? (map syntax-e (base-resolves deriv))
+                         '(#%top-interaction))
                  ;; A *different* top interaction; keep it
                  deriv]
                 [else

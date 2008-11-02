@@ -26,6 +26,7 @@
 (define (macro-stepper-frame-mixin base-frame%)
   (class base-frame%
     (init-field config)
+    (init-field director)
     (init-field (filename #f))
 
     (define obsoleted? #f)
@@ -56,25 +57,6 @@
       (send config set-height h)
       (send widget update/preserve-view))
 
-    (override/return-false file-menu:create-new?
-                           file-menu:create-open?
-                           file-menu:create-open-recent?
-                           file-menu:create-revert?
-                           file-menu:create-save?
-                           file-menu:create-save-as?
-                           ;file-menu:create-print?
-                           edit-menu:create-undo?
-                           edit-menu:create-redo?
-                           ;edit-menu:create-cut?
-                           ;edit-menu:create-paste?
-                           edit-menu:create-clear?)
-
-    (define file-menu (get-file-menu))
-    (define edit-menu (get-edit-menu))
-    (define stepper-menu
-      (new (get-menu%) (parent (get-menu-bar)) (label "Stepper")))
-    (define help-menu (get-help-menu))
-
     (define warning-panel
       (new horizontal-panel%
            (parent (get-area-container))
@@ -87,6 +69,7 @@
     (define widget
       (new (get-macro-stepper-widget%)
            (parent (get-area-container))
+           (director director)
            (config config)))
     (define controller (send widget get-controller))
 
@@ -109,6 +92,32 @@
                       (remq warning-panel children))))))
 
     ;; Set up menus
+
+    (override/return-false file-menu:create-new?
+                           file-menu:create-open?
+                           file-menu:create-open-recent?
+                           file-menu:create-revert?
+                           file-menu:create-save?
+                           file-menu:create-save-as?
+                           ;file-menu:create-print?
+                           edit-menu:create-undo?
+                           edit-menu:create-redo?
+                           ;edit-menu:create-cut?
+                           ;edit-menu:create-paste?
+                           edit-menu:create-clear?)
+
+    (define stepper-menu
+      (new (get-menu%) (parent (get-menu-bar)) (label "Stepper")))
+
+    (define/override (file-menu:between-new-and-open file-menu)
+      (new (get-menu-item%)
+           (label "Duplicate stepper")
+           (parent file-menu)
+           (callback (lambda _ (send widget duplicate-stepper))))
+      (new (get-menu-item%)
+           (label "Duplicate stepper (current term only)")
+           (parent file-menu)
+           (callback (lambda _ (send widget show-in-new-frame)))))
 
     (menu-option/notify-box stepper-menu
                             "Show syntax properties"
@@ -148,11 +157,7 @@
     (menu-option/notify-box stepper-menu
                             "Show macro hiding panel"
                             (get-field show-hiding-panel? config))
-    #;
-    (new (get-menu-item%)
-         (label "Show in new frame")
-         (parent stepper-menu)
-         (callback (lambda _ (send widget show-in-new-frame))))
+
     (new (get-menu-item%)
          (label "Remove selected term")
          (parent stepper-menu)
@@ -240,9 +245,12 @@
       (let ([dc (get-dc)])
         (send dc set-font warning-font) 
         (let-values ([(cw ch) (get-client-size)]
-                     [(tw th dont-care dont-care2) (send dc get-text-extent warning)])
-          (send dc set-pen (send the-pen-list find-or-create-pen warning-color 1 'solid))
-          (send dc set-brush (send the-brush-list find-or-create-brush warning-color 'solid))
+                     [(tw th dont-care dont-care2) 
+                      (send dc get-text-extent warning)])
+          (send dc set-pen 
+                (send the-pen-list find-or-create-pen warning-color 1 'solid))
+          (send dc set-brush
+                (send the-brush-list find-or-create-brush warning-color 'solid))
           (send dc draw-rectangle 0 0 cw ch)
           (send dc draw-text 
                 warning
@@ -250,7 +258,8 @@
                 (- (/ ch 2) (/ th 2))))))
     (super-new)
     (inherit min-width min-height stretchable-height)
-    (let-values ([(tw th dc dc2) (send (get-dc) get-text-extent warning warning-font)])
+    (let-values ([(tw th dc dc2)
+                  (send (get-dc) get-text-extent warning warning-font)])
       (min-width (+ 2 (inexact->exact (ceiling tw))))
       (min-height (+ 2 (inexact->exact (ceiling th)))))
     (stretchable-height #f)))
