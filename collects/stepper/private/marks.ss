@@ -72,14 +72,14 @@
   
   ; see module top for type
   (define (make-full-mark location label bindings)
-    (datum->syntax #'here `(lambda () (,(make-make-full-mark-varargs location label bindings)
-                                              ,@(map make-mark-binding-stx bindings)))))
+    (datum->syntax #'here `(#%plain-lambda () (#%plain-app ,(make-make-full-mark-varargs location label bindings)
+                                                           ,@(map make-mark-binding-stx bindings)))))
   
   (define (mark-source mark)
     (full-mark-struct-source (mark)))
     
   (define (make-mark-binding-stx id)
-    #`(lambda () #,id))
+    #`(#%plain-lambda () #,id))
   
   (define (mark-bindings mark)
     (map list 
