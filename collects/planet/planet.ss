@@ -43,7 +43,9 @@ Download and install the package that
    (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))
 would install"
       #:args (owner pkg maj min)
-      (download/install owner pkg maj min)]
+      (begin
+        (verify-package-name pkg)
+        (download/install owner pkg maj min))]
      ["remove" "remove the specified package from the local cache"
       "
 Remove the specified package from the local cache, optionally also removing its distribution file"
@@ -75,21 +77,29 @@ Install local file <plt-file> into the planet cache as though it had been downlo
      ["link" "create a development link"
       "\nCreate a development link between the specified package specifier and the specified directory name"
       #:args (owner pkg maj min path)
-      (add-hard-link-cmd owner pkg maj min path)]
+      (begin
+        (verify-package-name pkg)
+        (add-hard-link-cmd owner pkg maj min path))]
      ["unlink" "remove development link associated with the given package"
       "\nRemove development link associated with the given package"
       #:args (owner pkg maj min)
-      (remove-hard-link-cmd owner pkg maj min)]
+      (begin
+        (verify-package-name pkg)
+        (remove-hard-link-cmd owner pkg maj min))]
      ["fetch" "download a package file without installing it"
        "\nDownload the given package file without installing it"
        #:args (owner pkg maj min)
-       (download/no-install owner pkg maj min)]
+       (begin
+         (verify-package-name pkg)
+         (download/no-install owner pkg maj min))]
      ["url" "get a URL for the given package"
       "
 Get a URL for the given package.
 This is not necessary for normal use of planet, but may be helpful in some circumstances for retrieving packages."
       #:args (owner pkg maj min)
-      (get-download-url owner pkg maj min)]
+      (begin
+        (verify-package-name pkg)
+        (get-download-url owner pkg maj min))]
      ["open" "unpack the contents of the given package"
       "
 Unpack the contents of the given package into the given directory without installing.
@@ -114,6 +124,11 @@ This command does not unpack or install the named .plt file."
          module
          "Remove all linkage the given module has, forcing it to upgrade"
          ...)))
+
+  (define (verify-package-name pkg)
+    (unless (regexp-match #rx"\\.plt$" pkg)
+      (fprintf (current-error-port) "Expected package name to end with '.plt', got: ~a\n" pkg)
+      (exit 1)))
   
   
   ;; ============================================================
