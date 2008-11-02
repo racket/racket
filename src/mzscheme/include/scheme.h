@@ -1756,6 +1756,9 @@ MZ_EXTERN int scheme_get_external_event_fd(void);
 MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
 MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
+typedef void (*Scheme_Report_Out_Of_Memory_Proc)(void);
+MZ_EXTERN void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p);
+
 /* Stack-preparation start-up: */
 typedef int (*Scheme_Nested_Main)(void *data);
 MZ_EXTERN int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data);

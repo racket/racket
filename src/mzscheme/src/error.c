@@ -2583,6 +2583,8 @@ static mzReportEventProc mzReportEvent;
 
 void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len, Scheme_Object *data)
 {
+  /* This function must avoid GC allocation when called with the
+     configuration of scheme_log_abort(). */
   Scheme_Logger *orig_logger;
   Scheme_Object *queue, *q, *msg = NULL, *b;
   Scheme_Log_Reader *lr;
@@ -2683,10 +2685,10 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len
           memcpy(naya + slen + 2, buffer, len);
           naya[slen + 2 + len] = 0;
           buffer = naya;
-		  len += slen + 2;
+          len += slen + 2;
         }
-		a[0] = buffer;
-		mzReportEvent(hEventLog, ty, 1 /* category */,
+        a[0] = buffer;
+        mzReportEvent(hEventLog, ty, 1 /* category */,
                       (sev << 30) | 2 /* message */,
                       NULL, 
                       1, 0,
@@ -2769,6 +2771,26 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len
 
     logger = logger->parent;
   }
+}
+
+void scheme_log_abort(char *buffer)
+{
+  Scheme_Logger logger;
+  long ts;
+
+  memset(&logger, 0, sizeof(logger));
+
+  logger.name = NULL;
+  logger.parent = NULL;
+  logger.want_level = SCHEME_LOG_FATAL;
+
+  ts = 0;
+  logger.timestamp = &ts;
+  logger.local_timestamp = ts;
+  logger.syslog_level = init_syslog_level;
+  logger.stderr_level = init_stderr_level;
+
+  scheme_log_message(&logger, SCHEME_LOG_FATAL, buffer, strlen(buffer), scheme_false);
 }
 
 static int extract_level(const char *who, int which, int argc, Scheme_Object **argv)

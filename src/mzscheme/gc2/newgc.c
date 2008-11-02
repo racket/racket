@@ -128,6 +128,7 @@ void (*GC_collect_start_callback)(void);
 void (*GC_collect_end_callback)(void);
 void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 void (*GC_out_of_memory)(void);
+void (*GC_report_out_of_memory)(void);
 unsigned long (*GC_get_thread_stack_base)(void);
 void (*GC_mark_xtagged)(void *obj);
 void (*GC_fixup_xtagged)(void *obj);
@@ -148,6 +149,14 @@ static unsigned long in_unsafe_allocation_mode = 0;
 static void (*unsafe_allocation_abort)();
 static void garbage_collect(int);
 
+static void out_of_memory()
+{
+  if (GC_report_out_of_memory)
+    GC_report_out_of_memory();
+  GCPRINT(GCOUTF, "The system has run out of memory!\n");
+  abort();
+}
+
 inline static void check_used_against_max(size_t len) 
 {
   used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
@@ -163,9 +172,9 @@ inline static void check_used_against_max(size_t len)
 	if(used_pages > max_used_pages) {
 	  /* nope, no go. there's simply too much memory allocated. Inform
 	     the thunk and then die semi-gracefully */
-	  if(GC_out_of_memory)
-	    GC_out_of_memory();
-	  GCPRINT(GCOUTF, "The system has run out of memory!\n"); abort();
+          if (GC_out_of_memory)
+            GC_out_of_memory();
+          out_of_memory();
 	}
       }
     }
@@ -392,6 +401,7 @@ static struct mpage *malloc_mpage()
 {
   struct mpage *page;
   page = malloc(sizeof(struct mpage));
+  if (!page) out_of_memory();
   memset(page, 0, sizeof(struct mpage));
   return page;
 }
@@ -445,6 +455,7 @@ static void *allocate_big(size_t sizeb, int type)
     addr = malloc_dirty_pages(round_to_apage_size(sizeb), APAGE_SIZE);
   else
     addr = malloc_pages(round_to_apage_size(sizeb), APAGE_SIZE);
+  if (!addr) out_of_memory();
   bpage->addr = addr;
   bpage->size = sizeb;
   bpage->big_page = 1;
@@ -557,7 +568,7 @@ void *GC_malloc_one_tagged(size_t s) { return allocate(s, PAGE_TAGGED); }
 void *GC_malloc_one_xtagged(size_t s) { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s) { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s) { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s) { void *p = malloc(s); memset(p, 0, s); return p; }
+void *GC_malloc_atomic_uncollectable(size_t s) { void *p = malloc(s); if (!p) out_of_memory(); memset(p, 0, s); return p; }
 void *GC_malloc_allow_interior(size_t s) {return allocate_big(s, PAGE_ARRAY);}
 void *GC_malloc_atomic_allow_interior(size_t s) {return allocate_big(s, PAGE_ATOMIC);}
 void *GC_malloc_tagged_allow_interior(size_t s) {return allocate_big(s, PAGE_TAGGED);}
@@ -741,6 +752,7 @@ inline static void resize_gen0(unsigned long new_size)
   while(alloced_size < new_size) {
     work = malloc_mpage();
     addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+    if (!addr) out_of_memory();
     work->addr = addr;
     if(prev)
       prev->next = work;
@@ -898,6 +910,7 @@ static void backtrace_new_page(struct mpage *page)
   /* This is a little wastefull for big pages, because we'll
      only use the first few words: */
   page->backtrace = (void **)malloc_pages(APAGE_SIZE, APAGE_SIZE);
+  if (!page->backtrace) out_of_memory();
 }
 
 static void free_backtrace(struct mpage *page)
@@ -1061,7 +1074,7 @@ static struct immobile_box *immobile_boxes = NULL;
 void **GC_malloc_immobile_box(void *p)
 {
   struct immobile_box *ib = malloc(sizeof(struct immobile_box));
-  if(!ib) GCERR((GCOUTF, "Couldn't allocate space for immobile box!\n"));
+  if (!ib) out_of_memory();
   ib->p = p; ib->next = immobile_boxes; ib->prev = NULL;
   if(ib->next) ib->next->prev = ib;
   immobile_boxes = ib;
@@ -1310,6 +1323,7 @@ inline static void register_new_thread(void *t, void *c)
   struct gc_thread_info *work;
 
   work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
+  if (!work) out_of_memory();
   ((Scheme_Thread *)t)->gc_info = work;
   work->owner = current_owner((Scheme_Custodian *)c);
   work->thread = t;
@@ -1427,6 +1441,7 @@ inline static void push_ptr(void *ptr)
   /* This happens at the very beginning */
   if(!int_top) {
     int_top = (struct stacklet*)malloc(STACK_PART_SIZE);
+    if (!int_top) out_of_memory();
     int_top->prev = int_top->next = NULL;
     int_top->top = PPTR(int_top) + 4;
     int_top->end = PPTR(NUM(int_top) + STACK_PART_SIZE);
@@ -1442,6 +1457,7 @@ inline static void push_ptr(void *ptr)
     } else {
       /* we don't, so we need to allocate one */
       int_top->next = (struct stacklet*)malloc(STACK_PART_SIZE);
+      if (!int_top->next) out_of_memory();
       int_top->next->prev = int_top;
       int_top = int_top->next;
       int_top->next = NULL;
@@ -1539,6 +1555,7 @@ inline static int create_blank_owner_set(void)
   for (i = 1; i < owner_table_top; i++) {
     if (!owner_table[i]) {
       owner_table[i] = malloc(sizeof(struct ot_entry));
+      if (!owner_table[i]) out_of_memory();
       bzero(owner_table[i], sizeof(struct ot_entry));
       return i;
     }
@@ -1551,6 +1568,7 @@ inline static int create_blank_owner_set(void)
     owner_table_top *= 2;
 
   naya = (struct ot_entry **)malloc(owner_table_top*sizeof(struct ot_entry*));
+  if (!naya) out_of_memory();
   memcpy(naya, owner_table, old_top*sizeof(struct ot_entry*));
   owner_table = naya;
   bzero((char*)owner_table + (sizeof(struct ot_entry*) * old_top),
@@ -1892,6 +1910,7 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
 
   if(!work) {
     work = malloc(sizeof(struct account_hook));
+    if (!work) out_of_memory();
     work->type = type; work->c1 = c1; work->c2 = c2; work->amount = b;
     work->next = hooks; hooks = work;
   }
@@ -2265,6 +2284,7 @@ void GC_mark(const void *const_p)
             void *addr;
 	    work = malloc_mpage();
             addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+            if (!addr) out_of_memory();
             work->addr = addr;
 	    work->generation = 1;
 	    work->page_type = type;
@@ -2696,6 +2716,7 @@ struct mpage *allocate_compact_target(struct mpage *work)
 
   npage = malloc_mpage();
   addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+  if (!addr) out_of_memory();
   npage->addr = addr;
   npage->previous_size = npage->size = PREFIX_SIZE;
   npage->generation = 1;
@@ -2999,11 +3020,6 @@ static void protect_old_pages(void)
   flush_protect_page_ranges(0);
 }
 
-static void gc_overmem_abort()
-{
-  GCERR((GCOUTF, "ERROR: out of memory during collection!\n"));
-}
-
 #if 0
 extern double scheme_get_inexact_milliseconds(void);
 # define TIME_DECLS() double start, task_start
@@ -3057,7 +3073,7 @@ static void garbage_collect(int force_full)
   /* we don't want the low-level allocator freaking because we've gone past
      half the available memory */
   in_unsafe_allocation_mode = 1;
-  unsafe_allocation_abort = gc_overmem_abort;
+  unsafe_allocation_abort = out_of_memory;
 
   TIME_INIT();
 

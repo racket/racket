@@ -99,6 +99,11 @@ GC2_EXTERN void (*GC_out_of_memory)(void);
    Called by GC when it can't satify a memory request. GC_out_of_memory()
    might perform a longjmp. */
 
+GC2_EXTERN void (*GC_report_out_of_memory)(void);
+/*
+   Called by GC when it has to give up, maybe due to running out of memory
+   during a collection. */
+
 GC2_EXTERN void GC_dump(void);
 /*
    Dumps memory state info to stderr. */
