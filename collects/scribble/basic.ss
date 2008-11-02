@@ -119,7 +119,9 @@
             (list? v))
         (let ([b (hash-ref interned v #f)])
           (if b
-              (weak-box-value b)
+              (or (weak-box-value b)
+                  ;; just in case the value is GCed before we extract it:
+                  (intern-taglet v))
               (begin
                 (hash-set! interned v (make-weak-box v))
                 v)))

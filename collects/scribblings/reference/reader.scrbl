@@ -826,6 +826,28 @@ certain grammars, such as that of R@superscript{6}RS
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
 
+@defmodulelang[s-exp]
+
+The @scheme[s-exp] ``language'' is a kind of meta-language. It
+@scheme[read]s the S-expression that follows @litchar{#lang s-exp} and
+uses it as the language of a @scheme[module] form. It also reads all
+remaining S-expressions until an end-of-file, using them for the body
+of the generated @scheme[module].
+
+That is,
+
+@schememod[
+s-exp _module-path
+_form ...
+]
+
+is equivalent to
+
+@schemeblock[
+(module _name _module-path
+  _form ...)
+]
+
 @section[#:tag "parse-honu"]{Honu Parsing}
 
 See @|HonuManual| for information on @litchar{#hx} and
