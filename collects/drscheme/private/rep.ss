@@ -312,7 +312,7 @@ TODO
   (define drs-bindings-keymap-mixin
     (mixin (editor:keymap<%>) (editor:keymap<%>)
       (define/override (get-keymaps)
-        (append (super get-keymaps) (list drs-bindings-keymap)))
+        (editor:add-after-user-keymap drs-bindings-keymap (super get-keymaps)))
       (super-instantiate ())))
   
   ;; Max length of output queue (user's thread blocks if the
@@ -848,18 +848,8 @@ TODO
         (inner (void) after-delete x y))
       
       (define/override (get-keymaps)
-        (let loop ([old-maps (super get-keymaps)])
-          (cond
-            [(null? old-maps) 
-             (list scheme-interaction-mode-keymap)]
-            [else
-             (cond
-               [(eq? (car old-maps) (keymap:get-global))
-                (list* (car old-maps)
-                       scheme-interaction-mode-keymap
-                       (cdr old-maps))]
-               [else
-                (cons (car old-maps) (loop (cdr old-maps)))])])))
+        (editor:add-after-user-keymap scheme-interaction-mode-keymap
+                                      (super get-keymaps)))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;;                                            ;;;

@@ -428,16 +428,25 @@
   (define -keymap<%> (interface (basic<%>) get-keymaps))
   (define keymap-mixin
     (mixin (basic<%>) (-keymap<%>)
-      [define/public get-keymaps
-        (λ ()
-          (list (keymap:get-global)))]
+      (define/public (get-keymaps)
+        (list (keymap:get-user) (keymap:get-global)))
       (inherit set-keymap)
       
-      (super-instantiate ())
+      (super-new)
       (let ([keymap (make-object keymap:aug-keymap%)])
         (set-keymap keymap)
         (for-each (λ (k) (send keymap chain-to-keymap k #f))
                   (get-keymaps)))))
+  
+  (define (add-after-user-keymap km kms)
+    (let loop ([kms kms])
+      (cond
+        [(null? kms) (list km)]
+        [else
+         (let ([f (car kms)])
+           (if (eq? f (keymap:get-user))
+               (list* f km (cdr kms))
+               (cons f (loop (cdr kms)))))])))
   
   (define autowrap<%> (interface (basic<%>)))
   (define autowrap-mixin
@@ -505,7 +514,7 @@
       (define/public (get-can-close-parent) #f)
       
       (define/override (get-keymaps)
-        (append (super get-keymaps) (list (keymap:get-file))))
+        (add-after-user-keymap (keymap:get-file) (super get-keymaps)))
       (super-new)))
   
   (define backup-autosave<%>

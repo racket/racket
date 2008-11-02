@@ -1691,7 +1691,7 @@
                                   (loop (send snip next)))]
                            [else (cons snip (loop (send snip next)))]))))
     (define/override (get-keymaps)
-      (append (super get-keymaps) (list search/replace-keymap)))
+      (editor:add-after-user-keymap search/replace-keymap (super get-keymaps)))
     (super-new)
     (inherit set-styles-fixed)
     (set-styles-fixed #t)
@@ -1889,7 +1889,7 @@
     (inherit set-styles-fixed)
     (super-new [pref-sym 'framework:replace-string])
     (define/override (get-keymaps)
-      (append (super get-keymaps) (list search/replace-keymap)))
+      (editor:add-after-user-keymap search/replace-keymap (super get-keymaps)))
     (set-styles-fixed #t)))
 
 (define search/replace-keymap (new keymap%))
@@ -1952,6 +1952,7 @@
         (set! red? r?)
         (refresh)))
     (define/override (on-paint)
+      (super on-paint)
       (when red?
         (let ([dc (get-dc)])
           (let-values ([(cw ch) (get-client-size)])
@@ -1961,8 +1962,7 @@
               (send dc set-brush "pink" 'solid)
               (send dc draw-rectangle 0 0 cw ch)
               (send dc set-pen pen)
-              (send dc set-brush brush)))))
-      (super on-paint))
+              (send dc set-brush brush))))))
     (super-new)))
 
 (define-local-member-name 

@@ -145,7 +145,8 @@
      set-standard-style-list-pref-callbacks
      set-standard-style-list-delta
      set-default-font-color
-     get-default-color-style-name))
+     get-default-color-style-name
+     add-after-user-keymap))
   
   (define-signature pasteboard-class^
     (basic%
@@ -351,6 +352,7 @@
      setup-file
      setup-editor
      
+     get-user
      get-global
      get-search
      get-file

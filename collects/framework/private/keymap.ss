@@ -27,7 +27,8 @@
      (λ ()
        (let* ([path (spec->path spec)]
               [sexp (and (file-exists? path)
-                         (call-with-input-file path read))])
+                         (parameterize ([read-accept-reader #t])
+                           (call-with-input-file path read)))])
          (match sexp
            [`(module ,name ,(or `(lib "keybinding-lang.ss" "framework")
                                 `(lib "framework/keybinding-lang.ss")
@@ -35,7 +36,7 @@
                ,@(x ...)) 
             (let ([km (dynamic-require spec '#%keymap)])
               (hash-set! user-keybindings-files spec km)
-              (send global chain-to-keymap km #t))]
+              (send user-keymap chain-to-keymap km #t))]
            [else (error 'add-user-keybindings-file 
                         (string-constant user-defined-keybinding-malformed-file)
                         (path->string path))])))))
@@ -1402,6 +1403,9 @@
     (add-editor-keymap-functions keymap)
     (add-pasteboard-keymap-functions keymap)
     (add-text-keymap-functions keymap))
+  
+  (define user-keymap (make-object aug-keymap%))
+  (define (get-user) user-keymap)
   
   (define global (make-object aug-keymap%))
   (define global-main (make-object aug-keymap%))

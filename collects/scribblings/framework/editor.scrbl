@@ -278,9 +278,9 @@
     should return the same list of keymaps each time it is
     called.
 
+    See also @scheme[editor:add-after-user-keymap].
 
-    Defaultly returns @scheme[(list
-    @scheme[keymap:get-global])]
+    Defaultly returns @scheme[(list (keymap:get-user) (keymap:get-global))]
   }
 }
 @defmixin[editor:keymap-mixin (editor:basic<%>) (editor:keymap<%>)]{

@@ -987,6 +987,13 @@
   (-> (is-a?/c keymap%))
   ()
   @{This returns a keymap for handling file operations.})
+
+ (proc-doc/names
+  keymap:get-user
+  (-> (is-a?/c keymap%))
+  ()
+  @{This returns a keymap that contains all of the keybindings in the keymaps loaded via @scheme[keymap:add-user-keybindings-file]})
+
  
  (proc-doc/names
   keymap:get-global
@@ -1382,6 +1389,15 @@
   ()
   @{Returns a style list that is used for all instances of
             @scheme[editor:standard-style-list%].})
+ 
+ (proc-doc/names
+  editor:add-after-user-keymap
+  (-> (is-a?/c keymap%) (listof (is-a?/c keymap%)) (listof (is-a?/c keymap%)))
+  (keymap keymaps)
+  @{Returns a list that contains all of the keymaps in @scheme[keymaps], in the
+    same relative order, but also with @scheme[keymap], where @scheme[keymap]
+    is now the first keymap after @scheme[keymap:get-user] (if that keymap is
+    in the list.)})
  
  (proc-doc/names
   color-model:rgb->xyz
