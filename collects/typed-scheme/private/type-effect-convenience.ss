@@ -11,7 +11,8 @@
          "type-utils.ss" 
          scheme/promise
          (for-syntax macro-debugger/stxclass/stxclass)
-         (for-syntax scheme/base))
+         (for-syntax scheme/base)
+         (for-template scheme/base scheme/contract))
 
 (provide (all-defined-out) 
          ;; these should all eventually go away
@@ -114,27 +115,27 @@
     (lambda (t)
       (make-Struct s #f (list t) #f #f #'promise? values))))
 
-(define N (make-Base 'Number))
-(define -Integer (make-Base 'Integer))
-(define B (make-Base 'Boolean))
-(define Sym (make-Base 'Symbol))
-(define -Void (make-Base 'Void))
-(define -Bytes (make-Base 'Bytes))
-(define -Regexp (make-Base 'Regexp))
-(define -PRegexp (make-Base 'PRegexp))
-(define -Byte-Regexp (make-Base 'Byte-Regexp))
-(define -Byte-PRegexp (make-Base 'Byte-PRegexp))
-(define -String (make-Base 'String))
-(define -Keyword (make-Base 'Keyword))
-(define -Char (make-Base 'Char))
-(define -Syntax make-Syntax)
-(define -Prompt-Tag (make-Base 'Prompt-Tag))
-(define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set))
-(define -Path (make-Base 'Path))
-(define -Namespace (make-Base 'Namespace))
-(define -Output-Port (make-Base 'Output-Port))
-(define -Input-Port (make-Base 'Input-Port))  
+(define N (make-Base 'Number #'number?))
+(define -Integer (make-Base 'Integer #'integer?))
+(define B (make-Base 'Boolean #'boolean?))
+(define Sym (make-Base 'Symbol #'symbol?))
+(define -Void (make-Base 'Void #'void?))
+(define -Bytes (make-Base 'Bytes #'bytes?))
+(define -Regexp (make-Base 'Regexp #'(and/c regexp? (not/c pregexp?) (not/c byte-regexp?))))
+(define -PRegexp (make-Base 'PRegexp #'(and/c pregexp? (not/c byte-pregexp?))))
+(define -Byte-Regexp (make-Base 'Byte-Regexp #'(and/c byte-regexp? (not/c byte-pregexp?))))
+(define -Byte-PRegexp (make-Base 'Byte-PRegexp #'byte-pregexp?))
+(define -String (make-Base 'String #'string?))
+(define -Keyword (make-Base 'Keyword #'keyword?))
+(define -Char (make-Base 'Char #'char?))
+(define -Prompt-Tag (make-Base 'Prompt-Tag #'continuation-prompt-tag?))
+(define -Cont-Mark-Set (make-Base 'Continuation-Mark-Set #'continuation-mark-set?))
+(define -Path (make-Base 'Path #'path?))
+(define -Namespace (make-Base 'Namespace #'namespace?))
+(define -Output-Port (make-Base 'Output-Port #'output-port?))
+(define -Input-Port (make-Base 'Input-Port #'input-port?))
 
+(define -Syntax make-Syntax)
 (define -HT make-Hashtable)
 (define -Promise make-promise-ty)
 
@@ -173,7 +174,6 @@
 
 
 (define -pair make-Pair)
-(define -base make-Base)
 
 (define -struct make-Struct)
 (define -val make-Value)

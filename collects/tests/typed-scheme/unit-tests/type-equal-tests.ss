@@ -7,6 +7,8 @@
 
 (provide type-equal-tests)
 
+(define (-base x) (make-Base x #f))
+
 
 (define-syntax (te-tests stx)
   (define (single-test stx)

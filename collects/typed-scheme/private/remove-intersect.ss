@@ -23,16 +23,16 @@
      (ormap (lambda (t*) (overlap t t*)) e)]
     [(or (list _ (? Poly?)) (list (? Poly?) _))
      #t] ;; these can have overlap, conservatively
-    [(list (Base: s1) (Base: s2)) (eq? s1 s2)]
-    [(list (Base: _) (Value: _)) (subtype t2 t1)] ;; conservative
-    [(list (Value: _) (Base: _)) (subtype t1 t2)] ;; conservative
+    [(list (Base: s1 _) (Base: s2 _)) (eq? s1 s2)]
+    [(list (Base: _ _) (Value: _)) (subtype t2 t1)] ;; conservative
+    [(list (Value: _) (Base: _ _)) (subtype t1 t2)] ;; conservative
     [(list (Syntax: t) (Syntax: t*))
      (overlap t t*)]
     [(or (list (Syntax: _) _)
          (list _ (Syntax: _)))
      #f]    
-    [(list (Base: _) _) #f]
-    [(list _ (Base: _)) #f]
+    [(list (Base: _ _) _) #f]
+    [(list _ (Base: _ _)) #f]
     [(list (Value: (? pair? v)) (Pair: _ _)) #t]
     [(list (Pair: _ _) (Value: (? pair? v))) #t]
     [(list (Pair: a b) (Pair: a* b*))

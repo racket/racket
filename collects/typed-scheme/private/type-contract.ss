@@ -56,24 +56,7 @@
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          #`(listof #,(t->c elem-ty))]
         [(? (lambda (e) (eq? Any-Syntax e))) #'syntax?]
-        [(Base: sym)
-         (case sym
-           [(Number) #'number?]
-           [(Boolean) #'boolean?]
-           [(Keyword) #'keyword?]
-           [(Port) #'port?]
-           [(Path) #'path?]
-           [(String) #'string?]
-           [(Symbol) #'symbol?]
-           [(Bytes) #'bytes?]
-           [(Void) #'void?]
-           [(Syntax) #'syntax?]
-           [(Output-Port) #'output-port?]
-           [(Input-Port) #'input-port?]
-           [(Char) #'char?]
-           [(Namespace) #'namespace?]
-           [(Integer) #'integer?]
-           [else (int-err "Base type ~a cannot be converted to contract" sym)])]
+        [(Base: sym cnt) cnt]
         [(Union: elems) 
          (with-syntax 
              ([cnts (map t->c elems)])
@@ -125,7 +108,7 @@
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
         [(Struct: _ _ _ _ #f pred? cert) (cert pred?)]
-        [(Syntax: (Base: 'Symbol)) #'identifier?]
+        [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t)
          (if (equal? ty Any-Syntax)
              #`syntax?

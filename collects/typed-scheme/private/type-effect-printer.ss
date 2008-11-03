@@ -95,7 +95,7 @@
                       [else (fp "~a" v)])]
     [(? tuple? t)
      (fp "~a" (cons 'List (tuple-elems t)))]
-    [(Base: n) (fp "~a" n)]      
+    [(Base: n cnt) (fp "~a" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
     [(Struct: 'Promise par (list fld) proc _ _ _) (fp "(Promise ~a)" fld)]      
     [(Struct: nm par flds proc _ _ _) 
@@ -138,10 +138,10 @@
     #;
     [(Mu-unsafe: b) (fp "(unsafe-mu ~a ~a)" (Type-seq c) b)]
     [(Mu: x (Syntax: (Union: (list
-                              (Base: 'Number) 
-                              (Base: 'Boolean)
-                              (Base: 'Symbol)
-                              (Base: 'String)
+                              (Base: 'Number _) 
+                              (Base: 'Boolean _)
+                              (Base: 'Symbol _)
+                              (Base: 'String _)
                               (Mu: var (Union: (list (Value: '()) (Pair: (F: x) (F: var)))))
                               (Mu: y (Union: (list (F: x) (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))

@@ -50,7 +50,7 @@
 (dt Box (elem) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))])  
 
 ;; name is a Symbol (not a Name)
-(dt Base (name) [#:frees #f] [#:fold-rhs #:base])
+(dt Base (name contract) [#:frees #f] [#:fold-rhs #:base] [#:intern name])
 
 ;; body is a Scope
 (dt Mu (body) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
