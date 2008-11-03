@@ -460,23 +460,24 @@ Matthew
   (define w (image-width img))  
   (define h (image-height img))
   (cond
-    [(and (<= 0 x0) (< x0 w) (<= 0 x1) (< x1 w) (<= 0 y0) (< y0 w) (<= 0 y1) (< y1 w))
-     (add-line img x0 y0 x1 y1 c)]
-    [(= x0 x1) ;; vertical 
+    [(and (<= 0 x0 w) (<= 0 x1 w) (<= 0 y0 w) (<= 0 y1 w))
+     (shrink (add-line img x0 y0 x1 y1 c) 0 0 (- w 1) (- h 1))]
+    [(= x0 x1) ;; vertical that leaves bounds 
      (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
-    [(= y0 y1) ;; horizontal 
+    [(= y0 y1) ;; horizontal that leaves bounds 
      (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
     [else 
      (local ((define lin (points->line x0 y0 x1 y1))
              (define dir (direction x0 y0 x1 y1))
              (define-values (upp low lft rgt) (intersections lin w h))
              (define (add x y) (add-line img x0 y0 x y c)))
+       (printf "up/low: ~s x ~s ~s\n" upp low dir)
        (cond
          [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
           (case dir
             [(upper-left)  (if (number? upp) (add upp 0) (add 0 lft))]
             [(lower-left)  (if (number? low) (add low h) (add 0 lft))]
-            [(upper-right) (if (number? upp) (add upp 0) (add h rgt))]
+            [(upper-right) (if (number? upp) (add upp 0) (add w rgt))]
             [(lower-right) (if (number? low) (add low h) (add w rgt))]
             [else (error 'dir "contract violation: ~e" dir)])]
          [(and (< 0 x1 w) (< 0 y1 h)) ;; (x1,y1) in interior; symmetry!
@@ -657,8 +658,8 @@ Matthew
   (new (class frame%
          (super-new)
          (define/augment (on-close)  
-           (custodian-shutdown-all the-play-back-custodian)
-           (callback-stop!)))
+           (callback-stop!)
+           (custodian-shutdown-all the-play-back-custodian)))
        (label "DrScheme")
        (stretchable-width #f)
        (stretchable-height #f)
