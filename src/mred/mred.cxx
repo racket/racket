@@ -3165,6 +3165,7 @@ static void MrEdOutOfMemory(void)
 void *wxOutOfMemory()
 {
   scheme_out_of_memory_abort();
+  return NULL;
 }
 
 extern "C" {
