@@ -340,12 +340,16 @@
     (define/public (set-external-tag-path p)
       (set! external-tag-path p))
 
+    (define external-root-url #f)
+    (define/public (set-external-root-url p)
+      (set! external-root-url p))
+
     (define/public (tag->path+anchor ri tag)
       ;; Called externally; not used internally
       (let-values ([(dest ext?) (resolve-get/ext? #f ri tag)])
         (cond [(not dest) (values #f #f)]
               [(and ext? external-tag-path)
-               (values external-tag-path (format "~a" (serialize tag)))]
+               (values (string->url external-tag-path) (format "~a" (serialize tag)))]
               [else (values (relative->path (dest-path dest))
                             (and (not (dest-page? dest))
                                  (anchor-name (dest-anchor dest))))])))
@@ -845,7 +849,26 @@
                          (resolve-get/ext? part ri (link-element-tag e))])
              (if dest
                `((a [(href
-                      ,(if (and ext? external-tag-path)
+                      ,(cond
+                        [(and ext? external-root-url
+                              (let ([rel (find-relative-path
+                                          (find-doc-dir)
+                                          (relative->path (dest-path dest)))])
+                                (and (relative-path? rel)
+                                     rel)))
+                         => (lambda (rel)
+                              (url->string
+                               (struct-copy
+                                url
+                                (combine-url/relative
+                                 (string->url external-root-url)
+                                 (string-join (map path-element->string
+                                                   (explode-path rel))
+                                              "/"))
+                                [fragment
+                                 (and (not (dest-page? dest))
+                                      (anchor-name (dest-anchor dest)))])))]
+                        [(and ext? external-tag-path)
                          ;; Redirected to search:
                          (url->string
                           (let ([u (string->url external-tag-path)])
@@ -859,7 +882,8 @@
                                             (string->bytes/utf-8
                                              (format "~a" (serialize
                                                            (link-element-tag e)))))))
-                                    (url-query u))])))
+                                    (url-query u))])))]
+                        [else
                          ;; Normal link:
                          (format "~a~a~a"
                                  (from-root (relative->path (dest-path dest))
@@ -867,7 +891,7 @@
                                  (if (dest-page? dest) "" "#")
                                  (if (dest-page? dest)
                                    ""
-                                   (anchor-name (dest-anchor dest))))))
+                                   (anchor-name (dest-anchor dest))))]))
                      ,@(if (string? (element-style e))
                          `([class ,(element-style e)])
                          null)]
