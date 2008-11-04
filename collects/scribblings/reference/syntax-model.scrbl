@@ -220,7 +220,8 @@ the binding (according to @scheme[free-identifier=?]) matters.}
       (#%plain-app expr ...+)
       (#%top . id)
       (#%variable-reference id)
-      (#%variable-reference (#%top . id))]
+      (#%variable-reference (#%top . id))
+      (#%variable-reference)]
 [formals (id ...)
          (id ...+ . id)
          id]]

@@ -879,20 +879,25 @@ introduces @schemeidfont{#%top} identifiers.
 
 @defform*[#:literals (#%top)
           [(#%variable-reference id)
-           (#%variable-reference (#%top . id))]]{
+           (#%variable-reference (#%top . id))
+           (#%variable-reference)]]{
 
-Produces an opaque value representing the location of @scheme[id],
-which must be bound as a @tech{top-level variable} or
-@tech{module-level variable}.
+Produces an opaque @deftech{variable reference} value representing the
+location of @scheme[id], which must be bound as a @tech{top-level
+variable} or @tech{module-level variable}. If no @scheme[id] is
+supplied, the resulting value refers to an ``anonymous'' variable
+defined within the enclosing context (i.e., within the enclosing
+module, or at the top level if the form is not inside a module).
 
-The result is useful to low-level extensions; see @other-manual['(lib
-"scribblings/inside/inside.scrbl")]. It can also be used with
+A @tech{variable reference} can be used with
 @scheme[variable-reference->empty-namespace],
 @scheme[variable-reference->resolved-module-path], and
 @scheme[variable-reference->top-level-namespace], but facilities like
 @scheme[define-namespace-anchor] and
 @scheme[namespace-anchor->namespace] wrap those to provide an clearer
-interface.}
+interface. A @tech{variable reference} is also useful to low-level
+extensions; see @other-manual['(lib
+"scribblings/inside/inside.scrbl")].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "application"]{Procedure Applications and @scheme[#%app]}

@@ -1919,80 +1919,88 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   int l, ok;
 
   l = check_form(form, form);
-  if (l != 2)
-    bad_form(form, l);
 
-  rest = SCHEME_STX_CDR(form);
-  name = SCHEME_STX_CAR(rest);
-
-  if (SCHEME_STX_PAIRP(name)) {
-    rest = SCHEME_STX_CAR(name);
-    if (env->genv->phase == 0) {
-      var = scheme_top_stx;
-    } else {
-      var = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_top_stx), scheme_false, scheme_sys_wraps(env), 0, 0);
-    }
-    ok = scheme_stx_module_eq(rest, var, env->genv->phase);
-  } else 
-    ok = SCHEME_STX_SYMBOLP(name);
-
-  if (!ok) {
-    scheme_wrong_syntax("#%variable-reference", name, 
-			form, 
-			"not an identifier or #%%top form");
-    return NULL;
-  }
-
-  if (SCHEME_STX_PAIRP(name)) {
-    /* FIXME: when using #%top, need to set mutated flag */
+  if (l == 1) {
     if (rec[drec].comp)
-      var = scheme_compile_expr(name, env, rec, drec);
+      var = scheme_make_environment_dummy(env);
     else
-      var = scheme_expand_expr(name, env, rec, drec);
+      var = scheme_void;
   } else {
-    scheme_rec_add_certs(rec, drec, form);
+    if (l != 2)
+      bad_form(form, l);
 
-    var = scheme_lookup_binding(name, env, 
-				SCHEME_REFERENCING 
-				+ SCHEME_GLOB_ALWAYS_REFERENCE
-				+ (rec[drec].dont_mark_local_use 
-				   ? SCHEME_DONT_MARK_USE 
-				   : 0)
-				+ (rec[drec].resolve_module_ids
-				   ? SCHEME_RESOLVE_MODIDS
-				   : 0),
-				rec[drec].certs, env->in_modidx, 
-				&menv, NULL, NULL);
+    rest = SCHEME_STX_CDR(form);
+    name = SCHEME_STX_CAR(rest);
 
-    if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-	|| SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-      int imported = 0;
-      /* It must be in the module being compiled/expanded. */
-      if (env->genv->module) {
-        if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
-          if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
-            imported = 1;
-        } else
-          imported = 1;
+    if (SCHEME_STX_PAIRP(name)) {
+      rest = SCHEME_STX_CAR(name);
+      if (env->genv->phase == 0) {
+        var = scheme_top_stx;
       } else {
-        if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
-          if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
-            imported = 1;
-        } else
-          imported = 1;
+        var = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_top_stx), scheme_false, scheme_sys_wraps(env), 0, 0);
       }
+      ok = scheme_stx_module_eq(rest, var, env->genv->phase);
+    } else 
+      ok = SCHEME_STX_SYMBOLP(name);
 
-      if (rec[drec].comp) {
-	var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
-        if (!imported && env->genv->module)
-          SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
-      }
-    } else {
-      scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
+    if (!ok) {
+      scheme_wrong_syntax("#%variable-reference", name, 
+                          form, 
+                          "not an identifier or #%%top form");
+      return NULL;
     }
 
-    if (rec[drec].comp)
-      scheme_compile_rec_done_local(rec, drec);
+    if (SCHEME_STX_PAIRP(name)) {
+      /* FIXME: when using #%top, need to set mutated flag */
+      if (rec[drec].comp)
+        var = scheme_compile_expr(name, env, rec, drec);
+      else
+        var = scheme_expand_expr(name, env, rec, drec);
+    } else {
+      scheme_rec_add_certs(rec, drec, form);
+
+      var = scheme_lookup_binding(name, env, 
+                                  SCHEME_REFERENCING 
+                                  + SCHEME_GLOB_ALWAYS_REFERENCE
+                                  + (rec[drec].dont_mark_local_use 
+                                     ? SCHEME_DONT_MARK_USE 
+                                     : 0)
+                                  + (rec[drec].resolve_module_ids
+                                     ? SCHEME_RESOLVE_MODIDS
+                                     : 0),
+                                  rec[drec].certs, env->in_modidx, 
+                                  &menv, NULL, NULL);
+
+      if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
+          || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+        int imported = 0;
+        /* It must be in the module being compiled/expanded. */
+        if (env->genv->module) {
+          if (SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type)) {
+            if (!SAME_OBJ(((Module_Variable *)var)->modidx, env->genv->module->self_modidx))
+              imported = 1;
+          } else
+            imported = 1;
+        } else {
+          if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)) {
+            if (!SAME_OBJ(((Scheme_Bucket_With_Home *)var)->home, env->genv))
+              imported = 1;
+          } else
+            imported = 1;
+        }
+
+        if (rec[drec].comp) {
+          var = scheme_register_toplevel_in_prefix(var, env, rec, drec);
+          if (!imported && env->genv->module)
+            SCHEME_TOPLEVEL_FLAGS(var) |= SCHEME_TOPLEVEL_MUTATED;
+        }
+      } else {
+        scheme_wrong_syntax(NULL, name, form, "identifier does not refer to a top-level or module variable");
+      }
+
+      if (rec[drec].comp)
+        scheme_compile_rec_done_local(rec, drec);
+    }
   }
 
   if (rec[drec].comp)

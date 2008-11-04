@@ -1,4 +1,4 @@
-#lang mzscheme
+#lang scheme/base
 (require "dirs.ss" "path-relativize.ss")
 
 (provide path->main-collects-relative

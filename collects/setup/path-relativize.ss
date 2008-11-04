@@ -1,4 +1,5 @@
-#lang mzscheme
+#lang scheme/base
+(require scheme/promise)
 
 (provide make-relativize)
 

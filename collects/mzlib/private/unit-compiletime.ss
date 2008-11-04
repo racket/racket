@@ -1,20 +1,22 @@
 (module unit-compiletime mzscheme
-  (require-for-syntax syntax/struct)
   (require syntax/boundmap
            mzlib/list
-           "unit-syntax.ss")
+           "unit-syntax.ss"
+           (only scheme/base define-struct struct-out)
+           (rename scheme/base provide* provide))
   (require-for-template mzscheme
                         "unit-keywords.ss"
                         "unit-runtime.ss")
   (require scheme/private/define-struct)
   
-  (provide (struct var-info (syntax? exported? id))
-           (struct signature (siginfo vars val-defs stx-defs orig-binder))
-           (rename build-siginfo make-siginfo)
+  (provide* (struct-out var-info)
+            (struct-out signature)
+            (struct-out signature-form)
+            (struct-out unit-info)
+            (struct-out link-record))
+           
+  (provide (rename build-siginfo make-siginfo)
            siginfo-names siginfo-ctime-ids siginfo-rtime-ids siginfo-subtype
-           (struct signature-form (f))
-           (struct unit-info (unit-id import-sig-ids export-sig-ids orig-binder))
-           (struct link-record (linkid tag sigid siginfo))
            unprocess-link-record-bind unprocess-link-record-use
            set!-trans-extract do-identifier
            process-tagged-import process-tagged-export
@@ -44,21 +46,12 @@
                  
         
   ;; (make-var-info bool bool identifier)
-  (define-struct var-info (syntax? exported? id))
+  (define-struct var-info (syntax? [exported? #:mutable] id))
   
-  (define-syntax (define-struct/proc stx)
-    (syntax-case stx ()
+  (define-syntax define-struct/proc
+    (syntax-rules ()
       ((_ name (field ...) p)
-       (and (identifier? #'name)
-            (andmap identifier? (syntax->list #'(field ...))))
-       (generate-struct-declaration
-        stx #'name #f (syntax->list #'(field ...)) (syntax-local-context)
-        (lambda (orig-stx name-stx defined-name-stxes super-info)
-          #`(make-struct-type '#,name-stx 
-                              #,(and super-info (list-ref super-info 0))
-                              #,(/ (- (length defined-name-stxes) 3) 2)
-                              0 #f null (current-inspector)
-                              p))))))
+       (define-struct name (field ...) #:property prop:procedure p))))
 
   ;; An int/ext is
   ;; - (cons identifier identifier)

@@ -5294,6 +5294,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   /* Read main body: */
   result = read_marshalled(scheme_compilation_top_type, rp);
 
+  if (delay_info)
+    if (delay_info->ut)
+      delay_info->ut->rp = NULL; /* clean up */
+
   if (*local_ht) {
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
 		    "read (compiled): ill-formed code (unexpected graph structure)");

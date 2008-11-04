@@ -1655,6 +1655,8 @@ static void print_tagged_value(const char *prefix,
       sprintf(t2, "#<meta-continuation>[%d;%s]", mc->pseudo, t3);
       type = t2;
       len = strlen(t2);
+    } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_rt_compact_port)) {
+      
 #endif
     } else if (!scheme_strncmp(type, "#<syntax", 8)) {
       char *t2, *t3;

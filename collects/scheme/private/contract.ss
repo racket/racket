@@ -98,7 +98,7 @@ improve method arity mismatch contract violation error messages?
                        #,(syntax-position id)
                        #,(syntax-span id))
           #,(format "~s" (syntax->datum id))))
-  
+
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])
@@ -112,14 +112,13 @@ improve method arity mismatch contract violation error messages?
                         ;; No: lift the contract creation:
                         (with-syntax ([contract-id contract-id]
                                       [id id]
-                                      [name (datum->syntax #f (syntax->datum id) id)]
                                       [pos-module-source pos-module-source])
                           (syntax-local-introduce
                            (syntax-local-lift-expression
                             #`(-contract contract-id
                                          id
                                          pos-module-source
-                                         (module-source-as-symbol #'name)
+                                         (#%variable-reference)
                                          #,(id->contract-src-info #'id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
@@ -668,7 +667,7 @@ improve method arity mismatch contract violation error messages?
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (module-source-as-symbol #'pos-stx))
+                                   (define pos-module-source (#%variable-reference))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
@@ -743,7 +742,7 @@ improve method arity mismatch contract violation error messages?
 
 (define (contract/proc a-contract-raw name pos-blame neg-blame src-info)
   (let ([a-contract (coerce-contract 'contract a-contract-raw)])
- 
+
     (unless (or (and (list? src-info)
                      (= 2 (length src-info))
                      (srcloc? (list-ref src-info 0))
@@ -752,8 +751,8 @@ improve method arity mismatch contract violation error messages?
                 (syntax? src-info))
       (error 'contract "expected syntax or a list of two elements (srcloc and string or #f) as last argument, given: ~e, other args ~e ~e ~e ~e"
              src-info
-             neg-blame 
-             pos-blame
+             (unpack-blame neg-blame)
+             (unpack-blame pos-blame)
              a-contract-raw
              name))
     (((contract-proc a-contract) pos-blame neg-blame src-info (contract-name a-contract))
