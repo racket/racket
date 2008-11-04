@@ -3,7 +3,8 @@
   (require mzlib/unitsig
            mzlib/list
 	   mzlib/string
-           mzlib/etc)
+           mzlib/etc
+           (only scheme/base for for/fold in-list log-error))
   
   (require "sig.ss")
   
@@ -97,31 +98,36 @@
       ;; write-xml-element : Element Nat (Nat Output-Stream -> Void) Output-Stream -> Void
       (define (write-xml-element el over dent out)
 	(let* ([name (element-name el)]
-	       [start (lambda (f) (write-xml-base (format f name) over dent out))]
+	       [start (lambda (str) 
+                        (write-xml-base str over dent out)
+                        (display name out))]
 	       [content (element-content el)])
-	  (start "<~a")
-	  (for-each (lambda (att)
-		      (fprintf out " ~a=\"~a\"" (attribute-name att)
-			       (escape (attribute-value att) escape-attribute-table)))
-		    (element-attributes el))
+	  (start "<")
+          (for ([att (in-list (element-attributes el))])
+            (fprintf out " ~a=\"~a\"" (attribute-name att)
+                     (escape (attribute-value att) escape-attribute-table)))
 	  (if (and (null? content)
 		   (let ([short (empty-tag-shorthand)])
 		     (case short
 		       [(always) #t]
 		       [(never) #f]
 		       [else (memq (lowercase-symbol name) short)])))
-	      (fprintf out " />")
+	      (display " />" out)
 	      (begin
-		(fprintf out ">")
-		(for-each (lambda (c) (write-xml-content c (incr over) dent out)) content)
-		(start "</~a")
-		(fprintf out ">")))))
+		(display ">" out)
+                (for ([c (in-list content)])
+                  (write-xml-content c (incr over) dent out))
+		(start "</")
+		(display ">" out)))))
 
       ; : sym -> sym
+      (define lowercases (make-hash-table 'weak))
       (define (lowercase-symbol x)
-	(let ([s (symbol->string x)])
-	   (string-lowercase! s)
-	   (string->symbol s)))
+        (or (hash-table-get lowercases x #f)
+            (let ([s (symbol->string x)])
+              (let ([s (string->symbol (string-downcase s))])
+                (hash-table-put! lowercases x s)
+                s))))
       
       ;; write-xml-base : (U String Char Symbol) Nat (Nat Output-Stream -> Void) Output-Stream -> Void
       (define (write-xml-base el over dent out)
@@ -150,20 +156,19 @@
 	(let ([n (entity-text entity)])
 	  (fprintf out (if (number? n) "&#~a;" "&~a;") n)))
       
-      (define escape-table
-	(map (lambda (x y) (cons (regexp (symbol->string x)) y))
-	     '(< > &)
-	     '("\\&lt;" "\\&gt;" "\\&amp;")))
-      
-      (define escape-attribute-table
-	(list* (cons (regexp "\"") "\\&quot;") escape-table))
+      (define escape-table #rx"[<>&]")
+      (define escape-attribute-table #rx"[<>&\"]")
+
+      (define (replace-escaped s)
+        (case (string-ref s 0)
+          [(#\<) "&lt;"]
+          [(#\>) "&gt;"]
+          [(#\&) "&amp;"]
+          [(#\") "&quot;"]))
       
       ;; escape : String -> String
-      ;; more here - this could be much more efficient
       (define (escape x table)
-	(foldr (lambda (esc str) (regexp-replace* (car esc) str (cdr esc)))
-	       x
-	       table))
+        (regexp-replace* table x replace-escaped))
       
       ;; incr : Nat -> Nat
       (define (incr n) (+ n 2)))))

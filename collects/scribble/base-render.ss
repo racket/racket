@@ -383,6 +383,7 @@
 
     (define/public (render-element i part ri)
       (cond
+        [(string? i) (render-other i part ri)] ; short-cut for common case
         [(and (link-element? i)
               (null? (element-content i)))
          (let ([v (resolve-get part ri (link-element-tag i))])

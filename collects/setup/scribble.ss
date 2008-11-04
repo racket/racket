@@ -512,8 +512,25 @@
          (lambda () #f))
         #f))))
 
+(define (make-prod-thread)
+  ;; periodically dumps a stack trace, which can give us some idea of
+  ;; what the main thread is doing; usually used in `render-time'.
+  (let ([t (current-thread)])
+    (thread (lambda ()
+              (let loop ()
+                (sleep 0.05)
+                (for-each (lambda (i)
+                            (printf "~s\n" i))
+                          (continuation-mark-set->context (continuation-marks t)))
+                (newline)
+                (loop))))))
+
 (define-syntax-rule (render-time what expr)
   expr
+  #;
+  (begin
+    (printf "For ~a\n" what)
+    (time expr))
   #;
   (begin
     (collect-garbage) (collect-garbage) (printf "pre: ~a ~s\n" what (current-memory-use))

@@ -22,7 +22,7 @@ A string can be used as a single-valued sequence (see
 @secref["sequences"]). The characters of the string serve as elements
 of the sequence. See also @scheme[in-string].
 
-See also: @scheme[immutable], @scheme[symbol->string],
+See also: @scheme[immutable?], @scheme[symbol->string],
 @scheme[bytes->string/utf-8].
 
 @; ----------------------------------------
@@ -31,7 +31,7 @@ See also: @scheme[immutable], @scheme[symbol->string],
 @defproc[(string? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
  is a string, @scheme[#f] otherwise.
 
-@examples[(string? "Apple") (string? 'apple)]}
+@mz-examples[(string? "Apple") (string? 'apple)]}
 
 
 @defproc[(make-string [k exact-nonnegative-integer?] [char char?
@@ -39,14 +39,14 @@ See also: @scheme[immutable], @scheme[symbol->string],
 each position in the string is initialized with the character
 @scheme[char].
 
-@examples[(make-string 5 #\z)]}
+@mz-examples[(make-string 5 #\z)]}
 
 
 @defproc[(string [char char?] ...) string?]{ Returns a new
 mutable string whose length is the number of provided @scheme[char]s, and
 whose positions are initialized with the given @scheme[char]s.
 
-@examples[(string #\A #\p #\p #\l #\e)]}
+@mz-examples[(string #\A #\p #\p #\l #\e)]}
 
 
 @defproc[(string->immutable-string [str string?]) (and/c string? immutable?)]{
@@ -58,7 +58,7 @@ Returns an immutable string with the same content as
 @defproc[(string-length [str string?]) exact-nonnegative-integer?]{
  Returns the length of @scheme[str].
 
-@examples[(string-length "Apple")]}
+@mz-examples[(string-length "Apple")]}
 
 
 @defproc[(string-ref [str string?] [k exact-nonnegative-integer?])
@@ -67,7 +67,7 @@ Returns an immutable string with the same content as
  position @scheme[k] must be less than the length of the string,
  otherwise the @exnraise[exn:fail:contract].
 
-@examples[(string-ref "Apple" 0)]}
+@mz-examples[(string-ref "Apple" 0)]}
 
 
 @defproc[(string-set! [str (and/c string? (not/c immutable?))] [k
@@ -91,8 +91,8 @@ Returns an immutable string with the same content as
  @scheme[str], and @scheme[end] must be greater than or equal to @scheme[str],
  otherwise the @exnraise[exn:fail:contract].
 
-@examples[(substring "Apple" 1 3)
-          (substring "Apple" 1)]}
+@mz-examples[(substring "Apple" 1 3)
+             (substring "Apple" 1)]}
 
 
 @defproc[(string-copy [str string?]) string?]{ Returns
@@ -117,18 +117,18 @@ Returns an immutable string with the same content as
  account the sizes of the strings and the source and destination
  regions), the @exnraise[exn:fail:contract].
 
-@examples[(define s (string #\A #\p #\p #\l #\e))
-          (string-copy! s 4 "y")
-          (string-copy! s 0 s 3 4)
-          s]}
+@mz-examples[(define s (string #\A #\p #\p #\l #\e))
+             (string-copy! s 4 "y")
+             (string-copy! s 0 s 3 4)
+             s]}
 
 @defproc[(string-fill! [dest (and/c string? (not/c immutable?))] [char
  char?]) void?]{ Changes @scheme[dest] so that every position in the
  string is filled with @scheme[char].
 
-@examples[(define s (string #\A #\p #\p #\l #\e))
-          (string-fill! s #\q)
-          s]}
+@mz-examples[(define s (string #\A #\p #\p #\l #\e))
+             (string-fill! s #\q)
+             s]}
 
 
 @defproc[(string-append [str string?] ...) string?]{
@@ -138,7 +138,7 @@ as long as the sum of the given @scheme[str]s' lengths, and that
 contains the concatenated characters of the given @scheme[str]s. If no
 @scheme[str]s are provided, the result is a zero-length string.
 
-@examples[(string-append "Apple" "Banana")]}
+@mz-examples[(string-append "Apple" "Banana")]}
 
 
 @defproc[(string->list [str string?]) (listof char?)]{ Returns a new
@@ -147,7 +147,7 @@ contains the concatenated characters of the given @scheme[str]s. If no
  sequence of characters of @scheme[str] are in the same sequence in the
  result list.
 
-@examples[(string->list "Apple")]}
+@mz-examples[(string->list "Apple")]}
 
 
 @defproc[(list->string [lst (listof char?)]) string?]{ Returns a new
@@ -156,7 +156,7 @@ contains the concatenated characters of the given @scheme[str]s. If no
  the sequence of characters in @scheme[lst] is in the same sequence in
  the result string.
 
-@examples[(list->string (list #\A #\p #\p #\l #\e))]}
+@mz-examples[(list->string (list #\A #\p #\p #\l #\e))]}
 
 
 @defproc[(build-string [n exact-nonnegative-integer?]
@@ -168,7 +168,7 @@ the integers from @scheme[0] to @scheme[(sub1 n)] in order. If
 @scheme[_str] is the resulting string, then @scheme[(string-ref _str
 _i)] is the character produced by @scheme[(proc _i)].
 
-@examples[
+@mz-examples[
 (build-string 5 (lambda (i) (integer->char (+ i 97))))
 ]}
 
@@ -180,8 +180,8 @@ _i)] is the character produced by @scheme[(proc _i)].
 @defproc[(string=? [str1 string?] [str2 string?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are @scheme[equal?].}
 
-@examples[(string=? "Apple" "apple")
-          (string=? "a" "as" "a")]
+@mz-examples[(string=? "Apple" "apple")
+             (string=? "a" "as" "a")]
 
 @(define (string-sort direction folded?)
 (if folded?
@@ -193,68 +193,68 @@ _i)] is the character produced by @scheme[(proc _i)].
  increasing, where individual characters are ordered by
  @scheme[char<?], @scheme[#f] otherwise.
 
-@examples[(string<? "Apple" "apple")
-          (string<? "apple" "Apple")
-          (string<? "a" "b" "c")]}
+@mz-examples[(string<? "Apple" "apple")
+             (string<? "apple" "Apple")
+             (string<? "a" "b" "c")]}
 
 @defproc[(string<=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nondecreasing" #f]
 
-@examples[(string<=? "Apple" "apple")
-          (string<=? "apple" "Apple")
-          (string<=? "a" "b" "b")]}
+@mz-examples[(string<=? "Apple" "apple")
+             (string<=? "apple" "Apple")
+             (string<=? "a" "b" "b")]}
 
 @defproc[(string>? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["decreasing" #f]
 
-@examples[(string>? "Apple" "apple")
-          (string>? "apple" "Apple")
-          (string>? "c" "b" "a")]}
+@mz-examples[(string>? "Apple" "apple")
+             (string>? "apple" "Apple")
+             (string>? "c" "b" "a")]}
 
 @defproc[(string>=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nonincreasing" #f]
 
-@examples[(string>=? "Apple" "apple")
-          (string>=? "apple" "Apple")
-          (string>=? "c" "b" "b")]}
+@mz-examples[(string>=? "Apple" "apple")
+             (string>=? "apple" "Apple")
+             (string>=? "c" "b" "b")]}
 
 
 @defproc[(string-ci=? [str1 string?] [str2 string?] ...+) boolean?]{
  Returns @scheme[#t] if all of the arguments are @scheme[eqv?] after
  locale-insensitive case-folding via @scheme[string-foldcase].
 
-@examples[(string-ci=? "Apple" "apple")
-          (string-ci=? "a" "a" "a")]}
+@mz-examples[(string-ci=? "Apple" "apple")
+             (string-ci=? "a" "a" "a")]}
 
 @defproc[(string-ci<? [str1 string?] [str2 string?] ...+) boolean?]{
  Like @scheme[string<?], but checks whether the arguments would be in
  increasing order if each was first case-folded using
  @scheme[string-foldcase] (which is locale-insensitive).
 
-@examples[(string-ci<? "Apple" "apple")
-          (string-ci<? "apple" "banana")
-          (string-ci<? "a" "b" "c")]}
+@mz-examples[(string-ci<? "Apple" "apple")
+             (string-ci<? "apple" "banana")
+             (string-ci<? "a" "b" "c")]}
 
 @defproc[(string-ci<=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nondecreasing" #t]
 
-@examples[(string-ci<=? "Apple" "apple")
-          (string-ci<=? "apple" "Apple")
-          (string-ci<=? "a" "b" "b")]}
+@mz-examples[(string-ci<=? "Apple" "apple")
+             (string-ci<=? "apple" "Apple")
+             (string-ci<=? "a" "b" "b")]}
 
 @defproc[(string-ci>? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["decreasing" #t]
 
-@examples[(string-ci>? "Apple" "apple")
-          (string-ci>? "banana" "Apple")
-          (string-ci>? "c" "b" "a")]}
+@mz-examples[(string-ci>? "Apple" "apple")
+             (string-ci>? "banana" "Apple")
+             (string-ci>? "c" "b" "a")]}
 
 @defproc[(string-ci>=? [str1 string?] [str2 string?] ...+) boolean?]{
  @string-sort["nonincreasing" #t]
 
-@examples[(string-ci>=? "Apple" "apple")
-          (string-ci>=? "apple" "Apple")
-          (string-ci>=? "c" "b" "b")]}
+@mz-examples[(string-ci>=? "Apple" "apple")
+             (string-ci>=? "apple" "Apple")
+             (string-ci>=? "c" "b" "b")]}
 
 @; ----------------------------------------
 @section{String Conversions}
@@ -267,7 +267,7 @@ _i)] is the character produced by @scheme[(proc _i)].
  over the string), so the string produced by the conversion can be
  longer than the input string.
 
-@examples[
+@mz-examples[
 (string-upcase "abc!")
 (string-upcase "Stra\xDFe")
 ]}
@@ -275,7 +275,7 @@ _i)] is the character produced by @scheme[(proc _i)].
 @defproc[(string-downcase [string string?]) string?]{ Like
  @scheme[string-upcase], but the downcase conversion.
 
-@examples[
+@mz-examples[
 (string-downcase "aBC!")
 (string-downcase "Stra\xDFe")
 (string-downcase "\u039A\u0391\u039F\u03A3")
@@ -288,7 +288,7 @@ _i)] is the character produced by @scheme[(proc _i)].
  first character in each sequence of cased characters in @scheme[str]
  (ignoring case-ignorable characters).
 
-@examples[
+@mz-examples[
 (string-titlecase "aBC  twO")
 (string-titlecase "y2k")
 (string-titlecase "main stra\xDFe")
@@ -298,7 +298,7 @@ _i)] is the character produced by @scheme[(proc _i)].
 @defproc[(string-foldcase [string string?]) string?]{ Like
  @scheme[string-upcase], but the case-folding conversion.
 
-@examples[
+@mz-examples[
 (string-foldcase "aBC!")
 (string-foldcase "Stra\xDFe")
 (string-foldcase "\u039A\u0391\u039F\u03A3")
@@ -377,7 +377,7 @@ str ... strs)] is the same as @scheme[(apply string-append str
 @scheme[string-append] and @scheme[string-append*] is similar to the
 one between @scheme[list] and @scheme[list*].
 
-@examples[#:eval string-eval
+@mz-examples[#:eval string-eval
   (string-append* "a" "b" '("c" "d"))
   (string-append* (cdr (append* (map (lambda (x) (list ", " x))
                                      '("Alpha" "Beta" "Gamma")))))
@@ -388,7 +388,7 @@ one between @scheme[list] and @scheme[list*].
 Appends the strings in @scheme[strs], inserting @scheme[sep] between
 each pair of strings in @scheme[strs].
 
-@examples[#:eval string-eval
+@mz-examples[#:eval string-eval
  (string-join '("one" "two" "three" "four") " potato ")
 ]}
 

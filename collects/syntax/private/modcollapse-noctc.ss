@@ -263,16 +263,19 @@ Use syntax/modcollapse instead.
     (if path
         (collapse-module-path
          path
-         (cond
-          [(module-path-index? base)
-           (collapse-module-path-index base relto-mp)]
-          [(resolved-module-path? base)
-           (let ([n (resolved-module-path-name base)])
-             (if (path? n)
-                 n
-                 relto-mp))]
-          [else relto-mp]))
-        relto-mp)))
+         (lambda ()
+           (cond
+            [(module-path-index? base)
+             (collapse-module-path-index base relto-mp)]
+            [(resolved-module-path? base)
+             (let ([n (resolved-module-path-name base)])
+               (if (path? n)
+                   n
+                   relto-mp))]
+            [else relto-mp])))
+        (if (procedure? relto-mp) 
+            (relto-mp)
+            relto-mp))))
 
 (provide collapse-module-path
          collapse-module-path-index)

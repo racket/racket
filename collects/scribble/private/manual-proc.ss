@@ -295,8 +295,9 @@
               (*sig-elem (sig-id sig) (extract-id prototype))
               (to-element (make-just-context (extract-id prototype)
                                              stx-id)))))]))
+    (define p-depth (prototype-depth prototype))
     (define flat-size (+ (prototype-size args + + #f)
-                         (prototype-depth prototype)
+                         p-depth
                          (element-width tagged)))
     (define short? (or (flat-size . < . 40) ((length args) . < . 2)))
     (define res
@@ -319,7 +320,7 @@
                                   (loop (cdr res))))))))))
           res)))
     (define tagged+arg-width (+ (prototype-size args max max #t)
-                                (prototype-depth prototype)
+                                p-depth
                                 (element-width tagged)))
     (define result-next-line?
       ((+ (if short? flat-size tagged+arg-width) (block-width res))
@@ -339,10 +340,10 @@
              (to-flow
               (make-element
                #f
-               `(,(make-openers (add1 (prototype-depth prototype)))
+               `(,(make-openers (add1 p-depth))
                  ,tagged
                  ,@(if (null? args)
-                     (list (make-closers (prototype-depth prototype)))
+                     (list (make-closers p-depth))
                      (append-map (lambda (arg)
                                    (list spacer ((arg->elem #t) arg)))
                                  args))
@@ -363,7 +364,7 @@
                  (make-element
                   #f
                   (list
-                   (make-openers (add1 (prototype-depth prototype)))
+                   (make-openers (add1 p-depth))
                    tagged)))
                 (if one-ok?
                   (list*

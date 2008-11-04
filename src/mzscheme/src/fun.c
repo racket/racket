@@ -6814,6 +6814,10 @@ cont_marks(int argc, Scheme_Object *argv[])
     Scheme_Thread *t = (Scheme_Thread *)argv[0];
     Scheme_Object *m;
 
+    while (t->nestee) {
+      t = t->nestee;
+    }
+
     if (SAME_OBJ(t, scheme_current_thread))
       return scheme_current_continuation_marks(prompt_tag);
 
@@ -6833,6 +6837,8 @@ cont_marks(int argc, Scheme_Object *argv[])
 
       return (Scheme_Object *)set;
     } else {
+      scheme_start_atomic(); /* just in case */
+
       t->return_marks_to = scheme_current_thread;
       t->returned_marks = prompt_tag;
       scheme_swap_thread(t);
@@ -6840,6 +6846,8 @@ cont_marks(int argc, Scheme_Object *argv[])
       m = t->returned_marks;
       t->returned_marks = NULL;
       
+      scheme_end_atomic_no_swap();
+
       return m;
     }
   } else {

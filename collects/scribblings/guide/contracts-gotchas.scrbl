@@ -68,6 +68,7 @@ streams like this:
    null?
    (cons/c number? stream/c))))
 ]
+@close-eval[e]
  
 Unfortunately, this does not work because the value of
 @scheme[stream/c] is needed before it is defined. Put another way, all

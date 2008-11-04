@@ -91,18 +91,16 @@
 (define (anchor-name v)
   (define (encode-byte b)
     (string-append (if (< b 16) "~0" "~") (number->string b 16)))
-  (define (encode-str str)
-    (if (regexp-match? #px"[^[:ascii:]]" str)
-      (string-append* (map encode-byte (bytes->list (string->bytes/utf-8 str))))
-      (encode-byte (char->integer (string-ref str 0)))))
+  (define (encode-bytes str)
+    (string->bytes/utf-8 (encode-byte (bytes-ref str 0))))
   (if (literal-anchor? v)
     (literal-anchor-string v)
-    (let* ([v (format "~a" v)]
-           [v (regexp-replace* #rx"[A-Z.]" v ".&")]
-           [v (regexp-replace* #rx" " v "._")]
-           [v (regexp-replace* #rx"\"" v ".'")]
-           [v (regexp-replace* #rx"[^-a-zA-Z0-9_!+*'()/.,]" v encode-str)])
-      v)))
+    (let* ([v (string->bytes/utf-8 (format "~a" v))]
+           [v (regexp-replace* #rx#"[A-Z.]" v #".&")]
+           [v (regexp-replace* #rx#" " v #"._")]
+           [v (regexp-replace* #rx#"\"" v #".'")]
+           [v (regexp-replace* #rx#"[^-a-zA-Z0-9_!+*'()/.,]" v encode-bytes)])
+      (bytes->string/utf-8 v))))
 
 (define-serializable-struct literal-anchor (string))
 
@@ -826,6 +824,7 @@
 
     (define/override (render-element e part ri)
       (cond
+        [(string? e) (super render-element e part ri)] ; short-cut for common case
         [(hover-element? e)
          `((span ([title ,(hover-element-text e)])
              ,@(render-plain-element e part ri)))]
@@ -1270,9 +1269,16 @@
                           (loop (cdr path) (cdr root))))))
              roots))))
 
+(define exploded (make-weak-hash))
+(define (explode/cache p)
+  (or (hash-ref exploded p #f)
+      (let ([v (explode p)])
+        (hash-set! exploded p v)
+        v)))
+
 (define (from-root p d)
-  (define e-p (explode (path->complete-path p (current-directory))))
-  (define e-d (and d (explode (path->complete-path d (current-directory)))))
+  (define e-p (explode/cache (path->complete-path p (current-directory))))
+  (define e-d (and d (explode/cache (path->complete-path d (current-directory)))))
   (define p-in? (in-plt? e-p))
   (define d-in? (and d (in-plt? e-d)))
   ;; use an absolute link if the link is from outside the plt tree
@@ -1287,12 +1293,13 @@
     (let loop ([e-d e-d] [e-p e-p])
       (cond
         [(null? e-d)
-         (let loop ([e-p e-p])
-           (cond [(null? e-p) "/"]
-                 [(null? (cdr e-p)) (car e-p)]
-                 [(eq? 'same (car e-p)) (loop (cdr e-p))]
-                 [(eq? 'up (car e-p)) (string-append "../" (loop (cdr e-p)))]
-                 [else (string-append (car e-p) "/" (loop (cdr e-p)))]))]
+         (string-append*
+          (let loop ([e-p e-p])
+            (cond [(null? e-p) '("/")]
+                  [(null? (cdr e-p)) (list (car e-p))]
+                  [(eq? 'same (car e-p)) (loop (cdr e-p))]
+                  [(eq? 'up (car e-p)) (cons "../" (loop (cdr e-p)))]
+                  [else (cons (car e-p) (cons "/" (loop (cdr e-p))))])))]
         [(equal? (car e-d) (car e-p)) (loop (cdr e-d) (cdr e-p))]
         [(eq? 'same (car e-d)) (loop (cdr e-d) e-p)]
         [(eq? 'same (car e-p)) (loop e-d (cdr e-p))]

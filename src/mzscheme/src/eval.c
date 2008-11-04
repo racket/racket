@@ -1349,6 +1349,11 @@ static int eq_testable_constant(Scheme_Object *v)
   if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
     return 1;
 
+  if (SCHEME_INTP(v) 
+      && (SCHEME_INT_VAL(v) < (1 << 29))
+      && (SCHEME_INT_VAL(v) > -(1 << 29)))
+    return 1;
+
   return 0;
 }
 

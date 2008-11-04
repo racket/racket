@@ -202,7 +202,7 @@
               (f (map srep->attribute (cadr x)) (cddr x))
               (f null (cdr x))))]
           [(string? x) (make-pcdata 'scheme 'scheme x)]
-          [(or (symbol? x) (and (integer? x) (>= x 0)))
+          [(or (symbol? x) (exact-nonnegative-integer? x))
           (make-entity 'scheme 'scheme x)]
           [(or (comment? x) (pi? x) (cdata? x)) x]
           [else ;(error 'xexpr->xml "malformed xexpr ~e" x)

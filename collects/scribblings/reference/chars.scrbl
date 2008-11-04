@@ -29,7 +29,7 @@ otherwise.}
 
 Returns a character's code-point number.
 
-@examples[(char->integer #\A)]}
+@mz-examples[(char->integer #\A)]}
 
 
 @defproc[(integer->char [k (and/c exact-integer?
@@ -41,7 +41,7 @@ Return the character whose code-point number is @scheme[k]. For
 @scheme[k] less than @scheme[256], the result is the same object for
 the same @scheme[k].
 
-@examples[(integer->char 65)]}
+@mz-examples[(integer->char 65)]}
 
 
 @defproc[(char-utf-8-length [char char?]) (integer-in 1 6)]{
@@ -57,7 +57,7 @@ Produces the same result as @scheme[(bytes-length (string->bytes/utf-8
 
 Returns @scheme[#t] if all of the arguments are @scheme[eqv?].
 
-@examples[(char=? #\a #\a)
+@mz-examples[(char=? #\a #\a)
           (char=? #\a #\A #\a)]}
 
 @(define (char-sort direction folded?)
@@ -71,68 +71,68 @@ Returns @scheme[#t] if the arguments are sorted increasing, where
 two characters are ordered by their scalar values, @scheme[#f]
 otherwise.
 
-@examples[(char<? #\A #\a)
-          (char<? #\a #\A)
-          (char<? #\a #\b #\c)]}
+@mz-examples[(char<? #\A #\a)
+             (char<? #\a #\A)
+             (char<? #\a #\b #\c)]}
 
 @defproc[(char<=? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["nondecreasing" #f]
 
-@examples[(char<=? #\A #\a)
-          (char<=? #\a #\A)
-          (char<=? #\a #\b #\b)]}
+@mz-examples[(char<=? #\A #\a)
+             (char<=? #\a #\A)
+             (char<=? #\a #\b #\b)]}
 
 @defproc[(char>? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["decreasing" #f]
 
-@examples[(char>? #\A #\a)
-          (char>? #\a #\A)
-          (char>? #\c #\b #\a)]}
+@mz-examples[(char>? #\A #\a)
+             (char>? #\a #\A)
+             (char>? #\c #\b #\a)]}
 
 @defproc[(char>=? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["nonincreasing" #f]
 
-@examples[(char>=? #\A #\a)
-          (char>=? #\a #\A)
-          (char>=? #\c #\b #\b)]}
+@mz-examples[(char>=? #\A #\a)
+             (char>=? #\a #\A)
+             (char>=? #\c #\b #\b)]}
 
 
 @defproc[(char-ci=? [char1 char?] [char2 char?] ...+) boolean?]{
  Returns @scheme[#t] if all of the arguments are @scheme[eqv?] after
  locale-insensitive case-folding via @scheme[char-foldcase].
 
-@examples[(char-ci=? #\A #\a)
-          (char-ci=? #\a #\a #\a)]}
+@mz-examples[(char-ci=? #\A #\a)
+             (char-ci=? #\a #\a #\a)]}
 
 @defproc[(char-ci<? [char1 char?] [char2 char?] ...+) boolean?]{
  Like @scheme[char<?], but checks whether the arguments would be in
  increasing order if each was first case-folded using
  @scheme[char-foldcase] (which is locale-insensitive).
 
-@examples[(char-ci<? #\A #\a)
-          (char-ci<? #\a #\b)
-          (char-ci<? #\a #\b #\c)]}
+@mz-examples[(char-ci<? #\A #\a)
+             (char-ci<? #\a #\b)
+             (char-ci<? #\a #\b #\c)]}
 
 @defproc[(char-ci<=? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["nondecreasing" #t]
 
-@examples[(char-ci<=? #\A #\a)
-          (char-ci<=? #\a #\A)
-          (char-ci<=? #\a #\b #\b)]}
+@mz-examples[(char-ci<=? #\A #\a)
+             (char-ci<=? #\a #\A)
+             (char-ci<=? #\a #\b #\b)]}
 
 @defproc[(char-ci>? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["decreasing" #t]
 
-@examples[(char-ci>? #\A #\a)
-          (char-ci>? #\b #\A)
-          (char-ci>? #\c #\b #\a)]}
+@mz-examples[(char-ci>? #\A #\a)
+             (char-ci>? #\b #\A)
+             (char-ci>? #\c #\b #\a)]}
 
 @defproc[(char-ci>=? [char1 char?] [char2 char?] ...+) boolean?]{
  @char-sort["nonincreasing" #t]
 
-@examples[(char-ci>=? #\A #\a)
-          (char-ci>=? #\a #\A)
-          (char-ci>=? #\c #\b #\b)]}
+@mz-examples[(char-ci>=? #\A #\a)
+             (char-ci>=? #\a #\A)
+             (char-ci>=? #\c #\b #\b)]}
 
 @; ----------------------------------------
 @section{Classifications}
@@ -247,7 +247,7 @@ the case where Unicode defines a locale-independent mapping from the
 code point to a code-point sequence (in addition to the 1-1 mapping on
 scalar values).}
 
-@examples[
+@mz-examples[
 (char-upcase #\a)
 (char-upcase #\u03BB)
 (char-upcase #\space)
@@ -258,7 +258,7 @@ scalar values).}
 
 Like @scheme[char-upcase], but for the Unicode downcase mapping.
 
-@examples[
+@mz-examples[
 (char-downcase #\A)
 (char-downcase #\u039B)
 (char-downcase #\space)
@@ -268,7 +268,7 @@ Like @scheme[char-upcase], but for the Unicode downcase mapping.
 
 Like @scheme[char-upcase], but for the Unicode titlecase mapping.
 
-@examples[
+@mz-examples[
 (char-upcase #\a)
 (char-upcase #\u03BB)
 (char-upcase #\space)
@@ -278,7 +278,7 @@ Like @scheme[char-upcase], but for the Unicode titlecase mapping.
 
 Like @scheme[char-upcase], but for the Unicode case-folding mapping.
 
-@examples[
+@mz-examples[
 (char-foldcase #\A)
 (char-foldcase #\u03A3)
 (char-foldcase #\u03c2)

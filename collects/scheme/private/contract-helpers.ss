@@ -109,10 +109,9 @@
           (or location source)))))
 
 ;; unpack-blame : any/c -> any/c
-;; Constructs an S-expression for use in the blame error messages
-;; when blaming the module where stx's occurs, where the context
-;; is represented by a variable reference. Other representations of
-;; blame are returned as-is.
+;; Constructs an S-expression for use in the blame error messages.
+;; A variable reference represents a module or top-level context.
+;; Other representations of blame are returned as-is.
 (define (unpack-blame blame)
   (if (variable-reference? blame)
       (let ([rp (variable-reference->resolved-module-path blame)])
