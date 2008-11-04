@@ -171,19 +171,18 @@ as the @tech{definitions window} plus a few more:
  The @onscreen{Add User-defined Keybindings...} menu item in the
  @onscreen{Keybindings} sub-menu of @onscreen{Edit} selects a file
  containing Scheme definitions of keybindings. The file must contain a
- single module that uses a special keybindings language,
- @scheme[framework/keybinding-lang].  For example, a file named
- @filepath{mykeys.ss} for keybindings might contain the following
- code:
+ module that uses a special keybindings language,
+ @scheme[framework/keybinding-lang]. To do so, begin your file with
+ this line:
 
-@schemeblock[
-(module mykeys framework/keybinding-lang
-  ...)
+@schememod[
+s-exp framework/keybinding-lang
 ]
 
-The @scheme[framework/keybinding-lang] languages provides all bindings
-@schememodname[mzscheme], @schememodname[scheme/gui/base], and
-@scheme[scheme/classs], except that it adjusts @|mz-mod-begin| to
+The @scheme[framework/keybinding-lang] languages provides all of the bindings
+from @schememodname[scheme], @schememodname[scheme/class], and
+@schememodname[drscheme/tool-lib], 
+except that it adjusts @|mz-mod-begin| to
 introduce a @schemeidfont{keybinding} form:
 
 @specform[#:literals (keybindings)
@@ -194,9 +193,9 @@ suitable first argument for @xmethod[keymap% map-function], and the
 @scheme[proc-expr] must produce a suitable second argument for
 @xmethod[keymap% add-function].}
 
-Note that @schememodname[drscheme/tool-lib] adds all of the names
-defined in @other-manual['(lib "scribblings/tools/tools.scrbl")] to
-your keybindings module, which helps in defining DrScheme-specific
-keybindings.
+For example, this remaps the key combination ``control-a'' key to ``!''.
 
-
+@schememod[
+s-exp framework/keybinding-lang
+(keybinding "c:a" (λ (editor evt) (send editor insert "!")))
+]
