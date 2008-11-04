@@ -621,20 +621,14 @@ making some of the test cases much easier to manage.
 
 (define (clack world x y evt)
   (cond
-    [(equal? evt 'button-up)
-     (cond
-       [(equal? 'playing (world-state world))
-        (cond
-          [(point-in-circle? (world-board world) x y)
-           (move-cat 
-            (make-world (add-obstacle (world-board world) x y)
-                        (world-cat world)
-                        (world-state world)
-                        (world-size world)))]
-          [else 
-           world])]
-       [else
-        world])]
+    [(and (equal? evt 'button-up)
+          (equal? 'playing (world-state world))
+          (point-in-circle? (world-board world) x y))
+     (move-cat 
+      (make-world (add-obstacle (world-board world) x y)
+                  (world-cat world)
+                  (world-state world)
+                  (world-size world)))]
     [else 
      world]))
 
@@ -643,6 +637,13 @@ making some of the test cases much easier to manage.
                      10
                      'button-down)
               (make-world '() (make-posn 0 0) 'playing 1))
+
+(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1)
+                     0 
+                     0
+                     'button-up)
+              (make-world '() (make-posn 0 0) 'playing 1))
+
 (check-expect (clack (make-world '() (make-posn 0 0) 'cat-lost 1)
                      10
                      10
@@ -650,7 +651,7 @@ making some of the test cases much easier to manage.
               (make-world '() (make-posn 0 0) 'cat-lost 1))
 (check-expect (clack 
                (make-world
-                (list (make-cell (make-posn 1 0) true)
+                (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) true)
                       (make-cell (make-posn 0 1) true)
                       (make-cell (make-posn 1 1) false)
@@ -660,7 +661,9 @@ making some of the test cases much easier to manage.
                 (make-posn 1 1)
                 'playing
                 3)
-               10 10 'button-up)
+               (cell-center-x (make-posn 1 0))
+               (cell-center-y (make-posn 1 0))
+               'button-up)
               (make-world 
                (list (make-cell (make-posn 1 0) true)
                      (make-cell (make-posn 2 0) true)
@@ -789,6 +792,11 @@ making some of the test cases much easier to manage.
                                   (list (make-posn 2 2))
                                   (list 2))
               (make-posn 1 1))
+(check-expect (find-best-position (make-posn 1 1)
+                                  '∞
+                                  (list)
+                                  (list))
+              false)
 (check-expect (find-best-position (make-posn 2 2)
                                   2
                                   (list)
@@ -995,28 +1003,56 @@ making some of the test cases much easier to manage.
 (check-expect (append-all (list (list 1) (list 2) (list 3)))
               (list 1 2 3))
 
+;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
+(define (add-n-random-blocked-cells n all-cells board-size)
+  (cond
+    [(zero? n) all-cells]
+    [else
+     (local [(define unblocked-cells 
+               (filter (lambda (x) 
+                         (let ([cat-cell? (and (= (posn-x (cell-p x)) (quotient board-size 2))
+                                               (= (posn-y (cell-p x)) (quotient board-size 2)))])
+                           
+                           (and (not (cell-blocked? x))
+                                (not cat-cell?))))
+                       all-cells))
+             (define to-block (list-ref unblocked-cells 
+                                        (random (length unblocked-cells))))]
+       (add-n-random-blocked-cells
+        (sub1 n)
+        (map (lambda (c) (if (equal? to-block c)
+                             (make-cell (cell-p c) true)
+                             c))
+             all-cells)
+        board-size))]))
+
+(check-expect (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0) true)) 10)
+              (list (make-cell (make-posn 0 0) true)))
+(check-expect (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0) false)) 10)
+              (list (make-cell (make-posn 0 0) true)))
+
 (define dummy
   (local
     [(define board-size 11)
      (define initial-board
-       (filter
-        (lambda (c)
-          (not (and (= 0 (posn-x (cell-p c)))
-                    (or (= 0 (posn-y (cell-p c)))
-                        (= (- board-size 1)
-                           (posn-y (cell-p c)))))))
-        (append-all
-         (build-list
-          board-size
-          (lambda (i)
-            (build-list
-             board-size
-             (lambda (j) 
-               (let ([cat-cell? (and (= i (quotient board-size 2))
-                                     (= j (quotient board-size 2)))])
-                 (make-cell (make-posn i j) 
-                            (and (not cat-cell?)
-                                 (zero? (random 30))))))))))))
+       (add-n-random-blocked-cells
+        6
+        (filter
+         (lambda (c)
+           (not (and (= 0 (posn-x (cell-p c)))
+                     (or (= 0 (posn-y (cell-p c)))
+                         (= (- board-size 1)
+                            (posn-y (cell-p c)))))))
+         (append-all
+          (build-list
+           board-size
+           (lambda (i)
+             (build-list
+              board-size
+              (lambda (j) 
+                (make-cell (make-posn i j) 
+                           false)))))))
+        board-size))
      (define initial-world
        (make-world initial-board
                    (make-posn (quotient board-size 2)
