@@ -847,12 +847,19 @@
                `((a [(href
                       ,(if (and ext? external-tag-path)
                          ;; Redirected to search:
-                         (format "~a;tag=~a"
-                                 external-tag-path
-                                 (base64-encode
-                                  (string->bytes/utf-8
-                                   (format "~a" (serialize
-                                                 (link-element-tag e))))))
+                         (url->string
+                          (let ([u (string->url external-tag-path)])
+                            (struct-copy
+                             url
+                             u
+                             [query
+                              (cons (cons 'tag
+                                          (bytes->string/utf-8
+                                           (base64-encode
+                                            (string->bytes/utf-8
+                                             (format "~a" (serialize
+                                                           (link-element-tag e)))))))
+                                    (url-query u))])))
                          ;; Normal link:
                          (format "~a~a~a"
                                  (from-root (relative->path (dest-path dest))
