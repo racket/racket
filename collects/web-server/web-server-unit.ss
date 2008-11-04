@@ -75,8 +75,10 @@
                    (servlets:make config:scripts 
                                   #:make-servlet-namespace config:make-servlet-namespace
                                   #:url->path
-                                  (fsmap:make-url->valid-path
-                                   (fsmap:make-url->path (paths-servlet (host-paths host-info))))                                    
+                                  (fsmap:filter-url->path
+                                   #rx"\\.(ss|scm)$"
+                                   (fsmap:make-url->valid-path
+                                    (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
                                   #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
                                   #:responders-servlet (responders-servlet (host-responders host-info))
                                   #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info)))])

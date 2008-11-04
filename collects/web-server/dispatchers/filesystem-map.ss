@@ -9,7 +9,8 @@
 (provide/contract
  [url-path/c contract?]
  [make-url->path (path? . -> . url-path/c)]
- [make-url->valid-path (url-path/c . -> . url-path/c)])
+ [make-url->valid-path (url-path/c . -> . url-path/c)]
+ [filter-url->path (regexp? url-path/c . -> . url-path/c)])
 
 (define (build-path* . l)
   (if (empty? l)
@@ -50,3 +51,10 @@
       (unless (or (file-exists? p) (link-exists? p))
         (raise (make-exn:fail:filesystem:exists (string->immutable-string (format "No valid path: ~a" p)) (current-continuation-marks))))
       (values p w/o-base))))
+
+(define ((filter-url->path regex url->path) u)
+  (define-values (p w/o-base) (url->path u))
+  (if (regexp-match regex (path->string p))
+      (values p w/o-base)
+      (raise (make-exn:fail:filesystem:exists (string->immutable-string (format "Does not pass filter: ~a" p))
+                                              (current-continuation-marks)))))

@@ -95,8 +95,8 @@ URLs to paths on the filesystem.
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
  do not escape the @scheme[base] and removes them silently otherwise.}
 
-@defproc[(make-url->valid-path (url->path url->path?))
-         url->path?]{
+@defproc[(make-url->valid-path (url->path url->pathc))
+         url->path/c]{
  Runs the underlying @scheme[url->path], but only returns if the path
  refers to a file that actually exists. If it is does not, then the suffix
  elements of the URL are removed until a file is found. If this never occurs,
@@ -105,6 +105,15 @@ URLs to paths on the filesystem.
  This is primarily useful for dispatchers that allow path information after
  the name of a service to be used for data, but where the service is represented
  by a file. The most prominent example is obviously servlets.}
+                    
+@defproc[(filter-url->path [regex regexp?]
+                                 [url->path url-path/c])
+         url->path/c]{
+ Runs the underlying @scheme[url->path] but will only return if the path, when considered as a string,
+ matches the @scheme[regex]. This is useful to disallow strange files, like GIFs, from being considered
+ servlets when using the servlet dispatchers. It will return a @scheme[exn:fail:filesystem:exists?] exception if
+ the path does not match.
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-sequencer.ss"]{Sequencing}

@@ -52,7 +52,7 @@
   ;; servlet-content-producer/path: connection request url -> void
   (define (servlet-content-producer/path conn req uri)
     (define response
-      (with-handlers ([exn:fail:filesystem:exists:servlet?
+      (with-handlers ([exn:fail:filesystem:exists?
                        (lambda (the-exn) (next-dispatcher))]
                       [(lambda (x) #t)
                        (lambda (the-exn) (responders-servlet-loading uri the-exn))])
@@ -62,7 +62,7 @@
            (define-values (servlet-path _)
              (with-handlers
                  ([void (lambda (e)
-                          (raise (make-exn:fail:filesystem:exists:servlet
+                          (raise (make-exn:fail:filesystem:exists
                                   (exn-message e)
                                   (exn-continuation-marks e))))])
                (url->path uri)))
@@ -133,11 +133,6 @@
                          (string->symbol (path->string servlet-path))
                          (lambda () (load-servlet/path servlet-path))))
   
-  ;; exn:i/o:filesystem:servlet-not-found =
-  ;; (make-exn:fail:filesystem:exists:servlet str continuation-marks str sym)
-  (define-struct (exn:fail:filesystem:exists:servlet
-                  exn:fail:filesystem:exists) ())
-  
   (define (v0.response->v1.lambda response response-path)
     (define go
       (box
@@ -196,7 +191,8 @@
                         timeouts-default-servlet)
                        (v0.response->v1.lambda s a-path))]
         [else
-         (error 'load-servlet/path "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)])))
+         (error 'load-servlet/path
+                "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)])))
   
   (values (lambda ()
             ;; XXX - this is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
