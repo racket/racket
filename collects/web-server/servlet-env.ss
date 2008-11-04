@@ -42,17 +42,17 @@
 (provide/contract
  [serve/servlet (((request? . -> . response?))
                  (#:launch-browser? boolean?
-                  #:quit? boolean?
-                  #:listen-ip string?
-                  #:port number?
-                  #:manager manager?
-                  #:servlet-namespace (listof module-path?)
-                  #:server-root-path path?
-                  #:extra-files-path path?
-                  #:servlets-root path?
-                  #:file-not-found-path path?
-                  #:mime-types-path path?
-                  #:servlet-path path?)
+                                    #:quit? boolean?
+                                    #:listen-ip string?
+                                    #:port number?
+                                    #:manager manager?
+                                    #:servlet-namespace (listof module-path?)
+                                    #:server-root-path path?
+                                    #:extra-files-paths (listof path?)
+                                    #:servlets-root path?
+                                    #:file-not-found-path path?
+                                    #:mime-types-path path?
+                                    #:servlet-path path?)
                  . ->* .
                  void)])
 (define (serve/servlet new-servlet 
@@ -78,8 +78,9 @@
                        [servlet-namespace empty]
                        #:server-root-path 
                        [server-root-path (directory-part default-configuration-table-path)]
-                       #:extra-files-path 
-                       [extra-files-path (build-path server-root-path "htdocs")]
+                       #:extra-files-paths 
+                       [extra-files-paths (list (build-path server-root-path "htdocs"))]
+                       ; XXX Add support for other servlets
                        #:servlets-root
                        [servlets-root (build-path server-root-path ".")]
                        #:file-not-found-path
@@ -112,11 +113,14 @@
                                          (values (build-path servlets-root servlet-path)
                                                  empty)))])
             servlet-dispatch))
-         (files:make 
-          #:url->path (fsmap:make-url->path
-                       extra-files-path)
-          #:path->mime-type (make-path->mime-type mime-types-path)
-          #:indices (list "index.html" "index.htm"))         
+         (apply sequencer:make
+                (map (lambda (extra-files-path)
+                       (files:make 
+                        #:url->path (fsmap:make-url->path
+                                     extra-files-path)
+                        #:path->mime-type (make-path->mime-type mime-types-path)
+                        #:indices (list "index.html" "index.htm")))
+                     extra-files-paths))
          (files:make 
           #:url->path (fsmap:make-url->path 
                        (build-path server-root-path "htdocs"))

@@ -9,6 +9,43 @@
 
 The @web-server provides a way to quickly configure and start a server instance.
 
+Here's a simple example:
+@schememod[
+scheme
+(require web-server/servlet
+         web-server/servlet-env)
+
+(define (my-app request)
+  `(html (head (title "Hello world!"))
+         (body (p "Hey out there!"))))
+
+(serve/servlet my-app)
+]
+
+Suppose you'd like to change the port to something else, change the last line to:
+@schemeblock[
+(serve/servlet my-app 
+               #:port 8080)
+]
+
+By default the URL for your servlet is @filepath{http://localhost:8000/servlets/standalone.ss}, 
+suppose you wanted it to be @filepath{http://localhost:8000/hello.ss}:
+@schemeblock[
+(serve/servlet my-app
+               #:servlet-path (build-path "hello.ss"))
+]
+For the time being, this path must end in @filepath{.ss} or @filepath{.scm}.
+
+Suppose you wanted to use a style-sheet (@filepath{style.css}) found on your Desktop (@filepath{/Users/jay/Desktop/}):
+@schemeblock[
+(serve/servlet my-app
+               #:extra-files-paths 
+               (list
+                (build-path "/Users/jay/Desktop")))
+]
+These files are served @emph{in addition} to those from the @scheme[#:server-root-path] @filepath{htdocs} directory.
+Notice that you may pass any number of extra paths.
+
 @defproc[(serve/servlet [servlet (request? . -> . response?)]
                        [#:launch-browser? launch-browser? boolean? #t]
                        [#:quit? quit? boolean? #t]
@@ -17,7 +54,7 @@ The @web-server provides a way to quickly configure and start a server instance.
                        [#:manager manager manager? default-threshold-LRU-manager]
                        [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                        [#:server-root-path server-root-path path? default-server-root-path]
-                       [#:extra-files-path extra-files-path path? (build-path server-root-path "htdocs")]
+                       [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
                        [#:servlets-root servlets-root path? (build-path server-root-path ".")]
                        [#:file-not-found-path file-not-found-path  path?
                                               (build-path server-root-path "conf" "not-found.html")]
@@ -43,8 +80,8 @@ The @web-server provides a way to quickly configure and start a server instance.
  The modules specified by @scheme[servlet-namespace] are shared with other servlets.
  
  The server files are rooted at @scheme[server-root-path] (which is defaultly the distribution root.)
- A file path, in addition to the @filepath["htdocs"] directory under @scheme[server-root-path] may be
- provided with @scheme[extra-files-path]. These files are checked first.
+ File paths, in addition to the @filepath["htdocs"] directory under @scheme[server-root-path] may be
+ provided with @scheme[extra-files-paths]. These paths are checked first, in the order they appear in the list.
  The @filepath["servlets"] directory is expected at @scheme[servlets-root].
  
  If a file cannot be found, @scheme[file-not-found-path] is used as an error response.
