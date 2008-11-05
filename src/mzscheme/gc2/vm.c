@@ -35,6 +35,7 @@ static VM *vm_create() {
 #if !( defined(_WIN32) || defined(OSKIT) )
   #define BLOCKFREE_CACHE_SIZE 96
   vm->freeblocks = ofm_malloc(sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
+  memset(vm->freeblocks, 0, sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
 #endif
   return vm;
 }
