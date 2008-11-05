@@ -85,6 +85,8 @@ typedef struct NewGC {
   void *park[2];
   void *park_save[2];
 
+  mpage *release_pages;
+
   int generations_available;
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
@@ -94,7 +96,6 @@ typedef struct NewGC {
   unsigned long peak_memory_use;
   unsigned long num_minor_collects;
   unsigned long num_major_collects;
-
 
   unsigned short weak_array_tag;
   unsigned short weak_box_tag;

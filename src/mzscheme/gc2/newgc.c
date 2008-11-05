@@ -298,7 +298,6 @@ static const char *zero_sized[4]; /* all 0-sized allocs get this */
 static Mark_Proc mark_table[NUMBER_OF_TAGS]; /* the table of mark procs */
 static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the table of repair procs */
 static unsigned long memory_in_use = 0; /* the amount of memory in use */
-static struct mpage *release_page = NULL;
 static int avoid_collection;
 
 /* These procedures modify or use the page map. The page map provides us very
@@ -2146,8 +2145,9 @@ inline static void do_heap_compact(void)
 	  if(prev) prev->next = work->next; else pages[i] = work->next;
 	  if(work->next) work->next->prev = prev;
 
-	  work->next = release_page;
-	  release_page = work;
+    /* push work onto GC->release_pages */
+	  work->next = GC->release_pages;
+	  GC->release_pages = work;
 
 	  /* add the old page to the page map so fixups can find forwards */
 	  pagemap_add(work);
@@ -2276,6 +2276,17 @@ static void repair_heap(void)
   }
 }
 
+static inline void cleanup_vacated_pages(mpage *pages) {
+  /* Free pages vacated by compaction: */
+  while (pages) {
+    mpage *prev = pages->next;
+    pagemap_remove(pages);
+    free_backtrace(pages);
+    free_pages(pages->addr, APAGE_SIZE);
+    free_mpage(pages);
+    pages = prev;
+  }
+}
 static void clean_up_heap(void)
 {
   struct mpage *work, *prev;
@@ -2325,16 +2336,9 @@ static void clean_up_heap(void)
     for(work = pages[i]; work; work = work->next)
       memory_in_use += work->size;
   }
-  
-  /* Free pages vacated by compaction: */
-  while (release_page) {
-    prev = release_page->next;
-    pagemap_remove(release_page);
-    free_backtrace(release_page);
-    free_pages(release_page->addr, APAGE_SIZE);
-    free_mpage(release_page);
-    release_page = prev;
-  }
+
+  cleanup_vacated_pages(GC->release_pages);
+  GC->release_pages = NULL;
 }
 
 static void protect_old_pages(void)
