@@ -4,7 +4,7 @@
 # define inline _inline
 #endif
 
-#include "../mzconfig.h"
+#include "mzconfig.h"
 
 #ifdef SIZEOF_LONG
 # if SIZEOF_LONG == 8
