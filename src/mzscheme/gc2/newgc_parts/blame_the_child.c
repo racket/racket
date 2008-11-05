@@ -208,7 +208,7 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
 	 ignore them outright. In the case of custodians, we do need
 	 to do the check; those differences are handled by replacing
          the mark procedure in mark_table. */
-      mark_table[*(unsigned short*)ptr](ptr);
+      GC->mark_table[*(unsigned short*)ptr](ptr);
       break;
     }
     case PAGE_ATOMIC: break;
@@ -224,7 +224,7 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
       unsigned short tag = *(unsigned short*)ptr;
       void **temp = ptr, **end = PPTR(info) + (info->size - INSET_WORDS);
       
-      while(temp < end) temp += mark_table[tag](temp);
+      while(temp < end) temp += GC->mark_table[tag](temp);
       break;
     }
     case PAGE_XTAGGED: GC_mark_xtagged(ptr); break;
@@ -240,10 +240,10 @@ inline static void mark_acc_big_page(struct mpage *page)
     case PAGE_TAGGED: 
       {
         unsigned short tag = *(unsigned short*)start;
-        if((unsigned long)mark_table[tag] < PAGE_TYPES) {
+        if((unsigned long)GC->mark_table[tag] < PAGE_TYPES) {
           /* atomic */
         } else
-          mark_table[tag](start); break;
+          GC->mark_table[tag](start); break;
       }
     case PAGE_ATOMIC: break;
     case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
@@ -251,7 +251,7 @@ inline static void mark_acc_big_page(struct mpage *page)
     case PAGE_TARRAY: {
       unsigned short tag = *(unsigned short *)start;
       end -= INSET_WORDS;
-      while(start < end) start += mark_table[tag](start);
+      while(start < end) start += GC->mark_table[tag](start);
       break;
     }
   }
@@ -297,14 +297,14 @@ static void do_btc_accounting(void)
     GC->unsafe_allocation_abort = btc_overmem_abort;
     
     if(!normal_thread_mark) {
-      normal_thread_mark = mark_table[scheme_thread_type];
-      normal_custodian_mark = mark_table[scheme_custodian_type];
-      normal_cust_box_mark = mark_table[GC->cust_box_tag];
+      normal_thread_mark = GC->mark_table[scheme_thread_type];
+      normal_custodian_mark = GC->mark_table[scheme_custodian_type];
+      normal_cust_box_mark = GC->mark_table[GC->cust_box_tag];
     }
-    mark_table[scheme_thread_type] = &BTC_thread_mark;
-    mark_table[scheme_custodian_type] = &BTC_custodian_mark;
-    mark_table[GC->ephemeron_tag] = btc_mark_ephemeron;
-    mark_table[GC->cust_box_tag] = BTC_cust_box_mark;
+    GC->mark_table[scheme_thread_type] = &BTC_thread_mark;
+    GC->mark_table[scheme_custodian_type] = &BTC_custodian_mark;
+    GC->mark_table[GC->ephemeron_tag] = btc_mark_ephemeron;
+    GC->mark_table[GC->cust_box_tag] = BTC_cust_box_mark;
 
     /* clear the memory use numbers out */
     for(i = 1; i < owner_table_top; i++)
@@ -333,10 +333,10 @@ static void do_btc_accounting(void)
       box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
   
-    mark_table[scheme_thread_type] = normal_thread_mark;
-    mark_table[scheme_custodian_type] = normal_custodian_mark;
-    mark_table[GC->ephemeron_tag] = mark_ephemeron;
-    mark_table[GC->cust_box_tag] = normal_cust_box_mark;
+    GC->mark_table[scheme_thread_type] = normal_thread_mark;
+    GC->mark_table[scheme_custodian_type] = normal_custodian_mark;
+    GC->mark_table[GC->ephemeron_tag] = mark_ephemeron;
+    GC->mark_table[GC->cust_box_tag] = normal_cust_box_mark;
     GC->in_unsafe_allocation_mode = 0;
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;

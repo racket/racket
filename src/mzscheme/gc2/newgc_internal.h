@@ -73,6 +73,9 @@ typedef struct Gen0 {
 
 typedef struct NewGC {
   Gen0 gen0;
+  Mark_Proc  *mark_table;   /* the table of mark procs */
+  Fixup_Proc *fixup_table;  /* the table of repair procs */
+
   struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
   unsigned long max_pages_in_heap;
@@ -81,6 +84,7 @@ typedef struct NewGC {
   unsigned long actual_pages_size;
   unsigned long in_unsafe_allocation_mode :1;
   void (*unsafe_allocation_abort)();
+  unsigned long memory_in_use; /* the amount of memory in use */
 
   void *park[2];
   void *park_save[2];
@@ -114,6 +118,8 @@ typedef struct NewGC {
 
 void NewGC_initialize(NewGC *newgc) {
   memset(newgc, 0, sizeof(NewGC));
+  newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+  newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
   newgc->primoridal_gc              = NULL;
   newgc->max_heap_size              = 0;
   newgc->max_pages_in_heap          = 0;

@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "gc2.h"
+
+#define NUMBER_OF_TAGS 512
 #include "newgc_internal.h"
 #include "../src/schpriv.h"
 
@@ -84,7 +87,6 @@ static THREAD_LOCAL NewGC *GC;
 #define INCREMENT_CYCLE_COUNT_GROWTH 1048576
 
 
-#include "gc2.h"
 #include "gc2_dump.h"
 
 #define BYTEPTR(x) ((char *)x)
@@ -171,11 +173,10 @@ Type_Tag weak_array_tag  = 42; /* set by client */
 
 #define gc_on_free_list_tag 511
 
-#define _num_tags_ 512
 
-Size_Proc size_table[_num_tags_];
-Mark_Proc mark_table[_num_tags_];
-Fixup_Proc fixup_table[_num_tags_];
+Size_Proc size_table[NUMBER_OF_TAGS];
+Mark_Proc mark_table[NUMBER_OF_TAGS];
+Fixup_Proc fixup_table[NUMBER_OF_TAGS];
 
 /****************** Memory Pages ******************/
 
@@ -762,7 +763,7 @@ static void init_tagged_mpage(void **p, MPage *page)
 #endif
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	GCPRINT(GCOUTF, "bad tag: %d at %lx\n", tag, (long)p);
 	GCFLUSHOUT();
 	CRASH(7);
@@ -1085,7 +1086,7 @@ void GC_mark(const void *p)
 #if CHECKS
 	    {
 	      Type_Tag tag = *(Type_Tag *)p;
-	      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+	      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 		GCPRINT(GCOUTF, "bad tag: %d at %lx\n", tag, (long)p);
 		CRASH(11);
 	      }
@@ -1506,7 +1507,7 @@ static void do_bigblock(void **p, MPage *page, int fixup)
       tag = *(Type_Tag *)p;
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	CRASH(16);
       }
       prev_var_stack = GC_variable_stack;
@@ -1627,7 +1628,7 @@ static void propagate_all_mpages()
 #endif
 	  
 #if CHECKS
-	    if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+	    if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	      CRASH(18);
 	    }
 #endif
@@ -2325,7 +2326,7 @@ static void fixup_tagged_mpage(void **p, MPage *page)
 #endif
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	GCFLUSHOUT();
 	CRASH(28);
       }
@@ -2755,7 +2756,7 @@ static void check_ptr(void **a)
       Type_Tag tag;
 
       tag = *(Type_Tag *)p;
-      if ((tag < 0) || (tag >= _num_tags_) 
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) 
 	  || (!size_table[tag] 
 	      && (tag != weak_box_tag)
 	      && (tag != ephemeron_tag)
@@ -3202,7 +3203,7 @@ static void gcollect(int full)
 	      if (f->tagged) {
 		Type_Tag tag = *(Type_Tag *)f->p;
 #if CHECKS
-		if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+		if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 		  CRASH(34);
 		}
 #endif
@@ -4316,7 +4317,7 @@ static long scan_tagged_mpage(void **p, MPage *page, short trace_for_tag,
       }
 
       dump_info_array[tag]++;
-      dump_info_array[tag + _num_tags_] += size;
+      dump_info_array[tag + NUMBER_OF_TAGS] += size;
 
       if (tag == trace_for_tag) {
 #if KEEP_BACKPOINTERS
@@ -4649,7 +4650,7 @@ void GC_dump_with_traces(int flags,
       } else {
 	GCPRINT(GCOUTF, "Tag counts and sizes:\n");
 	GCPRINT(GCOUTF, "Begin MzScheme3m\n");
-	for (i = 0; i < _num_tags_; i++) {
+	for (i = 0; i < NUMBER_OF_TAGS; i++) {
 	  if (dump_info_array[i]) {
 	    char *tn, buf[256];
 	    switch(i) {
@@ -4667,7 +4668,7 @@ void GC_dump_with_traces(int flags,
 	      }
 	      break;
 	    }
-	    GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, dump_info_array[i], (dump_info_array[i + _num_tags_]) << LOG_WORD_SIZE);
+	    GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, dump_info_array[i], (dump_info_array[i + NUMBER_OF_TAGS]) << LOG_WORD_SIZE);
 	  }
 	}
 	GCPRINT(GCOUTF, "End MzScheme3m\n");

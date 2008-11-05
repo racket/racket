@@ -36,6 +36,9 @@
 #include "gc2_dump.h"
 #include "../src/schpriv.h"
 
+/* the number of tags to use for tagged objects */
+#define NUMBER_OF_TAGS 512
+
 #include "newgc_internal.h"
 static THREAD_LOCAL NewGC *GC;
 
@@ -74,8 +77,6 @@ static THREAD_LOCAL NewGC *GC;
 # define LOG_WORD_SIZE 2
 #endif
 
-/* the number of tags to use for tagged objects */
-#define NUMBER_OF_TAGS 512
 
 /* the size of a page we use for the internal mark stack */
 #define STACK_PART_SIZE (1 * 1024 * 1024)
@@ -295,10 +296,6 @@ static struct mpage *pages[PAGE_TYPES];
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
-static Mark_Proc mark_table[NUMBER_OF_TAGS]; /* the table of mark procs */
-static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the table of repair procs */
-static unsigned long memory_in_use = 0; /* the amount of memory in use */
-static int avoid_collection;
 
 /* These procedures modify or use the page map. The page map provides us very
    fast mappings from pointers to the page the reside on, if any. The page 
@@ -666,7 +663,7 @@ inline static void resize_gen0(unsigned long new_size)
 inline static void reset_nursery(void)
 {
   unsigned long new_gen0_size; 
-  new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)memory_in_use) + GEN0_SIZE_ADDITION);
+  new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)GC->memory_in_use) + GEN0_SIZE_ADDITION);
   if(new_gen0_size > GEN0_MAX_SIZE)
     new_gen0_size = GEN0_MAX_SIZE;
 
@@ -1086,6 +1083,7 @@ inline static void check_finalizers(int level)
 inline static void do_ordered_level3(void)
 {
   struct finalizer *temp;
+  Mark_Proc *mark_table = GC->mark_table;
 
   for(temp = GC_resolve(finalizers); temp; temp = GC_resolve(temp->next))
     if(!marked(temp->p)) {
@@ -1495,8 +1493,8 @@ void GC_gcollect(void)
 void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 			    Fixup_Proc fixup, int constant_Size, int atomic)
 {
-  mark_table[tag] = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
-  fixup_table[tag] = fixup;
+  GC->mark_table[tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
+  GC->fixup_table[tag] = fixup;
 }
 
 long GC_get_memory_use(void *o) 
@@ -1511,7 +1509,7 @@ long GC_get_memory_use(void *o)
       retval = custodian_usage(arg);
     }
   } else {
-    retval = gen0_size_in_use() + memory_in_use;
+    retval = gen0_size_in_use() + GC->memory_in_use;
   }
 
   return retval;
@@ -1530,6 +1528,7 @@ void GC_mark(const void *const_p)
 {
   struct mpage *page;
   void *p = (void*)const_p;
+  NewGC *gc = GC;
 
   if(!p || (NUM(p) & 0x1)) {
     GCDEBUG((DEBUGOUTF, "Not marking %p (bad ptr)\n", p));
@@ -1606,8 +1605,8 @@ void GC_mark(const void *const_p)
 	  /* first check to see if this is an atomic object masquerading
 	     as a tagged object; if it is, then convert it */
 	  if(type == PAGE_TAGGED) {
-            if((unsigned long)mark_table[*(unsigned short*)p] < PAGE_TYPES)
-	      type = ohead->type = (int)(unsigned long)mark_table[*(unsigned short*)p];
+            if((unsigned long)gc->mark_table[*(unsigned short*)p] < PAGE_TYPES)
+	      type = ohead->type = (int)(unsigned long)gc->mark_table[*(unsigned short*)p];
           }
 
 	  /* now set us up for the search for where to put this thing */
@@ -1682,6 +1681,7 @@ void GC_mark(const void *const_p)
 inline static void internal_mark(void *p)
 {
   struct mpage *page = find_page(p);
+  NewGC *gc = GC;
 
   /* we can assume a lot here -- like it's a valid pointer with a page --
      because we vet bad cases out in GC_mark, above */
@@ -1695,10 +1695,10 @@ inline static void internal_mark(void *p)
       case PAGE_TAGGED: 
         {
           unsigned short tag = *(unsigned short*)start;
-          if((unsigned long)mark_table[tag] < PAGE_TYPES) {
+          if((unsigned long)gc->mark_table[tag] < PAGE_TYPES) {
             /* atomic */
           } else
-            mark_table[tag](start); break;
+            gc->mark_table[tag](start); break;
         }
       case PAGE_ATOMIC: break;
       case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
@@ -1706,7 +1706,7 @@ inline static void internal_mark(void *p)
       case PAGE_TARRAY: {
                           unsigned short tag = *(unsigned short *)start;
                           end -= INSET_WORDS;
-                          while(start < end) start += mark_table[tag](start);
+                          while(start < end) start += gc->mark_table[tag](start);
                           break;
                         }
     }
@@ -1716,7 +1716,7 @@ inline static void internal_mark(void *p)
     set_backtrace_source(p, info->type);
 
     switch(info->type) {
-      case PAGE_TAGGED: mark_table[*(unsigned short*)p](p); break;
+      case PAGE_TAGGED: gc->mark_table[*(unsigned short*)p](p); break;
       case PAGE_ATOMIC: break;
       case PAGE_ARRAY: {
                          void **start = p;
@@ -1728,7 +1728,7 @@ inline static void internal_mark(void *p)
                           void **start = p;
                           void **end = PPTR(info) + (info->size - INSET_WORDS);
                           unsigned short tag = *(unsigned short *)start;
-                          while(start < end) start += mark_table[tag](start);
+                          while(start < end) start += gc->mark_table[tag](start);
                           break;
                         }
       case PAGE_XTAGGED: GC_mark_xtagged(p); break;
@@ -2172,6 +2172,7 @@ static void repair_heap(void)
 {
   struct mpage *page;
   int i;
+  NewGC *gc = GC;
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for(page = pages[i]; page; page = page->next) {
@@ -2187,7 +2188,7 @@ static void repair_heap(void)
 	  page->big_page = 1; /* remove the mark */
 	  switch(page->page_type) {
 	    case PAGE_TAGGED: 
-	      fixup_table[*(unsigned short*)start](start); 
+	      gc->fixup_table[*(unsigned short*)start](start); 
 	      break;
 	    case PAGE_ATOMIC: break;
 	    case PAGE_ARRAY: 
@@ -2199,7 +2200,7 @@ static void repair_heap(void)
 	    case PAGE_TARRAY: {
 	      unsigned short tag = *(unsigned short *)start;
 	      end -= INSET_WORDS;
-	      while(start < end) start += fixup_table[tag](start);
+	      while(start < end) start += gc->fixup_table[tag](start);
 	      break;
 	    }
 	  }
@@ -2216,7 +2217,7 @@ static void repair_heap(void)
 		
 		if(info->mark) {
 		  info->mark = 0;
-		  fixup_table[*(unsigned short*)(start+1)](start+1);
+		  gc->fixup_table[*(unsigned short*)(start+1)](start+1);
 		} else {
 		  info->dead = 1;
 		}
@@ -2254,7 +2255,7 @@ static void repair_heap(void)
 		  void **tempend = (start++) + (size - INSET_WORDS);
 		  unsigned short tag = *(unsigned short*)start;
 		  while(start < tempend)
-		    start += fixup_table[tag](start);
+		    start += gc->fixup_table[tag](start);
 		  info->mark = 0;
 		  start = PPTR(info) + size;
 		} else {
@@ -2279,7 +2280,9 @@ static void repair_heap(void)
   }
 }
 
-static inline void cleanup_vacated_pages(mpage *pages) {
+static inline void cleanup_vacated_pages(NewGC *gc) {
+  mpage *pages = gc->release_pages;
+
   /* Free pages vacated by compaction: */
   while (pages) {
     mpage *prev = pages->next;
@@ -2289,16 +2292,18 @@ static inline void cleanup_vacated_pages(mpage *pages) {
     free_mpage(pages);
     pages = prev;
   }
+  gc->release_pages = NULL;
 }
 static void clean_up_heap(void)
 {
   struct mpage *work, *prev;
   int i;
+  NewGC *gc = GC;
 
-  memory_in_use = 0;
+  gc->memory_in_use = 0;
   
   /* For the purposes of this little loop, s/prev/next/ */
-  for(work = GC->gen0.big_pages; work; work = prev) {
+  for(work = gc->gen0.big_pages; work; work = prev) {
     prev = work->next;
     pagemap_remove(work);
     free_pages(work->addr, round_to_apage_size(work->size));
@@ -2308,7 +2313,7 @@ static void clean_up_heap(void)
   for(i = 0; i < PAGE_TYPES; i++) {
     struct mpage *prev = NULL;
 
-    if(GC->gc_full) {
+    if(gc->gc_full) {
       work = pages[i];
       while(work) {
 	if(!work->marked_on) {
@@ -2337,11 +2342,10 @@ static void clean_up_heap(void)
     
     /* since we're here anyways, compute the total memory use */
     for(work = pages[i]; work; work = work->next)
-      memory_in_use += work->size;
+      gc->memory_in_use += work->size;
   }
 
-  cleanup_vacated_pages(GC->release_pages);
-  GC->release_pages = NULL;
+  cleanup_vacated_pages(gc);
 }
 
 static void protect_old_pages(void)
@@ -2383,23 +2387,23 @@ extern double scheme_get_inexact_milliseconds(void);
 
 static void garbage_collect(int force_full)
 {
+  NewGC *gc = GC;
   static unsigned long number = 0;
   static unsigned int since_last_full = 0;
   static unsigned int running_finalizers = 0;
   static unsigned long last_full_mem_use = (20 * 1024 * 1024);
-  unsigned long old_mem_use = memory_in_use;
+  unsigned long old_mem_use = gc->memory_in_use;
   unsigned long old_gen0    = GC->gen0.current_size;
   int next_gc_full;
   TIME_DECLS();
-  NewGC *gc = GC;
 
   /* determine if this should be a full collection or not */
   gc->gc_full = force_full || !gc->generations_available 
-    || (since_last_full > 100) || (memory_in_use > (2 * last_full_mem_use));
+    || (since_last_full > 100) || (gc->memory_in_use > (2 * last_full_mem_use));
 #if 0
   printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number, 
  	 gc->gc_full, force_full, !generations_available,
-         (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use)),
+         (since_last_full > 100), (gc->memory_in_use > (2 * last_full_mem_use)),
          last_full_mem_use);
 #endif
 
@@ -2527,23 +2531,23 @@ static void garbage_collect(int force_full)
 
   /* update some statistics */
   if(gc->gc_full) gc->num_major_collects++; else gc->num_minor_collects++;
-  if(gc->peak_memory_use < memory_in_use) gc->peak_memory_use = memory_in_use;
+  if(gc->peak_memory_use < gc->memory_in_use) gc->peak_memory_use = gc->memory_in_use;
   if(gc->gc_full)
     since_last_full = 0;
-  else if((float)(memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
+  else if((float)(gc->memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
     since_last_full += 1;
-  else if((float)(memory_in_use - old_mem_use) < (0.4 * (float)old_mem_use))
+  else if((float)(gc->memory_in_use - old_mem_use) < (0.4 * (float)old_mem_use))
     since_last_full += 5;
   else 
     since_last_full += 10;
   if(gc->gc_full)
-    last_full_mem_use = memory_in_use;
+    last_full_mem_use = gc->memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
   if (GC_collect_start_callback)
     GC_collect_end_callback();
   if (GC_collect_inform_callback)
-    GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, memory_in_use);
+    GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
 
   TIME_STEP("ended");
 
