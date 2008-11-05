@@ -15,12 +15,6 @@ struct ot_entry {
 
 static struct ot_entry **owner_table = NULL;
 static unsigned int owner_table_top = 0;
-static int doing_memory_accounting = 0;
-static int really_doing_accounting = 0;
-static int current_mark_owner = 0;
-static int old_btc_mark = 0;
-static int new_btc_mark = 1;
-static int reset_limits = 0, reset_required = 0;
 
 inline static int create_blank_owner_set(void)
 {
@@ -145,9 +139,9 @@ inline static unsigned long custodian_usage(void *custodian)
   unsigned long retval = 0;
   int i;
   
-  if(!really_doing_accounting) {
+  if(!GC->really_doing_accounting) {
     GC->park[0] = custodian;
-    really_doing_accounting = 1;
+    GC->really_doing_accounting = 1;
     garbage_collect(1);
     custodian = GC->park[0]; 
     GC->park[0] = NULL;
@@ -164,17 +158,17 @@ inline static void memory_account_mark(struct mpage *page, void *ptr)
   if(page->big_page) {
     struct objhead *info = (struct objhead *)(NUM(page->addr) + PREFIX_SIZE);
 
-    if(info->btc_mark == old_btc_mark) {
-      info->btc_mark = new_btc_mark;
-      account_memory(current_mark_owner, gcBYTES_TO_WORDS(page->size));
+    if(info->btc_mark == GC->old_btc_mark) {
+      info->btc_mark = GC->new_btc_mark;
+      account_memory(GC->current_mark_owner, gcBYTES_TO_WORDS(page->size));
       push_ptr(ptr);
     }
   } else {
     struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
     
-    if(info->btc_mark == old_btc_mark) {
-      info->btc_mark = new_btc_mark;
-      account_memory(current_mark_owner, info->size);
+    if(info->btc_mark == GC->old_btc_mark) {
+      info->btc_mark = GC->new_btc_mark;
+      account_memory(GC->current_mark_owner, info->size);
       push_ptr(ptr);
     }
   }
@@ -212,7 +206,7 @@ int BTC_thread_mark(void *p)
 
 int BTC_custodian_mark(void *p)
 {
-  if(custodian_to_owner_set(p) == current_mark_owner)
+  if(custodian_to_owner_set(p) == GC->current_mark_owner)
     return GC->normal_custodian_mark(p);
   else
     return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
@@ -282,11 +276,10 @@ inline static void mark_acc_big_page(struct mpage *page)
   }
 }
 
-int kill_propagation_loop = 0;
 
 static void btc_overmem_abort()
 {
-  kill_propagation_loop = 1;
+  GC->kill_propagation_loop = 1;
   GCWARN((GCOUTF, "WARNING: Ran out of memory accounting. "
 	          "Info will be wrong.\n"));
 }
@@ -296,7 +289,7 @@ static void propagate_accounting_marks(void)
   struct mpage *page;
   void *p;
 
-  while(pop_ptr(&p) && !kill_propagation_loop) {
+  while(pop_ptr(&p) && !GC->kill_propagation_loop) {
     page = pagemap_find_page(p);
     set_backtrace_source(p, page->page_type);
     GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p));
@@ -305,19 +298,19 @@ static void propagate_accounting_marks(void)
     else
       mark_normal_obj(page, p);
   }
-  if(kill_propagation_loop)
+  if(GC->kill_propagation_loop)
     reset_pointer_stack();
 }
 
 static void do_btc_accounting(void)
 {
-  if(really_doing_accounting) {
+  if(GC->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(NULL)]->originator;
     Scheme_Custodian_Reference *box = cur->global_next;
     int i;
 
     GCDEBUG((DEBUGOUTF, "\nBEGINNING MEMORY ACCOUNTING\n"));
-    doing_memory_accounting = 1;
+    GC->doing_memory_accounting = 1;
     GC->in_unsafe_allocation_mode = 1;
     GC->unsafe_allocation_abort = btc_overmem_abort;
     
@@ -347,9 +340,9 @@ static void do_btc_accounting(void)
     while(cur) {
       int owner = custodian_to_owner_set(cur);
       
-      current_mark_owner = owner;
+      GC->current_mark_owner = owner;
       GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
-      kill_propagation_loop = 0;
+      GC->kill_propagation_loop = 0;
       mark_threads(owner);
       mark_cust_boxes(cur);
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
@@ -364,9 +357,9 @@ static void do_btc_accounting(void)
     GC->mark_table[GC->cust_box_tag]      = GC->normal_cust_box_mark;
 
     GC->in_unsafe_allocation_mode = 0;
-    doing_memory_accounting = 0;
-    old_btc_mark = new_btc_mark;
-    new_btc_mark = !new_btc_mark;
+    GC->doing_memory_accounting = 0;
+    GC->old_btc_mark = GC->new_btc_mark;
+    GC->new_btc_mark = !GC->new_btc_mark;
   }
 
   clear_stack_pages();
@@ -385,18 +378,18 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
 {
   struct account_hook *work;
 
-  if(!really_doing_accounting) {
+  if(!GC->really_doing_accounting) {
     GC->park[0] = c1; GC->park[1] = c2;
-    really_doing_accounting = 1;
+    GC->really_doing_accounting = 1;
     garbage_collect(1);
     c1 = GC->park[0]; c2 = GC->park[1];
     GC->park[0] = GC->park[1] = NULL;
   }
 
   if (type == MZACCT_LIMIT)
-    reset_limits = 1;
+    GC->reset_limits = 1;
   if (type == MZACCT_REQUIRE)
-    reset_required = 1;
+    GC->reset_required = 1;
 
   for(work = hooks; work; work = work->next) {
     if((work->type == type) && (work->c2 == c2) && (work->c1 == c1)) {
@@ -440,12 +433,12 @@ static unsigned long custodian_super_require(void *c)
 {
   int set = ((Scheme_Custodian *)c)->gc_owner_set;
 
-  if (reset_required) {
+  if (GC->reset_required) {
     int i;
     for(i = 1; i < owner_table_top; i++)
       if (owner_table[i])
         owner_table[i]->required_set = 0;
-    reset_required = 0;
+    GC->reset_required = 0;
   }
 
   if (!owner_table[set]->required_set) {
@@ -497,12 +490,12 @@ static unsigned long custodian_single_time_limit(int set)
   if (!set)
     return (unsigned long)(long)-1;
 
-  if (reset_limits) {
+  if (GC->reset_limits) {
     int i;
     for(i = 1; i < owner_table_top; i++)
       if (owner_table[i])
         owner_table[i]->limit_set = 0;
-    reset_limits = 0;
+    GC->reset_limits = 0;
   }
 
   if (!owner_table[set]->limit_set) {
@@ -538,7 +531,7 @@ static unsigned long custodian_single_time_limit(int set)
 
 
 # define set_account_hook(a,b,c,d) { add_account_hook(a,b,c,d); return 1; }
-# define set_btc_mark(x) (((struct objhead *)(x))->btc_mark = old_btc_mark)
+# define set_btc_mark(x) (((struct objhead *)(x))->btc_mark = GC->old_btc_mark)
 #endif
 
 #ifndef NEWGC_BTC_ACCOUNT

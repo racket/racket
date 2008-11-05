@@ -1459,7 +1459,7 @@ void GC_mark(const void *const_p)
   }
 
   /* toss this over to the BTC mark routine if we're doing accounting */
-  if(doing_memory_accounting) { memory_account_mark(page,p); return; }
+  if(GC->doing_memory_accounting) { memory_account_mark(page,p); return; }
 
   if(page->big_page) {
     /* This is a bigpage. The first thing we do is see if its been marked

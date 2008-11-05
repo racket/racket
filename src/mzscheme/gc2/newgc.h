@@ -128,6 +128,19 @@ typedef struct NewGC {
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
   unsigned char running_finalizers           :1;
 
+  /* blame the child */
+  unsigned int doing_memory_accounting        :1;
+  unsigned int really_doing_accounting        :1;
+  unsigned int old_btc_mark                   :1;
+  unsigned int new_btc_mark                   :1;
+  unsigned int reset_limits                   :1;
+  unsigned int reset_required                 :1;
+  unsigned int kill_propagation_loop          :1;
+  unsigned int current_mark_owner;
+  //static struct ot_entry **owner_table = NULL;
+  unsigned int owner_table_top;
+
+
   unsigned long number_of_gc_runs;
   unsigned int since_last_full;
   unsigned long last_full_mem_use;
@@ -171,4 +184,5 @@ void NewGC_initialize(NewGC *newgc) {
   
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
+  newgc->new_btc_mark = 1;
 }

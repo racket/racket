@@ -313,8 +313,8 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
-gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
-			 $(srcdir)/newgc.h \
+gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+			 $(srcdir)/newgc.h $(srcdir)/blame_the_child.c \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
        $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
        $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
@@ -322,7 +322,7 @@ gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc
        $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gc2.c -o gc2.@LTO@
 
-new_gc.@LTO@: $(srcdir)/newgc.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+new_gc.@LTO@: $(srcdir)/newgc.c $(srcdir)/gc2.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
        $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
        $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
@@ -330,7 +330,7 @@ new_gc.@LTO@: $(srcdir)/newgc.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/
        $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/newgc.c -o new_gc.@LTO@
 
-copy_gc.@LTO@: $(srcdir)/copy.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+copy_gc.@LTO@: $(srcdir)/copy.c $(srcdir)/gc2.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
        $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
        $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
@@ -338,7 +338,7 @@ copy_gc.@LTO@: $(srcdir)/copy.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/
        $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/copy.c -o copy_gc.@LTO@
 
-compact_gc.@LTO@: $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+compact_gc.@LTO@: $(srcdir)/compact.c $(srcdir)/gc2.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
        $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
        $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
