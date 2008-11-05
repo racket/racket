@@ -89,6 +89,11 @@ typedef struct NewGC {
   void *park[2];
   void *park_save[2];
 
+  /* blame the child saved off Mark_Proc pointers */
+  Mark_Proc normal_thread_mark;
+  Mark_Proc normal_custodian_mark;
+  Mark_Proc normal_cust_box_mark;
+
   mpage *release_pages;
   unsigned long stack_base;
   int dumping_avoid_collection; /* dumping coutner flag */

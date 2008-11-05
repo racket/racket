@@ -1126,126 +1126,6 @@ inline static void reset_weak_finalizers(void)
 #undef weak_box_resolve
 
 /*****************************************************************************/
-/* thread list                                                               */
-/*****************************************************************************/
-#ifdef NEWGC_BTC_ACCOUNT
-inline static int current_owner(Scheme_Custodian *c);
-
-struct gc_thread_info {
-  void *thread;
-  int owner;
-  struct gc_thread_info *next;
-};
-
-static Mark_Proc normal_thread_mark     = NULL;
-static Mark_Proc normal_custodian_mark  = NULL;
-static Mark_Proc normal_cust_box_mark   = NULL;
-static struct gc_thread_info *threads = NULL;
-
-
-inline static void register_new_thread(void *t, void *c)
-{
-  struct gc_thread_info *work;
-
-  work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
-  if (!work) out_of_memory();
-  ((Scheme_Thread *)t)->gc_info = work;
-  work->owner = current_owner((Scheme_Custodian *)c);
-  work->thread = t;
-  work->next = threads;
-  threads = work;
-}
-
-inline static void register_thread(void *t, void *c)
-{
-  struct gc_thread_info *work;
-
-  work = ((Scheme_Thread *)t)->gc_info;
-  work->owner = current_owner((Scheme_Custodian *)c);
-}
-
-inline static void mark_threads(int owner)
-{
-  struct gc_thread_info *work;
-
-  for(work = threads; work; work = work->next)
-    if(work->owner == owner) {
-      if (((Scheme_Thread *)work->thread)->running) {
-        normal_thread_mark(work->thread);
-        if (work->thread == scheme_current_thread) {
-          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
-        }
-      }
-    }
-}
-
-inline static void mark_cust_boxes(Scheme_Custodian *cur)
-{
-  Scheme_Object *pr, *prev = NULL, *next;
-  GC_Weak_Box *wb;
-
-  /* cust boxes is a list of weak boxes to cust boxes */
-
-  pr = cur->cust_boxes;
-  while (pr) {
-    wb = (GC_Weak_Box *)SCHEME_CAR(pr);
-    next = SCHEME_CDR(pr);
-    if (wb->val) {
-      normal_cust_box_mark(wb->val);
-      prev = pr;
-    } else {
-      if (prev)
-        SCHEME_CDR(prev) = next;
-      else
-        cur->cust_boxes = next;
-    }
-    pr = next;
-  }
-  cur->cust_boxes = NULL;
-}
-
-inline static void clean_up_thread_list(void)
-{
-  struct gc_thread_info *work = threads, *prev = NULL;
-
-  while(work) {
-    if(!find_page(work->thread) || marked(work->thread)) {
-      work->thread = GC_resolve(work->thread);
-      prev = work;
-      work = work->next;
-    } else {
-      struct gc_thread_info *next = work->next;
-
-      if(prev) prev->next = next;
-      if(!prev) threads = next;
-      free(work);
-      work = next;
-    }
-  }
-}
-
-inline static int thread_get_owner(void *p)
-{
-  return ((Scheme_Thread *)p)->gc_info->owner;
-}
-#endif
-
-#ifndef NEWGC_BTC_ACCOUNT
-# define register_thread(t,c) /* */
-# define register_new_thread(t,c) /* */
-# define clean_up_thread_list() /* */
-#endif
-
-void GC_register_thread(void *t, void *c)
-{
-  register_thread(t, c);
-}
-void GC_register_new_thread(void *t, void *c)
-{
-  register_new_thread(t, c);
-}
-
-/*****************************************************************************/
 /* Internal Stack Routines                                                   */
 /*****************************************************************************/
 
@@ -1348,11 +1228,102 @@ inline static void reset_pointer_stack(void)
   mark_stack->top = PPTR(mark_stack) + 4;
 }
 
+/*****************************************************************************/
+/* thread list                                                               */
+/*****************************************************************************/
+#ifdef NEWGC_BTC_ACCOUNT
+inline static int current_owner(Scheme_Custodian *c);
+
+struct gc_thread_info {
+  void *thread;
+  int owner;
+  struct gc_thread_info *next;
+};
+
+static struct gc_thread_info *threads = NULL;
+
+
+inline static void register_new_thread(void *t, void *c)
+{
+  struct gc_thread_info *work;
+
+  work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
+  ((Scheme_Thread *)t)->gc_info = work;
+  work->owner = current_owner((Scheme_Custodian *)c);
+  work->thread = t;
+  work->next = threads;
+  threads = work;
+}
+
+inline static void register_thread(void *t, void *c)
+{
+  struct gc_thread_info *work;
+
+  work = ((Scheme_Thread *)t)->gc_info;
+  work->owner = current_owner((Scheme_Custodian *)c);
+}
+
+inline static void mark_threads(int owner)
+{
+  struct gc_thread_info *work;
+
+  for(work = threads; work; work = work->next)
+    if(work->owner == owner) {
+      if (((Scheme_Thread *)work->thread)->running) {
+        GC->normal_thread_mark(work->thread);
+        if (work->thread == scheme_current_thread) {
+          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
+        }
+      }
+    }
+}
+
+inline static void clean_up_thread_list(void)
+{
+  struct gc_thread_info *work = threads, *prev = NULL;
+
+  while(work) {
+    if(!find_page(work->thread) || marked(work->thread)) {
+      work->thread = GC_resolve(work->thread);
+      prev = work;
+      work = work->next;
+    } else {
+      struct gc_thread_info *next = work->next;
+
+      if(prev) prev->next = next;
+      if(!prev) threads = next;
+      free(work);
+      work = next;
+    }
+  }
+}
+
+inline static int thread_get_owner(void *p)
+{
+  return ((Scheme_Thread *)p)->gc_info->owner;
+}
 #include "newgc_parts/blame_the_child.c"
 
 int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 {
   set_account_hook(type, c1, c2, b);
+}
+
+#endif
+
+#ifndef NEWGC_BTC_ACCOUNT
+# define register_thread(t,c) /* */
+# define register_new_thread(t,c) /* */
+# define clean_up_thread_list() /* */
+#endif
+
+void GC_register_thread(void *t, void *c)
+{
+  register_thread(t, c);
+}
+void GC_register_new_thread(void *t, void *c)
+{
+  register_new_thread(t, c);
 }
 
 /*****************************************************************************/

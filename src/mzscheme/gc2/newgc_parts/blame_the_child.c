@@ -180,6 +180,31 @@ inline static void memory_account_mark(struct mpage *page, void *ptr)
   }
 }
 
+inline static void mark_cust_boxes(Scheme_Custodian *cur)
+{
+  Scheme_Object *pr, *prev = NULL, *next;
+  GC_Weak_Box *wb;
+
+  /* cust boxes is a list of weak boxes to cust boxes */
+
+  pr = cur->cust_boxes;
+  while (pr) {
+    wb = (GC_Weak_Box *)SCHEME_CAR(pr);
+    next = SCHEME_CDR(pr);
+    if (wb->val) {
+      GC->normal_cust_box_mark(wb->val);
+      prev = pr;
+    } else {
+      if (prev)
+        SCHEME_CDR(prev) = next;
+      else
+        cur->cust_boxes = next;
+    }
+    pr = next;
+  }
+  cur->cust_boxes = NULL;
+}
+
 int BTC_thread_mark(void *p)
 {
   return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
@@ -188,7 +213,7 @@ int BTC_thread_mark(void *p)
 int BTC_custodian_mark(void *p)
 {
   if(custodian_to_owner_set(p) == current_mark_owner)
-    return normal_custodian_mark(p);
+    return GC->normal_custodian_mark(p);
   else
     return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
 }
@@ -296,15 +321,16 @@ static void do_btc_accounting(void)
     GC->in_unsafe_allocation_mode = 1;
     GC->unsafe_allocation_abort = btc_overmem_abort;
     
-    if(!normal_thread_mark) {
-      normal_thread_mark = GC->mark_table[scheme_thread_type];
-      normal_custodian_mark = GC->mark_table[scheme_custodian_type];
-      normal_cust_box_mark = GC->mark_table[GC->cust_box_tag];
+    if(!GC->normal_thread_mark) {
+      GC->normal_thread_mark    = GC->mark_table[scheme_thread_type];
+      GC->normal_custodian_mark = GC->mark_table[scheme_custodian_type];
+      GC->normal_cust_box_mark  = GC->mark_table[GC->cust_box_tag];
     }
-    GC->mark_table[scheme_thread_type] = &BTC_thread_mark;
-    GC->mark_table[scheme_custodian_type] = &BTC_custodian_mark;
-    GC->mark_table[GC->ephemeron_tag] = btc_mark_ephemeron;
-    GC->mark_table[GC->cust_box_tag] = BTC_cust_box_mark;
+
+    GC->mark_table[scheme_thread_type]    = BTC_thread_mark;
+    GC->mark_table[scheme_custodian_type] = BTC_custodian_mark;
+    GC->mark_table[GC->ephemeron_tag]     = BTC_ephemeron_mark;
+    GC->mark_table[GC->cust_box_tag]      = BTC_cust_box_mark;
 
     /* clear the memory use numbers out */
     for(i = 1; i < owner_table_top; i++)
@@ -322,8 +348,7 @@ static void do_btc_accounting(void)
       int owner = custodian_to_owner_set(cur);
       
       current_mark_owner = owner;
-      GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n",
-	       owner, cur));
+      GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
       kill_propagation_loop = 0;
       mark_threads(owner);
       mark_cust_boxes(cur);
@@ -333,15 +358,17 @@ static void do_btc_accounting(void)
       box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
   
-    GC->mark_table[scheme_thread_type] = normal_thread_mark;
-    GC->mark_table[scheme_custodian_type] = normal_custodian_mark;
-    GC->mark_table[GC->ephemeron_tag] = mark_ephemeron;
-    GC->mark_table[GC->cust_box_tag] = normal_cust_box_mark;
+    GC->mark_table[scheme_thread_type]    = GC->normal_thread_mark;
+    GC->mark_table[scheme_custodian_type] = GC->normal_custodian_mark;
+    GC->mark_table[GC->ephemeron_tag]     = mark_ephemeron;
+    GC->mark_table[GC->cust_box_tag]      = GC->normal_cust_box_mark;
+
     GC->in_unsafe_allocation_mode = 0;
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;
     new_btc_mark = !new_btc_mark;
   }
+
   clear_stack_pages();
 }
 

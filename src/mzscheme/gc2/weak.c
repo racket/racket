@@ -9,7 +9,7 @@
       init_weak_boxes zero_weak_boxes
       GC_malloc_ephemeron
       size_ephemeron, mark_ephemeron, fixup_ephemeron
-      btc_mark_ephemeron [ifdef NEW_BTC_ACCOUNT]
+      BTC_ephemeron_mark [ifdef NEW_BTC_ACCOUNT]
       init_ephemerons mark_ready_ephemerons zero_remaining_ephemerons
       num_last_seen_ephemerons
    Requires:
@@ -235,7 +235,7 @@ static int mark_ephemeron(void *p)
 }
 
 #ifdef NEWGC_BTC_ACCOUNT
-static int btc_mark_ephemeron(void *p)
+static int BTC_ephemeron_mark(void *p)
 {
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
   
