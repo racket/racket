@@ -1,7 +1,9 @@
 /* Provides: */
+/*
 static void os_vm_free_pages(void *p, size_t len);
 static void *os_vm_alloc_pages(size_t len);
 static void protect_pages(void *p, size_t len, int writeable);
+*/
 /* Requires: */
 /* Optional:
       CHECK_USED_AGAINST_MAX(len)

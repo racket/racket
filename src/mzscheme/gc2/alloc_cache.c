@@ -14,18 +14,24 @@
 */
 
 /* interface to GC */
+/*
 static void *malloc_pages(size_t len, size_t alignment);
 static void *malloc_dirty_pages(size_t len, size_t alignment);
 static void free_pages(void *p, size_t len);
 static void flush_freed_pages(void);
 static void protect_pages(void *p, size_t len, int writable);
+*/
 
 /* interface to OS */
+/*
 static void os_vm_free_pages(void *p, size_t len);
 static void *os_vm_alloc_pages(size_t len);
+*/
 
 /* private utility functions */
+/*
 static void *do_malloc_pages(size_t len, size_t alignment, int dirty_ok);
+*/
 
 
 static void *malloc_pages(size_t len, size_t alignment)

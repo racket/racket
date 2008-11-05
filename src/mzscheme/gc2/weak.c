@@ -25,8 +25,6 @@
 /*                               weak arrays                                  */
 /******************************************************************************/
 
-static GC_Weak_Array *weak_arrays;
-
 static int size_weak_array(void *p)
 {
   GC_Weak_Array *a = (GC_Weak_Array *)p;
@@ -41,8 +39,8 @@ static int mark_weak_array(void *p)
 
   gcMARK(a->replace_val);
 
-  a->next = weak_arrays;
-  weak_arrays = a;
+  a->next = GC->weak_arrays;
+  GC->weak_arrays = a;
 
 #if CHECKS
   /* For now, weak arrays only used for symbols, keywords, and falses: */
@@ -105,7 +103,7 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
 }
 
 void init_weak_arrays() {
-  weak_arrays = NULL;
+  GC->weak_arrays = NULL;
 }
 
 static void zero_weak_arrays()
@@ -113,7 +111,7 @@ static void zero_weak_arrays()
   GC_Weak_Array *wa;
   int i;
 
-  wa = weak_arrays;
+  wa = GC->weak_arrays;
   while (wa) {
     void **data;
     
@@ -132,8 +130,6 @@ static void zero_weak_arrays()
 /*                                weak boxes                                  */
 /******************************************************************************/
 
-static GC_Weak_Box *weak_boxes;
-
 static int size_weak_box(void *p)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -146,8 +142,8 @@ static int mark_weak_box(void *p)
   gcMARK(wb->secondary_erase);
 
   if (wb->val) {
-    wb->next = weak_boxes;
-    weak_boxes = wb;
+    wb->next = GC->weak_boxes;
+    GC->weak_boxes = wb;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -187,14 +183,14 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
 }
 
 void init_weak_boxes() {
-  weak_boxes = NULL;
+  GC->weak_boxes = NULL;
 }
 
 static void zero_weak_boxes()
 {
   GC_Weak_Box *wb;
 
-  wb = weak_boxes;
+  wb = GC->weak_boxes;
   while (wb) {
     if (!is_marked(wb->val)) {
       wb->val = NULL;
@@ -213,10 +209,6 @@ static void zero_weak_boxes()
 /*                                 ephemeron                                  */
 /******************************************************************************/
 
-static GC_Ephemeron *ephemerons;
-
-static int num_last_seen_ephemerons = 0;
-
 static int size_ephemeron(void *p)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -227,8 +219,8 @@ static int mark_ephemeron(void *p)
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
-    eph->next = ephemerons;
-    ephemerons = eph;
+    eph->next = GC->ephemerons;
+    GC->ephemerons = eph;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -280,25 +272,25 @@ void *GC_malloc_ephemeron(void *k, void *v)
 }
 
 void init_ephemerons() {
-  ephemerons = NULL;
-  num_last_seen_ephemerons = 0;
+  GC->ephemerons = NULL;
+  GC->num_last_seen_ephemerons = 0;
 }
 
 static void mark_ready_ephemerons()
 {
   GC_Ephemeron *waiting = NULL, *next, *eph;
 
-  for (eph = ephemerons; eph; eph = next) {
+  for (eph = GC->ephemerons; eph; eph = next) {
     next = eph->next;
     if (is_marked(eph->key)) {
       gcMARK(eph->val);
-      num_last_seen_ephemerons++;
+      GC->num_last_seen_ephemerons++;
     } else {
       eph->next = waiting;
       waiting = eph;
     }
   }
-  ephemerons = waiting;
+  GC->ephemerons = waiting;
 }
 
 static void zero_remaining_ephemerons()
@@ -307,7 +299,7 @@ static void zero_remaining_ephemerons()
 
   /* After unordered finalization, any remaining ephemerons
      should be zeroed. */
-  for (eph = ephemerons; eph; eph = eph->next) {
+  for (eph = GC->ephemerons; eph; eph = eph->next) {
     eph->key = NULL;
     eph->val = NULL;
   }

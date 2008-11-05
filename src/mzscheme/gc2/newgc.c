@@ -1841,7 +1841,7 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"# of major collections: %li\n", GC->num_major_collects));
   GCWARN((GCOUTF,"# of minor collections: %li\n", GC->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", GC->num_fnls));
-  GCWARN((GCOUTF,"# of traced ephemerons: %i\n", num_last_seen_ephemerons));
+  GCWARN((GCOUTF,"# of traced ephemerons: %i\n", GC->num_last_seen_ephemerons));
 
   if (flags & GC_DUMP_SHOW_TRACE) {
     print_traced_objects(path_length_limit, get_type_name, get_xtagged_name, print_tagged_value);
