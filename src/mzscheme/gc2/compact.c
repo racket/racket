@@ -159,6 +159,7 @@ void **GC_variable_stack;
 
 void **GC_get_variable_stack() { return GC_variable_stack; }
 void GC_set_variable_stack(void **p) { GC_variable_stack = p; }
+void GC_register_root_custodian(void *_c) {}
 
 /********************* Type tags *********************/
 Type_Tag pair_tag = 42; /* set by client */
@@ -659,6 +660,11 @@ static MPage *find_page(void *p)
   }
   
   return NULL;  
+}
+
+int GC_is_allocated(void *p)
+{
+  return !!find_page(p);
 }
 
 /* Works only during GC: */

@@ -1,4 +1,3 @@
-
 srcdir = @srcdir@
 builddir = @builddir@
 prefix = @prefix@
@@ -31,6 +30,9 @@ XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
+XFORM_COMPACT_GC_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -DUSE_COMPACT_3M_GC" -o
+XFORM_COMPACT_GC = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_COMPACT_GC_NOPRECOMP)
+
 FOREIGN_USED_OBJ = foreign.@LTO@
 FOREIGN_NOT_USED_OBJ = 
 
@@ -47,7 +49,6 @@ OBJS =  salloc.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
 	hash.@LTO@ \
-	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	mzrt.@LTO@ \
@@ -60,7 +61,7 @@ OBJS =  salloc.@LTO@ \
 	port.@LTO@ \
 	portfun.@LTO@ \
 	print.@LTO@ \
-        rational.@LTO@ \
+	rational.@LTO@ \
 	read.@LTO@ \
 	regexp.@LTO@ \
 	sema.@LTO@ \
@@ -73,8 +74,7 @@ OBJS =  salloc.@LTO@ \
 	thread.@LTO@ \
 	type.@LTO@ \
 	vector.@LTO@ \
-	$(@FOREIGN_IF_USED@_OBJ) \
-	gc2.@LTO@
+	$(@FOREIGN_IF_USED@_OBJ)
 
 FOREIGN_USED_C = $(XSRCDIR)/foreign.c
 FOREIGN_NOT_USED_C =
@@ -93,6 +93,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/fun.c \
 	$(XSRCDIR)/hash.c \
 	$(XSRCDIR)/jit.c \
+	$(XSRCDIR)/jit_compact_gc.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
@@ -104,7 +105,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/port.c \
 	$(XSRCDIR)/portfun.c \
 	$(XSRCDIR)/print.c \
-        $(XSRCDIR)/rational.c \
+	$(XSRCDIR)/rational.c \
 	$(XSRCDIR)/read.c \
 	$(XSRCDIR)/regexp.c \
 	$(XSRCDIR)/sema.c \
@@ -123,6 +124,8 @@ XSRCS = $(XSRCDIR)/salloc.c \
 all: xsrc
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
+
+all2: all ../mzscheme@MMM@@NOT_OSX@  ../mzscheme_compact_gc@NOT_OSX@
 
 xsrcs: $(XSRCS)
 
@@ -167,6 +170,10 @@ $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
+
+$(XSRCDIR)/jit_compact_gc.c: ../src/jit.@LTO@ $(XFORMDEP)
+	$(XFORM_COMPACT_GC) $(XSRCDIR)/jit_compact_gc.c $(SRCDIR)/jit.c
+
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
@@ -249,6 +256,8 @@ hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
+jit_compact_gc.@LTO@: $(XSRCDIR)/jit_compact_gc.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit_compact_gc.c -o jit_compact_gc.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
@@ -312,6 +321,30 @@ gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc
        $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gc2.c -o gc2.@LTO@
 
+new_gc.@LTO@: $(srcdir)/newgc.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
+       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
+       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
+       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
+       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+	$(CC) $(CFLAGS) -c $(srcdir)/newgc.c -o new_gc.@LTO@
+
+copy_gc.@LTO@: $(srcdir)/copy.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
+       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
+       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
+       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
+       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+	$(CC) $(CFLAGS) -c $(srcdir)/copy.c -o copy_gc.@LTO@
+
+compact_gc.@LTO@: $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
+       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
+       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
+       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
+       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+	$(CC) $(CFLAGS) -c $(srcdir)/compact.c -o compact_gc.@LTO@
+
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
@@ -324,12 +357,20 @@ FOREIGN_NOT_USED_OBJSLIB =
 EXTRA_OBJS_T = ../src/gmp.@LTO@ $(@FOREIGN_IF_USED@_LIB)
 EXTRA_OBJS_L = ../src/gmp.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
-../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T)
-	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L)
+../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) jit.@LTO@ gc2.@LTO@
+	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) jit.@LTO@ gc2.@LTO@
 	$(RANLIB) ../libmzscheme3m.@LIBSFX@
+
+../libmzscheme_compact_gc.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) jit_compact_gc.@LTO@ compact_gc.@LTO@
+	$(AR) $(ARFLAGS) ../libmzscheme_compact_gc.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) jit_compact_gc.@LTO@ compact_gc.@LTO@
+	$(RANLIB) ../libmzscheme_compact_gc.@LIBSFX@
 
 ../mzscheme@MMM@@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
 	cd ..; @MZLINKER@ -o mzscheme@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+
+../mzscheme_compact_gc@NOT_OSX@: main.@LTO@ ../libmzscheme_compact_gc.@LIBSFX@
+	cd ..; @MZLINKER@ -o mzscheme_compact_gc @PROFFLAGS@ gc2/main.@LTO@ libmzscheme_compact_gc.@LIBSFX@ @LDFLAGS@ $(LIBS)
+
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
 #  path.
