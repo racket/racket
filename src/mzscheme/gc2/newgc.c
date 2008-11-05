@@ -113,8 +113,6 @@ void (*GC_fixup_xtagged)(void *obj);
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static unsigned long in_unsafe_allocation_mode = 0;
-static void (*unsafe_allocation_abort)();
 static void garbage_collect(int);
 
 static void out_of_memory()
@@ -129,9 +127,9 @@ inline static void check_used_against_max(size_t len)
 {
   GC->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 
-  if(in_unsafe_allocation_mode) {
+  if(GC->in_unsafe_allocation_mode) {
     if(GC->used_pages > GC->max_pages_in_heap)
-      unsafe_allocation_abort();
+      GC->unsafe_allocation_abort();
   } else {
     if(GC->used_pages > GC->max_pages_for_use) {
       garbage_collect(0); /* hopefully this will free enough space */
@@ -226,6 +224,15 @@ enum {
   PAGE_BIG      = 5,
   /* the number of page types. */
   PAGE_TYPES    = 6,
+};
+
+static const char *type_name[PAGE_TYPES] = { 
+  "tagged", 
+  "atomic", 
+  "array",
+  "tagged array", 
+  "xtagged",
+  "big" 
 };
 
 /* the page map makes a nice mapping from addresses to pages, allowing
@@ -1406,13 +1413,11 @@ int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static int generations_available = 1, no_further_modifications = 0;
-
 int designate_modified(void *p)
 {
   struct mpage *page = find_page(p);
 
-  if (no_further_modifications) {
+  if (GC->no_further_modifications) {
     GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
     return 0;
   }
@@ -1782,11 +1787,6 @@ void GC_fixup(void *pp)
 /* memory stats and traces                                                   */
 /*****************************************************************************/
 
-/* These collect information about memory usage, for use in GC_dump. */
-static unsigned long peak_memory_use = 0;
-static unsigned long num_minor_collects = 0;
-static unsigned long num_major_collects = 0;
-
 #ifdef MZ_GC_BACKTRACE
 # define trace_page_t struct mpage
 # define trace_page_type(page) (page)->page_type
@@ -1813,9 +1813,6 @@ static void *trace_pointer_start(struct mpage *page, void *p) {
 #endif
 
 #define MAX_DUMP_TAG 256
-
-static char *type_name[PAGE_TYPES] = { "tagged", "atomic", "array",
-				       "tagged array", "xtagged", "big" };
 
 void GC_dump_with_traces(int flags,
 			 GC_get_type_name_proc get_type_name,
@@ -1907,12 +1904,12 @@ void GC_dump_with_traces(int flags,
 
   GCWARN((GCOUTF,"\n"));
   GCWARN((GCOUTF,"Current memory use: %li\n", GC_get_memory_use(NULL)));
-  GCWARN((GCOUTF,"Peak memory use after a collection: %li\n",peak_memory_use));
+  GCWARN((GCOUTF,"Peak memory use after a collection: %li\n", GC->peak_memory_use));
   GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %li (+%li)\n", 
           GC->used_pages * APAGE_SIZE, 
           GC->actual_pages_size - (GC->used_pages * APAGE_SIZE)));
-  GCWARN((GCOUTF,"# of major collections: %li\n", num_major_collects));
-  GCWARN((GCOUTF,"# of minor collections: %li\n", num_minor_collects));
+  GCWARN((GCOUTF,"# of major collections: %li\n", GC->num_major_collects));
+  GCWARN((GCOUTF,"# of minor collections: %li\n", GC->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", num_fnls));
   GCWARN((GCOUTF,"# of traced ephemerons: %i\n", num_last_seen_ephemerons));
 
@@ -1963,7 +1960,7 @@ static void prepare_pages_for_collection(void)
   if(gc_full) {
     /* we need to make sure that previous_size for every page is reset, so
        we don't accidentally screw up the mark routine */
-    if (generations_available) {
+    if (GC->generations_available) {
       for(i = 0; i < PAGE_TYPES; i++)
 	for(work = pages[i]; work; work = work->next) {
           if (work->mprotected) {
@@ -1983,7 +1980,7 @@ static void prepare_pages_for_collection(void)
        pages in pages[] from the page map */
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = pages[i]; work; work = work->next) {
-	if (generations_available) {
+	if (GC->generations_available) {
           if (work->back_pointers) {
             if (work->mprotected) {
               work->mprotected = 0;
@@ -2373,9 +2370,8 @@ extern double scheme_get_inexact_milliseconds(void);
 
 /* Full GCs trigger finalization. Finalization releases data
    in the old generation. So one more full GC is needed to
-   really clean up. The another_full flag triggers the
-   second full GC. */
-static int another_full;
+   really clean up. The full_needed_for_finalization flag triggers 
+   the second full GC. */
 
 static void garbage_collect(int force_full)
 {
@@ -2387,9 +2383,10 @@ static void garbage_collect(int force_full)
   unsigned long old_gen0    = GC->gen0.current_size;
   int next_gc_full;
   TIME_DECLS();
+  NewGC *gc = GC;
 
   /* determine if this should be a full collection or not */
-  gc_full = force_full || !generations_available 
+  gc_full = force_full || !gc->generations_available 
     || (since_last_full > 100) || (memory_in_use > (2 * last_full_mem_use));
 #if 0
   printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number, 
@@ -2400,8 +2397,8 @@ static void garbage_collect(int force_full)
 
   next_gc_full = gc_full;
   
-  if (another_full) {
-    another_full = 0;
+  if (gc->full_needed_for_finalization) {
+    gc->full_needed_for_finalization= 0;
     gc_full = 1;
   }
 
@@ -2410,8 +2407,8 @@ static void garbage_collect(int force_full)
 
   /* we don't want the low-level allocator freaking because we've gone past
      half the available memory */
-  in_unsafe_allocation_mode = 1;
-  unsafe_allocation_abort = out_of_memory;
+  GC->in_unsafe_allocation_mode = 1;
+  GC->unsafe_allocation_abort = out_of_memory;
 
   TIME_INIT();
 
@@ -2421,7 +2418,7 @@ static void garbage_collect(int force_full)
 
   TIME_STEP("started");
 
-  no_further_modifications = 1;
+  gc->no_further_modifications = 1;
 
   prepare_pages_for_collection();
   init_weak_boxes();
@@ -2501,7 +2498,7 @@ static void garbage_collect(int force_full)
   if (gc_full)
     do_btc_accounting();
   TIME_STEP("accounted");
-  if (generations_available)
+  if (gc->generations_available)
     protect_old_pages();
   TIME_STEP("protect");
   if (gc_full)
@@ -2511,9 +2508,9 @@ static void garbage_collect(int force_full)
   TIME_STEP("reset");
 
   /* now we do want the allocator freaking if we go over half */
-  in_unsafe_allocation_mode = 0;
+  GC->in_unsafe_allocation_mode = 0;
 
-  no_further_modifications = 0;
+  gc->no_further_modifications = 0;
 
   /* If we have too many idle pages, flush: */
   if (GC->actual_pages_size > ((GC->used_pages << (LOG_APAGE_SIZE + 1)))) {
@@ -2521,8 +2518,8 @@ static void garbage_collect(int force_full)
   }
 
   /* update some statistics */
-  if(gc_full) num_major_collects++; else num_minor_collects++;
-  if(peak_memory_use < memory_in_use) peak_memory_use = memory_in_use;
+  if(gc_full) gc->num_major_collects++; else gc->num_minor_collects++;
+  if(gc->peak_memory_use < memory_in_use) gc->peak_memory_use = memory_in_use;
   if(gc_full)
     since_last_full = 0;
   else if((float)(memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
@@ -2587,7 +2584,7 @@ static void garbage_collect(int force_full)
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 
   if (next_gc_full)
-    another_full = 1;
+    GC->full_needed_for_finalization = 1;
 }
 
 #if MZ_GC_BACKTRACE

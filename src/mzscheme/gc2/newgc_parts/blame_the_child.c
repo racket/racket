@@ -293,8 +293,8 @@ static void do_btc_accounting(void)
 
     GCDEBUG((DEBUGOUTF, "\nBEGINNING MEMORY ACCOUNTING\n"));
     doing_memory_accounting = 1;
-    in_unsafe_allocation_mode = 1;
-    unsafe_allocation_abort = btc_overmem_abort;
+    GC->in_unsafe_allocation_mode = 1;
+    GC->unsafe_allocation_abort = btc_overmem_abort;
     
     if(!normal_thread_mark) {
       normal_thread_mark = mark_table[scheme_thread_type];
@@ -337,7 +337,7 @@ static void do_btc_accounting(void)
     mark_table[scheme_custodian_type] = normal_custodian_mark;
     mark_table[GC->ephemeron_tag] = mark_ephemeron;
     mark_table[GC->cust_box_tag] = normal_cust_box_mark;
-    in_unsafe_allocation_mode = 0;
+    GC->in_unsafe_allocation_mode = 0;
     doing_memory_accounting = 0;
     old_btc_mark = new_btc_mark;
     new_btc_mark = !new_btc_mark;
