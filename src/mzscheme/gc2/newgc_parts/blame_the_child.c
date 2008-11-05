@@ -297,7 +297,7 @@ static void propagate_accounting_marks(void)
   void *p;
 
   while(pop_ptr(&p) && !kill_propagation_loop) {
-    page = find_page(p);
+    page = pagemap_find_page(p);
     set_backtrace_source(p, page->page_type);
     GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p));
     if(page->big_page)

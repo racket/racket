@@ -329,7 +329,7 @@ inline static void pagemap_remove(struct mpage *page)
   modify_page_map(page->addr, page, NULL);
 }
 
-inline static struct mpage *find_page(void *p)
+inline static mpage *pagemap_find_page(void *p)
 {
   DECL_PAGE_MAP;
   FIND_PAGE_MAP(p);
@@ -338,7 +338,7 @@ inline static struct mpage *find_page(void *p)
 
 int GC_is_allocated(void *p)
 {
-  return !!find_page(p);
+  return !!pagemap_find_page(p);
 }
 
 static size_t round_to_apage_size(size_t sizeb)
@@ -680,7 +680,7 @@ inline static int marked(void *p)
   struct mpage *page;
 
   if(!p) return 0;
-  if(!(page = find_page(p))) return 1;
+  if(!(page = pagemap_find_page(p))) return 1;
   if((NUM(page->addr) + page->previous_size) > NUM(p)) return 1;
   return ((struct objhead *)(NUM(p) - WORD_SIZE))->mark;
 }
@@ -947,7 +947,7 @@ inline static void repair_roots()
 
 static int is_finalizable_page(void *p)
 {
-  return (find_page(p) ? 1 : 0);
+  return (pagemap_find_page(p) ? 1 : 0);
 }
 
 #include "fnls.c"
@@ -1015,7 +1015,7 @@ inline static void check_finalizers(int level)
       work = next;
     } else { 
       GCDEBUG((DEBUGOUTF, "CFNL: Not finalizing %p (level %i on %p): %p / %i\n",
-	       work, work->eager_level, work->p, find_page(work->p),
+	       work, work->eager_level, work->p, pagemap_find_page(work->p),
 	       marked(work->p)));
       prev = work; 
       work = GC_resolve(work->next); 
@@ -1266,7 +1266,7 @@ inline static void clean_up_thread_list(void)
   GC_Thread_Info *prev = NULL;
 
   while(work) {
-    if(!find_page(work->thread) || marked(work->thread)) {
+    if(!pagemap_find_page(work->thread) || marked(work->thread)) {
       work->thread = GC_resolve(work->thread);
       prev = work;
       work = work->next;
@@ -1315,7 +1315,7 @@ void GC_register_new_thread(void *t, void *c)
 
 int designate_modified(void *p)
 {
-  struct mpage *page = find_page(p);
+  struct mpage *page = pagemap_find_page(p);
 
   if (GC->no_further_modifications) {
     GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
@@ -1434,7 +1434,7 @@ void GC_mark(const void *const_p)
     return;
   }
 
-  if((page = find_page(p))) {
+  if((page = pagemap_find_page(p))) {
     /* toss this over to the BTC mark routine if we're doing accounting */
     if(doing_memory_accounting) { memory_account_mark(page,p); return; }
 
@@ -1579,7 +1579,7 @@ void GC_mark(const void *const_p)
 /* this is the second mark routine. It's not quite as complicated. */
 inline static void internal_mark(void *p)
 {
-  struct mpage *page = find_page(p);
+  struct mpage *page = pagemap_find_page(p);
   NewGC *gc = GC;
 
   /* we can assume a lot here -- like it's a valid pointer with a page --
@@ -1648,7 +1648,7 @@ static void propagate_marks(void)
 
 void *GC_resolve(void *p)
 {
-  struct mpage *page = find_page(p);
+  struct mpage *page = pagemap_find_page(p);
   struct objhead *info;
 
   if(!page || page->big_page)
@@ -1674,7 +1674,7 @@ void GC_fixup(void *pp)
   if(!p || (NUM(p) & 0x1))
     return;
 
-  if((page = find_page(p))) {
+  if((page = pagemap_find_page(p))) {
     struct objhead *info;
 
     if(page->big_page) return;
@@ -1833,7 +1833,7 @@ void GC_dump(void)
 int GC_is_tagged(void *p)
 {
   struct mpage *page;
-  page = find_page(p);
+  page = pagemap_find_page(p);
   return page && (page->page_type == PAGE_TAGGED);
 }
 
