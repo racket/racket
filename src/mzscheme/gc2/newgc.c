@@ -2234,46 +2234,42 @@ inline static void gen0_free_big_pages() {
 
 static void clean_up_heap(void)
 {
-  struct mpage *work, *prev;
   int i;
+  size_t memory_in_use = 0;
   NewGC *gc = GC;
-
-  gc->memory_in_use = 0;
 
   gen0_free_big_pages();
 
   for(i = 0; i < PAGE_TYPES; i++) {
-    struct mpage *prev = NULL;
-
     if(gc->gc_full) {
-      work = GC->gen1_pages[i];
+      mpage *work = GC->gen1_pages[i];
+      mpage *prev = NULL;
       while(work) {
+        mpage *next = work->next;
         if(!work->marked_on) {
-          struct mpage *next = work->next;
-
+          /* remove work from list */
           if(prev) prev->next = next; else GC->gen1_pages[i] = next;
           if(next) work->next->prev = prev;
           gen1_free_mpage(work);
-          work = next;
         } else {
           pagemap_add(work);
           work->back_pointers = work->marked_on = 0;
+          memory_in_use += work->size;
           prev = work; 
-          work = work->next;
         }
+        work = next;
       }
     } else {
+      mpage *work;
       for(work = GC->gen1_pages[i]; work; work = work->next) {
         pagemap_add(work);
         work->back_pointers = work->marked_on = 0;
+        memory_in_use += work->size;
       }
     }
-
-    /* since we're here anyways, compute the total memory use */
-    for(work = GC->gen1_pages[i]; work; work = work->next)
-      gc->memory_in_use += work->size;
   }
-
+  
+  gc->memory_in_use = memory_in_use;
   cleanup_vacated_pages(gc);
 }
 
