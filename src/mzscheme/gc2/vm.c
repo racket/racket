@@ -30,11 +30,11 @@ typedef struct VM {
 } VM;
 
 static VM *vm_create() {
-  VM *vm = malloc(sizeof(VM));
+  VM *vm = ofm_malloc(sizeof(VM));
   memset(vm, 0, sizeof(VM));
 #if !( defined(_WIN32) || defined(OSKIT) )
   #define BLOCKFREE_CACHE_SIZE 96
-  vm->freeblocks = malloc(sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
+  vm->freeblocks = ofm_malloc(sizeof(FreeBlock) * BLOCKFREE_CACHE_SIZE);
 #endif
   return vm;
 }

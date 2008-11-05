@@ -154,6 +154,12 @@ static void out_of_memory()
   abort();
 }
 
+static void *ofm_malloc(size_t size) {
+  void *ptr = malloc(size);
+  if (!ptr) out_of_memory();
+  return ptr;
+}
+
 inline static void check_used_against_max(NewGC *gc, size_t len) 
 {
   gc->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
@@ -186,14 +192,20 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
 
 static void *malloc_pages(NewGC *gc, size_t len, size_t alignment)
 {
+  void *ptr;
   check_used_against_max(gc, len);
-  return vm_malloc_pages(gc->vm, len, alignment, 0);
+  ptr = vm_malloc_pages(gc->vm, len, alignment, 0);
+  if (!ptr) out_of_memory();
+  return ptr;
 }
 
 static void *malloc_dirty_pages(NewGC *gc, size_t len, size_t alignment)
 {
+  void *ptr;
   check_used_against_max(gc, len);
-  return vm_malloc_pages(gc->vm, len, alignment, 1);
+  ptr = vm_malloc_pages(gc->vm, len, alignment, 1);
+  if (!ptr) out_of_memory();
+  return ptr;
 }
 
 static void free_pages(NewGC *gc, void *p, size_t len)
@@ -381,8 +393,7 @@ static size_t round_to_apage_size(size_t sizeb)
 static struct mpage *malloc_mpage()
 {
   struct mpage *page;
-  page = malloc(sizeof(struct mpage));
-  if (!page) out_of_memory();
+  page = ofm_malloc(sizeof(struct mpage));
   memset(page, 0, sizeof(struct mpage));
   return page;
 }
@@ -606,7 +617,7 @@ void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGG
 void *GC_malloc_one_xtagged(size_t s)             { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = malloc(s); memset(p, 0, s); return p; }
+void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = ofm_malloc(s); memset(p, 0, s); return p; }
 void *GC_malloc_allow_interior(size_t s)          { return allocate_big(s, PAGE_ARRAY); }
 void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_big(s, PAGE_ATOMIC); }
 void *GC_malloc_tagged_allow_interior(size_t s)   { return allocate_big(s, PAGE_TAGGED); }
@@ -737,7 +748,7 @@ static void init_debug_file(void)
      collections += 1;
      */
 
-  char *filename = malloc(8 * sizeof(char));
+  char *filename = ofm_malloc(8 * sizeof(char));
 
   filename[0] = 'g'; filename[1] = 'c'; filename[2] = 'l';
   filename[3] = 'o'; filename[4] = 'g';
@@ -1172,7 +1183,7 @@ typedef struct MarkSegment {
 static THREAD_LOCAL MarkSegment *mark_stack = NULL;
 
 inline static MarkSegment* mark_stack_create_frame() {
-  MarkSegment *mark_frame = (MarkSegment*)malloc(STACK_PART_SIZE);
+  MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
   mark_frame->top  = PPTR(&(mark_frame->stop_here));
   mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
@@ -1332,15 +1343,15 @@ void GC_write_barrier(void *p)
 
 void NewGC_initialize(NewGC *newgc) {
   memset(newgc, 0, sizeof(NewGC));
-  newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-  newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+  newgc->mark_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+  newgc->fixup_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-  newgc->page_maps = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+  newgc->page_maps = ofm_malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
-  newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
+  newgc->page_maps = ofm_malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
   newgc->vm = vm_create();
-  newgc->protect_range = malloc(sizeof(Page_Range));
+  newgc->protect_range = ofm_malloc(sizeof(Page_Range));
   
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
@@ -1355,7 +1366,7 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     NewGC *gc;
     initialized = 1;
 
-    gc = malloc(sizeof(NewGC));
+    gc = ofm_malloc(sizeof(NewGC));
     GC = gc;
     NewGC_initialize(gc);
 

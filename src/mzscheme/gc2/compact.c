@@ -20,6 +20,7 @@
 static THREAD_LOCAL CompactGC *GC;
 #define GCTYPE CompactGC
 #define GC_get_GC() (GC)
+#define ofm_malloc malloc
 
 /**************** Configuration ****************/
 

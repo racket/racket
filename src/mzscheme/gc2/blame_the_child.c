@@ -15,7 +15,7 @@ inline static void BTC_register_new_thread(void *t, void *c)
   NewGC *gc = GC_get_GC();
   GC_Thread_Info *work;
 
-  work = (GC_Thread_Info *)malloc(sizeof(GC_Thread_Info));
+  work = (GC_Thread_Info *)ofm_malloc(sizeof(GC_Thread_Info));
   ((Scheme_Thread *)t)->gc_info = work;
   work->owner = current_owner(gc, (Scheme_Custodian *)c);
   work->thread = t;
@@ -86,7 +86,7 @@ inline static int create_blank_owner_set(NewGC *gc)
 
   for (i = 1; i < curr_size; i++) {
     if (!owner_table[i]) {
-      owner_table[i] = malloc(sizeof(OTEntry));
+      owner_table[i] = ofm_malloc(sizeof(OTEntry));
       bzero(owner_table[i], sizeof(OTEntry));
       return i;
     }
@@ -101,7 +101,7 @@ inline static int create_blank_owner_set(NewGC *gc)
   }
   gc->owner_table_size = curr_size;
 
-  naya = (OTEntry **)malloc(curr_size * sizeof(OTEntry*));
+  naya = (OTEntry **)ofm_malloc(curr_size * sizeof(OTEntry*));
   memcpy(naya, owner_table, old_size*sizeof(OTEntry*));
   gc->owner_table = owner_table = naya;
   bzero(((char*)owner_table) + (sizeof(OTEntry*) * old_size),
@@ -471,7 +471,7 @@ inline static void BTC_add_account_hook(int type,void *c1,void *c2,unsigned long
   }
 
   if(!work) {
-    work = malloc(sizeof(AccountHook));
+    work = ofm_malloc(sizeof(AccountHook));
     work->type = type; 
     work->c1 = c1; 
     work->c2 = c2; 

@@ -15,7 +15,7 @@ static void grow_roots(Roots *roots) {
   unsigned long *new_roots;
 
   roots->size = roots->size ? ( 2 * roots->size ) : 500;
-  new_roots   = (unsigned long *)malloc(sizeof(unsigned long) * (roots->size + 1));
+  new_roots   = (unsigned long *)ofm_malloc(sizeof(unsigned long) * (roots->size + 1));
 
   memcpy((void *)new_roots, (void *)roots->roots, sizeof(unsigned long) * roots->count);
 

@@ -4,7 +4,7 @@
 void **GC_malloc_immobile_box(void *p)
 {
   GCTYPE *gc = GC_get_GC();
-  GC_Immobile_Box *ib = malloc(sizeof(GC_Immobile_Box));
+  GC_Immobile_Box *ib = ofm_malloc(sizeof(GC_Immobile_Box));
   if(!ib) GCERR((GCOUTF, "Couldn't allocate space for immobile box!\n"));
   ib->p     = p; 
   ib->next  = gc->immobile_boxes;
