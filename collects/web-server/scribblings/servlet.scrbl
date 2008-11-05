@@ -547,7 +547,7 @@ functions of interest for the servlet developer.}
 
 @defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
 
-@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . void?)]
+@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . request?)]
                                  [thunk (-> any)])
          any]{
  Calls @scheme[thunk] with an exception handler that generates an HTML error page
