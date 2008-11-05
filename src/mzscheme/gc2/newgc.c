@@ -294,7 +294,7 @@ unsigned long GC_gen0_alloc_page_end = 0;
 static struct mpage *pages[PAGE_TYPES];
 
 /* miscellaneous variables */
-static char *zero_sized[4]; /* all 0-sized allocs get this */
+static const char *zero_sized[4]; /* all 0-sized allocs get this */
 static int gc_full = 0; /* a flag saying if this is a full/major collection */
 static Mark_Proc mark_table[NUMBER_OF_TAGS]; /* the table of mark procs */
 static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the table of repair procs */
