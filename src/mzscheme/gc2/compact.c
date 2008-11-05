@@ -443,6 +443,9 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
+
+  GC = malloc(sizeof(CompactGC));
+  CompactGC_initialize(GC);
 }
 
 void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup, 
