@@ -1605,72 +1605,69 @@ void GC_mark(const void *const_p)
 }
 
 /* this is the second mark routine. It's not quite as complicated. */
-inline static void internal_mark(PageMap pagemap, void *p)
-{
-  struct mpage *page = pagemap_find_page(pagemap, p);
-  NewGC *gc = GC;
-
-  /* we can assume a lot here -- like it's a valid pointer with a page --
-     because we vet bad cases out in GC_mark, above */
-  if(page->big_page) {
-    void **start = PPTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE);
-    void **end = PPTR(NUM(page->addr) + page->size);
-
-    set_backtrace_source(start, page->page_type);
-
-    switch(page->page_type) {
-      case PAGE_TAGGED: 
-        {
-          unsigned short tag = *(unsigned short*)start;
-          if((unsigned long)gc->mark_table[tag] < PAGE_TYPES) {
-            /* atomic */
-          } else
-            gc->mark_table[tag](start); break;
-        }
-      case PAGE_ATOMIC: break;
-      case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
-      case PAGE_XTAGGED: GC_mark_xtagged(start); break;
-      case PAGE_TARRAY: {
-                          unsigned short tag = *(unsigned short *)start;
-                          end -= INSET_WORDS;
-                          while(start < end) start += gc->mark_table[tag](start);
-                          break;
-                        }
-    }
-  } else {
-    struct objhead *info = (struct objhead *)(NUM(p) - WORD_SIZE);
-
-    set_backtrace_source(p, info->type);
-
-    switch(info->type) {
-      case PAGE_TAGGED: gc->mark_table[*(unsigned short*)p](p); break;
-      case PAGE_ATOMIC: break;
-      case PAGE_ARRAY: {
-                         void **start = p;
-                         void **end = PPTR(info) + info->size;
-                         while(start < end) gcMARK(*start++);
-                         break;
-                       }
-      case PAGE_TARRAY: {
-                          void **start = p;
-                          void **end = PPTR(info) + (info->size - INSET_WORDS);
-                          unsigned short tag = *(unsigned short *)start;
-                          while(start < end) start += gc->mark_table[tag](start);
-                          break;
-                        }
-      case PAGE_XTAGGED: GC_mark_xtagged(p); break;
-    }
-  }
-}
-
 /* this is what actually does mark propagation */
 static void propagate_marks(void) 
 {
   void *p;
-  PageMap pagemap = GC->page_maps;
+  NewGC *gc = GC;
+  PageMap pagemap = gc->page_maps;
+  Mark_Proc *mark_table = gc->mark_table;
+
   while(pop_ptr(&p)) {
+    struct mpage *page = pagemap_find_page(pagemap, p);
     GCDEBUG((DEBUGOUTF, "Popped pointer %p\n", p));
-    internal_mark(pagemap, p);
+
+    /* we can assume a lot here -- like it's a valid pointer with a page --
+       because we vet bad cases out in GC_mark, above */
+    if(page->big_page) {
+      void **start = PPTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE);
+      void **end = PPTR(NUM(page->addr) + page->size);
+
+      set_backtrace_source(start, page->page_type);
+
+      switch(page->page_type) {
+        case PAGE_TAGGED: 
+          {
+            unsigned short tag = *(unsigned short*)start;
+            if((unsigned long)mark_table[tag] < PAGE_TYPES) {
+              /* atomic */
+            } else
+              mark_table[tag](start); break;
+          }
+        case PAGE_ATOMIC: break;
+        case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
+        case PAGE_XTAGGED: GC_mark_xtagged(start); break;
+        case PAGE_TARRAY: {
+                            unsigned short tag = *(unsigned short *)start;
+                            end -= INSET_WORDS;
+                            while(start < end) start += mark_table[tag](start);
+                            break;
+                          }
+      }
+    } else {
+      struct objhead *info = (struct objhead *)(NUM(p) - WORD_SIZE);
+
+      set_backtrace_source(p, info->type);
+
+      switch(info->type) {
+        case PAGE_TAGGED: mark_table[*(unsigned short*)p](p); break;
+        case PAGE_ATOMIC: break;
+        case PAGE_ARRAY: {
+                           void **start = p;
+                           void **end = PPTR(info) + info->size;
+                           while(start < end) gcMARK(*start++);
+                           break;
+                         }
+        case PAGE_TARRAY: {
+                            void **start = p;
+                            void **end = PPTR(info) + (info->size - INSET_WORDS);
+                            unsigned short tag = *(unsigned short *)start;
+                            while(start < end) start += mark_table[tag](start);
+                            break;
+                          }
+        case PAGE_XTAGGED: GC_mark_xtagged(p); break;
+      }
+    }
   }
 }
 
