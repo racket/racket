@@ -177,7 +177,7 @@ provides the unit that actually implements a dispatching server.
 @(require (for-label web-server/private/closure)
           (for-label web-server/private/define-closure))
 
-@defmodule[web-server/private/closure]
+@defmodule[web-server/private/closure]{
 
 The defunctionalization process of the Web Language (see @secref["lang"])
 requires an explicit representation of closures that is serializable.
@@ -196,22 +196,50 @@ requires an explicit representation of closures that is serializable.
 
 @defproc[(closure->deserialize-name [c closure?])
          symbol?]{
- Extracts the unique tag of a closure @scheme[c]
+ Extracts the unique tag of a closure @scheme[c].
 }
-
+                 
+}
+                 
 These are difficult to use directly, so @filepath{private/define-closure.ss}
 defines a helper form:
 
 @subsection[#:style 'hidden]{Define Closure}
-@defmodule[web-server/private/define-closure]
+@defmodule[web-server/private/define-closure]{
 
 @defform[(define-closure tag formals (free-vars ...) body)]{
- Defines a closure, constructed with @scheme[make-tag] that accepts
+ Defines a closure, constructed with @scheme[make-tag] that accepts closure that returns
  @scheme[freevars ...], that when invoked with @scheme[formals]
  executes @scheme[body].
 }
 
-@; XXX Example
+Here is an example:
+@schememod[
+ scheme
+(require scheme/serialize)
+
+(define-closure foo (a b) (x y)
+  (+ (- a b)
+     (* x y)))
+
+(define f12 (make-foo (lambda () (values 1 2))))
+(serialize f12)
+#,(schemeresult '((1) 1 (('page . foo:deserialize-info)) 0 () () (0 1 2)))
+(f12 6 7)
+#,(schemeresult 1)
+(f12 9 1)
+#,(schemeresult 10)
+
+(define f45 (make-foo (lambda () (values 4 5))))
+(serialize f45)
+#,(schemeresult '((1) 1 (('page . foo:deserialize-info)) 0 () () (0 4 5)))
+(f45 1 2)
+#,(schemeresult 19)
+(f45 8 8)
+#,(schemeresult 20)
+]
+
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "cache-table.ss"]{Cache Table}

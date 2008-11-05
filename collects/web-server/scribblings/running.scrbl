@@ -97,8 +97,6 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
  The @scheme[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
 }
 
-@; XXX Not the right `server' above.
-
 Here's an example of a simple web server that serves files
 from a given path:
 
