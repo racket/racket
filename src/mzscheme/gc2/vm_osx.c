@@ -198,16 +198,13 @@ static void protect_pages(void *p, size_t len, int writeable)
 #include "alloc_cache.c"
 
 #ifndef DONT_NEED_MAX_HEAP_SIZE
-typedef int64_t size_type;
 
 static unsigned long determine_max_heap_size()
 {
-  struct rlimit *rlim = malloc(sizeof(struct rlimit));
-  size_type retval = 0;
+  struct rlimit rlim;
 
-  getrlimit(RLIMIT_RSS, rlim);
-  retval = rlim->rlim_cur; free(rlim);
-  return (retval == RLIM_INFINITY) ? (unsigned long)-1 : retval;
+  getrlimit(RLIMIT_RSS, &rlim);
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : retval;
 }
 #endif
 
