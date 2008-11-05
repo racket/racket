@@ -65,6 +65,20 @@ typedef struct OTEntry {
   char required_set;
 } OTEntry;
 
+typedef struct Range {
+  unsigned long start, len;
+  struct Range *left, *right, *prev, *next;
+} Range;
+
+typedef struct Page_Range {
+  Range *range_root;
+  Range *range_start;
+  void *range_alloc_block;
+  unsigned long range_alloc_size;
+  unsigned long range_alloc_used;
+} Page_Range;
+
+
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 typedef mpage ****PageMap;
 #else
@@ -78,6 +92,7 @@ typedef struct NewGC {
   PageMap page_maps;
   /* All non-gen0 pages are held in the following structure. */
   struct mpage *gen1_pages[PAGE_TYPES];
+  Page_Range *protect_range;
 
 
   /* Finalization */
@@ -169,6 +184,7 @@ void NewGC_initialize(NewGC *newgc) {
   newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
   newgc->blockfree = malloc(sizeof(Free_Block) * BLOCKFREE_CACHE_SIZE);
+  newgc->protect_range = malloc(sizeof(Page_Range));
   
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);

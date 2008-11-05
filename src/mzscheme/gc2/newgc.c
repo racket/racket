@@ -1347,7 +1347,7 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     GC_add_roots(&GC->park, (char *)&GC->park + sizeof(GC->park) + 1);
     GC_add_roots(&GC->park_save, (char *)&GC->park_save + sizeof(GC->park_save) + 1);
 
-    initialize_protect_page_ranges(malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
+    initialize_protect_page_ranges(GC->protect_range, malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
   }
   else {
     GCPRINT(GCOUTF, "HEY WHATS UP.\n");
@@ -1832,6 +1832,7 @@ void *GC_next_tagged_start(void *p)
 
 static void prepare_pages_for_collection(void)
 {
+  Page_Range *protect_range = GC->protect_range;
   struct mpage *work;
   int i;
 
@@ -1844,10 +1845,10 @@ static void prepare_pages_for_collection(void)
         for(work = GC->gen1_pages[i]; work; work = work->next) {
           if (work->mprotected) {
             work->mprotected = 0;
-            add_protect_page_range(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+            add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
           }
         }
-      flush_protect_page_ranges(1);
+      flush_protect_page_ranges(protect_range, 1);
     }
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = GC->gen1_pages[i]; work; work = work->next) {
@@ -1864,13 +1865,13 @@ static void prepare_pages_for_collection(void)
           if (work->back_pointers) {
             if (work->mprotected) {
               work->mprotected = 0;
-              add_protect_page_range(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+              add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
             }
           }
         }
         pagemap_remove(pagemap, work);
       }
-    flush_protect_page_ranges(1);
+    flush_protect_page_ranges(protect_range, 1);
   }
 }
 
@@ -2236,6 +2237,7 @@ static void clean_up_heap(void)
 
 static void protect_old_pages(void)
 {
+  Page_Range *protect_range = GC->protect_range;
   struct mpage *page;
   int i;
 
@@ -2245,11 +2247,11 @@ static void protect_old_pages(void)
         if(page->page_type != PAGE_ATOMIC)  {
           if (!page->mprotected) {
             page->mprotected = 1;
-            add_protect_page_range(page->addr, page->size, APAGE_SIZE, 0);
+            add_protect_page_range(protect_range, page->addr, page->size, APAGE_SIZE, 0);
           }
         }
 
-  flush_protect_page_ranges(0);
+  flush_protect_page_ranges(protect_range, 0);
 }
 
 #if 0
