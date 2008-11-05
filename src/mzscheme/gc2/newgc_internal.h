@@ -87,6 +87,20 @@ typedef struct finalizer {
   struct finalizer *right;
 } Fnl;
 
+typedef struct Weak_Finalizer {
+  void *p;
+  int offset;
+  void *saved;
+  struct Weak_Finalizer *next;
+} Weak_Finalizer;
+
+typedef struct GC_Thread_Info {
+  void *thread;
+  int owner;
+  struct GC_Thread_Info *next;
+} GC_Thread_Info;
+
+
 typedef struct NewGC {
   Gen0 gen0;
   Mark_Proc  *mark_table;   /* the table of mark procs */
@@ -95,6 +109,7 @@ typedef struct NewGC {
   /* Finalization */
   Fnl *run_queue;
   Fnl *last_in_queue;
+  Weak_Finalizer *weak_finalizers;
 
   struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
@@ -113,6 +128,7 @@ typedef struct NewGC {
   Mark_Proc normal_thread_mark;
   Mark_Proc normal_custodian_mark;
   Mark_Proc normal_cust_box_mark;
+  GC_Thread_Info *thread_infos;
 
   mpage *release_pages;
   unsigned long stack_base;

@@ -1039,47 +1039,39 @@ inline static void do_ordered_level3(void)
     }
 }
 
-struct weak_finalizer {
-  void *p;
-  int offset;
-  void *saved;
-  struct weak_finalizer *next;
-};
-
-static struct weak_finalizer *weak_finalizers = NULL;
-
 void GC_finalization_weak_ptr(void **p, int offset)
 {
-  struct weak_finalizer *wfnl;
+  Weak_Finalizer *wfnl;
 
-  GC->park[0] = p; wfnl = GC_malloc_atomic(sizeof(struct weak_finalizer));
+  GC->park[0] = p; wfnl = GC_malloc_atomic(sizeof(Weak_Finalizer));
   p = GC->park[0]; GC->park[0] = NULL;
   wfnl->p = p; wfnl->offset = offset * sizeof(void*); wfnl->saved = NULL;
-  wfnl->next = weak_finalizers; weak_finalizers = wfnl;
+  wfnl->next = GC->weak_finalizers; GC->weak_finalizers = wfnl;
 }
 
 inline static void mark_weak_finalizer_structs(void)
 {
-  struct weak_finalizer *work;
+  Weak_Finalizer *work;
 
   GCDEBUG((DEBUGOUTF, "MARKING WEAK FINALIZERS.\n"));
-  for(work = weak_finalizers; work; work = work->next) {
-    set_backtrace_source(&weak_finalizers, BT_ROOT);
+  for(work = GC->weak_finalizers; work; work = work->next) {
+    set_backtrace_source(&GC->weak_finalizers, BT_ROOT);
     gcMARK(work);
   }
 }
 
 inline static void repair_weak_finalizer_structs(void)
 {
-  struct weak_finalizer *work, *prev;
+  Weak_Finalizer *work;
+  Weak_Finalizer *prev;
 
-  gcFIXUP(weak_finalizers);
-  work = weak_finalizers; prev = NULL;
+  gcFIXUP(GC->weak_finalizers);
+  work = GC->weak_finalizers; prev = NULL;
   while(work) {
     gcFIXUP(work->next);
     if(!marked(work->p)) {
       if(prev) prev->next = work->next;
-      if(!prev) weak_finalizers = work->next;
+      if(!prev) GC->weak_finalizers = work->next;
       work = GC_resolve(work->next);
     } else {
       gcFIXUP(work->p);
@@ -1091,9 +1083,9 @@ inline static void repair_weak_finalizer_structs(void)
 
 inline static void zero_weak_finalizers(void)
 {
-  struct weak_finalizer *wfnl;
+  Weak_Finalizer *wfnl;
 
-  for(wfnl = GC_resolve(weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
+  for(wfnl = GC_resolve(GC->weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
     wfnl->saved = *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset);
     *(void**)(NUM(GC_resolve(wfnl->p)) + wfnl->offset) = NULL;
   }
@@ -1101,9 +1093,9 @@ inline static void zero_weak_finalizers(void)
 
 inline static void reset_weak_finalizers(void)
 {
-  struct weak_finalizer *wfnl;
+  Weak_Finalizer *wfnl;
 
-  for(wfnl = GC_resolve(weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
+  for(wfnl = GC_resolve(GC->weak_finalizers); wfnl; wfnl = GC_resolve(wfnl->next)) {
     if(marked(wfnl->p)) {
       set_backtrace_source(wfnl, BT_WEAKLINK);
       gcMARK(wfnl->saved); 
@@ -1232,30 +1224,22 @@ inline static void reset_pointer_stack(void)
 #ifdef NEWGC_BTC_ACCOUNT
 inline static int current_owner(Scheme_Custodian *c);
 
-struct gc_thread_info {
-  void *thread;
-  int owner;
-  struct gc_thread_info *next;
-};
-
-static struct gc_thread_info *threads = NULL;
-
-
 inline static void register_new_thread(void *t, void *c)
 {
-  struct gc_thread_info *work;
+  GC_Thread_Info *work;
 
-  work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
+  work = (GC_Thread_Info *)malloc(sizeof(GC_Thread_Info));
   ((Scheme_Thread *)t)->gc_info = work;
   work->owner = current_owner((Scheme_Custodian *)c);
   work->thread = t;
-  work->next = threads;
-  threads = work;
+
+  work->next = GC->thread_infos;
+  GC->thread_infos = work;
 }
 
 inline static void register_thread(void *t, void *c)
 {
-  struct gc_thread_info *work;
+  GC_Thread_Info *work;
 
   work = ((Scheme_Thread *)t)->gc_info;
   work->owner = current_owner((Scheme_Custodian *)c);
@@ -1263,9 +1247,9 @@ inline static void register_thread(void *t, void *c)
 
 inline static void mark_threads(int owner)
 {
-  struct gc_thread_info *work;
+  GC_Thread_Info *work;
 
-  for(work = threads; work; work = work->next)
+  for(work = GC->thread_infos; work; work = work->next)
     if(work->owner == owner) {
       if (((Scheme_Thread *)work->thread)->running) {
         GC->normal_thread_mark(work->thread);
@@ -1278,7 +1262,8 @@ inline static void mark_threads(int owner)
 
 inline static void clean_up_thread_list(void)
 {
-  struct gc_thread_info *work = threads, *prev = NULL;
+  GC_Thread_Info *work = GC->thread_infos;
+  GC_Thread_Info *prev = NULL;
 
   while(work) {
     if(!find_page(work->thread) || marked(work->thread)) {
@@ -1286,10 +1271,10 @@ inline static void clean_up_thread_list(void)
       prev = work;
       work = work->next;
     } else {
-      struct gc_thread_info *next = work->next;
+      GC_Thread_Info *next = work->next;
 
       if(prev) prev->next = next;
-      if(!prev) threads = next;
+      if(!prev) GC->thread_infos = next;
       free(work);
       work = next;
     }

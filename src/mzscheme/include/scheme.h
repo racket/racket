@@ -1091,7 +1091,7 @@ typedef struct Scheme_Thread {
   Scheme_Object *mbox_sema;
 
 #ifdef MZ_PRECISE_GC
-  struct gc_thread_info *gc_info; /* managed by the GC */
+  struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif
 } Scheme_Thread;
 
