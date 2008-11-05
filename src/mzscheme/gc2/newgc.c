@@ -110,9 +110,6 @@ void (*GC_fixup_xtagged)(void *obj);
 
 #include "my_qsort.c"
 
-static void *park[2];
-static void *park_save[2];
-
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
@@ -1108,8 +1105,8 @@ void GC_finalization_weak_ptr(void **p, int offset)
 {
   struct weak_finalizer *wfnl;
 
-  park[0] = p; wfnl = GC_malloc_atomic(sizeof(struct weak_finalizer));
-  p = park[0]; park[0] = NULL;
+  GC->park[0] = p; wfnl = GC_malloc_atomic(sizeof(struct weak_finalizer));
+  p = GC->park[0]; GC->park[0] = NULL;
   wfnl->p = p; wfnl->offset = offset * sizeof(void*); wfnl->saved = NULL;
   wfnl->next = weak_finalizers; weak_finalizers = wfnl;
 }
@@ -1471,8 +1468,8 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     GC_register_traversers(GC->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
     GC_register_traversers(GC->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
     initialize_signal_handler();
-    GC_add_roots(&park, (char *)&park + sizeof(park) + 1);
-    GC_add_roots(&park_save, (char *)&park_save + sizeof(park_save) + 1);
+    GC_add_roots(&GC->park, (char *)&GC->park + sizeof(GC->park) + 1);
+    GC_add_roots(&GC->park_save, (char *)&GC->park_save + sizeof(GC->park_save) + 1);
 
     initialize_protect_page_ranges(malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
   }
@@ -2560,10 +2557,10 @@ static void garbage_collect(int force_full)
     running_finalizers = 1;
 
     /* Finalization might allocate, which might need park: */
-    park_save[0] = park[0];
-    park_save[1] = park[1];
-    park[0] = NULL;
-    park[1] = NULL;
+    GC->park_save[0] = GC->park[0];
+    GC->park_save[1] = GC->park[1];
+    GC->park[0] = NULL;
+    GC->park[1] = NULL;
 
     while(run_queue) {
       struct finalizer *f;
@@ -2581,10 +2578,10 @@ static void garbage_collect(int force_full)
     run_account_hooks();
     running_finalizers = 0;
 
-    park[0] = park_save[0];
-    park[1] = park_save[1];
-    park_save[0] = NULL;
-    park_save[1] = NULL;
+    GC->park[0] = GC->park_save[0];
+    GC->park[1] = GC->park_save[1];
+    GC->park_save[0] = NULL;
+    GC->park_save[1] = NULL;
   }
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();

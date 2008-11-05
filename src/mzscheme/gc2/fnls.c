@@ -81,16 +81,16 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = p;
-  park[1] = data;
+  GC->park[0] = p;
+  GC->park[1] = data;
 
   fnl = (Fnl *)GC_malloc_atomic(sizeof(Fnl));
   memset(fnl, 0, sizeof(Fnl));
 
-  p = park[0];
-  park[0] = NULL;
-  data = park[1];
-  park[1] = NULL;
+  p = GC->park[0];
+  data = GC->park[1];
+  GC->park[0] = NULL;
+  GC->park[1] = NULL;
 
   fnl->next = finalizers;
   fnl->prev = NULL;

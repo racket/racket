@@ -146,11 +146,11 @@ inline static unsigned long custodian_usage(void *custodian)
   int i;
   
   if(!really_doing_accounting) {
-    park[0] = custodian;
+    GC->park[0] = custodian;
     really_doing_accounting = 1;
     garbage_collect(1);
-    custodian = park[0]; 
-    park[0] = NULL;
+    custodian = GC->park[0]; 
+    GC->park[0] = NULL;
   }
   for(i = 1; i < owner_table_top; i++)
     if(owner_table[i] && custodian_member_owner_set(custodian, i)) 
@@ -359,11 +359,11 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
   struct account_hook *work;
 
   if(!really_doing_accounting) {
-    park[0] = c1; park[1] = c2;
+    GC->park[0] = c1; GC->park[1] = c2;
     really_doing_accounting = 1;
     garbage_collect(1);
-    c1 = park[0]; c2 = park[1];
-    park[0] = park[1] = NULL;
+    c1 = GC->park[0]; c2 = GC->park[1];
+    GC->park[0] = GC->park[1] = NULL;
   }
 
   if (type == MZACCT_LIMIT)

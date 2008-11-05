@@ -82,6 +82,19 @@ typedef struct NewGC {
   unsigned long in_unsafe_allocation_mode :1;
   void (*unsafe_allocation_abort)();
 
+  void *park[2];
+  void *park_save[2];
+
+  int generations_available;
+  unsigned char full_needed_for_finalization :1;
+  unsigned char no_further_modifications:1;
+
+  /* These collect information about memory usage, for use in GC_dump. */
+  unsigned long peak_memory_use;
+  unsigned long num_minor_collects;
+  unsigned long num_major_collects;
+
+
   unsigned short weak_array_tag;
   unsigned short weak_box_tag;
   unsigned short ephemeron_tag;
@@ -114,4 +127,5 @@ void NewGC_initialize(NewGC *newgc) {
   newgc->weak_boxes = NULL;
   newgc->ephemerons = NULL;
   newgc->num_last_seen_ephemerons = 0;
+  newgc->generations_available = 1;
 }

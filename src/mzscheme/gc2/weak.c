@@ -88,14 +88,14 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   GC_Weak_Array *w;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = replace_val;
+  GC->park[0] = replace_val;
 
   w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
 					    + sizeof(GC_Weak_Array) 
 					    - sizeof(void *));
 
-  replace_val = park[0];
-  park[0] = NULL;
+  replace_val = GC->park[0];
+  GC->park[0] = NULL;
 
   w->type = GC->weak_array_tag;
   w->replace_val = replace_val;
@@ -168,15 +168,15 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
   GC_Weak_Box *w;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = p;
-  park[1] = secondary;
+  GC->park[0] = p;
+  GC->park[1] = secondary;
 
   w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
 
-  p = park[0];
-  park[0] = NULL;
-  secondary = (void **)park[1];
-  park[1] = NULL;
+  p = GC->park[0];
+  secondary = (void **)GC->park[1];
+  GC->park[0] = NULL;
+  GC->park[1] = NULL;
   
   w->type = GC->weak_box_tag;
   w->val = p;
@@ -262,15 +262,15 @@ void *GC_malloc_ephemeron(void *k, void *v)
   GC_Ephemeron *eph;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = k;
-  park[1] = v;
+  GC->park[0] = k;
+  GC->park[1] = v;
 
   eph = (GC_Ephemeron *)GC_malloc_one_tagged(sizeof(GC_Ephemeron));
 
-  k = park[0];
-  park[0] = NULL;
-  v = park[1];
-  park[1] = NULL;
+  k = GC->park[0];
+  v = GC->park[1];
+  GC->park[0] = NULL;
+  GC->park[1] = NULL;
   
   eph->type = GC->ephemeron_tag;
   eph->key = k;
