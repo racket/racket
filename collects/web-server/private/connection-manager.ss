@@ -38,16 +38,18 @@
                 (lambda () 
                   (cond
                     [(weak-box-value conn-wb)
-                     => kill-connection!]))))
+                     => kill-connection-w/o-timer!]))))
   conn)
 
 ;; kill-connection!: connection -> void
 ;; kill this connection
 (define (kill-connection! conn)
   #;(printf "K: ~a~n" (connection-id conn))
-  ; XXX Don't need to do this when called from timer
   (with-handlers ([exn? void])
     (cancel-timer! (connection-timer conn)))
+  (kill-connection-w/o-timer! conn))
+
+(define (kill-connection-w/o-timer! conn)  
   (with-handlers ([exn:fail:network? void])
     (close-output-port (connection-o-port conn)))
   (with-handlers ([exn:fail:network? void])

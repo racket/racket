@@ -30,6 +30,7 @@
                     dispatcher/c))])
 
 (define interface-version 'v1)
+; XXX url->servlet
 (define (make config:scripts 
               #:url->path url->path
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
