@@ -113,7 +113,6 @@ structures.
 
 where a @scheme[host-table-sexpr] is:
 
-@; XXX Where the paths are resolved relative to
 @schemeblock[
 `(host-table
   (default-indices ,string? ...)
@@ -140,6 +139,9 @@ where a @scheme[host-table-sexpr] is:
    (servlet-root ,path-string?)
    (mime-types ,path-string?)
    (password-authentication ,path-string?)))]
+
+In this syntax, the @scheme['messages] paths are relative to the @scheme['configuration-root] directory.
+All the paths in @scheme['paths] are relative to @scheme['host-root] (other than @scheme['host-root] obviously.)
 
 @(require (for-label web-server/dispatchers/dispatch-log))
 
