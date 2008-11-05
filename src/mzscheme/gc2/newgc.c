@@ -1441,7 +1441,7 @@ long GC_get_memory_use(void *o)
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark(const void *const_p)
 {
-  struct mpage *page;
+  mpage *page;
   void *p = (void*)const_p;
   NewGC *gc = GC;
 
@@ -1450,149 +1450,155 @@ void GC_mark(const void *const_p)
     return;
   }
 
-  if((page = pagemap_find_page(p))) {
-    /* toss this over to the BTC mark routine if we're doing accounting */
-    if(doing_memory_accounting) { memory_account_mark(page,p); return; }
+  if(!(page = pagemap_find_page(p))) {
+    GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
+    return;
+  }
 
-    if(page->big_page) {
-      /* This is a bigpage. The first thing we do is see if its been marked
-         previously */
-      if(page->big_page == 1) {
-        /* in this case, it has not. So we want to mark it, first off. */
-        page->big_page = 2;
+  /* toss this over to the BTC mark routine if we're doing accounting */
+  if(doing_memory_accounting) { memory_account_mark(page,p); return; }
 
-        /* if this is in the nursery, we want to move it out of the nursery */
-        if(!page->generation) {
-          page->generation = 1;
-
-          /* remove page */
-          if(page->prev) page->prev->next = page->next; else
-            GC->gen0.big_pages = page->next;
-          if(page->next) page->next->prev = page->prev;
-
-          backtrace_new_page(page);
-
-          /* add to gen1 */
-          page->next = GC->gen1_pages[PAGE_BIG]; 
-          page->prev = NULL;
-          if(page->next) page->next->prev = page;
-          GC->gen1_pages[PAGE_BIG] = page;
-          /* if we're doing memory accounting, then we need to make sure the
-             btc_mark is right */
-          set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
-        }
-
-        page->marked_on = 1;
-        record_backtrace(page, PTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE));
-        GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
-        /* Finally, we want to add this to our mark queue, so we can 
-           propagate its pointers */
-        push_ptr(p);
-      } else GCDEBUG((DEBUGOUTF, "Not marking %p on big %p (already marked)\n",
-            p, page));
-    } else {
-      struct objhead *ohead = (struct objhead *)(NUM(p) - WORD_SIZE);
-
-      if(!ohead->mark) {
-        /* what we do next depends on whether this is a gen0 or gen1 
-           object */
-        if(page->generation) {
-          /* this is a generation 1 object. This means we are not going
-             to move it, we don't have to check to see if it's an atomic
-             object masquerading as a tagged object, etc. So all we do
-             is add the pointer to the mark queue and note on the page
-             that we marked something on it*/
-          if((NUM(page->addr) + page->previous_size) <= NUM(p)) {
-            GCDEBUG((DEBUGOUTF, "Marking %p (leaving alone)\n", p));
-            ohead->mark = 1;
-            page->marked_on = 1;
-            page->previous_size = PREFIX_SIZE;
-            page->live_size += ohead->size;
-            record_backtrace(page, p);
-            push_ptr(p);
-          } else GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n",
-                p, page, page->previous_size));
-        } else {
-          /* this is a generation 0 object. This means that we do have
-             to do all of the above. Fun, fun, fun. */
-          unsigned short type = ohead->type;
-          struct mpage *work;
-          size_t size;
-          void *newplace;
-
-          /* first check to see if this is an atomic object masquerading
-             as a tagged object; if it is, then convert it */
-          if(type == PAGE_TAGGED) {
-            if((unsigned long)gc->mark_table[*(unsigned short*)p] < PAGE_TYPES)
-              type = ohead->type = (int)(unsigned long)gc->mark_table[*(unsigned short*)p];
-          }
-
-          /* now set us up for the search for where to put this thing */
-          work = GC->gen1_pages[type];
-          size = gcWORDS_TO_BYTES(ohead->size);
-
-          /* search for a page with the space to spare */
-          if (work && ((work->size + size) >= APAGE_SIZE))
-            work = NULL;
-
-          /* now either fetch where we're going to put this object or make
-             a new page if we couldn't find a page with space to spare */
-          if(work) {
-            pagemap_add(work);
-            work->marked_on = 1;
-            if (work->mprotected) {
-              work->mprotected = 0;
-              protect_pages(work->addr, APAGE_SIZE, 1);
-            }
-            newplace = PTR(NUM(work->addr) + work->size);
-          } else {
-            /* Allocate and prep the page */
-            void *addr;
-            work = malloc_mpage();
-            addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
-            if (!addr) out_of_memory();
-            work->addr = addr;
-            work->generation = 1;
-            work->page_type = type;
-            work->size = work->previous_size = PREFIX_SIZE;
-            work->marked_on = 1;
-            backtrace_new_page(work);
-            work->next = GC->gen1_pages[type];
-            work->prev = NULL;
-            if(work->next)
-              work->next->prev = work;
-            pagemap_add(work);
-            GC->gen1_pages[type] = work;
-            newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
-          }
-
-          /* update the size */
-          work->size += size;
-          work->has_new = 1;
-
-          /* transfer the object */
-          memcpy(newplace, (const void *)ohead, size);
-          /* mark the old location as marked and moved, and the new location
-             as marked */
-          ohead->mark = ohead->moved = 1;
-          ((struct objhead *)newplace)->mark = 1;
-          /* if we're doing memory accounting, then we need the btc_mark
-             to be set properly */
-          set_btc_mark(newplace);
-          /* drop the new location of the object into the forwarding space
-             and into the mark queue */
-          newplace = PTR(NUM(newplace) + WORD_SIZE);
-          /* record why we marked this one (if enabled) */
-          record_backtrace(work, newplace);
-          /* set forwarding pointer */
-          GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", 
-                p, newplace, work));
-          *(void**)p = newplace;
-          push_ptr(newplace);
-        }
-      } else GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));
+  if(page->big_page) {
+    /* This is a bigpage. The first thing we do is see if its been marked
+       previously */
+    if(page->big_page != 1) {
+      GCDEBUG((DEBUGOUTF, "Not marking %p on big %p (already marked)\n", p, page));
+      return;
     }
-  } else GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
+    /* in this case, it has not. So we want to mark it, first off. */
+    page->big_page = 2;
+
+    /* if this is in the nursery, we want to move it out of the nursery */
+    if(!page->generation) {
+      page->generation = 1;
+
+      /* remove page */
+      if(page->prev) page->prev->next = page->next; else
+        GC->gen0.big_pages = page->next;
+      if(page->next) page->next->prev = page->prev;
+
+      backtrace_new_page(page);
+
+      /* add to gen1 */
+      page->next = GC->gen1_pages[PAGE_BIG]; 
+      page->prev = NULL;
+      if(page->next) page->next->prev = page;
+      GC->gen1_pages[PAGE_BIG] = page;
+
+      /* if we're doing memory accounting, then we need to make sure the
+         btc_mark is right */
+      set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
+    }
+
+    page->marked_on = 1;
+    record_backtrace(page, PTR(NUM(page->addr) + PREFIX_SIZE + WORD_SIZE));
+    GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
+    /* Finally, we want to add this to our mark queue, so we can 
+       propagate its pointers */
+    push_ptr(p);
+  }
+  else {
+    struct objhead *ohead = (struct objhead *)(NUM(p) - WORD_SIZE);
+
+    if(ohead->mark) {
+      GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));
+      return;
+    }
+
+    /* what we do next depends on whether this is a gen0 or gen1 
+       object */
+    if(page->generation) {
+      /* this is a generation 1 object. This means we are not going
+         to move it, we don't have to check to see if it's an atomic
+         object masquerading as a tagged object, etc. So all we do
+         is add the pointer to the mark queue and note on the page
+         that we marked something on it*/
+      if((NUM(page->addr) + page->previous_size) <= NUM(p)) {
+        GCDEBUG((DEBUGOUTF, "Marking %p (leaving alone)\n", p));
+        ohead->mark = 1;
+        page->marked_on = 1;
+        page->previous_size = PREFIX_SIZE;
+        page->live_size += ohead->size;
+        record_backtrace(page, p);
+        push_ptr(p);
+      } else GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n",
+            p, page, page->previous_size));
+    } else {
+      /* this is a generation 0 object. This means that we do have
+         to do all of the above. Fun, fun, fun. */
+      unsigned short type = ohead->type;
+      struct mpage *work;
+      size_t size;
+      void *newplace;
+
+      /* first check to see if this is an atomic object masquerading
+         as a tagged object; if it is, then convert it */
+      if(type == PAGE_TAGGED) {
+        if((unsigned long)gc->mark_table[*(unsigned short*)p] < PAGE_TYPES)
+          type = ohead->type = (int)(unsigned long)gc->mark_table[*(unsigned short*)p];
+      }
+
+      /* now set us up for the search for where to put this thing */
+      work = GC->gen1_pages[type];
+      size = gcWORDS_TO_BYTES(ohead->size);
+
+      /* search for a page with the space to spare */
+      if (work && ((work->size + size) >= APAGE_SIZE))
+        work = NULL;
+
+      /* now either fetch where we're going to put this object or make
+         a new page if we couldn't find a page with space to spare */
+      if(work) {
+        pagemap_add(work);
+        work->marked_on = 1;
+        if (work->mprotected) {
+          work->mprotected = 0;
+          protect_pages(work->addr, APAGE_SIZE, 1);
+        }
+        newplace = PTR(NUM(work->addr) + work->size);
+      } else {
+        /* Allocate and prep the page */
+        work = malloc_mpage();
+        work->addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
+        work->generation = 1;
+        work->page_type = type;
+        work->size = work->previous_size = PREFIX_SIZE;
+        work->marked_on = 1;
+        backtrace_new_page(work);
+        work->next = GC->gen1_pages[type];
+        work->prev = NULL;
+        if(work->next)
+          work->next->prev = work;
+        pagemap_add(work);
+        GC->gen1_pages[type] = work;
+        newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
+      }
+
+      /* update the size */
+      work->size += size;
+      work->has_new = 1;
+
+      /* transfer the object */
+      memcpy(newplace, (const void *)ohead, size);
+      /* mark the old location as marked and moved, and the new location
+         as marked */
+      ohead->mark = ohead->moved = 1;
+      ((struct objhead *)newplace)->mark = 1;
+      /* if we're doing memory accounting, then we need the btc_mark
+         to be set properly */
+      set_btc_mark(newplace);
+      /* drop the new location of the object into the forwarding space
+         and into the mark queue */
+      newplace = PTR(NUM(newplace) + WORD_SIZE);
+      /* record why we marked this one (if enabled) */
+      record_backtrace(work, newplace);
+      /* set forwarding pointer */
+      GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", 
+            p, newplace, work));
+      *(void**)p = newplace;
+      push_ptr(newplace);
+    }
+  }
 }
 
 /* this is the second mark routine. It's not quite as complicated. */
@@ -1967,12 +1973,9 @@ static void mark_backpointers(void)
 struct mpage *allocate_compact_target(struct mpage *work)
 {
   struct mpage *npage;
-  void *addr;
 
   npage = malloc_mpage();
-  addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
-  if (!addr) out_of_memory();
-  npage->addr = addr;
+  npage->addr = malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE);
   npage->previous_size = npage->size = PREFIX_SIZE;
   npage->generation = 1;
   npage->back_pointers = 0;
