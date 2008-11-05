@@ -1474,6 +1474,7 @@ void GC_mark(const void *const_p)
 
 	  backtrace_new_page(page);
 
+    /* add to gen1 */
 	  page->next = GC->gen1_pages[PAGE_BIG]; 
 	  page->prev = NULL;
 	  if(page->next) page->next->prev = page;
@@ -2213,6 +2214,21 @@ static inline void cleanup_vacated_pages(NewGC *gc) {
   }
   gc->release_pages = NULL;
 }
+
+inline static void gen0_free_big_pages() {
+  mpage *work;
+  mpage *next;
+  NewGC *gc = GC;
+
+  for(work = gc->gen0.big_pages; work; work = next) {
+    next = work->next;
+    pagemap_remove(work);
+    free_pages(work->addr, round_to_apage_size(work->size));
+    free_mpage(work);
+  }
+}
+
+
 static void clean_up_heap(void)
 {
   struct mpage *work, *prev;
@@ -2220,14 +2236,8 @@ static void clean_up_heap(void)
   NewGC *gc = GC;
 
   gc->memory_in_use = 0;
-  
-  /* For the purposes of this little loop, s/prev/next/ */
-  for(work = gc->gen0.big_pages; work; work = prev) {
-    prev = work->next;
-    pagemap_remove(work);
-    free_pages(work->addr, round_to_apage_size(work->size));
-    free_mpage(work);
-  }
+ 
+  gen0_free_big_pages();
 
   for(i = 0; i < PAGE_TYPES; i++) {
     struct mpage *prev = NULL;
@@ -2565,11 +2575,7 @@ void GC_free_all(void)
 
   remove_signal_handler();
 
-  for (work = GC->gen0.big_pages; work; work = next) {
-    next = work->next;
-    free_pages(work->addr, round_to_apage_size(work->size));
-    free_mpage(work);
-  }
+  gen0_free_big_pages();
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = GC->gen1_pages[i]; work; work = next) {
