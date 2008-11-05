@@ -120,9 +120,9 @@ static void *park[2], *park_save[2];
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static unsigned long pages_in_heap = 0;
+static unsigned long max_pages_in_heap = 0;
 static unsigned long max_heap_size = 0;
-static unsigned long max_used_pages = 0;
+static unsigned long max_pages_for_use = 0;
 static unsigned long used_pages = 0;
 static unsigned long actual_pages_size = 0;
 static unsigned long in_unsafe_allocation_mode = 0;
@@ -142,20 +142,20 @@ inline static void check_used_against_max(size_t len)
   used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 
   if(in_unsafe_allocation_mode) {
-    if(used_pages > pages_in_heap)
+    if(used_pages > max_pages_in_heap)
       unsafe_allocation_abort();
   } else {
-    if(used_pages > max_used_pages) {
+    if(used_pages > max_pages_for_use) {
       garbage_collect(0); /* hopefully this will free enough space */
-      if(used_pages > max_used_pages) {
-	garbage_collect(1); /* hopefully *this* will free enough space */
-	if(used_pages > max_used_pages) {
-	  /* nope, no go. there's simply too much memory allocated. Inform
-	     the thunk and then die semi-gracefully */
-          if (GC_out_of_memory)
+      if(used_pages > max_pages_for_use) {
+        garbage_collect(1); /* hopefully *this* will free enough space */
+        if(used_pages > max_pages_for_use) {
+          /* nope, no go. there's simply too much memory allocated. Inform
+             the thunk and then die semi-gracefully */
+          if(GC_out_of_memory)
             GC_out_of_memory();
           out_of_memory();
-	}
+        }
       }
     }
   }
@@ -1508,12 +1508,12 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     initialized = 1;
     /* Our best guess at what the OS will let us allocate: */
     max_heap_size = determine_max_heap_size();
-    pages_in_heap = max_heap_size / APAGE_SIZE;
+    max_pages_in_heap = max_heap_size / APAGE_SIZE;
     /* Not all of that memory is available for allocating GCable
        objects.  There's the memory used by the stack, code,
        malloc()/free()ed memory, etc., and there's also the
        administrative structures for the GC itself. */
-    max_used_pages = pages_in_heap / 2;
+    max_pages_for_use = max_pages_in_heap / 2;
     
     resize_gen0(INIT_GEN0_SIZE);
     

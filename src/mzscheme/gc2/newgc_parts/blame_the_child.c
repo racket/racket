@@ -446,8 +446,8 @@ inline static void run_account_hooks()
 
   while(work) {
     if( ((work->type == MZACCT_REQUIRE) && 
-         ((used_pages > (max_used_pages / 2))
-          || ((((max_used_pages / 2) - used_pages) * APAGE_SIZE)
+         ((used_pages > (max_pages_for_use / 2))
+          || ((((max_pages_for_use / 2) - used_pages) * APAGE_SIZE)
               < (work->amount + custodian_super_require(work->c1)))))
 	||
 	((work->type == MZACCT_LIMIT) &&
