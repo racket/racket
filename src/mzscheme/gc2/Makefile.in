@@ -390,6 +390,8 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
 	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"
 
+../mzscheme_compact_gc@OSX@:
+	echo "../mzscheme_compact_gc not currently build on OSX"
 
 clean:
 	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*

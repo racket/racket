@@ -107,7 +107,7 @@ static void os_vm_free_pages(void *p, size_t len)
   }
 }
 
-static void protect_pages(void *p, size_t len, int writeable)
+static void vm_protect_pages(void *p, size_t len, int writeable)
 {
   kern_return_t retval;
 
@@ -133,7 +133,7 @@ static unsigned long determine_max_heap_size()
   struct rlimit rlim;
 
   getrlimit(RLIMIT_RSS, &rlim);
-  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : retval;
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : rlim.rlim_cur;
 }
 #endif
 
