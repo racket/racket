@@ -317,7 +317,7 @@ inline static void pagemap_remove_with_size(PageMap pagemap, mpage *page, long s
 
 int GC_is_allocated(void *p)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   return !!pagemap_find_page(gc->page_maps, p);
 }
 
@@ -399,7 +399,7 @@ static inline int BTC_single_allocation_limit(NewGC *gc, size_t sizeb);
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   mpage *bpage;
   void *addr;
 
@@ -524,7 +524,7 @@ inline static void *allocate(size_t sizeb, int type)
   /* ensure that allocation will fit in a gen0 page */
   newptr = GC_gen0_alloc_page_ptr + sizeb;
   while (OVERFLOWS_GEN0(newptr)) {
-    gc = GC;
+    gc = GC_get_GC();
     /* bring page size used up to date */
     gc->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr);
     gc->gen0.current_size += gc->gen0.curr_alloc_page->size;
@@ -912,13 +912,13 @@ void GC_set_variable_stack(void **p)
 
 void GC_set_stack_base(void *base) 
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   gc->stack_base = (unsigned long)base;
 }
 
 unsigned long GC_get_stack_base() 
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   return gc->stack_base;
 }
 
@@ -1079,7 +1079,7 @@ inline static void do_ordered_level3(NewGC *gc)
 
 void GC_finalization_weak_ptr(void **p, int offset)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   Weak_Finalizer *wfnl;
 
   gc->park[0] = p; wfnl = GC_malloc_atomic(sizeof(Weak_Finalizer));
@@ -1302,7 +1302,7 @@ void GC_register_new_thread(void *t, void *c)
 
 int designate_modified(void *p)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   struct mpage *page = pagemap_find_page(gc->page_maps, p);
 
   if (gc->no_further_modifications) {
@@ -1393,21 +1393,21 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 
 void GC_gcollect(void)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   garbage_collect(gc, 1);
 }
 
 void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
     Fixup_Proc fixup, int constant_Size, int atomic)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   gc->mark_table[tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
   gc->fixup_table[tag] = fixup;
 }
 
 long GC_get_memory_use(void *o) 
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
 #ifdef NEWGC_BTC_ACCOUNT
   if(o) {
     return BTC_get_memory_use(gc, o);
@@ -1436,7 +1436,7 @@ void GC_mark(const void *const_p)
     return;
   }
 
-  gc = GC;
+  gc = GC_get_GC();
   if(!(page = pagemap_find_page(gc->page_maps, p))) {
     GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
     return;
@@ -1664,7 +1664,7 @@ static void propagate_marks(NewGC *gc)
 
 void *GC_resolve(void *p)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   struct mpage *page = pagemap_find_page(gc->page_maps, p);
   struct objhead *info;
 
@@ -1692,7 +1692,7 @@ void GC_fixup(void *pp)
   if(!p || (NUM(p) & 0x1))
     return;
 
-  gc = GC;
+  gc = GC_get_GC();
   if((page = pagemap_find_page(gc->page_maps, p))) {
     struct objhead *info;
 
@@ -1743,7 +1743,7 @@ void GC_dump_with_traces(int flags,
     GC_print_tagged_value_proc print_tagged_value,
     int path_length_limit)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   mpage *page;
   int i;
   static unsigned long counts[MAX_DUMP_TAG], sizes[MAX_DUMP_TAG];
@@ -1852,7 +1852,7 @@ void GC_dump(void)
 
 int GC_is_tagged(void *p)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   struct mpage *page;
   page = pagemap_find_page(gc->page_maps, p);
   return page && (page->page_type == PAGE_TAGGED);
@@ -2568,7 +2568,7 @@ void GC_dump_variable_stack(void **var_stack,
 
 void GC_free_all(void)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   int i;
   mpage *work;
   mpage *next;

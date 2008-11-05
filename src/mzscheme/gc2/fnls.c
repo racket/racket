@@ -26,7 +26,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     void *data, void (**oldf)(void *p, void *data), 
     void **olddata)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   Fnl *fnl;
 
   if (!is_finalizable_page(gc, p)) {

@@ -12,7 +12,7 @@ inline static int current_owner(NewGC *gc, Scheme_Custodian *c);
 
 inline static void BTC_register_new_thread(void *t, void *c)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   GC_Thread_Info *work;
 
   work = (GC_Thread_Info *)malloc(sizeof(GC_Thread_Info));
@@ -26,7 +26,7 @@ inline static void BTC_register_new_thread(void *t, void *c)
 
 inline static void BTC_register_thread(void *t, void *c)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   GC_Thread_Info *work;
 
   work = ((Scheme_Thread *)t)->gc_info;
@@ -136,7 +136,7 @@ inline static int current_owner(NewGC *gc, Scheme_Custodian *c)
 
 void BTC_register_root_custodian(void *_c)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   Scheme_Custodian *c = (Scheme_Custodian *)_c;
 
   if (gc->owner_table) {
@@ -277,7 +277,7 @@ int BTC_thread_mark(void *p)
 
 int BTC_custodian_mark(void *p)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   if(custodian_to_owner_set(gc, p) == gc->current_mark_owner)
     return gc->normal_custodian_mark(p);
   else
@@ -442,7 +442,7 @@ static void BTC_do_accounting(NewGC *gc)
 
 inline static void BTC_add_account_hook(int type,void *c1,void *c2,unsigned long b)
 {
-  NewGC *gc = GC;
+  NewGC *gc = GC_get_GC();
   AccountHook *work;
 
   if(!gc->really_doing_accounting) {

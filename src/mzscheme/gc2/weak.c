@@ -35,7 +35,7 @@ static int size_weak_array(void *p)
 
 static int mark_weak_array(void *p)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
   gcMARK(a->replace_val);
@@ -84,7 +84,7 @@ static int fixup_weak_array(void *p)
 
 void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *w;
 
   /* Allcation might trigger GC, so we use park: */
@@ -139,7 +139,7 @@ static int size_weak_box(void *p)
 
 static int mark_weak_box(void *p)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
     
   gcMARK(wb->secondary_erase);
@@ -164,7 +164,7 @@ static int fixup_weak_box(void *p)
 
 void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *w;
 
   /* Allcation might trigger GC, so we use park: */
@@ -220,7 +220,7 @@ static int size_ephemeron(void *p)
 
 static int mark_ephemeron(void *p)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
@@ -256,7 +256,7 @@ static int fixup_ephemeron(void *p)
 
 void *GC_malloc_ephemeron(void *k, void *v)
 {
-  GCTYPE *gc = GC;
+  GCTYPE *gc = GC_get_GC();
   GC_Ephemeron *eph;
 
   /* Allcation might trigger GC, so we use park: */

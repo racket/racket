@@ -19,6 +19,7 @@
 
 static THREAD_LOCAL CompactGC *GC;
 #define GCTYPE CompactGC
+#define GC_get_GC() (GC)
 
 /**************** Configuration ****************/
 
