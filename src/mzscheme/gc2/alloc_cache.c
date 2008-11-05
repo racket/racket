@@ -29,9 +29,7 @@ static void *os_vm_alloc_pages(size_t len);
 */
 
 /* private utility functions */
-/*
 static void *do_malloc_pages(size_t len, size_t alignment, int dirty_ok);
-*/
 
 
 static void *malloc_pages(size_t len, size_t alignment)
