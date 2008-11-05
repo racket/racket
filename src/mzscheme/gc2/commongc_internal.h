@@ -51,3 +51,19 @@ typedef struct GC_Immobile_Box {
   struct GC_Immobile_Box *prev;
 } GC_Immobile_Box;
 
+typedef struct finalizer {
+  char eager_level;
+  char tagged;
+  void *p;
+  GC_finalization_proc f;
+  void *data;
+#if CHECKS
+  long size;
+#endif
+  struct finalizer *next;
+  /* Patched after GC: */
+  struct finalizer *prev;
+  struct finalizer *left;
+  struct finalizer *right;
+} Fnl;
+

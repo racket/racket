@@ -39,6 +39,18 @@
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+#define PAGEMAP64_LEVEL1_SIZE (1 << 16)
+#define PAGEMAP64_LEVEL2_SIZE (1 << 16)
+#define PAGEMAP64_LEVEL3_SIZE (1 << (32 - LOG_APAGE_SIZE))
+#define PAGEMAP64_LEVEL1_BITS(p) (((unsigned long)(p)) >> 48)
+#define PAGEMAP64_LEVEL2_BITS(p) ((((unsigned long)(p)) >> 32) & ((PAGEMAP64_LEVEL2_SIZE) - 1))
+#define PAGEMAP64_LEVEL3_BITS(p) ((((unsigned long)(p)) >> LOG_APAGE_SIZE) & ((PAGEMAP64_LEVEL3_SIZE) - 1))
+#else
+#define PAGEMAP32_SIZE (1 << (32 - LOG_APAGE_SIZE))
+#define PAGEMAP32_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
+#endif
+
 #include "newgc_internal.h"
 static THREAD_LOCAL NewGC *GC;
 
@@ -88,12 +100,6 @@ static THREAD_LOCAL NewGC *GC;
 #define PTR(x) ((void*)(x))
 #define PPTR(x) ((void**)(x))
 #define NUM(x) ((unsigned long)(x))
-#define USEFUL_ADDR_BITS (32 - LOG_APAGE_SIZE)
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-# define ADDR_BITS(x) ((NUM(x) >> LOG_APAGE_SIZE) & ((1 << USEFUL_ADDR_BITS) - 1))
-#else
-# define ADDR_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
-#endif
 #define WORD_SIZE (1 << LOG_WORD_SIZE)
 #define WORD_BITS (8 * WORD_SIZE)
 #define APAGE_SIZE (1 << LOG_APAGE_SIZE)
@@ -185,6 +191,105 @@ int GC_mtrace_union_current_with(int newval)
 }
 
 /*****************************************************************************/
+/* Page Map Routines                                                         */
+/*****************************************************************************/
+
+/* the page map makes a nice mapping from addresses to pages, allowing
+   fairly fast lookup. this is useful. */
+
+inline static void pagemap_set(void *p, mpage *value) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  unsigned long pos;
+  mpage ***page_maps;
+  mapge **page_map;
+
+  pos = PAGEMAP64_LEVEL1_BITS(p);
+  page_maps = GC->page_mapss[pos];
+  if (!page_maps) {
+    page_maps = (mpage ***)calloc(PAGEMAP64_LEVEL2_SIZE, sizeof(mpage **));
+    page_mapss[pos] = page_maps;
+  }
+  pos = PAGEMAP64_LEVEL2_BITS(p);
+  page_map = page_maps[pos];
+  if (!page_map) {
+    page_map = (mpage **)calloc(PAGEMAP64_LEVEL3_SIZE, sizeof(mpage *));
+    page_maps[pos] = page_map;
+  }
+  page_map[PAGEMAP64_LEVEL3_BITS(p)] = value;
+#else
+  GC->page_map[PAGEMAP32_BITS(p)] = value;
+#endif
+}
+
+inline static struct mpage *pagemap_find_page(void *p) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  mpage ***page_maps;
+  mpage **page_map;
+
+  page_maps = GC->page_mapss[PAGEMAP64_LEVEL1_BITS(p)];
+  if (!page_maps) return NULL;
+  page_map = page_maps[PAGEMAP64_LEVEL2_BITS(p)];
+  if (!page_map) return NULL;
+  return page_map[PAGEMAP64_LEVEL3_BITS(p)];
+#else
+  return GC->page_map[PAGEMAP32_BITS(p)];
+#endif
+}
+
+/* These procedures modify or use the page map. The page map provides us very
+   fast mappings from pointers to the page the reside on, if any. The page 
+   map itself serves two important purposes:
+
+   Between collections, it maps pointers to write-protected pages, so that 
+     the write-barrier can identify what page a write has happened to and
+     mark it as potentially containing pointers from gen 1 to gen 0. 
+
+   During collections, it maps pointers to "from" pages. */
+
+/* pagemap_modify_with_size could be optimized more for the 64 bit case
+   repeatedly calling pagemap_set for the 64 bit case is not optimal */
+inline static void pagemap_modify_with_size(mpage *page, long size, mpage *val) {
+  void *p = page->addr;
+
+  while(size > 0) {
+    pagemap_set(p, val);
+    size -= APAGE_SIZE;
+    p = (char *)p + APAGE_SIZE;
+  }
+}
+
+inline static void pagemap_modify(mpage *page, mpage *val) {
+  long size = page->big_page ? page->size : APAGE_SIZE;
+  pagemap_modify_with_size(page, size, val);
+}
+
+inline static void pagemap_add(struct mpage *page)
+{
+  pagemap_modify(page, page);
+}
+
+inline static void pagemap_add_with_size(struct mpage *page, long size)
+{
+  pagemap_modify_with_size(page, size, page);
+}
+
+inline static void pagemap_remove(struct mpage *page)
+{
+  pagemap_modify(page, NULL);
+}
+
+inline static void pagemap_remove_with_size(struct mpage *page, long size)
+{
+  pagemap_modify_with_size(page, size, NULL);
+}
+
+int GC_is_allocated(void *p)
+{
+  return !!pagemap_find_page(p);
+}
+
+
+/*****************************************************************************/
 /* Allocation                                                                */
 /*****************************************************************************/
 
@@ -236,46 +341,6 @@ static const char *type_name[PAGE_TYPES] = {
   "big" 
 };
 
-/* the page map makes a nice mapping from addresses to pages, allowing
-   fairly fast lookup. this is useful. */
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-static struct mpage ***page_mapss[1 << 16];
-# define DECL_PAGE_MAP struct mpage **page_map;
-# define GET_PAGE_MAP(p) page_map = create_page_map(p);
-# define FIND_PAGE_MAP(p) page_map = get_page_map(p); if (!page_map) return NULL
-inline static struct mpage **create_page_map(void *p) {
-  unsigned long pos;
-  struct mpage ***page_maps, **page_map;
-  pos = (unsigned long)p >> 48;
-  page_maps = page_mapss[pos];
-  if (!page_maps) {
-    page_maps = (struct mpage ***)calloc(1 << 16, sizeof(struct mpage **));
-    page_mapss[pos] = page_maps;
-  }
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
-  page_map = page_maps[pos];
-  if (!page_map) {
-    page_map = (struct mpage **)calloc(1 << USEFUL_ADDR_BITS, sizeof(struct mpage *));
-    page_maps[pos] = page_map;
-  }
-  return page_map;
-}
-inline static struct mpage **get_page_map(void *p) {
-  unsigned long pos;
-  struct mpage ***page_maps;
-  pos = (unsigned long)p >> 48;
-  page_maps = page_mapss[pos];
-  if (!page_maps)
-    return NULL;
-  pos = ((unsigned long)p >> 32) & ((1 << 16) - 1);
-  return page_maps[pos];
-}
-#else
-static struct mpage *page_map[1 << USEFUL_ADDR_BITS];
-# define DECL_PAGE_MAP /**/
-# define GET_PAGE_MAP(p) /**/
-# define FIND_PAGE_MAP(p) /**/
-#endif
 
 /* Generation 0. Generation 0 is a set of very large pages in a list(GC->gen0.pages),
    plus a set of smaller bigpages in a separate list(GC->gen0.big_pages). 
@@ -297,50 +362,6 @@ static struct mpage *pages[PAGE_TYPES];
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
 
-/* These procedures modify or use the page map. The page map provides us very
-   fast mappings from pointers to the page the reside on, if any. The page 
-   map itself serves two important purposes:
-
-   Between collections, it maps pointers to write-protected pages, so that 
-     the write-barrier can identify what page a write has happened to and
-     mark it as potentially containing pointers from gen 1 to gen 0. 
-
-   During collections, it maps pointers to "from" pages. */
-#define modify_page_map(addr, page, val) {                            \
-    long size_left = page->big_page ? page->size : APAGE_SIZE;        \
-    void *p = addr;                                                   \
-    DECL_PAGE_MAP;                                                    \
-                                                                      \
-    while(size_left > 0) {                                            \
-      GET_PAGE_MAP(p);                                                \
-      page_map[ADDR_BITS(p)] = val;                                   \
-      size_left -= APAGE_SIZE;                                        \
-      p = (char *)p + APAGE_SIZE;                                     \
-    }                                                                 \
-  }
-
-inline static void pagemap_add(struct mpage *page)
-{
-  modify_page_map(page->addr, page, page);
-}
-
-inline static void pagemap_remove(struct mpage *page)
-{
-  modify_page_map(page->addr, page, NULL);
-}
-
-inline static mpage *pagemap_find_page(void *p)
-{
-  DECL_PAGE_MAP;
-  FIND_PAGE_MAP(p);
-  return page_map[ADDR_BITS(p)];
-}
-
-int GC_is_allocated(void *p)
-{
-  return !!pagemap_find_page(p);
-}
-
 static size_t round_to_apage_size(size_t sizeb)
 {  
   sizeb += APAGE_SIZE - 1;
@@ -361,6 +382,8 @@ static void free_mpage(struct mpage *page)
 {
   free(page);
 }
+
+
 
 static unsigned long custodian_single_time_limit(int set);
 inline static int thread_get_owner(void *p);
@@ -453,17 +476,21 @@ static void *allocate_big(size_t sizeb, int type)
 #endif
 
 inline static struct mpage *gen0_create_new_mpage() {
-  struct mpage *work;
-  work = malloc_mpage();
-  work->addr = malloc_dirty_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+  mpage *newmpage;
 
-  work->big_page = 1; /* until added */
-  work->size = GEN0_PAGE_SIZE; /* until added */
-  pagemap_add(work);
-  work->size = PREFIX_SIZE;
-  work->big_page = 0;
+  newmpage = malloc_mpage();
+  newmpage->addr = malloc_dirty_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+  newmpage->big_page = 0;
+  newmpage->size = PREFIX_SIZE;
+  pagemap_add_with_size(newmpage, GEN0_PAGE_SIZE);
 
-  return work;
+  return newmpage;
+}
+
+inline static void gen0_free_mpage(mpage *page) {
+  pagemap_remove_with_size(page, GEN0_PAGE_SIZE);
+  free_pages(page->addr, GEN0_PAGE_SIZE);
+  free_mpage(page);
 }
 
 //#define OVERFLOWS_GEN0(ptr) ((ptr) > (NUM(GC->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE))

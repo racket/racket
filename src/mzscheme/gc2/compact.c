@@ -13,10 +13,10 @@
 #include "gc2.h"
 
 #define NUMBER_OF_TAGS 512
-#include "newgc_internal.h"
+#include "compactgc_internal.h"
 #include "../src/schpriv.h"
 
-static THREAD_LOCAL NewGC *GC;
+static THREAD_LOCAL CompactGC *GC;
 
 /**************** Configuration ****************/
 

@@ -71,22 +71,6 @@ typedef struct Gen0 {
  unsigned long max_size;
 } Gen0;
 
-typedef struct finalizer {
-  char eager_level;
-  char tagged;
-  void *p;
-  GC_finalization_proc f;
-  void *data;
-#if CHECKS
-  long size;
-#endif
-  struct finalizer *next;
-  /* Patched after GC: */
-  struct finalizer *prev;
-  struct finalizer *left;
-  struct finalizer *right;
-} Fnl;
-
 typedef struct Weak_Finalizer {
   void *p;
   int offset;
@@ -105,6 +89,11 @@ typedef struct NewGC {
   Gen0 gen0;
   Mark_Proc  *mark_table;   /* the table of mark procs */
   Fixup_Proc *fixup_table;  /* the table of repair procs */
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  mpage ****page_mapss;
+#else
+  mpage **page_map;
+#endif
 
   /* Finalization */
   Fnl *run_queue;
@@ -120,9 +109,6 @@ typedef struct NewGC {
   unsigned long in_unsafe_allocation_mode :1;
   void (*unsafe_allocation_abort)();
   unsigned long memory_in_use; /* the amount of memory in use */
-
-  void *park[2];
-  void *park_save[2];
 
   /* blame the child saved off Mark_Proc pointers */
   Mark_Proc normal_thread_mark;
@@ -145,6 +131,12 @@ typedef struct NewGC {
   unsigned long num_minor_collects;
   unsigned long num_major_collects;
 
+  GC_Immobile_Box *immobile_boxes;
+
+  /* Common with CompactGC */
+  void *park[2];
+  void *park_save[2];
+
   unsigned short weak_array_tag;
   unsigned short weak_box_tag;
   unsigned short ephemeron_tag;
@@ -155,13 +147,18 @@ typedef struct NewGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
-  GC_Immobile_Box *immobile_boxes;
 } NewGC;
 
 void NewGC_initialize(NewGC *newgc) {
   memset(newgc, 0, sizeof(NewGC));
   newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
   newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  newgc->page_mapss = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+#else
+  newgc->page_map = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
+#endif
+
   newgc->primoridal_gc              = NULL;
   newgc->max_heap_size              = 0;
   newgc->max_pages_in_heap          = 0;
