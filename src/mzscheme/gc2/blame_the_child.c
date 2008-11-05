@@ -40,8 +40,8 @@ inline static int create_blank_owner_set(void)
   memcpy(naya, owner_table, old_top*sizeof(struct ot_entry*));
   owner_table = naya;
   bzero((char*)owner_table + (sizeof(struct ot_entry*) * old_top),
-	(owner_table_top - old_top) * sizeof(struct ot_entry*));
-  
+      (owner_table_top - old_top) * sizeof(struct ot_entry*));
+
   return create_blank_owner_set();
 }
 
@@ -84,7 +84,7 @@ void GC_register_root_custodian(void *_c)
     GCPRINT(GCOUTF, "Something extremely weird (and bad) has happened.\n");
     abort();
   }
-  
+
   owner_table[1]->originator = c;
   c->gc_owner_set = 1;
 }
@@ -123,14 +123,14 @@ inline static void clean_up_owner_table(void)
     if(owner_table[i]) {
       /* repair or delete the originator */
       if(!marked(owner_table[i]->originator)) {
-	owner_table[i]->originator = NULL;
+        owner_table[i]->originator = NULL;
       } else 
-	owner_table[i]->originator = GC_resolve(owner_table[i]->originator);
+        owner_table[i]->originator = GC_resolve(owner_table[i]->originator);
 
       /* potential delete */
       if(i != 1) 
-	if((owner_table[i]->memory_use == 0) && !owner_table[i]->originator)
-	  free_owner_set(i);
+        if((owner_table[i]->memory_use == 0) && !owner_table[i]->originator)
+          free_owner_set(i);
     }
 }
 
@@ -138,7 +138,7 @@ inline static unsigned long custodian_usage(void *custodian)
 {
   unsigned long retval = 0;
   int i;
-  
+
   if(!GC->really_doing_accounting) {
     GC->park[0] = custodian;
     GC->really_doing_accounting = 1;
@@ -165,7 +165,7 @@ inline static void memory_account_mark(struct mpage *page, void *ptr)
     }
   } else {
     struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
-    
+
     if(info->btc_mark == GC->old_btc_mark) {
       info->btc_mark = GC->new_btc_mark;
       account_memory(GC->current_mark_owner, info->size);
@@ -221,31 +221,31 @@ inline static void mark_normal_obj(struct mpage *page, void *ptr)
 {
   switch(page->page_type) {
     case PAGE_TAGGED: {
-      /* we do not want to mark the pointers in a thread or custodian 
-	 unless the object's owner is the current owner. In the case
-	 of threads, we already used it for roots, so we can just
-	 ignore them outright. In the case of custodians, we do need
-	 to do the check; those differences are handled by replacing
-         the mark procedure in mark_table. */
-      GC->mark_table[*(unsigned short*)ptr](ptr);
-      break;
-    }
+                        /* we do not want to mark the pointers in a thread or custodian 
+                           unless the object's owner is the current owner. In the case
+                           of threads, we already used it for roots, so we can just
+                           ignore them outright. In the case of custodians, we do need
+                           to do the check; those differences are handled by replacing
+                           the mark procedure in mark_table. */
+                        GC->mark_table[*(unsigned short*)ptr](ptr);
+                        break;
+                      }
     case PAGE_ATOMIC: break;
     case PAGE_ARRAY: { 
-      struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
-      void **temp = ptr, **end = temp + (info->size - 1);
-      
-      while(temp < end) gcMARK(*(temp++));
-      break;
-    };
+                       struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
+                       void **temp = ptr, **end = temp + (info->size - 1);
+
+                       while(temp < end) gcMARK(*(temp++));
+                       break;
+                     };
     case PAGE_TARRAY: {
-      struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
-      unsigned short tag = *(unsigned short*)ptr;
-      void **temp = ptr, **end = PPTR(info) + (info->size - INSET_WORDS);
-      
-      while(temp < end) temp += GC->mark_table[tag](temp);
-      break;
-    }
+                        struct objhead *info = (struct objhead *)((char*)ptr - WORD_SIZE);
+                        unsigned short tag = *(unsigned short*)ptr;
+                        void **temp = ptr, **end = PPTR(info) + (info->size - INSET_WORDS);
+
+                        while(temp < end) temp += GC->mark_table[tag](temp);
+                        break;
+                      }
     case PAGE_XTAGGED: GC_mark_xtagged(ptr); break;
   }
 }
@@ -268,11 +268,11 @@ inline static void mark_acc_big_page(struct mpage *page)
     case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
     case PAGE_XTAGGED: GC_mark_xtagged(start); break;
     case PAGE_TARRAY: {
-      unsigned short tag = *(unsigned short *)start;
-      end -= INSET_WORDS;
-      while(start < end) start += GC->mark_table[tag](start);
-      break;
-    }
+                        unsigned short tag = *(unsigned short *)start;
+                        end -= INSET_WORDS;
+                        while(start < end) start += GC->mark_table[tag](start);
+                        break;
+                      }
   }
 }
 
@@ -281,7 +281,7 @@ static void btc_overmem_abort()
 {
   GC->kill_propagation_loop = 1;
   GCWARN((GCOUTF, "WARNING: Ran out of memory accounting. "
-	          "Info will be wrong.\n"));
+        "Info will be wrong.\n"));
 }
 
 static void propagate_accounting_marks(void)
@@ -313,7 +313,7 @@ static void do_btc_accounting(void)
     GC->doing_memory_accounting = 1;
     GC->in_unsafe_allocation_mode = 1;
     GC->unsafe_allocation_abort = btc_overmem_abort;
-    
+
     if(!GC->normal_thread_mark) {
       GC->normal_thread_mark    = GC->mark_table[scheme_thread_type];
       GC->normal_custodian_mark = GC->mark_table[scheme_custodian_type];
@@ -328,7 +328,7 @@ static void do_btc_accounting(void)
     /* clear the memory use numbers out */
     for(i = 1; i < owner_table_top; i++)
       if(owner_table[i])
-	owner_table[i]->memory_use = 0;
+        owner_table[i]->memory_use = 0;
 
     /* the end of the custodian list is where we want to start */
     while(SCHEME_PTR1_VAL(box)) {
@@ -339,7 +339,7 @@ static void do_btc_accounting(void)
     /* walk backwards for the order we want */
     while(cur) {
       int owner = custodian_to_owner_set(cur);
-      
+
       GC->current_mark_owner = owner;
       GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
       GC->kill_propagation_loop = 0;
@@ -347,10 +347,10 @@ static void do_btc_accounting(void)
       mark_cust_boxes(cur);
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
       propagate_accounting_marks();
-      
+
       box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
-  
+
     GC->mark_table[scheme_thread_type]    = GC->normal_thread_mark;
     GC->mark_table[scheme_custodian_type] = GC->normal_custodian_mark;
     GC->mark_table[GC->ephemeron_tag]     = mark_ephemeron;
@@ -394,9 +394,9 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
   for(work = hooks; work; work = work->next) {
     if((work->type == type) && (work->c2 == c2) && (work->c1 == c1)) {
       if(type == MZACCT_REQUIRE) {
-	if(b > work->amount) work->amount = b;
+        if(b > work->amount) work->amount = b;
       } else { /* (type == MZACCT_LIMIT) */
-	if(b < work->amount) work->amount = b;
+        if(b < work->amount) work->amount = b;
       }
       break;
     } 
@@ -456,7 +456,7 @@ static unsigned long custodian_super_require(void *c)
     owner_table[set]->super_required = req;
     owner_table[set]->required_set = 1;
   }
-  
+
   return owner_table[set]->super_required;
 }
 
@@ -466,12 +466,12 @@ inline static void run_account_hooks()
 
   while(work) {
     if( ((work->type == MZACCT_REQUIRE) && 
-         ((GC->used_pages > (GC->max_pages_for_use / 2))
-          || ((((GC->max_pages_for_use / 2) - GC->used_pages) * APAGE_SIZE)
-              < (work->amount + custodian_super_require(work->c1)))))
-	||
-	((work->type == MZACCT_LIMIT) &&
-	 (GC_get_memory_use(work->c1) > work->amount))) {
+          ((GC->used_pages > (GC->max_pages_for_use / 2))
+           || ((((GC->max_pages_for_use / 2) - GC->used_pages) * APAGE_SIZE)
+             < (work->amount + custodian_super_require(work->c1)))))
+        ||
+        ((work->type == MZACCT_LIMIT) &&
+         (GC_get_memory_use(work->c1) > work->amount))) {
       struct account_hook *next = work->next;
 
       if(prev) prev->next = next;
