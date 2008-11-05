@@ -482,130 +482,110 @@ static void *allocate_big(size_t sizeb, int type)
 
 inline static void *allocate(size_t sizeb, int type)
 {
-  if(sizeb) {
-    size_t sizew = gcBYTES_TO_WORDS(sizeb) + 1;
+  size_t sizew;
 
-    sizew = ALIGN_SIZE(sizew);
-    if(sizew < MAX_OBJECT_SIZEW) {
-      struct objhead *info;
-      unsigned long newptr;
+  if(sizeb == 0) return zero_sized;
 
-      sizeb = gcWORDS_TO_BYTES(sizew);
-    alloc_retry:
-      newptr = GC_gen0_alloc_page_ptr + sizeb;
+  sizew = ALIGN_SIZE(( gcBYTES_TO_WORDS(sizeb) + 1));
+  if(sizew > MAX_OBJECT_SIZEW)  return allocate_big(sizeb, type);
 
-      if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
-        unsigned long old_size;
-        old_size = GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr);
-        gen0_current_size += old_size;
-        GC_gen0_alloc_page->size = old_size;
-	if(GC_gen0_alloc_page->next) { 
-	  GC_gen0_alloc_page = GC_gen0_alloc_page->next;
-	  GC_gen0_alloc_page_addr = GC_gen0_alloc_page->addr;
-          GC_gen0_alloc_page_ptr = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
-	} else if (avoid_collection) {
-	  struct mpage *work;
-          void *addr;
+  struct objhead *info;
+  unsigned long newptr;
 
-          work = malloc_mpage();
-          addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
-          work->addr = addr;
-	  GC_gen0_alloc_page->prev = work;
-	  work->next = GC_gen0_alloc_page;
-	  GC_gen0_alloc_page = work;
-	  GC_gen0_alloc_page_addr = addr;
-          GC_gen0_alloc_page_ptr = NUM(addr);
-	  work->big_page = 1; /* until added */
-          work->size = GEN0_PAGE_SIZE; /* until added */
-	  pagemap_add(work);
-	  work->size = PREFIX_SIZE;
-	  work->big_page = 0;
-	} else 
-	  garbage_collect(0);
-	goto alloc_retry;
-      } else {
-	void *retval = PTR(GC_gen0_alloc_page_ptr);
+  sizeb = gcWORDS_TO_BYTES(sizew);
 
-	GC_gen0_alloc_page_ptr = newptr;
+alloc_retry:
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
 
-        if (type == PAGE_ATOMIC)
-          *((void **)retval) = NULL; /* init objhead */
-        else
-          bzero(retval, sizeb);
+  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
+    unsigned long old_size;
+    old_size = GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr);
+    gen0_current_size += old_size;
+    GC_gen0_alloc_page->size = old_size;
+    if(GC_gen0_alloc_page->next) { 
+      GC_gen0_alloc_page = GC_gen0_alloc_page->next;
+      GC_gen0_alloc_page_addr = GC_gen0_alloc_page->addr;
+      GC_gen0_alloc_page_ptr = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
+    }
+    else if (avoid_collection) {
+      struct mpage *work;
+      void *addr;
 
-	info = (struct objhead *)retval;
-	info->type = type;
-	info->size = sizew;
+      work = malloc_mpage();
+      addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+      work->addr = addr;
+      GC_gen0_alloc_page->prev = work;
+      work->next = GC_gen0_alloc_page;
+      GC_gen0_alloc_page = work;
+      GC_gen0_alloc_page_addr = addr;
+      GC_gen0_alloc_page_ptr = NUM(addr);
+      work->big_page = 1; /* until added */
+      work->size = GEN0_PAGE_SIZE; /* until added */
+      pagemap_add(work);
+      work->size = PREFIX_SIZE;
+      work->big_page = 0;
+    } else 
+      garbage_collect(0);
+    goto alloc_retry;
+  } 
+  else {
+    void *retval = PTR(GC_gen0_alloc_page_ptr);
 
-	return PTR(NUM(retval) + WORD_SIZE);
-      }
-    } else return allocate_big(sizeb, type);
-  } else return zero_sized;
+    GC_gen0_alloc_page_ptr = newptr;
+
+    if (type == PAGE_ATOMIC)
+      *((void **)retval) = NULL; /* init objhead */
+    else
+      bzero(retval, sizeb);
+
+    info = (struct objhead *)retval;
+    info->type = type;
+    info->size = sizew;
+
+    return PTR(NUM(retval) + WORD_SIZE);
+  }
+}
+
+inline static void *fast_malloc_one_small_tagged(size_t sizeb, int dirty)
+{
+  unsigned long newptr;
+
+  sizeb += WORD_SIZE;
+  sizeb = ALIGN_BYTES_SIZE(sizeb);
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
+
+  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
+    return GC_malloc_one_tagged(sizeb - WORD_SIZE);
+  } else {
+    void *retval = PTR(GC_gen0_alloc_page_ptr);
+
+    GC_gen0_alloc_page_ptr = newptr;
+
+    if (dirty)
+      *((void **)retval) = NULL; /* init objhead */
+    else
+      bzero(retval, sizeb);
+
+    ((struct objhead *)retval)->size = (sizeb >> gcLOG_WORD_SIZE);
+    
+    return PTR(NUM(retval) + WORD_SIZE);
+  }
 }
 
 /* the allocation mechanism we present to the outside world */
-void *GC_malloc(size_t s) { return allocate(s, PAGE_ARRAY); }
-void *GC_malloc_one_tagged(size_t s) { return allocate(s, PAGE_TAGGED); }
-void *GC_malloc_one_xtagged(size_t s) { return allocate(s, PAGE_XTAGGED); }
-void *GC_malloc_array_tagged(size_t s) { return allocate(s, PAGE_TARRAY); }
-void *GC_malloc_atomic(size_t s) { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s) { void *p = malloc(s); if (!p) out_of_memory(); memset(p, 0, s); return p; }
-void *GC_malloc_allow_interior(size_t s) {return allocate_big(s, PAGE_ARRAY);}
-void *GC_malloc_atomic_allow_interior(size_t s) {return allocate_big(s, PAGE_ATOMIC);}
-void *GC_malloc_tagged_allow_interior(size_t s) {return allocate_big(s, PAGE_TAGGED);}
+void *GC_malloc(size_t s)                         { return allocate(s, PAGE_ARRAY); }
+void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGGED); }
+void *GC_malloc_one_xtagged(size_t s)             { return allocate(s, PAGE_XTAGGED); }
+void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
+void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
+void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = malloc(s); memset(p, 0, s); return p; }
+void *GC_malloc_allow_interior(size_t s)          { return allocate_big(s, PAGE_ARRAY); }
+void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_big(s, PAGE_ATOMIC); }
+void *GC_malloc_tagged_allow_interior(size_t s)   { return allocate_big(s, PAGE_TAGGED); }
+void *GC_malloc_one_small_dirty_tagged(size_t s)  { return fast_malloc_one_small_tagged(s, 1); }
+void *GC_malloc_one_small_tagged(size_t s)        { return fast_malloc_one_small_tagged(s, 0); }
 void GC_free(void *p) {}
 
-void *GC_malloc_one_small_tagged(size_t sizeb)
-{
-  unsigned long ptr, newptr;
-
-  sizeb += WORD_SIZE;
-  sizeb = ALIGN_BYTES_SIZE(sizeb);
-  ptr = GC_gen0_alloc_page_ptr;
-  newptr = GC_gen0_alloc_page_ptr + sizeb;
-
-  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
-    return GC_malloc_one_tagged(sizeb - WORD_SIZE);
-  } else {
-    void *retval = PTR(ptr);
-    struct objhead *info = (struct objhead *)retval;
-
-    GC_gen0_alloc_page_ptr = newptr;
-
-    bzero(retval, sizeb);
-
-    /* info->type = type; */ /* We know that the type field is already 0 */
-    info->size = (sizeb >> gcLOG_WORD_SIZE);
-    
-    return PTR(NUM(retval) + WORD_SIZE);
-  }
-}
-
-void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
-{
-  unsigned long ptr, newptr;
-
-  sizeb += WORD_SIZE;
-  sizeb = ALIGN_BYTES_SIZE(sizeb);
-  ptr = GC_gen0_alloc_page_ptr;
-  newptr = GC_gen0_alloc_page_ptr + sizeb;
-
-  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
-    return GC_malloc_one_tagged(sizeb - WORD_SIZE);
-  } else {
-    void *retval = PTR(ptr);
-    struct objhead *info = (struct objhead *)retval;
-
-    GC_gen0_alloc_page_ptr = newptr;
-
-    *(void **)info = NULL; /* client promises the initialize the rest */
-
-    /* info->type = type; */ /* We know that the type field is already 0 */
-    info->size = (sizeb >> gcLOG_WORD_SIZE);
-    
-    return PTR(NUM(retval) + WORD_SIZE);
-  }
-}
 
 long GC_compute_alloc_size(long sizeb)
 {
@@ -614,15 +594,16 @@ long GC_compute_alloc_size(long sizeb)
 
 long GC_initial_word(int sizeb)
 {
-  struct objhead _info;
-  long w;
+  long w = 0;
+  struct objhead info;
 
   sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeb)) + WORD_SIZE);
   
-  memset(&_info, 0, sizeof(_info));
-  _info.size = (sizeb >> gcLOG_WORD_SIZE);
+  memset(&info, 0, sizeof(struct objhead));
+  info.size = (sizeb >> gcLOG_WORD_SIZE);
+  memcpy(&w, &info, sizeof(struct objhead));
 
-  memcpy(&w, &_info, sizeof(long));
+  ((struct objhead*)&w)->size = (sizeb >> gcLOG_WORD_SIZE);
 
   return w;
 }
