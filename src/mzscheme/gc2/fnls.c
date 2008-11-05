@@ -11,20 +11,6 @@
       park
 */
 
-typedef struct finalizer {
-  char eager_level;
-  char tagged;
-  void *p;
-  GC_finalization_proc f;
-  void *data;
-#if CHECKS
-  long size;
-#endif
-  struct finalizer *next;
-  /* Patched after GC: */
-  struct finalizer *prev, *left, *right;
-} Fnl;
-
 static Fnl *finalizers, *splayed_finalizers;
 static int num_fnls;
 

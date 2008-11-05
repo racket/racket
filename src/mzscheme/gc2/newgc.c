@@ -952,12 +952,9 @@ static int is_finalizable_page(void *p)
 
 #include "fnls.c"
 
-static Fnl *run_queue;
-static Fnl *last_in_queue;
-
 inline static void mark_finalizer_structs(void)
 {
-  struct finalizer *fnl;
+  Fnl *fnl;
 
   for(fnl = GC_resolve(finalizers); fnl; fnl = GC_resolve(fnl->next)) { 
     set_backtrace_source(fnl, BT_FINALIZER);
@@ -965,28 +962,28 @@ inline static void mark_finalizer_structs(void)
     set_backtrace_source(&finalizers, BT_ROOT);
     gcMARK(fnl);
   }
-  for(fnl = run_queue; fnl; fnl = fnl->next) {
+  for(fnl = GC->run_queue; fnl; fnl = fnl->next) {
     set_backtrace_source(fnl, BT_FINALIZER);
     gcMARK(fnl->data);
     gcMARK(fnl->p);
-    set_backtrace_source(&run_queue, BT_ROOT);
+    set_backtrace_source(&GC->run_queue, BT_ROOT);
     gcMARK(fnl);
   }
 }  
 
 inline static void repair_finalizer_structs(void)
 {
-  struct finalizer *fnl;
+  Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP(finalizers); gcFIXUP(run_queue);
+  gcFIXUP(finalizers); gcFIXUP(GC->run_queue);
   /* then repair the stuff inside them */
   for(fnl = finalizers; fnl; fnl = fnl->next) {
     gcFIXUP(fnl->data);
     gcFIXUP(fnl->p);
     gcFIXUP(fnl->next);
   }
-  for(fnl = run_queue; fnl; fnl = fnl->next) {
+  for(fnl = GC->run_queue; fnl; fnl = fnl->next) {
     gcFIXUP(fnl->data);
     gcFIXUP(fnl->p);
     gcFIXUP(fnl->next);
@@ -995,7 +992,8 @@ inline static void repair_finalizer_structs(void)
 
 inline static void check_finalizers(int level)
 {
-  struct finalizer *work = GC_resolve(finalizers), *prev = NULL;
+  Fnl *work = GC_resolve(finalizers);
+  Fnl *prev = NULL;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
   while(work) {
@@ -1009,8 +1007,8 @@ inline static void check_finalizers(int level)
       gcMARK(work->p);
       if(prev) prev->next = next;
       if(!prev) finalizers = next;
-      if(last_in_queue) last_in_queue = last_in_queue->next = work;
-      if(!last_in_queue) run_queue = last_in_queue = work;
+      if(GC->last_in_queue) GC->last_in_queue = GC->last_in_queue->next = work;
+      if(!GC->last_in_queue) GC->run_queue = GC->last_in_queue = work;
       work->next = NULL;
       --num_fnls;
 
@@ -2469,7 +2467,7 @@ static void garbage_collect(int force_full)
 
   TIME_DONE();
 
-  if (!run_queue)
+  if (!gc->run_queue)
     next_gc_full = 0;
 
   /* run any queued finalizers, EXCEPT in the case where this collection was
@@ -2487,12 +2485,12 @@ static void garbage_collect(int force_full)
     GC->park[0] = NULL;
     GC->park[1] = NULL;
 
-    while(run_queue) {
+    while(gc->run_queue) {
       struct finalizer *f;
       void **gcs;
 
-      f = run_queue; run_queue = run_queue->next;
-      if(!run_queue) last_in_queue = NULL;
+      f = gc->run_queue; gc->run_queue = gc->run_queue->next;
+      if(!gc->run_queue) gc->last_in_queue = NULL;
 
       GCDEBUG((DEBUGOUTF, "Running finalizers %p for pointer %p (lvl %i)\n",
 	       f, f->p, f->eager_level));

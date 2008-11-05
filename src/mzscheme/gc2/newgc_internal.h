@@ -71,10 +71,30 @@ typedef struct Gen0 {
  unsigned long max_size;
 } Gen0;
 
+typedef struct finalizer {
+  char eager_level;
+  char tagged;
+  void *p;
+  GC_finalization_proc f;
+  void *data;
+#if CHECKS
+  long size;
+#endif
+  struct finalizer *next;
+  /* Patched after GC: */
+  struct finalizer *prev;
+  struct finalizer *left;
+  struct finalizer *right;
+} Fnl;
+
 typedef struct NewGC {
   Gen0 gen0;
   Mark_Proc  *mark_table;   /* the table of mark procs */
   Fixup_Proc *fixup_table;  /* the table of repair procs */
+
+  /* Finalization */
+  Fnl *run_queue;
+  Fnl *last_in_queue;
 
   struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
