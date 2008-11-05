@@ -163,12 +163,7 @@
     [(#%variable-reference . v)
      stx]       
     [id (identifier? #'id)
-        stx]
-    ; XXX Shouldn't
-    [(letrec-syntaxes+values ([(sv ...) se] ...)
-       ([(vv ...) ve] ...)
-       be ...)
-     (raise-syntax-error 'elim-callcc/mark "Not in ANF" stx)]
+        stx]    
     [(#%expression d)
      (markit (quasisyntax/loc stx (#%expression #,(elim-callcc #'d))))]
     [_

@@ -74,21 +74,21 @@
      (check-equal? (abort/cc
                     (lambda () 
                       (let/ec esc
-                        ('f1 (with-continuation-mark the-cont-key 'f1
+                        ('f1 (with-continuation-mark the-cont-key +
                                (esc (activation-record-list)))))))
-                   (list (vector 'f1 #f))))
+                   (list (vector + #f))))
     
     (test-case
      "Double"
      (check-equal? (abort/cc
                     (lambda () 
                       (let/ec esc
-                        ('f1 (with-continuation-mark the-cont-key 'f1
-                               ('f2 (with-continuation-mark the-cont-key 'f2
+                        ('f1 (with-continuation-mark the-cont-key +
+                               ('f2 (with-continuation-mark the-cont-key -
                                       (esc (activation-record-list)))))))))
                    ; Opposite the order of c-c-m
-                   (list (vector 'f1 #f)
-                         (vector 'f2 #f))))
+                   (list (vector + #f)
+                         (vector - #f))))
     
     (test-case
      "Unsafe"
