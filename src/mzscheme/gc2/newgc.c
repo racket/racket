@@ -691,7 +691,6 @@ inline static int marked(void *p)
 #ifdef NEWGC_INTERNAL_DEBUGGING
 static FILE *dump;
 static int collections = 0;
-static unsigned long stack_base;
 
 static void init_debug_file(void) 
 {
@@ -756,10 +755,7 @@ static void dump_heap(void)
 	dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
       }
     fprintf(dump, "STACK:\n");
-    dump_region((void*)(NUM(&i) & 0xfffffff0),
-		(void*)((GC_get_thread_stack_base   
-			 ? GC_get_thread_stack_base()       
-			 : (unsigned long)stack_base) & 0xfffffff0)); 
+    dump_region((void*)(NUM(&i) & 0xfffffff0), (void*)(get_stack_base() & 0xfffffff0)); 
     fflush(dump);
   }
 }
@@ -868,7 +864,6 @@ static void *get_backtrace(struct mpage *page, void *ptr)
 /* this code is entirely lifted from compact.c                               */
 /*****************************************************************************/
 void **GC_variable_stack;
-static unsigned long stack_base;
 
 void **GC_get_variable_stack()
 { 
@@ -882,17 +877,18 @@ void GC_set_variable_stack(void **p)
 
 void GC_set_stack_base(void *base) 
 {
-  stack_base = (unsigned long)base;
+  GC->stack_base = (unsigned long)base;
 }
 
 unsigned long GC_get_stack_base() 
 {
-  return stack_base;
+  return GC->stack_base;
 }
 
-#define gc_stack_base ((void*)(GC_get_thread_stack_base               \
-                               ? GC_get_thread_stack_base()           \
-                               : (unsigned long)stack_base)) 
+static inline void *get_stack_base() {
+  if (GC_get_thread_stack_base) return (void*) GC_get_thread_stack_base();
+  return (void*) GC->stack_base;
+}
 
 #include "stack_comp.c"
 
@@ -1177,7 +1173,7 @@ inline static void mark_threads(int owner)
       if (((Scheme_Thread *)work->thread)->running) {
         normal_thread_mark(work->thread);
         if (work->thread == scheme_current_thread) {
-          GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
+          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
         }
       }
     }
@@ -2400,7 +2396,7 @@ static void garbage_collect(int force_full)
   mark_roots();
   mark_immobiles();
   TIME_STEP("rooted");
-  GC_mark_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
+  GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
 
   TIME_STEP("stacked");
 
@@ -2448,7 +2444,7 @@ static void garbage_collect(int force_full)
   repair_weak_finalizer_structs();
   repair_roots();
   repair_immobiles();
-  GC_fixup_variable_stack(GC_variable_stack, 0, gc_stack_base, NULL);
+  GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
   TIME_STEP("reparied roots");
   repair_heap();
   TIME_STEP("repaired");

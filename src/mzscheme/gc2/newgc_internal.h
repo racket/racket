@@ -90,7 +90,7 @@ typedef struct NewGC {
   void *park_save[2];
 
   mpage *release_pages;
-
+  unsigned long stack_base;
   int dumping_avoid_collection; /* dumping coutner flag */
 
   int generations_available;
