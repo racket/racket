@@ -83,16 +83,17 @@ typedef struct GC_Thread_Info {
   struct GC_Thread_Info *next;
 } GC_Thread_Info;
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+typedef mpage ****PageMap;
+#else
+typedef mpage **PageMap;
+#endif
 
 typedef struct NewGC {
   Gen0 gen0;
   Mark_Proc  *mark_table;   /* the table of mark procs */
   Fixup_Proc *fixup_table;  /* the table of repair procs */
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-  mpage ****page_mapss;
-#else
-  mpage **page_map;
-#endif
+  PageMap page_maps;
   /* All non-gen0 pages are held in the following structure. */
   struct mpage *gen1_pages[PAGE_TYPES];
 
@@ -177,9 +178,9 @@ void NewGC_initialize(NewGC *newgc) {
   newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
   newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-  newgc->page_mapss = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+  newgc->page_maps = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
-  newgc->page_map = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
+  newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
   
   newgc->generations_available = 1;

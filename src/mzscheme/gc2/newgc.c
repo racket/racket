@@ -221,42 +221,42 @@ int GC_mtrace_union_current_with(int newval)
 /* the page map makes a nice mapping from addresses to pages, allowing
    fairly fast lookup. this is useful. */
 
-inline static void pagemap_set(void *p, mpage *value) {
+inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   unsigned long pos;
-  mpage ***page_maps;
-  mapge **page_map;
+  mpage ***page_maps2;
+  mpage **page_maps3;
 
   pos = PAGEMAP64_LEVEL1_BITS(p);
-  page_maps = GC->page_mapss[pos];
+  page_maps2 = page_maps1[pos];
   if (!page_maps) {
-    page_maps = (mpage ***)calloc(PAGEMAP64_LEVEL2_SIZE, sizeof(mpage **));
-    page_mapss[pos] = page_maps;
+    page_maps2 = (mpage ***)calloc(PAGEMAP64_LEVEL2_SIZE, sizeof(mpage **));
+    page_maps1[pos] = page_maps2;
   }
   pos = PAGEMAP64_LEVEL2_BITS(p);
-  page_map = page_maps[pos];
-  if (!page_map) {
-    page_map = (mpage **)calloc(PAGEMAP64_LEVEL3_SIZE, sizeof(mpage *));
-    page_maps[pos] = page_map;
+  page_maps3 = page_maps2[pos];
+  if (!page_maps3) {
+    page_maps3 = (mpage **)calloc(PAGEMAP64_LEVEL3_SIZE, sizeof(mpage *));
+    page_maps2[pos] = page_maps3;
   }
-  page_map[PAGEMAP64_LEVEL3_BITS(p)] = value;
+  page_maps3[PAGEMAP64_LEVEL3_BITS(p)] = value;
 #else
-  GC->page_map[PAGEMAP32_BITS(p)] = value;
+  page_maps1[PAGEMAP32_BITS(p)] = value;
 #endif
 }
 
-inline static struct mpage *pagemap_find_page(void *p) {
+inline static struct mpage *pagemap_find_page(PageMap page_maps1, void *p) {
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-  mpage ***page_maps;
-  mpage **page_map;
+  mpage ***page_maps2;
+  mpage **page_maps3;
 
-  page_maps = GC->page_mapss[PAGEMAP64_LEVEL1_BITS(p)];
-  if (!page_maps) return NULL;
-  page_map = page_maps[PAGEMAP64_LEVEL2_BITS(p)];
-  if (!page_map) return NULL;
-  return page_map[PAGEMAP64_LEVEL3_BITS(p)];
+  page_maps2 = page_maps1[PAGEMAP64_LEVEL1_BITS(p)];
+  if (!page_maps2) return NULL;
+  page_maps3 = page_maps2[PAGEMAP64_LEVEL2_BITS(p)];
+  if (!page_maps3) return NULL;
+  return page_maps3[PAGEMAP64_LEVEL3_BITS(p)];
 #else
-  return GC->page_map[PAGEMAP32_BITS(p)];
+  return page_maps1[PAGEMAP32_BITS(p)];
 #endif
 }
 
@@ -272,44 +272,44 @@ inline static struct mpage *pagemap_find_page(void *p) {
 
 /* pagemap_modify_with_size could be optimized more for the 64 bit case
    repeatedly calling pagemap_set for the 64 bit case is not optimal */
-inline static void pagemap_modify_with_size(mpage *page, long size, mpage *val) {
+inline static void pagemap_modify_with_size(PageMap pagemap, mpage *page, long size, mpage *val) {
   void *p = page->addr;
 
   while(size > 0) {
-    pagemap_set(p, val);
+    pagemap_set(pagemap, p, val);
     size -= APAGE_SIZE;
     p = (char *)p + APAGE_SIZE;
   }
 }
 
-inline static void pagemap_modify(mpage *page, mpage *val) {
+inline static void pagemap_modify(PageMap pagemap, mpage *page, mpage *val) {
   long size = page->big_page ? page->size : APAGE_SIZE;
-  pagemap_modify_with_size(page, size, val);
+  pagemap_modify_with_size(pagemap, page, size, val);
 }
 
-inline static void pagemap_add(struct mpage *page)
+inline static void pagemap_add(PageMap pagemap, mpage *page)
 {
-  pagemap_modify(page, page);
+  pagemap_modify(pagemap, page, page);
 }
 
-inline static void pagemap_add_with_size(struct mpage *page, long size)
+inline static void pagemap_add_with_size(PageMap pagemap, mpage *page, long size)
 {
-  pagemap_modify_with_size(page, size, page);
+  pagemap_modify_with_size(pagemap, page, size, page);
 }
 
-inline static void pagemap_remove(struct mpage *page)
+inline static void pagemap_remove(PageMap pagemap, mpage *page)
 {
-  pagemap_modify(page, NULL);
+  pagemap_modify(pagemap, page, NULL);
 }
 
-inline static void pagemap_remove_with_size(struct mpage *page, long size)
+inline static void pagemap_remove_with_size(PageMap pagemap, mpage *page, long size)
 {
-  pagemap_modify_with_size(page, size, NULL);
+  pagemap_modify_with_size(pagemap, page, size, NULL);
 }
 
 int GC_is_allocated(void *p)
 {
-  return !!pagemap_find_page(p);
+  return !!pagemap_find_page(GC->page_maps, p);
 }
 
 
@@ -435,7 +435,7 @@ static void *allocate_big(size_t sizeb, int type)
   bpage->next = GC->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
   GC->gen0.big_pages = bpage;
-  pagemap_add(bpage);
+  pagemap_add(GC->page_maps, bpage);
 
   return PTR(NUM(addr) + PREFIX_SIZE + WORD_SIZE);
 }
@@ -478,13 +478,13 @@ inline static struct mpage *gen0_create_new_mpage() {
   newmpage->addr = malloc_dirty_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
   newmpage->big_page = 0;
   newmpage->size = PREFIX_SIZE;
-  pagemap_add_with_size(newmpage, GEN0_PAGE_SIZE);
+  pagemap_add_with_size(GC->page_maps, newmpage, GEN0_PAGE_SIZE);
 
   return newmpage;
 }
 
 inline static void gen0_free_mpage(mpage *page) {
-  pagemap_remove_with_size(page, GEN0_PAGE_SIZE);
+  pagemap_remove_with_size(GC->page_maps, page, GEN0_PAGE_SIZE);
   free_pages(page->addr, GEN0_PAGE_SIZE);
   free_mpage(page);
 }
@@ -699,7 +699,7 @@ inline static int marked(void *p)
   struct mpage *page;
 
   if(!p) return 0;
-  if(!(page = pagemap_find_page(p))) return 1;
+  if(!(page = pagemap_find_page(GC->page_maps, p))) return 1;
   if((NUM(page->addr) + page->previous_size) > NUM(p)) return 1;
   return ((struct objhead *)(NUM(p) - WORD_SIZE))->mark;
 }
@@ -967,7 +967,7 @@ inline static void repair_roots()
 
 static int is_finalizable_page(void *p)
 {
-  return (pagemap_find_page(p) ? 1 : 0);
+  return (pagemap_find_page(GC->page_maps, p) ? 1 : 0);
 }
 
 #include "fnls.c"
@@ -1285,7 +1285,7 @@ inline static void clean_up_thread_list(void)
   GC_Thread_Info *prev = NULL;
 
   while(work) {
-    if(!pagemap_find_page(work->thread) || marked(work->thread)) {
+    if(!pagemap_find_page(GC->page_maps, work->thread) || marked(work->thread)) {
       work->thread = GC_resolve(work->thread);
       prev = work;
       work = work->next;
@@ -1334,7 +1334,7 @@ void GC_register_new_thread(void *t, void *c)
 
 int designate_modified(void *p)
 {
-  struct mpage *page = pagemap_find_page(p);
+  struct mpage *page = pagemap_find_page(GC->page_maps, p);
 
   if (GC->no_further_modifications) {
     GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
@@ -1453,7 +1453,7 @@ void GC_mark(const void *const_p)
     return;
   }
 
-  if(!(page = pagemap_find_page(p))) {
+  if(!(page = pagemap_find_page(GC->page_maps, p))) {
     GCDEBUG((DEBUGOUTF,"Not marking %p (no page)\n",p));
     return;
   }
@@ -1552,7 +1552,7 @@ void GC_mark(const void *const_p)
       /* now either fetch where we're going to put this object or make
          a new page if we couldn't find a page with space to spare */
       if(work) {
-        pagemap_add(work);
+        pagemap_add(GC->page_maps, work);
         work->marked_on = 1;
         if (work->mprotected) {
           work->mprotected = 0;
@@ -1572,7 +1572,7 @@ void GC_mark(const void *const_p)
         work->prev = NULL;
         if(work->next)
           work->next->prev = work;
-        pagemap_add(work);
+        pagemap_add(GC->page_maps, work);
         GC->gen1_pages[type] = work;
         newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
       }
@@ -1605,9 +1605,9 @@ void GC_mark(const void *const_p)
 }
 
 /* this is the second mark routine. It's not quite as complicated. */
-inline static void internal_mark(void *p)
+inline static void internal_mark(PageMap pagemap, void *p)
 {
-  struct mpage *page = pagemap_find_page(p);
+  struct mpage *page = pagemap_find_page(pagemap, p);
   NewGC *gc = GC;
 
   /* we can assume a lot here -- like it's a valid pointer with a page --
@@ -1667,16 +1667,16 @@ inline static void internal_mark(void *p)
 static void propagate_marks(void) 
 {
   void *p;
-
+  PageMap pagemap = GC->page_maps;
   while(pop_ptr(&p)) {
     GCDEBUG((DEBUGOUTF, "Popped pointer %p\n", p));
-    internal_mark(p);
+    internal_mark(pagemap, p);
   }
 }
 
 void *GC_resolve(void *p)
 {
-  struct mpage *page = pagemap_find_page(p);
+  struct mpage *page = pagemap_find_page(GC->page_maps, p);
   struct objhead *info;
 
   if(!page || page->big_page)
@@ -1702,7 +1702,7 @@ void GC_fixup(void *pp)
   if(!p || (NUM(p) & 0x1))
     return;
 
-  if((page = pagemap_find_page(p))) {
+  if((page = pagemap_find_page(GC->page_maps, p))) {
     struct objhead *info;
 
     if(page->big_page) return;
@@ -1908,6 +1908,7 @@ static void prepare_pages_for_collection(void)
   } else {
     /* if we're not doing a major collection, then we need to remove all the
        pages in GC->gen1_pages[] from the page map */
+    PageMap pagemap = GC->page_maps;
     for(i = 0; i < PAGE_TYPES; i++)
       for(work = GC->gen1_pages[i]; work; work = work->next) {
         if (GC->generations_available) {
@@ -1918,7 +1919,7 @@ static void prepare_pages_for_collection(void)
             }
           }
         }
-        pagemap_remove(work);
+        pagemap_remove(pagemap, work);
       }
     flush_protect_page_ranges(1);
   }
@@ -1929,6 +1930,7 @@ static void mark_backpointers(void)
   if(!GC->gc_full) {
     struct mpage *work;
     int i;
+    PageMap pagemap = GC->page_maps;
 
     /* if this is not a full collection, then we need to mark any pointers
        which point backwards into generation 0, since they're roots. */
@@ -1939,7 +1941,7 @@ static void mark_backpointers(void)
              if they were, they wouldn't have this bit set */
           work->marked_on = 1;
           work->previous_size = PREFIX_SIZE;
-          pagemap_add(work);
+          pagemap_add(pagemap, work);
           if(work->big_page) {
             work->big_page = 2;
             push_ptr(PPTR(NUM(work->addr) + PREFIX_SIZE));
@@ -2002,6 +2004,7 @@ struct mpage *allocate_compact_target(struct mpage *work)
 inline static void do_heap_compact(void)
 {
   int i;
+  PageMap pagemap = GC->page_maps;
 
   for(i = 0; i < PAGE_BIG; i++) {
     struct mpage *work = GC->gen1_pages[i], *prev, *npage;
@@ -2077,7 +2080,7 @@ inline static void do_heap_compact(void)
           GC->release_pages = work;
 
           /* add the old page to the page map so fixups can find forwards */
-          pagemap_add(work);
+          pagemap_add(pagemap, work);
 
           work = prev;
         } else { 
@@ -2206,7 +2209,7 @@ static void repair_heap(void)
 
 static inline void gen1_free_mpage(mpage *page) {
   size_t real_page_size = page->big_page ? round_to_apage_size(page->size) : APAGE_SIZE;
-  pagemap_remove(page);
+  pagemap_remove(GC->page_maps, page);
   free_backtrace(page);
   free_pages(page->addr, real_page_size);
   free_mpage(page);
@@ -2231,7 +2234,7 @@ inline static void gen0_free_big_pages() {
 
   for(work = gc->gen0.big_pages; work; work = next) {
     next = work->next;
-    pagemap_remove(work);
+    pagemap_remove(GC->page_maps, work);
     free_pages(work->addr, round_to_apage_size(work->size));
     free_mpage(work);
   }
@@ -2242,6 +2245,7 @@ static void clean_up_heap(void)
 {
   int i;
   size_t memory_in_use = 0;
+  PageMap pagemap = GC->page_maps;
   NewGC *gc = GC;
 
   gen0_free_big_pages();
@@ -2258,7 +2262,7 @@ static void clean_up_heap(void)
           if(next) work->next->prev = prev;
           gen1_free_mpage(work);
         } else {
-          pagemap_add(work);
+          pagemap_add(pagemap, work);
           work->back_pointers = work->marked_on = 0;
           memory_in_use += work->size;
           prev = work; 
@@ -2268,7 +2272,7 @@ static void clean_up_heap(void)
     } else {
       mpage *work;
       for(work = GC->gen1_pages[i]; work; work = work->next) {
-        pagemap_add(work);
+        pagemap_add(pagemap, work);
         work->back_pointers = work->marked_on = 0;
         memory_in_use += work->size;
       }
