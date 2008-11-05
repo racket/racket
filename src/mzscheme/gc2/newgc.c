@@ -116,10 +116,6 @@ static void *park_save[2];
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static unsigned long max_pages_in_heap = 0;
-static unsigned long max_pages_for_use = 0;
-static unsigned long used_pages = 0;
-static unsigned long actual_pages_size = 0;
 static unsigned long in_unsafe_allocation_mode = 0;
 static void (*unsafe_allocation_abort)();
 static void garbage_collect(int);
@@ -134,17 +130,17 @@ static void out_of_memory()
 
 inline static void check_used_against_max(size_t len) 
 {
-  used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  GC->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 
   if(in_unsafe_allocation_mode) {
-    if(used_pages > max_pages_in_heap)
+    if(GC->used_pages > GC->max_pages_in_heap)
       unsafe_allocation_abort();
   } else {
-    if(used_pages > max_pages_for_use) {
+    if(GC->used_pages > GC->max_pages_for_use) {
       garbage_collect(0); /* hopefully this will free enough space */
-      if(used_pages > max_pages_for_use) {
+      if(GC->used_pages > GC->max_pages_for_use) {
         garbage_collect(1); /* hopefully *this* will free enough space */
-        if(used_pages > max_pages_for_use) {
+        if(GC->used_pages > GC->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory)
@@ -158,14 +154,14 @@ inline static void check_used_against_max(size_t len)
 
 inline static void free_used_pages(size_t len) 
 {
-  used_pages -= (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  GC->used_pages -= (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
 }
 
 #define CHECK_USED_AGAINST_MAX(len) check_used_against_max(len)
 #define LOGICALLY_ALLOCATING_PAGES(len) /* empty */
-#define ACTUALLY_ALLOCATING_PAGES(len) actual_pages_size += len
+#define ACTUALLY_ALLOCATING_PAGES(len) GC->actual_pages_size += len
 #define LOGICALLY_FREEING_PAGES(len) free_used_pages(len)
-#define ACTUALLY_FREEING_PAGES(len) actual_pages_size -= len
+#define ACTUALLY_FREEING_PAGES(len) GC->actual_pages_size -= len
 
 #include "page_range.c"
 
@@ -1462,12 +1458,12 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 # endif
 
     /* Our best guess at what the OS will let us allocate: */
-    max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
+    GC->max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
     /* Not all of that memory is available for allocating GCable
        objects.  There's the memory used by the stack, code,
        malloc()/free()ed memory, etc., and there's also the
        administrative structures for the GC itself. */
-    max_pages_for_use = max_pages_in_heap / 2;
+    GC->max_pages_for_use = GC->max_pages_in_heap / 2;
     
     resize_gen0(GEN0_INITIAL_SIZE);
     
@@ -1916,8 +1912,8 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"Current memory use: %li\n", GC_get_memory_use(NULL)));
   GCWARN((GCOUTF,"Peak memory use after a collection: %li\n",peak_memory_use));
   GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %li (+%li)\n", 
-          used_pages * APAGE_SIZE, 
-          actual_pages_size - (used_pages * APAGE_SIZE)));
+          GC->used_pages * APAGE_SIZE, 
+          GC->actual_pages_size - (GC->used_pages * APAGE_SIZE)));
   GCWARN((GCOUTF,"# of major collections: %li\n", num_major_collects));
   GCWARN((GCOUTF,"# of minor collections: %li\n", num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", num_fnls));
@@ -2523,7 +2519,7 @@ static void garbage_collect(int force_full)
   no_further_modifications = 0;
 
   /* If we have too many idle pages, flush: */
-  if (actual_pages_size > ((used_pages << (LOG_APAGE_SIZE + 1)))) {
+  if (GC->actual_pages_size > ((GC->used_pages << (LOG_APAGE_SIZE + 1)))) {
     flush_freed_pages();
   }
 
