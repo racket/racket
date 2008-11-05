@@ -8,7 +8,6 @@
          "configuration/namespace.ss"
          "configuration/responders.ss"
          "web-config-sig.ss")
-; XXX unit? should be particular unit sig
 (provide/contract
  [configuration-table->web-config@
   (->* (path-string?)
@@ -17,7 +16,7 @@
                #:make-servlet-namespace make-servlet-namespace/c)
        unit?)]
  [configuration-table-sexpr->web-config@
-  (->* (list?) ; XXX
+  (->* (configuration-table-sexpr?)
        (#:web-server-root path-string?
                           #:port (or/c false/c number?)
                           #:listen-ip (or/c false/c string?)

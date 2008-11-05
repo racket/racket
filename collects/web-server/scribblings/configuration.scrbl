@@ -91,13 +91,17 @@ structures.
 
 @defthing[default-configuration-table-path path?]{The default configuration table S-expression file.}
 
-@defproc[(sexpr->configuration-table (sexpr list?))
+@defthing[configuration-table-sexpr? (any . -> . boolean?)]{
+ Equivalent to @scheme[list?].
+}
+
+@defproc[(sexpr->configuration-table (sexpr configuration-table-sexpr?))
          configuration-table?]{
  This function converts a @scheme[configuration-table] from an S-expression.
 }
 
 @defproc[(configuration-table->sexpr (ctable configuration-table?))
-         list?]{
+         configuration-table-sexpr?]{
  This function converts a @scheme[configuration-table] to an S-expression.
 }
 

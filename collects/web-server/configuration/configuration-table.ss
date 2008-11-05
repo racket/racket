@@ -4,12 +4,15 @@
          mzlib/pretty)
 (require "configuration-table-structs.ss"
          "../servlet/bindings.ss")
+(define configuration-table-sexpr? list?)
+
 (provide/contract
+ [configuration-table-sexpr? (any/c . -> . boolean?)]
  [read-configuration-table (path-string? . -> . configuration-table?)]
  [write-configuration-table (configuration-table? path-string? . -> . void)]
- [configuration-table->sexpr (configuration-table? . -> . list?)]
- [sexpr->configuration-table (list? . -> . configuration-table?)]
- [default-configuration-table-path path?])  
+ [configuration-table->sexpr (configuration-table? . -> . configuration-table-sexpr?)]
+ [sexpr->configuration-table (configuration-table-sexpr? . -> . configuration-table?)]
+ [default-configuration-table-path path?])
 
 (define default-configuration-table-path
   (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))

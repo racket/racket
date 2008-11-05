@@ -80,7 +80,6 @@
                        [server-root-path (directory-part default-configuration-table-path)]
                        #:extra-files-paths 
                        [extra-files-paths (list (build-path server-root-path "htdocs"))]
-                       ; XXX Add support for other servlets
                        #:servlets-root
                        [servlets-root (build-path server-root-path ".")]
                        #:file-not-found-path
