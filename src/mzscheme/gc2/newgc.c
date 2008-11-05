@@ -2100,6 +2100,7 @@ static void repair_heap(void)
   struct mpage *page;
   int i;
   NewGC *gc = GC;
+  Fixup_Proc *fixup_table = gc->fixup_table;
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for(page = GC->gen1_pages[i]; page; page = page->next) {
@@ -2115,7 +2116,7 @@ static void repair_heap(void)
           page->big_page = 1; /* remove the mark */
           switch(page->page_type) {
             case PAGE_TAGGED: 
-              gc->fixup_table[*(unsigned short*)start](start); 
+              fixup_table[*(unsigned short*)start](start); 
               break;
             case PAGE_ATOMIC: break;
             case PAGE_ARRAY: 
@@ -2127,7 +2128,7 @@ static void repair_heap(void)
             case PAGE_TARRAY: {
                                 unsigned short tag = *(unsigned short *)start;
                                 end -= INSET_WORDS;
-                                while(start < end) start += gc->fixup_table[tag](start);
+                                while(start < end) start += fixup_table[tag](start);
                                 break;
                               }
           }
@@ -2144,7 +2145,7 @@ static void repair_heap(void)
 
                 if(info->mark) {
                   info->mark = 0;
-                  gc->fixup_table[*(unsigned short*)(start+1)](start+1);
+                  fixup_table[*(unsigned short*)(start+1)](start+1);
                 } else {
                   info->dead = 1;
                 }
@@ -2182,7 +2183,7 @@ static void repair_heap(void)
                   void **tempend = (start++) + (size - INSET_WORDS);
                   unsigned short tag = *(unsigned short*)start;
                   while(start < tempend)
-                    start += gc->fixup_table[tag](start);
+                    start += fixup_table[tag](start);
                   info->mark = 0;
                   start = PPTR(info) + size;
                 } else {
