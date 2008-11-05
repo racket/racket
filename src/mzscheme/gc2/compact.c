@@ -352,9 +352,6 @@ static MSet *sets[NUM_SETS]; /* First one is tagged, last one is atomic */
 
 /********************* Statistics *********************/
 static long page_allocations = 0;
-static long page_reservations = 0;
-#define ACTUALLY_ALLOCATING_PAGES(len) (page_reservations += len)
-#define ACTUALLY_FREEING_PAGES(len) (page_reservations -= len)
 
 static long memory_in_use, gc_threshold = GROW_ADDITION, max_memory_use;
 static int prev_memory_in_use, memory_use_growth;
@@ -429,13 +426,13 @@ static int just_checking, the_size;
 static void *malloc_pages(size_t len, size_t alignment)
 {
   page_allocations += len;
-  return vm_malloc_pages(len, alignment, 0);
+  return vm_malloc_pages(GC->vm, len, alignment, 0);
 }
 
 static void free_pages(void *p, size_t len)
 {
   page_allocations -= len;
-  vm_free_pages(p, len);
+  vm_free_pages(GC->vm, p, len);
 }
 
 /******************************************************************************/
@@ -447,6 +444,11 @@ static unsigned long stack_base;
 void GC_set_stack_base(void *base)
 {
   stack_base = (unsigned long)base;
+}
+
+void CompactGC_initialize(CompactGC *gc) {
+  memset(gc, 0, sizeof(CompactGC));
+  gc->vm = vm_create();
 }
 
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
@@ -2598,7 +2600,7 @@ static void free_unused_mpages()
     }
   }
 
-  vm_flush_freed_pages();
+  vm_flush_freed_pages(GC->vm);
 }
 
 void promote_all_ages()
@@ -4734,8 +4736,8 @@ void GC_dump_with_traces(int flags,
 	  (long)FREE_LIST_DELTA,
 	  (100.0 * FREE_LIST_DELTA) / memory_in_use);
   GCPRINT(GCOUTF, "Mmap overhead: %ld (%.2f%%)\n", 
-	  page_reservations - memory_in_use + FREE_LIST_DELTA,
-	  (100.0 * ((double)page_reservations - memory_in_use)) / memory_in_use);
+	  vm_memory_allocated(GC->vm) - memory_in_use + FREE_LIST_DELTA,
+	  (100.0 * ((double) vm_memory_allocated(GC->vm) - memory_in_use)) / memory_in_use);
 
 #if KEEP_BACKPOINTERS
   if (flags & GC_DUMP_SHOW_TRACE) {
@@ -4767,5 +4769,8 @@ void GC_dump(void)
 
 void GC_free_all(void)
 {
+  vm_flush_freed_pages(GC->vm);
+  vm_free(GC->vm);
+  free(GC); 
 }
 

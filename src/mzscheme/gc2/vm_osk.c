@@ -3,15 +3,13 @@
       allocator
       determine_max_heap_size()
    Requires:
-      ACTUALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
    Optional:
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
 
 #include <oskit/c/malloc.h>
 
-inline static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+inline static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
   void *p;
 
@@ -20,18 +18,18 @@ inline static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
   if (!dirty_ok)
   memset(p, 0, len);
 
-  ACTUALLY_ALLOCATING_PAGES(len);
+  vm_memory_allocated_inc(vm, len);
 
   return p;
 }
 
-static void vm_free_pages(void *p, size_t len)
+static void vm_free_pages(VM *vm, void *p, size_t len)
 {
+  vm_memory_allocated_dec(vm, len);
   sfree(p, len);
-  ACTUALLY_FREEING_PAGES(len);
 }
 
-static void vm_flush_freed_pages(void)
+static void vm_flush_freed_pages(VM *vm)
 {
 }
 

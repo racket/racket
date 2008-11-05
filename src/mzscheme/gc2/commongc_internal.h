@@ -66,13 +66,3 @@ typedef struct finalizer {
   struct finalizer *left;
   struct finalizer *right;
 } Fnl;
-
-typedef struct {
-  void *start;
-  long len;
-  short age;
-  short zeroed;
-} Free_Block;
-
-
-#define BLOCKFREE_CACHE_SIZE 96

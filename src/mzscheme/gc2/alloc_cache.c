@@ -1,22 +1,19 @@
 /* 
    Provides:
-      find_cached_pages --- same interface as malloc_pages
+      vm_malloc_pages --- usual interface
       vm_free_pages --- usual interface
       vm_flush_freed_pages --- usual interface
    Requires (defined earlier):
       page_size --- in bytes
       my_qsort --- possibly from my_qsort.c
-      ACTUALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
 */
 
 /* interface to GC */
 /*
-static void *malloc_pages(size_t len, size_t alignment);
-static void *malloc_dirty_pages(size_t len, size_t alignment);
-static void free_pages(void *p, size_t len);
-static void flush_freed_pages(void);
-static void protect_pages(void *p, size_t len, int writable);
+static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok);
+static void vm_free_pages(void *p, size_t len);
+static void vm_flush_freed_pages(void);
+static void vm_protect_pages(void *p, size_t len, int writable);
 */
 
 /* interface to OS */
@@ -26,21 +23,23 @@ static void *os_vm_alloc_pages(size_t len);
 */
 #define BLOCKFREE_UNMAP_AGE 1
 
-static int compare_free_block(const void *a, const void *b)
+static int free_block_compare(const void *a, const void *b)
 {
-  if ((unsigned long)((Free_Block *)a)->start < (unsigned long)((Free_Block *)b)->start)
+  if ((unsigned long)((FreeBlock *)a)->start < (unsigned long)((FreeBlock *)b)->start)
     return -1;
   else
     return 1;
 }
 
-static void collapse_adjacent_pages(void)
+static void alloc_cache_collapse_pages(FreeBlock *blockfree)
 {
-  int i, j;
-  Free_Block *blockfree = GC->blockfree;
+  int i;
+  int j;
+
+  /* sort by FreeBlock->start */
+  my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(FreeBlock), free_block_compare);
 
   /* collapse adjacent: */
-  my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(Free_Block), compare_free_block);
   j = 0;
   for (i = 1; i < BLOCKFREE_CACHE_SIZE; i++) {
     if ((blockfree[j].start + blockfree[j].len) == blockfree[i].start) {
@@ -54,11 +53,10 @@ static void collapse_adjacent_pages(void)
   }
 }
 
-inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok)
+inline static void *alloc_cache_find_pages(FreeBlock *blockfree, size_t len, size_t alignment, int dirty_ok)
 {
   int i;
   void *r;
-  Free_Block *blockfree = GC->blockfree;
 
   /* Try an exact fit: */
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
@@ -105,10 +103,10 @@ inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok
   return NULL;
 }
 
-static void return_mem_to_cache(void *p, size_t len, int zeroed)
+static void alloc_cache_return_mem(VM *vm, void *p, size_t len, int zeroed)
 {
   int i;
-  Free_Block *blockfree = GC->blockfree;
+  FreeBlock *blockfree = vm->freeblocks;
 
   /* Round up to nearest page: */
   if (len & (page_size - 1))
@@ -144,30 +142,30 @@ static void return_mem_to_cache(void *p, size_t len, int zeroed)
   }
 
   /* Might help next time around: */
-  collapse_adjacent_pages();
+  alloc_cache_collapse_pages(blockfree);
 
   os_vm_free_pages(p, len);
 
-  ACTUALLY_FREEING_PAGES(len);
+  vm_memory_allocated_dec(vm, len);
 }
 
-static void vm_free_pages(void *p, size_t len)
+static void vm_free_pages(VM *vm, void *p, size_t len)
 {
-  return_mem_to_cache(p, len, 0);
+  alloc_cache_return_mem(vm, p, len, 0);
 }
 
-static void vm_flush_freed_pages(void)
+static void vm_flush_freed_pages(VM *vm)
 {
   int i;
-  Free_Block *blockfree = GC->blockfree;
+  FreeBlock *blockfree = vm->freeblocks;
 
-  collapse_adjacent_pages();
+  alloc_cache_collapse_pages(blockfree);
 
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
     if (blockfree[i].start) {
       if (blockfree[i].age == BLOCKFREE_UNMAP_AGE) {
         os_vm_free_pages(blockfree[i].start, blockfree[i].len);
-        ACTUALLY_FREEING_PAGES(blockfree[i].len);
+        vm_memory_allocated_dec(vm, blockfree[i].len);
         blockfree[i].start = NULL;
         blockfree[i].len = 0;
       } else
@@ -186,9 +184,10 @@ static void vm_flush_freed_pages(void)
    mechanism, but we do a bit of work to collapse adjacent pages in
    the cache. */
 
-static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
   void *r;
+  FreeBlock *blockfree = vm->freeblocks;
 
   if (!page_size)
     page_size = getpagesize();
@@ -198,7 +197,7 @@ static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
     len += page_size - (len & (page_size - 1));
 
   /* Something from the cache, perhaps? */
-  r = find_cached_pages(len, alignment, dirty_ok);
+  r = alloc_cache_find_pages(blockfree, len, alignment, dirty_ok);
   if(!r) {
     /* attempt to allocate from OS */
     r = os_vm_alloc_pages(len + alignment);
@@ -217,15 +216,15 @@ static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
         if (pre_extra == 0) {
           /* Instead of actually unmapping, put it in the cache, and there's
              a good chance we can use it next time: */
-          ACTUALLY_ALLOCATING_PAGES(extra);
-          return_mem_to_cache(real_r + len, extra, 1);
+          vm_memory_allocated_inc(vm, extra);
+          alloc_cache_return_mem(vm, real_r + len, extra, 1);
         } 
         else { os_vm_free_pages(real_r + len, extra - pre_extra); }
       }
       r = real_r;
     }
 
-    ACTUALLY_ALLOCATING_PAGES(len);
+    vm_memory_allocated_inc(vm, len);
   }
 
   return r;

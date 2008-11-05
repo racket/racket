@@ -3,8 +3,6 @@
       allocator
       determine_max_heap_size()
    Requires:
-      ACTUALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
    Optional:
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
@@ -22,7 +20,7 @@ typedef struct {
 static alloc_cache_entry cache[2][CACHE_SLOTS];
 #endif
 
-static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
 #if CACHE_SLOTS
   {
@@ -44,7 +42,7 @@ static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
   }
 #endif
 
-  ACTUALLY_ALLOCATING_PAGES(len);
+  vm_memory_allocated_inc(vm, len);
 
   /* VirtualAlloc MEM_COMMIT always zeros memory */
   return (void *)VirtualAlloc(NULL, len, 
@@ -52,7 +50,7 @@ static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
       PAGE_READWRITE);
 }
 
-static void vm_free_pages(void *p, size_t len)
+static void vm_free_pages(VM *vm, void *p, size_t len)
 {
 
 #if CACHE_SLOTS
@@ -71,12 +69,11 @@ static void vm_free_pages(void *p, size_t len)
   }
 #endif
 
-  ACTUALLY_FREEING_PAGES(len);
-
+  vm_memory_allocated_dec(vm, len);
   VirtualFree(p, 0, MEM_RELEASE);
 }
 
-static void vm_flush_freed_pages(void)
+static void vm_flush_freed_pages(VM *vm)
 {
 #if CACHE_SLOTS
   int i;
@@ -86,7 +83,7 @@ static void vm_flush_freed_pages(void)
     if (cache[1][i].len) {
       for (p = cache[1][i].page; p; p = next) {
         next = *(void **)p;
-        ACTUALLY_FREEING_PAGES(cache[i].len);
+        vm_memory_allocated_dec(vm, cache[i].len);
         VirtualFree(p, 0, MEM_RELEASE);
       }
     }
@@ -112,6 +109,7 @@ typedef BOOL (WINAPI * QueryInformationJobObject_Proc)(HANDLE hJob,
     LPVOID lpJobObjectInfo,
     DWORD cbJobObjectInfoLength,
     LPDWORD lpReturnLength);
+
 static size_type determine_max_heap_size(void)
 {
   JOBOBJECT_EXTENDED_LIMIT_INFORMATION info;

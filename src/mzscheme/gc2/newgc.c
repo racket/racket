@@ -178,9 +178,6 @@ inline static void check_used_against_max(size_t len)
   }
 }
 
-#define ACTUALLY_ALLOCATING_PAGES(len) GC->actual_pages_size += len
-#define ACTUALLY_FREEING_PAGES(len) GC->actual_pages_size -= len
-
 #include "page_range.c"
 
 #include "vm.c"
@@ -190,19 +187,19 @@ inline static void check_used_against_max(size_t len)
 static void *malloc_pages(size_t len, size_t alignment)
 {
   check_used_against_max(len);
-  return vm_malloc_pages(len, alignment, 0);
+  return vm_malloc_pages(GC->vm, len, alignment, 0);
 }
 
 static void *malloc_dirty_pages(size_t len, size_t alignment)
 {
   check_used_against_max(len);
-  return vm_malloc_pages(len, alignment, 1);
+  return vm_malloc_pages(GC->vm, len, alignment, 1);
 }
 
 static void free_pages(void *p, size_t len)
 {
   GC->used_pages -= (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
-  vm_free_pages(p, len);
+  vm_free_pages(GC->vm, p, len);
 }
 
 
@@ -1324,6 +1321,23 @@ void GC_write_barrier(void *p)
 
 #include "sighand.c"
 
+void NewGC_initialize(NewGC *newgc) {
+  memset(newgc, 0, sizeof(NewGC));
+  newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+  newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  newgc->page_maps = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+#else
+  newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
+#endif
+  newgc->vm = vm_create();
+  newgc->protect_range = malloc(sizeof(Page_Range));
+  
+  newgc->generations_available = 1;
+  newgc->last_full_mem_use = (20 * 1024 * 1024);
+  newgc->new_btc_mark = 1;
+}
+
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   static int initialized = 0;
@@ -1797,7 +1811,7 @@ void GC_dump_with_traces(int flags,
   GCWARN((GCOUTF,"Peak memory use after a collection: %li\n", GC->peak_memory_use));
   GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %li (+%li)\n", 
         GC->used_pages * APAGE_SIZE, 
-        GC->actual_pages_size - (GC->used_pages * APAGE_SIZE)));
+        vm_memory_allocated(GC->vm) - (GC->used_pages * APAGE_SIZE)));
   GCWARN((GCOUTF,"# of major collections: %li\n", GC->num_major_collects));
   GCWARN((GCOUTF,"# of minor collections: %li\n", GC->num_minor_collects));
   GCWARN((GCOUTF,"# of installed finalizers: %i\n", GC->num_fnls));
@@ -2411,7 +2425,7 @@ static void garbage_collect(int force_full)
     protect_old_pages();
   TIME_STEP("protect");
   if (gc->gc_full)
-    vm_flush_freed_pages();
+    vm_flush_freed_pages(gc->vm);
   reset_finalizer_tree();
 
   TIME_STEP("reset");
@@ -2422,8 +2436,8 @@ static void garbage_collect(int force_full)
   gc->no_further_modifications = 0;
 
   /* If we have too many idle pages, flush: */
-  if (gc->actual_pages_size > ((gc->used_pages << (LOG_APAGE_SIZE + 1)))) {
-    vm_flush_freed_pages();
+  if (vm_memory_allocated(gc->vm) > ((gc->used_pages << (LOG_APAGE_SIZE + 1)))) {
+    vm_flush_freed_pages(gc->vm);
   }
 
   /* update some statistics */
@@ -2558,5 +2572,7 @@ void GC_free_all(void)
     }
   }
 
-  vm_flush_freed_pages();
+  vm_flush_freed_pages(GC->vm);
+  vm_free(GC->vm);
+  free(GC);
 }

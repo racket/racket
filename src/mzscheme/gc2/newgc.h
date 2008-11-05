@@ -171,22 +171,6 @@ typedef struct NewGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
-  Free_Block    *blockfree;
-} NewGC;
+  struct VM     *vm;
 
-void NewGC_initialize(NewGC *newgc) {
-  memset(newgc, 0, sizeof(NewGC));
-  newgc->mark_table = malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-  newgc->fixup_table = malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-  newgc->page_maps = malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
-#else
-  newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
-#endif
-  newgc->blockfree = malloc(sizeof(Free_Block) * BLOCKFREE_CACHE_SIZE);
-  newgc->protect_range = malloc(sizeof(Page_Range));
-  
-  newgc->generations_available = 1;
-  newgc->last_full_mem_use = (20 * 1024 * 1024);
-  newgc->new_btc_mark = 1;
-}
+} NewGC;

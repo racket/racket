@@ -19,10 +19,5 @@ typedef struct CompactGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
-  Free_Block    *blockfree;
+  struct VM     *vm;
 } CompactGC;
-
-void CompactGC_initialize(CompactGC *gc) {
-  memset(gc, 0, sizeof(CompactGC));
-  gc->blockfree = malloc(sizeof(Free_Block) *BLOCKFREE_CACHE_SIZE);
-}

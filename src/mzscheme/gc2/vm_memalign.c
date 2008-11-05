@@ -3,8 +3,6 @@
       posix_memalign-based allocator
       determine_max_heap_size() (uses rlimit_heapsize.c)
    Requires:
-      ACTUALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
    Optional:
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
@@ -16,7 +14,7 @@
 
 static int page_size; /* OS page size */
 
-static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
   void *r;
 
@@ -33,20 +31,20 @@ static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
     return NULL;
   }
 
-  ACTUALLY_ALLOCATING_PAGES(len);
+  vm_memory_allocated_inc(vm, len);
 
   if(!dirty_ok)
     memset(p, 0, len);
   return r;
 }
 
-static void vm_free_pages(void *p, size_t len)
+static void vm_free_pages(VM *vm, void *p, size_t len)
 {
-  ACTUALLY_FREEING_PAGES(len);
+  vm_memory_allocated_dec(vm, len);
   free(p);
 }
 
-static void vm_flush_freed_pages(void)
+static void vm_flush_freed_pages(VM *vm)
 {
 }
 
