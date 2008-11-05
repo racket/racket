@@ -34,7 +34,6 @@
 #include "platforms.h"
 #include "gc2.h"
 #include "gc2_dump.h"
-#include "../src/schpriv.h"
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -85,6 +84,7 @@ static THREAD_LOCAL NewGC *GC;
 
 /* This turns on blame-the-child automatic memory accounting */
 /* #define NEWGC_BTC_ACCOUNT */
+/* #undef NEWGC_BTC_ACCOUNT */
 
 /* This turns on memory tracing */
 /* #define NEWGC_MEMORY_TRACE */
@@ -383,8 +383,9 @@ static void free_mpage(struct mpage *page)
   free(page);
 }
 
-static unsigned long custodian_single_time_limit(int set);
-inline static int thread_get_owner(void *p);
+#ifdef NEWGC_BTC_ACCOUNT
+static inline int BTC_single_allocation_limit(size_t sizeb);
+#endif
 
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
@@ -392,18 +393,20 @@ static void *allocate_big(size_t sizeb, int type)
   mpage *bpage;
   void *addr;
 
+#ifdef NEWGC_BTC_ACCOUNT
   if(GC_out_of_memory) {
-    /* We're allowed to fail. Check for allocations that exceed a single-time
-       limit. Otherwise, the limit doesn't work as intended, because
-       a program can allocate a large block that nearly exhausts memory,
-       and then a subsequent allocation can fail. As long as the limit
-       is much smaller than the actual available memory, and as long as
-       GC_out_of_memory protects any user-requested allocation whose size
-       is independent of any existing object, then we can enforce the limit. */
-    if (custodian_single_time_limit(thread_get_owner(scheme_current_thread)) < sizeb) {
+    if (BTC_single_allocation_limit(sizeb)) {
+      /* We're allowed to fail. Check for allocations that exceed a single-time
+         limit. Otherwise, the limit doesn't work as intended, because
+         a program can allocate a large block that nearly exhausts memory,
+         and then a subsequent allocation can fail. As long as the limit
+         is much smaller than the actual available memory, and as long as
+         GC_out_of_memory protects any user-requested allocation whose size
+         is independent of any existing object, then we can enforce the limit. */
       GC_out_of_memory();
     }
   }
+#endif
 
   /* the actual size of this is the size, ceilinged to the next largest word,
      plus one word for the object header.
@@ -1238,94 +1241,43 @@ inline static void reset_pointer_stack(void)
 }
 
 /*****************************************************************************/
-/* thread list                                                               */
+/* BLAME THE CHILD                                                           */
 /*****************************************************************************/
+
 #ifdef NEWGC_BTC_ACCOUNT
-inline static int current_owner(Scheme_Custodian *c);
-
-inline static void register_new_thread(void *t, void *c)
-{
-  GC_Thread_Info *work;
-
-  work = (GC_Thread_Info *)malloc(sizeof(GC_Thread_Info));
-  ((Scheme_Thread *)t)->gc_info = work;
-  work->owner = current_owner((Scheme_Custodian *)c);
-  work->thread = t;
-
-  work->next = GC->thread_infos;
-  GC->thread_infos = work;
-}
-
-inline static void register_thread(void *t, void *c)
-{
-  GC_Thread_Info *work;
-
-  work = ((Scheme_Thread *)t)->gc_info;
-  work->owner = current_owner((Scheme_Custodian *)c);
-}
-
-inline static void mark_threads(int owner)
-{
-  GC_Thread_Info *work;
-
-  for(work = GC->thread_infos; work; work = work->next)
-    if(work->owner == owner) {
-      if (((Scheme_Thread *)work->thread)->running) {
-        GC->normal_thread_mark(work->thread);
-        if (work->thread == scheme_current_thread) {
-          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
-        }
-      }
-    }
-}
-
-inline static void clean_up_thread_list(void)
-{
-  GC_Thread_Info *work = GC->thread_infos;
-  GC_Thread_Info *prev = NULL;
-
-  while(work) {
-    if(!pagemap_find_page(GC->page_maps, work->thread) || marked(work->thread)) {
-      work->thread = GC_resolve(work->thread);
-      prev = work;
-      work = work->next;
-    } else {
-      GC_Thread_Info *next = work->next;
-
-      if(prev) prev->next = next;
-      if(!prev) GC->thread_infos = next;
-      free(work);
-      work = next;
-    }
-  }
-}
-
-inline static int thread_get_owner(void *p)
-{
-  return ((Scheme_Thread *)p)->gc_info->owner;
-}
-#include "blame_the_child.c"
-
-int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
-{
-  set_account_hook(type, c1, c2, b);
-}
-
-#endif
-
-#ifndef NEWGC_BTC_ACCOUNT
-# define register_thread(t,c) /* */
-# define register_new_thread(t,c) /* */
+# include "blame_the_child.c"
+#else
 # define clean_up_thread_list() /* */
 #endif
 
+void GC_register_root_custodian(void *c)
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_register_root_custodian(c);
+#endif
+}
+
+int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
+{
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_add_account_hook(type, c1, c2, b); 
+  return 1;
+#else
+  return 0;
+#endif
+}
+
 void GC_register_thread(void *t, void *c)
 {
-  register_thread(t, c);
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_register_thread(t, c);
+#endif
 }
 void GC_register_new_thread(void *t, void *c)
 {
-  register_new_thread(t, c);
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_register_new_thread(t, c);
+#endif
 }
 
 /*****************************************************************************/
@@ -1417,20 +1369,12 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 
 long GC_get_memory_use(void *o) 
 {
-  Scheme_Object *arg = (Scheme_Object*)o;
-  unsigned long retval = 0;
-
-  if(arg) {
-    if(SCHEME_PROCP(arg)) {
-      retval = 0;
-    } else if(SAME_TYPE(SCHEME_TYPE(arg), scheme_custodian_type)) {
-      retval = custodian_usage(arg);
-    }
-  } else {
-    retval = gen0_size_in_use() + GC->memory_in_use;
+#ifdef NEWGC_BTC_ACCOUNT
+  if(o) {
+    return BTC_get_memory_use(o);
   }
-
-  return retval;
+#endif
+  return gen0_size_in_use() + GC->memory_in_use;
 }
 
 /*****************************************************************************/
@@ -1459,7 +1403,11 @@ void GC_mark(const void *const_p)
   }
 
   /* toss this over to the BTC mark routine if we're doing accounting */
-  if(GC->doing_memory_accounting) { memory_account_mark(page,p); return; }
+  if(GC->doing_memory_accounting) { 
+#ifdef NEWGC_BTC_ACCOUNT
+    BTC_memory_account_mark(page, p); return; 
+#endif
+  }
 
   if(page->big_page) {
     /* This is a bigpage. The first thing we do is see if its been marked
@@ -1490,7 +1438,9 @@ void GC_mark(const void *const_p)
 
       /* if we're doing memory accounting, then we need to make sure the
          btc_mark is right */
-      set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
+#ifdef NEWGC_BTC_ACCOUNT
+        BTC_set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
+#endif
     }
 
     page->marked_on = 1;
@@ -1589,7 +1539,9 @@ void GC_mark(const void *const_p)
       ((struct objhead *)newplace)->mark = 1;
       /* if we're doing memory accounting, then we need the btc_mark
          to be set properly */
-      set_btc_mark(newplace);
+#ifdef NEWGC_BTC_ACCOUNT
+      BTC_set_btc_mark(newplace);
+#endif
       /* drop the new location of the object into the forwarding space
          and into the mark queue */
       newplace = PTR(NUM(newplace) + WORD_SIZE);
@@ -2421,9 +2373,9 @@ static void garbage_collect(int force_full)
   /* do some cleanup structures that either change state based on the
      heap state after collection or that become useless based on changes
      in state after collection */
-  clean_up_thread_list();
-  clean_up_owner_table();
-  clean_up_account_hooks();
+#ifdef NEWGC_BTC_ACCOUNT
+  BTC_clean_up();
+#endif
   TIME_STEP("cleaned");
   repair_finalizer_structs();
   repair_weak_finalizer_structs();
@@ -2437,8 +2389,10 @@ static void garbage_collect(int force_full)
   TIME_STEP("cleaned heap");
   reset_nursery();
   TIME_STEP("reset nursurey");
+#ifdef NEWGC_BTC_ACCOUNT
   if (gc->gc_full)
-    do_btc_accounting();
+    BTC_do_accounting();
+#endif
   TIME_STEP("accounted");
   if (gc->generations_available)
     protect_old_pages();
@@ -2513,7 +2467,9 @@ static void garbage_collect(int force_full)
       f->f(f->p, f->data);
       GC_variable_stack = saved_gc_variable_stack;
     }
-    run_account_hooks();
+#ifdef NEWGC_BTC_ACCOUNT
+    BTC_run_account_hooks();
+#endif
     gc->running_finalizers = 0;
 
     gc->park[0] = gc->park_save[0];

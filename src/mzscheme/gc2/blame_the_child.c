@@ -3,6 +3,75 @@
 /*****************************************************************************/
 #ifdef NEWGC_BTC_ACCOUNT
 
+#include "../src/schpriv.h"
+
+/*****************************************************************************/
+/* thread list                                                               */
+/*****************************************************************************/
+inline static int current_owner(Scheme_Custodian *c);
+
+inline static void BTC_register_new_thread(void *t, void *c)
+{
+  GC_Thread_Info *work;
+
+  work = (GC_Thread_Info *)malloc(sizeof(GC_Thread_Info));
+  ((Scheme_Thread *)t)->gc_info = work;
+  work->owner = current_owner((Scheme_Custodian *)c);
+  work->thread = t;
+
+  work->next = GC->thread_infos;
+  GC->thread_infos = work;
+}
+
+inline static void BTC_register_thread(void *t, void *c)
+{
+  GC_Thread_Info *work;
+
+  work = ((Scheme_Thread *)t)->gc_info;
+  work->owner = current_owner((Scheme_Custodian *)c);
+}
+
+inline static void mark_threads(int owner)
+{
+  GC_Thread_Info *work;
+
+  for(work = GC->thread_infos; work; work = work->next)
+    if(work->owner == owner) {
+      if (((Scheme_Thread *)work->thread)->running) {
+        GC->normal_thread_mark(work->thread);
+        if (work->thread == scheme_current_thread) {
+          GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(), NULL);
+        }
+      }
+    }
+}
+
+inline static void clean_up_thread_list(void)
+{
+  GC_Thread_Info *work = GC->thread_infos;
+  GC_Thread_Info *prev = NULL;
+
+  while(work) {
+    if(!pagemap_find_page(GC->page_maps, work->thread) || marked(work->thread)) {
+      work->thread = GC_resolve(work->thread);
+      prev = work;
+      work = work->next;
+    } else {
+      GC_Thread_Info *next = work->next;
+
+      if(prev) prev->next = next;
+      if(!prev) GC->thread_infos = next;
+      free(work);
+      work = next;
+    }
+  }
+}
+
+inline static int thread_get_owner(void *p)
+{
+  return ((Scheme_Thread *)p)->gc_info->owner;
+}
+
 #define OWNER_TABLE_INIT_AMT 10
 
 struct ot_entry {
@@ -13,7 +82,7 @@ struct ot_entry {
   char limit_set, required_set;
 };
 
-static struct ot_entry **owner_table = NULL;
+static THREAD_LOCAL struct ot_entry **owner_table = NULL;
 static unsigned int owner_table_top = 0;
 
 inline static int create_blank_owner_set(void)
@@ -69,7 +138,7 @@ inline static int current_owner(Scheme_Custodian *c)
     return custodian_to_owner_set(c);
 }
 
-void GC_register_root_custodian(void *_c)
+void BTC_register_root_custodian(void *_c)
 {
   Scheme_Custodian *c = (Scheme_Custodian *)_c;
 
@@ -152,9 +221,9 @@ inline static unsigned long custodian_usage(void *custodian)
   return gcWORDS_TO_BYTES(retval);
 }
 
-inline static void memory_account_mark(struct mpage *page, void *ptr)
+inline static void BTC_memory_account_mark(struct mpage *page, void *ptr)
 {
-  GCDEBUG((DEBUGOUTF, "memory_account_mark: %p/%p\n", page, ptr));
+  GCDEBUG((DEBUGOUTF, "BTC_memory_account_mark: %p/%p\n", page, ptr));
   if(page->big_page) {
     struct objhead *info = (struct objhead *)(NUM(page->addr) + PREFIX_SIZE);
 
@@ -302,7 +371,7 @@ static void propagate_accounting_marks(void)
     reset_pointer_stack();
 }
 
-static void do_btc_accounting(void)
+static void BTC_do_accounting(void)
 {
   if(GC->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(NULL)]->originator;
@@ -365,25 +434,17 @@ static void do_btc_accounting(void)
   clear_stack_pages();
 }
 
-struct account_hook {
-  int type;
-  void *c1, *c2;
-  unsigned long amount;
-  struct account_hook *next;
-};
-
-static struct account_hook *hooks = NULL;
-
-inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
+inline static void BTC_add_account_hook(int type,void *c1,void *c2,unsigned long b)
 {
-  struct account_hook *work;
+  AccountHook *work;
 
   if(!GC->really_doing_accounting) {
-    GC->park[0] = c1; GC->park[1] = c2;
+    GC->park[0] = c1; 
+    GC->park[1] = c2;
     GC->really_doing_accounting = 1;
     garbage_collect(1);
-    c1 = GC->park[0]; c2 = GC->park[1];
-    GC->park[0] = GC->park[1] = NULL;
+    c1 = GC->park[0]; GC->park[0] = NULL;
+    c2 = GC->park[1]; GC->park[1] = NULL;
   }
 
   if (type == MZACCT_LIMIT)
@@ -391,7 +452,7 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
   if (type == MZACCT_REQUIRE)
     GC->reset_required = 1;
 
-  for(work = hooks; work; work = work->next) {
+  for(work = GC->hooks; work; work = work->next) {
     if((work->type == type) && (work->c2 == c2) && (work->c1 == c1)) {
       if(type == MZACCT_REQUIRE) {
         if(b > work->amount) work->amount = b;
@@ -403,26 +464,35 @@ inline static void add_account_hook(int type,void *c1,void *c2,unsigned long b)
   }
 
   if(!work) {
-    work = malloc(sizeof(struct account_hook));
-    work->type = type; work->c1 = c1; work->c2 = c2; work->amount = b;
-    work->next = hooks; hooks = work;
+    work = malloc(sizeof(AccountHook));
+    work->type = type; 
+    work->c1 = c1; 
+    work->c2 = c2; 
+    work->amount = b;
+
+    /* push work onto hooks */
+    work->next = GC->hooks;
+    GC->hooks = work;
   }
 }
 
 inline static void clean_up_account_hooks()
 {
-  struct account_hook *work = hooks, *prev = NULL;
+  AccountHook *work = GC->hooks;
+  AccountHook *prev = NULL;
 
   while(work) {
     if((!work->c1 || marked(work->c1)) && marked(work->c2)) {
       work->c1 = GC_resolve(work->c1);
       work->c2 = GC_resolve(work->c2);
-      prev = work; work = work->next;
+      prev = work;
+      work = work->next;
     } else {
-      struct account_hook *next = work->next;
+      /* remove work hook */
+      AccountHook *next = work->next;
 
       if(prev) prev->next = next;
-      if(!prev) hooks = next;
+      if(!prev) GC->hooks = next;
       free(work);
       work = next;
     }
@@ -443,7 +513,7 @@ static unsigned long custodian_super_require(void *c)
 
   if (!owner_table[set]->required_set) {
     unsigned long req = 0, r;
-    struct account_hook *work = hooks;
+    AccountHook *work = GC->hooks;
 
     while(work) {
       if ((work->type == MZACCT_REQUIRE) && (c == work->c2)) {
@@ -460,9 +530,10 @@ static unsigned long custodian_super_require(void *c)
   return owner_table[set]->super_required;
 }
 
-inline static void run_account_hooks()
+inline static void BTC_run_account_hooks()
 {
-  struct account_hook *work = hooks, *prev = NULL;
+  AccountHook *work = GC->hooks; 
+  AccountHook *prev = NULL;
 
   while(work) {
     if( ((work->type == MZACCT_REQUIRE) && 
@@ -472,15 +543,16 @@ inline static void run_account_hooks()
         ||
         ((work->type == MZACCT_LIMIT) &&
          (GC_get_memory_use(work->c1) > work->amount))) {
-      struct account_hook *next = work->next;
+      AccountHook *next = work->next;
 
       if(prev) prev->next = next;
-      if(!prev) hooks = next;
+      if(!prev) GC->hooks = next;
       scheme_schedule_custodian_close(work->c2);
       free(work);
       work = next;
     } else {
-      prev = work; work = work->next;
+      prev = work; 
+      work = work->next;
     }
   }
 }
@@ -502,7 +574,7 @@ static unsigned long custodian_single_time_limit(int set)
     /* Check for limits on this custodian or one of its ancestors: */
     unsigned long limit = (unsigned long)(long)-1;
     Scheme_Custodian *orig = owner_table[set]->originator, *c;
-    struct account_hook *work = hooks;
+    AccountHook *work = GC->hooks;
 
     while(work) {
       if ((work->type == MZACCT_LIMIT) && (work->c1 == work->c2)) {
@@ -529,23 +601,32 @@ static unsigned long custodian_single_time_limit(int set)
   return owner_table[set]->single_time_limit;
 }
 
-
-# define set_account_hook(a,b,c,d) { add_account_hook(a,b,c,d); return 1; }
-# define set_btc_mark(x) (((struct objhead *)(x))->btc_mark = GC->old_btc_mark)
-#endif
-
-#ifndef NEWGC_BTC_ACCOUNT
-# define clean_up_owner_table() /* */
-# define do_btc_accounting() /* */
-# define doing_memory_accounting 0
-# define memory_account_mark(p,o) /* */
-# define set_account_hook(a,b,c,d) return 0
-# define clean_up_account_hooks() /* */
-# define run_account_hooks() /* */
-# define custodian_usage(cust) 0
-# define set_btc_mark(x) /* */
-static unsigned long custodian_single_time_limit(int set)
+long BTC_get_memory_use(void *o)
 {
-  return (unsigned long)(long)-1;
+  Scheme_Object *arg = (Scheme_Object*)o;
+  if(SAME_TYPE(SCHEME_TYPE(arg), scheme_custodian_type)) {
+    return custodian_usage(arg);
+  }
+
+  return 0;
 }
+
+int BTC_single_allocation_limit(size_t sizeb) {
+  /* We're allowed to fail. Check for allocations that exceed a single-time
+   * limit. Otherwise, the limit doesn't work as intended, because
+   * a program can allocate a large block that nearly exhausts memory,
+   * and then a subsequent allocation can fail. As long as the limit
+   * is much smaller than the actual available memory, and as long as
+   * GC_out_of_memory protects any user-requested allocation whose size
+   * is independent of any existing object, then we can enforce the limit. */
+  return (custodian_single_time_limit(thread_get_owner(scheme_current_thread)) < sizeb);
+}
+
+static inline void BTC_clean_up() {
+  clean_up_thread_list();
+  clean_up_owner_table();
+  clean_up_account_hooks();
+}
+
+# define BTC_set_btc_mark(x) (((struct objhead *)(x))->btc_mark = GC->old_btc_mark)
 #endif

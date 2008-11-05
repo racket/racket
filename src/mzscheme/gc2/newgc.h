@@ -1,41 +1,5 @@
 #include "commongc_internal.h"
-
-#if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
-
-/* This is the log base 2 of the standard memory page size. 14 means 2^14,
-   which is 16k. This seems to be a good size for most platforms.
-   Under Windows as of 2008, however, the allocation granularity is 64k. */
-#ifdef _WIN32
-# define LOG_APAGE_SIZE 16
-#else
-# define LOG_APAGE_SIZE 14
-#endif
-
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-# define OBJH_WORD_SIZE 8
-#else
-# define OBJH_WORD_SIZE 4
-#endif
-
-struct objhead {
-  unsigned long hash      : ((8*OBJH_WORD_SIZE) - (4+3+LOG_APAGE_SIZE));
-  /* the type and size of the object */
-  unsigned long type      : 3;
-  /* these are the various mark bits we use */
-  unsigned long mark      : 1;
-  unsigned long btc_mark  : 1;
-  /* these are used for compaction et al*/
-  unsigned long moved     : 1;
-  unsigned long dead      : 1;
-  unsigned long size      : LOG_APAGE_SIZE;
-};
-
-XFORM_NONGCING extern int GC_is_allocated(void *p);
-
-#define OBJHEAD_HAS_HASH_BITS
-#define OBJHEAD_HASH_BITS(p) ((struct objhead *)((void **)p - 1))->hash
-
-#endif
+#include "gc2_obj.h"
 
 typedef struct mpage {
   struct mpage *next;
@@ -82,6 +46,26 @@ typedef struct GC_Thread_Info {
   int owner;
   struct GC_Thread_Info *next;
 } GC_Thread_Info;
+
+typedef struct AccountHook {
+  int type;
+  void *c1;
+  void *c2;
+  unsigned long amount;
+  struct AccountHook *next;
+} AccountHook;
+
+/*
+struct ot_entry {
+  Scheme_Custodian *originator;
+  Scheme_Custodian **members;
+  unsigned long memory_use;
+  unsigned long single_time_limit;
+  unsigned long super_required;
+  char limit_set;
+  char required_set;
+};
+*/
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 typedef mpage ****PageMap;
@@ -138,8 +122,11 @@ typedef struct NewGC {
   unsigned int reset_required                 :1;
   unsigned int kill_propagation_loop          :1;
   unsigned int current_mark_owner;
-  //static struct ot_entry **owner_table = NULL;
+  /* ot_entry **owner_table; */
   unsigned int owner_table_top;
+  AccountHook *hooks;
+
+
 
 
   unsigned long number_of_gc_runs;

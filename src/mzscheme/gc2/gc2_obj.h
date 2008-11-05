@@ -1,3 +1,4 @@
+#include "../src/schpriv.h"
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 
