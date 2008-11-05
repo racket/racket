@@ -265,15 +265,16 @@ struct mpage {
 #define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - PREFIX_WSIZE - 3)
 
 /* the page type constants */
-#define PAGE_TAGGED 0
-#define PAGE_ATOMIC 1
-#define PAGE_ARRAY 2
-#define PAGE_TARRAY 3
-#define PAGE_XTAGGED 4
-#define PAGE_BIG 5
-
-/* the number of page types. */
-#define PAGE_TYPES 6
+enum {
+  PAGE_TAGGED   = 0,
+  PAGE_ATOMIC   = 1,
+  PAGE_ARRAY    = 2,
+  PAGE_TARRAY   = 3,
+  PAGE_XTAGGED  = 4,
+  PAGE_BIG      = 5,
+  /* the number of page types. */
+  PAGE_TYPES    = 6,
+};
 
 /* the page map makes a nice mapping from addresses to pages, allowing
    fairly fast lookup. this is useful. */
