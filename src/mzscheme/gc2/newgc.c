@@ -381,16 +381,13 @@ static void free_mpage(struct mpage *page)
   free(page);
 }
 
-
-
 static unsigned long custodian_single_time_limit(int set);
 inline static int thread_get_owner(void *p);
 
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
 {
-  unsigned long sizew;
-  struct mpage *bpage;
+  mpage *bpage;
   void *addr;
 
   if(GC_out_of_memory) {
@@ -410,8 +407,7 @@ static void *allocate_big(size_t sizeb, int type)
      plus one word for the object header.
      This last serves many purposes, including making sure the object is 
      aligned for Sparcs. */
-  sizew = gcBYTES_TO_WORDS(sizeb) + PREFIX_WSIZE + 1;
-  sizeb = gcWORDS_TO_BYTES(sizew);
+  sizeb = gcWORDS_TO_BYTES((gcBYTES_TO_WORDS(sizeb) + PREFIX_WSIZE + 1));
 
   if((GC->gen0.current_size + sizeb) >= GC->gen0.max_size) {
     if (!GC->dumping_avoid_collection)
@@ -2564,7 +2560,8 @@ void GC_dump_variable_stack(void **var_stack,
 void GC_free_all(void)
 {
   int i;
-  struct mpage *work, *next;
+  mpage *work;
+  mpage *next;
 
   remove_signal_handler();
 
