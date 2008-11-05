@@ -36,6 +36,8 @@
 #include "newgc_internal.h"
 #include "../src/schpriv.h"
 
+static THREAD_LOCAL NewGC *GC;
+
 #ifdef _WIN32
 # include <windows.h>
 # define bzero(m, s) memset(m, 0, s)
@@ -1292,15 +1294,11 @@ inline static void reset_weak_finalizers(void)
 /* weak boxes and arrays                                                     */
 /*****************************************************************************/
 
-static unsigned short weak_array_tag;
-static unsigned short weak_box_tag;
-static unsigned short ephemeron_tag;
-
 #define is_marked(p) marked(p)
-
 #define weak_box_resolve(p) GC_resolve(p)
-
 #include "weak.c"
+#undef is_marked
+#undef weak_box_resolve
 
 /*****************************************************************************/
 /* thread list                                                               */
@@ -1317,7 +1315,6 @@ struct gc_thread_info {
 static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL, normal_cust_box_mark = NULL;
 static struct gc_thread_info *threads = NULL;
 
-static unsigned short cust_box_tag;
 
 inline static void register_new_thread(void *t, void *c)
 {
@@ -1523,7 +1520,7 @@ inline static void reset_pointer_stack(void)
   int_top->top = PPTR(int_top) + 4;
 }
 
-#include "newgc_parts/btc.c"
+#include "newgc_parts/blame_the_child.c"
 
 int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 {
@@ -1569,14 +1566,18 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 {
   static int initialized = 0;
 
-  weak_box_tag = weakbox;
-  ephemeron_tag = ephemeron;
-  weak_array_tag = weakarray;
-# ifdef NEWGC_BTC_ACCOUNT
-  cust_box_tag = custbox;
-# endif
 
   if(!initialized) {
+    GC = malloc(sizeof(NewGC));
+    NewGC_initialize(GC);
+    
+    GC->weak_box_tag = weakbox;
+    GC->ephemeron_tag = ephemeron;
+    GC->weak_array_tag = weakarray;
+# ifdef NEWGC_BTC_ACCOUNT
+    GC->cust_box_tag = custbox;
+# endif
+
     initialized = 1;
     /* Our best guess at what the OS will let us allocate: */
     max_heap_size = determine_max_heap_size();
@@ -1589,17 +1590,18 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     
     resize_gen0(INIT_GEN0_SIZE);
     
-    GC_register_traversers(weak_box_tag, size_weak_box, mark_weak_box,
-			   fixup_weak_box, 0, 0);
-    GC_register_traversers(ephemeron_tag, size_ephemeron, mark_ephemeron,
-			   fixup_ephemeron, 0, 0);
-    GC_register_traversers(weak_array_tag, size_weak_array, mark_weak_array,
-			   fixup_weak_array, 0, 0);
+    GC_register_traversers(GC->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
+    GC_register_traversers(GC->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
+    GC_register_traversers(GC->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
     initialize_signal_handler();
     GC_add_roots(&park, (char *)&park + sizeof(park) + 1);
     GC_add_roots(&park_save, (char *)&park_save + sizeof(park_save) + 1);
 
     initialize_protect_page_ranges(malloc_dirty_pages(APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
+  }
+  else {
+    GCPRINT(GCOUTF, "HEY WHATS UP.\n");
+    abort();
   }
 }
 

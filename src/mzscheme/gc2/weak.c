@@ -97,7 +97,7 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   replace_val = park[0];
   park[0] = NULL;
 
-  w->type = weak_array_tag;
+  w->type = GC->weak_array_tag;
   w->replace_val = replace_val;
   w->count = (size_in_bytes >> LOG_WORD_SIZE);
   
@@ -178,7 +178,7 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
   secondary = (void **)park[1];
   park[1] = NULL;
   
-  w->type = weak_box_tag;
+  w->type = GC->weak_box_tag;
   w->val = p;
   w->secondary_erase = secondary;
   w->soffset = soffset;
@@ -272,7 +272,7 @@ void *GC_malloc_ephemeron(void *k, void *v)
   v = park[1];
   park[1] = NULL;
   
-  eph->type = ephemeron_tag;
+  eph->type = GC->ephemeron_tag;
   eph->key = k;
   eph->val = v;
 

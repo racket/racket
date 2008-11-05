@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "newgc_internal.h"
+#include "../src/schpriv.h"
+
+static THREAD_LOCAL NewGC *GC;
 
 /**************** Configuration ****************/
 
@@ -79,7 +83,6 @@
 
 #define INCREMENT_CYCLE_COUNT_GROWTH 1048576
 
-typedef short Type_Tag;
 
 #include "gc2.h"
 #include "gc2_dump.h"
@@ -2867,62 +2870,73 @@ static long started, rightnow, old;
 # define PRINTTIME(x) /* empty */
 #endif
 
-static void do_roots(int fixup)
+static void mark_roots()
 {
   ImmobileBox *ib;
   int i;
 
-  for (i = 0; i < roots_count; i += 2) {
-    void **s = (void **)roots[i];
-    void **e = (void **)roots[i + 1];
-    
+  for (i = 0; i < roots->count; i += 2) {
+    void **s = (void **)roots->roots[i];
+    void **e = (void **)roots->roots[i + 1];
+
     while (s < e) {
-      if (fixup) {
-	gcFIXUP(*s);
-      } else {
 #if RECORD_MARK_SRC
-	mark_src = s;
-	mark_type = MTYPE_ROOT;
+      mark_src = s;
+      mark_type = MTYPE_ROOT;
 #endif
-	gcMARK(*s);
-      }
+      gcMARK(*s);
       s++;
     }
   }
 
-  if (fixup)
-    GC_fixup_variable_stack(GC_variable_stack,
-			    0,
-			    (void *)(GC_get_thread_stack_base
-				     ? GC_get_thread_stack_base()
-				     : stack_base),
-                            NULL);
-  else {
 #if RECORD_MARK_SRC
-    record_stack_source = 1;
+  record_stack_source = 1;
 #endif
-    GC_mark_variable_stack(GC_variable_stack,
-			   0,
-			   (void *)(GC_get_thread_stack_base
-				    ? GC_get_thread_stack_base()
-				    : stack_base),
-                           NULL);
+  GC_mark_variable_stack(GC_variable_stack,
+      0,
+      (void *)(GC_get_thread_stack_base
+        ? GC_get_thread_stack_base()
+        : stack_base),
+      NULL);
 #if RECORD_MARK_SRC
-    record_stack_source = 0;
+  record_stack_source = 0;
 #endif
-  }
 
   /* Do immobiles: */
   for (ib = immobile; ib; ib = ib->next) {
-    if (fixup) {
-      gcFIXUP(ib->p);
-    } else {
 #if RECORD_MARK_SRC
-      mark_src = ib;
-      mark_type = MTYPE_IMMOBILE;
+    mark_src = ib;
+    mark_type = MTYPE_IMMOBILE;
 #endif
-      gcMARK(ib->p);
+    gcMARK(ib->p);
+  }
+}
+
+static void fixup_roots()
+{
+  ImmobileBox *ib;
+  int i;
+
+  for (i = 0; i < roots->count; i += 2) {
+    void **s = (void **)roots->roots[i];
+    void **e = (void **)roots->roots[i + 1];
+
+    while (s < e) {
+      gcFIXUP(*s);
+      s++;
     }
+  }
+
+  GC_fixup_variable_stack(GC_variable_stack,
+      0,
+      (void *)(GC_get_thread_stack_base
+        ? GC_get_thread_stack_base()
+        : stack_base),
+      NULL);
+
+  /* Do immobiles: */
+  for (ib = immobile; ib; ib = ib->next) {
+    gcFIXUP(ib->p);
   }
 }
 
@@ -3033,7 +3047,7 @@ static void gcollect(int full)
   mark_calls = mark_hits = mark_recalls = mark_colors = mark_many = mark_slow = 0;
 #endif
 
-  do_roots(0);
+  mark_roots();
 
   {
     Fnl *f;
@@ -3392,7 +3406,7 @@ static void gcollect(int full)
 
     scanned_pages = 0;
     
-    do_roots(1);
+    fixup_roots();
 
     {
       Fnl *f;
