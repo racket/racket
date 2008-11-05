@@ -734,25 +734,25 @@ static void dump_heap(void)
 {
   struct mpage *page;
   short i;
-  
+
   if(collections >= 0) {
     for(page = GC->gen0.pages; page; page = page->next) {
       fprintf(dump, "Generation 0 Page (%p:%p - %p, size %i):\n", 
-	      page, page->addr, PTR(NUM(page->addr) + GEN0_PAGE_SIZE), page->size);
+          page, page->addr, PTR(NUM(page->addr) + GEN0_PAGE_SIZE), page->size);
       dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
-    for(page = Gc->gen0.big_pages; page; page = page->next) {
+    for(page = GC->gen0.big_pages; page; page = page->next) {
       fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
-	      page, page->addr, page->generation, page->page_type, page->big_page,
-	      page->back_pointers, page->size);
+          page, page->addr, page->generation, page->page_type, page->big_page,
+          page->back_pointers, page->size);
       dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
     for(i = 0; i < PAGE_TYPES; i++)
       for(page = pages[i]; page; page = page->next) {
-	fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
-		page, page->addr, page->generation, page->page_type, page->big_page,
-		page->back_pointers, page->size);
-	dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
+        fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
+            page, page->addr, page->generation, page->page_type, page->big_page,
+            page->back_pointers, page->size);
+        dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
       }
     fprintf(dump, "STACK:\n");
     dump_region((void*)(NUM(&i) & 0xfffffff0), (void*)(get_stack_base() & 0xfffffff0)); 
