@@ -160,6 +160,13 @@ static void *ofm_malloc(size_t size) {
   return ptr;
 }
 
+static void *ofm_malloc_zero(size_t size) {
+  void *ptr;
+  ptr = ofm_malloc(size);
+  memset(ptr, 0, size);
+  return ptr;
+}
+
 inline static void check_used_against_max(NewGC *gc, size_t len) 
 {
   gc->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
@@ -393,8 +400,7 @@ static size_t round_to_apage_size(size_t sizeb)
 static struct mpage *malloc_mpage()
 {
   struct mpage *page;
-  page = ofm_malloc(sizeof(struct mpage));
-  memset(page, 0, sizeof(struct mpage));
+  page = ofm_malloc_zero(sizeof(struct mpage));
   return page;
 }
 
@@ -617,7 +623,7 @@ void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGG
 void *GC_malloc_one_xtagged(size_t s)             { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = ofm_malloc(s); memset(p, 0, s); return p; }
+void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = ofm_malloc_zero(s); return p; }
 void *GC_malloc_allow_interior(size_t s)          { return allocate_big(s, PAGE_ARRAY); }
 void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_big(s, PAGE_ATOMIC); }
 void *GC_malloc_tagged_allow_interior(size_t s)   { return allocate_big(s, PAGE_TAGGED); }
@@ -1343,15 +1349,15 @@ void GC_write_barrier(void *p)
 
 void NewGC_initialize(NewGC *newgc) {
   memset(newgc, 0, sizeof(NewGC));
-  newgc->mark_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-  newgc->fixup_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+  newgc->mark_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+  newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-  newgc->page_maps = ofm_malloc(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
+  newgc->page_maps = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
-  newgc->page_maps = ofm_malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
+  newgc->page_maps = ofm_malloc_zero(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
   newgc->vm = vm_create();
-  newgc->protect_range = ofm_malloc(sizeof(Page_Range));
+  newgc->protect_range = ofm_malloc_zero(sizeof(Page_Range));
   
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
