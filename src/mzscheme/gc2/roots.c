@@ -11,16 +11,6 @@
 #define ROOTS_PTR_ALIGNMENT WORD_SIZE
 #define ROOTS_PTR_TO_INT(x) ((unsigned long)x)
 
-typedef struct Roots {
-  long count;
-  long size;
-  /* roots is a array of longs, logically grouped into start and end pairs.
-   * [ start0, end0, start1, end1, ... ]
-   */
-  unsigned long *roots;
-  int nothing_new;
-} Roots;
-
 static Roots *roots = &(Roots) { 0 ,0, 0, 0, };
 
 

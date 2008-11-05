@@ -33,6 +33,7 @@
 #include <string.h>
 #include "gc2.h"
 #include "gc2_dump.h"
+#include "newgc_internal.h"
 #include "../src/schpriv.h"
 
 #ifdef _WIN32
@@ -1295,7 +1296,6 @@ static unsigned short weak_box_tag;
 static unsigned short ephemeron_tag;
 
 #define is_marked(p) marked(p)
-typedef short Type_Tag;
 
 #define weak_box_resolve(p) GC_resolve(p)
 

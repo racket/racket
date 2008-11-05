@@ -25,18 +25,6 @@
 /*                               weak arrays                                  */
 /******************************************************************************/
 
-/* The GC_Weak_Array structure is not externally visible, but
-   clients expect a specific structure. See README for more
-   information. */
-typedef struct GC_Weak_Array {
-  Type_Tag type;
-  short keyex;
-  long count;
-  void *replace_val;
-  struct GC_Weak_Array *next;
-  void *data[1]; /* must be the 5th longword! */
-} GC_Weak_Array;
-
 static GC_Weak_Array *weak_arrays;
 
 static int size_weak_array(void *p)
@@ -144,18 +132,6 @@ static void zero_weak_arrays()
 /*                                weak boxes                                  */
 /******************************************************************************/
 
-/* The GC_Weak_Box struct is not externally visible, but
-   first three fields are mandated by the GC interface */
-typedef struct GC_Weak_Box {
-  Type_Tag type;
-  short keyex;
-  void *val;
-  /* The rest is up to us: */
-  void **secondary_erase;
-  int soffset;
-  struct GC_Weak_Box *next;
-} GC_Weak_Box;
-
 static GC_Weak_Box *weak_boxes;
 
 static int size_weak_box(void *p)
@@ -236,17 +212,6 @@ static void zero_weak_boxes()
 /******************************************************************************/
 /*                                 ephemeron                                  */
 /******************************************************************************/
-
-/* The GC_Ephemeron struct is not externally visible, but
-   first three fields are mandated by the GC interface */
-typedef struct GC_Ephemeron {
-  Type_Tag type;
-  short keyex;
-  void *key;
-  void *val;
-  /* The rest is up to us: */
-  struct GC_Ephemeron *next;
-} GC_Ephemeron;
 
 static GC_Ephemeron *ephemerons;
 
