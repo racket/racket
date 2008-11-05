@@ -108,7 +108,6 @@ typedef struct NewGC {
   unsigned long max_pages_for_use;
   unsigned long used_pages;
   unsigned long actual_pages_size;
-  unsigned long in_unsafe_allocation_mode :1;
   void (*unsafe_allocation_abort)();
   unsigned long memory_in_use; /* the amount of memory in use */
 
@@ -122,11 +121,16 @@ typedef struct NewGC {
   unsigned long stack_base;
   int dumping_avoid_collection; /* dumping coutner flag */
 
-  int generations_available;
+  unsigned char generations_available        :1;
+  unsigned char in_unsafe_allocation_mode    :1;
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
+  unsigned char running_finalizers           :1;
 
+  unsigned long number_of_gc_runs;
+  unsigned int since_last_full;
+  unsigned long last_full_mem_use;
 
   /* These collect information about memory usage, for use in GC_dump. */
   unsigned long peak_memory_use;
@@ -160,24 +164,7 @@ void NewGC_initialize(NewGC *newgc) {
 #else
   newgc->page_map = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
-
-  newgc->primoridal_gc              = NULL;
-  newgc->max_heap_size              = 0;
-  newgc->max_pages_in_heap          = 0;
-  newgc->max_pages_for_use          = 0;
-  newgc->used_pages                 = 0;
-  newgc->actual_pages_size          = 0;
-  newgc->in_unsafe_allocation_mode  = 0;
-  newgc->unsafe_allocation_abort    = NULL;
-
-  newgc->roots.count = 0;
-  newgc->roots.size = 0;
-  newgc->roots.roots = NULL;
-  newgc->roots.nothing_new = 0;
-
-  newgc->weak_arrays = NULL;
-  newgc->weak_boxes = NULL;
-  newgc->ephemerons = NULL;
-  newgc->num_last_seen_ephemerons = 0;
+  
   newgc->generations_available = 1;
+  newgc->last_full_mem_use = (20 * 1024 * 1024);
 }

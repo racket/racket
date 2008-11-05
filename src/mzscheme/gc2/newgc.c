@@ -154,17 +154,19 @@ static void out_of_memory()
 
 inline static void check_used_against_max(size_t len) 
 {
-  GC->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  NewGC *gc = GC;
 
-  if(GC->in_unsafe_allocation_mode) {
-    if(GC->used_pages > GC->max_pages_in_heap)
-      GC->unsafe_allocation_abort();
+  gc->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+
+  if(gc->in_unsafe_allocation_mode) {
+    if(gc->used_pages > gc->max_pages_in_heap)
+      gc->unsafe_allocation_abort();
   } else {
-    if(GC->used_pages > GC->max_pages_for_use) {
+    if(gc->used_pages > gc->max_pages_for_use) {
       garbage_collect(0); /* hopefully this will free enough space */
-      if(GC->used_pages > GC->max_pages_for_use) {
+      if(gc->used_pages > gc->max_pages_for_use) {
         garbage_collect(1); /* hopefully *this* will free enough space */
-        if(GC->used_pages > GC->max_pages_for_use) {
+        if(gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory)
@@ -2316,23 +2318,19 @@ extern double scheme_get_inexact_milliseconds(void);
 static void garbage_collect(int force_full)
 {
   NewGC *gc = GC;
-  static unsigned long number = 0;
-  static unsigned int since_last_full = 0;
-  static unsigned int running_finalizers = 0;
-  static unsigned long last_full_mem_use = (20 * 1024 * 1024);
   unsigned long old_mem_use = gc->memory_in_use;
-  unsigned long old_gen0    = GC->gen0.current_size;
+  unsigned long old_gen0    = gc->gen0.current_size;
   int next_gc_full;
   TIME_DECLS();
 
   /* determine if this should be a full collection or not */
   gc->gc_full = force_full || !gc->generations_available 
-    || (since_last_full > 100) || (gc->memory_in_use > (2 * last_full_mem_use));
+    || (gc->since_last_full > 100) || (gc->memory_in_use > (2 * gc->last_full_mem_use));
 #if 0
-  printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number, 
+  printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number_of_gc_runs, 
       gc->gc_full, force_full, !generations_available,
-      (since_last_full > 100), (gc->memory_in_use > (2 * last_full_mem_use)),
-      last_full_mem_use);
+      (gc->since_last_full > 100), (gc->memory_in_use > (2 * gc->last_full_mem_use)),
+      gc->last_full_mem_use);
 #endif
 
   next_gc_full = gc->gc_full;
@@ -2342,13 +2340,13 @@ static void garbage_collect(int force_full)
     gc->gc_full = 1;
   }
 
-  number++; 
+  gc->number_of_gc_runs++; 
   INIT_DEBUG_FILE(); DUMP_HEAP();
 
   /* we don't want the low-level allocator freaking because we've gone past
      half the available memory */
-  GC->in_unsafe_allocation_mode = 1;
-  GC->unsafe_allocation_abort = out_of_memory;
+  gc->in_unsafe_allocation_mode = 1;
+  gc->unsafe_allocation_abort = out_of_memory;
 
   TIME_INIT();
 
@@ -2448,12 +2446,12 @@ static void garbage_collect(int force_full)
   TIME_STEP("reset");
 
   /* now we do want the allocator freaking if we go over half */
-  GC->in_unsafe_allocation_mode = 0;
+  gc->in_unsafe_allocation_mode = 0;
 
   gc->no_further_modifications = 0;
 
   /* If we have too many idle pages, flush: */
-  if (GC->actual_pages_size > ((GC->used_pages << (LOG_APAGE_SIZE + 1)))) {
+  if (gc->actual_pages_size > ((gc->used_pages << (LOG_APAGE_SIZE + 1)))) {
     flush_freed_pages();
   }
 
@@ -2461,15 +2459,15 @@ static void garbage_collect(int force_full)
   if(gc->gc_full) gc->num_major_collects++; else gc->num_minor_collects++;
   if(gc->peak_memory_use < gc->memory_in_use) gc->peak_memory_use = gc->memory_in_use;
   if(gc->gc_full)
-    since_last_full = 0;
+    gc->since_last_full = 0;
   else if((float)(gc->memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
-    since_last_full += 1;
+    gc->since_last_full += 1;
   else if((float)(gc->memory_in_use - old_mem_use) < (0.4 * (float)old_mem_use))
-    since_last_full += 5;
+    gc->since_last_full += 5;
   else 
-    since_last_full += 10;
+    gc->since_last_full += 10;
   if(gc->gc_full)
-    last_full_mem_use = gc->memory_in_use;
+    gc->last_full_mem_use = gc->memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
   if (GC_collect_start_callback)
@@ -2490,14 +2488,14 @@ static void garbage_collect(int force_full)
      if we run a finalizer after collection, and it triggers a collection,
      we should not run the next finalizer in the queue until the "current"
      finalizer completes its execution */
-  if(!running_finalizers) {
-    running_finalizers = 1;
+  if(!gc->running_finalizers) {
+    gc->running_finalizers = 1;
 
     /* Finalization might allocate, which might need park: */
-    GC->park_save[0] = GC->park[0];
-    GC->park_save[1] = GC->park[1];
-    GC->park[0] = NULL;
-    GC->park[1] = NULL;
+    gc->park_save[0] = gc->park[0];
+    gc->park_save[1] = gc->park[1];
+    gc->park[0] = NULL;
+    gc->park[1] = NULL;
 
     while(gc->run_queue) {
       struct finalizer *f;
@@ -2512,18 +2510,18 @@ static void garbage_collect(int force_full)
       GC_variable_stack = saved_gc_variable_stack;
     }
     run_account_hooks();
-    running_finalizers = 0;
+    gc->running_finalizers = 0;
 
-    GC->park[0] = GC->park_save[0];
-    GC->park[1] = GC->park_save[1];
-    GC->park_save[0] = NULL;
-    GC->park_save[1] = NULL;
+    gc->park[0] = gc->park_save[0];
+    gc->park[1] = gc->park_save[1];
+    gc->park_save[0] = NULL;
+    gc->park_save[1] = NULL;
   }
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 
   if (next_gc_full)
-    GC->full_needed_for_finalization = 1;
+    gc->full_needed_for_finalization = 1;
 }
 
 #if MZ_GC_BACKTRACE
