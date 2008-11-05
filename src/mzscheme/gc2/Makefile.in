@@ -124,8 +124,8 @@ XSRCS = $(XSRCDIR)/salloc.c \
 all: xsrc
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
-
-all2: all ../mzscheme@MMM@@NOT_OSX@  ../mzscheme_compact_gc@NOT_OSX@
+	$(MAKE) ../mzscheme3m
+	$(MAKE)../mzscheme_compact_gc
 
 xsrcs: $(XSRCS)
 
