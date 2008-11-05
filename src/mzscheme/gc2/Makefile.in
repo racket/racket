@@ -125,7 +125,7 @@ all: xsrc
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
 	$(MAKE) ../mzscheme3m
-	$(MAKE)../mzscheme_compact_gc
+	$(MAKE) ../mzscheme_compact_gc
 
 xsrcs: $(XSRCS)
 
