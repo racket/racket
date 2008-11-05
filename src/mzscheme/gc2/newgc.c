@@ -1308,17 +1308,18 @@ void GC_register_new_thread(void *t, void *c)
 /* This is the code we use to implement the mark stack. We can't, sadly, use
    the standard C stack because we'll blow it; propagation makes for a *very*
    deep stack. So we use this instead. */
-typedef struct stacklet {
-  struct stacklet *prev, *next;
+typedef struct MarkSegment {
+  struct MarkSegment *prev;
+  struct MarkSegment *next;
   void **top;
   void **end;
   void **stop_here; /* this is only used for its address */
-} MarkFrame;
+} MarkSegment;
 
-static struct stacklet *int_top = NULL;
+static MarkSegment *mark_stack = NULL;
 
-inline static MarkFrame* mark_stack_create_frame() {
-  MarkFrame *mark_frame = (MarkFrame*)malloc(STACK_PART_SIZE);
+inline static MarkSegment* mark_stack_create_frame() {
+  MarkSegment *mark_frame = (MarkSegment*)malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
   mark_frame->top  = PPTR(&(mark_frame->stop_here));
   mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
@@ -1328,36 +1329,36 @@ inline static MarkFrame* mark_stack_create_frame() {
 inline static void push_ptr(void *ptr)
 {
   /* This happens at the very beginning */
-  if(!int_top) {
-    int_top = mark_stack_create_frame();
-    int_top->prev = NULL;
+  if(!mark_stack) {
+    mark_stack = mark_stack_create_frame();
+    mark_stack->prev = NULL;
   }
 
-  /* This happens during propoagation if we go past the end of this stacklet */
-  if(int_top->top == int_top->end) {
+  /* This happens during propoagation if we go past the end of this MarkSegment*/
+  if(mark_stack->top == mark_stack->end) {
     /* test to see if we already have another stack page ready */
-    if(int_top->next) {
+    if(mark_stack->next) {
       /* we do, so just use it */
-      int_top = int_top->next;
-      int_top->top = PPTR(&(int_top->stop_here));
+      mark_stack = mark_stack->next;
+      mark_stack->top = PPTR(&(mark_stack->stop_here));
     } else {
       /* we don't, so we need to allocate one */
-      int_top->next = mark_stack_create_frame();
-      int_top->next->prev = int_top;
-      int_top = int_top->next;
+      mark_stack->next = mark_stack_create_frame();
+      mark_stack->next->prev = mark_stack;
+      mark_stack = mark_stack->next;
     }
   }
 
   /* at this point, we're guaranteed to be good to push a  pointers */
-  *(int_top->top++) = ptr;
+  *(mark_stack->top++) = ptr;
 }
 
 inline static int pop_ptr(void **ptr)
 {
-  if(int_top->top == PPTR(&int_top->stop_here)) {
-    if(int_top->prev) {
+  if(mark_stack->top == PPTR(&mark_stack->stop_here)) {
+    if(mark_stack->prev) {
       /* if there is a previous page, go to it */
-      int_top = int_top->prev;
+      mark_stack = mark_stack->prev;
     } else {
       /* if there isn't a previous page, then we've hit the bottom of the
 	 stack */
@@ -1366,40 +1367,41 @@ inline static int pop_ptr(void **ptr)
   }
 
   /* if we get here, we're guaranteed to have data */
-  *ptr = *(--int_top->top);
+  *ptr = *(--mark_stack->top);
   return 1;
 }
 
 inline static void clear_stack_pages(void)
 {
-  if(int_top) {
-    struct stacklet *temp, *base;
+  if(mark_stack) {
+    MarkSegment *temp;
+    MarkSegment *base;
     int keep = 2;
 
     /* go to the head of the list */
-    for(; int_top->prev; int_top = int_top->prev) {}
+    for(; mark_stack->prev; mark_stack = mark_stack->prev) {}
     /* then go through and clear them out */
-    base = int_top;
-    for(; int_top; int_top = temp) {
-      temp = int_top->next;
+    base = mark_stack;
+    for(; mark_stack; mark_stack = temp) {
+      temp = mark_stack->next;
       if(keep) { 
         keep--; 
         if (!keep)
-          int_top->next = NULL;
+          mark_stack->next = NULL;
       } else 
-        free(int_top);
+        free(mark_stack);
     }
-    int_top = base;
-    int_top->top = PPTR(int_top) + 4;
+    mark_stack = base;
+    mark_stack->top = PPTR(mark_stack) + 4;
   }
 }
 
 inline static void reset_pointer_stack(void)
 {
   /* go to the head of the list */
-  for(; int_top->prev; int_top = int_top->prev) {}
+  for(; mark_stack->prev; mark_stack = mark_stack->prev) {}
   /* reset the stack */
-  int_top->top = PPTR(int_top) + 4;
+  mark_stack->top = PPTR(mark_stack) + 4;
 }
 
 #include "newgc_parts/blame_the_child.c"
