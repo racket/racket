@@ -10,9 +10,9 @@
 /* VirtualProtect can be used only on pages allocated at the same
    time, so we can't collapse ranges. */
 
-# define initialize_protect_page_ranges(b, s) /* */
-# define add_protect_page_range(s, l, a, w) protect_pages(s, l, w)
-# define flush_protect_page_ranges(w) /* */
+# define initialize_protect_page_ranges(pr, b, s) /* */
+# define add_protect_page_range(pr, s, l, a, w) protect_pages(s, l, w)
+# define flush_protect_page_ranges(pr, w) /* */
 
 #else
 

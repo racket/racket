@@ -2,6 +2,16 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
+#ifdef MZ_USE_PLACES
+# if _MSC_VER
+#  define THREAD_LOCAL __declspec(thread)
+# else
+#  define THREAD_LOCAL __thread
+# endif
+#else
+# define THREAD_LOCAL /* empty */
+#endif
+
 /***************************************************************************/
 /***   See README for a general overview of the interface architecture.  ***/
 /***************************************************************************/

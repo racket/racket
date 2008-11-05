@@ -128,7 +128,7 @@ static void initialize_signal_handler()
     if (aveh)
       aveh(TRUE, fault_handler);
     else
-      generations_available = 0;
+      GC->generations_available = 0;
   }
 # endif
 }
@@ -148,7 +148,7 @@ static void remove_signal_handler()
   }
 # endif
 # ifdef NEED_SIGWIN
-  if (generations_available) {
+  if (GC->generations_available) {
     HMODULE hm;
     ULONG (WINAPI*rveh)(gcPVECTORED_EXCEPTION_HANDLER);
 
