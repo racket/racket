@@ -158,6 +158,7 @@ typedef struct NewGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
+  Free_Block    *blockfree;
 } NewGC;
 
 void NewGC_initialize(NewGC *newgc) {
@@ -169,6 +170,7 @@ void NewGC_initialize(NewGC *newgc) {
 #else
   newgc->page_maps = malloc(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
+  newgc->blockfree = malloc(sizeof(Free_Block) * BLOCKFREE_CACHE_SIZE);
   
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);

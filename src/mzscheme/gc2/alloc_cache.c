@@ -42,16 +42,7 @@ static void *malloc_dirty_pages(size_t len, size_t alignment)
   return do_malloc_pages(len, alignment, 1);
 }
 
-typedef struct {
-  void *start;
-  long len;
-  short age;
-  short zeroed;
-} Free_Block;
-
 #define BLOCKFREE_UNMAP_AGE 1
-#define BLOCKFREE_CACHE_SIZE 96
-static Free_Block blockfree[BLOCKFREE_CACHE_SIZE];
 
 static int compare_free_block(const void *a, const void *b)
 {
@@ -64,6 +55,7 @@ static int compare_free_block(const void *a, const void *b)
 static void collapse_adjacent_pages(void)
 {
   int i, j;
+  Free_Block *blockfree = GC->blockfree;
 
   /* collapse adjacent: */
   my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(Free_Block), compare_free_block);
@@ -84,6 +76,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok
 {
   int i;
   void *r;
+  Free_Block *blockfree = GC->blockfree;
 
   /* Try an exact fit: */
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
@@ -136,6 +129,7 @@ inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok
 static void return_mem_to_cache(void *p, size_t len, int zeroed)
 {
   int i;
+  Free_Block *blockfree = GC->blockfree;
 
   /* Round up to nearest page: */
   if (len & (page_size - 1))
@@ -187,6 +181,7 @@ static void free_pages(void *p, size_t len)
 static void flush_freed_pages(void)
 {
   int i;
+  Free_Block *blockfree = GC->blockfree;
 
   collapse_adjacent_pages();
 
