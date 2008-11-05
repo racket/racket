@@ -75,6 +75,7 @@ static const char *type_name[PAGE_TYPES] = {
 #include "newgc.h"
 static THREAD_LOCAL NewGC *GC;
 #define GCTYPE NewGC
+#define GC_get_GC() (GC)
 
 #include "msgprint.c"
 
@@ -143,7 +144,7 @@ void (*GC_fixup_xtagged)(void *obj);
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static void garbage_collect(int);
+static void garbage_collect(NewGC*, int);
 
 static void out_of_memory()
 {
@@ -162,9 +163,9 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
       gc->unsafe_allocation_abort(gc);
   } else {
     if(gc->used_pages > gc->max_pages_for_use) {
-      garbage_collect(0); /* hopefully this will free enough space */
+      garbage_collect(gc, 0); /* hopefully this will free enough space */
       if(gc->used_pages > gc->max_pages_for_use) {
-        garbage_collect(1); /* hopefully *this* will free enough space */
+        garbage_collect(gc, 1); /* hopefully *this* will free enough space */
         if(gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
@@ -398,9 +399,9 @@ static inline int BTC_single_allocation_limit(NewGC *gc, size_t sizeb);
 /* the core allocation functions */
 static void *allocate_big(size_t sizeb, int type)
 {
+  NewGC *gc = GC;
   mpage *bpage;
   void *addr;
-  NewGC *gc = GC;
 
 #ifdef NEWGC_BTC_ACCOUNT
   if(GC_out_of_memory) {
@@ -425,7 +426,7 @@ static void *allocate_big(size_t sizeb, int type)
 
   if((gc->gen0.current_size + sizeb) >= gc->gen0.max_size) {
     if (!gc->dumping_avoid_collection)
-      garbage_collect(0);
+      garbage_collect(gc, 0);
   }
   gc->gen0.current_size += sizeb;
 
@@ -548,7 +549,7 @@ inline static void *allocate(size_t sizeb, int type)
       GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
     }
     else {
-      garbage_collect(0);
+      garbage_collect(gc, 0);
     }
     newptr = GC_gen0_alloc_page_ptr + sizeb;
   } 
@@ -818,11 +819,10 @@ static void dump_heap(NewGC *gc)
 
 #if MZ_GC_BACKTRACE
 
-static void backtrace_new_page(struct mpage *page)
+static void backtrace_new_page(NewGC *gc, mpage *page)
 {
   /* This is a little wastefull for big pages, because we'll
      only use the first few words: */
-  NewGC *gc = GC;
   page->backtrace = (void **)malloc_pages(gc, APAGE_SIZE, APAGE_SIZE);
 }
 
@@ -883,7 +883,7 @@ static void *get_backtrace(struct mpage *page, void *ptr)
 # define BT_IMMOBILE   (PAGE_TYPES + 4)
 
 #else
-# define backtrace_new_page(page) /* */
+# define backtrace_new_page(gc, page) /* */
 # define free_backtrace(page) /* */
 # define set_backtrace_source(ptr, type) /* */
 # define record_backtrace(page, ptr) /* */
@@ -983,9 +983,8 @@ inline static void repair_roots(NewGC *gc)
 /* finalizers                                                                */
 /*****************************************************************************/
 
-static int is_finalizable_page(void *p)
+static int is_finalizable_page(NewGC *gc, void *p)
 {
-  NewGC *gc = GC;
   return (pagemap_find_page(gc->page_maps, p) ? 1 : 0);
 }
 
@@ -1080,9 +1079,9 @@ inline static void do_ordered_level3(NewGC *gc)
 
 void GC_finalization_weak_ptr(void **p, int offset)
 {
+  NewGC *gc = GC;
   Weak_Finalizer *wfnl;
 
-  NewGC *gc = GC;
   gc->park[0] = p; wfnl = GC_malloc_atomic(sizeof(Weak_Finalizer));
   p = gc->park[0]; gc->park[0] = NULL;
   wfnl->p = p; wfnl->offset = offset * sizeof(void*); wfnl->saved = NULL;
@@ -1394,7 +1393,8 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 
 void GC_gcollect(void)
 {
-  garbage_collect(1);
+  NewGC *gc = GC;
+  garbage_collect(gc, 1);
 }
 
 void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
@@ -1407,13 +1407,12 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
 
 long GC_get_memory_use(void *o) 
 {
-  NewGC *gc;
+  NewGC *gc = GC;
 #ifdef NEWGC_BTC_ACCOUNT
   if(o) {
-    return BTC_get_memory_use(o);
+    return BTC_get_memory_use(gc, o);
   }
 #endif
-  gc = GC;
   return gen0_size_in_use(gc) + gc->memory_in_use;
 }
 
@@ -1469,7 +1468,7 @@ void GC_mark(const void *const_p)
         gc->gen0.big_pages = page->next;
       if(page->next) page->next->prev = page->prev;
 
-      backtrace_new_page(page);
+      backtrace_new_page(gc, page);
 
       /* add to gen1 */
       page->next = gc->gen1_pages[PAGE_BIG]; 
@@ -1558,7 +1557,7 @@ void GC_mark(const void *const_p)
         work->page_type = type;
         work->size = work->previous_size = PREFIX_SIZE;
         work->marked_on = 1;
-        backtrace_new_page(work);
+        backtrace_new_page(gc, work);
         work->next = gc->gen1_pages[type];
         work->prev = NULL;
         if(work->next)
@@ -1599,10 +1598,9 @@ void GC_mark(const void *const_p)
 
 /* this is the second mark routine. It's not quite as complicated. */
 /* this is what actually does mark propagation */
-static void propagate_marks(void) 
+static void propagate_marks(NewGC *gc) 
 {
   void *p;
-  NewGC *gc = GC;
   PageMap pagemap = gc->page_maps;
   Mark_Proc *mark_table = gc->mark_table;
 
@@ -1745,10 +1743,10 @@ void GC_dump_with_traces(int flags,
     GC_print_tagged_value_proc print_tagged_value,
     int path_length_limit)
 {
-  struct mpage *page;
+  NewGC *gc = GC;
+  mpage *page;
   int i;
   static unsigned long counts[MAX_DUMP_TAG], sizes[MAX_DUMP_TAG];
-  NewGC *gc = GC;
 
   reset_object_traces();
   if (for_each_found)
@@ -1983,7 +1981,7 @@ struct mpage *allocate_compact_target(NewGC *gc, mpage *work)
   npage->big_page = 0;
   npage->page_type = work->page_type;
   npage->marked_on = 1;
-  backtrace_new_page(npage);
+  backtrace_new_page(gc, npage);
   /* Link in this new replacement page */
   npage->prev = work;
   npage->next = work->next;
@@ -2224,10 +2222,9 @@ static inline void cleanup_vacated_pages(NewGC *gc) {
   gc->release_pages = NULL;
 }
 
-inline static void gen0_free_big_pages() {
+inline static void gen0_free_big_pages(NewGC *gc) {
   mpage *work;
   mpage *next;
-  NewGC *gc = GC;
   PageMap pagemap = gc->page_maps;
 
   for(work = gc->gen0.big_pages; work; work = next) {
@@ -2244,7 +2241,7 @@ static void clean_up_heap(NewGC *gc)
   size_t memory_in_use = 0;
   PageMap pagemap = gc->page_maps;
 
-  gen0_free_big_pages();
+  gen0_free_big_pages(gc);
 
   for(i = 0; i < PAGE_TYPES; i++) {
     if(gc->gc_full) {
@@ -2317,9 +2314,8 @@ extern double scheme_get_inexact_milliseconds(void);
    really clean up. The full_needed_for_finalization flag triggers 
    the second full GC. */
 
-static void garbage_collect(int force_full)
+static void garbage_collect(NewGC *gc, int force_full)
 {
-  NewGC *gc = GC;
   unsigned long old_mem_use = gc->memory_in_use;
   unsigned long old_gen0    = gc->gen0.current_size;
   int next_gc_full;
@@ -2385,15 +2381,15 @@ static void garbage_collect(int force_full)
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  propagate_marks(); mark_ready_ephemerons(gc); propagate_marks(); 
-  check_finalizers(gc, 1); mark_ready_ephemerons(gc); propagate_marks();
-  check_finalizers(gc, 2); mark_ready_ephemerons(gc); propagate_marks();
+  propagate_marks(gc); mark_ready_ephemerons(gc); propagate_marks(gc); 
+  check_finalizers(gc, 1); mark_ready_ephemerons(gc); propagate_marks(gc);
+  check_finalizers(gc, 2); mark_ready_ephemerons(gc); propagate_marks(gc);
   if(gc->gc_full) zero_weak_finalizers(gc);
-  do_ordered_level3(gc); propagate_marks();
-  check_finalizers(gc, 3); propagate_marks();
+  do_ordered_level3(gc); propagate_marks(gc);
+  check_finalizers(gc, 3); propagate_marks(gc);
   if(gc->gc_full) {
     reset_weak_finalizers(gc); 
-    propagate_marks();
+    propagate_marks(gc);
   }
 #ifndef NEWGC_BTC_ACCOUNT
   /* we need to clear out the stack pages. If we're doing memory accounting,
@@ -2572,15 +2568,15 @@ void GC_dump_variable_stack(void **var_stack,
 
 void GC_free_all(void)
 {
+  NewGC *gc = GC;
   int i;
   mpage *work;
   mpage *next;
-  NewGC *gc = GC;
   PageMap pagemap = gc->page_maps;
 
   remove_signal_handler(gc);
 
-  gen0_free_big_pages();
+  gen0_free_big_pages(gc);
 
   for(i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {

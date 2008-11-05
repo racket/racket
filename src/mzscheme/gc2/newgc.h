@@ -100,7 +100,7 @@ typedef struct NewGC {
   Fnl *last_in_queue;
   Weak_Finalizer *weak_finalizers;
 
-  struct GC *primoridal_gc;
+  struct NewGC *primoridal_gc;
   unsigned long max_heap_size;
   unsigned long max_pages_in_heap;
   unsigned long max_pages_for_use;

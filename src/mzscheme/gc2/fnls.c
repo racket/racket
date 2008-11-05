@@ -7,7 +7,7 @@
       finalizers
       num_fnls
    Requires:
-      is_finalizable_page(p)
+      is_finalizable_page(gc, p)
       park
 */
 
@@ -29,7 +29,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   GCTYPE *gc = GC;
   Fnl *fnl;
 
-  if (!is_finalizable_page(p)) {
+  if (!is_finalizable_page(gc, p)) {
     /* Never collected. Don't finalize it. */
     if (oldf) *oldf = NULL;
     if (olddata) *olddata = NULL;

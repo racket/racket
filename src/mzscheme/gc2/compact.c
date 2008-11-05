@@ -565,7 +565,7 @@ static int is_marked(CompactGC *gc, void *p);
 /*                             finalization                                   */
 /******************************************************************************/
 
-static int is_finalizable_page(void *p)
+static int is_finalizable_page(CompactGC *gc, void *p)
 {
   MPage *page;
   page = find_page(p);
