@@ -128,7 +128,6 @@ URLs to paths on the filesystem.
  then it calls @scheme[next-dispatcher] itself.
 }}
 
-@; XXX Kind of timeout that is proportional to bindings
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-timeout.ss"]{Timeouts}
 @a-dispatcher[web-server/dispatchers/dispatch-timeout
@@ -153,7 +152,6 @@ URLs to paths on the filesystem.
  object, and outputs the response to the connection.
 }}
 
-@; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-filter.ss"]{Filtering Requests}
 @a-dispatcher[web-server/dispatchers/dispatch-filter
@@ -335,7 +333,6 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that runs servlets written in Scheme.}]{
 
-@; XXX Remove config:scripts
 @defproc[(make [config:scripts (box/c cache-table?)]
                [#:url->path url->path url->path?]
                [#:make-servlet-namespace
