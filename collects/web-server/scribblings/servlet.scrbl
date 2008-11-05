@@ -128,8 +128,6 @@ This is what @scheme[send/suspend/dispatch] gives to its function argument.
 
 @defmodule[web-server/private/request-structs]
 
-@; XXX Create http sub-directory
-@; XXX Have this include read-request and write-response
 @filepath{private/request-structs.ss} provides a number of structures and functions
 related to HTTP request data structures.
 
@@ -271,7 +269,6 @@ Here is an example typical of what you will find in many applications:
 @filepath{private/response-structs.ss} provides structures and functions related to
 HTTP responses.
 
-@; XXX Only use bytes
 @defstruct[response/basic
            ([code number?]
             [message string?]
@@ -293,7 +290,6 @@ HTTP responses.
  ]
 }
 
-@; XXX Rename string? option
 @defstruct[(response/full response/basic)
            ([body (listof (or/c string? bytes?))])]{
  As with @scheme[response/basic], except with @scheme[body] as the response
@@ -486,7 +482,6 @@ functions of interest for the servlet developer.}
  Calls @scheme[send/forward] with @scheme[redirect-to].
 }
                   
-@; XXX Move
 @defproc[(adjust-timeout! [t number?])
          void?]{
  Calls the servlet's manager's @scheme[adjust-timeout!] function.
@@ -494,7 +489,6 @@ functions of interest for the servlet developer.}
  @warning{This is deprecated and will be removed in a future release.}
 }
                   
-@; XXX Remove
 @defthing[current-url-transform (parameter/c url-transform?)]{
  Holds a @scheme[url-transform?] function that is called by
  @scheme[send/suspend] to transform the URLs it generates.
@@ -508,7 +502,6 @@ functions of interest for the servlet developer.}
  returns the instance id, continuation id, and nonce.
 }
                   
-@; XXX Remove
 @defproc[(embed-ids [ids (list/c number? number? number?)]
                     [u url?])
          string?]{
@@ -524,7 +517,6 @@ functions of interest for the servlet developer.}
 @filepath{servlet/helpers.ss} provides functions built on
 @filepath{servlet/web.ss} that are useful in many servlets.
 
-@; XXX Move into http/response.ss
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
@@ -562,7 +554,6 @@ functions of interest for the servlet developer.}
  ]
 }
 
-@; XXX Depreciate
 @; ------------------------------------------------------------
 @section[#:tag "servlet-url.ss"]{Servlet URLs}
 @(require (for-label web-server/servlet/servlet-url))
@@ -581,7 +572,6 @@ They may eventually provided by another module.
  that went into @scheme[su].
 }
 
-@; XXX Support Digest
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 @(require (for-label web-server/servlet/basic-auth))

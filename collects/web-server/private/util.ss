@@ -23,7 +23,6 @@
  [url-path->string ((listof path/param?) . -> . string?)]
  [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
  [directory-part (path? . -> . path?)]
- ; XXX Eliminate use of this
  [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
  [exn->string ((or/c exn? any/c) . -> . string?)]
  [build-path-unless-absolute (path-string? path-string? . -> . path?)]

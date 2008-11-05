@@ -57,7 +57,6 @@ procedures after a given amount of time, that may be extended.
 }
 
 
-@; XXX Generalize
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
 @(require (for-label web-server/private/connection-manager))
@@ -78,7 +77,6 @@ for doing this.
  The connection will last until @scheme[timer] triggers.
 }
 
-@; XXX Don't pass in parent-cust
 @defproc[(start-connection-manager [parent-cust custodian?])
          void]{
  Runs the connection manager (now just the timer manager) will @scheme[parent-cust]
@@ -163,8 +161,6 @@ The @scheme[dispatch-server^] signature is an alias for
 
 The @schememodname[web-server/private/dispatch-server-unit] module
 provides the unit that actually implements a dispatching server.
-
-@; XXX Talk about how threads and custodians are used.
 
 @defthing[dispatch-server@ (unit/c (tcp^ dispatch-server-config^) 
                                    (dispatch-server^))]{
@@ -371,7 +367,6 @@ needs. They are provided by @filepath{private/util.ss}.
  Replaces the URL path of @scheme[u] with @scheme[proc] of the former path.
 }
 
-@; XXX Remove use or take url?
 @defproc[(url-path->string [url-path (listof path/param?)])
          string?]{
  Formats @scheme[url-path] as a string with @scheme["/"] as a delimiter
@@ -417,7 +412,6 @@ needs. They are provided by @filepath{private/util.ss}.
  according to @scheme[exn].
 }
 
-@; XXX Remove
 @defproc[(network-error [s symbol?]
                         [fmt string?]
                         [v any/c] ...)
