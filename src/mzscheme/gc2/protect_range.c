@@ -11,7 +11,7 @@
    time, so we can't collapse ranges. */
 
 # define initialize_protect_page_ranges(pr, b, s) /* */
-# define add_protect_page_range(pr, s, l, a, w) protect_pages(s, l, w)
+# define add_protect_page_range(pr, s, l, a, w) vm_protect_pages(s, l, w)
 # define flush_protect_page_ranges(pr, w) /* */
 
 #else
@@ -28,7 +28,7 @@ static void flush_protect_page_ranges(Page_Range *protect_range, int writeable)
   compact_page_ranges(protect_range);
 
   for (work = protect_range->range_start; work; work = work->next) {
-    protect_pages((void *)work->start, work->len, writeable);
+    vm_protect_pages((void *)work->start, work->len, writeable);
   }
 
   reset_page_ranges(protect_range);

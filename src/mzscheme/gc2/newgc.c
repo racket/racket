@@ -178,15 +178,7 @@ inline static void check_used_against_max(size_t len)
   }
 }
 
-inline static void free_used_pages(size_t len) 
-{
-  GC->used_pages -= (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
-}
-
-#define CHECK_USED_AGAINST_MAX(len) check_used_against_max(len)
-#define LOGICALLY_ALLOCATING_PAGES(len) /* empty */
 #define ACTUALLY_ALLOCATING_PAGES(len) GC->actual_pages_size += len
-#define LOGICALLY_FREEING_PAGES(len) free_used_pages(len)
 #define ACTUALLY_FREEING_PAGES(len) GC->actual_pages_size -= len
 
 #include "page_range.c"
@@ -194,6 +186,25 @@ inline static void free_used_pages(size_t len)
 #include "vm.c"
 
 #include "protect_range.c"
+
+static void *malloc_pages(size_t len, size_t alignment)
+{
+  check_used_against_max(len);
+  return vm_malloc_pages(len, alignment, 0);
+}
+
+static void *malloc_dirty_pages(size_t len, size_t alignment)
+{
+  check_used_against_max(len);
+  return vm_malloc_pages(len, alignment, 1);
+}
+
+static void free_pages(void *p, size_t len)
+{
+  GC->used_pages -= (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  vm_free_pages(p, len);
+}
+
 
 /*****************************************************************************/
 /* Memory Tracing, Part 1                                                    */
@@ -524,7 +535,7 @@ inline static void *allocate(size_t sizeb, int type)
     /* WARNING: tries to avoid a collection but
      * malloc_pages can cause a collection due to check_used_against_max */
     else if (GC->dumping_avoid_collection) {
-      struct mpage *new_mpage= gen0_create_new_mpage();
+      mpage *new_mpage = gen0_create_new_mpage();
 
       /* push page */
       new_mpage->next = GC->gen0.curr_alloc_page;
@@ -1296,7 +1307,7 @@ int designate_modified(void *p)
   if(page) {
     if (!page->back_pointers) {
       page->mprotected = 0;
-      protect_pages(page->addr, page->big_page ? round_to_apage_size(page->size) : APAGE_SIZE, 1);
+      vm_protect_pages(page->addr, page->big_page ? round_to_apage_size(page->size) : APAGE_SIZE, 1);
       page->back_pointers = 1;
       return 1;
     }
@@ -1506,7 +1517,7 @@ void GC_mark(const void *const_p)
         work->marked_on = 1;
         if (work->mprotected) {
           work->mprotected = 0;
-          protect_pages(work->addr, APAGE_SIZE, 1);
+          vm_protect_pages(work->addr, APAGE_SIZE, 1);
         }
         newplace = PTR(NUM(work->addr) + work->size);
       } else {
@@ -2004,7 +2015,7 @@ inline static void do_heap_compact(void)
 
               if (npage->mprotected) {
                 npage->mprotected = 0;
-                protect_pages(npage->addr, APAGE_SIZE, 1);
+                vm_protect_pages(npage->addr, APAGE_SIZE, 1);
               }
 
               GCDEBUG((DEBUGOUTF,"Moving size %i object from %p to %p\n",
@@ -2400,7 +2411,7 @@ static void garbage_collect(int force_full)
     protect_old_pages();
   TIME_STEP("protect");
   if (gc->gc_full)
-    flush_freed_pages();
+    vm_flush_freed_pages();
   reset_finalizer_tree();
 
   TIME_STEP("reset");
@@ -2412,7 +2423,7 @@ static void garbage_collect(int force_full)
 
   /* If we have too many idle pages, flush: */
   if (gc->actual_pages_size > ((gc->used_pages << (LOG_APAGE_SIZE + 1)))) {
-    flush_freed_pages();
+    vm_flush_freed_pages();
   }
 
   /* update some statistics */
@@ -2542,10 +2553,10 @@ void GC_free_all(void)
       next = work->next;
 
       if (work->mprotected)
-        protect_pages(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, 1);
+        vm_protect_pages(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, 1);
       gen1_free_mpage(pagemap, work);
     }
   }
 
-  flush_freed_pages();
+  vm_flush_freed_pages();
 }

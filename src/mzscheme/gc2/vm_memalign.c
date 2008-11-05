@@ -3,12 +3,9 @@
       posix_memalign-based allocator
       determine_max_heap_size() (uses rlimit_heapsize.c)
    Requires:
-      LOGICALLY_ALLOCATING_PAGES(len)
       ACTUALLY_ALLOCATING_PAGES(len)
-      LOGICALLY_FREEING_PAGES(len)
       ACTUALLY_FREEING_PAGES(len)
    Optional:
-      CHECK_USED_AGAINST_MAX(len)
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
 
@@ -17,20 +14,14 @@
 #include <sys/mman.h>
 #include <errno.h>
 
-#ifndef CHECK_USED_AGAINST_MAX
-# define CHECK_USED_AGAINST_MAX(x) /* empty */
-#endif
-
 static int page_size; /* OS page size */
 
-static void *malloc_dirty_pages(size_t len, size_t alignment)
+static void *vm_malloc_pages(size_t len, size_t alignment, int dirty_ok)
 {
   void *r;
 
   if (!page_size)
     page_size = getpagesize();
-
-  CHECK_USED_AGAINST_MAX(len);
 
   /* Round up to nearest page: */
   if (len & (page_size - 1))
@@ -43,31 +34,23 @@ static void *malloc_dirty_pages(size_t len, size_t alignment)
   }
 
   ACTUALLY_ALLOCATING_PAGES(len);
-  LOGICALLY_ALLOCATING_PAGES(len);
 
+  if(!dirty_ok)
+    memset(p, 0, len);
   return r;
 }
 
-static void *malloc_pages(size_t len, size_t alignment)
-{
-  void *p;
-  p = malloc_dirty_pages(len, alignment);
-  memset(p, 0, len);
-  return p;
-}
-
-static void free_pages(void *p, size_t len)
+static void vm_free_pages(void *p, size_t len)
 {
   ACTUALLY_FREEING_PAGES(len);
-  LOGICALLY_FREEING_PAGES(len);
   free(p);
 }
 
-static void flush_freed_pages(void)
+static void vm_flush_freed_pages(void)
 {
 }
 
-static void protect_pages(void *p, size_t len, int writeable)
+static void vm_protect_pages(void *p, size_t len, int writeable)
 {
   if (len & (page_size - 1)) {
     len += page_size - (len & (page_size - 1));

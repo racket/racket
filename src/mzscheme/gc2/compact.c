@@ -353,9 +353,7 @@ static MSet *sets[NUM_SETS]; /* First one is tagged, last one is atomic */
 /********************* Statistics *********************/
 static long page_allocations = 0;
 static long page_reservations = 0;
-#define LOGICALLY_ALLOCATING_PAGES(len) (page_allocations += len)
 #define ACTUALLY_ALLOCATING_PAGES(len) (page_reservations += len)
-#define LOGICALLY_FREEING_PAGES(len) (page_allocations -= len)
 #define ACTUALLY_FREEING_PAGES(len) (page_reservations -= len)
 
 static long memory_in_use, gc_threshold = GROW_ADDITION, max_memory_use;
@@ -426,6 +424,19 @@ static int just_checking, the_size;
 
 #define DONT_NEED_MAX_HEAP_SIZE
 #include "vm.c"
+
+
+static void *malloc_pages(size_t len, size_t alignment)
+{
+  page_allocations += len;
+  return vm_malloc_pages(len, alignment, 0);
+}
+
+static void free_pages(void *p, size_t len)
+{
+  page_allocations -= len;
+  vm_free_pages(p, len);
+}
 
 /******************************************************************************/
 /*                              client setup                                  */
@@ -871,9 +882,9 @@ static void init_all_mpages(int young)
 #if GENERATIONS
       if (generations_available) {
 	if (page->flags & MFLAG_BIGBLOCK)
-	  protect_pages((void *)p, page->u.size, 1);
+	  vm_protect_pages((void *)p, page->u.size, 1);
 	else
-	  protect_pages((void *)p, MPAGE_SIZE, 1);
+	  vm_protect_pages((void *)p, MPAGE_SIZE, 1);
       }
 #endif
       page->flags |= MFLAG_MODIFIED;
@@ -935,9 +946,9 @@ static void init_all_mpages(int young)
 #if GENERATIONS
 	if (generations_available) {
 	  if (page->flags & MFLAG_BIGBLOCK)
-	    protect_pages((void *)p, page->u.size, 1);
+	    vm_protect_pages((void *)p, page->u.size, 1);
 	  else
-	    protect_pages((void *)p, MPAGE_SIZE, 1);
+	    vm_protect_pages((void *)p, MPAGE_SIZE, 1);
 	}
 #endif
 	page->flags |= MFLAG_MODIFIED;
@@ -2587,7 +2598,7 @@ static void free_unused_mpages()
     }
   }
 
-  flush_freed_pages();
+  vm_flush_freed_pages();
 }
 
 void promote_all_ages()
@@ -2618,9 +2629,9 @@ void protect_old_mpages()
       
 	  p = page->block_start;
 	  if (page->flags & MFLAG_BIGBLOCK)
-	    protect_pages((void *)p, page->u.size, 0);
+	    vm_protect_pages((void *)p, page->u.size, 0);
 	  else 
-	    protect_pages((void *)p, MPAGE_SIZE, 0);
+	    vm_protect_pages((void *)p, MPAGE_SIZE, 0);
 	}
       }
     }
@@ -2665,9 +2676,9 @@ static int designate_modified_maybe(void *p, int no_barrier_ok)
           page->flags |= MFLAG_MODIFIED;
           p = (void *)((long)p & MPAGE_START);
           if (page->flags & MFLAG_BIGBLOCK)
-            protect_pages(p, page->u.size, 1);
+            vm_protect_pages(p, page->u.size, 1);
           else
-            protect_pages(p, MPAGE_SIZE, 1);
+            vm_protect_pages(p, MPAGE_SIZE, 1);
           num_seg_faults++;
           return 1;
         }

@@ -2,13 +2,10 @@
 /*
 static void os_vm_free_pages(void *p, size_t len);
 static void *os_vm_alloc_pages(size_t len);
-static void protect_pages(void *p, size_t len, int writeable);
+static void vm_protect_pages(void *p, size_t len, int writeable);
 */
 /* Requires: */
 /* Optional:
-      CHECK_USED_AGAINST_MAX(len)
-      GCPRINT
-      GCOUTF
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
 
@@ -18,19 +15,7 @@ static void protect_pages(void *p, size_t len, int writeable);
 #include <sys/mman.h>
 #include <errno.h>
 
-#ifndef GCPRINT
-# define GCPRINT fprintf
-# define GCOUTF stderr
-#endif
-#ifndef CHECK_USED_AGAINST_MAX
-# define CHECK_USED_AGAINST_MAX(x) /* empty */
-#endif
-
 static long page_size;
-#ifndef MAP_ANON
-static int fd;
-static int fd_created;
-#endif
 
 static void os_vm_free_pages(void *p, size_t len)
 {
@@ -44,6 +29,9 @@ static void *os_vm_alloc_pages(size_t len)
   void *r;
 
 #ifndef MAP_ANON
+  static int fd;
+  static int fd_created;
+
   if (!fd_created) {
     fd_created = 1;
     fd = open("/dev/zero", O_RDWR);
@@ -67,7 +55,7 @@ static void *os_vm_alloc_pages(size_t len)
 }
 
 
-static void protect_pages(void *p, size_t len, int writeable)
+static void vm_protect_pages(void *p, size_t len, int writeable)
 {
   if (len & (page_size - 1)) {
     len += page_size - (len & (page_size - 1));

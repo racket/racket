@@ -3,39 +3,17 @@
 /*                     OS-specific low-level allocator                        */
 /******************************************************************************/
 
-/******************************************************************************/
-/* Windows */
+#ifndef GCPRINT
+# define GCPRINT fprintf
+# define GCOUTF stderr
+#endif
 
-#if _WIN32
+#if _WIN32            /* Windows */
 # include "vm_win.c"
-# define MALLOCATOR_DEFINED
-#endif
-
-/******************************************************************************/
-/* OSKit */
-
-#if OSKIT
+#elif defined(OSKIT)  /* OSKit */
 # include "vm_osk.c"
-# define MALLOCATOR_DEFINED
-#endif
-
-/******************************************************************************/
-/* OS X */
-
-#if defined(OS_X)
-# if GENERATIONS
-static int designate_modified(void *p);
-# endif
-
-# define TEST 0
+#elif defined(OS_X)   /* OS X */
 # include "vm_osx.c"
-
-# define MALLOCATOR_DEFINED
-#endif
-
-/******************************************************************************/
-/* Default: mmap */
-
-#ifndef MALLOCATOR_DEFINED
+#else                 /* Default: mmap */
 # include "vm_mmap.c"
 #endif

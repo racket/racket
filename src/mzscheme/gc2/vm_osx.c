@@ -8,11 +8,7 @@
       TEST = 0
       GENERATIONS --- zero or non-zero
       designate_modified --- when GENERATIONS is non-zero
-      my_qsort (for alloc_cache.c)
    Optional:
-      CHECK_USED_AGAINST_MAX(len)
-      GCPRINT
-      GCOUTF
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
 
@@ -30,9 +26,12 @@
 # include <pthread.h>
 #endif
 
+# if GENERATIONS
+static int designate_modified(void *p);
+# endif
+# define TEST 0
 #ifndef TEST
 # define TEST 1
-# include "my_qsort.c"
 int designate_modified(void *p);
 #endif
 
@@ -45,18 +44,6 @@ int designate_modified(void *p);
 # define ARCH_THREAD_STATE i386_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT i386_THREAD_STATE_COUNT
 #endif
-
-#ifndef GCPRINT
-# define GCPRINT fprintf
-# define GCOUTF stderr
-#endif
-#ifndef CHECK_USED_AGAINST_MAX
-# define CHECK_USED_AGAINST_MAX(x) /* empty */
-#endif
-
-/* Forward declarations: */
-inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok);
-static void free_actual_pages(void *p, size_t len, int zeroed);
 
 /* the structure of an exception msg and its reply */
 typedef struct rep_msg {
@@ -357,11 +344,11 @@ char *big_page = NULL;
 int designate_modified(void *p)
 {
   if((p >= normal_page) && (p < (normal_page + MPAGE_SIZE))) {
-    protect_pages(p, MPAGE_SIZE, 1);
+    vm_protect_pages(p, MPAGE_SIZE, 1);
     return 1;
   }
   if((p >= big_page) && (p < (big_page + BPAGE_SIZE))) {
-    protect_pages(p, BPAGE_SIZE, 1);
+    vm_protect_pages(p, BPAGE_SIZE, 1);
     return 1;
   }
   printf("Unrecognized write: %p\n", p);
@@ -372,14 +359,14 @@ int main(int argc, char **argv)
 {
   macosx_init_exception_handler();
   printf("Allocating test pages:\n");
-  normal_page = malloc_pages(MPAGE_SIZE, MPAGE_SIZE);
+  normal_page = vm_malloc_pages(MPAGE_SIZE, MPAGE_SIZE,0);
   printf("  ... normal page at %p\n", normal_page);
-  big_page = malloc_pages(BPAGE_SIZE, MPAGE_SIZE);
+  big_page = vm_malloc_pages(BPAGE_SIZE, MPAGE_SIZE,0);
   printf("  ... big page at %p\n", big_page);
   printf("Setting protection on test pages\n");
-  protect_pages(normal_page, MPAGE_SIZE, 0);
+  vm_protect_pages(normal_page, MPAGE_SIZE, 0);
   printf("  ... normal page %p set\n", normal_page);
-  protect_pages(big_page, MPAGE_SIZE, 0);
+  vm_protect_pages(big_page, MPAGE_SIZE, 0);
   printf("  ... big page %p set\n", big_page);
   printf("Writing to test pages\n");
   normal_page[2] = 'A';
@@ -388,9 +375,9 @@ int main(int argc, char **argv)
   printf("  ... normal_page %p's second byte is %c\n", normal_page, normal_page[2]);
   printf("  ... big_page %p's second byte is %c\n", big_page, big_page[2]);
   printf("Freeing test pages:\n");
-  free_pages(normal_page, MPAGE_SIZE);
+  vm_free_pages(normal_page, MPAGE_SIZE);
   printf("  ... freed normal page\n");
-  free_pages(big_page, MPAGE_SIZE);
+  vm_free_pages(big_page, MPAGE_SIZE);
   printf("  ... freed big page\n");
 }
 #endif
