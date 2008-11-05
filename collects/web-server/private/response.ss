@@ -59,7 +59,6 @@
 (define (output-response conn resp)
   (output-response/method conn resp 'get))
 
-; XXX Check method in response
 (define (output-response/method conn resp meth)
   (define bresp (response->response/basic (connection-close? conn) resp))
   (output-headers+response/basic conn bresp)
@@ -298,7 +297,6 @@
            (make-200-response modified-seconds mime-type total-content-length)))
       ; Send the appropriate file content:
       (when (eq? method 'get)
-        ; XXX Move out?
         (adjust-connection-timeout! ; Give it one second per byte.
          conn
          (apply + (map (lambda (range)
