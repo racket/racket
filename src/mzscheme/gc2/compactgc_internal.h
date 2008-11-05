@@ -1,6 +1,11 @@
 #include "commongc_internal.h"
 
 typedef struct CompactGC {
+ /* Common with NewGC */
+  Fnl *finalizers;
+  Fnl *splayed_finalizers;
+  int num_fnls;
+
   void *park[2];
   void *park_save[2];
 

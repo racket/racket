@@ -2829,7 +2829,7 @@ static void init(void)
 #if USE_FREELIST
     GC_register_traversers(gc_on_free_list_tag, size_on_free_list, size_on_free_list, size_on_free_list, 0, 0);
 #endif
-    GC_add_roots(&finalizers, (char *)&finalizers + sizeof(finalizers) + 1);
+    GC_add_roots(&GC->finalizers, (char *)&GC->finalizers + sizeof(GC->finalizers) + 1);
     GC_add_roots(&fnl_weaks, (char *)&fnl_weaks + sizeof(fnl_weaks) + 1);
     GC_add_roots(&run_queue, (char *)&run_queue + sizeof(run_queue) + 1);
     GC_add_roots(&last_in_queue, (char *)&last_in_queue + sizeof(last_in_queue) + 1);
@@ -3049,7 +3049,7 @@ static void gcollect(int full)
 
   {
     Fnl *f;
-    for (f = finalizers; f; f = f->next) {
+    for (f = GC->finalizers; f; f = f->next) {
 #if RECORD_MARK_SRC
       mark_src = f;
       mark_type = MTYPE_FINALIZER;
@@ -3108,7 +3108,7 @@ static void gcollect(int full)
     /* Propagate all marks. */
     propagate_all_mpages();
     
-    if ((did_fnls >= 3) || !finalizers) {
+    if ((did_fnls >= 3) || !GC->finalizers) {
       if (did_fnls == 3) {
 	/* Finish up ordered finalization */
 	Fnl *f, *next, *prev;
@@ -3117,7 +3117,7 @@ static void gcollect(int full)
 	/* Enqueue and mark level 3 finalizers that still haven't been marked. */
 	/* (Recursive marking is already done, though.) */
 	prev = NULL;
-	for (f = finalizers; f; f = next) {
+	for (f = GC->finalizers; f; f = next) {
 	  next = f->next;
 	  if (f->eager_level == 3) {
 	    if (!is_marked(f->p)) {
@@ -3131,7 +3131,7 @@ static void gcollect(int full)
 	      if (prev)
 		prev->next = next;
 	      else
-		finalizers = next;
+		GC->finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3193,7 +3193,7 @@ static void gcollect(int full)
 
 	/* Mark content of not-yet-marked finalized objects,
 	   but don't mark the finalized objects themselves. */	
-	for (f = finalizers; f; f = f->next) {
+	for (f = GC->finalizers; f; f = f->next) {
 	  if (f->eager_level == 3) {
 #if RECORD_MARK_SRC
 	    mark_src = f;
@@ -3219,7 +3219,7 @@ static void gcollect(int full)
 	/* Unordered finalization */
 	Fnl *f, *prev, *queue;
 
-	f = finalizers;
+	f = GC->finalizers;
 	prev = NULL;
 	queue = NULL;
 	
@@ -3232,7 +3232,7 @@ static void gcollect(int full)
 	      if (prev)
 		prev->next = next;
 	      else
-		finalizers = next;
+		GC->finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3408,7 +3408,7 @@ static void gcollect(int full)
 
     {
       Fnl *f;
-      for (f = finalizers; f; f = f->next) {
+      for (f = GC->finalizers; f; f = f->next) {
 #if CHECKS
 	fnl_count++;
 #endif
@@ -3524,7 +3524,7 @@ static void gcollect(int full)
       run_queue = run_queue->next;
       if (!run_queue)
 	last_in_queue = NULL;
-      --num_fnls;
+      --GC->num_fnls;
 
       gcs = GC_variable_stack;
       f->f(f->p, f->data);
@@ -4700,7 +4700,7 @@ void GC_dump_with_traces(int flags,
     }
   }
 
-  GCPRINT(GCOUTF, "Active fnls: %d\n", num_fnls);
+  GCPRINT(GCOUTF, "Active fnls: %d\n", GC->num_fnls);
   GCPRINT(GCOUTF, "Active fnl weak links: %d\n", fnl_weak_link_count);
 
   if (memory_in_use > max_memory_use)

@@ -975,10 +975,10 @@ inline static void mark_finalizer_structs(void)
 {
   Fnl *fnl;
 
-  for(fnl = GC_resolve(finalizers); fnl; fnl = GC_resolve(fnl->next)) { 
+  for(fnl = GC_resolve(GC->finalizers); fnl; fnl = GC_resolve(fnl->next)) { 
     set_backtrace_source(fnl, BT_FINALIZER);
     gcMARK(fnl->data); 
-    set_backtrace_source(&finalizers, BT_ROOT);
+    set_backtrace_source(&GC->finalizers, BT_ROOT);
     gcMARK(fnl);
   }
   for(fnl = GC->run_queue; fnl; fnl = fnl->next) {
@@ -995,9 +995,9 @@ inline static void repair_finalizer_structs(void)
   Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP(finalizers); gcFIXUP(GC->run_queue);
+  gcFIXUP(GC->finalizers); gcFIXUP(GC->run_queue);
   /* then repair the stuff inside them */
-  for(fnl = finalizers; fnl; fnl = fnl->next) {
+  for(fnl = GC->finalizers; fnl; fnl = fnl->next) {
     gcFIXUP(fnl->data);
     gcFIXUP(fnl->p);
     gcFIXUP(fnl->next);
@@ -1011,7 +1011,7 @@ inline static void repair_finalizer_structs(void)
 
 inline static void check_finalizers(int level)
 {
-  Fnl *work = GC_resolve(finalizers);
+  Fnl *work = GC_resolve(GC->finalizers);
   Fnl *prev = NULL;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
@@ -1025,11 +1025,11 @@ inline static void check_finalizers(int level)
       set_backtrace_source(work, BT_FINALIZER);
       gcMARK(work->p);
       if(prev) prev->next = next;
-      if(!prev) finalizers = next;
+      if(!prev) GC->finalizers = next;
       if(GC->last_in_queue) GC->last_in_queue = GC->last_in_queue->next = work;
       if(!GC->last_in_queue) GC->run_queue = GC->last_in_queue = work;
       work->next = NULL;
-      --num_fnls;
+      --GC->num_fnls;
 
       work = next;
     } else { 
@@ -1047,7 +1047,7 @@ inline static void do_ordered_level3(void)
   struct finalizer *temp;
   Mark_Proc *mark_table = GC->mark_table;
 
-  for(temp = GC_resolve(finalizers); temp; temp = GC_resolve(temp->next))
+  for(temp = GC_resolve(GC->finalizers); temp; temp = GC_resolve(temp->next))
     if(!marked(temp->p)) {
       GCDEBUG((DEBUGOUTF,
             "LVL3: %p is not marked. Marking payload (%p)\n", 
@@ -1839,7 +1839,7 @@ void GC_dump_with_traces(int flags,
         GC->actual_pages_size - (GC->used_pages * APAGE_SIZE)));
   GCWARN((GCOUTF,"# of major collections: %li\n", GC->num_major_collects));
   GCWARN((GCOUTF,"# of minor collections: %li\n", GC->num_minor_collects));
-  GCWARN((GCOUTF,"# of installed finalizers: %i\n", num_fnls));
+  GCWARN((GCOUTF,"# of installed finalizers: %i\n", GC->num_fnls));
   GCWARN((GCOUTF,"# of traced ephemerons: %i\n", num_last_seen_ephemerons));
 
   if (flags & GC_DUMP_SHOW_TRACE) {

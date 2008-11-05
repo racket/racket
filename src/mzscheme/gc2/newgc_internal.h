@@ -140,6 +140,10 @@ typedef struct NewGC {
   GC_Immobile_Box *immobile_boxes;
 
   /* Common with CompactGC */
+  Fnl *finalizers;
+  Fnl *splayed_finalizers;
+  int num_fnls;
+
   void *park[2];
   void *park_save[2];
 
