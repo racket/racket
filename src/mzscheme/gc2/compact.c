@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "platforms.h"
 #include "gc2.h"
 
 #define NUMBER_OF_TAGS 512
@@ -160,7 +161,7 @@ unsigned long (*GC_get_thread_stack_base)(void);
 void (*GC_mark_xtagged)(void *obj);
 void (*GC_fixup_xtagged)(void *obj);
 
-void **GC_variable_stack;
+THREAD_LOCAL void **GC_variable_stack;
 
 void **GC_get_variable_stack() { return GC_variable_stack; }
 void GC_set_variable_stack(void **p) { GC_variable_stack = p; }

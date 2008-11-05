@@ -354,8 +354,8 @@ int GC_is_allocated(void *p)
    The size count helps us trigger collection quickly when we're running out of space; see
    the test in allocate_big. 
 */
-unsigned long GC_gen0_alloc_page_ptr = 0;
-unsigned long GC_gen0_alloc_page_end = 0;
+THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr = 0;
+THREAD_LOCAL unsigned long GC_gen0_alloc_page_end = 0;
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
@@ -888,7 +888,7 @@ static void *get_backtrace(struct mpage *page, void *ptr)
 /* With the exception of the "traverse" macro and resultant simplification,  */
 /* this code is entirely lifted from compact.c                               */
 /*****************************************************************************/
-void **GC_variable_stack;
+THREAD_LOCAL void **GC_variable_stack;
 
 void **GC_get_variable_stack()
 { 
@@ -1155,7 +1155,7 @@ typedef struct MarkSegment {
   void **stop_here; /* this is only used for its address */
 } MarkSegment;
 
-static MarkSegment *mark_stack = NULL;
+static THREAD_LOCAL MarkSegment *mark_stack = NULL;
 
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)malloc(STACK_PART_SIZE);
@@ -1188,7 +1188,7 @@ inline static void push_ptr(void *ptr)
     }
   }
 
-  /* at this point, we're guaranteed to be good to push a  pointers */
+  /* at this point, we're guaranteed to be good to push pointers */
   *(mark_stack->top++) = ptr;
 }
 
@@ -1199,8 +1199,7 @@ inline static int pop_ptr(void **ptr)
       /* if there is a previous page, go to it */
       mark_stack = mark_stack->prev;
     } else {
-      /* if there isn't a previous page, then we've hit the bottom of the
-	 stack */
+      /* if there isn't a previous page, then we've hit the bottom of the stack */
       return 0;
     }
   }
@@ -2497,16 +2496,15 @@ static void garbage_collect(int force_full)
 
     while(gc->run_queue) {
       struct finalizer *f;
-      void **gcs;
+      void **saved_gc_variable_stack;
 
       f = gc->run_queue; gc->run_queue = gc->run_queue->next;
       if(!gc->run_queue) gc->last_in_queue = NULL;
 
-      GCDEBUG((DEBUGOUTF, "Running finalizers %p for pointer %p (lvl %i)\n",
-	       f, f->p, f->eager_level));
-      gcs = GC_variable_stack;
+      GCDEBUG((DEBUGOUTF, "Running finalizers %p for pointer %p (lvl %i)\n", f, f->p, f->eager_level));
+      saved_gc_variable_stack = GC_variable_stack;
       f->f(f->p, f->data);
-      GC_variable_stack = gcs;
+      GC_variable_stack = saved_gc_variable_stack;
     }
     run_account_hooks();
     running_finalizers = 0;

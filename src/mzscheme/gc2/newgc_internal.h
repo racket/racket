@@ -66,7 +66,6 @@ typedef struct Gen0 {
  struct mpage *curr_alloc_page;
  struct mpage *pages;
  struct mpage *big_pages;
- unsigned long GC_gen0_alloc_page_ptr;
  unsigned long current_size;
  unsigned long max_size;
 } Gen0;

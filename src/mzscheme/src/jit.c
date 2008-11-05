@@ -1094,7 +1094,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-extern unsigned long GC_gen0_alloc_page_ptr;
+extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
 long GC_initial_word(int sizeb);
 long GC_compute_alloc_size(long sizeb);
 long GC_alloc_alignment(void);

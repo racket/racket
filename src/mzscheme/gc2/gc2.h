@@ -262,7 +262,7 @@ GC2_EXTERN void GC_finalization_weak_ptr(void **p, int offset);
 /* Cooperative GC                                                          */
 /***************************************************************************/
 
-GC2_EXTERN void **GC_variable_stack;
+GC2_EXTERN THREAD_LOCAL void **GC_variable_stack;
 /*
    See the general overview in README. */
 

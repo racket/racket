@@ -399,7 +399,7 @@ MZ_EXTERN void scheme_gc_ptr_ok(void *p);
 MZ_EXTERN void scheme_collect_garbage(void);
 
 #ifdef MZ_PRECISE_GC
-MZ_EXTERN void **GC_variable_stack;
+MZ_EXTERN THREAD_LOCAL void **GC_variable_stack;
 MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 MZ_EXTERN void *GC_resolve(void *p);
