@@ -35,12 +35,13 @@ static int size_weak_array(void *p)
 
 static int mark_weak_array(void *p)
 {
+  GCTYPE *gc = GC;
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
   gcMARK(a->replace_val);
 
-  a->next = GC->weak_arrays;
-  GC->weak_arrays = a;
+  a->next = gc->weak_arrays;
+  gc->weak_arrays = a;
 
 #if CHECKS
   /* For now, weak arrays only used for symbols, keywords, and falses: */
@@ -83,45 +84,46 @@ static int fixup_weak_array(void *p)
 
 void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
 {
+  GCTYPE *gc = GC;
   GC_Weak_Array *w;
 
   /* Allcation might trigger GC, so we use park: */
-  GC->park[0] = replace_val;
+  gc->park[0] = replace_val;
 
   w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
 					    + sizeof(GC_Weak_Array) 
 					    - sizeof(void *));
 
-  replace_val = GC->park[0];
-  GC->park[0] = NULL;
+  replace_val = gc->park[0];
+  gc->park[0] = NULL;
 
-  w->type = GC->weak_array_tag;
+  w->type = gc->weak_array_tag;
   w->replace_val = replace_val;
   w->count = (size_in_bytes >> LOG_WORD_SIZE);
   
   return w;
 }
 
-void init_weak_arrays() {
-  GC->weak_arrays = NULL;
+static void init_weak_arrays(GCTYPE *gc) {
+  gc->weak_arrays = NULL;
 }
 
-static void zero_weak_arrays()
+static void zero_weak_arrays(GCTYPE *gc)
 {
   GC_Weak_Array *wa;
   int i;
 
-  wa = GC->weak_arrays;
+  wa = gc->weak_arrays;
   while (wa) {
     void **data;
-    
+
     data = wa->data;
     for (i = wa->count; i--; ) {
       void *p = data[i];
-      if (p && !is_marked(p))
-	data[i] = wa->replace_val;
+      if (p && !is_marked(gc, p))
+        data[i] = wa->replace_val;
     }
-    
+
     wa = wa->next;
   }
 }
@@ -137,13 +139,14 @@ static int size_weak_box(void *p)
 
 static int mark_weak_box(void *p)
 {
+  GCTYPE *gc = GC;
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
     
   gcMARK(wb->secondary_erase);
 
   if (wb->val) {
-    wb->next = GC->weak_boxes;
-    GC->weak_boxes = wb;
+    wb->next = gc->weak_boxes;
+    gc->weak_boxes = wb;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -161,20 +164,21 @@ static int fixup_weak_box(void *p)
 
 void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
 {
+  GCTYPE *gc = GC;
   GC_Weak_Box *w;
 
   /* Allcation might trigger GC, so we use park: */
-  GC->park[0] = p;
-  GC->park[1] = secondary;
+  gc->park[0] = p;
+  gc->park[1] = secondary;
 
   w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
 
-  p = GC->park[0];
-  secondary = (void **)GC->park[1];
-  GC->park[0] = NULL;
-  GC->park[1] = NULL;
+  p = gc->park[0];
+  secondary = (void **)gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
   
-  w->type = GC->weak_box_tag;
+  w->type = gc->weak_box_tag;
   w->val = p;
   w->secondary_erase = secondary;
   w->soffset = soffset;
@@ -182,23 +186,23 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
   return w;
 }
 
-void init_weak_boxes() {
-  GC->weak_boxes = NULL;
+static void init_weak_boxes(GCTYPE *gc) {
+  gc->weak_boxes = NULL;
 }
 
-static void zero_weak_boxes()
+static void zero_weak_boxes(GCTYPE *gc)
 {
   GC_Weak_Box *wb;
 
-  wb = GC->weak_boxes;
+  wb = gc->weak_boxes;
   while (wb) {
-    if (!is_marked(wb->val)) {
+    if (!is_marked(gc, wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
         void **p;
         p = (void **)GC_resolve(wb->secondary_erase);
-	*(p + wb->soffset) = NULL;
-	wb->secondary_erase = NULL;
+        *(p + wb->soffset) = NULL;
+        wb->secondary_erase = NULL;
       }
     }
     wb = wb->next;
@@ -216,11 +220,12 @@ static int size_ephemeron(void *p)
 
 static int mark_ephemeron(void *p)
 {
+  GCTYPE *gc = GC;
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
-    eph->next = GC->ephemerons;
-    GC->ephemerons = eph;
+    eph->next = gc->ephemerons;
+    gc->ephemerons = eph;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -251,55 +256,56 @@ static int fixup_ephemeron(void *p)
 
 void *GC_malloc_ephemeron(void *k, void *v)
 {
+  GCTYPE *gc = GC;
   GC_Ephemeron *eph;
 
   /* Allcation might trigger GC, so we use park: */
-  GC->park[0] = k;
-  GC->park[1] = v;
+  gc->park[0] = k;
+  gc->park[1] = v;
 
   eph = (GC_Ephemeron *)GC_malloc_one_tagged(sizeof(GC_Ephemeron));
 
-  k = GC->park[0];
-  v = GC->park[1];
-  GC->park[0] = NULL;
-  GC->park[1] = NULL;
+  k = gc->park[0];
+  v = gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
   
-  eph->type = GC->ephemeron_tag;
+  eph->type = gc->ephemeron_tag;
   eph->key = k;
   eph->val = v;
 
   return eph;
 }
 
-void init_ephemerons() {
-  GC->ephemerons = NULL;
-  GC->num_last_seen_ephemerons = 0;
+void init_ephemerons(GCTYPE *gc) {
+  gc->ephemerons = NULL;
+  gc->num_last_seen_ephemerons = 0;
 }
 
-static void mark_ready_ephemerons()
+static void mark_ready_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *waiting = NULL, *next, *eph;
 
-  for (eph = GC->ephemerons; eph; eph = next) {
+  for (eph = gc->ephemerons; eph; eph = next) {
     next = eph->next;
-    if (is_marked(eph->key)) {
+    if (is_marked(gc, eph->key)) {
       gcMARK(eph->val);
-      GC->num_last_seen_ephemerons++;
+      gc->num_last_seen_ephemerons++;
     } else {
       eph->next = waiting;
       waiting = eph;
     }
   }
-  GC->ephemerons = waiting;
+  gc->ephemerons = waiting;
 }
 
-static void zero_remaining_ephemerons()
+static void zero_remaining_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *eph;
 
   /* After unordered finalization, any remaining ephemerons
      should be zeroed. */
-  for (eph = GC->ephemerons; eph; eph = eph->next) {
+  for (eph = gc->ephemerons; eph; eph = eph->next) {
     eph->key = NULL;
     eph->val = NULL;
   }

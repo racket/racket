@@ -26,6 +26,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     void *data, void (**oldf)(void *p, void *data), 
     void **olddata)
 {
+  GCTYPE *gc = GC;
   Fnl *fnl;
 
   if (!is_finalizable_page(p)) {
@@ -35,8 +36,8 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
   }
 
-  GC->splayed_finalizers = fnl_splay((unsigned long)p, GC->splayed_finalizers);
-  fnl = GC->splayed_finalizers;
+  gc->splayed_finalizers = fnl_splay((unsigned long)p, gc->splayed_finalizers);
+  fnl = gc->splayed_finalizers;
   if (fnl && (fnl->p == p)) {
     if (oldf) *oldf = fnl->f;
     if (olddata) *olddata = fnl->data;
@@ -49,12 +50,12 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
       if (fnl->prev)
         fnl->prev->next = fnl->next;
       else
-        GC->finalizers = fnl->next;
+        gc->finalizers = fnl->next;
       if (fnl->next)
         fnl->next->prev = fnl->prev;
 
-      --GC->num_fnls;
-      GC->splayed_finalizers = fnl_splay_delete((unsigned long)p, GC->splayed_finalizers);
+      --gc->num_fnls;
+      gc->splayed_finalizers = fnl_splay_delete((unsigned long)p, gc->splayed_finalizers);
     }
     return;
   }
@@ -66,16 +67,16 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
 
   /* Allcation might trigger GC, so we use park: */
-  GC->park[0] = p;
-  GC->park[1] = data;
+  gc->park[0] = p;
+  gc->park[1] = data;
 
   fnl = (Fnl *)GC_malloc_atomic(sizeof(Fnl));
   memset(fnl, 0, sizeof(Fnl));
 
-  p = GC->park[0];
-  data = GC->park[1];
-  GC->park[0] = NULL;
-  GC->park[1] = NULL;
+  p = gc->park[0];
+  data = gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
 
 
   fnl->p = p;
@@ -111,30 +112,30 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
 #endif
 
   /* push finalizer */
-  fnl->next = GC->finalizers;
+  fnl->next = gc->finalizers;
   fnl->prev = NULL;
-  if (GC->finalizers) {
-    GC->finalizers->prev = fnl;
+  if (gc->finalizers) {
+    gc->finalizers->prev = fnl;
   }
-  GC->finalizers = fnl;
+  gc->finalizers = fnl;
 
-  GC->splayed_finalizers = fnl_splay_insert((unsigned long)p, fnl, GC->splayed_finalizers);
+  gc->splayed_finalizers = fnl_splay_insert((unsigned long)p, fnl, gc->splayed_finalizers);
 
-  GC->num_fnls++;
+  gc->num_fnls++;
 }
 
-static void reset_finalizer_tree()
+static void reset_finalizer_tree(GCTYPE *gc)
   /* After a GC, rebuild the splay tree, since object addresses
      have moved. */
 {
   Fnl *fnl;
   Fnl *prev = NULL;
 
-  GC->splayed_finalizers = NULL;
+  gc->splayed_finalizers = NULL;
 
-  for (fnl = GC->finalizers; fnl; fnl = fnl->next) {
+  for (fnl = gc->finalizers; fnl; fnl = fnl->next) {
     fnl->prev = prev;
-    GC->splayed_finalizers = fnl_splay_insert((unsigned long)fnl->p, fnl, GC->splayed_finalizers);
+    gc->splayed_finalizers = fnl_splay_insert((unsigned long)fnl->p, fnl, gc->splayed_finalizers);
     prev = fnl;
   }
 }

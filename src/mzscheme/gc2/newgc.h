@@ -100,13 +100,13 @@ typedef struct NewGC {
   Fnl *last_in_queue;
   Weak_Finalizer *weak_finalizers;
 
-  struct NewGC *primoridal_gc;
+  struct GC *primoridal_gc;
   unsigned long max_heap_size;
   unsigned long max_pages_in_heap;
   unsigned long max_pages_for_use;
   unsigned long used_pages;
   unsigned long actual_pages_size;
-  void (*unsafe_allocation_abort)();
+  void (*unsafe_allocation_abort)(struct NewGC *);
   unsigned long memory_in_use; /* the amount of memory in use */
 
   /* blame the child saved off Mark_Proc pointers */

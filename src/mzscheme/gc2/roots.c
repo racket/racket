@@ -80,7 +80,8 @@ static void sort_and_merge_roots(Roots *roots)
 
 void GC_add_roots(void *start, void *end)
 {
-  Roots *roots = &GC->roots;
+  GCTYPE *gc = GC;
+  Roots *roots = &gc->roots;
 
   if (roots->count >= roots->size) {
     grow_roots(roots);

@@ -18,6 +18,7 @@
 #include "../src/schpriv.h"
 
 static THREAD_LOCAL CompactGC *GC;
+#define GCTYPE CompactGC
 
 /**************** Configuration ****************/
 
@@ -453,12 +454,14 @@ void CompactGC_initialize(CompactGC *gc) {
 
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
+  CompactGC *gc;
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
 
-  GC = malloc(sizeof(CompactGC));
-  CompactGC_initialize(GC);
+  gc = malloc(sizeof(CompactGC));
+  GC = gc;
+  CompactGC_initialize(gc);
 }
 
 void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup, 
@@ -553,7 +556,7 @@ static int size_on_free_list(void *p)
 /*                           weak arrays and boxes                            */
 /******************************************************************************/
 
-static int is_marked(void *p);
+static int is_marked(CompactGC *gc, void *p);
 #define weak_box_resolve(p) (p)
 
 #include "weak.c"
@@ -685,7 +688,7 @@ int GC_is_allocated(void *p)
 }
 
 /* Works only during GC: */
-static int is_marked(void *p)
+static int is_marked(CompactGC *gc, void *p)
 {
   unsigned long g = ((unsigned long)p >> MAPS_SHIFT);
   MPage *map;
@@ -701,26 +704,26 @@ static int is_marked(void *p)
 #endif
     if (page->flags & MFLAG_BIGBLOCK) {
       if (page->flags & MFLAG_CONTINUED)
-	return is_marked(page->o.bigblock_start);
+        return is_marked(gc, page->o.bigblock_start);
       else
-	return (page->flags & (COLOR_MASK | MFLAG_OLD));
+        return (page->flags & (COLOR_MASK | MFLAG_OLD));
     } else {
       if (page->flags & MFLAG_OLD)
-	return 1;
+        return 1;
       else if (page->flags & COLOR_MASK) {
-	long offset = ((long)p & MPAGE_MASK) >> LOG_WORD_SIZE;
+        long offset = ((long)p & MPAGE_MASK) >> LOG_WORD_SIZE;
 
- 	if (page->type > MTYPE_TAGGED)
- 	  offset -= 1;
+        if (page->type > MTYPE_TAGGED)
+          offset -= 1;
 
-	return OFFSET_COLOR(page->u.offsets, offset);
+        return OFFSET_COLOR(page->u.offsets, offset);
       } else if ((long)p & 0x1)
-	return 1;
+        return 1;
       else
-	return 0;
+        return 0;
     }
   }
-  
+
   return 1;
 }
 
@@ -2861,7 +2864,7 @@ static void init(void)
     initialized = 1;
 
 #if GENERATIONS
-    initialize_signal_handler();
+    initialize_signal_handler(GC);
 #endif
   }
 }
@@ -2958,6 +2961,7 @@ static void fixup_roots()
 
 static void gcollect(int full)
 {
+  CompactGC *gc = GC;
   int did_fnls;
 #if TIME
   struct rusage pre, post;
@@ -2977,9 +2981,9 @@ static void gcollect(int full)
 
   set_ending_tags();
 
-  init_weak_boxes();
-  init_ephemerons();
-  init_weak_arrays();
+  init_weak_boxes(gc);
+  init_ephemerons(gc);
+  init_weak_arrays(gc);
 
   did_fnls = 0;
 
@@ -3118,7 +3122,7 @@ static void gcollect(int full)
 
   /* Propagate, mark ready ephemerons */
   propagate_all_mpages();
-  mark_ready_ephemerons();
+  mark_ready_ephemerons(gc);
 
   /* Propagate, loop to do finalization */
   while (1) { 
@@ -3138,7 +3142,7 @@ static void gcollect(int full)
 	for (f = GC->finalizers; f; f = next) {
 	  next = f->next;
 	  if (f->eager_level == 3) {
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Mark it and enqueue it. */
 #if RECORD_MARK_SRC
 	      mark_src = f;
@@ -3173,7 +3177,7 @@ static void gcollect(int full)
 	  for (wl = fnl_weaks; wl; wl = wl->next) {
 	    void *wp = (void *)wl->p;
 	    int markit;
-	    markit = is_marked(wp);
+	    markit = is_marked(gc, wp);
 	    if (markit) {
 #if RECORD_MARK_SRC
 	      mark_src = wp;
@@ -3217,7 +3221,7 @@ static void gcollect(int full)
 	    mark_src = f;
 	    mark_type = MTYPE_TAGGED;
 #endif
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Mark content. */
 	      if (f->tagged) {
 		Type_Tag tag = *(Type_Tag *)f->p;
@@ -3243,7 +3247,7 @@ static void gcollect(int full)
 	
 	while (f) {
 	  if (f->eager_level == eager_level) {
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Move finalization to run queue. */
 	      Fnl *next = f->next;
 
@@ -3286,7 +3290,7 @@ static void gcollect(int full)
 	  f = f->next;
 	}
 
-	mark_ready_ephemerons();
+	mark_ready_ephemerons(gc);
       }
 	
       did_fnls++;
@@ -3323,9 +3327,9 @@ static void gcollect(int full)
 
   /******************************************************/
 
-  zero_remaining_ephemerons();
-  zero_weak_boxes();
-  zero_weak_arrays();
+  zero_remaining_ephemerons(gc);
+  zero_weak_boxes(gc);
+  zero_weak_arrays(gc);
 
   /* Cleanup weak finalization links: */
   {
@@ -3334,7 +3338,7 @@ static void gcollect(int full)
     prev = NULL;
     for (wl = fnl_weaks; wl; wl = next) {
       next = wl->next;
-      if (!is_marked(wl->p)) {
+      if (!is_marked(gc, wl->p)) {
 	/* Will be collected. Removed this link. */
 	wl->p = NULL;
 	if (prev)
@@ -3472,7 +3476,7 @@ static void gcollect(int full)
 
   protect_old_mpages();
 
-  reset_finalizer_tree();
+  reset_finalizer_tree(GC);
 
 #if (COMPACTING == NEVER_COMPACT)
 # define THRESH_FREE_LIST_DELTA (FREE_LIST_DELTA >> LOG_WORD_SIZE)
