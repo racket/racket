@@ -1035,7 +1035,7 @@ inline static void check_finalizers(int level)
       work = next;
     } else { 
       GCDEBUG((DEBUGOUTF, "CFNL: Not finalizing %p (level %i on %p): %p / %i\n",
-            work, work->eager_level, work->p, pagemap_find_page(work->p),
+            work, work->eager_level, work->p, pagemap_find_page(GC->page_maps, work->p),
             marked(work->p)));
       prev = work; 
       work = GC_resolve(work->next); 
@@ -1858,7 +1858,7 @@ void GC_dump(void)
 int GC_is_tagged(void *p)
 {
   struct mpage *page;
-  page = pagemap_find_page(p);
+  page = pagemap_find_page(GC->page_maps, p);
   return page && (page->page_type == PAGE_TAGGED);
 }
 
@@ -2205,9 +2205,9 @@ static void repair_heap(void)
   }
 }
 
-static inline void gen1_free_mpage(mpage *page) {
+static inline void gen1_free_mpage(PageMap pagemap, mpage *page) {
   size_t real_page_size = page->big_page ? round_to_apage_size(page->size) : APAGE_SIZE;
-  pagemap_remove(GC->page_maps, page);
+  pagemap_remove(pagemap, page);
   free_backtrace(page);
   free_pages(page->addr, real_page_size);
   free_mpage(page);
@@ -2215,11 +2215,12 @@ static inline void gen1_free_mpage(mpage *page) {
 
 static inline void cleanup_vacated_pages(NewGC *gc) {
   mpage *pages = gc->release_pages;
+  PageMap pagemap = gc->page_maps;
 
   /* Free pages vacated by compaction: */
   while (pages) {
     mpage *next = pages->next;
-    gen1_free_mpage(pages);
+    gen1_free_mpage(pagemap, pages);
     pages = next;
   }
   gc->release_pages = NULL;
@@ -2229,15 +2230,15 @@ inline static void gen0_free_big_pages() {
   mpage *work;
   mpage *next;
   NewGC *gc = GC;
+  PageMap pagemap = gc->page_maps;
 
   for(work = gc->gen0.big_pages; work; work = next) {
     next = work->next;
-    pagemap_remove(GC->page_maps, work);
+    pagemap_remove(pagemap, work);
     free_pages(work->addr, round_to_apage_size(work->size));
     free_mpage(work);
   }
 }
-
 
 static void clean_up_heap(void)
 {
@@ -2258,7 +2259,7 @@ static void clean_up_heap(void)
           /* remove work from list */
           if(prev) prev->next = next; else GC->gen1_pages[i] = next;
           if(next) work->next->prev = prev;
-          gen1_free_mpage(work);
+          gen1_free_mpage(pagemap, work);
         } else {
           pagemap_add(pagemap, work);
           work->back_pointers = work->marked_on = 0;
@@ -2572,6 +2573,7 @@ void GC_free_all(void)
   int i;
   mpage *work;
   mpage *next;
+  PageMap pagemap = GC->page_maps;
 
   remove_signal_handler();
 
@@ -2583,7 +2585,7 @@ void GC_free_all(void)
 
       if (work->mprotected)
         protect_pages(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, 1);
-      gen1_free_mpage(work);
+      gen1_free_mpage(pagemap, work);
     }
   }
 
