@@ -314,6 +314,7 @@ main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
 gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/compact.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
+			 $(srcdir)/newgc_internal.h \
        $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
        $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
        $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \

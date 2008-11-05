@@ -34,9 +34,9 @@
 #include "platforms.h"
 #include "gc2.h"
 #include "gc2_dump.h"
-#include "newgc_internal.h"
 #include "../src/schpriv.h"
 
+#include "newgc_internal.h"
 static THREAD_LOCAL NewGC *GC;
 
 #include "msgprint.c"
@@ -64,7 +64,7 @@ static THREAD_LOCAL NewGC *GC;
 #define GEN0_INITIAL_SIZE (1 * 1024 * 1024)
 #define GEN0_SIZE_FACTOR 0.5
 #define GEN0_SIZE_ADDITION (512 * 1024)
-#define MAX_GEN0_SIZE (32 * 1024 * 1024)
+#define GEN0_MAX_SIZE (32 * 1024 * 1024)
 #define GEN0_PAGE_SIZE (1 * 1024 * 1024)
 
 /* This is the log base 2 of the size of one word, given in bytes */
@@ -74,18 +74,14 @@ static THREAD_LOCAL NewGC *GC;
 # define LOG_WORD_SIZE 2
 #endif
 
-/* This is the log base 2 of the standard memory page size. 14 means 2^14,
-   which is 16k. This seems to be a good size for most platforms.
-   Under Windows as of 2008, however, the allocation granularity is 64k. */
-/* # define LOG_APAGE_SIZE ... see gc2_obj.h */
-#include "gc2_obj.h"
-
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
 
 /* the size of a page we use for the internal mark stack */
 #define STACK_PART_SIZE (1 * 1024 * 1024)
 
+
+/* # define LOG_APAGE_SIZE ... see gc2_obj.h */
 /* These are computed from the previous settings. You shouldn't mess with 
    them */
 #define PTR(x) ((void*)(x))
@@ -121,7 +117,6 @@ static void *park_save[2];
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
 static unsigned long max_pages_in_heap = 0;
-static unsigned long max_heap_size = 0;
 static unsigned long max_pages_for_use = 0;
 static unsigned long used_pages = 0;
 static unsigned long actual_pages_size = 0;
@@ -150,8 +145,8 @@ inline static void check_used_against_max(size_t len)
       if(used_pages > max_pages_for_use) {
         garbage_collect(1); /* hopefully *this* will free enough space */
         if(used_pages > max_pages_for_use) {
-          /* nope, no go. there's simply too much memory allocated. Inform
-             the thunk and then die semi-gracefully */
+          /* too much memory allocated. 
+           * Inform the thunk and then die semi-gracefully */
           if(GC_out_of_memory)
             GC_out_of_memory();
           out_of_memory();
@@ -202,23 +197,6 @@ int GC_mtrace_union_current_with(int newval)
 /*****************************************************************************/
 
 /* struct objhead is defined in gc2_obj.h */
-
-typedef struct mpage {
-  struct mpage *next, *prev;
-  void *addr;
-  unsigned long previous_size;
-  unsigned long size;
-  unsigned char generation;
-  unsigned char back_pointers;
-  unsigned char big_page;
-  unsigned char page_type;
-  unsigned char marked_on;
-  unsigned char has_new;
-  unsigned char mprotected;
-  unsigned short live_size;
-  void **backtrace;
-} mpage;
-
 /* Make sure alloction starts out double-word aligned. 
    The header on each allocated object is one word, so to make
    the content double-word aligned, we deeper. */
@@ -228,12 +206,14 @@ typedef struct mpage {
 # else
 #  define PREFIX_WSIZE 3
 # endif
-#else
-# if defined(GC_ALIGN_EIGHT) && !defined(SIXTY_FOUR_BIT_INTEGERS)
-#  define PREFIX_WSIZE 1
-# else
+#elif defined(GC_ALIGN_EIGHT) 
+# if defined(SIXTY_FOUR_BIT_INTEGERS)
 #  define PREFIX_WSIZE 0
+# else
+#  define PREFIX_WSIZE 1
 # endif
+#else /* GC_ALIGHT_FOUR or byte aligned */
+# define PREFIX_WSIZE 0
 #endif
 #define PREFIX_SIZE (PREFIX_WSIZE * WORD_SIZE)
 
@@ -296,23 +276,19 @@ static struct mpage *page_map[1 << USEFUL_ADDR_BITS];
 # define FIND_PAGE_MAP(p) /**/
 #endif
 
-/* Generation 0. Generation 0 is a set of very large pages in a list(gen0_pages),
-   plus a set of smaller bigpages in a separate list. The former is purely an
-   optimization, saving us from constantly deallocating and allocating the
-   entire nursery on every GC. The latter is useful because it simplifies
+/* Generation 0. Generation 0 is a set of very large pages in a list(GC->gen0.pages),
+   plus a set of smaller bigpages in a separate list(GC->gen0.big_pages). 
+   The former is purely an optimization, saving us from constantly deallocating 
+   and allocating the entire nursery on every GC. The latter is useful because it simplifies
    the allocation process (which is also a speed hack, come to think of it) 
 
-   gen0_pages           is the list of very large nursery pages.
-   gen0_curr_alloc_page   is the member of this list we are currently allocating on.
+   GC->gen0.pages             is the list of very large nursery pages.
+   GC->gen0.curr_alloc_page   is the member of this list we are currently allocating on.
    The size count helps us trigger collection quickly when we're running out of space; see
    the test in allocate_big. 
 */
-static struct mpage *gen0_pages = NULL;
-static struct mpage *gen0_curr_alloc_page = NULL;
-static struct mpage *gen0_big_pages = NULL;
 unsigned long GC_gen0_alloc_page_ptr = 0;
-static unsigned long gen0_current_size = 0;
-static unsigned long gen0_max_size = 0;
+unsigned long GC_gen0_alloc_page_end = 0;
 
 /* All non-gen0 pages are held in the following structure. */
 static struct mpage *pages[PAGE_TYPES];
@@ -321,7 +297,7 @@ static struct mpage *pages[PAGE_TYPES];
 static char *zero_sized[4]; /* all 0-sized allocs get this */
 static int gc_full = 0; /* a flag saying if this is a full/major collection */
 static Mark_Proc mark_table[NUMBER_OF_TAGS]; /* the table of mark procs */
-static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the talbe of repair procs */
+static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the table of repair procs */
 static unsigned long memory_in_use = 0; /* the amount of memory in use */
 static struct mpage *release_page = NULL;
 static int avoid_collection;
@@ -421,11 +397,11 @@ static void *allocate_big(size_t sizeb, int type)
   sizew = gcBYTES_TO_WORDS(sizeb) + PREFIX_WSIZE + 1;
   sizeb = gcWORDS_TO_BYTES(sizew);
 
-  if((gen0_current_size + sizeb) >= gen0_max_size) {
+  if((GC->gen0.current_size + sizeb) >= GC->gen0.max_size) {
     if (!avoid_collection)
       garbage_collect(0);
   }
-  gen0_current_size += sizeb;
+  GC->gen0.current_size += sizeb;
 
   /* We not only need APAGE_SIZE alignment, we 
      need everything consisently mapped within an APAGE_SIZE
@@ -440,9 +416,11 @@ static void *allocate_big(size_t sizeb, int type)
   bpage->size = sizeb;
   bpage->big_page = 1;
   bpage->page_type = type;
-  bpage->next = gen0_big_pages;
+
+  /* push new bpage onto GC->gen0.big_pages */
+  bpage->next = GC->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
-  gen0_big_pages = bpage;
+  GC->gen0.big_pages = bpage;
   pagemap_add(bpage);
 
   return PTR(NUM(addr) + PREFIX_SIZE + WORD_SIZE);
@@ -482,7 +460,7 @@ static void *allocate_big(size_t sizeb, int type)
 inline static struct mpage *gen0_create_new_mpage() {
   struct mpage *work;
   work = malloc_mpage();
-  work->addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+  work->addr = malloc_dirty_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
 
   work->big_page = 1; /* until added */
   work->size = GEN0_PAGE_SIZE; /* until added */
@@ -493,55 +471,56 @@ inline static struct mpage *gen0_create_new_mpage() {
   return work;
 }
 
-#define OVERFLOWS_GEN0(ptr) ((ptr) > (NUM(gen0_curr_alloc_page->addr) + GEN0_PAGE_SIZE))
-#define gen0_size_in_use() (gen0_current_size + ((GC_gen0_alloc_page_ptr - NUM(gen0_curr_alloc_page->addr)) - PREFIX_SIZE))
+//#define OVERFLOWS_GEN0(ptr) ((ptr) > (NUM(GC->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE))
+#define OVERFLOWS_GEN0(ptr) ((ptr) > GC_gen0_alloc_page_end)
+#define gen0_size_in_use() (GC->gen0.current_size + ((GC_gen0_alloc_page_ptr - NUM(GC->gen0.curr_alloc_page->addr)) - PREFIX_SIZE))
 
 inline static void *allocate(size_t sizeb, int type)
 {
   size_t sizew;
+  unsigned long newptr;
 
   if(sizeb == 0) return zero_sized;
 
   sizew = ALIGN_SIZE(( gcBYTES_TO_WORDS(sizeb) + 1));
   if(sizew > MAX_OBJECT_SIZEW)  return allocate_big(sizeb, type);
 
-  unsigned long newptr;
-
   sizeb = gcWORDS_TO_BYTES(sizew);
 
-alloc_retry:
+  /* ensure that allocation will fit in a gen0 page */
   newptr = GC_gen0_alloc_page_ptr + sizeb;
-
-  if(OVERFLOWS_GEN0(newptr)) {
-
+  while (OVERFLOWS_GEN0(newptr)) {
     /* bring page size used up to date */
-    gen0_curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(gen0_curr_alloc_page->addr);
-    gen0_current_size += gen0_curr_alloc_page->size;
+    GC->gen0.curr_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(GC->gen0.curr_alloc_page->addr);
+    GC->gen0.current_size += GC->gen0.curr_alloc_page->size;
 
     /* try next nursery page if present */
-    if(gen0_curr_alloc_page->next) { 
-      gen0_curr_alloc_page      = gen0_curr_alloc_page->next;
-      GC_gen0_alloc_page_ptr    = NUM(gen0_curr_alloc_page->addr) + gen0_curr_alloc_page->size;
+    if(GC->gen0.curr_alloc_page->next) { 
+      GC->gen0.curr_alloc_page  = GC->gen0.curr_alloc_page->next;
+      GC_gen0_alloc_page_ptr    = NUM(GC->gen0.curr_alloc_page->addr) + GC->gen0.curr_alloc_page->size;
+      GC_gen0_alloc_page_end    = NUM(GC->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE;
     }
     /* WARNING: tries to avoid a collection but
      * malloc_pages can cause a collection due to check_used_against_max */
     else if (avoid_collection) {
-      struct mpage *work= gen0_create_new_mpage();
+      struct mpage *new_mpage= gen0_create_new_mpage();
 
       /* push page */
-      work->next = gen0_curr_alloc_page;
-      gen0_curr_alloc_page->prev = work;
+      new_mpage->next = GC->gen0.curr_alloc_page;
+      new_mpage->next->prev = new_mpage;
 
-      gen0_curr_alloc_page      = work;
-      GC_gen0_alloc_page_ptr    = NUM(work->addr);
+      GC->gen0.curr_alloc_page  = new_mpage;
+      GC_gen0_alloc_page_ptr    = NUM(new_mpage->addr);
+      GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
     }
     else {
       garbage_collect(0);
     }
-
-    goto alloc_retry;
+    newptr = GC_gen0_alloc_page_ptr + sizeb;
   } 
-  else {
+
+  /* actual Allocation */
+  {
     struct objhead *info;
     void *retval = PTR(GC_gen0_alloc_page_ptr);
 
@@ -633,12 +612,12 @@ long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW)
    to the size we've computed as ideal */
 inline static void resize_gen0(unsigned long new_size)
 {
-  mpage *work = gen0_pages;
+  mpage *work = GC->gen0.pages;
   mpage *prev = NULL;
   unsigned long alloced_size = 0;
 
   /* first, make sure the big pages pointer is clean */
-  gen0_big_pages = NULL; 
+  GC->gen0.big_pages = NULL; 
 
   /* reset any parts of gen0 we're keeping */
   while(work && (alloced_size < new_size)) {
@@ -654,7 +633,7 @@ inline static void resize_gen0(unsigned long new_size)
 
     if(prev)
       prev->next = newpage;
-    else gen0_pages = newpage;
+    else GC->gen0.pages = newpage;
     prev = newpage;
 
     alloced_size += GEN0_PAGE_SIZE;
@@ -677,20 +656,21 @@ inline static void resize_gen0(unsigned long new_size)
   }
 
   /* we're going to allocate onto the first page now */
-  gen0_curr_alloc_page = gen0_pages;
-  GC_gen0_alloc_page_ptr = NUM(gen0_curr_alloc_page->addr) + gen0_curr_alloc_page->size;
+  GC->gen0.curr_alloc_page = GC->gen0.pages;
+  GC_gen0_alloc_page_ptr = NUM(GC->gen0.curr_alloc_page->addr) + GC->gen0.curr_alloc_page->size;
+  GC_gen0_alloc_page_end = NUM(GC->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE;
 
   /* set the two size variables */
-  gen0_max_size = alloced_size;
-  gen0_current_size = 0;
+  GC->gen0.max_size = alloced_size;
+  GC->gen0.current_size = 0;
 }
 
 inline static void reset_nursery(void)
 {
   unsigned long new_gen0_size; 
   new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)memory_in_use) + GEN0_SIZE_ADDITION);
-  if(new_gen0_size > MAX_GEN0_SIZE)
-    new_gen0_size = MAX_GEN0_SIZE;
+  if(new_gen0_size > GEN0_MAX_SIZE)
+    new_gen0_size = GEN0_MAX_SIZE;
 
   resize_gen0(new_gen0_size);
 }
@@ -762,12 +742,12 @@ static void dump_heap(void)
   short i;
   
   if(collections >= 0) {
-    for(page = gen0_pages; page; page = page->next) {
+    for(page = GC->gen0.pages; page; page = page->next) {
       fprintf(dump, "Generation 0 Page (%p:%p - %p, size %i):\n", 
 	      page, page->addr, PTR(NUM(page->addr) + GEN0_PAGE_SIZE), page->size);
       dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
-    for(page = gen0_big_pages; page; page = page->next) {
+    for(page = Gc->gen0.big_pages; page; page = page->next) {
       fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
 	      page, page->addr, page->generation, page->page_type, page->big_page,
 	      page->back_pointers, page->size);
@@ -1482,8 +1462,7 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
 # endif
 
     /* Our best guess at what the OS will let us allocate: */
-    max_heap_size = determine_max_heap_size();
-    max_pages_in_heap = max_heap_size / APAGE_SIZE;
+    max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
     /* Not all of that memory is available for allocating GCable
        objects.  There's the memory used by the stack, code,
        malloc()/free()ed memory, etc., and there's also the
@@ -1571,7 +1550,7 @@ void GC_mark(const void *const_p)
 	if(!page->generation) {
 	  page->generation = 1;
 	  if(page->prev) page->prev->next = page->next; else
-	    gen0_big_pages = page->next;
+	    GC->gen0.big_pages = page->next;
 	  if(page->next) page->next->prev = page->prev;
 
 	  backtrace_new_page(page);
@@ -1920,7 +1899,7 @@ void GC_dump_with_traces(int flags,
   }
   GCPRINT(GCOUTF, "End MzScheme3m\n");
 
-  GCWARN((GCOUTF, "Generation 0: %li of %li bytes used\n", gen0_size_in_use(), gen0_max_size));
+  GCWARN((GCOUTF, "Generation 0: %li of %li bytes used\n", gen0_size_in_use(), GC->gen0.max_size));
   
   for(i = 0; i < PAGE_TYPES; i++) {
     unsigned long total_use = 0, count = 0;
@@ -2314,7 +2293,7 @@ static void clean_up_heap(void)
   memory_in_use = 0;
   
   /* For the purposes of this little loop, s/prev/next/ */
-  for(work = gen0_big_pages; work; work = prev) {
+  for(work = GC->gen0.big_pages; work; work = prev) {
     prev = work->next;
     pagemap_remove(work);
     free_pages(work->addr, round_to_apage_size(work->size));
@@ -2411,7 +2390,8 @@ static void garbage_collect(int force_full)
   static unsigned int since_last_full = 0;
   static unsigned int running_finalizers = 0;
   static unsigned long last_full_mem_use = (20 * 1024 * 1024);
-  unsigned long old_mem_use = memory_in_use, old_gen0 = gen0_current_size;
+  unsigned long old_mem_use = memory_in_use;
+  unsigned long old_gen0    = GC->gen0.current_size;
   int next_gc_full;
   TIME_DECLS();
 
@@ -2664,7 +2644,7 @@ void GC_free_all(void)
 
   remove_signal_handler();
 
-  for (work = gen0_big_pages; work; work = next) {
+  for (work = GC->gen0.big_pages; work; work = next) {
     next = work->next;
     free_pages(work->addr, round_to_apage_size(work->size));
     free_mpage(work);

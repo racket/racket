@@ -1,5 +1,67 @@
 #include "commongc_internal.h"
 
+#if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
+
+/* This is the log base 2 of the standard memory page size. 14 means 2^14,
+   which is 16k. This seems to be a good size for most platforms.
+   Under Windows as of 2008, however, the allocation granularity is 64k. */
+#ifdef _WIN32
+# define LOG_APAGE_SIZE 16
+#else
+# define LOG_APAGE_SIZE 14
+#endif
+
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+# define OBJH_WORD_SIZE 8
+#else
+# define OBJH_WORD_SIZE 4
+#endif
+
+struct objhead {
+  unsigned long hash      : ((8*OBJH_WORD_SIZE) - (4+3+LOG_APAGE_SIZE));
+  /* the type and size of the object */
+  unsigned long type      : 3;
+  /* these are the various mark bits we use */
+  unsigned long mark      : 1;
+  unsigned long btc_mark  : 1;
+  /* these are used for compaction et al*/
+  unsigned long moved     : 1;
+  unsigned long dead      : 1;
+  unsigned long size      : LOG_APAGE_SIZE;
+};
+
+XFORM_NONGCING extern int GC_is_allocated(void *p);
+
+#define OBJHEAD_HAS_HASH_BITS
+#define OBJHEAD_HASH_BITS(p) ((struct objhead *)((void **)p - 1))->hash
+
+#endif
+
+typedef struct mpage {
+  struct mpage *next;
+  struct mpage *prev;
+  void *addr;
+  unsigned long previous_size;
+  unsigned long size;
+  unsigned char generation;
+/*
+  unsigned char back_pointers :1;
+  unsigned char big_page      :2;
+  unsigned char page_type     :3; 
+  unsigned char marked_on     :1;
+  unsigned char has_new       :1;
+  unsigned char mprotected    :1;
+*/
+  unsigned char back_pointers ;
+  unsigned char big_page      ;
+  unsigned char page_type     ; 
+  unsigned char marked_on     ;
+  unsigned char has_new       ;
+  unsigned char mprotected    ;
+  unsigned short live_size;
+  void **backtrace;
+} mpage;
+
 typedef struct Gen0 {
  struct mpage *curr_alloc_page;
  struct mpage *pages;
