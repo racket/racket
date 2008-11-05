@@ -1038,14 +1038,14 @@ unsigned long GC_get_stack_base()
 
 #define traverse_roots(gcMUCK, set_bt_src) {				    \
     unsigned long j;                                                        \
-    if(roots) {                                                             \
+    if(roots->roots) {                                                      \
       sort_and_merge_roots();                                               \
-      for(j = 0; j < roots_count; j += 2) {                                 \
-        void **start = (void**)roots[j];                                    \
-        void **end = (void**)roots[j+1];                                    \
+      for(j = 0; j < roots->count; j += 2) {                                \
+        void **start = (void**)roots->roots[j];                             \
+        void **end = (void**)roots->roots[j+1];                             \
         while(start < end) {                                                \
           set_bt_src(start, BT_ROOT);                                       \
-          gcMUCK(*start++);						    \
+          gcMUCK(*start++);                                                 \
         }                                                                   \
       }                                                                     \
     }                                                                       \
