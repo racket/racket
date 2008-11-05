@@ -295,7 +295,6 @@ static struct mpage *pages[PAGE_TYPES];
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
-static int gc_full = 0; /* a flag saying if this is a full/major collection */
 static Mark_Proc mark_table[NUMBER_OF_TAGS]; /* the table of mark procs */
 static Fixup_Proc fixup_table[NUMBER_OF_TAGS]; /* the table of repair procs */
 static unsigned long memory_in_use = 0; /* the amount of memory in use */
@@ -1959,7 +1958,7 @@ static void prepare_pages_for_collection(void)
   int i;
   
   GCDEBUG((DEBUGOUTF, "PREPPING PAGES.\n"));
-  if(gc_full) {
+  if(GC->gc_full) {
     /* we need to make sure that previous_size for every page is reset, so
        we don't accidentally screw up the mark routine */
     if (GC->generations_available) {
@@ -1998,7 +1997,7 @@ static void prepare_pages_for_collection(void)
 
 static void mark_backpointers(void)
 {
-  if(!gc_full) {
+  if(!GC->gc_full) {
     struct mpage *work;
     int i;
 
@@ -2295,7 +2294,7 @@ static void clean_up_heap(void)
   for(i = 0; i < PAGE_TYPES; i++) {
     struct mpage *prev = NULL;
 
-    if(gc_full) {
+    if(GC->gc_full) {
       work = pages[i];
       while(work) {
 	if(!work->marked_on) {
@@ -2359,7 +2358,7 @@ static void protect_old_pages(void)
 #if 0
 extern double scheme_get_inexact_milliseconds(void);
 # define TIME_DECLS() double start, task_start
-# define TIME_INIT() start = task_start = scheme_get_inexact_milliseconds(); fprintf(stderr, "GC (%d):\n", gc_full)
+# define TIME_INIT() start = task_start = scheme_get_inexact_milliseconds(); fprintf(stderr, "GC (%d):\n", GC->gc_full)
 # define TIME_STEP(task) fprintf(stderr, "  %s: %lf\n", task, scheme_get_inexact_milliseconds() - task_start); \
                          task_start = scheme_get_inexact_milliseconds()
 # define TIME_DONE() fprintf(stderr, " Total: %lf\n", scheme_get_inexact_milliseconds() - start)
@@ -2388,20 +2387,20 @@ static void garbage_collect(int force_full)
   NewGC *gc = GC;
 
   /* determine if this should be a full collection or not */
-  gc_full = force_full || !gc->generations_available 
+  gc->gc_full = force_full || !gc->generations_available 
     || (since_last_full > 100) || (memory_in_use > (2 * last_full_mem_use));
 #if 0
   printf("Collection %li (full = %i): %i / %i / %i / %i  %ld\n", number, 
- 	 gc_full, force_full, !generations_available,
+ 	 gc->gc_full, force_full, !generations_available,
          (since_last_full > 100), (memory_in_use > (2 * last_full_mem_use)),
          last_full_mem_use);
 #endif
 
-  next_gc_full = gc_full;
+  next_gc_full = gc->gc_full;
   
   if (gc->full_needed_for_finalization) {
     gc->full_needed_for_finalization= 0;
-    gc_full = 1;
+    gc->gc_full = 1;
   }
 
   number++; 
@@ -2450,10 +2449,10 @@ static void garbage_collect(int force_full)
   propagate_marks(); mark_ready_ephemerons(); propagate_marks(); 
   check_finalizers(1); mark_ready_ephemerons(); propagate_marks();
   check_finalizers(2); mark_ready_ephemerons(); propagate_marks();
-  if(gc_full) zero_weak_finalizers();
+  if(gc->gc_full) zero_weak_finalizers();
   do_ordered_level3(); propagate_marks();
   check_finalizers(3); propagate_marks();
-  if(gc_full) {
+  if(gc->gc_full) {
     reset_weak_finalizers(); 
     propagate_marks();
   }
@@ -2474,7 +2473,7 @@ static void garbage_collect(int force_full)
 
   TIME_STEP("zeroed");
 
-  if(gc_full) do_heap_compact();
+  if(gc->gc_full) do_heap_compact();
 
   TIME_STEP("compacted");
 
@@ -2497,13 +2496,13 @@ static void garbage_collect(int force_full)
   TIME_STEP("cleaned heap");
   reset_nursery();
   TIME_STEP("reset nursurey");
-  if (gc_full)
+  if (gc->gc_full)
     do_btc_accounting();
   TIME_STEP("accounted");
   if (gc->generations_available)
     protect_old_pages();
   TIME_STEP("protect");
-  if (gc_full)
+  if (gc->gc_full)
     flush_freed_pages();
   reset_finalizer_tree();
 
@@ -2520,9 +2519,9 @@ static void garbage_collect(int force_full)
   }
 
   /* update some statistics */
-  if(gc_full) gc->num_major_collects++; else gc->num_minor_collects++;
+  if(gc->gc_full) gc->num_major_collects++; else gc->num_minor_collects++;
   if(gc->peak_memory_use < memory_in_use) gc->peak_memory_use = memory_in_use;
-  if(gc_full)
+  if(gc->gc_full)
     since_last_full = 0;
   else if((float)(memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
     since_last_full += 1;
@@ -2530,14 +2529,14 @@ static void garbage_collect(int force_full)
     since_last_full += 5;
   else 
     since_last_full += 10;
-  if(gc_full)
+  if(gc->gc_full)
     last_full_mem_use = memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
   if (GC_collect_start_callback)
     GC_collect_end_callback();
   if (GC_collect_inform_callback)
-    GC_collect_inform_callback(gc_full, old_mem_use + old_gen0, memory_in_use);
+    GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, memory_in_use);
 
   TIME_STEP("ended");
 
