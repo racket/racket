@@ -74,42 +74,36 @@ inline static int thread_get_owner(void *p)
 
 #define OWNER_TABLE_INIT_AMT 10
 
-struct ot_entry {
-  Scheme_Custodian *originator;
-  Scheme_Custodian **members;
-  unsigned long memory_use;
-  unsigned long single_time_limit, super_required;
-  char limit_set, required_set;
-};
-
-static THREAD_LOCAL struct ot_entry **owner_table = NULL;
-static unsigned int owner_table_top = 0;
-
 inline static int create_blank_owner_set(void)
 {
   int i;
-  unsigned int old_top;
-  struct ot_entry **naya;
+  unsigned int curr_size = GC->owner_table_size;
+  OTEntry **owner_table = GC->owner_table;
+  unsigned int old_size;
+  OTEntry **naya;
 
-  for (i = 1; i < owner_table_top; i++) {
+  for (i = 1; i < curr_size; i++) {
     if (!owner_table[i]) {
-      owner_table[i] = malloc(sizeof(struct ot_entry));
-      bzero(owner_table[i], sizeof(struct ot_entry));
+      owner_table[i] = malloc(sizeof(OTEntry));
+      bzero(owner_table[i], sizeof(OTEntry));
       return i;
     }
   }
 
-  old_top = owner_table_top;
-  if (!owner_table_top)
-    owner_table_top = OWNER_TABLE_INIT_AMT;
-  else
-    owner_table_top *= 2;
+  old_size = curr_size;
+  if (!curr_size) {
+    curr_size = OWNER_TABLE_INIT_AMT;
+  }
+  else {
+    curr_size *= 2;
+  }
+  GC->owner_table_size = curr_size;
 
-  naya = (struct ot_entry **)malloc(owner_table_top*sizeof(struct ot_entry*));
-  memcpy(naya, owner_table, old_top*sizeof(struct ot_entry*));
-  owner_table = naya;
-  bzero((char*)owner_table + (sizeof(struct ot_entry*) * old_top),
-      (owner_table_top - old_top) * sizeof(struct ot_entry*));
+  naya = (OTEntry **)malloc(curr_size * sizeof(OTEntry*));
+  memcpy(naya, owner_table, old_size*sizeof(OTEntry*));
+  GC->owner_table = owner_table = naya;
+  bzero(((char*)owner_table) + (sizeof(OTEntry*) * old_size),
+      (curr_size - old_size) * sizeof(OTEntry*));
 
   return create_blank_owner_set();
 }
@@ -122,7 +116,7 @@ inline static int custodian_to_owner_set(Scheme_Custodian *cust)
     return cust->gc_owner_set;
 
   i = create_blank_owner_set();
-  owner_table[i]->originator = cust;
+  GC->owner_table[i]->originator = cust;
   cust->gc_owner_set = i;
 
   return i;
@@ -142,11 +136,11 @@ void BTC_register_root_custodian(void *_c)
 {
   Scheme_Custodian *c = (Scheme_Custodian *)_c;
 
-  if (owner_table) {
+  if (GC->owner_table) {
     /* Reset */
-    free(owner_table);
-    owner_table = NULL;
-    owner_table_top = 0;
+    free(GC->owner_table);
+    GC->owner_table = NULL;
+    GC->owner_table_size = 0;
   }
 
   if (create_blank_owner_set() != 1) {
@@ -154,14 +148,14 @@ void BTC_register_root_custodian(void *_c)
     abort();
   }
 
-  owner_table[1]->originator = c;
+  GC->owner_table[1]->originator = c;
   c->gc_owner_set = 1;
 }
 
 inline static int custodian_member_owner_set(void *cust, int set)
 {
   Scheme_Custodian_Reference *box;
-  Scheme_Custodian *work = owner_table[set]->originator;
+  Scheme_Custodian *work = (Scheme_Custodian *) GC->owner_table[set]->originator;
 
   while(work) {
     if(work == cust) return 1;
@@ -173,11 +167,12 @@ inline static int custodian_member_owner_set(void *cust, int set)
 
 inline static void account_memory(int set, long amount)
 {
-  owner_table[set]->memory_use += amount;
+  GC->owner_table[set]->memory_use += amount;
 }
 
 inline static void free_owner_set(int set)
 {
+  OTEntry **owner_table = GC->owner_table;
   if(owner_table[set]) {
     free(owner_table[set]);
   }
@@ -186,9 +181,11 @@ inline static void free_owner_set(int set)
 
 inline static void clean_up_owner_table(void)
 {
+  OTEntry **owner_table = GC->owner_table;
+  const int table_size = GC->owner_table_size;
   int i;
 
-  for(i = 1; i < owner_table_top; i++)
+  for(i = 1; i < table_size; i++)
     if(owner_table[i]) {
       /* repair or delete the originator */
       if(!marked(owner_table[i]->originator)) {
@@ -205,6 +202,8 @@ inline static void clean_up_owner_table(void)
 
 inline static unsigned long custodian_usage(void *custodian)
 {
+  OTEntry **owner_table = GC->owner_table;
+  const int table_size = GC->owner_table_size;
   unsigned long retval = 0;
   int i;
 
@@ -215,7 +214,7 @@ inline static unsigned long custodian_usage(void *custodian)
     custodian = GC->park[0]; 
     GC->park[0] = NULL;
   }
-  for(i = 1; i < owner_table_top; i++)
+  for(i = 1; i < table_size; i++)
     if(owner_table[i] && custodian_member_owner_set(custodian, i)) 
       retval += owner_table[i]->memory_use;
   return gcWORDS_TO_BYTES(retval);
@@ -373,6 +372,9 @@ static void propagate_accounting_marks(void)
 
 static void BTC_do_accounting(void)
 {
+  const int table_size = GC->owner_table_size;
+  OTEntry **owner_table = GC->owner_table;
+
   if(GC->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(NULL)]->originator;
     Scheme_Custodian_Reference *box = cur->global_next;
@@ -395,7 +397,7 @@ static void BTC_do_accounting(void)
     GC->mark_table[GC->cust_box_tag]      = BTC_cust_box_mark;
 
     /* clear the memory use numbers out */
-    for(i = 1; i < owner_table_top; i++)
+    for(i = 1; i < table_size; i++)
       if(owner_table[i])
         owner_table[i]->memory_use = 0;
 
@@ -502,10 +504,12 @@ inline static void clean_up_account_hooks()
 static unsigned long custodian_super_require(void *c)
 {
   int set = ((Scheme_Custodian *)c)->gc_owner_set;
+  const int table_size = GC->owner_table_size;
+  OTEntry **owner_table = GC->owner_table;
 
   if (GC->reset_required) {
     int i;
-    for(i = 1; i < owner_table_top; i++)
+    for(i = 1; i < table_size; i++)
       if (owner_table[i])
         owner_table[i]->required_set = 0;
     GC->reset_required = 0;
@@ -559,12 +563,15 @@ inline static void BTC_run_account_hooks()
 
 static unsigned long custodian_single_time_limit(int set)
 {
+  OTEntry **owner_table = GC->owner_table;
+  const int table_size = GC->owner_table_size;
+
   if (!set)
     return (unsigned long)(long)-1;
 
   if (GC->reset_limits) {
     int i;
-    for(i = 1; i < owner_table_top; i++)
+    for(i = 1; i < table_size; i++)
       if (owner_table[i])
         owner_table[i]->limit_set = 0;
     GC->reset_limits = 0;
@@ -573,7 +580,7 @@ static unsigned long custodian_single_time_limit(int set)
   if (!owner_table[set]->limit_set) {
     /* Check for limits on this custodian or one of its ancestors: */
     unsigned long limit = (unsigned long)(long)-1;
-    Scheme_Custodian *orig = owner_table[set]->originator, *c;
+    Scheme_Custodian *orig = (Scheme_Custodian *) owner_table[set]->originator, *c;
     AccountHook *work = GC->hooks;
 
     while(work) {

@@ -55,17 +55,15 @@ typedef struct AccountHook {
   struct AccountHook *next;
 } AccountHook;
 
-/*
-struct ot_entry {
-  Scheme_Custodian *originator;
-  Scheme_Custodian **members;
+typedef struct OTEntry {
+  void *originator;
+  void **members;
   unsigned long memory_use;
   unsigned long single_time_limit;
   unsigned long super_required;
   char limit_set;
   char required_set;
-};
-*/
+} OTEntry;
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 typedef mpage ****PageMap;
@@ -122,8 +120,8 @@ typedef struct NewGC {
   unsigned int reset_required                 :1;
   unsigned int kill_propagation_loop          :1;
   unsigned int current_mark_owner;
-  /* ot_entry **owner_table; */
-  unsigned int owner_table_top;
+  OTEntry **owner_table;
+  unsigned int owner_table_size;
   AccountHook *hooks;
 
 
