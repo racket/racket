@@ -94,6 +94,9 @@ typedef struct NewGC {
 #else
   mpage **page_map;
 #endif
+  /* All non-gen0 pages are held in the following structure. */
+  struct mpage *gen1_pages[PAGE_TYPES];
+
 
   /* Finalization */
   Fnl *run_queue;

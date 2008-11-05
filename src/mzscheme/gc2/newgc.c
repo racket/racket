@@ -51,6 +51,28 @@
 #define PAGEMAP32_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
 #endif
 
+/* the page type constants */
+enum {
+  PAGE_TAGGED   = 0,
+  PAGE_ATOMIC   = 1,
+  PAGE_ARRAY    = 2,
+  PAGE_TARRAY   = 3,
+  PAGE_XTAGGED  = 4,
+  PAGE_BIG      = 5,
+  /* the number of page types. */
+  PAGE_TYPES    = 6,
+};
+
+static const char *type_name[PAGE_TYPES] = { 
+  "tagged", 
+  "atomic", 
+  "array",
+  "tagged array", 
+  "xtagged",
+  "big" 
+};
+
+
 #include "newgc_internal.h"
 static THREAD_LOCAL NewGC *GC;
 
@@ -320,27 +342,6 @@ int GC_is_allocated(void *p)
    important meaning. */
 #define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - PREFIX_WSIZE - 3)
 
-/* the page type constants */
-enum {
-  PAGE_TAGGED   = 0,
-  PAGE_ATOMIC   = 1,
-  PAGE_ARRAY    = 2,
-  PAGE_TARRAY   = 3,
-  PAGE_XTAGGED  = 4,
-  PAGE_BIG      = 5,
-  /* the number of page types. */
-  PAGE_TYPES    = 6,
-};
-
-static const char *type_name[PAGE_TYPES] = { 
-  "tagged", 
-  "atomic", 
-  "array",
-  "tagged array", 
-  "xtagged",
-  "big" 
-};
-
 
 /* Generation 0. Generation 0 is a set of very large pages in a list(GC->gen0.pages),
    plus a set of smaller bigpages in a separate list(GC->gen0.big_pages). 
@@ -355,9 +356,6 @@ static const char *type_name[PAGE_TYPES] = {
 */
 unsigned long GC_gen0_alloc_page_ptr = 0;
 unsigned long GC_gen0_alloc_page_end = 0;
-
-/* All non-gen0 pages are held in the following structure. */
-static struct mpage *pages[PAGE_TYPES];
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
@@ -775,7 +773,7 @@ static void dump_heap(void)
       dump_region(PPTR(NUM(page->addr) + PREFIX_SIZE), PPTR(NUM(page->addr) + page->size));
     }
     for(i = 0; i < PAGE_TYPES; i++)
-      for(page = pages[i]; page; page = page->next) {
+      for(page = GC->gen1_pages[i]; page; page = page->next) {
         fprintf(dump, "Page %p:%p (gen %i, type %i, big %i, back %i, size %i)\n",
             page, page->addr, page->generation, page->page_type, page->big_page,
             page->back_pointers, page->size);
@@ -1481,10 +1479,10 @@ void GC_mark(const void *const_p)
 
 	  backtrace_new_page(page);
 
-	  page->next = pages[PAGE_BIG]; 
+	  page->next = GC->gen1_pages[PAGE_BIG]; 
 	  page->prev = NULL;
 	  if(page->next) page->next->prev = page;
-	  pages[PAGE_BIG] = page;
+	  GC->gen1_pages[PAGE_BIG] = page;
 	  /* if we're doing memory accounting, then we need to make sure the
 	     btc_mark is right */
 	  set_btc_mark(NUM(page->addr) + PREFIX_SIZE);
@@ -1536,7 +1534,7 @@ void GC_mark(const void *const_p)
           }
 
 	  /* now set us up for the search for where to put this thing */
-	  work = pages[type];
+	  work = GC->gen1_pages[type];
 	  size = gcWORDS_TO_BYTES(ohead->size);
 
 	  /* search for a page with the space to spare */
@@ -1565,12 +1563,12 @@ void GC_mark(const void *const_p)
 	    work->size = work->previous_size = PREFIX_SIZE;
 	    work->marked_on = 1;
 	    backtrace_new_page(work);
-	    work->next = pages[type];
+	    work->next = GC->gen1_pages[type];
 	    work->prev = NULL;
 	    if(work->next)
 	      work->next->prev = work;
 	    pagemap_add(work);
-	    pages[type] = work;
+	    GC->gen1_pages[type] = work;
 	    newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
 	  }
 
@@ -1763,7 +1761,7 @@ void GC_dump_with_traces(int flags,
   for (i = 0; i < MAX_DUMP_TAG; i++) {
     counts[i] = sizes[i] = 0;
   }
-  for (page = pages[PAGE_TAGGED]; page; page = page->next) {
+  for (page = GC->gen1_pages[PAGE_TAGGED]; page; page = page->next) {
     void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
     void **end = PPTR(NUM(page->addr) + page->size);
     
@@ -1784,7 +1782,7 @@ void GC_dump_with_traces(int flags,
       start += info->size;
     }
   }
-  for (page = pages[PAGE_BIG]; page; page = page->next) {
+  for (page = GC->gen1_pages[PAGE_BIG]; page; page = page->next) {
     if (page->page_type == PAGE_TAGGED) {
       void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
       unsigned short tag = *(unsigned short *)(start + 1);
@@ -1823,7 +1821,7 @@ void GC_dump_with_traces(int flags,
   for(i = 0; i < PAGE_TYPES; i++) {
     unsigned long total_use = 0, count = 0;
     
-    for(page = pages[i]; page; page = page->next) {
+    for(page = GC->gen1_pages[i]; page; page = page->next) {
       total_use += page->size;
       count++;
     }
@@ -1891,7 +1889,7 @@ static void prepare_pages_for_collection(void)
        we don't accidentally screw up the mark routine */
     if (GC->generations_available) {
       for(i = 0; i < PAGE_TYPES; i++)
-	for(work = pages[i]; work; work = work->next) {
+	for(work = GC->gen1_pages[i]; work; work = work->next) {
           if (work->mprotected) {
             work->mprotected = 0;
             add_protect_page_range(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
@@ -1900,15 +1898,15 @@ static void prepare_pages_for_collection(void)
       flush_protect_page_ranges(1);
     }
     for(i = 0; i < PAGE_TYPES; i++)
-      for(work = pages[i]; work; work = work->next) {
+      for(work = GC->gen1_pages[i]; work; work = work->next) {
 	work->live_size = 0;
 	work->previous_size = PREFIX_SIZE;
       }
   } else {
     /* if we're not doing a major collection, then we need to remove all the
-       pages in pages[] from the page map */
+       pages in GC->gen1_pages[] from the page map */
     for(i = 0; i < PAGE_TYPES; i++)
-      for(work = pages[i]; work; work = work->next) {
+      for(work = GC->gen1_pages[i]; work; work = work->next) {
 	if (GC->generations_available) {
           if (work->back_pointers) {
             if (work->mprotected) {
@@ -1932,7 +1930,7 @@ static void mark_backpointers(void)
     /* if this is not a full collection, then we need to mark any pointers
        which point backwards into generation 0, since they're roots. */
     for(i = 0; i < PAGE_TYPES; i++) {
-      for(work = pages[i]; work; work = work->next) {
+      for(work = GC->gen1_pages[i]; work; work = work->next) {
 	if(work->back_pointers) {
 	  /* these pages are guaranteed not to be write protected, because
 	     if they were, they wouldn't have this bit set */
@@ -2006,7 +2004,7 @@ inline static void do_heap_compact(void)
   int i;
 
   for(i = 0; i < PAGE_BIG; i++) {
-    struct mpage *work = pages[i], *prev, *npage;
+    struct mpage *work = GC->gen1_pages[i], *prev, *npage;
 
     /* Start from the end: */
     if (work) {
@@ -2071,7 +2069,7 @@ inline static void do_heap_compact(void)
 
 	  prev = work->prev;
 
-	  if(prev) prev->next = work->next; else pages[i] = work->next;
+	  if(prev) prev->next = work->next; else GC->gen1_pages[i] = work->next;
 	  if(work->next) work->next->prev = prev;
 
     /* push work onto GC->release_pages */
@@ -2101,7 +2099,7 @@ static void repair_heap(void)
   NewGC *gc = GC;
 
   for(i = 0; i < PAGE_TYPES; i++) {
-    for(page = pages[i]; page; page = page->next) {
+    for(page = GC->gen1_pages[i]; page; page = page->next) {
       if(page->marked_on) {
 	page->has_new = 0;
 	/* these are guaranteed not to be protected */
@@ -2240,12 +2238,12 @@ static void clean_up_heap(void)
     struct mpage *prev = NULL;
 
     if(gc->gc_full) {
-      work = pages[i];
+      work = GC->gen1_pages[i];
       while(work) {
 	if(!work->marked_on) {
 	  struct mpage *next = work->next;
 	  
-	  if(prev) prev->next = next; else pages[i] = next;
+	  if(prev) prev->next = next; else GC->gen1_pages[i] = next;
 	  if(next) work->next->prev = prev;
 	  pagemap_remove(work);
 	  free_backtrace(work);
@@ -2260,14 +2258,14 @@ static void clean_up_heap(void)
 	}
       }
     } else {
-      for(work = pages[i]; work; work = work->next) {
+      for(work = GC->gen1_pages[i]; work; work = work->next) {
 	pagemap_add(work);
 	work->back_pointers = work->marked_on = 0;
       }
     }
     
     /* since we're here anyways, compute the total memory use */
-    for(work = pages[i]; work; work = work->next)
+    for(work = GC->gen1_pages[i]; work; work = work->next)
       gc->memory_in_use += work->size;
   }
 
@@ -2281,7 +2279,7 @@ static void protect_old_pages(void)
 
   for(i = 0; i < PAGE_TYPES; i++) 
     if(i != PAGE_ATOMIC)
-      for(page = pages[i]; page; page = page->next)
+      for(page = GC->gen1_pages[i]; page; page = page->next)
 	if(page->page_type != PAGE_ATOMIC)  {
           if (!page->mprotected) {
             page->mprotected = 1;
@@ -2579,7 +2577,7 @@ void GC_free_all(void)
   }
 
   for(i = 0; i < PAGE_TYPES; i++) {
-    for (work = pages[i]; work; work = next) {
+    for (work = GC->gen1_pages[i]; work; work = next) {
       next = work->next;
 
       if (work->mprotected)
