@@ -249,7 +249,7 @@ inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
 
   pos = PAGEMAP64_LEVEL1_BITS(p);
   page_maps2 = page_maps1[pos];
-  if (!page_maps) {
+  if (!page_maps2) {
     page_maps2 = (mpage ***)calloc(PAGEMAP64_LEVEL2_SIZE, sizeof(mpage **));
     page_maps1[pos] = page_maps2;
   }

@@ -4,6 +4,14 @@
 # define inline _inline
 #endif
 
+#include "../mzconfig.h"
+
+#ifdef SIZEOF_LONG
+# if SIZEOF_LONG == 8
+#  define SIXTY_FOUR_BIT_INTEGERS
+# endif
+#endif
+
 #if defined(sparc) || defined(__sparc) || defined(__sparc__)
 /* Required for `double' operations: */
 # define GC_ALIGN_EIGHT
