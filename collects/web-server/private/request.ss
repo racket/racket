@@ -33,7 +33,6 @@
     (match (headers-assq* #"Content-Length" headers)
       [(struct header (f v))
        ; Give it one second per byte (with 5 second minimum... a bit arbitrary)          
-       ; XXX Can this be abstracted?
        (adjust-connection-timeout! conn (max 5 (string->number (bytes->string/utf-8 v))))]
       [#f
        (void)]))

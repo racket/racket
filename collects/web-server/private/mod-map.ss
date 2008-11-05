@@ -1,11 +1,7 @@
-#lang scheme/base
-(require mzlib/list
-         mzlib/plt-match)
-; XXX Contract?
-(provide compress-serial
-         decompress-serial)
-
-; XXX even though we allow all values to be serialized, we only protect against source modification of the servlet program.
+#lang scheme
+(provide/contract
+ [compress-serial (list? . -> . list?)]
+ [decompress-serial (list? . -> . list?)])
 
 ;; compress-mod-map : (listof (cons mod-spec symbol)) -> (listof (cons (or mod-spec number) symbol))
 (define (compress-mod-map mm)
