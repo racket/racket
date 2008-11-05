@@ -11,9 +11,6 @@
 #define ROOTS_PTR_ALIGNMENT WORD_SIZE
 #define ROOTS_PTR_TO_INT(x) ((unsigned long)x)
 
-static Roots *roots = &(Roots) { 0 ,0, 0, 0, };
-
-
 static void grow_roots(Roots *roots) {
   unsigned long *new_roots;
 
@@ -38,6 +35,7 @@ static int compare_roots(const void *a, const void *b)
 
 static void sort_and_merge_roots()
 {
+  Roots *roots = &GC->roots;
   if (roots->nothing_new)
     return;
 
@@ -83,6 +81,8 @@ static void sort_and_merge_roots()
 
 void GC_add_roots(void *start, void *end)
 {
+  Roots *roots = &GC->roots;
+
   if (roots->count >= roots->size) {
     grow_roots(roots);
   }

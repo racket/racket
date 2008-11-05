@@ -933,8 +933,9 @@ static inline void *get_stack_base() {
 
 #include "roots.c"
 
-#define traverse_roots(gcMUCK, set_bt_src) {				    \
+#define traverse_roots(gcMUCK, set_bt_src) {	                  			    \
   unsigned long j;                                                        \
+  Roots *roots = &GC->roots;                                              \
   if(roots->roots) {                                                      \
     sort_and_merge_roots();                                               \
     for(j = 0; j < roots->count; j += 2) {                                \

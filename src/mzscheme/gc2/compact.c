@@ -2870,6 +2870,7 @@ static long started, rightnow, old;
 
 static void mark_roots()
 {
+  Roots *roots = &GC->roots;
   ImmobileBox *ib;
   int i;
 
@@ -2912,6 +2913,7 @@ static void mark_roots()
 
 static void fixup_roots()
 {
+  Roots *roots = &GC->roots;
   ImmobileBox *ib;
   int i;
 
