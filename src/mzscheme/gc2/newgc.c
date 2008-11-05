@@ -480,6 +480,20 @@ static void *allocate_big(size_t sizeb, int type)
 # endif
 #endif
 
+inline static struct mpage *create_new_mpage() {
+  struct mpage *work;
+  work = malloc_mpage();
+  work->addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
+
+  work->big_page = 1; /* until added */
+  work->size = GEN0_PAGE_SIZE; /* until added */
+  pagemap_add(work);
+  work->size = PREFIX_SIZE;
+  work->big_page = 0;
+
+  return work;
+}
+
 inline static void *allocate(size_t sizeb, int type)
 {
   size_t sizew;
@@ -498,34 +512,34 @@ alloc_retry:
   newptr = GC_gen0_alloc_page_ptr + sizeb;
 
   if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
-    unsigned long old_size;
-    old_size = GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr);
-    gen0_current_size += old_size;
-    GC_gen0_alloc_page->size = old_size;
-    if(GC_gen0_alloc_page->next) { 
-      GC_gen0_alloc_page = GC_gen0_alloc_page->next;
-      GC_gen0_alloc_page_addr = GC_gen0_alloc_page->addr;
-      GC_gen0_alloc_page_ptr = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
-    }
-    else if (avoid_collection) {
-      struct mpage *work;
-      void *addr;
 
-      work = malloc_mpage();
-      addr = malloc_pages(GEN0_PAGE_SIZE, APAGE_SIZE);
-      work->addr = addr;
-      GC_gen0_alloc_page->prev = work;
+    /* bring page size used up to date */
+    GC_gen0_alloc_page->size = GC_gen0_alloc_page_ptr - NUM(GC_gen0_alloc_page_addr);
+    gen0_current_size += GC_gen0_alloc_page->size;
+
+    /* try next nursery page if present */
+    if(GC_gen0_alloc_page->next) { 
+      GC_gen0_alloc_page      = GC_gen0_alloc_page->next;
+      GC_gen0_alloc_page_addr = GC_gen0_alloc_page->addr;
+      GC_gen0_alloc_page_ptr  = NUM(GC_gen0_alloc_page_addr) + GC_gen0_alloc_page->size;
+    }
+    /* WARNING: tries to avoid a collection but
+     * malloc_pages can cause a collection due to check_used_against_max */
+    else if (avoid_collection) {
+      struct mpage *work= create_new_mpage();
+
+      /* push page */
       work->next = GC_gen0_alloc_page;
-      GC_gen0_alloc_page = work;
-      GC_gen0_alloc_page_addr = addr;
-      GC_gen0_alloc_page_ptr = NUM(addr);
-      work->big_page = 1; /* until added */
-      work->size = GEN0_PAGE_SIZE; /* until added */
-      pagemap_add(work);
-      work->size = PREFIX_SIZE;
-      work->big_page = 0;
-    } else 
+      GC_gen0_alloc_page->prev = work;
+
+      GC_gen0_alloc_page      = work;
+      GC_gen0_alloc_page_addr = work->addr;
+      GC_gen0_alloc_page_ptr  = NUM(work->addr);
+    }
+    else {
       garbage_collect(0);
+    }
+
     goto alloc_retry;
   } 
   else {
@@ -622,7 +636,7 @@ inline static void resize_gen0(unsigned long new_size)
   struct mpage *work = gen0_pages, *prev = NULL;
   void *addr;
   unsigned long alloced_size = 0;
-  
+
   /* first, make sure the big pages pointer is clean */
   gen0_big_pages = NULL; 
 
@@ -631,22 +645,22 @@ inline static void resize_gen0(unsigned long new_size)
   while(work) {
     if(alloced_size > new_size) {
       /* there should really probably be an ASSERT here. If prev is NULL,
-	 that's a BIG, BIG PROBLEM. After allocating it at startup, the
-	 first page in gen0_pages should *never* be deallocated, so we
+         that's a BIG, BIG PROBLEM. After allocating it at startup, the
+         first page in gen0_pages should *never* be deallocated, so we
          should never arrive here without a valid prev */
       prev->next = NULL;
-      
+
       /* remove the excess pages */
       while(work) {
-	struct mpage *next = work->next;
-	work->big_page = 1;
-	work->size = GEN0_PAGE_SIZE;
-	pagemap_remove(work);
-	free_pages(work->addr, GEN0_PAGE_SIZE);
+        struct mpage *next = work->next;
+        work->big_page = 1;
+        work->size = GEN0_PAGE_SIZE;
+        pagemap_remove(work);
+        free_pages(work->addr, GEN0_PAGE_SIZE);
         free_mpage(work);
-	work = next;
+        work = next;
       }
-      
+
       break;
     } else {
       /* We used to zero out the memory here, but it's
@@ -670,11 +684,13 @@ inline static void resize_gen0(unsigned long new_size)
       prev->next = work;
     else gen0_pages = work;
     prev = work;
+
     work->big_page = 1; /* until added */
     work->size = GEN0_PAGE_SIZE; /* until added */
     pagemap_add(prev);
     work->size = PREFIX_SIZE;
     work->big_page = 0;
+
     alloced_size += GEN0_PAGE_SIZE;
   }
 
@@ -734,12 +750,21 @@ static unsigned long stack_base;
 
 static void init_debug_file(void) 
 {
+  /*
+  char filename_buf[20];
+  snprintf(filename_buf, 20, "gclog%d%d", (collections / 10), (collections % 10));
+  dump = fopen(filename_buf, "a");
+  collections += 1;
+  */
+
   char *filename = malloc(8 * sizeof(char));
   
   filename[0] = 'g'; filename[1] = 'c'; filename[2] = 'l';
-  filename[3] = 'o'; filename[4] = 'g'; filename[7] = 0;
+  filename[3] = 'o'; filename[4] = 'g';
   filename[5] = '0' + (collections / 10);
   filename[6] = '0' + (collections % 10);
+  filename[7] = 0;
+
   dump = fopen(filename, "a");
   collections += 1;
 }
@@ -1333,24 +1358,29 @@ void GC_register_new_thread(void *t, void *c)
 /* This is the code we use to implement the mark stack. We can't, sadly, use
    the standard C stack because we'll blow it; propagation makes for a *very*
    deep stack. So we use this instead. */
-struct stacklet {
+typedef struct stacklet {
   struct stacklet *prev, *next;
   void **top;
   void **end;
   void **stop_here; /* this is only used for its address */
-};
+} MarkFrame;
 
 static struct stacklet *int_top = NULL;
+
+inline static MarkFrame* mark_stack_create_frame() {
+  MarkFrame *mark_frame = (MarkFrame*)malloc(STACK_PART_SIZE);
+  mark_frame->next = NULL;
+  mark_frame->top  = PPTR(&(mark_frame->stop_here));
+  mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
+  return mark_frame;
+}
 
 inline static void push_ptr(void *ptr)
 {
   /* This happens at the very beginning */
   if(!int_top) {
-    int_top = (struct stacklet*)malloc(STACK_PART_SIZE);
-    if (!int_top) out_of_memory();
-    int_top->prev = int_top->next = NULL;
-    int_top->top = PPTR(int_top) + 4;
-    int_top->end = PPTR(NUM(int_top) + STACK_PART_SIZE);
+    int_top = mark_stack_create_frame();
+    int_top->prev = NULL;
   }
 
   /* This happens during propoagation if we go past the end of this stacklet */
@@ -1359,16 +1389,12 @@ inline static void push_ptr(void *ptr)
     if(int_top->next) {
       /* we do, so just use it */
       int_top = int_top->next;
-      int_top->top = PPTR(int_top) + 4;
+      int_top->top = PPTR(&(int_top->stop_here));
     } else {
       /* we don't, so we need to allocate one */
-      int_top->next = (struct stacklet*)malloc(STACK_PART_SIZE);
-      if (!int_top->next) out_of_memory();
+      int_top->next = mark_stack_create_frame();
       int_top->next->prev = int_top;
       int_top = int_top->next;
-      int_top->next = NULL;
-      int_top->top = PPTR(int_top) + 4;
-      int_top->end = PPTR(NUM(int_top) + STACK_PART_SIZE);
     }
   }
 
@@ -1420,10 +1446,8 @@ inline static void clear_stack_pages(void)
 
 inline static void reset_pointer_stack(void)
 {
-  struct stacklet *temp;
-
   /* go to the head of the list */
-  for(temp = int_top; int_top->prev; int_top = int_top->prev) {}
+  for(; int_top->prev; int_top = int_top->prev) {}
   /* reset the stack */
   int_top->top = PPTR(int_top) + 4;
 }
@@ -1733,33 +1757,33 @@ inline static void internal_mark(void *p)
       case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
       case PAGE_XTAGGED: GC_mark_xtagged(start); break;
       case PAGE_TARRAY: {
-	unsigned short tag = *(unsigned short *)start;
-	end -= INSET_WORDS;
-	while(start < end) start += mark_table[tag](start);
-	break;
-      }
+                          unsigned short tag = *(unsigned short *)start;
+                          end -= INSET_WORDS;
+                          while(start < end) start += mark_table[tag](start);
+                          break;
+                        }
     }
   } else {
     struct objhead *info = (struct objhead *)(NUM(p) - WORD_SIZE);
-    
+
     set_backtrace_source(p, info->type);
 
     switch(info->type) {
       case PAGE_TAGGED: mark_table[*(unsigned short*)p](p); break;
       case PAGE_ATOMIC: break;
       case PAGE_ARRAY: {
-	void **start = p;
-	void **end = PPTR(info) + info->size;
-	while(start < end) gcMARK(*start++);
-	break;
-      }
+                         void **start = p;
+                         void **end = PPTR(info) + info->size;
+                         while(start < end) gcMARK(*start++);
+                         break;
+                       }
       case PAGE_TARRAY: {
-	void **start = p;
-	void **end = PPTR(info) + (info->size - INSET_WORDS);
-	unsigned short tag = *(unsigned short *)start;
-	while(start < end) start += mark_table[tag](start);
-	break;
-      }
+                          void **start = p;
+                          void **end = PPTR(info) + (info->size - INSET_WORDS);
+                          unsigned short tag = *(unsigned short *)start;
+                          while(start < end) start += mark_table[tag](start);
+                          break;
+                        }
       case PAGE_XTAGGED: GC_mark_xtagged(p); break;
     }
   }
