@@ -9,10 +9,6 @@
       GENERATIONS --- zero or non-zero
       designate_modified --- when GENERATIONS is non-zero
       my_qsort (for alloc_cache.c)
-      LOGICALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_ALLOCATING_PAGES(len)
-      LOGICALLY_FREEING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
    Optional:
       CHECK_USED_AGAINST_MAX(len)
       GCPRINT
@@ -93,81 +89,27 @@ static mach_port_t task_self = 0;
 static mach_port_t exc_port = 0;
 
 /* the VM subsystem as defined by the GC files */
-static void *do_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+static void *os_vm_alloc_pages(size_t len)
 {
   kern_return_t retval;
-  size_t extra = 0;
   void *r;
 
   if(!task_self) task_self = mach_task_self();
 
-  CHECK_USED_AGAINST_MAX(len);
-  
   /* round up to the nearest page: */
   if(len & (page_size - 1))
     len += page_size - (len & (page_size - 1));
 
-  r = find_cached_pages(len, alignment, dirty_ok);
-  if (r)
-    return r;
-
-  extra = alignment;
-
-  retval = vm_allocate(task_self, (vm_address_t*)&r, len + extra, TRUE);
+  retval = vm_allocate(task_self, (vm_address_t*)&r, len, TRUE);
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "Couldn't allocate memory: %s\n", mach_error_string(retval));
     abort();
   }
 
-  if(extra) {
-    /* we allocated too large so we can choose the alignment */
-    void *real_r;
-    long pre_extra;
-
-    real_r = (void*)(((unsigned long)r + (alignment-1)) & (~(alignment-1)));
-    pre_extra = real_r - r;
-    if(pre_extra) {
-      retval = vm_deallocate(task_self, (vm_address_t)r, pre_extra);
-      if(retval != KERN_SUCCESS) {
-	GCPRINT(GCOUTF, "WARNING: couldn't deallocate pre-extra: %s\n",
-	       mach_error_string(retval));
-      }
-    }
-    if(pre_extra < extra) {
-      if (!pre_extra) {
-	/* Instead of actually unmapping, put it in the cache, and there's
-	   a good chance we can use it next time: */
-	ACTUALLY_ALLOCATING_PAGES(extra);
-	free_actual_pages(real_r + len, extra, 1);
-      } else {
-	retval = vm_deallocate(task_self, (vm_address_t)real_r + len, 
-			       extra - pre_extra);
-	if(retval != KERN_SUCCESS) {
-	  GCPRINT(GCOUTF, "WARNING: couldn't deallocate post-extra: %s\n",
-		  mach_error_string(retval));
-	}
-      }
-    }
-    r = real_r;
-  }
-
-  ACTUALLY_ALLOCATING_PAGES(len);
-  LOGICALLY_ALLOCATING_PAGES(len);
-
   return r;
 }
 
-static void *malloc_pages(size_t len, size_t alignment)
-{
-  return do_malloc_pages(len, alignment, 0);
-}
-
-static void *malloc_dirty_pages(size_t len, size_t alignment)
-{
-  return do_malloc_pages(len, alignment, 1);
-}
-
-static void system_free_pages(void *p, size_t len)
+static void os_vm_free_pages(void *p, size_t len)
 {
   kern_return_t retval;
 

@@ -48,7 +48,6 @@ inline static void *malloc_pages(size_t len, size_t alignment)
 
 static void free_pages(void *p, size_t len)
 {
-  free_used_pages(len);
   sfree(p, len);
 
   LOGICALLY_FREEING_PAGES(len);
