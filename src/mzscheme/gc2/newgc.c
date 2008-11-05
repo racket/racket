@@ -396,7 +396,7 @@ static void *allocate_big(size_t sizeb, int type)
   sizeb = gcWORDS_TO_BYTES(sizew);
 
   if((GC->gen0.current_size + sizeb) >= GC->gen0.max_size) {
-    if (!avoid_collection)
+    if (!GC->dumping_avoid_collection)
       garbage_collect(0);
   }
   GC->gen0.current_size += sizeb;
@@ -500,7 +500,7 @@ inline static void *allocate(size_t sizeb, int type)
     }
     /* WARNING: tries to avoid a collection but
      * malloc_pages can cause a collection due to check_used_against_max */
-    else if (avoid_collection) {
+    else if (GC->dumping_avoid_collection) {
       struct mpage *new_mpage= gen0_create_new_mpage();
 
       /* push page */
@@ -1010,7 +1010,8 @@ static int is_finalizable_page(void *p)
 
 #include "fnls.c"
 
-static Fnl *run_queue, *last_in_queue;
+static Fnl *run_queue;
+static Fnl *last_in_queue;
 
 inline static void mark_finalizer_structs(void)
 {
@@ -1193,7 +1194,9 @@ struct gc_thread_info {
   struct gc_thread_info *next;
 };
 
-static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL, normal_cust_box_mark = NULL;
+static Mark_Proc normal_thread_mark     = NULL;
+static Mark_Proc normal_custodian_mark  = NULL;
+static Mark_Proc normal_cust_box_mark   = NULL;
 static struct gc_thread_info *threads = NULL;
 
 
@@ -1828,7 +1831,7 @@ void GC_dump_with_traces(int flags,
 
   reset_object_traces();
   if (for_each_found)
-    avoid_collection++;
+    GC->dumping_avoid_collection++;
 
   /* Traverse tagged pages to count objects: */
   for (i = 0; i < MAX_DUMP_TAG; i++) {
@@ -1918,7 +1921,7 @@ void GC_dump_with_traces(int flags,
   }
 
   if (for_each_found)
-    --avoid_collection;
+    --GC->dumping_avoid_collection;
 }
 
 void GC_dump(void)

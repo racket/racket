@@ -87,10 +87,13 @@ typedef struct NewGC {
 
   mpage *release_pages;
 
+  int dumping_avoid_collection; /* dumping coutner flag */
+
   int generations_available;
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
+
 
   /* These collect information about memory usage, for use in GC_dump. */
   unsigned long peak_memory_use;
