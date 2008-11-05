@@ -937,7 +937,7 @@ static inline void *get_stack_base() {
   unsigned long j;                                                        \
   Roots *roots = &GC->roots;                                              \
   if(roots->roots) {                                                      \
-    sort_and_merge_roots();                                               \
+    sort_and_merge_roots(roots);                                          \
     for(j = 0; j < roots->count; j += 2) {                                \
       void **start = (void**)roots->roots[j];                             \
       void **end = (void**)roots->roots[j+1];                             \

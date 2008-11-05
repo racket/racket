@@ -2976,7 +2976,7 @@ static void gcollect(int full)
   getrusage(RUSAGE_SELF, &pre);
 #endif
 
-  sort_and_merge_roots();
+  sort_and_merge_roots(&GC->roots);
 
   during_gc = 1;
 

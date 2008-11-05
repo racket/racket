@@ -33,9 +33,8 @@ static int compare_roots(const void *a, const void *b)
     return 1;
 }
 
-static void sort_and_merge_roots()
+static void sort_and_merge_roots(Roots *roots)
 {
-  Roots *roots = &GC->roots;
   if (roots->nothing_new)
     return;
 
