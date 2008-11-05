@@ -154,11 +154,6 @@ GC2_EXTERN void *GC_malloc_one_small_dirty_tagged(size_t);
    zeroed. The client must set all words in the allocated
    object before a GC can occur. */
 
-GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
-GC2_EXTERN void *GC_malloc_mutable_pair(void *car, void *cdr);
-/* 
-   Like GC_malloc_one_tagged, but even more streamline. */
-
 GC2_EXTERN void *GC_malloc_one_xtagged(size_t);
 /* 
    Alloc an item, initially zeroed. Rather than having a specific tag,

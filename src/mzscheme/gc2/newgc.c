@@ -630,48 +630,6 @@ void *GC_malloc_one_small_dirty_tagged(size_t sizeb)
   }
 }
 
-void *GC_malloc_pair(void *car, void *cdr)
-{
-  unsigned long ptr, newptr;
-  size_t sizeb;
-  void *retval;
-
-  sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
-  ptr = GC_gen0_alloc_page_ptr;
-  newptr = GC_gen0_alloc_page_ptr + sizeb;
-
-  if(newptr > NUM(GC_gen0_alloc_page_addr) + GEN0_PAGE_SIZE) {
-    park[0] = car;
-    park[1] = cdr;
-    retval = GC_malloc_one_tagged(sizeb - WORD_SIZE);
-    car = park[0];
-    cdr = park[1];
-    park[0] = NULL;
-    park[1] = NULL;
-  } else {
-    struct objhead *info;
-
-    GC_gen0_alloc_page_ptr = newptr;
-
-    retval = PTR(ptr);
-    info = (struct objhead *)retval;
-
-    ((void **)retval)[0] = NULL; /* objhead */
-    ((void **)retval)[1] = 0;    /* tag word */
-
-    /* info->type = type; */ /* We know that the type field is already 0 */
-    info->size = (sizeb >> gcLOG_WORD_SIZE);
-
-    retval = PTR(NUM(retval) + WORD_SIZE);
-  }
-    
-  ((short *)retval)[0] = scheme_pair_type;
-  ((void **)retval)[1] = car;
-  ((void **)retval)[2] = cdr;
-  
-  return retval;
-}
-
 long GC_compute_alloc_size(long sizeb)
 {
   return ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeb)) + WORD_SIZE);
@@ -695,14 +653,6 @@ long GC_initial_word(int sizeb)
 long GC_alloc_alignment()
 {
   return APAGE_SIZE;
-}
-
-void *GC_malloc_mutable_pair(void *car, void *cdr)
-{
-  void *p;
-  p = GC_malloc_pair(car, cdr);
-  *(short *)p = scheme_mutable_pair_type;
-  return p;
 }
 
 long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }

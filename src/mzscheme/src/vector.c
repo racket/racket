@@ -287,11 +287,7 @@ vector_to_list (int argc, Scheme_Object *argv[])
   return scheme_vector_to_list(argv[0]);
 }
 
-#ifdef MZ_PRECISE_GC
-# define cons(car, cdr) GC_malloc_pair(car, cdr)
-#else
 # define cons(car, cdr) scheme_make_pair(car, cdr)
-#endif
 
 Scheme_Object *
 scheme_vector_to_list (Scheme_Object *vec)

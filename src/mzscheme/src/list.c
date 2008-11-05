@@ -669,30 +669,22 @@ scheme_init_list (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
-#ifdef MZ_PRECISE_GC
-  return GC_malloc_pair(car, cdr);
-#else
   Scheme_Object *cons;
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
   return cons;
-#endif
 }
 
 Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
-#ifdef MZ_PRECISE_GC
-  return GC_malloc_mutable_pair(car, cdr);
-#else
   Scheme_Object *cons;
   cons = scheme_alloc_object();
   cons->type = scheme_mutable_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
   return cons;
-#endif
 }
 
 Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -710,11 +702,7 @@ Scheme_Object *scheme_make_raw_pair(Scheme_Object *car, Scheme_Object *cdr)
   return cons;
 }
 
-#ifdef MZ_PRECISE_GC
-# define cons(car, cdr) GC_malloc_pair(car, cdr)
-#else
 # define cons(car, cdr) scheme_make_pair(car, cdr)
-#endif
 
 Scheme_Object *scheme_build_list(int size, Scheme_Object **argv)
 {
