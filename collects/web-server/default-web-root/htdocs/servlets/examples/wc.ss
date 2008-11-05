@@ -26,7 +26,7 @@
   (make-web-cell 0))
 
 (define (include-counter a-counter)
-  ; XXX This shouldn't be necessary (but is for testing, not in production)
+  ; Note: This shouldn't be necessary (but is for testing, not in production)
   (call-with-current-continuation
    (lambda (k)
      (define (generate)

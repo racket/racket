@@ -247,24 +247,42 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that performs HTTP Basic authentication filtering.}]{
 
-@defproc[(make [#:password-file password-file path-string? "passwords"]
+@(require (for-label web-server/private/request-structs
+                     web-server/private/response-structs
+                     net/url
+                     web-server/configuration/responders))
+
+@defthing[denied?/c contract?]{
+ Equivalent to @scheme[(request? . -> . (or/c false/c string?))].
+ The return is the authentication realm as a string if the request is not authorized and 
+ @scheme[#f] if the request @emph{is} authorized.
+}         
+                                                                         
+@defproc[(make [denied? denied?/c]
                [#:authentication-responder
                 authentication-responder
-                ((url url?) (header header?) . -> . response?)
+                (url? header? . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
-         (values (-> void)
-                 dispatcher/c)]{
- The first returned value is a procedure that refreshes the password
- file used by the dispatcher.
-
- The dispatcher that is returned does the following:
- Checks if the request contains Basic authentication credentials, and that
- they are included in @scheme[password-file]. If they are not,
+         dispatcher/c]{
+ A dispatcher that checks if the request is denied based on @scheme[denied?]. If so, then 
  @scheme[authentication-responder] is called with a @scheme[header] that
- requests credentials. If they are, then @scheme[next-dispatcher] is
+ requests credentials. If not, then @scheme[next-dispatcher] is
  invoked.
+}
+                      
+@defthing[authorized?/c contract?]{
+ Equivalent to @scheme[(string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?))].
+ The input is the URI as a string and the username and passwords as bytes.
+ The return is the authentication realm as a string if the user is not authorized and 
+ @scheme[#f] if the request @emph{is} authorized.
+}       
+                      
+@defproc[(make-basic-denied?/path [password-file path-string?])
+         (values (-> void)
+                 authorized?/c)]{
+ Creates an authorization procedure based on the given password file. The first returned value 
+ is a procedure that refreshes the password cache used by the authorization procedure.
 
- @; XXX Separate out password-file work
  @scheme[password-file] is parsed as:
  @schemeblock[(list ([domain : string?]
                      [path : string-regexp?]

@@ -19,7 +19,7 @@
                (div (h3 "Second") ,(inc2 next-counter2 next-counter1))))))))
 
 (define (include-counter my-counter other-counter embed/url)
-  ; XXX This shouldn't be necessary (but is for testing, not in production)
+  ; Note: This shouldn't be necessary (but is for testing, not in production)
   (call-with-current-continuation
    (lambda (k)
     (letrec ([include

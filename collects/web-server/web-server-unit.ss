@@ -58,11 +58,13 @@
                    #:log-path (host-log-path host-info))
          (lambda (conn req) (next-dispatcher)))
      (let-values ([(update-password-cache! password-check)
-                   (passwords:make #:password-file (host-passwords host-info)
-                                   #:authentication-responder (responders-authentication (host-responders host-info)))])
+                   (passwords:password-file->authorized? (host-passwords host-info))])
        (sequencer:make
         (timeout:make (timeouts-password (host-timeouts host-info)))
-        password-check
+        (passwords:make
+         (passwords:make-basic-denied?/path
+          password-check)
+         #:authentication-responder (responders-authentication (host-responders host-info)))
         (path-procedure:make "/conf/refresh-passwords"
                              (lambda _
                                (update-password-cache!)
