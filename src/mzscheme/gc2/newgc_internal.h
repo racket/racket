@@ -114,6 +114,7 @@ typedef struct NewGC {
   GC_Weak_Box   *weak_boxes;
   GC_Ephemeron  *ephemerons;
   int num_last_seen_ephemerons;
+  GC_Immobile_Box *immobile_boxes;
 } NewGC;
 
 void NewGC_initialize(NewGC *newgc) {

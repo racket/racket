@@ -44,3 +44,10 @@ typedef struct GC_Ephemeron {
   /* The rest is up to us: */
   struct GC_Ephemeron *next;
 } GC_Ephemeron;
+
+typedef struct GC_Immobile_Box {
+  void *p; /* this must be first or mred dies */
+  struct GC_Immobile_Box *next;
+  struct GC_Immobile_Box *prev;
+} GC_Immobile_Box;
+

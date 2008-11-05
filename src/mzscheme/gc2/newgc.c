@@ -943,58 +943,7 @@ inline static void repair_roots()
   traverse_roots(gcFIXUP, two_arg_no_op);
 }
 
-/*****************************************************************************/
-/* immobile boxes                                                            */
-/*****************************************************************************/
-struct immobile_box {
-  void *p; /* this must be first or mred dies */
-  struct immobile_box *next, *prev;
-};
-
-static struct immobile_box *immobile_boxes = NULL;
-
-void **GC_malloc_immobile_box(void *p)
-{
-  struct immobile_box *ib = malloc(sizeof(struct immobile_box));
-  if (!ib) out_of_memory();
-  ib->p = p; ib->next = immobile_boxes; ib->prev = NULL;
-  if(ib->next) ib->next->prev = ib;
-  immobile_boxes = ib;
-  return (void**)ib;
-}
-
-void GC_free_immobile_box(void **b) 
-{
-  struct immobile_box *ib;
-
-  for(ib = immobile_boxes; ib; ib = ib->next)
-    if(PPTR(ib) == b) {
-      if(ib->prev) ib->prev->next = ib->next;
-      if(!ib->prev) immobile_boxes = ib->next;
-      if(ib->next) ib->next->prev = ib->prev;
-      free(ib);
-      return;
-    }
-  GCWARN((GCOUTF, "Attempted free of non-existent immobile box %p\n", b));
-}
-
-#define traverse_immobiles(gcMUCK, set_bt_src) {			    \
-    struct immobile_box *ib;                                                \
-    for(ib = immobile_boxes; ib; ib = ib->next) {			    \
-      set_bt_src(ib, BT_IMMOBILE);					    \
-      gcMUCK(ib->p);                                                        \
-    }                                                                       \
-  }
-
-inline static void mark_immobiles(void)
-{
-  traverse_immobiles(gcMARK, set_backtrace_source);
-}
-
-inline static void repair_immobiles(void)
-{
-  traverse_immobiles(gcFIXUP, two_arg_no_op);
-}
+#include "immobile_boxes.c"
 
 /*****************************************************************************/
 /* finalizers                                                                */
