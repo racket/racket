@@ -73,7 +73,7 @@ static const char *type_name[PAGE_TYPES] = {
 };
 
 
-#include "newgc_internal.h"
+#include "newgc.h"
 static THREAD_LOCAL NewGC *GC;
 
 #include "msgprint.c"
@@ -1303,7 +1303,7 @@ inline static int thread_get_owner(void *p)
 {
   return ((Scheme_Thread *)p)->gc_info->owner;
 }
-#include "newgc_parts/blame_the_child.c"
+#include "blame_the_child.c"
 
 int GC_set_account_hook(int type, void *c1, unsigned long b, void *c2)
 {
