@@ -360,8 +360,11 @@
       "-------------------------- miscellaneous flags ------------------------------"]
      [once-each
       [("-v")
-       ,(lambda (f) (compiler:option:verbose #t))
-       ("Verbose mode")]
+       ,(lambda (f) (compiler:option:somewhat-verbose #t))
+       ("Slightly verbose mode, including version banner and output files")]
+      [("--vv")
+       ,(lambda (f) (compiler:option:somewhat-verbose #t) (compiler:option:verbose #t))
+       ("Very verbose mode")]
       [("--save-temps")
        ,(lambda (f) (compiler:option:clean-intermediate-files #f))
        ("Keep intermediate files")]
@@ -394,12 +397,13 @@
                (void)))))))
    (list "file/directory/collection")))
 
-(printf "mzc v~a [~a], Copyright (c) 2004-2008 PLT Scheme Inc.\n"
-        (version)
-        (system-type 'gc))
-
 (define-values (mode source-files prefix)
   (parse-options (current-command-line-arguments)))
+
+(when (compiler:option:somewhat-verbose)
+  (printf "mzc v~a [~a], Copyright (c) 2004-2008 PLT Scheme Inc.\n"
+          (version)
+          (system-type 'gc)))
 
 (when (and (auto-dest-dir) (not (memq mode '(zo compile))))
   (error 'mzc "--auto-dir works only with -z, --zo, -e, or --extension (or default mode)"))
@@ -465,29 +469,37 @@
    (let ([n (make-base-empty-namespace)]
          [mc (dynamic-require 'compiler/cm 'managed-compile-zo)]
          [cnh (dynamic-require 'compiler/cm 'manager-compile-notify-handler)]
+         [cth (dynamic-require 'compiler/cm 'manager-trace-handler)]
          [did-one? #f])
      (parameterize ([current-namespace n]
+                    [cth (lambda (p)
+                           (when (compiler:option:verbose)
+                             (printf "  ~a\n" p)))]
                     [cnh (lambda (p)
                            (set! did-one? #t)
-                           (printf "  making ~s\n" (path->string p)))])
+                           (when (compiler:option:somewhat-verbose)
+                             (printf "  making ~s\n" (path->string p))))])
        (for ([file source-files])
          (unless (file-exists? file)
            (error 'mzc "file does not exist: ~a" file))
          (set! did-one? #f)
          (let ([name (extract-base-filename/ss file 'mzc)])
-           (printf "\"~a\":\n" file)
+           (when (compiler:option:somewhat-verbose)
+             (printf "\"~a\":\n" file))
            (mc file)
            (let ([dest (append-zo-suffix
                         (let-values ([(base name dir?) (split-path file)])
                           (build-path (if (symbol? base) 'same base)
                                       "compiled" name)))])
-             (printf " [~a \"~a\"]\n"
-                     (if did-one? "output to" "already up-to-date at")
-                     dest))))))]
+             (when (compiler:option:somewhat-verbose)
+               (printf " [~a \"~a\"]\n"
+                       (if did-one? "output to" "already up-to-date at")
+                       dest)))))))]
   [(collection-zos)
    (parameterize ([compile-notify-handler 
                    (lambda (path)
-                     (printf "  making ~s\n" (path->string path)))])
+                     (when (compiler:option:somewhat-verbose)
+                       (printf "  making ~s\n" (path->string path))))])
      (apply compile-collection-zos source-files))]
   [(cc)
    (for ([file source-files])
@@ -495,23 +507,27 @@
             [dest (append-object-suffix
                    (let-values ([(base name dir?) (split-path base)])
                      (build-path (or (dest-dir) 'same) name)))])
-       (printf "\"~a\":\n" file)
+       (when (compiler:option:somewhat-verbose)
+         (printf "\"~a\":\n" file))
        (compile-extension (not (compiler:option:verbose)) file dest null)
-       (printf " [output to \"~a\"]\n" dest)))]
+       (when (compiler:option:somewhat-verbose)
+         (printf " [output to \"~a\"]\n" dest))))]
   [(ld)
    (extract-base-filename/ext (ld-output) 'mzc)
    ;; (for ([file source-files]) (extract-base-filename/o file 'mzc))
    (let ([dest (if (dest-dir)
                  (build-path (dest-dir) (ld-output))
                  (ld-output))])
-     (printf "~a:\n" (let ([s (apply string-append
-                                     (map (lambda (n) (format " \"~a\"" n))
-                                          source-files))])
-                       (substring s 1 (string-length s))))
+     (when (compiler:option:somewhat-verbose)
+       (printf "~a:\n" (let ([s (apply string-append
+                                       (map (lambda (n) (format " \"~a\"" n))
+                                            source-files))])
+                         (substring s 1 (string-length s)))))
      (link-extension (not (compiler:option:verbose))
                      source-files
                      dest)
-     (printf " [output to \"~a\"]\n" dest))]
+     (when (compiler:option:somewhat-verbose)
+       (printf " [output to \"~a\"]\n" dest)))]
   [(xform)
    (for ([file source-files])
      (let* ([out-file (path-replace-suffix file ".3m.c")]
@@ -523,7 +539,8 @@
         file
         out-file
         (list (find-include-dir)))
-       (printf " [output to \"~a\"]\n" out-file)))]
+       (when (compiler:option:somewhat-verbose)
+         (printf " [output to \"~a\"]\n" out-file))))]
   [(exe gui-exe)
    (unless (= 1 (length source-files))
      (error 'mzc "expected a single module source file to embed; given: ~e"
@@ -554,7 +571,8 @@
       #:collects-path (exe-embedded-collects-path)
       #:collects-dest (exe-embedded-collects-dest)
       #:aux (exe-aux))
-     (printf " [output to \"~a\"]\n" dest))]
+     (when (compiler:option:somewhat-verbose)
+       (printf " [output to \"~a\"]\n" dest)))]
   [(c-mods)
    (let ([dest (mods-output)])
      (let-values ([(in out) (make-pipe)])
@@ -592,14 +610,16 @@
          (fprintf out "XFORM_END_SKIP;\n")
          (fprintf out "#endif\n")
          (close-output-port out)))
-     (printf " [output to \"~a\"]\n" dest))]
+     (when (compiler:option:somewhat-verbose)
+       (printf " [output to \"~a\"]\n" dest)))]
   [(exe-dir)
    ((dynamic-require 'compiler/distribute 'assemble-distribution)
     (exe-dir-output)
     source-files
     #:collects-path (exe-embedded-collects-path)
     #:copy-collects (exe-dir-add-collects-dirs))
-   (printf " [output to \"~a\"]\n" (exe-dir-output))]
+   (when (compiler:option:somewhat-verbose)
+     (printf " [output to \"~a\"]\n" (exe-dir-output)))]
   [(plt)
    (for ([fd source-files])
      (unless (relative-path? fd)
@@ -622,7 +642,8 @@
              (let* ([i (get-info '("mzscheme"))]
                     [v (and i (i 'version (lambda () #f)))])
                (list (list '("mzscheme") v))))
-   (printf " [output to \"~a\"]\n" (plt-output))]
+   (when (compiler:option:somewhat-verbose)
+     (printf " [output to \"~a\"]\n" (plt-output)))]
   [(plt-collect)
    (pack-collections-plt
     (plt-output)
@@ -640,5 +661,6 @@
                     std-filter)
     #:at-plt-home? (plt-files-plt-home-relative?)
     #:test-plt-collects? (not (plt-force-install-dir?)))
-   (printf " [output to \"~a\"]\n" (plt-output))]
+   (when (compiler:option:somewhat-verbose)
+     (printf " [output to \"~a\"]\n" (plt-output)))]
   [else (printf "bad mode: ~a\n" mode)])

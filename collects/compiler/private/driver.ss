@@ -628,8 +628,9 @@
 		  ;; read all top-level s-expressions
 		  ;;
 	      
-		  (printf "\"~a\": " input-path)
-		  (unless (compiler:option:verbose) (newline))
+                  (when (compiler:option:somewhat-verbose)
+                    (printf "\"~a\": " input-path)
+                    (unless (compiler:option:verbose) (newline)))
 		  (let ([read-thunk
 			 (lambda ()
 			   (with-handlers ([void top-level-exn-handler])
@@ -1398,11 +1399,13 @@
 	;;
 	
 	(if c-only?
-	    (printf " [output to \"~a\"]~n" (or c3m-output-path c-output-path))
+            (when (compiler:option:somewhat-verbose)
+              (printf " [output to \"~a\"]~n" (or c3m-output-path c-output-path)))
 	    
 	    (begin
 	      (unless input-path
-		(printf "\"~a\": ~n" (or c3m-output-path c-output-path)))
+                (when (compiler:option:somewhat-verbose)
+                  (printf "\"~a\": ~n" (or c3m-output-path c-output-path))))
 	      
 	      (when (compiler:option:verbose) (printf " [compiling native code to \"~a\"]~n"
 						      obj-output-path))
@@ -1436,7 +1439,8 @@
                 (clean-up))
 	      
 	      (if multi-o?
-		  (printf " [output to \"~a\"]~n" obj-output-path)
+                  (when (compiler:option:somewhat-verbose)
+                    (printf " [output to \"~a\"]~n" obj-output-path))
 		  
 		  (begin
 		    ;; Link
@@ -1460,7 +1464,8 @@
 		    (when (compiler:option:clean-intermediate-files)
 		      (delete-file obj-output-path))
 		    
-		    (printf " [output to \"~a\"]~n" dll-output-path)))))
+                    (when (compiler:option:somewhat-verbose)
+                      (printf " [output to \"~a\"]~n" dll-output-path))))))
 	
 	(when debug:port
 	  (close-output-port debug:port))

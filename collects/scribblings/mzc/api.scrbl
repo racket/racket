@@ -185,6 +185,11 @@ More options are defined by the @schememodname[dynext/compile] and
 @schememodname[dynext/link] libraries, which control the actual C
 compiler and linker that are used for compilation via C.
 
+@defboolparam[somewhat-verbose on?]{
+
+A @scheme[#t] value for the parameter causes the compiler to print
+the files that it compiles and produces. The default is @scheme[#f].}
+
 @defboolparam[verbose on?]{
 
 A @scheme[#t] value for the parameter causes the compiler to print
