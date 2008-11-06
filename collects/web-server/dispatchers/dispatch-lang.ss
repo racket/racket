@@ -25,8 +25,6 @@
                                   #:responders-servlet (url? any/c . -> . response?))
        dispatcher/c)])
 
-; XXX url->servlet
-; XXX optional session manager
 (define interface-version 'v1)
 (define (make #:url->path url->path
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]

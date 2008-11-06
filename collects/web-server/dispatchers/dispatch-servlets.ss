@@ -30,7 +30,6 @@
                     dispatcher/c))])
 
 (define interface-version 'v1)
-; XXX url->servlet and remove config:scripts
 (define (make config:scripts 
               #:url->path url->path
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
@@ -157,7 +156,6 @@
                                          web-server/servlet/web
                                          web-server/servlet/web-cells))]
                    [current-custodian (make-servlet-custodian)])
-      ; XXX load/use-compiled breaks errortrace
       (define s (load/use-compiled a-path))
       (cond
         [(void? s)
@@ -196,6 +194,6 @@
                 "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)])))
   
   (values (lambda ()
-            ;; XXX - this is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
+            ;; This is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
             (cache-table-clear! (unbox config:scripts)))
           servlet-content-producer))

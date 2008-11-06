@@ -48,7 +48,6 @@
 
 ;; send/suspend/hidden: (url input-field -> response) -> request
 ;; like send/suspend except the continuation is encoded in a hidden field
-;; XXX incorporate stuffing in some way
 (define (send/suspend/hidden page-maker)
   (send/suspend
    (lambda (k)
