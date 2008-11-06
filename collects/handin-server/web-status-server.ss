@@ -15,10 +15,15 @@
 
 (define (serve-status port-no)
 
+  (define ((in-dir dir) . paths) (path->string (apply build-path dir paths)))
+  (define in-here
+    (in-dir (build-path (this-expression-source-directory) "status-web-root")))
+  (define in-plt-web-dir
+    (in-dir (build-path (collection-path "web-server") "default-web-root")))
+
   (define web-dir
-    (path->string
-     (or (get-conf 'web-base-dir)
-         (build-path (this-expression-source-directory) "status-web-root"))))
+    (cond [(get-conf 'web-base-dir) => path->string]
+          [else (in-here)]))
 
   (define config
     `((port ,port-no)
@@ -43,17 +48,14 @@
           (file-per-byte-connection-timeout 1/20)
           (file-base-connection-timeout 30))
          (paths
-          (configuration-root "conf")
-          (host-root ,web-dir)
+          (configuration-root ,(in-plt-web-dir "conf"))
+          (host-root ".")
           (log-file-path ,(cond [(get-conf 'web-log-file) => path->string]
                                 [else #f]))
-          (file-root "htdocs")
-          (servlet-root ,web-dir)
-          (mime-types ,(path->string
-                        (build-path (collection-path "web-server")
-                                    "default-web-root"
-                                    "mime.types")))
-          (password-authentication "unused"))))
+          (file-root ".")
+          (servlet-root ,(in-here "servlets"))
+          (mime-types ,(in-plt-web-dir "mime.types"))
+          (password-authentication ,(in-plt-web-dir "passwords")))))
       (virtual-host-table)))
 
   (define configuration
