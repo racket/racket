@@ -13,6 +13,7 @@
 (define mode:standard "Standard")
 (define mode:custom "Custom ...")
 
+
 ;; macro-hiding-prefs-widget%
 (define macro-hiding-prefs-widget%
   (class object%
@@ -32,11 +33,12 @@
             [hide-contracts? (send box:hide-contracts get-value)]
             [hide-transformers? (send box:hide-phase1 get-value)]
             [specialized-policies (get-specialized-policies)])
-        (make-policy hide-mzscheme?
-                     hide-libs?
-                     hide-contracts?
-                     hide-transformers?
-                     specialized-policies)))
+        (policy->predicate
+         `(custom ,hide-mzscheme?
+                  ,hide-libs?
+                  ,hide-contracts?
+                  ,hide-transformers?
+                  ,specialized-policies))))
 
     (define super-panel
       (new vertical-panel%
@@ -162,12 +164,11 @@
     (define add-show-id-button
       (new button% (parent look-button-pane) (label "Show macro") (enabled #f)
            (callback (lambda _ (add-show-identifier) (refresh)))))
-    #;(new grow-box-spacer-pane% (parent right-pane))
+    ;;(new grow-box-spacer-pane% (parent right-pane))
 
     ;; Methods
 
     (define stx #f)
-    (define stx-name #f)
 
     ;; refresh : -> void
     (define/public (refresh)
@@ -181,60 +182,42 @@
     ;; set-syntax : syntax/#f -> void
     (define/public (set-syntax lstx)
       (set! stx (and (identifier? lstx) lstx))
-      (when (identifier? stx)
-        (let ([binding (identifier-binding stx)])
-          (if (pair? binding)
-              (set! stx-name (cadr binding))
-              (set! stx-name (syntax-e stx)))))
       (send add-show-id-button enable (identifier? lstx))
       (send add-hide-id-button enable (identifier? lstx)))
 
+    ;; A PolicyLine is an Entry
+    ;; Entry is defined in ../model/hiding-policies
+
+    ;; identifier-policies : (listof Entry)
     (define identifier-policies null)
 
+    ;; get-specialized-policies : -> (listof Entry)
     (define/private (get-specialized-policies)
-      (map (lambda (policy)
-             (define key (mcar policy))
-             (define show? (mcdr policy))
-             (cond [(pair? key)
-                    (lambda (id binding return)
-                      (when (and (pair? binding)
-                                 (equal? key (get-id-key/binding id binding)))
-                        (return show?)))]
-                   [else
-                    (lambda (id binding return)
-                      (when (free-identifier=? id key)
-                        (return show?)))]))
-           identifier-policies))
+      identifier-policies)
 
     (define/public (add-hide-identifier)
-      (add-identifier-policy #f)
-      (ensure-custom-mode))
+      (when (identifier? stx)
+        (add-policy-line 'hide-if `(free=? ,stx))))
 
     (define/public (add-show-identifier)
-      (add-identifier-policy #t)
+      (when (identifier? stx)
+        (add-policy-line 'show-if `(free=? ,stx))))
+
+    ;; add-policy-line : 'show-if/'hide-if Condition -> void
+    (define/private (add-policy-line action condition)
+      (set! identifier-policies
+            (cons `(,action ,condition)
+                  (remove-policy/condition condition identifier-policies)))
+      (update-list-view)
       (ensure-custom-mode))
 
-    (define/private (add-identifier-policy show?)
-      (when (identifier? stx)
-        (let ([key (get-id-key stx)])
-          (let loop ([i 0] [policies identifier-policies])
-            (cond [(null? policies)
-                   (set! identifier-policies
-                         (cons (mcons key show?) identifier-policies))
-                   (send look-ctl append "")
-                   (update-list-view i key show?)]
-                  [(key=? key (mcar (car policies)))
-                   (set-mcdr! (car policies) show?)
-                   (update-list-view i key show?)]
-                  [else (loop (add1 i) (cdr policies))])))))
+    ;; update-list-view : -> void
+    (define/private (update-list-view)
+      (send look-ctl set null)
+      (for ([policy identifier-policies])
+        (send look-ctl append (policy->string policy) policy)))
 
-    (define/private (update-list-view index key show?)
-      (send look-ctl set-data index key)
-      (send look-ctl set-string
-            index
-            (string-append (if show? "show " "hide ")
-                           (key->text key))))
-
+    ;; delete-selected : -> void
     (define/private (delete-selected)
       (define to-delete (sort (send look-ctl get-selections) <))
       (set! identifier-policies
@@ -245,11 +228,70 @@
                     [else
                      (cons (car policies)
                            (loop (add1 i) (cdr policies) to-delete))])))
-      (for-each (lambda (n) (send look-ctl delete n)) (reverse to-delete)))
+      (update-list-view))
 
     (super-new)
     (update-visibility)))
 
+
+(define (remove-policy/condition condition policies)
+  (filter (lambda (p) (not (same-condition? (cadr p) condition)))
+          policies))
+
+
+;; ----
+
+(define (policy->string policy)
+  (string-append 
+   (case (car policy)
+     ((show-if) "show ")
+     ((hide-if) "hide "))
+   (condition->string (cadr policy))))
+
+(define (condition->string condition)
+  (match condition
+    [`(free=? ,id)
+     (let ([b (identifier-binding id)])
+       (or #;(identifier->string id)
+           (cond [(list? b)
+                  (let ([mod (caddr b)]
+                        [name (cadddr b)])
+                    (format "'~s' from ~a" name (mpi->string mod)))]
+                 [else
+                  (symbol->string (syntax-e id))])))]
+    [_
+     "<condition>"]))
+
+#|
+(require scribble/xref
+         scribble/manual-struct
+         setup/xref)
+
+(define xref-p (delay (load-collections-xref)))
+
+(define (identifier->string id)
+  (define binding-info (identifier-binding id))
+  (define xref (force xref-p))
+  (define definition-tag
+    (and xref 
+         (xref-binding->definition-tag xref binding-info #f)))
+  (and definition-tag
+       (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
+         (define index-entry
+           (and path (xref-tag->index-entry xref definition-tag)))
+         (define desc
+           (and index-entry (entry-desc index-entry)))
+         (and desc
+              (let ([name (exported-index-desc-name desc)]
+                    [libs (exported-index-desc-from-libs desc)])
+                (format "'~a' from ~a"
+                        name
+                        (mpi->string (car libs))))))))
+|#
+
+
+
+#|
 (define (get-id-key id)
   id
   #; ;; FIXME
@@ -277,4 +319,4 @@
                    name
                    (mpi->string mod)))]
         [else (symbol->string (syntax-e key))]))
-
+|#
