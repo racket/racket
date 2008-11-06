@@ -13,15 +13,15 @@
           [o-port output-port?]
           [custodian custodian?]
           [close? boolean?])]
- [start-connection-manager (custodian? . -> . void)]
+ [start-connection-manager (-> void)]
  [new-connection (number? input-port? output-port? custodian? boolean? . -> . connection?)]
  [kill-connection! (connection? . -> . void)]
  [adjust-connection-timeout! (connection? number? . -> . void)])
 
 ;; start-connection-manager: custodian -> void
 ;; calls the timer manager
-(define (start-connection-manager custodian)
-  (start-timer-manager custodian))
+(define (start-connection-manager)
+  (start-timer-manager))
 
 ;; new-connection: number i-port o-port custodian -> connection
 ;; ask the connection manager for a new connection

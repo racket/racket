@@ -26,10 +26,9 @@ procedures after a given amount of time, that may be extended.
  @scheme[action] should be called when this @scheme[evt] is ready.
 }
 
-@defproc[(start-timer-manager [cust custodian?])
+@defproc[(start-timer-manager)
          void]{
- Handles the execution and management of timers. Resources are charged to
- @scheme[cust].
+ Handles the execution and management of timers.
 }
 
 @defproc[(start-timer [s number?]
@@ -77,10 +76,9 @@ for doing this.
  The connection will last until @scheme[timer] triggers.
 }
 
-@defproc[(start-connection-manager [parent-cust custodian?])
+@defproc[(start-connection-manager)
          void]{
- Runs the connection manager (now just the timer manager) will @scheme[parent-cust]
- as the custodian.
+ Runs the connection manager (now just the timer manager).
 }
 
 @defproc[(new-connection [timeout number?]

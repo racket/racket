@@ -3,7 +3,7 @@
          web-server/private/connection-manager)
 (provide connection-manager-tests)
 
-(start-connection-manager (current-custodian))
+(start-connection-manager)
 
 (define connection-manager-tests
   (test-suite
