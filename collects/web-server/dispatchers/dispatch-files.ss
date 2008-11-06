@@ -16,7 +16,7 @@
  [interface-version dispatcher-interface-version/c]
  [read-range-header (-> (listof header?) (or/c (listof pair?) false/c))]
  [make
-  (->* (#:url->path url-path/c)
+  (->* (#:url->path url->path/c)
        (#:path->mime-type (path? . -> . bytes?)
                           #:indices (listof path-string?))
        dispatcher/c)])

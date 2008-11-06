@@ -7,7 +7,7 @@
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
 (define-struct (exn:fail:servlet:instance exn:fail) ()
   #:mutable)
-(define-struct servlet (custodian namespace manager handler)
+(define-struct servlet (custodian namespace manager directory handler)
   #:mutable)
 (define-struct execution-context (request)
   #:mutable)
@@ -28,6 +28,7 @@
          ([custodian custodian?]
           [namespace namespace?]
           [manager manager?]
+          [directory path?]
           [handler (request? . -> . response?)])]
  [struct execution-context 
          ([request request?])]

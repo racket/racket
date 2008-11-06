@@ -15,9 +15,13 @@
 (current-server-custodian (current-custodian))
 
 (define (mkd p)
-  (define-values (! d)
-    (servlets:make (box (make-cache-table))
-                   #:url->path (lambda _ (values p url0s))
+  (define-values (! u->s)
+    (servlets:make-cached-url->servlet
+     (box (make-cache-table))
+     (lambda _ (values p url0s))
+     (servlets:make-default-path->servlet)))
+  (define d
+    (servlets:make u->s
                    #:responders-servlet-loading
                    (lambda (u exn)
                      (raise exn))

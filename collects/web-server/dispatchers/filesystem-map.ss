@@ -3,14 +3,14 @@
          mzlib/list
          mzlib/contract)
 (require "../private/util.ss")
-(define url-path/c
+(define url->path/c
   ((url?) . ->* . (path? (listof path-element?))))
 
 (provide/contract
- [url-path/c contract?]
- [make-url->path (path? . -> . url-path/c)]
- [make-url->valid-path (url-path/c . -> . url-path/c)]
- [filter-url->path (regexp? url-path/c . -> . url-path/c)])
+ [url->path/c contract?]
+ [make-url->path (path? . -> . url->path/c)]
+ [make-url->valid-path (url->path/c . -> . url->path/c)]
+ [filter-url->path (regexp? url->path/c . -> . url->path/c)])
 
 (define (build-path* . l)
   (if (empty? l)

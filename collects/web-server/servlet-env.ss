@@ -104,14 +104,15 @@
              (lambda _ (next-dispatcher)))
          (filter:make
           #rx"\\.ss"
-          (let-values ([(clear-cache! servlet-dispatch)
-                        (servlets:make (box the-scripts)
-                                       #:make-servlet-namespace make-servlet-namespace
-                                       #:url->path
-                                       (lambda _
-                                         (values (build-path servlets-root servlet-path)
-                                                 empty)))])
-            servlet-dispatch))
+          (let-values ([(clear-cache! url->servlet)
+                        (servlets:make-cached-url->servlet
+                         (box the-scripts)
+                         (lambda _
+                           (values (build-path servlets-root servlet-path)
+                                   empty))
+                         (servlets:make-default-path->servlet
+                          #:make-servlet-namespace make-servlet-namespace))])
+            (servlets:make url->servlet)))
          (apply sequencer:make
                 (map (lambda (extra-files-path)
                        (files:make 
@@ -138,6 +139,7 @@
                            (make-servlet (make-custodian)
                                          (make-servlet-namespace)
                                          manager
+                                         servlets-root
                                          new-servlet)))
     (when launch-browser?
       ((send-url) standalone-url #t))

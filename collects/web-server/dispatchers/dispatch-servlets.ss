@@ -15,27 +15,130 @@
          "../configuration/namespace.ss"
          "../managers/manager.ss"
          "../managers/timeouts.ss"
-         "../private/servlet.ss"
+         (except-in "../private/servlet.ss"
+                    servlet-prompt)
          "../private/cache-table.ss"
-         "../private/util.ss")  
+         "../private/util.ss")
 (provide/contract
- [interface-version dispatcher-interface-version/c]
- [make (->* ((box/c cache-table?)
-             #:url->path url-path/c)
-            (#:make-servlet-namespace make-servlet-namespace/c
-                                      #:responders-servlet-loading (url? any/c . -> . response?)
-                                      #:responders-servlet (url? any/c . -> . response?)
-                                      #:timeouts-default-servlet number?)
-            (values (-> void)
-                    dispatcher/c))])
-
+ [interface-version dispatcher-interface-version/c])
 (define interface-version 'v1)
-(define (make config:scripts 
-              #:url->path url->path
-              #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
+
+; -----
+(define path->servlet/c (path? . -> . servlet?))
+(provide/contract
+ [path->servlet/c contract?]
+ [make-default-path->servlet
+  (->* ()
+       (#:make-servlet-namespace make-servlet-namespace/c
+                                 #:timeouts-default-servlet number?)
+       path->servlet/c)])
+
+(define (v0.response->v1.lambda response response-path)
+  (define go
+    (box
+     (lambda ()
+       (set-box! go (lambda () (load/use-compiled response-path)))
+       response)))
+  (lambda (initial-request)
+    ((unbox go))))
+
+(define (v1.module->v1.lambda timeout start)
+  (lambda (initial-request)
+    (adjust-timeout! timeout)
+    (start initial-request)))
+
+(define (make-v1.servlet directory timeout start)
+  (make-v2.servlet directory                   
+                   (create-timeout-manager
+                    default-servlet-instance-expiration-handler
+                    timeout
+                    timeout)
+                   (v1.module->v1.lambda timeout start)))
+
+(define (make-v2.servlet directory manager start)
+  (make-servlet (current-custodian)
+                (current-namespace)
+                manager
+                directory
+                start))
+
+(define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
+                                    #:timeouts-default-servlet [timeouts-default-servlet 30])
+  (lambda (a-path)
+    (parameterize ([current-namespace (make-servlet-namespace
+                                       #:additional-specs
+                                       '(web-server/servlet
+                                         web-server/private/servlet
+                                         web-server/servlet/web
+                                         web-server/servlet/web-cells))]
+                   [current-custodian (make-servlet-custodian)])
+      (define s (load/use-compiled a-path))
+      (cond
+        [(void? s)
+         (let* ([module-name `(file ,(path->string a-path))]
+                [version (dynamic-require module-name 'interface-version)])
+           (case version
+             [(v1)
+              (let ([timeout (dynamic-require module-name 'timeout)]
+                    [start (dynamic-require module-name 'start)])
+                (make-v1.servlet (directory-part a-path) timeout start))]
+             [(v2)
+              (let ([start (dynamic-require module-name 'start)]
+                    [manager (dynamic-require module-name 'manager)])
+                (make-v2.servlet (directory-part a-path) manager start))]
+             [else
+              (error 'path->servlet "unknown servlet version ~e, must be 'v1 or 'v2" version)]))]
+        [(response? s)
+         (make-v1.servlet (directory-part a-path) timeouts-default-servlet
+                          (v0.response->v1.lambda s a-path))]
+        [else
+         (error 'path->servlet
+                "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)]))))
+
+; -----
+(define url->servlet/c (url? . -> . servlet?))
+(provide/contract
+ [url->servlet/c contract?]
+ [make-cached-url->servlet
+  (-> (box/c cache-table?)
+      url->path/c
+      path->servlet/c
+      (values (-> void)
+              url->servlet/c))])
+
+(define (make-cached-url->servlet
+         config:scripts
+         url->path 
+         path->servlet)
+  (values (lambda ()
+            ;; This is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
+            (cache-table-clear! (unbox config:scripts)))
+          (lambda (uri)
+            (define-values (servlet-path _)
+              (with-handlers
+                  ([void (lambda (e)
+                           (raise (make-exn:fail:filesystem:exists
+                                   (exn-message e)
+                                   (exn-continuation-marks e))))])
+                (url->path uri)))
+            (cache-table-lookup! (unbox config:scripts)
+                                 (string->symbol (path->string servlet-path))
+                                 (lambda () (path->servlet servlet-path))))))
+
+; -----
+(provide/contract
+ [make (->* (url->servlet/c)
+            (#:responders-servlet-loading (url? any/c . -> . response?)
+                                          #:responders-servlet (url? any/c . -> . response?))
+            dispatcher/c)])
+
+;; default-server-instance-expiration-handler : (request -> response)
+(define (default-servlet-instance-expiration-handler req)
+  (next-dispatcher))
+
+(define (make url->servlet
               #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
-              #:responders-servlet [responders-servlet servlet-error-responder]
-              #:timeouts-default-servlet [timeouts-default-servlet 30])
+              #:responders-servlet [responders-servlet servlet-error-responder])
   
   ;; servlet-content-producer: connection request -> void
   (define (servlet-content-producer conn req)
@@ -58,16 +161,8 @@
                        (lambda (the-exn) (responders-servlet-loading uri the-exn))])
         (call-with-continuation-prompt
          (lambda ()
-           (define instance-custodian (make-servlet-custodian))
-           (define-values (servlet-path _)
-             (with-handlers
-                 ([void (lambda (e)
-                          (raise (make-exn:fail:filesystem:exists
-                                  (exn-message e)
-                                  (exn-continuation-marks e))))])
-               (url->path uri)))
-           (parameterize ([current-directory (directory-part servlet-path)]
-                          [current-custodian instance-custodian]
+           (define instance-custodian (make-servlet-custodian))           
+           (parameterize ([current-custodian instance-custodian]
                           [exit-handler
                            (lambda _
                              (kill-connection! conn)
@@ -75,8 +170,9 @@
              ;; any resources (e.g. threads) created when the
              ;; servlet is loaded should be within the dynamic
              ;; extent of the servlet custodian
-             (define the-servlet (cached-load servlet-path))
+             (define the-servlet (url->servlet uri))
              (parameterize ([current-servlet the-servlet]
+                            [current-directory (servlet-directory the-servlet)]
                             [current-namespace (servlet-namespace the-servlet)])
                (define manager (servlet-manager the-servlet))
                (parameterize ([current-execution-context (make-execution-context req)])
@@ -91,18 +187,13 @@
          servlet-prompt)))
     (output-response conn response))
   
-  ;; default-server-instance-expiration-handler : (request -> response)
-  (define (default-servlet-instance-expiration-handler req)
-    (next-dispatcher))
-  
   (define (invoke-servlet-continuation conn req instance-id k-id salt)
     (define uri (request-uri req))
-    (define-values (servlet-path _) (url->path uri))
-    (define the-servlet (cached-load servlet-path))
+    (define the-servlet (url->servlet uri))
     (define manager (servlet-manager the-servlet))
     (define response
       (parameterize ([current-servlet the-servlet]
-                     [current-directory (directory-part servlet-path)]
+                     [current-directory (servlet-directory the-servlet)]
                      [current-servlet-instance-id instance-id]
                      [current-custodian (servlet-custodian the-servlet)]
                      [current-namespace (servlet-namespace the-servlet)]
@@ -127,73 +218,4 @@
              servlet-prompt)))))
     (output-response conn response))
   
-  ;; cached-load : path -> script, namespace
-  (define (cached-load servlet-path)
-    (cache-table-lookup! (unbox config:scripts)
-                         (string->symbol (path->string servlet-path))
-                         (lambda () (load-servlet/path servlet-path))))
-  
-  (define (v0.response->v1.lambda response response-path)
-    (define go
-      (box
-       (lambda ()
-         (set-box! go (lambda () (load/use-compiled response-path)))
-         response)))
-    (lambda (initial-request)
-      ((unbox go))))
-  
-  (define (v1.module->v1.lambda timeout start)
-    (lambda (initial-request)
-      (adjust-timeout! timeout)
-      (start initial-request)))
-  
-  ;; load-servlet/path path -> servlet
-  (define (load-servlet/path a-path)
-    (parameterize ([current-namespace (make-servlet-namespace
-                                       #:additional-specs
-                                       '(web-server/servlet
-                                         web-server/private/servlet
-                                         web-server/servlet/web
-                                         web-server/servlet/web-cells))]
-                   [current-custodian (make-servlet-custodian)])
-      (define s (load/use-compiled a-path))
-      (cond
-        [(void? s)
-         (let* ([module-name `(file ,(path->string a-path))]
-                [version (dynamic-require module-name 'interface-version)])
-           (case version
-             [(v1)
-              (let ([timeout (dynamic-require module-name 'timeout)]
-                    [start (dynamic-require module-name 'start)])
-                (make-servlet (current-custodian)
-                              (current-namespace)
-                              (create-timeout-manager
-                               default-servlet-instance-expiration-handler
-                               timeout
-                               timeout)
-                              (v1.module->v1.lambda timeout start)))]
-             [(v2)
-              (let ([start (dynamic-require module-name 'start)]
-                    [manager (dynamic-require module-name 'manager)])
-                (make-servlet (current-custodian)
-                              (current-namespace)
-                              manager
-                              start))]
-             [else
-              (error 'load-servlet/path "unknown servlet version ~e, must be 'v1 or 'v2" version)]))]
-        [(response? s)
-         (make-servlet (current-custodian)
-                       (current-namespace)
-                       (create-timeout-manager
-                        default-servlet-instance-expiration-handler
-                        timeouts-default-servlet
-                        timeouts-default-servlet)
-                       (v0.response->v1.lambda s a-path))]
-        [else
-         (error 'load-servlet/path
-                "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)])))
-  
-  (values (lambda ()
-            ;; This is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
-            (cache-table-clear! (unbox config:scripts)))
-          servlet-content-producer))
+  servlet-content-producer)

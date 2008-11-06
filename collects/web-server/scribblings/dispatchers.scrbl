@@ -84,18 +84,18 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 @filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
 
-@defthing[url-path/c contract?]{
+@defthing[url->path/c contract?]{
  This contract is equivalent to @scheme[((url?) . ->* . (path? (listof path-element?)))].
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
 @defproc[(make-url->path (base path?))
-         url-path/c]{
+         url->path/c]{
  The @scheme[url-path/c] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
  do not escape the @scheme[base] and removes them silently otherwise.}
 
-@defproc[(make-url->valid-path (url->path url->pathc))
+@defproc[(make-url->valid-path (url->path url->path/c))
          url->path/c]{
  Runs the underlying @scheme[url->path], but only returns if the path
  refers to a file that actually exists. If it is does not, then the suffix
@@ -312,7 +312,7 @@ a URL that refreshes the password file, servlet cache, etc.}
              @elem{allows files to be served.
                 It defines a dispatcher construction procedure.}]{
 
-@defproc[(make [#:url->path url->path url->path?]
+@defproc[(make [#:url->path url->path url->path/c]
                [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher/c]{
@@ -332,13 +332,39 @@ a URL that refreshes the password file, servlet cache, etc.}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets
               @elem{defines a dispatcher constructor
                     that runs servlets written in Scheme.}]{
+                                                            
+@defthing[path->servlet/c contract?]{
+Equivalent to @scheme[(path? . -> . servlet?)].
+}
 
-@defproc[(make [config:scripts (box/c cache-table?)]
-               [#:url->path url->path url->path?]
-               [#:make-servlet-namespace
-                make-servlet-namespace
-                make-servlet-namespace?
-                (make-make-servlet-namespace)]
+@defproc[(make-default-path->servlet 
+          [#:make-servlet-namespace
+           make-servlet-namespace
+           make-servlet-namespace?
+           (make-make-servlet-namespace)]
+          [#:timeouts-default-servlet
+           timeouts-default-servlet
+           integer?
+           30])
+         path->servlet/c]{
+ Constructs a procedure that loads a servlet from the path in a namespace created with @scheme[make-servlet-namespace],
+ using a timeout manager with @scheme[timeouts-default-servlet] as the default timeout (if no manager is given.)
+} 
+          
+@defthing[url->servlet/c contract?]{Equivalent to @scheme[(url? . -> . servlet?)]}
+
+@defproc[(make-cached-url->servlet
+          [config:scripts (box/c cache-table?)]
+          [url->path url->path/c]
+          [path->serlvet path->servlet/c])         
+         (values (-> void)
+                 url->servlet/c)]{
+ The first return value flushes the cache. 
+ The second is a procedure that uses @scheme[url->path] to resolve the URL to a path, then uses @scheme[path->servlet] to resolve
+ that path to a servlet, caching the results in @scheme[config:scripts].
+}
+                        
+@defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
                 ((url url?) (exn exn?) . -> . response?)
@@ -346,27 +372,14 @@ a URL that refreshes the password file, servlet cache, etc.}
                [#:responders-servlet
                 responders-servlet
                 ((url url?) (exn exn?) . -> . response?)
-                servlet-error-responder]
-               [#:timeouts-default-servlet
-                timeouts-default-servlet
-                integer?
-                30])
-         (values (-> void)
-                 dispatcher/c)]{
- The first returned value is a procedure that refreshes the servlet
- code cache.
-
- The dispatcher does the following:
- If the request URL contains a continuation reference, then it is invoked with the
- request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
- The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
- If this fails then @scheme[responders-servlet-loading] is used to format a response
- with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
- If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
- used to format a response with the exception.
-
- Servlets that do not specify timeouts are given timeouts according to @scheme[timeouts-default-servlet].
-}}
+                servlet-error-responder])
+         dispatcher/c]{
+ This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
+ If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
+ @scheme[responders-servlet].
+}
+                      
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
@@ -374,7 +387,7 @@ a URL that refreshes the password file, servlet cache, etc.}
              @elem{defines a dispatcher constructor
                    that runs servlets written in the Web Language.}]{
 
-@defproc[(make [#:url->path url->path url->path?]
+@defproc[(make [#:url->path url->path url->path/c]
                [#:make-servlet-namespace make-servlet-namespace
                                          make-servlet-namespace?
                                          (make-make-servlet-namespace)]

@@ -19,7 +19,7 @@
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make
-  (->* (#:url->path url-path/c)
+  (->* (#:url->path url->path/c)
        (#:make-servlet-namespace make-servlet-namespace/c
                                   #:responders-servlet-loading (url? any/c . -> . response?)
                                   #:responders-servlet (url? any/c . -> . response?))

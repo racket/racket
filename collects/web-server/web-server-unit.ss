@@ -72,18 +72,17 @@
      (path-procedure:make "/conf/collect-garbage"
                           (lambda _
                             (collect-garbage)
-                            ((responders-collect-garbage (host-responders host-info)))))
-     (let-values ([(clear-cache! servlet-dispatch)
-                   (servlets:make config:scripts 
-                                  #:make-servlet-namespace config:make-servlet-namespace
-                                  #:url->path
-                                  (fsmap:filter-url->path
-                                   #rx"\\.(ss|scm)$"
-                                   (fsmap:make-url->valid-path
-                                    (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
-                                  #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
-                                  #:responders-servlet (responders-servlet (host-responders host-info))
-                                  #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info)))])
+                            ((responders-collect-garbage (host-responders host-info)))))     
+     (let-values ([(clear-cache! url->servlet)
+                   (servlets:make-cached-url->servlet
+                    config:scripts
+                    (fsmap:filter-url->path
+                     #rx"\\.(ss|scm)$"
+                     (fsmap:make-url->valid-path
+                      (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
+                    (servlets:make-default-path->servlet
+                     #:make-servlet-namespace config:make-servlet-namespace
+                     #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info))))])
        (sequencer:make
         (path-procedure:make "/conf/refresh-servlets"
                              (lambda _
@@ -91,7 +90,9 @@
                                ((responders-servlets-refreshed (host-responders host-info)))))
         (sequencer:make
          (timeout:make (timeouts-servlet-connection (host-timeouts host-info)))
-         servlet-dispatch)))
+         (servlets:make url->servlet
+                        #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
+                        #:responders-servlet (responders-servlet (host-responders host-info))))))
      (files:make #:url->path (fsmap:make-url->path (paths-htdocs (host-paths host-info)))
                  #:path->mime-type (make-path->mime-type (paths-mime-types (host-paths host-info)))
                  #:indices (host-indices host-info))
