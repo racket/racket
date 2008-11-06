@@ -681,12 +681,16 @@ making some of the test cases much easier to manage.
   (local [(define cat-position (world-cat world))
           (define table (build-table/fast world))
           (define neighbors (adjacent cat-position (world-size world)))
+          (define next-cat-positions
+            (find-best-positions neighbors
+                                 (map (lambda (p) (lookup-in-table table p))
+                                      neighbors)))
           (define next-cat-position
-            (find-best-position (first neighbors)
-                                (lookup-in-table table (first neighbors))
-                                (rest neighbors)
-                                (map (lambda (p) (lookup-in-table table p))
-                                     (rest neighbors))))]
+            (cond
+              [(boolean? next-cat-positions) false]
+              [else
+               (list-ref next-cat-positions
+                         (random (length next-cat-positions)))]))]
     (make-world (world-board world)
                 (cond 
                   [(boolean? next-cat-position)
@@ -699,6 +703,7 @@ making some of the test cases much easier to manage.
                    'cat-won]
                   [else 'playing])
                 (world-size world))))
+
 
 (check-expect
  (move-cat
@@ -763,60 +768,42 @@ making some of the test cases much easier to manage.
              'playing
              5))
 
-;; find-best-position : (nelistof posn) (nelistof number or '∞)
-;;                   -> posn or #f
-;; returns #f if there is no non-infinite move, otherwise returns
-;; the next step for the cat.
-(define (find-best-position best-posn score rest-posns scores)
-  (cond
-    [(empty? rest-posns) 
-     (cond
-       [(equal? score '∞)
-        false]
-       [else
-        best-posn])]
-    [else (cond
-            [(<=/f score (first scores))
-             (find-best-position best-posn
-                                 score 
-                                 (rest rest-posns)
-                                 (rest scores))]
-            [else
-             (find-best-position (first rest-posns)
-                                 (first scores)
-                                 (rest rest-posns)
-                                 (rest scores))])]))
-
-(check-expect (find-best-position (make-posn 1 1)
-                                  1
-                                  (list (make-posn 2 2))
-                                  (list 2))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 1 1)
-                                  '∞
-                                  (list)
-                                  (list))
+;; find-best-positions : (nelistof posn) (nelistof number or '∞) -> (nelistof posn) or false
+(define (find-best-positions posns scores)
+  (local [(define best-score (foldl (lambda (x sofar)
+                                      (if (<=/f x sofar)
+                                          x
+                                          sofar))
+                                    (first scores)
+                                    (rest scores)))]
+    (cond
+      [(symbol? best-score) false]
+      [else
+       (map
+        second
+        (filter (lambda (x) (equal? (first x) best-score))
+                (map list scores posns)))])))
+(check-expect (find-best-positions (list (make-posn 0 0)) (list 1))
+              (list (make-posn 0 0)))
+(check-expect (find-best-positions (list (make-posn 0 0)) (list '∞))
               false)
-(check-expect (find-best-position (make-posn 2 2)
-                                  2
-                                  (list)
-                                  (list))
-              (make-posn 2 2))
-(check-expect (find-best-position (make-posn 2 2) 
-                                  2 
-                                  (list (make-posn 1 1)) 
-                                  (list 1))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 2 2) 
-                                  '∞ 
-                                  (list (make-posn 1 1)) 
-                                  (list 1))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 2 2)
-                                  2
-                                  (list (make-posn 1 1))
-                                  (list '∞))
-              (make-posn 2 2))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list 1 2))
+              (list (make-posn 0 0)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list 1 1))
+              (list (make-posn 0 0)
+                    (make-posn 1 1)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list '∞ 2))
+              (list (make-posn 1 1)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list '∞ '∞))
+              false)
 
 ;; add-obstacle : board number number -> board
 (define (add-obstacle board x y)
