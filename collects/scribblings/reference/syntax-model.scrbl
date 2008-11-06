@@ -235,10 +235,10 @@ More specifically, the typesetting of identifiers in the above grammar
 is significant. For example, the second case for @scheme[_expr] is a
 @tech{syntax-object} list whose first element is an @tech{identifier},
 where the @tech{identifier}'s @tech{lexical information} specifies a
-binding to the @scheme[define-values] of the
+binding to the @scheme[#%plain-lambda] of the
 @schememodname[scheme/base] language (i.e., the @tech{identifier} is
 @scheme[free-identifier=?] to one whose binding is
-@scheme[define-values]). In all cases, identifiers above typeset as
+@scheme[#%plain-lambda]). In all cases, identifiers above typeset as
 syntactic-form names refer to the bindings defined in
 @secref["syntax"].
 

@@ -10,4 +10,5 @@
 
 Returns a list of free @scheme[lambda]- and @scheme[let]-bound
 identifiers in @scheme[expr-stx]. The expression must be fully
-expanded (@secref[#:doc refman "fully-expanded"]).}
+expanded (see @secref[#:doc refman "fully-expanded"] and
+@scheme[expand]).}
