@@ -502,12 +502,6 @@ functions of interest for the servlet developer.}
  returns the instance id, continuation id, and nonce.
 }
                   
-@defproc[(embed-ids [ids (list/c number? number? number?)]
-                    [u url?])
-         string?]{
- Creates a @scheme[continuation-url?].
-}
-
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
 @(require (for-label web-server/servlet/helpers))
