@@ -321,8 +321,8 @@
 (define (add-header-line! line)
   (let ([new (list line)] [cur (thread-cell-ref added-lines)])
     (if cur
-	(set-box! cur (append (unbox cur) new))
-	(thread-cell-set! added-lines (box new)))))
+      (set-box! cur (append (unbox cur) new))
+      (thread-cell-set! added-lines (box new)))))
 
 (define ((wrap-evaluator eval) expr)
   (define unknown "unknown")
@@ -450,11 +450,11 @@
                    (cond [(list? allowed)
                           (unless (member users allowed)
                             (error*
-                             "You are not registered ~a for this submission"
+                             "You are not registered for ~a submission"
                              (case (length users)
-                               [(1) "for individual submission"]
-                               [(2) "as a pair"]
-                               [else "as a group"])))]
+                               [(1) "individual"]
+                               [(2) "pair"]
+                               [else "group"])))]
                          [(procedure? allowed) (allowed users)]
                          [(not allowed) ; default is single-user submission
                           (unless (= 1 (length users))
@@ -479,7 +479,9 @@
                            (prefix-line (user-substs user student-line)))
                          (for-each prefix-line/substs extra-lines)
                          (for-each prefix-line/substs
-				   (unbox (or (thread-cell-ref added-lines) (box '()))))
+                                   (cond [(thread-cell-ref added-lines)
+                                          => unbox]
+                                         [else '()]))
                          (display submission-text))))
                    (define submission-text
                      (and create-text?
