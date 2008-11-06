@@ -16,14 +16,12 @@
 (define (serve-status port-no)
 
   (define ((in-dir dir) . paths) (path->string (apply build-path dir paths)))
-  (define in-here
-    (in-dir (build-path (this-expression-source-directory) "status-web-root")))
+  (define in-web-dir
+    (in-dir (or (get-conf 'web-base-dir)
+                (build-path (this-expression-source-directory)
+                            "status-web-root"))))
   (define in-plt-web-dir
     (in-dir (build-path (collection-path "web-server") "default-web-root")))
-
-  (define web-dir
-    (cond [(get-conf 'web-base-dir) => path->string]
-          [else (in-here)]))
 
   (define config
     `((port ,port-no)
@@ -53,7 +51,7 @@
           (log-file-path ,(cond [(get-conf 'web-log-file) => path->string]
                                 [else #f]))
           (file-root ".")
-          (servlet-root ,(in-here "servlets"))
+          (servlet-root ,(in-web-dir "servlets"))
           (mime-types ,(in-plt-web-dir "mime.types"))
           (password-authentication ,(in-plt-web-dir "passwords")))))
       (virtual-host-table)))
@@ -61,7 +59,7 @@
   (define configuration
     (configuration-table-sexpr->web-config@
      config
-     #:web-server-root web-dir
+     #:web-server-root (in-web-dir)
      #:make-servlet-namespace
      (make-make-servlet-namespace
       #:to-be-copied-module-specs
