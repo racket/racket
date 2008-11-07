@@ -62,6 +62,12 @@
      "Distribution file parses"
      (read-passwords default-passwords))
     
+    (test-exn
+     "False not allowed as password-file"
+     exn?
+     (lambda ()
+       (passwords:password-file->authorized? #f)))
+    
     (test-exn "authorized"
               exn:dispatcher?
               (lambda () (runt #t #t)))
