@@ -8,13 +8,13 @@
   Classes matching this interface support the basic 
   @scheme[editor<%>]
   functionality required by the framework.
-  @defmethod*[(((has-focus?) boolean))]{
+  @defmethod*[(((has-focus?) boolean?))]{
     This function returns @scheme[#t] when the editor has the keyboard
     focus. It is implemented using:
     @method[editor<%> on-focus]
 
   }
-  @defmethod*[(((local-edit-sequence?) boolean))]{
+  @defmethod*[(((local-edit-sequence?) boolean?))]{
     Indicates if this editor is in an edit sequence. Enclosing buffer's
     edit-sequence status is not considered by this method.
 
@@ -49,11 +49,11 @@
 
 
   }
-  @defmethod*[(((save-file-out-of-date?) boolean))]{
+  @defmethod*[(((save-file-out-of-date?) boolean?))]{
     Returns @scheme[#t] if the file on disk has been modified, by some other program.
 
   }
-  @defmethod*[(((save-file/gui-error (filename (union path |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean))]{
+  @defmethod*[(((save-file/gui-error (filename (union path |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> save-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -63,7 +63,7 @@
     no error occurred and @scheme[#f] if an error occurred.
 
   }
-  @defmethod*[(((load-file/gui-error (filename (union string |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean))]{
+  @defmethod*[(((load-file/gui-error (filename (union string |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean?))]{
     This method is an alternative to 
     @method[editor<%> load-file]. Rather than showing errors via the original stdout, it
     opens a dialog with an error message showing the error.
@@ -91,7 +91,7 @@
 
     Does nothing.
   }
-  @defmethod*[(((can-close?) boolean))]{
+  @defmethod*[(((can-close?) boolean?))]{
     This method is called to query the editor if is okay to
     close the editor. Although there is no visible effect
     associated with closing an editor, there may be some cleanup
@@ -105,7 +105,7 @@
 
     Returns @scheme[#t].
   }
-  @defmethod*[(((close) boolean))]{
+  @defmethod*[(((close) boolean?))]{
     This method is merely
     @schemeblock[
     (if (can-close?)
@@ -155,7 +155,7 @@
   This installs the global keymap @scheme[keymap:get-global] to
   handle keyboard and mouse mappings not handled by @scheme[keymap]. The
   global keymap is created when the framework is invoked.
-  @defmethod*[#:mode augment (((can-save-file? (filename string) (format symbol?)) boolean))]{
+  @defmethod*[#:mode augment (((can-save-file? (filename string) (format symbol?)) boolean?))]{
 
     Checks to see if the file on the disk has been modified out
     side of this editor, using
@@ -163,7 +163,7 @@
     If it has, this method prompts the user to be sure they want to save.
 
   }
-  @defmethod*[#:mode augment (((after-save-file (success? boolean)) void))]{
+  @defmethod*[#:mode augment (((after-save-file (success? boolean?)) void))]{
 
     If the current filename is not a temporary filename, this method calls
     @scheme[handler:add-to-recent]with the current filename.
@@ -175,19 +175,19 @@
     @method[editor:basic<%> save-file-out-of-date?].
 
   }
-  @defmethod*[#:mode augment (((after-load-file (success? boolean)) void))]{
+  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void))]{
 
     Updates a private instance variable with the modification
     time of the file, for using in implementing
     @method[editor:basic<%> save-file-out-of-date?]
 
   }
-  @defmethod*[#:mode override (((on-focus (on? boolean)) void))]{
+  @defmethod*[#:mode override (((on-focus (on? boolean?)) void))]{
     Manages the state to implement
     @method[editor:basic<%> has-focus?]
 
   }
-  @defmethod*[#:mode augment (((on-edit-sequence) boolean))]{
+  @defmethod*[#:mode augment (((on-edit-sequence) boolean?))]{
 
     Always returns @scheme[#t]. Updates a flag for
     @method[editor:basic<%> local-edit-sequence?]
@@ -323,13 +323,22 @@
     in the editor.
 
   }
-  @defmethod*[(((allow-close-with-no-filename?) boolean))]{
+  @defmethod*[(((allow-close-with-no-filename?) boolean?))]{
     This method indicates if closing the file when it hasn't
     been saved is a reason to alert the user. See also
     @method[editor:file-mixin can-close?].
 
 
     Defaultly returns @scheme[#f].
+  }
+  
+  @defmethod[(user-saves-or-not-modified? [allow-cancel? #t]) boolean?]{
+    If the file has not been saved, this prompts the user about saving and,
+    if the user says to save, then it saves the file.
+    
+    The result is @scheme[#t] if the save file is up to date, or if
+    the user says it is okay to continue without saving. Generally used
+    when closing the file or quiting the app.
   }
 }
 @defmixin[editor:file-mixin (editor:keymap<%>) (editor:file<%>)]{
@@ -344,7 +353,7 @@
     frame that matches
     @scheme[frame:editor<%>].
   }
-  @defmethod*[#:mode augment (((can-close?) boolean))]{
+  @defmethod*[#:mode augment (((can-close?) boolean?))]{
 
     If the 
     @method[editor:file<%> allow-close-with-no-filename?]
@@ -369,7 +378,7 @@
 }
 @definterface[editor:backup-autosave<%> (editor:basic<%>)]{
   Classes matching this interface support backup files and autosaving.
-  @defmethod*[(((backup?) boolean))]{
+  @defmethod*[(((backup?) boolean?))]{
     Indicates weather this 
     @scheme[editor<%>]
     should be backed up.
@@ -382,7 +391,7 @@
     @index{'framework:backup-files?}
 
   }
-  @defmethod*[(((autosave?) boolean))]{
+  @defmethod*[(((autosave?) boolean?))]{
     Indicates weather this 
     @scheme[editor<%>]
     should be autosaved.
@@ -455,7 +464,7 @@
   See also
   @scheme[frame:text-info<%>].
 
-  @defmethod*[#:mode override (((lock (lock? boolean)) void))]{
+  @defmethod*[#:mode override (((lock (lock? boolean?)) void))]{
 
     Uses 
     @method[editor:basic<%> run-after-edit-sequence]

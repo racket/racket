@@ -495,21 +495,23 @@
       (inherit save-file)
       (define/public (allow-close-with-no-filename?) #f)
       (define/augment (can-close?)
-        (let* ([user-allowed-or-not-modified
-                (or (not (is-modified?))
-                    (and (not (get-filename))
-                         (allow-close-with-no-filename?))
-                    (case (gui-utils:unsaved-warning
-                           (get-filename/untitled-name)
-                           (string-constant dont-save)
-                           #t
-                           (or (get-top-level-window)
-                               (get-can-close-parent)))
-                      [(continue) #t]
-                      [(save) (save-file)]
-                      [else #f]))])
-          (and user-allowed-or-not-modified
-               (inner #t can-close?))))
+        (and (user-saves-or-not-modified?)
+             (inner #t can-close?)))
+      
+      (define/public (user-saves-or-not-modified? [allow-cancel? #t])
+        (or (not (is-modified?))
+            (and (not (get-filename))
+                 (allow-close-with-no-filename?))
+            (case (gui-utils:unsaved-warning
+                   (get-filename/untitled-name)
+                   (string-constant dont-save)
+                   #t
+                   (or (get-top-level-window)
+                       (get-can-close-parent))
+                   allow-cancel?)
+              [(continue) #t]
+              [(save) (save-file)]
+              [else #f])))
       
       (define/public (get-can-close-parent) #f)
       

@@ -27,7 +27,7 @@
 @defmixin[canvas:delegate-mixin (canvas:basic<%>) (canvas:delegate<%>)]{
   Provides an implementation of
   @scheme[canvas:delegate<%>].
-  @defmethod*[#:mode override (((on-superwindow-show (shown? boolean)) void))]{
+  @defmethod*[#:mode override (((on-superwindow-show (shown? boolean?)) void))]{
 
     Notifies the delegate window when the original window is
     visible. When invisible, the blue highlighting is erased.

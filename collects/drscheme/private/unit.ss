@@ -2476,10 +2476,11 @@ module browser threading seems wrong.
             (update-running (send current-tab is-running?))
             (on-tab-change old-tab current-tab)
             
+            (restore-visible-tab-regions)
             (end-container-sequence)
             ;; restore-visible-tab-regions has to be outside the container sequence
             ;; or else things get moved again during the container sequence end
-            (restore-visible-tab-regions)))
+            #;(restore-visible-tab-regions)))
         
         (define/pubment (on-tab-change from-tab to-tab)
           (let ([old-enabled (send from-tab get-enabled)]
@@ -2559,9 +2560,9 @@ module browser threading seems wrong.
                    (list x y w h)))
                (send txt get-canvases)))
         
-        (inherit set-text-to-search)
+        (inherit set-text-to-search reflow-container)
         (define/private (restore-visible-tab-regions)
-          (define (set-visible-regions txt regions ints?)
+          (define (fix-up-canvas-numbers txt regions ints?)
             (when regions
               (let* ([canvases (send txt get-canvases)]
                      [canvases-count (length canvases)]
@@ -2586,25 +2587,30 @@ module browser threading seems wrong.
                            (split-interactions (car canvases))
                            (split-definitions (car canvases)))
                        (loop (- i 1) 
-                             (cdr canvases))))]))
-              (for-each (λ (c r)
-                          (set-visible-tab-region txt c r)) 
+                             (cdr canvases))))]))))
+          
+          (define (set-visible-regions txt regions)
+            (when regions
+              (for-each (λ (canvas region) 
+                          (let ([admin (send txt get-admin)])
+                            (send admin scroll-to 
+                                  (first region)
+                                  (second region)
+                                  (third region)
+                                  (fourth region)))) 
                         (send txt get-canvases)
                         regions)))
-          (define (set-visible-tab-region txt canvas region)
-            (let ([admin (send txt get-admin)])
-              (send admin scroll-to 
-                    (first region)
-                    (second region)
-                    (third region)
-                    (fourth region))))
+          
           (let-values ([(vi is?) (send current-tab get-visible-ints)]
                        [(vd ds?) (send current-tab get-visible-defs)])
             (set! interactions-shown? is?)
             (set! definitions-shown? ds?)
             (update-shown)
-            (set-visible-regions definitions-text vd #f)
-            (set-visible-regions interactions-text vi #t))
+            (fix-up-canvas-numbers definitions-text vd #f)
+            (fix-up-canvas-numbers interactions-text vi #t)
+            (reflow-container)
+            (set-visible-regions definitions-text vd)
+            (set-visible-regions interactions-text vi))
           (case (send current-tab get-focus-d/i)
             [(defs) 
              (send (car definitions-canvases) focus)
@@ -2617,15 +2623,23 @@ module browser threading seems wrong.
           (with-handlers ([exn:fail:filesystem? (λ (x) #f)])
             (string=? (path->string (normal-case-path (normalize-path p1)))
                       (path->string (normal-case-path (normalize-path p2))))))
+        
         (define/override (make-visible filename)
+          (let ([tab (find-matching-tab filename)])
+            (when tab
+              (change-to-tab tab))))
+
+        (define/private (find-matching-tab filename)
           (let loop ([tabs tabs])
-            (unless (null? tabs)
-              (let* ([tab (car tabs)]
-                     [tab-filename (send (send tab get-defs) get-filename)])
-                (if (and tab-filename
-                         (pathname-equal? filename tab-filename))
-                    (change-to-tab tab)
-                    (loop (cdr tabs)))))))
+            (cond
+              [(null? tabs) #f]
+              [else
+               (let* ([tab (car tabs)]
+                      [tab-filename (send (send tab get-defs) get-filename)])
+                 (if (and tab-filename
+                          (pathname-equal? filename tab-filename))
+                     tab
+                     (loop (cdr tabs))))])))
         
         (define/override (editing-this-file? filename)
           (ormap (λ (tab)
@@ -2666,7 +2680,22 @@ module browser threading seems wrong.
                                      (string-constant close)))
             (send item set-shortcut (if just-one? #\w #f))))
         
-        
+        ;; offer-to-save-file : path -> void
+        ;; bring the tab that edits the file named by `path' to the front
+        ;; and opens a dialog asking if it should be saved.
+        (define/public (offer-to-save-file path)
+          (let ([original-tab current-tab]
+                [tab-to-save (find-matching-tab path)])
+            (when tab-to-save
+              (let ([defs-to-save (send tab-to-save get-defs)])
+                (when (send defs-to-save save-file-out-of-date?)
+                  (unless (eq? tab-to-save original-tab)
+                    (change-to-tab tab-to-save))
+                  (send defs-to-save user-saves-or-not-modified? #f)
+                  (unless (eq? tab-to-save original-tab)
+                    (change-to-tab original-tab)))))))
+                  
+              
         ;;
         ;; end tabs
         ;;

@@ -53,7 +53,7 @@
     @scheme[preferences:get]) the matching open parenthesis is flashed.
 
   }
-  @defmethod*[(((tabify-on-return?) boolean))]{
+  @defmethod*[(((tabify-on-return?) boolean?))]{
     The result of this method is used to determine if the return key
     automatically tabs over to the correct position.
 

@@ -83,7 +83,7 @@
 
 
   }
-  @defmethod*[(((clear) boolean))]{
+  @defmethod*[(((clear) boolean?))]{
     This removes all of the frames in the group. It does not close the frames. See also
     @method[group:% on-close-all]and 
     @method[group:% can-close-all?].

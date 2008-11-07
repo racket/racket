@@ -1041,11 +1041,48 @@
                        (cond
                          [(preferences:get 'framework:white-on-black?)
                           (send on-sd set-delta-foreground "white")
-                          (send off-sd set-delta-background "indianred")]
+                          (send off-sd set-delta-foreground "indianred")]
                          [else
-                          (send on-sd set-delta-foreground "black")
-                          (send off-sd set-delta-foreground "lightgray")
-                          (send off-sd set-delta-background "firebrick")])
+                          ;; picture 1.png
+                          #;
+                          (begin
+                            (send on-sd set-delta-foreground "black")
+                            (send off-sd set-delta-foreground "lightgray")
+                            (send off-sd set-delta-background "firebrick"))
+                          
+                          ;; picture 2.png
+                          #;
+                          (begin
+                            (send on-sd set-delta-foreground "darkgreen")
+                            (send off-sd set-delta-foreground "firebrick")
+                            (send off-sd set-delta-background "Khaki"))
+                          
+                          ;; picture 3.png
+                          #;
+                          (begin
+                            (send on-sd set-delta-foreground "darkgreen")
+                            (send off-sd set-delta-foreground "Khaki")
+                            (send off-sd set-delta-background "black"))
+                          
+                          ;; picture 4.png
+                          #;
+                          (begin
+                            (send on-sd set-delta-foreground "black")
+                            (send off-sd set-delta-foreground "Khaki")
+                            (send off-sd set-delta-background "darkblue"))
+                          
+                          ;; picture 5.png
+                          (begin
+                            (send on-sd set-delta-foreground (make-object color% 0 80 0))
+                            (send off-sd set-delta-foreground "orange")
+                            (send off-sd set-delta-background "black"))
+                          
+                          ;; variation on 5.
+                          (begin
+                            (send on-sd set-delta-foreground "black")
+                            (send off-sd set-delta-foreground "orange")
+                            (send off-sd set-delta-background "black"))
+                          ])
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht

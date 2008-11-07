@@ -78,7 +78,7 @@
     If clear-colors is true all the text in the buffer will have it's
     style set to Standard.
   }
-  @defmethod*[(((force-stop-colorer (stop? boolean)) void))]{
+  @defmethod*[(((force-stop-colorer (stop? boolean?)) void))]{
     Causes the entire tokenizing/coloring system to become inactive.
     Intended for debugging purposes only.
 
@@ -86,11 +86,11 @@
     stop? determines whether the system is being forced to stop or allowed
     to wake back up.
   }
-  @defmethod*[(((is-stopped?) boolean))]{
+  @defmethod*[(((is-stopped?) boolean?))]{
     Indicates if the colorer for this editor has been stopped, or not.
 
   }
-  @defmethod*[(((is-frozen?) boolean))]{
+  @defmethod*[(((is-frozen?) boolean?))]{
     Indicates if this editor's colorer is frozen. See also
     @method[color:text<%> freeze-colorer]
     and
@@ -131,7 +131,7 @@
     This returns the list of regions that are currently being colored in the editor.
 
   }
-  @defmethod*[(((skip-whitespace (position natural-number?) (direction (symbols (quote forward) (quote backward))) (comments? boolean)) natural-number?))]{
+  @defmethod*[(((skip-whitespace (position natural-number?) (direction (symbols (quote forward) (quote backward))) (comments? boolean?)) natural-number?))]{
     Returns the next non-whitespace character.
 
 
@@ -172,7 +172,7 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((insert-close-paren (position natural-number?) (char char?) (flash? boolean) (fixup? boolean)) void))]{
+  @defmethod*[(((insert-close-paren (position natural-number?) (char char?) (flash? boolean?) (fixup? boolean?)) void))]{
 
 
     Position is the place to put the parenthesis and char is the
