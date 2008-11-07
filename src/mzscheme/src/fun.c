@@ -119,6 +119,7 @@ static Scheme_Object *extract_cc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_markses (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_cc_proc_marks (int argc, Scheme_Object *argv[]);
 static Scheme_Object *extract_one_cc_mark (int argc, Scheme_Object *argv[]);
+static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
@@ -397,6 +398,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_prim_w_arity(extract_one_cc_mark,
 						      "continuation-mark-set-first",
 						      2, 4),
+			     env);
+  scheme_add_global_constant("call-with-immediate-continuation-mark",
+			     scheme_make_prim_w_arity(call_with_immediate_cc_mark,
+						      "call-with-immediate-continuation-mark",
+						      2, 3),
 			     env);
   scheme_add_global_constant("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
@@ -3940,6 +3946,42 @@ int scheme_escape_continuation_ok(Scheme_Object *ec)
     return 1;
   else
     return 0;
+}
+
+static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
+{
+  Scheme_Thread *p = scheme_current_thread;
+  long findpos, bottom;
+  Scheme_Object *a[1], *key;
+
+  scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
+
+  key = argv[0];
+  if (argc > 2)
+    a[0] = argv[2];
+  else
+    a[0] = scheme_false;
+
+  findpos = (long)MZ_CONT_MARK_STACK;
+  bottom = (long)p->cont_mark_stack_bottom;
+  while (1) {
+    if (findpos-- > bottom) {
+      Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
+      long pos = findpos & SCHEME_MARK_SEGMENT_MASK;
+      Scheme_Cont_Mark *find = seg + pos;
+
+      if ((long)find->pos < (long)MZ_CONT_MARK_POS) {
+        break;
+      } else {
+        if (find->key == key) {
+          a[0] = find->val;
+          break;
+        }
+      }
+    }
+  }
+
+  return scheme_tail_apply(argv[1], 1, a);
 }
 
 static Scheme_Object *

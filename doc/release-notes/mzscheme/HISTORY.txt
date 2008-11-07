@@ -1,3 +1,9 @@
+Version 4.1.2.4
+Added call-with-immediate-continuation-mark
+
+Version 4.1.2.3
+Added variable-reference? and empty #%variable-reference form
+
 Version 4.1.2.1
 Extended continuation-marks to work on a thread argument
 
