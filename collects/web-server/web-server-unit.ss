@@ -57,18 +57,20 @@
          (log:make #:format (log:log-format->format (host-log-format host-info))
                    #:log-path (host-log-path host-info))
          (lambda (conn req) (next-dispatcher)))
-     (let-values ([(update-password-cache! password-check)
-                   (passwords:password-file->authorized? (host-passwords host-info))])
-       (sequencer:make
-        (timeout:make (timeouts-password (host-timeouts host-info)))
-        (passwords:make
-         (passwords:make-basic-denied?/path
-          password-check)
-         #:authentication-responder (responders-authentication (host-responders host-info)))
-        (path-procedure:make "/conf/refresh-passwords"
-                             (lambda _
-                               (update-password-cache!)
-                               ((responders-passwords-refreshed (host-responders host-info)))))))
+     (if (host-passwords host-info)
+         (let-values ([(update-password-cache! password-check)
+                       (passwords:password-file->authorized? (host-passwords host-info))])
+           (sequencer:make
+            (timeout:make (timeouts-password (host-timeouts host-info)))
+            (passwords:make
+             (passwords:make-basic-denied?/path
+              password-check)
+             #:authentication-responder (responders-authentication (host-responders host-info)))
+            (path-procedure:make "/conf/refresh-passwords"
+                                 (lambda _
+                                   (update-password-cache!)
+                                   ((responders-passwords-refreshed (host-responders host-info)))))))
+         (lambda (conn req) (next-dispatcher)))
      (path-procedure:make "/conf/collect-garbage"
                           (lambda _
                             (collect-garbage)
