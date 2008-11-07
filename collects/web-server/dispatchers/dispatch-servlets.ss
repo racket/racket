@@ -62,15 +62,22 @@
                 directory
                 start))
 
+(define default-module-specs
+  '(web-server/servlet
+    web-server/private/servlet
+    web-server/servlet/web
+    web-server/servlet/web-cells))
+(provide/contract
+ [make-v1.servlet (path? integer? (request? . -> . response?) . -> . servlet?)]
+ [make-v2.servlet (path? manager? (request? . -> . response?) . -> . servlet?)]
+ [default-module-specs (listof module-path?)])
+
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
                                     #:timeouts-default-servlet [timeouts-default-servlet 30])
   (lambda (a-path)
     (parameterize ([current-namespace (make-servlet-namespace
                                        #:additional-specs
-                                       '(web-server/servlet
-                                         web-server/private/servlet
-                                         web-server/servlet/web
-                                         web-server/servlet/web-cells))]
+                                       default-module-specs)]
                    [current-custodian (make-servlet-custodian)])
       (define s (load/use-compiled a-path))
       (cond

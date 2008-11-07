@@ -32,9 +32,19 @@ By default the URL for your servlet is @filepath{http://localhost:8000/servlets/
 suppose you wanted it to be @filepath{http://localhost:8000/hello.ss}:
 @schemeblock[
 (serve/servlet my-app
-               #:servlet-path (build-path "hello.ss"))
+               #:servlet-path "/hello.ss")
 ]
-For the time being, this path must end in @filepath{.ss} or @filepath{.scm}.
+
+Suppose you wanted it to capture top-level requests:
+@schemeblock[
+(serve/servlet my-app
+               #:servlet-path "/")
+]
+Or, perhaps just some nice top-level name:
+@schemeblock[
+(serve/servlet my-app
+               #:servlet-path "/main")
+]
 
 Suppose you wanted to use a style-sheet (@filepath{style.css}) found on your Desktop (@filepath{/Users/jay/Desktop/}):
 @schemeblock[
@@ -46,43 +56,50 @@ Suppose you wanted to use a style-sheet (@filepath{style.css}) found on your Des
 These files are served @emph{in addition} to those from the @scheme[#:server-root-path] @filepath{htdocs} directory.
 Notice that you may pass any number of extra paths.
 
-@defproc[(serve/servlet [servlet (request? . -> . response?)]
+@defproc[(serve/servlet [start (request? . -> . response?)]
                        [#:launch-browser? launch-browser? boolean? #t]
                        [#:quit? quit? boolean? #t]
                        [#:listen-ip listen-ip string? "127.0.0.1"]
                        [#:port port number? 8000]
+                       [#:servlet-path servlet-path string?
+                                       "/servlets/standalone.ss"]
+                       [#:servlet-regexp servlet-regexp regexp?
+                                         (regexp (format "^~a$" (regexp-quote servlet-path)))]
                        [#:manager manager manager? default-threshold-LRU-manager]
                        [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                        [#:server-root-path server-root-path path? default-server-root-path]
                        [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
-                       [#:servlets-root servlets-root path? (build-path server-root-path ".")]
+                       [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
+                       [#:servlet-current-directory servlet-current-directory path? servlets-root]
                        [#:file-not-found-path file-not-found-path  path?
                                               (build-path server-root-path "conf" "not-found.html")]
                        [#:mime-types-path mime-types-path path?
-                                          (build-path server-root-path "mime.types")]
-                       [#:servlet-path servlet-path path?
-                                       "servlets/standalone.ss"])
+                                          (build-path server-root-path "mime.types")])
                        void]{
  This sets up and starts a fairly default server instance.
       
- @scheme[servlet] is installed as a server at @scheme[servlet-path] with @scheme[manager]
- as its continuation manager. (The default manager limits the amount of memory to 64 MB and
- deals with memory pressure as discussed in the @scheme[make-threshold-LRU-manager] documentation.)
- 
- If @scheme[launch-browser?] is true, then a web browser is opened to the servlet's start page.
+ @scheme[start] is loaded as a servlet and responds to requests that match @scheme[servlet-regexp]. The current directory
+ of servlet execution is @scheme[servlet-current-directory].
+
+ If @scheme[launch-browser?] is true, then a web browser is opened to @filepath{http://localhost:<port><servlet-path>}.
  
  If @scheme[quit?] is true, then the URL @filepath["/quit"] ends the server.
-
+ 
  Advanced users may need the following options:
  
  The server listens on @scheme[listen-ip] and port @scheme[port].
+ 
+ The servlet is loaded with @scheme[manager]
+ as its continuation manager. (The default manager limits the amount of memory to 64 MB and
+ deals with memory pressure as discussed in the @scheme[make-threshold-LRU-manager] documentation.)
  
  The modules specified by @scheme[servlet-namespace] are shared with other servlets.
  
  The server files are rooted at @scheme[server-root-path] (which is defaultly the distribution root.)
  File paths, in addition to the @filepath["htdocs"] directory under @scheme[server-root-path] may be
  provided with @scheme[extra-files-paths]. These paths are checked first, in the order they appear in the list.
- The @filepath["servlets"] directory is expected at @scheme[servlets-root].
+ 
+ Other servlets are served from @scheme[servlets-root].
  
  If a file cannot be found, @scheme[file-not-found-path] is used as an error response.
  

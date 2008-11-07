@@ -52,10 +52,11 @@
                                     #:servlets-root path?
                                     #:file-not-found-path path?
                                     #:mime-types-path path?
-                                    #:servlet-path path?)
+                                    #:servlet-path string?
+                                    #:servlet-regexp regexp?)
                  . ->* .
                  void)])
-(define (serve/servlet new-servlet 
+(define (serve/servlet start 
                        #:launch-browser?
                        [launch-browser? #t]
                        #:quit?
@@ -72,7 +73,12 @@
                          (lambda (request)
                            `(html (head (title "Page Has Expired."))
                                   (body (p "Sorry, this page has expired. Please go back."))))
-                         (* 64 1024 1024))]
+                         (* 64 1024 1024))]          
+                       
+                       #:servlet-path
+                       [servlet-path "/servlets/standalone.ss"]
+                       #:servlet-regexp
+                       [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
                        
                        #:servlet-namespace
                        [servlet-namespace empty]
@@ -81,20 +87,27 @@
                        #:extra-files-paths 
                        [extra-files-paths (list (build-path server-root-path "htdocs"))]
                        #:servlets-root
-                       [servlets-root (build-path server-root-path ".")]
+                       [servlets-root (build-path server-root-path "htdocs")]
+                       #:servlet-current-directory
+                       [servlet-current-directory servlets-root]
                        #:file-not-found-path
                        [file-not-found-path (build-path server-root-path "conf" "not-found.html")]
                        #:mime-types-path
-                       [mime-types-path (build-path server-root-path "mime.types")]
-                       #:servlet-path
-                       [servlet-path "servlets/standalone.ss"])
+                       [mime-types-path (build-path server-root-path "mime.types")])
   (let*-values
       ([(standalone-url)
-        (format "http://localhost:~a/~a" the-port servlet-path)]
+        (format "http://localhost:~a~a" the-port servlet-path)]
        [(make-servlet-namespace) (make-make-servlet-namespace
                                   #:to-be-copied-module-specs servlet-namespace)]
        [(the-scripts) (make-cache-table)]
        [(sema) (make-semaphore 0)]
+       [(servlet)
+        (parameterize ([current-custodian (make-custodian)]
+                       [current-namespace
+                        (make-servlet-namespace
+                         #:additional-specs
+                         servlets:default-module-specs)])
+          (servlets:make-v2.servlet servlet-current-directory manager start))]
        [(dispatcher)
         (sequencer:make
          (if quit?
@@ -103,16 +116,18 @@
               (quit-server sema))
              (lambda _ (next-dispatcher)))
          (filter:make
-          #rx"\\.ss"
-          (let-values ([(clear-cache! url->servlet)
-                        (servlets:make-cached-url->servlet
-                         (box the-scripts)
-                         (lambda _
-                           (values (build-path servlets-root servlet-path)
-                                   empty))
-                         (servlets:make-default-path->servlet
-                          #:make-servlet-namespace make-servlet-namespace))])
-            (servlets:make url->servlet)))
+          servlet-regexp
+          (servlets:make (lambda (url) servlet)))
+         (let-values ([(clear-cache! url->servlet)
+                       (servlets:make-cached-url->servlet
+                        (box the-scripts)
+                        (fsmap:filter-url->path
+                         #rx"\\.(ss|scm)$"
+                         (fsmap:make-url->valid-path
+                          (fsmap:make-url->path servlets-root)))
+                        (servlets:make-default-path->servlet
+                         #:make-servlet-namespace make-servlet-namespace))])
+           (servlets:make url->servlet))
          (apply sequencer:make
                 (map (lambda (extra-files-path)
                        (files:make 
@@ -130,17 +145,7 @@
        [(shutdown-server)
         (serve #:dispatch dispatcher
                #:listen-ip listen-ip
-               #:port the-port)])
-    (cache-table-lookup! the-scripts
-                         (string->symbol
-                          (path->string
-                           (build-path servlets-root servlet-path)))
-                         (lambda ()
-                           (make-servlet (make-custodian)
-                                         (make-servlet-namespace)
-                                         manager
-                                         servlets-root
-                                         new-servlet)))
+               #:port the-port)])    
     (when launch-browser?
       ((send-url) standalone-url #t))
     (printf "Your Web application is running at ~a.~n" standalone-url)
