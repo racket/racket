@@ -432,7 +432,7 @@
   [(compile-c)
    ((compile-extensions-to-c prefix) source-files (dest-dir))]
   [(zo)
-   ((compile-zos prefix)
+   ((compile-zos prefix #:verbose? (compiler:option:somewhat-verbose))
     source-files
     (if (auto-dest-dir) 'auto (dest-dir)))]
   [(expand)
