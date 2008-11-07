@@ -17,7 +17,6 @@
 (define (mkd p)
   (define-values (! u->s)
     (servlets:make-cached-url->servlet
-     (box (make-cache-table))
      (lambda _ (values p url0s))
      (servlets:make-default-path->servlet)))
   (define d

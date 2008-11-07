@@ -88,7 +88,6 @@
     (define listen-ip the-listen-ip)
     (define initial-connection-timeout (configuration-table-initial-connection-timeout table))
     (define virtual-hosts the-virtual-hosts)
-    (define scripts (box (make-cache-table)))
     (define make-servlet-namespace the-make-servlet-namespace)))
 
 ; apply-default-functions-to-host-table : str host-table -> host

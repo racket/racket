@@ -107,19 +107,18 @@
 (provide/contract
  [url->servlet/c contract?]
  [make-cached-url->servlet
-  (-> (box/c cache-table?)
-      url->path/c
+  (-> url->path/c
       path->servlet/c
       (values (-> void)
               url->servlet/c))])
 
-(define (make-cached-url->servlet
-         config:scripts
+(define (make-cached-url->servlet         
          url->path 
          path->servlet)
+  (define config:scripts (make-cache-table))
   (values (lambda ()
             ;; This is broken - only out of date or specifically mentioned scripts should be flushed.  This destroys persistent state!
-            (cache-table-clear! (unbox config:scripts)))
+            (cache-table-clear! config:scripts))
           (lambda (uri)
             (define-values (servlet-path _)
               (with-handlers
@@ -128,7 +127,7 @@
                                    (exn-message e)
                                    (exn-continuation-marks e))))])
                 (url->path uri)))
-            (cache-table-lookup! (unbox config:scripts)
+            (cache-table-lookup! config:scripts
                                  (string->symbol (path->string servlet-path))
                                  (lambda () (path->servlet servlet-path))))))
 

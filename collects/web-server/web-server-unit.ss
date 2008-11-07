@@ -77,7 +77,6 @@
                             ((responders-collect-garbage (host-responders host-info)))))     
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
-                    config:scripts
                     (fsmap:filter-url->path
                      #rx"\\.(ss|scm)$"
                      (fsmap:make-url->valid-path

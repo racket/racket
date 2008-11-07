@@ -372,14 +372,13 @@ Equivalent to @scheme[(path? . -> . servlet?)].
 @defthing[url->servlet/c contract?]{Equivalent to @scheme[(url? . -> . servlet?)]}
 
 @defproc[(make-cached-url->servlet
-          [config:scripts (box/c cache-table?)]
           [url->path url->path/c]
           [path->serlvet path->servlet/c])         
          (values (-> void)
                  url->servlet/c)]{
  The first return value flushes the cache. 
  The second is a procedure that uses @scheme[url->path] to resolve the URL to a path, then uses @scheme[path->servlet] to resolve
- that path to a servlet, caching the results in @scheme[config:scripts].
+ that path to a servlet, caching the results in an internal table.
 }
                         
 @defproc[(make [url->servlet url->servlet/c]

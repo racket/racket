@@ -94,67 +94,65 @@
                        [file-not-found-path (build-path server-root-path "conf" "not-found.html")]
                        #:mime-types-path
                        [mime-types-path (build-path server-root-path "mime.types")])
-  (let*-values
-      ([(standalone-url)
-        (format "http://localhost:~a~a" the-port servlet-path)]
-       [(make-servlet-namespace) (make-make-servlet-namespace
-                                  #:to-be-copied-module-specs servlet-namespace)]
-       [(the-scripts) (make-cache-table)]
-       [(sema) (make-semaphore 0)]
-       [(servlet)
-        (parameterize ([current-custodian (make-custodian)]
-                       [current-namespace
-                        (make-servlet-namespace
-                         #:additional-specs
-                         servlets:default-module-specs)])
-          (servlets:make-v2.servlet servlet-current-directory manager start))]
-       [(dispatcher)
-        (sequencer:make
-         (if quit?
-             (filter:make 
-              #rx"^/quit$"
-              (quit-server sema))
-             (lambda _ (next-dispatcher)))
-         (filter:make
-          servlet-regexp
-          (servlets:make (lambda (url) servlet)))
-         (let-values ([(clear-cache! url->servlet)
-                       (servlets:make-cached-url->servlet
-                        (box the-scripts)
-                        (fsmap:filter-url->path
-                         #rx"\\.(ss|scm)$"
-                         (fsmap:make-url->valid-path
-                          (fsmap:make-url->path servlets-root)))
-                        (servlets:make-default-path->servlet
-                         #:make-servlet-namespace make-servlet-namespace))])
-           (servlets:make url->servlet))
-         (apply sequencer:make
-                (map (lambda (extra-files-path)
-                       (files:make 
-                        #:url->path (fsmap:make-url->path
-                                     extra-files-path)
-                        #:path->mime-type (make-path->mime-type mime-types-path)
-                        #:indices (list "index.html" "index.htm")))
-                     extra-files-paths))
-         (files:make 
-          #:url->path (fsmap:make-url->path 
-                       (build-path server-root-path "htdocs"))
-          #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
-          #:indices (list "index.html" "index.htm"))
-         (lift:make (gen-file-not-found-responder file-not-found-path)))]
-       [(shutdown-server)
-        (serve #:dispatch dispatcher
-               #:listen-ip listen-ip
-               #:port the-port)])    
-    (when launch-browser?
-      ((send-url) standalone-url #t))
-    (printf "Your Web application is running at ~a.~n" standalone-url)
-    (printf "Click 'Stop' at any time to terminate the Web Server.~n")
-    (with-handlers
-        ([exn:break?
-          (lambda (exn)
-            (printf "~nWeb Server stopped.~n")
-            (shutdown-server))])
-      (semaphore-wait/enable-break sema))
-    ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
-    (shutdown-server)))
+  (define standalone-url
+    (format "http://localhost:~a~a" the-port servlet-path))
+  (define make-servlet-namespace
+    (make-make-servlet-namespace
+     #:to-be-copied-module-specs servlet-namespace))
+  (define sema (make-semaphore 0))
+  (define servlet
+    (parameterize ([current-custodian (make-custodian)]
+                   [current-namespace
+                    (make-servlet-namespace
+                     #:additional-specs
+                     servlets:default-module-specs)])
+      (servlets:make-v2.servlet servlet-current-directory manager start)))
+  (define dispatcher
+    (sequencer:make
+     (if quit?
+         (filter:make 
+          #rx"^/quit$"
+          (quit-server sema))
+         (lambda _ (next-dispatcher)))
+     (filter:make
+      servlet-regexp
+      (servlets:make (lambda (url) servlet)))
+     (let-values ([(clear-cache! url->servlet)
+                   (servlets:make-cached-url->servlet
+                    (fsmap:filter-url->path
+                     #rx"\\.(ss|scm)$"
+                     (fsmap:make-url->valid-path
+                      (fsmap:make-url->path servlets-root)))
+                    (servlets:make-default-path->servlet
+                     #:make-servlet-namespace make-servlet-namespace))])
+       (servlets:make url->servlet))
+     (apply sequencer:make
+            (map (lambda (extra-files-path)
+                   (files:make 
+                    #:url->path (fsmap:make-url->path
+                                 extra-files-path)
+                    #:path->mime-type (make-path->mime-type mime-types-path)
+                    #:indices (list "index.html" "index.htm")))
+                 extra-files-paths))
+     (files:make 
+      #:url->path (fsmap:make-url->path 
+                   (build-path server-root-path "htdocs"))
+      #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
+      #:indices (list "index.html" "index.htm"))
+     (lift:make (gen-file-not-found-responder file-not-found-path))))
+  (define shutdown-server
+    (serve #:dispatch dispatcher
+           #:listen-ip listen-ip
+           #:port the-port))
+  (when launch-browser?
+    ((send-url) standalone-url #t))
+  (printf "Your Web application is running at ~a.~n" standalone-url)
+  (printf "Click 'Stop' at any time to terminate the Web Server.~n")
+  (with-handlers
+      ([exn:break?
+        (lambda (exn)
+          (printf "~nWeb Server stopped.~n")
+          (shutdown-server))])
+    (semaphore-wait/enable-break sema))
+  ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
+  (shutdown-server))
