@@ -2462,9 +2462,9 @@ module browser threading seems wrong.
             
             
             (begin-container-sequence)
-            (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text))
+            (for-each (λ (defs-canvas) (send defs-canvas set-editor definitions-text #f))
                       definitions-canvases)
-            (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text))
+            (for-each (λ (ints-canvas) (send ints-canvas set-editor interactions-text #f))
                       interactions-canvases)
             
             (update-save-message)
@@ -2477,10 +2477,11 @@ module browser threading seems wrong.
             (on-tab-change old-tab current-tab)
             
             (restore-visible-tab-regions)
-            (end-container-sequence)
-            ;; restore-visible-tab-regions has to be outside the container sequence
-            ;; or else things get moved again during the container sequence end
-            #;(restore-visible-tab-regions)))
+            (for-each (λ (defs-canvas) (send defs-canvas refresh))
+                      definitions-canvases)
+            (for-each (λ (ints-canvas) (send ints-canvas refresh))
+                      interactions-canvases)
+            (end-container-sequence)))
         
         (define/pubment (on-tab-change from-tab to-tab)
           (let ([old-enabled (send from-tab get-enabled)]
@@ -2688,7 +2689,7 @@ module browser threading seems wrong.
                 [tab-to-save (find-matching-tab path)])
             (when tab-to-save
               (let ([defs-to-save (send tab-to-save get-defs)])
-                (when (send defs-to-save save-file-out-of-date?)
+                (when (send defs-to-save is-modified?)
                   (unless (eq? tab-to-save original-tab)
                     (change-to-tab tab-to-save))
                   (send defs-to-save user-saves-or-not-modified? #f)
