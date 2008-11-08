@@ -21,8 +21,8 @@
  [make
   (->* (#:url->path url->path/c)
        (#:make-servlet-namespace make-servlet-namespace/c
-                                  #:responders-servlet-loading (url? any/c . -> . response?)
-                                  #:responders-servlet (url? any/c . -> . response?))
+                                 #:responders-servlet-loading (url? any/c . -> . response?)
+                                 #:responders-servlet (url? any/c . -> . response?))
        dispatcher/c)])
 
 (define interface-version 'v1)
@@ -30,9 +30,7 @@
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
               #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
               #:responders-servlet [responders-servlet servlet-error-responder])
-  
-  ;; dispatch : connection request -> void
-  (define (dispatch conn req)
+  (lambda (conn req)
     (define uri (request-uri req))
     (with-handlers ([void (lambda (exn) (next-dispatcher))])
       (define-values (a-path url-servlet-path) (url->path uri))
@@ -50,7 +48,7 @@
              => (lambda (ses) ses)]
             [else
              (let ()
-               (define cust (make-custodian (current-server-custodian)))
+               (define cust (make-servlet-custodian))
                (define ns (make-servlet-namespace
                            #:additional-specs
                            '(web-server/lang/web-cells
@@ -77,6 +75,4 @@
                               conn
                               (responders-servlet uri the-exn)
                               (request-method req)))])
-            (output-response conn ((session-servlet ses) req)))))))
-  
-  dispatch)
+            (output-response conn ((session-servlet ses) req))))))))
