@@ -32,6 +32,7 @@
 ;;   ignored, and should only be used by the mzscheme tests.)
 (define tests
   '([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
+    ;; [require "planet/lang.ss"]
     [require "typed-scheme/run.ss"]
     [require "match/plt-match-tests.ss"]
     ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]

@@ -1,26 +1,21 @@
-(load-relative "../mzscheme/loadtest.ss")
-
-(Section 'planet)
+#lang scheme/base
 
 (require planet/util
-         scheme/contract)
+         scheme/runtime-path
+         "../eli-tester.ss")
 
-;; Testing: #lang planet
+(define-runtime-path here ".")
+(define (in-here path) (path->string (build-path here path)))
 
-(test (void)
-      'add-hard-link
-      (with-handlers ([exn:fail? values])
-        (add-hard-link "plt" "dummy-package.plt" 1 0
-                       (string->path "examples/dummy-package"))))
+(test
 
-(test '(successful test result)
-      'hash-lang-planet
-      (with-handlers ([exn:fail? values])
-        (dynamic-require "examples/dummy-module.ss" 'result)))
+ ;; Testing: #lang planet
+ (add-hard-link "plt" "dummy-package.plt" 1 0
+                (string->path (in-here "examples/dummy-package")))
+ => (void)
+ (dynamic-require `(file ,(in-here "examples/dummy-module.ss")) 'result)
+ => '(successful test result)
+ (remove-hard-link "plt" "dummy-package.plt" 1 0)
+ => (void)
 
-(test (void)
-      'remove-hard-link
-      (with-handlers ([exn:fail? values])
-        (remove-hard-link "plt" "dummy-package.plt" 1 0)))
-
-(report-errs)
+ )
