@@ -606,12 +606,15 @@
 
  (wrap-text-item "Text umbrechen")
 
+ ;; windows menu
  (windows-menu-label "&Fenster")
  (minimize "Minimieren") ;; minimize and zoom are only used under mac os x
  (zoom "Zoomen")
  (bring-frame-to-front "Fenster nach vorn")       ;;; title of dialog
  (bring-frame-to-front... "Fenster nach vorn...") ;;; corresponding title of menu item
  (most-recent-window "Letztes Fenster")
+ (next-tab "Nächster Tab")
+ (prev-tab "Vorheriger Tab")
 
  (view-menu-label "&Anzeigen")
  (show-overview "Programm-Umriss einblenden") 
@@ -1325,5 +1328,15 @@
   (bug-track-report "Ticket einreichen")
   (bug-track-forget "Vergessen")
   (bug-track-forget-all "Alles vergessen")
+
+ 
+ ;; string normalization. To see this, paste some text with a ligature into DrScheme
+ ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
+ (normalize "Normalisieren")
+ (leave-alone "Unverändert lassen")
+ (normalize-string-info "Der Text, den Sie eingefügt haben, enthält Ligaturen oder andere nicht-normalisierte Zeichen. Normalisieren?")
+ (normalize-string-preference "Eingefügten Text normalisieren")
+ (ask-about-normalizing-strings "Bei Normalisierung nachfragen")
+ 
 
  )
