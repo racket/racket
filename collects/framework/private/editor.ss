@@ -202,6 +202,7 @@
                        (file-exists? filename)
                        (file-or-directory-modify-seconds filename)))))
         (inner (void) after-load-file success?))
+      
       (define/public (save-file-out-of-date?)
         (and last-saved-file-time
              (let ([fn (get-filename)])

@@ -241,6 +241,15 @@ A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to
  the procedure is a string.}
 
+@defparam[current-path->compilation-dir path->compilation-dir (or/c #f (-> path? path?))]{
+
+  This parameter controls the location where compiled .zo files are
+  saved. It is called with the path of a @tt{.ss} file and is expected
+  to return a path where the @tt{.zo} and @tt{.dep} file can be saved.
+
+  If it is @scheme[#f], then @scheme[use-compiled-file-paths] is used.
+}
+
 @; ----------------------------------------------------------------------
 
 @section{Compilation Manager Hook for Syntax Transformers}

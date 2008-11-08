@@ -10,12 +10,15 @@
          make-caching-managed-compile-zo
          trust-existing-zos
          manager-compile-notify-handler
+         current-path->compilation-dir
          (rename-out [trace manager-trace-handler]))
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
 (define indent (make-parameter ""))
 (define trust-existing-zos (make-parameter #f))
+
+(define current-path->compilation-dir (make-parameter #f))
 
 (define (trace-printf fmt . args)
   (let ([t (trace)])
@@ -30,16 +33,22 @@
 
 (define (get-compilation-dir+name mode path)
   (let-values ([(base name must-be-dir?) (split-path path)])
-    (values (if (eq? 'relative base) mode (build-path base mode))
-            name)))
+    (values 
+     (cond
+       [(current-path->compilation-dir)
+        =>
+        (λ (f) (f path))]
+       [(eq? 'relative base) mode]
+       [else (build-path base mode)])
+     name)))
 
 (define (get-compilation-path mode path)
   (let-values ([(dir name) (get-compilation-dir+name mode path)])
     (build-path dir name)))
 
 (define (get-compilation-dir mode path)
-  (let-values ([(base name-suffix must-be-dir?) (split-path path)])
-    (if (eq? 'relative base) mode (build-path base mode))))
+  (let-values ([(dir name) (get-compilation-dir+name mode path)])
+    dir))
 
 (define (touch path)
   (close-output-port (open-output-file path #:exists 'append)))
@@ -295,13 +304,18 @@
         [orig-load (current-load)]
         [orig-registry (namespace-module-registry (current-namespace))]
         [default-handler (current-load/use-compiled)]
+        [orig-path->compilation-dir-handler (current-path->compilation-dir)]
         [modes (use-compiled-file-paths)])
     (define (compilation-manager-load-handler path mod-name)
       (cond [(not mod-name)
              (trace-printf "skipping:  ~a mod-name ~s" path mod-name)]
-            [(not (member (car modes) (use-compiled-file-paths)))
-             (trace-printf "skipping:  ~a compiled-paths ~s"
-                           path (use-compiled-file-paths))]
+            [(or (null? (use-compiled-file-paths))
+                 (not (equal? (car modes)
+                              (car (use-compiled-file-paths)))))
+             (trace-printf "skipping:  ~a compiled-paths's first element changed; current value ~s, first element was ~s"
+                           path 
+                           (use-compiled-file-paths)
+                           (car modes))]
             [(not (eq? compilation-manager-load-handler
                        (current-load/use-compiled)))
              (trace-printf "skipping:  ~a current-load/use-compiled changed ~s"
@@ -317,6 +331,11 @@
              (trace-printf "skipping:  ~a orig-registry ~s current-registry ~s"
                            path orig-registry
                            (namespace-module-registry (current-namespace)))]
+            [(not (eq? (current-path->compilation-dir)
+                       orig-path->compilation-dir-handler))
+             (trace-printf "skipping:  ~a orig path->compilation-dir-handler ~s current path->compilation-dir-handler ~s"
+                           orig-path->compilation-dir-handler
+                           (current-path->compilation-dir))]
             [else
              (trace-printf "processing: ~a" path)
              (compile-root (car modes) path cache read-syntax)
