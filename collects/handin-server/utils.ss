@@ -49,9 +49,11 @@
 ;; Execution ----------------------------------------
 
 (define (make-evaluator* lang reqs inp)
-  (if (and (list? lang) (= 2 (length lang)) (eq? 'module (car lang)))
-    (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs)
-    (make-evaluator lang inp #:requires reqs)))
+  (reraise-exn-as-submission-problem
+   (lambda ()
+     (if (and (list? lang) (= 2 (length lang)) (eq? 'module (car lang)))
+       (make-module-evaluator inp #:language (cadr lang) #:allow-read reqs)
+       (make-evaluator lang inp #:requires reqs)))))
 
 (define (open-input-text-editor/lines str)
   (let ([inp (open-input-text-editor str)])
