@@ -27,6 +27,7 @@
          get-output
          get-error-output
          get-uncovered-expressions
+         get-namespace
          make-evaluator
          make-module-evaluator
          call-with-limits
@@ -429,6 +430,7 @@
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
+(define-evaluator-messenger get-namespace 'namespace)
 
 (define (make-evaluator* init-hook require-perms program-maker)
   (define cust          (make-custodian))
@@ -532,6 +534,8 @@
           [(output) (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
+          [(namespace) (user-eval (make-evaluator-message
+                                   current-namespace '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define linked-outputs? #f)

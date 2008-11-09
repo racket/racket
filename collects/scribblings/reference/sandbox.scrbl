@@ -616,6 +616,11 @@ the @scheme[src] argument.  Using a sequence of S-expressions (not
 coverage results, since each expression may be assigned a single
 source location.}
 
+@defproc[(get-namespace [evaluator (any/c . -> . any)])
+         namespace?]{
+
+Retrieves the namespace that is used in an evaluator.}
+
 @; ----------------------------------------------------------------------
 
 @section{Miscellaneous}
