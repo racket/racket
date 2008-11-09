@@ -168,7 +168,6 @@ restriction is enforced).
 
 In all cases, the evaluator operates in an isolated and limited
 environment:
-
 @itemize[
 
  @item{It uses a new custodian and namespace. When @scheme[gui?] is
@@ -180,6 +179,10 @@ environment:
  @item{Each evaluation is wrapped in a @scheme[call-with-limits]; see
        also @scheme[sandbox-eval-limits] and @scheme[set-eval-limits].}
 ]
+Note that these limits apply to the creation of the sandbox
+environment too --- so, for example, if the memory that is required to
+create the sandbox is higher than the limit, then
+@scheme[make-evaluator] will fail with a memory limit exception.
 
 Evaluation can also be instrumented to track coverage information when
 @scheme[sandbox-coverage-enabled] is set. Exceptions (both syntax and
@@ -470,6 +473,16 @@ in megabytes.  Either one can be @scheme[#f] for disabling the
 corresponding limit; alternately, the parameter can be set to
 @scheme[#f] to disable all limits (in case more are available in
 future versions). The default is @scheme[(list 30 20)].
+
+Note that these limits apply to the creation of the sandbox
+environment too --- even @scheme[(make-evaluator 'scheme/base)] can
+fail if the limits are strict enough.  Therefore, to avoid surprises
+you need to catch errors that happen when the sandbox is created.
+
+so, for example, if the memory that is required to
+create the sandbox is higher than the limit, then
+@scheme[make-evaluator] will fail with a memory limit exception.
+
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
