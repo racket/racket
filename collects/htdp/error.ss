@@ -76,7 +76,7 @@
 ;;   sym (... *->* ...) num (union sym str) (union sym str) -> void
 (define (check-proc proc f exp-arity arg# arg-err)
   (unless (procedure? f)
-    (tp-error proc "procedure expected as ~s argument; given ~e" arg# f))
+    (tp-error proc "procedure expected as ~a argument; given ~e" arg# f))
   (unless (procedure-arity-includes? f exp-arity)
     (let ([arity-of-f (procedure-arity f)])
       (tp-error proc "procedure of ~a expected as ~a argument; given procedure of ~a "
