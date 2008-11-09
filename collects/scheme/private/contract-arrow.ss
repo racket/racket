@@ -833,12 +833,14 @@ v4 todo:
                                     (syntax-local-infer-name stx)
                                     #`(λ args (apply f args))))))))))))]))
 
+(define ->d-tail-key (gensym '->d-tail-key))
+
 (define (->d-proj ->d-stct)
   (let ([non-kwd-ctc-count (+ (length (->d-mandatory-dom-ctcs ->d-stct))
                               (length (->d-optional-dom-ctcs ->d-stct))
                               (if (->d-mtd? ->d-stct) 1 0))])
     (λ (pos-blame neg-blame src-info orig-str)
-      (let ([tail-key (gensym '->d-tail-key)])
+      (let ([this->d-id (gensym '->d-tail-key)])
         (λ (val)
           (check-procedure val
                            (->d-mtd? ->d-stct)
@@ -856,8 +858,53 @@ v4 todo:
                           [dep-pre-args
                            (build-dep-ctc-args non-kwd-ctc-count raw-orig-args (->d-rest-ctc ->d-stct)
                                                (->d-keywords ->d-stct) kwd-args kwd-arg-vals)]
-                          [thnk
+                          [thunk
                            (λ ()
+                             (keyword-apply
+                              val
+                              kwd-args
+                              
+                              ;; contracted keyword arguments
+                              (let loop ([all-kwds (->d-keywords ->d-stct)]
+                                         [kwd-ctcs (->d-keyword-ctcs ->d-stct)] 
+                                         [building-kwd-args kwd-args]
+                                         [building-kwd-arg-vals kwd-arg-vals])
+                                (cond
+                                  [(or (null? building-kwd-args) (null? all-kwds)) '()]
+                                  [else (if (eq? (car all-kwds)
+                                                 (car building-kwd-args))
+                                            (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) neg-blame pos-blame src-info orig-str)
+                                                  (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
+                                            (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))
+                              
+                              (append
+                               ;; this parameter (if necc.)
+                               (if (->d-mtd? ->d-stct)
+                                   (list (car raw-orig-args))
+                                   '())
+                               
+                               ;; contracted ordinary arguments
+                               (let loop ([args orig-args]
+                                          [non-kwd-ctcs (append (->d-mandatory-dom-ctcs ->d-stct)
+                                                                (->d-optional-dom-ctcs ->d-stct))])
+                                 (cond
+                                   [(null? args) 
+                                    (if (->d-rest-ctc ->d-stct)
+                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() neg-blame pos-blame src-info orig-str)
+                                        '())]
+                                   [(null? non-kwd-ctcs) 
+                                    (if (->d-rest-ctc ->d-stct)
+                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args neg-blame pos-blame src-info orig-str)
+                                        
+                                        ;; ran out of arguments, but don't have a rest parameter.
+                                        ;; procedure-reduce-arity (or whatever the new thing is
+                                        ;; going to be called) should ensure this doesn't happen.
+                                        (error 'shouldnt\ happen))]
+                                   [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
+                                               (loop (cdr args)
+                                                     (cdr non-kwd-ctcs)))])))))]
+                          [check-and-mark
+                           (λ (marks)
                              (when (->d-pre-cond ->d-stct)
                                (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
                                  (raise-contract-error val
@@ -865,50 +912,10 @@ v4 todo:
                                                        neg-blame
                                                        orig-str
                                                        "#:pre-cond violation")))
-                             (with-continuation-mark tail-key #t
-                               (keyword-apply
-                                val
-                                kwd-args
-                                
-                                ;; contracted keyword arguments
-                                (let loop ([all-kwds (->d-keywords ->d-stct)]
-                                           [kwd-ctcs (->d-keyword-ctcs ->d-stct)] 
-                                           [building-kwd-args kwd-args]
-                                           [building-kwd-arg-vals kwd-arg-vals])
-                                  (cond
-                                    [(or (null? building-kwd-args) (null? all-kwds)) '()]
-                                    [else (if (eq? (car all-kwds)
-                                                   (car building-kwd-args))
-                                              (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) neg-blame pos-blame src-info orig-str)
-                                                    (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
-                                              (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))
-                                
-                                (append
-                                 ;; this parameter (if necc.)
-                                 (if (->d-mtd? ->d-stct)
-                                     (list (car raw-orig-args))
-                                     '())
-                                 
-                                 ;; contracted ordinary arguments
-                                 (let loop ([args orig-args]
-                                            [non-kwd-ctcs (append (->d-mandatory-dom-ctcs ->d-stct)
-                                                                  (->d-optional-dom-ctcs ->d-stct))])
-                                   (cond
-                                     [(null? args) 
-                                      (if (->d-rest-ctc ->d-stct)
-                                          (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() neg-blame pos-blame src-info orig-str)
-                                          '())]
-                                     [(null? non-kwd-ctcs) 
-                                      (if (->d-rest-ctc ->d-stct)
-                                          (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args neg-blame pos-blame src-info orig-str)
-                                          
-                                          ;; ran out of arguments, but don't have a rest parameter.
-                                          ;; procedure-reduce-arity (or whatever the new thing is
-                                          ;; going to be called) should ensure this doesn't happen.
-                                          (error 'shouldnt\ happen))]
-                                     [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
-                                                 (loop (cdr args)
-                                                       (cdr non-kwd-ctcs)))]))))))]
+                             (if marks
+                                 (with-continuation-mark ->d-tail-key (cons this->d-id marks)
+                                   (thunk))
+                                 (thunk)))]
                           [rng (let ([rng (->d-range ->d-stct)])
                                  (cond
                                    [(not rng) #f]
@@ -918,12 +925,13 @@ v4 todo:
                                    [else rng]))]
                           [rng-underscore? (box? (->d-range ->d-stct))])
                      (call-with-immediate-continuation-mark
-                      tail-key
+                      ->d-tail-key
                       (λ (first-mark)
                         (if (and rng
-                                 (not first-mark))
+                                 (not (and first-mark
+                                           (member this->d-id first-mark))))
                             (call-with-values
-                             thnk
+                             (λ () (check-and-mark (or first-mark '())))
                              (λ orig-results
                                (let* ([range-count (length rng)]
                                       [post-args (append orig-results raw-orig-args)]
@@ -959,7 +967,7 @@ v4 todo:
                                                         (if rng-underscore? #f dep-post-args)
                                                         (car results) pos-blame neg-blame src-info orig-str)
                                         (loop (cdr results) (cdr result-contracts)))]))))))
-                            (thnk))))))])
+                            (check-and-mark #f))))))])
             (make-keyword-procedure kwd-proc
                                     ((->d-name-wrapper ->d-stct)
                                      (λ args

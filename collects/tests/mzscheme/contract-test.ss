@@ -5265,6 +5265,31 @@ so that propagation occurs.
              (f 3))
            (c)))
   
+  (ctest '(1 1)
+         'tail->d-mut-rec
+         (letrec ([odd-count 0]
+                  [pos-count 0]
+                  [count-odd?
+                   (λ (x)
+                     (set! odd-count (+ odd-count 1))
+                     (odd? x))]
+                  [count-positive? 
+                   (λ (x)
+                     (set! pos-count (+ pos-count 1))
+                     (positive? x))]
+                  [returns-odd
+                   (contract (->d ([x any/c]) () [_ count-odd?])
+                             (λ (x) (returns-pos x))
+                             'pos
+                             'neg)]
+                  [returns-pos
+                   (contract (->d ([x any/c]) () [_ count-positive?])
+                             (λ (x) (if (zero? x) 1 (returns-odd (- x 1))))
+                             'pos
+                             'neg)])
+           (returns-odd 3)
+           (list odd-count pos-count)))
+  
   (ctest 2
          'case->-regular
          (let ([c (counter)])
