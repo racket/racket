@@ -917,8 +917,13 @@
                                       " => "
                                       (if (= 2 (length status))
                                           (render (cadr status))
-                                          (cons 'values (map (lambda (v) (render v))
-                                                             (rest status)))))))]
+                                          (string-append
+                                           "(values"
+                                           (let loop ([vals (rest status)])
+                                             (cond
+                                               [(cons? vals) (string-append " " (render (first vals))
+                                                                            (loop (rest vals)))]
+                                               [else ")"])))))))]
                               [""]))
                           ""))
                 (cond [(get-current-frame-endpoints)
