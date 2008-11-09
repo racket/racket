@@ -463,25 +463,27 @@
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
     ;; finally wait for interaction expressions
-    (let loop ([n 1])
-      (let ([expr (channel-get input-ch)])
-        (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
-        (with-handlers ([void (lambda (exn)
-                                (channel-put result-ch (cons 'exn exn)))])
-          (let* ([run (if (evaluator-message? expr)
-                        (lambda ()
-                          (apply (evaluator-message-msg expr)
-                                 (evaluator-message-args expr)))
-                        (lambda ()
-                          (eval* (input->code (list expr) 'eval n))))]
-                 [sec (and limits (car limits))]
-                 [mb  (and limits (cadr limits))]
-                 [run (if (or sec mb)
-                        (lambda () (with-limits sec mb (run)))
-                        run)])
-            (channel-put result-ch
-                         (cons 'vals (call-with-values run list)))))
-        (loop (add1 n)))))
+    (let ([n 0])
+      (let loop ()
+        (let ([expr (channel-get input-ch)])
+          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
+          (with-handlers ([void (lambda (exn)
+                                  (channel-put result-ch (cons 'exn exn)))])
+            (let* ([run (if (evaluator-message? expr)
+                          (lambda ()
+                            (apply (evaluator-message-msg expr)
+                                   (evaluator-message-args expr)))
+                          (lambda ()
+                            (set! n (add1 n))
+                            (eval* (input->code (list expr) 'eval n))))]
+                   [sec (and limits (car limits))]
+                   [mb  (and limits (cadr limits))]
+                   [run (if (or sec mb)
+                          (lambda () (with-limits sec mb (run)))
+                          run)])
+              (channel-put result-ch
+                           (cons 'vals (call-with-values run list)))))
+          (loop)))))
   (define (user-eval expr)
     (let ([r (if user-thread
                (begin (channel-put input-ch expr)
