@@ -1617,7 +1617,6 @@
                          (and/c
                           void?
                           (λ (new)
-                            (printf "old ~a new ~a\n" old (unbox b))
                             (= old (unbox b)))))])
                (λ (b)
                  (set-box! b (+ (unbox b) 1)))
@@ -5183,6 +5182,116 @@ so that propagation occurs.
   (ctest #t contract-first-order-passes? (or/c 'x "x" #rx"x.") "xy")
   (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") "yx")
   (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") 'y)
+  
+  
+;                       
+;                       
+;                       
+;                       
+;    ;          ;;; ;;; 
+;  ;;;              ;;; 
+;  ;;;;  ;;;;;  ;;; ;;; 
+;  ;;;; ;;;;;;; ;;; ;;; 
+;  ;;;  ;;  ;;; ;;; ;;; 
+;  ;;;    ;;;;; ;;; ;;; 
+;  ;;;  ;;; ;;; ;;; ;;; 
+;  ;;;; ;;; ;;; ;;; ;;; 
+;   ;;;  ;;;;;; ;;; ;;; 
+;                       
+;                       
+;                       
+;                       
+
+  (contract-eval
+   `(define (counter)
+      (let ([c 0])
+        (case-lambda 
+          [() c]
+          [(x) (set! c (+ c 1)) #t]))))
+  
+  (ctest 1
+         'tail-arrow
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (-> any/c c)
+                               (λ (x) (if (zero? x) x (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
+  (ctest 2
+         'tail-multiple-value-arrow
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (-> any/c (values c c))
+                               (λ (x) (if (zero? x) (values x x) (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
+  (ctest 2
+         'tail-arrow-star
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (->* (any/c) () (values c c))
+                               (λ (x) (if (zero? x) (values x x) (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
+  
+  (ctest 2
+         'tail-arrow-d1
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (->d ([arg any/c]) () (values [_ c] [_ c]))
+                               (λ (x) (if (zero? x) (values x x) (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
+  (ctest 1
+         'tail-arrow-d2
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (->d ([arg any/c]) () [rng c])
+                               (λ (x) (if (zero? x) x (f (- x 1))))
+                               'pos
+                               'neg)])
+             (f 3))
+           (c)))
+  
+  (ctest 2
+         'case->-regular
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (case-> (-> any/c c)
+                                       (-> any/c any/c c))
+                               (case-lambda
+                                 [(x) (if (zero? x) x (f (- x 1)))]
+                                 [(x y) (f x)])
+                               'pos
+                               'neg)])
+             (f 4 1))
+           (c)))
+  
+  (ctest 1
+         'case->-rest-args
+         (let ([c (counter)])
+           (letrec ([f 
+                     (contract (case-> (-> any/c #:rest any/c c)
+                                       (-> any/c any/c #:rest any/c c))
+                               (case-lambda
+                                 [(x) (f x 1)]
+                                 [(x y . z) (if (zero? x) x (apply f (- x 1) y (list y y)))])
+                               'pos
+                               'neg)])
+             (f 4))
+           (c)))
   
 ;                                                                
 ;                                                                

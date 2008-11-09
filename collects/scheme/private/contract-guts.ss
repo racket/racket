@@ -350,7 +350,7 @@
   (let ([ctc (coerce-contract 'contract-name ctc)])
     ((name-get ctc) ctc)))
 
-(define (contract? x) (and (coerce-contract/f x) #t))
+(define (contract? x) (and (coerce-contract/f x) #t))
 (define (contract-proc ctc) ((proj-get ctc) ctc))
 
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
@@ -454,6 +454,8 @@
   #:property flat-prop (λ (ctc) (λ (x) #f)))
 
 (define none/c (make-none/c 'none/c))
+
+
 
 
 ;                                                                                                                 
