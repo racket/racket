@@ -638,7 +638,7 @@ timeouts and memory problems. Use @scheme[call-with-limits] directly
 only to limit a whole testing session, instead of each expression.}
 
 
-@defform[(with-limits mb-expr body-expr body ...)]{
+@defform[(with-limits sec-expr mb-expr body ...)]{
 
 A macro version of @scheme[call-with-limits].}
 
