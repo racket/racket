@@ -7,7 +7,8 @@
          web-server/private/define-closure
          "../private/request-structs.ss"
          "abort-resume.ss"
-         "../private/session.ss"
+         (only-in "../private/session.ss"
+                  session-url current-session)
          "stuff-url.ss"
          "../private/url-param.ss")
 

@@ -222,6 +222,8 @@ should produce:
 '(div ((class "posts")))
 ]
 
+While
+
 @schemeblock[
 (render-posts (list (make-post "Post 1" "Body 1")
                     (make-post "Post 2" "Body 2")))
@@ -773,7 +775,7 @@ which hooks up our web application module to the @schememodname["model.ss"] modu
 
 @external-file["iteration-8.ss"]
 
-@section{A Model of Persistent}
+@section{A Persistent Model}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-9
                                   web-server/scribblings/tutorial/examples/model-2)]
 
@@ -1150,10 +1152,10 @@ Second, add the following at the bottom of your application:
                #:quit? #f
                #:listen-ip #f
                #:port 8000 
-               #:extra-files-path 
-               (build-path _path "htdocs")
+               #:extra-files-paths
+               (list (build-path _path "htdocs"))
                #:servlet-path
-               "servlets/APPLICATION.ss")
+               "/servlets/APPLICATION.ss")
 ]
 
 You can change the value of the @scheme[#:port] parameter to use a different port.
@@ -1168,7 +1170,7 @@ Third, to run your server, you can either press @onscreen{Run} in DrScheme, or t
 
 @commandline{mzscheme -t <file.ss>}
 
-(With your own file name, of course.) Both of these will start a Web server @emph{just} for your application.
+(With your own file name, of course.) Both of these will start a Web server  for your application.
 
 @centerline{------------}
 
