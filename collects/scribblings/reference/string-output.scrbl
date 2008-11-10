@@ -24,7 +24,7 @@ The same as @scheme[(write-char #\newline out)].}
                        [out output-port? (current-output-port)]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (string-length str)])
-         void?]{
+         exact-nonnegative-integer?]{
 
 Writes characters to @scheme[out] from @scheme[str] starting from
 index @scheme[start-pos] (inclusive) up to @scheme[end-pos]
@@ -39,7 +39,7 @@ is always @scheme[(- end-pos start-pos)].}
                       [out output-port? (current-output-port)]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
-         void?]{
+         exact-nonnegative-integer?]{
 
 Like @scheme[write-string], but writes bytes instead of characters.}
 
