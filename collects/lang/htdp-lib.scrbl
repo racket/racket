@@ -161,3 +161,13 @@ they can be syntactically restricted to application positions.
   @scheme[id] is exported as the primitive operator named
   @scheme[id]. An alternative to @scheme[define-higher-order-primitive].}
 
+@defform[(first-order->higher-order expr)]{
+
+If @scheme[expr] is an identifier for a first-order function (either a
+primitive or a function defined within Beginner Student), produces the
+function as a value; otherwise, the form is equivalent to
+@scheme[expr].
+
+This form is mainly useful for implementing syntactic forms that, like
+the application of a higher-order primitive, allow first-order bindings
+to be used in an expression position.}
