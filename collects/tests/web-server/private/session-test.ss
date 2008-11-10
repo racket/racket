@@ -14,17 +14,17 @@
    
    (test-case
     "new-session"
-    (check-true (session? (new-session (make-custodian) (make-base-empty-namespace) url0 url0ps))))
+    (check-true (session? (new-session (make-custodian) (make-base-empty-namespace) url0))))
    
    (test-case
     "lookup-session"
-    (let ([ses (new-session (make-custodian) (make-base-empty-namespace) url0 url0ps)])
+    (let ([ses (new-session (make-custodian) (make-base-empty-namespace) url0)])
       (install-session ses url0ps)
       (check-eq? (lookup-session url0ps)
                  ses)))
    
    (test-case
     "lookup-session (fail)"
-    (let ([ses (new-session (make-custodian) (make-base-empty-namespace) url0 url0ps)])
+    (let ([ses (new-session (make-custodian) (make-base-empty-namespace) url0)])
       (install-session ses url0ps)
       (check-false (lookup-session empty))))))

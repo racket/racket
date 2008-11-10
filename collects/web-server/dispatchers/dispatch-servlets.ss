@@ -149,6 +149,7 @@
     (define uri (request-uri req))
     (define instance-custodian (make-servlet-custodian))      
     (parameterize ([current-custodian instance-custodian]
+                   [current-execution-context (make-execution-context req)]
                    [exit-handler
                     (lambda _
                       (kill-connection! conn)
@@ -173,28 +174,27 @@
                          [current-directory (servlet-directory the-servlet)]
                          [current-namespace (servlet-namespace the-servlet)])
             (define manager (servlet-manager the-servlet))
-            (parameterize ([current-execution-context (make-execution-context req)])
-              
-              (define-values (instance-id handler)
-                (cond
-                  [(continuation-url? uri)
-                   => (match-lambda
-                        [(list instance-id k-id salt)
-                         (values instance-id
-                                 (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
-                  [else
-                   (values ((manager-create-instance manager) (exit-handler))
-                           (servlet-handler the-servlet))]))
-              
-              (parameterize ([current-servlet-instance-id instance-id])
-                (with-handlers ([(lambda (x) #t)
-                                 (lambda (exn)
-                                   (responders-servlet
-                                    (request-uri req)
-                                    exn))])
-                  (call-with-continuation-prompt
-                   (lambda ()
-                     (handler req))
-                   servlet-prompt)))))))
+            
+            (define-values (instance-id handler)
+              (cond
+                [(continuation-url? uri)
+                 => (match-lambda
+                      [(list instance-id k-id salt)
+                       (values instance-id
+                               (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
+                [else
+                 (values ((manager-create-instance manager) (exit-handler))
+                         (servlet-handler the-servlet))]))
+            
+            (parameterize ([current-servlet-instance-id instance-id])
+              (with-handlers ([(lambda (x) #t)
+                               (lambda (exn)
+                                 (responders-servlet
+                                  (request-uri req)
+                                  exn))])
+                (call-with-continuation-prompt
+                 (lambda ()
+                   (handler req))
+                 servlet-prompt))))))
       
       (output-response conn response))))

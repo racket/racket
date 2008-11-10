@@ -32,7 +32,7 @@
           [handler (request? . -> . response?)])]
  [struct execution-context 
          ([request request?])]
- [current-servlet (parameter/c servlet?)]
- [current-servlet-instance-id (parameter/c number?)]
- [current-execution-context (parameter/c execution-context?)]
+ [current-servlet (parameter/c (or/c false/c servlet?))]
+ [current-servlet-instance-id (parameter/c (or/c false/c number?))]
+ [current-execution-context (parameter/c (or/c false/c execution-context?))]
  [current-servlet-manager (-> manager?)])

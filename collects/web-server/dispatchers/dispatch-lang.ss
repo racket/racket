@@ -1,10 +1,11 @@
 #lang scheme/base
 (require mzlib/list
          scheme/contract
-         web-server/private/session
          (only-in "../lang/web.ss"
                   initialize-servlet)           
          web-server/lang/web-cells
+         web-server/managers/none
+         web-server/private/servlet
          "../private/request-structs.ss"
          "../private/response-structs.ss"
          "dispatch.ss"
@@ -24,6 +25,19 @@
                                  #:responders-servlet-loading (url? any/c . -> . response?)
                                  #:responders-servlet (url? any/c . -> . response?))
        dispatcher/c)])
+
+;; HACK
+(define the-session-table (make-weak-hash))
+
+(define (install-session ses paths)
+  (hash-set! the-session-table paths ses))
+
+;; lookup-session : (listof string) -> (union session #f)
+(define (lookup-session paths)
+  (hash-ref the-session-table paths 
+            (lambda () #f)))
+;; /HACK
+
 
 (define interface-version 'v1)
 (define (make #:url->path url->path
@@ -52,27 +66,36 @@
                (define ns (make-servlet-namespace
                            #:additional-specs
                            '(web-server/lang/web-cells
-                             web-server/lang/abort-resume
-                             web-server/private/session
+                             web-server/lang/abort-resume                             
+                             web-server/private/servlet
                              web-server/private/request-structs)))
-               (define ses (new-session cust ns uri url-servlet-paths))
+               (define dir (directory-part a-path))
+               (define ses 
+                 (make-servlet
+                  cust ns
+                  (create-none-manager (lambda (req) (error "No continuations!")))
+                  dir
+                  (lambda (req) (error "session not initialized"))))
                (parameterize ([current-custodian cust]
-                              [current-directory (directory-part a-path)]
+                              [current-directory dir]
                               [current-namespace ns]
-                              [current-session ses])
+                              [current-execution-context (make-execution-context req)]
+                              [current-servlet ses])
                  (define start
                    (dynamic-require `(file ,(path->string a-path))
                                     'start))
-                 (set-session-servlet! ses (initialize-servlet start)))
+                 (set-servlet-handler! ses (initialize-servlet start)))
                (install-session ses url-servlet-paths)
                ses)]))
-        (parameterize ([current-custodian (session-cust ses)]
-                       [current-namespace (session-namespace ses)]
-                       [current-session ses])
+        (parameterize ([current-custodian (servlet-custodian ses)]
+                       [current-directory (servlet-directory ses)]
+                       [current-namespace (servlet-namespace ses)]
+                       [current-execution-context (make-execution-context req)]
+                       [current-servlet ses])
           (with-handlers ([exn?
                            (lambda (the-exn)
                              (output-response/method
                               conn
                               (responders-servlet uri the-exn)
                               (request-method req)))])
-            (output-response conn ((session-servlet ses) req))))))))
+            (output-response conn ((servlet-handler ses) req))))))))

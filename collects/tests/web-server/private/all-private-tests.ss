@@ -5,7 +5,6 @@
          "response-test.ss"
          "connection-manager-test.ss"
          "define-closure-test.ss"
-         "session-test.ss"
          "mime-types-test.ss"
          "url-param-test.ss"
          "mod-map-test.ss"
@@ -21,7 +20,6 @@
    mime-types-tests
    mod-map-tests
    request-tests
-   response-tests
-   session-tests
+   response-tests   
    url-param-tests
    util-tests))
