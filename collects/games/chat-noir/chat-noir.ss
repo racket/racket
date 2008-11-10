@@ -106,6 +106,7 @@ making some of the test cases much easier to manage.
           0
           (- (image-width img) (pinhole-x img) 1) 
           (- (image-height img) (pinhole-y img) 1)))
+
 (check-expect (chop-whiskers (rectangle 5 5 'solid 'black))
               (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
 (check-expect (chop-whiskers (rectangle 6 6 'solid 'black))
@@ -182,6 +183,7 @@ making some of the test cases much easier to manage.
   (local [(define rightmost-posn 
             (make-posn (- board-size 1) (- board-size 2)))]
     (+ (cell-center-x rightmost-posn) circle-radius)))
+
 (check-expect (world-width 3) 150)
 
 ;; world-height : number -> number
@@ -193,7 +195,7 @@ making some of the test cases much easier to manage.
 (check-expect (world-height 3) 116.208)
 
 
-;; cell-center : cell -> number
+;; cell-center-x : posn -> number
 (define (cell-center-x p)
   (local [(define x (posn-x p))
           (define y (posn-y p))]
@@ -212,7 +214,7 @@ making some of the test cases much easier to manage.
 (check-expect (cell-center-x (make-posn 1 1))
               (+ (* 3 circle-spacing) circle-radius))
 
-;; cell-center-y : cell -> number
+;; cell-center-y : posn -> number
 (define (cell-center-y p)
   (local [(define y (posn-y p))]
     (+ circle-radius
@@ -250,7 +252,7 @@ making some of the test cases much easier to manage.
 ;;  (listof dist-cells)
 
 ;; a dist-cell is
-;;  - (make-dist-cell posn number)
+;;  - (make-dist-cell posn (number or '∞))
 (define-struct dist-cell (p n))
 
 ;; build-table/fast : world -> distance-map
@@ -294,7 +296,7 @@ making some of the test cases much easier to manage.
                   '()
                   (world-size world)))
 
-;; build-distance : board posn table (listof posn) number -> distance-map
+;; build-distance : board posn distance-map (listof posn) number -> distance-map
 (define (build-distance board p t visited board-size)
   (cond
     [(cell-blocked? (lookup-board board p)) 
@@ -440,7 +442,7 @@ making some of the test cases much easier to manage.
 (check-error (lookup-board '() (make-posn 0 0))
              "lookup-board: did not find posn")
 
-;; add-to-table : posn number table -> table
+;; add-to-table : posn (number or '∞) distance-map -> distance-map
 (define (add-to-table p n t) 
   (cond
     [(empty? t) (list (make-dist-cell p n))]
@@ -468,7 +470,7 @@ making some of the test cases much easier to manage.
               (list (make-dist-cell (make-posn 2 2) 2)
                     (make-dist-cell (make-posn 1 2) 3)))
 
-;; in-table : table posn -> boolean
+;; in-table : distance-map posn -> boolean
 (define (in-table? t p) (number? (lookup-in-table t p)))
 
 (check-expect (in-table? empty (make-posn 1 2)) false)
@@ -479,7 +481,7 @@ making some of the test cases much easier to manage.
                          (make-posn 1 2))
               false)
 
-;; lookup-in-table : table posn -> number or '∞
+;; lookup-in-table : distance-map posn -> number or '∞
 ;; looks for the distance as recorded in the table t, 
 ;; if not found returns a distance of '∞
 (define (lookup-in-table t p)
@@ -571,7 +573,7 @@ making some of the test cases much easier to manage.
 (check-expect (min-l (list)) '∞)
 (check-expect (min-l (list 10 1 12)) 1)
 
-;; <=/f : (number or '∞) (number or '∞) -> (number or '∞)
+;; <=/f : (number or '∞) (number or '∞) -> boolean
 (define (<=/f a b) (equal? a (min/f a b)))
 (check-expect (<=/f 1 2) true)
 (check-expect (<=/f 2 1) false)
@@ -676,7 +678,7 @@ making some of the test cases much easier to manage.
                'cat-lost
                3))
 
-;; move-cat : board -> board
+;; move-cat : world -> world
 (define (move-cat world)
   (local [(define cat-position (world-cat world))
           (define table (build-table/fast world))
