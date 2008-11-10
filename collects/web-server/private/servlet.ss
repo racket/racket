@@ -5,12 +5,10 @@
          "../private/response-structs.ss")
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
-(define-struct (exn:fail:servlet:instance exn:fail) ()
-  #:mutable)
+(define-struct (exn:fail:servlet:instance exn:fail) ())
 (define-struct servlet (custodian namespace manager directory handler)
   #:mutable)
-(define-struct execution-context (request)
-  #:mutable)
+(define-struct execution-context (request))
 
 (define current-servlet (make-parameter #f))
 (define current-servlet-instance-id (make-parameter #f))

@@ -5,12 +5,9 @@
 
 (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
 
-(define-struct response/basic (code message seconds mime headers)
-  #:mutable)
-(define-struct (response/full response/basic) (body)
-  #:mutable)
-(define-struct (response/incremental response/basic) (generator)
-  #:mutable)
+(define-struct response/basic (code message seconds mime headers))
+(define-struct (response/full response/basic) (body))
+(define-struct (response/incremental response/basic) (generator))
 
 ; response = (cons string (listof string)), where the first string is a mime-type
 ;          | x-expression
