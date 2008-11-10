@@ -69,20 +69,22 @@
   ;;  keyword setup
   ;;--------------------------------------------------------------------
   
+  (define-for-syntax (do-class-keyword stx)
+    (if (identifier? stx)
+        (raise-syntax-error
+         #f
+         "illegal (unparenthesized) use of a class keyword"
+         stx)
+        (raise-syntax-error
+         #f
+         "use of a class keyword is not in a class top-level"
+         stx)))
+
   (define-syntax provide-class-keyword
     (syntax-rules ()
       [(_ id ...)
        (begin
-	 (define-syntax (id stx)
-	   (if (identifier? stx)
-	       (raise-syntax-error
-		#f
-		"illegal (unparenthesized) use of a class keyword"
-		stx)
-	       (raise-syntax-error
-		#f
-		"use of a class keyword is not in a class top-level"
-		stx)))
+	 (define-syntax (id stx) (do-class-keyword stx))
 	 ...
 	 (provide id ...))]))
   
@@ -94,43 +96,47 @@
 			 inspect
                          init-rest)
 
+  (define-for-syntax (do-define-like-internal stx)
+    (syntax-case stx ()
+      [(_ orig . __)
+       (raise-syntax-error
+        #f
+        "use of a class keyword is not in a class top-level"
+        #'orig)]))
+
+  (define-for-syntax (do-define-like stx internal-id)
+    (syntax-case stx ()
+      [(_ elem ...)
+       (syntax-property
+        #`(#,internal-id #,stx
+                         #,@(map (lambda (e)
+                                   (if (identifier? e)
+                                       e
+                                       (syntax-property
+                                        (syntax-case e ()
+                                          [((n1 n2) . expr)
+                                           (quasisyntax/loc e
+                                             (#,(syntax-property
+                                                 #'(n1 n2)
+                                                 'certify-mode 'transparent)
+                                              . expr))]
+                                          [_else e])
+                                        'certify-mode 'transparent)))
+                                 (syntax-e #'(elem ...))))
+        'certify-mode
+        'transparent)]
+      [(_ . elems)
+       #`(#,internal-id #,stx . elems)]
+      [_else 
+       (raise-syntax-error #f "illegal (unparenthesized) use of class keyword" stx)]))
+
   (define-syntax provide-class-define-like-keyword
     (syntax-rules ()
       [(_ [internal-id id] ...)
        (begin
-	 (define-syntax (internal-id stx)
-	   (syntax-case stx ()
-	     [(_ orig . __)
-	      (raise-syntax-error
-	       #f
-	       "use of a class keyword is not in a class top-level"
-	       #'orig)]))
+	 (define-syntax (internal-id stx) (do-define-like-internal stx))
 	 ...
-	 (define-syntax (id stx)
-	   (syntax-case stx ()
-	     [(_ elem (... ...))
-	      (syntax-property
-	       #`(internal-id #,stx
-			      #,@(map (lambda (e)
-					(if (identifier? e)
-					    e
-					    (syntax-property
-					     (syntax-case e ()
-					       [((n1 n2) . expr)
-						(quasisyntax/loc e
-						  (#,(syntax-property
-						      #'(n1 n2)
-						      'certify-mode 'transparent)
-						   . expr))]
-					       [_else e])
-					     'certify-mode 'transparent)))
-				      (syntax-e #'(elem (... ...)))))
-	       'certify-mode
-	       'transparent)]
-	     [(_ . elems)
-	      #`(internal-id #,stx . elems)]
-	     [_else 
-	      (raise-syntax-error #f "illegal (unparenthesized) use of class keyword" stx)]))
+	 (define-syntax (id stx) (do-define-like stx #'internal-id))
 	 ...
 	 (provide id ...))]))
   
@@ -139,6 +145,14 @@
    [-init init]
    [-init-field init-field])
 
+
+  (define-for-syntax not-in-a-class
+    (lambda (stx)
+      (raise-syntax-error
+       #f
+       "use of a class keyword is not in a class"
+       stx)))
+
   (define-syntax define/provide-context-keyword
     (syntax-rules ()
       [(_ (id param-id) ...)
@@ -146,12 +160,7 @@
 	 (begin
 	   (provide id)
 	   (define-syntax-parameter param-id 
-	     (make-set!-transformer
-	      (lambda (stx)
-		(raise-syntax-error
-		 #f
-		 "use of a class keyword is not in a class"
-		 stx))))
+	     (make-set!-transformer not-in-a-class))
 	   (define-syntax id
 	     (make-parameter-rename-transformer #'param-id)))
 	 ...)]))

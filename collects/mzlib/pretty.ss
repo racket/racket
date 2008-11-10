@@ -1089,12 +1089,13 @@
        (define max-call-head-width 5)
 
        (define (no-sharing? expr count apair? acdr)
-         (if (and found 
-                  (apair? expr)
-                  (hash-table-get found (acdr expr) #f))
-             #f
-             (or (zero? count)
-                 (no-sharing? (acdr expr) (sub1 count) apair? acdr))))
+         (if (apair? expr)
+             (if (and found 
+                      (hash-table-get found (acdr expr) #f))
+                 #f
+                 (or (zero? count)
+                     (no-sharing? (acdr expr) (sub1 count) apair? acdr)))
+             #f))
 
        (define (style head expr apair? acar acdr)
          (case (look-in-style-table head)

@@ -4494,14 +4494,14 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
      (But don't mutate the wrap list, because that will stomp on
      tables that might be needed by a propoagation.)
 
-     In addition to depending on the rest of the wraps, a
-     simplifciation can depend on preceding wraps due to rib
-     skipping. So the lex_cache maps a wrap to another hash table that
-     maps a skip list to a simplified rename.
-     
      A lex_cache maps wrap starts w to simplified tables. A lex_cache
      is modified by this function, only, but it's also read in 
-     datum_to_wraps. */
+     datum_to_wraps.
+
+     In addition to depending on the rest of the wraps, a
+     simplification can depend on preceding wraps due to rib
+     skipping. So the lex_cache maps a wrap to another hash table that
+     maps a skip list to a simplified rename. */
 
   WRAP_POS_INIT(w, wraps);
   WRAP_POS_INIT_END(prev);
@@ -4548,7 +4548,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	if (add) {
 	  /* Need to simplify, but do deepest first: */
-	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_CAR(stack), key)) {
+	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_CAR(SCHEME_CAR(stack)), key)) {
 	    stack = CONS(CONS(key, orig_skip_ribs), stack);
 	  }
 	} else {
@@ -4576,7 +4576,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
     while (!WRAP_POS_REVEND_P(w)) {
       v = WRAP_POS_FIRST(w);
-      
+
       if (SCHEME_RIBP(v)
 	  || (SCHEME_VECTORP(v)
 	      && (SCHEME_VEC_SIZE(v) > 2) /* a simplified vec can be empty */
@@ -4733,6 +4733,21 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	SCHEME_VEC_ELS(v2)[0] = scheme_false;
 	SCHEME_VEC_ELS(v2)[1] = scheme_false;
+
+        {
+          /* Sometimes we generate the same simplified lex table, so
+             look for an equivalent one in the cache. */
+          v = scheme_hash_get(lex_cache, scheme_true);
+          if (!v) {
+            v = (Scheme_Object *)scheme_make_hash_table_equal();
+            scheme_hash_set(lex_cache, scheme_true, v);
+          }
+          svl = scheme_hash_get((Scheme_Hash_Table *)v, v2);
+          if (svl)
+            v2 = svl;
+          else
+            scheme_hash_set((Scheme_Hash_Table *)v, v2, v2);
+        }
 
 	v2l = CONS(v2, v2l);
       }

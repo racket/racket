@@ -38,14 +38,16 @@ following @scheme[_shared-expr] grammar, where earlier variants in a
 production take precedence over later variants:
 
 @schemegrammar*[
-#:literals (cons list vector-immutable box-immutable mcons vector box)
+#:literals (cons list list* append vector-immutable box-immutable mcons vector box)
 [shared-expr shell-expr
              plain-expr]
 [shell-expr (cons in-immutable-expr in-immutable-expr)
             (list in-immutable-expr ...)
+            (list* in-immutable-expr ...)
+            (append early-expr ... in-immutable-expr)
             (vector-immutable in-immutable-expr ...)
             (box-immutable in-immutable-expr)
-            (mcons patchable-expr)
+            (mcons patchable-expr patchable-expr)
             (vector patchable-expr ...)
             (box patchable-expr ...)
             (#, @|maker| patchable-expr ...)]
@@ -67,7 +69,7 @@ be one of the @scheme[id]s bound by the @scheme[shared] form to a
 
 When the @scheme[expr]s of the @scheme[shared] form are parsed via
 @scheme[_shared-expr] (taking into account the order of the variants
-for precedence), and sub-expression that parses via
+for precedence), and sub-expressions that parse via
 @scheme[_early-expr] will be evaluated first when the @scheme[shared]
 form is evaluated. Among such expressions, they are evaluated in the
 order as they appear within the @scheme[shared] form. However, any
@@ -90,7 +92,7 @@ where a reference to an @scheme[id] produces @|undefined-const| if it
 is evaluated before the right-hand side of the @scheme[id] binding.
 
 Finally, the @scheme[_patchable-expr]s are evaluated. At this point,
-all @scheme[id]s are bound, so @scheme[_patchable-expr]s also created
+all @scheme[id]s are bound, so @scheme[_patchable-expr]s also creates
 data cycles (but only with cycles that can be created via mutation).
 
 @examples[

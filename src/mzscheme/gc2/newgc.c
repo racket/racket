@@ -1317,7 +1317,7 @@ void GC_register_new_thread(void *t, void *c)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-int designate_modified(void *p)
+static int designate_modified(void *p)
 {
   NewGC *gc = GC_get_GC();
   struct mpage *page = pagemap_find_page(gc->page_maps, p);
