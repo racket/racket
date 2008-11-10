@@ -328,10 +328,10 @@ a URL that refreshes the password file, servlet cache, etc.}
  This dispatcher supports HTTP Range GET requests and HEAD requests.}}
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
+@section[#:tag "dispatch-servlets.ss"]{Serving Servlets}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets
               @elem{defines a dispatcher constructor
-                    that runs servlets written in Scheme.}]{
+                    that runs servlets.}]{
 
 @defproc[(make-v1.servlet [directory path?]
                           [timeout integer?]
@@ -345,6 +345,12 @@ a URL that refreshes the password file, servlet cache, etc.}
                           [start (request? . -> . response?)])
          servlet?]{
  Creates a version 2 servlet that uses @scheme[directory] as its current directory, a @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
+}
+ 
+@defproc[(make-stateless.servlet [directory path?]
+                                 [start (request? . -> . response?)])
+         servlet?]{
+ Creates a stateless servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
 }
                   
 @defthing[default-module-specs (listof module-path?)]{
@@ -397,32 +403,6 @@ Equivalent to @scheme[(path? . -> . servlet?)].
 }
                       
 }
-
-@; ------------------------------------------------------------
-@section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
-@a-dispatcher[web-server/dispatchers/dispatch-lang
-             @elem{defines a dispatcher constructor
-                   that runs servlets written in the Web Language.}]{
-
-@defproc[(make [#:url->path url->path url->path/c]
-               [#:make-servlet-namespace make-servlet-namespace
-                                         make-servlet-namespace?
-                                         (make-make-servlet-namespace)]
-               [#:responders-servlet-loading responders-servlet-loading 
-                                             ((url url?) (exn exn?) . -> . response?)
-                                             servlet-loading-responder]
-               [#:responders-servlet responders-servlet
-                                     ((url url?) (exn exn?) . -> . response?)
-                                     servlet-error-responder])
-         dispatcher/c]{
- If the request URL contains a serialized continuation, then it is invoked with the
- request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
- The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
- If this fails then @scheme[responders-servlet-loading] is used to format a response
- with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
- If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
- used to format a response with the exception.
-}}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-stat.ss"]{Statistics}

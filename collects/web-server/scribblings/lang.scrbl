@@ -2,35 +2,15 @@
 @(require "web-server.ss")
 
 @title[#:tag "lang"
-       #:style 'toc]{Web Language Servlets}
+       #:style 'toc]{Web Language}
 
+@defmodulelang[web-server]
+                    
 The @web-server allows servlets to be written in a special Web
 language that is nearly identical to Scheme. Herein we discuss how it
 is different and what API is provided.
 
 @local-table-of-contents[]
-
-@; ------------------------------------------------------------
-@section[#:tag "lang-servlets"]{Definition}
-@(require (for-label "dummy-language-servlet.ss")) @; to give a binding context
-
-@defmodule*/no-declare[(web-server/lang)]
-
-@declare-exporting[#:use-sources (web-server/scribblings/dummy-language-servlet)]
-
-A @defterm{Web language servlet} is a module written in the
-@schememodname[web-server/lang] language. The servlet module should
-provide the following function:
-
-@defproc[(start [initial-request request?])
-         response?]{
- Called when this servlet is invoked.
- The argument is the HTTP request that initiated the servlet.
-}
-                   
-The only way to run Web language servlets currently is to use the
-functional interface to starting the server and create a dispatcher
-that includes a @scheme[make-lang-dispatcher] dispatcher.
 
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
@@ -156,10 +136,15 @@ the future.
 @defproc[(stuff-url [v serializable?]
                     [u url?])
          url?]{
- Serializes @scheme[v] and computes the MD5 of the serialized
- representation. The serialization of @scheme[v] is written to
- @filepath{$HOME/.urls/M} where `M' is the MD5. `M' is then
- placed in @scheme[u] as a URL param.
+ Returns a URL based on @scheme[u] with @scheme[v] serialized and "stuffed" into it.
+ The following steps are applied until the URL is short enough to be accepted by IE.
+ @itemize[
+  @item{Put the plain-text serialization in the URL.}
+  @item{Compress the serialization with @schememodname[file/gzip] into the URL.}
+  @item{Compute the MD5 of the compressed seralization and write it to
+   @filepath{$HOME/.urls/M} where `M' is the MD5. `M' is then
+   placed in the URL}
+ ]
 }
 
 @defproc[(stuffed-url? [u url?])

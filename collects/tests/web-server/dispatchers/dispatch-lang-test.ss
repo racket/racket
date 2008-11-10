@@ -6,12 +6,13 @@
          web-server/dispatchers/dispatch
          web-server/private/request-structs
          web-server/configuration/namespace
-         (prefix-in lang: web-server/dispatchers/dispatch-lang)
+         #;(prefix-in lang: web-server/dispatchers/dispatch-lang)
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          "servlet-test-util.ss"
          "../util.ss")
 (provide dispatch-lang-tests)
 
-(define (mkd p)
+#;(define (mkd p)
   (lang:make #:url->path (lambda _ (values p (list p)))
              #:make-servlet-namespace
              (make-make-servlet-namespace)
@@ -24,6 +25,21 @@
                ((error-display-handler) (exn-message exn) exn)
                (raise exn))))
 
+(define (mkd p)
+  (define-values (! u->s)
+    (servlets:make-cached-url->servlet
+     (lambda _ (values p url0s))
+     (servlets:make-default-path->servlet)))
+  (define d
+    (servlets:make u->s
+                   #:responders-servlet-loading
+                   (lambda (u exn)
+                     (raise exn))
+                   #:responders-servlet
+                   (lambda (u exn)
+                     (raise exn))))
+  d)
+
 (define example-servlets (build-path (collection-path "web-server") "default-web-root" "htdocs" "lang-servlets/"))
 
 (define dispatch-lang-tests
@@ -32,7 +48,7 @@
    
    (test-exn
     "add-param.ss - Parameters, s/s/u (should fail)"
-    exn:dispatcher?
+    exn:fail:contract?
     (lambda ()
       (let* ([xs #"10"]
              [ys #"17"]

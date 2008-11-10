@@ -20,7 +20,7 @@ of these servlets.
 
 A @defterm{servlet} is a module that provides the following:
 
-@defthing[interface-version (one-of/c 'v1 'v2)]{
+@defthing[interface-version (one-of/c 'v1 'v2 'stateless)]{
  A symbol indicating the servlet interface the servlet conforms
  to. This influences the other provided identifiers.
 }
@@ -74,6 +74,13 @@ An example version 2 module:
           (body (h1 "Hi Mom!"))))
  ]
 
+An example @scheme['stateless] servlet module:
+@schememod[
+ web-server
+ (define interface-version 'stateless)
+ (define (start req)
+   `(html (body (h2 "Look ma, no state!"))))
+]
 
 @; ------------------------------------------------------------
 @section[#:tag "servlet-structs.ss"]{Contracts}

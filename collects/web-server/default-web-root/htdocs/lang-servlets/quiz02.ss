@@ -1,6 +1,7 @@
 #lang web-server
 (require "quiz-lib.ss")
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 ;; get-answer: mc-question -> number
 ;; get an answer for a multiple choice question

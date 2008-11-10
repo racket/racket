@@ -6,13 +6,14 @@
          web-server/web-server
          web-server/configuration/responders
          web-server/private/mime-types
+         (prefix-in path-procedure: "dispatchers/dispatch-pathprocedure.ss")
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)
          (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
          (prefix-in files: web-server/dispatchers/dispatch-files)
          (prefix-in filter: web-server/dispatchers/dispatch-filter)
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
-         (prefix-in lang: web-server/dispatchers/dispatch-lang)
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          (prefix-in stat: web-server/dispatchers/dispatch-stat))
 
 (define server-root-path (make-parameter (collection-path "web-server" "default-web-root")))
@@ -35,6 +36,7 @@
 (define default-host-path (build-path (server-root-path) "conf"))  
 (define file-not-found-file (build-path default-host-path "not-found.html"))
 (define servlet-error-file (build-path default-host-path "servlet-error.html"))
+(define servlet-refresh-file (build-path default-host-path "servlet-refresh.html"))
 
 (define url->path
   (fsmap:make-url->path 
@@ -47,11 +49,21 @@
        (sequencer:make          
         (timeout:make (* 5 60))
         (stat:make)
-        (filter:make
-         #rx"\\.ss"
-         (lang:make #:url->path (fsmap:make-url->valid-path url->path)
-                    #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
-                    #:responders-servlet (gen-servlet-responder servlet-error-file)))
+        (let-values ([(clear-cache! url->servlet)
+                      (servlets:make-cached-url->servlet
+                       (fsmap:filter-url->path
+                        #rx"\\.(ss|scm)$"
+                        (fsmap:make-url->valid-path
+                         url->path))
+                       (servlets:make-default-path->servlet))])
+          (sequencer:make
+           (path-procedure:make "/conf/refresh-servlets"
+                                (lambda _
+                                  (clear-cache!)
+                                  ((gen-servlets-refreshed servlet-refresh-file))))
+           (servlets:make url->servlet
+                          #:responders-servlet-loading (gen-servlet-responder servlet-error-file)
+                          #:responders-servlet (gen-servlet-responder servlet-error-file))))
         (files:make #:url->path url->path
                     #:path->mime-type (make-path->mime-type (build-path (server-root-path) "mime.types"))
                     #:indices (list "index.html" "index.htm"))

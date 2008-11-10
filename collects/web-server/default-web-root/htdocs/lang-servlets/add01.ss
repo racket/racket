@@ -1,7 +1,8 @@
 #lang scheme/base
 (require web-server/private/request-structs
          net/url)
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 (define (start req)
   (let* ([uri (request-uri req)]

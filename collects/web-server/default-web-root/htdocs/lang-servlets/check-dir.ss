@@ -1,5 +1,6 @@
 #lang web-server
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 (define (directory-page n)
   (send/suspend/url

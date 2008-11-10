@@ -1,5 +1,6 @@
 #lang web-server
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 ;; get-number-from-user: string -> number
 ;; ask the user for a number

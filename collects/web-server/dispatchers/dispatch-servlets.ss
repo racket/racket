@@ -4,6 +4,9 @@
 (require "dispatch.ss"
          "../private/web-server-structs.ss"
          "../private/connection-manager.ss"
+         web-server/managers/none
+         (only-in "../lang/web.ss"
+                  initialize-servlet)
          "../private/response.ss"
          "../private/request-structs.ss"
          "../private/response-structs.ss"
@@ -42,34 +45,71 @@
   (lambda (initial-request)
     ((unbox go))))
 
-(define (v1.module->v1.lambda timeout start)
-  (lambda (initial-request)
-    (adjust-timeout! timeout)
-    (start initial-request)))
-
 (define (make-v1.servlet directory timeout start)
-  (make-v2.servlet directory                   
-                   (create-timeout-manager
-                    default-servlet-instance-expiration-handler
-                    timeout
-                    timeout)
-                   (v1.module->v1.lambda timeout start)))
+  (make-v2.servlet 
+   directory                   
+   (create-timeout-manager
+    default-servlet-instance-expiration-handler
+    timeout
+    timeout)
+   (lambda (initial-request)
+     (adjust-timeout! timeout)
+     (start initial-request))))
 
 (define (make-v2.servlet directory manager start)
-  (make-servlet (current-custodian)
-                (current-namespace)
-                manager
-                directory
-                start))
+  (make-servlet 
+   (current-custodian)
+   (current-namespace)
+   manager
+   directory                
+   (lambda (req)
+     (define uri (request-uri req))
+     
+     (define-values (instance-id handler)
+       (cond
+         [(continuation-url? uri)
+          => (match-lambda
+               [(list instance-id k-id salt)
+                (values instance-id
+                        (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
+         [else
+          (values ((manager-create-instance manager) (exit-handler))
+                  start)]))
+     
+     (parameterize ([current-servlet-instance-id instance-id])
+       (handler req)))))
 
-(define default-module-specs
-  '(web-server/servlet
-    web-server/private/servlet
-    web-server/servlet/web
+(define (make-stateless.servlet directory start)
+  (define ses 
+    (make-servlet
+     (current-custodian) (current-namespace)
+     (create-none-manager (lambda (req) (error "No continuations!")))
+     directory
+     (lambda (req) (error "Session not initialized"))))
+  (parameterize ([current-directory directory]
+                 [current-servlet ses])    
+    (set-servlet-handler! ses (initialize-servlet start)))
+  ses)
+
+(define common-module-specs
+  '(web-server/private/servlet
+    web-server/private/request-structs
+    web-server/private/response-structs))
+
+(define servlet-module-specs
+  '(web-server/servlet/web
     web-server/servlet/web-cells))
+(define lang-module-specs
+  '(web-server/lang/web-cells
+    web-server/lang/abort-resume))
+(define default-module-specs
+  (append common-module-specs
+          servlet-module-specs
+          lang-module-specs))
 (provide/contract
  [make-v1.servlet (path? integer? (request? . -> . response?) . -> . servlet?)]
  [make-v2.servlet (path? manager? (request? . -> . response?) . -> . servlet?)]
+ [make-stateless.servlet (path? (request? . -> . response?) . -> . servlet?)]
  [default-module-specs (listof module-path?)])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
@@ -93,8 +133,11 @@
               (let ([start (dynamic-require module-name 'start)]
                     [manager (dynamic-require module-name 'manager)])
                 (make-v2.servlet (directory-part a-path) manager start))]
+             [(stateless)
+              (let ([start (dynamic-require module-name 'start)])
+                (make-stateless.servlet (directory-part a-path) start))]
              [else
-              (error 'path->servlet "unknown servlet version ~e, must be 'v1 or 'v2" version)]))]
+              (error 'path->servlet "unknown servlet version ~e, must be 'v1, 'v2, or 'stateless" version)]))]
         [(response? s)
          (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                           (v0.response->v1.lambda s a-path))]
@@ -173,28 +216,14 @@
                          [current-custodian (servlet-custodian the-servlet)]
                          [current-directory (servlet-directory the-servlet)]
                          [current-namespace (servlet-namespace the-servlet)])
-            (define manager (servlet-manager the-servlet))
-            
-            (define-values (instance-id handler)
-              (cond
-                [(continuation-url? uri)
-                 => (match-lambda
-                      [(list instance-id k-id salt)
-                       (values instance-id
-                               (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
-                [else
-                 (values ((manager-create-instance manager) (exit-handler))
-                         (servlet-handler the-servlet))]))
-            
-            (parameterize ([current-servlet-instance-id instance-id])
-              (with-handlers ([(lambda (x) #t)
-                               (lambda (exn)
-                                 (responders-servlet
-                                  (request-uri req)
-                                  exn))])
-                (call-with-continuation-prompt
-                 (lambda ()
-                   (handler req))
-                 servlet-prompt))))))
+            (with-handlers ([(lambda (x) #t)
+                             (lambda (exn)
+                               (responders-servlet
+                                (request-uri req)
+                                exn))])
+              (call-with-continuation-prompt
+               (lambda ()
+                 ((servlet-handler the-servlet) req))
+               servlet-prompt)))))
       
       (output-response conn response))))
