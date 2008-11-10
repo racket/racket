@@ -1264,13 +1264,36 @@ static LONG WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, in
   return retval;
 }
 
+
+extern DWORD wx_original_thread_id;
+static int cut_off_callbacks;
+
+void wxNoMoreCallbacks(void)
+{
+  cut_off_callbacks = 1;
+}
+
+static int invalid_callback_context()
+{
+  if (GetCurrentThreadId() != wx_original_thread_id) {
+    return 1;
+  }
+  if (cut_off_callbacks)
+    return 1;
+
+  return 0;
+}
+
 extern int wx_trampolining;
 
 // Main window proc
 LRESULT APIENTRY wxWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
+{ 
   LRESULT res;
   int tramp = wx_trampolining;
+
+  if (invalid_callback_context())
+    return ::DefWindowProcW(hWnd, message, wParam, lParam);
 
   wx_trampolining = 0;
 
@@ -1299,6 +1322,9 @@ LONG APIENTRY wxDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
   LRESULT res;
   int tramp = wx_trampolining;
+
+  if (invalid_callback_context())
+    return ::DefWindowProcW(hWnd, message, wParam, lParam);
 
   wx_trampolining = 0;
 

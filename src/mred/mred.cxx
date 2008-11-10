@@ -3153,7 +3153,8 @@ static void MrEdOutOfMemory(void)
 #ifdef wx_mac
   Alert(101, NULL);
 #endif
-#ifdef wx_win
+#ifdef wx_msw
+  wxNoMoreCallbacks();
   MessageBox(NULL, 
              "PLT Scheme virtual machine is out of memory. Aborting.",
              "Out of Memory",
