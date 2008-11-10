@@ -350,7 +350,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make-stateless.servlet [directory path?]
                                  [start (request? . -> . response?)])
          servlet?]{
- Creates a stateless servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
+ Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
 }
                   
 @defthing[default-module-specs (listof module-path?)]{
