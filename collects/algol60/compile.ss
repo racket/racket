@@ -316,14 +316,19 @@
      
      (define (compile-argument arg context)
        (cond
-         [(and (a60:variable? arg) 
-               (not (let ([v  (a60:variable-name arg)])
-		      (or (procedure-variable? v context)
-			  (label-variable? v context)
-			  (primitive-variable? v context)))))
-          `(case-lambda
-             [() ,(compile-expression arg context 'any)]
-             [(val)  ,(compile-statement (make-a60:assign (list arg) 'val) 'void context)])]
+         [(or (and (a60:variable? arg)
+                   (not (let ([v  (a60:variable-name arg)])
+                          (or (procedure-variable? v context)
+                              (label-variable? v context)
+                              (primitive-variable? v context)))))
+              (a60:subscript? arg))
+          (let ([arg (if (a60:subscript? arg)
+                         (make-a60:variable (a60:subscript-array arg)
+                                            (list (a60:subscript-index arg)))
+                         arg)])
+            `(case-lambda
+              [() ,(compile-expression arg context 'any)]
+              [(val)  ,(compile-statement (make-a60:assign (list arg) 'val) 'void context)]))]
          [(identifier? arg)
           (compile-argument (make-a60:variable arg null) context)]
          [else `(lambda () ,(compile-expression arg context 'any))]))
@@ -474,7 +479,7 @@
          (and (pair? v)
               (eq? (car v) 'by-name)
               (cadr v))))
-     
+
      (define (procedure-variable? var context)
        (let ([v (var-binding var context)])
          (eq? v 'procedure)))
