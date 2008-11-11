@@ -259,6 +259,10 @@ Use syntax/modcollapse instead.
         [else #f]))
 
 (define (collapse-module-path-index mpi relto-mp)
+  (define (force-relto relto-mp)
+    (if (procedure? relto-mp) 
+        (relto-mp)
+        relto-mp))
   (let-values ([(path base) (module-path-index-split mpi)])
     (if path
         (collapse-module-path
@@ -271,11 +275,9 @@ Use syntax/modcollapse instead.
              (let ([n (resolved-module-path-name base)])
                (if (path? n)
                    n
-                   relto-mp))]
-            [else relto-mp])))
-        (if (procedure? relto-mp) 
-            (relto-mp)
-            relto-mp))))
+                   (force-relto relto-mp)))]
+            [else (force-relto relto-mp)])))
+        (force-relto relto-mp))))
 
 (provide collapse-module-path
          collapse-module-path-index)
