@@ -400,9 +400,10 @@ scheme_init_fun (Scheme_Env *env)
 						      2, 4),
 			     env);
   scheme_add_global_constant("call-with-immediate-continuation-mark",
-			     scheme_make_prim_w_arity(call_with_immediate_cc_mark,
-						      "call-with-immediate-continuation-mark",
-						      2, 3),
+			     scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
+                                                       "call-with-immediate-continuation-mark",
+                                                       2, 3,
+                                                       0, -1),
 			     env);
   scheme_add_global_constant("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
@@ -3962,10 +3963,10 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
   else
     a[0] = scheme_false;
 
-  findpos = (long)MZ_CONT_MARK_STACK;
-  bottom = (long)p->cont_mark_stack_bottom;
-  while (1) {
-    if (findpos-- > bottom) {
+  if (p->cont_mark_stack_segments) {
+    findpos = (long)MZ_CONT_MARK_STACK;
+    bottom = (long)p->cont_mark_stack_bottom;
+    while (findpos-- > bottom) {
       Scheme_Cont_Mark *seg = p->cont_mark_stack_segments[findpos >> SCHEME_LOG_MARK_SEGMENT_SIZE];
       long pos = findpos & SCHEME_MARK_SEGMENT_MASK;
       Scheme_Cont_Mark *find = seg + pos;
