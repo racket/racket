@@ -7,6 +7,7 @@
          web-server/private/cache-table
          web-server/private/web-server-structs
          web-server/configuration/namespace
+         web-server/servlet/setup
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          "servlet-test-util.ss"
          "../util.ss")
@@ -18,7 +19,7 @@
   (define-values (! u->s)
     (servlets:make-cached-url->servlet
      (lambda _ (values p url0s))
-     (servlets:make-default-path->servlet)))
+     (make-default-path->servlet)))
   (define d
     (servlets:make u->s
                    #:responders-servlet-loading

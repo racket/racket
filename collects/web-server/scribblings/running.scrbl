@@ -82,7 +82,7 @@ To run the web server with MrEd, use
 
 @filepath{web-server.ss} provides a number of functions for easing embedding
 of the @web-server in other applications, or loading a custom
-dispatcher. See @filepath{run.ss} for an example of such a script.
+dispatcher. 
 
 @defproc[(serve [#:dispatch dispatch dispatcher?]
                 [#:tcp@ tcp@ tcp-unit^ raw:tcp@]

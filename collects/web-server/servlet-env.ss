@@ -17,6 +17,7 @@
          web-server/dispatchers/dispatch
          web-server/private/mime-types
          web-server/configuration/configuration-table
+         web-server/servlet/setup
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)         
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
@@ -121,10 +122,10 @@
                                    [current-namespace
                                     (make-servlet-namespace
                                      #:additional-specs
-                                     servlets:default-module-specs)])
+                                     default-module-specs)])
                       (if stateless?
-                          (servlets:make-stateless.servlet servlet-current-directory start)
-                          (servlets:make-v2.servlet servlet-current-directory manager start)))])
+                          (make-stateless.servlet servlet-current-directory start)
+                          (make-v2.servlet servlet-current-directory manager start)))])
                (set-box! servlet-box servlet)
                servlet)))))
      (let-values ([(clear-cache! url->servlet)
@@ -133,7 +134,7 @@
                      #rx"\\.(ss|scm)$"
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path servlets-root)))
-                    (servlets:make-default-path->servlet
+                    (make-default-path->servlet
                      #:make-servlet-namespace make-servlet-namespace))])
        (servlets:make url->servlet))
      (apply sequencer:make

@@ -11,6 +11,7 @@
          "private/cache-table.ss"
          (prefix-in http: "private/request.ss"))
 (require "dispatchers/dispatch.ss"
+         web-server/servlet/setup
          (prefix-in fsmap: "dispatchers/filesystem-map.ss")
          (prefix-in sequencer: "dispatchers/dispatch-sequencer.ss")
          (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
@@ -81,7 +82,7 @@
                      #rx"\\.(ss|scm)$"
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
-                    (servlets:make-default-path->servlet
+                    (make-default-path->servlet
                      #:make-servlet-namespace config:make-servlet-namespace
                      #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info))))])
        (sequencer:make

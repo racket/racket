@@ -6,7 +6,7 @@
          web-server/dispatchers/dispatch
          web-server/private/request-structs
          web-server/configuration/namespace
-         #;(prefix-in lang: web-server/dispatchers/dispatch-lang)
+         web-server/servlet/setup
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          "servlet-test-util.ss"
          "../util.ss")
@@ -29,7 +29,7 @@
   (define-values (! u->s)
     (servlets:make-cached-url->servlet
      (lambda _ (values p url0s))
-     (servlets:make-default-path->servlet)))
+     (make-default-path->servlet)))
   (define d
     (servlets:make u->s
                    #:responders-servlet-loading
