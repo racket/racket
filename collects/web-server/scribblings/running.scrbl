@@ -55,14 +55,16 @@ The following API is provided to customize the server instance:
 
 One command-line utility is provided with the @|web-server|:
 
-@commandline{plt-web-server [-f <file-name> -p <port> -a <ip-address>]}
+@commandline{plt-web-server [-f <file-name> -p <port> -a <ip-address> --ssl]}
 
 The optional file-name argument specifies the path to a
 @scheme[configuration-table] S-expression (see
 @secref["configuration-table.ss"].) If this is not provided, the
 default configuration shipped with the server is used. The optional
 port and ip-address arguments override the corresponding portions of
-the @scheme[configuration-table].
+the @scheme[configuration-table]. If the SSL option is provided, then 
+the server uses HTTPS with @filepath{server-cert.pem} and @filepath{private-key.pem}
+in the current directory, with 443 as the default port.
 
 The @scheme[configuration-table] is given to
 @scheme[configuration-table->web-config@] and used to construct a
@@ -139,7 +141,8 @@ from a given path:
  a function that shuts down all of the server instances.
 }
                   
-@defproc[(serve/web-config@ [config@ web-config^])
+@defproc[(serve/web-config@ [config@ web-config^]
+                            [#:tcp@ tcp@ tcp-unit^ raw:tcp@])
          (-> void)]{
  Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
         
@@ -148,8 +151,7 @@ from a given path:
  @schemeblock[
   (serve/web-config@
    (configuration-table->web-config@ 
-    default-configuration-table-path))
-  (do-not-return)]
+    default-configuration-table-path))]
 }
 
 @defproc[(do-not-return) void]{

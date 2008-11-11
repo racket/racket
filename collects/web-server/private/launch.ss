@@ -1,6 +1,10 @@
-#lang scheme/base
-(require mzlib/cmdline
-         mzlib/pregexp)
+#lang scheme
+(require scheme/cmdline
+         scheme/unit
+         mzlib/pregexp
+         net/tcp-sig
+         net/tcp-unit
+         net/ssl-tcp-unit)
 (require "../configuration/configuration-table.ss"
          (except-in "../web-server.ss" serve)
          "../web-config-unit.ss")
@@ -13,11 +17,19 @@
         (cdr x)
         default)))
 
+(define ssl (make-parameter #f))
+(define port (make-parameter 80))
+
 (define configuration@
   (parse-command-line
    "plt-web-server"
    (current-command-line-arguments)
    `((once-each
+      [("--ssl")
+       ,(lambda (flag)
+          (port 443)
+          (ssl #t))
+       ("Run with SSL using server-cert.pem and private-key.pem in the current directory, with 443 as the default port.")]
       [("-f" "--configuration-table")
        ,(lambda (flag file-name)
           (cond
@@ -28,8 +40,8 @@
             [else (cons 'config (string->path file-name))]))
        ("Use an alternate configuration table" "file-name")]
       [("-p" "--port")
-       ,(lambda (flag port)
-          (cons 'port (string->number port)))
+       ,(lambda (flag the-port)
+          (port (string->number the-port)))
        ("Use an alternate network port." "port")]
       [("-a" "--ip-address")
        ,(lambda (flag ip-address)
@@ -46,11 +58,21 @@
    (lambda (flags)
      (configuration-table->web-config@
       (extract-flag 'config flags default-configuration-table-path)
-      #:port (extract-flag 'port flags #f)
+      #:port (port)
       #:listen-ip (extract-flag 'ip-address flags #f)))
    '()))
 
 (define (serve)
-  (serve/web-config@ configuration@))
+  (serve/web-config@ 
+   configuration@
+   #:tcp@ (if (ssl)
+              (let ()
+                (define-unit-binding ssl-tcp@
+                  (make-ssl-tcp@ (build-path (current-directory) "server-cert.pem")
+                                 (build-path (current-directory) "private-key.pem")
+                                 #f #f #f #f #f)
+                  (import) (export tcp^))
+                ssl-tcp@)
+              tcp@)))
 
 (provide serve)
