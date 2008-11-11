@@ -31,8 +31,7 @@ TODO
          scheme/gui/base
          framework
          browser/external
-         "drsig.ss"
-         "zo-cache.ss")
+         "drsig.ss")
 
 (provide rep@ with-stacktrace-name)
 
@@ -1293,10 +1292,6 @@ TODO
                  (update-running #f)
                  (send context set-breakables #f #f)
                  
-                 ;; set this relatively late, so that the 
-                 ;; setup code for the language doesn't use it
-                 (current-load/use-compiled drscheme-load/use-compiled-handler)
-                 
                  ;; after this returns, future event dispatches
                  ;; will use the user's break parameterization
                  (initialize-dispatch-handler)
@@ -1701,24 +1696,6 @@ TODO
   
   (define input-delta (make-object style-delta%))
   (send input-delta set-delta-foreground (make-object color% 0 150 0))
-
-  (define drscheme-load/use-compiled-handler
-    (let ([ol (current-load/use-compiled)])
-      (λ (path mod) ;; =User=
-        
-        (parameterize ([current-eventspace drscheme:init:system-eventspace])
-          (let ([s (make-semaphore 0)])
-            (queue-callback
-             (λ () ;; =Kernel= =Handler=
-               (let ([frame (send (group:get-the-frame-group) locate-file path)])
-                 (when frame
-                   (send frame offer-to-save-file path)))
-               (semaphore-post s)))
-            (semaphore-wait s)))
-        
-        (build-and-load-zo-file ol path mod))))
-  
-  
   
   ;; insert-error-in-text : (is-a?/c text%)
   ;;                        (union #f (is-a?/c drscheme:rep:text<%>))

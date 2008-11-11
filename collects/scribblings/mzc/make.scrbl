@@ -241,13 +241,20 @@ A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to
  the procedure is a string.}
 
-@defparam[current-path->compilation-dir path->compilation-dir (or/c #f (-> path? path?))]{
+@;{
+@defparam[manager-skip-file-handler proc (-> path? (or/c number? #f))]{
+  This handler is consulted for each file that is loaded. If it
+  returns a number, then the file is skipped (ie, not compiled), 
+  and the number is used as the timestamp. If it returns @scheme[#f],
+  then the file is compiled (if necessary) as usual.
 
-  This parameter controls the location where compiled .zo files are
-  saved. It is called with the path of a @tt{.ss} file and is expected
-  to return a path where the @tt{.zo} and @tt{.dep} file can be saved.
+@;{Defaults to a function that checks to see if the module in the file
+   has already been loaded in the filesystem and, if it has, it
+   returns the timestamp of the .zo file for that file (or the .ss file
+   if the .zo file does not exist).}
 
-  If it is @scheme[#f], then @scheme[use-compiled-file-paths] is used.
+  Defaults to @scheme[(λ (x) #f)].
+}
 }
 
 @; ----------------------------------------------------------------------

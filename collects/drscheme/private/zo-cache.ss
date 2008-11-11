@@ -21,39 +21,11 @@ All of this code runs on the user's parameterization/thread
      (original-load/use-compiled-handler path mod)]
     [else
      ;; otherwise do some managed compilation
-     (parameterize ([current-path->compilation-dir path->cache-path])
+     (parameterize ([manager-skip-file-handler (λ (x)
+                                                 (printf "considering ~s\n" x)
+                                                 #f)])
        (managed-compile-zo path))
-     ;; and then load the compiled file
-     (let-values ([(base name dir) (split-path path)])
-       (original-load/use-compiled-handler 
-        (build-path (path->cache-path path) (compiled-name name #".zo"))
-        mod))]))
-
-;; path->cache-path : path[w/extension] -> path
-;; returns the location of the cached zo file that corresponds to its input
-(define (path->cache-path path)
-  (cond
-    [(already-a-compiled-file? path)
-     (let ([mode (car (use-compiled-file-paths))])
-       (let-values ([(base name must-be-dir?) (split-path path)])
-         (cond
-           [(eq? 'relative base) mode]
-           [else (build-path base mode)])))]
-    [else
-     (apply build-path
-            (find-system-path 'addon-dir)
-            (version)
-            "drscheme-zo-cache"
-            (remove-last (cdr (explode-path (normalize-path path))))
-            #;(replace-last-with-zo (cdr (explode-path (normalize-path path)))))]))
-
-(define (remove-last lst) (reverse (cdr (reverse lst))))
-
-(define (replace-last-with-zo lst)
-  (cond
-    [(null? (cdr lst))
-     (list (compiled-name (car lst)))]
-    [else (cons (car lst) (replace-last-with-zo (cdr lst)))]))
+     (original-load/use-compiled-handler path mod)]))
 
 (define (exists-and-is-newer? orig-path candidate-path)
   (and (file-exists? candidate-path)

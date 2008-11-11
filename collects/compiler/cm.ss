@@ -10,15 +10,14 @@
          make-caching-managed-compile-zo
          trust-existing-zos
          manager-compile-notify-handler
-         current-path->compilation-dir
+         ;manager-skip-file-handler ;; not yet tested, so not yet exported
          (rename-out [trace manager-trace-handler]))
 
 (define manager-compile-notify-handler (make-parameter void))
 (define trace (make-parameter void))
 (define indent (make-parameter ""))
 (define trust-existing-zos (make-parameter #f))
-
-(define current-path->compilation-dir (make-parameter #f))
+(define manager-skip-file-handler (make-parameter (λ (x) #f)))
 
 (define (trace-printf fmt . args)
   (let ([t (trace)])
@@ -35,9 +34,6 @@
   (let-values ([(base name must-be-dir?) (split-path path)])
     (values 
      (cond
-       [(current-path->compilation-dir)
-        =>
-        (λ (f) (f path))]
        [(eq? 'relative base) mode]
        [else (build-path base mode)])
      name)))
@@ -214,16 +210,16 @@
     (let* ([zo-name (path-add-suffix (get-compilation-path mode path) #".zo")]
            [zo-exists? (file-exists? zo-name)])
       (if (and zo-exists? (trust-existing-zos))
-        (touch zo-name)
-        (begin (when zo-exists? (delete-file zo-name))
-               (with-handlers
-                   ([exn:get-module-code?
-                     (lambda (ex)
-                       (compilation-failure mode path zo-name
-                                            (exn:get-module-code-path ex)
-                                            (exn-message ex))
-                       (raise ex))])
-                 (compile-zo* mode path read-src-syntax zo-name))))))
+          (touch zo-name)
+          (begin (when zo-exists? (delete-file zo-name))
+                 (with-handlers
+                     ([exn:get-module-code?
+                       (lambda (ex)
+                         (compilation-failure mode path zo-name
+                                              (exn:get-module-code-path ex)
+                                              (exn-message ex))
+                         (raise ex))])
+                   (compile-zo* mode path read-src-syntax zo-name))))))
   (trace-printf "end compile: ~a" path))
 
 (define (get-compiled-time mode path)
@@ -279,6 +275,7 @@
          (hash-set! up-to-date path stamp)
          stamp)]))
   (or (and up-to-date (hash-ref up-to-date path #f))
+      ((manager-skip-file-handler) path)
       (begin (trace-printf "checking: ~a" path)
              (do-check))))
 
@@ -304,7 +301,6 @@
         [orig-load (current-load)]
         [orig-registry (namespace-module-registry (current-namespace))]
         [default-handler (current-load/use-compiled)]
-        [orig-path->compilation-dir-handler (current-path->compilation-dir)]
         [modes (use-compiled-file-paths)])
     (define (compilation-manager-load-handler path mod-name)
       (cond [(not mod-name)
@@ -331,11 +327,6 @@
              (trace-printf "skipping:  ~a orig-registry ~s current-registry ~s"
                            path orig-registry
                            (namespace-module-registry (current-namespace)))]
-            [(not (eq? (current-path->compilation-dir)
-                       orig-path->compilation-dir-handler))
-             (trace-printf "skipping:  ~a orig path->compilation-dir-handler ~s current path->compilation-dir-handler ~s"
-                           orig-path->compilation-dir-handler
-                           (current-path->compilation-dir))]
             [else
              (trace-printf "processing: ~a" path)
              (compile-root (car modes) path cache read-syntax)
