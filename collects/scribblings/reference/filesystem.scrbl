@@ -586,7 +586,7 @@ lines like @scheme[read-bytes-line].}
                                                   'replace 'truncate 'truncate/replace) 'error])
          void?]{
 
-Uses @scheme[display] to print each @scheme[v] to @scheme[path]. The @scheme[mode-flag] and
+Uses @scheme[display] to print @scheme[v] to @scheme[path]. The @scheme[mode-flag] and
 @scheme[exists-flag] arguments are the same as for
 @scheme[open-output-file].}
 

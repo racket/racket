@@ -3,7 +3,7 @@ Added call-with-immediate-continuation-mark
 In scheme/port: added port->string, port->bytes, port->lines
    port->bytes-lines, and display-list
 In scheme/file: added file->string, file->bytes, file->lines,
-   file->bytes-lines, write-to-file, display-to-file, 
+   file->value, file->bytes-lines, write-to-file, display-to-file, 
    and display-list-to-file
 
 Version 4.1.2.3
