@@ -13,7 +13,7 @@
 ; elim-letrec : (listof identifier-syntax?)[3] -> syntax?[2] -> syntax?[3]
 ; Eliminates letrec-values from syntax[2] and correctly handles references to 
 ; letrec-bound variables [3] therein. 
-(define ((elim-letrec ids) stx)  
+(define ((elim-letrec ids) stx)
   (recertify
    stx
    (kernel-syntax-case
@@ -69,10 +69,14 @@
       (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
         (syntax/loc stx
           (#%plain-lambda formals be ...)))]
-     [(case-lambda [formals be ...] ...)
-      (with-syntax ([((be ...) ...) (map (elim-letrec ids) (syntax->list #'((be ...) ...)))])
+     [(case-lambda [formals be] ...)
+      (with-syntax ([(be ...) (map (elim-letrec ids) (syntax->list #'(be ...)))])
         (syntax/loc stx
-          (case-lambda [formals be ...] ...)))]
+          (case-lambda [formals be] ...)))]
+     [(case-lambda [formals be ...] ...)
+      ((elim-letrec ids)
+       (syntax/loc stx
+         (case-lambda [formals (begin be ...)] ...)))]
      [(if te ce ae)
       (with-syntax ([te ((elim-letrec ids) #'te)]
                     [ce ((elim-letrec ids) #'ce)]
