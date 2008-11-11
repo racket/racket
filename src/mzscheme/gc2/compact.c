@@ -3859,6 +3859,23 @@ void *GC_malloc_one_small_dirty_tagged(size_t size_in_bytes)
   return GC_malloc_one_tagged(size_in_bytes);
 }
 
+void *GC_malloc_pair(void *a, void *b)
+{
+  void *p;
+
+  park[0] = a;
+  park[1] = b;
+  p = GC_malloc_one_tagged(3 << LOG_WORD_SIZE);
+  a = park[0];
+  b = park[1];
+
+  ((Type_Tag *)p)[0] = pair_tag;
+  ((void **)p)[1] = a;
+  ((void **)p)[2] = b;
+
+  return p;
+}
+
 #ifndef gcINLINE
 # define gcINLINE inline
 #endif

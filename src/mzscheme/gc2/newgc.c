@@ -617,6 +617,49 @@ inline static void *fast_malloc_one_small_tagged(size_t sizeb, int dirty)
   }
 }
 
+void *GC_malloc_pair(void *car, void *cdr)
+{
+  unsigned long ptr, newptr;
+  size_t sizeb;
+  void *retval;
+
+  sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
+  ptr = GC_gen0_alloc_page_ptr;
+  newptr = GC_gen0_alloc_page_ptr + sizeb;
+
+  if(OVERFLOWS_GEN0(newptr)) {
+    NewGC *gc = GC_get_GC();
+    gc->park[0] = car;
+    gc->park[1] = cdr;
+    retval = GC_malloc_one_tagged(sizeb - WORD_SIZE);
+    car = gc->park[0];
+    cdr = gc->park[1];
+    gc->park[0] = NULL;
+    gc->park[1] = NULL;
+  } else {
+    struct objhead *info;
+
+    GC_gen0_alloc_page_ptr = newptr;
+
+    retval = PTR(ptr);
+    info = (struct objhead *)retval;
+
+    ((void **)retval)[0] = NULL; /* objhead */
+    ((void **)retval)[1] = 0;    /* tag word */
+
+    /* info->type = type; */ /* We know that the type field is already 0 */
+    info->size = (sizeb >> gcLOG_WORD_SIZE);
+
+    retval = PTR(NUM(retval) + WORD_SIZE);
+  }
+    
+  ((short *)retval)[0] = scheme_pair_type;
+  ((void **)retval)[1] = car;
+  ((void **)retval)[2] = cdr;
+  
+  return retval;
+}
+
 /* the allocation mechanism we present to the outside world */
 void *GC_malloc(size_t s)                         { return allocate(s, PAGE_ARRAY); }
 void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGGED); }

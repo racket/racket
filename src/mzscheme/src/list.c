@@ -669,12 +669,16 @@ scheme_init_list (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
+#ifdef MZ_PRECISE_GC
+  return GC_malloc_pair(car, cdr);
+#else
   Scheme_Object *cons;
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
   SCHEME_CAR(cons) = car;
   SCHEME_CDR(cons) = cdr;
   return cons;
+#endif
 }
 
 Scheme_Object *scheme_make_mutable_pair(Scheme_Object *car, Scheme_Object *cdr)
