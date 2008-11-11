@@ -48,6 +48,7 @@
                                     #:manager manager?
                                     #:servlet-namespace (listof module-path?)
                                     #:server-root-path path?
+                                    #:stateless? boolean?
                                     #:extra-files-paths (listof path?)
                                     #:servlets-root path?
                                     #:file-not-found-path path?
@@ -79,6 +80,8 @@
                        [servlet-path "/servlets/standalone.ss"]
                        #:servlet-regexp
                        [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
+                       #:stateless? 
+                       [stateless? #f]
                        
                        #:servlet-namespace
                        [servlet-namespace empty]
@@ -100,13 +103,7 @@
     (make-make-servlet-namespace
      #:to-be-copied-module-specs servlet-namespace))
   (define sema (make-semaphore 0))
-  (define servlet
-    (parameterize ([current-custodian (make-custodian)]
-                   [current-namespace
-                    (make-servlet-namespace
-                     #:additional-specs
-                     servlets:default-module-specs)])
-      (servlets:make-v2.servlet servlet-current-directory manager start)))
+  (define servlet-box (box #f))
   (define dispatcher
     (sequencer:make
      (if quit?
@@ -116,7 +113,20 @@
          (lambda _ (next-dispatcher)))
      (filter:make
       servlet-regexp
-      (servlets:make (lambda (url) servlet)))
+      (servlets:make
+       (lambda (url)
+         (or (unbox servlet-box)
+             (let ([servlet
+                    (parameterize ([current-custodian (make-custodian)]
+                                   [current-namespace
+                                    (make-servlet-namespace
+                                     #:additional-specs
+                                     servlets:default-module-specs)])
+                      (if stateless?
+                          (servlets:make-stateless.servlet servlet-current-directory start)
+                          (servlets:make-v2.servlet servlet-current-directory manager start)))])
+               (set-box! servlet-box servlet)
+               servlet)))))
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
                     (fsmap:filter-url->path

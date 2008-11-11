@@ -56,6 +56,17 @@ Suppose you wanted to use a style-sheet (@filepath{style.css}) found on your Des
 These files are served @emph{in addition} to those from the @scheme[#:server-root-path] @filepath{htdocs} directory.
 Notice that you may pass any number of extra paths.
 
+Suppose you would like to start a server for a stateless Web servlet @filepath{servlet.ss} that provides @schemeid[start]:
+@schememod[
+ scheme
+ (require "servlet.ss"
+          web-server/servlet-env)
+
+ (serve/servlet start #:stateless? #t)
+]
+Note: If you put the call to @scheme[serve/servlet] in the module like normal, strange things will happen because of the way
+the top-level interacts with continuations. (Read: Don't do it.)
+
 @defproc[(serve/servlet [start (request? . -> . response?)]
                        [#:launch-browser? launch-browser? boolean? #t]
                        [#:quit? quit? boolean? #t]
@@ -65,6 +76,7 @@ Notice that you may pass any number of extra paths.
                                        "/servlets/standalone.ss"]
                        [#:servlet-regexp servlet-regexp regexp?
                                          (regexp (format "^~a$" (regexp-quote servlet-path)))]
+                       [#:stateless? stateless? boolean? #f]
                        [#:manager manager manager? default-threshold-LRU-manager]
                        [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                        [#:server-root-path server-root-path path? default-server-root-path]
@@ -84,6 +96,8 @@ Notice that you may pass any number of extra paths.
  If @scheme[launch-browser?] is true, then a web browser is opened to @filepath{http://localhost:<port><servlet-path>}.
  
  If @scheme[quit?] is true, then the URL @filepath["/quit"] ends the server.
+ 
+ If @scheme[stateless?] is true, then the servlet is run as a stateless @schememodname[web-server] module.
  
  Advanced users may need the following options:
  

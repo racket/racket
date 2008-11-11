@@ -87,7 +87,7 @@
        [(vector f cms)
         (with-continuation-marks/hash cms (lambda () (rebuild-cms fs thunk)))])]))
 
-(define (abort/cc thunk)
+(define (call-with-web-prompt thunk)
   (call-with-continuation-prompt
    thunk
    web-prompt))
@@ -132,7 +132,7 @@
 ;; dispatch-start: (request -> response) request -> reponse
 ;; pass the initial request to the starting interaction point
 (define (dispatch-start start req0)
-  (abort/cc 
+  (call-with-web-prompt 
    (lambda ()
      (with-continuation-mark safe-call? '(#t start)
        (start
@@ -142,7 +142,7 @@
 ;; dispatch: (request -> (request -> response)) request -> response
 ;; lookup the continuation for this request and invoke it
 (define (dispatch decode-continuation req)   
-  (abort/cc
+  (call-with-web-prompt
    (lambda ()
      (cond
        [(decode-continuation req)
@@ -166,7 +166,7 @@
 (provide/contract
  ;; AUXILLIARIES
  [abort ((-> any) . -> . any)]
- [abort/cc ((-> any) . -> . any)]
+ [call-with-web-prompt ((-> any) . -> . any)]
  [resume (saved-context? any/c . -> . any)]
  [the-cont-key mark-key?]
  [the-save-cm-key mark-key?]

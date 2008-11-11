@@ -221,9 +221,11 @@
                                (responders-servlet
                                 (request-uri req)
                                 exn))])
-              (call-with-continuation-prompt
+              (call-with-continuation-barrier 
                (lambda ()
-                 ((servlet-handler the-servlet) req))
-               servlet-prompt)))))
+                 (call-with-continuation-prompt
+                  (lambda ()
+                    ((servlet-handler the-servlet) req))
+                  servlet-prompt)))))))
       
       (output-response conn response))))
