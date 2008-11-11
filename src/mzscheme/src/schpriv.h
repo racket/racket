@@ -2165,6 +2165,7 @@ void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int
 void scheme_resolve_info_adjust_mapping(Resolve_Info *info, int oldp, int newp, int flags, Scheme_Object *lifted);
 int scheme_resolve_info_flags(Resolve_Info *info, int pos, Scheme_Object **lifted);
 int scheme_resolve_info_lookup(Resolve_Info *resolve, int pos, int *flags, Scheme_Object **lifted, int convert_shift);
+int scheme_optimize_info_is_ready(Optimize_Info *info, int pos);
 void scheme_resolve_info_set_toplevel_pos(Resolve_Info *info, int pos);
 
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);

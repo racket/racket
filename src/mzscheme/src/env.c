@@ -3033,6 +3033,8 @@ void scheme_optimize_info_used_top(Optimize_Info *info)
 
 void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use)
 {
+  /* A raw-pair `value' is an indicator for whether a letrec-bound
+     variable is ready. */
   Scheme_Object *p;
 
   p = scheme_make_vector(4, NULL);
@@ -3120,7 +3122,7 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
   return 0;
 }
 
-static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use)
+static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, int *not_ready)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3140,6 +3142,13 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     n = SCHEME_VEC_ELS(p)[1];
     if (SCHEME_INT_VAL(n) == pos) {
       n = SCHEME_VEC_ELS(p)[2];
+      if (SCHEME_RPAIRP(n)) {
+        /* This was a letrec-bound identifier that may or may not be ready,
+           but which wasn't replaced with more information. */
+        if (not_ready)
+          *not_ready = SCHEME_TRUEP(SCHEME_CAR(n));
+        break;
+      }
       if (single_use)
         *single_use = SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]);
       if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_unclosed_procedure_type)) {
@@ -3168,7 +3177,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           if (!*single_use)
             single_use = NULL;
         }
-	n = do_optimize_info_lookup(info, pos, j, NULL, single_use);
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -3189,7 +3198,16 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
 Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL);
+}
+
+int scheme_optimize_info_is_ready(Optimize_Info *info, int pos)
+{
+  int closure_offset, single_use, ready = 1;
+  
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready);
+
+  return ready;
 }
 
 Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)

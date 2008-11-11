@@ -2959,7 +2959,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   Optimize_Info *body_info, *rhs_info;
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
-  Scheme_Object *body, *value;
+  Scheme_Object *body, *value, *ready_pairs = NULL;
   int i, j, pos, is_rec, not_simply_let_star = 0;
   int size_before_opt, did_set_value;
   int remove_last_one = 0;
@@ -3009,6 +3009,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     for (j = pre_body->count; j--; ) {
       if (pre_body->flags[j] & SCHEME_WAS_SET_BANGED) {
 	scheme_optimize_mutated(body_info, pos + j);
+      } else if (is_rec) {
+        /* Indicate that it's not yet ready, so it cannot be inlined: */
+        ready_pairs = scheme_make_raw_pair(scheme_false, ready_pairs);
+        scheme_optimize_propagate(body_info, pos+j, ready_pairs, 0);
       }
     }
     pos += pre_body->count;
@@ -3120,6 +3124,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 	     This must be done with respect to body_info, not
 	     rhs_info, because we attach the value to body_info: */
 	  value = scheme_optimize_reverse(body_info, vpos, 1);
+          
+          /* Double-check that the value is ready, because we might be
+             nested in the RHS of a `letrec': */
+          if (value)
+            if (!scheme_optimize_info_is_ready(body_info, SCHEME_LOCAL_POS(value)))
+              value = NULL;
 	}
       }
 
@@ -3239,6 +3249,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 
   if (for_inline) {
     body_info->size = rhs_info->size;
+  }
+
+  /* All letrec-bound variables are now ready.  We could improve the
+     optimizer by making variables available earlier, since letrec is
+     really letrec*, but watch out for the re-optimization loop
+     above. */
+  while (ready_pairs) {
+    SCHEME_CAR(ready_pairs) = scheme_true;
+    ready_pairs = SCHEME_CDR(ready_pairs);
   }
 
   body = scheme_optimize_expr(body, body_info);
