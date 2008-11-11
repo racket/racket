@@ -81,11 +81,6 @@
                           (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
                         url0
                         (build-list 7 (lambda (i) i)))))
-    (test-equal? "cut.ss - current-url-transform"
-                 (let* ([d (mkd (build-path example-servlets "cut.ss"))]
-                        [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
-                   k0)
-                 "#")
     (test-equal? "clear.ss - current-servlet-continuation-expiration-handler, clear-continuation-table!, send/finish, send/forward"
                  (let* ([d (mkd (build-path example-servlets "clear.ss"))]
                         [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))]

@@ -9,9 +9,6 @@
 (define response-generator/c
   (k-url? . -> . response?))
 
-(define url-transform/c
-  (k-url? . -> . k-url?))
-
 (define expiration-handler/c
   (or/c false/c
         (request? . -> . response?)))
@@ -22,6 +19,5 @@
 (provide/contract
  [response-generator/c contract?]
  [k-url? (any/c . -> . boolean?)]
- [url-transform/c contract?]
  [expiration-handler/c contract?]
  [embed/url/c contract?])

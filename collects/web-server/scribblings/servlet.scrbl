@@ -107,12 +107,6 @@ Example: @schemeblock[(lambda (k-url)
                               "Click Me to Invoke the Continuation!"))))]
 }
 
-@defthing[url-transform? contract?]{
-Equivalent to @scheme[(k-url? . -> . k-url?)].
-           
-Example: @scheme[(lambda (k-url) (regexp-replace "^/" k-url "/servlets/"))]
-}
-
 @defthing[expiration-handler/c contract?]{
 Equivalent to @scheme[(or/c false/c (request? . -> . response?))].
            
@@ -496,13 +490,6 @@ functions of interest for the servlet developer.}
  @warning{This is deprecated and will be removed in a future release.}
 }
                   
-@defthing[current-url-transform (parameter/c url-transform?)]{
- Holds a @scheme[url-transform?] function that is called by
- @scheme[send/suspend] to transform the URLs it generates.
- 
- @warning{This is deprecated and will be removed in a future release.}
-}
-
 @defproc[(continuation-url? [u url?])
          (or/c false/c (list/c number? number? number?))]{
  Checks if @scheme[u] is a URL that refers to a continuation, if so
@@ -553,24 +540,6 @@ functions of interest for the servlet developer.}
    (lambda ()
      (/ 1 (get-number (request-number)))))
  ]
-}
-
-@; ------------------------------------------------------------
-@section[#:tag "servlet-url.ss"]{Servlet URLs}
-@(require (for-label web-server/servlet/servlet-url))
-
-@defmodule[web-server/servlet/servlet-url]
-
-@filepath{servlet/servlet-url.ss} provides functions that might be useful to you.
-They may eventually provided by another module.
-
-@defproc[(request->servlet-url (req request?))
-         servlet-url?]{Generates a value to be passed to the next function.}
-
-@defproc[(servlet-url->url-string/no-continuation [su servlet-url?])
-         string?]{
- Returns a URL string without the continuation information in the URL
- that went into @scheme[su].
 }
 
 @; ------------------------------------------------------------

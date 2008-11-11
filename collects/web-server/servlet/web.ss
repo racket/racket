@@ -37,7 +37,6 @@
 ;; ********************************************************************************
 
 (provide/contract
- [current-url-transform (parameter/c url-transform/c)]
  [current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]
  [redirect/get (-> request?)]
  [redirect/get/forget (-> request?)]
@@ -51,11 +50,6 @@
 
 ;; ************************************************************
 ;; EXPORTS
-
-;; current-url-transform : string? -> string?
-(define (default-url-transformer x) x)
-(define current-url-transform
-  (make-parameter default-url-transformer))
 
 ;; current-servlet-continuation-expiration-handler : request -> response
 (define current-servlet-continuation-expiration-handler
@@ -95,10 +89,9 @@
                             instance-id
                             (make-custodian-box (current-custodian) k)
                             expiration-handler))
-       (define k-url ((current-url-transform)
-                      (embed-ids 
-                       (list* instance-id k-embedding)
-                       (request-uri (execution-context-request ctxt)))))
+       (define k-url (embed-ids 
+                      (list* instance-id k-embedding)
+                      (request-uri (execution-context-request ctxt))))
        (send/back (response-generator k-url)))
      servlet-prompt)
     (restore-web-cell-set! wcs)))
