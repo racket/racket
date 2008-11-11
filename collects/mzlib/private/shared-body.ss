@@ -97,14 +97,14 @@
                                  [(mcons . _)
                                   (bad "mcons")]
                                  [(lst e ...)
-                                  (ormap (lambda (x) (free-identifier=? x #'lst))
+                                  (ormap (lambda (x) (same-special-id? #'lst x))
                                          (syntax->list #'(list list*)))
                                   (with-syntax ([(e ...)
                                                  (map (lambda (x) (cons-elem x))
                                                       (syntax->list (syntax (e ...))))])
                                     (syntax/loc expr (lst e ...)))]
                                  [(lst . _)
-                                  (ormap (lambda (x) (free-identifier=? x #'lst))
+                                  (ormap (lambda (x) (same-special-id? #'lst x))
                                          (syntax->list #'(list list*)))
                                   (bad (syntax-e #'lst))]
                                  [(append e0 ... e)
