@@ -14,6 +14,7 @@
              "private/old-rp.ss"
              "private/old-if.ss"
              "private/old-procs.ss"
+             "private/map.ss" ; shadows #%kernel bindings
              "promise.ss"
              (only "private/cond.ss" old-cond)
              "tcp.ss"
@@ -86,6 +87,7 @@
              (rename list list-immutable)
              make-namespace
              #%top-interaction
+             map for-each andmap ormap
              (rename datum #%datum)
              (rename mzscheme-in-stx-module-begin #%module-begin)
              (rename #%module-begin #%plain-module-begin)
