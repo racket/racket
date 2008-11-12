@@ -132,7 +132,8 @@
 
   (define-syntax (first-order->higher-order stx)
     (syntax-case stx ()
-      [(_ id) (fo:first-order->higher-order #'id)]))
+      [(_ id) (identifier? #'id) (fo:first-order->higher-order #'id)]
+      [(_ expr) #'expr]))
 
   (define-syntax (provide-primitive stx)
     (syntax-case stx ()
