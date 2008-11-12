@@ -3,7 +3,7 @@
          web-server/private/connection-manager
          (only-in (planet "ssax.ss" ("lizorkin" "ssax.plt" 2 0))
                   ssax:xml->sxml)
-         web-server/private/request-structs
+         web-server/http
          web-server/private/web-server-structs
          net/url
          mzlib/pretty

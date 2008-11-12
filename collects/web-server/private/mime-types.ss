@@ -3,7 +3,7 @@
          mzlib/plt-match
          mzlib/string)
 (require "util.ss"
-         "response-structs.ss")
+         web-server/http)
 (provide/contract
  [read-mime-types (path-string? . -> . hash?)]
  [make-path->mime-type (path-string? . -> . (path? . -> . bytes?))])

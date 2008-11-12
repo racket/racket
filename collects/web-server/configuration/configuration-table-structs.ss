@@ -1,8 +1,8 @@
 #lang scheme/base
 (require mzlib/contract
          net/url)
-(require "../private/response-structs.ss"
-         "../private/request-structs.ss"
+(require web-server/http/response-structs
+         web-server/http/request-structs
          "../private/util.ss")           
 
 ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))

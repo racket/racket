@@ -245,8 +245,7 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that performs HTTP Basic authentication filtering.}]{
 
-@(require (for-label web-server/private/request-structs
-                     web-server/private/response-structs
+@(require (for-label web-server/http
                      net/url
                      web-server/configuration/responders))
 

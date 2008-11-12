@@ -5,10 +5,8 @@
 (require "dispatch.ss"
          "../private/util.ss"
          "../configuration/responders.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss"
-         "../servlet/basic-auth.ss"
-         "../private/response.ss")  
+         web-server/http
+         web-server/http/response)
 
 (define denied?/c (request? . -> . (or/c false/c string?)))
 (define authorized?/c (string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?)))

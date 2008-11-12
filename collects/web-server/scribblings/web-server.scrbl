@@ -12,6 +12,8 @@ develop Web applications in Scheme.
 
 @include-section["running.scrbl"]
 
+@include-section["http.scrbl"]
+
 @include-section["servlet.scrbl"]
 @include-section["lang.scrbl"]
 

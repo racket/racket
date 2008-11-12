@@ -3,7 +3,7 @@
          mzlib/list
          mzlib/pretty)
 (require "configuration-table-structs.ss"
-         "../servlet/bindings.ss")
+         web-server/http/bindings)
 (define configuration-table-sexpr? list?)
 
 (provide/contract

@@ -1,5 +1,5 @@
 #lang scheme
-(require web-server/private/request-structs
+(require web-server/http
          xml)
 
 ; Combinators

@@ -2,7 +2,7 @@
 (require mzlib/contract
          mzlib/plt-match
          net/url
-         "../private/request-structs.ss"
+         web-server/http
          "../private/util.ss"
          "dispatch.ss")
 (provide/contract

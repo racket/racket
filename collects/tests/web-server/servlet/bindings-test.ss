@@ -2,8 +2,8 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          mzlib/list
          net/url
-         web-server/private/request-structs
-         web-server/servlet/bindings)
+         web-server/http
+         web-server/http/bindings)
 (provide bindings-tests)
 
 (define bs `([foo . 3] [foos . 1] [foos . 2]))

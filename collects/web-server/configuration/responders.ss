@@ -2,8 +2,8 @@
 (require mzlib/contract
          mzlib/list
          net/url)
-(require "../private/response-structs.ss"
-         "../private/request-structs.ss")
+(require web-server/http/response-structs
+         web-server/http/request-structs)
 
 (define (format-stack-trace trace)
   `(pre

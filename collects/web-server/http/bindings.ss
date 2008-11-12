@@ -1,9 +1,9 @@
 #lang scheme/base
 (require mzlib/list
          mzlib/contract
-         mzlib/plt-match)
-(require "../private/util.ss"
-         "../private/request-structs.ss")
+         mzlib/plt-match
+         web-server/private/util
+         web-server/http/request-structs)
 
 (define (request-headers request)
   (map (match-lambda

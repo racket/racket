@@ -3,11 +3,9 @@
 (require "../managers/manager.ss"
          "../private/util.ss"
          "../private/servlet.ss"
-         "../servlet/helpers.ss"
          "../servlet/web-cells.ss"
          "../servlet/servlet-structs.ss"
-         "../private/response-structs.ss"
-         "../private/request-structs.ss")
+         web-server/http)
 
 (provide servlet-prompt)
 

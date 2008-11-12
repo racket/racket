@@ -3,7 +3,7 @@
          (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list
-         web-server/private/request-structs
+         web-server/http
          web-server/private/cache-table
          web-server/private/web-server-structs
          web-server/configuration/namespace

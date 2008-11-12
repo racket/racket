@@ -1,9 +1,8 @@
 #lang scheme/base
 (require mzlib/contract)
 (require "dispatch.ss"
-         "../private/response.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss")
+         web-server/http
+         web-server/http/response)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make ((request? . -> . response?) . -> . dispatcher/c)])

@@ -6,10 +6,8 @@
 
 (require "dispatch.ss"
          "../private/util.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss"
-         "../servlet/helpers.ss"
-         "../private/response.ss"
+         web-server/http
+         web-server/http/response
          "../dispatchers/filesystem-map.ss")
 
 (provide/contract

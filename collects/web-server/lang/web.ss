@@ -2,11 +2,9 @@
 (require net/url
          scheme/contract
          scheme/serialize
-         web-server/private/request-structs
-         web-server/private/response-structs
+         web-server/http
          web-server/private/define-closure
-         web-server/private/servlet
-         "../private/request-structs.ss"
+         web-server/private/servlet         
          "abort-resume.ss"
          "stuff-url.ss"
          "../private/url-param.ss")

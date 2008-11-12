@@ -6,7 +6,7 @@
          mzlib/plt-match
          scheme/contract)
 (require "dispatch.ss"
-         "../private/request-structs.ss")  
+         web-server/http)  
 (define format-req/c (request? . -> . string?))
 
 (provide/contract

@@ -1,10 +1,8 @@
 #lang scheme/base
 (require net/url
          scheme/contract
-         (for-template "web.ss")
          "web.ss"
-         web-server/private/request-structs
-         "../servlet/helpers.ss")
+         web-server/http)
 (provide/contract
  [redirect/get (-> request?)])  
 

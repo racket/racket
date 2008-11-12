@@ -3,10 +3,10 @@
          mzlib/plt-match
          net/url
          mzlib/list
-         net/uri-codec)
-(require "util.ss"
-         "connection-manager.ss"
-         "../private/request-structs.ss")
+         net/uri-codec
+         web-server/private/util
+         web-server/private/connection-manager
+         web-server/http/request-structs)
 
 (provide/contract
  [rename ext:read-request read-request

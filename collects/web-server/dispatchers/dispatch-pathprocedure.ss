@@ -3,9 +3,8 @@
          net/url)
 (require "dispatch.ss"
          "../private/util.ss"
-         "../private/response.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss")
+         web-server/http
+         web-server/http/response)
 (provide/contract
  [interface-version dispatcher-interface-version/c]
  [make (string? (request? . -> . response?) . -> . dispatcher/c)])

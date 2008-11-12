@@ -3,10 +3,10 @@
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          web-server/private/connection-manager
          web-server/private/timer
-         web-server/private/request-structs)
+         web-server/http)
 (provide request-tests)
 
-(require/expose web-server/private/request
+(require/expose web-server/http/request
                 (read-bindings&post-data/raw))
 
 ;; mock connection object for test on post body parsing

@@ -2,7 +2,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))         
          mzlib/list
-         web-server/private/request-structs
+         web-server/http
          "../util.ss")
 (provide test-add-two-numbers
          test-double-counters
