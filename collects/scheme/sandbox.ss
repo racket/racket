@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/port
+         scheme/list
          syntax/moddep
          scheme/gui/dynamic)
 
@@ -129,7 +130,10 @@
                             (and (perm<=? needed (car perm))
                                  (regexp-match (cadr perm) bpath)))
                           (sandbox-path-permissions))
-             (error what "file access denied ~a" (cons path modes))))))
+             (error what "~a access denied for ~a"
+                    (apply string-append
+                           (add-between (map symbol->string modes) "+"))
+                    path)))))
      (lambda args (apply (sandbox-network-guard) args)))))
 
 (define sandbox-security-guard (make-parameter default-sandbox-guard))
