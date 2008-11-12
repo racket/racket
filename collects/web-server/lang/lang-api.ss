@@ -1,18 +1,16 @@
 #lang scheme
 (require net/url
          web-server/http
-         "abort-resume.ss"
-         "web.ss"
-         "web-cells.ss"
-         "web-param.ss"
-         "file-box.ss"
-         "web-extras.ss")
+         web-server/lang/abort-resume
+         web-server/lang/web
+         web-server/lang/web-cells
+         web-server/lang/web-param
+         web-server/lang/file-box)
 (provide (except-out (all-from-out scheme) #%module-begin)
          (all-from-out net/url
                        web-server/http
-                       "abort-resume.ss"
-                       "web.ss"
-                       "web-cells.ss"
-                       "web-param.ss"
-                       "file-box.ss"
-                       "web-extras.ss"))
+                       web-server/lang/abort-resume
+                       web-server/lang/web
+                       web-server/lang/web-cells
+                       web-server/lang/web-param
+                       web-server/lang/file-box))

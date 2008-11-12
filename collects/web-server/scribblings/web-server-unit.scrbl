@@ -1,15 +1,18 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "web-server-unit.ss"]{Web Server Unit}
+@title[#:tag "web-server-unit.ss"
+             #:style 'toc]{Web Server Unit}
 @(require (for-label web-server/web-server-sig)
           (for-label web-server/web-server-unit))
 
 The @web-server offers a unit-based approach to running the server.
 
+@local-table-of-contents[]
+
 @section{Signature}
 
-@defmodule[web-server/web-server-sig]
+@defmodule[web-server/web-server-sig]{
 
 @defsignature[web-server^ ()]{
 
@@ -25,9 +28,11 @@ The @web-server offers a unit-based approach to running the server.
  }
 }
 
+}
+
 @section{Unit}
 
-@defmodule[web-server/web-server-unit]
+@defmodule[web-server/web-server-unit]{
 
 @defthing[web-server@ (unit/c (web-config^ tcp^)
                               (web-server^))]{
@@ -49,4 +54,6 @@ operations:
 
 Using this @scheme[dispatcher?], it loads a dispatching server that provides @scheme[serve]
 and @scheme[serve-ports] functions that operate as expected.
+}
+
 }

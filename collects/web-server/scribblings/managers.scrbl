@@ -18,7 +18,7 @@ pluggable through the manager interface.
 @(require (for-label web-server/managers/manager)
           (for-label web-server/servlet/servlet-structs))
 
-@defmodule[web-server/managers/manager]
+@defmodule[web-server/managers/manager]{
 
 @filepath{managers/manager.ss} defines the manager interface. It is required by
 the users and implementers of managers.
@@ -59,12 +59,14 @@ the users and implementers of managers.
  This exception should be thrown by a manager when a continuation is
  looked up that does not exist.
 }
+                                                       
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "none.ss"]{No Continuations}
 @(require (for-label web-server/managers/none))
 
-@defmodule[web-server/managers/none]
+@defmodule[web-server/managers/none]{
 
 @filepath{managers/none.ss} defines a manager constructor:
 
@@ -81,13 +83,15 @@ the users and implementers of managers.
 }
 
 If you are considering using this manager, also consider using the
-Web Language. (See @secref["lang"].)
+Web Language. (See @secref["stateless-servlets"].)
+
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "timeouts.ss"]{Timeouts}
 @(require (for-label web-server/managers/timeouts))
 
-@defmodule[web-server/managers/timeouts]
+@defmodule[web-server/managers/timeouts]{
 
 @filepath{managers/timeouts.ss} defines a manager constructor:
 
@@ -113,11 +117,13 @@ Web Language. (See @secref["lang"].)
 This manager has been found to be... problematic... in large-scale
 deployments of the @web-server .
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "lru.ss"]{LRU}
 @(require (for-label web-server/managers/lru))
 
-@defmodule[web-server/managers/lru]
+@defmodule[web-server/managers/lru]{
 
 @filepath{managers/lru.ss} defines a manager constructor:
 
@@ -169,3 +175,4 @@ The recommended usage of this manager is codified as the following function:
  stays low, it will still efficiently expire old continuations.
 }
  
+}

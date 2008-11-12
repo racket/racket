@@ -85,3 +85,9 @@
      [(struct binding:form (id kont))
       (deserialize (read (open-input-bytes kont)))]
      [_ #f])))
+
+(provide/contract
+ [redirect/get (-> request?)])  
+
+(define (redirect/get)
+  (send/suspend/url (lambda (k-url) (redirect-to (url->string k-url) temporarily))))

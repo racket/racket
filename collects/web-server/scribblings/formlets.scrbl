@@ -100,7 +100,7 @@ The rest of the manual gives the details of @tech{formlet} usage and extension.
 @section{Syntactic Shorthand}
 
 @(require (for-label web-server/formlets/syntax))
-@defmodule[web-server/formlets/syntax]
+@defmodule[web-server/formlets/syntax]{
 
 Most users will want to use the syntactic shorthand for creating @tech{formlet}s.
 
@@ -116,10 +116,12 @@ Most users will want to use the syntactic shorthand for creating @tech{formlet}s
  @scheme[(#%# _xexpr ...)] renders an @xexpr forest.
 }
 
+}
+
 @section{Functional Usage}
 
 @(require (for-label web-server/formlets/lib))
-@defmodule[web-server/formlets/lib]
+@defmodule[web-server/formlets/lib]{
 
 The syntactic shorthand abbreviates the construction of @deftech{formlet}s with the following library.
 These combinators may be used directly to construct low-level formlets, such as those for new INPUT element
@@ -191,11 +193,13 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
          any/c]{
  Runs the processing stage of @scheme[f] on the bindings in @scheme[r].
 }
+               
+}
 
 @section[#:tag "input-formlets"]{Predefined Formlets}
 
 @(require (for-label web-server/formlets/input))
-@defmodule[web-server/formlets/input]
+@defmodule[web-server/formlets/input]{
 
 There are a few basic @tech{formlet}s provided by this library.
 
@@ -213,10 +217,12 @@ There are a few basic @tech{formlet}s provided by this library.
  Equivalent to @scheme[(cross (pure string->symbol) input-string)].
 }
 
+}
+
 @section{Utilities}
 
 @(require (for-label web-server/formlets/servlet))
-@defmodule[web-server/formlets/servlet]
+@defmodule[web-server/formlets/servlet]{
 
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
@@ -231,4 +237,6 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
                         [f (formlet/c any/c)])
          xexpr?]{
  Like @scheme[send/formlet], but for use with @scheme[send/suspend/dispatch].
+}
+
 }

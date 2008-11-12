@@ -14,7 +14,7 @@ The @web-server implements many HTTP RFCs that are provided by this module.
 @section[#:tag "request-structs.ss"]{Requests}
 @(require (for-label web-server/http/request-structs))
 
-@defmodule[web-server/http/request-structs]
+@defmodule[web-server/http/request-structs]{
 
 @defstruct[header ([field bytes?]
                    [value bytes?])]{
@@ -82,11 +82,13 @@ Here is an example typical of what you will find in many applications:
      (get-number (request-number))]))
 ]
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "bindings.ss"]{Bindings}
 @(require (for-label web-server/http/bindings))
 
-@defmodule[web-server/http/bindings]
+@defmodule[web-server/http/bindings]{
 
 These functions, while convenient, could introduce subtle bugs into your
 application. Examples: that they are case-insensitive could introduce
@@ -142,11 +144,13 @@ Here is an example typical of what you will find in many applications:
     (request-bindings req))))
 ]
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{Responses}
 @(require (for-label web-server/http/response-structs))
 
-@defmodule[web-server/http/response-structs]
+@defmodule[web-server/http/response-structs]{
 
 @defstruct[response/basic
            ([code number?]
@@ -225,12 +229,13 @@ Here is an example typical of what you will find in many applications:
 @warning{If you include a Content-Length header in a response that is inaccurate, there @bold{will be an error} in
 transmission that the server @bold{will not catch}.}
 
-                  
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "redirect.ss"]{Redirect}
 @(require (for-label web-server/http/redirect))
 
-@defmodule[web-server/http/redirect]
+@defmodule[web-server/http/redirect]{
 
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
@@ -254,11 +259,13 @@ transmission that the server @bold{will not catch}.}
 
 @defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 @(require (for-label web-server/http/basic-auth))
 
-@defmodule[web-server/http/basic-auth]
+@defmodule[web-server/http/basic-auth]{
 
 An implementation of HTTP Basic Authentication.
 
@@ -269,4 +276,6 @@ An implementation of HTTP Basic Authentication.
  
  Example:
  @scheme[(extract-user-pass (request-headers/raw req))] might return @scheme[(cons #"aladin" #"open sesame")].
+}
+
 }
