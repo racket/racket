@@ -52,16 +52,18 @@ scheme_init_vector (Scheme_Env *env)
 						    "make-vector", 
 						    1, 2), 
 			     env);
-  scheme_add_global_constant("vector", 
-			     scheme_make_immed_prim(vector, 
-						    "vector", 
-						    0, -1), 
-			     env);
-  scheme_add_global_constant("vector-immutable", 
-			     scheme_make_immed_prim(vector_immutable, 
-						    "vector-immutable", 
-						    0, -1), 
-			     env);
+  
+  p = scheme_make_immed_prim(vector, "vector", 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
+  scheme_add_global_constant("vector", p, env);
+
+  p = scheme_make_immed_prim(vector_immutable, "vector-immutable", 0, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
+  scheme_add_global_constant("vector-immutable", p, env);
   
   p = scheme_make_folding_prim(vector_length, "vector-length", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -76,7 +78,7 @@ scheme_init_vector (Scheme_Env *env)
   p = scheme_make_immed_prim(scheme_checked_vector_set,
 			     "vector-set!", 
 			     3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("vector-set!", p, env);
 
   scheme_add_global_constant("vector->list", 

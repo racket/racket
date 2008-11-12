@@ -99,10 +99,10 @@
 		   (test v name ((eval `(lambda (x y z) (,op x y z))) (get-arg1) arg2 arg3))
 		   (check-effect)))]
 	 [tri-exact (lambda (v op get-arg1 arg2 arg3 check-effect 3rd-all-ok?)
-		      (check-error-message op (eval `(lambda (x) (,op x ,arg2 ,arg3))))
-		      (check-error-message op (eval `(lambda (x) (,op (,get-arg1) x ,arg3))))
-		      (unless 3rd-all-ok?
-			(check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
+                      (check-error-message op (eval `(lambda (x) (,op x ,arg2 ,arg3))))
+                      (check-error-message op (eval `(lambda (x) (,op (,get-arg1) x ,arg3))))
+                      (unless 3rd-all-ok?
+                        (check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
 		      (tri0 v op get-arg1 arg2 arg3 check-effect))])
 
     (un #f 'null? 0)
@@ -341,6 +341,13 @@
     (bin-exact 99 'bytes-ref #"Abc\xF7" 2)
     (bin-exact #xF7 'bytes-ref #"Abc\xF7" 3)
 
+    (un0 #(1) 'vector 1)
+    (un0 #(1) 'vector-immutable 1)
+    (bin0 #(1 2) 'vector 1 2)
+    (bin0 #(1 2) 'vector-immutable 1 2)
+    (tri0 #(1 2 3) 'vector (lambda () 1) 2 3 void)
+    (tri0 #(1 2 3) 'vector-immutable (lambda () 1) 2 3 void)
+
     (let ([test-setter
 	   (lambda (make-X def-val set-val set-name set ref)
 	     (let ([v (make-X 3 def-val)])
@@ -473,6 +480,7 @@
 	   '(let* ([x (cons 1 1)]) (cons x x)))
 (test-comp '(let* ([x 1][y (add1 x)]) (+ y x))
 	   '3)
+#;
 (test-comp '(letrec ([x (cons 1 1)][y x]) (cons x y))
 	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 

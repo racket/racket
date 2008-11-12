@@ -412,7 +412,7 @@ scheme_init_string (Scheme_Env *env)
 
 
   p = scheme_make_immed_prim(scheme_checked_string_set, "string-set!", 3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("string-set!", p, env);
 
   scheme_add_global_constant("string=?",
@@ -656,7 +656,7 @@ scheme_init_string (Scheme_Env *env)
 			     env);
 
   p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("bytes?", p, env);
 
   scheme_add_global_constant("make-bytes",
@@ -680,7 +680,7 @@ scheme_init_string (Scheme_Env *env)
   scheme_add_global_constant("bytes-ref", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_set, "bytes-set!", 3, 3);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_MIN_NARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("bytes-set!", p, env);
 
   scheme_add_global_constant("bytes=?",
