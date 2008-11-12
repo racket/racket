@@ -347,6 +347,10 @@
     (bin0 #(1 2) 'vector-immutable 1 2)
     (tri0 #(1 2 3) 'vector (lambda () 1) 2 3 void)
     (tri0 #(1 2 3) 'vector-immutable (lambda () 1) 2 3 void)
+    (un0 '(1) 'list 1)
+    (bin0 '(1 2) 'list 1 2)
+    (tri0 '(1 2 3) 'list (lambda () 1) 2 3 void)
+    (un0 '#&1 'box 1)
 
     (let ([test-setter
 	   (lambda (make-X def-val set-val set-name set ref)

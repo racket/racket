@@ -2457,6 +2457,9 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
     info->single_result = -info->single_result;
   }
 
+  if (!app->num_args && SAME_OBJ(app->args[0], scheme_list_proc))
+    return scheme_null;
+
   return (Scheme_Object *)app;
 }
 

@@ -27,6 +27,7 @@
 
 /* globals */
 Scheme_Object scheme_null[1];
+Scheme_Object *scheme_list_proc;
 
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
@@ -195,11 +196,15 @@ scheme_init_list (Scheme_Env *env)
 						     "list?",
 						     1, 1),
 			      env);
-  scheme_add_global_constant ("list",
-			      scheme_make_immed_prim(list_prim,
-						     "list",
-						     0, -1),
-			      env);
+
+  REGISTER_SO(scheme_list_proc);
+  p = scheme_make_immed_prim(list_prim, "list", 0, -1);
+  scheme_list_proc = p;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
+  scheme_add_global_constant ("list", p, env);
+
   scheme_add_global_constant ("list*",
 			      scheme_make_immed_prim(list_star_prim,
 						     "list*",
@@ -404,11 +409,10 @@ scheme_init_list (Scheme_Env *env)
                                                        1, 1, 1),
 			      env);
 
-  scheme_add_global_constant(BOX,
-			     scheme_make_immed_prim(box,
-						    BOX,
-						    1, 1),
-			     env);
+  p = scheme_make_immed_prim(box, BOX, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  scheme_add_global_constant(BOX, p, env);
+
   scheme_add_global_constant("box-immutable",
 			     scheme_make_immed_prim(immutable_box,
 						    "box-immutable",
