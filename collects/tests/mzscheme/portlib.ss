@@ -25,10 +25,10 @@
   (test (string-length x) 'long-string (bytes-length (port->bytes (p)))))
 
 (let ([p (open-output-bytes)])
-  (display-list '(1 2 3) p)
+  (display-lines '(1 2 3) p)
   (test "1\n2\n3\n" get-output-string p))
 (let ([p (open-output-bytes)])
-  (display-list '(1 2 3) p #:separator #"!!")
+  (display-lines '(1 2 3) p #:separator #"!!")
   (test "1!!2!!3!!" get-output-string p))
 
 ;; ----------------------------------------

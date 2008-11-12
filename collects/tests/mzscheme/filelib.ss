@@ -9,7 +9,7 @@
 
 (define tmp-name "tmp0-filelib")
 (when (file-exists? tmp-name) (delete-file tmp-name))
-(display-list-to-file '("a" "b" "c") tmp-name #:separator #"\r\n" #:mode 'binary)
+(display-lines-to-file '("a" "b" "c") tmp-name #:separator #"\r\n" #:mode 'binary)
 (test "a\r\nb\r\nc\r\n" file->string tmp-name #:mode 'binary)
 (test #"a\r\nb\r\nc\r\n" file->bytes tmp-name)
 (test '("a" "b" "c") file->lines tmp-name)
@@ -36,9 +36,9 @@
 (err/rt-chk-test (file->string "x" #:mode 'other))
 (err/rt-chk-test (file->bytes "x" #:mode 'other))
 (err/rt-chk-test (file->value "x" #:mode 'other))
-(err/rt-chk-test (display-list-to-file 10 "x"))
-(err/rt-chk-test (display-list-to-file '(10) "x" #:mode 'other))
-(err/rt-chk-test (display-list-to-file '(10) "x" #:exists 'other))
+(err/rt-chk-test (display-lines-to-file 10 "x"))
+(err/rt-chk-test (display-lines-to-file '(10) "x" #:mode 'other))
+(err/rt-chk-test (display-lines-to-file '(10) "x" #:exists 'other))
 (err/rt-chk-test (file->lines "x" #:line-mode 'junk))
 (err/rt-chk-test (file->lines "x" #:mode 'other))
 (err/rt-chk-test (file->bytes-lines "x" #:line-mode 'junk))
@@ -47,9 +47,9 @@
 (err/rt-chk-test (display-to-file "y" "x" #:mode 'other))
 (err/rt-chk-test (write-to-file #"y" "x" #:exists 'other))
 (err/rt-chk-test (write-to-file #"y" "x" #:mode 'other))
-(err/rt-chk-test (display-list-to-file 'y "x"))
-(err/rt-chk-test (display-list-to-file '(y) "x" #:exists 'other))
-(err/rt-chk-test (display-list-to-file '(y) "x" #:mode 'other))
+(err/rt-chk-test (display-lines-to-file 'y "x"))
+(err/rt-chk-test (display-lines-to-file '(y) "x" #:exists 'other))
+(err/rt-chk-test (display-lines-to-file '(y) "x" #:mode 'other))
 
 ;; ----------------------------------------
 

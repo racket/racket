@@ -19,7 +19,7 @@
          file->bytes-lines
          display-to-file
          write-to-file
-         display-list-to-file)
+         display-lines-to-file)
 
 (require "private/portlines.ss")
 
@@ -420,17 +420,17 @@
   (->file 'display-to-file f mode exists (lambda (p) (display s p))))
 
 (define (write-to-file s f 
-                      #:mode [mode 'binary]
-                      #:exists [exists 'error])
+                       #:mode [mode 'binary]
+                       #:exists [exists 'error])
   (->file 'write-to-file f mode exists (lambda (p) (write s p))))
 
-(define (display-list-to-file l f 
-                    #:mode [mode 'binary]
-                    #:exists [exists 'error]
-                    #:separator [newline #"\n"])
+(define (display-lines-to-file l f 
+                               #:mode [mode 'binary]
+                               #:exists [exists 'error]
+                               #:separator [newline #"\n"])
   (unless (list? l)
-    (raise-type-error 'display-list-to-file "list" l))
-  (->file 'display-list-to-file f mode exists
+    (raise-type-error 'display-lines-to-file "list" l))
+  (->file 'display-lines-to-file f mode exists
           (lambda (p)
             (do-lines->port l p newline))))
 

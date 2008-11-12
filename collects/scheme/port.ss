@@ -8,7 +8,7 @@
            port->bytes
            port->lines
            port->bytes-lines
-           display-list)
+           display-lines)
 
   (define (port->string-port who p)
     (unless (input-port? p)
@@ -29,9 +29,9 @@
   (define (port->bytes-lines [p (current-input-port)] #:line-mode [mode 'any])
     (port->x-lines 'port->bytes-lines p mode read-bytes-line))
 
-  (define (display-list l [p (current-output-port)] #:separator [newline #"\n"])
+  (define (display-lines l [p (current-output-port)] #:separator [newline #"\n"])
     (unless (list? l)
-      (raise-type-error 'display-list "list" l))
+      (raise-type-error 'display-lines "list" l))
     (unless (output-port? p)
-      (raise-type-error 'display-list "output-port" p))
+      (raise-type-error 'display-lines "output-port" p))
     (do-lines->port l p newline)))

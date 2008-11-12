@@ -34,9 +34,9 @@ Read all characters from @scheme[in], breaking them into lines. The
 Like @scheme[port->lines], but reading bytes and collecting them into
 lines like @scheme[read-bytes-line].}
 
-@defproc[(display-list [lst list?]
-                       [out output-port? (current-output-port)]
-                       [#:separator separator any/c #"\n"])
+@defproc[(display-lines [lst list?]
+                        [out output-port? (current-output-port)]
+                        [#:separator separator any/c #"\n"])
          void?]{
 
 Use @scheme[display] to each each element of @scheme[lst] to @scheme[out], adding

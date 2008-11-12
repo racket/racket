@@ -599,8 +599,8 @@ Uses @scheme[display] to print @scheme[v] to @scheme[path]. The @scheme[mode-fla
 
 Like @scheme[display-to-file], but using @scheme[write] instead of @scheme[display].}
 
-@defproc[(display-list-to-file [lst list?]
-                       [path path-string?]
+@defproc[(display-lines-to-file [lst list?]
+                                [path path-string?]
                        [#:separator separator any/c #"\n"]
                        [#:mode mode-flag (or/c 'binary 'text) 'binary]
                        [#:exists exists-flag (or/c 'error 'append 'update
