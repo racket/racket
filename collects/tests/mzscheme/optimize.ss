@@ -480,7 +480,6 @@
 	   '(let* ([x (cons 1 1)]) (cons x x)))
 (test-comp '(let* ([x 1][y (add1 x)]) (+ y x))
 	   '3)
-#;
 (test-comp '(letrec ([x (cons 1 1)][y x]) (cons x y))
 	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 

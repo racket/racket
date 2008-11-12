@@ -2959,7 +2959,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   Optimize_Info *body_info, *rhs_info;
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
-  Scheme_Object *body, *value, *ready_pairs = NULL;
+  Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
   int i, j, pos, is_rec, not_simply_let_star = 0;
   int size_before_opt, did_set_value;
   int remove_last_one = 0;
@@ -3011,8 +3011,14 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 	scheme_optimize_mutated(body_info, pos + j);
       } else if (is_rec) {
         /* Indicate that it's not yet ready, so it cannot be inlined: */
-        ready_pairs = scheme_make_raw_pair(scheme_false, ready_pairs);
-        scheme_optimize_propagate(body_info, pos+j, ready_pairs, 0);
+        Scheme_Object *rp;
+        rp = scheme_make_raw_pair(scheme_false, NULL);
+        if (rp_last)
+          SCHEME_CDR(rp_last) = rp;
+        else
+          ready_pairs = rp;
+        rp_last = rp;
+        scheme_optimize_propagate(body_info, pos+j, rp_last, 0);
       }
     }
     pos += pre_body->count;
@@ -3023,6 +3029,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   body = head->body;
   pre_body = NULL;
   retry_start = NULL;
+  ready_pairs_start = NULL;
   did_set_value = 0;
   pos = 0;
   for (i = head->num_clauses; i--; ) {
@@ -3144,8 +3151,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
     }
 
-    if (!retry_start)
+    if (!retry_start) {
       retry_start = pre_body;
+      ready_pairs_start = ready_pairs;
+    }
 
     /* Re-optimize to inline letrec bindings? */
     if (is_rec
@@ -3160,6 +3169,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
            but then assume not for all if any turn out not (i.e., approximate fix point). */
         int flags;
         Scheme_Object *clones, *cl, *cl_first;
+        /* Reset "ready" flags: */
+        for (rp_last = ready_pairs_start; !SAME_OBJ(rp_last, ready_pairs); rp_last = SCHEME_CDR(rp_last)) {
+          SCHEME_CAR(rp_last) = scheme_false;
+        }
         /* Set-flags loop: */
         clones = make_clones(retry_start, pre_body, body_info);
         (void)set_code_flags(retry_start, pre_body, clones,
@@ -3214,6 +3227,17 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 	  }
 	  if (clv == pre_body)
 	    break;
+          {
+            /* Since letrec is really letrec*, the variables 
+               for this binding are now ready: */
+            int i;
+            for (i = clv->count; i--; ) {
+              if (!(clv->flags[i] & SCHEME_WAS_SET_BANGED)) {
+                SCHEME_CAR(ready_pairs_start) = scheme_true;
+                ready_pairs_start = SCHEME_CDR(ready_pairs_start);
+              }
+            }
+          }
 	  clv = (Scheme_Compiled_Let_Value *)clv->body;
 	}
         /* Check flags loop: */
@@ -3225,7 +3249,20 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
                              1);
       }
       retry_start = NULL;
+      ready_pairs_start = NULL;
       did_set_value = 0;
+    }
+
+    if (is_rec) {
+      /* Since letrec is really letrec*, the variables 
+         for this binding are now ready: */
+      int i;
+      for (i = pre_body->count; i--; ) {
+        if (!(pre_body->flags[i] & SCHEME_WAS_SET_BANGED)) {
+          SCHEME_CAR(ready_pairs) = scheme_true;
+          ready_pairs = SCHEME_CDR(ready_pairs);
+        }
+      }
     }
 
     if (remove_last_one) {
@@ -3249,15 +3286,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 
   if (for_inline) {
     body_info->size = rhs_info->size;
-  }
-
-  /* All letrec-bound variables are now ready.  We could improve the
-     optimizer by making variables available earlier, since letrec is
-     really letrec*, but watch out for the re-optimization loop
-     above. */
-  while (ready_pairs) {
-    SCHEME_CAR(ready_pairs) = scheme_true;
-    ready_pairs = SCHEME_CDR(ready_pairs);
   }
 
   body = scheme_optimize_expr(body, body_info);
