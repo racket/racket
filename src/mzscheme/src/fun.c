@@ -5602,7 +5602,7 @@ call_with_continuation_barrier (int argc, Scheme_Object *argv[])
 {
   scheme_check_proc_arity("call-with-continuation-barrier", 0, 0, argc, argv);
 
-  return scheme_apply(argv[0], 0, NULL);
+  return scheme_apply_multi(argv[0], 0, NULL);
 }
 
 Scheme_Prompt *scheme_get_barrier_prompt(Scheme_Meta_Continuation **_meta_cont,
