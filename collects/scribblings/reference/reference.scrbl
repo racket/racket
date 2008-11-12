@@ -33,7 +33,8 @@ language.
                                scheme/private/stxcase-scheme
                                scheme/private/letstx-scheme
                                scheme/private/define
-                               scheme/private/stx)]{
+                               scheme/private/stx
+                               scheme/private/map)]{
 
 Unless otherwise noted, the bindings defined in this manual are
 exported by the @schememodname[scheme/base] and @schememodname[scheme]

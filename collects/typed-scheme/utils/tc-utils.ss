@@ -30,6 +30,17 @@
 
 (define check-unreachable-code? (make-parameter #f))
 
+(define warn-unreachable? (make-parameter #t))
+
+(define (warn-unreachable e)
+  (let ([l (current-logger)])
+    (when (and (warn-unreachable?)
+               (log-level? l 'warning)
+               (eq? (syntax-source-module e) (syntax-source-module (orig-module-stx)))
+	       (syntax-source-module e))
+      (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~e" (syntax->datum (locate-stx e)))
+                   e))))
+
 (define (locate-stx stx)
   (define omodule (orig-module-stx))
   (define emodule (expanded-module-stx))

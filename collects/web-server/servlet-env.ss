@@ -17,6 +17,7 @@
          web-server/dispatchers/dispatch
          web-server/private/mime-types
          web-server/configuration/configuration-table
+         web-server/servlet/setup
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)         
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
@@ -42,20 +43,22 @@
 (provide/contract
  [serve/servlet (((request? . -> . response?))
                  (#:launch-browser? boolean?
-                  #:quit? boolean?
-                  #:listen-ip string?
-                  #:port number?
-                  #:manager manager?
-                  #:servlet-namespace (listof module-path?)
-                  #:server-root-path path?
-                  #:extra-files-path path?
-                  #:servlets-root path?
-                  #:file-not-found-path path?
-                  #:mime-types-path path?
-                  #:servlet-path path?)
+                                    #:quit? boolean?
+                                    #:listen-ip string?
+                                    #:port number?
+                                    #:manager manager?
+                                    #:servlet-namespace (listof module-path?)
+                                    #:server-root-path path?
+                                    #:stateless? boolean?
+                                    #:extra-files-paths (listof path?)
+                                    #:servlets-root path?
+                                    #:file-not-found-path path?
+                                    #:mime-types-path path?
+                                    #:servlet-path string?
+                                    #:servlet-regexp regexp?)
                  . ->* .
                  void)])
-(define (serve/servlet new-servlet 
+(define (serve/servlet start 
                        #:launch-browser?
                        [launch-browser? #t]
                        #:quit?
@@ -72,79 +75,95 @@
                          (lambda (request)
                            `(html (head (title "Page Has Expired."))
                                   (body (p "Sorry, this page has expired. Please go back."))))
-                         (* 64 1024 1024))]
+                         (* 64 1024 1024))]          
+                       
+                       #:servlet-path
+                       [servlet-path "/servlets/standalone.ss"]
+                       #:servlet-regexp
+                       [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
+                       #:stateless? 
+                       [stateless? #f]
                        
                        #:servlet-namespace
                        [servlet-namespace empty]
                        #:server-root-path 
                        [server-root-path (directory-part default-configuration-table-path)]
-                       #:extra-files-path 
-                       [extra-files-path (build-path server-root-path "htdocs")]
+                       #:extra-files-paths 
+                       [extra-files-paths (list (build-path server-root-path "htdocs"))]
                        #:servlets-root
-                       [servlets-root (build-path server-root-path ".")]
+                       [servlets-root (build-path server-root-path "htdocs")]
+                       #:servlet-current-directory
+                       [servlet-current-directory servlets-root]
                        #:file-not-found-path
                        [file-not-found-path (build-path server-root-path "conf" "not-found.html")]
                        #:mime-types-path
-                       [mime-types-path (build-path server-root-path "mime.types")]
-                       #:servlet-path
-                       [servlet-path "servlets/standalone.ss"])
-  (let*-values
-      ([(standalone-url)
-        (format "http://localhost:~a/~a" the-port servlet-path)]
-       [(make-servlet-namespace) (make-make-servlet-namespace
-                                  #:to-be-copied-module-specs servlet-namespace)]
-       [(the-scripts) (make-cache-table)]
-       [(sema) (make-semaphore 0)]
-       [(dispatcher)
-        (sequencer:make
-         (if quit?
-             (filter:make 
-              #rx"^/quit$"
-              (quit-server sema))
-             (lambda _ (next-dispatcher)))
-         (filter:make
-          #rx"\\.ss"
-          (let-values ([(clear-cache! servlet-dispatch)
-                        (servlets:make (box the-scripts)
-                                       #:make-servlet-namespace make-servlet-namespace
-                                       #:url->path
-                                       (lambda _
-                                         (values (build-path servlets-root servlet-path)
-                                                 empty)))])
-            servlet-dispatch))
-         (files:make 
-          #:url->path (fsmap:make-url->path
-                       extra-files-path)
-          #:path->mime-type (make-path->mime-type mime-types-path)
-          #:indices (list "index.html" "index.htm"))         
-         (files:make 
-          #:url->path (fsmap:make-url->path 
-                       (build-path server-root-path "htdocs"))
-          #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
-          #:indices (list "index.html" "index.htm"))
-         (lift:make (gen-file-not-found-responder file-not-found-path)))]
-       [(shutdown-server)
-        (serve #:dispatch dispatcher
-               #:listen-ip listen-ip
-               #:port the-port)])
-    (cache-table-lookup! the-scripts
-                         (string->symbol
-                          (path->string
-                           (build-path servlets-root servlet-path)))
-                         (lambda ()
-                           (make-servlet (make-custodian)
-                                         (make-servlet-namespace)
-                                         manager
-                                         new-servlet)))
-    (when launch-browser?
-      ((send-url) standalone-url #t))
-    (printf "Your Web application is running at ~a.~n" standalone-url)
-    (printf "Click 'Stop' at any time to terminate the Web Server.~n")
-    (with-handlers
-        ([exn:break?
-          (lambda (exn)
-            (printf "~nWeb Server stopped.~n")
-            (shutdown-server))])
-      (semaphore-wait/enable-break sema))
-    ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
-    (shutdown-server)))
+                       [mime-types-path (build-path server-root-path "mime.types")])
+  (define standalone-url
+    (format "http://localhost:~a~a" the-port servlet-path))
+  (define make-servlet-namespace
+    (make-make-servlet-namespace
+     #:to-be-copied-module-specs servlet-namespace))
+  (define sema (make-semaphore 0))
+  (define servlet-box (box #f))
+  (define dispatcher
+    (sequencer:make
+     (if quit?
+         (filter:make 
+          #rx"^/quit$"
+          (quit-server sema))
+         (lambda _ (next-dispatcher)))
+     (filter:make
+      servlet-regexp
+      (servlets:make
+       (lambda (url)
+         (or (unbox servlet-box)
+             (let ([servlet
+                    (parameterize ([current-custodian (make-custodian)]
+                                   [current-namespace
+                                    (make-servlet-namespace
+                                     #:additional-specs
+                                     default-module-specs)])
+                      (if stateless?
+                          (make-stateless.servlet servlet-current-directory start)
+                          (make-v2.servlet servlet-current-directory manager start)))])
+               (set-box! servlet-box servlet)
+               servlet)))))
+     (let-values ([(clear-cache! url->servlet)
+                   (servlets:make-cached-url->servlet
+                    (fsmap:filter-url->path
+                     #rx"\\.(ss|scm)$"
+                     (fsmap:make-url->valid-path
+                      (fsmap:make-url->path servlets-root)))
+                    (make-default-path->servlet
+                     #:make-servlet-namespace make-servlet-namespace))])
+       (servlets:make url->servlet))
+     (apply sequencer:make
+            (map (lambda (extra-files-path)
+                   (files:make 
+                    #:url->path (fsmap:make-url->path
+                                 extra-files-path)
+                    #:path->mime-type (make-path->mime-type mime-types-path)
+                    #:indices (list "index.html" "index.htm")))
+                 extra-files-paths))
+     (files:make 
+      #:url->path (fsmap:make-url->path 
+                   (build-path server-root-path "htdocs"))
+      #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
+      #:indices (list "index.html" "index.htm"))
+     (lift:make (gen-file-not-found-responder file-not-found-path))))
+  (define shutdown-server
+    (serve #:dispatch dispatcher
+           #:listen-ip listen-ip
+           #:port the-port))
+  (when launch-browser?
+    ((send-url) standalone-url #t))
+  (printf "Your Web application is running at ~a.~n" standalone-url)
+  (printf "Click 'Stop' at any time to terminate the Web Server.~n")
+  (with-handlers
+      ([exn:break?
+        (lambda (exn)
+          (printf "~nWeb Server stopped.~n")
+          (shutdown-server))])
+    (semaphore-wait/enable-break sema))
+  ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
+  (shutdown-server))

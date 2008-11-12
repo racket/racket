@@ -2156,7 +2156,9 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       pt->src_modidx = im->me->src_modidx;
     scheme_extend_module_rename_with_shared(rn, idx, pt, 
                                             marshal_phase_index, 
-                                            scheme_make_integer(0), 1);
+                                            scheme_make_integer(0), 
+                                            scheme_null,
+                                            1);
   }
 
   mark_src = scheme_rename_to_stx(rn);
@@ -3917,7 +3919,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
       return;
     }
   } else if (env->phase < base_phase) {
-    if (env->phase == -1) {
+    if (env->phase == base_phase - 1) {
       expstart_module(menv, env, restart, eval_exp, eval_run, base_phase);
     }
     show_done("nrn-", menv, eval_exp, eval_run);
@@ -6278,7 +6280,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  /* may be a single shadowed exclusion, now bound to exclude_hint... */
 	  n = SCHEME_CAR(n);
 	  if (SCHEME_STXP(n))
-	    n = scheme_tl_id_sym(env->genv, n, NULL, 0, NULL, NULL);
+	    n = scheme_tl_id_sym(env->genv, n, NULL, -1, NULL, NULL);
 	  n = scheme_hash_get(required, n);
 	  if (n && !SAME_OBJ(SCHEME_VEC_ELS(n)[1], kernel_modidx)) {
 	    /* there is a single shadowed exclusion. */
@@ -7033,7 +7035,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
           prnt_name = name;
           if (SCHEME_STXP(name)) {
             if (genv)
-              name = scheme_tl_id_sym(genv, name, NULL, 0, phase, NULL);
+              name = scheme_tl_id_sym(genv, name, NULL, -1, phase, NULL);
             else
               name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
           }
@@ -7106,7 +7108,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
             if (genv
                 && (SAME_OBJ(phase, scheme_make_integer(0))
                     || SAME_OBJ(phase, scheme_make_integer(1))))
-              name = scheme_tl_id_sym(genv, name, NULL, 0, phase, NULL);
+              name = scheme_tl_id_sym(genv, name, NULL, -1, phase, NULL);
             else {
               name = SCHEME_STX_VAL(name); /* shouldn't get here; no `define-for-label' */
             }
@@ -7869,7 +7871,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 {
   int j, var_count;
   Scheme_Object *orig_idx = idx, *to_phase;
-  Scheme_Object **exs, **exsns, **exss;
+  Scheme_Object **exs, **exsns, **exss, *context_marks = scheme_null;
   char *exets;
   int is_kern, has_context, save_marshal_info = 0;
   Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *ename = orig_ename;
@@ -7879,9 +7881,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   if (mark_src) {
     /* Check whether there's context for this import (which
        leads to generated local names). */
-    Scheme_Object *l;
-    l = scheme_stx_extract_marks(mark_src);
-    has_context = !SCHEME_NULLP(l);
+    context_marks = scheme_stx_extract_marks(mark_src);
+    has_context = !SCHEME_NULLP(context_marks);
     if (has_context) {
       if (all_simple)
 	*all_simple = 0;
@@ -7889,7 +7890,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   } else
     has_context = 0; /* computed later */
 
-  if (iname || ename || onlys || for_unmarshal || unpack_kern || has_context)
+  if (iname || ename || onlys || for_unmarshal || unpack_kern)
     can_save_marshal = 0;
 
   if (onlys)
@@ -7964,7 +7965,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         /* Simple "import everything" whose mappings can be shared via the exporting module: */
         if (!pt->src_modidx)
           pt->src_modidx = me->src_modidx;
-        scheme_extend_module_rename_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, 1);
+        scheme_extend_module_rename_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, context_marks, 1);
         skip_rename = 1;
       } else
         skip_rename = 0;
@@ -8040,7 +8041,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
             /* The `require' expression has a set of marks in its
                context, which means that we need to generate a name. */
             iname = scheme_datum_to_syntax(iname, scheme_false, mark_src, 0, 0);
-            iname = scheme_tl_id_sym(orig_env, iname, scheme_false, 2, to_phase, NULL);
+            iname = scheme_tl_id_sym(orig_env, iname, scheme_false, skip_rename ? 3 : 2, to_phase, NULL);
             if (all_simple)
               *all_simple = 0;
           }
@@ -8154,7 +8155,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
 				       Scheme_Hash_Table *export_registry)
 {
-  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name, *pt_phase, *src_phase_index;
+  Scheme_Object *orig_idx, *exns, *prefix, *idx, *name, *pt_phase, *src_phase_index, *marks;
   Scheme_Module_Exports *me;
   Scheme_Env *env;
   int share_all;
@@ -8164,6 +8165,13 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
   info = SCHEME_CDR(info);
   pt_phase = SCHEME_CAR(info);
   info = SCHEME_CDR(info);
+
+  if (SCHEME_PAIRP(info) && SCHEME_PAIRP(SCHEME_CAR(info))) {
+    marks = SCHEME_CAR(info);
+    info = SCHEME_CDR(info);
+  } else
+    marks = scheme_null;
+
   if (SCHEME_INTP(info)
       || SCHEME_FALSEP(info)) {
     share_all = 1;
@@ -8224,9 +8232,12 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
     if (pt) {
       if (!pt->src_modidx)
         pt->src_modidx = me->src_modidx;
-      scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, 0);
+      scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, marks, 0);
     }
   } else {
+    if (!SCHEME_NULLP(marks))
+      scheme_signal_error("internal error: unexpected marks");
+
     add_single_require(me, pt_phase, src_phase_index, orig_idx, NULL,
                        NULL, NULL, rn,
                        exns, NULL, prefix, NULL, NULL,

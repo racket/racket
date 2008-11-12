@@ -8,7 +8,7 @@
          (schemeunit))
 
 (require (rename-in (private type-effect-convenience) [-> t:->])
-         (except-in (private base-types) Un)
+         (private base-types)
          (for-template (private base-types)))
 
 (provide parse-type-tests)

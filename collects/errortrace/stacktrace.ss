@@ -208,7 +208,7 @@
                          (let loop ([bodys bodys])
                            (if (null? (cdr bodys))
                                (list (cons (car bodys) prof-expr))
-                               (cons (cons (car bodys) #'(void))
+                               (cons (cons (car bodys) #'(#%plain-app void))
                                      (loop (cdr bodys))))))
                        ;; Map 1-to-1:
                        (map cons bodys bodyl)))))

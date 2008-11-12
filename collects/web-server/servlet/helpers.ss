@@ -32,9 +32,6 @@
                                            (pre ,(exn->string exn)))))))])
     (thunk)))
 
-; XXX contract
-(provide
- with-errors-to-browser)
 (provide/contract
  [redirect-to
   (->* (string?) (redirection-status? #:headers (listof header?))
@@ -42,4 +39,9 @@
  [redirection-status? (any/c . -> . boolean?)]
  [permanently redirection-status?]
  [temporarily redirection-status?]
- [see-other redirection-status?])
+ [see-other redirection-status?]
+ [with-errors-to-browser
+  ((response? . -> . request?)
+   (-> any)
+   . -> .
+   any)])

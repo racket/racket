@@ -106,6 +106,7 @@ making some of the test cases much easier to manage.
           0
           (- (image-width img) (pinhole-x img) 1) 
           (- (image-height img) (pinhole-y img) 1)))
+
 (check-expect (chop-whiskers (rectangle 5 5 'solid 'black))
               (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
 (check-expect (chop-whiskers (rectangle 6 6 'solid 'black))
@@ -182,6 +183,7 @@ making some of the test cases much easier to manage.
   (local [(define rightmost-posn 
             (make-posn (- board-size 1) (- board-size 2)))]
     (+ (cell-center-x rightmost-posn) circle-radius)))
+
 (check-expect (world-width 3) 150)
 
 ;; world-height : number -> number
@@ -193,7 +195,7 @@ making some of the test cases much easier to manage.
 (check-expect (world-height 3) 116.208)
 
 
-;; cell-center : cell -> number
+;; cell-center-x : posn -> number
 (define (cell-center-x p)
   (local [(define x (posn-x p))
           (define y (posn-y p))]
@@ -212,7 +214,7 @@ making some of the test cases much easier to manage.
 (check-expect (cell-center-x (make-posn 1 1))
               (+ (* 3 circle-spacing) circle-radius))
 
-;; cell-center-y : cell -> number
+;; cell-center-y : posn -> number
 (define (cell-center-y p)
   (local [(define y (posn-y p))]
     (+ circle-radius
@@ -250,7 +252,7 @@ making some of the test cases much easier to manage.
 ;;  (listof dist-cells)
 
 ;; a dist-cell is
-;;  - (make-dist-cell posn number)
+;;  - (make-dist-cell posn (number or '∞))
 (define-struct dist-cell (p n))
 
 ;; build-table/fast : world -> distance-map
@@ -294,7 +296,7 @@ making some of the test cases much easier to manage.
                   '()
                   (world-size world)))
 
-;; build-distance : board posn table (listof posn) number -> distance-map
+;; build-distance : board posn distance-map (listof posn) number -> distance-map
 (define (build-distance board p t visited board-size)
   (cond
     [(cell-blocked? (lookup-board board p)) 
@@ -440,7 +442,7 @@ making some of the test cases much easier to manage.
 (check-error (lookup-board '() (make-posn 0 0))
              "lookup-board: did not find posn")
 
-;; add-to-table : posn number table -> table
+;; add-to-table : posn (number or '∞) distance-map -> distance-map
 (define (add-to-table p n t) 
   (cond
     [(empty? t) (list (make-dist-cell p n))]
@@ -468,7 +470,7 @@ making some of the test cases much easier to manage.
               (list (make-dist-cell (make-posn 2 2) 2)
                     (make-dist-cell (make-posn 1 2) 3)))
 
-;; in-table : table posn -> boolean
+;; in-table : distance-map posn -> boolean
 (define (in-table? t p) (number? (lookup-in-table t p)))
 
 (check-expect (in-table? empty (make-posn 1 2)) false)
@@ -479,7 +481,7 @@ making some of the test cases much easier to manage.
                          (make-posn 1 2))
               false)
 
-;; lookup-in-table : table posn -> number or '∞
+;; lookup-in-table : distance-map posn -> number or '∞
 ;; looks for the distance as recorded in the table t, 
 ;; if not found returns a distance of '∞
 (define (lookup-in-table t p)
@@ -571,7 +573,7 @@ making some of the test cases much easier to manage.
 (check-expect (min-l (list)) '∞)
 (check-expect (min-l (list 10 1 12)) 1)
 
-;; <=/f : (number or '∞) (number or '∞) -> (number or '∞)
+;; <=/f : (number or '∞) (number or '∞) -> boolean
 (define (<=/f a b) (equal? a (min/f a b)))
 (check-expect (<=/f 1 2) true)
 (check-expect (<=/f 2 1) false)
@@ -621,20 +623,14 @@ making some of the test cases much easier to manage.
 
 (define (clack world x y evt)
   (cond
-    [(equal? evt 'button-up)
-     (cond
-       [(equal? 'playing (world-state world))
-        (cond
-          [(point-in-circle? (world-board world) x y)
-           (move-cat 
-            (make-world (add-obstacle (world-board world) x y)
-                        (world-cat world)
-                        (world-state world)
-                        (world-size world)))]
-          [else 
-           world])]
-       [else
-        world])]
+    [(and (equal? evt 'button-up)
+          (equal? 'playing (world-state world))
+          (point-in-circle? (world-board world) x y))
+     (move-cat 
+      (make-world (add-obstacle (world-board world) x y)
+                  (world-cat world)
+                  (world-state world)
+                  (world-size world)))]
     [else 
      world]))
 
@@ -643,6 +639,13 @@ making some of the test cases much easier to manage.
                      10
                      'button-down)
               (make-world '() (make-posn 0 0) 'playing 1))
+
+(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1)
+                     0 
+                     0
+                     'button-up)
+              (make-world '() (make-posn 0 0) 'playing 1))
+
 (check-expect (clack (make-world '() (make-posn 0 0) 'cat-lost 1)
                      10
                      10
@@ -650,7 +653,7 @@ making some of the test cases much easier to manage.
               (make-world '() (make-posn 0 0) 'cat-lost 1))
 (check-expect (clack 
                (make-world
-                (list (make-cell (make-posn 1 0) true)
+                (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) true)
                       (make-cell (make-posn 0 1) true)
                       (make-cell (make-posn 1 1) false)
@@ -660,7 +663,9 @@ making some of the test cases much easier to manage.
                 (make-posn 1 1)
                 'playing
                 3)
-               10 10 'button-up)
+               (cell-center-x (make-posn 1 0))
+               (cell-center-y (make-posn 1 0))
+               'button-up)
               (make-world 
                (list (make-cell (make-posn 1 0) true)
                      (make-cell (make-posn 2 0) true)
@@ -673,17 +678,21 @@ making some of the test cases much easier to manage.
                'cat-lost
                3))
 
-;; move-cat : board -> board
+;; move-cat : world -> world
 (define (move-cat world)
   (local [(define cat-position (world-cat world))
           (define table (build-table/fast world))
           (define neighbors (adjacent cat-position (world-size world)))
+          (define next-cat-positions
+            (find-best-positions neighbors
+                                 (map (lambda (p) (lookup-in-table table p))
+                                      neighbors)))
           (define next-cat-position
-            (find-best-position (first neighbors)
-                                (lookup-in-table table (first neighbors))
-                                (rest neighbors)
-                                (map (lambda (p) (lookup-in-table table p))
-                                     (rest neighbors))))]
+            (cond
+              [(boolean? next-cat-positions) false]
+              [else
+               (list-ref next-cat-positions
+                         (random (length next-cat-positions)))]))]
     (make-world (world-board world)
                 (cond 
                   [(boolean? next-cat-position)
@@ -696,6 +705,7 @@ making some of the test cases much easier to manage.
                    'cat-won]
                   [else 'playing])
                 (world-size world))))
+
 
 (check-expect
  (move-cat
@@ -760,55 +770,42 @@ making some of the test cases much easier to manage.
              'playing
              5))
 
-;; find-best-position : (nelistof posn) (nelistof number or '∞)
-;;                   -> posn or #f
-;; returns #f if there is no non-infinite move, otherwise returns
-;; the next step for the cat.
-(define (find-best-position best-posn score rest-posns scores)
-  (cond
-    [(empty? rest-posns) 
-     (cond
-       [(equal? score '∞)
-        false]
-       [else
-        best-posn])]
-    [else (cond
-            [(<=/f score (first scores))
-             (find-best-position best-posn
-                                 score 
-                                 (rest rest-posns)
-                                 (rest scores))]
-            [else
-             (find-best-position (first rest-posns)
-                                 (first scores)
-                                 (rest rest-posns)
-                                 (rest scores))])]))
-
-(check-expect (find-best-position (make-posn 1 1)
-                                  1
-                                  (list (make-posn 2 2))
-                                  (list 2))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 2 2)
-                                  2
-                                  (list)
-                                  (list))
-              (make-posn 2 2))
-(check-expect (find-best-position (make-posn 2 2) 
-                                  2 
-                                  (list (make-posn 1 1)) 
-                                  (list 1))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 2 2) 
-                                  '∞ 
-                                  (list (make-posn 1 1)) 
-                                  (list 1))
-              (make-posn 1 1))
-(check-expect (find-best-position (make-posn 2 2)
-                                  2
-                                  (list (make-posn 1 1))
-                                  (list '∞))
-              (make-posn 2 2))
+;; find-best-positions : (nelistof posn) (nelistof number or '∞) -> (nelistof posn) or false
+(define (find-best-positions posns scores)
+  (local [(define best-score (foldl (lambda (x sofar)
+                                      (if (<=/f x sofar)
+                                          x
+                                          sofar))
+                                    (first scores)
+                                    (rest scores)))]
+    (cond
+      [(symbol? best-score) false]
+      [else
+       (map
+        second
+        (filter (lambda (x) (equal? (first x) best-score))
+                (map list scores posns)))])))
+(check-expect (find-best-positions (list (make-posn 0 0)) (list 1))
+              (list (make-posn 0 0)))
+(check-expect (find-best-positions (list (make-posn 0 0)) (list '∞))
+              false)
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list 1 2))
+              (list (make-posn 0 0)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list 1 1))
+              (list (make-posn 0 0)
+                    (make-posn 1 1)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list '∞ 2))
+              (list (make-posn 1 1)))
+(check-expect (find-best-positions (list (make-posn 0 0)
+                                         (make-posn 1 1))
+                                   (list '∞ '∞))
+              false)
 
 ;; add-obstacle : board number number -> board
 (define (add-obstacle board x y)
@@ -995,28 +992,56 @@ making some of the test cases much easier to manage.
 (check-expect (append-all (list (list 1) (list 2) (list 3)))
               (list 1 2 3))
 
+;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
+(define (add-n-random-blocked-cells n all-cells board-size)
+  (cond
+    [(zero? n) all-cells]
+    [else
+     (local [(define unblocked-cells 
+               (filter (lambda (x) 
+                         (let ([cat-cell? (and (= (posn-x (cell-p x)) (quotient board-size 2))
+                                               (= (posn-y (cell-p x)) (quotient board-size 2)))])
+                           
+                           (and (not (cell-blocked? x))
+                                (not cat-cell?))))
+                       all-cells))
+             (define to-block (list-ref unblocked-cells 
+                                        (random (length unblocked-cells))))]
+       (add-n-random-blocked-cells
+        (sub1 n)
+        (map (lambda (c) (if (equal? to-block c)
+                             (make-cell (cell-p c) true)
+                             c))
+             all-cells)
+        board-size))]))
+
+(check-expect (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0) true)) 10)
+              (list (make-cell (make-posn 0 0) true)))
+(check-expect (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0) false)) 10)
+              (list (make-cell (make-posn 0 0) true)))
+
 (define dummy
   (local
     [(define board-size 11)
      (define initial-board
-       (filter
-        (lambda (c)
-          (not (and (= 0 (posn-x (cell-p c)))
-                    (or (= 0 (posn-y (cell-p c)))
-                        (= (- board-size 1)
-                           (posn-y (cell-p c)))))))
-        (append-all
-         (build-list
-          board-size
-          (lambda (i)
-            (build-list
-             board-size
-             (lambda (j) 
-               (let ([cat-cell? (and (= i (quotient board-size 2))
-                                     (= j (quotient board-size 2)))])
-                 (make-cell (make-posn i j) 
-                            (and (not cat-cell?)
-                                 (zero? (random 30))))))))))))
+       (add-n-random-blocked-cells
+        6
+        (filter
+         (lambda (c)
+           (not (and (= 0 (posn-x (cell-p c)))
+                     (or (= 0 (posn-y (cell-p c)))
+                         (= (- board-size 1)
+                            (posn-y (cell-p c)))))))
+         (append-all
+          (build-list
+           board-size
+           (lambda (i)
+             (build-list
+              board-size
+              (lambda (j) 
+                (make-cell (make-posn i j) 
+                           false)))))))
+        board-size))
      (define initial-world
        (make-world initial-board
                    (make-posn (quotient board-size 2)

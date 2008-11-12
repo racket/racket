@@ -14,6 +14,7 @@
     "mzcom"
     "mzscheme"
     "plai"
+    "planet"
     "plot"
     "profj"
     "r6rs"

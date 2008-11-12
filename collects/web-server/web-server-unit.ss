@@ -11,6 +11,7 @@
          "private/cache-table.ss"
          (prefix-in http: "private/request.ss"))
 (require "dispatchers/dispatch.ss"
+         web-server/servlet/setup
          (prefix-in fsmap: "dispatchers/filesystem-map.ss")
          (prefix-in sequencer: "dispatchers/dispatch-sequencer.ss")
          (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
@@ -57,39 +58,43 @@
          (log:make #:format (log:log-format->format (host-log-format host-info))
                    #:log-path (host-log-path host-info))
          (lambda (conn req) (next-dispatcher)))
-     (let-values ([(update-password-cache! password-check)
-                   (passwords:make #:password-file (host-passwords host-info)
-                                   #:authentication-responder (responders-authentication (host-responders host-info)))])
-       (sequencer:make
-        (timeout:make (timeouts-password (host-timeouts host-info)))
-        password-check
-        (path-procedure:make "/conf/refresh-passwords"
-                             (lambda _
-                               (update-password-cache!)
-                               ((responders-passwords-refreshed (host-responders host-info)))))))
+     (if (host-passwords host-info)
+         (let-values ([(update-password-cache! password-check)
+                       (passwords:password-file->authorized? (host-passwords host-info))])
+           (sequencer:make
+            (timeout:make (timeouts-password (host-timeouts host-info)))
+            (passwords:make
+             (passwords:make-basic-denied?/path
+              password-check)
+             #:authentication-responder (responders-authentication (host-responders host-info)))
+            (path-procedure:make "/conf/refresh-passwords"
+                                 (lambda _
+                                   (update-password-cache!)
+                                   ((responders-passwords-refreshed (host-responders host-info)))))))
+         (lambda (conn req) (next-dispatcher)))
      (path-procedure:make "/conf/collect-garbage"
                           (lambda _
                             (collect-garbage)
-                            ((responders-collect-garbage (host-responders host-info)))))
-     (let-values ([(clear-cache! servlet-dispatch)
-                   (servlets:make config:scripts 
-                                  #:make-servlet-namespace config:make-servlet-namespace
-                                  #:url->path
-                                  (fsmap:make-url->valid-path
-                                   (fsmap:make-url->path (paths-servlet (host-paths host-info))))                                    
-                                  #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
-                                  #:responders-servlet (responders-servlet (host-responders host-info))
-                                  #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info)))])
+                            ((responders-collect-garbage (host-responders host-info)))))     
+     (let-values ([(clear-cache! url->servlet)
+                   (servlets:make-cached-url->servlet
+                    (fsmap:filter-url->path
+                     #rx"\\.(ss|scm)$"
+                     (fsmap:make-url->valid-path
+                      (fsmap:make-url->path (paths-servlet (host-paths host-info)))))
+                    (make-default-path->servlet
+                     #:make-servlet-namespace config:make-servlet-namespace
+                     #:timeouts-default-servlet (timeouts-default-servlet (host-timeouts host-info))))])
        (sequencer:make
         (path-procedure:make "/conf/refresh-servlets"
                              (lambda _
                                (clear-cache!)
                                ((responders-servlets-refreshed (host-responders host-info)))))
-        (filter:make
-         #rx"^/servlets"
-         (sequencer:make
-          (timeout:make (timeouts-servlet-connection (host-timeouts host-info)))
-          servlet-dispatch))))
+        (sequencer:make
+         (timeout:make (timeouts-servlet-connection (host-timeouts host-info)))
+         (servlets:make url->servlet
+                        #:responders-servlet-loading (responders-servlet-loading (host-responders host-info))
+                        #:responders-servlet (responders-servlet (host-responders host-info))))))
      (files:make #:url->path (fsmap:make-url->path (paths-htdocs (host-paths host-info)))
                  #:path->mime-type (make-path->mime-type (paths-mime-types (host-paths host-info)))
                  #:indices (host-indices host-info))

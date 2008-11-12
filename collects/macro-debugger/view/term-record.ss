@@ -70,6 +70,9 @@
         [(define-guarded-getters guard (method expr) ...)
          (begin (define/public (method) guard expr) ...)]))
 
+    (define/public (get-events) events)
+    (define/public (get-raw-deriv) raw-deriv)
+
     (define-guarded-getters (recache-deriv!)
       [get-deriv deriv]
       [get-deriv-hidden? deriv-hidden?]

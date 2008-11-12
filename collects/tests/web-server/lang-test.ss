@@ -268,7 +268,7 @@
        (let* ([first-key (test-m06.1 '(dispatch-start start 'foo))]
               [second-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
               [third-key (test-m06.1 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) -7)))])
-         (check = 3 (test-m06.1 `(abort/cc (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
+         (check = 3 (test-m06.1 `(call-with-web-prompt (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
          (check = 4 (test-m06.1 `(dispatch ,the-dispatch (list ,second-key 3))))
          (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,second-key -1)))))
          (check = -7 (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 0))))
@@ -295,7 +295,7 @@
        (let* ([first-key (test-m06.2 '(dispatch-start start 'foo))]
               [second-key (test-m06.2 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) 1)))]
               [third-key (test-m06.2 `(dispatch ,the-dispatch (list (deserialize (serialize ,first-key)) -7)))])
-         (check = 3 (test-m06.2 `(abort/cc (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
+         (check = 3 (test-m06.2 `(call-with-web-prompt (lambda () (dispatch ,the-dispatch (list ,second-key 2))))))
          (check = 4 (test-m06.2 `(dispatch ,the-dispatch (list ,second-key 3))))
          (check-true (zero? (test-m06.2 `(dispatch ,the-dispatch (list ,second-key -1)))))
          (check = -7 (test-m06.2 `(dispatch ,the-dispatch (list ,third-key 0))))

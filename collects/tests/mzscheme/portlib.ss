@@ -5,7 +5,31 @@
 
 (define SLEEP-TIME 0.1)
 
-(require mzlib/port)
+(require scheme/port)
+
+;; ----------------------------------------
+
+(let* ([p (lambda () (open-input-string "hello\r\nthere"))])
+  (test "hello\r\nthere" port->string (p))
+  (test #"hello\r\nthere" port->bytes (p))
+  (test '("hello" "there") port->lines (p))
+  (test '(#"hello" #"there") port->bytes-lines (p))
+  (test '("hello\r" "there") port->lines (p) #:line-mode 'linefeed)
+  (test '(#"hello\r" #"there") port->bytes-lines (p) #:line-mode 'linefeed)
+  (test '("hello" "" "there") port->lines (p) #:line-mode 'any-one)
+  (test '(#"hello" #"" #"there") port->bytes-lines (p) #:line-mode 'any-one))
+
+(let* ([x (make-string 50000 #\x)]
+       [p (lambda () (open-input-string x))])
+  (test (string-length x) 'long-string (string-length (port->string (p))))
+  (test (string-length x) 'long-string (bytes-length (port->bytes (p)))))
+
+(let ([p (open-output-bytes)])
+  (display-lines '(1 2 3) p)
+  (test "1\n2\n3\n" get-output-string p))
+(let ([p (open-output-bytes)])
+  (display-lines '(1 2 3) p #:separator #"!!")
+  (test "1!!2!!3!!" get-output-string p))
 
 ;; ----------------------------------------
 

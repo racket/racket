@@ -3956,6 +3956,9 @@ void scheme_thread_block(float sleep_time)
   Scheme_Thread *next;
   Scheme_Thread *p = scheme_current_thread;
 
+  if (p->return_marks_to) /* just in case we get here */
+    return;
+
   if (p->running & MZTHREAD_KILLED) {
     /* This thread is dead! Give up now. */
     if (!do_atomic)

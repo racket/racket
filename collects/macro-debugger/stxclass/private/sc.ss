@@ -8,7 +8,8 @@
                      "util.ss")
          scheme/match
          syntax/stx
-         "kws.ss")
+         "kws.ss"
+         "messages.ss")
 (provide define-syntax-class
          define-basic-syntax-class
          define-basic-syntax-class*
@@ -40,11 +41,12 @@
                         '(arg ...)
                         (rhs-attrs the-rhs)
                         ((syntax-local-certifier) #'parser)
-                        (rhs:union-description the-rhs))))
+                        (rhs-description the-rhs))))
               (define parser (rhs->parser name rhss (arg ...) #,stx)))]
     [(define-syntax-class name . rhss)
      (syntax/loc stx
        (define-syntax-class (name) . rhss))]))
+
 
 #;
 (define-syntax (define-syntax-splice-class stx)
@@ -87,13 +89,10 @@
     [(define-basic-syntax-class* (name arg ...)
        ([attr-name attr-depth] ...)
        parser-expr)
-     (begin (define parser (let ([name parser-expr]) name))
-            (define-syntax name
-              (make sc 'name
-                    '(arg ...)
-                    (list (make-attr 'attr-name 'attr-depth null) ...)
-                    ((syntax-local-certifier) #'parser)
-                    #f)))]))
+     (define-syntax-class (name arg ...)
+       (basic-syntax-class
+        ([attr-name attr-depth] ...)
+        (let ([name parser-expr]) name)))]))
 
 (define-syntax (rhs->parser stx)
   (syntax-case stx ()
@@ -141,15 +140,17 @@
   (syntax-case stx ()
     [(syntax-parser . clauses)
      #`(lambda (x)
-         (parameterize ((current-expression (or (current-expression) x)))
-           #,(parse:clauses #'clauses #'x #'syntax-patterns-fail)))]))
+         (let ([fail (syntax-patterns-fail x)])
+           (parameterize ((current-expression (or (current-expression) x)))
+             #,(parse:clauses #'clauses #'x #'fail))))]))
 
 (define-syntax (syntax-parse stx)
   (syntax-case stx ()
     [(syntax-parse expr . clauses)
      #`(let ([x expr])
-         (parameterize ((current-expression (or (current-expression) x)))
-           #,(parse:clauses #'clauses #'x #'syntax-patterns-fail)))]))
+         (let ([fail (syntax-patterns-fail x)])
+           (parameterize ((current-expression (or (current-expression) x)))
+             #,(parse:clauses #'clauses #'x #'fail))))]))
 
 (define-syntax with-patterns
   (syntax-rules ()
@@ -158,14 +159,18 @@
     [(with-patterns ([p x] . more) . b)
      (syntax-parse x [p (with-patterns more . b)])]))
 
-(define (syntax-patterns-fail x expected reason frontier)
+(define ((syntax-patterns-fail stx0) x expected reason frontier)
   (define (err msg stx)
-    (raise (make-exn:fail:syntax (string->immutable-string msg)
-                                 (current-continuation-marks)
-                                 (list stx))))
+    (raise (make-exn:fail:syntax 
+            (if msg
+                (string->immutable-string (string-append "bad syntax: " msg))
+                (string->immutable-string "bad syntax"))
+            (current-continuation-marks)
+            (list stx))))
   (define-values (stx n) (frontier->syntax frontier))
-  (cond [(stx-null? x)
-         (err (format "missing ~s" expected)
+  (cond #;
+        [(and (stx-null? x) expected)
+         (err (format "missing ~s" (expectation->string expected))
               (datum->syntax stx x
                              (list (syntax-source stx)
                                    #f
@@ -176,7 +181,7 @@
                                            (syntax-span stx)
                                            -1))
                                    1)))]
-        [(equal? expected '())
+        [(empty-expectation? expected)
          ;; FIXME: "extra term(s) after <pattern>"
          (syntax-case x ()
            [(one)
@@ -184,20 +189,22 @@
            [(first . more)
             (err "unexpected terms starting here" #'first)]
            [_
-            (err "expected end of list" x)])]
-        [expected
-         (err (format "~a~a"
-                      expected
-                      (cond [(zero? n) ""]
-                            [(= n +inf.0) " after matching main pattern"]
-                            [else (format " after ~s ~a"
-                                          n
-                                          (if (= 1 n) "form" "forms"))]))
-              stx)]
+            (err "unexpected term" x)])]
+        [(and expected (expectation->string expected))
+         =>
+         (lambda (msg)
+           (err (format "expected ~a~a"
+                        msg
+                        (cond [(zero? n) ""]
+                              [(= n +inf.0) " after matching main pattern"]
+                              [else (format " after ~s ~a"
+                                            n
+                                            (if (= 1 n) "form" "forms"))]))
+                stx))]
         [reason
-         (format "~a" reason)]
+         (err (format "~a" reason) stx)]
         [else
-         (err "failed" stx)]))
+         (err #f stx0)]))
 
 (define (frontier->syntax f)
   (match f

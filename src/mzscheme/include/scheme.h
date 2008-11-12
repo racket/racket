@@ -639,7 +639,7 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_IS_METHOD 4096
 #define SCHEME_PRIM_IS_CLOSURE 8192
 #define SCHEME_PRIM_IS_UNARY_INLINED 16384
-#define SCHEME_PRIM_IS_MIN_NARY_INLINED 32768
+#define SCHEME_PRIM_IS_NARY_INLINED 32768
 
 /* Values with SCHEME_PRIM_OPT_MASK, earlier implies later: */
 #define SCHEME_PRIM_OPT_FOLDING    3
@@ -1091,7 +1091,7 @@ typedef struct Scheme_Thread {
   Scheme_Object *mbox_sema;
 
 #ifdef MZ_PRECISE_GC
-  struct gc_thread_info *gc_info; /* managed by the GC */
+  struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif
 } Scheme_Thread;
 
@@ -1755,6 +1755,9 @@ MZ_EXTERN int scheme_get_external_event_fd(void);
 /* GC registration: */
 MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
 MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
+
+typedef void (*Scheme_Report_Out_Of_Memory_Proc)(void);
+MZ_EXTERN void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p);
 
 /* Stack-preparation start-up: */
 typedef int (*Scheme_Nested_Main)(void *data);

@@ -38,6 +38,8 @@
     (make-parameter null))
   (define current-redirect
     (make-parameter #f))
+  (define current-redirect-main
+    (make-parameter #f))
 
   (define (read-one str)
     (let ([i (open-input-string str)])
@@ -67,8 +69,10 @@
        (current-dest-name name)]
       [("--style") file "use given base .css/.tex file"
        (current-style-file file)]
-      [("--redirect") url "redirect external tag links to <url>"
+      [("--redirect") url "redirect external links to tag search via <url>"
        (current-redirect url)]
+      [("--redirect-main") url "redirect main doc links to <url>"
+       (current-redirect-main url)]
       [("--info-out") file "write format-specific link information to <file>"
        (current-info-output-file file)]]
      [multi
@@ -110,6 +114,8 @@
                            [style-extra-files (reverse (current-style-extra-files))])])
         (when (current-redirect)
           (send renderer set-external-tag-path (current-redirect)))
+        (when (current-redirect-main)
+          (send renderer set-external-root-url (current-redirect-main)))
         (send renderer report-output!)
         (let* ([fns (map (lambda (fn)
                            (let-values ([(base name dir?) (split-path fn)])

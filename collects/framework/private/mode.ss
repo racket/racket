@@ -50,7 +50,9 @@
           (augment #t can-set-size-constraint? ())
           (override can-do-edit-operation? (op) (op recursive?))
           (augment #t can-load-file? (filename format))
-          (augment #t can-save-file? (filename format)))]))
+          (augment #t can-save-file? (filename format))
+          
+          (override put-file (directory default-name)))]))
 
 (define-unit mode@
   (import)

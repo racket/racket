@@ -13,6 +13,15 @@
   (require (for-label scheme))
   (provide (for-label (all-from-out scheme)))
 
+  (provide mz-examples)
+  (define mz-eval (make-base-eval))
+  (define-syntax mz-examples
+    (syntax-rules ()
+      [(_ #:eval . rest)
+       (examples #:eval . rest)]
+      [(_ . rest)
+       (examples #:eval mz-eval . rest)]))
+
   (define AllUnix "Unix and Mac OS X")
   (provide AllUnix)
 

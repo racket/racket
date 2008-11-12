@@ -809,9 +809,12 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
 @litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader}, except
-that the terminating whitespace (if any) is consumed before the
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader}. Note
+that the terminating whitespace (if any) is not consumed before the
 external reading procedure is called.
+
+@margin-note{The @schememodname[syntax/module-reader] library provides a
+             domain-specific language for writing language readers.}
 
 Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
 followed by a space when @litchar{#!} is followed by alphanumeric
@@ -822,6 +825,28 @@ certain grammars, such as that of R@superscript{6}RS
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
+
+@defmodulelang[s-exp]
+
+The @scheme[s-exp] ``language'' is a kind of meta-language. It
+@scheme[read]s the S-expression that follows @litchar{#lang s-exp} and
+uses it as the language of a @scheme[module] form. It also reads all
+remaining S-expressions until an end-of-file, using them for the body
+of the generated @scheme[module].
+
+That is,
+
+@schememod[
+s-exp _module-path
+_form ...
+]
+
+is equivalent to
+
+@schemeblock[
+(module _name _module-path
+  _form ...)
+]
 
 @section[#:tag "parse-honu"]{Honu Parsing}
 

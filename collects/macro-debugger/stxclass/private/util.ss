@@ -8,6 +8,10 @@
 
 (provide make
 
+         with-temporaries
+         generate-temporary
+         generate-n-temporaries
+
          chunk-kw-seq/no-dups
          chunk-kw-seq
          reject-duplicate-chunks
@@ -47,6 +51,18 @@
             stx)))
        (with-syntax ([constructor constructor])
          #'(constructor expr ...)))]))
+
+(define-syntax-rule (with-temporaries (temp-name ...) . body)
+  (with-syntax ([(temp-name ...) (generate-temporaries (quote-syntax (temp-name ...)))])
+    . body))
+
+(define (generate-temporary [stx 'g])
+  (car (generate-temporaries (list stx))))
+
+(define (generate-n-temporaries n)
+  (generate-temporaries
+   (for/list ([i (in-range n)])
+     (string->symbol (format "g~sx" i)))))
 
 (define (chunk-kw-seq/no-dups stx kws #:context [ctx #f])
   (let-values ([(chunks rest) (chunk-kw-seq stx kws #:context ctx)])

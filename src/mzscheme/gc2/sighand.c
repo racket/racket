@@ -97,7 +97,7 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 /*                             init function                                  */
 /******************************************************************************/
 
-static void initialize_signal_handler()
+static void initialize_signal_handler(GCTYPE *gc)
 {
 # ifdef NEED_OSX_MACH_HANDLER
   macosx_init_exception_handler();
@@ -128,12 +128,12 @@ static void initialize_signal_handler()
     if (aveh)
       aveh(TRUE, fault_handler);
     else
-      generations_available = 0;
+      gc->generations_available = 0;
   }
 # endif
 }
 
-static void remove_signal_handler()
+static void remove_signal_handler(GCTYPE *gc)
 {
 # ifdef NEED_OSX_MACH_HANDLER
 # endif
@@ -148,7 +148,7 @@ static void remove_signal_handler()
   }
 # endif
 # ifdef NEED_SIGWIN
-  if (generations_available) {
+  if (gc->generations_available) {
     HMODULE hm;
     ULONG (WINAPI*rveh)(gcPVECTORED_EXCEPTION_HANDLER);
 

@@ -177,13 +177,13 @@
               ;; value types              
               [(list (Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
               ;; integers are numbers too
-              [(list (Base: 'Integer) (Base: 'Number)) A0]
+              [(list (Base: 'Integer _) (Base: 'Number _)) A0]
               ;; values are subtypes of their "type"
-              [(list (Value: (? integer? n)) (Base: 'Integer)) A0]
-              [(list (Value: (? number? n)) (Base: 'Number)) A0]
-              [(list (Value: (? boolean? n)) (Base: 'Boolean)) A0]
-              [(list (Value: (? symbol? n)) (Base: 'Symbol)) A0]
-              [(list (Value: (? string? n)) (Base: 'String)) A0]
+              [(list (Value: (? integer? n)) (Base: 'Integer _)) A0]
+              [(list (Value: (? number? n)) (Base: 'Number _)) A0]
+              [(list (Value: (? boolean? n)) (Base: 'Boolean _)) A0]
+              [(list (Value: (? symbol? n)) (Base: 'Symbol _)) A0]
+              [(list (Value: (? string? n)) (Base: 'String _)) A0]
               ;; tvars are equal if they are the same variable
               [(list (F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
               ;; case-lambda

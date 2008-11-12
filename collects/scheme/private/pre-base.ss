@@ -12,6 +12,7 @@
              "reqprov.ss"
              "modbeg.ss"
              "for.ss"
+             "map.ss" ; shadows #%kernel bindings
 
              '#%builtin) ; so it's attached
 
@@ -74,6 +75,7 @@
              (all-from "for.ss")
              #%top-interaction
 
+             map for-each andmap ormap
              make-keyword-procedure
              (rename new-keyword-apply keyword-apply)
              procedure-keywords

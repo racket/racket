@@ -183,7 +183,7 @@ wxMediaCanvas::wxMediaCanvas(wxWindow *parent,
 	    + wxOVERRIDE_KEY_TRANSLATIONS 
 	    + INIT_SB 
 	    + (style & wxINVISIBLE ? wxINVISIBLE : 0)
-	    + (style & wxTRANSPARENT_WIN ? wxTRANSPARENT_WIN : 0)
+	    + (style & wxTRANSPARENT_WIN ? wxTRANSPARENT_WIN : wxNO_AUTOCLEAR)
 	    + (style & wxCONTROL_BORDER ? wxCONTROL_BORDER : 0)
 	    + (style & wxCOMBO_SIDE ? wxCOMBO_SIDE : 0)
 	    + (style & wxRESIZE_CORNER ? wxRESIZE_CORNER : 0)), 
@@ -352,7 +352,7 @@ void wxMediaCanvas::ResetSize()
   ResetVisual(FALSE);
 
 #if defined(wx_mac)
-  {
+  if (0) {
     wxDC *adc;
     wxColor *bg;
     bg = GetCanvasBackground();
@@ -413,10 +413,12 @@ void wxMediaCanvas::OnFocus(Bool focus)
       media->SetAdmin(admin);
     }
     
-    media->OwnCaret(focus);
+    if (media)
+      media->OwnCaret(focus);
     
     if (PTRNE(oldadmin, admin)) {
-      media->SetAdmin(oldadmin);
+      if (media)
+        media->SetAdmin(oldadmin);
     }
   }
 
@@ -440,10 +442,12 @@ void wxMediaCanvas::BlinkCaret()
 	media->SetAdmin(admin);
       }
 
-      media->BlinkCaret();
+      if (media)
+        media->BlinkCaret();
 
       if (PTRNE(oldadmin, admin)) {
-	media->SetAdmin(oldadmin);
+        if (media)
+          media->SetAdmin(oldadmin);
       }
     }
 
@@ -465,7 +469,8 @@ void *wxMediaCanvas::CallAsPrimaryOwner(void *(*f)(void *), void *data)
     r = f(data);
     
     if (PTRNE(oldadmin, admin)) {
-      media->SetAdmin(oldadmin);
+      if (media)
+        media->SetAdmin(oldadmin);
     }
   } else
     r = f(data);
@@ -572,15 +577,17 @@ void wxMediaCanvas::OnEvent(wxMouseEvent *event)
       media->SetAdmin(admin);
     }
 
-    {
+    if (media) {
       wxCursor *c;
       c = media->AdjustCursor(event);
       SetCustomCursor(c);
     }
-    media->OnEvent(event);
+    if (media)
+      media->OnEvent(event);
     
     if (PTRNE(oldadmin, admin)) {
-      media->SetAdmin(oldadmin);
+      if (media)
+        media->SetAdmin(oldadmin);
     }
 
     if (event->Dragging()) {
@@ -622,14 +629,16 @@ void wxMediaCanvas::UpdateCursorNow(void)
   if (PTRNE((oldadmin = (wxCanvasMediaAdmin *)media->GetAdmin()), admin))
     media->SetAdmin(admin);
   
-  {
+  if (media) {
     wxCursor *c;
     c = media->AdjustCursor(event);
     SetCustomCursor(c);
   }
     
-  if (PTRNE(oldadmin, admin))
-    media->SetAdmin(oldadmin);
+  if (PTRNE(oldadmin, admin)) {
+    if (media)
+      media->SetAdmin(oldadmin);
+  }
 }
 
 wxMenu *wxMediaCanvas::PopupForMedia(wxMediaBuffer *WXUNUSED(b), void *WXUNUSED(m))
@@ -663,10 +672,50 @@ void wxMediaCanvas::OnChar(wxKeyEvent *event)
       media->SetAdmin(admin);
     }
 
-    media->OnChar(event);
+    if (media)
+      media->OnChar(event);
     
     if (PTRNE(oldadmin, admin)) {
-      media->SetAdmin(oldadmin);
+      if (media)
+        media->SetAdmin(oldadmin);
+    }
+  }
+}
+
+void wxMediaCanvas::ClearMargins(void)
+{
+  /* This method is called by `on-paint' in `wx:canvas%'
+     before it calls the `on-paint' in `canvas%'. It's
+     essentially a compromise between autoclear mode and
+     no-autoclear mode. */
+
+  if (xmargin || ymargin) {
+    wxDC *adc;
+    wxColor *bg;
+    bg = GetCanvasBackground();
+    if (bg) {
+      wxBrush *b, *ob;
+      wxPen *p, *op;
+      int cw, ch;
+
+      GetClientSize(&cw, &ch);
+
+      b = wxTheBrushList->FindOrCreateBrush(bg, wxSOLID);
+      p = wxThePenList->FindOrCreatePen("BLACK", 0, wxTRANSPARENT);
+      adc = GetDC();
+
+      ob = adc->GetBrush();
+      op = adc->GetPen();
+      adc->SetBrush(b);
+      adc->SetPen(p);
+
+      adc->DrawRectangle(0, 0, xmargin, ch);
+      adc->DrawRectangle(cw-xmargin, 0, cw, ch);
+      adc->DrawRectangle(0, 0, cw, ymargin);
+      adc->DrawRectangle(0, ch-ymargin, cw, ch);
+
+      adc->SetBrush(ob);
+      adc->SetPen(op);
     }
   }
 }
@@ -675,7 +724,7 @@ void wxMediaCanvas::OnPaint(void)
 {
   need_refresh = FALSE;
 
-  if (media) {
+  if (media) {  
     if (!media->printing) {
       double w, h, x, y;
       GetView(&x, &y, &w, &h);
@@ -851,14 +900,16 @@ void wxMediaCanvas::Redraw(double localx, double localy, double fw, double fh)
       media->SetAdmin(admin);
     }
 
-    media->Refresh(x, y, w, h, 
-		   (focuson || focusforcedon)
-		   ? wxSNIP_DRAW_SHOW_CARET
-		   : wxSNIP_DRAW_SHOW_INACTIVE_CARET,
-		   GetCanvasBackground());
+    if (media)
+      media->Refresh(x, y, w, h, 
+                     (focuson || focusforcedon)
+                     ? wxSNIP_DRAW_SHOW_CARET
+                     : wxSNIP_DRAW_SHOW_INACTIVE_CARET,
+                     GetCanvasBackground());
 
     if (PTRNE(oldadmin, admin)) {
-      media->SetAdmin(oldadmin);
+      if (media)
+        media->SetAdmin(oldadmin);
     }
   }
 
@@ -872,8 +923,9 @@ Bool wxMediaCanvas::ScrollTo(double localx, double localy, double fw, double fh,
   double iw, ih;
   double x, y;
   double find_dy;
+  wxMediaBuffer *med = media;
 
-  if (!media || media->printing || (!allowXScroll && !allowYScroll))
+  if (!med || med->printing || (!allowXScroll && !allowYScroll))
     return FALSE;
 
   GetView(&x, &y, &iw, &ih);
@@ -895,25 +947,25 @@ Bool wxMediaCanvas::ScrollTo(double localx, double localy, double fw, double fh,
 	|| (fh <= ih && localy < y) 
 	// doesn't fit, no conflicting bias, can shift up to see more:
 	|| (fh > ih && bias != 1 && localy < y)) 
-      sy = media->FindScrollLine(find_dy + localy) - scrollOffset;
+      sy = med->FindScrollLine(find_dy + localy) - scrollOffset;
     else if (// doesn't fit, bias is set:
 	     (bias == 1 && fh > ih) 
 	     // fits, need to shift up into view:
 	     || (fh <= ih && y + ih < localy + fh))  {
       double l = find_dy + localy + fh - ih;
       // Find scroll pos for top of region to show:
-      sy = media->FindScrollLine(l);
+      sy = med->FindScrollLine(l);
       // Unless l is exactly the top of a line, move down to the next whole line:
-      if (media->ScrollLineLocation(sy) != l)
+      if (med->ScrollLineLocation(sy) != l)
 	sy++;
       sy -= scrollOffset;
     } else if (// doesn't fit, no conflicting bias, maybe shift down to see more:
 	       (fh > ih && bias != -1 && localy + fh > y + ih)) {
       // Shift to one more than the first scroll position that shows last line
       long my;
-      my = media->FindScrollLine(find_dy + localy + fh - ih) + 1 - scrollOffset;
+      my = med->FindScrollLine(find_dy + localy + fh - ih) + 1 - scrollOffset;
       // But only shift down the extra line if doing so doesn't skip the whole area
-      if (media->ScrollLineLocation(my) < find_dy + localy + fh)
+      if (med->ScrollLineLocation(my) < find_dy + localy + fh)
 	sy = my;
       else if (my > 0)
 	sy = my - 1;
@@ -974,6 +1026,8 @@ Bool wxMediaCanvas::ResetVisual(Bool reset_scroll)
     lastheight = lh;
 
     if (media && (allowXScroll || allowYScroll)) {
+      wxMediaBuffer *med = media;
+
       if (reset_scroll)
 	x = y = 0;
       else {
@@ -984,18 +1038,18 @@ Bool wxMediaCanvas::ResetVisual(Bool reset_scroll)
       w = h = 0.0;
       GetView(NULL, NULL, &w, &h);
       totalWidth = totalHeight = 0.0;
-      media->GetExtent(&totalWidth, &totalHeight);
+      med->GetExtent(&totalWidth, &totalHeight);
 
       if (!h || (!scrollToLast && (h >= totalHeight))) {
 	vnumScrolls = 0;
 	scrollOffset = 0;
       } else {
 	if (scrollBottomBased) {
-	  vnumScrolls = media->NumScrollLines() - 1;
+	  vnumScrolls = med->NumScrollLines() - 1;
 	  scrollOffset = 1;
 	  if (!scrollToLast) {
 	    long start;
-	    start = media->FindScrollLine(h + 1) - 1;
+	    start = med->FindScrollLine(h + 1) - 1;
 	    scrollOffset += start;
 	    vnumScrolls -= start;
 	  }
@@ -1003,16 +1057,16 @@ Bool wxMediaCanvas::ResetVisual(Bool reset_scroll)
 	  long top = (long)(totalHeight - (scrollToLast ? 0 : h));
 	  if (top)
 	    --top;
-	  vnumScrolls = media->FindScrollLine(top) + 1;
-	  if (vnumScrolls >= media->NumScrollLines())
-	    vnumScrolls = media->NumScrollLines() - 1;
+	  vnumScrolls = med->FindScrollLine(top) + 1;
+	  if (vnumScrolls >= med->NumScrollLines())
+	    vnumScrolls = med->NumScrollLines() - 1;
 	  scrollOffset = 0;
 	}
       }
 
       if (vnumScrolls > 0) {
 	int numLines;
-	numLines = media->NumScrollLines() - 1;
+	numLines = med->NumScrollLines() - 1;
 	vspp = (long)(((double)h * numLines) / totalHeight) - 1;
 	if (vspp < 1)
 	  vspp = 1;

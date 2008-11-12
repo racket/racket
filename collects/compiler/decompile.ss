@@ -299,7 +299,7 @@
                                       zero? negative? exact-nonnegative-integer?  
                                       exact-positive-integer?
                                       car cdr caar cadr cdar cddr
-                                      mcar mcdr unbox syntax-e
+                                      mcar mcdr unbox vector-length syntax-e
                                       add1 sub1 - abs bitwise-not))]
              [(3) (memq (car a) '(eq? = <= < >= >
                                       bitwise-bit-set? char=?

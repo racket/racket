@@ -88,6 +88,8 @@ typedef void *(*CAPOFunc)(void*);
 
 @ "scroll-to" : bool ScrollTo(double,double,nndouble,nndouble, bool,SYM[bias]=0); : : : rFALSE
 
+@ "clear-margins" : void ClearMargins();
+
 @ "get-x-margin" : nnint GetXMargin();
 @ "get-y-margin" : nnint GetYMargin();
 @ "set-x-margin" : void SetXMargin(nnint);

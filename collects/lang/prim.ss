@@ -8,14 +8,15 @@
   (require lang/error
 	   (rename lang/htdp-beginner beginner-app #%app))
   
-  (require-for-syntax "private/firstorder.ss"
+  (require-for-syntax (prefix fo: "private/firstorder.ss")
                       stepper/private/shared)
   
   (provide define-primitive
 	   define-higher-order-primitive
 	   provide-primitive
 	   provide-higher-order-primitive
-	   provide-primitives)
+	   provide-primitives
+           first-order->higher-order)
 
   (define-syntax (define-primitive stx)
     (syntax-case stx ()
@@ -24,7 +25,7 @@
                                            (apply implementation argv))])
                                name)])
 	 #'(define-syntax name 
-             (make-first-order
+             (fo:make-first-order
               (lambda (stx)
                 (with-syntax ([tagged-impl (stepper-syntax-property
                                             (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
@@ -82,7 +83,7 @@
 			  (map (lambda (arg new-arg)
 				 (cond
 				  [(not (is-proc-arg? arg)) new-arg]
-				  [else #`(fo->ho #,new-arg)]))
+				  [else #`(first-order->higher-order #,new-arg)]))
 			       args new-args)]
 			 [num-arguments (length args)])
 	     (with-syntax ([impl #'(let ([name (lambda (new-arg ...)
@@ -90,7 +91,7 @@
                                      name)])
 	       (syntax/loc stx
 		   (define-syntax name
-                     (make-first-order
+                     (fo:make-first-order
                       (lambda (s)
                         (with-syntax ([tagged-impl (stepper-syntax-property
                                                     (stepper-syntax-property (quote-syntax impl) 'stepper-skip-completely #t)
@@ -129,9 +130,10 @@
                       ((syntax-local-certifier #t)
                        #'impl))))))))]))
 
-  (define-syntax (fo->ho stx)
+  (define-syntax (first-order->higher-order stx)
     (syntax-case stx ()
-      [(_ id) (first-order->higher-order #'id)]))
+      [(_ id) (identifier? #'id) (fo:first-order->higher-order #'id)]
+      [(_ expr) #'expr]))
 
   (define-syntax (provide-primitive stx)
     (syntax-case stx ()

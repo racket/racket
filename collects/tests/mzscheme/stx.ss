@@ -106,6 +106,30 @@
       syntax->datum 
       (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) () [(((a ...) ...) ...) #'((a ...) ... ...)]))
 
+(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20])) (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
+        [((([x y] ...) ...) ...)
+         (syntax->datum #'(ell ((ull (+ x ...)
+                                     ((- x ... y ...) ...))
+                                ...)
+                               ...))])
+      'fancy-ellipses
+      '(ell ((ull (+ n m) ((- n m 1 2) (- p q 10 20)))
+             (ull (+ p q) ((- nn mm -1 -2) (- pp qq -10 -20))))
+            ((ull (+ nn mm) ((- n m 1 2) (- p q 10 20)))
+             (ull (+ pp qq) ((- nn mm -1 -2) (- pp qq -10 -20))))))
+
+(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20])) (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
+        [((([x y] ...) ...) ...)
+         (syntax->datum #'(ell ((ull (+ x ...)
+                                     ((- x ...) ...))
+                                ...)
+                               ...))])
+      'fancy-ellipses
+      '(ell ((ull (+ n m) ((- n m) (- p q)))
+             (ull (+ p q) ((- nn mm) (- pp qq))))
+            ((ull (+ nn mm) ((- n m) (- p q)))
+             (ull (+ pp qq) ((- nn mm) (- pp qq))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test basic expansion and property propagation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

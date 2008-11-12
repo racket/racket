@@ -52,42 +52,50 @@
   (define (split-last l)
     (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
       (values all-but (car last-list))))
-  (cond [(not inst) ty]
-        [(not (or (Poly? ty) (PolyDots? ty)))
-         (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]
-        
-        [(and (Poly? ty)
-              (not (= (length (syntax->list inst)) (Poly-n ty))))
-         (tc-error/expr #:return (Un)
-                        "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                        ty (Poly-n ty) (length (syntax->list inst)))]
-        [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
-         ;; we can provide 0 arguments for the ... var
-         (tc-error/expr #:return (Un)
-                        "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
-                        ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
-        [(PolyDots? ty)
-         ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-         ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-         (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
-           (match (syntax-e last-stx)
-             [(cons last-ty-stx (? identifier? last-id-stx))
-              (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
-                (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-              (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
-                  (let* ([last-id (syntax-e last-id-stx)]
-                         [last-ty
-                          (parameterize ([current-tvars (extend-env (list last-id)
-                                                                    (list (make-DottedBoth (make-F last-id)))
-                                                                    (current-tvars))])
-                            (parse-type last-ty-stx))])
-                    (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                  (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                                 ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
-             [_
-              (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
-        [else
-         (instantiate-poly ty (map parse-type (syntax->list inst)))]))
+  (define (in-improper-stx stx)
+    (let loop ([l stx])
+      (match l
+        [#f null]
+        [(cons a b) (cons a (loop b))]
+        [e (list e)])))
+  (for/fold ([ty ty])
+    ([inst (in-improper-stx inst)])
+    (cond [(not inst) ty]
+          [(not (or (Poly? ty) (PolyDots? ty)))
+           (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]
+          
+          [(and (Poly? ty)
+                (not (= (length (syntax->list inst)) (Poly-n ty))))
+           (tc-error/expr #:return (Un)
+                          "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                          ty (Poly-n ty) (length (syntax->list inst)))]
+          [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
+           ;; we can provide 0 arguments for the ... var
+           (tc-error/expr #:return (Un)
+                          "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
+                          ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
+          [(PolyDots? ty)
+           ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
+           ;; use instantiate-poly-dotted, otherwise we do the normal thing.
+           (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
+             (match (syntax-e last-stx)
+               [(cons last-ty-stx (? identifier? last-id-stx))
+                (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
+                  (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
+                (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
+                    (let* ([last-id (syntax-e last-id-stx)]
+                           [last-ty
+                            (parameterize ([current-tvars (extend-env (list last-id)
+                                                                      (list (make-DottedBoth (make-F last-id)))
+                                                                      (current-tvars))])
+                              (parse-type last-ty-stx))])
+                      (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
+                    (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                                   ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
+               [_
+                (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
+          [else
+           (instantiate-poly ty (map parse-type (syntax->list inst)))])))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -147,7 +155,7 @@
         [(quote #t) (ret (-val #t) (list (make-True-Effect)) (list (make-True-Effect)))]
         [(quote val)  (ret (tc-literal #'val))]
         ;; syntax
-        [(quote-syntax datum) (ret Any-Syntax)]
+        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
         ;; mutation!
         [(set! id val)
          (match-let* ([(tc-result: id-t) (tc-expr #'id)]
@@ -233,7 +241,7 @@
       
       [(quote val)  (ret (tc-literal #'val))]
       ;; syntax
-      [(quote-syntax datum) (ret Any-Syntax)]
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
        (begin (tc-expr/check #'e1 Univ)
@@ -317,7 +325,7 @@
               (begin (check-below ret-ty expected) (ret expected))
               ret-ty))]
        [(tc-result: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
-    [(tc-result: t) (tc-error/expr #:return (or expected (Un)) "send: expected a class instance, got ~a" t)]))
+    [(tc-result: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
 
 ;; type-check a list of exprs, producing the type of the last one.
 ;; if the list is empty, the type is Void.

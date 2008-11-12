@@ -1006,6 +1006,7 @@ profile todo:
   (send test-not-covered-style-delta set-delta-foreground "maroon")
   
   (define erase-test-coverage-style-delta (make-object style-delta% 'change-normal-color))
+  (send erase-test-coverage-style-delta set-transparent-text-backing-on #t)
   
   (define test-coverage-tab-mixin
     (mixin (drscheme:rep:context<%> drscheme:unit:tab<%>) (test-coverage-tab<%>)

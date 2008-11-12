@@ -8,21 +8,20 @@
          "configuration/namespace.ss"
          "configuration/responders.ss"
          "web-config-sig.ss")
-; XXX unit? should be particular unit sig
 (provide/contract
  [configuration-table->web-config@
   (->* (path-string?)
        (#:port (or/c false/c number?)
                #:listen-ip (or/c false/c string?)
                #:make-servlet-namespace make-servlet-namespace/c)
-      unit?)]
+       unit?)]
  [configuration-table-sexpr->web-config@
-  (->* (list?) ; XXX
-      (#:web-server-root path-string?
-      #:port (or/c false/c number?)
-      #:listen-ip (or/c false/c string?)
-      #:make-servlet-namespace make-servlet-namespace/c)
-      unit?)])
+  (->* (configuration-table-sexpr?)
+       (#:web-server-root path-string?
+                          #:port (or/c false/c number?)
+                          #:listen-ip (or/c false/c string?)
+                          #:make-servlet-namespace make-servlet-namespace/c)
+       unit?)])
 
 ; configuration-table->web-config@ : path -> configuration
 (define (configuration-table->web-config@ 
@@ -89,7 +88,6 @@
     (define listen-ip the-listen-ip)
     (define initial-connection-timeout (configuration-table-initial-connection-timeout table))
     (define virtual-hosts the-virtual-hosts)
-    (define scripts (box (make-cache-table)))
     (define make-servlet-namespace the-make-servlet-namespace)))
 
 ; apply-default-functions-to-host-table : str host-table -> host
@@ -121,12 +119,13 @@
            (if p 
                (build-path-unless-absolute b p)
                #f))])
-    (let ([host-base (build-path-unless-absolute web-server-root (paths-host-base paths))])
+    (let* ([host-base (build-path-unless-absolute web-server-root (paths-host-base paths))]
+           [htdocs-base (build-path-unless-absolute host-base (paths-htdocs paths))])
       (make-paths (build-path-unless-absolute host-base (paths-conf paths))
                   host-base
                   (build-path-unless-absolute host-base (paths-log paths))
-                  (build-path-unless-absolute host-base (paths-htdocs paths))
-                  (build-path-unless-absolute host-base (paths-servlet paths))
+                  htdocs-base
+                  (build-path-unless-absolute htdocs-base (paths-servlet paths))
                   (build-path-unless-absolute host-base (paths-mime-types paths))                    
                   (build-path-unless-absolute host-base (paths-passwords paths))))))
 

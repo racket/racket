@@ -242,6 +242,7 @@ typedef void *(*CAPOFunc)(void*);
 
 
 
+
 class os_wxMediaCanvas : public wxMediaCanvas {
  public:
 
@@ -1114,6 +1115,26 @@ static Scheme_Object *os_wxMediaCanvasGetXMargin(int n,  Scheme_Object *p[])
   return scheme_make_integer(r);
 }
 
+static Scheme_Object *os_wxMediaCanvasClearMargins(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaCanvas_class, "clear-margins in editor-canvas%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  WITH_VAR_STACK(((wxMediaCanvas *)((Scheme_Class_Object *)p[0])->primdata)->ClearMargins());
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
 static Scheme_Object *os_wxMediaCanvasScrollTo(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -1474,7 +1495,7 @@ void objscheme_setup_wxMediaCanvas(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaCanvas_class);
 
-  os_wxMediaCanvas_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-canvas%", "canvas%", (Scheme_Method_Prim *)os_wxMediaCanvas_ConstructScheme, 29));
+  os_wxMediaCanvas_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "editor-canvas%", "canvas%", (Scheme_Method_Prim *)os_wxMediaCanvas_ConstructScheme, 30));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "on-char" " method", (Scheme_Method_Prim *)os_wxMediaCanvasOnChar, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "on-event" " method", (Scheme_Method_Prim *)os_wxMediaCanvasOnEvent, 1, 1));
@@ -1493,6 +1514,7 @@ void objscheme_setup_wxMediaCanvas(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "set-x-margin" " method", (Scheme_Method_Prim *)os_wxMediaCanvasSetXMargin, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "get-y-margin" " method", (Scheme_Method_Prim *)os_wxMediaCanvasGetYMargin, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "get-x-margin" " method", (Scheme_Method_Prim *)os_wxMediaCanvasGetXMargin, 0, 0));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "clear-margins" " method", (Scheme_Method_Prim *)os_wxMediaCanvasClearMargins, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "scroll-to" " method", (Scheme_Method_Prim *)os_wxMediaCanvasScrollTo, 5, 6));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "set-lazy-refresh" " method", (Scheme_Method_Prim *)os_wxMediaCanvasSetLazyRefresh, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaCanvas_class, "get-lazy-refresh" " method", (Scheme_Method_Prim *)os_wxMediaCanvasGetLazyRefresh, 0, 0));

@@ -99,10 +99,10 @@
 		   (test v name ((eval `(lambda (x y z) (,op x y z))) (get-arg1) arg2 arg3))
 		   (check-effect)))]
 	 [tri-exact (lambda (v op get-arg1 arg2 arg3 check-effect 3rd-all-ok?)
-		      (check-error-message op (eval `(lambda (x) (,op x ,arg2 ,arg3))))
-		      (check-error-message op (eval `(lambda (x) (,op (,get-arg1) x ,arg3))))
-		      (unless 3rd-all-ok?
-			(check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
+                      (check-error-message op (eval `(lambda (x) (,op x ,arg2 ,arg3))))
+                      (check-error-message op (eval `(lambda (x) (,op (,get-arg1) x ,arg3))))
+                      (unless 3rd-all-ok?
+                        (check-error-message op (eval `(lambda (x) (,op (,get-arg1) ,arg2 x)))))
 		      (tri0 v op get-arg1 arg2 arg3 check-effect))])
 
     (un #f 'null? 0)
@@ -329,6 +329,9 @@
     (bin-exact 'b 'vector-ref #(a b c) 1)
     (bin-exact 'c 'vector-ref #(a b c) 2)
 
+    (un-exact 'a 'unbox (box 'a))
+    (un-exact 3 'vector-length (vector 'a 'b 'c))
+
     (bin-exact #\a 'string-ref "abc\u2001" 0)
     (bin-exact #\b 'string-ref "abc\u2001" 1)
     (bin-exact #\c 'string-ref "abc\u2001" 2)
@@ -337,6 +340,13 @@
     (bin-exact 65 'bytes-ref #"Abc\xF7" 0)
     (bin-exact 99 'bytes-ref #"Abc\xF7" 2)
     (bin-exact #xF7 'bytes-ref #"Abc\xF7" 3)
+
+    (un0 #(1) 'vector 1)
+    (un0 #(1) 'vector-immutable 1)
+    (bin0 #(1 2) 'vector 1 2)
+    (bin0 #(1 2) 'vector-immutable 1 2)
+    (tri0 #(1 2 3) 'vector (lambda () 1) 2 3 void)
+    (tri0 #(1 2 3) 'vector-immutable (lambda () 1) 2 3 void)
 
     (let ([test-setter
 	   (lambda (make-X def-val set-val set-name set ref)

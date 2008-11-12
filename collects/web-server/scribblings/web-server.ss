@@ -7,13 +7,11 @@
 
 (define web-server "Web Server")
 
-; XXX Format better
 (define (warning . x)
-  (apply elem "Warning:" x))
+  (apply elem (bold "Warning: ") x))
 
-; XXX Actually display link
 (define (href-link url label)
-  (elem label " (" url ")")) 
+  (link url label))
 
 (provide (all-from-out scribble/manual)
          (all-from-out scribble/eval)

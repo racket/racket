@@ -27,7 +27,8 @@
      (λ ()
        (let* ([path (spec->path spec)]
               [sexp (and (file-exists? path)
-                         (call-with-input-file path read))])
+                         (parameterize ([read-accept-reader #t])
+                           (call-with-input-file path read)))])
          (match sexp
            [`(module ,name ,(or `(lib "keybinding-lang.ss" "framework")
                                 `(lib "framework/keybinding-lang.ss")
@@ -35,7 +36,7 @@
                ,@(x ...)) 
             (let ([km (dynamic-require spec '#%keymap)])
               (hash-set! user-keybindings-files spec km)
-              (send global chain-to-keymap km #t))]
+              (send user-keymap chain-to-keymap km #t))]
            [else (error 'add-user-keybindings-file 
                         (string-constant user-defined-keybinding-malformed-file)
                         (path->string path))])))))
@@ -724,19 +725,6 @@
                          (+ (send edit last-line) 1)))]))))
               
               #t)]
-           [goto-position
-            (λ (edit event)
-              (let ([num-str
-                     (call/text-keymap-initializer
-                      (λ ()
-                        (get-text-from-user 
-                         (string-constant goto-position)
-                         (string-constant goto-position))))])
-                (when (string? num-str)
-                    (let ([pos (string->number num-str)])
-                      (when pos
-                        (send edit set-position (sub1 pos))))))
-              #t)]
            [repeater
             (λ (n edit)
               (let* ([km (send edit get-keymap)]
@@ -1081,7 +1069,6 @@
           (add-m "select-click-line" select-click-line)
           
           (add "goto-line" goto-line)
-          (add "goto-position" goto-position)
           
           (add "delete-key" delete-key)
           
@@ -1151,20 +1138,18 @@
           
           (map "c:e" "end-of-line")
           (map "d:right" "end-of-line")
-          (map "m:right" "end-of-line")
           (map "end" "end-of-line")
-          (map "m:s:right" "select-to-end-of-line")
           (map "s:end" "select-to-end-of-line")
           (map "s:c:e" "select-to-end-of-line")
+          (map "s:d:right" "select-to-end-of-line")
           
           (map "c:a" "beginning-of-line")
           (map "d:left" "beginning-of-line")
-          (map "m:left" "beginning-of-line")
           (map "home" "beginning-of-line")
-          (map "m:s:left" "select-to-beginning-of-line")
           (map "s:home" "select-to-beginning-of-line")
           (map "s:c:a" "select-to-beginning-of-line")
-          
+          (map "s:d:left" "select-to-beginning-of-line")
+
           (map "c:f" "forward-character")
           (map "right" "forward-character")
           (map "s:c:f" "forward-select")
@@ -1176,18 +1161,14 @@
           (map "s:left" "backward-select")
           
           (map-meta "f" "forward-word")
-          (map "a:right" "forward-word")
           (map "c:right" "forward-word")
           (map-meta "s:f" "forward-select-word")
-          (map "a:s:right" "forward-select-word")
           (map "c:s:right" "forward-select-word")
           
           (map-meta "b" "backward-word")
-          (map "a:left" "backward-word")
           
           (map "c:left" "backward-word")
           (map-meta "s:b" "backward-select-word")
-          (map "a:s:left" "backward-select-word")
           (map "c:s:left" "backward-select-word")
           
           (map-meta "<" "beginning-of-file")
@@ -1203,20 +1184,16 @@
           (map "s:d:down" "select-to-end-of-file")
           
           (map "c:v" "next-page")
-          (map "a:down" "next-page")
           (map "pagedown" "next-page")
           (map "c:down" "next-page")
           (map "s:c:v" "select-page-down")
-          (map "a:s:down" "select-page-down")
           (map "s:pagedown" "select-page-down")
           (map "s:c:down" "select-page-down")
           
           (map-meta "v" "previous-page")
-          (map "a:up" "previous-page")
           (map "pageup" "previous-page")
           (map "c:up" "previous-page")
           (map-meta "s:v" "select-page-up")
-          (map "s:a:up" "select-page-up")
           (map "s:pageup" "select-page-up")
           (map "s:c:up" "select-page-up")
           
@@ -1268,7 +1245,6 @@
           (map-meta "o" "toggle-overwrite")
           
           (map-meta "g" "goto-line")
-          (map-meta "p" "goto-position")
           
           (map "c:u" "command-repeat-0")
           (let loop ([n 9])
@@ -1428,9 +1404,12 @@
     (add-pasteboard-keymap-functions keymap)
     (add-text-keymap-functions keymap))
   
+  (define user-keymap (make-object aug-keymap%))
+  (define (get-user) user-keymap)
+  
   (define global (make-object aug-keymap%))
   (define global-main (make-object aug-keymap%))
-  (send global chain-to-keymap global-main #t)
+  (send global chain-to-keymap global-main #f)
   (setup-global global-main)
   (generic-setup global-main)
   (define (get-global) global)

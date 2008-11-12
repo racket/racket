@@ -36,16 +36,19 @@
               [else (loop (add1 p) (cdr l))])))
 
   ;; Like stx-memq-pos, but goes into nestings to
-  ;;  find identifiers.
+  ;;  find identifiers at the same nesting.
   (-define (stx-memq*-pos ssym l)
            (let loop ([p 0][l l])
              (cond
               [(null? l) #f]
-              [(bound-identifier=? ssym 
-                                   (let loop ([i (car l)])
-                                     (if (syntax? i)
-                                         i
-                                         (loop (car i)))))
+              [(let loop ([i (car l)][ssym ssym])
+                 (if (syntax? i)
+                     (if (syntax? ssym)
+                         (bound-identifier=? i ssym)
+                         #f)
+                     (if (pair? ssym)
+                         (loop (car i) (car ssym))
+                         #f)))
                p]
               [else (loop (add1 p) (cdr l))])))
 
@@ -534,19 +537,19 @@
                                                             (ellipsis-sub-env nesting proto-r top local-top))
                                                           nestings))]
                                [proto-rr-deep (and proto-r
+                                                   ;; the ones that we had to unwrap:
                                                    (let loop ([l proto-rr+deep?s])
                                                      (cond
                                                       [(null? l) null]
                                                       [(cdar l) (loop (cdr l))]
                                                       [else (cons (caar l) (loop (cdr l)))])))]
                                [proto-rr-shallow (and proto-r
+                                                      ;; the ones that we leave alone for these ellipses:
                                                       (let loop ([l proto-rr+deep?s])
                                                         (cond
                                                          [(null? l) null]
                                                          [(cdar l) (cons (caar l) (loop (cdr l)))]
                                                          [else (loop (cdr l))])))]
-                               [flat-nestings-deep (and proto-r (extract-vars proto-rr-deep))]
-                               [flat-nestings-shallow (and proto-r (extract-vars proto-rr-shallow))]
                                [__ (unless (null? proto-rr-shallow)
                                      (when (null? proto-rr-deep)
                                        (apply
@@ -562,19 +565,24 @@
                               `(lambda (r)
                                  ,(let ([pre (let ([deeps
                                                     (let ([valses
+                                                           ;; Generate one binding per nested use. This will duplicate
+                                                           ;; bindings if a pattern variable is used multiple times; that's
+                                                           ;; good if the uses are in different nesting levels (which could be
+                                                           ;; ok if there are extra ellipses around them), but it might also
+                                                           ;; create redundant entries.
                                                            (map (lambda (var)
-                                                                  (apply-list-ref 'r (stx-memq*-pos var proto-r) use-tail-pos))
-                                                                flat-nestings-deep)])
+                                                                  (apply-list-ref 'r (stx-memq*-pos (list var) proto-r) use-tail-pos))
+                                                                proto-rr-deep)])
                                                       (cond
                                                        [(and (= 1 (length valses))
                                                              (= 0 el-count)
-                                                             (null? flat-nestings-shallow)
+                                                             (null? proto-rr-shallow)
                                                              (equal? ehead '(lambda (r) (car r))))
                                                         ;; Common case: one item in list, no map needed:
                                                         (car valses)]
                                                        [(and (= 2 (length valses))
                                                              (= 0 el-count)
-                                                             (null? flat-nestings-shallow)
+                                                             (null? proto-rr-shallow)
                                                              (equal? ehead '(lambda (r) (list (car r) (cadr r)))))
                                                         ;; Another common case: a maintained pair
                                                         `(map 
@@ -590,17 +598,17 @@
                                                           (wrap
                                                            `(map 
                                                              (lambda vals (,ehead 
-                                                                           ,(if (null? flat-nestings-shallow)
+                                                                           ,(if (null? proto-rr-shallow)
                                                                                 'vals
                                                                                 '(append shallows vals))))
                                                              ,@valses)
                                                            el-count))]))])
-                                               (if (null? flat-nestings-shallow)
+                                               (if (null? proto-rr-shallow)
                                                    deeps
                                                    `(let ([shallows
                                                            (list ,@(map (lambda (var)
                                                                           (apply-list-ref 'r (stx-memq*-pos var proto-r) use-tail-pos))
-                                                                        flat-nestings-shallow))])
+                                                                        proto-rr-shallow))])
                                                       ,deeps)))]
                                         [post (apply-to-r rest)])
                                     (if (eq? post 'null)
@@ -896,27 +904,29 @@
   ;; found, and signaling an error otherwise. If the prototype 
   ;; entry should be unwrapped by one, it is, and the resulting
   ;; prototype is paired with #f. Otherwise, the prototype is left
-  ;; alone and paired with #t.
+  ;; alone and paired with #t. There may be multiple matches; in that 
+  ;; case, prefer unwrapping to not unwrapping (because the other one
+  ;; must be for a different sub-template nuder a shared ellipsis).
   (-define ellipsis-sub-env
            (lambda (nesting proto-r src detail-src)
-             (let ([v (ormap (lambda (proto)
-                               (let ([start (if (pair? proto)
-                                                (car proto)
-                                                proto)])
-                                 (let loop ([c start] [n nesting] [unwrap? (pair? proto)])
-                                   (cond
-                                    [(and (pair? c) (pair? n))
-                                     (loop (car c) (car n) #t)]
-                                    [(pair? n)
-                                     (loop c (car n) #f)]
-                                    [(and (syntax? c) (syntax? n))
-                                     (if (bound-identifier=? c n)
-                                         (cons (if unwrap? start proto)
-                                               (not unwrap?))
-                                         #f)]
-                                    [else #f]))))
-                             proto-r)])
-               (unless v
+             (let ([vs (map (lambda (proto)
+                              (let ([start (if (pair? proto)
+                                               (car proto)
+                                               proto)])
+                                (let loop ([c start] [n nesting] [unwrap? (pair? proto)])
+                                  (cond
+                                   [(and (pair? c) (pair? n))
+                                    (loop (car c) (car n) #t)]
+                                   [(pair? n)
+                                    (loop c (car n) #f)]
+                                   [(and (syntax? c) (syntax? n))
+                                    (if (bound-identifier=? c n)
+                                        (cons (if unwrap? start proto)
+                                              (not unwrap?))
+                                        #f)]
+                                   [else #f]))))
+                            proto-r)])
+               (unless (ormap values vs)
                  (apply
                   raise-syntax-error 
                   'syntax
@@ -927,7 +937,8 @@
                      (if (syntax? n)
                          n
                          (loop (car n)))))))
-               v)))
+               (or (ormap (lambda (v) (and v (not (cdr v)) v)) vs)
+                   (ormap values vs)))))
 
   (-define (extract-vars proto-r)
            (map (lambda (i)

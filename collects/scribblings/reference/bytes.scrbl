@@ -22,7 +22,7 @@ A byte string can be used as a single-valued sequence (see
 @secref["sequences"]). The bytes of the string serve as elements
 of the sequence. See also @scheme[in-bytes].
 
-See also: @scheme[immutable].
+See also: @scheme[immutable?].
 
 @; ----------------------------------------
 @section{Byte String Constructors, Selectors, and Mutators}
@@ -30,21 +30,21 @@ See also: @scheme[immutable].
 @defproc[(bytes? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
  is a byte string, @scheme[#f] otherwise.
 
-@examples[(bytes? #"Apple") (bytes? "Apple")]}
+@mz-examples[(bytes? #"Apple") (bytes? "Apple")]}
 
 
 @defproc[(make-bytes [k exact-nonnegative-integer?] [b byte? 0])
 bytes?]{ Returns a new mutable byte string of length @scheme[k] where each
 position in the byte string is initialized with the byte @scheme[b].
 
-@examples[(make-bytes 5 65)]}
+@mz-examples[(make-bytes 5 65)]}
 
 
 @defproc[(bytes [b byte?] ...) bytes?]{ Returns a new mutable byte
 string whose length is the number of provided @scheme[b]s, and whose
 positions are initialized with the given @scheme[b]s.
 
-@examples[(bytes 65 112 112 108 101)]}
+@mz-examples[(bytes 65 112 112 108 101)]}
 
 
 @defproc[(bytes->immutable-bytes [bstr bytes?])
@@ -59,13 +59,13 @@ positions are initialized with the given @scheme[b]s.
  a byte (i.e., an exact integer between @scheme[0] and @scheme[255]
  inclusive), @scheme[#f] otherwise.
 
-@examples[(byte? 65) (byte? 0) (byte? 256) (byte? -1)]}
+@mz-examples[(byte? 65) (byte? 0) (byte? 256) (byte? -1)]}
 
 
 @defproc[(bytes-length [bstr bytes?]) exact-nonnegative-integer?]{
  Returns the length of @scheme[bstr].
 
-@examples[(bytes-length #"Apple")]}
+@mz-examples[(bytes-length #"Apple")]}
 
 
 @defproc[(bytes-ref [bstr bytes?] [k exact-nonnegative-integer?])
@@ -74,7 +74,7 @@ positions are initialized with the given @scheme[b]s.
  position @scheme[k] must be less than the length of the bytes,
  otherwise the @exnraise[exn:fail:contract].
 
-@examples[(bytes-ref #"Apple" 0)]}
+@mz-examples[(bytes-ref #"Apple" 0)]}
 
 
 @defproc[(bytes-set! [bstr (and/c bytes? (not/c immutable?))] [k
@@ -84,9 +84,9 @@ positions are initialized with the given @scheme[b]s.
  @scheme[k] must be less than the length of the bytes, otherwise the
  @exnraise[exn:fail:contract].
 
-@examples[(define s (bytes 65 112 112 108 101))
-          (bytes-set! s 4 121)
-          s]}
+@mz-examples[(define s (bytes 65 112 112 108 101))
+             (bytes-set! s 4 121)
+             s]}
 
 
 @defproc[(subbytes [bstr bytes?] [start exact-nonnegative-integer?]
@@ -98,8 +98,8 @@ positions are initialized with the given @scheme[b]s.
  @scheme[bstr], and @scheme[end] must be greater than or equal to @scheme[bstr],
  otherwise the @exnraise[exn:fail:contract].
 
-@examples[(subbytes #"Apple" 1 3)
-          (subbytes #"Apple" 1)]}
+@mz-examples[(subbytes #"Apple" 1 3)
+             (subbytes #"Apple" 1)]}
 
 
 @defproc[(bytes-copy [bstr bytes?]) bytes?]{ Returns
@@ -124,18 +124,18 @@ positions are initialized with the given @scheme[b]s.
  account the sizes of the bytes strings and the source and destination
  regions), the @exnraise[exn:fail:contract].
 
-@examples[(define s (bytes 65 112 112 108 101))
-          (bytes-copy! s 4 #"y")
-          (bytes-copy! s 0 s 3 4)
-          s]}
+@mz-examples[(define s (bytes 65 112 112 108 101))
+             (bytes-copy! s 4 #"y")
+             (bytes-copy! s 0 s 3 4)
+             s]}
 
 @defproc[(bytes-fill! [dest (and/c bytes? (not/c immutable?))] [char
  char?]) void?]{ Changes @scheme[dest] so that every position in the
  bytes is filled with @scheme[char].
 
-@examples[(define s (bytes 65 112 112 108 101))
-          (bytes-fill! s 113)
-          s]}
+@mz-examples[(define s (bytes 65 112 112 108 101))
+             (bytes-fill! s 113)
+             s]}
 
 
 @defproc[(bytes-append [bstr bytes?] ...) bytes?]{ 
@@ -146,7 +146,7 @@ that contains the concatenated bytes of the given @scheme[bstr]s. If
 no @scheme[bstr]s are provided, the result is a zero-length byte
 string.
 
-@examples[(bytes-append #"Apple" #"Banana")]}
+@mz-examples[(bytes-append #"Apple" #"Banana")]}
 
 
 @defproc[(bytes->list [bstr bytes?]) (listof byte?)]{ Returns a new
@@ -155,7 +155,7 @@ string.
  sequence of bytes of @scheme[bstr] are in the same sequence in the
  result list.
 
-@examples[(bytes->list #"Apple")]}
+@mz-examples[(bytes->list #"Apple")]}
 
 
 @defproc[(list->bytes [lst (listof byte?)]) bytes?]{ Returns a new
@@ -164,7 +164,7 @@ string.
  the sequence of bytes in @scheme[lst] is in the same sequence in
  the result bytes.
 
-@examples[(list->bytes (list 65 112 112 108 101))]}
+@mz-examples[(list->bytes (list 65 112 112 108 101))]}
 
 
 @; ----------------------------------------
@@ -173,8 +173,8 @@ string.
 @defproc[(bytes=? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{ Returns
  @scheme[#t] if all of the arguments are @scheme[eqv?].}
 
-@examples[(bytes=? #"Apple" #"apple")
-          (bytes=? #"a" #"as" #"a")]
+@mz-examples[(bytes=? #"Apple" #"apple")
+             (bytes=? #"a" #"as" #"a")]
 
 @(define (bytes-sort direction)
    @elem{Like @scheme[bytes<?], but checks whether the arguments are @|direction|.})
@@ -184,16 +184,16 @@ string.
  increasing, where individual bytes are ordered by @scheme[<],
  @scheme[#f] otherwise.
 
-@examples[(bytes<? #"Apple" #"apple")
-          (bytes<? #"apple" #"Apple")
-          (bytes<? #"a" #"b" #"c")]}
+@mz-examples[(bytes<? #"Apple" #"apple")
+             (bytes<? #"apple" #"Apple")
+             (bytes<? #"a" #"b" #"c")]}
 
 @defproc[(bytes>? [bstr1 bytes?] [bstr2 bytes?] ...+) boolean?]{
  @bytes-sort["decreasing"]
 
-@examples[(bytes>? #"Apple" #"apple")
-          (bytes>? #"apple" #"Apple")
-          (bytes>? #"c" #"b" #"a")]}
+@mz-examples[(bytes>? #"Apple" #"apple")
+             (bytes>? #"apple" #"Apple")
+             (bytes>? #"c" #"b" #"a")]}
 
 @; ----------------------------------------
 @section{Bytes to/from Characters, Decoding and Encoding}

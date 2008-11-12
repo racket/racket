@@ -67,70 +67,25 @@ Second, if you want to make your own Scheme start-up script, you can write:
 
 @section[#:tag "faq:https"]{How do I set up the server to use HTTPS?}
 
-The essence of the solution to this problem is to use an SSL TCP implementation as provided by @schememodname[net/ssl-tcp-unit]. Many of the functions that start the Web Server are parameterized by a @scheme[tcp@] unit. If you pass an SSL unit, then the server will be serving HTTPS. However, to do this, you must write your own start up script. Here's a simple example:
+This requires an SSL certificate and private key. This is very platform specific, but we will provide
+the details for using OpenSSL on UNIX:
 
-@(require (for-label scheme/unit)
-          (for-label net/ssl-tcp-unit)
-          (for-label net/tcp-sig)
-          (for-label net/tcp-unit)
-          (for-label web-server/web-server)
-          (for-label web-server/web-server-unit)
-          (for-label web-server/web-server-sig)
-          (for-label web-server/web-config-sig)
-          (for-label web-server/web-config-unit)
-          (for-label web-server/configuration/namespace))
+@commandline{openssl genrsa -des3 -out private-key.pem 1024}
 
-@schememod[
-scheme
+This will generate a new private key, but it will have a passphrase on it. You can remove this via:
 
-@code:comment{Load the appropriate libraries to reimplement server}
-(require scheme/unit
-         net/ssl-tcp-unit
-         net/tcp-sig
-         net/tcp-unit
-         (only-in web-server/web-server do-not-return)
-         web-server/web-server-unit
-         web-server/web-server-sig
-         web-server/web-config-sig
-         web-server/web-config-unit
-         web-server/configuration/namespace)
+@commandline{openssl rsa -in private-key.pem -out private-key.pem}
+@commandline{chmod 400 private-key.pem}
 
-@code:comment{Define the necessary parameters.}
-(define port-no 8443)
-(define SSL-path (find-system-path 'home-dir))
+Now, we generate a self-signed certificate:
 
-@code:comment{Load the standard configuration file, but augment the port.}
-(define configuration
-  (configuration-table->web-config@
-   (build-path (collection-path "web-server")
-               "default-web-root"
-               "configuration-table.ss")
-   #:port port-no))
+@commandline{openssl req -new -x509 -nodes -sha1 -days 365 -key private-key.pem > server-cert.pem}
 
-@code:comment{The configuration is a unit and this lets us treat it as one.}
-(define-unit-binding config@ configuration
-  (import) (export web-config^))
+(Each certificate authority has different instructions for generating certificate signing requests.)
 
-@code:comment{This loads the SSL TCP interface with the appropriate keys.}
-(define-unit-binding ssl-tcp@
-  (make-ssl-tcp@ (build-path SSL-path "server-cert.pem")
-                 (build-path SSL-path "private-key.pem")
-                 #f #f #f #f #f)
-  (import) (export tcp^))
+We can now start the server with:
 
-@code:comment{Combine the configuration with the TCP interface to get a server!}
-(define-compound-unit/infer ssl-server@
-  (import)
-  (link ssl-tcp@ config@ web-server@)
-  (export web-server^))
+@commandline{plt-web-server --ssl}
 
-@code:comment{Invoke the server to get at what it provides.}
-(define-values/invoke-unit/infer ssl-server@)
-
-@code:comment{Run the server.}
-(serve)
-(do-not-return)
-]
-
-Running this script, rather than @exec{plt-web-server}, runs the server using SSL on port @scheme[port-no].
-The certificate and private key are located in the @scheme[SSL-path] directory.
+The Web Server will start on port 443 (which can be overridden with the @exec{-p} option) using the
+@filepath{private-key.pem} and @filepath{server-cert.pem} we've created.

@@ -1,8 +1,8 @@
 #reader scribble/reader
-#lang scheme/gui
+#lang scheme/base
 
-(require string-constants)
-
+(require string-constants scheme/gui/base
+         scheme/contract scheme/class)
 (require scribble/srcdoc)
 (require/doc scheme/base scribble/manual)
 
@@ -232,12 +232,12 @@
           (λ () (cursor-off))))])))
 
 (define unsaved-warning
-  (lambda (filename action-anyway (can-save-now? #f) (parent #f))
+  (lambda (filename action-anyway (can-save-now? #f) (parent #f) [cancel? #t])
     (let ([mb-res (message-box/custom 
                    (string-constant warning)
                    (format (string-constant file-is-not-saved) filename)
                    (string-constant save)
-                   (string-constant cancel)
+                   (and cancel? (string-constant cancel))
                    action-anyway
                    parent
                    (if can-save-now?
@@ -454,11 +454,13 @@
    (boolean?
     (or/c false/c
           (is-a?/c frame%)
-          (is-a?/c dialog%)))
+          (is-a?/c dialog%))
+    boolean?)
    (symbols 'continue 'save 'cancel))
   ((filename action)
    ((can-save-now? #f)
-    (parent #f)))
+    (parent #f)
+    (cancel? #t)))
   
   @{This displays a dialog that warns the user of a unsaved file.
          
@@ -468,7 +470,14 @@
          The result symbol indicates the user's choice. If
          @scheme[can-save-now?] is @scheme[#f], this function does not
          give the user the ``Save'' option and thus will not return
-         @scheme['save].})
+         @scheme['save].
+         
+         If @scheme[cancel?] is @scheme[#t] there is a cancel button
+         in the dialog and the result may be @scheme['cancel]. If it
+         is @scheme[#f], then there is no cancel button, and @scheme['cancel]
+         will not be the result of the function.
+         
+         })
  
  (proc-doc/names
   gui-utils:get-choice

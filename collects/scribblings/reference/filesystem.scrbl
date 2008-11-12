@@ -536,6 +536,82 @@ module path.}
 
 @note-lib[scheme/file]
 
+@defproc[(file->string [path path-string?]
+                       [#:mode mode-flag (or/c 'binary 'text) 'binary])
+         string?]{
+
+Reads all characters from @scheme[path] and returns them as a string.
+The @scheme[mode-flag] argument is the same as for
+@scheme[open-input-file].}
+ 
+@defproc[(file->bytes [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary])
+         bytes?]{
+
+Reads all characters from @scheme[path] and returns them as a
+@tech{byte string}.  The @scheme[mode-flag] argument is the same as
+for @scheme[open-input-file].}
+
+@defproc[(file->lines [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         bytes?]{
+
+Read all characters from @scheme[path], breaking them into lines. The
+@scheme[line-mode] argument is the same as the second argument to
+@scheme[read-line], but the default is @scheme['any] instead of
+@scheme['linefeed]. The @scheme[mode-flag] argument is the same as for
+@scheme[open-input-file].}
+
+@defproc[(file->value [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary])
+         bytes?]{
+
+Reads a single S-expression from @scheme[path] using @scheme[read].
+The @scheme[mode-flag] argument is the same as for
+@scheme[open-input-file].}
+
+@defproc[(file->bytes-lines [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         bytes?]{
+
+Like @scheme[file->lines], but reading bytes and collecting them into
+lines like @scheme[read-bytes-line].}
+
+@defproc[(display-to-file [v any/c]
+                          [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:exists exists-flag (or/c 'error 'append 'update
+                                                  'replace 'truncate 'truncate/replace) 'error])
+         void?]{
+
+Uses @scheme[display] to print @scheme[v] to @scheme[path]. The @scheme[mode-flag] and
+@scheme[exists-flag] arguments are the same as for
+@scheme[open-output-file].}
+
+@defproc[(write-to-file [v any/c]
+                        [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:exists exists-flag (or/c 'error 'append 'update
+                                                  'replace 'truncate 'truncate/replace) 'error])
+         void?]{
+
+Like @scheme[display-to-file], but using @scheme[write] instead of @scheme[display].}
+
+@defproc[(display-lines-to-file [lst list?]
+                                [path path-string?]
+                       [#:separator separator any/c #"\n"]
+                       [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                       [#:exists exists-flag (or/c 'error 'append 'update
+                                                   'replace 'truncate 'truncate/replace) 'error])
+         void?]{
+
+Displays each element of @scheme[lst] to @scheme[path], adding
+@scheme[separator] after each element. The @scheme[mode-flag] and
+@scheme[exists-flag] arguments are the same as for
+@scheme[open-output-file].}
+
 @defproc[(copy-directory/files [src path-string?][dest path-string?]) 
          void?]{
 

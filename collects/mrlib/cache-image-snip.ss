@@ -54,6 +54,10 @@
       
       ;; the pinhole's coordinates
       (init-field px py)
+      (when (inexact? px)
+        (set! px (floor (inexact->exact px))))
+      (when (inexact? py)
+        (set! py (floor (inexact->exact py))))
       (define/public (get-pinhole) (values px py))
 
       (init-field (width #f)

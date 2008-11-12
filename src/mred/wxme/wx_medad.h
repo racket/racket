@@ -455,6 +455,8 @@ class wxMediaCanvas : public wxCanvas
 
   virtual void Scroll(int x, int y, Bool refresh);
 
+  void ClearMargins();
+
   /* To block bad uses: */
   virtual void Scroll(int x, int y);
   virtual void SetScrollbars(int h_pixels, int v_pixels, int x_len, int y_len,

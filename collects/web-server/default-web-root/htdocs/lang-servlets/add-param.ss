@@ -1,5 +1,6 @@
 #lang web-server
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 (define msg (make-parameter "unknown"))
 

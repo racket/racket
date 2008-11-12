@@ -23,7 +23,7 @@ through a Scheme API.}
 
 @section[#:tag "api:zo"]{Bytecode Compilation}
 
-@defproc[((compile-zos [expr any/c]) 
+@defproc[((compile-zos [expr any/c] [#:module? module? any/c #f] [#:verbose? verbose? any/c #f]) 
           [scheme-files (listof path-string?)]
           [dest-dir (or/c path-string? false/c (one-of/c 'auto))])
          void?]{
@@ -41,7 +41,7 @@ subdirectory relative to the source; the directory is created if
 necessary.
 
 If @scheme[expr] is anything other than @scheme[#f], then a namespace
-is created for compiling the files that are supplied later;
+is created for compiling the files that are supplied later, and
 @scheme[expr] is evaluated to initialize the created namespace. For
 example, @scheme[expr] might load a set of macros. In addition, the
 expansion-time part of each expression later compiled is evaluated in
@@ -49,13 +49,20 @@ the namespace before being compiled, so that the effects are visible
 when compiling later expressions.
 
 If @scheme[expr] is @scheme[#f], then no compilation namespace is
-created, and expressions in the files are assumed to compile
-independently (so there's no need to evaluate the expansion-time part
-of an expression to compile).
+created (the current namespace is used), and expressions in the files
+are assumed to compile independently (so there's no need to evaluate
+the expansion-time part of an expression to compile).
 
 Typically, @scheme[expr] is @scheme[#f] for compiling @scheme[module]
 files, and it is @scheme[(void)] for compiling files with top-level
-definitions and expressions.}
+definitions and expressions.
+
+If @scheme[module?] is @scheme[#t], then the given files are read and
+compiled as modules (so there is no dependency on the current
+namespace's top-level environment).
+
+If @scheme[verbose?] is @scheme[#t], the output file for each given
+file is reported through the current output port.}
 
 
 @defproc[(compile-collection-zos [collection string?] ...+)
@@ -184,6 +191,11 @@ form of parameters) that control the compiler's behaviors.}
 More options are defined by the @schememodname[dynext/compile] and
 @schememodname[dynext/link] libraries, which control the actual C
 compiler and linker that are used for compilation via C.
+
+@defboolparam[somewhat-verbose on?]{
+
+A @scheme[#t] value for the parameter causes the compiler to print
+the files that it compiles and produces. The default is @scheme[#f].}
 
 @defboolparam[verbose on?]{
 

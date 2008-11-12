@@ -42,16 +42,13 @@ some are quoted to produce a symbol or a syntax object.
 An identifier @deftech{binds} another (i.e., it is a
 @deftech{binding}) when the former is parsed as a @tech{variable} and
 the latter is parsed as a reference to the former; the latter is
-@deftech{bound}.  The @deftech{scope} of a @tech{binding} is the set
+@deftech{bound}. The @deftech{scope} of a @tech{binding} is the set
 of source forms to which it applies. The @deftech{environment} of a
 form is the set of bindings whose @tech{scope} includes the form. A
 binding for a sub-expression @deftech{shadows} any @tech{bindings}
 (i.e., it is @deftech{shadowing}) in its @tech{environment}, so that
 uses of an @tech{identifier} refer to the @tech{shadowing}
-@tech{binding}.  A @deftech{top-level binding} is a @tech{binding}
-from a definition at the top-level; a @deftech{module binding} is a
-binding from a definition in a module; and a @deftech{local binding}
-is another other kind of binding.
+@tech{binding}. 
 
 For example, as a bit of source, the text
 
@@ -62,6 +59,14 @@ appears twice). When this source is parsed in a typical
 @tech{environment}, @scheme[x] turns out to represent a
 @tech{variable} (unlike @scheme[let]). In particular, the first
 @scheme[x] @tech{binds} the second @scheme[x].
+
+A @deftech{top-level binding} is a @tech{binding} from a definition at
+the top-level; a @deftech{module binding} is a binding from a
+definition in a module; and a @deftech{local binding} is another other
+kind of binding. There is no difference between an @deftech{unbound}
+identifier and one with a @tech{top-level binding}; within a module,
+references to @tech{top-level bindings} are disallowed, and so such
+identifiers are called @tech{unbound} in a module context.
 
 Throughout the documentation, @tech{identifiers} are typeset to
 suggest the way that they are parsed. A black, boldface
@@ -215,7 +220,8 @@ the binding (according to @scheme[free-identifier=?]) matters.}
       (#%plain-app expr ...+)
       (#%top . id)
       (#%variable-reference id)
-      (#%variable-reference (#%top . id))]
+      (#%variable-reference (#%top . id))
+      (#%variable-reference)]
 [formals (id ...)
          (id ...+ . id)
          id]]
@@ -229,10 +235,10 @@ More specifically, the typesetting of identifiers in the above grammar
 is significant. For example, the second case for @scheme[_expr] is a
 @tech{syntax-object} list whose first element is an @tech{identifier},
 where the @tech{identifier}'s @tech{lexical information} specifies a
-binding to the @scheme[define-values] of the
+binding to the @scheme[#%plain-lambda] of the
 @schememodname[scheme/base] language (i.e., the @tech{identifier} is
 @scheme[free-identifier=?] to one whose binding is
-@scheme[define-values]). In all cases, identifiers above typeset as
+@scheme[#%plain-lambda]). In all cases, identifiers above typeset as
 syntactic-form names refer to the bindings defined in
 @secref["syntax"].
 

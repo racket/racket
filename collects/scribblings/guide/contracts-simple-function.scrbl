@@ -324,10 +324,8 @@ difference between these two contracts is:
 (-> integer? any/c)
 ]
 
-Both allow any result, right? There are two differences:
-@itemize{
-
-@item{In the first case, the function may return anything at
+Both allow any result, right? There is one important difference:
+in the first case, the function may return anything at
 all, including multiple values. In the second case, the
 function may return any value, but not more than one. For
 example, this function:
@@ -336,22 +334,3 @@ example, this function:
 ]
 meets the first contract, but not the second one.}
 
-@item{This also means that a call to a function that
-has the second contract is not a tail call. So, for example,
-the following program is an infinite loop that takes only a constant
-amount of space, but if you replace @scheme[any] with
-@scheme[any/c], it uses up all of the memory available.
-
-@schemeblock[
-(module server scheme
-  (provide/contract
-   [f (-> (-> procedure? any) boolean?)])
-  (define (f g) (g g)))
-
-(module client scheme
-  (require 'server)
-  (f f))
-
-(require 'client)
-]
-}}

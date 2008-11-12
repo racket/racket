@@ -392,8 +392,8 @@ is an integer and a @scheme[#:x] argument is that a boolean.
 
 If @scheme[any] is used as the last sub-form for @scheme[->], no
 contract checking is performed on the result of the function, and
-tail-recursion is preserved. Note that the function may return
-multiple values in that case.
+thus any number of values is legal (even different numbers on different
+invocations of the function).
 
 If @scheme[(values res-expr ...)] is used as the last sub-form of
 @scheme[->], the function must produce a result for each contract, and

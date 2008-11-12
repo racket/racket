@@ -2,6 +2,16 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
+#ifdef MZ_USE_PLACES
+# if _MSC_VER
+#  define THREAD_LOCAL __declspec(thread)
+# else
+#  define THREAD_LOCAL __thread
+# endif
+#else
+# define THREAD_LOCAL /* empty */
+#endif
+
 /***************************************************************************/
 /***   See README for a general overview of the interface architecture.  ***/
 /***************************************************************************/
@@ -99,6 +109,11 @@ GC2_EXTERN void (*GC_out_of_memory)(void);
    Called by GC when it can't satify a memory request. GC_out_of_memory()
    might perform a longjmp. */
 
+GC2_EXTERN void (*GC_report_out_of_memory)(void);
+/*
+   Called by GC when it has to give up, maybe due to running out of memory
+   during a collection. */
+
 GC2_EXTERN void GC_dump(void);
 /*
    Dumps memory state info to stderr. */
@@ -150,9 +165,10 @@ GC2_EXTERN void *GC_malloc_one_small_dirty_tagged(size_t);
    object before a GC can occur. */
 
 GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
-GC2_EXTERN void *GC_malloc_mutable_pair(void *car, void *cdr);
 /* 
-   Like GC_malloc_one_tagged, but even more streamline. */
+   Like GC_malloc_one_tagged, but even more streamlined.
+   The main potential advantage is that `car' and `cdr' don't
+   have to be retained by the callee in the case of a GC. */
 
 GC2_EXTERN void *GC_malloc_one_xtagged(size_t);
 /* 
@@ -262,7 +278,7 @@ GC2_EXTERN void GC_finalization_weak_ptr(void **p, int offset);
 /* Cooperative GC                                                          */
 /***************************************************************************/
 
-GC2_EXTERN void **GC_variable_stack;
+GC2_EXTERN THREAD_LOCAL void **GC_variable_stack;
 /*
    See the general overview in README. */
 

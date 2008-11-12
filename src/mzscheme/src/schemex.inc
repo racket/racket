@@ -88,6 +88,8 @@
   scheme_extension_table->scheme_log_level_p = scheme_log_level_p;
   scheme_extension_table->scheme_log = scheme_log;
   scheme_extension_table->scheme_log_message = scheme_log_message;
+  scheme_extension_table->scheme_log_abort = scheme_log_abort;
+  scheme_extension_table->scheme_out_of_memory_abort = scheme_out_of_memory_abort;
   scheme_extension_table->scheme_wrong_count = scheme_wrong_count;
   scheme_extension_table->scheme_wrong_count_m = scheme_wrong_count_m;
   scheme_extension_table->scheme_case_lambda_wrong_count = scheme_case_lambda_wrong_count;

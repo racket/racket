@@ -106,7 +106,7 @@ integers from @scheme[0] to @scheme[(sub1 n)] in order. If
 @scheme[_lst] is the resulting list, then @scheme[(list-ref _lst _i)]
 is the value produced by @scheme[(proc _i)].
 
-@examples[
+@mz-examples[
 (build-list 10 values)
 (build-list 5 (lambda (x) (* x x)))
 ]}
@@ -191,7 +191,7 @@ Similar to @scheme[map], except that
 
 If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
 
-@examples[
+@mz-examples[
 (andmap positive? '(1 2 3))
 (andmap positive? '(1 2 a))
 (andmap positive? '(1 -2 a))
@@ -220,7 +220,7 @@ Similar to @scheme[map], except that
 
 If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 
-@examples[
+@mz-examples[
 (ormap eq? '(a b c) '(a b c))
 (ormap positive? '(1 2 a))
 (ormap + '(1 2 3) '(4 5 6))
@@ -257,7 +257,7 @@ If @scheme[foldl] is called with @math{n} lists, then @scheme[proc]
 Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
  constant space (plus the space for each call to @scheme[proc]).
 
-@examples[
+@mz-examples[
 (foldl cons '() '(1 2 3 4))
 (foldl + 0 '(1 2 3 4))
 ]}
@@ -270,7 +270,7 @@ Like @scheme[foldl], but the lists are traversed from right to left.
  space proportional to the length of @scheme[lst]s (plus the space for
  each call to @scheme[proc]).
 
-@examples[
+@mz-examples[
 (foldr cons '() '(1 2 3 4))
 (foldr (lambda (v l) (cons (add1 v) l)) '() '(1 2 3 4))
 ]}
@@ -365,7 +365,7 @@ By default, @scheme[extract-key] is applied to two list elements for
  @scheme[extract-key] as @scheme[(lambda (x) (random))] and
  @scheme[#t] for @scheme[cache-keys?] effectively shuffles the list.}
 
-@examples[
+@mz-examples[
 (sort '(1 3 4 2) <)
 (sort '("aardvark" "dingo" "cow" "bear") string<?)
 (sort '(("aardvark") ("dingo") ("cow") ("bear"))
@@ -521,7 +521,7 @@ Returns a fresh list whose elements are the first @scheme[pos] elements of
 The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely start with a chain of at least @scheme[pos] pairs.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
  (take '(1 2 3 4) 2)
  (take 'non-list 0)
 ]}
@@ -545,7 +545,7 @@ has fewer than @scheme[pos] elements, then the
 The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely end with a chain of at least @scheme[pos] pairs.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
  (take-right '(1 2 3 4) 2)
  (take-right 'non-list 0)
 ]}
@@ -558,7 +558,7 @@ dropping its @scheme[pos]-length tail. If @scheme[lst] has fewer than
 The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely end with a chain of at least @scheme[pos] pairs.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
  (drop-right '(1 2 3 4) 2)
  (drop-right 'non-list 0)
 ]}
@@ -576,7 +576,7 @@ except that it can be faster.}
 Returns a list with the same elements as @scheme[lst], but with
 @scheme[v] between each pair of items in @scheme[lst].
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (add-between '(x y z) 'or)
   (add-between '(x) 'or)
 ]}
@@ -591,7 +591,7 @@ same as @scheme[(apply append lst ... lsts)].  In other words, the
 relationship between @scheme[append] and @scheme[append*] is similar
 to the one between @scheme[list] and @scheme[list*].
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (append* '(a) '(b) '((c) (d)))
   (cdr (append* (map (lambda (x) (list ", " x))
                      '("Alpha" "Beta" "Gamma"))))
@@ -606,7 +606,7 @@ pairs are interior nodes, and the resulting list contains all of the
 non-@scheme[null] leaves of the tree in the same order as an inorder
 traversal.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (flatten '((a) b (c (d) . e) ()))
   (flatten 'a)
 ]}
@@ -620,7 +620,7 @@ of the list are equivalent.  The resulting list is in the same order
 as @scheme[lst], and for any item that occurs multiple times, the
 first one is kept.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (remove-duplicates '(a b b a))
   (remove-duplicates '(1 2 1.0 0))
   (remove-duplicates '(1 2 1.0 0) =)
@@ -646,7 +646,7 @@ The result is the same as
 
 but @scheme[pred] is applied to each item in @scheme[lst] only once.
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (partition even? '(1 2 3 4 5 6))
 ]}
 
@@ -656,7 +656,7 @@ but @scheme[pred] is applied to each item in @scheme[lst] only once.
 
 Returns @scheme[(append* (map proc lst ...))].
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
  (append-map vector->list '(#(1) #(2 3) #(4)))
 ]}
 
@@ -668,7 +668,7 @@ Like @scheme[filter], but the meaning of the @scheme[pred] predicate
 is reversed: the result is a list of all items for which @scheme[pred]
 returns @scheme[#f].
 
-@examples[#:eval list-eval
+@mz-examples[#:eval list-eval
   (filter-not even? '(1 2 3 4 5 6))
 ]}
 
@@ -714,7 +714,7 @@ placeholders:
 Due to these restrictions, @scheme[make-reader-graph] creates exactly
 the same sort of cyclic values as @scheme[read].
 
-@examples[
+@mz-examples[
 (let* ([ph (make-placeholder #f)]
        [x (cons 1 ph)])
   (placeholder-set! ph x)

@@ -749,6 +749,7 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *m
                                              struct Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
                                              Scheme_Object *src_phase_index, 
+                                             Scheme_Object *marks,
                                              int save_unmarshal);
 void scheme_extend_module_rename_with_kernel(Scheme_Object *rn, Scheme_Object *nominal_src);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
@@ -1970,7 +1971,6 @@ typedef struct Scheme_Native_Closure_Data {
   } u2;
 #ifdef MZ_PRECISE_GC
   void **retained; /* inside code */
-  mzshort retain_count;
 #endif
 } Scheme_Native_Closure_Data;
 
@@ -2165,6 +2165,7 @@ void scheme_resolve_info_add_mapping(Resolve_Info *info, int oldp, int newp, int
 void scheme_resolve_info_adjust_mapping(Resolve_Info *info, int oldp, int newp, int flags, Scheme_Object *lifted);
 int scheme_resolve_info_flags(Resolve_Info *info, int pos, Scheme_Object **lifted);
 int scheme_resolve_info_lookup(Resolve_Info *resolve, int pos, int *flags, Scheme_Object **lifted, int convert_shift);
+int scheme_optimize_info_is_ready(Optimize_Info *info, int pos);
 void scheme_resolve_info_set_toplevel_pos(Resolve_Info *info, int pos);
 
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);
@@ -2476,6 +2477,7 @@ struct Scheme_Env {
 			  protected access and certificates */
 
   Scheme_Object *rename_set;
+  Scheme_Hash_Table *temp_marked_names; /* used to correlate imports with re-exports */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;
@@ -2634,7 +2636,7 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 
 
 
-Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, 
+Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int mode, 
                                 Scheme_Object *phase, int *_skipped);
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
 
@@ -3049,6 +3051,7 @@ Scheme_Object *scheme_checked_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_vector_length(Scheme_Object *v);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 

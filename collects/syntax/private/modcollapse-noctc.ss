@@ -259,20 +259,25 @@ Use syntax/modcollapse instead.
         [else #f]))
 
 (define (collapse-module-path-index mpi relto-mp)
+  (define (force-relto relto-mp)
+    (if (procedure? relto-mp) 
+        (relto-mp)
+        relto-mp))
   (let-values ([(path base) (module-path-index-split mpi)])
     (if path
         (collapse-module-path
          path
-         (cond
-          [(module-path-index? base)
-           (collapse-module-path-index base relto-mp)]
-          [(resolved-module-path? base)
-           (let ([n (resolved-module-path-name base)])
-             (if (path? n)
-                 n
-                 relto-mp))]
-          [else relto-mp]))
-        relto-mp)))
+         (lambda ()
+           (cond
+            [(module-path-index? base)
+             (collapse-module-path-index base relto-mp)]
+            [(resolved-module-path? base)
+             (let ([n (resolved-module-path-name base)])
+               (if (path? n)
+                   n
+                   (force-relto relto-mp)))]
+            [else (force-relto relto-mp)])))
+        (force-relto relto-mp))))
 
 (provide collapse-module-path
          collapse-module-path-index)

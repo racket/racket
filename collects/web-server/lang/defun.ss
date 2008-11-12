@@ -100,22 +100,7 @@
                 empty)]
        [id (identifier? #'id)
            (values stx
-                   empty)]
-       ; XXX Shouldn't
-       [(letrec-syntaxes+values ([(sv ...) se] ...)
-          ([(vv ...) ve] ...)
-          be ...)
-        (let-values ([(nses se-defs) (defun* (syntax->list #'(se ...)))]
-                     [(nves ve-defs) (defun* (syntax->list #'(ve ...)))]
-                     [(nbes be-defs) (defun* (syntax->list #'(be ...)))])
-          (with-syntax ([(nse ...) nses]
-                        [(nve ...) nves]
-                        [(nbe ...) nbes])
-            (values (syntax/loc stx 
-                      (letrec-syntaxes+values ([(sv ...) nse] ...)
-                        ([(vv ...) nve] ...)
-                        nbe ...))
-                    (append se-defs ve-defs be-defs))))]
+                   empty)]       
        [(#%expression d)
         (let-values ([(nd d-defs) (defun #'d)])
           (values (quasisyntax/loc stx (#%expression #,nd))

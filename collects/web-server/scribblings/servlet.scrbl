@@ -20,7 +20,7 @@ of these servlets.
 
 A @defterm{servlet} is a module that provides the following:
 
-@defthing[interface-version (one-of/c 'v1 'v2)]{
+@defthing[interface-version (one-of/c 'v1 'v2 'stateless)]{
  A symbol indicating the servlet interface the servlet conforms
  to. This influences the other provided identifiers.
 }
@@ -45,25 +45,83 @@ A @defterm{servlet} is a module that provides the following:
  This function is called when an instance of this servlet is started.
  The argument is the HTTP request that initiated the instance.
 }
+                   
+An example version 1 module:
+@schememod[
+ scheme
+ 
+ (define interface-version 'v1)
+ (define timeout (* 60 60 24))
+ (define (start req)
+   `(html (head (title "Hello World!"))
+          (body (h1 "Hi Mom!"))))
+ ]
+
+An example version 2 module:
+@(require (for-label web-server/managers/none))
+@schememod[
+ scheme
+ (require web-server/managers/none)
+ 
+ (define interface-version 'v2)
+ (define manager 
+   (create-none-manager
+    (lambda (req)
+      `(html (head (title "No Continuations Here!"))
+             (body (h1 "No Continuations Here!"))))))
+ (define (start req)
+   `(html (head (title "Hello World!"))
+          (body (h1 "Hi Mom!"))))
+ ]
+
+An example @scheme['stateless] servlet module:
+@schememod[
+ web-server
+ (define interface-version 'stateless)
+ (define (start req)
+   `(html (body (h2 "Look ma, no state!"))))
+]
 
 @; ------------------------------------------------------------
 @section[#:tag "servlet-structs.ss"]{Contracts}
-@(require (for-label web-server/servlet/servlet-structs))
+@(require (for-label web-server/servlet/servlet-structs
+                     web-server/servlet))
 
 @defmodule[web-server/servlet/servlet-structs]
 
 @filepath{servlet/servlet-structs.ss} provides a number of contracts
 for use in servlets.
 
-@defthing[k-url? contract?]{Equivalent to @scheme[string?].}
+@defthing[k-url? contract?]{
+Equivalent to @scheme[string?]. 
+                                       
+Example: @scheme["http://localhost:8080/servlets;1*1*20131636/examples/add.ss"]}
 
-@defthing[response-generator? contract?]{Equivalent to @scheme[(k-url? . -> . response?)].}
+@defthing[response-generator? contract?]{
+Equivalent to @scheme[(k-url? . -> . response?)].
+           
+Example: @schemeblock[(lambda (k-url)
+                        `(html 
+                          (body 
+                           (a ([href ,k-url])
+                              "Click Me to Invoke the Continuation!"))))]
+}
 
-@defthing[url-transform? contract?]{Equivalent to @scheme[(k-url? . -> . k-url?)].}
+@defthing[expiration-handler/c contract?]{
+Equivalent to @scheme[(or/c false/c (request? . -> . response?))].
+           
+Example: @schemeblock[(lambda (req)
+                        `(html (head (title "Expired"))
+                               (body (h1 "Expired")
+                                     (p "This URL has expired. "
+                                        "Please return to the home page."))))]
+}
 
-@defthing[expiration-handler/c contract?]{Equivalent to @scheme[(or/c false/c (request? . -> . response?))].}
+@defthing[embed/url/c contract?]{
+Equivalent to @scheme[(((request? . -> . any/c)) (expiration-handler/c) . opt-> . string?)].
 
-@defthing[embed/url/c contract?]{Equivalent to @scheme[(((request? . -> . any/c)) (expiration-handler/c) . opt-> . string?)].}
+This is what @scheme[send/suspend/dispatch] gives to its function argument.
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{HTTP Requests}
@@ -71,8 +129,6 @@ for use in servlets.
 
 @defmodule[web-server/private/request-structs]
 
-@; XXX Create http sub-directory
-@; XXX Have this include read-request and write-response
 @filepath{private/request-structs.ss} provides a number of structures and functions
 related to HTTP request data structures.
 
@@ -89,6 +145,8 @@ related to HTTP request data structures.
 @defproc[(headers-assq* [id bytes?] [heads (listof header?)])
          (or/c false/c header?)]{
  Returns the header with a field case-insensitively equal to @scheme[id] from @scheme[heads] or @scheme[#f].
+         
+ You almost @bold{always} want to use this, rather than @scheme[headers-assq] because Web browsers may send headers with arbitrary casing.
 }
 
 @defstruct[binding ([id bytes?])]{Represents a binding of @scheme[id].}
@@ -121,7 +179,24 @@ related to HTTP request data structures.
  to the server at @scheme[host-ip]:@scheme[host-port] with @scheme[headers/raw]
  headers, @scheme[bindings/raw] GET and POST queries and @scheme[post-data/raw]
  POST data.
+ 
+ You are @bold{unlikely to need to construct} a request struct.
 }
+                                         
+Here is an example typical of what you will find in many applications:
+@schemeblock[
+(define (get-number req)
+  (match
+    (bindings-assq 
+      #"number"
+      (request-bindings/raw req))
+    [(? binding:form? b)
+     (string->number
+      (bytes->string/utf-8
+       (binding:form-value b)))]
+    [_
+     (get-number (request-number))]))
+]
 
 @; ------------------------------------------------------------
 @section[#:tag "bindings.ss"]{Request Bindings}
@@ -131,6 +206,15 @@ related to HTTP request data structures.
 
 @filepath{servlet/bindings.ss} provides a number of helper functions
 for accessing request bindings.
+
+These functions, while convenient, could introduce subtle bugs into your
+application. Examples: that they are case-insensitive could introduce
+a bug; if the data submitted is not in UTF-8 format, then the conversion
+to a string will fail; if an attacker submits a form field as if it were
+a file, when it is not, then the @scheme[request-bindings] will hold a
+@scheme[bytes?] object and your program will error; and, for file uploads
+you lose the filename. @bold{Therefore, we recommend against their use, but
+they are provided for compatibility with old code.}
 
 @defproc[(request-bindings [req request?])
          (listof (or/c (cons/c symbol? string?)
@@ -167,14 +251,15 @@ for accessing request bindings.
  Returns @scheme[#t] if @scheme[binds] contains a binding for @scheme[id].
  Otherwise, @scheme[#f].
 }
-
-These functions, while convenient, could introduce subtle bugs into your
-application. Examples: that they are case-insensitive could introduce
-a bug; if the data submitted is not in UTF-8 format, then the conversion
-to a string will fail; if an attacked submits a form field as if it were
-a file, when it is not, then the @scheme[request-bindings] will hold a
-@scheme[bytes?] object and your program will error; and, for file uploads
-you lose the filename.
+                  
+Here is an example typical of what you will find in many applications:
+@schemeblock[
+(define (get-number req)
+  (string->number
+   (extract-binding/single
+    'number
+    (request-bindings req))))
+]
 
 @; ------------------------------------------------------------
 @section[#:tag "response-structs.ss"]{HTTP Responses}
@@ -185,7 +270,6 @@ you lose the filename.
 @filepath{private/response-structs.ss} provides structures and functions related to
 HTTP responses.
 
-@; XXX Only use bytes
 @defstruct[response/basic
            ([code number?]
             [message string?]
@@ -196,13 +280,35 @@ HTTP responses.
  @scheme[message] the message, @scheme[seconds] the generation time, @scheme[mime]
  the MIME type of the file, and @scheme[extras] are the extra headers, in addition
  to those produced by the server.
+ 
+ Example:
+ @schemeblock[
+  (make-response/basic
+   301 "Moved Permanently"
+   (current-seconds) TEXT/HTML-MIME-TYPE
+   (list (make-header #"Location"
+                      #"http://www.plt-scheme.org/downloads")))
+ ]
 }
 
-@; XXX Rename string? option
 @defstruct[(response/full response/basic)
            ([body (listof (or/c string? bytes?))])]{
  As with @scheme[response/basic], except with @scheme[body] as the response
  body.
+
+ Example:
+ @schemeblock[
+  (make-response/full
+   301 "Moved Permanently"
+   (current-seconds) TEXT/HTML-MIME-TYPE
+   (list (make-header #"Location"
+                      #"http://www.plt-scheme.org/downloads"))
+   (list #"<html><body><p>"
+         #"Please go to <a href=\""
+         #"http://www.plt-scheme.org/downloads"
+         #"\">here</a> instead."
+         #"</p></body></html>"))
+ ]
 }
 
 @defstruct[(response/incremental response/basic)
@@ -222,7 +328,7 @@ HTTP responses.
       (send/bytes #"Some content")
       (send/bytes)
       (send/bytes #"Even" #"more" #"content!")
-      (send/bytes "No we're done")))
+      (send/bytes "Now we're done")))
  ]
 }
 
@@ -238,8 +344,8 @@ HTTP responses.
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
 
-@warning{If you include a Content-Length header in a response that is inaccurate, there WILL be an error in
-transmission that the server will not catch.}
+@warning{If you include a Content-Length header in a response that is inaccurate, there @bold{will be an error} in
+transmission that the server @bold{will not catch}.}
 
 @; ------------------------------------------------------------
 @section[#:tag "web.ss"]{Web}
@@ -251,12 +357,32 @@ functions of interest for the servlet developer.}
 
 @defproc[(send/back [response response?])
          void?]{
- Sends @scheme[response] to the client.
+ Sends @scheme[response] to the client. No continuation is captured, so the servlet is done.
+       
+ Example:
+ @schemeblock[
+  (send/back
+   `(html
+     (body
+      (h1 "The sum is: "
+          ,(+ first-number
+              second-number)))))
+ ]
 }
 
 @defthing[current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]{
  Holds the @scheme[expiration-handler/c] to be used when a continuation
  captured in this context is expired, then looked up.
+ 
+ Example:
+ @schemeblock[
+  (parameterize 
+      ([current-servlet-continuation-expiration-handler
+        (lambda (req)
+          `(html (head (title "Custom Expiration!"))))])
+    (send/suspend
+     ...))
+  ]               
 }
 
 @defproc[(send/suspend [make-response response-generator?]
@@ -267,67 +393,109 @@ functions of interest for the servlet developer.}
  is expected to generate a @scheme[response?], which is sent to the client. If the
  continuation URL is invoked, the captured continuation is invoked and the request is
  returned from this call to @scheme[send/suspend].
+ 
+ Example:
+ @schemeblock[
+  (send/suspend
+   (lambda (k-url)
+     `(html (head (title "Enter a number"))
+            (body 
+             (form ([action ,k-url])
+                   "Enter a number: "
+                   (input ([name "number"]))
+                   (input ([type "submit"])))))))
+  ]
+ 
+ When this form is submitted by the browser, the request will be sent to the URL generated by @scheme[send/suspend].
+ Thus, the request will be ``returned'' from @scheme[send/suspend] to the continuation of this call.
 }
-
-@defproc[(continuation-url? [u url?])
-         (or/c false/c (list/c number? number? number?))]{
- Checks if @scheme[u] is a URL that refers to a continuation, if so
- returns the instance id, continuation id, and nonce.
-}
-
-@; XXX Move
-@defproc[(adjust-timeout! [t number?])
-         void?]{
- Calls the servlet's manager's @scheme[adjust-timeout!] function.
-}
-
-@defproc[(clear-continuation-table!)
-         void?]{
- Calls the servlet's manager's @scheme[clear-continuation-table!] function.
-}
-
-@defproc[(send/forward [make-response response-generator?]
-                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
-         request?]{
- Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
-}
-
-@defproc[(send/finish [response response?])
-         void?]{
- Calls @scheme[clear-continuation-table!], then @scheme[send/back].
-}
-
+                  
 @defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
  the function with the @scheme[request?] object and return the result to the caller of
  @scheme[send/suspend/dispatch].
+ 
+ Use @scheme[send/suspend/dispatch] when there are multiple `logical' continuations of a page.
+ For example, we could either add to a number or subtract from it:
+ @schemeblock[
+  (define (count-dot-com i)
+    (count-dot-com 
+     (send/suspend/dispatch
+      (lambda (embed/url)
+        `(html 
+          (head (title "Count!"))
+          (body
+           (h2 (a ([href
+                    ,(embed/url
+                      (lambda (req)
+                        (sub1 i)))])
+                  "-"))
+           (h1 ,(number->string i))
+           (h2 (a ([href
+                    ,(embed/url
+                      (lambda (req)
+                        (add1 i)))])
+                  "+"))))))))
+  ]
+ It is very common that the return value of @scheme[send/suspend/dispatch] is irrevelant in
+ your application and you may think of it as ``embedding'' value-less callbacks.
+}
+
+@defproc[(clear-continuation-table!)
+         void?]{
+ Calls the servlet's manager's @scheme[clear-continuation-table!] function. Normally, this deletes all the previously
+ captured continuations.
+}
+
+@defproc[(send/forward [make-response response-generator?]
+                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
+         request?]{
+ Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
+       
+ Use this if the user can logically go `forward' in your application, but cannot go backward.
+}
+
+@defproc[(send/finish [response response?])
+         void?]{
+ Calls @scheme[clear-continuation-table!], then @scheme[send/back].
+       
+ Use this if the user is truly `done' with your application. For example, it may be used to display the post-logout page:
+ @schemeblock[
+  (send/finish
+   `(html (head (title "Logged out"))
+          (body (p "Thank you for using the services "
+                   "of the Add Two Numbers, Inc."))))
+  ]
 }
 
 @defproc[(redirect/get)
          request?]{
  Calls @scheme[send/suspend] with @scheme[redirect-to].
+       
+ This implements the Post-Redirect-Get pattern. 
+ Use this to prevent the @onscreen["Refresh"] button from duplicating effects, such as adding items to a database. 
 }
 
 @defproc[(redirect/get/forget)
          request?]{
  Calls @scheme[send/forward] with @scheme[redirect-to].
 }
-
-@; XXX Remove
-@defproc[(embed-ids [ids (list/c number? number? number?)]
-                    [u url?])
-         string?]{
- Creates a @scheme[continuation-url?].
+                  
+@defproc[(adjust-timeout! [t number?])
+         void?]{
+ Calls the servlet's manager's @scheme[adjust-timeout!] function.
+       
+ @warning{This is deprecated and will be removed in a future release.}
 }
-
-@; XXX Remove
-@defthing[current-url-transform (parameter/c url-transform?)]{
- Holds a @scheme[url-transform?] function that is called by
- @scheme[send/suspend] to transform the URLs it generates.
+                  
+@defproc[(continuation-url? [u url?])
+         (or/c false/c (list/c number? number? number?))]{
+ Checks if @scheme[u] is a URL that refers to a continuation, if so
+ returns the instance id, continuation id, and nonce.
 }
-
+                  
 @; ------------------------------------------------------------
 @section[#:tag "helpers.ss"]{Helpers}
 @(require (for-label web-server/servlet/helpers))
@@ -337,13 +505,15 @@ functions of interest for the servlet developer.}
 @filepath{servlet/helpers.ss} provides functions built on
 @filepath{servlet/web.ss} that are useful in many servlets.
 
-@; XXX Move into http/response.ss
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
          response?]{
  Generates an HTTP response that redirects the browser to @scheme[uri],
  while including the @scheme[headers] in the response.
+ 
+ Example:
+ @scheme[(redirect-to "http://www.add-three-numbers.com" permanently)]
 }
 
 @defproc[(redirection-status? [v any/c])
@@ -357,33 +527,21 @@ functions of interest for the servlet developer.}
 
 @defthing[see-other redirection-status?]{A @scheme[redirection-status?] for "see-other" redirections.}
 
-@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . void?)]
+@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . request?)]
                                  [thunk (-> any)])
          any]{
  Calls @scheme[thunk] with an exception handler that generates an HTML error page
  and calls @scheme[send/finish-or-back].
+ 
+ Example:
+ @schemeblock[
+  (with-errors-to-browser
+   send/back
+   (lambda ()
+     (/ 1 (get-number (request-number)))))
+ ]
 }
 
-@; XXX Depreciate
-@; ------------------------------------------------------------
-@section[#:tag "servlet-url.ss"]{Servlet URLs}
-@(require (for-label web-server/servlet/servlet-url))
-
-@defmodule[web-server/servlet/servlet-url]
-
-@filepath{servlet/servlet-url.ss} provides functions that might be useful to you.
-They may eventually provided by another module.
-
-@defproc[(request->servlet-url (req request?))
-         servlet-url?]{Generates a value to be passed to the next function.}
-
-@defproc[(servlet-url->url-string/no-continuation [su servlet-url?])
-         string?]{
- Returns a URL string without the continuation information in the URL
- that went into @scheme[su]
-}
-
-@; XXX Support Digest
 @; ------------------------------------------------------------
 @section[#:tag "basic-auth.ss"]{Basic Authentication}
 @(require (for-label web-server/servlet/basic-auth))
@@ -396,7 +554,10 @@ implementation of HTTP Basic Authentication.
 @defproc[(extract-user-pass [heads (listof header?)])
          (or/c false/c (cons/c bytes? bytes?))]{
  Returns a pair of the username and password from the authentication
- header in @scheme[heads] if they are present, or @scheme[#f]
+ header in @scheme[heads] if they are present, or @scheme[#f].
+ 
+ Example:
+ @scheme[(extract-user-pass (request-headers/raw req))] might return @scheme[(cons #"aladin" #"open sesame")].
 }
 
 @; ------------------------------------------------------------
@@ -405,14 +566,14 @@ implementation of HTTP Basic Authentication.
 
 @defmodule[web-server/servlet/web-cells]{The
 @schememodname[web-server/servlet/web-cells] library provides the
-interface to web cells.}
+interface to Web cells.}
 
-A web cell is a kind of state defined relative to the @defterm{frame tree}.
+A Web cell is a kind of state defined relative to the @defterm{frame tree}.
 The frame-tree is a mirror of the user's browsing session. Every time a
 continuation is invoked, a new frame (called the @defterm{current frame}) is
 created as a child of the current frame when the continuation was captured.
 
-You should use web cells if you want an effect to be encapsulated in all
+You should use Web cells if you want an effect to be encapsulated in all
 interactions linked from (in a transitive sense) the HTTP response being
 generated. For more information on their semantics, consult the paper 
 @href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mk-int-safe-state-web/"
@@ -440,3 +601,94 @@ generated. For more information on their semantics, consult the paper
  Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
  other bindings to @scheme[wc] in the current frame.
 }
+              
+Below is an extended example that demonstrates how Web cells allow
+the creation of reusable Web abstractions without requiring global
+transformations of the program into continuation or store passing style.
+@schememod[
+ web-server/insta
+
+ (define (start initial-request)
+  (define counter1 (make-counter))
+  (define counter2 (make-counter))
+  (define include1 (include-counter counter1))
+  (define include2 (include-counter counter2))
+  (send/suspend/dispatch
+   (lambda (embed/url)
+     `(html 
+       (body (h2 "Double Counters")
+             (div (h3 "First")
+                  ,(include1 embed/url))
+             (div (h3 "Second")
+                  ,(include2 embed/url)))))))
+
+(define (make-counter)
+  (make-web-cell 0))
+
+(define (include-counter a-counter)
+  (let/cc k
+    (let loop ()
+      (k
+       (lambda (embed/url)
+         `(div (h3 ,(number->string (web-cell-ref a-counter)))
+               (a ([href 
+                    ,(embed/url
+                      (lambda _
+                        @code:comment{A new frame has been created}
+                        (define last (web-cell-ref a-counter))
+                        @code:comment{We can inspect the value at the parent}
+                        (web-cell-shadow a-counter (add1 last))
+                        @code:comment{The new frame has been modified}
+                        (loop)))])
+                  "+")))))))
+]
+
+@; ------------------------------------------------------------
+@section[#:tag "setup.ss"]{Setup}
+@(require (for-label web-server/servlet/setup))
+
+@defmodule[web-server/servlet/setup]
+
+This module is used internally to build and load servlets. It may be useful to those who are trying to extend the server.
+
+@defproc[(make-v1.servlet [directory path?]
+                          [timeout integer?]
+                          [start (request? . -> . response?)])
+         servlet?]{
+ Creates a version 1 servlet that uses @scheme[directory] as its current directory, a timeout manager with a @scheme[timeout] timeout, and @scheme[start] as the request handler.
+}
+
+@defproc[(make-v2.servlet [directory path?]
+                          [manager manager?]
+                          [start (request? . -> . response?)])
+         servlet?]{
+ Creates a version 2 servlet that uses @scheme[directory] as its current directory, a @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
+}
+ 
+@defproc[(make-stateless.servlet [directory path?]
+                                 [start (request? . -> . response?)])
+         servlet?]{
+ Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
+}
+                  
+@defthing[default-module-specs (listof module-path?)]{
+ The modules that the Web Server needs to share with all servlets.
+}
+
+@defthing[path->servlet/c contract?]{
+Equivalent to @scheme[(path? . -> . servlet?)].
+}
+
+@defproc[(make-default-path->servlet 
+          [#:make-servlet-namespace
+           make-servlet-namespace
+           make-servlet-namespace?
+           (make-make-servlet-namespace)]
+          [#:timeouts-default-servlet
+           timeouts-default-servlet
+           integer?
+           30])
+         path->servlet/c]{
+ Constructs a procedure that loads a servlet from the path in a namespace created with @scheme[make-servlet-namespace],
+ using a timeout manager with @scheme[timeouts-default-servlet] as the default timeout (if no manager is given.)
+} 

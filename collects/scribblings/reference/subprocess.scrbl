@@ -301,7 +301,11 @@ Executes a shell command asynchronously. The result is a list of five values:
     under @|AllUnix|, and takes no action under Windows. The result is
     @|void-const|.}
 
-   @item{@scheme['kill] terminates the subprocess and returns @|void-const|.}
+   @item{@scheme['kill] terminates the subprocess and returns
+     @|void-const|.  Note that the immediate process created by
+     @scheme[process] is a shell process that may run another program;
+     terminating the shell process may not terminate processes that
+     the shell starts, particularly under Windows.}
 
    }}
 

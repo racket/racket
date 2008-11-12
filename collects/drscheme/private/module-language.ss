@@ -6,6 +6,7 @@
          scheme/list
          mred
          compiler/embed
+         compiler/cm
          launcher
          framework
          string-constants
@@ -43,7 +44,10 @@
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
   (define-struct (module-language-settings drscheme:language:simple-settings)
-    (collection-paths command-line-args auto-text))
+    (collection-paths command-line-args auto-text compilation-on?))
+  
+  (define default-compilation-on? #t)
+  (define default-auto-text "#lang scheme\n")  
   
   ;; module-mixin : (implements drscheme:language:language<%>)
   ;;             -> (implements drscheme:language:language<%>)
@@ -70,7 +74,8 @@
                   (vector->list (drscheme:language:simple-settings->vector super-defaults))
                   (list '(default)
                         #()
-                        default-auto-text)))))
+                        default-auto-text
+                        default-compilation-on?)))))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
@@ -83,36 +88,46 @@
              ;; auto-text
              ;; (equal? (module-language-settings-auto-text settings)
              ;;         default-auto-text)
-             ))
+             (equal? (module-language-settings-compilation-on? settings)
+                     default-compilation-on?)))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
           (list super-marshalled
                 (module-language-settings-collection-paths settings)
                 (module-language-settings-command-line-args settings)
-                (module-language-settings-auto-text settings))))
+                (module-language-settings-auto-text settings)
+                (module-language-settings-compilation-on? settings))))
       
       (define/override (unmarshall-settings marshalled)
         (and (list? marshalled)
-             ;; older formats had no auto-text
-             (<= 3 (length marshalled) 4)
-             (list? (cadr marshalled))
-             (andmap (λ (x) (or (string? x) (symbol? x)))
-                     (cadr marshalled))
-             (vector? (caddr marshalled))
-             (andmap string? (vector->list (caddr marshalled)))
-             (or (= 3 (length marshalled))
-                 (string? (cadddr marshalled)))
-             (let ([super (super unmarshall-settings (car marshalled))])
-               (and super
-                    (apply make-module-language-settings
-                           (append
-                            (vector->list (drscheme:language:simple-settings->vector super))
-                            (list (cadr marshalled)
-                                  (caddr marshalled)
-                                  (if (= 3 (length marshalled))
-                                    default-auto-text
-                                    (cadddr marshalled)))))))))
+             (let ([marshalled-len (length marshalled)])
+               ;; older formats had no auto-text or compilation disabling
+               (and (<= 3 (length marshalled))
+                    (let ([collection-paths (list-ref marshalled 1)]
+                          [command-line-args (list-ref marshalled 2)]
+                          [auto-text (if (<= marshalled-len 3)
+                                         default-auto-text
+                                         (list-ref marshalled 3))]
+                          [compilation-on? (if (<= marshalled-len 4)
+                                               default-compilation-on?
+                                               (list-ref marshalled 4))])
+                      (and (list? collection-paths)
+                           (andmap (λ (x) (or (string? x) (symbol? x)))
+                                   collection-paths)
+                           (vector? command-line-args)
+                           (andmap string? (vector->list command-line-args))
+                           (string? auto-text)
+                           (boolean? compilation-on?)
+                           (let ([super (super unmarshall-settings (car marshalled))])
+                             (and super
+                                  (apply make-module-language-settings
+                                         (append
+                                          (vector->list (drscheme:language:simple-settings->vector super))
+                                          (list collection-paths
+                                                command-line-args
+                                                auto-text
+                                                compilation-on?)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -127,12 +142,17 @@
              (when (null? cpaths)
                (fprintf (current-error-port)
                         "Warning: your collection paths are empty!\n"))
-             (current-library-collection-paths cpaths)))))
+             (current-library-collection-paths cpaths))
+           
+           (when (and (module-language-settings-compilation-on? settings)
+                      (eq? (drscheme:language:simple-settings-annotations settings) 'none))
+             (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
+           ;[manager-trace-handler (λ (x) (display x) (newline))]
+           )))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
       
-      (define default-auto-text "#lang scheme\n")
       (define/public (get-auto-text settings)
         (module-language-settings-auto-text settings))
       
@@ -320,9 +340,20 @@
            [alignment '(center center)]
            [stretchable-height #f]
            [stretchable-width #f]))
+    (define compilation-on-radio-box #f)
+    (define annotations-radio-box #f)
     (define simple-case-lambda
       (drscheme:language:simple-module-based-language-config-panel
-       new-parent #:case-sensitive #t))
+       new-parent
+       #:case-sensitive #t
+       #:annotations-callback 
+       (λ (cb evt) (update-compilation-on-radio-box-visibility))
+       #:dynamic-panel-extras
+       (λ (dynamic-panel)
+         (set! annotations-radio-box (car (send dynamic-panel get-children)))
+         (set! compilation-on-radio-box (new check-box%
+                                             [label (string-constant automatically-compile?)]
+                                             [parent dynamic-panel])))))
     (define cp-panel (new group-box-panel%
                           [parent new-parent]
                           [label (string-constant ml-cp-collection-paths)]))
@@ -377,7 +408,8 @@
         (send remove-button enable lb-selection)
         (send raise-button enable (and lb-selection (not (= lb-selection 0))))
         (send lower-button enable
-              (and lb-selection (not (= lb-selection (- lb-tot 1)))))))
+              (and lb-selection (not (= lb-selection (- lb-tot 1)))))
+        (update-compilation-on-radio-box-visibility)))
     
     (define (add-callback)
       (let ([dir (get-directory (string-constant ml-cp-choose-a-collection-path)
@@ -463,6 +495,9 @@
     (define (install-auto-text str)
       (send auto-text-text-box set-value (regexp-replace #rx"\n$" str "")))
     
+    (define (update-compilation-on-radio-box-visibility)
+      (send compilation-on-radio-box enable (equal? 0 (send annotations-radio-box get-selection))))
+    
     (send collection-paths-lb set '())
     (update-buttons)
     
@@ -474,12 +509,14 @@
                  (vector->list (drscheme:language:simple-settings->vector simple-settings))
                  (list (get-collection-paths)
                        (get-command-line-args)
-                       (get-auto-text)))))]
+                       (get-auto-text)
+                       (send compilation-on-radio-box get-value)))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
        (install-command-line-args (module-language-settings-command-line-args settings))
        (install-auto-text (module-language-settings-auto-text settings))
+       (send compilation-on-radio-box set-value (module-language-settings-compilation-on? settings))
        (update-buttons)]))
   
   ;; transform-module : (union #f path) syntax

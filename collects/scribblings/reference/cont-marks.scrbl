@@ -115,6 +115,29 @@ Returns the first element of the list that would be returned by
 result can be computed more quickly using
 @scheme[continuation-mark-set-first].}
 
+@defproc[(call-with-immediate-continuation-mark
+          [key-v any/c]
+          [proc (any/c . -> . any)]
+          [default-v any/c #f])
+         any]{
+
+Calls @scheme[proc] with the value associated with @scheme[key-v] in
+the first frame of the current continuation (i.e., a value that would
+be replaced if the call to
+@scheme[call-with-immediate-continuation-mark] were replaced with a
+@scheme[with-continuation-mark] form using @scheme[key-v] as the key
+expression). If no such value exists in the first frame,
+@scheme[default-v] is passed to @scheme[proc]. The @scheme[proc] is
+called in tail position with respect to the
+@scheme[call-with-immediate-continuation-mark] call.
+
+This function could be implemented with a combination of
+@scheme[with-continuation-mark], @scheme[current-continuation-marks],
+and @scheme[continuation-mark-set->list], but
+@scheme[call-with-immediate-continuation-mark] is implemented more
+efficiently; it inspects only the first frame of the current
+continuation.}
+
 @defproc[(continuation-mark-set? [v any/c]) boolean?]{
 Returns @scheme[#t] if @scheme[v] is a mark set created by
 @scheme[continuation-marks] or @scheme[current-continuation-marks],

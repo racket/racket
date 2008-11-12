@@ -3,7 +3,9 @@
 
 
 (providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app)
-                 (except "private/prims.ss"))
+                 (except "private/prims.ss")
+                 (except "private/base-types.ss")
+                 (except "private/base-types-extra.ss"))
 	   (basics #%module-begin		   		   		   
 		   #%top-interaction
 		   lambda

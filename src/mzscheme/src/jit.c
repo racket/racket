@@ -125,6 +125,7 @@ static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
 static void *bad_mcar_code, *bad_mcdr_code;
 static void *bad_set_mcar_code, *bad_set_mcdr_code;
 static void *bad_unbox_code;
+static void *bad_vector_length_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
@@ -445,8 +446,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 #ifdef MZ_PRECISE_GC
       if (ndata) {
 	memset(jitter->retain_start, 0, num_retained * sizeof(void*));
-	ndata->retained = jitter->retain_start;
-	ndata->retain_count = num_retained;
+	ndata->retained = (num_retained ? jitter->retain_start : NULL);
 	SCHEME_BOX_VAL(fnl_obj) = scheme_make_integer(size_pre_retained);
 	GC_set_finalizer(fnl_obj, 1, 3,
 			 release_native_code, buffer,
@@ -464,6 +464,11 @@ static void *generate_one(mz_jit_state *old_jitter,
     jitter->self_pos = 1; /* beyond end of stack */
     jitter->self_toplevel_pos = -1;
     jitter->status_at_ptr = NULL;
+
+    /* Leave room for retained size on first pass, 
+       install it if needed) on second pass:*/
+    if (!known_size || num_retained)
+      mz_retain_it(jitter, (void *)scheme_make_integer(num_retained));
 
     ok = generate(jitter, data);
 
@@ -503,6 +508,7 @@ static void *generate_one(mz_jit_state *old_jitter,
 	  known_size += (JIT_WORD_SIZE - (known_size & (JIT_WORD_SIZE - 1)));
 	}
 	num_retained = jitter->retained;
+        if (num_retained == 1)  num_retained = 0;
 	/* Keep this buffer? Don't if it's too big, or if it's
 	   a part of old_jitter, or if there's already a bigger
 	   cache. */
@@ -1088,7 +1094,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-extern unsigned long GC_gen0_alloc_page_ptr;
+extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
 long GC_initial_word(int sizeb);
 long GC_compute_alloc_size(long sizeb);
 long GC_alloc_alignment(void);
@@ -1134,15 +1140,16 @@ static long read_first_word(void *sp)
   return foo;
 }
 
-static long initial_tag_word(Scheme_Type tag)
+static long initial_tag_word(Scheme_Type tag, int immut)
 {
   GC_CAN_IGNORE Scheme_Small_Object sp;
   memset(&sp, 0, sizeof(Scheme_Small_Object));
   sp.iso.so.type = tag;
+  if (immut) SCHEME_SET_IMMUTABLE(&sp);
   return read_first_word((void *)&sp);
 }
 
-static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, 
+static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut,
 			int keep_r0_r1, int keep_fpr1)
 /* Puts allocated result at JIT_V1; first word is GC tag.
    Uses JIT_R2 as temporary. The allocated memory is "dirty" (i.e., not 0ed).
@@ -1182,7 +1189,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty,
   a_word = GC_initial_word(amt);
   jit_movi_l(JIT_R2, a_word);
   jit_str_l(JIT_V1, JIT_R2);
-  a_word = initial_tag_word(ty);
+  a_word = initial_tag_word(ty, immut);
   jit_movi_l(JIT_R2, a_word);
   jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
   CHECK_LIMIT();
@@ -1204,6 +1211,49 @@ static double double_result;
 static void *malloc_double(void)
 {
   return scheme_make_double(double_result);
+}
+#endif
+
+#if !defined(CAN_INLINE_ALLOC)
+static Scheme_Object *make_vector(long n)
+{
+  Scheme_Object *vec;
+  vec = scheme_make_vector(n, NULL);
+  return vec;
+}
+static Scheme_Object *make_ivector(long n)
+{
+  Scheme_Object *vec;
+  vec = make_vector(n);
+  SCHEME_SET_IMMUTABLE(vec);
+  return vec;
+}
+static Scheme_Object *make_one_element_vector(Scheme_Object *a)
+{
+  Scheme_Object *vec;
+  vec = scheme_make_vector(1, a);
+  return vec;
+}
+static Scheme_Object *make_one_element_ivector(Scheme_Object *a)
+{
+  Scheme_Object *vec;
+  vec = make_one_element_vector(a);
+  SCHEME_SET_IMMUTABLE(vec);
+  return vec;
+}
+static Scheme_Object *make_two_element_vector(Scheme_Object *a, Scheme_Object *b)
+{
+  Scheme_Object *vec;
+  vec = scheme_make_vector(2, a);
+  SCHEME_VEC_ELS(vec)[1] = b;
+  return vec;
+}
+static Scheme_Object *make_two_element_ivector(Scheme_Object *a, Scheme_Object *b)
+{
+  Scheme_Object *vec;
+  vec = make_two_element_vector(a, b);
+  SCHEME_SET_IMMUTABLE(vec);
+  return vec;
 }
 #endif
 
@@ -1341,8 +1391,9 @@ static int inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app)
 static int inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app)
 {
   return (SCHEME_PRIMP(o)
-	  && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_MIN_NARY_INLINED)
-	  && (((Scheme_App_Rec *)_app)->num_args == ((Scheme_Primitive_Proc *)o)->mina));
+	  && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_NARY_INLINED)
+	  && (((Scheme_App_Rec *)_app)->num_args >= ((Scheme_Primitive_Proc *)o)->mina)
+          && (((Scheme_App_Rec *)_app)->num_args <= ((Scheme_Primitive_Proc *)o)->mu.maxa));
 }
 
 static int is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
@@ -2305,7 +2356,7 @@ static int generate_nontail_self_setup(mz_jit_state *jitter)
 }
 
 static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
-			mz_jit_state *jitter, int is_tail, int multi_ok)
+			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call)
 {
   int i, offset, need_safety = 0;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
@@ -2510,7 +2561,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(i + offset));
     }
     if ((!direct_prim || (num_rands > 1))
-	&& (!direct_self || !is_tail || (i + 1 < num_rands))) {
+	&& (!direct_self || !is_tail || no_call || (i + 1 < num_rands))) {
       jit_stxi_p(WORDS_TO_BYTES(i + offset), JIT_RUNSTACK, JIT_R0);
     }
   }
@@ -2522,17 +2573,20 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   }
 
   if (direct_prim) {
-    (void)jit_movi_p(JIT_V1, ((Scheme_Primitive_Proc *)rator)->prim_val);
-    if (num_rands == 1) {
-      mz_runstack_unskipped(jitter, 1);
-    } else {
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+    if (!no_call) {
+      (void)jit_movi_p(JIT_V1, ((Scheme_Primitive_Proc *)rator)->prim_val);
+      if (num_rands == 1) {
+        mz_runstack_unskipped(jitter, 1);
+      } else {
+        JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+      }
+      LOG_IT(("direct: %s\n", ((Scheme_Primitive_Proc *)rator)->name));
     }
-    LOG_IT(("direct: %s\n", ((Scheme_Primitive_Proc *)rator)->name));
   }
 
   if (reorder_ok) {
-    generate(rator, jitter, 0, 0, JIT_V1);
+    if (!no_call)
+      generate(rator, jitter, 0, 0, JIT_V1);
     CHECK_LIMIT();
   }
 
@@ -2543,7 +2597,9 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   else
     scheme_indirect_call_count++;
 
-  if (!(direct_self && is_tail)
+  if (no_call) {
+    /* leave actual call to inlining code */
+  } else if (!(direct_self && is_tail)
       && (num_rands >= MAX_SHARED_CALL_RANDS)) {
     LOG_IT(("<-many args\n"));
     if (is_tail) {
@@ -2856,7 +2912,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
       if (!no_alloc) {
 #ifdef INLINE_FP_OPS
 # ifdef CAN_INLINE_ALLOC
-        inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 1);
+        inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1);
         CHECK_LIMIT();
         jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
         (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
@@ -3606,6 +3662,9 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   return 1;
 }
 
+static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
+                                 Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3);
+
 static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
 				  jit_insn **for_branch, int branch_short)
 {
@@ -3870,6 +3929,36 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "vector-length")) {
+      GC_CAN_IGNORE jit_insn *reffail, *ref;
+
+      LOG_IT(("inlined vector-length\n"));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      __START_TINY_JUMPS__(1);
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      __END_TINY_JUMPS__(1);
+
+      reffail = _jit.x.pc;
+      (void)jit_jmpi(bad_vector_length_code);
+
+      __START_TINY_JUMPS__(1);
+      mz_patch_branch(ref);
+      jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R1, scheme_vector_type);
+      __END_TINY_JUMPS__(1);
+
+      (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
+      jit_lshi_l(JIT_R0, JIT_R0, 1);
+      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unbox")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
 
@@ -3926,6 +4015,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "vector-immutable")
+               || IS_NAMED_PRIM(rator, "vector")) {
+      return generate_vector_alloc(jitter, rator, NULL, app, NULL);
     }
   }
 
@@ -4379,7 +4471,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 1, 0);
+      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_pair_type, 0, 1, 0);
       CHECK_LIMIT();
 
       jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
@@ -4391,11 +4483,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_prepare(2);
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
-# ifdef MZ_PRECISE_GC
-      (void)mz_finish(GC_malloc_pair);
-# else
       (void)mz_finish(scheme_make_pair);
-# endif
       jit_retval(JIT_R0);
 #endif
 
@@ -4408,7 +4496,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 1, 0);
+      inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0);
       CHECK_LIMIT();
 
       jit_stxi_p((long)&SCHEME_MCAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
@@ -4420,15 +4508,14 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_prepare(2);
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
-# ifdef MZ_PRECISE_GC
-      (void)mz_finish(GC_malloc_mutable_pair);
-# else
       (void)mz_finish(scheme_make_mutable_pair);
-# endif
       jit_retval(JIT_R0);
 #endif
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "vector-immutable")
+               || IS_NAMED_PRIM(rator, "vector")) {
+      return generate_vector_alloc(jitter, rator, NULL, NULL, app);
     }
   }
 
@@ -4450,10 +4537,12 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   if (!SCHEME_PRIMP(rator))
     return 0;
 
-  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_MIN_NARY_INLINED))
+  if (!(SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED))
     return 0;
 
-  if (app->num_args != ((Scheme_Primitive_Proc *)rator)->mina)
+  if (app->num_args < ((Scheme_Primitive_Proc *)rator)->mina)
+    return 0;
+  if (app->num_args > ((Scheme_Primitive_Proc *)rator)->mu.maxa)
     return 0;
 
   scheme_direct_call_count++;
@@ -4562,6 +4651,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       mz_runstack_unskipped(jitter, 3 - pushed);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "vector-immutable")
+               || IS_NAMED_PRIM(rator, "vector")) {
+      return generate_vector_alloc(jitter, rator, app, NULL, NULL);
     }
   }
 
@@ -4573,6 +4665,93 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   --scheme_direct_call_count;
 
   return 0;
+}
+
+static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
+                                 Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3)
+{
+  int imm, i, c;
+
+  imm = IS_NAMED_PRIM(rator, "vector-immutable");
+
+  if (app2) {
+    mz_runstack_skipped(jitter, 1);
+    generate_non_tail(app2->rand, jitter, 0, 1);
+    mz_runstack_unskipped(jitter, 1);
+    c = 1;
+  } else if (app3) {
+    generate_two_args(app3->rand1, app3->rand2, jitter, 1);
+    c = 2;
+  } else {
+    c = app->num_args;
+    if (c)
+      generate_app(app, NULL, c, jitter, 0, 0, 1);
+  }
+  CHECK_LIMIT();
+
+#ifdef CAN_INLINE_ALLOC
+  /* Inlined alloc */
+  if (app2)
+    jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
+  inline_alloc(jitter, sizeof(Scheme_Vector) + ((c - 1) * sizeof(Scheme_Object*)), scheme_vector_type, 
+               imm, app2 || app3, 0);
+  CHECK_LIMIT();
+
+  if ((c == 2) || (c == 1)) {
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[0] + sizeof(long), JIT_V1, JIT_R0);
+  }
+  if (c == 2) {
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[1] + sizeof(long), JIT_V1, JIT_R1);
+  }
+  jit_movi_l(JIT_R1, c);
+  jit_stxi_i((long)&SCHEME_VEC_SIZE(0x0) + sizeof(long), JIT_V1, JIT_R1);
+  jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+#else
+  /* Non-inlined */
+  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  if (c == 1) {
+    mz_prepare(1);
+    jit_pusharg_p(JIT_R0);
+    if (imm)
+      (void)mz_finish(make_one_element_ivector);
+    else
+      (void)mz_finish(make_one_element_vector);
+  } else if (c == 2) {
+    mz_prepare(2);
+    jit_pusharg_p(JIT_R1);
+    jit_pusharg_p(JIT_R0);
+    if (imm)
+      (void)mz_finish(make_two_element_ivector);
+    else
+      (void)mz_finish(make_two_element_vector);
+  } else {
+    jit_movi_l(JIT_R1, c);
+    mz_prepare(1);
+    jit_pusharg_l(JIT_R1);
+    if (imm)
+      (void)mz_finish(make_ivector);
+    else
+      (void)mz_finish(make_vector);
+  }
+  jit_retval(JIT_R0);
+#endif
+
+  CHECK_LIMIT();
+
+  if (app) {
+    for (i = 0; i < c; i++) {
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
+      jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[i], JIT_R0, JIT_R1);
+      CHECK_LIMIT();
+    }
+    
+    if (c) {
+      jit_addi_l(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(c));
+      mz_runstack_popped(jitter, c);
+    }
+  }
+
+  return 1;
 }
 
 int generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, jit_insn **refs)
@@ -4625,7 +4804,7 @@ static int generate_closure(Scheme_Closure_Data *data,
 # ifdef CAN_INLINE_ALLOC
     if (immediately_filled) {
       /* Inlined alloc */
-      inline_alloc(jitter, sz, scheme_native_closure_type, 0, 0);
+      inline_alloc(jitter, sz, scheme_native_closure_type, 0, 0, 0);
       CHECK_LIMIT();
       jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
     } else
@@ -4825,7 +5004,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
   {
     int amt, need_ends = 1, using_local1 = 0;
     START_JIT_DATA();
-
+    
     /* Might change the stack or marks: */
     if (is_simple(obj, INIT_SIMPLE_DEPTH, 1, jitter, 0)) {
       need_ends = 0;
@@ -5358,10 +5537,14 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("app %d\n", app->num_args));
 
       r = generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1);
-      if (r)
+      if (r) {
+        CHECK_LIMIT();
+        if (target != JIT_R0)
+          jit_movr_p(target, JIT_R0);
 	return r;
+      }
 
-      r = generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok);
+      r = generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -5376,8 +5559,12 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       int r;
 
       r = generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1);
-      if (r)
+      if (r) {
+        CHECK_LIMIT();
+        if (target != JIT_R0)
+          jit_movr_p(target, JIT_R0);
 	return r;
+      }
 
       LOG_IT(("app 2\n"));
 
@@ -5386,7 +5573,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       args[0] = app->rator;
       args[1] = app->rand;
       
-      r = generate_app(NULL, args, 1, jitter, is_tail, multi_ok);
+      r = generate_app(NULL, args, 1, jitter, is_tail, multi_ok, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -5401,8 +5588,12 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       int r;
 
       r = generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1);
-      if (r)
+      if (r) {
+        CHECK_LIMIT();
+        if (target != JIT_R0)
+          jit_movr_p(target, JIT_R0);
 	return r;
+      }
 
       LOG_IT(("app 3\n"));
 
@@ -5412,7 +5603,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      r = generate_app(NULL, args, 2, jitter, is_tail, multi_ok);
+      r = generate_app(NULL, args, 2, jitter, is_tail, multi_ok, 0);
 
       CHECK_LIMIT();
       if (target != JIT_R0)
@@ -6179,6 +6370,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_unbox);
+  CHECK_LIMIT();
+
+  /* *** bad_vector_length_code *** */
+  /* R0 is argument */
+  bad_vector_length_code = jit_get_ip().ptr;
+  jit_prepare(1);
+  jit_pusharg_i(JIT_R0);
+  (void)mz_finish(scheme_vector_length);
   CHECK_LIMIT();
 
   /* *** call_original_unary_arith_code *** */

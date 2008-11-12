@@ -2,9 +2,45 @@
 @(require "mz.ss"
           (for-label scheme/port))
 
-@title{More Port Constructors and Events}
+@title[#:tag "port-lib"]{More Port Constructors, Procedures, and Events}
 
 @note-lib-only[scheme/port]
+
+@; ----------------------------------------------------------------------
+
+@section{Port String and List Conversions}
+
+@defproc[(port->string [in input-port? (current-input-port)]) string?]{
+
+Reads all characters from @scheme[in] and returns them as a string.}
+
+@defproc[(port->bytes [in input-port? (current-input-port)]) bytes?]{
+
+Reads all bytes from @scheme[in] and returns them as a @tech{byte string}.}
+
+@defproc[(port->lines [in input-port? (current-input-port)]
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         (listof string?)]{
+
+Read all characters from @scheme[in], breaking them into lines. The
+@scheme[line-mode] argument is the same as the second argument to
+@scheme[read-line], but the default is @scheme['any] instead of
+@scheme['linefeed].}
+
+@defproc[(port->bytes-lines [in input-port? (current-input-port)]
+                            [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         (listof bytes?)]{
+
+Like @scheme[port->lines], but reading bytes and collecting them into
+lines like @scheme[read-bytes-line].}
+
+@defproc[(display-lines [lst list?]
+                        [out output-port? (current-output-port)]
+                        [#:separator separator any/c #"\n"])
+         void?]{
+
+Use @scheme[display] to each each element of @scheme[lst] to @scheme[out], adding
+@scheme[separator] after each element.}
 
 @; ----------------------------------------------------------------------
 

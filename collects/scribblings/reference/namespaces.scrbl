@@ -341,6 +341,11 @@ correspond to the first two elements of a list produced by
 @scheme[identifier-binding].}
 
 
+@defproc[(variable-reference? [v any/c]) boolean?]{
+
+Return @scheme[#t] if @scheme[v] is a @tech{variable reference}
+produced by @scheme[#%variable-reference], @scheme[#f] otherwise.}
+
 @defproc[(variable-reference->empty-namespace [varref variable-reference?])
          namespace?]{
 
@@ -352,25 +357,25 @@ and with the same phase as @scheme[varref].}
 @defproc[(variable-reference->namespace [varref variable-reference?])
          namespace?]{
 
-If @scheme[varref] refers to a module binding, then the result is a
-namespace for the module's body in the referenced binding's
-@tech{phase}; the result is the same as a namespace obtained via
-@scheme[module->namespace].
+If @scheme[varref] refers to a @tech{module-level variable}, then the
+result is a namespace for the module's body in the referenced
+variable's @tech{phase}; the result is the same as a namespace
+obtained via @scheme[module->namespace].
 
-If @scheme[varref] refers to a top-level binding, then the result is
-the namespace in which the referenced binding is defined.}
+If @scheme[varref] refers to a @tech{top-level variable}, then the
+result is the namespace in which the referenced variable is defined.}
 
 
 @defproc[(variable-reference->resolved-module-path [varref variable-reference?])
          resolved-module-path?]{
 
-If @scheme[varref] refers to a module binding, the result is a
-@tech{resolved module path} naming the module.
+If @scheme[varref] refers to a @tech{module-level variable}, the
+result is a @tech{resolved module path} naming the module.
 
-If @scheme[varref] refers to a top-level binding, then the
+If @scheme[varref] refers to a @tech{top-level variable}, then the
 @exnraise[exn:fail:contract].}
 
 @defproc[(variable-reference->phase [varref variable-reference?])
          exact-nonnegative-integer?]{
 
-Returns the @tech{phase} of the binding referenced by @scheme[varref].}
+Returns the @tech{phase} of the variable referenced by @scheme[varref].}

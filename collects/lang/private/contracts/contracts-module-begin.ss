@@ -252,8 +252,10 @@
                    (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
                      ;; Lift out certain forms to make them visible to the module
                      ;;  expander:
-                     (syntax-case e2 (#%require define-syntaxes define-values-for-syntax define-values begin)
+                     (syntax-case e2 (#%require #%provide define-syntaxes define-values-for-syntax define-values begin)
                        [(#%require . __)
+                        #`(begin #,e2 (frm e3s #,e1s #,def-ids))]
+                       [(#%provide . __)
                         #`(begin #,e2 (frm e3s #,e1s #,def-ids))]
                        [(define-syntaxes (id ...) . _)
                         #`(begin #,e2 (frm e3s #,e1s (id ... . #,def-ids)))]

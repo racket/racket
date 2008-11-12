@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide module-source-as-string build-src-loc-string 
+(provide unpack-blame build-src-loc-string 
          mangle-id mangle-id-for-maker
          build-struct-names
          nums-up-to
@@ -9,7 +9,6 @@
          known-good-contract?)
 
 (require setup/main-collects
-         syntax/private/modcollapse-noctc
          (for-template scheme/base))
 
 (define (add-name-prop name stx)
@@ -109,34 +108,22 @@
           (string-append source ":" location)
           (or location source)))))
 
-(define o (current-output-port))
-
-;; module-source-as-string : syntax -> symbol
-;; constructs a string for use in the blame error messages
-;; when blaming the module where stx's occurs.
-(define (module-source-as-string stx)
-  (let ([mpi (syntax-source-module stx)])
-    (cond
-      [(not mpi) 
-       "the top level"]
-      [else
-       ;; note: the directory passed to collapse-module-path-index should be irrelevant
-       (let ([collapsed 
-              (with-handlers ((exn:fail? (λ (x) "the top level")))  ;; this with-handlers works around a bug elsewhere
-                (collapse-module-path-index mpi (current-directory)))])
-         (cond
-           [(path? collapsed)
-            (let ([resolved (resolved-module-path-name (module-path-index-resolve mpi))])
-              (cond
-                [(symbol? resolved) (format "module ~a" resolved)]
-                [else (format "module ~a" `(file ,(path->string resolved)))]))]
-           [(and (pair? collapsed)
-                 (pair? (cdr collapsed))
-                 (null? (cddr collapsed))
-                 (eq? (car collapsed) 'quote))
-            (format "module '~a" (cadr collapsed))]
-           [else
-            (format "module ~a" collapsed)]))])))
+;; unpack-blame : any/c -> any/c
+;; Constructs an S-expression for use in the blame error messages.
+;; A variable reference represents a module or top-level context.
+;; Other representations of blame are returned as-is.
+(define (unpack-blame blame)
+  (if (variable-reference? blame)
+      (let ([rp (variable-reference->resolved-module-path blame)])
+        (cond
+         [(not rp) 
+          'top-level]
+         [else
+          (let ([resolved (resolved-module-path-name rp)])
+            (cond
+             [(symbol? resolved) `(quote ,resolved)]
+             [else `(file ,(path->string resolved))]))]))
+      blame))
 
 (define build-struct-names
   (lambda (name-stx fields omit-sel? omit-set? srcloc-stx)

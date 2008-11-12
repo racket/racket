@@ -1059,6 +1059,7 @@ If the namespace does not, they are colored the unbound color.
                (ensure-rep-hidden)
                (let-values ([(expanded-expression expansion-completed) (make-traversal)])
                  (let* ([definitions-text (get-definitions-text)]
+                        [interactions-text (get-interactions-text)]
                         [drs-eventspace (current-eventspace)]
                         [the-tab (get-current-tab)])
                    (let-values ([(old-break-thread old-custodian) (send the-tab get-breakables)])
@@ -1119,6 +1120,13 @@ If the namespace does not, they are colored the unbound color.
                                   (parameterize ([current-eventspace drs-eventspace])
                                     (queue-callback
                                      (λ () ;; =drs=
+                                       
+                                       ;; a call like this one also happens in 
+                                       ;; drscheme:debug:error-display-handler/stacktrace
+                                       ;; but that call won't happen here, because
+                                       ;; the rep is not in the current-rep parameter
+                                       (send interactions-text highlight-errors/exn exn)
+                                       
                                        (show-error-report/tab))))
                                   
                                   (drscheme:debug:error-display-handler/stacktrace 

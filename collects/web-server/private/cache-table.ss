@@ -1,8 +1,7 @@
 #lang scheme/base
 (require mzlib/contract)
 
-(define-struct cache-table (hash semaphore)
-  #:mutable)
+(define-struct cache-table (hash semaphore) #:mutable)
 
 (define (new-cache-table)
   ; Only eq? tables are not locked

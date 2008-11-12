@@ -108,7 +108,8 @@
                           body)]))))])])
        #`[(vector? #,x)
           (case (vector-length #,x)
-            clauses ...)])]
+            clauses ...
+            [else (#,esc)])])]
     ;; it's a structure
     [(box? k)
      ;; all the rows are structures with the same predicate

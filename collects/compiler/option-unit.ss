@@ -23,6 +23,7 @@
   (define disable-interrupts (make-parameter #f))
   (define fixnum-arithmetic (make-parameter #f))
 
+  (define somewhat-verbose (make-parameter #f))
   (define verbose (make-parameter #f))
   (define debug (make-parameter #f))
   (define test (make-parameter #f))

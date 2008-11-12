@@ -44,20 +44,21 @@
 	(let ([c (read-bytes-avail! s src)])
 	  (cond
 	   [(number? c)
-	    (for-each
-	     (lambda (dest)
-	       (let loop ([start 0])
-		 (unless (= start c)
-		   (let ([c2 (write-bytes-avail s dest start c)])
-		     (loop (+ start c2))))))
-	     dests)
+            (let loop ([dests dests])
+              (unless (null? dests)
+                (let loop ([start 0])
+                  (unless (= start c)
+                    (let ([c2 (write-bytes-avail s (car dests) start c)])
+                      (loop (+ start c2)))))
+                (loop (cdr dests))))
 	    (loop)]
 	   [(procedure? c)
 	    (let ([v (let-values ([(l col p) (port-next-location src)])
 		       (c (object-name src) l col p))])
-	      (for-each
-	       (lambda (dest) (write-special v dest))
-	       dests))
+              (let loop ([dests dests])
+                (unless (null? dests)
+                  (write-special v (car dests))
+                  (loop (cdr dests)))))
 	    (loop)]
 	   [else
 	    ;; Must be EOF

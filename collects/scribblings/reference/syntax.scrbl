@@ -568,7 +568,7 @@ follows.
               (for-meta phase-level provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, but adjusted to apply to @tech{phase level}
  specified by @scheme[phase-level] (where @scheme[#f] corresponds to the
- @tech{label phase level}). In particular, an @scheme[id] or @scheme[rename-out] form as
+ @tech{label phase level}). In particular, an @scheme[_id] or @scheme[rename-out] form as
  a @scheme[provide-spec] refers to a binding at @scheme[phase-level], an
  @scheme[all-define-out] exports only @scheme[phase-level]
  definitions, and an @scheme[all-from-out] exports bindings
@@ -800,7 +800,7 @@ representation of the program fragment) without its @tech{lexical
 information}, source location, etc.  Quoted pairs, vectors, and boxes
 are immutable.
 
-@examples[
+@mz-examples[
 (eval:alts (#,(schemekeywordfont "quote") x) 'x)
 (eval:alts (#,(schemekeywordfont "quote") (+ 1 2)) '(+ 1 2))
 (+ 1 2)
@@ -817,7 +817,7 @@ syntax error is reported.
 See also @secref["expand-steps"] for information on how the expander
 introduces @schemeidfont{#%datum} identifiers.
 
-@examples[
+@mz-examples[
 (#%datum . 10)
 (#%datum . x)
 (#%datum . #:x)
@@ -833,7 +833,7 @@ Produces the same result as @scheme[expr]. The only use of
 @scheme[#%expression] is to force the parsing of a form as an
 expression.
 
-@examples[
+@mz-examples[
 (#%expression (+ 1 2))
 (#%expression (define x 10))
 ]}
@@ -879,20 +879,25 @@ introduces @schemeidfont{#%top} identifiers.
 
 @defform*[#:literals (#%top)
           [(#%variable-reference id)
-           (#%variable-reference (#%top . id))]]{
+           (#%variable-reference (#%top . id))
+           (#%variable-reference)]]{
 
-Produces an opaque value representing the location of @scheme[id],
-which must be bound as a @tech{top-level variable} or
-@tech{module-level variable}.
+Produces an opaque @deftech{variable reference} value representing the
+location of @scheme[id], which must be bound as a @tech{top-level
+variable} or @tech{module-level variable}. If no @scheme[id] is
+supplied, the resulting value refers to an ``anonymous'' variable
+defined within the enclosing context (i.e., within the enclosing
+module, or at the top level if the form is not inside a module).
 
-The result is useful to low-level extensions; see @other-manual['(lib
-"scribblings/inside/inside.scrbl")]. It can also be used with
+A @tech{variable reference} can be used with
 @scheme[variable-reference->empty-namespace],
 @scheme[variable-reference->resolved-module-path], and
 @scheme[variable-reference->top-level-namespace], but facilities like
 @scheme[define-namespace-anchor] and
 @scheme[namespace-anchor->namespace] wrap those to provide an clearer
-interface.}
+interface. A @tech{variable reference} is also useful to low-level
+extensions; see @other-manual['(lib
+"scribblings/inside/inside.scrbl")].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "application"]{Procedure Applications and @scheme[#%app]}
@@ -915,7 +920,7 @@ arguments). Typically, the lexical context of the pair indicates the
 procedure-application @scheme[#%app] that is described next. See also
 @secref["expand-steps"].
 
-@examples[
+@mz-examples[
 (+ 1 2)
 ((lambda (x #:arg y) (list y x)) #:arg 2 1)
 ]}
@@ -954,7 +959,7 @@ according to their order in the application form.
 See also @secref["expand-steps"] for information on how the
 expander introduces @schemeidfont{#%app} identifiers.
 
-@examples[
+@mz-examples[
 (#%app + 1 2)
 (#%app (lambda (x #:arg y) (list y x)) #:arg 2 1)
 (#%app cons)
@@ -1072,7 +1077,7 @@ the @exnraise[exn:fail:contract].
 The last @scheme[body] expression is in tail position with respect to
 the procedure body.
 
-@examples[
+@mz-examples[
 ((lambda (x) x) 10)
 ((lambda (x y) (list y x)) 1 2)
 ((lambda (x [y 5]) (list y x)) 1 2)
@@ -1112,7 +1117,7 @@ Note that a @scheme[case-lambda] clause supports only
 @scheme[lambda]. That is, @scheme[case-lambda] does not directly
 support keyword and optional arguments.
 
-@examples[
+@mz-examples[
 (let ([f (case-lambda
           [() 10]
           [(x) x]
@@ -1143,7 +1148,7 @@ locations. It then evaluates the @scheme[body]s, in which the
 tail position with respect to the @scheme[let] form. The @scheme[id]s
 must be distinct according to @scheme[bound-identifier=?].
 
-@examples[
+@mz-examples[
 (let ([x 5]) x)
 (let ([x 5])
   (let ([x 2]
@@ -1156,7 +1161,7 @@ values become arguments in an application of a procedure
 @scheme[(lambda (id ...) body ...+)], where @scheme[proc-id] is bound
 within the @scheme[body]s to the procedure itself.}
 
-@examples[
+@mz-examples[
 (let fac ([n 10])
   (if (zero? n)
       1
@@ -1171,7 +1176,7 @@ available. The @scheme[id]s are bound in the remaining @scheme[val-expr]s
 as well as the @scheme[body]s, and the @scheme[id]s need not be
 distinct; later bindings shadow earlier bindings.
 
-@examples[
+@mz-examples[
 (let* ([x 1]
        [y (+ x 1)])
   (list y x))
@@ -1185,7 +1190,7 @@ created first and filled with @|undefined-const|, and all
 @scheme[body]s. The @scheme[id]s must be distinct according to
 @scheme[bound-identifier=?].
 
-@examples[
+@mz-examples[
 (letrec ([is-even? (lambda (n)
                      (or (zero? n)
                          (is-odd? (sub1 n))))]
@@ -1201,7 +1206,7 @@ values as corresponding @scheme[id]s, otherwise the
 @exnraise[exn:fail:contract]. A separate location is created for each
 @scheme[id], all of which are bound in the @scheme[body]s.
 
-@examples[
+@mz-examples[
 (let-values ([(x y) (quotient/remainder 10 3)])
   (list y x))
 ]}
@@ -1212,7 +1217,7 @@ values as corresponding @scheme[id]s. A separate location is created
 for each @scheme[id], all of which are bound in the later
 @scheme[val-expr]s and in the @scheme[body]s.
 
-@examples[
+@mz-examples[
 (let*-values ([(x y) (quotient/remainder 10 3)]
               [(z) (list y x)])
   z)
@@ -1225,7 +1230,7 @@ created for each @scheme[id], all of which are initialized to
 @|undefined-const| and bound in all @scheme[val-expr]s
 and in the @scheme[body]s.
 
-@examples[
+@mz-examples[
 (letrec-values ([(is-even? is-odd?)
                  (values
                    (lambda (n)
@@ -1314,7 +1319,7 @@ evaluated, and its results are the result for the @scheme[if]
 form. The @scheme[then-expr] and @scheme[else-expr] are in tail
 position with respect to the @scheme[if] form.
 
-@examples[
+@mz-examples[
 (if (positive? -5) (error "doesn't get here") 2)
 (if (positive? 5) 1 (error "doesn't get here"))
 ]}
@@ -1363,7 +1368,7 @@ the @scheme[cond] expression.}
 returned as the result of the @scheme[cond] form. The
 @scheme[test-expr] is not in tail position.}
 
-@examples[
+@mz-examples[
 (cond)
 (cond
   [else 5])
@@ -1406,7 +1411,7 @@ Otherwise, the first @scheme[expr] is evaluated. If it produces
 expression with the remaining @scheme[expr]s in tail position with
 respect to the original @scheme[and] form.
 
-@examples[
+@mz-examples[
 (and)
 (and 1)
 (and (values 1 2))
@@ -1430,7 +1435,7 @@ value other than @scheme[#f], that result is the result of the
 @scheme[or] expression with the remaining @scheme[expr]s in tail
 position with respect to the original @scheme[or] form.
 
-@examples[
+@mz-examples[
 (or)
 (or 1)
 (or (values 1 2))
@@ -1461,7 +1466,7 @@ For the selected @scheme[case-clause], the results of the last
 A @scheme[case-clause] that starts with @scheme[else] must be the last
 @scheme[case-clause].
 
-@examples[
+@mz-examples[
 (case (+ 7 5)
  [(1 2 3) 'small]
  [(10 11 12) 'big])
@@ -1676,7 +1681,7 @@ ignoring the @scheme[body] results. The results of the @scheme[expr]
 are the results of the @scheme[begin0] form, but the @scheme[expr] is
 in tail position only if no @scheme[body]s are present.
 
-@examples[
+@mz-examples[
 (begin0
   (values 1 2)
   (printf "hi\n"))
@@ -1720,7 +1725,7 @@ the result of the @scheme[when] expression is
 last @scheme[expr] is in tail position with respect to the
 @scheme[when] form.
 
-@examples[
+@mz-examples[
 (when (positive? -5)
   (display "hi"))
 (when (positive? 5)
@@ -1732,7 +1737,7 @@ last @scheme[expr] is in tail position with respect to the
 
 Equivalent to @scheme[(when (not test-expr) expr ...)].
 
-@examples[
+@mz-examples[
 (unless (positive? 5)
   (display "hi"))
 (unless (positive? -5)
@@ -1783,7 +1788,7 @@ Assuming that all @scheme[id]s refer to variables, this form evaluates
 corresponding value from @scheme[expr] in the same way as for
 @scheme[set!].
 
-@examples[
+@mz-examples[
 (let ([a 1]
       [b 2])
   (set!-values (a b) (values b a))
@@ -1846,7 +1851,7 @@ is used directly in place of the quoted pair (in the same way that
 @scheme[quasiquote] in any other way than as @scheme[(unquote _expr)]
 or @scheme[(unquote-splicing _expr)], a syntax error is reported.
 
-@examples[
+@mz-examples[
 (eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
 (eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote) (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
 (eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
@@ -1858,7 +1863,7 @@ A @scheme[quasiquote], @scheme[unquote], or @scheme[unquote-splicing]
 form is typically abbreviated with @litchar{`}, @litchar{,}, or
 @litchar[",@"], respectively. See also @secref["parse-quote"].
 
-@examples[
+@mz-examples[
 `(0 1 2)
 `(1 ,(+ 1 2) 4)
 `#s(stuff 1 ,(+ 1 2) 4)
@@ -1873,7 +1878,7 @@ but a further nested @scheme[unquote] or @scheme[unquote-splicing]
 escapes.  Multiple nestings of @scheme[quasiquote] require multiple
 nestings of @scheme[unquote] or @scheme[unquote-splicing] to escape.
 
-@examples[
+@mz-examples[
 `(1 `,(+ 1 ,(+ 2 3)) 4)
 `(1 ```,,@,,@(list (+ 1 2)) 4)
 ]
@@ -1910,7 +1915,7 @@ Produces a @tech{syntax object} that preserves the @tech{lexical
 information} and source-location information attached to
 @scheme[datum] at expansion time.
 
-@examples[
+@mz-examples[
 (syntax? (quote-syntax x))
 ]
 }

@@ -36,7 +36,7 @@
                #:initial-connection-timeout number?)
        (-> void))]
  [do-not-return (-> void)]
- [serve/web-config@ (unit? . -> . (-> void?))])
+ [serve/web-config@ ((unit?) (#:tcp@ unit?) . ->* . (-> void?))])
 
 (define (do-not-return)
   (semaphore-wait (make-semaphore 0)))
@@ -101,7 +101,9 @@
     (for-each apply shutdowns)))
 
 ; serve/config@ : configuration -> (-> void)
-(define (serve/web-config@ config@)
+(define (serve/web-config@ config@ #:tcp@ [tcp@ raw:tcp@])
+  (define-unit-binding a-tcp@
+    tcp@ (import) (export tcp^))
   (define-unit m@ (import web-server^) (export)
     (init-depend web-server^)
     (serve))
@@ -109,5 +111,5 @@
   (invoke-unit
    (compound-unit/infer
     (import)
-    (link raw:tcp@ c@ web-server@ m@)
+    (link a-tcp@ c@ web-server@ m@)
     (export))))

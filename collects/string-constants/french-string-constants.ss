@@ -329,6 +329,11 @@
   (help-desk-this-is-just-example-text
    "Ceci est simplement un morceau de texte pour pouvoir choisir la taille de la police.  Ouvrez l'Aide (dans le menu Aide) pour suivre ces liens.")
   
+  ;; this appears in the bottom part of the frame the first time the user hits `f1' 
+  ;; (assuming nothing else has loaded the documentation index first)
+  ;; see also: cs-status-loading-docs-index
+  (help-desk-loading-documentation-index "Aide: chargement de l'index de la documentation")
+  
   ; help desk htty proxy
   (http-proxy "Proxy HTTP")
   (proxy-direct-connection "Connexion directe")
@@ -385,6 +390,9 @@
   (save-in-drs-format "Sauvegarder ce fichier au format DrScheme (non-texte) ?")
   (yes "Oui")
   (no "Non")
+  
+ ;; saving image (right click on an image to see the text)
+  (save-image "Sauvegarder l'image...")
   
   ;;; preferences
   (preferences "Préférences")
@@ -494,16 +502,22 @@
   (repl-error-color "Erreurs")
   
   ;;; find/replace
-  (find-and-replace "Chercher et remplacer")
-  (find "Chercher")
-  (replace "Remplacer")
+  (search-next "Sui")
+  (search-previous "Pre")
+  (search-match "occ.")  ;;; this one and the next one are singular/plural variants of each other
+  (search-matches "occ.") 
+  (search-replace "Remplacer")
+  (search-skip "Passer")
+  (search-show-replace "Montrer Remplacer")
+  (search-hide-replace "Cacher Remplacer")
+  (find-case-sensitive "Sensible à la casse")  ;; the check box in both the docked & undocked search
+  (find-anchor-based "Recherche utilisant des ancres")
+
+  ;; these string constants used to be used by searching,
+  ;; but aren't anymore. They are still used by other tools, tho.
+  (hide "Cacher")
   (dock "Attacher")
   (undock "Détacher")
-  (replace&find-again "Remplacer && chercher à nouveau") ;;; need double & to get a single &
-  (forward "En avant")
-  (backward "En arrière")
-  (hide "Cacher")
-  (find-case-sensitive "Sensible à la casse")  ;; the check box in both the docked & undocked search
 
   ;;; multi-file-search
   (mfs-multi-file-search-menu-item "Rechercher dans les fichiers...")
@@ -590,7 +604,7 @@
   (open-here-menu-item "&Ouvrir ici...")
   
   (open-recent-info "Une liste des fichiers ouverts récemment.")
-  (open-recent-menu-item "Ouvrir récent")
+  (open-recent-menu-item "Ouvrir récen&t")
   
   (revert-info "Retour à la version originale de ce fichier sur le disque dur.")
   (revert-menu-item "&Retour version disque")
@@ -637,15 +651,28 @@
   (select-all-info "Sélectionner tout le document.")
   (select-all-menu-item "&Sélectionner tout")
   
-  (find-info "Rechercher une chaîne de caractères.")
-  (find-menu-item "Rechercher...")
+  (find-menu-item "Rechercher") ;; menu item
+  (find-info "Transférer le contrôle du clavier entre la fenêtre d'édition et la barre de recherche")
   
-  (find-again-info "Recherche à nouveau la même chaîne de caractères.")
-  (find-again-menu-item "Rechercher à nouveau")
+  (find-next-info "Recherche la même chaîne de caractères, en avant.")
+  (find-next-menu-item "Rechercher en avant")
   
-  (replace-and-find-again-info "Remplacer le texte sélectionné et rechercher à nouveau le même texte.")
-  (replace-and-find-again-menu-item "Remplacer && rechercher à nouveau")
+  (find-previous-info "Recherche la même chaîne de caractères, en arrière.")
+  (find-previous-menu-item "Rechercher en arrière")
+
+  (show-replace-menu-item "Montrer Remplacer")
+  (hide-replace-menu-item "Cacher Remplacer")
+  (show/hide-replace-info "Montrer ou cacher le champ de remplacement")
+
+  (replace-menu-item "Remplacer")
+  (replace-info "Remplacer le résultat de la recherche")
   
+  (replace-all-info "Remplacer toutes les occurrences de la chaîne de caractères recherchée")
+  (replace-all-menu-item "Remplacer tout")
+  
+  (find-case-sensitive-info "Changer la recherche entre sensible à la casse et insensible à la casse")
+  (find-case-sensitive-menu-item "Recherche sensible à la casse")
+
   (complete-word "Compléter le mot") ; the complete word menu item in the edit menu
   (no-completions "... pas de complétion connue") ; shows up in the completions menu when there are no completions (in italics)
   
@@ -825,11 +852,11 @@
   ;;; scheme-menu
   (scheme-menu-name "&Scheme")
   (execute-menu-item-label "Exécuter")
-  (execute-menu-item-help-string "Réexécuter le program de la fenêtre de définition.")
-  (break-menu-item-label "Stopper")
-  (break-menu-item-help-string "Stopper l'exécution.")
-  (kill-menu-item-label "Tuer")
-  (kill-menu-item-help-string "Tuer l'exécution.")
+  (execute-menu-item-help-string "Réexécuter le programme de la fenêtre de définition.") 
+  (ask-quit-menu-item-label "Demander au programme de quitter")
+  (ask-quit-menu-item-help-string "Utilise break-thread pour stopper la tâche principale de l'évaluation courante")
+  (force-quit-menu-item-label "Forcer le programme à quitter")
+  (force-quit-menu-item-help-string "Utilise custodian-shutdown-all pour terminer toute l'évaluation courante")
   (limit-memory-menu-item-label "Limiter la mémoire...")
   (limit-memory-msg-1 "La limite prendra effet à la prochaine exécution du programme.")
   (limit-memory-msg-2 "Elle doit être d'au moins 100 megaoctets.")
@@ -907,7 +934,9 @@
   (whole-part "Partie entière")
   (numerator "Numérateur")
   (denominator "Dénominateur")
-  (invalid-number "Nombre invalide : doit être un nombre réel exact non-entier.")
+  (insert-number/bad-whole-part "La partie entière du nombre doit être intégrale")
+  (insert-number/bad-numerator "Le numérateur du nombre doit être un entier non-négatif")
+  (insert-number/bad-denominator "Le dénominateur du nombre doit être un entier positif")
   (insert-fraction-menu-item-label "Insérer une fraction...")
   
   ;; number snip popup menu
@@ -992,7 +1021,7 @@
   (advanced-one-line-summary "Intermédiaire plus lambda et mutation")
   (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "Assez gros Scheme")
-  (pretty-big-scheme-one-line-summary "Graphique, plus de nombreuses bibliothèques standards")
+  (pretty-big-scheme-one-line-summary "Ajoute de la syntaxe et des fonctions provenants des languages HtDP, mzscheme, et mred/mred")
   (r5rs-language-name "R5RS")
   (r5rs-one-line-summary "R5RS, de base")
   (expander "Expanseur") ; compression, compresseur, compresser => expansion, expanseur, expanser (expandeur, expander fait trop franglais et expandion n'existe pas)
@@ -1243,6 +1272,8 @@
   (ml-cp-raise "Monter")
   (ml-cp-lower "Descendre")
 
+  (ml-always-show-#lang-line "Toujours montrer la ligne #lang dans le langage Module")
+
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "mode Java")
@@ -1381,4 +1412,16 @@
   (gui-tool-show-gui-toolbar "Montrer la barre d'outils GUI")
   (gui-tool-hide-gui-toolbar "Cacher la barre d'outils GUI")
   (gui-tool-insert-gui "Insérer une GUI")  
+  
+  ;; contract violation tracking
+  
+  ; tooltip for new planet icon in drscheme window (must have a planet violation logged to see it)
+  (show-planet-contract-violations "Montrer les violations de contrat pour PLaneT")
+  
+  ; buttons in the dialog that lists the recorded bug reports
+  (bug-track-report "Soumettre un rapport de bogue")
+  (bug-track-forget "Oublier")
+  (bug-track-forget-all "Oublier tous")
+  
+
   ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz"

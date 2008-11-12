@@ -9,7 +9,7 @@
          get-info)
 
 (define (planet-get in lang-mod export-sym src line col pos mk-fail-thunk)
-  (let ([spec (regexp-try-match #px"^(.*?)(\\s|$)" in)]
+  (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(\\s|$)" in)]
         [bad (lambda (str eof?)
                ((if eof?
                     raise-read-eof-error 

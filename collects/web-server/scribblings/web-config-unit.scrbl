@@ -25,10 +25,6 @@ Provides contains the following identifiers.
  Contains the configuration of individual virtual hosts.
 }
 
-@defthing[scripts (box/c (cache-table? path? servlet?))]{
- Contains initially loaded servlets.
-}
-
 @defthing[initial-connection-timeout integer?]{
  Specifies the initial timeout given to a connection.
 }

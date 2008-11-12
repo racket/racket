@@ -11,7 +11,8 @@ There are a number of ways to run the Web Server. They are given in order of sim
 @; ------------------------------------------------------------
 @section[#:tag "insta"]{Instant Servlets}
 @(require (for-label (only-in web-server/insta/insta
-                              no-web-browser static-files-path)))
+                              no-web-browser static-files-path)
+                     web-server/servlet-env))
 @defmodulelang[web-server/insta]
 
 The fastest way to get a servlet running in the Web server is to use the 
@@ -54,14 +55,16 @@ The following API is provided to customize the server instance:
 
 One command-line utility is provided with the @|web-server|:
 
-@commandline{plt-web-server [-f <file-name> -p <port> -a <ip-address>]}
+@commandline{plt-web-server [-f <file-name> -p <port> -a <ip-address> --ssl]}
 
 The optional file-name argument specifies the path to a
 @scheme[configuration-table] S-expression (see
 @secref["configuration-table.ss"].) If this is not provided, the
 default configuration shipped with the server is used. The optional
 port and ip-address arguments override the corresponding portions of
-the @scheme[configuration-table].
+the @scheme[configuration-table]. If the SSL option is provided, then 
+the server uses HTTPS with @filepath{server-cert.pem} and @filepath{private-key.pem}
+in the current directory, with 443 as the default port.
 
 The @scheme[configuration-table] is given to
 @scheme[configuration-table->web-config@] and used to construct a
@@ -81,7 +84,7 @@ To run the web server with MrEd, use
 
 @filepath{web-server.ss} provides a number of functions for easing embedding
 of the @web-server in other applications, or loading a custom
-dispatcher. See @filepath{run.ss} for an example of such a script.
+dispatcher. 
 
 @defproc[(serve [#:dispatch dispatch dispatcher?]
                 [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
@@ -96,12 +99,13 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
  The @scheme[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
 }
 
-@; XXX Not the right `server' above.
-
 Here's an example of a simple web server that serves files
 from a given path:
 
 @(require (for-label web-server/dispatchers/filesystem-map)
+          (for-label web-server/web-config-unit)
+          (for-label web-server/web-config-sig)
+          (for-label web-server/configuration/configuration-table)
           (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @schemeblock[
@@ -137,6 +141,18 @@ from a given path:
  a function that shuts down all of the server instances.
 }
                   
+@defproc[(serve/web-config@ [config@ web-config^]
+                            [#:tcp@ tcp@ tcp-unit^ raw:tcp@])
+         (-> void)]{
+ Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
+        
+ It is very useful to combine this with @scheme[configuration-table->web-config@] and @scheme[configuration-table-sexpr->web-config@]:
+ 
+ @schemeblock[
+  (serve/web-config@
+   (configuration-table->web-config@ 
+    default-configuration-table-path))]
+}
 
 @defproc[(do-not-return) void]{
  This function does not return. If you are writing a script to load the @web-server

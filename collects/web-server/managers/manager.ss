@@ -6,13 +6,10 @@
                         adjust-timeout!
                         clear-continuations!
                         continuation-store!
-                        continuation-lookup)
-  #:mutable)
+                        continuation-lookup))
 
-(define-struct (exn:fail:servlet-manager:no-instance exn:fail) (expiration-handler)
-  #:mutable)
-(define-struct (exn:fail:servlet-manager:no-continuation exn:fail) (expiration-handler)
-  #:mutable)
+(define-struct (exn:fail:servlet-manager:no-instance exn:fail) (expiration-handler))
+(define-struct (exn:fail:servlet-manager:no-continuation exn:fail) (expiration-handler))
 
 (provide/contract
  [struct manager ([create-instance ((-> void) . -> . number?)]

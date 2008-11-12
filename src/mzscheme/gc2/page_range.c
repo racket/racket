@@ -6,11 +6,6 @@
     add_page_range
 */
 
-typedef struct Range {
-  unsigned long start, len;
-  struct Range *left, *right, *prev, *next;
-} Range;
-
 #define Tree Range
 #define Splay_Item(t) (t)->start
 #define Set_Splay_Item(t, v) (t)->start = (v)
@@ -24,13 +19,6 @@ typedef struct Range {
 #undef Tree
 #undef Splay_Item
 #undef Set_Splay_Item
-
-typedef struct Page_Range {
-  Range *range_root, *range_start;
-  void *range_alloc_block;
-  unsigned long range_alloc_size;
-  unsigned long range_alloc_used;
-} Page_Range;
 
 static void initialize_page_ranges(Page_Range *pr, void *block, unsigned long size)
 {

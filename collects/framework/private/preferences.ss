@@ -443,6 +443,10 @@ the state transitions / contracts are:
                                'framework:anchored-search
                                (string-constant find-anchor-based)
                                values values)
+                   (make-check editor-panel
+                               'framework:do-paste-normalization
+                               (string-constant normalize-string-preference)
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   
@@ -461,7 +465,10 @@ the state transitions / contracts are:
                                'framework:verify-exit
                                (string-constant verify-exit)
                                values values)
-                   
+                   (make-check warnings-panel
+                               'framework:ask-about-paste-normalization
+                               (string-constant ask-about-normalizing-strings)
+                               values values)
                    (warnings-panel-procs warnings-panel))))])
       (add-warnings-checkbox-panel)))
   

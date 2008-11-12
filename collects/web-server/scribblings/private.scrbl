@@ -26,10 +26,9 @@ procedures after a given amount of time, that may be extended.
  @scheme[action] should be called when this @scheme[evt] is ready.
 }
 
-@defproc[(start-timer-manager [cust custodian?])
+@defproc[(start-timer-manager)
          void]{
- Handles the execution and management of timers. Resources are charged to
- @scheme[cust].
+ Handles the execution and management of timers.
 }
 
 @defproc[(start-timer [s number?]
@@ -57,7 +56,6 @@ procedures after a given amount of time, that may be extended.
 }
 
 
-@; XXX Generalize
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
 @(require (for-label web-server/private/connection-manager))
@@ -78,11 +76,9 @@ for doing this.
  The connection will last until @scheme[timer] triggers.
 }
 
-@; XXX Don't pass in parent-cust
-@defproc[(start-connection-manager [parent-cust custodian?])
+@defproc[(start-connection-manager)
          void]{
- Runs the connection manager (now just the timer manager) will @scheme[parent-cust]
- as the custodian.
+ Runs the connection manager (now just the timer manager).
 }
 
 @defproc[(new-connection [timeout number?]
@@ -164,8 +160,6 @@ The @scheme[dispatch-server^] signature is an alias for
 The @schememodname[web-server/private/dispatch-server-unit] module
 provides the unit that actually implements a dispatching server.
 
-@; XXX Talk about how threads and custodians are used.
-
 @defthing[dispatch-server@ (unit/c (tcp^ dispatch-server-config^) 
                                    (dispatch-server^))]{
  Runs the dispatching server config in a very basic way, except that it uses
@@ -177,7 +171,7 @@ provides the unit that actually implements a dispatching server.
 @(require (for-label web-server/private/closure)
           (for-label web-server/private/define-closure))
 
-@defmodule[web-server/private/closure]
+@defmodule[web-server/private/closure]{
 
 The defunctionalization process of the Web Language (see @secref["lang"])
 requires an explicit representation of closures that is serializable.
@@ -196,22 +190,50 @@ requires an explicit representation of closures that is serializable.
 
 @defproc[(closure->deserialize-name [c closure?])
          symbol?]{
- Extracts the unique tag of a closure @scheme[c]
+ Extracts the unique tag of a closure @scheme[c].
 }
-
+                 
+}
+                 
 These are difficult to use directly, so @filepath{private/define-closure.ss}
 defines a helper form:
 
 @subsection[#:style 'hidden]{Define Closure}
-@defmodule[web-server/private/define-closure]
+@defmodule[web-server/private/define-closure]{
 
 @defform[(define-closure tag formals (free-vars ...) body)]{
- Defines a closure, constructed with @scheme[make-tag] that accepts
+ Defines a closure, constructed with @scheme[make-tag] that accepts closure that returns
  @scheme[freevars ...], that when invoked with @scheme[formals]
  executes @scheme[body].
 }
 
-@; XXX Example
+Here is an example:
+@schememod[
+ scheme
+(require scheme/serialize)
+
+(define-closure foo (a b) (x y)
+  (+ (- a b)
+     (* x y)))
+
+(define f12 (make-foo (lambda () (values 1 2))))
+(serialize f12)
+#,(schemeresult '((1) 1 (('page . foo:deserialize-info)) 0 () () (0 1 2)))
+(f12 6 7)
+#,(schemeresult 1)
+(f12 9 1)
+#,(schemeresult 10)
+
+(define f45 (make-foo (lambda () (values 4 5))))
+(serialize f45)
+#,(schemeresult '((1) 1 (('page . foo:deserialize-info)) 0 () () (0 4 5)))
+(f45 1 2)
+#,(schemeresult 19)
+(f45 8 8)
+#,(schemeresult 20)
+]
+
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "cache-table.ss"]{Cache Table}
@@ -266,7 +288,6 @@ files.
  function from paths to their MIME type.
 }
 
-@; XXX Rename mod-map.ss
 @; ------------------------------------------------------------
 @section[#:tag "mod-map.ss"]{Serialization Utilities}
 @(require (for-label web-server/private/mod-map))
@@ -277,14 +298,14 @@ The @schememodname[scheme/serialize] library provides the
 functionality of serializing values. @filepath{private/mod-map.ss}
 compresses the serialized representation.
 
-@defproc[(compress-serial [sv serialized-value?])
-         compressed-serialized-value?]{
+@defproc[(compress-serial [sv list?])
+         list?]{
  Collapses multiple occurrences of the same module in the module
  map of the serialized representation, @scheme[sv].
 }
 
-@defproc[(decompress-serial [csv compressed-serialized-value?])
-         serialized-value?]{
+@defproc[(decompress-serial [csv list?])
+         list?]{
  Expands multiple occurrences of the same module in the module
  map of the compressed serialized representation, @scheme[csv].
 }
@@ -344,7 +365,6 @@ needs. They are provided by @filepath{private/util.ss}.
  Replaces the URL path of @scheme[u] with @scheme[proc] of the former path.
 }
 
-@; XXX Remove use or take url?
 @defproc[(url-path->string [url-path (listof path/param?)])
          string?]{
  Formats @scheme[url-path] as a string with @scheme["/"] as a delimiter
@@ -390,7 +410,6 @@ needs. They are provided by @filepath{private/util.ss}.
  according to @scheme[exn].
 }
 
-@; XXX Remove
 @defproc[(network-error [s symbol?]
                         [fmt string?]
                         [v any/c] ...)

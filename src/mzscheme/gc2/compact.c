@@ -10,6 +10,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "platforms.h"
+#include "gc2.h"
+
+#define NUMBER_OF_TAGS 512
+#include "compactgc_internal.h"
+#include "../src/schpriv.h"
+
+static THREAD_LOCAL CompactGC *GC;
+#define GCTYPE CompactGC
+#define GC_get_GC() (GC)
+#define ofm_malloc malloc
 
 /**************** Configuration ****************/
 
@@ -79,9 +90,7 @@
 
 #define INCREMENT_CYCLE_COUNT_GROWTH 1048576
 
-typedef short Type_Tag;
 
-#include "gc2.h"
 #include "gc2_dump.h"
 
 #define BYTEPTR(x) ((char *)x)
@@ -149,30 +158,30 @@ void (*GC_collect_start_callback)(void);
 void (*GC_collect_end_callback)(void);
 void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 void (*GC_out_of_memory)(void);
+void (*GC_report_out_of_memory)(void);
 unsigned long (*GC_get_thread_stack_base)(void);
 
 void (*GC_mark_xtagged)(void *obj);
 void (*GC_fixup_xtagged)(void *obj);
 
-void **GC_variable_stack;
+THREAD_LOCAL void **GC_variable_stack;
 
 void **GC_get_variable_stack() { return GC_variable_stack; }
 void GC_set_variable_stack(void **p) { GC_variable_stack = p; }
+void GC_register_root_custodian(void *_c) {}
 
 /********************* Type tags *********************/
-Type_Tag pair_tag = 42; /* set by client */
-Type_Tag mutable_pair_tag = 42; /* set by client */
 Type_Tag weak_box_tag = 42; /* set by client */
 Type_Tag ephemeron_tag = 42; /* set by client */
 Type_Tag weak_array_tag  = 42; /* set by client */
+Type_Tag pair_tag  = 42; /* set by client */
 
 #define gc_on_free_list_tag 511
 
-#define _num_tags_ 512
 
-Size_Proc size_table[_num_tags_];
-Mark_Proc mark_table[_num_tags_];
-Fixup_Proc fixup_table[_num_tags_];
+Size_Proc size_table[NUMBER_OF_TAGS];
+Mark_Proc mark_table[NUMBER_OF_TAGS];
+Fixup_Proc fixup_table[NUMBER_OF_TAGS];
 
 /****************** Memory Pages ******************/
 
@@ -347,11 +356,6 @@ static MSet *sets[NUM_SETS]; /* First one is tagged, last one is atomic */
 
 /********************* Statistics *********************/
 static long page_allocations = 0;
-static long page_reservations = 0;
-#define LOGICALLY_ALLOCATING_PAGES(len) (page_allocations += len)
-#define ACTUALLY_ALLOCATING_PAGES(len) (page_reservations += len)
-#define LOGICALLY_FREEING_PAGES(len) (page_allocations -= len)
-#define ACTUALLY_FREEING_PAGES(len) (page_reservations -= len)
 
 static long memory_in_use, gc_threshold = GROW_ADDITION, max_memory_use;
 static int prev_memory_in_use, memory_use_growth;
@@ -422,6 +426,19 @@ static int just_checking, the_size;
 #define DONT_NEED_MAX_HEAP_SIZE
 #include "vm.c"
 
+
+static void *malloc_pages(size_t len, size_t alignment)
+{
+  page_allocations += len;
+  return vm_malloc_pages(GC->vm, len, alignment, 0);
+}
+
+static void free_pages(void *p, size_t len)
+{
+  page_allocations -= len;
+  vm_free_pages(GC->vm, p, len);
+}
+
 /******************************************************************************/
 /*                              client setup                                  */
 /******************************************************************************/
@@ -433,13 +450,22 @@ void GC_set_stack_base(void *base)
   stack_base = (unsigned long)base;
 }
 
+void CompactGC_initialize(CompactGC *gc) {
+  memset(gc, 0, sizeof(CompactGC));
+  gc->vm = vm_create();
+}
+
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
-  pair_tag = pair;
-  mutable_pair_tag = mutable_pair;
+  CompactGC *gc;
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
+  pair_tag = pair;
+
+  gc = malloc(sizeof(CompactGC));
+  GC = gc;
+  CompactGC_initialize(gc);
 }
 
 void GC_register_traversers(Type_Tag tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup, 
@@ -534,7 +560,7 @@ static int size_on_free_list(void *p)
 /*                           weak arrays and boxes                            */
 /******************************************************************************/
 
-static int is_marked(void *p);
+static int is_marked(CompactGC *gc, void *p);
 #define weak_box_resolve(p) (p)
 
 #include "weak.c"
@@ -543,7 +569,7 @@ static int is_marked(void *p);
 /*                             finalization                                   */
 /******************************************************************************/
 
-static int is_finalizable_page(void *p)
+static int is_finalizable_page(CompactGC *gc, void *p)
 {
   MPage *page;
   page = find_page(p);
@@ -660,8 +686,13 @@ static MPage *find_page(void *p)
   return NULL;  
 }
 
+int GC_is_allocated(void *p)
+{
+  return !!find_page(p);
+}
+
 /* Works only during GC: */
-static int is_marked(void *p)
+static int is_marked(CompactGC *gc, void *p)
 {
   unsigned long g = ((unsigned long)p >> MAPS_SHIFT);
   MPage *map;
@@ -677,26 +708,26 @@ static int is_marked(void *p)
 #endif
     if (page->flags & MFLAG_BIGBLOCK) {
       if (page->flags & MFLAG_CONTINUED)
-	return is_marked(page->o.bigblock_start);
+        return is_marked(gc, page->o.bigblock_start);
       else
-	return (page->flags & (COLOR_MASK | MFLAG_OLD));
+        return (page->flags & (COLOR_MASK | MFLAG_OLD));
     } else {
       if (page->flags & MFLAG_OLD)
-	return 1;
+        return 1;
       else if (page->flags & COLOR_MASK) {
-	long offset = ((long)p & MPAGE_MASK) >> LOG_WORD_SIZE;
+        long offset = ((long)p & MPAGE_MASK) >> LOG_WORD_SIZE;
 
- 	if (page->type > MTYPE_TAGGED)
- 	  offset -= 1;
+        if (page->type > MTYPE_TAGGED)
+          offset -= 1;
 
-	return OFFSET_COLOR(page->u.offsets, offset);
+        return OFFSET_COLOR(page->u.offsets, offset);
       } else if ((long)p & 0x1)
-	return 1;
+        return 1;
       else
-	return 0;
+        return 0;
     }
   }
-  
+
   return 1;
 }
 
@@ -756,7 +787,7 @@ static void init_tagged_mpage(void **p, MPage *page)
 #endif
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	GCPRINT(GCOUTF, "bad tag: %d at %lx\n", tag, (long)p);
 	GCFLUSHOUT();
 	CRASH(7);
@@ -860,9 +891,9 @@ static void init_all_mpages(int young)
 #if GENERATIONS
       if (generations_available) {
 	if (page->flags & MFLAG_BIGBLOCK)
-	  protect_pages((void *)p, page->u.size, 1);
+	  vm_protect_pages((void *)p, page->u.size, 1);
 	else
-	  protect_pages((void *)p, MPAGE_SIZE, 1);
+	  vm_protect_pages((void *)p, MPAGE_SIZE, 1);
       }
 #endif
       page->flags |= MFLAG_MODIFIED;
@@ -924,9 +955,9 @@ static void init_all_mpages(int young)
 #if GENERATIONS
 	if (generations_available) {
 	  if (page->flags & MFLAG_BIGBLOCK)
-	    protect_pages((void *)p, page->u.size, 1);
+	    vm_protect_pages((void *)p, page->u.size, 1);
 	  else
-	    protect_pages((void *)p, MPAGE_SIZE, 1);
+	    vm_protect_pages((void *)p, MPAGE_SIZE, 1);
 	}
 #endif
 	page->flags |= MFLAG_MODIFIED;
@@ -1079,7 +1110,7 @@ void GC_mark(const void *p)
 #if CHECKS
 	    {
 	      Type_Tag tag = *(Type_Tag *)p;
-	      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+	      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 		GCPRINT(GCOUTF, "bad tag: %d at %lx\n", tag, (long)p);
 		CRASH(11);
 	      }
@@ -1500,7 +1531,7 @@ static void do_bigblock(void **p, MPage *page, int fixup)
       tag = *(Type_Tag *)p;
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	CRASH(16);
       }
       prev_var_stack = GC_variable_stack;
@@ -1621,7 +1652,7 @@ static void propagate_all_mpages()
 #endif
 	  
 #if CHECKS
-	    if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+	    if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	      CRASH(18);
 	    }
 #endif
@@ -2319,7 +2350,7 @@ static void fixup_tagged_mpage(void **p, MPage *page)
 #endif
 
 #if CHECKS
-      if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 	GCFLUSHOUT();
 	CRASH(28);
       }
@@ -2576,7 +2607,7 @@ static void free_unused_mpages()
     }
   }
 
-  flush_freed_pages();
+  vm_flush_freed_pages(GC->vm);
 }
 
 void promote_all_ages()
@@ -2607,9 +2638,9 @@ void protect_old_mpages()
       
 	  p = page->block_start;
 	  if (page->flags & MFLAG_BIGBLOCK)
-	    protect_pages((void *)p, page->u.size, 0);
+	    vm_protect_pages((void *)p, page->u.size, 0);
 	  else 
-	    protect_pages((void *)p, MPAGE_SIZE, 0);
+	    vm_protect_pages((void *)p, MPAGE_SIZE, 0);
 	}
       }
     }
@@ -2654,9 +2685,9 @@ static int designate_modified_maybe(void *p, int no_barrier_ok)
           page->flags |= MFLAG_MODIFIED;
           p = (void *)((long)p & MPAGE_START);
           if (page->flags & MFLAG_BIGBLOCK)
-            protect_pages(p, page->u.size, 1);
+            vm_protect_pages(p, page->u.size, 1);
           else
-            protect_pages(p, MPAGE_SIZE, 1);
+            vm_protect_pages(p, MPAGE_SIZE, 1);
           num_seg_faults++;
           return 1;
         }
@@ -2749,7 +2780,7 @@ static void check_ptr(void **a)
       Type_Tag tag;
 
       tag = *(Type_Tag *)p;
-      if ((tag < 0) || (tag >= _num_tags_) 
+      if ((tag < 0) || (tag >= NUMBER_OF_TAGS) 
 	  || (!size_table[tag] 
 	      && (tag != weak_box_tag)
 	      && (tag != ephemeron_tag)
@@ -2821,7 +2852,7 @@ static void init(void)
 #if USE_FREELIST
     GC_register_traversers(gc_on_free_list_tag, size_on_free_list, size_on_free_list, size_on_free_list, 0, 0);
 #endif
-    GC_add_roots(&finalizers, (char *)&finalizers + sizeof(finalizers) + 1);
+    GC_add_roots(&GC->finalizers, (char *)&GC->finalizers + sizeof(GC->finalizers) + 1);
     GC_add_roots(&fnl_weaks, (char *)&fnl_weaks + sizeof(fnl_weaks) + 1);
     GC_add_roots(&run_queue, (char *)&run_queue + sizeof(run_queue) + 1);
     GC_add_roots(&last_in_queue, (char *)&last_in_queue + sizeof(last_in_queue) + 1);
@@ -2837,7 +2868,7 @@ static void init(void)
     initialized = 1;
 
 #if GENERATIONS
-    initialize_signal_handler();
+    initialize_signal_handler(GC);
 #endif
   }
 }
@@ -2860,67 +2891,81 @@ static long started, rightnow, old;
 # define PRINTTIME(x) /* empty */
 #endif
 
-static void do_roots(int fixup)
+static void mark_roots()
 {
+  Roots *roots = &GC->roots;
   ImmobileBox *ib;
   int i;
 
-  for (i = 0; i < roots_count; i += 2) {
-    void **s = (void **)roots[i];
-    void **e = (void **)roots[i + 1];
-    
+  for (i = 0; i < roots->count; i += 2) {
+    void **s = (void **)roots->roots[i];
+    void **e = (void **)roots->roots[i + 1];
+
     while (s < e) {
-      if (fixup) {
-	gcFIXUP(*s);
-      } else {
 #if RECORD_MARK_SRC
-	mark_src = s;
-	mark_type = MTYPE_ROOT;
+      mark_src = s;
+      mark_type = MTYPE_ROOT;
 #endif
-	gcMARK(*s);
-      }
+      gcMARK(*s);
       s++;
     }
   }
 
-  if (fixup)
-    GC_fixup_variable_stack(GC_variable_stack,
-			    0,
-			    (void *)(GC_get_thread_stack_base
-				     ? GC_get_thread_stack_base()
-				     : stack_base),
-                            NULL);
-  else {
 #if RECORD_MARK_SRC
-    record_stack_source = 1;
+  record_stack_source = 1;
 #endif
-    GC_mark_variable_stack(GC_variable_stack,
-			   0,
-			   (void *)(GC_get_thread_stack_base
-				    ? GC_get_thread_stack_base()
-				    : stack_base),
-                           NULL);
+  GC_mark_variable_stack(GC_variable_stack,
+      0,
+      (void *)(GC_get_thread_stack_base
+        ? GC_get_thread_stack_base()
+        : stack_base),
+      NULL);
 #if RECORD_MARK_SRC
-    record_stack_source = 0;
+  record_stack_source = 0;
 #endif
-  }
 
   /* Do immobiles: */
   for (ib = immobile; ib; ib = ib->next) {
-    if (fixup) {
-      gcFIXUP(ib->p);
-    } else {
 #if RECORD_MARK_SRC
-      mark_src = ib;
-      mark_type = MTYPE_IMMOBILE;
+    mark_src = ib;
+    mark_type = MTYPE_IMMOBILE;
 #endif
-      gcMARK(ib->p);
+    gcMARK(ib->p);
+  }
+}
+
+static void fixup_roots()
+{
+  Roots *roots = &GC->roots;
+  ImmobileBox *ib;
+  int i;
+
+  for (i = 0; i < roots->count; i += 2) {
+    void **s = (void **)roots->roots[i];
+    void **e = (void **)roots->roots[i + 1];
+
+    while (s < e) {
+      gcFIXUP(*s);
+      s++;
     }
+  }
+
+  GC_fixup_variable_stack(GC_variable_stack,
+      0,
+      (void *)(GC_get_thread_stack_base
+        ? GC_get_thread_stack_base()
+        : stack_base),
+      NULL);
+
+  /* Do immobiles: */
+  for (ib = immobile; ib; ib = ib->next) {
+    gcFIXUP(ib->p);
   }
 }
 
 static void gcollect(int full)
 {
+  CompactGC *gc = GC;
   int did_fnls;
 #if TIME
   struct rusage pre, post;
@@ -2940,9 +2985,9 @@ static void gcollect(int full)
 
   set_ending_tags();
 
-  init_weak_boxes();
-  init_ephemerons();
-  init_weak_arrays();
+  init_weak_boxes(gc);
+  init_ephemerons(gc);
+  init_weak_arrays(gc);
 
   did_fnls = 0;
 
@@ -2955,7 +3000,7 @@ static void gcollect(int full)
   getrusage(RUSAGE_SELF, &pre);
 #endif
 
-  sort_and_merge_roots();
+  sort_and_merge_roots(&GC->roots);
 
   during_gc = 1;
 
@@ -3026,11 +3071,11 @@ static void gcollect(int full)
   mark_calls = mark_hits = mark_recalls = mark_colors = mark_many = mark_slow = 0;
 #endif
 
-  do_roots(0);
+  mark_roots();
 
   {
     Fnl *f;
-    for (f = finalizers; f; f = f->next) {
+    for (f = GC->finalizers; f; f = f->next) {
 #if RECORD_MARK_SRC
       mark_src = f;
       mark_type = MTYPE_FINALIZER;
@@ -3081,7 +3126,7 @@ static void gcollect(int full)
 
   /* Propagate, mark ready ephemerons */
   propagate_all_mpages();
-  mark_ready_ephemerons();
+  mark_ready_ephemerons(gc);
 
   /* Propagate, loop to do finalization */
   while (1) { 
@@ -3089,7 +3134,7 @@ static void gcollect(int full)
     /* Propagate all marks. */
     propagate_all_mpages();
     
-    if ((did_fnls >= 3) || !finalizers) {
+    if ((did_fnls >= 3) || !GC->finalizers) {
       if (did_fnls == 3) {
 	/* Finish up ordered finalization */
 	Fnl *f, *next, *prev;
@@ -3098,10 +3143,10 @@ static void gcollect(int full)
 	/* Enqueue and mark level 3 finalizers that still haven't been marked. */
 	/* (Recursive marking is already done, though.) */
 	prev = NULL;
-	for (f = finalizers; f; f = next) {
+	for (f = GC->finalizers; f; f = next) {
 	  next = f->next;
 	  if (f->eager_level == 3) {
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Mark it and enqueue it. */
 #if RECORD_MARK_SRC
 	      mark_src = f;
@@ -3112,7 +3157,7 @@ static void gcollect(int full)
 	      if (prev)
 		prev->next = next;
 	      else
-		finalizers = next;
+		GC->finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3136,7 +3181,7 @@ static void gcollect(int full)
 	  for (wl = fnl_weaks; wl; wl = wl->next) {
 	    void *wp = (void *)wl->p;
 	    int markit;
-	    markit = is_marked(wp);
+	    markit = is_marked(gc, wp);
 	    if (markit) {
 #if RECORD_MARK_SRC
 	      mark_src = wp;
@@ -3174,18 +3219,18 @@ static void gcollect(int full)
 
 	/* Mark content of not-yet-marked finalized objects,
 	   but don't mark the finalized objects themselves. */	
-	for (f = finalizers; f; f = f->next) {
+	for (f = GC->finalizers; f; f = f->next) {
 	  if (f->eager_level == 3) {
 #if RECORD_MARK_SRC
 	    mark_src = f;
 	    mark_type = MTYPE_TAGGED;
 #endif
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Mark content. */
 	      if (f->tagged) {
 		Type_Tag tag = *(Type_Tag *)f->p;
 #if CHECKS
-		if ((tag < 0) || (tag >= _num_tags_) || !size_table[tag]) {
+		if ((tag < 0) || (tag >= NUMBER_OF_TAGS) || !size_table[tag]) {
 		  CRASH(34);
 		}
 #endif
@@ -3200,20 +3245,20 @@ static void gcollect(int full)
 	/* Unordered finalization */
 	Fnl *f, *prev, *queue;
 
-	f = finalizers;
+	f = GC->finalizers;
 	prev = NULL;
 	queue = NULL;
 	
 	while (f) {
 	  if (f->eager_level == eager_level) {
-	    if (!is_marked(f->p)) {
+	    if (!is_marked(gc, f->p)) {
 	      /* Not yet marked. Move finalization to run queue. */
 	      Fnl *next = f->next;
 
 	      if (prev)
 		prev->next = next;
 	      else
-		finalizers = next;
+		GC->finalizers = next;
 	      
 	      f->eager_level = 0; /* indicates queued */
 	      
@@ -3249,7 +3294,7 @@ static void gcollect(int full)
 	  f = f->next;
 	}
 
-	mark_ready_ephemerons();
+	mark_ready_ephemerons(gc);
       }
 	
       did_fnls++;
@@ -3286,9 +3331,9 @@ static void gcollect(int full)
 
   /******************************************************/
 
-  zero_remaining_ephemerons();
-  zero_weak_boxes();
-  zero_weak_arrays();
+  zero_remaining_ephemerons(gc);
+  zero_weak_boxes(gc);
+  zero_weak_arrays(gc);
 
   /* Cleanup weak finalization links: */
   {
@@ -3297,7 +3342,7 @@ static void gcollect(int full)
     prev = NULL;
     for (wl = fnl_weaks; wl; wl = next) {
       next = wl->next;
-      if (!is_marked(wl->p)) {
+      if (!is_marked(gc, wl->p)) {
 	/* Will be collected. Removed this link. */
 	wl->p = NULL;
 	if (prev)
@@ -3385,11 +3430,11 @@ static void gcollect(int full)
 
     scanned_pages = 0;
     
-    do_roots(1);
+    fixup_roots();
 
     {
       Fnl *f;
-      for (f = finalizers; f; f = f->next) {
+      for (f = GC->finalizers; f; f = f->next) {
 #if CHECKS
 	fnl_count++;
 #endif
@@ -3435,7 +3480,7 @@ static void gcollect(int full)
 
   protect_old_mpages();
 
-  reset_finalizer_tree();
+  reset_finalizer_tree(GC);
 
 #if (COMPACTING == NEVER_COMPACT)
 # define THRESH_FREE_LIST_DELTA (FREE_LIST_DELTA >> LOG_WORD_SIZE)
@@ -3505,7 +3550,7 @@ static void gcollect(int full)
       run_queue = run_queue->next;
       if (!run_queue)
 	last_in_queue = NULL;
-      --num_fnls;
+      --GC->num_fnls;
 
       gcs = GC_variable_stack;
       f->f(f->p, f->data);
@@ -3827,23 +3872,6 @@ void *GC_malloc_pair(void *a, void *b)
   b = park[1];
 
   ((Type_Tag *)p)[0] = pair_tag;
-  ((void **)p)[1] = a;
-  ((void **)p)[2] = b;
-
-  return p;
-}
-
-void *GC_malloc_mutable_pair(void *a, void *b)
-{
-  void *p;
-
-  park[0] = a;
-  park[1] = b;
-  p = GC_malloc_one_tagged(3 << LOG_WORD_SIZE);
-  a = park[0];
-  b = park[1];
-
-  ((Type_Tag *)p)[0] = mutable_pair_tag;
   ((void **)p)[1] = a;
   ((void **)p)[2] = b;
 
@@ -4333,7 +4361,7 @@ static long scan_tagged_mpage(void **p, MPage *page, short trace_for_tag,
       }
 
       dump_info_array[tag]++;
-      dump_info_array[tag + _num_tags_] += size;
+      dump_info_array[tag + NUMBER_OF_TAGS] += size;
 
       if (tag == trace_for_tag) {
 #if KEEP_BACKPOINTERS
@@ -4666,7 +4694,7 @@ void GC_dump_with_traces(int flags,
       } else {
 	GCPRINT(GCOUTF, "Tag counts and sizes:\n");
 	GCPRINT(GCOUTF, "Begin MzScheme3m\n");
-	for (i = 0; i < _num_tags_; i++) {
+	for (i = 0; i < NUMBER_OF_TAGS; i++) {
 	  if (dump_info_array[i]) {
 	    char *tn, buf[256];
 	    switch(i) {
@@ -4684,7 +4712,7 @@ void GC_dump_with_traces(int flags,
 	      }
 	      break;
 	    }
-	    GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, dump_info_array[i], (dump_info_array[i + _num_tags_]) << LOG_WORD_SIZE);
+	    GCPRINT(GCOUTF, "  %20.20s: %10ld %10ld\n", tn, dump_info_array[i], (dump_info_array[i + NUMBER_OF_TAGS]) << LOG_WORD_SIZE);
 	  }
 	}
 	GCPRINT(GCOUTF, "End MzScheme3m\n");
@@ -4715,7 +4743,7 @@ void GC_dump_with_traces(int flags,
     }
   }
 
-  GCPRINT(GCOUTF, "Active fnls: %d\n", num_fnls);
+  GCPRINT(GCOUTF, "Active fnls: %d\n", GC->num_fnls);
   GCPRINT(GCOUTF, "Active fnl weak links: %d\n", fnl_weak_link_count);
 
   if (memory_in_use > max_memory_use)
@@ -4733,8 +4761,8 @@ void GC_dump_with_traces(int flags,
 	  (long)FREE_LIST_DELTA,
 	  (100.0 * FREE_LIST_DELTA) / memory_in_use);
   GCPRINT(GCOUTF, "Mmap overhead: %ld (%.2f%%)\n", 
-	  page_reservations - memory_in_use + FREE_LIST_DELTA,
-	  (100.0 * ((double)page_reservations - memory_in_use)) / memory_in_use);
+	  vm_memory_allocated(GC->vm) - memory_in_use + FREE_LIST_DELTA,
+	  (100.0 * ((double) vm_memory_allocated(GC->vm) - memory_in_use)) / memory_in_use);
 
 #if KEEP_BACKPOINTERS
   if (flags & GC_DUMP_SHOW_TRACE) {
@@ -4766,5 +4794,8 @@ void GC_dump(void)
 
 void GC_free_all(void)
 {
+  vm_flush_freed_pages(GC->vm);
+  vm_free(GC->vm);
+  free(GC); 
 }
 

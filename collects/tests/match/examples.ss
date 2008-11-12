@@ -571,6 +571,11 @@
                          [(or (and x 2) (and x 3) (and x 4)) 3]
                          [_ (values 4 5)])])
            (list x y)))
+   
+   (comp 'bad
+         (match #(1) 
+           [(vector a b) a]
+           [else 'bad]))
 
 
    ))

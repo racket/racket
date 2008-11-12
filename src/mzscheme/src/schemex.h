@@ -144,6 +144,8 @@ int (*scheme_log_level_p)(Scheme_Logger *logger, int level);
 void (*scheme_log)(Scheme_Logger *logger, int level, int flags,
                           char *msg, ...);
 void (*scheme_log_message)(Scheme_Logger *logger, int level, char *buffer, long len, Scheme_Object *data);
+void (*scheme_log_abort)(char *buffer);
+void (*scheme_out_of_memory_abort)();
 void (*scheme_wrong_count)(const char *name, int minc, int maxc,
 				  int argc, Scheme_Object **argv);
 void (*scheme_wrong_count_m)(const char *name, int minc, int maxc,

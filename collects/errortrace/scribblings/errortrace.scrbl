@@ -96,15 +96,15 @@ you also need to ensure that @scheme[instrumenting-enabled] is on.}
 @defboolparam[profiling-record-enabled on?]{
 
 Enables/disables the recording of profiling info for the instrumented code.
-The default is @scheme[#t].}
+The default is @scheme[#t].
 
 Profiling information is accumulated in a hash table.  If a procedure
 is redefined, new profiling information is accumulated for the new
 version of the procedure, but the old information is also preserved.
 
 Depending of the source program, profiling usually induces a factor of
-2 to 4 slowdown in addition to any slowdown from the exception
-information instrumentation.
+2 to 4 slowdown, in addition to any slowdown from the
+exception-information instrumentation.}
 
 @defproc[(output-profile-results [paths? any/c] [sort-time? any/c]) void?]{
                                                                       

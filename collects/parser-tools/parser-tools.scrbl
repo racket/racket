@@ -347,7 +347,7 @@ Repetition of @scheme[re] sequence 0 or more times.}
 
 @defform[(+ re ...)]{
 
-Repetition of @scheme[re] sequence 0 or more times.}
+Repetition of @scheme[re] sequence 1 or more times.}
 
 @defform[(? re ...)]{
 

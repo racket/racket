@@ -7,6 +7,7 @@
          web-server/private/cache-table
          web-server/private/web-server-structs
          web-server/configuration/namespace
+         web-server/servlet/setup
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          "servlet-test-util.ss"
          "../util.ss")
@@ -15,9 +16,12 @@
 (current-server-custodian (current-custodian))
 
 (define (mkd p)
-  (define-values (! d)
-    (servlets:make (box (make-cache-table))
-                   #:url->path (lambda _ (values p url0s))
+  (define-values (! u->s)
+    (servlets:make-cached-url->servlet
+     (lambda _ (values p url0s))
+     (make-default-path->servlet)))
+  (define d
+    (servlets:make u->s
                    #:responders-servlet-loading
                    (lambda (u exn)
                      (raise exn))
@@ -27,7 +31,7 @@
   d)
 
 (define example-servlets 
-  (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
+  (build-path (collection-path "web-server") "default-web-root" "htdocs" "servlets" "examples/"))
 
 (define dispatch-servlets-tests
   (test-suite
@@ -77,11 +81,6 @@
                           (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
                         url0
                         (build-list 7 (lambda (i) i)))))
-    (test-equal? "cut.ss - current-url-transform"
-                 (let* ([d (mkd (build-path example-servlets "cut.ss"))]
-                        [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))])
-                   k0)
-                 "#")
     (test-equal? "clear.ss - current-servlet-continuation-expiration-handler, clear-continuation-table!, send/finish, send/forward"
                  (let* ([d (mkd (build-path example-servlets "clear.ss"))]
                         [k0 (first ((sxpath "//a/@href/text()") (call d url0 empty)))]

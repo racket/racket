@@ -135,4 +135,6 @@ extern wxKeyEvent *wxMakeCharEvent(BOOL just_check, WORD wParam, LPARAM lParam, 
 
 extern BOOL wxTranslateMessage(MSG *m);
 
+extern void wxNoMoreCallbacks(void);
+
 #endif

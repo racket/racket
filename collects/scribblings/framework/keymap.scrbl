@@ -26,7 +26,7 @@
   }
 }
 @defmixin[keymap:aug-keymap-mixin (keymap%) (keymap:aug-keymap<%>)]{
-  @defmethod*[#:mode override (((chain-to-keymap (next (instance keymap%)) (prefix? boolean)) void))]{
+  @defmethod*[#:mode override (((chain-to-keymap (next (instance keymap%)) (prefix? boolean?)) void))]{
 
     Keeps a list of the keymaps chained to this one.
   }

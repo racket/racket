@@ -5294,6 +5294,10 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   /* Read main body: */
   result = read_marshalled(scheme_compilation_top_type, rp);
 
+  if (delay_info)
+    if (delay_info->ut)
+      delay_info->ut->rp = NULL; /* clean up */
+
   if (*local_ht) {
     scheme_read_err(port, NULL, -1, -1, -1, -1, 0, NULL,
 		    "read (compiled): ill-formed code (unexpected graph structure)");
@@ -6089,21 +6093,26 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   buf = MALLOC_N_ATOMIC(char, size);
   len = 0;
 
+  if (init_ch) {
+    ch = init_ch;
+  } else {
+    ch = scheme_getc_special_ok(port);
+  }
+  scheme_tell_all(port, &name_line, &name_col, &name_pos);
+
   while (1) {
-    if (!len && init_ch) {
-      ch = init_ch;
-    } else
-      ch = scheme_getc_special_ok(port);
-    if (!len)
-      scheme_tell_all(port, &name_line, &name_col, &name_pos);
+    /* ch was only peeked at this point (except for the first iteration), so we
+       can leave the input immediately after the language spec */
     if (ch == EOF) {
       break;
     } else if (ch == SCHEME_SPECIAL) {
-      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation, 
+      ch = scheme_getc_special_ok(port);
+      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
                       "read: found non-character while reading `#lang'");
     } else if (scheme_isspace(ch)) {
       break;
     } else {
+      if (len) ch = scheme_getc_special_ok(port);
       if ((ch < 128)
           && (is_lang_nonsep_char(ch)
               || (ch == '/'))) {
@@ -6123,6 +6132,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
         return NULL;
       }
     }
+    ch = scheme_peekc_special_ok(port);
   }
 
   if (!len) {

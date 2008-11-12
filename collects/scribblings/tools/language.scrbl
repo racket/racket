@@ -791,7 +791,7 @@ to this url.
 
 }}
 
-@defmethod[(get-metadata)
+@defmethod[(get-metadata [modname symbol?] [settings any/c])
            string?]{
 
 This method is only called when
@@ -805,6 +805,10 @@ opened in DrScheme.
 
 The string is expect to be a prefix to the file that sets up
 a reader for files in this language, using @tt{#reader}.
+
+The @scheme[modname] argument's printed form is the same as the file's
+name, but without the path, and without an extension. The
+@scheme[settings] argument is the current language's settings value.
 
 See also
 @method[drscheme:language:language<%> metadata->settings],

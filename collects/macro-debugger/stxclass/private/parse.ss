@@ -3,7 +3,8 @@
 (require (for-template scheme/base
                        syntax/stx
                        scheme/stxparam
-                       "kws.ss")
+                       "kws.ss"
+                       "messages.ss")
          scheme/match
          scheme/contract
          scheme/private/sc
@@ -22,7 +23,11 @@
 ;;   - 'fail' stxparameterized to (non-escaping!) failure procedure
 (define-struct pk (ps k) #:transparent)
 
-;; A FrontierContext (FC) is ({nat id}*)
+;; A FrontierContext (FC) is ({FrontierIndex stx}*)
+;; A FrontierIndex is one of
+;;   - nat
+;;   - `(+ ,nat expr ...)
+
 (define (empty-frontier x)
   (list 0 x))
 (define (done-frontier x)
@@ -46,28 +51,29 @@
 (define (frontier->expr fc)
   #`(list #,@(reverse (or fc null))))
 
-;; A FrontierContext (FC) is (listof (cons id nat))
-
 ;; parse:rhs : RHS (listof SAttr) (listof identifier) -> stx
 ;; Takes a list of the relevant attrs; order is significant!
 ;; Returns either fail or a list having length same as 'relsattrs'
 (define (parse:rhs rhs relsattrs args)
-  (with-syntax ([(arg ...) args])
-    #`(lambda (x arg ...)
-        (define (fail-rhs x expected reason frontier)
-          (make-failed x expected reason))
-        #,(parse:pks (list #'x)
-                     (list (empty-frontier #'x))
-                     (rhs->pks rhs relsattrs #'x)
-                     #'fail-rhs))))
+  (cond [(rhs:union? rhs)
+         (with-syntax ([(arg ...) args])
+           #`(lambda (x arg ...)
+               (define (fail-rhs x expected reason frontier)
+                 (make-failed x expected reason))
+               #,(parse:pks (list #'x)
+                            (list (empty-frontier #'x))
+                            (rhs->pks rhs relsattrs #'x)
+                            #'fail-rhs)))]
+        [(rhs:basic? rhs)
+         (rhs:basic-parser rhs)]))
 
 ;; fail : id id #:pattern datum #:reason datum #:fc FC -> stx
-(define (fail k x #:pattern [p #f] #:reason [reason #f] #:fc [fc #f])
+(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fc [fc #f])
   (with-syntax ([k k] [x x] [p p] [reason reason]
                 [fc-expr (frontier->expr fc)])
     #`(let ([failcontext fc-expr])
         #;(printf "failing at ~s\n" failcontext)
-        (k x 'p 'reason failcontext))))
+        (k x p 'reason failcontext))))
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
@@ -206,54 +212,6 @@
                #`(let-syntax ([failvar (make-rename-transformer (quote-syntax #,failid))])
                    (try failvar (expr ...))))))]))
 
-(define (report-stxclass stxclass)
-  (and stxclass
-       (format "expected ~a"
-               (or (sc-description stxclass)
-                   (sc-name stxclass)))))
-
-(define (report-constants pairs? data literals)
-  (cond [pairs? #f]
-        [(null? data)
-         (format "expected ~a" (report-choices-literals literals))]
-        [(null? literals)
-         (format "expected ~a" (report-choices-data data))]
-        [else
-         (format "expected ~a; or ~a"
-                 (report-choices-data data)
-                 (report-choices-literals literals))]))
-
-(define (report-choices-literals literals0)
-  (define literals
-    (sort (map syntax-e literals0) 
-          string<? 
-          #:key symbol->string
-          #:cache-keys? #t))
-  (case (length literals)
-    [(1) (format "the literal identifier ~s" (car literals))]
-    [else (format "one of the following literal identifiers: ~a"
-                  (comma-list literals))]))
-
-(define (report-choices-data data)
-  (case (length data)
-    [(1) (format "the datum ~s" (car data))]
-    [else (format "one of the following literals: ~a"
-                  (comma-list data))]))
-
-(define (comma-list items0)
-  (define items (for/list ([item items0]) (format "~s" item)))
-  (define (loop items)
-    (cond [(null? items)
-           null]
-          [(null? (cdr items))
-           (list ", or " (car items))]
-          [else
-           (list* ", " (car items) (loop (cdr items)))]))
-  (case (length items)
-    [(2) (format "~a or ~a" (car items) (cadr items))]
-    [else (let ([strings (list* (car items) (loop (cdr items)))])
-            (apply string-append strings))]))
-
 
 ;; parse:extpk : (listof identifier) (listof FC) ExtPK identifier -> stx
 ;; Pre: vars is not empty
@@ -270,7 +228,7 @@
            (if (ok? r)
                #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'r) failid)
                #,(fail failid (car vars)
-                       #:pattern (report-stxclass stxclass)
+                       #:pattern (expectation-of-stxclass stxclass)
                        #:fc (car fcs)))))]
     [(struct cpks (pairpks datumpkss literalpkss))
      (with-syntax ([var0 (car vars)]
@@ -324,11 +282,12 @@
                    [datum-test datum-rhs] ...
                    [else
                     #,(fail failid (car vars)
-                            #:pattern (report-constants (pair? pairpks)
-                                                        (for/list ([d datumpkss])
-                                                                  (datumpks-datum d))
-                                                        (for/list ([l literalpkss])
-                                                                  (literalpks-literal l)))
+                            #:pattern (expectation-of-constants
+                                       (pair? pairpks)
+                                       (for/list ([d datumpkss])
+                                         (datumpks-datum d))
+                                       (for/list ([l literalpkss])
+                                         (literalpks-literal l)))
                             #:fc (car fcs))]))))]
     #;
     [(struct pk ((cons (struct pat:splice (orig-stx attrs depth head tail))

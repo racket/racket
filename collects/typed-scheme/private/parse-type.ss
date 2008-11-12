@@ -47,7 +47,7 @@
       [(Instance t)
        (eq? (syntax-e #'Instance) 'Instance)
        (let ([v (parse-type #'t)])
-         (if (not (or (Mu? v) (Class? v) (Union? v)))
+         (if (not (or (Mu? v) (Class? v) (Union? v) (Error? v)))
              (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                     (make-Instance (Un)))
              (make-Instance v)))]

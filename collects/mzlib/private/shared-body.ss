@@ -56,6 +56,7 @@
                                                      (and (cadr decl)
                                                           (andmap values (list-ref decl 4))
                                                           decl)))))))))]
+           [append-ids null]
 	   [same-special-id? (lambda (a b)
 			       ;; Almost module-or-top-identifier=?,
 			       ;; but handle the-cons specially
@@ -84,7 +85,7 @@
                                                         ph))
                                                  names placeholder-ids ph-used?s))
                                      (loop expr)))
-                               (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                               (syntax-case* expr (the-cons mcons append box box-immutable vector vector-immutable) same-special-id?
                                  [(the-cons a d)
                                   (with-syntax ([a (cons-elem #'a)]
                                                 [d (cons-elem #'d)])
@@ -95,13 +96,28 @@
                                   (syntax (mcons undefined undefined))]
                                  [(mcons . _)
                                   (bad "mcons")]
-                                 [(list e ...)
+                                 [(lst e ...)
+                                  (ormap (lambda (x) (same-special-id? #'lst x))
+                                         (syntax->list #'(list list*)))
                                   (with-syntax ([(e ...)
                                                  (map (lambda (x) (cons-elem x))
                                                       (syntax->list (syntax (e ...))))])
-                                    (syntax/loc expr (list e ...)))]
-                                 [(list . _)
-                                  (bad "list")]
+                                    (syntax/loc expr (lst e ...)))]
+                                 [(lst . _)
+                                  (ormap (lambda (x) (same-special-id? #'lst x))
+                                         (syntax->list #'(list list*)))
+                                  (bad (syntax-e #'lst))]
+                                 [(append e0 ... e)
+                                  (let ([len-id (car (generate-temporaries '(len)))])
+                                    (set! append-ids (cons len-id append-ids))
+                                    (with-syntax ([e (cons-elem #'e)]
+                                                  [len-id len-id])
+                                      (syntax/loc expr (let ([ph (make-placeholder e)]
+                                                             [others (append e0 ... null)])
+                                                         (set! len-id (length others))
+                                                         (append others ph)))))]
+                                 [(append . _)
+                                  (bad "append")]
                                  [(box v)
                                   (syntax (box undefined))]
                                  [(box . _)
@@ -143,10 +159,12 @@
                      [(init-expr ...)
 		      (map (lambda (expr temp-id used?)
                              (let ([init-id
-                                    (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                                    (syntax-case* expr (the-cons mcons list list* append box box-immutable vector vector-immutable) same-special-id?
                                       [(the-cons . _) temp-id]
                                       [(mcons . _) temp-id]
                                       [(list . _) temp-id]
+                                      [(list* . _) temp-id]
+                                      [(append . _) temp-id]
                                       [(box . _) temp-id]
                                       [(box-immutable . _) temp-id]
                                       [(vector . _) temp-id]
@@ -170,11 +188,13 @@
 				       (if (null? l)
 					   null
 					   (cons (datum->syntax (quote-syntax here) n #f)
-						 (loop (cdr l) (add1 n))))))])
+						 (loop (cdr l) (add1 n))))))]
+                            [append-ids (reverse append-ids)])
 			(map (lambda (name expr)
                                (let loop ([name name] [expr expr])
                                  (with-syntax ([name name])
-                                   (syntax-case* expr (the-cons mcons list box box-immutable vector vector-immutable) same-special-id?
+                                   (syntax-case* expr (the-cons mcons list list* append box box-immutable vector vector-immutable) 
+                                                 same-special-id?
                                      [(the-cons a d)
                                       #`(begin #,(loop #`(car name) #'a)
                                                #,(loop #`(cdr name) #'d))]
@@ -189,6 +209,23 @@
                                                       (loop #`(list-ref name #,n) e))
                                                     (gen-n es)
                                                     es)))]
+                                     [(list* e ...)
+                                      (let* ([es (syntax->list #'(e ...))]
+                                             [last-n (sub1 (length es))])
+                                        #`(begin
+                                            #,@(map (lambda (n e)
+                                                      (loop #`(#,(if (= (syntax-e n) last-n)
+                                                                     #'list-tail
+                                                                     #'list-ref)
+                                                               name 
+                                                               #,n) 
+                                                            e))
+                                                    (gen-n es)
+                                                    es)))]
+                                     [(append e0 ... e)
+                                      (with-syntax ([len-id (car append-ids)])
+                                        (set! append-ids (cdr append-ids))
+                                        (loop #`(list-tail name len-id) #'e))]
                                      [(box v)
                                       (syntax (set-box! name v))]
                                      [(box-immutable v)
@@ -241,9 +278,11 @@
                                                      (and (unbox ph-used?)
                                                           #`(placeholder-set! #,ph #,graph-expr)))
                                                    placeholder-ids ph-used?s
-                                                   (syntax->list #'(graph-expr ...))))])
+                                                   (syntax->list #'(graph-expr ...))))]
+                       [(append-id ...) append-ids])
            (syntax/loc stx
              (letrec-values ([(used-ph-id) (make-placeholder #f)] ...
+                             [(append-id) #f] ...
                              [(temp-id ...)
                               (begin
                                 ph-init ...

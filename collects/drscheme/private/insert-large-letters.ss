@@ -1,8 +1,18 @@
 #lang typed-scheme
 
-(require "mred-typed.ss"
+(require typed/mred/mred
+         typed/framework/framework
          scheme/class
          string-constants/string-constant)
+
+
+(define-type-alias Bitmap-Message% (Class () 
+                                          ([parent Any])
+                                          ([set-bm ((Instance Bitmap%) -> Void)])))
+
+
+(require/typed "bitmap-message.ss"
+               [bitmap-message% Bitmap-Message%])
 
 (provide insert-large-letters)
 

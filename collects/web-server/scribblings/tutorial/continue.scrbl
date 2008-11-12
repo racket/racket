@@ -222,6 +222,8 @@ should produce:
 '(div ((class "posts")))
 ]
 
+While
+
 @schemeblock[
 (render-posts (list (make-post "Post 1" "Body 1")
                     (make-post "Post 2" "Body 2")))
@@ -773,7 +775,7 @@ which hooks up our web application module to the @schememodname["model.ss"] modu
 
 @external-file["iteration-8.ss"]
 
-@section{A Model of Persistent}
+@section{A Persistent Model}
 @declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-9
                                   web-server/scribblings/tutorial/examples/model-2)]
 
@@ -1150,10 +1152,10 @@ Second, add the following at the bottom of your application:
                #:quit? #f
                #:listen-ip #f
                #:port 8000 
-               #:extra-files-path 
-               (build-path _path "htdocs")
+               #:extra-files-paths
+               (list (build-path _path "htdocs"))
                #:servlet-path
-               "servlets/APPLICATION.ss")
+               "/servlets/APPLICATION.ss")
 ]
 
 You can change the value of the @scheme[#:port] parameter to use a different port.
@@ -1168,7 +1170,7 @@ Third, to run your server, you can either press @onscreen{Run} in DrScheme, or t
 
 @commandline{mzscheme -t <file.ss>}
 
-(With your own file name, of course.) Both of these will start a Web server @emph{just} for your application.
+(With your own file name, of course.) Both of these will start a Web server  for your application.
 
 @centerline{------------}
 
@@ -1181,88 +1183,25 @@ This final task that we'll cover is using the server in HTTPS mode.
 This requires an SSL certificate and private key. This is very platform specific, but we will provide
 the details for using OpenSSL on UNIX:
 
-@commandline{openssl genrsa -des3 -out host.key 1024}
+@commandline{openssl genrsa -des3 -out private-key.pem 1024}
 
 This will generate a new private key, but it will have a passphrase on it. You can remove this via:
 
-@commandline{openssl rsa -in host.key -out host.key}
-@commandline{chmod 400 host.key}
+@commandline{openssl rsa -in private-key.pem -out private-key.pem}
+@commandline{chmod 400 private-key.pem}
 
 Now, we generate a self-signed certificate:
 
-@commandline{openssl req -new -x509 -nodes -sha1 -days 365 -key host.key > host.cert}
+@commandline{openssl req -new -x509 -nodes -sha1 -days 365 -key private-key.pem > server-cert.pem}
 
 (Each certificate authority has different instructions for generating certificate signing requests.)
 
-If we move these files into our home directory:
-@commandline{mv host.key host.cert ~/}
+We can now start the server with:
 
-We can now start the server with the following incantation:
+@commandline{plt-web-server --ssl}
 
-@(require (for-label scheme/unit)
-          (for-label net/ssl-tcp-unit)
-          (for-label net/tcp-sig)
-          (for-label net/tcp-unit)
-          (for-label web-server/web-server)
-          (for-label web-server/web-server-unit)
-          (for-label web-server/web-server-sig)
-          (for-label web-server/web-config-sig)
-          (for-label web-server/web-config-unit)
-          (for-label web-server/configuration/namespace))
-
-@schememod[
-scheme
-
-@code:comment{Load the appropriate libraries to reimplement server}
-(require scheme/unit
-         net/ssl-tcp-unit
-         net/tcp-sig
-         net/tcp-unit
-         (only-in web-server/web-server do-not-return)
-         web-server/web-server-unit
-         web-server/web-server-sig
-         web-server/web-config-sig
-         web-server/web-config-unit
-         web-server/configuration/namespace)
-
-@code:comment{Define the necessary parameters.}
-(define port-no 8443)
-(define SSL-path (find-system-path 'home-dir))
-
-@code:comment{Load the standard configuration file, but augment the port.}
-(define configuration
-  (configuration-table->web-config@
-   (build-path (collection-path "web-server")
-               "default-web-root"
-               "configuration-table.ss")
-   #:port port-no))
-
-@code:comment{The configuration is a unit and this lets us treat it as one.}
-(define-unit-binding config@ configuration
-  (import) (export web-config^))
-
-@code:comment{This loads the SSL TCP interface with the appropriate keys.}
-(define-unit-binding ssl-tcp@
-  (make-ssl-tcp@ (build-path SSL-path "host.cert")
-                 (build-path SSL-path "host.key")
-                 #f #f #f #f #f)
-  (import) (export tcp^))
-
-@code:comment{Combine the configuration with the TCP interface to get a server!}
-(define-compound-unit/infer ssl-server@
-  (import)
-  (link ssl-tcp@ config@ web-server@)
-  (export web-server^))
-
-@code:comment{Invoke the server to get at what it provides.}
-(define-values/invoke-unit/infer ssl-server@)
-
-@code:comment{Run the server.}
-(serve)
-(do-not-return)
-]
-
-This is, admittedly, not the simplest imaginable way of setting up a server, but it gets the job done. 
+The Web Server will start on port 443 (which can be overridden with the @exec{-p} option) using the
+@filepath{private-key.pem} and @filepath{server-cert.pem} we've created.
 
 @section{Moving Forward}
 

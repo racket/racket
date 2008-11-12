@@ -9,7 +9,7 @@
       init_weak_boxes zero_weak_boxes
       GC_malloc_ephemeron
       size_ephemeron, mark_ephemeron, fixup_ephemeron
-      btc_mark_ephemeron [ifdef NEW_BTC_ACCOUNT]
+      BTC_ephemeron_mark [ifdef NEW_BTC_ACCOUNT]
       init_ephemerons mark_ready_ephemerons zero_remaining_ephemerons
       num_last_seen_ephemerons
    Requires:
@@ -25,20 +25,6 @@
 /*                               weak arrays                                  */
 /******************************************************************************/
 
-/* The GC_Weak_Array structure is not externally visible, but
-   clients expect a specific structure. See README for more
-   information. */
-typedef struct GC_Weak_Array {
-  Type_Tag type;
-  short keyex;
-  long count;
-  void *replace_val;
-  struct GC_Weak_Array *next;
-  void *data[1]; /* must be the 5th longword! */
-} GC_Weak_Array;
-
-static GC_Weak_Array *weak_arrays;
-
 static int size_weak_array(void *p)
 {
   GC_Weak_Array *a = (GC_Weak_Array *)p;
@@ -49,12 +35,13 @@ static int size_weak_array(void *p)
 
 static int mark_weak_array(void *p)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
   gcMARK(a->replace_val);
 
-  a->next = weak_arrays;
-  weak_arrays = a;
+  a->next = gc->weak_arrays;
+  gc->weak_arrays = a;
 
 #if CHECKS
   /* For now, weak arrays only used for symbols, keywords, and falses: */
@@ -97,45 +84,46 @@ static int fixup_weak_array(void *p)
 
 void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Array *w;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = replace_val;
+  gc->park[0] = replace_val;
 
   w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
 					    + sizeof(GC_Weak_Array) 
 					    - sizeof(void *));
 
-  replace_val = park[0];
-  park[0] = NULL;
+  replace_val = gc->park[0];
+  gc->park[0] = NULL;
 
-  w->type = weak_array_tag;
+  w->type = gc->weak_array_tag;
   w->replace_val = replace_val;
   w->count = (size_in_bytes >> LOG_WORD_SIZE);
   
   return w;
 }
 
-void init_weak_arrays() {
-  weak_arrays = NULL;
+static void init_weak_arrays(GCTYPE *gc) {
+  gc->weak_arrays = NULL;
 }
 
-static void zero_weak_arrays()
+static void zero_weak_arrays(GCTYPE *gc)
 {
   GC_Weak_Array *wa;
   int i;
 
-  wa = weak_arrays;
+  wa = gc->weak_arrays;
   while (wa) {
     void **data;
-    
+
     data = wa->data;
     for (i = wa->count; i--; ) {
       void *p = data[i];
-      if (p && !is_marked(p))
-	data[i] = wa->replace_val;
+      if (p && !is_marked(gc, p))
+        data[i] = wa->replace_val;
     }
-    
+
     wa = wa->next;
   }
 }
@@ -144,20 +132,6 @@ static void zero_weak_arrays()
 /*                                weak boxes                                  */
 /******************************************************************************/
 
-/* The GC_Weak_Box struct is not externally visible, but
-   first three fields are mandated by the GC interface */
-typedef struct GC_Weak_Box {
-  Type_Tag type;
-  short keyex;
-  void *val;
-  /* The rest is up to us: */
-  void **secondary_erase;
-  int soffset;
-  struct GC_Weak_Box *next;
-} GC_Weak_Box;
-
-static GC_Weak_Box *weak_boxes;
-
 static int size_weak_box(void *p)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -165,13 +139,14 @@ static int size_weak_box(void *p)
 
 static int mark_weak_box(void *p)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
     
   gcMARK(wb->secondary_erase);
 
   if (wb->val) {
-    wb->next = weak_boxes;
-    weak_boxes = wb;
+    wb->next = gc->weak_boxes;
+    gc->weak_boxes = wb;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -189,20 +164,21 @@ static int fixup_weak_box(void *p)
 
 void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Weak_Box *w;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = p;
-  park[1] = secondary;
+  gc->park[0] = p;
+  gc->park[1] = secondary;
 
   w = (GC_Weak_Box *)GC_malloc_one_tagged(sizeof(GC_Weak_Box));
 
-  p = park[0];
-  park[0] = NULL;
-  secondary = (void **)park[1];
-  park[1] = NULL;
+  p = gc->park[0];
+  secondary = (void **)gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
   
-  w->type = weak_box_tag;
+  w->type = gc->weak_box_tag;
   w->val = p;
   w->secondary_erase = secondary;
   w->soffset = soffset;
@@ -210,23 +186,23 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset)
   return w;
 }
 
-void init_weak_boxes() {
-  weak_boxes = NULL;
+static void init_weak_boxes(GCTYPE *gc) {
+  gc->weak_boxes = NULL;
 }
 
-static void zero_weak_boxes()
+static void zero_weak_boxes(GCTYPE *gc)
 {
   GC_Weak_Box *wb;
 
-  wb = weak_boxes;
+  wb = gc->weak_boxes;
   while (wb) {
-    if (!is_marked(wb->val)) {
+    if (!is_marked(gc, wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
         void **p;
         p = (void **)GC_resolve(wb->secondary_erase);
-	*(p + wb->soffset) = NULL;
-	wb->secondary_erase = NULL;
+        *(p + wb->soffset) = NULL;
+        wb->secondary_erase = NULL;
       }
     }
     wb = wb->next;
@@ -237,21 +213,6 @@ static void zero_weak_boxes()
 /*                                 ephemeron                                  */
 /******************************************************************************/
 
-/* The GC_Ephemeron struct is not externally visible, but
-   first three fields are mandated by the GC interface */
-typedef struct GC_Ephemeron {
-  Type_Tag type;
-  short keyex;
-  void *key;
-  void *val;
-  /* The rest is up to us: */
-  struct GC_Ephemeron *next;
-} GC_Ephemeron;
-
-static GC_Ephemeron *ephemerons;
-
-static int num_last_seen_ephemerons = 0;
-
 static int size_ephemeron(void *p)
 {
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -259,18 +220,19 @@ static int size_ephemeron(void *p)
 
 static int mark_ephemeron(void *p)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
-    eph->next = ephemerons;
-    ephemerons = eph;
+    eph->next = gc->ephemerons;
+    gc->ephemerons = eph;
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
 }
 
 #ifdef NEWGC_BTC_ACCOUNT
-static int btc_mark_ephemeron(void *p)
+static int BTC_ephemeron_mark(void *p)
 {
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
   
@@ -294,55 +256,56 @@ static int fixup_ephemeron(void *p)
 
 void *GC_malloc_ephemeron(void *k, void *v)
 {
+  GCTYPE *gc = GC_get_GC();
   GC_Ephemeron *eph;
 
   /* Allcation might trigger GC, so we use park: */
-  park[0] = k;
-  park[1] = v;
+  gc->park[0] = k;
+  gc->park[1] = v;
 
   eph = (GC_Ephemeron *)GC_malloc_one_tagged(sizeof(GC_Ephemeron));
 
-  k = park[0];
-  park[0] = NULL;
-  v = park[1];
-  park[1] = NULL;
+  k = gc->park[0];
+  v = gc->park[1];
+  gc->park[0] = NULL;
+  gc->park[1] = NULL;
   
-  eph->type = ephemeron_tag;
+  eph->type = gc->ephemeron_tag;
   eph->key = k;
   eph->val = v;
 
   return eph;
 }
 
-void init_ephemerons() {
-  ephemerons = NULL;
-  num_last_seen_ephemerons = 0;
+void init_ephemerons(GCTYPE *gc) {
+  gc->ephemerons = NULL;
+  gc->num_last_seen_ephemerons = 0;
 }
 
-static void mark_ready_ephemerons()
+static void mark_ready_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *waiting = NULL, *next, *eph;
 
-  for (eph = ephemerons; eph; eph = next) {
+  for (eph = gc->ephemerons; eph; eph = next) {
     next = eph->next;
-    if (is_marked(eph->key)) {
+    if (is_marked(gc, eph->key)) {
       gcMARK(eph->val);
-      num_last_seen_ephemerons++;
+      gc->num_last_seen_ephemerons++;
     } else {
       eph->next = waiting;
       waiting = eph;
     }
   }
-  ephemerons = waiting;
+  gc->ephemerons = waiting;
 }
 
-static void zero_remaining_ephemerons()
+static void zero_remaining_ephemerons(GCTYPE *gc)
 {
   GC_Ephemeron *eph;
 
   /* After unordered finalization, any remaining ephemerons
      should be zeroed. */
-  for (eph = ephemerons; eph; eph = eph->next) {
+  for (eph = gc->ephemerons; eph; eph = eph->next) {
     eph->key = NULL;
     eph->val = NULL;
   }

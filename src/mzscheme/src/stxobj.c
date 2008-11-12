@@ -141,7 +141,10 @@ typedef struct Module_Renames {
                             nominal_modix_plus_phase -> nominal_modix | (cons nominal_modix import_phase_plus_nominal_phase)
                             import_phase_plus_nominal_phase -> import-phase-index | (cons import-phase-index nom-phase) */
   Scheme_Hash_Table *nomarshal_ht; /* like ht, but dropped on marshal */
-  Scheme_Object *shared_pes; /* list of (cons modidx (cons phase_export phase-index-int)) like nomarshal ht, but shared from provider */
+  Scheme_Object *shared_pes; /* list of (cons modidx (cons phase_export phase_and_marks))
+                                  phase_and_marks -> phase-index-int OR
+                                                     (cons (nonempty-listof mark) phase-index-int)
+                                like nomarshal ht, but shared from provider */
   Scheme_Hash_Table *marked_names; /* shared with module environment while compiling the module;
 				      this table maps a top-level-bound identifier with a non-empty mark
 				      set to a gensym created for the binding */
@@ -1320,23 +1323,29 @@ void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *m
                                              Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
                                              Scheme_Object *src_phase_index,
+                                             Scheme_Object *marks,
                                              int save_unmarshal)
 {
   Module_Renames *mrn = (Module_Renames *)rn;
-  Scheme_Object *pr;
+  Scheme_Object *pr, *index_plus_marks;
 
   check_not_sealed(mrn);
 
+  if (SCHEME_PAIRP(marks))
+    index_plus_marks = scheme_make_pair(marks, src_phase_index);
+  else
+    index_plus_marks = src_phase_index;
+
   pr = scheme_make_pair(scheme_make_pair(modidx, 
                                          scheme_make_pair((Scheme_Object *)pt,
-                                                          src_phase_index)),
+                                                          index_plus_marks)),
                         mrn->shared_pes);
   mrn->shared_pes = pr;
 
   if (save_unmarshal) {
     pr = scheme_make_pair(scheme_make_pair(modidx, 
                                            scheme_make_pair(unmarshal_phase_index,
-                                                            src_phase_index)),
+                                                            index_plus_marks)),
                           mrn->unmarshal_info);
     mrn->unmarshal_info = pr;
   }
@@ -3155,13 +3164,51 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
   }
 }
 
-static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme_Object *glob_id, 
+static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache)
+{
+  int l1, l2;
+  Scheme_Object *m1, *m2;
+
+  p = SCHEME_CDR(p); /* skip modidx */
+  p = SCHEME_CDR(p); /* skip phase_export */
+  if (SCHEME_PAIRP(p)) {
+    /* has marks */
+
+    m1 = SCHEME_CAR(p);
+    if (*marks_cache)
+      m2 = *marks_cache;
+    else {
+      m2 = scheme_stx_extract_marks(orig_id);
+      *marks_cache = m2;
+    }
+
+    l1 = scheme_list_length(m1);
+    l2 = scheme_list_length(m2);
+
+    if (l2 < l1) return -1; /* no match */
+
+    while (l2 > l1) {
+      m2 = SCHEME_CDR(m2);
+      l2--;
+    }
+
+    if (scheme_equal(m1, m2))
+      return l1; /* matches */
+    else
+      return -1; /* no match */
+  } else
+    return 0; /* match empty mark set */
+}
+
+static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, 
+                                               Scheme_Object *glob_id, Scheme_Object *orig_id,
                                                Scheme_Object **get_names, int get_orig_name)
 {
-  Scheme_Object *pr, *idx, *pos, *src;
+  Scheme_Object *pr, *idx, *pos, *src, *best_match = NULL;
   Scheme_Module_Phase_Exports *pt;
   Scheme_Hash_Table *ht;
-  int i, phase;
+  int i, phase, best_match_len = -1;
+  Scheme_Object *marks_cache = NULL;
 
   for (pr = shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
     pt = (Scheme_Module_Phase_Exports *)SCHEME_CADR(SCHEME_CAR(pr));
@@ -3177,69 +3224,87 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
 
     pos = scheme_hash_get(pt->ht, glob_id);
     if (pos) {
-      /* found it; return suitable rename: */
-      idx = SCHEME_CAR(SCHEME_CAR(pr));
+      /* Found it, maybe. Check marks. */
+      int mark_len;
+      mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache);
+      if (mark_len > best_match_len) {
+        /* Marks match and improve on previously found match. Build suitable rename: */
+        best_match_len = mark_len;
+        
+        idx = SCHEME_CAR(SCHEME_CAR(pr));
 
-      i = SCHEME_INT_VAL(pos);
+        i = SCHEME_INT_VAL(pos);
 
-      if (get_orig_name)
-        return pt->provide_src_names[i];
+        if (get_orig_name)
+          best_match = pt->provide_src_names[i];
+        else {
+          if (pt->provide_srcs)
+            src = pt->provide_srcs[i];
+          else
+            src = scheme_false;
 
-      if (pt->provide_srcs)
-        src = pt->provide_srcs[i];
-      else
-        src = scheme_false;
+          if (get_names) {
+            /* If module bound, result is module idx, and get_names[0] is set to source name,
+               get_names[1] is set to the nominal source module, get_names[2] is set to
+               the nominal source module's export, get_names[3] is set to the phase of
+               the source definition, get_names[4] is set to the module import phase index,
+               and get_names[5] is set to the nominal export phase */
 
-      if (get_names) {
-        /* If module bound, result is module idx, and get_names[0] is set to source name,
-           get_names[1] is set to the nominal source module, get_names[2] is set to
-           the nominal source module's export, get_names[3] is set to the phase of
-           the source definition, get_names[4] is set to the module import phase index,
-           and get_names[5] is set to the nominal export phase */
+            if (pt->provide_src_phases)
+              phase = pt->provide_src_phases[i];
+            else
+              phase = 0;
 
-        if (pt->provide_src_phases)
-          phase = pt->provide_src_phases[i];
-        else
-          phase = 0;
+            get_names[0] = pt->provide_src_names[i];
+            get_names[1] = idx;
+            get_names[2] = glob_id;
+            get_names[3] = scheme_make_integer(phase);
+            get_names[4] = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(pr)));
+            if (SCHEME_PAIRP(get_names[4])) /* skip over marks, if any */
+              get_names[4] = SCHEME_CDR(get_names[4]);
+            get_names[5] = pt->phase_index;
+          }
 
-        get_names[0] = pt->provide_src_names[i];
-        get_names[1] = idx;
-        get_names[2] = glob_id;
-        get_names[3] = scheme_make_integer(phase);
-        get_names[4] = SCHEME_CDR(SCHEME_CDR(SCHEME_CAR(pr)));
-        get_names[5] = pt->phase_index;
+          if (SCHEME_FALSEP(src)) {
+            src = idx;
+          } else {
+            src = scheme_modidx_shift(src, pt->src_modidx, idx);
+          }
+
+          best_match = src;
+        }
       }
-
-      if (SCHEME_FALSEP(src)) {
-        src = idx;
-      } else {
-        src = scheme_modidx_shift(src, pt->src_modidx, idx);
-      }
-
-      return src;
-    }
-
-    if (pt->reprovide_kernel) {
+    } else if (pt->reprovide_kernel) {
       Scheme_Object *kpr;
       kpr = scheme_hash_get(krn->ht, glob_id);
       if (kpr) {
-        if (get_orig_name)
-          return glob_id;
-        if (get_names) {
-          idx = SCHEME_CAR(SCHEME_CAR(kpr));
-          get_names[0] = glob_id;
-          get_names[1] = idx;
-          get_names[2] = glob_id;
-          get_names[3] = scheme_make_integer(0);
-          get_names[4] = pt->phase_index;
-          get_names[5] = scheme_make_integer(0);
+        /* Found it, maybe. Check marks. */
+        int mark_len;
+        mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache);
+        if (mark_len > best_match_len) {
+          /* Marks match and improve on previously found match. Build suitable rename: */
+          best_match_len = mark_len;
+
+          if (get_orig_name)
+            best_match = glob_id;
+          else {
+            if (get_names) {
+              idx = SCHEME_CAR(SCHEME_CAR(kpr));
+              get_names[0] = glob_id;
+              get_names[1] = idx;
+              get_names[2] = glob_id;
+              get_names[3] = scheme_make_integer(0);
+              get_names[4] = pt->phase_index;
+              get_names[5] = scheme_make_integer(0);
+            }
+            best_match = scheme_get_kernel_modidx();
+          }
         }
-        return scheme_get_kernel_modidx();
       }
     }
   }
 
-  return NULL;
+  return best_match;
 }
 
 static Module_Renames *extract_renames(Module_Renames_Set *mrns, Scheme_Object *phase)
@@ -3457,7 +3522,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  }
           get_names_done = 0;
           if (!rename) {
-            rename = scheme_search_shared_pes(mrn->shared_pes, glob_id, get_names, 0);
+            rename = scheme_search_shared_pes(mrn->shared_pes, glob_id, a, get_names, 0);
             if (rename)
               get_names_done = 1;
           }
@@ -3841,7 +3906,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    rename = scheme_hash_get(krn->ht, glob_id);
 
           if (!rename)
-            result = scheme_search_shared_pes(mrn->shared_pes, glob_id, NULL, 1);
+            result = scheme_search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1);
 	  else if (rename) {
 	    /* match; set result: */
 	    if (mrn->kind == mzMOD_RENAME_MARKED)
@@ -4429,14 +4494,14 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
      (But don't mutate the wrap list, because that will stomp on
      tables that might be needed by a propoagation.)
 
-     In addition to depending on the rest of the wraps, a
-     simplifciation can depend on preceding wraps due to rib
-     skipping. So the lex_cache maps a wrap to another hash table that
-     maps a skip list to a simplified rename.
-     
      A lex_cache maps wrap starts w to simplified tables. A lex_cache
      is modified by this function, only, but it's also read in 
-     datum_to_wraps. */
+     datum_to_wraps.
+
+     In addition to depending on the rest of the wraps, a
+     simplification can depend on preceding wraps due to rib
+     skipping. So the lex_cache maps a wrap to another hash table that
+     maps a skip list to a simplified rename. */
 
   WRAP_POS_INIT(w, wraps);
   WRAP_POS_INIT_END(prev);
@@ -4483,7 +4548,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	if (add) {
 	  /* Need to simplify, but do deepest first: */
-	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_CAR(stack), key)) {
+	  if (SCHEME_NULLP(stack) || !SAME_OBJ(SCHEME_CAR(SCHEME_CAR(stack)), key)) {
 	    stack = CONS(CONS(key, orig_skip_ribs), stack);
 	  }
 	} else {
@@ -4511,7 +4576,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
     while (!WRAP_POS_REVEND_P(w)) {
       v = WRAP_POS_FIRST(w);
-      
+
       if (SCHEME_RIBP(v)
 	  || (SCHEME_VECTORP(v)
 	      && (SCHEME_VEC_SIZE(v) > 2) /* a simplified vec can be empty */
@@ -4668,6 +4733,21 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
 	SCHEME_VEC_ELS(v2)[0] = scheme_false;
 	SCHEME_VEC_ELS(v2)[1] = scheme_false;
+
+        {
+          /* Sometimes we generate the same simplified lex table, so
+             look for an equivalent one in the cache. */
+          v = scheme_hash_get(lex_cache, scheme_true);
+          if (!v) {
+            v = (Scheme_Object *)scheme_make_hash_table_equal();
+            scheme_hash_set(lex_cache, scheme_true, v);
+          }
+          svl = scheme_hash_get((Scheme_Hash_Table *)v, v2);
+          if (svl)
+            v2 = svl;
+          else
+            scheme_hash_set((Scheme_Hash_Table *)v, v2, v2);
+        }
 
 	v2l = CONS(v2, v2l);
       }
@@ -4832,7 +4912,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
           if (mrn->kind == mzMOD_RENAME_MARKED) {
             /* Not useful if there's no marked names. */
             redundant = ((mrn->sealed >= STX_SEAL_ALL)
-                         && (!mrn->marked_names || !mrn->marked_names->count));
+                         && (!mrn->marked_names || !mrn->marked_names->count)
+                         && SCHEME_NULLP(mrn->shared_pes));
             if (!redundant) {
               /* Otherwise, watch out for multiple instances of the same rename: */
               WRAP_POS l;
@@ -5405,6 +5486,8 @@ static Scheme_Object *unmarshal_mark(Scheme_Object *_a, Scheme_Unmarshal_Tables 
 
   if (SCHEME_INTP(a) && IS_POSMARK(a))
     a = scheme_make_integer(-SCHEME_INT_VAL(a));
+  else if (!SCHEME_NUMBERP(a))
+    return NULL;
   else
     a = scheme_intern_symbol(scheme_number_to_string(10, a));
   
@@ -5554,6 +5637,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
       if (!SCHEME_PAIRP(a)) return_NULL;
       set_identity = unmarshal_mark(SCHEME_CAR(a), ut); 
+      if (!set_identity) return_NULL;
       a = SCHEME_CDR(a);
 
       mrn = (Module_Renames *)scheme_make_module_rename(phase, kind, NULL);
@@ -5566,9 +5650,10 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
       if (!SCHEME_VECTORP(a)) {
 	/* Unmarshall info: */
-	Scheme_Object *ml = a, *mli;
+	Scheme_Object *ml = a, *mli, *first = scheme_null, *last = NULL, *ai;
 	while (SCHEME_PAIRP(ml)) {
-	  mli = SCHEME_CAR(ml);
+          ai = SCHEME_CAR(ml);
+	  mli = ai;
 	  if (!SCHEME_PAIRP(mli)) return_NULL;
 
 	  /* A module path index: */
@@ -5580,23 +5665,56 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 
           if (!SCHEME_PAIRP(mli)) return_NULL;
 
-          /* A phase/dimension index */
+          /* A phase/dimension index k */
           p = SCHEME_CAR(mli);
           if (!ok_phase_index(p))
             return_NULL;
           
           p = SCHEME_CDR(mli);
+          if (SCHEME_PAIRP(p) && SCHEME_PAIRP(SCHEME_CAR(p))) {
+            /* list of marks: */
+            Scheme_Object *m_first = scheme_null, *m_last = NULL, *mp, *after_marks;
+
+            after_marks = SCHEME_CDR(p);
+            mli = SCHEME_CAR(p);
+
+            while (SCHEME_PAIRP(mli)) {
+              p = SCHEME_CAR(mli);
+              p = unmarshal_mark(p, ut); 
+              if (!p) return_NULL;
+
+              mp = scheme_make_pair(p, scheme_null);
+              if (m_last)
+                SCHEME_CDR(m_last) = mp;
+              else
+                m_first = mp;
+              m_last = mp;
+
+              mli = SCHEME_CDR(mli);
+            }
+
+            /* Rebuild for unmarshaled marks: */
+            ai = scheme_make_pair(SCHEME_CAR(ai),
+                                  scheme_make_pair(SCHEME_CADR(ai),
+                                                   scheme_make_pair(m_first, after_marks)));
+
+            if (!SCHEME_NULLP(mli)) return_NULL;
+            p = after_marks;
+          }
+
           if (ok_phase_index(p)) {
-            /* For a shared table: (cons k src-phase-index) */
+            /* For a shared table: src-phase-index */
           } else {
+            /* For a non-shared table: (list* src-phase-index exceptions prefix), after k */
             mli = p;
             if (!SCHEME_PAIRP(mli)) return_NULL;
 
-            /* For a shared table: (cons k src-phase-index) */
             p = SCHEME_CAR(mli);
             if (!ok_phase_index(p))
               return_NULL;
             mli = SCHEME_CDR(mli);
+
+            if (!SCHEME_PAIRP(mli)) return_NULL;
 
             /* A list of symbols: */
             p = SCHEME_CAR(mli);
@@ -5612,11 +5730,19 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
           }
 
 	  ml = SCHEME_CDR(ml);
+
+          /* rebuild, in case we converted marks */
+          p = scheme_make_pair(ai, scheme_null);
+          if (last)
+            SCHEME_CDR(last) = p;
+          else
+            first = p;
+          last = p;
 	}
 	if (!SCHEME_NULLP(ml)) return_NULL;
 
-	mrn->unmarshal_info = a;
-	if (SCHEME_PAIRP(a))
+	mrn->unmarshal_info = first;
+	if (SCHEME_PAIRP(first))
 	  mrn->needs_unmarshal = 1;
 
 	if (!SCHEME_PAIRP(mns)) return_NULL;

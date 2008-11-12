@@ -164,8 +164,7 @@ the closest prompt tagged by @scheme[prompt-tag], the
 @exnraise[exn:fail:contract:continuation].}
 
 @defproc[(call-with-escape-continuation 
-          [proc (continuation? . -> . any)]
-          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)]) 
+          [proc (continuation? . -> . any)]) 
          any]{
 
 Like @scheme[call-with-current-continuation], but @scheme[proc] is not
@@ -181,12 +180,11 @@ than @scheme[call-with-current-continuation].
 A continuation obtained from @scheme[call-with-escape-continuation] is
 actually a kind of prompt. Escape continuations are provided mainly
 for backward compatibility, since they pre-date general prompts in
-MzScheme, and because @scheme[call/ec] is often an easy replacement
+PLT Scheme, and because @scheme[call/ec] is often an easy replacement
 for @scheme[call/cc] to improve performance.}
 
 @defproc[(call/ec
-          [proc (continuation? . -> . any)]
-          [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)]) 
+          [proc (continuation? . -> . any)]) 
          any]{
 
 The @scheme[call/ec] binding is an alias for @scheme[call-with-escape-continuation].

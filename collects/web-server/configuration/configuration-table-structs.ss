@@ -7,32 +7,25 @@
 
 ; configuration-table = (make-configuration-table nat nat num host-table (listof (cons str host-table)))
 (define-struct configuration-table
-  (port max-waiting initial-connection-timeout default-host virtual-hosts)
-  #:mutable)
+  (port max-waiting initial-connection-timeout default-host virtual-hosts))
 
 ; host-table = (make-host-table (listof str) sym messages timeouts paths)
-(define-struct host-table (indices log-format messages timeouts paths)
-  #:mutable)
+(define-struct host-table (indices log-format messages timeouts paths))
 
-(define-struct host (indices log-format log-path passwords responders timeouts paths)
-  #:mutable)  
+(define-struct host (indices log-format log-path passwords responders timeouts paths))  
 
 (define-struct responders
-  (servlet servlet-loading authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage)
-  #:mutable)
+  (servlet servlet-loading authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage))
 
 ; messages = (make-messages str^6)
 (define-struct messages
-  (servlet authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage)
-  #:mutable)
+  (servlet authentication servlets-refreshed passwords-refreshed file-not-found protocol collect-garbage))
 
 ; timeouts = (make-timeouts nat^5)
-(define-struct timeouts (default-servlet password servlet-connection file-per-byte file-base)
-  #:mutable)
+(define-struct timeouts (default-servlet password servlet-connection file-per-byte file-base))
 
 ; paths = (make-paths str^6)
-(define-struct paths (conf host-base log htdocs servlet mime-types passwords)
-  #:mutable)
+(define-struct paths (conf host-base log htdocs servlet mime-types passwords))
 
 (provide/contract
  [struct configuration-table

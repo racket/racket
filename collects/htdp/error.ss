@@ -55,7 +55,7 @@
 (define (check-result pname pred? expected given . other-given)
   (if (pred? given)
       given
-      (tp-error pname "result of type <~a> expected, given: ~a" expected 
+      (tp-error pname "result of type <~a> expected, your function produced ~a" expected 
                 (if (pair? other-given)
                     (car other-given)
                     given))))
@@ -63,7 +63,7 @@
 ;; check-arg : sym bool str str TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname "expected <~a> as ~a argument, given: ~e"
+    (tp-error pname "expected <~a> as ~a argument, given: ~a"
               expected arg-posn given)))
 
 ;; check-arity : sym num (list-of TST) -> void
@@ -76,7 +76,7 @@
 ;;   sym (... *->* ...) num (union sym str) (union sym str) -> void
 (define (check-proc proc f exp-arity arg# arg-err)
   (unless (procedure? f)
-    (tp-error proc "procedure expected as ~s argument; given ~e" arg# f))
+    (tp-error proc "procedure expected as ~a argument; given ~e" arg# f))
   (unless (procedure-arity-includes? f exp-arity)
     (let ([arity-of-f (procedure-arity f)])
       (tp-error proc "procedure of ~a expected as ~a argument; given procedure of ~a "

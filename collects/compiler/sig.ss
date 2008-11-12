@@ -9,7 +9,9 @@
 
 ;; Compiler options
 (define-signature compiler:option^
-  (verbose ; default = #f
+  (somewhat-verbose ; default = #f
+   verbose ; default = #f
+   
 
    setup-prefix ; string to embed in public names;
                 ; used mainly for compiling extensions

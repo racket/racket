@@ -145,7 +145,8 @@
      set-standard-style-list-pref-callbacks
      set-standard-style-list-delta
      set-default-font-color
-     get-default-color-style-name))
+     get-default-color-style-name
+     add-after-user-keymap))
   
   (define-signature pasteboard-class^
     (basic%
@@ -163,6 +164,7 @@
      foreground-color<%>
      hide-caret/selection<%>
      nbsp->space<%>
+     normalize-paste<%>
      delegate<%>
      wide-snip<%>
      searching<%>
@@ -177,6 +179,7 @@
      basic% 
      hide-caret/selection%
      nbsp->space%
+     normalize-paste%
      1-pixel-string-snip%
      1-pixel-tab-snip%
      delegate%
@@ -197,6 +200,7 @@
      foreground-color-mixin
      hide-caret/selection-mixin
      nbsp->space-mixin
+     normalize-paste-mixin
      wide-snip-mixin
      delegate-mixin
      searching-mixin
@@ -291,7 +295,8 @@
   (define-signature group^ extends group-class^
     (get-the-frame-group
      on-close-action
-     can-close-check))
+     can-close-check
+     add-to-windows-menu))
   
   (define-signature handler-class^
     ())
@@ -347,6 +352,7 @@
      setup-file
      setup-editor
      
+     get-user
      get-global
      get-search
      get-file

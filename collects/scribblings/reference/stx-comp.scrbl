@@ -21,9 +21,10 @@ suitable expression context at the @tech{phase level} indicated by
          boolean?]{
 
 Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
-lexical, module, or top-level binding at the @tech{phase level}
-indicated by @scheme[phase-level]. A @scheme[#f] value for
-@scheme[phase-level] corresponds to the @tech{label phase level}.
+@tech{local binding}, @tech{module binding}, or @tech{top-level
+binding} at the @tech{phase level} indicated by
+@scheme[phase-level]. A @scheme[#f] value for @scheme[phase-level]
+corresponds to the @tech{label phase level}.
 
 ``Same module binding'' means that the identifiers refer to the same
 original definition site, not necessarily the @scheme[require] or
@@ -127,8 +128,9 @@ Returns one of three kinds of values, depending on the binding of
 
         }}
 
-      @item{The result is @scheme[#f] if @scheme[id-stx] 
-            has a @tech{top-level binding}.}
+      @item{The result is @scheme[#f] if @scheme[id-stx] has a
+            @tech{top-level binding} (or, equivalently, if it is
+            @tech{unbound}).}
 
       }}
 

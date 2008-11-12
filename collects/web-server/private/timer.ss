@@ -8,32 +8,31 @@
 
 (define timer-ch (make-async-channel))
 
-; start-timer-manager : custodian -> void
+; start-timer-manager : -> void
 ; The timer manager thread   
-(define (start-timer-manager server-custodian)
-  (parameterize ([current-custodian server-custodian])
-    (thread
-     (lambda ()
-       (let loop ([timers null])
-         #;(printf "Timers: ~a~n" (length timers))
-         ;; Wait for either...
-         (apply sync
-                ;; ... a timer-request message ...
-                (handle-evt
-                 timer-ch
-                 (lambda (req)
-                   ;; represent a req as a (timer-list -> timer-list) function:
-                   ;; add/remove/change timer evet:
-                   (loop (req timers))))
-                ;; ... or a timer
-                (map (lambda (timer)
-                       (handle-evt
-                        (timer-evt timer)
-                        (lambda (_)
-                          ;; execute timer
-                          ((timer-action timer))
-                          (loop (remq timer timers)))))
-                     timers))))))
+(define (start-timer-manager)
+  (thread
+   (lambda ()
+     (let loop ([timers null])
+       #;(printf "Timers: ~a~n" (length timers))
+       ;; Wait for either...
+       (apply sync
+              ;; ... a timer-request message ...
+              (handle-evt
+               timer-ch
+               (lambda (req)
+                 ;; represent a req as a (timer-list -> timer-list) function:
+                 ;; add/remove/change timer evet:
+                 (loop (req timers))))
+              ;; ... or a timer
+              (map (lambda (timer)
+                     (handle-evt
+                      (timer-evt timer)
+                      (lambda (_)
+                        ;; execute timer
+                        ((timer-action timer))
+                        (loop (remq timer timers)))))
+                   timers)))))
   (void))
 
 ;; Limitation on this add-timer: thunk cannot make timer
@@ -93,7 +92,7 @@
  [struct timer ([evt evt?]
                 [expire-seconds number?]
                 [action (-> void)])]   
- [start-timer-manager (custodian? . -> . void)]
+ [start-timer-manager (-> void)]
  [start-timer (number? (-> void) . -> . timer?)]
  [reset-timer! (timer? number? . -> . void)]
  [increment-timer! (timer? number? . -> . void)]

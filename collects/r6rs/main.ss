@@ -151,14 +151,19 @@ FIXME:
      (let ([a (local-expand
                #'thing
                'module
-               (kernel-form-identifier-list))])
-       (syntax-case a (begin)
+               (cons #'#%require 
+                     (kernel-form-identifier-list)))])
+       (syntax-case a (begin #%require)
          [(def . _)
           (ormap (lambda (id)
                    (free-identifier=? id #'def))
                  (list #'define-values
                        #'define-syntaxes
                        #'define-values-for-syntax))
+          #`(begin #,a (library-body/defns . more))]
+         [(#%require . _)
+          ;; We allow `require' mixed with definitions, because it
+          ;; might reasonably be introduced by a macro.
           #`(begin #,a (library-body/defns . more))]
          [(begin sub ...)
           #`(library-body/defns sub ... . more)]
@@ -257,7 +262,9 @@ FIXME:
             (for-each (map-id 0) ids)
             (for-each (map-id 1) for-syntax-ids))
           (for-each (lambda (l)
-                      (for-each (map-id (car l)) (cdr l)))
+                      (if (car l)
+                          (for-each (map-id (car l)) (cdr l))
+                          null))
                     (syntax-local-module-required-identifiers #f #t))
           (apply
            append

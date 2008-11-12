@@ -3148,20 +3148,24 @@ extern "C" {
 
 static void MrEdOutOfMemory(void)
 {
+  /* Hopefully we have enough memory for a message dialog under
+     Windows and Mac OS X: */
 #ifdef wx_mac
   Alert(101, NULL);
-  ExitToShell();
-#else
-#ifdef wx_x
-  printf("mred: out of memory\n");
 #endif
-  _exit(-1);
+#ifdef wx_msw
+  wxNoMoreCallbacks();
+  MessageBox(NULL, 
+             "PLT Scheme virtual machine is out of memory. Aborting.",
+             "Out of Memory",
+             MB_OK);
 #endif
+  /* For X, mzscheme already writes to stderr (and maybe syslog). */
 }
 
 void *wxOutOfMemory()
 {
-  MrEdOutOfMemory();
+  scheme_out_of_memory_abort();
   return NULL;
 }
 
@@ -3321,12 +3325,7 @@ wxFrame *MrEdApp::OnInit(void)
 #if !defined(USE_SENORA_GC) && !defined(MZ_PRECISE_GC)
   GC_set_warn_proc(CAST_IGNORE MrEdIgnoreWarnings);
 #endif
-#if 0
-  /* Used to be set for the sake of Mac OS Classic. Now,
-     setting GC_out_of_memory for 3m means that it's ok
-     to fail when a limit is reached. We don't want that. */
-  GC_out_of_memory = (OOM_ptr)MrEdOutOfMemory;
-#endif
+  scheme_set_report_out_of_memory(MrEdOutOfMemory);
 
 #ifdef SGC_STD_DEBUGGING
   scheme_external_dump_info = dump_cpp_info;

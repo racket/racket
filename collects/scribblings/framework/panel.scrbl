@@ -47,7 +47,7 @@
 }
 @defmixin[panel:single-window-mixin (panel:single<%> window<%>) (panel:single-window<%>)]{
 
-  @defmethod*[#:mode override (((container-size (info (list-of (list exact-integer exact-integer boolean boolean)))) (values exact-integer exact-integer)))]{
+  @defmethod*[#:mode override (((container-size (info (list-of (list exact-integer exact-integer boolean boolean?)))) (values exact-integer exact-integer)))]{
 
     Factors the border width into the size calculation.
   }
@@ -89,7 +89,7 @@
     Return the current percentages of the children.
 
   }
-  @defmethod*[(((get-vertical?) boolean))]{
+  @defmethod*[(((get-vertical?) boolean?))]{
     This method controls the behavior of the other overridden
     methods in mixins that implement this interface.
 
@@ -124,7 +124,7 @@
     matches the number of children and calls
     @method[panel:dragable<%> after-percentage-change].
   }
-  @defmethod*[#:mode override (((on-subwindow-event (receiver (instanceof window<%>)) (event (instanceof mouse-event%))) boolean))]{
+  @defmethod*[#:mode override (((on-subwindow-event (receiver (instanceof window<%>)) (event (instanceof mouse-event%))) boolean?))]{
 
     When the cursor is dragging the middle bar around, this
     method handles the resizing of the two panes.
@@ -149,7 +149,7 @@
   method of the 
   @scheme[panel:dragable-mixin]
   to return @scheme[#t].
-  @defmethod*[#:mode override (((get-vertical?) boolean))]{
+  @defmethod*[#:mode override (((get-vertical?) boolean?))]{
 
     Returns @scheme[#t].
   }
@@ -160,7 +160,7 @@
   method of the 
   @scheme[panel:dragable-mixin]
   to return @scheme[#f].
-  @defmethod*[#:mode override (((get-vertical?) boolean))]{
+  @defmethod*[#:mode override (((get-vertical?) boolean?))]{
 
     Returns @scheme[#f].
   }

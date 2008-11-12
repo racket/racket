@@ -70,7 +70,7 @@
     Returns a list of (opaque) values representing the active
     ranges in the editor.
   }
-  @defmethod*[(((get-styles-fixed) boolean))]{
+  @defmethod*[(((get-styles-fixed) boolean?))]{
     If the result of this function is @scheme[#t], the styles in this 
     @scheme[text:basic<%>]
     will be fixed. This means
@@ -87,7 +87,7 @@
     @method[text:basic<%> set-styles-fixed]when setting the styles.
 
   }
-  @defmethod*[(((set-styles-fixed (fixed? boolean)) void))]{
+  @defmethod*[(((set-styles-fixed (fixed? boolean?)) void))]{
     Sets the styles fixed parameter of this
     @scheme[text%]. See also 
     @method[text:basic<%> get-styles-fixed]
@@ -125,7 +125,7 @@
     See also
     @method[text:basic<%> port-name-matches?].
   }
-  @defmethod*[(((port-name-matches? (id (or/c path? symbol?))) boolean))]{
+  @defmethod*[(((port-name-matches? (id (or/c path? symbol?))) boolean?))]{
 
     Indicates if @scheme[id] matches the port name of this file. If
     the file is saved, the port name matches when the save file
@@ -302,6 +302,33 @@
     @method[text:nbsp->space-mixin on-insert].
   }
 }
+
+@definterface[text:normalize-paste<%> (text:basic<%>)]{
+  @defmethod[(ask-normalize?) boolean?]{
+    Prompts the user if the pasted text should be normalized 
+    (and updates various preferences based on the response).
+
+    Override this method in the mixin to avoid all GUI and preferences interactions.
+  }
+  @defmethod[(string-normalize [s string?]) string?]{
+    Normalizes @scheme[s]. Defaults to @scheme[string-normalize-nfkc].
+  }
+
+}
+
+@defmixin[text:normalize-paste-mixin (text:basic<%>) (text:normalize-paste<%>)]{
+  @defmethod[#:mode override (do-paste [start exact-nonnegative-integer?] [time (and/c exact? integer?)]) void?]{
+    Overridden to detect when insertions are due to pasting. Sets some internal state and calls the super.
+  }
+  @defmethod[#:mode augment (on-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
+   Calls @method[editor<%> begin-edit-sequence].
+  }
+  @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?] [len exact-nonnegative-integer?]) void?]{
+    Normalizes any next text and calls @method[editor<%> end-edit-sequence].
+  }
+
+}
+
 @definterface[text:searching<%> (editor:keymap<%> text:basic<%>)]{
   Any object matching this interface can be searched.
 
@@ -401,7 +428,7 @@
 @defmixin[text:return-mixin (text%) (text:return<%>)]{
   Use this buffer to perform some special action when return is typed.
 
-  @defconstructor[((return (-> boolean)))]{
+  @defconstructor[((return (-> boolean?)))]{
 
   }
   @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void))]{
@@ -585,7 +612,7 @@
 
     ends an edit sequence in the delegate.
   }
-  @defmethod*[#:mode override (((resized (snip (is-a?/c snip%)) (redraw-now? boolean)) void))]{
+  @defmethod*[#:mode override (((resized (snip (is-a?/c snip%)) (redraw-now? boolean?)) void))]{
 
     Sends a message to the delegate to update the size of the
     copied snip, if there is one.
@@ -607,7 +634,7 @@
     remembers the filename, for use in 
     @method[text:delegate-mixin after-load-file].
   }
-  @defmethod*[#:mode augment (((after-load-file (success? boolean)) void))]{
+  @defmethod*[#:mode augment (((after-load-file (success? boolean?)) void))]{
 
     updates the delegate with the new contents of the text.
   }
@@ -710,7 +737,7 @@
 @definterface[text:file<%> (editor:file<%> text:basic<%>)]{
   Mixins that implement this interface lock themselves when
   the file they are editing is read only.
-  @defmethod*[(((get-read-write?) boolean))]{
+  @defmethod*[(((get-read-write?) boolean?))]{
     Indicates whether or not this editor is in read-write mode.
 
   }
@@ -721,14 +748,14 @@
   }
 }
 @defmixin[text:file-mixin (editor:file<%> text:basic<%>) (text:file<%>)]{
-  @defmethod*[#:mode augment (((can-insert? (start number) (len number)) boolean))]{
+  @defmethod*[#:mode augment (((can-insert? (start number) (len number)) boolean?))]{
 
     Returns false if the result of
     @method[text:file<%> get-read-write?]
     is true, otherwise returns the
     result of calling @scheme[inner].
   }
-  @defmethod*[#:mode augment (((can-delete? (start number) (len number)) boolean))]{
+  @defmethod*[#:mode augment (((can-delete? (start number) (len number)) boolean?))]{
 
     Returns false if the result of
     @method[text:file<%> get-read-write?]
@@ -823,14 +850,14 @@
     @method[text:ports<%> get-unread-start-point].
 
   }
-  @defmethod*[(((set-allow-edits (allow-edits? boolean)) void))]{
+  @defmethod*[(((set-allow-edits (allow-edits? boolean?)) void))]{
     Enables or disables editing in the buffer. Be sure to update 
     the unread start point (via
     @method[text:ports<%> set-unread-start-point]) and the insertion point (via
     @method[text:ports<%> set-insertion-point]) after making changes to the buffer.
 
   }
-  @defmethod*[(((get-allow-edits) boolean))]{
+  @defmethod*[(((get-allow-edits) boolean?))]{
     Indicates if editing is allowed in the buffer at this point.
 
   }
@@ -858,7 +885,7 @@
     @method[text:ports<%> set-insertion-point].
 
   }
-  @defmethod*[(((submit-to-port? (key char)) boolean))]{
+  @defmethod*[(((submit-to-port? (key char)) boolean?))]{
     Augment this method to help control when characters should
     be submitted to the input port.
 
@@ -1001,13 +1028,13 @@
 }
 @defmixin[text:ports-mixin (text:wide-snip<%>) (text:ports<%>)]{
 
-  @defmethod*[#:mode augment (((can-insert? (start exact-integer) (len exact-integer)) boolean))]{
+  @defmethod*[#:mode augment (((can-insert? (start exact-integer) (len exact-integer)) boolean?))]{
 
     Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
     returns @scheme[#f].
   }
-  @defmethod*[#:mode augment (((can-delete? (start exact-integer) (len exact-integer)) boolean))]{
+  @defmethod*[#:mode augment (((can-delete? (start exact-integer) (len exact-integer)) boolean?))]{
 
     Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
@@ -1072,7 +1099,7 @@
     @scheme[(make-object color% 204 153 255)].
 
   }
-  @defmethod*[(((completion-mode-key-event? (key-event key-event%)) boolean))]{
+  @defmethod*[(((completion-mode-key-event? (key-event key-event%)) boolean?))]{
     Returns true when the key event passed to it should initiate
     the completions menu.
 

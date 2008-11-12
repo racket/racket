@@ -68,7 +68,7 @@ See also @scheme[path-dialog%].
                         [filename (or/c path-string? false/c) #f]
                         [extension (or/c string? false/c) #f]
                         [style null? null]
-                        [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
+                        [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c (listof path?) false/c)]{
 Like
 @scheme[get-file], except that the user can select multiple files, and the
@@ -82,7 +82,7 @@ Like
                    [filename (or/c path-string? false/c) #f]
                    [extension (or/c string? false/c) #f]
                    [style (listof (one-of/c 'packages 'enter-packages)) null]
-                   [filters (listof (list/c string? string?)) @scheme['(("Any" "*.*"))]])
+                   [filters (listof (list/c string? string?)) '(("Any" "*.*"))])
          (or/c path? false/c)]{
 
 Obtains a file pathname from the user via the platform-specific
@@ -105,7 +105,7 @@ If @scheme[directory] is not @scheme[#f], it is used as the starting
  prefix.
 
 Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
- will gets a default extension if the user does not supply one. If
+ will get a default extension if the user does not supply one. If
  @scheme[extension] is the empty string, then the extension is derived
  from the user's @scheme[filters] choice if the corresponding pattern is
  of the form @scheme[(string-append "*." extension)]; if the pattern is

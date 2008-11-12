@@ -98,7 +98,7 @@
   (define compile-c-extensions
     (make-unprefixed-compiler 'compile-c-extension))
 
-  (define (compile-to-zo src dest namespace eval?)
+  (define (compile-to-zo src dest namespace eval? verbose? mod?)
     ((if eval? 
          (lambda (t) (parameterize ([read-accept-reader #t])
                        (t)))
@@ -106,13 +106,23 @@
      (lambda ()
        (parameterize ([current-namespace namespace])
          (compile-file src dest
-                       (if eval?
-                         (lambda (expr)
-                           (expand-syntax-top-level-with-compile-time-evals expr))
-                         values)))))
-    (printf " [output to \"~a\"]\n" dest))
+                       (compose
+                        (if eval?
+                            (lambda (expr)
+                              (expand-syntax-top-level-with-compile-time-evals expr))
+                            values)
+                        (if mod?
+                            (lambda (expr)
+                              (check-module-form expr 
+                                                 (let-values ([(base name dir?) (split-path src)])
+                                                   (string->symbol 
+                                                    (path-element->string (path-replace-suffix name #""))))
+                                                 src))
+                            values))))))
+    (when verbose?
+      (printf " [output to \"~a\"]\n" dest)))
 
-  (define (compile-zos prefix)
+  (define (compile-zos prefix #:verbose? [verbose? #f] #:module? [mod? #f])
     (define n (if prefix (make-base-namespace) (current-namespace)))
     (when prefix (eval prefix n))
     (lambda (source-files destination-directory)
@@ -132,7 +142,7 @@
              source-files))
       (for ([f source-files] [b file-bases])
         (let ([zo (append-zo-suffix b)])
-          (compile-to-zo f zo n prefix)))))
+          (compile-to-zo f zo n prefix verbose? mod?)))))
 
   (define (compile-directory dir info #:verbose [verbose? #t])
     (define info* (or info (lambda (key mk-default) (mk-default))))

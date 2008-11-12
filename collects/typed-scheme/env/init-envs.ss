@@ -23,6 +23,7 @@
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
     [(Union: elems) `(make-Union (list ,@(map sub elems)))]
+    [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(Struct: name parent flds proc poly? pred-id cert)
      `(make-Struct ,(sub name) ,(sub parent) ,(sub flds) ,(sub proc) ,(sub poly?) (quote-syntax ,pred-id) (syntax-local-certifier))]

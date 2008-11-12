@@ -1,8 +1,5 @@
-#lang scheme/base
-(require net/url
-         mzlib/list
-         mzlib/plt-match
-         scheme/contract)
+#lang scheme
+(require net/url)
 (require "../managers/manager.ss"
          "../private/util.ss"
          "../private/servlet.ss"
@@ -14,61 +11,32 @@
 
 (provide servlet-prompt)
 
-;; ************************************************************
-;; HELPERS
-(provide/contract
- [continuation-url? (url? . -> . (or/c false/c (list/c number? number? number?)))]
- [embed-ids ((list/c number? number? number?) url? . -> . string?)])
-
 ;; ********************************************************************************
 ;; Parameter Embedding
+(require web-server/private/url-param)
 
 ;; embed-ids: (list number number number) url -> string
-(define embed-ids
-  (match-lambda*
-    [(list (list inst-id k-id salt) in-url)
-     (insert-param
-      in-url
-      (format "~a*~a*~a" inst-id k-id salt))]))
+(define (embed-ids v u)
+  (url->string
+   (insert-param 
+    u "k" (write/string v))))
 
 ;; continuation-url?: url -> (or/c (list number number number) #f)
 ;; determine if this url encodes a continuation and extract the instance id and
 ;; continuation id.
 (define (continuation-url? a-url)
-  (define (match-url-params x) (regexp-match #rx"([^\\*]*)\\*([^\\*]*)\\*([^\\*]*)" x))
-  (let ([k-params (filter match-url-params
-                          (apply append (map path/param-param (url-path a-url))))])
-    (if (empty? k-params)
-        #f
-        (match (match-url-params (first k-params))
-          [(list s instance k-id salt)
-           (let ([instance/n (string->number instance)]
-                 [k-id/n (string->number k-id)]
-                 [salt/n (string->number salt)])
-             (if (and (number? instance/n)
-                      (number? k-id/n)
-                      (number? salt/n))
-                 (list instance/n
-                       k-id/n
-                       salt/n)
-                 #f))]))))
-
-;; insert-param: url string -> string
-;; add a path/param to the path in a url
-;; (assumes that there is only one path/param)
-(define (insert-param in-url new-param-str)
-  (url->string
-   (url-replace-path
-    (lambda (old-path)        
-      (if (empty? old-path)
-          (list (make-path/param "" (list new-param-str)))
-          (list* (make-path/param (path/param-path (first old-path))
-                                  (list new-param-str))
-                 (rest old-path))))
-    in-url)))   
+  (cond 
+    [(extract-param a-url "k")
+     => read/string]
+    [else
+     #f]))
 
 (provide/contract
- [current-url-transform (parameter/c url-transform/c)]
+ [continuation-url? (url? . -> . (or/c false/c (list/c number? number? number?)))])
+
+;; ********************************************************************************
+
+(provide/contract
  [current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]
  [redirect/get (-> request?)]
  [redirect/get/forget (-> request?)]
@@ -82,11 +50,6 @@
 
 ;; ************************************************************
 ;; EXPORTS
-
-;; current-url-transform : string? -> string?
-(define (default-url-transformer x) x)
-(define current-url-transform
-  (make-parameter default-url-transformer))
 
 ;; current-servlet-continuation-expiration-handler : request -> response
 (define current-servlet-continuation-expiration-handler
@@ -126,10 +89,9 @@
                             instance-id
                             (make-custodian-box (current-custodian) k)
                             expiration-handler))
-       (define k-url ((current-url-transform)
-                      (embed-ids 
-                       (list* instance-id k-embedding)
-                       (request-uri (execution-context-request ctxt)))))
+       (define k-url (embed-ids 
+                      (list* instance-id k-embedding)
+                      (request-uri (execution-context-request ctxt))))
        (send/back (response-generator k-url)))
      servlet-prompt)
     (restore-web-cell-set! wcs)))

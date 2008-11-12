@@ -17,13 +17,13 @@
     
     (test-case
      "Easy"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () (current-saved-continuation-marks-and 'k1 'v1)))
                    (make-immutable-hash (list (cons 'k1 'v1)))))
     
     (test-case
      "Preserve"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (with-continuation-mark the-save-cm-key (make-immutable-hash (list (cons 'k2 'v2)))
                         (current-saved-continuation-marks-and 'k1 'v1))))
@@ -33,7 +33,7 @@
     
     (test-case
      "Update"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (with-continuation-mark the-save-cm-key 
                         (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
@@ -44,7 +44,7 @@
     
     (test-case
      "Double"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (with-continuation-mark the-save-cm-key 
                         (make-immutable-hash (list (cons 'k3 'v1) (cons 'k4 'v0)))
@@ -65,37 +65,37 @@
     
     (test-case
      "Easy"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () (activation-record-list)))
                    empty))
     
     (test-case
      "Single"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (let/ec esc
-                        ('f1 (with-continuation-mark the-cont-key 'f1
+                        ('f1 (with-continuation-mark the-cont-key +
                                (esc (activation-record-list)))))))
-                   (list (vector 'f1 #f))))
+                   (list (vector + #f))))
     
     (test-case
      "Double"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (let/ec esc
-                        ('f1 (with-continuation-mark the-cont-key 'f1
-                               ('f2 (with-continuation-mark the-cont-key 'f2
+                        ('f1 (with-continuation-mark the-cont-key +
+                               ('f2 (with-continuation-mark the-cont-key -
                                       (esc (activation-record-list)))))))))
                    ; Opposite the order of c-c-m
-                   (list (vector 'f1 #f)
-                         (vector 'f2 #f))))
+                   (list (vector + #f)
+                         (vector - #f))))
     
     (test-case
      "Unsafe"
      (check-exn
       exn?
       (lambda ()
-        (abort/cc
+        (call-with-web-prompt
          (lambda () 
            (with-continuation-mark safe-call? #f
              (activation-record-list))))))))
@@ -109,7 +109,7 @@
     
     (test-case
      "Simple"
-     (check-equal? (abort/cc
+     (check-equal? (call-with-web-prompt
                     (lambda () 
                       (abort (lambda () 42))))
                    42)))
@@ -145,7 +145,7 @@
            [g (lambda (x) (+ x x))]
            [esc-b (box #f)]
            [capture (lambda _ (activation-record-list))])
-       (check-equal? (abort/cc
+       (check-equal? (call-with-web-prompt
                       (lambda ()
                         (let/ec esc 
                           (set-box! esc-b esc)
@@ -159,7 +159,7 @@
      "marks"
      (let ([f (lambda (x) (* x x))]
            [g (lambda (x) (+ x x))])
-       (check-equal? (abort/cc
+       (check-equal? (call-with-web-prompt
                       (lambda ()
                         (let/ec esc 
                           (resume (list (vector f (make-immutable-hash (list (cons 3 4) (cons 1 2)))) 
@@ -181,7 +181,7 @@
            [g (lambda (x) (+ x x))]
            [esc-b (box #f)]
            [capture (lambda _ (activation-record-list))])
-       (check-equal? (abort/cc
+       (check-equal? (call-with-web-prompt
                       (lambda ()
                         (let/ec esc 
                           (set-box! esc-b esc)

@@ -254,13 +254,13 @@ and @cpp{tmp2}. The final result might be
 }
 
 Notice that @cpp{result} is not registered above. The
-@cpp{MZ_GC_UNREG} macro cannot trigger a garbage collection, so the
+@cppdef{MZ_GC_UNREG} macro cannot trigger a garbage collection, so the
 @cpp{result} variable is never live during a potential
 collection. Note also that @cpp{tmp1} and @cpp{tmp2} are initialized
 with @cpp{NULL}, so that they always contain a pointer whenever a
 collection is possible.
 
-The @cppi{MZ_GC_DECL_REG} macro expands to a local-variable
+The @cppdef{MZ_GC_DECL_REG} macro expands to a local-variable
 declaration to hold information for the garbage collector. The
 argument is the number of slots to provide for
 registration. Registering a simple pointer requires a single slot,
@@ -285,9 +285,9 @@ example, to register a pointer @cpp{tmp} and an array of 10
   }
 }
 
-The @cppi{MZ_GC_ARRAY_VAR_IN_REG} macro registers a local array given
+The @cppdef{MZ_GC_ARRAY_VAR_IN_REG} macro registers a local array given
 a starting slot, the array variable, and an array size. The
-@cppi{MZ_GC_VAR_IN_REG} takes a slot and simple pointer variable. A
+@cppdef{MZ_GC_VAR_IN_REG} macro takes a slot and simple pointer variable. A
 local variable or array must not be registered multiple times.
 
 In the above example, the first argument to @cppi{MZ_GC_VAR_IN_REG} is
@@ -316,7 +316,7 @@ In general, the only constraint on the second argument to
 the stack.
 
 Pointer information is not actually registered with the collector
-until the @cppi{MZ_GC_REG} macro is used. The @cppi{MZ_GC_UNREG} macro
+until the @cppdef{MZ_GC_REG} macro is used. The @cppi{MZ_GC_UNREG} macro
 de-registers the information. Each call to @cpp{MZ_GC_REG} must be
 balanced by one call to @cpp{MZ_GC_UNREG}.
 
@@ -401,7 +401,7 @@ declarations for the block's variables. In that case, the nested
 Variables declared in a local block can also be registered together
 with variables from an enclosing block, but the local-block variable
 must be unregistered before it goes out of scope. The
-@cppi{MZ_GC_NO_VAR_IN_REG} macro can be used to unregister a variable
+@cppdef{MZ_GC_NO_VAR_IN_REG} macro can be used to unregister a variable
 or to initialize a slot as having no variable.
 
 @verbatim[#:indent 2]{
@@ -521,7 +521,7 @@ The following macros can be used (with care!) to navigate
 
 @itemize{
 
-@item{@cppi{XFORM_START_SKIP} and @cppi{XFORM_END_SKIP}: code
+@item{@cppdef{XFORM_START_SKIP} and @cppdef{XFORM_END_SKIP}: code
   between these two statements is ignored by the transform tool,
   except to tokenize it.
 
@@ -550,7 +550,7 @@ The following macros can be used (with care!) to navigate
    MZ_PRECISE_GC} and @cpp{#endif}; a semi-colon by itself at the
  top level is not legal in C.}
 
-@item{@cppi{XFORM_HIDE_EXPR}: a macro that takes wraps an expression to
+@item{@cppdef{XFORM_HIDE_EXPR}: a macro that takes wraps an expression to
   disable processing of the expression.
 
   Example:
@@ -570,11 +570,11 @@ The following macros can be used (with care!) to navigate
     }
   }}
 
-@item{@cppi{XFORM_CAN_IGNORE}: a macro that acts like a type
+@item{@cppdef{XFORM_CAN_IGNORE}: a macro that acts like a type
   modifier (must appear first) to indicate that a declared variable
   can be treated as atomic. See above for an example.}
 
-@item{@cppi{XFORM_START_SUSPEND} and @cppi{XFORM_END_SUSPEND}: for
+@item{@cppdef{XFORM_START_SUSPEND} and @cppdef{XFORM_END_SUSPEND}: for
   use at the top level (outside of any function definition), and
   similar to @cpp{XFORM_START_SKIP} and @cpp{XFORM_END_SKIP} in
   that function and class bodies are not transformed. Type and
@@ -582,17 +582,17 @@ The following macros can be used (with care!) to navigate
   transformations, however. These forms must be terminated by a
   semi-colon.}
 
-@item{@cppi{XFORM_START_TRUST_ARITH} and
-  @cppi{XFORM_END_TRUST_ARITH}: for use at the top level (outside
+@item{@cppdef{XFORM_START_TRUST_ARITH} and
+  @cppdef{XFORM_END_TRUST_ARITH}: for use at the top level (outside
   of any function definition) to disable warnings about pointer
   arithmetic. Use only when you're absolutely certain that the garbage
   collector cannot be pointers offset into the middle of a collectable
   object. These forms must be terminated by a semi-colon.}
 
-@item{@cppi{XFORM_TRUST_PLUS}: a replacement for @cpp{+} that does
+@item{@cppdef{XFORM_TRUST_PLUS}: a replacement for @cpp{+} that does
   not trigger pointer-arithmetic warnings. Use with care.}
 
-@item{@cppi{XFORM_TRUST_MINUS}: a replacement for @cpp{-} that does
+@item{@cppdef{XFORM_TRUST_MINUS}: a replacement for @cpp{-} that does
   not trigger pointer-arithmetic warnings. Use with care.}
 
 }

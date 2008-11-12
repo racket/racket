@@ -9,22 +9,56 @@
          "../private/response-structs.ss"
          "../servlet/basic-auth.ss"
          "../private/response.ss")  
+
+(define denied?/c (request? . -> . (or/c false/c string?)))
+(define authorized?/c (string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?)))
+
 (provide/contract
  [interface-version dispatcher-interface-version/c]
- [make (->* ()
-            (#:password-file path-string?
-                             #:authentication-responder 
-                             (url? header? . -> . response?))
-            (values
-             (-> void)
-             dispatcher/c))])
+ [denied?/c contract?]
+ [make (->* (denied?/c)
+            (#:authentication-responder
+             (url? header? . -> . response?))
+            dispatcher/c)]
+ [authorized?/c contract?]
+ [make-basic-denied?/path
+  (authorized?/c . -> . denied?/c)]
+ [password-file->authorized?
+  (path? . -> . (values (-> void)
+                        authorized?/c))])
 
 (define interface-version 'v1)
-(define (make ; XXX Take authorized? function
-         #:password-file [password-file "passwords"]
-         #:authentication-responder 
-         [authentication-responder 
-          (gen-authentication-responder "forbidden.html")])
+(define (make denied?
+              #:authentication-responder 
+              [authentication-responder 
+               (gen-authentication-responder "forbidden.html")])
+  (lambda (conn req)
+    (define uri (request-uri req))
+    (define method (request-method req))
+    (cond
+      [(denied? req)
+       => (lambda (realm)
+            (request-authentication conn method uri
+                                    authentication-responder
+                                    realm))]
+      [else
+       (next-dispatcher)])))
+
+(define (make-basic-denied?/path
+         authorized?)  
+  (lambda (req)
+    (define uri (request-uri req))
+    (define path (url-path->string (url-path uri)))
+    (cond
+      [(extract-user-pass (request-headers/raw req))
+       => (lambda (user*pass)
+            (authorized? path 
+                         (car user*pass)
+                         (cdr user*pass)))]
+      [else
+       (authorized? path #f #f)])))
+
+(define (password-file->authorized? password-file)
   (define last-read-time (box #f))
   (define password-cache (box #f))
   (define (update-password-cache!)
@@ -38,38 +72,13 @@
   (define (read-password-cache)
     (update-password-cache!)
     (unbox password-cache))
-  (define (dispatch conn req)
-    (define uri (request-uri req))
-    (define path (url-path->string (url-path uri)))
-    (define method (request-method req))
-    (define denied? (read-password-cache))
-    (cond
-      [(and denied?
-            (access-denied? method path (request-headers/raw req) denied?))
-       => (lambda (realm)
-            (request-authentication conn method uri
-                                    authentication-responder
-                                    realm))]
-      [else
-       (next-dispatcher)]))
   (values update-password-cache!
-          dispatch))
-
-;; ****************************************
-;; ****************************************
-;; ACCESS CONTROL
-
+          (lambda (path user pass)
+            (define denied? (read-password-cache))
+            (denied? path (if user (lowercase-symbol! user) #f) pass))))
+    
 ;; pass-entry = (make-pass-entry str regexp (list sym str))
 (define-struct pass-entry (domain pattern users))
-
-;; access-denied? : Method string x-table denied? -> (or/c false str)
-;; denied?: str sym str -> (or/c str #f)
-;; the return string is the prompt for authentication
-(define (access-denied? method uri-str headers denied?)
-  (define user-pass (extract-user-pass headers))
-  (if user-pass
-      (denied? uri-str (lowercase-symbol! (car user-pass)) (cdr user-pass))
-      (denied? uri-str fake-user "")))
 
 (define-struct (exn:password-file exn) ())
 
@@ -105,8 +114,6 @@
                             #f
                             (pass-entry-domain x)))))
                passwords)))))
-
-(define fake-user (gensym))
 
 ;; password-list? : TST -> bool
 

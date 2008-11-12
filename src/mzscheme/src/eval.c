@@ -1349,6 +1349,11 @@ static int eq_testable_constant(Scheme_Object *v)
   if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
     return 1;
 
+  if (SCHEME_INTP(v) 
+      && (SCHEME_INT_VAL(v) < (1 << 29))
+      && (SCHEME_INT_VAL(v) > -(1 << 29)))
+    return 1;
+
   return 0;
 }
 
@@ -5133,10 +5138,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 			   Scheme_Compile_Expand_Info *rec, int drec, 
 			   int app_position)
 {
-  Scheme_Object *name, *var, *stx, *normal, *can_recycle_stx = NULL;
+  Scheme_Object *name, *var, *stx, *normal, *can_recycle_stx = NULL, *orig_unbound_name = NULL;
   Scheme_Env *menv = NULL;
   GC_CAN_IGNORE char *not_allowed;
-  int looking_for_top;
+  int looking_for_top, has_orig_unbound = 0;
 
  top:
 
@@ -5251,8 +5256,12 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       if (!var) {
 	/* Top variable */
 	stx = top_symbol;
-	not_allowed = "reference to top-level identifier";
+        if (env->genv->module)
+          not_allowed = "reference to an unbound identifier";
+        else
+          not_allowed = "reference to a top-level identifier";
 	normal = top_expander;
+        has_orig_unbound = 1;
 	form = find_name; /* in case it was re-mapped */
 	looking_for_top = 1;
       } else {
@@ -5348,6 +5357,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       
       if (!var) {
 	/* apply to global variable: compile it normally */
+        orig_unbound_name = find_name;
+        has_orig_unbound = 1;
       } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_local_type)
 		 || SAME_TYPE(SCHEME_TYPE(var), scheme_local_unbox_type)) {
 	/* apply to local variable: compile it normally */
@@ -5494,11 +5505,30 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     }
   } else {
     /* Not allowed this context! */
-    scheme_wrong_syntax(scheme_compile_stx_string, NULL, form, 
-			"bad syntax; %s is not allowed, "
-			"because no %S syntax transformer is bound",
-			not_allowed,
-			SCHEME_STX_VAL(stx));
+    char *phase, buf[30];
+    if (env->genv->phase == 0)
+      phase = "";
+    else if (env->genv->phase == 1)
+      phase = " in the transformer environment";
+    else {
+      phase = buf;
+      sprintf(buf, " at phase %ld", env->genv->phase);
+    }
+    if (has_orig_unbound) {
+      scheme_wrong_syntax(scheme_compile_stx_string, 
+                          orig_unbound_name, form, 
+                          "unbound identifier%s "
+                          "(and no %S syntax transformer is bound)",
+                          phase,
+                          SCHEME_STX_VAL(stx));
+    } else {
+      scheme_wrong_syntax(scheme_compile_stx_string, NULL, form, 
+                          "bad syntax; %s is not allowed, "
+                          "because no %S syntax transformer is bound%s",
+                          not_allowed,
+                          SCHEME_STX_VAL(stx),
+                          phase);
+    }
     return NULL;
   }
 

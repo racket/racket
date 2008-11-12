@@ -25,12 +25,13 @@ TODO
          scheme/pretty
          scheme/unit
          scheme/list
-         "drsig.ss"
+         
          string-constants
          setup/xref
          scheme/gui/base
          framework
-         browser/external)
+         browser/external
+         "drsig.ss")
 
 (provide rep@ with-stacktrace-name)
 
@@ -312,7 +313,7 @@ TODO
   (define drs-bindings-keymap-mixin
     (mixin (editor:keymap<%>) (editor:keymap<%>)
       (define/override (get-keymaps)
-        (cons drs-bindings-keymap (super get-keymaps)))
+        (editor:add-after-user-keymap drs-bindings-keymap (super get-keymaps)))
       (super-instantiate ())))
   
   ;; Max length of output queue (user's thread blocks if the
@@ -847,9 +848,9 @@ TODO
           (reset-highlighting))
         (inner (void) after-delete x y))
       
-      (define/override get-keymaps
-        (λ ()
-          (cons scheme-interaction-mode-keymap (super get-keymaps))))
+      (define/override (get-keymaps)
+        (editor:add-after-user-keymap scheme-interaction-mode-keymap
+                                      (super get-keymaps)))
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;;                                            ;;;
@@ -1854,4 +1855,5 @@ TODO
              (drs-autocomplete-mixin 
               (λ (txt) (send txt get-definitions-text))
               (text:foreground-color-mixin
-               text:clever-file-format%)))))))))))))
+               (text:normalize-paste-mixin
+                text:clever-file-format%))))))))))))))

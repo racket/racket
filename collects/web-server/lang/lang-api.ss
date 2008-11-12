@@ -14,7 +14,6 @@
          (all-from-out "../private/request-structs.ss")
          (all-from-out "../private/response-structs.ss")
          (all-from-out "../servlet/helpers.ss")
-         ; XXX Try to remove, or only provide send/suspend
          (all-from-out "abort-resume.ss")
          (all-from-out "web.ss")
          (all-from-out "web-cells.ss")

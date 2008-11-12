@@ -313,7 +313,7 @@ In more detail, patterns match as follows:
 
  @item{@scheme[(#,(schemeidfont "app") _expr _pat)] --- applies
        @scheme[_expr] to the value to be matched; the result of the
-       application is matched again @scheme[_pat].
+       application is matched againt @scheme[_pat].
 
        @examples[
        #:eval match-eval

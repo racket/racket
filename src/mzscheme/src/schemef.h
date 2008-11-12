@@ -182,6 +182,8 @@ MZ_EXTERN int scheme_log_level_p(Scheme_Logger *logger, int level);
 MZ_EXTERN void scheme_log(Scheme_Logger *logger, int level, int flags,
                           char *msg, ...);
 MZ_EXTERN void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len, Scheme_Object *data);
+MZ_EXTERN void scheme_log_abort(char *buffer);
+MZ_EXTERN void scheme_out_of_memory_abort();
 
 MZ_EXTERN void scheme_wrong_count(const char *name, int minc, int maxc,
 				  int argc, Scheme_Object **argv);
@@ -397,7 +399,7 @@ MZ_EXTERN void scheme_gc_ptr_ok(void *p);
 MZ_EXTERN void scheme_collect_garbage(void);
 
 #ifdef MZ_PRECISE_GC
-MZ_EXTERN void **GC_variable_stack;
+MZ_EXTERN THREAD_LOCAL void **GC_variable_stack;
 MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 MZ_EXTERN void *GC_resolve(void *p);

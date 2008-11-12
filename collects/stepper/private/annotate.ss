@@ -224,7 +224,7 @@
                                                   stx))])])
           
           (if (eq? (stepper-syntax-property stx 'stepper-xml-hint) 'from-xml-box)
-              (stepper-syntax-property #`(#,put-into-xml-table #,rewritten) 
+              (stepper-syntax-property #`(#%plain-app #,put-into-xml-table #,rewritten) 
                                        'stepper-skipto
                                        (list syntax-e cdr car))
               (syntax-recertify rewritten stx (current-code-inspector) #f))))))
@@ -307,24 +307,25 @@
   
   ;; wrap a pre-break around stx
   (define (pre-break-wrap stx)
-    #`(begin (#,result-exp-break) #,stx))
+    #`(begin (#%plain-app #,result-exp-break) #,stx))
   
   ;; wrap a normal break around stx
   (define (break-wrap exp)
-    #`(begin (#,normal-break) #,exp))
+    #`(begin (#%plain-app #,normal-break) #,exp));
   
   ;; wrap a double-break around exp
   (define (double-break-wrap exp)
-    #`(begin (#,double-break) #,exp))
+    #`(begin (#%plain-app #,double-break) #,exp))
   
   ;; abstraction used in the next two defs
   (define (return-value-wrap-maker break-proc) 
     (lambda (exp)
-      #`(call-with-values
-         (lambda () #,exp)
-         (lambda args
-           (#,break-proc args)
-           (apply values args)))))
+      #`(#%plain-app
+         call-with-values
+         (#%plain-lambda () #,exp)
+         (#%plain-lambda args
+           (#%plain-app #,break-proc args)
+           (#%plain-app #,apply values args)))))
   
   ;; wrap a return-value-break around exp
   (define return-value-wrap
@@ -347,8 +348,9 @@
                 #`(with-continuation-mark #,debug-key 
                     #,(make-top-level-mark source-exp)
                     ;; inserting eta-expansion to prevent destruction of top-level mark
-                    (call-with-values (lambda () #,annotated)
-                                      (lambda args (apply values args))))))
+                    (#%plain-app
+                     call-with-values (#%plain-lambda () #,annotated)
+                     (#%plain-lambda args (#%plain-app #,apply values args))))))
   
   ; annotate/inner takes 
   ; a) an expression to annotate
@@ -522,10 +524,10 @@
                             annotated-lambda)]
                        [captured
                         (cond [(pair? procedure-name-info)
-                               #`(#,closure-storing-proc #,inferred-name-lambda #,closure-info 
-                                                         #,(cadr procedure-name-info))]
+                               #`(#%plain-app #,closure-storing-proc #,inferred-name-lambda #,closure-info 
+                                              #,(cadr procedure-name-info))]
                               [else
-                               #`(#,closure-storing-proc #,inferred-name-lambda #,closure-info)])])
+                               #`(#%plain-app #,closure-storing-proc #,inferred-name-lambda #,closure-info)])])
                       
                       (normal-bundle free-varrefs captured)))]
                   
@@ -661,9 +663,13 @@
                                           [((lifted-var ...) ...) lifted-var-sets])
                              (with-syntax ([(exp-thunk ...) (map (lx (lambda () _))
                                                                  (syntax->list #`let-clauses))])
-                               #`(list (list exp-thunk
-                                             (list lifted-var ...)
-                                             (lambda () (list var ...))) ...)))]
+                               #`(#%plain-app 
+                                  list 
+                                  (#%plain-app
+                                   list exp-thunk
+                                   (#%plain-app
+                                    list lifted-var ...)
+                                   (#%plain-lambda () (#%plain-app list var ...))) ...)))]
                           ; time to work from the inside out again
                           ; without renaming, this would all be much much simpler.
                           [wrapped-begin (outer-wcm-wrap (make-debug-info-let free-varrefs
@@ -671,7 +677,7 @@
                                                                               let-counter) 
                                                          (double-break-wrap
                                                           #`(begin #,@(apply append (zip set!-clauses counter-clauses))
-                                                                   (#,exp-finished-break #,exp-finished-clauses)
+                                                                   (#%plain-app #,exp-finished-break #,exp-finished-clauses)
                                                                    #,annotated-body)))])))))]
                   
                   
@@ -785,11 +791,13 @@
                    (match-lambda 
                      [(vector annotated free-vars) 
                       (vector (if (stepper-syntax-property exp 'stepper-use-val-as-final)
-                                  #`(call-with-values 
-                                     (lambda () #,annotated)
-                                     (lambda results
-                                       (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () results))))
-                                       (values results)))
+                                  #`(#%plain-app
+                                     call-with-values 
+                                     (#%plain-lambda () #,annotated)
+                                     (#%plain-lambda results
+                                       (#,exp-finished-break 
+                                        (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () results))))
+                                       (#%plain-app values results)))
                                   annotated)
                               free-vars)]
                      [error 'maybe-final-val-wrap "stepper internal error 20080527"])]
@@ -1056,13 +1064,13 @@
                               [tagged-arg-temps (map (lambda (var) (stepper-syntax-property var 'stepper-binding-type 'stepper-temp))
                                                      arg-temps)]
                               [let-clauses #`((#,tagged-arg-temps 
-                                               (values #,@(map (lambda (_) *unevaluated*) tagged-arg-temps))))]
+                                               (#%plain-app values #,@(map (lambda (_) *unevaluated*) tagged-arg-temps))))]
                               [set!-list (map (lambda (arg-symbol annotated-sub-exp)
                                                 #`(set! #,arg-symbol #,annotated-sub-exp))
                                               tagged-arg-temps annotated-terms)]
                               [new-tail-bound (binding-set-union (list tail-bound tagged-arg-temps))]
                               [app-debug-info (make-debug-info-app new-tail-bound tagged-arg-temps 'called)]
-                              [app-term (quasisyntax/loc exp #,tagged-arg-temps)]
+                              [app-term (quasisyntax/loc exp (#%plain-app #,@tagged-arg-temps))]
                               [debug-info (make-debug-info-app new-tail-bound
                                                                (varref-set-union (list free-varrefs tagged-arg-temps)) ; NB using bindings as vars
                                                                'not-yet-called)]
@@ -1070,7 +1078,7 @@
                                                                             #,(break-wrap
                                                                                (wcm-wrap
                                                                                 app-debug-info
-                                                                                #`(if (#,in-closure-table #,(car tagged-arg-temps))
+                                                                                #`(if (#%plain-app #,in-closure-table #,(car tagged-arg-temps))
                                                                                       #,app-term
                                                                                       #,(return-value-wrap app-term))))))])
                          #`(let-values #,let-clauses #,let-body))
@@ -1168,7 +1176,7 @@
           [(syntax-property exp 'test-call) exp]
           [(stepper-syntax-property exp 'stepper-define-struct-hint)
            #`(begin #,exp
-                    (#,(make-define-struct-break exp)))]
+                    (#%plain-app #,(make-define-struct-break exp)))]
           [(stepper-syntax-property exp 'stepper-skipto)
            (skipto/auto exp 'rebuild annotate/module-top-level)] 
           [else 
@@ -1183,7 +1191,7 @@
                     (define-values (new-var ...)
                       #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
                     ;; this next expression should deliver the newly computed values to an exp-finished-break
-                    (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () (list new-var ...)))))))]
+                    (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...)))))))]
              [(define-syntaxes (new-vars ...) e)
               exp]
              [(#%require specs ...)
@@ -1194,13 +1202,15 @@
               #`(begin #,@(map annotate/module-top-level (syntax->list #`bodies)))]
              [(#%plain-app call-with-values (#%plain-lambda () body) print-values)
               (stepper-recertify 
-               #`(call-with-values 
-                  (lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
-                  (lambda vals
+               #`(#%plain-app
+                  call-with-values 
+                  (#%plain-lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
+                  (#%plain-lambda vals
                     (begin
-                      (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () vals))))
-                      (call-with-values (lambda () vals)
-                                        print-values))))
+                      (#,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () vals))))
+                      (#%plain-app
+                       call-with-values (#%plain-lambda () vals)
+                       print-values))))
                exp)]
              [any
               (stepper-syntax-property exp 'stepper-test-suite-hint)

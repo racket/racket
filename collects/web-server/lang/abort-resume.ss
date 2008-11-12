@@ -1,30 +1,7 @@
-#lang scheme/base
-(require mzlib/list
-         mzlib/plt-match
-         mzlib/serialize
+#lang scheme
+(require scheme/serialize
          "../private/define-closure.ss"
          "../lang/web-cells.ss")
-; XXX contract
-(provide
- 
- ;; AUXILLIARIES
- abort
- abort/cc
- resume
- the-cont-key
- the-save-cm-key
- safe-call?
- the-undef
- activation-record-list
- current-saved-continuation-marks-and
- kont-append-fun
- 
- ;; "SERVLET" INTERFACE
- send/suspend
- 
- ;; "CLIENT" INTERFACE
- dispatch-start
- dispatch)
 
 ;; **********************************************************************
 ;; **********************************************************************
@@ -33,7 +10,7 @@
 (define the-cont-key (make-mark-key))
 (define the-save-cm-key (make-mark-key))
 (define safe-call? (make-mark-key))
-(define web-prompt (make-continuation-prompt-tag 'web)) 
+(define web-prompt (make-continuation-prompt-tag 'web)) 
 
 (define (current-saved-continuation-marks-and key val)
   (define c
@@ -62,7 +39,7 @@
 ;; erase the stack and apply a thunk
 (define (abort thunk)
   #;(printf "abort ~S~n" thunk)
-  (abort-current-continuation web-prompt thunk))
+  (abort-current-continuation web-prompt thunk))
 
 ;; with-continuation-marks : (listof (cons any1 any2)) (-> any3) -> any3
 (define (with-continuation-marks cms thnk)
@@ -110,7 +87,7 @@
        [(vector f cms)
         (with-continuation-marks/hash cms (lambda () (rebuild-cms fs thunk)))])]))
 
-(define (abort/cc thunk)
+(define (call-with-web-prompt thunk)
   (call-with-continuation-prompt
    thunk
    web-prompt))
@@ -155,7 +132,7 @@
 ;; dispatch-start: (request -> response) request -> reponse
 ;; pass the initial request to the starting interaction point
 (define (dispatch-start start req0)
-  (abort/cc 
+  (call-with-web-prompt 
    (lambda ()
      (with-continuation-mark safe-call? '(#t start)
        (start
@@ -165,10 +142,50 @@
 ;; dispatch: (request -> (request -> response)) request -> response
 ;; lookup the continuation for this request and invoke it
 (define (dispatch decode-continuation req)   
-  (abort/cc
+  (call-with-web-prompt
    (lambda ()
      (cond
        [(decode-continuation req)
         => (lambda (k) (k req))]
        [else
         (error 'dispatch "no continuation associated with the provided request: ~S" req)]))))
+
+;; **********************************************************************
+;; **********************************************************************
+
+; These should really be from web-server/private, but it interferes with testing
+(define request? any/c)
+(define response? any/c)
+
+(define cms? (and/c hash? immutable?))
+
+(define saved-context?
+  (listof (vector/c (or/c false/c procedure?)
+                    (or/c false/c cms?))))
+
+(provide/contract
+ ;; AUXILLIARIES
+ [abort ((-> any) . -> . any)]
+ [call-with-web-prompt ((-> any) . -> . any)]
+ [resume (saved-context? any/c . -> . any)]
+ [the-cont-key mark-key?]
+ [the-save-cm-key mark-key?]
+ [safe-call? mark-key?]
+ [the-undef undef?]
+ [activation-record-list (-> saved-context?)]
+ [current-saved-continuation-marks-and (any/c any/c . -> . cms?)]
+ [kont-append-fun (kont? procedure? . -> . kont?)]
+
+ ;; "CLIENT" INTERFACE
+ [dispatch ((request? . -> . (request? . -> . response?))
+            request?
+            . -> .
+            response?)]
+ [dispatch-start ((request? . -> . response?)
+                  request?
+                  . -> .
+                  response?)])
+(provide
+ ;; "SERVLET" INTERFACE
+ ; A contract would interfere with the safe-call? key
+ send/suspend)

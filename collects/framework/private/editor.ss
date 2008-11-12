@@ -202,6 +202,7 @@
                        (file-exists? filename)
                        (file-or-directory-modify-seconds filename)))))
         (inner (void) after-load-file success?))
+      
       (define/public (save-file-out-of-date?)
         (and last-saved-file-time
              (let ([fn (get-filename)])
@@ -428,16 +429,25 @@
   (define -keymap<%> (interface (basic<%>) get-keymaps))
   (define keymap-mixin
     (mixin (basic<%>) (-keymap<%>)
-      [define/public get-keymaps
-        (λ ()
-          (list (keymap:get-global)))]
+      (define/public (get-keymaps)
+        (list (keymap:get-user) (keymap:get-global)))
       (inherit set-keymap)
       
-      (super-instantiate ())
+      (super-new)
       (let ([keymap (make-object keymap:aug-keymap%)])
         (set-keymap keymap)
         (for-each (λ (k) (send keymap chain-to-keymap k #f))
                   (get-keymaps)))))
+  
+  (define (add-after-user-keymap km kms)
+    (let loop ([kms kms])
+      (cond
+        [(null? kms) (list km)]
+        [else
+         (let ([f (car kms)])
+           (if (eq? f (keymap:get-user))
+               (list* f km (cdr kms))
+               (cons f (loop (cdr kms)))))])))
   
   (define autowrap<%> (interface (basic<%>)))
   (define autowrap-mixin
@@ -486,26 +496,28 @@
       (inherit save-file)
       (define/public (allow-close-with-no-filename?) #f)
       (define/augment (can-close?)
-        (let* ([user-allowed-or-not-modified
-                (or (not (is-modified?))
-                    (and (not (get-filename))
-                         (allow-close-with-no-filename?))
-                    (case (gui-utils:unsaved-warning
-                           (get-filename/untitled-name)
-                           (string-constant dont-save)
-                           #t
-                           (or (get-top-level-window)
-                               (get-can-close-parent)))
-                      [(continue) #t]
-                      [(save) (save-file)]
-                      [else #f]))])
-          (and user-allowed-or-not-modified
-               (inner #t can-close?))))
+        (and (user-saves-or-not-modified?)
+             (inner #t can-close?)))
+      
+      (define/public (user-saves-or-not-modified? [allow-cancel? #t])
+        (or (not (is-modified?))
+            (and (not (get-filename))
+                 (allow-close-with-no-filename?))
+            (case (gui-utils:unsaved-warning
+                   (get-filename/untitled-name)
+                   (string-constant dont-save)
+                   #t
+                   (or (get-top-level-window)
+                       (get-can-close-parent))
+                   allow-cancel?)
+              [(continue) #t]
+              [(save) (save-file)]
+              [else #f])))
       
       (define/public (get-can-close-parent) #f)
       
       (define/override (get-keymaps)
-        (cons (keymap:get-file) (super get-keymaps)))
+        (add-after-user-keymap (keymap:get-file) (super get-keymaps)))
       (super-new)))
   
   (define backup-autosave<%>

@@ -13,10 +13,10 @@
 ;; start the server and return a thunk to shut it down
 (define (serve)
   (define the-server-custodian (make-custodian))
-  (start-connection-manager the-server-custodian)
   (parameterize ([current-custodian the-server-custodian]
                  [current-server-custodian the-server-custodian]
                  #;[current-thread-initial-stack-size 3])
+    (start-connection-manager)
     (thread
      (lambda ()
        (run-server config:port 
@@ -40,10 +40,10 @@
 ;; NOTE: (GregP) should allow the user to pass in a connection-custodian
 (define (serve-ports ip op)
   (define server-cust (make-custodian))
-  (start-connection-manager server-cust)
   (parameterize ([current-custodian server-cust]
                  [current-server-custodian server-cust])
     (define connection-cust (make-custodian))
+    (start-connection-manager)
     (parameterize ([current-custodian connection-cust])
       (thread
        (lambda ()

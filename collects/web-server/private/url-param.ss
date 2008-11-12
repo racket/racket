@@ -4,7 +4,6 @@
          mzlib/plt-match
          mzlib/list
          "util.ss")
-; XXX Use instead of embed-ids
 (provide/contract
  [extract-param (url? string? . -> . (or/c string? false/c))]
  [insert-param (url? string? string? . -> . url?)])

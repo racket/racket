@@ -119,17 +119,19 @@
             (list? v))
         (let ([b (hash-ref interned v #f)])
           (if b
-              (weak-box-value b)
+              (or (weak-box-value b)
+                  ;; just in case the value is GCed before we extract it:
+                  (intern-taglet v))
               (begin
                 (hash-set! interned v (make-weak-box v))
                 v)))
         v)))
 
-(define (module-path-index->taglet mod)
+(define (do-module-path-index->taglet mod)
   ;; Derive the name from the module path:
   (let ([p (collapse-module-path-index
             mod
-            (build-path (current-directory) "dummy"))])
+            (lambda () (build-path (current-directory) "dummy")))])
     (if (path? p)
         ;; If we got a path back anyway, then it's best to use the resolved
         ;; name; if the current directory has changed since we 
@@ -157,6 +159,13 @@
                      ;; Otherwise the path is fully normalized:
                      p)])
           (intern-taglet p)))))
+
+(define collapsed (make-weak-hasheq))
+(define (module-path-index->taglet mod)
+  (or (hash-ref collapsed mod #f)
+      (let ([v (do-module-path-index->taglet mod)])
+        (hash-set! collapsed mod v)
+        v)))
 
 (define (module-path-prefix->string p)
   (format "~a" (module-path-index->taglet (module-path-index-join p #f))))

@@ -11,10 +11,19 @@
 #define ROOTS_PTR_ALIGNMENT WORD_SIZE
 #define ROOTS_PTR_TO_INT(x) ((unsigned long)x)
 
-static long roots_count;
-static long roots_size;
-static unsigned long *roots;
-static int nothing_new = 0;
+static void grow_roots(Roots *roots) {
+  unsigned long *new_roots;
+
+  roots->size = roots->size ? ( 2 * roots->size ) : 500;
+  new_roots   = (unsigned long *)ofm_malloc(sizeof(unsigned long) * (roots->size + 1));
+
+  memcpy((void *)new_roots, (void *)roots->roots, sizeof(unsigned long) * roots->count);
+
+  if (roots->roots)
+    free(roots->roots);
+
+  roots->roots = new_roots;
+}
 
 static int compare_roots(const void *a, const void *b)
 {
@@ -24,59 +33,61 @@ static int compare_roots(const void *a, const void *b)
     return 1;
 }
 
-static void sort_and_merge_roots()
+static void sort_and_merge_roots(Roots *roots)
 {
-  int i, offset, top;
-
-  if (nothing_new)
+  if (roots->nothing_new)
     return;
 
-  if (roots_count < 4)
+  if (roots->count < 4)
     return;
 
-  my_qsort(roots, roots_count >> 1, 2 * sizeof(unsigned long), compare_roots);
-  offset = 0;
-  top = roots_count;
-  for (i = 2; i < top; i += 2) {
-    if ((roots[i - 2 - offset] <= roots[i])
-	&& ((roots[i - 1 - offset] + (ROOTS_PTR_ALIGNMENT - 1)) >= roots[i])) {
-      /* merge: */
-      if (roots[i + 1] > roots[i - 1 - offset])
-	roots[i - 1 - offset] = roots[i + 1];
-      offset += 2;
-      roots_count -= 2;
-    } else if (roots[i] == roots[i + 1]) {
-      /* Remove empty range: */
-      offset += 2;
-      roots_count -= 2;
-    } else if (offset) {
-      /* compact: */
-      roots[i - offset] = roots[i];
-      roots[i + 1 - offset] = roots[i + 1];
+  my_qsort(roots->roots, roots->count >> 1, 2 * sizeof(unsigned long), compare_roots);
+
+  {
+    int i;
+    int offset = 0;
+    int top = roots->count;
+    for (i = 2; i < top; i += 2) {
+      int astart = i - 2 - offset;
+      int aend   = i - 1 - offset;
+      int bstart = i;
+      int bend   = i + 1;
+      /*|----a----|
+       *       |----b----| */
+      if (    (roots->roots[astart] <= roots->roots[bstart])
+          && ((roots->roots[aend] + (ROOTS_PTR_ALIGNMENT - 1)) >= roots->roots[bstart])) {
+        /* merge overlapping roots: */
+        if (roots->roots[bend] > roots->roots[aend])
+          roots->roots[aend] = roots->roots[bend];
+        offset += 2;
+        roots->count -= 2;
+      } else if (roots->roots[bstart] == roots->roots[bend]) {
+        /* Remove empty range: */
+        offset += 2;
+        roots->count -= 2;
+      } else if (offset) {
+        /* compact: */
+        int emptystart = i - offset;
+        int emptyend   = i + 1 - offset;
+        roots->roots[emptystart] = roots->roots[bstart];
+        roots->roots[emptyend]   = roots->roots[bend];
+      }
     }
   }
 
-  nothing_new = 1;
+  roots->nothing_new = 1;
 }
 
 void GC_add_roots(void *start, void *end)
 {
-  if (roots_count >= roots_size) {
-    unsigned long *naya;
+  GCTYPE *gc = GC_get_GC();
+  Roots *roots = &gc->roots;
 
-    roots_size = roots_size ? 2 * roots_size : 500;
-    naya = (unsigned long *)malloc(sizeof(unsigned long) * (roots_size + 1));
-
-    memcpy((void *)naya, (void *)roots, 
-	   sizeof(unsigned long) * roots_count);
-
-    if (roots)
-      free(roots);
-
-    roots = naya;
+  if (roots->count >= roots->size) {
+    grow_roots(roots);
   }
 
-  roots[roots_count++] = ROOTS_PTR_TO_INT(start);
-  roots[roots_count++] = ROOTS_PTR_TO_INT(end) - ROOTS_PTR_ALIGNMENT;
-  nothing_new = 0;
+  roots->roots[roots->count++] = ROOTS_PTR_TO_INT(start);
+  roots->roots[roots->count++] = ROOTS_PTR_TO_INT(end) - ROOTS_PTR_ALIGNMENT;
+  roots->nothing_new = 0;
 }

@@ -213,6 +213,8 @@
   (one-mz-test "embed-me1.ss" "This is 1\n" #t)
   (one-mz-test "embed-me1b.ss" "This is 1b\n" #f)
   (one-mz-test "embed-me1c.ss" "This is 1c\n" #f)
+  (one-mz-test "embed-me1d.ss" "This is 1d\n" #f)
+  (one-mz-test "embed-me1e.ss" "This is 1e\n" #f)
   (one-mz-test "embed-me2.ss" "This is 1\nThis is 2: #t\n" #t)
 
   ;; Try unicode expr and cmdline:

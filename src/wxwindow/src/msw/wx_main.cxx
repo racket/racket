@@ -41,6 +41,8 @@ char wxCanvasClassName[]        = "wxCanvasClass";
 
 HICON wxSTD_FRAME_ICON = NULL;
 
+DWORD wx_original_thread_id;
+
 HFONT wxSTATUS_LINE_FONT = NULL;
 LRESULT APIENTRY wxWndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -101,6 +103,8 @@ void wxInitialize(HINSTANCE hInstance)
   InitFafa(hInstance);
   if (!gaugeInit(hInstance))
     wxFatalError("Cannot initalize Gauge library");
+
+  wx_original_thread_id = GetCurrentThreadId();
 
   wxSTD_FRAME_ICON = LoadIcon(hInstance, "wxSTD_FRAME");
 

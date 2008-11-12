@@ -88,6 +88,8 @@
 #define scheme_log_level_p (scheme_extension_table->scheme_log_level_p)
 #define scheme_log (scheme_extension_table->scheme_log)
 #define scheme_log_message (scheme_extension_table->scheme_log_message)
+#define scheme_log_abort (scheme_extension_table->scheme_log_abort)
+#define scheme_out_of_memory_abort (scheme_extension_table->scheme_out_of_memory_abort)
 #define scheme_wrong_count (scheme_extension_table->scheme_wrong_count)
 #define scheme_wrong_count_m (scheme_extension_table->scheme_wrong_count_m)
 #define scheme_case_lambda_wrong_count (scheme_extension_table->scheme_case_lambda_wrong_count)

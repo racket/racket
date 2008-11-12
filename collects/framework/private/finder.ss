@@ -4,9 +4,7 @@
            "sig.ss"
            "../preferences.ss"
            mred/mred-sig
-           mzlib/string
-           scheme/path
-           mzlib/etc)
+           scheme/path)
   
   
   (import mred^
@@ -33,13 +31,13 @@
   ;; dialog wrappers
   
   (define (*put-file style)
-    (opt-lambda ([name #f]
-                 [directory #f]
-                 [replace? #f]
-                 [prompt (string-constant select-file)]
-                 [filter #f]
-                 [filter-msg (string-constant file-wrong-form)]
-                 [parent-win (dialog-parent-parameter)])
+    (lambda ([name #f]
+             [directory #f]
+             [replace? #f]
+             [prompt (string-constant select-file)]
+             [filter #f]
+             [filter-msg (string-constant file-wrong-form)]
+             [parent-win (dialog-parent-parameter)])
       (let* ([directory (if (and (not directory) (string? name))
                             (path-only name)
                             directory)]
@@ -63,11 +61,11 @@
                  [else f]))))))
   
   (define (*get-file style)
-    (opt-lambda ([directory #f]
-                 [prompt (string-constant select-file)]
-                 [filter #f]
-                 [filter-msg (string-constant file-wrong-form)]
-                 [parent-win (dialog-parent-parameter)])
+    (lambda ([directory #f]
+             [prompt (string-constant select-file)]
+             [filter #f]
+             [filter-msg (string-constant file-wrong-form)]
+             [parent-win (dialog-parent-parameter)])
       (let ([f (get-file prompt parent-win directory #f #f style)])
         (and f (or (not filter) (filter-match? filter f filter-msg))
              (let ([f (normalize-path f)])

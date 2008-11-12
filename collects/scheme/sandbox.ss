@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/port
+         scheme/list
          syntax/moddep
          scheme/gui/dynamic)
 
@@ -27,6 +28,7 @@
          get-output
          get-error-output
          get-uncovered-expressions
+         get-namespace
          make-evaluator
          make-module-evaluator
          call-with-limits
@@ -128,7 +130,10 @@
                             (and (perm<=? needed (car perm))
                                  (regexp-match (cadr perm) bpath)))
                           (sandbox-path-permissions))
-             (error what "file access denied ~a" (cons path modes))))))
+             (error what "`~a' access denied for ~a"
+                    (apply string-append
+                           (add-between (map symbol->string modes) "+"))
+                    path)))))
      (lambda args (apply (sandbox-network-guard) args)))))
 
 (define sandbox-security-guard (make-parameter default-sandbox-guard))
@@ -429,6 +434,7 @@
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
+(define-evaluator-messenger get-namespace 'namespace)
 
 (define (make-evaluator* init-hook require-perms program-maker)
   (define cust          (make-custodian))
@@ -463,25 +469,27 @@
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
     ;; finally wait for interaction expressions
-    (let loop ([n 1])
-      (let ([expr (channel-get input-ch)])
-        (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
-        (with-handlers ([void (lambda (exn)
-                                (channel-put result-ch (cons 'exn exn)))])
-          (let* ([run (if (evaluator-message? expr)
-                        (lambda ()
-                          (apply (evaluator-message-msg expr)
-                                 (evaluator-message-args expr)))
-                        (lambda ()
-                          (eval* (input->code (list expr) 'eval n))))]
-                 [sec (and limits (car limits))]
-                 [mb  (and limits (cadr limits))]
-                 [run (if (or sec mb)
-                        (lambda () (with-limits sec mb (run)))
-                        run)])
-            (channel-put result-ch
-                         (cons 'vals (call-with-values run list)))))
-        (loop (add1 n)))))
+    (let ([n 0])
+      (let loop ()
+        (let ([expr (channel-get input-ch)])
+          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
+          (with-handlers ([void (lambda (exn)
+                                  (channel-put result-ch (cons 'exn exn)))])
+            (let* ([run (if (evaluator-message? expr)
+                          (lambda ()
+                            (apply (evaluator-message-msg expr)
+                                   (evaluator-message-args expr)))
+                          (lambda ()
+                            (set! n (add1 n))
+                            (eval* (input->code (list expr) 'eval n))))]
+                   [sec (and limits (car limits))]
+                   [mb  (and limits (cadr limits))]
+                   [run (if (or sec mb)
+                          (lambda () (with-limits sec mb (run)))
+                          run)])
+              (channel-put result-ch
+                           (cons 'vals (call-with-values run list)))))
+          (loop)))))
   (define (user-eval expr)
     (let ([r (if user-thread
                (begin (channel-put input-ch expr)
@@ -530,6 +538,8 @@
           [(output) (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
+          [(namespace) (user-eval (make-evaluator-message
+                                   current-namespace '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define linked-outputs? #f)

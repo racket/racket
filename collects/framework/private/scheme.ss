@@ -22,7 +22,8 @@
         [prefix comment-box: framework:comment-box^]
         [prefix mode: framework:mode^]
         [prefix color: framework:color^]
-        [prefix color-prefs: framework:color-prefs^])
+        [prefix color-prefs: framework:color-prefs^]
+        [prefix finder: framework:finder^])
 
 (export (rename framework:scheme^
                 [-text-mode<%> text-mode<%>]
@@ -1151,7 +1152,7 @@
     (define/override (on-enable-surrogate text)
       (send text begin-edit-sequence)
       (super on-enable-surrogate text)
-      (send (send text get-keymap) chain-to-keymap keymap #t)
+      (send (send text get-keymap) chain-to-keymap keymap #f)
       
       ;; I don't know about these editor flag settings.
       ;; maybe they belong in drscheme?
@@ -1179,6 +1180,11 @@
            (values lexeme 'keyword paren start end))
           (else
            (values lexeme type paren start end)))))
+    
+    (define/override (put-file text sup directory default-name)
+      (parameterize ([finder:default-extension "ss"])
+        ;; don't call the surrogate's super, since it sets the default extension
+        (sup directory default-name)))
     
     (super-new (get-token (lambda (in) (scheme-lexer-wrapper in)))
                (token-sym->style short-sym->style-name)
@@ -1219,18 +1225,7 @@
 (define text-mode% (text-mode-mixin color:text-mode%))
 
 
-;;                                 ;;                                        
-;                                  ;                                        
-;                                  ;                                        
-;;;    ;;;   ; ;;    ;;;  ;;; ;    ;;;          ;  ;;   ;;;  ;;; ;;;;;; ;   ;;;;  ; ;;;  
-;   ;  ;   ;  ;;  ;  ;   ;  ; ; ;  ;   ;         ; ;    ;   ;  ;   ;  ; ; ;      ;  ;   ; 
-;;;   ;      ;   ;  ;;;;;  ; ; ;  ;;;;;         ;;     ;;;;;  ;   ;  ; ; ;   ;;;;  ;   ; 
-;  ;      ;   ;  ;      ; ; ;  ;             ; ;    ;       ; ;   ; ; ;  ;   ;  ;   ; 
-;   ;  ;   ;  ;   ;  ;   ;  ; ; ;  ;   ;         ;  ;   ;   ;   ;;;   ; ; ;  ;   ;  ;   ; 
-;;;    ;;;  ;;; ;;;  ;;;  ;; ; ;;  ;;;         ;;   ;;  ;;;     ;   ;; ; ;;  ;;; ; ;;;;  
-;                  ;     
-;                  ;     
-;;                  ;;;    
+
 (define (setup-keymap keymap)
   (let ([add-pos-function
          (λ (name call-method)
@@ -1339,13 +1334,17 @@
       
       (map-meta "right" "forward-sexp")
       (map "a:right" "forward-sexp")
+      (map "m:right" "forward-sexp")
       (map-meta "s:right" "select-forward-sexp")
       (map "a:s:right" "select-forward-sexp")
+      (map "m:s:right" "select-forward-sexp")
       
       (map-meta "left" "backward-sexp")
       (map "a:left" "backward-sexp")
+      (map "m:left" "backward-sexp")
       (map-meta "s:left" "select-backward-sexp")
       (map "a:s:left" "select-backward-sexp")
+      (map "m:s:left" "select-backward-sexp")
       
       (map-meta "return" "do-return")
       (map-meta "s:return" "do-return")
@@ -1662,6 +1661,7 @@
     
     (define-values (ok-button cancel-button)
       (gui-utils:ok/cancel-buttons bp confirm-callback cancel-callback (string-constant ok) (string-constant cancel)))
+    (send tb focus)
     (send f show #t)
     answers)
   

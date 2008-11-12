@@ -46,8 +46,8 @@
         (send (get-top-level-window) set-info-canvas (and on? this))
         (when on?
           (send (get-top-level-window) update-info)))
-      (define/override (set-editor m)
-        (super set-editor m)
+      (define/override (set-editor m [redraw? #t])
+        (super set-editor m redraw?)
         (let ([tlw (get-top-level-window)])
           (when (eq? this (send tlw get-info-canvas))
             (send tlw update-info))))

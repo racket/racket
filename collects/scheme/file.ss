@@ -10,7 +10,18 @@
 
          fold-files
          find-files
-         pathlist-closure)
+         pathlist-closure
+
+         file->string
+         file->bytes
+         file->value
+         file->lines
+         file->bytes-lines
+         display-to-file
+         write-to-file
+         display-lines-to-file)
+
+(require "private/portlines.ss")
 
 ;; utility: sorted dirlist so functions are deterministic
 (define (sorted-dirlist [dir (current-directory)])
@@ -331,3 +342,95 @@
                 (loop2 base (if (or (member base r) (member base paths))
                                 new (cons base new)))
                 (loop (cdr paths) (append (reverse new) r))))))))
+
+(define (check-path who f)
+  (unless (path-string? f)
+    (raise-type-error who "path string" f)))
+
+(define (check-file-mode who file-mode)
+  (unless (memq file-mode '(binary text))
+    (raise-type-error who "'binary or 'text" file-mode)))
+
+(define (file->x who f file-mode read-x x-append)
+  (check-path who f)
+  (check-file-mode who file-mode)
+  (let ([sz (file-size f)])
+    (call-with-input-file* 
+     f 
+     #:mode file-mode
+     (lambda (in)
+       ;; There's a good chance that `file-size' gets all the data:
+       (let ([s (read-x sz in)])
+         ;; ... but double-check:
+         (let ([more (let loop ()
+                       (let ([l (read-x 4096 in)])
+                         (if (eof-object? l)
+                             null
+                             (cons l (loop)))))])
+           (if (null? more)
+               s
+               (apply x-append (cons s more)))))))))
+
+(define (file->string f #:mode [mode 'binary])
+  (file->x 'file->string f mode read-string string-append))
+
+(define (file->bytes f #:mode [mode 'binary])
+  (file->x 'file->bytes f mode read-bytes bytes-append))
+
+(define (file->value f #:mode [file-mode 'binary])
+  (check-path 'file->value f)
+  (check-file-mode 'file->value file-mode)
+  (let ([sz (file-size f)])
+    (call-with-input-file* 
+     f 
+     #:mode file-mode
+     read)))
+
+(define (file->x-lines who f line-mode file-mode read-line)
+  (check-path who f)
+  (check-mode who line-mode)
+  (check-file-mode who file-mode)
+  (call-with-input-file* 
+   f 
+   #:mode file-mode
+   (lambda (p) (port->x-lines who p line-mode read-line))))
+
+(define (file->lines f #:line-mode [line-mode 'any] #:mode [file-mode 'binary])
+  (file->x-lines 'file->lines f line-mode file-mode read-line))
+
+(define (file->bytes-lines f #:line-mode [line-mode 'any] #:mode [file-mode 'binary])
+  (file->x-lines 'file->bytes-lines f line-mode file-mode read-bytes-line))
+
+(define (->file who f mode exists write)
+  (unless (path-string? f)
+    (raise-type-error who "path string" f))
+  (unless (memq mode '(binary text))
+    (raise-type-error who "'binary or 'text" mode))
+  (unless (memq exists '(error append update replace truncate truncate/replace))
+    (raise-type-error who "'error, 'append, 'update, 'replace, 'truncate, or 'truncate/replace" exists))
+  (call-with-output-file* 
+   f
+   #:mode mode
+   #:exists exists
+   write))
+
+(define (display-to-file s f 
+                         #:mode [mode 'binary]
+                         #:exists [exists 'error])
+  (->file 'display-to-file f mode exists (lambda (p) (display s p))))
+
+(define (write-to-file s f 
+                       #:mode [mode 'binary]
+                       #:exists [exists 'error])
+  (->file 'write-to-file f mode exists (lambda (p) (write s p))))
+
+(define (display-lines-to-file l f 
+                               #:mode [mode 'binary]
+                               #:exists [exists 'error]
+                               #:separator [newline #"\n"])
+  (unless (list? l)
+    (raise-type-error 'display-lines-to-file "list" l))
+  (->file 'display-lines-to-file f mode exists
+          (lambda (p)
+            (do-lines->port l p newline))))
+

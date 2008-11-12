@@ -8,15 +8,7 @@
       TEST = 0
       GENERATIONS --- zero or non-zero
       designate_modified --- when GENERATIONS is non-zero
-      my_qsort (for alloc_cache.c)
-      LOGICALLY_ALLOCATING_PAGES(len)
-      ACTUALLY_ALLOCATING_PAGES(len)
-      LOGICALLY_FREEING_PAGES(len)
-      ACTUALLY_FREEING_PAGES(len)
    Optional:
-      CHECK_USED_AGAINST_MAX(len)
-      GCPRINT
-      GCOUTF
       DONT_NEED_MAX_HEAP_SIZE --- to disable a provide
 */
 
@@ -34,9 +26,12 @@
 # include <pthread.h>
 #endif
 
+# if GENERATIONS
+static int designate_modified(void *p);
+# endif
+# define TEST 0
 #ifndef TEST
 # define TEST 1
-# include "my_qsort.c"
 int designate_modified(void *p);
 #endif
 
@@ -49,18 +44,6 @@ int designate_modified(void *p);
 # define ARCH_THREAD_STATE i386_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT i386_THREAD_STATE_COUNT
 #endif
-
-#ifndef GCPRINT
-# define GCPRINT fprintf
-# define GCOUTF stderr
-#endif
-#ifndef CHECK_USED_AGAINST_MAX
-# define CHECK_USED_AGAINST_MAX(x) /* empty */
-#endif
-
-/* Forward declarations: */
-inline static void *find_cached_pages(size_t len, size_t alignment, int dirty_ok);
-static void free_actual_pages(void *p, size_t len, int zeroed);
 
 /* the structure of an exception msg and its reply */
 typedef struct rep_msg {
@@ -93,81 +76,27 @@ static mach_port_t task_self = 0;
 static mach_port_t exc_port = 0;
 
 /* the VM subsystem as defined by the GC files */
-static void *do_malloc_pages(size_t len, size_t alignment, int dirty_ok)
+static void *os_vm_alloc_pages(size_t len)
 {
   kern_return_t retval;
-  size_t extra = 0;
   void *r;
 
   if(!task_self) task_self = mach_task_self();
 
-  CHECK_USED_AGAINST_MAX(len);
-  
   /* round up to the nearest page: */
   if(len & (page_size - 1))
     len += page_size - (len & (page_size - 1));
 
-  r = find_cached_pages(len, alignment, dirty_ok);
-  if (r)
-    return r;
-
-  extra = alignment;
-
-  retval = vm_allocate(task_self, (vm_address_t*)&r, len + extra, TRUE);
+  retval = vm_allocate(task_self, (vm_address_t*)&r, len, TRUE);
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "Couldn't allocate memory: %s\n", mach_error_string(retval));
     abort();
   }
 
-  if(extra) {
-    /* we allocated too large so we can choose the alignment */
-    void *real_r;
-    long pre_extra;
-
-    real_r = (void*)(((unsigned long)r + (alignment-1)) & (~(alignment-1)));
-    pre_extra = real_r - r;
-    if(pre_extra) {
-      retval = vm_deallocate(task_self, (vm_address_t)r, pre_extra);
-      if(retval != KERN_SUCCESS) {
-	GCPRINT(GCOUTF, "WARNING: couldn't deallocate pre-extra: %s\n",
-	       mach_error_string(retval));
-      }
-    }
-    if(pre_extra < extra) {
-      if (!pre_extra) {
-	/* Instead of actually unmapping, put it in the cache, and there's
-	   a good chance we can use it next time: */
-	ACTUALLY_ALLOCATING_PAGES(extra);
-	free_actual_pages(real_r + len, extra, 1);
-      } else {
-	retval = vm_deallocate(task_self, (vm_address_t)real_r + len, 
-			       extra - pre_extra);
-	if(retval != KERN_SUCCESS) {
-	  GCPRINT(GCOUTF, "WARNING: couldn't deallocate post-extra: %s\n",
-		  mach_error_string(retval));
-	}
-      }
-    }
-    r = real_r;
-  }
-
-  ACTUALLY_ALLOCATING_PAGES(len);
-  LOGICALLY_ALLOCATING_PAGES(len);
-
   return r;
 }
 
-static void *malloc_pages(size_t len, size_t alignment)
-{
-  return do_malloc_pages(len, alignment, 0);
-}
-
-static void *malloc_dirty_pages(size_t len, size_t alignment)
-{
-  return do_malloc_pages(len, alignment, 1);
-}
-
-static void system_free_pages(void *p, size_t len)
+static void os_vm_free_pages(void *p, size_t len)
 {
   kern_return_t retval;
 
@@ -178,7 +107,7 @@ static void system_free_pages(void *p, size_t len)
   }
 }
 
-static void protect_pages(void *p, size_t len, int writeable)
+static void vm_protect_pages(void *p, size_t len, int writeable)
 {
   kern_return_t retval;
 
@@ -198,16 +127,13 @@ static void protect_pages(void *p, size_t len, int writeable)
 #include "alloc_cache.c"
 
 #ifndef DONT_NEED_MAX_HEAP_SIZE
-typedef int64_t size_type;
 
 static unsigned long determine_max_heap_size()
 {
-  struct rlimit *rlim = malloc(sizeof(struct rlimit));
-  size_type retval = 0;
+  struct rlimit rlim;
 
-  getrlimit(RLIMIT_RSS, rlim);
-  retval = rlim->rlim_cur; free(rlim);
-  return (retval == RLIM_INFINITY) ? (unsigned long)-1 : retval;
+  getrlimit(RLIMIT_RSS, &rlim);
+  return (rlim.rlim_cur == RLIM_INFINITY) ? (unsigned long)-1 : rlim.rlim_cur;
 }
 #endif
 
@@ -418,11 +344,11 @@ char *big_page = NULL;
 int designate_modified(void *p)
 {
   if((p >= normal_page) && (p < (normal_page + MPAGE_SIZE))) {
-    protect_pages(p, MPAGE_SIZE, 1);
+    vm_protect_pages(p, MPAGE_SIZE, 1);
     return 1;
   }
   if((p >= big_page) && (p < (big_page + BPAGE_SIZE))) {
-    protect_pages(p, BPAGE_SIZE, 1);
+    vm_protect_pages(p, BPAGE_SIZE, 1);
     return 1;
   }
   printf("Unrecognized write: %p\n", p);
@@ -433,14 +359,14 @@ int main(int argc, char **argv)
 {
   macosx_init_exception_handler();
   printf("Allocating test pages:\n");
-  normal_page = malloc_pages(MPAGE_SIZE, MPAGE_SIZE);
+  normal_page = vm_malloc_pages(MPAGE_SIZE, MPAGE_SIZE,0);
   printf("  ... normal page at %p\n", normal_page);
-  big_page = malloc_pages(BPAGE_SIZE, MPAGE_SIZE);
+  big_page = vm_malloc_pages(BPAGE_SIZE, MPAGE_SIZE,0);
   printf("  ... big page at %p\n", big_page);
   printf("Setting protection on test pages\n");
-  protect_pages(normal_page, MPAGE_SIZE, 0);
+  vm_protect_pages(normal_page, MPAGE_SIZE, 0);
   printf("  ... normal page %p set\n", normal_page);
-  protect_pages(big_page, MPAGE_SIZE, 0);
+  vm_protect_pages(big_page, MPAGE_SIZE, 0);
   printf("  ... big page %p set\n", big_page);
   printf("Writing to test pages\n");
   normal_page[2] = 'A';
@@ -449,9 +375,9 @@ int main(int argc, char **argv)
   printf("  ... normal_page %p's second byte is %c\n", normal_page, normal_page[2]);
   printf("  ... big_page %p's second byte is %c\n", big_page, big_page[2]);
   printf("Freeing test pages:\n");
-  free_pages(normal_page, MPAGE_SIZE);
+  vm_free_pages(normal_page, MPAGE_SIZE);
   printf("  ... freed normal page\n");
-  free_pages(big_page, MPAGE_SIZE);
+  vm_free_pages(big_page, MPAGE_SIZE);
   printf("  ... freed big page\n");
 }
 #endif

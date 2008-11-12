@@ -43,7 +43,7 @@ operations:
  @item{Allows the @scheme["/conf/refresh-passwords"] URL to refresh the password file.}
  @item{Allows the @scheme["/conf/collect-garbage"] URL to call the garbage collector.}
  @item{Allows the @scheme["/conf/refresh-servlets"] URL to refresh the servlets cache.}
- @item{Execute servlets under the @scheme["/servlets/"] URL in the given servlet root directory.}
+ @item{Execute servlets in the mapping URLs to the given servlet root directory under htdocs.}
  @item{Serves files under the @scheme["/"] URL in the given htdocs directory.}
 ]
 

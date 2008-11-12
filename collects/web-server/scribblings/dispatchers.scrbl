@@ -84,19 +84,19 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 @filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
 
-@defthing[url-path/c contract?]{
+@defthing[url->path/c contract?]{
  This contract is equivalent to @scheme[((url?) . ->* . (path? (listof path-element?)))].
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
 @defproc[(make-url->path (base path?))
-         url-path/c]{
+         url->path/c]{
  The @scheme[url-path/c] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
  do not escape the @scheme[base] and removes them silently otherwise.}
 
-@defproc[(make-url->valid-path (url->path url->path?))
-         url->path?]{
+@defproc[(make-url->valid-path (url->path url->path/c))
+         url->path/c]{
  Runs the underlying @scheme[url->path], but only returns if the path
  refers to a file that actually exists. If it is does not, then the suffix
  elements of the URL are removed until a file is found. If this never occurs,
@@ -105,6 +105,15 @@ URLs to paths on the filesystem.
  This is primarily useful for dispatchers that allow path information after
  the name of a service to be used for data, but where the service is represented
  by a file. The most prominent example is obviously servlets.}
+                    
+@defproc[(filter-url->path [regex regexp?]
+                                 [url->path url-path/c])
+         url->path/c]{
+ Runs the underlying @scheme[url->path] but will only return if the path, when considered as a string,
+ matches the @scheme[regex]. This is useful to disallow strange files, like GIFs, from being considered
+ servlets when using the servlet dispatchers. It will return a @scheme[exn:fail:filesystem:exists?] exception if
+ the path does not match.
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-sequencer.ss"]{Sequencing}
@@ -119,7 +128,6 @@ URLs to paths on the filesystem.
  then it calls @scheme[next-dispatcher] itself.
 }}
 
-@; XXX Kind of timeout that is proportional to bindings
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-timeout.ss"]{Timeouts}
 @a-dispatcher[web-server/dispatchers/dispatch-timeout
@@ -144,7 +152,6 @@ URLs to paths on the filesystem.
  object, and outputs the response to the connection.
 }}
 
-@; XXX Change filtering to take predicate, rather than regexp
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-filter.ss"]{Filtering Requests}
 @a-dispatcher[web-server/dispatchers/dispatch-filter
@@ -187,25 +194,31 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defthing[paren-format format-req/c]{
  Formats a request by:
  @schemeblock[
-  (format "~s~n"
-            (list 'from (request-client-ip req)
-                  'to (request-host-ip req)
-                  'for (url->string (request-uri req)) 'at
-                  (date->string (seconds->date (current-seconds)) #t)))
- ]}
+  (format 
+   "~s~n"
+   (list 'from (request-client-ip req)
+         'to (request-host-ip req)
+         'for (url->string (request-uri req)) 'at
+         (date->string
+          (seconds->date (current-seconds)) #t)))
+  ]}
 
 @defthing[extended-format format-req/c]{
  Formats a request by:
  @schemeblock[
-  (format "~s~n"
-            `((client-ip ,(request-client-ip req))
-              (host-ip ,(request-host-ip req))
-              (referer ,(let ([R (headers-assq* #"Referer" (request-headers/raw req))])
-                          (if R
-                              (header-value R)
-                              #f)))
-              (uri ,(url->string (request-uri req)))
-              (time ,(current-seconds))))
+  (format 
+   "~s~n"
+   `((client-ip ,(request-client-ip req))
+     (host-ip ,(request-host-ip req))
+     (referer 
+      ,(let ([R (headers-assq* 
+                 #"Referer"
+                 (request-headers/raw req))])
+         (if R
+             (header-value R)
+             #f)))
+     (uri ,(url->string (request-uri req)))
+     (time ,(current-seconds))))
  ]}
 
 @defthing[apache-default-format format-req/c]{
@@ -232,24 +245,42 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that performs HTTP Basic authentication filtering.}]{
 
-@defproc[(make [#:password-file password-file path-string? "passwords"]
+@(require (for-label web-server/private/request-structs
+                     web-server/private/response-structs
+                     net/url
+                     web-server/configuration/responders))
+
+@defthing[denied?/c contract?]{
+ Equivalent to @scheme[(request? . -> . (or/c false/c string?))].
+ The return is the authentication realm as a string if the request is not authorized and 
+ @scheme[#f] if the request @emph{is} authorized.
+}         
+                                                                         
+@defproc[(make [denied? denied?/c]
                [#:authentication-responder
                 authentication-responder
-                ((url url?) (header header?) . -> . response?)
+                (url? header? . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
-         (values (-> void)
-                 dispatcher/c)]{
- The first returned value is a procedure that refreshes the password
- file used by the dispatcher.
-
- The dispatcher that is returned does the following:
- Checks if the request contains Basic authentication credentials, and that
- they are included in @scheme[password-file]. If they are not,
+         dispatcher/c]{
+ A dispatcher that checks if the request is denied based on @scheme[denied?]. If so, then 
  @scheme[authentication-responder] is called with a @scheme[header] that
- requests credentials. If they are, then @scheme[next-dispatcher] is
+ requests credentials. If not, then @scheme[next-dispatcher] is
  invoked.
+}
+                      
+@defthing[authorized?/c contract?]{
+ Equivalent to @scheme[(string? (or/c false/c bytes?) (or/c false/c bytes?) . -> . (or/c false/c string?))].
+ The input is the URI as a string and the username and passwords as bytes.
+ The return is the authentication realm as a string if the user is not authorized and 
+ @scheme[#f] if the request @emph{is} authorized.
+}       
+                      
+@defproc[(make-basic-denied?/path [password-file path-string?])
+         (values (-> void)
+                 authorized?/c)]{
+ Creates an authorization procedure based on the given password file. The first returned value 
+ is a procedure that refreshes the password cache used by the authorization procedure.
 
- @; XXX Separate out password-file work
  @scheme[password-file] is parsed as:
  @schemeblock[(list ([domain : string?]
                      [path : string-regexp?]
@@ -281,7 +312,7 @@ a URL that refreshes the password file, servlet cache, etc.}
              @elem{allows files to be served.
                 It defines a dispatcher construction procedure.}]{
 
-@defproc[(make [#:url->path url->path url->path?]
+@defproc[(make [#:url->path url->path url->path/c]
                [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
          dispatcher/c]{
@@ -297,18 +328,24 @@ a URL that refreshes the password file, servlet cache, etc.}
  This dispatcher supports HTTP Range GET requests and HEAD requests.}}
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-servlets.ss"]{Serving Scheme Servlets}
+@section[#:tag "dispatch-servlets.ss"]{Serving Servlets}
 @a-dispatcher[web-server/dispatchers/dispatch-servlets
               @elem{defines a dispatcher constructor
-                    that runs servlets written in Scheme.}]{
+                    that runs servlets.}]{
+          
+@defthing[url->servlet/c contract?]{Equivalent to @scheme[(url? . -> . servlet?)]}
 
-@; XXX Remove config:scripts
-@defproc[(make [config:scripts (box/c cache-table?)]
-               [#:url->path url->path url->path?]
-               [#:make-servlet-namespace
-                make-servlet-namespace
-                make-servlet-namespace?
-                (make-make-servlet-namespace)]
+@defproc[(make-cached-url->servlet
+          [url->path url->path/c]
+          [path->serlvet path->servlet/c])         
+         (values (-> void)
+                 url->servlet/c)]{
+ The first return value flushes the cache. 
+ The second is a procedure that uses @scheme[url->path] to resolve the URL to a path, then uses @scheme[path->servlet] to resolve
+ that path to a servlet, caching the results in an internal table.
+}
+                        
+@defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
                 ((url url?) (exn exn?) . -> . response?)
@@ -316,53 +353,14 @@ a URL that refreshes the password file, servlet cache, etc.}
                [#:responders-servlet
                 responders-servlet
                 ((url url?) (exn exn?) . -> . response?)
-                servlet-error-responder]
-               [#:timeouts-default-servlet
-                timeouts-default-servlet
-                integer?
-                30])
-         (values (-> void)
-                 dispatcher/c)]{
- The first returned value is a procedure that refreshes the servlet
- code cache.
-
- The dispatcher does the following:
- If the request URL contains a continuation reference, then it is invoked with the
- request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
- The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
- If this fails then @scheme[responders-servlet-loading] is used to format a response
- with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
- If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
- used to format a response with the exception.
-
- Servlets that do not specify timeouts are given timeouts according to @scheme[timeouts-default-servlet].
-}}
-
-@; ------------------------------------------------------------
-@section[#:tag "dispatch-lang.ss"]{Serving Web Language Servlets}
-@a-dispatcher[web-server/dispatchers/dispatch-lang
-             @elem{defines a dispatcher constructor
-                   that runs servlets written in the Web Language.}]{
-
-@defproc[(make [#:url->path url->path url->path?]
-               [#:make-servlet-namespace make-servlet-namespace
-                                         make-servlet-namespace?
-                                         (make-make-servlet-namespace)]
-               [#:responders-servlet-loading responders-servlet-loading 
-                                             ((url url?) (exn exn?) . -> . response?)
-                                             servlet-loading-responder]
-               [#:responders-servlet responders-servlet
-                                     ((url url?) (exn exn?) . -> . response?)
-                                     servlet-error-responder])
+                servlet-error-responder])
          dispatcher/c]{
- If the request URL contains a serialized continuation, then it is invoked with the
- request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
- The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
- If this fails then @scheme[responders-servlet-loading] is used to format a response
- with the exception. If it succeeds, then @scheme[start] export of the module is invoked.
- If there is an error when a servlet is invoked, then @scheme[responders-servlet] is
- used to format a response with the exception.
-}}
+ This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
+ If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
+ @scheme[responders-servlet].
+}
+                      
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-stat.ss"]{Statistics}

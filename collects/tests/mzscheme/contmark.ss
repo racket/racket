@@ -688,6 +688,21 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test #f call-with-immediate-continuation-mark 'x (lambda (v) v))
+(test 10 call-with-immediate-continuation-mark 'x (lambda (v) v) 10)
+(test 12 'cwicm (with-continuation-mark 'x 12 (call-with-immediate-continuation-mark 'x (lambda (v) v))))
+(test '(#f) 'cwiwcm (with-continuation-mark 'x 12 (list (call-with-immediate-continuation-mark 'x (lambda (v) v)))))
+(test 12 'cwicm (with-continuation-mark 'x 12 
+                  (with-continuation-mark 'y 13
+                    (call-with-immediate-continuation-mark 'x (lambda (v) v)))))
+(test 13 'cwicm (with-continuation-mark 'x 12 
+                  (with-continuation-mark 'y 13
+                    (call-with-immediate-continuation-mark 'y (lambda (v) v)))))
+(test 14 'cwicm (with-continuation-mark 'x 12 
+                  (with-continuation-mark 'y 13
+                    (with-continuation-mark 'x 14
+                      (call-with-immediate-continuation-mark 'x (lambda (v) v))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

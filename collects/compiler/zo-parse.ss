@@ -544,7 +544,8 @@
                                             (if kind 'marked 'normal)
                                             set-id
                                             (map (lambda (u)
-                                                   (let ([just-phase? (number? (cddr u))])
+                                                   (let ([just-phase? (let ([v (cddr u)])
+                                                                        (or (number? v) (not v)))])
                                                      (let-values ([(exns prefix)
                                                                    (if just-phase?
                                                                        (values null #f)

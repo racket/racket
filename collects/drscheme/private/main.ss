@@ -477,6 +477,39 @@
                                             "text:ports out"
                                             (string-constant repl-out-color))))
 
+(let* ([find-frame
+        (λ (item)
+          (let loop ([item item])
+            (cond
+              [(is-a? item top-level-window<%>)
+               (and (is-a? item drscheme:unit:frame%)
+                    item)]
+              [(is-a? item menu-item<%>)
+               (loop (send item get-parent))]
+              [(is-a? item menu-bar%)
+               (loop (send item get-frame))]
+              [else #f])))]
+       [dc
+        (λ (item)
+          (let ([frame (find-frame item)])
+            (send item enable (and frame (> (length (send frame get-tabs)) 1)))))])
+  (group:add-to-windows-menu
+   (λ (windows-menu)
+     (new menu-item%
+          [parent windows-menu] [label (string-constant prev-tab)] [shortcut #\[]
+          [demand-callback dc]
+          [callback (λ (item _) 
+                      (let ([frame (find-frame item)])
+                        (when frame
+                          (send frame prev-tab))))])
+     (new menu-item% [parent windows-menu] [label (string-constant next-tab)] [shortcut #\]]
+          [demand-callback dc]
+          [callback (λ (item _) 
+                      (let ([frame (find-frame item)])
+                        (when frame
+                          (send frame next-tab))))])
+     (new separator-menu-item% [parent windows-menu]))))
+
 ;; Check for any files lost last time.
 ;; Ignore the framework's empty frames test, since
 ;;   the autosave information window may appear and then

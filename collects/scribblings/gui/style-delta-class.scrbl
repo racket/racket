@@ -444,7 +444,10 @@ Makes the delta encode a background color change to match the absolute
  @scheme[0.0] in the result of @method[style-delta%
  get-background-mult], and it sets the additive values in the result
  of @method[style-delta% get-background-add] to the specified color's
- values.  The return value of the method is the delta itself.
+ values.  In addition, it also disables transparent text backing by
+ setting @scheme[transparent-text-backing-on] to @scheme[#f] and
+ @scheme[transparent-text-backing-off] to @scheme[#t].
+ The return value of the method is the delta itself.
 
 For the case that a string color name is supplied, see
  @scheme[color-database<%>].

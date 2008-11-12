@@ -6,6 +6,7 @@
  '#%paramz
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise
+ (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error))
 
 [raise (Univ . -> . (Un))]
@@ -344,18 +345,19 @@
 [bitwise-xor (null N . ->* . N)]
 
 [vector (-poly (a) (->* (list) a (-vec a)))]
-[make-string (cl-> [(N) -String] [(N -Char) -String])]
+[make-string (cl-> [(-Integer) -String] [(-Integer -Char) -String])]
 [abs (N . -> . N)]
-[substring (cl-> [(-String N) -String]
-                 [(-String N N) -String])]
-[string-length (-String . -> . N)]
-[string-set! (-String N -Char . -> . -Void)]
-[make-vector (-poly (a) (cl-> [(N) (-vec N)] [(N a) (-vec a)]))]
+[substring (cl-> [(-String -Integer) -String]
+                 [(-String -Integer -Integer) -String])]
+[string-length (-String . -> . -Integer)]
+[string-set! (-String -Integer -Char . -> . -Void)]
+[make-vector (-poly (a) (cl-> [(-Integer) (-vec -Integer)]
+			      [(-Integer a) (-vec a)]))]
 
 [file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
 [symbol->string (Sym . -> . -String)]
-[vector-length (-poly (a) ((-vec a) . -> . N))]
+[vector-length (-poly (a) ((-vec a) . -> . -Integer))]
 
 [call-with-input-file (-poly (a) (cl-> [(-String (-Port . -> . a))  a]
                                        [(-String (-Port . -> . a) Sym)  a]))]
@@ -365,9 +367,9 @@
 [current-output-port (-Param -Output-Port -Output-Port)]
 [current-error-port (-Param -Output-Port -Output-Port)]
 [current-input-port (-Param -Input-Port -Input-Port)]
-[round (N . -> . N)]
-[seconds->date (N . -> . (make-Name #'date))]
-[current-seconds (-> N)]
+[round (N . -> . -Integer)]
+[seconds->date (-Integer . -> . (make-Name #'date))]
+[current-seconds (-> -Integer)]
 [path->string (-> -Path -String)]
 
 [link-exists? (-> -Pathlike B)]
@@ -464,7 +466,7 @@
 [datum->syntax (cl->*
                 (-> (-opt (-Syntax Univ)) Sym (-Syntax Sym))
                 (-> (-opt (-Syntax Univ)) Univ (-Syntax Univ)))]
-[syntax->datum (-poly (a) (-> (-Syntax a) Univ))]
+[syntax->datum (-> (-Syntax Univ) Univ)]
 [syntax-e (-poly (a) (-> (-Syntax a) a))]
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [identifier? (make-pred-ty (-Syntax Sym))]
@@ -477,3 +479,5 @@
 
 [eof (-val eof)]
 [read-accept-reader (-Param B B)]
+
+[maybe-print-message (-String . -> . -Void)]

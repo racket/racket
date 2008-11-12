@@ -1,6 +1,7 @@
 #lang web-server
 (require web-server/lang/web-cell-component)
-(provide start)
+(define interface-version 'stateless)
+(provide start interface-version)
 
 (define (start initial-request)
   ; A top-level frame must exist
