@@ -68,6 +68,10 @@ cgc:
 	cd dynsrc; $(MAKE) dynlib3m
 	cd gc2; $(MAKE) ../mzscheme@MMM@
 
+compact:
+	$(MAKE) 3m
+	cd gc2; $(MAKE) ../mzscheme_compact_gc
+
 both:
 	$(MAKE) cgc
 	$(MAKE) 3m

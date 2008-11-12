@@ -1002,7 +1002,7 @@ list_p_prim (int argc, Scheme_Object *argv[])
 
 #define LIST_BODY(INIT)                          \
   int i;                                         \
-  Scheme_Object *l;                              \
+  GC_CAN_IGNORE Scheme_Object *l;                \
   INIT;                                          \
   for (i = argc ; i--; ) {                       \
     l = cons(argv[i], l);                        \
