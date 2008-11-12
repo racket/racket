@@ -325,7 +325,7 @@
               (begin (check-below ret-ty expected) (ret expected))
               ret-ty))]
        [(tc-result: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
-    [(tc-result: t) (tc-error/expr #:return (or expected (Un)) "send: expected a class instance, got ~a" t)]))
+    [(tc-result: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
 
 ;; type-check a list of exprs, producing the type of the last one.
 ;; if the list is empty, the type is Void.
