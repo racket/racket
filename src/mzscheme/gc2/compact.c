@@ -174,6 +174,7 @@ void GC_register_root_custodian(void *_c) {}
 Type_Tag weak_box_tag = 42; /* set by client */
 Type_Tag ephemeron_tag = 42; /* set by client */
 Type_Tag weak_array_tag  = 42; /* set by client */
+Type_Tag pair_tag  = 42; /* set by client */
 
 #define gc_on_free_list_tag 511
 
@@ -460,6 +461,7 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
   weak_box_tag = weakbox;
   ephemeron_tag = ephemeron;
   weak_array_tag = weakarray;
+  pair_tag = pair;
 
   gc = malloc(sizeof(CompactGC));
   GC = gc;
