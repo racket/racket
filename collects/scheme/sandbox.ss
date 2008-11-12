@@ -130,7 +130,7 @@
                             (and (perm<=? needed (car perm))
                                  (regexp-match (cadr perm) bpath)))
                           (sandbox-path-permissions))
-             (error what "~a access denied for ~a"
+             (error what "`~a' access denied for ~a"
                     (apply string-append
                            (add-between (map symbol->string modes) "+"))
                     path)))))
