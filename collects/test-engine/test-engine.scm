@@ -129,17 +129,20 @@
         (unless test-info (setup-info 'check-base))
         (inner (void) run)))
     (define/public (summarize-results port)
-      (when (test-execute)
-        (unless test-display (setup-display #f #f))
-        (let ([result (send test-info summarize-results)])
-          (send test-display install-info test-info)
-          (case result
-            [(no-tests) (display-untested port)]
-            [(all-passed) (display-success port display-event-space
-                                           (+ (send test-info tests-run)
-                                              (send test-info checks-run)))]
-            [(mixed-results)
-             (display-results display-rep display-event-space)]))))
+      (cond
+        [(test-execute)
+         (unless test-display (setup-display #f #f))
+         (let ([result (send test-info summarize-results)])
+           (send test-display install-info test-info)
+           (case result
+             [(no-tests) (display-untested port)]
+             [(all-passed) (display-success port display-event-space
+                                            (+ (send test-info tests-run)
+                                               (send test-info checks-run)))]
+             [(mixed-results)
+              (display-results display-rep display-event-space)]))]
+        [else
+         (fprintf port "Tests disabled.\n")]))
 
     (define/private (display-success port event count)
       #;(when event
