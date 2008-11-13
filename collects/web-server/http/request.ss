@@ -173,7 +173,7 @@
                          [(list #f (list _ _ f0 f1))
                           (make-binding:form (or f0 f1) (apply bytes-append contents))]
                          [(list (list _ _ f00 f01) (list _ _ f10 f11))
-                          (make-binding:file (or f10 f11) (or f00 f01) (apply bytes-append contents))])])
+                          (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
                     (read-mime-multipart content-boundary in))
                #f)])]
        [else        

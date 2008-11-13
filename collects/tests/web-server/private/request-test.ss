@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang scheme
 (require (planet "util.ss" ("schematics" "schemeunit.plt" 2))
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          web-server/private/connection-manager
@@ -49,7 +49,7 @@
    (test-suite
     "Bindings"
     (test-equal? "Simple" (binding:form-value (bindings-assq #"key" (list (make-binding:form #"key" #"val")))) #"val")
-    (test-equal? "Simple (File)" (binding:file-content (bindings-assq #"key" (list (make-binding:file #"key" #"name" #"val")))) #"val")
+    (test-equal? "Simple (File)" (binding:file-content (bindings-assq #"key" (list (make-binding:file #"key" #"name" empty #"val")))) #"val")
     (test-false "Not present" (bindings-assq #"key" (list))))
    
    ; XXX This needs to be really extensive, see what Apache has

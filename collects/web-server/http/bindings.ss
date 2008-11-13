@@ -16,7 +16,7 @@
          [(struct binding:form (id value))
           (cons (lowercase-symbol! (bytes->string/utf-8 id))
                 (bytes->string/utf-8 value))]
-         [(struct binding:file (id fname value))
+         [(struct binding:file (id fname headers value))
           (cons (lowercase-symbol! (bytes->string/utf-8 id))
                 value)])
        (request-bindings/raw request)))

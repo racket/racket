@@ -40,9 +40,12 @@ The @web-server implements many HTTP RFCs that are provided by this module.
 }
 
 @defstruct[(binding:file binding) ([filename bytes?]
+                                   [headers (listof header?)]
                                    [content bytes?])]{
  Represents the uploading of the file @scheme[filename] with the id @scheme[id]
- and the content @scheme[content].
+ and the content @scheme[content], where @scheme[headers] are the additional headers from
+ the MIME envelope the file was in. (For example, the @scheme[#"Content-Type"] header may
+ be included by some browsers.)
 }
 
 @defproc[(bindings-assq [id bytes?]
