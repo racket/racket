@@ -5,7 +5,7 @@
 
 (provide xform)
 
-(define (xform quiet? src dest header-dirs #:keep-lines? keep-lines?)
+(define (xform quiet? src dest header-dirs #:keep-lines? [keep-lines? #f])
   (let ([exe (current-extension-compiler)]
         [flags (expand-for-compile-variant
                 (current-extension-preprocess-flags))]
