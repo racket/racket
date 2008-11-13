@@ -50,6 +50,7 @@
         (define-struct (braces seq) ())
         (define-struct (callstage-parens parens) ())
         (define-struct (creation-parens parens) ())
+        (define-struct (nosrc-parens parens) ())
         (define-struct (call tok) (func args live tag nonempty?)) ;; a converted function call
         (define-struct (block-push tok) (vars tag super-tag top?))
         (define-struct (note tok) (s))
@@ -985,6 +986,7 @@
         (hash-table-put! makers 'struct:braces (cons 'make-braces make-braces))
         (hash-table-put! makers 'struct:callstage-parens (cons 'make-callstage-parens make-callstage-parens))
         (hash-table-put! makers 'struct:creation-parens (cons 'make-creation-parens make-creation-parens))
+        (hash-table-put! makers 'struct:nosrc-parens (cons 'make-nosrc-parens make-nosrc-parens))
         (hash-table-put! makers 'struct:call (cons 'make-call make-call))
         (hash-table-put! makers 'struct:block-push (cons 'make-block-push make-block-push))
         (hash-table-put! makers 'struct:note (cons 'make-note make-note))
@@ -1095,15 +1097,26 @@
           (apply + (map (lambda (x)
                           (get-variable-size (cdr x)))
                         vars)))
+
+        (define (extract-src-tok v)
+          (cond
+           [(tok? v) v]
+           [(call? v) (extract-src-tok (call-func v))]
+           [else #f]))
         
-        (define (print-it e indent semi-newlines? ordered? line file)
+        (define (print-it e indent semi-newlines? ordered? line file keep-lines?)
           (let loop ([e e][prev #f][prevs null][old-line line][old-file file])
             (if (null? e)
               (values old-line old-file)
               (let* ([v (car e)]
-                     [line (or (and (tok? v) (tok-line v))
+                     [sv (extract-src-tok v)]
+                     [line (if keep-lines?
+                               (or (and sv (tok-line sv))
+                                   old-line)
                                old-line)]
-                     [file (or (and (tok? v) (tok-file v))
+                     [file (if keep-lines?
+                               (or (and sv (tok-file sv))
+                                   old-file)
                                old-file)]
                      [inc-line! (lambda () (set! line (add1 line)))])
                 (when keep-lines?
@@ -1136,7 +1149,9 @@
                                                        (tok? prev)
                                                        (memq (tok-n prev) '(for))))
                                              (or (braces? v) (callstage-parens? v))
-                                             line file)])
+                                             line file
+                                             (and keep-lines?
+                                                  (not (nosrc-parens? v))))])
                        (set! line l)
                        (set! file f))
                      (when (and next-indent (= next-indent subindent))
@@ -1184,7 +1199,9 @@
                              (display/indent v "), "))))
                    (let-values ([(l f)
                                  (print-it (append (call-func v) (list (call-args v))) 
-                                           indent #f #f line file)])
+                                           indent #f #f line file 
+                                           ;; Can't put srcloc within macro call:
+                                           #f)])
                      (set! line l)
                      (set! file f))
                    (display/indent v ")")]
@@ -2780,7 +2797,7 @@
                                                               #t]
                                                              [else #f])))
                                                     (list (make-tok DECL_RET_SAVE #f #f)
-                                                          (make-parens
+                                                          (make-nosrc-parens
                                                            "(" #f #f ")"
                                                            (list->seq setup-stack-return-type)))
                                                     null)
@@ -3875,7 +3892,7 @@
                                (or (tok-file (car sube))
                                    where))]
                     [sube (top-level sube where #t)])
-               (let-values ([(l f) (print-it sube 0 #t #f line file)])
+               (let-values ([(l f) (print-it sube 0 #t #f line file keep-lines?)])
                  (set! line l)
                  (set! file f))
                where))
