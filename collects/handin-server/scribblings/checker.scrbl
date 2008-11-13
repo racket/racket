@@ -333,6 +333,10 @@ code.}
 
   Checks that @scheme[id] is defined, and is bound to a procedure.}
 
+@defform[(!syntax id arity)]{
+
+  Checks that @scheme[id] is defined, and is bound as a macro.}
+
 @defform[(!procedure* expr arity)]{
 
   Similar to @scheme[!procedure] but omits the defined check, making
