@@ -15,6 +15,7 @@
            scheme/function
            scheme/path
            scheme/file
+           scheme/port
            scheme/cmdline
            scheme/promise
            scheme/bool
@@ -39,6 +40,7 @@
                          scheme/function
                          scheme/path
                          scheme/file
+                         scheme/port
                          scheme/cmdline
                          scheme/promise
                          scheme/bool

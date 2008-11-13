@@ -1,9 +1,14 @@
+Version 4.1.2.5
+Changed scheme to re-export scheme/port
+In scheme/port: added [call-]with-input-from-{string,bytes} and
+   [call-]with-output-to-{string,bytes}
+
 Version 4.1.2.4
 Added call-with-immediate-continuation-mark
 In scheme/port: added port->string, port->bytes, port->lines
    port->bytes-lines, and display-list
 In scheme/file: added file->string, file->bytes, file->lines,
-   file->value, file->bytes-lines, write-to-file, display-to-file, 
+   file->value, file->bytes-lines, write-to-file, display-to-file,
    and display-list-to-file
 
 Version 4.1.2.3
