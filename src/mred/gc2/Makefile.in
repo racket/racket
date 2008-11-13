@@ -66,8 +66,8 @@ MZMMM = $(MZMMM_@WXVARIANT@)
 XFORM_CMD = $(MZMMM) -cqu $(srcdir)/../../mzscheme/gc2/xform.ss --setup ../../mzscheme/gc2
 XFORM_CPP_ARGS = -I$(srcdir)/../../mzscheme/gc2 $(NOGCINC) $(XINCLUDE) $(OPTIONS) @PREFLAGS@ $(XFORM_INC_@WXVARIANT@) @JPEG_INC@ @ZLIB_INC@
 
-XFORMXX = $(XFORM_CMD) --cpp "$(CXXCPP) $(XFORM_CPP_ARGS)" -o
-XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" -o
+XFORMXX = $(XFORM_CMD) --cpp "$(CXXCPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
+XFORM = $(XFORM_CMD) --cpp "$(CPP) $(XFORM_CPP_ARGS)" @XFORMFLAGS@ -o
 XFORMDEP = $(srcdir)/../../mzscheme/gc2/xform.ss $(srcdir)/../../mzscheme/gc2/xform-mod.ss $(srcdir)/../../mzscheme/gc2/gc2.h
 
 WXBDIR=../../wxxt

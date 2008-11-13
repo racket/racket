@@ -9,6 +9,7 @@
 		 cpp
 		 file-in
 		 file-out
+                 keep-lines?
 		 palm? pgc? pgc-really?
 		 precompiling-header? precompiled-header
 		 show-info? output-depends-info?
@@ -1044,10 +1045,6 @@
         
         (define (display/indent v s)
           (when next-indent
-            ;; can't get pre-processor line directive to work
-            '(when (and v (tok-file v) (tok-line v))
-               (printf "# ~a ~s~n" (max 1 (- (tok-line v) 1)) (tok-file v)))
-            
             (display (make-string next-indent #\space))
             (set! next-indent #f))
           (display s))
@@ -1099,34 +1096,56 @@
                           (get-variable-size (cdr x)))
                         vars)))
         
-        (define (print-it e indent semi-newlines? ordered?)
-          (let loop ([e e][prev #f][prevs null])
-            (unless (null? e)
-              (let ([v (car e)])
+        (define (print-it e indent semi-newlines? ordered? line file)
+          (let loop ([e e][prev #f][prevs null][old-line line][old-file file])
+            (if (null? e)
+              (values old-line old-file)
+              (let* ([v (car e)]
+                     [line (or (and (tok? v) (tok-line v))
+                               old-line)]
+                     [file (or (and (tok? v) (tok-file v))
+                               old-file)]
+                     [inc-line! (lambda () (set! line (add1 line)))])
+                (when keep-lines?
+                  (unless (and (equal? line old-line)
+                               (equal? file old-file))
+                    (if (and (equal? file old-file)
+                             (line . > . old-line)
+                             ((- line old-line) . < . 10))
+                        (display (make-string (- line old-line) #\newline))
+                        (printf "\n# ~a \"~a\"\n" line file))
+                    (set! next-indent indent)))
                 (cond
                   [(pragma? v)
                    (let ([s (format "#pragma ~a" (pragma-s v))])
                      (unless (regexp-match re:boring s)
-                       (printf "\n~a\n\n" s)))]
+                       (printf "\n~a\n\n" s)
+                       (set! line (+ line 3))))]
                   [(seq? v)
                    (display/indent v (tok-n v))
                    (let ([subindent (if (braces? v)
                                         (begin
                                           (newline/indent (+ indent 2))
+                                          (inc-line!)
                                           (+ indent 2))
                                         indent)])
-                     (print-it (seq->list (seq-in v)) subindent
-                               (not (and (parens? v)
-                                         prev
-					 (tok? prev)
-                                         (memq (tok-n prev) '(for))))
-                               (or (braces? v) (callstage-parens? v)))
+                     (let-values ([(l f)
+                                   (print-it (seq->list (seq-in v)) subindent
+                                             (not (and (parens? v)
+                                                       prev
+                                                       (tok? prev)
+                                                       (memq (tok-n prev) '(for))))
+                                             (or (braces? v) (callstage-parens? v))
+                                             line file)])
+                       (set! line l)
+                       (set! file f))
                      (when (and next-indent (= next-indent subindent))
                        (set! next-indent indent)))
                    (display/indent #f (seq-close v))
                    (cond
                      [(braces? v)
-                      (newline/indent indent)]
+                      (newline/indent indent)
+                      (inc-line!)]
                      [(brackets? v)
                       (display/indent v " ")]
                      [(parens? v)
@@ -1135,12 +1154,15 @@
                                (memq (tok-n prev) '(if))
                                (or (null? (cdr e))
                                    (not (braces? (cadr e)))))
-                          (newline/indent (+ indent 2))
+                          (begin
+                            (newline/indent (+ indent 2))
+                            (inc-line!))
                           (display/indent v " "))]
                      [else (error 'xform "unknown brace: ~a" (caar v))])]
                   [(note? v)
                    (display/indent v (note-s v))
-                   (newline/indent indent)]
+                   (newline/indent indent)
+                   (inc-line!)]
                   [(call? v)
                    (if (not (call-nonempty? v))
                        (display/indent v "FUNCCALL_EMPTY(")
@@ -1160,7 +1182,11 @@
                                    (display/indent v ")"))
                                  (display/indent v "_"))
                              (display/indent v "), "))))
-                   (print-it (append (call-func v) (list (call-args v))) indent #f #f)
+                   (let-values ([(l f)
+                                 (print-it (append (call-func v) (list (call-args v))) 
+                                           indent #f #f line file)])
+                     (set! line l)
+                     (set! file f))
                    (display/indent v ")")]
                   [(block-push? v)
                    (let ([size (total-push-size (block-push-vars v))]
@@ -1175,15 +1201,18 @@
                        (display/indent v (format "BLOCK_SETUP~a((" (if (block-push-top? v) "_TOP" "")))
                        (push-vars (block-push-vars v) prev-add "")
                        (display/indent v "));")
-                       (newline))
+                       (newline)
+                       (inc-line!))
                      (printf "#~adefine ~a_COUNT (~a~a)~n" tabbing tag size prev-add)
+                     (inc-line!)
                      (printf "#~adefine SETUP_~a(x) " tabbing tag)
                      (cond
                        [(and (zero? size) (block-push-super-tag v)) 
                         (printf "SETUP_~a(x)" (block-push-super-tag v))]
                        [per-block-push? (printf "SETUP(~a_COUNT)" tag)]
                        [else (printf "x")])
-                     (newline/indent indent))]
+                     (newline/indent indent)
+                     (inc-line!))]
                   [(nested-setup? v)
                    (let ([tabbing (if (zero? indent)
                                       ""
@@ -1203,9 +1232,11 @@
                         (printf "#~aundef BLOCK_SETUP~n" tabbing)
                         (printf "#~aundef FUNCCALL~n" tabbing)
                         (printf "#~aundef FUNCCALL_EMPTY~n" tabbing)
-                        (printf "#~aundef FUNCCALL_AGAIN~n" tabbing)]))]
+                        (printf "#~aundef FUNCCALL_AGAIN~n" tabbing)])
+                     (set! line (+ 4 line)))]
                   [(memq (tok-n v) asm-commands)
                    (newline/indent indent)
+                   (inc-line!)
                    (display/indent v (tok-n v))
                    (display/indent v " ")]
                   [(and (or (eq? '|HIDE_FROM_XFORM| (tok-n v))
@@ -1235,8 +1266,9 @@
                      (display/indent v " "))
                    (when (and (eq? semi (tok-n v))
                               semi-newlines?)
-                     (newline/indent indent))])
-                (loop (cdr e) v (cons v prevs))))))
+                     (newline/indent indent)
+                     (inc-line!))])
+                (loop (cdr e) v (cons v prevs) line file)))))
         
         
         ;; prev-was-funcall? implements a last-ditch optimization: if
@@ -3079,7 +3111,6 @@
                                                [len (if last?
                                                         (length e)
                                                         (sub1 (length e)))])
-                                          (printf "/* this far ~a */~n" (tok-line (car e)))
                                           (let ([k (lift-in-arithmetic? (let loop ([e e])
                                                                           (if (null? ((if last?
                                                                                           cddr 
@@ -3831,7 +3862,9 @@
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
-        (let* ([e e-raw])
+        (let* ([e e-raw]
+               [line -inf.0]
+               [file #f])
           (set! e-raw #f) ;; to allow GC
           (foldl-statement
            e
@@ -3842,7 +3875,9 @@
                                (or (tok-file (car sube))
                                    where))]
                     [sube (top-level sube where #t)])
-               (print-it sube 0 #t #f)
+               (let-values ([(l f) (print-it sube 0 #t #f line file)])
+                 (set! line l)
+                 (set! file f))
                where))
            #f))
         

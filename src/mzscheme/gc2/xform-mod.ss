@@ -13,6 +13,8 @@
   (define pgc? #t)
   (define pgc-really? #t)
 
+  (define keep-lines? #f)
+
   (define cpp #f)
   (define file-in #f)
   (define file-out #f)
@@ -36,6 +38,8 @@
      (set! palm? #t)
      (set! pgc? #f)
      (set! pgc-really? #f)]
+    [("--keep-lines") "keep source line information"
+     (set! keep-lines? #t)]
     [("--cgc") "conservative collection mode"
      (set! pgc-really? #f)]
     [("--cpp") cmdline "set CPP command line"
@@ -53,6 +57,7 @@
   (xform #t cpp
 	 file-in
 	 file-out
+         keep-lines?
 	 palm? pgc? pgc-really?
 	 precompiling-header? precompiled-header
 	 show-info? output-depends-info?

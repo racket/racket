@@ -419,6 +419,7 @@ fi
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then 
   COMPFLAGS="$COMPFLAGS -Wall"
+  XFORMFLAGS="$XFORMFLAGS --keep-lines"
 
   # Use -MMD when we have gcc and gnumake:
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
@@ -1309,6 +1310,7 @@ AC_SUBST(CGCOPTIONS)
 AC_SUBST(GC2OPTIONS)
 AC_SUBST(MROPTIONS)
 AC_SUBST(GCDIR)
+AC_SUBST(XFORMFLAGS)
 AC_SUBST(MZBINTARGET)
 AC_SUBST(MZINSTALLTARGET)
 AC_SUBST(EXTRA_GMP_OBJ)

@@ -1,23 +1,25 @@
+#lang scheme/base
 
-(module xform mzscheme
-  (require dynext/compile
-	   (prefix xform: "private/xform.ss"))
+(require dynext/compile
+         (prefix-in xform: "private/xform.ss"))
 
-  (provide xform)
+(provide xform)
 
-  (define (xform quiet? src dest header-dirs)
-    (let ([exe (current-extension-compiler)]
-	  [flags (expand-for-compile-variant
-		  (current-extension-preprocess-flags))]
-	  [headers (apply append
-			  (map (current-make-compile-include-strings)
-			       header-dirs))])
-      (xform:xform quiet?
-		   (cons exe
-			 (append flags headers))
-		   src
-		   dest
-		   #f #t #t
-		   #f #f
-		   #f #f
-		   #f))))
+(define (xform quiet? src dest header-dirs #:keep-lines? keep-lines?)
+  (let ([exe (current-extension-compiler)]
+        [flags (expand-for-compile-variant
+                (current-extension-preprocess-flags))]
+        [headers (apply append
+                        (map (current-make-compile-include-strings)
+                             header-dirs))])
+    (xform:xform quiet?
+                 (cons exe
+                       (append flags headers))
+                 src
+                 dest
+                 keep-lines?
+                 #f #t #t
+                 #f #f
+                 #f #f
+                 #f)))
+
