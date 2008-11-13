@@ -1223,9 +1223,10 @@ static void *malloc_double(void)
 static Scheme_Object *make_list(long n)
 {
   GC_CAN_IGNORE Scheme_Object *l = scheme_null;
+  GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
   
   while (n--) {
-    l = cons(MZ_RUNSTACK[n], l);
+    l = cons(rs[n], l);
   }
 
   return l;
@@ -5638,8 +5639,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("app %d\n", app->num_args));
 
       r = generate_inlined_nary(jitter, app, is_tail, multi_ok, NULL, 1);
+      CHECK_LIMIT();
       if (r) {
-        CHECK_LIMIT();
         if (target != JIT_R0)
           jit_movr_p(target, JIT_R0);
 	return r;
@@ -5660,8 +5661,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       int r;
 
       r = generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1);
+      CHECK_LIMIT();
       if (r) {
-        CHECK_LIMIT();
         if (target != JIT_R0)
           jit_movr_p(target, JIT_R0);
 	return r;
@@ -5669,8 +5670,6 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("app 2\n"));
 
-      CHECK_LIMIT();
-      
       args[0] = app->rator;
       args[1] = app->rand;
       
@@ -5689,16 +5688,14 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       int r;
 
       r = generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1);
+      CHECK_LIMIT();
       if (r) {
-        CHECK_LIMIT();
         if (target != JIT_R0)
           jit_movr_p(target, JIT_R0);
 	return r;
       }
 
       LOG_IT(("app 3\n"));
-
-      CHECK_LIMIT();
       
       args[0] = app->rator;
       args[1] = app->rand1;
