@@ -66,7 +66,8 @@ default configuration shipped with the server is used. The optional
 port and ip-address arguments override the corresponding portions of
 the @scheme[configuration-table]. If the SSL option is provided, then 
 the server uses HTTPS with @filepath{server-cert.pem} and @filepath{private-key.pem}
-in the current directory, with 443 as the default port.
+in the current directory, with 443 as the default port. (See the @schememodname[openssl] 
+module for details on the SSL implementation.)
 
 The @scheme[configuration-table] is given to
 @scheme[configuration-table->web-config@] and used to construct a
