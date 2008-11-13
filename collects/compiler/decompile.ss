@@ -300,14 +300,17 @@
                                       exact-positive-integer?
                                       car cdr caar cadr cdar cddr
                                       mcar mcdr unbox vector-length syntax-e
-                                      add1 sub1 - abs bitwise-not))]
+                                      add1 sub1 - abs bitwise-not
+                                      list vector box))]
              [(3) (memq (car a) '(eq? = <= < >= >
                                       bitwise-bit-set? char=?
                                       + - * / min max bitwise-and bitwise-ior
                                       arithmetic-shift vector-ref string-ref bytes-ref
-                                      set-mcar! set-mcdr! cons mcons))]
-             [(4) (memq (car a) '(vector-set! string-set! bytes-set!))]
-             [else #f]))
+                                      set-mcar! set-mcdr! cons mcons
+                                      list vector))]
+             [(4) (memq (car a) '(vector-set! string-set! bytes-set!
+                                              list vector))]
+             [else (memq (car a) '(list vector))]))
       (cons '#%in a)
       a))
 
