@@ -6,7 +6,9 @@
            web-server/servlet
            web-server/servlet/servlet-structs
            web-server/managers/timeouts
+           web-server/private/util
            net/uri-codec
+           net/url
            handin-server/private/md5
            handin-server/private/logger
            handin-server/private/config
@@ -255,12 +257,19 @@
   (define name "status")
 
   (define (instance-expiration-handler failed-request)
-    (let ([this (servlet-url->url-string/no-continuation
-                 (request->servlet-url failed-request))])
+    (let* (;; get the current url, and strip off the continuation data
+           [cont-url (request-uri failed-request)]
+           [base-url (url-replace-path
+                      (lambda (pl)
+                        (map (lambda (pp)
+                               (make-path/param (path/param-path pp) empty))
+                             pl))
+                      cont-url)]
+           [base-url-str (url->string base-url)])
       `(html (head (meta [(http-equiv "refresh")
-                          (content ,(format "3;URL=~a" this))]))
+                          (content ,(format "3;URL=~a" base-url-str))]))
              (body "Your session has expired, "
-                   (a ([href ,this]) "restarting") " in 3 seconds."))))
+                   (a ([href ,base-url-str]) "restarting") " in 3 seconds."))))
 
   (define manager
     (create-timeout-manager instance-expiration-handler 600 600))
