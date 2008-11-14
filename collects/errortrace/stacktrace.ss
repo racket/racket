@@ -80,12 +80,18 @@
       ;; expressions with test suite coverage information.  Returning the
       ;; first argument means no tests coverage information is collected.
 
+      (define no-coverage-point (gensym)) ; see HACK below
+
       ;; test-coverage-point : syntax syntax -> syntax
       ;; sets a test coverage point for a single expression
       (define (test-coverage-point body expr)
         (if (test-coverage-enabled)
             (let ([key (gensym 'test-coverage-point)])
               (initialize-test-coverage-point key expr)
+              ;; see HACK below
+              (when (and (pair? body) (eq? no-coverage-point (car body)))
+                (set! body (cdr body))
+                (test-covered key))
               (with-syntax ([key (datum->syntax
                                   #f key (quote-syntax here))]
                             [body body]
@@ -401,18 +407,33 @@
              [(#%expression e)
               top?
               (certify expr #`(#%expression #,(annotate (syntax e) phase)))]
-		   
+
              ;; No way to wrap
              [(#%require i ...) expr]
              ;; No error possible (and no way to wrap)
              [(#%provide i ...) expr]
-             
 
              ;; No error possible
              [(quote _)
               expr]
              [(quote-syntax _)
-              expr]
+              ;; HACK: if we get to a `quote-syntax', then this means that
+              ;; there is some macro involved.  Wrapping this `quote-syntax'
+              ;; with a test-coverage-point is not going to do anything,
+              ;; because the code that uses it has already been executed, when
+              ;; the code was expanded for this annotation to take place.  So a
+              ;; cheap hack is to simply mark this specific point as covered,
+              ;; whcih is what the following `no-coverage-point' tag signals
+              ;; for `test-coverage-point' above.  Note that the coverage point
+              ;; will *still* be created and immediately faked as covered,
+              ;; because if it's not created then there will be other
+              ;; surrounding syntaxes that are still marked as uncovered.  All
+              ;; of this is not really a proper solution, because actual code
+              ;; that happens at expansion time is not accounted for, but if
+              ;; you use simple `syntax-rules' macros, then these
+              ;; `quote-syntax' expressions are the only ones that will show up
+              ;; as uncovered.
+              (cons no-coverage-point expr)]
 
              ;; Wrap body, also a profile point
              [(#%plain-lambda args . body)
