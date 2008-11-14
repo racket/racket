@@ -12,13 +12,19 @@ improve method arity mismatch contract violation error messages?
 (provide (rename-out [-contract contract])
          recursive-contract
          provide/contract
-         define/contract)
+         define/contract
+         with-contract
+         current-contract-region)
 
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
          (for-syntax scheme/struct-info)
          (for-syntax scheme/list)
-         scheme/promise)
+         (for-syntax syntax/define)
+         (for-syntax syntax/kerncase)
+         scheme/promise
+         scheme/stxparam
+         mzlib/etc)
 
 (require "contract-arrow.ss"
          "contract-guts.ss"
@@ -26,6 +32,24 @@ improve method arity mismatch contract violation error messages?
 
 (require "contract-helpers.ss"
          (for-syntax (prefix-in a: "contract-helpers.ss")))
+
+
+;; These are useful for all below.
+
+(define-syntax (verify-contract stx)
+  (syntax-case stx ()
+    [(_ name x) (a:known-good-contract? #'x) #'x]
+    [(_ name x) #'(coerce-contract name x)]))
+
+;; id->contract-src-info : identifier -> syntax
+;; constructs the last argument to the -contract, given an identifier
+(define-for-syntax (id->contract-src-info id)
+  #`(list (make-srcloc #,id
+                       #,(syntax-line id)
+                       #,(syntax-column id)
+                       #,(syntax-position id)
+                       #,(syntax-span id))
+          #,(format "~s" (syntax->datum id))))
 
 
 
@@ -46,6 +70,255 @@ improve method arity mismatch contract violation error messages?
 ;                                          ;                                                         
 ;                                                                                                    
 
+;; (define/contract id contract expr)
+;; defines `id' with `contract'; initially binding
+;; it to the result of `expr'.  These variables may not be set!'d.
+(define-syntax (define/contract define-stx)
+  (when (eq? (syntax-local-context) 'expression)
+    (raise-syntax-error 'define/contract
+                        "used in expression context"
+                        define-stx))
+  (syntax-case define-stx ()
+    [(_ name)
+     (raise-syntax-error 'define/contract
+                         "no contract or body"
+                         define-stx)]
+    [(_ name contract-expr)
+     (raise-syntax-error 'define/contract
+                         "no body after contract"
+                         define-stx)]
+    [(_ name contract-expr expr)
+     (identifier? #'name)
+     (let ([contract (if (a:known-good-contract? #'contract-expr)
+                         #'contract-expr
+                         #'(verify-contract 'define/contract contract-expr))])
+       (quasisyntax/loc define-stx
+         (with-contract #:type definition name
+           ([name #,contract])
+           (define name expr))))]
+    [(_ name contract-expr expr0 expr ...)
+     (identifier? #'name)
+     (raise-syntax-error 'define/contract
+                         "multiple expressions after identifier and contract"
+                         define-stx)]
+    [(_ name+arg-list contract body0 body ...)
+     (let-values ([(name lam-expr)
+                   (normalize-definition
+                    (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
+                                                       #'body0 #'(body ...)))
+                    #'lambda #t #t)])
+       (with-syntax ([name name]
+                     [lam-expr lam-expr])
+         (syntax/loc define-stx
+           (with-contract #:type function name
+             ([name (verify-contract 'define/contract contract)])
+             (define name lam-expr)))))]))
+
+
+
+;                                                                                         
+;                                                                                         
+;              ;       ;                                                                  
+;                  ;   ;                                     ;                         ;  
+;                  ;   ;                                     ;                         ;  
+;  ;    ;    ; ;  ;;;; ; ;;;          ;;;     ;;;    ; ;;;  ;;;; ; ;;   ;;;;     ;;;  ;;;;
+;  ;    ;    ; ;   ;   ;;   ;        ;   ;   ;   ;   ;;   ;  ;   ;;    ;    ;   ;   ;  ;  
+;   ;  ; ;  ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;   ;  ; ;  ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;        ;;;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;     ;;;  ;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ; ;;;;  ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;   ; ;   ; ;  ;   ;   ;    ;       ;       ;     ;  ;    ;  ;   ;    ;     ;  ;       ;  
+;    ;     ;   ;   ;   ;    ;        ;   ;   ;   ;   ;    ;  ;   ;    ;    ;;   ;   ;  ;  
+;    ;     ;   ;   ;;; ;    ;         ;;;     ;;;    ;    ;  ;;; ;     ;;;; ;    ;;;   ;;;
+;                                                                                         
+;                                                                                         
+;                                                                                         
+
+(define-syntax-parameter current-contract-region #f)
+
+(define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
+  (make-set!-transformer
+   (lambda (stx)
+     (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
+                                     #'(#%variable-reference))]
+                   [pos-blame-id pos-blame-id]
+                   [contract-id contract-id]
+                   [id id])
+       (syntax-case stx (set!)
+         [(set! id arg)
+          (raise-syntax-error 'with-contract
+                              "cannot set! a with-contract variable"
+                              stx
+                              (syntax id))]
+         [(f arg ...)
+          (syntax/loc stx
+            ((-contract contract-id
+                        id
+                        pos-blame-id
+                        neg-blame-id
+                        #'f)
+             arg ...))]
+         [ident
+          (identifier? (syntax ident))
+          (syntax/loc stx
+            (-contract contract-id
+                       id
+                       pos-blame-id
+                       neg-blame-id
+                       #'ident))])))))
+
+(define-for-syntax (head-expand-all body-stxs)
+  (for/list ([stx body-stxs])
+    (local-expand stx
+                  (syntax-local-context)
+                  (kernel-form-identifier-list))))
+
+(define-for-syntax (check-exports ids body-stxs)
+  (let ([defd-ids (for/fold ([id-list null])
+                            ([stx body-stxs])
+                    (kernel-syntax-case stx #f
+                      [(define-values ids expr)
+                       (append (syntax->list #'ids)
+                               id-list)]
+                      [_ id-list]))])
+    (for ([id (in-list ids)])
+         (unless (findf (lambda (s)
+                          (bound-identifier=? s id))
+                        defd-ids)
+           (raise-syntax-error 'with-contract
+                               "identifier not defined in body"
+                               id)))))
+
+(define-for-syntax (check-and-split-with-contract-args args)
+  (let loop ([args args]
+             [unprotected null]
+             [protected null]
+             [protections null])
+    (cond
+      [(null? args)
+       (values unprotected protected protections)]
+      [(identifier? (car args))
+       (loop (cdr args)
+             (cons (car args) unprotected)
+             protected
+             protections)]
+      [(let ([lst (syntax->list (car args))])
+         (and (list? lst)
+              (= (length lst) 2)
+              (identifier? (first lst))
+              lst))
+       =>
+       (lambda (l)
+         (loop (cdr args)
+               unprotected
+               (cons (first l) protected)
+               (cons (second l) protections)))]
+      [else
+       (raise-syntax-error 'with-contract
+                           "expected an identifier or (identifier contract)"
+                           (car args))])))
+
+(define-syntax (with-contract stx)
+  (when (eq? (syntax-local-context) 'expression)
+    (raise-syntax-error 'with-contract
+                        "used in expression context"
+                        stx))
+  (syntax-case stx ()
+    [(_ #:type type blame (arg ...) body0 body ...)
+     (and (identifier? #'blame)
+          (identifier? #'type))
+     (let*-values ([(unprotected protected protections)
+                    (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
+                   [(expanded-bodies) (head-expand-all (cons #'body0
+                                                             (syntax->list #'(body ...))))]
+                   [(protected-ids ids contracts contract-defs)
+                    (for/lists (protected-ids ids contracts contract-defs)
+                      ([n protected]
+                       [c protections])
+                      (let ([new-id (a:mangle-id stx "with-contract-id" n)])
+                        (if (a:known-good-contract? c)
+                            (values n new-id c #f)
+                            (let ([contract-id (a:mangle-id stx "with-contract-contract-id" n)])
+                              (values n new-id contract-id
+                                      (quasisyntax/loc stx
+                                        (define-values (#,contract-id)
+                                          (verify-contract 'with-contract #,c))))))))])
+       (begin
+         (let* ([all-ids (append unprotected protected)]
+                [dupd-id (check-duplicate-identifier all-ids)])
+           (when dupd-id
+             (raise-syntax-error 'with-contract
+                                 "identifier appears twice in exports"
+                                 dupd-id))
+           (check-exports (append unprotected protected) expanded-bodies))
+         (with-syntax ([((protected-id id contract) ...)
+                        (map list protected-ids ids contracts)]
+                       [(contract-def ...) (filter values contract-defs)]
+                       [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
+                       [(unprotected-id ...) unprotected])
+           (quasisyntax/loc stx
+             (begin 
+               (define-values (unprotected-id ... id ...)
+                 (syntax-parameterize ([current-contract-region blame-str])
+                   (begin-with-definitions
+                     #,@expanded-bodies
+                     (values unprotected-id ... protected-id ...))))
+               contract-def ...
+               (define-syntax protected-id
+                 (make-with-contract-transformer 
+                  (quote-syntax contract)
+                  (quote-syntax id)
+                  blame-str)) ...)))))]
+    [(_ #:type type blame (arg ...) body0 body ...)
+     (raise-syntax-error 'with-contract
+                         "expected identifier for blame"
+                         #'blame)]
+    [(_ #:type type blame (arg ...))
+     (identifier? #'blame)
+     (raise-syntax-error 'with-contract
+                         "empty body"
+                         stx)]
+    [(_ #:type type blame bad-args etc ...)
+     (identifier? #'blame)
+     (raise-syntax-error 'with-contract
+                         "expected list of identifier and/or (identifier contract)"
+                         #'bad-args)]
+    [(_ #:type type args etc ...)
+     (not (identifier? #'args))
+     (raise-syntax-error 'with-contract
+                         "expected identifier for blame"
+                         #'args)]
+    [(_ #:type type etc ...)
+     (not (identifier? #'type))
+     (raise-syntax-error 'with-contract
+                         "expected identifier for type"
+                         #'type)]
+    [(_ #:type type blame)
+     (raise-syntax-error 'with-contract
+                         "only blame"
+                         stx)]
+    [(_ etc ...)
+     (syntax/loc stx
+       (with-contract #:type region etc ...))]))
+
+;                                                                                                            
+;                                                                                                            
+;                                                                                                            
+;                               ;       ;             ;                                                      
+;                                       ;             ;                                                      
+;                                       ;            ;                           ;                       ;   
+;   ; ;;    ; ;   ;;;   ;     ; ;    ;; ;    ;;;     ;     ;;;    ;;;    ; ;;   ;;;;  ; ;  ;;;     ;;;  ;;;; 
+;   ;;  ;   ;;   ;   ;   ;   ;  ;   ;  ;;   ;   ;    ;    ;   ;  ;   ;   ;;  ;   ;    ;;  ;   ;   ;   ;  ;   
+;   ;    ;  ;   ;     ;  ;   ;  ;  ;    ;  ;    ;    ;   ;      ;     ;  ;   ;   ;    ;       ;  ;       ;   
+;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;;;;;;   ;    ;      ;     ;  ;   ;   ;    ;    ;;;;  ;       ;   
+;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;        ;    ;      ;     ;  ;   ;   ;    ;   ;   ;  ;       ;   
+;   ;;  ;   ;    ;   ;     ;    ;   ;  ;;   ;       ;     ;   ;  ;   ;   ;   ;   ;    ;   ;   ;   ;   ;  ;   
+;   ; ;;    ;     ;;;      ;    ;    ;; ;    ;;;;  ;       ;;;    ;;;    ;   ;    ;;  ;    ;;;;;   ;;;    ;; 
+;   ;                                              ;                                                         
+;   ;                                              ;                                                         
+;   ;                                                                                                        
+
+
 ;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
 (define-for-syntax (lookup-struct-info stx provide-stx)
   (let ([id (syntax-case stx ()
@@ -58,46 +331,6 @@ improve method arity mismatch contract violation error messages?
                               "expected a struct name" 
                               provide-stx
                               id)))))
-
-(define-for-syntax (make-define/contract-transformer contract-id id)
-  (make-set!-transformer
-   (λ (stx)
-     (with-syntax ([neg-blame-str (a:build-src-loc-string stx)]
-                   [contract-id contract-id]
-                   [id id])
-       (syntax-case stx (set!)
-         [(set! id arg) 
-          (raise-syntax-error 'define/contract
-                              "cannot set! a define/contract variable" 
-                              stx 
-                              (syntax id))]
-         [(f arg ...)
-          (syntax/loc stx
-            ((-contract contract-id
-                        id
-                        (syntax->datum (quote-syntax f))
-                        neg-blame-str
-                        (quote-syntax f))
-             arg
-             ...))]
-         [ident
-          (identifier? (syntax ident))
-          (syntax/loc stx
-            (-contract contract-id
-                       id
-                       (syntax->datum (quote-syntax ident)) 
-                       neg-blame-str
-                       (quote-syntax ident)))])))))
-
-;; id->contract-src-info : identifier -> syntax
-;; constructs the last argument to the -contract, given an identifier
-(define-for-syntax (id->contract-src-info id)
-  #`(list (make-srcloc #,id
-                       #,(syntax-line id)
-                       #,(syntax-column id)
-                       #,(syntax-position id)
-                       #,(syntax-span id))
-          #,(format "~s" (syntax->datum id))))
 
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
@@ -139,51 +372,6 @@ improve method arity mismatch contract violation error messages?
            ;; In case of partial expansion for module-level and internal-defn contexts,
            ;; delay expansion until it's a good time to lift expressions:
            (quasisyntax/loc stx (#%expression #,stx)))))))
-
-;; (define/contract id contract expr)
-;; defines `id' with `contract'; initially binding
-;; it to the result of `expr'.  These variables may not be set!'d.
-(define-syntax (define/contract define-stx)
-  (syntax-case define-stx ()
-    [(_ name contract-expr expr)
-     (identifier? (syntax name))
-     (with-syntax ([contract-id 
-                    (a:mangle-id define-stx
-                                 "define/contract-contract-id"
-                                 (syntax name))]
-                   [id (a:mangle-id define-stx
-                                    "define/contract-id"
-                                    (syntax name))])
-       (syntax/loc define-stx 
-         (begin
-           (define contract-id contract-expr)
-           (define-syntax name
-             (make-define/contract-transformer (quote-syntax contract-id)
-                                               (quote-syntax id)))
-           (define id (let ([name expr]) name))  ;; let for procedure naming
-           )))]
-    [(_ name contract-expr expr)
-     (raise-syntax-error 'define/contract "expected identifier in first position"
-                         define-stx
-                         (syntax name))])) 
-
-
-;                                                                                                            
-;                                                                                                            
-;                                                                                                            
-;                               ;       ;             ;                                                      
-;                                       ;             ;                                                      
-;                                       ;            ;                           ;                       ;   
-;   ; ;;    ; ;   ;;;   ;     ; ;    ;; ;    ;;;     ;     ;;;    ;;;    ; ;;   ;;;;  ; ;  ;;;     ;;;  ;;;; 
-;   ;;  ;   ;;   ;   ;   ;   ;  ;   ;  ;;   ;   ;    ;    ;   ;  ;   ;   ;;  ;   ;    ;;  ;   ;   ;   ;  ;   
-;   ;    ;  ;   ;     ;  ;   ;  ;  ;    ;  ;    ;    ;   ;      ;     ;  ;   ;   ;    ;       ;  ;       ;   
-;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;;;;;;   ;    ;      ;     ;  ;   ;   ;    ;    ;;;;  ;       ;   
-;   ;    ;  ;   ;     ;   ; ;   ;  ;    ;  ;        ;    ;      ;     ;  ;   ;   ;    ;   ;   ;  ;       ;   
-;   ;;  ;   ;    ;   ;     ;    ;   ;  ;;   ;       ;     ;   ;  ;   ;   ;   ;   ;    ;   ;   ;   ;   ;  ;   
-;   ; ;;    ;     ;;;      ;    ;    ;; ;    ;;;;  ;       ;;;    ;;;    ;   ;    ;;  ;    ;;;;;   ;;;    ;; 
-;   ;                                              ;                                                         
-;   ;                                              ;                                                         
-;   ;                                                                                                        
 
 
 ;; (provide/contract p/c-ele ...)
@@ -483,7 +671,7 @@ improve method arity mismatch contract violation error messages?
                                                     #f
                                                     (with-syntax ([field-contract-id field-contract-id]
                                                                   [field-contract field-contract])
-                                                      #'(define field-contract-id (verify-contract field-contract)))))
+                                                      #'(define field-contract-id (verify-contract 'provide/contract field-contract)))))
                                               field-contract-ids
                                               field-contracts))]
                          [(field-contracts ...) field-contracts]
@@ -671,7 +859,7 @@ improve method arity mismatch contract violation error messages?
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
-                                          (list #'(define contract-id (verify-contract ctrct))))
+                                          (list #'(define contract-id (verify-contract 'provide/contract ctrct))))
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (quote-syntax id)
@@ -690,11 +878,6 @@ improve method arity mismatch contract violation error messages?
          (syntax 
           (begin
             bodies ...))))]))
-
-(define-syntax (verify-contract stx)
-  (syntax-case stx ()
-    [(_ x) (a:known-good-contract? #'x) #'x]
-    [(_ x) #'(coerce-contract 'provide/contract x)]))
 
 (define (make-pc-struct-type struct-name struct:struct-name . ctcs)
   (let-values ([(struct:struct-name _make _pred _get _set)

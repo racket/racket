@@ -1,5 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
+          scheme/sandbox
+          scribble/eval
           scribble/struct
           (for-label mzlib/contract))
 
@@ -56,7 +58,6 @@ from @schememodname[scheme/contract]:
  contract-violation->string
  contract?
  define-contract-struct
- define/contract
  false/c
  flat-contract
  flat-contract-predicate
@@ -91,3 +92,42 @@ from @schememodname[scheme/contract]:
  vector/c
  vectorof]
 
+It also provides the old version of @scheme[define/contract]:
+
+@defform[(define/contract id contract-expr init-value-expr)]{
+
+Attaches the contract @scheme[contract-expr] to
+@scheme[init-value-expr] and binds that to @scheme[id].
+
+The @scheme[define/contract] form treats individual definitions as
+units of blame. The definition itself is responsible for positive
+(co-variant) positions of the contract and each reference to
+@scheme[id] (including those in the initial value expression) must
+meet the negative positions of the contract.
+
+Error messages with @scheme[define/contract] are not as clear as those
+provided by @scheme[provide/contract], because
+@scheme[define/contract] cannot detect the name of the definition
+where the reference to the defined variable occurs. Instead, it uses
+the source location of the reference to the variable as the name of
+that definition.
+
+@examples[#:eval (parameterize ([sandbox-output 'string]
+                                [sandbox-error-output 'string]
+                                [sandbox-eval-limits #f])
+                   (make-evaluator 'mzscheme))
+                 (require mzlib/contract)
+                 (define/contract f
+                   (-> number? number?)
+                   (lambda (x) (+ x 1)))
+                 (define/contract g
+                   (-> number? number?)
+                   (lambda (x) (f #t)))
+                 (define/contract i
+                   (-> number? number?)
+                   (lambda (x)
+                     (if (number? x) (i #t) 0)))
+                 (f 4)
+                 (f #t)
+                 (g 4)
+                 (i 3)]}

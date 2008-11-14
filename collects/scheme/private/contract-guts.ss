@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require "contract-helpers.ss"
-         scheme/pretty)
+         scheme/pretty
+         (only-in scheme/list add-between))
 
 (require (for-syntax scheme/base
                      "contract-helpers.ss"))
@@ -175,23 +176,35 @@
      (lambda (x) (get x 0))
      (lambda (x) (get x 1)))))
 
-(define (default-contract-violation->string val src-info to-blame contract-sexp msg)
+(define (default-contract-violation->string val src-info to-blame contract-sexp+extra msg)
+  (define (add-modifiers-to-contract modifiers contract-str)
+    (if (null? modifiers)
+        contract-str
+        (string-append "for " 
+                       (apply string-append (add-between modifiers " of "))
+                       " in " contract-str)))
   (let ([blame-src (src-info-as-string src-info)]
         [formatted-contract-sexp
-         (let ([one-line 
-                (let ([sp (open-output-string)])
-                  (parameterize ([pretty-print-print-line print-contract-liner]
-                                 [pretty-print-columns 'infinity])
-                    (pretty-print contract-sexp sp)
-                    (get-output-string sp)))])
-           (if (< (string-length one-line) 30)
-               one-line
-               (let ([sp (open-output-string)])
-                 (newline sp)
-                 (parameterize ([pretty-print-print-line print-contract-liner]
-                                [pretty-print-columns 50])
-                   (pretty-print contract-sexp sp))
-                 (get-output-string sp))))]
+         (let-values ([(modifiers contract-sexp)
+                       (let loop ([dlist contract-sexp+extra]
+                                  [modifiers null])
+                         (if (and (pair? dlist)
+                                  (string? (car dlist)))
+                             (loop (cdr dlist) (cons (car dlist) modifiers))
+                             (values (reverse modifiers) dlist)))])
+           (let ([one-line 
+                  (let ([sp (open-output-string)])
+                    (parameterize ([pretty-print-columns 'infinity])
+                      (pretty-print contract-sexp sp)
+                      (get-output-string sp)))])
+             (if (< (string-length one-line) 30)
+                 (add-modifiers-to-contract modifiers one-line)
+                 (let ([sp (open-output-string)])
+                   (newline sp)
+                   (parameterize ([pretty-print-print-line print-contract-liner]
+                                  [pretty-print-columns 50])
+                     (pretty-print contract-sexp sp))
+                   (add-modifiers-to-contract modifiers (get-output-string sp))))))]
         [specific-blame
          (cond
            [(syntax? src-info)
@@ -210,8 +223,9 @@
                                    (pair? (cdr to-blame))
                                    (null? (cddr to-blame))
                                    (equal? 'quote (car to-blame)))
-                              (format "'~s" (cadr to-blame))]
-                             [else (format "~s" to-blame)])
+                              (format "module '~s" (cadr to-blame))]
+                             [(string? to-blame) to-blame]
+                             [else (format "module ~s" to-blame)])
                            formatted-contract-sexp
                            specific-blame)
                    msg)))
