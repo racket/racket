@@ -4047,7 +4047,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       generate_non_tail(app->rand, jitter, 0, 1);
       CHECK_LIMIT();
       mz_runstack_unskipped(jitter, 1);
-      jit_movi_p(JIT_R1, &scheme_null);
+      (void)jit_movi_p(JIT_R1, &scheme_null);
       return generate_cons_alloc(jitter, 0);
     } else if (IS_NAMED_PRIM(rator, "box")) {
       mz_runstack_skipped(jitter, 1);
@@ -4057,7 +4057,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
 #ifdef CAN_INLINE_ALLOC
       /* Inlined alloc */
-      jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
+      (void)jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
       inline_alloc(jitter, sizeof(Scheme_Small_Object), scheme_box_type, 0, 1, 0);
       CHECK_LIMIT();
       
@@ -4560,7 +4560,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_RUNSTACK_OVERFLOW();
       mz_runstack_pushed(jitter, 1);
       jit_str_p(JIT_RUNSTACK, JIT_R0);
-      jit_movi_p(JIT_R0, &scheme_null);
+      (void)jit_movi_p(JIT_R0, &scheme_null);
       CHECK_LIMIT();
 
       generate_cons_alloc(jitter, 1);
@@ -4720,15 +4720,17 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         generate_app(app, NULL, c, jitter, 0, 0, 1);
       CHECK_LIMIT();
 
-#ifndef CAN_INLINE_ALLOC
-      /* make_list is make_list_code, which uses MZ_RUNSTACK directly */
+#ifdef CAN_INLINE_ALLOC
+      jit_movi_l(JIT_R2, c);
+      (void)jit_calli(make_list_code);
+#else
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-#endif
       jit_movi_l(JIT_R0, c);
       mz_prepare(1);
       jit_pusharg_l(JIT_R0);
       (void)mz_finish(make_list);
       jit_retval(JIT_R0);
+#endif
 
       if (c) {
         jit_addi_l(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(c));
@@ -4810,7 +4812,7 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
 #ifdef CAN_INLINE_ALLOC
   /* Inlined alloc */
   if (app2)
-    jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
+    (void)jit_movi_p(JIT_R1, NULL); /* needed because R1 is marked during a GC */
   inline_alloc(jitter, sizeof(Scheme_Vector) + ((c - 1) * sizeof(Scheme_Object*)), scheme_vector_type, 
                imm, app2 || app3, 0);
   CHECK_LIMIT();
@@ -7217,7 +7219,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
     } else {
-      jit_movi_p(JIT_R0, NULL);
+      (void)jit_movi_p(JIT_R0, NULL);
       jit_pusharg_p(JIT_R0);
       jit_pusharg_p(JIT_R0);
     }
@@ -7238,16 +7240,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 
 #ifdef CAN_INLINE_ALLOC
   /* *** make_list_code *** */
+  /* R2 has length, args are one the stack */
   {
     jit_insn *ref, *refnext;
 
     make_list_code = jit_get_ip().ptr;  
-    jit_prolog(1);
-    in = jit_arg_p();
-    jit_getarg_p(JIT_R2, in); /* count */
-    mz_push_locals();
+    mz_prolog(JIT_R1);
     jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
-    jit_movi_p(JIT_R0, &scheme_null);
+    (void)jit_movi_p(JIT_R0, &scheme_null);
 
     __START_SHORT_JUMPS__(1);
     refnext = _jit.x.pc;
@@ -7269,8 +7269,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     mz_patch_branch(ref);
     __END_SHORT_JUMPS__(1);
 
-    mz_pop_locals();
-    jit_ret();
+    mz_epilog(JIT_R1);
   }
 #endif
 
