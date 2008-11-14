@@ -516,7 +516,7 @@
                 ;; It's a null:
                 expr]
                [(syntax-case* expr (#%plain-app void)
-                              (if phase
+                              (if (positive? phase)
                                 free-transformer-identifier=?
                                 free-identifier=?)
                   [(#%plain-app void) #t]
