@@ -619,6 +619,14 @@
               15)
            15)
 
+(test-comp '(letrec ((even
+                      (let ([unused 6])
+                        (let ([even (lambda (x) (if (zero? x) #t (even (sub1 x))))])
+                          (values even)))))
+              (even 10000))
+           '(letrec ((even (lambda (x) (if (zero? x) #t (even (sub1 x))))))
+              (even 10000)))
+
 (test-comp '(procedure? add1)
            #t)
 (test-comp '(procedure? (lambda (x) x))

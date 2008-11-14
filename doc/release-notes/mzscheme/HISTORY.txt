@@ -6,10 +6,10 @@ In scheme/port: added [call-]with-input-from-{string,bytes} and
 Version 4.1.2.4
 Added call-with-immediate-continuation-mark
 In scheme/port: added port->string, port->bytes, port->lines
-   port->bytes-lines, and display-list
+   port->bytes-lines, and display-lines
 In scheme/file: added file->string, file->bytes, file->lines,
    file->value, file->bytes-lines, write-to-file, display-to-file,
-   and display-list-to-file
+   and display-lines-to-file
 
 Version 4.1.2.3
 Added variable-reference? and empty #%variable-reference form

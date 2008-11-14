@@ -2953,6 +2953,19 @@ static int might_invoke_call_cc(Scheme_Object *value)
   return !is_liftable(value, -1, 10, 0);
 }
 
+static int worth_lifting(Scheme_Object *v)
+{
+  Scheme_Type lhs;
+  lhs = SCHEME_TYPE(v);
+  if ((lhs == scheme_compiled_unclosed_procedure_type)
+      || (lhs == scheme_local_type)
+      || (lhs == scheme_compiled_toplevel_type)
+      || (lhs == scheme_compiled_quote_syntax_type)
+      || (lhs > _scheme_compiled_values_types_))
+    return 1;
+  return 0;
+}
+
 Scheme_Object *
 scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
 {
@@ -2970,14 +2983,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
     clv = (Scheme_Compiled_Let_Value *)head->body;
     if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_local_type)
-	&& (((Scheme_Local *)clv->body)->position == 0)) {
-      Scheme_Type lhs;
-      lhs = SCHEME_TYPE(clv->value);
-      if ((lhs == scheme_compiled_unclosed_procedure_type)
-          || (lhs == scheme_local_type)
-          || (lhs == scheme_compiled_toplevel_type)
-          || (lhs == scheme_compiled_quote_syntax_type)
-	  || (lhs > _scheme_compiled_values_types_)) {
+        && (((Scheme_Local *)clv->body)->position == 0)) {
+      if (worth_lifting(clv->value)) {
         if (for_inline) {
 	  /* Just drop the inline-introduced let */
 	  return scheme_optimize_expr(clv->value, info);
@@ -3214,7 +3221,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
             body_info->letrec_not_twice = 1;
             
             value = scheme_optimize_expr(self_value, body_info);
-            
+
             body_info->letrec_not_twice = 0;
             
             clv->value = value;
@@ -3333,17 +3340,74 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     body = pre_body->body;
   }
 
-  scheme_optimize_info_done(body_info);
-
   /* Optimized away all clauses? */
-  if (!head->num_clauses)
+  if (!head->num_clauses) {
+    scheme_optimize_info_done(body_info);
     return head->body;
+  }
   
   if (is_rec && !not_simply_let_star) {
     /* We can simplify letrec to let* */
     SCHEME_LET_FLAGS(head) -= SCHEME_LET_RECURSIVE;
     SCHEME_LET_FLAGS(head) |= SCHEME_LET_STAR;
   }
+
+  {
+    int extract_depth = 0;
+
+    value = NULL;
+    
+    /* Check again for (let ([x <proc>]) x). */
+    if (!is_rec && (head->count == 1) && (head->num_clauses == 1)) {
+      clv = (Scheme_Compiled_Let_Value *)head->body;
+      if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_local_type)
+          && (((Scheme_Local *)clv->body)->position == 0)) {
+        if (worth_lifting(clv->value)) {
+          value = clv->value;
+          extract_depth = 1;
+        }
+      }
+    }
+
+    /* Check for (let ([unused #f] ...) <proc>) */
+    if (!value) {
+      if (head->count == head->num_clauses) {
+        body = head->body;
+        pos = 0;
+        for (i = head->num_clauses; i--; ) {
+          pre_body = (Scheme_Compiled_Let_Value *)body;
+          if ((pre_body->count != 1)
+              || !SCHEME_FALSEP(pre_body->value)
+              || (pre_body->flags[0] & SCHEME_WAS_USED))
+            break;
+          body = pre_body->body;
+        }
+        if (i < 0) {
+          if (worth_lifting(body)) {
+            value = body;
+            extract_depth = head->count;
+            rhs_info = body_info;
+          }
+        }
+      }
+    }
+    
+    if (value) {
+      value = scheme_optimize_clone(1, value, rhs_info, 0, 0);
+
+      if (value) {
+        info = scheme_optimize_info_add_frame(info, extract_depth, 0, 0);
+        info->inline_fuel = 0;
+        value = scheme_optimize_expr(value, info);
+        info->next->single_result = info->single_result;
+        info->next->preserves_marks = info->preserves_marks;
+        scheme_optimize_info_done(info);
+        return value;
+      }
+    }
+  }
+
+  scheme_optimize_info_done(body_info);
 
   return form;
 }
