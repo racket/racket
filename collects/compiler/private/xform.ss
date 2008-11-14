@@ -44,6 +44,7 @@
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
         (define-struct tok (n line file) (make-inspector))
+        (define-struct (sysheader-tok tok) ())
         (define-struct (seq tok) (close in))
         (define-struct (parens seq) ())
         (define-struct (brackets seq) ())
@@ -81,7 +82,7 @@
         ;; For dependency tracking:
         (define depends-files (make-hash-table 'equal))
         
-        (define (make-triple v src line)
+        (define (make-triple v src line sysheader?)
           (when (symbol? v)
             (hash-table-put! used-symbols v
                              (add1 (hash-table-get
@@ -90,7 +91,9 @@
                                     (lambda () 0)))))
           (when (and src output-depends-info?)
             (hash-table-put! depends-files src #t))
-          (make-tok v line src))
+          (if sysheader?
+              (make-sysheader-tok v line src)
+              (make-tok v line src)))
         
         (define (make-a-seq opener src line body)
           ((case opener
@@ -155,14 +158,15 @@
                   (add1 p)
                   (loop (add1 p))))))
         
-        (define re:line #rx#"^#[^\n\r]* ([0-9]+) \"([^\"]*)\"" )
+        (define re:line #rx#"^#[^\n\r]* ([0-9]+) \"([^\"]*)\"([^\r\n]*)" )
         (define re:pragma #rx#"^#pragma ([^\r\n]*)")
         
         (define (do-cpp s p)
           (let ([m (regexp-match re:line s p)])
             (when m
               (set! source-line (string->number (bytes->string/utf-8 (cadr m))))
-              (set! source-file (caddr m))))
+              (set! source-file (caddr m))
+              (set! source-sysheader? (regexp-match? #px#"\\b3\\b" (cadddr m)))))
           (let ([pragma (regexp-match re:pragma s p)])
             (if (and pragma
                      (not (regexp-match-positions re:boring (car pragma))))
@@ -172,8 +176,9 @@
         (define (result s)
           (make-triple
            s
-           source-file   ; file
-           source-line)) ; line
+           source-file
+           source-line
+           source-sysheader?))
         
         (define (symbol s)
           (result (string->symbol (bytes->string/utf-8 s))))
@@ -313,6 +318,7 @@
         
         (define source-file #f)
         (define source-line 0)
+        (define source-sysheader? #f)
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
@@ -980,6 +986,7 @@
         
         (define makers (make-hash-table))
         (hash-table-put! makers 'struct:tok (cons 'make-tok make-tok))
+        (hash-table-put! makers 'struct:sysheader-tok (cons 'make-sysheader-tok make-sysheader-tok))
         (hash-table-put! makers 'struct:seq (cons 'make-a-seq make-a-seq))
         (hash-table-put! makers 'struct:parens (cons 'make-parens make-parens))
         (hash-table-put! makers 'struct:brackets (cons 'make-brackets make-brackets))
@@ -1104,10 +1111,10 @@
            [(call? v) (extract-src-tok (call-func v))]
            [else #f]))
         
-        (define (print-it e indent semi-newlines? ordered? line file keep-lines?)
-          (let loop ([e e][prev #f][prevs null][old-line line][old-file file])
+        (define (print-it e indent semi-newlines? ordered? line file sysheader? keep-lines?)
+          (let loop ([e e][prev #f][prevs null][old-line line][old-file file][old-sysheader? sysheader?])
             (if (null? e)
-              (values old-line old-file)
+              (values old-line old-file old-sysheader?)
               (let* ([v (car e)]
                      [sv (extract-src-tok v)]
                      [line (if keep-lines?
@@ -1118,6 +1125,11 @@
                                (or (and sv (tok-file sv))
                                    old-file)
                                old-file)]
+                     [sysheader? (if keep-lines?
+                                     (if (and sv (tok-file sv))
+                                         (sysheader-tok? sv)
+                                         old-sysheader?)
+                                     old-sysheader?)]
                      [inc-line! (lambda () (set! line (add1 line)))])
                 (when keep-lines?
                   (unless (and (equal? line old-line)
@@ -1126,7 +1138,8 @@
                              (line . > . old-line)
                              ((- line old-line) . < . 10))
                         (display (make-string (- line old-line) #\newline))
-                        (printf "\n# ~a \"~a\"\n" line file))
+                        (printf "\n# ~a \"~a\"~a\n" line file
+                                (if sysheader? " 3" "")))
                     (set! next-indent indent)))
                 (cond
                   [(pragma? v)
@@ -1142,18 +1155,19 @@
                                           (inc-line!)
                                           (+ indent 2))
                                         indent)])
-                     (let-values ([(l f)
+                     (let-values ([(l f s?)
                                    (print-it (seq->list (seq-in v)) subindent
                                              (not (and (parens? v)
                                                        prev
                                                        (tok? prev)
                                                        (memq (tok-n prev) '(for))))
                                              (or (braces? v) (callstage-parens? v))
-                                             line file
+                                             line file sysheader?
                                              (and keep-lines?
                                                   (not (nosrc-parens? v))))])
                        (set! line l)
-                       (set! file f))
+                       (set! file f)
+                       (set! sysheader? s?))
                      (when (and next-indent (= next-indent subindent))
                        (set! next-indent indent)))
                    (display/indent #f (seq-close v))
@@ -1197,13 +1211,14 @@
                                    (display/indent v ")"))
                                  (display/indent v "_"))
                              (display/indent v "), "))))
-                   (let-values ([(l f)
+                   (let-values ([(l f s?)
                                  (print-it (append (call-func v) (list (call-args v))) 
-                                           indent #f #f line file 
+                                           indent #f #f line file sysheader?
                                            ;; Can't put srcloc within macro call:
                                            #f)])
                      (set! line l)
-                     (set! file f))
+                     (set! file f)
+                     (set! sysheader? s?))
                    (display/indent v ")")]
                   [(block-push? v)
                    (let ([size (total-push-size (block-push-vars v))]
@@ -1285,7 +1300,7 @@
                               semi-newlines?)
                      (newline/indent indent)
                      (inc-line!))])
-                (loop (cdr e) v (cons v prevs) line file)))))
+                (loop (cdr e) v (cons v prevs) line file sysheader?)))))
         
         
         ;; prev-was-funcall? implements a last-ditch optimization: if
@@ -3881,7 +3896,8 @@
         
         (let* ([e e-raw]
                [line -inf.0]
-               [file #f])
+               [file #f]
+               [sysheader? #f])
           (set! e-raw #f) ;; to allow GC
           (foldl-statement
            e
@@ -3892,9 +3908,10 @@
                                (or (tok-file (car sube))
                                    where))]
                     [sube (top-level sube where #t)])
-               (let-values ([(l f) (print-it sube 0 #t #f line file keep-lines?)])
+               (let-values ([(l f s?) (print-it sube 0 #t #f line file sysheader? keep-lines?)])
                  (set! line l)
-                 (set! file f))
+                 (set! file f)
+                 (set! sysheader? s?))
                where))
            #f))
         
