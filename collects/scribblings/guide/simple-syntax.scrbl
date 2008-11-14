@@ -280,9 +280,9 @@ work when given non-strings:
 @schemeblock[
 (define (reply s)
   (if (string? s)
-      (if (equal? "hello" (substring s 0 5)
+      (if (equal? "hello" (substring s 0 5))
           "hi!"
-          "huh?"))
+          "huh?")
       "huh?"))
 ]
 
@@ -292,8 +292,8 @@ better written as
 @schemeblock[
 (define (reply s)
   (if (if (string? s)
-          (equal? "hello" (substring s 0 5)
-          #f))
+          (equal? "hello" (substring s 0 5))
+          #f)
       "hi!"
       "huh?"))
 ]
