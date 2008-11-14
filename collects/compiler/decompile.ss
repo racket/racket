@@ -40,7 +40,7 @@
 ;; Main entry:
 (define (decompile top)
   (match top
-    [(struct compilation-top (_ prefix form))
+    [(struct compilation-top (max-let-depth prefix form))
      (let-values ([(globs defns) (decompile-prefix prefix)])
        `(begin
           ,@defns
@@ -88,7 +88,7 @@
 
 (define (decompile-module mod-form stack)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body))
+    [(struct mod (name self-modidx prefix provides requires body syntax-body max-let-depth))
      (let-values ([(globs defns) (decompile-prefix prefix)]
                   [(stack) (append '(#%modvars) stack)])
        `(module ,name ....

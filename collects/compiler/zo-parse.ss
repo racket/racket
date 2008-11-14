@@ -23,7 +23,7 @@
 ;; In stxs of prefix:
 (define-form-struct stx (encoded)) ; todo: decode syntax objects
 
-(define-form-struct mod (name self-modidx prefix provides requires body syntax-body))
+(define-form-struct mod (name self-modidx prefix provides requires body syntax-body max-let-depth))
 
 (define-form-struct lam (name flags num-params rest? closure-map max-let-depth body)) ; `lambda'
 (define-form-struct closure (code gen-id)) ; a static closure (nothing to close over)
@@ -220,7 +220,8 @@
                                    make-def-for-syntax
                                    make-def-syntaxes)
                                ids expr prefix max-let-depth)]))
-                         (vector->list syntax-body)))]))]))
+                         (vector->list syntax-body))
+                    max-let-depth)]))]))
 (define (read-module-wrap v)
   v)
 
