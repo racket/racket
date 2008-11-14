@@ -9,6 +9,7 @@
 		 cpp
 		 file-in
 		 file-out
+                 keep-lines?
 		 palm? pgc? pgc-really?
 		 precompiling-header? precompiled-header
 		 show-info? output-depends-info?
@@ -43,12 +44,14 @@
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
         (define-struct tok (n line file) (make-inspector))
+        (define-struct (sysheader-tok tok) ())
         (define-struct (seq tok) (close in))
         (define-struct (parens seq) ())
         (define-struct (brackets seq) ())
         (define-struct (braces seq) ())
         (define-struct (callstage-parens parens) ())
         (define-struct (creation-parens parens) ())
+        (define-struct (nosrc-parens parens) ())
         (define-struct (call tok) (func args live tag nonempty?)) ;; a converted function call
         (define-struct (block-push tok) (vars tag super-tag top?))
         (define-struct (note tok) (s))
@@ -79,7 +82,7 @@
         ;; For dependency tracking:
         (define depends-files (make-hash-table 'equal))
         
-        (define (make-triple v src line)
+        (define (make-triple v src line sysheader?)
           (when (symbol? v)
             (hash-table-put! used-symbols v
                              (add1 (hash-table-get
@@ -88,7 +91,9 @@
                                     (lambda () 0)))))
           (when (and src output-depends-info?)
             (hash-table-put! depends-files src #t))
-          (make-tok v line src))
+          (if sysheader?
+              (make-sysheader-tok v line src)
+              (make-tok v line src)))
         
         (define (make-a-seq opener src line body)
           ((case opener
@@ -153,14 +158,15 @@
                   (add1 p)
                   (loop (add1 p))))))
         
-        (define re:line #rx#"^#[^\n\r]* ([0-9]+) \"([^\"]*)\"" )
+        (define re:line #rx#"^#[^\n\r]* ([0-9]+) \"([^\"]*)\"([^\r\n]*)" )
         (define re:pragma #rx#"^#pragma ([^\r\n]*)")
         
         (define (do-cpp s p)
           (let ([m (regexp-match re:line s p)])
             (when m
               (set! source-line (string->number (bytes->string/utf-8 (cadr m))))
-              (set! source-file (caddr m))))
+              (set! source-file (caddr m))
+              (set! source-sysheader? (regexp-match? #px#"\\b3\\b" (cadddr m)))))
           (let ([pragma (regexp-match re:pragma s p)])
             (if (and pragma
                      (not (regexp-match-positions re:boring (car pragma))))
@@ -170,8 +176,9 @@
         (define (result s)
           (make-triple
            s
-           source-file   ; file
-           source-line)) ; line
+           source-file
+           source-line
+           source-sysheader?))
         
         (define (symbol s)
           (result (string->symbol (bytes->string/utf-8 s))))
@@ -311,6 +318,7 @@
         
         (define source-file #f)
         (define source-line 0)
+        (define source-sysheader? #f)
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
@@ -978,12 +986,14 @@
         
         (define makers (make-hash-table))
         (hash-table-put! makers 'struct:tok (cons 'make-tok make-tok))
+        (hash-table-put! makers 'struct:sysheader-tok (cons 'make-sysheader-tok make-sysheader-tok))
         (hash-table-put! makers 'struct:seq (cons 'make-a-seq make-a-seq))
         (hash-table-put! makers 'struct:parens (cons 'make-parens make-parens))
         (hash-table-put! makers 'struct:brackets (cons 'make-brackets make-brackets))
         (hash-table-put! makers 'struct:braces (cons 'make-braces make-braces))
         (hash-table-put! makers 'struct:callstage-parens (cons 'make-callstage-parens make-callstage-parens))
         (hash-table-put! makers 'struct:creation-parens (cons 'make-creation-parens make-creation-parens))
+        (hash-table-put! makers 'struct:nosrc-parens (cons 'make-nosrc-parens make-nosrc-parens))
         (hash-table-put! makers 'struct:call (cons 'make-call make-call))
         (hash-table-put! makers 'struct:block-push (cons 'make-block-push make-block-push))
         (hash-table-put! makers 'struct:note (cons 'make-note make-note))
@@ -1044,10 +1054,6 @@
         
         (define (display/indent v s)
           (when next-indent
-            ;; can't get pre-processor line directive to work
-            '(when (and v (tok-file v) (tok-line v))
-               (printf "# ~a ~s~n" (max 1 (- (tok-line v) 1)) (tok-file v)))
-            
             (display (make-string next-indent #\space))
             (set! next-indent #f))
           (display s))
@@ -1098,35 +1104,77 @@
           (apply + (map (lambda (x)
                           (get-variable-size (cdr x)))
                         vars)))
+
+        (define (extract-src-tok v)
+          (cond
+           [(tok? v) v]
+           [(call? v) (extract-src-tok (call-func v))]
+           [else #f]))
         
-        (define (print-it e indent semi-newlines? ordered?)
-          (let loop ([e e][prev #f][prevs null])
-            (unless (null? e)
-              (let ([v (car e)])
+        (define (print-it e indent semi-newlines? ordered? line file sysheader? keep-lines?)
+          (let loop ([e e][prev #f][prevs null][old-line line][old-file file][old-sysheader? sysheader?])
+            (if (null? e)
+              (values old-line old-file old-sysheader?)
+              (let* ([v (car e)]
+                     [sv (extract-src-tok v)]
+                     [line (if keep-lines?
+                               (or (and sv (tok-line sv))
+                                   old-line)
+                               old-line)]
+                     [file (if keep-lines?
+                               (or (and sv (tok-file sv))
+                                   old-file)
+                               old-file)]
+                     [sysheader? (if keep-lines?
+                                     (if (and sv (tok-file sv))
+                                         (sysheader-tok? sv)
+                                         old-sysheader?)
+                                     old-sysheader?)]
+                     [inc-line! (lambda () (set! line (add1 line)))])
+                (when keep-lines?
+                  (unless (and (equal? line old-line)
+                               (equal? file old-file))
+                    (if (and (equal? file old-file)
+                             (line . > . old-line)
+                             ((- line old-line) . < . 10))
+                        (display (make-string (- line old-line) #\newline))
+                        (printf "\n# ~a \"~a\"~a\n" line file
+                                (if sysheader? " 3" "")))
+                    (set! next-indent indent)))
                 (cond
                   [(pragma? v)
                    (let ([s (format "#pragma ~a" (pragma-s v))])
                      (unless (regexp-match re:boring s)
-                       (printf "\n~a\n\n" s)))]
+                       (printf "\n~a\n\n" s)
+                       (set! line (+ line 3))))]
                   [(seq? v)
                    (display/indent v (tok-n v))
                    (let ([subindent (if (braces? v)
                                         (begin
                                           (newline/indent (+ indent 2))
+                                          (inc-line!)
                                           (+ indent 2))
                                         indent)])
-                     (print-it (seq->list (seq-in v)) subindent
-                               (not (and (parens? v)
-                                         prev
-					 (tok? prev)
-                                         (memq (tok-n prev) '(for))))
-                               (or (braces? v) (callstage-parens? v)))
+                     (let-values ([(l f s?)
+                                   (print-it (seq->list (seq-in v)) subindent
+                                             (not (and (parens? v)
+                                                       prev
+                                                       (tok? prev)
+                                                       (memq (tok-n prev) '(for))))
+                                             (or (braces? v) (callstage-parens? v))
+                                             line file sysheader?
+                                             (and keep-lines?
+                                                  (not (nosrc-parens? v))))])
+                       (set! line l)
+                       (set! file f)
+                       (set! sysheader? s?))
                      (when (and next-indent (= next-indent subindent))
                        (set! next-indent indent)))
                    (display/indent #f (seq-close v))
                    (cond
                      [(braces? v)
-                      (newline/indent indent)]
+                      (newline/indent indent)
+                      (inc-line!)]
                      [(brackets? v)
                       (display/indent v " ")]
                      [(parens? v)
@@ -1135,12 +1183,15 @@
                                (memq (tok-n prev) '(if))
                                (or (null? (cdr e))
                                    (not (braces? (cadr e)))))
-                          (newline/indent (+ indent 2))
+                          (begin
+                            (newline/indent (+ indent 2))
+                            (inc-line!))
                           (display/indent v " "))]
                      [else (error 'xform "unknown brace: ~a" (caar v))])]
                   [(note? v)
                    (display/indent v (note-s v))
-                   (newline/indent indent)]
+                   (newline/indent indent)
+                   (inc-line!)]
                   [(call? v)
                    (if (not (call-nonempty? v))
                        (display/indent v "FUNCCALL_EMPTY(")
@@ -1160,7 +1211,14 @@
                                    (display/indent v ")"))
                                  (display/indent v "_"))
                              (display/indent v "), "))))
-                   (print-it (append (call-func v) (list (call-args v))) indent #f #f)
+                   (let-values ([(l f s?)
+                                 (print-it (append (call-func v) (list (call-args v))) 
+                                           indent #f #f line file sysheader?
+                                           ;; Can't put srcloc within macro call:
+                                           #f)])
+                     (set! line l)
+                     (set! file f)
+                     (set! sysheader? s?))
                    (display/indent v ")")]
                   [(block-push? v)
                    (let ([size (total-push-size (block-push-vars v))]
@@ -1175,15 +1233,18 @@
                        (display/indent v (format "BLOCK_SETUP~a((" (if (block-push-top? v) "_TOP" "")))
                        (push-vars (block-push-vars v) prev-add "")
                        (display/indent v "));")
-                       (newline))
+                       (newline)
+                       (inc-line!))
                      (printf "#~adefine ~a_COUNT (~a~a)~n" tabbing tag size prev-add)
+                     (inc-line!)
                      (printf "#~adefine SETUP_~a(x) " tabbing tag)
                      (cond
                        [(and (zero? size) (block-push-super-tag v)) 
                         (printf "SETUP_~a(x)" (block-push-super-tag v))]
                        [per-block-push? (printf "SETUP(~a_COUNT)" tag)]
                        [else (printf "x")])
-                     (newline/indent indent))]
+                     (newline/indent indent)
+                     (inc-line!))]
                   [(nested-setup? v)
                    (let ([tabbing (if (zero? indent)
                                       ""
@@ -1203,9 +1264,11 @@
                         (printf "#~aundef BLOCK_SETUP~n" tabbing)
                         (printf "#~aundef FUNCCALL~n" tabbing)
                         (printf "#~aundef FUNCCALL_EMPTY~n" tabbing)
-                        (printf "#~aundef FUNCCALL_AGAIN~n" tabbing)]))]
+                        (printf "#~aundef FUNCCALL_AGAIN~n" tabbing)])
+                     (set! line (+ 4 line)))]
                   [(memq (tok-n v) asm-commands)
                    (newline/indent indent)
+                   (inc-line!)
                    (display/indent v (tok-n v))
                    (display/indent v " ")]
                   [(and (or (eq? '|HIDE_FROM_XFORM| (tok-n v))
@@ -1235,8 +1298,9 @@
                      (display/indent v " "))
                    (when (and (eq? semi (tok-n v))
                               semi-newlines?)
-                     (newline/indent indent))])
-                (loop (cdr e) v (cons v prevs))))))
+                     (newline/indent indent)
+                     (inc-line!))])
+                (loop (cdr e) v (cons v prevs) line file sysheader?)))))
         
         
         ;; prev-was-funcall? implements a last-ditch optimization: if
@@ -2748,7 +2812,7 @@
                                                               #t]
                                                              [else #f])))
                                                     (list (make-tok DECL_RET_SAVE #f #f)
-                                                          (make-parens
+                                                          (make-nosrc-parens
                                                            "(" #f #f ")"
                                                            (list->seq setup-stack-return-type)))
                                                     null)
@@ -3079,7 +3143,6 @@
                                                [len (if last?
                                                         (length e)
                                                         (sub1 (length e)))])
-                                          (printf "/* this far ~a */~n" (tok-line (car e)))
                                           (let ([k (lift-in-arithmetic? (let loop ([e e])
                                                                           (if (null? ((if last?
                                                                                           cddr 
@@ -3831,7 +3894,10 @@
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
-        (let* ([e e-raw])
+        (let* ([e e-raw]
+               [line -inf.0]
+               [file #f]
+               [sysheader? #f])
           (set! e-raw #f) ;; to allow GC
           (foldl-statement
            e
@@ -3842,7 +3908,10 @@
                                (or (tok-file (car sube))
                                    where))]
                     [sube (top-level sube where #t)])
-               (print-it sube 0 #t #f)
+               (let-values ([(l f s?) (print-it sube 0 #t #f line file sysheader? keep-lines?)])
+                 (set! line l)
+                 (set! file f)
+                 (set! sysheader? s?))
                where))
            #f))
         

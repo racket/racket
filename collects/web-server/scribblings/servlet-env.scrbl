@@ -5,7 +5,7 @@
        #:style 'toc]{Simple Single Servlet Servers}
 @(require (for-label web-server/servlet-env))
 
-@defmodule[web-server/servlet-env]
+@defmodule[web-server/servlet-env]{
 
 The @web-server provides a way to quickly configure and start a server instance.
 
@@ -118,4 +118,6 @@ the top-level interacts with continuations. (Read: Don't do it.)
  If a file cannot be found, @scheme[file-not-found-path] is used as an error response.
  
  MIME types are looked up at @scheme[mime-types-path].
+}
+
 }

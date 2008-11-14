@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (only-in mzlib/file make-temporary-file)
-         web-server/private/mime-types
-         web-server/private/response-structs)
+         web-server/http
+         web-server/private/mime-types)
 (provide mime-types-tests)
 
 (define test-file (make-temporary-file))

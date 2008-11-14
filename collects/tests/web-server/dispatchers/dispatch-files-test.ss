@@ -6,7 +6,7 @@
          net/url
          mzlib/list
          xml/xml
-         web-server/private/request-structs
+         web-server/http
          web-server/private/util
          web-server/dispatchers/dispatch
          (prefix-in files: web-server/dispatchers/dispatch-files)

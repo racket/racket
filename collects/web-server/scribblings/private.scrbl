@@ -14,7 +14,7 @@ Some of these are documented here.
 @section[#:tag "timer.ss"]{Timers}
 @(require (for-label web-server/private/timer))
 
-@defmodule[web-server/private/timer]
+@defmodule[web-server/private/timer]{
 
 @filepath{private/timer.ss} provides a functionality for running
 procedures after a given amount of time, that may be extended.
@@ -55,12 +55,13 @@ procedures after a given amount of time, that may be extended.
  Cancels the firing of @scheme[t] ever and frees resources used by @scheme[t].
 }
 
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "connection-manager.ss"]{Connection Manager}
 @(require (for-label web-server/private/connection-manager))
 
-@defmodule[web-server/private/connection-manager]
+@defmodule[web-server/private/connection-manager]{
 
 @filepath{private/connection-manager.ss} provides functionality for managing pairs of
 input and output ports. We have plans to allow a number of different strategies
@@ -102,6 +103,8 @@ for doing this.
          void]{
  Calls @scheme[reset-timer!] with the timer behind @scheme[c] with @scheme[t].
 }
+              
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-server-unit.ss"]{Dispatching Server}
@@ -114,7 +117,7 @@ This dispatching server component is useful on its own.
 
 @subsection{Dispatching Server Signatures}
 
-@defmodule[web-server/private/dispatch-server-sig]
+@defmodule[web-server/private/dispatch-server-sig]{
 
 The @schememodname[web-server/private/dispatch-server-sig] library
 provides two signatures.
@@ -152,10 +155,11 @@ The @scheme[dispatch-server^] signature is an alias for
  @defthing[dispatch dispatcher?]{How to handle requests.}
 }
 
+}
 
 @subsection{Dispatching Server Unit}
 
-@defmodule[web-server/private/dispatch-server-unit]
+@defmodule[web-server/private/dispatch-server-unit]{
 
 The @schememodname[web-server/private/dispatch-server-unit] module
 provides the unit that actually implements a dispatching server.
@@ -166,6 +170,8 @@ provides the unit that actually implements a dispatching server.
  @secref["connection-manager.ss"] to manage connections.
 }
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "closure.ss"]{Serializable Closures}
 @(require (for-label web-server/private/closure)
@@ -173,7 +179,7 @@ provides the unit that actually implements a dispatching server.
 
 @defmodule[web-server/private/closure]{
 
-The defunctionalization process of the Web Language (see @secref["lang"])
+The defunctionalization process of the Web Language (see @secref["stateless-servlets"])
 requires an explicit representation of closures that is serializable.
 @filepath{private/closure.ss} is this representation. It provides:
 
@@ -239,7 +245,7 @@ Here is an example:
 @section[#:tag "cache-table.ss"]{Cache Table}
 @(require (for-label web-server/private/cache-table))
 
-@defmodule[web-server/private/cache-table]
+@defmodule[web-server/private/cache-table]{
 
 @filepath{private/cache-table.ss} provides a set of caching hash table
 functions.
@@ -267,11 +273,13 @@ functions.
  Determines if @scheme[v] is a cache table.
 }
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "mime-types.ss"]{MIME Types}
 @(require (for-label web-server/private/mime-types))
 
-@defmodule[web-server/private/mime-types]
+@defmodule[web-server/private/mime-types]{
 
 @filepath{private/mime-types.ss} provides function for dealing with @filepath{mime.types}
 files.
@@ -287,12 +295,14 @@ files.
  Uses a @scheme[read-mime-types] with @scheme[p] and constructs a
  function from paths to their MIME type.
 }
+                               
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "mod-map.ss"]{Serialization Utilities}
 @(require (for-label web-server/private/mod-map))
 
-@defmodule[web-server/private/mod-map]
+@defmodule[web-server/private/mod-map]{
 
 The @schememodname[scheme/serialize] library provides the
 functionality of serializing values. @filepath{private/mod-map.ss}
@@ -309,12 +319,14 @@ compresses the serialized representation.
  Expands multiple occurrences of the same module in the module
  map of the compressed serialized representation, @scheme[csv].
 }
+               
+}
 
 @; ------------------------------------------------------------
 @section[#:tag "url-param.ss"]{URL Param}
 @(require (for-label web-server/private/url-param))
 
-@defmodule[web-server/private/url-param]
+@defmodule[web-server/private/url-param]{
 
 The @web-server needs to encode information in URLs. If this data
 is stored in the query string, than it will be overridden by browsers that
@@ -335,6 +347,8 @@ with this process.
          (or/c string? false/c)]{
  Extracts the string associated with @scheme[k] in the final URL param of
  @scheme[u], if there is one, returning @scheme[#f] otherwise.
+}
+
 }
 
 @; ------------------------------------------------------------

@@ -82,8 +82,8 @@
 
       ;; test-coverage-point : syntax syntax -> syntax
       ;; sets a test coverage point for a single expression
-      (define (test-coverage-point body expr)
-        (if (test-coverage-enabled)
+      (define (test-coverage-point body expr phase)
+        (if (and (test-coverage-enabled) (zero? phase))
             (let ([key (gensym 'test-coverage-point)])
               (initialize-test-coverage-point key expr)
               (with-syntax ([key (datum->syntax
@@ -516,7 +516,7 @@
                 ;; It's a null:
                 expr]
                [(syntax-case* expr (#%plain-app void)
-                              (if phase
+                              (if (positive? phase)
                                 free-transformer-identifier=?
                                 free-identifier=?)
                   [(#%plain-app void) #t]
@@ -533,7 +533,8 @@
               (error 'errortrace "unrecognized expression form~a: ~e"
                      (if top? " at top-level" "")
                      (syntax->datum expr))])
-           expr)))
+           expr
+           phase)))
 
       (define annotate (make-annotate #f #f))
       (define annotate-top (make-annotate #t #f))

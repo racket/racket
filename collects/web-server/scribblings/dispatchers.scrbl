@@ -34,7 +34,7 @@ documentation will be useful.
 @section[#:tag "dispatch.ss"]{General}
 @(require (for-label web-server/dispatchers/dispatch))
 
-@defmodule[web-server/dispatchers/dispatch]
+@defmodule[web-server/dispatchers/dispatch]{
 
 @filepath{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
@@ -75,11 +75,13 @@ Consider the following example dispatcher, that captures the essence of URL rewr
                          [request-uri (rule (request-uri req))]))))
 ]
 
+}
+
 @; ------------------------------------------------------------
 @section[#:tag "filesystem-map.ss"]{Mapping URLs to Paths}
 @(require (for-label web-server/dispatchers/filesystem-map))
 
-@defmodule[web-server/dispatchers/filesystem-map]
+@defmodule[web-server/dispatchers/filesystem-map]{
 
 @filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
@@ -113,6 +115,8 @@ URLs to paths on the filesystem.
  matches the @scheme[regex]. This is useful to disallow strange files, like GIFs, from being considered
  servlets when using the servlet dispatchers. It will return a @scheme[exn:fail:filesystem:exists?] exception if
  the path does not match.
+}
+                     
 }
 
 @; ------------------------------------------------------------
@@ -245,8 +249,7 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that performs HTTP Basic authentication filtering.}]{
 
-@(require (for-label web-server/private/request-structs
-                     web-server/private/response-structs
+@(require (for-label web-server/http
                      net/url
                      web-server/configuration/responders))
 

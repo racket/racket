@@ -1,17 +1,11 @@
 #lang scheme/base
-(require "servlet/helpers.ss"
-         "servlet/web-cells.ss"
-         "servlet/bindings.ss"
-         "servlet/basic-auth.ss"
-         "servlet/web.ss"
-         "servlet/servlet-structs.ss"
-         "private/response-structs.ss"
-         "private/request-structs.ss")
-(provide (all-from-out "servlet/web.ss")
-         (all-from-out "servlet/web-cells.ss")
-         (all-from-out "servlet/helpers.ss")
-         (all-from-out "servlet/bindings.ss")
-         (all-from-out "servlet/basic-auth.ss")
-         (all-from-out "servlet/servlet-structs.ss")
-         (all-from-out "private/response-structs.ss")
-         (all-from-out "private/request-structs.ss"))
+(require web-server/servlet/web-cells
+         web-server/http/bindings
+         web-server/http
+         web-server/servlet/servlet-structs
+         web-server/servlet/web)
+(provide (all-from-out web-server/servlet/web-cells
+                       web-server/http/bindings
+                       web-server/http
+                       web-server/servlet/servlet-structs
+                       web-server/servlet/web))

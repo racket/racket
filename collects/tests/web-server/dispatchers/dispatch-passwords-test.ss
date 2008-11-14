@@ -6,7 +6,7 @@
          net/url
          mzlib/list
          mzlib/serialize
-         web-server/private/request-structs
+         web-server/http
          web-server/dispatchers/dispatch
          (prefix-in passwords: web-server/dispatchers/dispatch-passwords)
          "../util.ss")

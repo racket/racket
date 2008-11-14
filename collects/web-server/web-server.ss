@@ -10,7 +10,7 @@
          "web-config-sig.ss"
          "web-server-sig.ss"
          "web-server-unit.ss"
-         (prefix-in http: "private/request.ss"))
+         (prefix-in http: web-server/http/request))
 (provide/contract
  [serve
   (->* (#:dispatch dispatcher/c)

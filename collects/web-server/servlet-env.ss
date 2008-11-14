@@ -10,8 +10,7 @@
          web-server/private/servlet
          web-server/configuration/namespace
          web-server/private/cache-table 
-         web-server/private/request-structs
-         web-server/private/response-structs
+         web-server/http
          web-server/private/util
          web-server/configuration/responders
          web-server/dispatchers/dispatch

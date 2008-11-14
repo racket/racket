@@ -5,7 +5,7 @@
                   make-temporary-file)
          net/url
          mzlib/list
-         web-server/private/request-structs
+         web-server/http
          web-server/dispatchers/dispatch
          (prefix-in host: web-server/dispatchers/dispatch-host))
 (provide dispatch-host-tests)

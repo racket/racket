@@ -14,7 +14,7 @@
       (inner (void) install-info t))
 
     (define/public (display-results)
-      (send this insert-test-results test-info))
+      (insert-test-results test-info))
 
     (define/pubment (insert-test-results test-info)
       (let* ([style (send test-info test-style)]
@@ -117,7 +117,7 @@
     (define/public (add-analysis a) (send test-info add-analysis a))
 
     (define/public (setup-info style)
-      (set! test-info (make-object (send this info-class) style)))
+      (set! test-info (make-object (info-class) style)))
     (define/pubment (setup-display cur-rep event-space)
       (set! test-display (make-object display-class cur-rep))
       (set! display-rep cur-rep)
@@ -126,26 +126,37 @@
 
     (define/pubment (run)
       (when (test-execute)
-        (unless test-info (send this setup-info 'check-base))
+        (unless test-info (setup-info 'check-base))
         (inner (void) run)))
     (define/public (summarize-results port)
-      (when (test-execute)
-        (unless test-display (setup-display #f #f))
-        (let ([result (send test-info summarize-results)])
-          (send test-display install-info test-info)
-          (case result
-            [(no-tests) (send this display-untested port)]
-            [(all-passed) (send this display-success port display-event-space)]
-            [(mixed-results)
-             (send this display-results display-rep display-event-space)]))))
+      (cond
+        [(test-execute)
+         (unless test-display (setup-display #f #f))
+         (let ([result (send test-info summarize-results)])
+           (send test-display install-info test-info)
+           (case result
+             [(no-tests) (display-untested port)]
+             [(all-passed) (display-success port display-event-space
+                                            (+ (send test-info tests-run)
+                                               (send test-info checks-run)))]
+             [(mixed-results)
+              (display-results display-rep display-event-space)]))]
+        [else
+         (fprintf port "Tests disabled.\n")]))
 
-    (define/public (display-success port event)
+    (define/private (display-success port event count)
       #;(when event
         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event])
           ((dynamic-require 'scheme/gui 'queue-callback)
             (lambda () (send test-display report-success)))))
       (unless (test-silence)
-        (fprintf port "All tests passed!~n")))
+        (fprintf port "~a test~a passed!\n"
+                 (case count
+                   [(0) "Zero"]
+                   [(1) "The only"]
+                   [(2) "Both"]
+                   [else (format "All ~a" count)])
+                 (if (= count 1) "" "s"))))
     (define/public (display-untested port)
       (unless (test-silence)
         (fprintf port "This program should be tested.~n")))

@@ -1,22 +1,16 @@
 #lang scheme
 (require net/url
-         "../private/request-structs.ss"
-         "../private/response-structs.ss"
-         "../servlet/helpers.ss"
-         "abort-resume.ss"
-         "web.ss"
-         "web-cells.ss"
-         "web-param.ss"
-         "file-box.ss"
-         "web-extras.ss")
+         web-server/http
+         web-server/lang/abort-resume
+         web-server/lang/web
+         web-server/lang/web-cells
+         web-server/lang/web-param
+         web-server/lang/file-box)
 (provide (except-out (all-from-out scheme) #%module-begin)
-         (all-from-out net/url)
-         (all-from-out "../private/request-structs.ss")
-         (all-from-out "../private/response-structs.ss")
-         (all-from-out "../servlet/helpers.ss")
-         (all-from-out "abort-resume.ss")
-         (all-from-out "web.ss")
-         (all-from-out "web-cells.ss")
-         (all-from-out "web-param.ss")
-         (all-from-out "file-box.ss")
-         (all-from-out "web-extras.ss"))
+         (all-from-out net/url
+                       web-server/http
+                       web-server/lang/abort-resume
+                       web-server/lang/web
+                       web-server/lang/web-cells
+                       web-server/lang/web-param
+                       web-server/lang/file-box))

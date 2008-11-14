@@ -2,7 +2,7 @@
 (require mzlib/contract
          net/url)
 (require "dispatch.ss"
-         "../private/request-structs.ss"
+         web-server/http
          "../private/util.ss")
 (provide/contract
  [interface-version dispatcher-interface-version/c]

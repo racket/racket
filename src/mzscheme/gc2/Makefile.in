@@ -25,12 +25,12 @@ LIBS = @LIBS@
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
 XFORM_SETUP = ../mzscheme@CGC@ -cqu $(srcdir)/xform.ss --setup .
-XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" -o
+XFORM_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS)" @XFORMFLAGS@ -o
 XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
-XFORM_COMPACT_GC_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -DUSE_COMPACT_3M_GC" -o
+XFORM_COMPACT_GC_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -DUSE_COMPACT_3M_GC" @XFORMFLAGS@ -o
 XFORM_COMPACT_GC = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_COMPACT_GC_NOPRECOMP)
 
 FOREIGN_USED_OBJ = foreign.@LTO@
@@ -93,7 +93,6 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/fun.c \
 	$(XSRCDIR)/hash.c \
 	$(XSRCDIR)/jit.c \
-	$(XSRCDIR)/jit_compact_gc.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/module.c \
 	$(XSRCDIR)/network.c \
@@ -125,7 +124,6 @@ all: xsrc
 	$(MAKE) $(XSRCDIR)/precomp.h
 	$(MAKE) xobjects
 	$(MAKE) ../mzscheme3m
-	$(MAKE) ../mzscheme_compact_gc
 
 xsrcs: $(XSRCS)
 
@@ -170,10 +168,6 @@ $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
-
-$(XSRCDIR)/jit_compact_gc.c: ../src/jit.@LTO@ $(XFORMDEP)
-	$(XFORM_COMPACT_GC) $(XSRCDIR)/jit_compact_gc.c $(SRCDIR)/jit.c
-
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
@@ -227,6 +221,8 @@ $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_COLLECTS_DIR) $(srcdir)/../main.c
 
+$(XSRCDIR)/jit_compact_gc.c: ../src/jit.@LTO@ $(XFORMDEP)
+	$(XFORM_COMPACT_GC) $(XSRCDIR)/jit_compact_gc.c $(SRCDIR)/jit.c
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
@@ -391,7 +387,7 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"
 
 ../mzscheme_compact_gc@OSX@:
-	echo "../mzscheme_compact_gc not currently build on OSX"
+	echo "../mzscheme_compact_gc does not currently build on Mac OS X; use --enable-compact with configure, instead"
 
 clean:
 	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*

@@ -11,20 +11,8 @@ develop Web applications in Scheme.
 @table-of-contents[]
 
 @include-section["running.scrbl"]
-
-@include-section["servlet.scrbl"]
-@include-section["lang.scrbl"]
-
-@include-section["formlets.scrbl"]
-
-@include-section["configuration.scrbl"]
-@include-section["dispatchers.scrbl"]
-@include-section["web-config-unit.scrbl"]
-@include-section["web-server-unit.scrbl"]
-@include-section["managers.scrbl"]
-
-@include-section["private.scrbl"]
-
+@include-section["writing.scrbl"]
+@include-section["extending.scrbl"]
 @include-section["faq.scrbl"]
 
 @; ------------------------------------------------------------

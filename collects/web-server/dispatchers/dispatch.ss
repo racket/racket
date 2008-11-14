@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/contract)
 (require "../private/connection-manager.ss"
-         "../private/request-structs.ss")
+         web-server/http)
 
 (define dispatcher/c
   (connection? request? . -> . void))

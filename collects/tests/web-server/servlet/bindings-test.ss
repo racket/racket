@@ -1,9 +1,9 @@
-#lang scheme/base
+#lang scheme
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          mzlib/list
          net/url
-         web-server/private/request-structs
-         web-server/servlet/bindings)
+         web-server/http
+         web-server/http/bindings)
 (provide bindings-tests)
 
 (define bs `([foo . 3] [foos . 1] [foos . 2]))
@@ -41,7 +41,7 @@
      "File"
      (check-equal? (request-bindings
                     (make-request 'get (string->url "http://test.com/foo")
-                                  empty (list (make-binding:file #"key" #"file" #"val")) #f
+                                  empty (list (make-binding:file #"key" #"file" empty #"val")) #f
                                   "host" 80 "client"))
                    '((key . #"val")))))
    

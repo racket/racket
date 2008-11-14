@@ -238,9 +238,9 @@
           (file-exists? ,list-lib) => #t
           (input-port? (open-input-file ,list-lib)) => #t
           ;; writing is forbidden
-          (open-output-file ,list-lib) =err> "file access denied"
+          (open-output-file ,list-lib) =err> "`write' access denied"
           ;; reading from other places is forbidden
-          (directory-list ,tmp) =err> "file access denied"
+          (directory-list ,tmp) =err> "`read' access denied"
           ;; no network too
           (tcp-listen 12345) =err> "network access denied"
           --top--
@@ -255,7 +255,7 @@
           x => 123
           (length (with-input-from-file ,test-lib read)) => 5
           ;; the directory is still not kosher
-          (directory-list ,tmp) =err> "file access denied"
+          (directory-list ,tmp) =err> "`read' access denied"
           --top--
           ;; should work also for module evaluators
           ;; --> NO!  Shouldn't make user code require whatever it wants

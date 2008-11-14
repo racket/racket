@@ -347,6 +347,10 @@
     (bin0 #(1 2) 'vector-immutable 1 2)
     (tri0 #(1 2 3) 'vector (lambda () 1) 2 3 void)
     (tri0 #(1 2 3) 'vector-immutable (lambda () 1) 2 3 void)
+    (un0 '(1) 'list 1)
+    (bin0 '(1 2) 'list 1 2)
+    (tri0 '(1 2 3) 'list (lambda () 1) 2 3 void)
+    (un0 '#&1 'box 1)
 
     (let ([test-setter
 	   (lambda (make-X def-val set-val set-name set ref)
@@ -614,6 +618,14 @@
                      [foo (lambda () goo)])
               15)
            15)
+
+(test-comp '(letrec ((even
+                      (let ([unused 6])
+                        (let ([even (lambda (x) (if (zero? x) #t (even (sub1 x))))])
+                          (values even)))))
+              (even 10000))
+           '(letrec ((even (lambda (x) (if (zero? x) #t (even (sub1 x))))))
+              (even 10000)))
 
 (test-comp '(procedure? add1)
            #t)

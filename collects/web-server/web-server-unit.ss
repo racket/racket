@@ -9,7 +9,7 @@
          "private/mime-types.ss"
          "configuration/configuration-table-structs.ss"
          "private/cache-table.ss"
-         (prefix-in http: "private/request.ss"))
+         (prefix-in http: web-server/http/request))
 (require "dispatchers/dispatch.ss"
          web-server/servlet/setup
          (prefix-in fsmap: "dispatchers/filesystem-map.ss")

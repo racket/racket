@@ -694,6 +694,7 @@ CGCOPTIONS
 GC2OPTIONS
 MROPTIONS
 GCDIR
+XFORMFLAGS
 MZBINTARGET
 MZINSTALLTARGET
 EXTRA_GMP_OBJ
@@ -4189,6 +4190,7 @@ fi
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then
   COMPFLAGS="$COMPFLAGS -Wall"
+  XFORMFLAGS="$XFORMFLAGS --keep-lines"
 
   # Use -MMD when we have gcc and gnumake:
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
@@ -11811,6 +11813,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -12675,6 +12678,7 @@ CGCOPTIONS!$CGCOPTIONS$ac_delim
 GC2OPTIONS!$GC2OPTIONS$ac_delim
 MROPTIONS!$MROPTIONS$ac_delim
 GCDIR!$GCDIR$ac_delim
+XFORMFLAGS!$XFORMFLAGS$ac_delim
 MZBINTARGET!$MZBINTARGET$ac_delim
 MZINSTALLTARGET!$MZINSTALLTARGET$ac_delim
 EXTRA_GMP_OBJ!$EXTRA_GMP_OBJ$ac_delim
@@ -12691,7 +12695,6 @@ LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
-MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12733,6 +12736,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
 MAKE_MRED!$MAKE_MRED$ac_delim
 MAKE_WBUILD!$MAKE_WBUILD$ac_delim
@@ -12773,7 +12777,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 38; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 39; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

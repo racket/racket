@@ -7,10 +7,10 @@
          (only-in srfi/1/list fold filter-map)
          (only-in srfi/13/string string-join)
          xml/xml
-         "connection-manager.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss"
-         "util.ss")
+         web-server/private/connection-manager
+         web-server/http/request-structs
+         web-server/http/response-structs
+         web-server/private/util)
 
 (provide/contract
  [rename ext:output-response output-response (connection? response? . -> . void)]
@@ -49,8 +49,7 @@
 
 ;; Notes:
 ;; 1. close? is a boolean which corresponds roughly to the protocol version.
-;;    #t |-> 1.0 and #f |-> 1.1. See function close-connection? in
-;;    private/request.ss
+;;    #t |-> 1.0 and #f |-> 1.1. See function close-connection?
 ;;
 ;; 2. In the case of a chunked response when close? = #f, then the response
 ;;    must be compliant with http 1.0. In this case the chunked response is

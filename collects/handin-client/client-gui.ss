@@ -44,6 +44,8 @@
 (define (remember-user user)
   (preferences:set preference-key user))
 
+(define remembered-assignment (make-parameter #f))
+
 (define (connect) (handin-connect server port-no))
 
 ;; parameter-like procedure that keeps the password cached for a few minutes
@@ -134,7 +136,10 @@
            [label "Assignment:"]
            [choices null]
            [parent this]
-           [callback void]
+           [callback (lambda (c e)
+                       (remembered-assignment
+                        (send assignment get-string
+                              (send assignment get-selection))))]
            [stretchable-width #t]))
 
     (define button-panel
@@ -304,13 +309,17 @@
                                 (escape))])
                (semaphore-wait go-sema)
                (let* ([h (connect)]
-                      [l (retrieve-active-assignments h)])
+                      [l (retrieve-active-assignments h)]
+                      [n (cond [(member (remembered-assignment) l)
+                                => (lambda (r) (- (length l) (length r)))]
+                               [else 0])])
                  (when (null? l)
                    (handin-disconnect h)
                    (error 'handin "there are no active assignments"))
                  (set! connection h)
                  (for ([assign (in-list l)]) (send assignment append assign))
                  (send assignment enable #t)
+                 (send assignment set-selection n)
                  (set! ok-can-enable? #t)
                  (activate-ok)
                  (send status set-label

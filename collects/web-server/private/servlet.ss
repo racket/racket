@@ -1,8 +1,7 @@
 #lang scheme/base
 (require scheme/contract)
 (require "../managers/manager.ss"
-         "../private/request-structs.ss"
-         "../private/response-structs.ss")
+         web-server/http)
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
 (define-struct (exn:fail:servlet:instance exn:fail) ())

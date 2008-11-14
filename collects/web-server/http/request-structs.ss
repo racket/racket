@@ -33,7 +33,7 @@
 
 (define-serializable-struct binding (id))
 (define-serializable-struct (binding:form binding) (value))
-(define-serializable-struct (binding:file binding) (filename content))
+(define-serializable-struct (binding:file binding) (filename headers content))
 (define (bindings-assq ti bs)
   (match bs
     [(list)
@@ -49,6 +49,7 @@
                                  [value bytes?])]
  [struct (binding:file binding) ([id bytes?]
                                  [filename bytes?]
+                                 [headers (listof header?)]
                                  [content bytes?])])
 
 (define-serializable-struct request (method uri headers/raw bindings/raw post-data/raw

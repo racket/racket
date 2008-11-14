@@ -34,7 +34,7 @@ You are given the entire @schememodname[web-server/servlet] API.
 
 @subsection{Customization API}
 
-@defmodule[web-server/insta/insta]
+@defmodule[web-server/insta/insta] {
 
 The following API is provided to customize the server instance:
 
@@ -45,6 +45,8 @@ The following API is provided to customize the server instance:
 
 @defproc[(static-files-path [path path?]) void]{
  This instructs the Web server to serve static files, such as stylesheet and images, from @scheme[path].
+}
+
 }
 
 @; ------------------------------------------------------------
@@ -64,7 +66,8 @@ default configuration shipped with the server is used. The optional
 port and ip-address arguments override the corresponding portions of
 the @scheme[configuration-table]. If the SSL option is provided, then 
 the server uses HTTPS with @filepath{server-cert.pem} and @filepath{private-key.pem}
-in the current directory, with 443 as the default port.
+in the current directory, with 443 as the default port. (See the @schememodname[openssl] 
+module for details on the SSL implementation.)
 
 The @scheme[configuration-table] is given to
 @scheme[configuration-table->web-config@] and used to construct a
@@ -79,8 +82,13 @@ To run the web server with MrEd, use
 @; ------------------------------------------------------------
 @section[#:tag "web-server.ss"]{Functional}
 @(require (for-label web-server/web-server))
+@(require (for-label web-server/dispatchers/filesystem-map)
+          (for-label web-server/web-config-unit)
+          (for-label web-server/web-config-sig)
+          (for-label web-server/configuration/configuration-table)
+          (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
-@defmodule[web-server/web-server]
+@defmodule[web-server/web-server]{
 
 @filepath{web-server.ss} provides a number of functions for easing embedding
 of the @web-server in other applications, or loading a custom
@@ -101,12 +109,6 @@ dispatcher.
 
 Here's an example of a simple web server that serves files
 from a given path:
-
-@(require (for-label web-server/dispatchers/filesystem-map)
-          (for-label web-server/web-config-unit)
-          (for-label web-server/web-config-sig)
-          (for-label web-server/configuration/configuration-table)
-          (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @schemeblock[
 (define (start-file-server base)
@@ -157,4 +159,6 @@ from a given path:
 @defproc[(do-not-return) void]{
  This function does not return. If you are writing a script to load the @web-server
  you are likely to want to call this functions at the end of your script.
+}
+
 }

@@ -3,10 +3,10 @@
          mzlib/plt-match
          net/url
          mzlib/list
-         net/uri-codec)
-(require "util.ss"
-         "connection-manager.ss"
-         "../private/request-structs.ss")
+         net/uri-codec
+         web-server/private/util
+         web-server/private/connection-manager
+         web-server/http/request-structs)
 
 (provide/contract
  [rename ext:read-request read-request
@@ -173,7 +173,7 @@
                          [(list #f (list _ _ f0 f1))
                           (make-binding:form (or f0 f1) (apply bytes-append contents))]
                          [(list (list _ _ f00 f01) (list _ _ f10 f11))
-                          (make-binding:file (or f10 f11) (or f00 f01) (apply bytes-append contents))])])
+                          (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
                     (read-mime-multipart content-boundary in))
                #f)])]
        [else        

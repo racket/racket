@@ -6,8 +6,7 @@
          web-server/managers/none
          (only-in web-server/lang/web
                   initialize-servlet)
-         web-server/private/response-structs
-         web-server/private/request-structs
+         web-server/http
          web-server/servlet/web
          web-server/configuration/namespace
          web-server/private/web-server-structs
@@ -78,8 +77,7 @@
 
 (define common-module-specs
   '(web-server/private/servlet
-    web-server/private/request-structs
-    web-server/private/response-structs))
+    web-server/http))
 
 (define servlet-module-specs
   '(web-server/servlet/web

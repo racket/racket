@@ -1,8 +1,8 @@
 #lang scheme/base
 (require mzlib/contract
          mzlib/plt-match
-         net/base64)
-(require "../private/request-structs.ss")
+         net/base64
+         web-server/http/request-structs)
 
 (define (extract-user-pass headers)
   (match (headers-assq* #"Authorization" headers)

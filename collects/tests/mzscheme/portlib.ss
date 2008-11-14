@@ -33,6 +33,32 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define (test-with cw-in cw-out s wrap-in wrap-out)
+    (test 'cat cw-in s (wrap-in (lambda (p) (read p))))
+    (test s cw-out (wrap-out (lambda (p) (write 'cat p)))))
+  (test-with call-with-input-bytes call-with-output-bytes #"cat" values values)
+  (test-with call-with-input-string call-with-output-string "cat" values values)
+  (let ([wrap-in (lambda (f) (lambda () (f (current-input-port))))]
+        [wrap-out (lambda (f) (lambda () (f (current-output-port))))])
+    (test-with with-input-from-bytes with-output-to-bytes #"cat" wrap-in wrap-out)
+    (test-with with-input-from-string with-output-to-string "cat" wrap-in wrap-out)))
+
+(err/rt-test (call-with-input-bytes "x" values))
+(err/rt-test (call-with-input-string #"x" values))
+(err/rt-test (with-input-from-bytes "x" values))
+(err/rt-test (with-input-from-string #"x" values))
+(err/rt-test (call-with-input-bytes #"x" (lambda () 'x)))
+(err/rt-test (call-with-input-string "x" (lambda () 'x)))
+(err/rt-test (with-input-from-bytes #"x" add1))
+(err/rt-test (with-input-from-string "x" add1))
+(err/rt-test (call-with-output-bytes (lambda () 'x)))
+(err/rt-test (call-with-output-string (lambda () 'x)))
+(err/rt-test (with-output-to-bytes add1))
+(err/rt-test (with-output-to-string add1))
+
+;; ----------------------------------------
+
 ;; pipe and pipe-with-specials commmit tests
 (define (test-pipe-commit make-pipe)
   (let-values ([(in out) (make-pipe)])

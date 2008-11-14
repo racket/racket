@@ -1,7 +1,7 @@
 #lang scheme/base
 (require mzlib/contract
          xml/xml
-         "request-structs.ss")
+         web-server/http/request-structs)
 
 (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
 

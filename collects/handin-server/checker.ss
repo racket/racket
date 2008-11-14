@@ -655,8 +655,25 @@
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
+                            (error* "missing binding: ~e" (->disp 'id)))]
+                         [exn:fail:syntax?
+                          (lambda (_)
+                            (error* "bound to a syntax, expecting a value: ~e"
+                                    (->disp 'id)))])
+           (parameterize ([current-namespace (get-namespace (submission-eval))])
+             (namespace-variable-value `id)))
+         ...))
+
+(provide !syntax)
+(define-syntax-rule (!syntax id ...)
+  ;; expected to be used only with identifiers
+  (begin (with-handlers ([exn:fail:syntax? void]
+                         [exn:fail:contract:variable?
+                          (lambda (_)
                             (error* "missing binding: ~e" (->disp 'id)))])
-           ((submission-eval) `id))
+           (parameterize ([current-namespace (get-namespace (submission-eval))])
+             (namespace-variable-value `id))
+           (error* "bound to a value, expecting a syntax: ~e" (->disp 'id)))
          ...))
 
 (provide !procedure* !procedure)

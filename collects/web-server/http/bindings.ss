@@ -1,9 +1,9 @@
 #lang scheme/base
 (require mzlib/list
          mzlib/contract
-         mzlib/plt-match)
-(require "../private/util.ss"
-         "../private/request-structs.ss")
+         mzlib/plt-match
+         web-server/private/util
+         web-server/http/request-structs)
 
 (define (request-headers request)
   (map (match-lambda
@@ -16,7 +16,7 @@
          [(struct binding:form (id value))
           (cons (lowercase-symbol! (bytes->string/utf-8 id))
                 (bytes->string/utf-8 value))]
-         [(struct binding:file (id fname value))
+         [(struct binding:file (id fname headers value))
           (cons (lowercase-symbol! (bytes->string/utf-8 id))
                 value)])
        (request-bindings/raw request)))

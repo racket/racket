@@ -4,12 +4,11 @@
          xml/xml
          (only-in mzlib/file
                   make-temporary-file)
-         web-server/private/response
-         web-server/private/request-structs
-         web-server/private/response-structs
+         web-server/http
+         web-server/http/response
          "../util.ss")
 
-(require/expose web-server/private/response
+(require/expose web-server/http/response
                 (convert-http-ranges
                  make-content-length-header
                  make-content-range-header

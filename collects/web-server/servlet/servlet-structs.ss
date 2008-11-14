@@ -1,7 +1,6 @@
 #lang scheme/base
-(require scheme/contract)
-(require "../private/request-structs.ss"
-         "../private/response-structs.ss")  
+(require scheme/contract
+         web-server/http)  
 
 (define k-url?
   string?)

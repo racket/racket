@@ -2,9 +2,8 @@
 (require scheme/contract)
 (require web-server/servlet/setup
          web-server/managers/manager
-         web-server/private/response
-         web-server/private/response-structs
-         web-server/private/request-structs
+         web-server/http
+         web-server/http/response
          net/url
          web-server/dispatchers/dispatch
          web-server/dispatchers/filesystem-map

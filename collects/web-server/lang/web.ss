@@ -2,11 +2,9 @@
 (require net/url
          scheme/contract
          scheme/serialize
-         web-server/private/request-structs
-         web-server/private/response-structs
+         web-server/http
          web-server/private/define-closure
-         web-server/private/servlet
-         "../private/request-structs.ss"
+         web-server/private/servlet         
          "abort-resume.ss"
          "stuff-url.ss"
          "../private/url-param.ss")
@@ -87,3 +85,9 @@
      [(struct binding:form (id kont))
       (deserialize (read (open-input-bytes kont)))]
      [_ #f])))
+
+(provide/contract
+ [redirect/get (-> request?)])  
+
+(define (redirect/get)
+  (send/suspend/url (lambda (k-url) (redirect-to (url->string k-url) temporarily))))

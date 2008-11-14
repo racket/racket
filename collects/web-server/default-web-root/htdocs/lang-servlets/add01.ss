@@ -1,5 +1,5 @@
 #lang scheme/base
-(require web-server/private/request-structs
+(require web-server/http
          net/url)
 (define interface-version 'stateless)
 (provide start interface-version)

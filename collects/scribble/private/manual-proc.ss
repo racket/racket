@@ -573,7 +573,7 @@
                                        0))
                                    fields)))])
                 (if (and (short-width . < . max-proto-width)
-                         (not immutable?)
+                         immutable?
                          (not transparent?))
                   (make-omitable-paragraph
                    (list
@@ -590,16 +590,19 @@
                            (to-flow the-name)
                            (if (or (null? fields)
                                    (short-width . < . max-proto-width))
-                             flow-spacer
-                             (to-flow (make-element
-                                       #f (list spacer (schemeparenfont "(")))))
+                               flow-spacer
+                               (to-flow (make-element
+                                         #f (list spacer (schemeparenfont "(")))))
                            (to-flow (if (or (null? fields)
                                             (short-width . < . max-proto-width))
-                                      (make-element
-                                       #f (list (to-element (map field-view
-                                                                 fields))
-                                                (schemeparenfont ")")))
-                                      (to-element (field-view (car fields)))))))
+                                        (make-element
+                                         #f (cons (to-element (map field-view
+                                                                   fields))
+                                                  (if (and immutable?
+                                                           (not transparent?))
+                                                      (list (schemeparenfont ")"))
+                                                      null)))
+                                        (to-element (field-view (car fields)))))))
                     (if (short-width . < . max-proto-width)
                       null
                       (let loop ([fields (if (null? fields)

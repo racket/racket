@@ -4,7 +4,7 @@
          mzlib/etc
          mzlib/list
          web-server/dispatchers/dispatch
-         web-server/private/request-structs
+         web-server/http
          web-server/configuration/namespace
          web-server/servlet/setup
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
