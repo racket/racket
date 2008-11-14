@@ -660,8 +660,8 @@
                           (lambda (_)
                             (error* "bound to a syntax, expecting a value: ~e"
                                     (->disp 'id)))])
-           (namespace-variable-value `id #t #f
-                                     (get-namespace (submission-eval))))
+           (parameterize ([current-namespace (get-namespace (submission-eval))])
+             (namespace-variable-value `id)))
          ...))
 
 (provide !syntax)
@@ -671,8 +671,8 @@
                          [exn:fail:contract:variable?
                           (lambda (_)
                             (error* "missing binding: ~e" (->disp 'id)))])
-           (namespace-variable-value `id #t #f
-                                     (get-namespace (submission-eval)))
+           (parameterize ([current-namespace (get-namespace (submission-eval))])
+             (namespace-variable-value `id))
            (error* "bound to a value, expecting a syntax: ~e" (->disp 'id)))
          ...))
 
