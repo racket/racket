@@ -944,6 +944,34 @@ int check_location;
 #define mz_retain(x) mz_retain_it(jitter, x)
 #define mz_remap(x) mz_remap_it(jitter, x)
 
+/* 
+   mz_prolog() and mz_epilog() bracket an internal "function" using a
+   lighter-weight ABI that keeps all Rx and Vx registers as-is on
+   entry and exit. Some of those functions are registered in a special
+   way with add_symbol() so that the backtrace function can follow the
+   lightweight ABI to get back to the calling code. The lightweight
+   ABI does not support nested calls (at least not on all platforms;
+   see LOCAL2 below).
+
+   LOCAL2 and LOCAL3 are available for temporary storage on the C
+   stack using mz_get_local() and mz_set_local() under certain
+   circumstances:
+
+   * They can only be used within a function (normally corresponding
+     to a Scheme lambda) where mz_push_locals() has been called after
+     jit_prolog(), and where mz_pop_locals() is called before
+     jit_ret().
+
+   * On some platforms, LOCAL2 and LOCAL3 are the same.
+
+   * On some platforms, a lightweight function created with
+     mz_prolog() and mz_epilog() uses LOCAL2 to save the return
+     address. On those platforms, though, LOCAL3 is dufferent from
+     LOCAL2. So, LOCAL3 can always be used for temporary storage in
+     such functions (assuming that they're called from a function that
+     pushes locals, and that nothing else is using LOCAL2).
+*/
+
 #ifdef MZ_USE_JIT_PPC
 /* JIT_LOCAL1, JIT_LOCAL2, and JIT_LOCAL3 are offsets in the stack frame. */
 # define JIT_LOCAL1 56
