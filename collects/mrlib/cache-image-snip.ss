@@ -269,7 +269,7 @@
            [height (argb-height argb)]
            [argb-vector (argb-vector argb)]
            [bitmap (argb->bitmap argb)]
-           [mask (send bitmap get-loaded-mask)])
+           [mask (and bitmap (send bitmap get-loaded-mask))])
       (new cache-image-snip%
            (width width)
            (height height)
