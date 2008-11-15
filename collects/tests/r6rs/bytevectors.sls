@@ -277,6 +277,21 @@
     (test (let ((b (u8-list->bytevector '(1 2 3 255 1 2 1 2))))
             (bytevector->uint-list b 'little 2))
           '(513 65283 513 513))
+    (test (bytevector->u8-list
+           (uint-list->bytevector '(513 65283 513 513) 'little 2))
+          '(1 2 3 255 1 2 1 2))
+    (test (bytevector->u8-list
+           (uint-list->bytevector '(513 65283 513 513) 'big 2))
+          '(2 1 255 3 2 1 2 1))
+    (test (let ((b (u8-list->bytevector '(1 2 3 255 1 2 1 2))))
+            (bytevector->sint-list b 'little 2))
+          '(513 -253 513 513))
+    (test (let ((b (u8-list->bytevector '(2 1 255 3 2 1 2 1))))
+            (bytevector->sint-list b 'big 2))
+          '(513 -253 513 513))
+    (test (bytevector->u8-list
+           (sint-list->bytevector '(513 -253 513 513) 'little 2))
+          '(1 2 3 255 1 2 1 2))
     (test (let ((b (u8-list->bytevector '(1 2 3 255 1 2 1 2))))
             (bytevector->sint-list b 'little 2))
           '(513 -253 513 513))
