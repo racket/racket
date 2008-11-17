@@ -202,9 +202,7 @@
   ;;     -> (case-> (-> settings) (settings -> void))
   (define (simple-module-based-language-config-panel
            _parent
-           #:case-sensitive [*case-sensitive '?]
-           #:annotations-callback [annotations-callback void]
-           #:dynamic-panel-extras [dynamic-panel-extras void])
+           #:case-sensitive [*case-sensitive '?])
     (letrec ([parent (instantiate vertical-panel% ()
                        (parent _parent)
                        (alignment '(center center)))]
@@ -230,7 +228,7 @@
                                     (string-constant case-sensitive-label)
                                     input-panel
                                     void))]
-             [debugging (new radio-box%
+             [debugging (instantiate radio-box% ()
                           (label #f)
                           (choices 
                            (list (string-constant no-debugging-or-profiling)
@@ -238,7 +236,7 @@
                                  (string-constant debugging-and-profiling)
                                  (string-constant test-coverage)))
                           (parent dynamic-panel)
-                          (callback (λ (x y) (annotations-callback x y))))]
+                          (callback void))]
              [output-style (make-object radio-box%
                              (string-constant output-style-label)
                              (list (string-constant constructor-printing-style)
@@ -263,8 +261,6 @@
                                 (string-constant use-pretty-printer-label)
                                 output-panel
                                 void)])
-      
-      (dynamic-panel-extras dynamic-panel)
       
       (case-lambda
         [()

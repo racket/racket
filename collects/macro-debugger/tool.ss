@@ -183,17 +183,13 @@
           (when current-stepper-director
             (send current-stepper-director add-obsoleted-warning)
             (set! current-stepper-director #f))
-          
-          ;; setting the eval handler at this point disables CM,
-          ;; so only do it when we are debugging
-          (when debugging?
-            (run-in-evaluation-thread
-             (lambda ()
-               (let-values ([(e mnr) 
-                             (make-handlers (current-eval)
-                                            (current-module-name-resolver))])
-                 (current-eval e)
-                 (current-module-name-resolver mnr))))))
+          (run-in-evaluation-thread
+           (lambda ()
+             (let-values ([(e mnr) 
+                           (make-handlers (current-eval)
+                                          (current-module-name-resolver))])
+               (current-eval e)
+               (current-module-name-resolver mnr)))))
 
         (define/private (make-stepper filename)
           (new drscheme-macro-stepper-director% (filename filename)))
