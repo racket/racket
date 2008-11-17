@@ -262,7 +262,7 @@
   (with-handlers ([exn:fail?
                    (lambda (exn)
                      (fprintf (current-error-port)
-                              (format "~a File a PLT bug report if this is on a live server!~n" (exn-message exn)))
+                              (exn-message exn))
                      (output-headers+response/basic
                       conn
                       (make-416-response modified-seconds mime-type)))])
