@@ -86,6 +86,16 @@
           (list* (make-header #"Transfer-Encoding" #"chunked")
                  (response/basic-headers resp))
           (response/incremental-generator resp)))]
+    [(response/basic? resp)
+     (response->response/basic
+      close?
+      (make-response/full 
+       (response/basic-code resp)
+       (response/basic-message resp)
+       (response/basic-seconds resp)
+       (response/basic-mime resp)
+       (response/basic-headers resp)
+       empty))]
     [(and (pair? resp) (bytes? (car resp)))
      (response->response/basic
       close?
