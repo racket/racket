@@ -719,8 +719,8 @@
            (unless (null? cards)
              (let-values ([(x y w h) (send pb get-region-box r)]
                           [(len) (sub1 (length cards))]
-                          [(cw ch) (values (send (car cards) get-width)
-                                           (send (car cards) get-height))])
+                          [(cw ch) (values (send (car cards) card-width)
+                                           (send (car cards) card-height))])
                (let* ([pretty (lambda (cw) (+ (* (add1 len) cw) (* len PRETTY-CARD-SEP-AMOUNT)))]
                       [pw (pretty cw)]
                       [ph (pretty ch)])
