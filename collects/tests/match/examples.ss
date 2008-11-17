@@ -577,5 +577,11 @@
            [(vector a b) a]
            [else 'bad]))
 
+   (comp '(1 2)
+         (call-with-values 
+          (lambda () 
+            (match 'foo [_ (=> skip) (skip)] [_ (values 1 2)]))
+          list))
+   
 
    ))

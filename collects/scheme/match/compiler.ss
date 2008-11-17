@@ -431,7 +431,7 @@
                                    (if (Row-unmatch (car blocks))
                                        #`(let/ec k
                                                  (let ([#,(Row-unmatch (car blocks))
-                                                        (lambda () (k (#,esc)))])
+                                                        (lambda () (call-with-values #,esc k))])
                                                    rhs))
                                        #'rhs))])
                   ;; then compile the rest, with our name as the esc
