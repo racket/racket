@@ -92,6 +92,12 @@ downloadable packages contributed by PLT Scheme users.
              #:date "2004"
              #:url "http://www.cs.utah.edu/plt/publications/oopsla04-gff.pdf")
 
+  (bib-entry #:key "Flatt02"
+             #:author "Matthew Flatt"
+             #:title "Composable and Compilable Macros: You Want it When?"
+             #:location "International Conference on Functional Programming"
+             #:date "2002")
+ 
   (bib-entry #:key "Flatt06"
              #:author "Matthew Flatt, Robert Bruce Findler, and Matthias Felleisen"
              #:title "Scheme with Classes, Mixins, and Traits (invited tutorial)"
