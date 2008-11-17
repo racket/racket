@@ -78,7 +78,7 @@
     (let ([line (bytes->string/utf-8 line)])
       (unless (or (< (string-length line) len)
                   (< (string-width line) len))
-        (error* "~a \"~a\" in \"~a\" is longer than ~a characters"
+        (error* "~a \"~a\" in ~a is longer than ~a characters"
                 (if n (format "Line #~a" n) "The line")
                 (regexp-replace #rx"^[ \t]*(.*?)[ \t]*$" line "\\1")
                 (currently-processed-file-name)
@@ -148,7 +148,8 @@
 (define current-processed-file ; set when processing multi-file submissions
   (make-parameter #f))
 (define (currently-processed-file-name)
-  (or (current-processed-file) "your code"))
+  (let ([c (current-processed-file)])
+    (if c (format "\"~a\"" c) "your code")))
 
 (define (input->process->output maxwidth textualize? untabify? bad-re)
   (let loop ([n 1])
@@ -164,7 +165,7 @@
                [line (if (and untabify? (regexp-match? #rx"\t" line))
                        (untabify line) line)])
           (when (and bad-re (regexp-match? bad-re line))
-            (error* "You cannot use \"~a\" in \"~a\"!~a"
+            (error* "You cannot use \"~a\" in ~a!~a"
                     (if (regexp? bad-re) (object-name bad-re) bad-re)
                     (currently-processed-file-name)
                     (if textualize? "" (format " (line ~a)" n))))
