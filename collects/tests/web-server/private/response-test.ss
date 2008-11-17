@@ -29,6 +29,34 @@
     "output-response"
     
     (test-suite 
+     "response/basic"
+     (test-equal? "response/basic" 
+                  (output output-response 
+                          (make-response/basic 404 "404" (current-seconds) #"text/html"
+                                              (list)))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+     (test-equal? "response/basic (header)" 
+                  (output output-response 
+                          (make-response/basic 404 "404" (current-seconds) #"text/html"
+                                              (list (make-header #"Header" #"Value"))))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n")
+     (test-equal? "response/basic (body)" 
+                  (output output-response 
+                          (make-response/basic 404 "404" (current-seconds) #"text/html"
+                                              (list)))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+     (test-equal? "response/basic (bytes body)"
+                  (output output-response 
+                          (make-response/basic 404 "404" (current-seconds) #"text/html"
+                                              (list)))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\n\r\n")
+     (test-equal? "response/basic (both)" 
+                  (output output-response 
+                          (make-response/basic 404 "404" (current-seconds) #"text/html"
+                                              (list (make-header #"Header" #"Value"))))
+                  #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nHeader: Value\r\n\r\n"))
+    
+    (test-suite 
      "response/full"
      (test-equal? "response/full" 
                   (output output-response 
@@ -55,6 +83,7 @@
                           (make-response/full 404 "404" (current-seconds) #"text/html"
                                               (list (make-header #"Header" #"Value")) (list "Content!")))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\nContent!"))
+    
     (test-suite
      "response/incremental"
      (test-equal? "response/incremental" 
@@ -94,6 +123,7 @@
                                                        (write "Content!")
                                                        (write "Content!"))))
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n8\r\nContent!\r\n8\r\nContent!\r\n0\r\n\r\n"))
+    
     (test-suite
      "Simple content"
      (test-equal? "empty"
@@ -108,14 +138,17 @@
                   (output output-response
                           (list #"text/html" #"Content"))
                   #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 7\r\n\r\nContent"))
+    
     (test-suite
      "xexpr"
      (test-equal? "any"
                   (output output-response
                           `(html (head (title "Hey!")) (body "Content")))
-                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 65\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>")))
+                  #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: 65\r\n\r\n<html><head><title>Hey!</title></head><body>Content</body></html>"))
+    )
    (test-suite
     "output-response/method"
+    
     (test-suite 
      "response/full"
      (test-equal? "response/full" 
@@ -148,6 +181,7 @@
                                               (list (make-header #"Header" #"Value")) (list "Content!"))
                           'head)
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 8\r\nHeader: Value\r\n\r\n"))
+    
     (test-suite
      "response/incremental"
      (test-equal? "response/incremental" 
@@ -193,6 +227,7 @@
                                                        (write "Content!")))
                           'head)
                   #"HTTP/1.1 404 404\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nTransfer-Encoding: chunked\r\nHeader: Value\r\n\r\n"))
+    
     (test-suite
      "Simple content"
      (test-equal? "empty"
@@ -210,6 +245,7 @@
                           (list #"text/html" #"Content")
                           'head)
                   #"HTTP/1.1 200 Okay\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 7\r\n\r\n"))
+    
     (test-suite
      "xexpr"
      (test-equal? "any"
