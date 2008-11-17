@@ -198,11 +198,11 @@ tempted to put just
   (substring str 0 5))
 ]
 
-into @filepath{piece.ss} and run @exec{mzscheme} with
+into @filepath{piece.scm} and run @exec{mzscheme} with
 
 @interaction[
 #:eval piece-eval
-(eval:alts (load "piece.ss") (void))
+(eval:alts (load "piece.scm") (void))
 (piece "howdy universe")
 ]
 

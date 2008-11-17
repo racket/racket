@@ -17,8 +17,9 @@ module provides a toolbox for creating cards games.}
          table<%>]{
 
 Returns a table.  The table is named by @scheme[title], and it is
-@scheme[w] cards wide and @scheme[h] cards high. The table is not
-initially shown; @scheme[(send table show #t)] shows it.}
+@scheme[w] cards wide and @scheme[h] cards high (assuming a standard
+card of 71 by 96 pixels). The table is not initially shown;
+@scheme[(send table show #t)] shows it.}
 
 @defproc[(make-deck)
          (listof card<%>)]{
@@ -37,7 +38,7 @@ Returns a single card given a bitmap for the front, an optional bitmap
 for the back, and arbitrary values for the card's suit and value
 (which are returned by the card's @method[card<%> get-value] and
 @method[card<%> get-suit-id] methods). All provided bitmaps should be
-71 by 96 pixels.}
+the same size.}
 
 @defproc[(shuffle-list [lst list?] [n exact-nonnegative-integer?])
          list?]{
@@ -171,8 +172,9 @@ Create an instance with @scheme[make-table].
            void?]{
 
  Adds @scheme[cards] to fill the region @scheme[r], fanning them out
- bottom-right to top-left. The region @scheme[r] does not have to be
- added to the table.}
+ bottom-right to top-left, assuming that all cards in @scheme[cards]
+ have the same width and height. The region @scheme[r] does not have
+ to be added to the table.}
 
 @defmethod[(remove-card [card (is-a?/c card<%>)])
            void?]{
@@ -226,6 +228,19 @@ Removes @scheme[card] from the table.}
              
  Like @method[table<%> flip-cards], but only for @scheme[card] or
  elements of @scheme[cards] that are currently face down/up.}
+
+@defmethod*[([(rotate-card [card (is-a?/c card<%>)]
+                           [mode (or/c 'cw 'ccw 0 90 -90 180 -180 270 -270 360)]) 
+              void?]
+             [(rotate-cards [cards (listof (is-a?/c card<%>))]
+                            [mode (or/c 'cw 'ccw 0 90 -90 180 -180 270 -270 360)])
+              void?])]{
+
+ Rotates @scheme[card] or all @scheme[cards] (at once, currently
+ without animation, but animation may be added in the future).
+ The center of each card is kept in place, except that the card is
+ moved as necessary to keep it on the table.  See @xmethod[card<%>
+ rotate] for information on @scheme[mode].}
 
 @defmethod*[([(card-to-front [card (is-a?/c card<%>)]) void?]
              [(card-to-back [card (is-a?/c card<%>)]) void?])]{
@@ -384,13 +399,13 @@ Create instances with @scheme[make-deck] or @scheme[make-card].
 
 @defmethod[(card-width) exact-nonnegative-integer?]{
 
- Returns the width of the card in pixels.  All cards have the same
- width.}
+ Returns the width of the card in pixels. If the card is rotated 90 or
+ 270 degrees, the result is the card's original height.}
 
 @defmethod[(card-height) exact-nonnegative-integer?]{
 
- Returns the height of the card in pixels. All cards have the same
- height.}
+ Returns the height of the card in pixels.  If the card is rotated 90 or
+ 270 degrees, the result is the card's original width.}
 
 @defmethod[(flip) void?]{
 
@@ -408,6 +423,22 @@ Create instances with @scheme[make-deck] or @scheme[make-card].
 @defmethod[(face-down?) boolean?]{
 
  Returns @scheme[#t] if the card is currently face down.}
+
+@defmethod[(rotate [mode (or/c 'cw 'ccw 0 90 -90 180 -180 270 -270 360)]) void?]{
+
+ Rotates the card. Unlike using the @xmethod[table<%> rotate-card] method,
+ the card's top-left position is kept in place.
+
+ If @scheme[mode] is @scheme['cw], the card is
+ rotated clockwise; if @scheme[mode] is @scheme['ccw], the card is
+ rotated counter-clockwise; if @scheme[mode] is one of the allowed
+ numbers, the card is rotated the corresponding amount in degrees
+ counter-clockwise.}
+
+@defmethod[(orientation) (or/c 0 90 180 270)]{
+
+ Returns the orientation of the card, where @scheme[0] corresponds to
+ its initial state, @scheme[90] is rotated 90 degrees counter-clockwise, and so on.}
 
 @defmethod[(get-suit-id) any/c]{
 
@@ -476,7 +507,7 @@ Create instances with @scheme[make-deck] or @scheme[make-card].
 @defmethod*[([(dim) boolean?]
              [(dim [can? any/c]) void?])]{
 
- Gets/sets a hilite on the card, whichis rendered by drawing it dimmer
+ Gets/sets a hilite on the card, which is rendered by drawing it dimmer
  than normal.}
 
 @defmethod[(copy) (is-a?/c card<%>)]{

@@ -1005,6 +1005,8 @@
     (test (boolean=? #t #t) #t)
     (test (boolean=? #t #f) #f)
     (test (boolean=? #f #t) #f)
+    (test (boolean=? #t #t #f) #f)
+    (test (boolean=? #t #t #t #t) #t)
 
     ;; 11.9
     (test (pair? '(a . b))         #t)
@@ -1126,6 +1128,8 @@
     (test (symbol=? 'a 'a)         #t)
     (test (symbol=? 'a 'A)         #f)
     (test (symbol=? 'a 'b)         #f)
+    (test (symbol=? 'a 'a 'b)      #f)
+    (test (symbol=? 'a 'a 'a 'a)   #t)
     
     (test (symbol->string 'flying-fish)     
           "flying-fish")

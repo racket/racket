@@ -374,7 +374,11 @@ char *gc::gcGetName() {
    forces a GC more frequently than might otherwise happen as the
    total size of bitmaps grows. */
 
-static long total, accum = 1024 * 1024 * 5;
+#define INIT_ACCUM_SIZE 1024 * 1024 * 5
+#define INIT_ACCUM_COUNT 1000
+
+static long total, accum = INIT_ACCUM_SIZE;
+static int total_count, accum_count = INIT_ACCUM_COUNT;
 
 void *GC_malloc_accounting_shadow(long a)
 {
@@ -383,10 +387,24 @@ void *GC_malloc_accounting_shadow(long a)
     a = sizeof(long);
   total += a;
   accum -= a;
+  total_count += 1;
+  accum_count -= 1;
   if (accum <= 0) {
     GC_gcollect();
     accum = total >> 1;
+    if (accum < INIT_ACCUM_SIZE)
+      accum = INIT_ACCUM_SIZE;
   }
+#ifdef wx_msw
+  /* Under Windows, the number of bitmaps matters, even if
+     they're small. */
+  if (accum_count <= 0) {
+    GC_gcollect();
+    accum_count = total_count >> 1;
+    if (accum_count < INIT_ACCUM_COUNT)
+      accum_count = INIT_ACCUM_COUNT;
+  }
+#endif
   p = (long *)GC_malloc_atomic(a);
   *p = a;
   return (void *)p;
@@ -397,5 +415,7 @@ void GC_free_accounting_shadow(void *p)
   if (p) {
     total -= *(long *)p;
     accum += *(long *)p;
+    total_count -= 1;
+    accum_count += 1;
   }
 }

@@ -576,7 +576,7 @@ typedef struct Scheme_Struct_Type {
   int num_props; /* < 0 => props is really a hash table */
 
   Scheme_Object *proc_attr; /* int (position) or proc, only for proc_struct */
-  char *immutables;
+  char *immutables; /* for immediate slots, only (not parent) */
 
   Scheme_Object *guard;
 

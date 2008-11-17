@@ -385,3 +385,135 @@ example, since the enclosing module requires
 instance of @schememodname[scheme/class]. Moreover, that instance is
 the same as the one imported into the module, so the class datatype is
 shared.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "load"]{Scripting Evaluation and Using @scheme[load]}
+
+Historically, Scheme and Lisp systems did not offer module
+systems. Instead, large programs were built by essentially scripting
+the @tech{REPL} to evaluate program fragments in a particular order.
+While @tech{REPL} scripting turns out to be a bad way to structure
+programs and libraries, it is still sometimes a useful capability.
+
+@margin-note{Describing a program via @scheme[load] interacts
+especially badly with macro-defined language extensions
+@cite["Flatt02"].}
+
+The @scheme[load] function runs a @tech{REPL} script by
+@scheme[read]ing S-expressions from a file, one by one, and passing
+them to @scheme[eval]. If a file @filepath{place.scm} contains
+
+@schemeblock[
+(define city "Salt Lake City")
+(define state "Utah")
+(printf "~a, ~a\n" city state)
+]
+
+then it can be loaded in a @tech{REPL}:
+
+@interaction[
+(eval:alts (load "place.scm") (begin (define city "Salt Lake City")
+                                     (printf "~a, Utah\n" city)))
+city
+]
+
+Since @scheme[load] uses @scheme[eval], however, a module like the
+following generally will not work---for the same reasons described in
+@secref["namespaces"]:
+
+@schememod[
+scheme
+
+(define there "Utopia")
+
+(load "here.scm")
+]
+
+The current namespace for evaluating the content of
+@filepath{here.scm} is likely to be empty; in any case, you cannot get
+@scheme[there] from @filepath{here.scm}. Also, any definitions in
+@filepath{here.scm} will not become visible for use within the module;
+after all, the @scheme[load] happens dynamically, while references to
+identifiers within the module are resolved lexically, and therefore
+statically.
+
+Unlike @scheme[eval], @scheme[load] does not accept a namespace
+argument. To supply a namespace to @scheme[load], set the
+@scheme[current-namespace] parameter. The following example evaluates
+the expressions in @filepath{here.scm} using the bindings of the
+@schememodname[scheme/base] module:
+
+@schememod[
+scheme
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (load "here.scm"))
+]
+
+You can even use @scheme[namespace-anchor->namespace] to make the
+bindings of the enclosing module accessible for dynamic evaluation. In
+the following example, when @filepath{here.scm} is @scheme[load]ed, it
+can refer to @scheme[there] as well as the bindings of
+@schememodname[scheme]:
+
+@schememod[
+scheme
+
+(define there "Utopia")
+
+(define-namespace-anchor a)
+(parameterize ([current-namespace (namespace-anchor->namespace a)])
+  (load "here.scm"))
+]
+
+Still, if @filepath{here.scm} defines any identifiers, the definitions
+cannot be directly (i.e., statically) referenced by in the enclosing
+module.
+
+The @schememodname[scheme/load] module language is different from
+@schememodname[scheme] or @schememodname[scheme/base]. A module using
+@schememodname[scheme/load] treats all of its content as dynamic,
+passing each form in the module body to @scheme[eval] (using a
+namespace that is initialized with @schememodname[scheme]). As a
+result, uses of @scheme[eval] and @scheme[load] in the module body see
+the same dynamic namespace as immediate body forms. For example, if
+@filepath{here.scm} contains
+
+@schemeblock[
+(define here "Morporkia")
+(define (go!) (set! here there))
+]
+
+then running
+
+@schememod[
+scheme/load
+
+(define there "Utopia")
+
+(load "here.scm")
+
+(go!)
+(printf "~a\n" here)
+]
+
+prints ``Utopia''.
+
+Drawbacks of using @schememodname[scheme/load] include reduced
+error checking, tool support, and performance. For example, with the
+program
+
+@schememod[
+scheme/load
+
+(define good 5)
+(printf "running\n")
+good
+bad
+]
+
+DrScheme's @onscreen{Check Syntax} tool cannot tell that the second
+@scheme[good] is a reference to the first, and the unbound reference
+to @scheme[bad] is reported only at run time instead of rejected
+syntactically.

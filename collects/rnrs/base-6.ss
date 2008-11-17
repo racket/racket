@@ -76,7 +76,7 @@
              [r6rs:string->number string->number])
 
  ;; 11.8
- not boolean? boolean=?
+ not boolean? (rename-out [r6rs:boolean=? boolean=?])
 
  ;; 11.9
  (rename-out [r5rs:pair? pair?]
@@ -123,7 +123,7 @@
              [r5rs:for-each for-each])
 
  ;; 11.10
- symbol? symbol=?
+ symbol? (rename-out [r6rs:symbol=? symbol=?])
  string->symbol symbol->string
  
  ;; 11.11
@@ -348,6 +348,22 @@
                 (string-append prefix s))])
     (and (regexp-match? rx:number s)
          (string->number (regexp-replace* #rx"[|][0-9]+" s "")))))
+
+(define r6rs:symbol=?
+  (case-lambda
+   [(a b) (symbol=? a b)]
+   [(a b . rest) (and (symbol=? a b)
+                      (andmap (lambda (s)
+                                (symbol=? a s))
+                              rest))]))
+
+(define r6rs:boolean=?
+  (case-lambda
+   [(a b) (boolean=? a b)]
+   [(a b . rest) (and (boolean=? a b)
+                      (andmap (lambda (s)
+                                (boolean=? a s))
+                              rest))]))
 
 (define-syntax-rule (make-mapper what for for-each in-val val-length val->list list->result)
   (case-lambda
