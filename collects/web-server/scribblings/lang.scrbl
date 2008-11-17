@@ -3,6 +3,8 @@
 
 @title[#:tag "lang/web.ss"]{Stateless Web Interaction}
 
+@section{Low Level}
+
 @(require (for-label web-server/lang/abort-resume))
 @defmodule[web-server/lang/abort-resume]{
 
@@ -12,6 +14,8 @@
 }
              
 }
+
+@section{High Level}
 
 @(require (for-label web-server/lang/web))
 @defmodule[web-server/lang/web]{

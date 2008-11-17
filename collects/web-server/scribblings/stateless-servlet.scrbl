@@ -2,7 +2,6 @@
 @(require "web-server.ss")
 
 @title[#:tag "stateless-servlets"]{Stateless Servlets}
-@defmodulelang[web-server]
 
 @(require (for-label "dummy-stateless-servlet.ss")) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-stateless-servlet)]
@@ -29,6 +28,8 @@ The @schememodname[web-server] language automatically provides the @schememodnam
 
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
+
+@defmodulelang[web-server]
 
 A servlet has the following process performed on it automatically:
 @itemize[
