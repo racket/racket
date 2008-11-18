@@ -1,55 +1,15 @@
 #lang scheme
+(require scribble/text
+         scheme/port)
 
-(require scheme/include
-         (for-syntax scheme)         
-         (prefix-in text: scribble/text)
-         (for-syntax (prefix-in text: scribble/text))
-         (for-syntax (prefix-in at: scribble/reader)))
-
-; XXX I have to do this because without it there is an infinite loop.
-;     at:read-syntax-inside returns #'() instead of eof
-(define-for-syntax (*read-syntax . args)
-  (define r (apply at:read-syntax-inside args))
-  (if (eof-object? r) r
-      (if (null? (syntax->datum r))
-          eof
-          r)))
-
-(define-syntax (include-template stx)
-  (syntax-case stx ()
-    [(_ a-path)
-     ; XXX Not desireable, but necessary to get at the body, 
-     ;     rather than it being used as a string applied to the rest
-     (with-syntax ([(begin (#%app body ...))
-                    (local-expand 
-                     (with-syntax ([_stx stx])
-                       (syntax/loc stx
-                         (include-at/relative-to/reader
-                          _stx _stx
-                          (file a-path) *read-syntax)))
-                     'module-begin 
-                     empty)
-                    ])
-       (syntax/loc stx
-         (with-output-to-string
-          (begin/show body ...))))]))
-
-(define-syntax with-output-to-string
+(define-syntax include-template
   (syntax-rules ()
-    [(_ e ...)
-     (let ([os (open-output-string)])
-       (parameterize ([current-output-port os])
-         e ...)
-       (get-output-string os))]))
+    [(_ p)
+     (with-output-to-string
+      (lambda ()
+        (output (include/text p))))]))
 
-; XXX Want to have this instead of every begin, but perhaps should make a list rather than use show directly
-(define-syntax begin/show
-  (syntax-rules ()
-    [(_ e) e]
-    [(_ e ...)
-     (begin (text:output e) ...)]))
 (define t list)
-
 (define-syntax in
   (syntax-rules ()
     [(_ x xs e ...)
