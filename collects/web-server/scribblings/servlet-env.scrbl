@@ -3,7 +3,10 @@
 
 @title[#:tag "servlet-env.ss"
        #:style 'toc]{Simple Single Servlet Servers}
-@(require (for-label web-server/servlet-env))
+@(require (for-label web-server/servlet-env
+                     web-server/http
+                     web-server/managers/lru
+                     scheme/list))
 
 @defmodule[web-server/servlet-env]{
 
@@ -77,7 +80,7 @@ the top-level interacts with continuations. (Read: Don't do it.)
                        [#:servlet-regexp servlet-regexp regexp?
                                          (regexp (format "^~a$" (regexp-quote servlet-path)))]
                        [#:stateless? stateless? boolean? #f]
-                       [#:manager manager manager? default-threshold-LRU-manager]
+                       [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
                        [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                        [#:server-root-path server-root-path path? default-server-root-path]
                        [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
