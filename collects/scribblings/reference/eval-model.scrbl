@@ -650,8 +650,12 @@ escape-continuation aborts can cross continuation barriers.
 @;------------------------------------------------------------------------
 @section[#:tag "thread-model"]{Threads}
 
-Scheme supports multiple, pre-emptive @deftech{threads} of
-evaluation. Threads are created explicitly by functions such as @scheme[thread]. 
+Scheme supports multiple @deftech{threads} of evaluation.  Threads run
+concurrently, in the sense that one thread can preempt another without
+its cooperation, but threads currently all run on the same processor
+(i.e., the same underlying OS process and thread).
+
+Threads are created explicitly by functions such as @scheme[thread]. 
 In terms of the evaluation model, each step in evaluation actually consists of multiple concurrent
 expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
