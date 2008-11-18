@@ -55,7 +55,7 @@ Equivalent to @scheme[string?].
                                        
 Example: @scheme["http://localhost:8080/servlets;1*1*20131636/examples/add.ss"]}
 
-@defthing[response-generator? contract?]{
+@defthing[response-generator/c contract?]{
 Equivalent to @scheme[(k-url? . -> . response?)].
            
 Example: @schemeblock[(lambda (k-url)
@@ -91,7 +91,8 @@ This is what @scheme[send/suspend/dispatch] gives to its function argument.
 
 @; ------------------------------------------------------------
 @section[#:tag "lang/file-box.ss"]{File Boxes}
-@(require (for-label web-server/lang/file-box))
+@(require (for-label web-server/lang/file-box
+                     scheme/serialize))
 
 @defmodule[web-server/lang/file-box]{
 

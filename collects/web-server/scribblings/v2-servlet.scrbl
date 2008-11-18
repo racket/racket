@@ -2,7 +2,9 @@
 @(require "web-server.ss")
 
 @title{Version 2 Servlets}
-@(require (for-label "dummy-v2-servlet.ss")) @; to give a binding context
+@(require (for-label web-server/http
+                     (except-in web-server/managers/manager manager)
+                     "dummy-v2-servlet.ss")) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-v2-servlet)]
 
 @defthing[interface-version (one-of/c 'v2)]{

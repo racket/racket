@@ -3,7 +3,8 @@
 
 @title[#:tag "stateless-servlets"]{Stateless Servlets}
 
-@(require (for-label "dummy-stateless-servlet.ss")) @; to give a binding context
+@(require (for-label web-server/http
+                     "dummy-stateless-servlet.ss")) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-stateless-servlet)]
 
 @defthing[interface-version (one-of/c 'stateless)]{
@@ -29,6 +30,8 @@ The @schememodname[web-server] language automatically provides the @schememodnam
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}
 
+@(require (for-label web-server/lang/web))
+                     
 @defmodulelang[web-server]
 
 A servlet has the following process performed on it automatically:

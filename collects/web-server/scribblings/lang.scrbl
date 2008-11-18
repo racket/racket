@@ -3,6 +3,12 @@
 
 @title[#:tag "lang/web.ss"]{Stateless Web Interaction}
 
+@(require (for-label net/url
+                     xml
+                     scheme/serialize
+                     web-server/servlet/servlet-structs
+                     web-server/http))
+
 @section{Low Level}
 
 @(require (for-label web-server/lang/abort-resume))
