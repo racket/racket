@@ -429,10 +429,12 @@
                                                     (quote-syntax #,esc))])
                                             #,(Row-rhs (car blocks)))])
                                    (if (Row-unmatch (car blocks))
-                                       #`(let/ec k
-                                                 (let ([#,(Row-unmatch (car blocks))
-                                                        (lambda () (call-with-values #,esc k))])
-                                                   rhs))
+                                       #`(call-with-continuation-prompt
+                                          (lambda () (let ([#,(Row-unmatch (car blocks))
+                                                        (lambda () (abort-current-continuation match-prompt-tag))])
+                                                       rhs))
+                                          match-prompt-tag
+                                          (lambda () (#,esc)))
                                        #'rhs))])
                   ;; then compile the rest, with our name as the esc
                   (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])
