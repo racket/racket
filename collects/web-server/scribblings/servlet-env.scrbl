@@ -6,6 +6,7 @@
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
+                     web-server/configuration/responders
                      scheme/list))
 
 @defmodule[web-server/servlet-env]{
@@ -70,26 +71,34 @@ Suppose you would like to start a server for a stateless Web servlet @filepath{s
 Note: If you put the call to @scheme[serve/servlet] in the module like normal, strange things will happen because of the way
 the top-level interacts with continuations. (Read: Don't do it.)
 
+If you want to use @scheme[serve/servlet] in a start up script for a Web server, and don't want a browser opened or the DrScheme banner printed, then you can write:
+@schemeblock[
+(serve/servlet my-app
+               #:command-line? #t)
+]
+
 @defproc[(serve/servlet [start (request? . -> . response?)]
-                       [#:launch-browser? launch-browser? boolean? #t]
-                       [#:quit? quit? boolean? #t]
-                       [#:listen-ip listen-ip string? "127.0.0.1"]
-                       [#:port port number? 8000]
-                       [#:servlet-path servlet-path string?
-                                       "/servlets/standalone.ss"]
-                       [#:servlet-regexp servlet-regexp regexp?
-                                         (regexp (format "^~a$" (regexp-quote servlet-path)))]
-                       [#:stateless? stateless? boolean? #f]
-                       [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
-                       [#:servlet-namespace servlet-namespace (listof module-path?) empty]
-                       [#:server-root-path server-root-path path? default-server-root-path]
-                       [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
-                       [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
-                       [#:servlet-current-directory servlet-current-directory path? servlets-root]
-                       [#:file-not-found-path file-not-found-path  path?
-                                              (build-path server-root-path "conf" "not-found.html")]
-                       [#:mime-types-path mime-types-path path?
-                                          (build-path server-root-path "mime.types")])
+                        [#:command-line? command-line? boolean? #f]
+                        [#:launch-browser? launch-browser? boolean? (not command-line?)]
+                        [#:quit? quit? boolean? (not command-line?)]
+                        [#:banner? banner? boolean? (not command-line?)]
+                        [#:listen-ip listen-ip string? "127.0.0.1"]
+                        [#:port port number? 8000]
+                        [#:servlet-path servlet-path string?
+                                        "/servlets/standalone.ss"]
+                        [#:servlet-regexp servlet-regexp regexp?
+                                          (regexp (format "^~a$" (regexp-quote servlet-path)))]
+                        [#:stateless? stateless? boolean? #f]
+                        [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
+                        [#:servlet-namespace servlet-namespace (listof module-path?) empty]
+                        [#:server-root-path server-root-path path? default-server-root-path]
+                        [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
+                        [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
+                        [#:servlet-current-directory servlet-current-directory path? servlets-root]
+                        [#:file-not-found-responder file-not-found-responder
+                                                    (gen-file-not-found-responder (build-path server-root-path "conf" "not-found.html"))]
+                        [#:mime-types-path mime-types-path path?
+                                           (build-path server-root-path "mime.types")])
                        void]{
  This sets up and starts a fairly default server instance.
       
@@ -99,7 +108,7 @@ the top-level interacts with continuations. (Read: Don't do it.)
  If @scheme[launch-browser?] is true, then a web browser is opened to @filepath{http://localhost:<port><servlet-path>}.
  
  If @scheme[quit?] is true, then the URL @filepath["/quit"] ends the server.
- 
+  
  If @scheme[stateless?] is true, then the servlet is run as a stateless @schememodname[web-server] module.
  
  Advanced users may need the following options:
@@ -118,7 +127,10 @@ the top-level interacts with continuations. (Read: Don't do it.)
  
  Other servlets are served from @scheme[servlets-root].
  
- If a file cannot be found, @scheme[file-not-found-path] is used as an error response.
+ If a file cannot be found, @scheme[file-not-found-responder] is used to generate an error response.
+ 
+ If @scheme[banner?] is true, then an informative banner is printed. You may want to use this when
+ running from the command line, in which case the @scheme[command-line?] option controls similar options.
  
  MIME types are looked up at @scheme[mime-types-path].
 }

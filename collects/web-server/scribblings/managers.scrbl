@@ -165,7 +165,7 @@ The recommended usage of this manager is codified as the following function:
           [memory-threshold number?])
          manager?]{
  This creates an LRU manager with the following behavior:
- The memory limit is set to @scheme[memory-threshold]. Continuations start with @scheme[24]
+ The memory limit is set to @scheme[memory-threshold] bytes. Continuations start with @scheme[24]
  life points. Life points are deducted at the rate of one every @scheme[10] minutes, or one
  every @scheme[5] seconds when the memory limit is exceeded. Hence the maximum life time for
  a continuation is @scheme[4] hours, and the minimum is @scheme[2] minutes.
