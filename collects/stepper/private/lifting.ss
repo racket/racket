@@ -54,7 +54,10 @@
            ;; distinguish a top-level begin from one that's the result of some evaluation. 
            ;; I think for the moment that it will solve our problem simply to remove the
            ;; special case for begin at the top level.  JBC, 2006-10-09
-     
+           
+           ;; ... aaaand, yep, there's a bug.  The input is not fully-expanded syntax, and 
+           ;; therefore _can_ include a two-branched 'if' (because the reconstructor produces it.)
+           ;; 
            
            (define (top-level-expr-iterator stx context-so-far)
              (let ([try (try->offset-try (make-try-all-subexprs stx 'top-level context-so-far))])
@@ -120,6 +123,8 @@
                       (loop (+ count 1) (cdr clauses))))]
                  [(if test then else)
                   (try-exprs-offset 1 #'(test then else))]
+                 [(if test then)
+                  (try-exprs-offset 1 #'(test then))]
                  [(begin . bodies)
                   (try-exprs-offset 1 #'bodies)]
                  [(begin0 . bodies)
