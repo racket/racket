@@ -20,7 +20,7 @@
         (get-preference (string->symbol user) (lambda () #f) #f users-file))))
 
   (define (clean-str s)
-    (regexp-replace #rx" *$" (regexp-replace #rx"^ *" s "") ""))
+    (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
   (define (aget alist key)
     (cond [(assq key alist) => cdr] [else #f]))
