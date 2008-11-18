@@ -145,7 +145,7 @@
          (fprintf port "Tests disabled.\n")]))
 
     (define/private (display-success port event count)
-      #;(when event
+      (when event
         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event])
           ((dynamic-require 'scheme/gui 'queue-callback)
             (lambda () (send test-display report-success)))))
