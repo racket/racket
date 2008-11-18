@@ -108,6 +108,7 @@
                    (send coverage display-coverage src-editor))]
                 [else (lambda (t s e) (void))])
               #f #f)
+        (send button-editor lock #t)
         (let ([c (new style-delta%)])
           (send c set-delta-foreground "royalblue")
           (send dest change-style c start (sub1 (send dest get-end-position))
