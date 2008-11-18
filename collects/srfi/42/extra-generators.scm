@@ -10,11 +10,17 @@
 	   :vector-combinations
 	   :do-until
 	   :pairs
+           :pairs-by
 	   :list-by
 	   :alist
 	   :hash-table
 	   :hash-table-keys
-	   :hash-table-values)
+	   :hash-table-values
+           indices->list
+           indices->vector
+           last-combination?
+           next-combination
+           first-combination)
   (require "ec-core.scm")
   (require-for-syntax "ec-core.scm")
   
