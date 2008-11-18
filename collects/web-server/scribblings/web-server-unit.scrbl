@@ -3,8 +3,12 @@
 
 @title[#:tag "web-server-unit.ss"
              #:style 'toc]{Web Server Unit}
-@(require (for-label web-server/web-server-sig)
-          (for-label web-server/web-server-unit))
+@(require (for-label web-server/web-server-sig
+                     web-server/web-server-unit
+                     net/tcp-sig
+                     web-server/dispatchers/dispatch
+                     web-server/web-config-sig
+                     web-server/web-config-unit))
 
 The @web-server offers a unit-based approach to running the server.
 
@@ -37,7 +41,7 @@ The @web-server offers a unit-based approach to running the server.
 @defthing[web-server@ (unit/c (web-config^ tcp^)
                               (web-server^))]{
 
-Uses the @scheme[web-config^] to construct a @scheme[dispatcher?]
+Uses the @scheme[web-config^] to construct a @scheme[dispatcher/c]
 function that sets up one virtual host dispatcher, for each virtual
 host in the @scheme[web-config^], that sequences the following
 operations:
@@ -52,7 +56,7 @@ operations:
  @item{Serves files under the @scheme["/"] URL in the given htdocs directory.}
 ]
 
-Using this @scheme[dispatcher?], it loads a dispatching server that provides @scheme[serve]
+Using this @scheme[dispatcher/c], it loads a dispatching server that provides @scheme[serve]
 and @scheme[serve-ports] functions that operate as expected.
 }
 
