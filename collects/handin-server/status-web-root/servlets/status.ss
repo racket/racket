@@ -20,7 +20,7 @@
         (get-preference (string->symbol user) (lambda () #f) #f users-file))))
 
   (define (clean-str s)
-    (regexp-replace #rx" *$" (regexp-replace #rx"^ *" s "") ""))
+    (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
   (define (aget alist key)
     (cond [(assq key alist) => cdr] [else #f]))
@@ -207,7 +207,7 @@
       (one-status-page user for-handin)
       (all-status-page user)))
 
-  (define (login-page status for-handin errmsg)
+  (define (login-page for-handin errmsg)
     (let* ([request
             (send/suspend
              (lambda (k)
@@ -238,7 +238,7 @@
                     (or (equal? pw (car user-data))
                         (equal? pw (get-conf 'master-password)))))
              (status-page user for-handin)]
-            [else (login-page status for-handin "Bad username or password")])))
+            [else (login-page for-handin "Bad username or password")])))
 
   (define web-counter
     (let ([sema (make-semaphore 1)]
@@ -251,7 +251,7 @@
 
   (define (start initial-request)
     (parameterize ([current-session (web-counter)])
-      (login-page null (aget (request-bindings initial-request) 'handin) #f)))
+      (login-page (aget (request-bindings initial-request) 'handin) #f)))
 
   (define interface-version 'v2)
   (define name "status")

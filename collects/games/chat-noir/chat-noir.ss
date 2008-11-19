@@ -1,13 +1,8 @@
-#|
-
-hint: include the size of the board in your world structure
-This enables you to make test cases with different size boards,
-making some of the test cases much easier to manage.
-
-|#
-
+;; constants
 (define circle-radius 20)
 (define circle-spacing 22)
+
+;; data definitions
 
 ;; a world is:
 ;;  (make-world board posn state number)
@@ -138,21 +133,20 @@ making some of the test cases much easier to manage.
 
 ;; board->image : board number -> image
 (define (board->image cs world-size)
-  (foldl overlay 
+  (foldl (lambda (x y) (overlay y x))
          (nw:rectangle (world-width world-size)
                        (world-height world-size)
-                       'outline
-                       'black)
+                       'solid
+                       'white)
          (map cell->image cs)))
 
 (check-expect (board->image (list (make-cell (make-posn 0 0) false)) 3)
               (overlay
-               (cell->image 
-                (make-cell (make-posn 0 0) false))
                (nw:rectangle (world-width 3)
                              (world-height 3)
-                             'outline
-                             'black)))
+                             'solid
+                             'white)
+               (cell->image (make-cell (make-posn 0 0) false))))
 
 
 ;; cell->image : cell -> image

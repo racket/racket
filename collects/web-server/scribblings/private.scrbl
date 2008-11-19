@@ -2,6 +2,12 @@
 @(require "web-server.ss")
 
 @title[#:tag "private" #:style 'toc]{Internal}
+@(require (for-label scheme/tcp
+                     web-server/dispatchers/dispatch
+                     net/url
+                     scheme/serialize
+                     xml
+                     net/tcp-sig))
 
 The @web-server is a complicated piece of software and as a result,
 defines a number of interesting and independently useful sub-components.
@@ -147,12 +153,15 @@ The @scheme[dispatch-server^] signature is an alias for
  @defthing[initial-connection-timeout integer?]{Specifies the initial timeout given to a connection.}
  @defproc[(read-request [c connection?]
                         [p port?]
-                        [port-addresses port-addresses?])
+                        [port-addresses (-> port? boolean?
+                                            (or/c (values string? string?)
+                                                  (values string? (integer-in 1 65535)
+                                                          string? (integer-in 1 65535))))])
           any/c]{
   Defines the way the server reads requests off connections to be passed
   to @scheme[dispatch].
  }
- @defthing[dispatch dispatcher?]{How to handle requests.}
+ @defthing[dispatch dispatcher/c]{How to handle requests.}
 }
 
 }

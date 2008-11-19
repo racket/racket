@@ -339,6 +339,9 @@ specified with the datatype and its associated procedures.
 @;------------------------------------------------------------------------
 @section[#:tag "gc-model"]{Garbage Collection}
 
+@margin-note/ref{See @secref["memory"] for functions related to
+garbage collection.}
+
 In the program state
 
 @prog-steps[
@@ -504,6 +507,8 @@ access the same @tech{location}.
 @;------------------------------------------------------------------------
 @section[#:tag "module-eval-model"]{Modules and Module-Level Variables}
 
+@margin-note/ref{See @secref["module"] for the syntax of modules.}
+
 Most definitions in PLT Scheme are in modules. In terms of evaluation,
 a module is essentially a prefix on a defined name, so that different
 modules can define the name. That is, a @deftech{module-level
@@ -599,6 +604,8 @@ re-declared, each re-declaration of the module is immediately
 @;------------------------------------------------------------------------
 @section[#:tag "mark-model"]{Continuation Frames and Marks}
 
+@margin-note/ref{See @secref["contmarks"] for continuation-mark forms and functions.}
+
 Every continuation @scheme[_C] can be partitioned into
 @deftech{continuation frames} @frame[1], @frame[2], ..., @frame["n"]
 such that @scheme[_C] = @*sub[@frame[1] @*sub[@frame[2] @*sub["..."
@@ -617,6 +624,8 @@ to implement dynamic scope.
 
 @;------------------------------------------------------------------------
 @section[#:tag "prompt-model"]{Prompts, Delimited Continuations, and Barriers}
+
+@margin-note/ref{See @secref["cont"] for continuation and prompt functions.}
 
 A @deftech{prompt} is a special kind of continuation frame that is
 annotated with a specific @deftech{prompt tag} (essentially a
@@ -650,8 +659,14 @@ escape-continuation aborts can cross continuation barriers.
 @;------------------------------------------------------------------------
 @section[#:tag "thread-model"]{Threads}
 
-Scheme supports multiple, pre-emptive @deftech{threads} of
-evaluation. Threads are created explicitly by functions such as @scheme[thread]. 
+@margin-note/ref{See @secref["concurrency"] for thread and synchronization functions.}
+
+Scheme supports multiple @deftech{threads} of evaluation.  Threads run
+concurrently, in the sense that one thread can preempt another without
+its cooperation, but threads currently all run on the same processor
+(i.e., the same underlying OS process and thread).
+
+Threads are created explicitly by functions such as @scheme[thread]. 
 In terms of the evaluation model, each step in evaluation actually consists of multiple concurrent
 expressions, up to one per thread, rather than a single expression. The expressions all
 share the same objects and top-level variables, so that they can
@@ -672,6 +687,8 @@ is created) as all other threads.
 
 @;------------------------------------------------------------------------
 @section[#:tag "parameter-model"]{Parameters}
+
+@margin-note/ref{See @secref["parameters"] for parameter forms and functions.}
 
 @deftech{Parameters} are essentially a derived concept in Scheme; they
 are defined in terms of @tech{continuation marks} and @tech{thread
@@ -701,6 +718,8 @@ the current continuation's frame.
 @;------------------------------------------------------------------------
 @section[#:tag "exn-model"]{Exceptions}
 
+@margin-note/ref{See @secref["exns"] for exception forms, functions, and types.}
+
 @deftech{Exceptions} are essentially a derived concept in Scheme; they
 are defined in terms of continuations, prompts, and continuation
 marks.  However, exceptions are also built in, in the sense that
@@ -722,6 +741,8 @@ outermost frame of the continuation for any new thread.
 
 @;------------------------------------------------------------------------
 @section[#:tag "custodian-model"]{Custodians}
+
+@margin-note/ref{See @secref["custodians"] for custodian functions.}
 
 A @deftech{custodian} manages a collection of threads, file-stream
 ports, TCP ports, TCP listeners, UDP sockets, and byte converters.

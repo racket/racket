@@ -3,11 +3,9 @@
 
 @title[#:tag "concurrency" #:style 'toc]{Concurrency}
 
-PLT Scheme supports multiple threads of control within a
-program. Threads run concurrently, in the sense that one thread can
-preempt another without its cooperation, but threads currently all run
-on the same processor (i.e., the same underlying OS process and
-thread).
+PLT Scheme supports multiple threads of control within a program,
+thread-local storage, some primitive synchronization mechanisms, and a
+framework for composing synchronization abstractions.
 
 @local-table-of-contents[]
 

@@ -7,7 +7,10 @@
          exn:misc:match?
          match:error
          fail
-         matchable?)
+         matchable?
+         match-prompt-tag)
+
+(define match-prompt-tag (make-continuation-prompt-tag 'match))
 
 (define match-equality-test (make-parameter equal?))
 

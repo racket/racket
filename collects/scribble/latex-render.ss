@@ -374,6 +374,7 @@
                   (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
                  [(#\~) "$\\sim$"]
                  [(#\{ #\} #\# #\% #\& #\$) (format "\\~a" c)]
+                 [(#\uA0) "~"]
                  [(#\uDF) "{\\ss}"]
                  [(#\u039A) "K"] ; kappa
                  [(#\u0391) "A"] ; alpha

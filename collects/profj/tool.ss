@@ -28,7 +28,7 @@
                               (dynamic-require the-file 'id))])
                (apply orig-fn x)))
            ...)]))
-  
+    
   (dr "compile.ss"
       compile-java compile-interactions compile-files compile-ast compile-interactions-ast
       compilation-unit-code compilation-unit-contains set-compilation-unit-code!
@@ -763,11 +763,12 @@
                      (send collect-coverage enable #f))
                  (install-classpath (profj-settings-classpath settings))])))
                                
+          (define eventspace (current-eventspace))
           (define/public (front-end/complete-program port settings)
             (mred? #t)
             (let ([name (object-name port)]
                   [rep (drscheme:rep:current-rep)]
-                  [eventspace (current-eventspace)]
+                  #;[eventspace (current-eventspace)]
                   [execute-types (create-type-record)])
               (let ([name-to-require #f]
                     [require? #f]
