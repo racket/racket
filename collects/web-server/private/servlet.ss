@@ -4,7 +4,6 @@
          web-server/http)
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
-(define-struct (exn:fail:servlet:instance exn:fail) ())
 (define-struct servlet (custodian namespace manager directory handler)
   #:mutable)
 (define-struct execution-context (request))
@@ -18,9 +17,6 @@
 
 (provide/contract
  [servlet-prompt continuation-prompt-tag?]
- [struct (exn:fail:servlet:instance exn:fail)
-         ([message string?]
-          [continuation-marks continuation-mark-set?])]
  [struct servlet 
          ([custodian custodian?]
           [namespace namespace?]
