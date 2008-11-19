@@ -682,6 +682,9 @@ it, compiles it, and evaluates it.
 @;------------------------------------------------------------------------
 @section[#:tag "namespace-model"]{Namespaces}
 
+@margin-note/ref{See @secref["Namespaces"] for functions that
+manipulate namespaces.}
+
 A @deftech{namespace} is a top-level mapping from symbols to binding
 information. It is the starting point for expanding an expression; a
 @tech{syntax object} produced by @scheme[read-syntax] has no initial
