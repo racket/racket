@@ -44,7 +44,7 @@ re-exported by @schememodname[net/url].}
                 [query (listof (cons/c symbol? (or/c false/c string?)))]
                 [fragment (or/c false/c string?)])]{
 
-The basic structure for all URLs, hich is explained in RFC 3986
+The basic structure for all URLs, which is explained in RFC 3986
 @cite["RFC3986"]. The following diagram illustrates the parts:
 
 @verbatim[#:indent 2]|{
