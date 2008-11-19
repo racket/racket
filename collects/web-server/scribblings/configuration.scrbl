@@ -11,7 +11,10 @@ configuring the @web-server .
 
 @; ------------------------------------------------------------
 @section[#:tag "configuration-table-structs.ss"]{Configuration Table Structure}
-@(require (for-label web-server/configuration/configuration-table-structs))
+@(require (for-label web-server/configuration/configuration-table-structs
+                     web-server/http
+                     net/url
+                     web-server/private/util))
 
 @defmodule[web-server/configuration/configuration-table-structs]{
 
