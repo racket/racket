@@ -168,6 +168,6 @@
     ((send-url) standalone-url #t))
   (welcome)
   (with-handlers ([exn:break? (lambda (exn) (bye))])
-    (semaphore-wait/enable-break sema))
-  ;; We can get here if a /quit url is visited
-  (bye))
+    (semaphore-wait/enable-break sema)
+    ;; We can get here if a /quit url is visited
+    (bye)))
