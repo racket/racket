@@ -44,9 +44,9 @@
                     #:line-width [lw #f]
                     #:color [col #f]
                     #:under? [under? #f])
-    (finish-pin (t:pin-line (ghost p)
-                            src find-src 
-                            dest find-dest)
+    (finish-pin (launder (t:pin-line (ghost p)
+                                     src find-src 
+                                     dest find-dest))
                 p lw col under?))
 
   (define (pin-arrow-line sz p src find-src dest find-dest
@@ -54,10 +54,10 @@
                           #:color [col #f]
                           #:under? [under? #f]
                           #:solid? [solid? #t])
-    (finish-pin (t:pin-arrow-line sz (ghost p)
-                                  src find-src 
-                                  dest find-dest
-                                  #f #f #f solid?)
+    (finish-pin (launder (t:pin-arrow-line sz (ghost p)
+                                           src find-src 
+                                           dest find-dest
+                                           #f #f #f solid?))
                 p lw col under?))
 
   (define (pin-arrows-line sz p src find-src dest find-dest
@@ -65,10 +65,10 @@
                            #:color [col #f]
                            #:under? [under? #f]
                            #:solid? [solid? #t])
-    (finish-pin (t:pin-arrows-line sz (ghost p)
-                                   src find-src 
-                                   dest find-dest
-                                  #f #f #f solid?)
+    (finish-pin (launder (t:pin-arrows-line sz (ghost p)
+                                            src find-src 
+                                            dest find-dest
+                                            #f #f #f solid?))
                 p lw col under?))
 
   (define (finish-pin l p lw col under?)
