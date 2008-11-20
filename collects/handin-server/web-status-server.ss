@@ -277,4 +277,4 @@
                          (lambda () (log-line "*** starting web server"))
                          (run-servlet p)
                          (lambda () (log-line "*** web server died!"))))))
-  (lambda () (thread-break t)))
+  (lambda () (break-thread t)))
