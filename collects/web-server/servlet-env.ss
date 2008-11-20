@@ -26,7 +26,8 @@
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
          (prefix-in files: web-server/dispatchers/dispatch-files)
          (prefix-in filter: web-server/dispatchers/dispatch-filter)
-         (prefix-in servlets: web-server/dispatchers/dispatch-servlets))
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
+         (prefix-in log: web-server/dispatchers/dispatch-log))
 
 (define send-url (make-parameter net:send-url))
 
@@ -58,9 +59,19 @@
                   #:file-not-found-responder (request? . -> . response?)
                   #:mime-types-path path?
                   #:servlet-path string?
-                  #:servlet-regexp regexp?)
+                  #:servlet-regexp regexp?
+                  #:log-file (or/c false/c path?))
                  . ->* .
                  void)])
+
+;; utility for conveniently chaining dispatchers
+(define (dispatcher-sequence . dispatchers)
+  (let loop ([ds dispatchers] [r '()])
+    (cond [(null? ds) (apply sequencer:make (reverse r))]
+          [(not (car ds))   (loop (cdr ds) r)]
+          [(list? (car ds)) (loop (append (car ds) (cdr ds)) r)]
+          [else (loop (cdr ds) (cons (car ds) r))])))
+
 (define (serve/servlet
          start
          #:command-line?
@@ -114,7 +125,10 @@
                               p
                               (build-path
                                (directory-part default-configuration-table-path)
-                               "mime.types")))])
+                               "mime.types")))]
+
+         #:log-file
+         [log-file #f])
   (define standalone-url
     (string-append (if ssl? "https" "http")
                    "://localhost"
@@ -126,10 +140,13 @@
   (define sema (make-semaphore 0))
   (define servlet-box (box #f))
   (define dispatcher
-    (sequencer:make
-     (if quit?
-       (filter:make #rx"^/quit$" (quit-server sema))
-       (lambda _ (next-dispatcher)))
+    (dispatcher-sequence
+     (and log-file (log:make #:format (log:log-format->format
+                                       ;; 'parenthesized-default
+                                       ;; 'extended
+                                       'apache-default)
+                             #:log-path log-file))
+     (and quit? (filter:make #rx"^/quit$" (quit-server sema)))
      (filter:make
       servlet-regexp
       (servlets:make
@@ -155,13 +172,12 @@
                     (make-default-path->servlet
                      #:make-servlet-namespace make-servlet-namespace))])
        (servlets:make url->servlet))
-     (apply sequencer:make
-            (map (lambda (extra-files-path)
-                   (files:make
-                    #:url->path (fsmap:make-url->path extra-files-path)
-                    #:path->mime-type (make-path->mime-type mime-types-path)
-                    #:indices (list "index.html" "index.htm")))
-                 extra-files-paths))
+     (map (lambda (extra-files-path)
+            (files:make
+             #:url->path (fsmap:make-url->path extra-files-path)
+             #:path->mime-type (make-path->mime-type mime-types-path)
+             #:indices (list "index.html" "index.htm")))
+          extra-files-paths)
      (files:make
       #:url->path (fsmap:make-url->path (build-path server-root-path "htdocs"))
       #:path->mime-type (make-path->mime-type mime-types-path)
