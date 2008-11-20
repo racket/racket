@@ -272,8 +272,9 @@
 
 (provide run)
 (define (run p)
-  (thread (lambda () (dynamic-wind
-                       (lambda () (log-line "*** starting web server"))
-                       (run-servlet p)
-                       (lambda () (log-line "*** web server died!")))))
-  (void))
+  (define t
+    (thread (lambda () (dynamic-wind
+                         (lambda () (log-line "*** starting web server"))
+                         (run-servlet p)
+                         (lambda () (log-line "*** web server died!"))))))
+  (lambda () (thread-break t)))
