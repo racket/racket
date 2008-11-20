@@ -9,7 +9,7 @@
          web-server/managers/manager
          web-server/private/servlet
          web-server/configuration/namespace
-         web-server/private/cache-table 
+         web-server/private/cache-table
          web-server/http
          web-server/private/util
          web-server/configuration/responders
@@ -18,10 +18,10 @@
          web-server/configuration/configuration-table
          web-server/servlet/setup
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
-         (prefix-in fsmap: web-server/dispatchers/filesystem-map)         
+         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
          (prefix-in files: web-server/dispatchers/dispatch-files)
-         (prefix-in filter: web-server/dispatchers/dispatch-filter)         
+         (prefix-in filter: web-server/dispatchers/dispatch-filter)
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets))
 
 (define send-url (make-parameter net:send-url))
@@ -30,93 +30,89 @@
   (lift:make
    (lambda (request)
      (thread (lambda () (sleep 2) (semaphore-post sema)))
-     `(html
-       (head
-        (title "Server Stopped")
-        (link ([rel "stylesheet"] [href "/error.css"])))
-       (body
-        (div ([class "section"])
-             (div ([class "title"]) "Server Stopped")
-             (p "Return to DrScheme.")))))))
+     `(html (head (title "Server Stopped")
+              (link ([rel "stylesheet"] [href "/error.css"])))
+            (body (div ([class "section"])
+                    (div ([class "title"]) "Server Stopped")
+                    (p "Return to DrScheme.")))))))
 
 (provide/contract
  [serve/servlet (((request? . -> . response?))
                  (#:command-line? boolean?
-                                  #:launch-browser? boolean?
-                                  #:quit? boolean?
-                                  #:banner? boolean?
-                                  #:listen-ip string?
-                                  #:port number?
-                                  #:manager manager?
-                                  #:servlet-namespace (listof module-path?)
-                                  #:server-root-path path?
-                                  #:stateless? boolean?
-                                  #:extra-files-paths (listof path?)
-                                  #:servlets-root path?
-                                  #:file-not-found-responder (request? . -> . response?)
-                                  #:mime-types-path path?
-                                  #:servlet-path string?
-                                  #:servlet-regexp regexp?)
+                  #:launch-browser? boolean?
+                  #:quit? boolean?
+                  #:banner? boolean?
+                  #:listen-ip string?
+                  #:port number?
+                  #:manager manager?
+                  #:servlet-namespace (listof module-path?)
+                  #:server-root-path path?
+                  #:stateless? boolean?
+                  #:extra-files-paths (listof path?)
+                  #:servlets-root path?
+                  #:file-not-found-responder (request? . -> . response?)
+                  #:mime-types-path path?
+                  #:servlet-path string?
+                  #:servlet-regexp regexp?)
                  . ->* .
                  void)])
-(define (serve/servlet start 
-                       #:command-line?
-                       [command-line? #f]
-                       #:launch-browser?
-                       [launch-browser? (not command-line?)]
-                       #:quit?
-                       [quit? (not command-line?)]
-                       #:banner?
-                       [banner? (not command-line?)]
-                       
-                       #:listen-ip
-                       [listen-ip "127.0.0.1"]
-                       #:port
-                       [the-port 8000]
-                       
-                       #:manager
-                       [manager 
-                        (make-threshold-LRU-manager
-                         (lambda (request)
-                           `(html (head (title "Page Has Expired."))
-                                  (body (p "Sorry, this page has expired. Please go back."))))
-                         (* 64 1024 1024))]          
-                       
-                       #:servlet-path
-                       [servlet-path "/servlets/standalone.ss"]
-                       #:servlet-regexp
-                       [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
-                       #:stateless? 
-                       [stateless? #f]
-                       
-                       #:servlet-namespace
-                       [servlet-namespace empty]
-                       #:server-root-path 
-                       [server-root-path (directory-part default-configuration-table-path)]
-                       #:extra-files-paths 
-                       [extra-files-paths (list (build-path server-root-path "htdocs"))]
-                       #:servlets-root
-                       [servlets-root (build-path server-root-path "htdocs")]
-                       #:servlet-current-directory
-                       [servlet-current-directory servlets-root]
-                       #:file-not-found-responder
-                       [file-not-found-responder (gen-file-not-found-responder (build-path server-root-path "conf" "not-found.html"))]
-                       #:mime-types-path
-                       [mime-types-path (build-path server-root-path "mime.types")])
-  (define standalone-url
-    (format "http://localhost:~a~a" the-port servlet-path))
+(define (serve/servlet
+         start
+         #:command-line?
+         [command-line? #f]
+         #:launch-browser?
+         [launch-browser? (not command-line?)]
+         #:quit?
+         [quit? (not command-line?)]
+         #:banner?
+         [banner? (not command-line?)]
+
+         #:listen-ip
+         [listen-ip "127.0.0.1"]
+         #:port
+         [the-port 8000]
+
+         #:manager
+         [manager
+          (make-threshold-LRU-manager
+           (lambda (request)
+             `(html (head (title "Page Has Expired."))
+                    (body (p "Sorry, this page has expired. Please go back."))))
+           (* 64 1024 1024))]
+
+         #:servlet-path
+         [servlet-path "/servlets/standalone.ss"]
+         #:servlet-regexp
+         [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
+         #:stateless?
+         [stateless? #f]
+
+         #:servlet-namespace
+         [servlet-namespace empty]
+         #:server-root-path
+         [server-root-path (directory-part default-configuration-table-path)]
+         #:extra-files-paths
+         [extra-files-paths (list (build-path server-root-path "htdocs"))]
+         #:servlets-root
+         [servlets-root (build-path server-root-path "htdocs")]
+         #:servlet-current-directory
+         [servlet-current-directory servlets-root]
+         #:file-not-found-responder
+         [file-not-found-responder
+          (gen-file-not-found-responder
+           (build-path server-root-path "conf" "not-found.html"))]
+         #:mime-types-path
+         [mime-types-path (build-path server-root-path "mime.types")])
+  (define standalone-url (format "http://localhost:~a~a" the-port servlet-path))
   (define make-servlet-namespace
-    (make-make-servlet-namespace
-     #:to-be-copied-module-specs servlet-namespace))
+    (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
   (define sema (make-semaphore 0))
   (define servlet-box (box #f))
   (define dispatcher
     (sequencer:make
      (if quit?
-         (filter:make 
-          #rx"^/quit$"
-          (quit-server sema))
-         (lambda _ (next-dispatcher)))
+       (filter:make #rx"^/quit$" (quit-server sema))
+       (lambda _ (next-dispatcher)))
      (filter:make
       servlet-regexp
       (servlets:make
@@ -129,8 +125,8 @@
                                      #:additional-specs
                                      default-module-specs)])
                       (if stateless?
-                          (make-stateless.servlet servlet-current-directory start)
-                          (make-v2.servlet servlet-current-directory manager start)))])
+                        (make-stateless.servlet servlet-current-directory start)
+                        (make-v2.servlet servlet-current-directory manager start)))])
                (set-box! servlet-box servlet)
                servlet)))))
      (let-values ([(clear-cache! url->servlet)
@@ -144,33 +140,34 @@
        (servlets:make url->servlet))
      (apply sequencer:make
             (map (lambda (extra-files-path)
-                   (files:make 
-                    #:url->path (fsmap:make-url->path
-                                 extra-files-path)
+                   (files:make
+                    #:url->path (fsmap:make-url->path extra-files-path)
                     #:path->mime-type (make-path->mime-type mime-types-path)
                     #:indices (list "index.html" "index.htm")))
                  extra-files-paths))
-     (files:make 
-      #:url->path (fsmap:make-url->path 
-                   (build-path server-root-path "htdocs"))
-      #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
+     (files:make
+      #:url->path (fsmap:make-url->path (build-path server-root-path "htdocs"))
+      #:path->mime-type (make-path->mime-type
+                         (build-path server-root-path "mime.types"))
       #:indices (list "index.html" "index.htm"))
      (lift:make file-not-found-responder)))
   (define shutdown-server
     (serve #:dispatch dispatcher
            #:listen-ip listen-ip
            #:port the-port))
+  (define welcome
+    (if banner?
+      (lambda ()
+        (printf "Your Web application is running at ~a.\n" standalone-url)
+        (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
+      (void)))
+  (define (bye)
+    (when banner? (printf "\nWeb Server stopped.\n"))
+    (shutdown-server))
   (when launch-browser?
     ((send-url) standalone-url #t))
-  (when banner?
-    (printf "Your Web application is running at ~a.~n" standalone-url)
-    (printf "Click 'Stop' at any time to terminate the Web Server.~n"))
-  (with-handlers
-      ([exn:break?
-        (lambda (exn)
-          (when banner?
-            (printf "~nWeb Server stopped.~n"))
-          (shutdown-server))])
+  (welcome)
+  (with-handlers ([exn:break? (lambda (exn) (bye))])
     (semaphore-wait/enable-break sema))
-  ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
-  (shutdown-server))
+  ;; We can get here if a /quit url is visited
+  (bye))
