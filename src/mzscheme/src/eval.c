@@ -889,8 +889,12 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 	return 1;
       }
     }
-    /* (void <omittable> ...) */
-    if (SAME_OBJ(scheme_void_proc, app->args[0])) {
+    /* ({void,list,list*,vector,vector-immutable} <omittable> ...) */
+    if (SAME_OBJ(scheme_void_proc, app->args[0])
+        || SAME_OBJ(scheme_list_proc, app->args[0])
+        || SAME_OBJ(scheme_list_star_proc, app->args[0])
+        || SAME_OBJ(scheme_vector_proc, app->args[0])
+        || SAME_OBJ(scheme_vector_immutable_proc, app->args[0])) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
         int i;
@@ -905,10 +909,15 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   }
 
   if ((vtype == scheme_application2_type)) {
-    /* (values <omittable>) or (void <omittable>) */
+    /* ({values,void,list,list*,vector,vector-immutable,box} <omittable>) */
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
     if (SAME_OBJ(scheme_values_func, app->rator)
-        || SAME_OBJ(scheme_void_proc, app->rator)) {
+        || SAME_OBJ(scheme_void_proc, app->rator)
+        || SAME_OBJ(scheme_list_proc, app->rator)
+        || SAME_OBJ(scheme_list_star_proc, app->rator)
+        || SAME_OBJ(scheme_vector_proc, app->rator)
+        || SAME_OBJ(scheme_vector_immutable_proc, app->rator)
+        || SAME_OBJ(scheme_box_proc, app->rator)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
 	if (scheme_omittable_expr(app->rand, 1, fuel - 1, resolved, warn_info))
@@ -928,8 +937,14 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
 	  return 1;
       }
     }
-    /* (void <omittable> <omittable>) */
-    if (SAME_OBJ(scheme_void_proc, app->rator)) {
+    /* ({void,cons,list,list*,vector,vector-immutable) <omittable> <omittable>) */
+    if (SAME_OBJ(scheme_void_proc, app->rator)
+        || SAME_OBJ(scheme_cons_proc, app->rator)
+        || SAME_OBJ(scheme_mcons_proc, app->rator)
+        || SAME_OBJ(scheme_list_proc, app->rator)
+        || SAME_OBJ(scheme_list_star_proc, app->rator)
+        || SAME_OBJ(scheme_vector_proc, app->rator)
+        || SAME_OBJ(scheme_vector_immutable_proc, app->rator)) {
       note_match(1, vals, warn_info);
       if ((vals == 1) || (vals < 0)) {
 	if (scheme_omittable_expr(app->rand1, 1, fuel - 1, resolved, warn_info)
@@ -2507,7 +2522,8 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     }
   }
 
-  if (SAME_OBJ(scheme_values_func, app->rator)
+  if ((SAME_OBJ(scheme_values_func, app->rator)
+       || SAME_OBJ(scheme_list_star_proc, app->rator))
       && scheme_omittable_expr(app->rand, 1, -1, 0, info)) {
     info->preserves_marks = 1;
     info->single_result = 1;
