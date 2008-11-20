@@ -49,19 +49,26 @@
    (lambda (req)
      (define uri (request-uri req))
      
-     (define-values (instance-id handler)
-       (cond
-         [(continuation-url? uri)
-          => (match-lambda
-               [(list instance-id k-id salt)
-                (values instance-id
-                        (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
-         [else
-          (values ((manager-create-instance manager) (exit-handler))
-                  start)]))
-     
-     (parameterize ([current-servlet-instance-id instance-id])
-       (handler req)))))
+     (with-handlers ([exn:fail:servlet-manager:no-instance?
+                      (lambda (the-exn)
+                        ((exn:fail:servlet-manager:no-instance-expiration-handler the-exn) req))]
+                     [exn:fail:servlet-manager:no-continuation?
+                      (lambda (the-exn)
+                        ((exn:fail:servlet-manager:no-continuation-expiration-handler the-exn) req))])
+       
+       (define-values (instance-id handler)
+         (cond
+           [(continuation-url? uri)
+            => (match-lambda
+                 [(list instance-id k-id salt)
+                  (values instance-id
+                          (custodian-box-value ((manager-continuation-lookup manager) instance-id k-id salt)))])]
+           [else
+            (values ((manager-create-instance manager) (exit-handler))
+                    start)]))
+       
+       (parameterize ([current-servlet-instance-id instance-id])
+         (handler req))))))
 
 (define (make-stateless.servlet directory start)
   (define ses 

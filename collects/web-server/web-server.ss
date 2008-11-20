@@ -15,25 +15,25 @@
  [serve
   (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
-               #:port number?
-               #:listen-ip (or/c false/c string?)
-               #:max-waiting number?
-               #:initial-connection-timeout number?)
+        #:port number?
+        #:listen-ip (or/c false/c string?)
+        #:max-waiting number?
+        #:initial-connection-timeout number?)
        (-> void))]
  [serve/ports
   (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
-               #:ports (listof number?)
-               #:listen-ip (or/c false/c string?)
-               #:max-waiting number?
-               #:initial-connection-timeout number?)
+        #:ports (listof number?)
+        #:listen-ip (or/c false/c string?)
+        #:max-waiting number?
+        #:initial-connection-timeout number?)
        (-> void))]
  [serve/ips+ports
   (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
-               #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
-               #:max-waiting number?
-               #:initial-connection-timeout number?)
+        #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
+        #:max-waiting number?
+        #:initial-connection-timeout number?)
        (-> void))]
  [do-not-return (-> void)]
  [serve/web-config@ ((unit?) (#:tcp@ unit?) . ->* . (-> void?))])
@@ -59,7 +59,7 @@
     dispatch-server@/tcp@
     (import dispatch-server-config^)
     (export dispatch-server^))
-  
+
   (serve))
 
 (define (serve/ports

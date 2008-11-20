@@ -1,6 +1,7 @@
 #lang typed-scheme
              
-(require (only-in typed/mred/mred dt require/typed/provide Font%))
+(require typed/private/utils
+         (only-in typed/mred/mred Font%))
 
 (dt Style-List% (Class () 
                        ()

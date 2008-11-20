@@ -317,7 +317,6 @@ void wxMediaPasteboard::OnDefaultEvent(wxMouseEvent *event)
   if (!admin)
     return;
 
-  /* First, find clicked-on snip: */
   x = event->x;
   y = event->y;
   

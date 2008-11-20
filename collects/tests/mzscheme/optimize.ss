@@ -350,6 +350,9 @@
     (un0 '(1) 'list 1)
     (bin0 '(1 2) 'list 1 2)
     (tri0 '(1 2 3) 'list (lambda () 1) 2 3 void)
+    (un0 '1 'list* 1)
+    (bin0 '(1 . 2) 'list* 1 2)
+    (tri0 '(1 2 . 3) 'list* (lambda () 1) 2 3 void)
     (un0 '#&1 'box 1)
 
     (let ([test-setter
@@ -443,17 +446,19 @@
 	      (list a b c d e f))])
      10))
 
-(test-comp (normalize-depth '(let* ([i (cons 0 1)][j i]) j))
-	   (normalize-depth '(let* ([i (cons 0 1)]) i)))
+;; We use nonsense `display' and `write' where we used to use `cons' and
+;; `list', because the old ones now get optimized away:
+(test-comp (normalize-depth '(let* ([i (display 0 1)][j i]) j))
+	   (normalize-depth '(let* ([i (display 0 1)]) i)))
 
-(test-comp (normalize-depth '(let* ([i (cons 0 1)][j (list 2)][k (list 3)][g i]) g))
-	   (normalize-depth '(let* ([i (cons 0 1)][j (list 2)][k (list 3)]) i)))
+(test-comp (normalize-depth '(let* ([i (display 0 1)][j (write 2)][k (write 3)][g i]) g))
+	   (normalize-depth '(let* ([i (display 0 1)][j (write 2)][k (write 3)]) i)))
 
-(test-comp (normalize-depth '(let* ([i (cons 0 1)][j (list 2)][k (list 3)][g i][h g]) h))
-	   (normalize-depth '(let* ([i (cons 0 1)][j (list 2)][k (list 3)]) i)))
+(test-comp (normalize-depth '(let* ([i (display 0 1)][j (write 2)][k (write 3)][g i][h g]) h))
+	   (normalize-depth '(let* ([i (display 0 1)][j (write 2)][k (write 3)]) i)))
 
-(test-comp (normalize-depth '(let* ([i (cons 0 1)][g i][h (car g)][m h]) m))
-	   (normalize-depth '(let* ([i (cons 0 1)][h (car i)]) h)))
+(test-comp (normalize-depth '(let* ([i (display 0 1)][g i][h (car g)][m h]) m))
+	   (normalize-depth '(let* ([i (display 0 1)][h (car i)]) h)))
 
 ; (require #%kernel) ; 
 
@@ -684,6 +689,26 @@
            '(module m mzscheme
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
+
+(let ([test-dropped
+       (lambda (cons-name . args)
+         (test-comp `(let ([x 5])
+                       (let ([y (,cons-name ,@args)])
+                         x))
+                    5))])
+  (test-dropped 'cons 1 2)
+  (test-dropped 'mcons 1 2)
+  (test-dropped 'box 1)
+  (let ([test-multi
+         (lambda (cons-name)
+           (test-dropped cons-name 1 2)
+           (test-dropped cons-name 1 2 3)
+           (test-dropped cons-name 1)
+           (test-dropped cons-name))])
+    (test-multi 'list)
+    (test-multi 'list*)
+    (test-multi 'vector)
+    (test-multi 'vector-immutable)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check bytecode verification of lifted functions

@@ -1,82 +1,283 @@
-#lang scheme/base
-(require scheme/unit
-         net/ssl-tcp-unit
-         net/tcp-sig
-         net/tcp-unit
-         (only-in mzlib/etc this-expression-source-directory)
-         web-server/web-server-unit
-         web-server/web-server-sig
-         web-server/web-config-sig
-         web-server/web-config-unit
-         web-server/configuration/namespace
-         "private/config.ss")
+#lang scheme
+(require scheme/list
+         scheme/file
+         scheme/date
+         net/uri-codec
+         web-server/servlet
+         web-server/servlet-env
+         web-server/managers/lru
+         handin-server/private/md5
+         handin-server/private/logger
+         handin-server/private/config
+         handin-server/private/hooker)
 
-(provide serve-status)
+(define (aget alist key)
+  (cond [(assq key alist) => cdr] [else #f]))
 
-(define (serve-status port-no)
+(define (clean-str s)
+  (regexp-replace #rx" +$" (regexp-replace #rx"^ +" s "") ""))
 
-  (define ((in-dir dir) . paths) (path->string (apply build-path dir paths)))
-  (define in-web-dir
-    (in-dir (or (get-conf 'web-base-dir)
-                (build-path (this-expression-source-directory)
-                            "status-web-root"))))
-  (define in-plt-web-dir
-    (in-dir (build-path (collection-path "web-server") "default-web-root")))
+(define (make-page title . body)
+  `(html (head (title ,title))
+         (body ([bgcolor "white"]) (h1 ((align "center")) ,title) ,@body)))
 
-  (define config
-    `((port ,port-no)
-      (max-waiting 40)
-      (initial-connection-timeout 30)
-      (default-host-table
-        (host-table
-         (default-indices "index.html")
-         (log-format parenthesized-default)
-         (messages
-          (servlet-message "servlet-error.html")
-          (authentication-message "forbidden.html")
-          (servlets-refreshed "servlet-refresh.html")
-          (passwords-refreshed "passwords-refresh.html")
-          (file-not-found-message "not-found.html")
-          (protocol-message "protocol-error.html")
-          (collect-garbage "collect-garbage.html"))
-         (timeouts
-          (default-servlet-timeout 120)
-          (password-connection-timeout 300)
-          (servlet-connection-timeout 86400)
-          (file-per-byte-connection-timeout 1/20)
-          (file-base-connection-timeout 30))
-         (paths
-          (configuration-root ,(in-plt-web-dir "conf"))
-          (host-root ".")
-          (log-file-path ,(cond [(get-conf 'web-log-file) => path->string]
-                                [else #f]))
-          (file-root ".")
-          (servlet-root ,(in-web-dir "servlets"))
-          (mime-types ,(in-plt-web-dir "mime.types"))
-          (password-authentication ,(in-plt-web-dir "passwords")))))
-      (virtual-host-table)))
+(define get-user-data
+  (let ([users-file (build-path server-dir "users.ss")])
+    (unless (file-exists? users-file)
+      (error 'get-user-data "users file missing at: ~a" users-file))
+    (lambda (user)
+      (get-preference (string->symbol user) (lambda () #f) #f users-file))))
 
-  (define configuration
-    (configuration-table-sexpr->web-config@
-     config
-     #:web-server-root (in-web-dir)
-     #:make-servlet-namespace
-     (make-make-servlet-namespace
-      #:to-be-copied-module-specs
-      '(handin-server/private/md5
-        handin-server/private/logger
-        handin-server/private/config
-        handin-server/private/hooker
-        handin-server/private/reloadable))))
+(define (relativize-path p)
+  (path->string (find-relative-path (normalize-path server-dir) p)))
 
-  (define-unit-binding config@ configuration (import) (export web-config^))
-  (define-unit-binding ssl-tcp@
-    (make-ssl-tcp@ "server-cert.pem" "private-key.pem" #f #f #f #f #f)
-    (import) (export tcp^))
-  (define-compound-unit/infer status-server@
-    (import)
-    (link ssl-tcp@ config@ web-server@)
-    (export web-server^))
-  (define-values/invoke-unit/infer status-server@)
+(define (make-k k tag)
+  (format "~a~atag=~a" k (if (regexp-match? #rx"^[^#]*[?]" k) "&" "?")
+          (uri-encode tag)))
 
-  (serve))
+;; `look-for' can be a username as a string (will find "bar+foo" for "foo"), or
+;; a regexp that should match the whole directory name (used with "^solution"
+;; below)
+(define (find-handin-entry hi look-for)
+  (let ([dir (assignment<->dir hi)])
+    (and (directory-exists? dir)
+         (ormap
+          (lambda (d)
+            (let ([d (path->string d)])
+              (and (cond [(string? look-for)
+                          (member look-for (regexp-split #rx" *[+] *" d))]
+                         [(regexp? look-for) (regexp-match? look-for d)]
+                         [else (error 'find-handin-entry
+                                      "internal error: ~e" look-for)])
+                   (build-path dir d))))
+          (directory-list dir)))))
+
+(define (handin-link k user hi)
+  (let* ([dir (find-handin-entry hi user)]
+         [l (and dir (with-handlers ([exn:fail? (lambda (x) null)])
+                       (parameterize ([current-directory dir])
+                         (sort (filter (lambda (f)
+                                         (and (not (equal? f "grade"))
+                                              (file-exists? f)))
+                                       (map path->string (directory-list)))
+                               string<?))))])
+    (if (pair? l)
+      (cdr (append-map
+            (lambda (f)
+              (let ([hi (build-path dir f)])
+                `((br)
+                  (a ([href ,(make-k k (relativize-path hi))]) ,f)
+                  " ("
+                  ,(date->string
+                    (seconds->date (file-or-directory-modify-seconds hi))
+                    #t)
+                  ")")))
+            l))
+      (list (format "No handins accepted so far for user ~s, assignment ~s"
+                    user hi)))))
+
+(define (solution-link k hi)
+  (let ([soln (and (member (assignment<->dir hi) (get-conf 'inactive-dirs))
+                   (find-handin-entry hi #rx"^solution"))]
+        [none `((i "---"))])
+    (cond [(not soln) none]
+          [(file-exists? soln)
+           `((a ((href ,(make-k k (relativize-path soln)))) "Solution"))]
+          [(directory-exists? soln)
+           (parameterize ([current-directory soln])
+             (let ([files (sort (map path->string
+                                     (filter file-exists? (directory-list)))
+                                string<?)])
+               (if (null? files)
+                 none
+                 (apply append
+                        (map (lambda (f)
+                               `((a ([href ,(make-k k (relativize-path
+                                                       (build-path soln f)))])
+                                    (tt ,f))
+                                 (br)))
+                             files)))))]
+          [else none])))
+
+(define (handin-grade user hi)
+  (let* ([dir (find-handin-entry hi user)]
+         [grade (and dir
+                     (let ([filename (build-path dir "grade")])
+                       (and (file-exists? filename)
+                            (with-input-from-file filename
+                              (lambda ()
+                                (read-string (file-size filename)))))))])
+    (or grade "--")))
+
+(define (one-status-page user for-handin)
+  (let* ([next (send/suspend
+                (lambda (k)
+                  (make-page (format "User: ~a, Handin: ~a" user for-handin)
+                    `(p ,@(handin-link k user for-handin))
+                    `(p "Grade: " ,(handin-grade user for-handin))
+                    `(p ,@(solution-link k for-handin))
+                    `(p (a ([href ,(make-k k "allofthem")])
+                           ,(format "All handins for ~a" user))))))]
+         [tag (aget (request-bindings next) 'tag)])
+    (if (string=? tag "allofthem")
+      (all-status-page user)
+      (download user tag))))
+
+(define (all-status-page user)
+  (define (cell  . texts) `(td ([bgcolor "white"]) ,@texts))
+  (define (rcell . texts) `(td ([bgcolor "white"] [align "right"]) ,@texts))
+  (define (header . texts) `(td ([bgcolor "#f0f0f0"]) (big (strong ,@texts))))
+  (define ((row k active?) dir)
+    (let ([hi (assignment<->dir dir)])
+      `(tr ([valign "top"])
+         ,(apply header hi (if active? `((br) (small (small "[active]"))) '()))
+         ,(apply cell (handin-link k user hi))
+         ,(rcell (handin-grade user hi))
+         ,(apply cell (solution-link k hi)))))
+  (let* ([next
+          (send/suspend
+           (lambda (k)
+             (make-page
+              (format "All Handins for ~a" user)
+              `(table ([bgcolor "#ddddff"] [cellpadding "6"] [align "center"])
+                 (tr () ,@(map header '(nbsp "Files" "Grade" "Solution")))
+                 ,@(append (map (row k #t) (get-conf 'active-dirs))
+                           (map (row k #f) (get-conf 'inactive-dirs)))))))]
+         [tag (aget (request-bindings next) 'tag)])
+    (download user tag)))
+
+(define (download who tag)
+  (define (check path elts allow-active?)
+    (let loop ([path path] [elts (reverse elts)])
+      (let*-values ([(base name dir?) (split-path path)]
+                    [(name) (path->string name)]
+                    [(check) (and (pair? elts) (car elts))])
+        (if (null? elts)
+          ;; must be rooted in a submission directory (why build-path instead
+          ;; of using `path'? -- because path will have a trailing slash)
+          (member (build-path base name)
+                  (get-conf (if allow-active? 'all-dirs 'inactive-dirs)))
+          (and (cond [(eq? '* check) #t]
+                     [(regexp? check) (regexp-match? check name)]
+                     [(string? check)
+                      (or (equal? name check)
+                          (member check (regexp-split #rx" *[+] *" name)))]
+                     [else #f])
+               (loop base (cdr elts)))))))
+  (define file (build-path server-dir tag))
+  (with-handlers ([exn:fail?
+                   (lambda (exn)
+                     (log-line "Status exception: ~a" (exn-message exn))
+                     (make-page "Error" "Illegal file access"))])
+    ;; Make sure the user is allowed to read the requested file:
+    (or (check file `(,who *) #t)
+        (check file `(#rx"^solution") #f)
+        (check file `(#rx"^solution" *) #f)
+        (error 'download "bad file access for ~s: ~a" who file))
+    (log-line "Status file-get: ~s ~a" who file)
+    (hook 'status-file-get `([username ,(string->symbol who)] [file ,file]))
+    ;; Return the downloaded file
+    (let* ([data (file->bytes file)]
+           [html? (regexp-match? #rx"[.]html?$" (string-foldcase tag))]
+           [wxme? (regexp-match?
+                   #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME" data)])
+      (make-response/full 200 "Okay" (current-seconds)
+        (cond [html? #"text/html"]
+              [wxme? #"application/data"]
+              [else  #"text/plain"])
+        (list
+         (make-header #"Content-Length"
+                      (string->bytes/latin-1
+                       (number->string (bytes-length data))))
+         (make-header #"Content-Disposition"
+                      (string->bytes/utf-8
+                       (format "~a; filename=~s"
+                               (if wxme? "attachment" "inline")
+                               (let-values ([(base name dir?) (split-path file)])
+                                 (path->string name))))))
+        (list data)))))
+
+(define (status-page user for-handin)
+  (log-line "Status access: ~s" user)
+  (hook 'status-login `([username ,(string->symbol user)]))
+  (if for-handin
+    (one-status-page user for-handin)
+    (all-status-page user)))
+
+(define (login-page for-handin errmsg)
+  (let* ([request
+          (send/suspend
+           (lambda (k)
+             (make-page
+              "Handin Status Login"
+              `(form ([action ,k] [method "post"])
+                 (table ([align "center"])
+                   (tr (td ([colspan "2"] [align "center"])
+                           (font ([color "red"]) ,(or errmsg 'nbsp))))
+                   (tr (td "Username")
+                       (td (input ([type "text"] [name "user"] [size "20"]
+                                   [value ""]))))
+                   (tr (td nbsp))
+                   (tr (td "Password")
+                       (td (input ([type "password"] [name "passwd"]
+                                   [size "20"] [value ""]))))
+                   (tr (td ([colspan "2"] [align "center"])
+                           (input ([type "submit"] [name "post"]
+                                   [value "Login"])))))))))]
+         [bindings  (request-bindings request)]
+         [user      (aget bindings 'user)]
+         [passwd    (aget bindings 'passwd)]
+         [user      (and user (clean-str user))]
+         [user-data (get-user-data user)])
+    (cond [(and user-data
+                (string? passwd)
+                (let ([pw (md5 passwd)])
+                  (or (equal? pw (car user-data))
+                      (equal? pw (get-conf 'master-password)))))
+           (status-page user for-handin)]
+          [else (login-page for-handin "Bad username or password")])))
+
+(define web-counter
+  (let ([sema (make-semaphore 1)] [count 0])
+    (lambda ()
+      (dynamic-wind
+        (lambda () (semaphore-wait sema))
+        (lambda () (set! count (add1 count)) (format "w~a" count))
+        (lambda () (semaphore-post sema))))))
+
+(define ((send-error msg) req)
+  `(html (head (meta [(http-equiv "refresh") (content "3;URL=/")])
+               (title ,msg))
+         (body ,msg "; " (a ([href "/"]) "restarting") " in 3 seconds.")))
+
+(define ((run-servlet port))
+  (define dir (string->path server-dir))
+  (serve/servlet
+   (lambda (request)
+     (parameterize ([current-session (web-counter)])
+       (login-page (aget (request-bindings request) 'handin) #f)))
+   #:port port #:listen-ip #f #:ssl? #t #:command-line? #t
+   #:servlet-path "/" #:servlet-regexp #rx""
+   #:server-root-path dir #:servlets-root dir
+   #:file-not-found-responder (send-error "File not found")
+   #:servlet-namespace '(handin-server/private/md5
+                         handin-server/private/logger
+                         handin-server/private/config
+                         handin-server/private/hooker
+                         handin-server/private/reloadable)
+   #:manager (make-threshold-LRU-manager
+              (send-error "Your session has expired") (* 12 1024 1024))
+   #:log-file (get-conf 'web-log-file)))
+
+(provide run)
+(define (run)
+  (cond [(get-conf 'https-port-number)
+         => (lambda (p)
+              (define t
+                (thread (lambda ()
+                          (dynamic-wind
+                            (lambda () (log-line "*** starting web server"))
+                            (run-servlet p)
+                            (lambda () (log-line "*** web server died!"))))))
+              (lambda () (break-thread t)))]
+        [else void]))

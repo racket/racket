@@ -114,16 +114,6 @@ This directory contains the following files and sub-directories:
     option), or @scheme[#f] for no log file; defaults to
     @filepath{log}.}
 
-  @item{@indexed-scheme[web-base-dir] --- if @scheme[#f] (the
-    default), the built-in web server will use the
-    @filepath{status-web-root} in the handin collection for its
-    configuration; to have complete control over the built in server
-    content, you can copy and edit @filepath{status-web-root}, then
-    add this configuration entry set to the name of your new copy
-    (relative to the handin server directory, or absolute).  Note that
-    you must copy the @filepath{servlets} directory if you want the
-    status servlet.}
-
   @item{@indexed-scheme[web-log-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename for
     logging the internal HTTPS status web server; or @scheme[#f] (the
@@ -218,11 +208,11 @@ This directory contains the following files and sub-directories:
 
   Changes to @filepath{config.ss} are detected, the file will be
   re-read, and options are reloaded.  A few options are fixed at
-  startup time: port numbers, log file specs, and the
-  @scheme[web-base-dir] are fixed as configured at startup.  All other
-  options will change the behavior of the running server (but things
-  like @scheme[username-case-sensitive?]  it would be unwise to do
-  so).  (For safety, options are not reloaded until the file parses
+  startup time: port numbers and log file specs are fixed as
+  configured at startup.  All other options will change the behavior
+  of the running server (but things like
+  @scheme[username-case-sensitive?]  it would be unwise to do so).
+  (For safety, options are not reloaded until the file parses
   correctly, but make sure that you don't save a copy that has
   inconsistent options: it is best to create a new configuration file
   and move it over the old one, or use an editor that does so and not
@@ -482,11 +472,11 @@ the correct assignment in the handin dialog.
 A student can download his/her own submissions through a web server
 that runs concurrently with the handin server.  The starting URL is
 
-@commandline{https://SERVER:PORT/servlets/status.ss}
+@commandline{https://SERVER:PORT/}
 
 to obtain a list of all assignments, or
 
-@commandline{https://SERVER:PORT/servlets/status.ss?handin=ASSIGNMENT}
+@commandline{https://SERVER:PORT/?handin=ASSIGNMENT}
 
 to start with a specific assignment (named ASSIGNMENT).  The default
 PORT is 7980.

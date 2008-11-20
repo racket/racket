@@ -533,6 +533,32 @@ void wxCanvasDC::DrawPoint(double x, double y)
   if (!current_pen || current_pen->GetStyle() == wxTRANSPARENT)
     return;
 
+  if (anti_alias) {
+    double xx, yy;
+    CGContextRef cg;
+
+    SetCurrentDC(TRUE);
+    cg = GetCG();
+
+    CGContextSaveGState(cg);
+
+    xx = SmoothingXFormX(x);
+    yy = SmoothingXFormY(y);
+
+    CGContextMoveToPoint(cg, xx, yy);
+    CGContextAddLineToPoint(cg, xx, yy);
+    
+    wxMacSetCurrentTool(kPenTool);
+    CGContextStrokePath(cg);
+    wxMacSetCurrentTool(kNoTool);
+
+    CGContextRestoreGState(cg);
+
+    ReleaseCurrentDC();
+
+    return;
+  }
+
   SetCurrentDC();
   wxMacSetCurrentTool(kPenTool);
   wxMacDrawPoint(XLOG2DEV(x), YLOG2DEV(y));

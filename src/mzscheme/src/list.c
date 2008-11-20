@@ -27,7 +27,11 @@
 
 /* globals */
 Scheme_Object scheme_null[1];
+Scheme_Object *scheme_cons_proc;
+Scheme_Object *scheme_mcons_proc;
 Scheme_Object *scheme_list_proc;
+Scheme_Object *scheme_list_star_proc;
+Scheme_Object *scheme_box_proc;
 
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
@@ -155,7 +159,9 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("mpair?", p, env);
 
+  REGISTER_SO(scheme_cons_proc);
   p = scheme_make_noncm_prim(cons_prim, "cons", 2, 2);
+  scheme_cons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("cons", p, env);
 
@@ -167,7 +173,9 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant ("cdr", p, env);
 
+  REGISTER_SO(scheme_mcons_proc);
   p = scheme_make_noncm_prim(mcons_prim, "mcons", 2, 2);
+  scheme_mcons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("mcons", p, env);
 
@@ -205,11 +213,14 @@ scheme_init_list (Scheme_Env *env)
                                 | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant ("list", p, env);
 
-  scheme_add_global_constant ("list*",
-			      scheme_make_immed_prim(list_star_prim,
-						     "list*",
-						     1, -1),
-			      env);
+  REGISTER_SO(scheme_list_star_proc);
+  p = scheme_make_immed_prim(list_star_prim, "list*", 1, -1);
+  scheme_list_star_proc = p;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
+  scheme_add_global_constant ("list*", p, env);
+
   scheme_add_global_constant("immutable?",
 			     scheme_make_folding_prim(immutablep,
 						      "immutable?",
@@ -409,7 +420,9 @@ scheme_init_list (Scheme_Env *env)
                                                        1, 1, 1),
 			      env);
 
+  REGISTER_SO(scheme_box_proc);
   p = scheme_make_immed_prim(box, BOX, 1, 1);
+  scheme_box_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
   scheme_add_global_constant(BOX, p, env);
 

@@ -1256,13 +1256,23 @@ static void *malloc_double(void)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-static void *make_list_code;
-# define make_list make_list_code
+static void *make_list_code, *make_list_star_code;
 #else
 static Scheme_Object *make_list(long n)
 {
   GC_CAN_IGNORE Scheme_Object *l = scheme_null;
   GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
+  
+  while (n--) {
+    l = cons(rs[n], l);
+  }
+
+  return l;
+}
+static Scheme_Object *make_list_star(long n)
+{
+  GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
+  GC_CAN_IGNORE Scheme_Object *l = rs[--n];
   
   while (n--) {
     l = cons(rs[n], l);
@@ -4077,6 +4087,13 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, app, NULL);
+    } else if (IS_NAMED_PRIM(rator, "list*")) {
+      /* on a single argument, `list*' is identity */
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "list")) {
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1);
@@ -4553,7 +4570,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       (void)jit_movi_p(JIT_R0, scheme_void);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "cons")) {
+    } else if (IS_NAMED_PRIM(rator, "cons")
+               || IS_NAMED_PRIM(rator, "list*")) {
       LOG_IT(("inlined cons\n"));
 
       generate_two_args(app->rand1, app->rand2, jitter, 1);
@@ -4748,8 +4766,12 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, app, NULL, NULL);
-    } else if (IS_NAMED_PRIM(rator, "list")) {
+    } else if (IS_NAMED_PRIM(rator, "list")
+               || IS_NAMED_PRIM(rator, "list*")) {
       int c = app->num_args;
+      int star;
+
+      star = IS_NAMED_PRIM(rator, "list*");
 
       if (c)
         generate_app(app, NULL, c, jitter, 0, 0, 1);
@@ -4757,13 +4779,19 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
 #ifdef CAN_INLINE_ALLOC
       jit_movi_l(JIT_R2, c);
-      (void)jit_calli(make_list_code);
+      if (star)
+        (void)jit_calli(make_list_star_code);
+      else
+        (void)jit_calli(make_list_code);
 #else
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       jit_movi_l(JIT_R0, c);
       mz_prepare(1);
       jit_pusharg_l(JIT_R0);
-      (void)mz_finish(make_list);
+      if (star)
+        (void)mz_finish(make_list_star);
+      else
+        (void)mz_finish(make_list);
       jit_retval(JIT_R0);
 #endif
 
@@ -7252,13 +7280,21 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 #ifdef CAN_INLINE_ALLOC
   /* *** make_list_code *** */
   /* R2 has length, args are on runstack */
-  {
+  for (i = 0; i < 2; i++) {
     jit_insn *ref, *refnext;
 
-    make_list_code = jit_get_ip().ptr;  
+    if (i == 0)
+      make_list_code = jit_get_ip().ptr;  
+    else
+      make_list_star_code = jit_get_ip().ptr;  
     mz_prolog(JIT_R1);
     jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
-    (void)jit_movi_p(JIT_R0, &scheme_null);
+    if (i == 0)
+      (void)jit_movi_p(JIT_R0, &scheme_null);
+    else {
+      jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R2);
+    }
 
     __START_SHORT_JUMPS__(1);
     ref = jit_beqi_l(jit_forward(), JIT_R2, 0);
