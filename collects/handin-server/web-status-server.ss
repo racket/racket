@@ -266,15 +266,18 @@
                          handin-server/private/hooker
                          handin-server/private/reloadable)
    #:manager (make-threshold-LRU-manager
-              (send-error "Your session has expired") (* 12 1024 1024))))
-
-
+              (send-error "Your session has expired") (* 12 1024 1024))
+   #:log-file (get-conf 'web-log-file)))
 
 (provide run)
-(define (run p)
-  (define t
-    (thread (lambda () (dynamic-wind
-                         (lambda () (log-line "*** starting web server"))
-                         (run-servlet p)
-                         (lambda () (log-line "*** web server died!"))))))
-  (lambda () (break-thread t)))
+(define (run)
+  (cond [(get-conf 'https-port-number)
+         => (lambda (p)
+              (define t
+                (thread (lambda ()
+                          (dynamic-wind
+                            (lambda () (log-line "*** starting web server"))
+                            (run-servlet p)
+                            (lambda () (log-line "*** web server died!"))))))
+              (lambda () (break-thread t)))]
+        [else void]))

@@ -622,9 +622,7 @@
 (log-line "server started ------------------------------")
 (hook 'server-start `([port ,(get-conf 'port-number)]))
 
-(define stop-status
-  (cond [(get-conf 'https-port-number) => web:run]
-        [else void]))
+(define stop-status (web:run))
 
 (define session-count 0)
 
