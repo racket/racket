@@ -3,7 +3,11 @@
 #lang scheme/base
 (require (prefix-in net: net/sendurl)
          scheme/contract
-         scheme/list)
+         scheme/list
+         scheme/unit
+         net/tcp-unit
+         net/tcp-sig
+         net/ssl-tcp-unit)
 (require web-server/web-server
          web-server/managers/lru
          web-server/managers/manager
@@ -44,6 +48,7 @@
                   #:banner? boolean?
                   #:listen-ip (or/c false/c string?)
                   #:port number?
+                  #:ssl? boolean?
                   #:manager manager?
                   #:servlet-namespace (listof module-path?)
                   #:server-root-path path?
@@ -71,6 +76,8 @@
          [listen-ip "127.0.0.1"]
          #:port
          [the-port 8000]
+         #:ssl?
+         [ssl? #f]
 
          #:manager
          [manager
@@ -102,8 +109,18 @@
           (gen-file-not-found-responder
            (build-path server-root-path "conf" "not-found.html"))]
          #:mime-types-path
-         [mime-types-path (build-path server-root-path "mime.types")])
-  (define standalone-url (format "http://localhost:~a~a" the-port servlet-path))
+         [mime-types-path (let ([p (build-path server-root-path "mime.types")])
+                            (if (file-exists? p)
+                              p
+                              (build-path
+                               (directory-part default-configuration-table-path)
+                               "mime.types")))])
+  (define standalone-url
+    (string-append (if ssl? "https" "http")
+                   "://localhost"
+                   (if (and (not ssl?) (= the-port 80))
+                     "" (format ":~a" the-port))
+                   servlet-path))
   (define make-servlet-namespace
     (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
   (define sema (make-semaphore 0))
@@ -153,20 +170,26 @@
   (define shutdown-server
     (serve #:dispatch dispatcher
            #:listen-ip listen-ip
-           #:port the-port))
-  (define welcome
-    (if banner?
-      (lambda ()
-        (printf "Your Web application is running at ~a.\n" standalone-url)
-        (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
-      (void)))
-  (define (bye)
-    (when banner? (printf "\nWeb Server stopped.\n"))
-    (shutdown-server))
+           #:port the-port
+           #:tcp@ (if ssl?
+                    (let ()
+                      (define-unit-binding ssl-tcp@
+                        (make-ssl-tcp@
+                         (build-path server-root-path "server-cert.pem")
+                         (build-path server-root-path "private-key.pem")
+                         #f #f #f #f #f)
+                        (import) (export tcp^))
+                      ssl-tcp@)
+                    tcp@)))
   (when launch-browser?
     ((send-url) standalone-url #t))
-  (welcome)
-  (with-handlers ([exn:break? (lambda (exn) (bye))])
-    (semaphore-wait/enable-break sema)
-    ;; We can get here if a /quit url is visited
-    (bye)))
+  (when banner?
+    (printf "Your Web application is running at ~a.\n" standalone-url)
+    (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
+  (let ([bye (lambda ()
+               (when banner? (printf "\nWeb Server stopped.\n"))
+               (shutdown-server))])
+    (with-handlers ([exn:break? (lambda (exn) (bye))])
+      (semaphore-wait/enable-break sema)
+      ;; We can get here if a /quit url is visited
+      (bye))))
