@@ -14,4 +14,3 @@
   [quantize ( String -> (values String (Listof (Vectorof Number)) (U #f (Vectorof Number))))])
   
 (provide gif-stream? GIF-Stream)
-  
