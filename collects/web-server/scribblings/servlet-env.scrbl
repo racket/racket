@@ -9,6 +9,7 @@
                      web-server/private/util
                      web-server/configuration/configuration-table
                      web-server/configuration/responders
+                     web-server/dispatchers/dispatch-log
                      scheme/list))
 
 @defmodule[web-server/servlet-env]{
@@ -102,6 +103,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
                         [#:servlet-current-directory servlet-current-directory path? servlets-root]
                         [#:file-not-found-responder file-not-found-responder
+                                                    (request? . -> . response?)
                                                     (gen-file-not-found-responder 
                                                      (build-path
                                                       server-root-path
@@ -116,7 +118,9 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                                                  (build-path
                                                   (directory-part 
                                                    default-configuration-table-path)
-                                                  "mime.types")))])
+                                                  "mime.types")))]
+                        [#:log-file log-file path? #f]
+                        [#:log-format log-format symbol? 'apache-default])
                        void]{
  This sets up and starts a fairly default server instance.
       
@@ -154,6 +158,9 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  running from the command line, in which case the @scheme[command-line?] option controls similar options.
  
  MIME types are looked up at @scheme[mime-types-path].
+ 
+ If @scheme[log-file] is given, then it used to log requests using @scheme[log-format] as the format. Allowable formats
+ are those allowed by @scheme[log-format->format].
 }
 
 }

@@ -128,7 +128,9 @@
                                "mime.types")))]
 
          #:log-file
-         [log-file #f])
+         [log-file #f]
+         #:log-format
+         [log-format 'apache-default])
   (define standalone-url
     (string-append (if ssl? "https" "http")
                    "://localhost"
@@ -141,10 +143,7 @@
   (define servlet-box (box #f))
   (define dispatcher
     (dispatcher-sequence
-     (and log-file (log:make #:format (log:log-format->format
-                                       ;; 'parenthesized-default
-                                       ;; 'extended
-                                       'apache-default)
+     (and log-file (log:make #:format (log:log-format->format log-format)
                              #:log-path log-file))
      (and quit? (filter:make #rx"^/quit$" (quit-server sema)))
      (filter:make
