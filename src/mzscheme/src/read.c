@@ -4371,8 +4371,6 @@ static Scheme_Object *read_compact_k(void)
   return read_compact(port, p->ku.k.i1);
 }
 
-int dump_info = 0;
-
 static Scheme_Object *read_compact(CPort *port, int use_stack)
 {
 #define BLK_BUF_SIZE 32
@@ -4397,9 +4395,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
   while (1) {
     ZO_CHECK(port->pos < port->size);
     ch = CP_GETC(port);
-
-    if (dump_info)
-      printf("%d %d %d\n", ch, port->pos, need_car); 
 
     switch(cpt_branch[ch]) {
     case CPT_ESCAPE:
@@ -4456,8 +4451,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_SYMREF:
       l = read_compact_number(port);
       RANGE_CHECK(l, < port->symtab_size);
-      if (dump_info)
-        printf("%d\n", l);
       v = port->symtab[l];
       if (!v) {
         long save_pos = port->pos;
@@ -5268,7 +5261,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
     len = symtabsize;
     for (j = 1; j < len; j++) {
       if (!symtab[j]) {
-        if (dump_info) printf("at %ld %ld\n", j, rp->pos); 
         v = read_compact(rp, 0);
         symtab[j] = v;
       } else {
