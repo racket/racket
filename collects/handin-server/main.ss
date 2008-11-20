@@ -10,7 +10,7 @@
          "private/run-status.ss"
          "private/reloadable.ss"
          "private/hooker.ss"
-         "web-status-server.ss"
+         (prefix-in web: "web-status-server.ss")
          ;; this sets some global parameter values, and this needs
          ;; to be done in the main thread, rather than later in a
          ;; user session thread (that will make the global changes
@@ -623,7 +623,7 @@
 (hook 'server-start `([port ,(get-conf 'port-number)]))
 
 (define stop-status
-  (cond [(get-conf 'https-port-number) => serve-status]
+  (cond [(get-conf 'https-port-number) => web:run]
         [else void]))
 
 (define session-count 0)

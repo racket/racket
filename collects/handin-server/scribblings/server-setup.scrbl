@@ -482,11 +482,11 @@ the correct assignment in the handin dialog.
 A student can download his/her own submissions through a web server
 that runs concurrently with the handin server.  The starting URL is
 
-@commandline{https://SERVER:PORT/servlets/status.ss}
+@commandline{https://SERVER:PORT/}
 
 to obtain a list of all assignments, or
 
-@commandline{https://SERVER:PORT/servlets/status.ss?handin=ASSIGNMENT}
+@commandline{https://SERVER:PORT/?handin=ASSIGNMENT}
 
 to start with a specific assignment (named ASSIGNMENT).  The default
 PORT is 7980.

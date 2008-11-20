@@ -50,9 +50,8 @@
   The submitted file will be @filepath{.../test/tester/handin.scm}.}
 
 @item{Check the status of your submission by pointing a web browser at
-  @tt{https://localhost:7980/servlets/status.ss}.  Note the ``s'' in
-  ``https''. Use the ``@tt{tester}'' username and ``@tt{pw}''
-  password, as before.
+  @tt{https://localhost:7980/}.  Note the ``s'' in ``https''.  Use the
+  ``@tt{tester}'' username and ``@tt{pw}'' password, as before.
 
   NOTE: The @scheme[https-port-number] line in the
   @filepath{config.ss} file enables the embedded secure server.  You
