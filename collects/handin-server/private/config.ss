@@ -74,7 +74,6 @@
     [(allow-new-users)         (values #f                    id           )]
     [(allow-change-info)       (values #f                    id           )]
     [(master-password)         (values #f                    id           )]
-    [(web-base-dir)            (values #f                    path/false   )]
     [(log-output)              (values #t                    id           )]
     [(log-file)                (values "log"                 path/false   )]
     [(web-log-file)            (values #f                    path/false   )]
