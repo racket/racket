@@ -82,7 +82,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:launch-browser? launch-browser? boolean? (not command-line?)]
                         [#:quit? quit? boolean? (not command-line?)]
                         [#:banner? banner? boolean? (not command-line?)]
-                        [#:listen-ip listen-ip string? "127.0.0.1"]
+                        [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
                         [#:port port number? 8000]
                         [#:servlet-path servlet-path string?
                                         "/servlets/standalone.ss"]
