@@ -18,7 +18,7 @@
         default)))
 
 (define ssl (make-parameter #f))
-(define port (make-parameter 80))
+(define port (make-parameter #f))
 
 (define configuration@
   (parse-command-line
@@ -27,7 +27,7 @@
    `((once-each
       [("--ssl")
        ,(lambda (flag)
-          (port 443)
+          (unless (port) (port 443))
           (ssl #t))
        ("Run with SSL using server-cert.pem and private-key.pem in the current directory, with 443 as the default port.")]
       [("-f" "--configuration-table")
@@ -41,7 +41,10 @@
        ("Use an alternate configuration table" "file-name")]
       [("-p" "--port")
        ,(lambda (flag the-port)
-          (port (string->number the-port)))
+          (let ([p (string->number the-port)])
+            (if (and (integer? p) (<= 1 p 65535))
+              (port p)
+              (error 'web-server "expecting a valid port number, got \"~a\"" the-port))))
        ("Use an alternate network port." "port")]
       [("-a" "--ip-address")
        ,(lambda (flag ip-address)
@@ -58,7 +61,7 @@
    (lambda (flags)
      (configuration-table->web-config@
       (extract-flag 'config flags default-configuration-table-path)
-      #:port (port)
+      #:port (or (port) 80)
       #:listen-ip (extract-flag 'ip-address flags #f)))
    '()))
 
