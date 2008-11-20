@@ -147,8 +147,7 @@
                  extra-files-paths))
      (files:make
       #:url->path (fsmap:make-url->path (build-path server-root-path "htdocs"))
-      #:path->mime-type (make-path->mime-type
-                         (build-path server-root-path "mime.types"))
+      #:path->mime-type (make-path->mime-type mime-types-path)
       #:indices (list "index.html" "index.htm"))
      (lift:make file-not-found-responder)))
   (define shutdown-server
