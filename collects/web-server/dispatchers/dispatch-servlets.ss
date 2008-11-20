@@ -51,10 +51,6 @@
                                           #:responders-servlet (url? any/c . -> . response?))
             dispatcher/c)])
 
-;; default-server-instance-expiration-handler : (request -> response)
-(define (default-servlet-instance-expiration-handler req)
-  (next-dispatcher))
-
 (define (make url->servlet
               #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
               #:responders-servlet [responders-servlet servlet-error-responder])
@@ -70,15 +66,6 @@
       (define response
         (with-handlers ([exn:fail:filesystem:exists?
                          (lambda (the-exn) (next-dispatcher))]
-                        [exn:fail:servlet-manager:no-instance?
-                         (lambda (the-exn)
-                           ((exn:fail:servlet-manager:no-instance-expiration-handler the-exn) req))]
-                        [exn:fail:servlet-manager:no-continuation?
-                         (lambda (the-exn)
-                           ((exn:fail:servlet-manager:no-continuation-expiration-handler the-exn) req))]
-                        [exn:fail:servlet:instance?
-                         (lambda (the-exn)
-                           (default-servlet-instance-expiration-handler req))]
                         [(lambda (x) #t)
                          (lambda (the-exn) (responders-servlet-loading uri the-exn))])
           (define the-servlet (url->servlet uri))
@@ -87,10 +74,7 @@
                          [current-directory (servlet-directory the-servlet)]
                          [current-namespace (servlet-namespace the-servlet)])
             (with-handlers ([(lambda (x) #t)
-                             (lambda (exn)
-                               (responders-servlet
-                                (request-uri req)
-                                exn))])
+                             (lambda (exn) (responders-servlet uri exn))])
               (call-with-continuation-barrier 
                (lambda ()
                  (call-with-continuation-prompt
