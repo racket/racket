@@ -162,10 +162,8 @@ void wxsScheme_setup(Scheme_Env *env)
   get_ps_setup_from_user = scheme_false;
   message_box = scheme_false;
 
-  orig_collect_start_callback = GC_collect_start_callback;
-  GC_collect_start_callback = (GC_START_END_PTR)collect_start_callback;
-  orig_collect_end_callback = GC_collect_end_callback;
-  GC_collect_end_callback = (GC_START_END_PTR)collect_end_callback;
+  orig_collect_start_callback = GC_set_collect_start_callback(collect_start_callback);
+  orig_collect_end_callback = GC_set_collect_end_callback(collect_end_callback);
 }
 
 extern "C" {

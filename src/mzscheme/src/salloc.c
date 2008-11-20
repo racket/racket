@@ -2053,7 +2053,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[])
         scheme_console_printf(" swapped in\n");
         var_stack = GC_variable_stack;
         delta = 0;
-        limit = (void *)GC_get_thread_stack_base();
+        limit = (void *)scheme_get_current_thread_stack_start();
       } else {
         scheme_console_printf(" swapped out\n");
         var_stack = (void **)t->jmpup_buf.gc_var_stack;

@@ -130,14 +130,30 @@ static THREAD_LOCAL NewGC *GC;
 #define GENERATIONS 1
 
 /* the externals */
-void (*GC_collect_start_callback)(void);
-void (*GC_collect_end_callback)(void);
-void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 void (*GC_out_of_memory)(void);
 void (*GC_report_out_of_memory)(void);
-unsigned long (*GC_get_thread_stack_base)(void);
 void (*GC_mark_xtagged)(void *obj);
 void (*GC_fixup_xtagged)(void *obj);
+
+GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
+  NewGC *gc = GC_get_GC();
+  GC_collect_start_callback_Proc old;
+  old = gc->GC_collect_start_callback;
+  gc->GC_collect_start_callback = func;
+  return old;
+}
+GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc func) {
+  NewGC *gc = GC_get_GC();
+  GC_collect_end_callback_Proc old;
+  old = gc->GC_collect_end_callback;
+  gc->GC_collect_end_callback = func;
+  return old;
+}
+void GC_set_collect_inform_callback(void (*func)(int major_gc, long pre_used, long post_used)) {
+  NewGC *gc = GC_get_GC();
+  gc->GC_collect_inform_callback = func;
+}
+
 
 #include "my_qsort.c"
 
@@ -982,8 +998,13 @@ unsigned long GC_get_stack_base()
   return gc->stack_base;
 }
 
+void GC_set_get_thread_stack_base(unsigned long (*func)(void)) {
+  NewGC *gc = GC_get_GC();
+  gc->GC_get_thread_stack_base = func;
+}
+
 static inline void *get_stack_base(NewGC *gc) {
-  if (GC_get_thread_stack_base) return (void*) GC_get_thread_stack_base();
+  if (gc->GC_get_thread_stack_base) return (void*) gc->GC_get_thread_stack_base();
   return (void*) gc->stack_base;
 }
 
@@ -2409,8 +2430,8 @@ static void garbage_collect(NewGC *gc, int force_full)
   TIME_INIT();
 
   /* inform the system (if it wants us to) that we're starting collection */
-  if(GC_collect_start_callback)
-    GC_collect_start_callback();
+  if(gc->GC_collect_start_callback)
+    gc->GC_collect_start_callback();
 
   TIME_STEP("started");
 
@@ -2530,10 +2551,10 @@ static void garbage_collect(NewGC *gc, int force_full)
     gc->last_full_mem_use = gc->memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
-  if (GC_collect_start_callback)
-    GC_collect_end_callback();
-  if (GC_collect_inform_callback)
-    GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
+  if (gc->GC_collect_start_callback)
+    gc->GC_collect_end_callback();
+  if (gc->GC_collect_inform_callback)
+    gc->GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
 
   TIME_STEP("ended");
 

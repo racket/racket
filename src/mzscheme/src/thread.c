@@ -200,10 +200,6 @@ Scheme_Object *scheme_break_enabled_key;
 
 long scheme_total_gc_time;
 static long start_this_gc_time, end_this_gc_time;
-#ifndef MZ_PRECISE_GC
-extern MZ_DLLIMPORT void (*GC_collect_start_callback)(void);
-extern MZ_DLLIMPORT void (*GC_collect_end_callback)(void);
-#endif
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
@@ -437,7 +433,7 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 #endif
 
 #ifdef MZ_PRECISE_GC
-static unsigned long get_current_stack_start(void);
+unsigned long scheme_get_current_thread_stack_start(void);
 #endif
 
 /*========================================================================*/
@@ -2106,10 +2102,10 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     thread_swap_callbacks = scheme_null;
     thread_swap_out_callbacks = scheme_null;
 
-    GC_collect_start_callback = get_ready_for_GC;
-    GC_collect_end_callback = done_with_GC;
+    GC_set_collect_start_callback(get_ready_for_GC);
+    GC_set_collect_end_callback(done_with_GC);
 #ifdef MZ_PRECISE_GC
-    GC_collect_inform_callback = inform_GC;
+    GC_set_collect_inform_callback(inform_GC);
 #endif
 
 #ifdef LINK_EXTENSIONS_BY_TABLE
@@ -2118,7 +2114,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 #endif
     
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
-    GC_get_thread_stack_base = get_current_stack_start;
+    GC_set_get_thread_stack_base(scheme_get_current_thread_stack_start);
 #endif
     process->stack_start = stack_base;
 
@@ -7448,7 +7444,7 @@ Scheme_Jumpup_Buf_Holder *scheme_new_jmpupbuf_holder(void)
 }
 
 #ifdef MZ_PRECISE_GC
-static unsigned long get_current_stack_start(void)
+unsigned long scheme_get_current_thread_stack_start(void)
 {
   Scheme_Thread *p;
   p = scheme_current_thread;

@@ -151,6 +151,12 @@ typedef struct NewGC {
   unsigned long num_minor_collects;
   unsigned long num_major_collects;
 
+  /* Callbacks */
+  void (*GC_collect_start_callback)(void);
+  void (*GC_collect_end_callback)(void);
+  void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
+  unsigned long (*GC_get_thread_stack_base)(void);
+
   GC_Immobile_Box *immobile_boxes;
 
   /* Common with CompactGC */
