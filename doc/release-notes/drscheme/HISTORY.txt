@@ -1,4 +1,17 @@
 ------------------------------
+        Version 4.3
+------------------------------
+
+  . minor bug fixes
+
+------------------------------
+        Version 4.2
+------------------------------
+
+  . contract library's function contract 
+    combinatiors now preserve tail recursion.
+
+------------------------------
         Version 4.1
 ------------------------------
 
