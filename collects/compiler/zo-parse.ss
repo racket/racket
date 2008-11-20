@@ -661,7 +661,7 @@
 ;; Main parsing loop
 
 (define (read-compact cp)
-  (let loop ([need-car 0] [proper #f] [last #f] [first #f])
+  (let loop ([need-car 0] [proper #f])
     (begin-with-definitions
       (define ch (cp-getc cp))
       (define-values (cpt-start cpt-tag) (let ([x (cpt-table-lookup ch)])
@@ -707,7 +707,7 @@
                      (cons (read-compact cp)
                            (if ppr null (read-compact cp)))
                      (read-compact-list l ppr cp))
-                 (loop l ppr last first)))]
+                 (loop l ppr)))]
           [(let-one)
            (make-let-one (read-compact cp) (read-compact cp))]
           [(branch)
@@ -747,8 +747,10 @@
                                   (read-compact cp))])
                       (vector->immutable-vector (list->vector lst)))]
           [(list) (let* ([n (read-compact-number cp)])
-                    (for/list ([i (in-range n)])
-                      (read-compact cp)))]
+                    (append
+                     (for/list ([i (in-range n)])
+                       (read-compact cp))
+                     (read-compact cp)))]
           [(prefab)
            (let ([v (read-compact cp)])
              (apply make-prefab-struct
@@ -845,9 +847,8 @@
                                             [(symbol? s) s]
                                             [(vector? s) (vector-ref s 0)]
                                             [else 'closure]))))])
-               (vector-set! (cport-symtab cp) l cl)
                (set-indirect-v! ind cl)
-               cl))]
+               ind))]
           [(svector)
            (read-compact-svector cp (read-compact-number cp))]
           [(small-svector)
@@ -858,7 +859,7 @@
         [(and proper (= need-car 1))
          (cons v null)]
         [else
-         (cons v (loop (sub1 need-car) proper last first))]))))
+         (cons v (loop (sub1 need-car) proper))]))))
 
 ;; path -> bytes
 ;; implementes read.c:read_compiled
@@ -898,11 +899,13 @@
    (define symtab (make-vector symtabsize (make-not-ready)))
 
    (define cp (make-cport 0 port size* rst symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
+
    (for/list ([i (in-range 1 symtabsize)])
      (when (not-ready? (vector-ref symtab i))
        (set-cport-pos! cp (vector-ref so* (sub1 i)))
        (let ([v (read-compact cp)])
          (vector-set! symtab i v))))
+
    (set-cport-pos! cp shared-size)
    (read-marshalled 'compilation-top-type cp)))
 
