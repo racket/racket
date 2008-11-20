@@ -6,6 +6,8 @@
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
+                     web-server/private/util
+                     web-server/configuration/configuration-table
                      web-server/configuration/responders
                      scheme/list))
 
@@ -84,10 +86,14 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:banner? banner? boolean? (not command-line?)]
                         [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
                         [#:port port number? 8000]
+                        [#:ssl? ssl? boolean? #f]
                         [#:servlet-path servlet-path string?
                                         "/servlets/standalone.ss"]
                         [#:servlet-regexp servlet-regexp regexp?
-                                          (regexp (format "^~a$" (regexp-quote servlet-path)))]
+                                          (regexp 
+                                           (format 
+                                            "^~a$"
+                                            (regexp-quote servlet-path)))]
                         [#:stateless? stateless? boolean? #f]
                         [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
                         [#:servlet-namespace servlet-namespace (listof module-path?) empty]
@@ -96,9 +102,21 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
                         [#:servlet-current-directory servlet-current-directory path? servlets-root]
                         [#:file-not-found-responder file-not-found-responder
-                                                    (gen-file-not-found-responder (build-path server-root-path "conf" "not-found.html"))]
+                                                    (gen-file-not-found-responder 
+                                                     (build-path
+                                                      server-root-path
+                                                      "conf"
+                                                      "not-found.html"))]
                         [#:mime-types-path mime-types-path path?
-                                           (build-path server-root-path "mime.types")])
+                                           (let ([p (build-path
+                                                     server-root-path
+                                                     "mime.types")])
+                                             (if (file-exists? p)
+                                                 p
+                                                 (build-path
+                                                  (directory-part 
+                                                   default-configuration-table-path)
+                                                  "mime.types")))])
                        void]{
  This sets up and starts a fairly default server instance.
       
@@ -114,6 +132,9 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  Advanced users may need the following options:
  
  The server listens on @scheme[listen-ip] and port @scheme[port].
+ 
+ If @scheme[ssl?] is true, then the server runs in HTTPS mode with @filepath{<server-root-path>/server-cert.pem}
+ and @filepath{<server-root-path>/private-key.pem} as the certificates and private keys 
  
  The servlet is loaded with @scheme[manager]
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
