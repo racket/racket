@@ -110,15 +110,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                                                       "conf"
                                                       "not-found.html"))]
                         [#:mime-types-path mime-types-path path?
-                                           (let ([p (build-path
-                                                     server-root-path
-                                                     "mime.types")])
-                                             (if (file-exists? p)
-                                                 p
-                                                 (build-path
-                                                  (directory-part 
-                                                   default-configuration-table-path)
-                                                  "mime.types")))]
+                                           ...]
                         [#:log-file log-file path? #f]
                         [#:log-format log-format symbol? 'apache-default])
                        void]{
@@ -157,8 +149,10 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  If @scheme[banner?] is true, then an informative banner is printed. You may want to use this when
  running from the command line, in which case the @scheme[command-line?] option controls similar options.
  
- MIME types are looked up at @scheme[mime-types-path].
- 
+ MIME types are looked up at @scheme[mime-types-path]. By default the @filepath{mime.types} file in the
+ @scheme[server-root-path] is used, but if that file does not exist, then the file that ships with the
+ Web Server is used instead. Of course, if a path is given, then it overrides this behavior.
+
  If @scheme[log-file] is given, then it used to log requests using @scheme[log-format] as the format. Allowable formats
  are those allowed by @scheme[log-format->format].
 }
