@@ -42,7 +42,7 @@
                   #:launch-browser? boolean?
                   #:quit? boolean?
                   #:banner? boolean?
-                  #:listen-ip string?
+                  #:listen-ip (or/c false/c string?)
                   #:port number?
                   #:manager manager?
                   #:servlet-namespace (listof module-path?)
