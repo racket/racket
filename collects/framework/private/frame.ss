@@ -1952,7 +1952,6 @@
         (set! red? r?)
         (refresh)))
     (define/override (on-paint)
-      (super on-paint)
       (when red?
         (let ([dc (get-dc)])
           (let-values ([(cw ch) (get-client-size)])
@@ -1962,7 +1961,8 @@
               (send dc set-brush "pink" 'solid)
               (send dc draw-rectangle 0 0 cw ch)
               (send dc set-pen pen)
-              (send dc set-brush brush))))))
+              (send dc set-brush brush)))))
+      (super on-paint))
     (super-new)))
 
 (define-local-member-name 
