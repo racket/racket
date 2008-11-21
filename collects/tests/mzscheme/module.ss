@@ -239,6 +239,8 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
 
+(define expand-test-use-toplevel? #t)
+
 (test (void) eval
       '(begin
 	 (module mod_beg2 mzscheme
@@ -281,6 +283,8 @@
 			 . forms)])))
 	 (module m 'mod_beg2
 		 3)))
+
+(define expand-test-use-toplevel? #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
