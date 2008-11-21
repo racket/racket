@@ -165,4 +165,5 @@ things in the Web Language, they are sensitive to source code modification.
 
 @; ------------------------------------------------------------
 @include-section["formlets.scrbl"]
+@include-section["templates.scrbl"]
 @include-section["managers.scrbl"]

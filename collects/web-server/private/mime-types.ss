@@ -1,7 +1,7 @@
 #lang scheme/base
-(require mzlib/contract
-         mzlib/plt-match
-         mzlib/string)
+(require scheme/contract
+         scheme/match
+         scheme/promise)
 (require "util.ss"
          web-server/http)
 (provide/contract
@@ -17,13 +17,9 @@
         (match (read-line (current-input-port) 'any)
           [(? eof-object?)
            (void)]
-          [(regexp #"^([^\t ]+)[\t ]+(.+)$"
-                   (list s type exts))
-           (for-each (lambda (ext)
-                       (hash-set! MIME-TYPE-TABLE
-                                  (lowercase-symbol! ext)
-                                  type))
-                     (regexp-split #" " exts))
+          [(regexp #rx#"^([^\t ]+)[\t ]+(.+)$" (list _ type exts))
+           (for ([ext (in-list (regexp-split #" " exts))])
+             (hash-set! MIME-TYPE-TABLE (lowercase-symbol! ext) type))
            (loop)]
           [_
            (loop)]))))
@@ -36,12 +32,11 @@
 ;; 1. Can we determine the mime type based on file contents?
 ;; 2. Assuming that 7-bit ASCII is correct for mime-type
 (define (make-path->mime-type a-path)
-  (define MIME-TYPE-TABLE (read-mime-types a-path))
-  (define file-suffix-regexp (byte-regexp #".*\\.([^\\.]*$)"))
+  (define MIME-TYPE-TABLE (delay (read-mime-types a-path)))
   (lambda (path)
-    (match (regexp-match file-suffix-regexp (path->bytes path))
-      [(list path-bytes sffx)
-       (hash-ref MIME-TYPE-TABLE
+    (match (path->bytes path)
+      [(regexp #rx#".*\\.([^\\.]*$)" (list _ sffx))
+       (hash-ref (force MIME-TYPE-TABLE)
                  (lowercase-symbol! sffx)
-                 (lambda () TEXT/HTML-MIME-TYPE))]
+                 TEXT/HTML-MIME-TYPE)]
       [_ TEXT/HTML-MIME-TYPE])))
