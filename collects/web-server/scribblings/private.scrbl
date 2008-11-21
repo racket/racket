@@ -181,6 +181,13 @@ provides the unit that actually implements a dispatching server.
 
 }
 
+@subsection{Threads and Custodians}
+
+The dispatching server runs in a dedicated thread. Every time a connection is initiated, a new thread is started to handle it.
+Connection threads are created inside a dedicated custodian that is a child of the server's custodian. When the server is used to
+provide servlets, each servlet also receives a new custodian that is a child of the server's custodian @bold{not} the connection
+custodian.
+
 @; ------------------------------------------------------------
 @section[#:tag "closure.ss"]{Serializable Closures}
 @(require (for-label web-server/private/closure)
