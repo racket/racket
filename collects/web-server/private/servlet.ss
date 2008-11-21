@@ -21,7 +21,7 @@
          ([custodian custodian?]
           [namespace namespace?]
           [manager manager?]
-          [directory path?]
+          [directory path-string?]
           [handler (request? . -> . response?)])]
  [struct execution-context 
          ([request request?])]

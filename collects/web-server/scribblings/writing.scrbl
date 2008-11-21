@@ -104,7 +104,7 @@ boxes in a safe way.
 @defproc[(file-box? [v any/c])
          boolean?]{Checks if @scheme[v] is a file-box.}
 
-@defproc[(file-box [p path?]
+@defproc[(file-box [p path-string?]
                    [v serializable?])
          file-box?]{
  Creates a file-box that is stored at @scheme[p], with the default

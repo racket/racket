@@ -293,13 +293,13 @@ functions.
 @filepath{private/mime-types.ss} provides function for dealing with @filepath{mime.types}
 files.
 
-@defproc[(read-mime-types [p path?])
+@defproc[(read-mime-types [p path-string?])
          (hash-table/c symbol? bytes?)]{
  Reads the @filepath{mime.types} file from @scheme[p] and constructs a
  hash table mapping extensions to MIME types.
 }
 
-@defproc[(make-path->mime-type [p path?])
+@defproc[(make-path->mime-type [p path-string?])
          (path? . -> . bytes?)]{
  Uses a @scheme[read-mime-types] with @scheme[p] and constructs a
  function from paths to their MIME type.
@@ -371,7 +371,7 @@ needs. They are provided by @filepath{private/util.ss}.
 
 @subsection{Contracts}
 @defthing[port-number? contract?]{Equivalent to @scheme[(between/c 1 65535)].}
-@defthing[path-element? contract?]{Equivalent to @scheme[(or/c string? path? (symbols 'up 'same))].}
+@defthing[path-element? contract?]{Equivalent to @scheme[(or/c path-string? (symbols 'up 'same))].}
 
 @subsection{Lists}
 @defproc[(list-prefix? [l list?]
@@ -395,19 +395,19 @@ needs. They are provided by @filepath{private/util.ss}.
 }
 
 @subsection{Paths}
-@defproc[(explode-path* [p path?])
+@defproc[(explode-path* [p path-string?])
          (listof path-element?)]{
  Like @scheme[normalize-path], but does not resolve symlinks.
 }
 
-@defproc[(path-without-base [base path?]
-                            [p path?])
+@defproc[(path-without-base [base path-string?]
+                            [p path-string?])
          (listof path-element?)]{
  Returns, as a list, the portion of @scheme[p] after @scheme[base],
  assuming @scheme[base] is a prefix of @scheme[p].
 }
 
-@defproc[(directory-part [p path?])
+@defproc[(directory-part [p path-string?])
          path?]{
  Returns the directory part of @scheme[p], returning @scheme[(current-directory)]
  if it is relative.

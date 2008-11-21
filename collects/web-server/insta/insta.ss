@@ -15,10 +15,7 @@
 (provide/contract
  [static-files-path (path-string? . -> . void?)])
 (define (static-files-path path)
-  (set! extra-files-path 
-        (if (path? path) 
-            path
-            (string->path path))))
+  (set! extra-files-path path))
 
 (provide/contract
  [no-web-browser (-> void)])

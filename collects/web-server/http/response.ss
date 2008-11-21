@@ -15,7 +15,7 @@
 (provide/contract
  [rename ext:output-response output-response (connection? response? . -> . void)]
  [rename ext:output-response/method output-response/method (connection? response? symbol? . -> . void)]
- [rename ext:output-file output-file (connection? path? symbol? bytes? (or/c pair? false/c) . -> . void)])
+ [rename ext:output-file output-file (connection? path-string? symbol? bytes? (or/c pair? false/c) . -> . void)])
 
 ;; Table 1. head responses:
 ; ------------------------------------------------------------------------------

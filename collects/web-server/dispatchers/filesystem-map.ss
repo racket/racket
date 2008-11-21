@@ -8,7 +8,7 @@
 
 (provide/contract
  [url->path/c contract?]
- [make-url->path (path? . -> . url->path/c)]
+ [make-url->path (path-string? . -> . url->path/c)]
  [make-url->valid-path (url->path/c . -> . url->path/c)]
  [filter-url->path (regexp? url->path/c . -> . url->path/c)])
 

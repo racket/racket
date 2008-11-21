@@ -98,10 +98,10 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:stateless? stateless? boolean? #f]
                         [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
                         [#:servlet-namespace servlet-namespace (listof module-path?) empty]
-                        [#:server-root-path server-root-path path? default-server-root-path]
-                        [#:extra-files-paths extra-files-paths (listof path?) (list (build-path server-root-path "htdocs"))]
-                        [#:servlets-root servlets-root path? (build-path server-root-path "htdocs")]
-                        [#:servlet-current-directory servlet-current-directory path? servlets-root]
+                        [#:server-root-path server-root-path path-string? default-server-root-path]
+                        [#:extra-files-paths extra-files-paths (listof path-string?) (list (build-path server-root-path "htdocs"))]
+                        [#:servlets-root servlets-root path-string? (build-path server-root-path "htdocs")]
+                        [#:servlet-current-directory servlet-current-directory path-string? servlets-root]
                         [#:file-not-found-responder file-not-found-responder
                                                     (request? . -> . response?)
                                                     (gen-file-not-found-responder 
@@ -109,9 +109,9 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                                                       server-root-path
                                                       "conf"
                                                       "not-found.html"))]
-                        [#:mime-types-path mime-types-path path?
+                        [#:mime-types-path mime-types-path path-string?
                                            ....]
-                        [#:log-file log-file path? #f]
+                        [#:log-file log-file (or/c false/c path-string?) #f]
                         [#:log-format log-format symbol? 'apache-default])
                        void]{
  This sets up and starts a fairly default server instance.

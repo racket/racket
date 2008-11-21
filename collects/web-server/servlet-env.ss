@@ -52,15 +52,15 @@
                   #:ssl? boolean?
                   #:manager manager?
                   #:servlet-namespace (listof module-path?)
-                  #:server-root-path path?
+                  #:server-root-path path-string?
                   #:stateless? boolean?
-                  #:extra-files-paths (listof path?)
-                  #:servlets-root path?
+                  #:extra-files-paths (listof path-string?)
+                  #:servlets-root path-string?
                   #:file-not-found-responder (request? . -> . response?)
-                  #:mime-types-path path?
+                  #:mime-types-path path-string?
                   #:servlet-path string?
                   #:servlet-regexp regexp?
-                  #:log-file (or/c false/c path?))
+                  #:log-file (or/c false/c path-string?))
                  . ->* .
                  void)])
 
