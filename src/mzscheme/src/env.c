@@ -2123,7 +2123,8 @@ Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
   }
 
   while (env != upto) {
-    if (!(env->flags & (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME | SCHEME_CAPTURE_LIFTED))) {
+    if (!(env->flags & (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME 
+                        | SCHEME_CAPTURE_LIFTED | SCHEME_INTDEF_SHADOW))) {
       int i, count;
       
       /* How many slots filled in the frame so far?  This can change
@@ -2311,6 +2312,26 @@ Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 	    stx = scheme_add_rename(stx, l);
 	}
       }
+    } else if (env->flags & SCHEME_INTDEF_SHADOW) {
+      /* Just extract existing uids from identifiers, and don't need to
+         add renames to syntax objects. */
+      if (!env->uids) {
+        Scheme_Object **uids, *uid;
+        int i;
+        
+        uids = MALLOC_N(Scheme_Object *, env->num_bindings);
+        env->uids = uids;
+        
+        for (i = env->num_bindings; i--; ) {
+          uid = scheme_stx_moduleless_env(env->values[i]);
+          if (SCHEME_FALSEP(uid))
+            scheme_signal_error("intdef shadow binding is #f for %d/%s",
+                                SCHEME_TYPE(env->values[i]),
+                                scheme_write_to_string(SCHEME_STX_VAL(env->values[i]), 
+                                                       NULL));
+          env->uids[i] = uid;
+        }
+      }
     }
 
     env = env->next;
@@ -2446,7 +2467,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	if (frame->values[i]) {
 	  if (frame->uids) 
 	    uid = frame->uids[i];
-	  if (SAME_OBJ(SCHEME_STX_VAL(find_id), SCHEME_STX_VAL(frame->values[i]))
+          if (SAME_OBJ(SCHEME_STX_VAL(find_id), SCHEME_STX_VAL(frame->values[i]))
 	      && (scheme_stx_env_bound_eq(find_id, frame->values[i], uid, scheme_make_integer(phase))
 		  || ((frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)
 		      && scheme_stx_module_eq2(find_id, frame->values[i], scheme_make_integer(phase), find_id_sym))

@@ -4563,6 +4563,7 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     /* should be always NULL */
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].env_already = 0;
   }
 }
 
@@ -4581,6 +4582,7 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].certs = src[drec].certs;
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].env_already = 0;
   }
 }
 
@@ -4603,6 +4605,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].certs = src[drec].certs;
   lam[dlrec].observer = src[drec].observer;
   lam[dlrec].pre_unwrapped = 0;
+  lam[dlrec].env_already = 0;
 }
 
 void scheme_merge_lambda_rec(Scheme_Compile_Info *src, int drec,
@@ -4850,6 +4853,7 @@ static void *compile_k(void)
     rec.certs = NULL;
     rec.observer = NULL;
     rec.pre_unwrapped = 0;
+    rec.env_already = 0;
 
     cenv = scheme_new_comp_env(genv, insp, SCHEME_TOPLEVEL_FRAME);
 
@@ -6289,7 +6293,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  if (!SCHEME_STX_SYMBOLP(var))
 	    scheme_wrong_syntax(NULL, var, first, 
 				"name must be an identifier");
-	  scheme_dup_symbol_check(&r, "internal definition", var, "binding", first);
+	  // scheme_dup_symbol_check(&r, "internal definition", var, "binding", first);
 	  vars = SCHEME_STX_CDR(vars);
 	  cnt++;
 	}
@@ -6359,6 +6363,16 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	    scheme_set_local_syntax(cnt++, a, scheme_false, new_env);
 	  }
 
+	  /* Extend shared rib with renamings */
+	  scheme_add_env_renames(rib, new_env, env);
+
+          /* Check for duplicates after extending the rib with renamings,
+             since the renamings properly track marks. */
+          for (l = names; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
+	    a = SCHEME_STX_CAR(l);
+            scheme_dup_symbol_check(&r, "internal definition", a, "binding", first);
+          }
+
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */
 	    scheme_prepare_exp_env(new_env->genv);
@@ -6371,9 +6385,6 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 				 &pos);
 	  }
 
-	  /* Extend shared rib with renamings */
-	  scheme_add_env_renames(rib, new_env, env);
-	  
 	  /* Remember extended environment */
 	  SCHEME_PTR1_VAL(ctx) = new_env;
 	  env = new_env;
@@ -6441,6 +6452,9 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     }
 
     if (!more) {
+      /* We've converted to a letrec or letrec-values+syntaxes */
+      rec[drec].env_already = 1;
+
       if (rec[drec].comp) {
 	result = scheme_compile_expr(result, env, rec, drec);
         return scheme_make_pair(result, scheme_null);
@@ -8720,6 +8734,7 @@ static void *expand_k(void)
     erec1.certs = certs;
     erec1.observer = observer;
     erec1.pre_unwrapped = 0;
+    erec1.env_already = 0;
 
     if (catch_lifts_key)
       scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false, catch_lifts_key);
@@ -9201,7 +9216,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     l = scheme_add_rename(l, renaming);
 
   if (for_expr) {
-    /* Package up expanded expr with the enviornment. */
+    /* Package up expanded expr with the environment. */
     while (1) {
       if (orig_env->flags & SCHEME_FOR_STOPS)
         orig_env = orig_env->next;
@@ -9552,6 +9567,7 @@ local_eval(int argc, Scheme_Object **argv)
     rec.certs = certs;
     rec.observer = observer;
     rec.pre_unwrapped = 0;
+    rec.env_already = 0;
     
     /* Evaluate and bind syntaxes */
     expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);
