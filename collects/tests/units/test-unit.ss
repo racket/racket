@@ -1677,3 +1677,15 @@
   (use-unit-badly1 u-a))
 (test-runtime-error exn:fail:contract:variable? "context mismatch; no u-a"
   (use-unit-badly2 sig^))
+
+(test 12
+      (let ()
+        (define-signature s^ (x))
+        (define-unit u@
+          (import)
+          (export s^)
+          (define x 12))
+        (define-values/invoke-unit u@ (import) (export s^))
+        x))
+
+
