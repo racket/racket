@@ -268,7 +268,7 @@ the template to be unescaped, then create a @scheme[cdata] structure:
  Expands into
  @schemeblock[
   (for/list ([x xs])
-   (list e ...))
+   (begin/text e ...))
  ]
  
  Template Example:
