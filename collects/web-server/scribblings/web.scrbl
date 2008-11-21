@@ -128,7 +128,7 @@ functions of interest for the servlet developer.
         (lambda (req)
           `(html (head (title "Custom Expiration!"))))])
     (send/suspend
-     ...))
+     ....))
   ]               
 }
 

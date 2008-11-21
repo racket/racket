@@ -110,7 +110,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                                                       "conf"
                                                       "not-found.html"))]
                         [#:mime-types-path mime-types-path path?
-                                           ...]
+                                           ....]
                         [#:log-file log-file path? #f]
                         [#:log-format log-format symbol? 'apache-default])
                        void]{
