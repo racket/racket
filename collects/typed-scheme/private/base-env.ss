@@ -3,6 +3,7 @@
 (require
  scheme/list
  scheme/tcp
+ scheme
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in '#%kernel [apply kernel:apply])
@@ -494,3 +495,8 @@
 [tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
 [tcp-listen (N . -> . -TCP-Listener)]
+
+;; scheme/bool
+[boolean=? (B B . -> . B)]
+[symbol=? (Sym Sym . -> . B)]
+[false? (make-pred-ty (-val #f))]

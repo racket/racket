@@ -2982,12 +2982,14 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
   return scheme_false;
 }
 
-XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl,
-				     Scheme_Object *barrier_env, Scheme_Object *ignore_rib)
+XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
 /* Compares the marks in two wraps lists. A result of 2 means that the
-   result depended on a barrier env. Use #f for barrier_env
-   to treat no rib envs as barriers; we check for barrier_env only in ribs
-   because simpliciation eliminates the need for these checks(?). */
+   result depended on a barrier env. For a rib-based renaming, we need
+   to check only up to the rib, and the barrier effect important for
+   when a rib-based renaming is layered with another renaming (such as
+   when an internal-definition-base local-expand is used to form a new
+   set of bindings, as in the unit form); simplification cleans up the
+   layers, so that we only need to check in ribs. */
 {
   WRAP_POS awl;
   WRAP_POS bwl;
@@ -3015,9 +3017,7 @@ XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl,
 	  WRAP_POS_INC(awl);
 	}
       } else if (SCHEME_RIBP(WRAP_POS_FIRST(awl))) {
-	if (SAME_OBJ(ignore_rib, WRAP_POS_FIRST(awl))) {
-	  WRAP_POS_INC(awl);
-	} else if (SCHEME_FALSEP(barrier_env)) {
+	if (SCHEME_FALSEP(barrier_env)) {
 	  WRAP_POS_INC(awl);
 	} else {
 	  /* See if the barrier environment is in this rib. */
@@ -3054,9 +3054,7 @@ XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl,
 	  WRAP_POS_INC(bwl);
 	}
       } else if (SCHEME_RIBP(WRAP_POS_FIRST(bwl))) {
-	if (SAME_OBJ(ignore_rib, WRAP_POS_FIRST(bwl))) {
-	  WRAP_POS_INC(bwl);
-	} else if (SCHEME_FALSEP(barrier_env)) {
+	if (SCHEME_FALSEP(barrier_env)) {
 	  WRAP_POS_INC(bwl);
 	} else {
 	  /* See if the barrier environment is in this rib. */
@@ -3665,15 +3663,16 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 		       && !no_lexical)) {
       /* Lexical rename: */
       Scheme_Object *rename, *renamed;
-      int ri, c, istart, iend, is_rib;
+      int ri, c, istart, iend;
+      Scheme_Lexical_Rib *is_rib;
 
       if (rib) {
 	rename = rib->rename;
+	is_rib = rib;
 	rib = rib->next;
-	is_rib = 1;
       } else {
 	rename = WRAP_POS_FIRST(wraps);
-	is_rib = 0;
+	is_rib = NULL;
       }
 
       c = SCHEME_RENAME_LEN(rename);
@@ -3735,7 +3734,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      {
 		WRAP_POS w2;
 		WRAP_POS_INIT(w2, ((Scheme_Stx *)renamed)->wraps);
-		same = same_marks(&w2, &wraps, other_env, WRAP_POS_FIRST(wraps));
+		same = same_marks(&w2, &wraps, other_env);
                 if (!same)
                   EXPLAIN(printf("Different marks\n"));
 	      }
@@ -3755,7 +3754,11 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 		o_rename_stack = CONS(CONS(other_env, envname),
 				      o_rename_stack);
 	      }
-	      rib = NULL; /* skip rest of rib (if any) */
+              if (is_rib) {
+                /* skip rest of rib (if any) and future instances of the same rib */
+                rib = NULL;
+                skip_ribs = add_skip_set(is_rib->timestamp, skip_ribs);
+              }
 	    }
 
 	    break;
@@ -4092,7 +4095,7 @@ int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *u
     WRAP_POS bw;
     WRAP_POS_INIT(aw, ((Scheme_Stx *)a)->wraps);
     WRAP_POS_INIT(bw, ((Scheme_Stx *)b)->wraps);
-    if (!same_marks(&aw, &bw, ae, NULL))
+    if (!same_marks(&aw, &bw, ae))
       return 0;
   }
 
@@ -4277,7 +4280,7 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *a, Scheme_Object *re
   WRAP_POS_INIT(aw, ((Scheme_Stx *)a)->wraps);
   WRAP_POS_INIT(bw, ((Scheme_Stx *)relative_to)->wraps);
 
-  if (!same_marks(&aw, &bw, NULL, NULL)) {
+  if (!same_marks(&aw, &bw, scheme_false)) {
     Scheme_Object *wraps = ((Scheme_Stx *)relative_to)->wraps;
     if (uid) {
       /* Add a rename record: */
@@ -4647,7 +4650,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
 
               /* Check marks (now that we have the correct barriers). */
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-	      if (!same_marks(&w2, &w, other_env, (Scheme_Object *)init_rib)) {
+	      if (!same_marks(&w2, &w, other_env)) {
 		other_env = NULL;
 	      }
 
@@ -4699,7 +4702,7 @@ static void simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_ca
               }
 	    } else {
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
-	      if (same_marks(&w2, &w, scheme_false, (Scheme_Object *)init_rib))
+	      if (same_marks(&w2, &w, scheme_false))
                 ok = SCHEME_VEC_ELS(v)[0];
 	      else
 		ok = NULL;
@@ -6759,7 +6762,7 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   WRAP_POS_INIT(awl, stx->wraps);
   WRAP_POS_INIT_END(ewl);
 
-  if (same_marks(&awl, &ewl, scheme_false, NULL))
+  if (same_marks(&awl, &ewl, scheme_false))
     return scheme_true;
   else
     return scheme_false;

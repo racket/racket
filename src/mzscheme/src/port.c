@@ -892,9 +892,6 @@ typedef struct Scheme_Thread_Memory {
 
 Scheme_Thread_Memory *tm_start, *tm_next;
 
-extern MZ_DLLIMPORT void (*GC_collect_start_callback)(void);
-extern MZ_DLLIMPORT void (*GC_collect_end_callback)(void);
-
 void scheme_init_thread_memory()
 {
 #ifndef MZ_PRECISE_GC
@@ -915,8 +912,8 @@ void scheme_init_thread_memory()
 #endif
 
   /* scheme_init_thread() will replace these: */
-  GC_collect_start_callback = scheme_suspend_remembered_threads;
-  GC_collect_end_callback = scheme_resume_remembered_threads;
+  GC_set_collect_start_callback(scheme_suspend_remembered_threads);
+  GC_set_collect_end_callback(scheme_resume_remembered_threads);
 }
 
 Scheme_Thread_Memory *scheme_remember_thread(void *t, int autoclose)

@@ -339,4 +339,65 @@
 
 ;; ----------------------------------------
 
+(require (only-in mzlib/etc begin-with-definitions))
+
+(define-syntax (def stx)
+  (syntax-case stx ()
+    [(_ id)
+     (with-syntax ([x:id (datum->syntax #'id 'x)])
+       #'(begin
+           (define x:id 50)
+           (define-syntax id #'x:id)))]))
+(define-syntax (look stx)
+  (syntax-case stx ()
+    [(_ id) (syntax-local-value #'id)]))
+
+(test 50 'look
+      (let ()
+        (def foo)
+        (look foo)))
+
+(test 50 'look
+      (begin-with-definitions
+       (def foo)
+       (look foo)))
+
+(test #t 'bwd-struct
+      (let ()
+        (begin-with-definitions
+         (define-struct a (x y))
+         (define-struct (b a) (z))
+         (b? (make-b 1 2 3)))))
+
+(test 5 'intdef
+      (let ()
+        (define-syntax foo
+          (syntax-rules ()
+            [(_ id) (begin
+                      (define x 5)
+                      (define id x))]))
+        (foo x)
+        x))
+
+(test 6 'intdef-values
+      (let ()
+        (define-syntax foo
+          (syntax-rules ()
+            [(_ id) (define-values (x id) 
+                      (values 6 (lambda () x)))]))
+        (foo x)
+        (x)))
+
+(test 75 'bwd
+      (begin-with-definitions
+       (define-syntax foo
+         (syntax-rules ()
+           [(_ id) (begin
+                     (define x 75)
+                     (define id x))]))
+       (foo x)
+       x))
+
+;; ----------------------------------------
+
 (report-errs)

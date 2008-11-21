@@ -1837,6 +1837,7 @@ typedef struct Scheme_Compile_Expand_Info
   char resolve_module_ids;
   char pre_unwrapped;
   int depth;
+  int env_already;
 } Scheme_Compile_Expand_Info;
 
 typedef Scheme_Compile_Expand_Info Scheme_Compile_Info;
@@ -2301,6 +2302,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_FOR_STOPS 128
 #define SCHEME_FOR_INTDEF 256
 #define SCHEME_CAPTURE_LIFTED 512
+#define SCHEME_INTDEF_SHADOW 1024
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1

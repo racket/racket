@@ -415,7 +415,7 @@ for this language.
 }
 
 @defmethod[(get-transformer-module)
-           (or/c quoted-module-path @scheme[#f])]{
+           (or/c quoted-module-path #f)]{
 This method specifies the module that defines the
 transformation language. It is used to initialize
 the transformer portion of the user's namespace.

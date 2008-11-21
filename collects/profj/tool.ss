@@ -506,7 +506,7 @@
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate intermediate+access advanced))
-                (make-profj-settings 'field #f #t #f #t #t null)
+                (make-profj-settings 'field #f #t #f #t #f null)
                 (make-profj-settings 'type #f #t #t #f #f null)))
           ;default-settings? any -> bool
           (define/public (default-settings? s) (equal? s (default-settings)))

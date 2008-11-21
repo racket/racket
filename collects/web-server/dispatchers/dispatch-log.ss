@@ -45,7 +45,7 @@
 (define (apache-default-format req)
   (define request-time (srfi-date:current-date))
   (format "~a - - [~a] \"~a\" ~a ~a~n"
-          (request-host-ip req)
+          (request-client-ip req)
           (srfi-date:date->string request-time "~d/~b/~Y:~T ~z")
           (request-line-raw req)
           200

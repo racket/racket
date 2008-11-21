@@ -320,8 +320,20 @@ void GC_maybe_gc()
 }
 
 /* PLTSCHEME: notification callback for starting/ending a GC */
-void (*GC_collect_start_callback)(void) = NULL;
-void (*GC_collect_end_callback)(void) = NULL;
+GC_collect_start_callback_Proc GC_collect_start_callback = NULL;
+GC_collect_end_callback_Proc GC_collect_end_callback = NULL;
+GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
+  GC_collect_start_callback_Proc old;
+  old = GC_collect_start_callback;
+  GC_collect_start_callback = func;
+  return old;
+}
+GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc func) {
+  GC_collect_end_callback_Proc old;
+  old = GC_collect_end_callback;
+  GC_collect_end_callback = func;
+  return old;
+}
 
 /*
  * Stop the world garbage collection.  Assumes lock held, signals disabled.

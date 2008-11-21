@@ -99,7 +99,10 @@
                  get-definitions-text)
 
         (define macro-debug-panel
-          (new vertical-pane% (parent (get-button-panel))))
+          (new horizontal-pane%
+               (parent (get-button-panel))
+               (stretchable-height #f)
+               (stretchable-width #f)))
         (define macro-debug-button
           (new switchable-button%
                (label "Macro Stepper")

@@ -1278,7 +1278,9 @@
             (new switchable-button%
                  (label (string-constant debug-tool-button-name))
                  (bitmap debug-bitmap)
-                 (parent (make-object vertical-pane% (get-button-panel)))
+                 (parent (new vertical-pane%
+			      [parent (get-button-panel)]
+			      [alignment '(center center)]))
                  (callback (λ (button) (debug-callback)))))
           (inherit register-toolbar-button)
           (register-toolbar-button debug-button)

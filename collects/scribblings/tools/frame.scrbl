@@ -60,7 +60,7 @@ if the
 }
 
 @defmethod[#:mode override 
-           (file-menu:between-open-and-revert [file-menu (is-a?/c @scheme[menu%])])
+           (file-menu:between-open-and-revert [file-menu (is-a?/c menu%)])
            void?]{
 
 Adds an ``Install .plt File...'' menu item, which
@@ -72,7 +72,7 @@ method.
 }
 
 @defmethod[#:mode override 
-           (file-menu:between-print-and-close [file-menu (is-a?/c @scheme[menu%])])
+           (file-menu:between-print-and-close [file-menu (is-a?/c menu%)])
            void?]{
 
 Calls the super method. Then, creates a menu item for
@@ -187,7 +187,7 @@ This interface is the result of the @scheme[drscheme:frame:basics-mixin]
 
 
 
-@defmethod[(add-show-menu-items [show-menu (is-a?/c @scheme[menu%])])
+@defmethod[(add-show-menu-items [show-menu (is-a?/c menu%)])
            void?]{
 @methspec{
 
