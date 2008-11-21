@@ -857,13 +857,7 @@ WARNING: printf is rebound in the body of the unit to always
              normalize?))]
         [else
          (preferences:get 'framework:do-paste-normalization)]))
-    (define/public (string-normalize s) 
-      
-      (let ([ns (string-normalize-nfkc s)])
-        (unless (equal? s ns)
-          (printf "normalized: ~s => ~s\n" s ns)))
-      
-      (string-normalize-nfkc s))
+    (define/public (string-normalize s) (string-normalize-nfkc s))
 
     
     
