@@ -312,10 +312,13 @@ byte strings corresponding to a sequence of matches of
 results for parenthesized sub-patterns in @scheme[pattern] are not
 returned.)
 
-If @scheme[pattern] matches a zero-length string or byte sequence, and
-if it is at the beginning or end of the input, then the match does not
-count. Otherwise, one character or byte in the input is skipped before
-attempting another match.
+The @scheme[pattern] is used in order to find matches, where each
+match attempt starts at the end of the last match.  Empty matches are
+handled like any matches, returning a zero-length string or byte
+sequence (they are more useful in the complementing
+@scheme[regexp-split] function).  However, the @scheme[pattern] is
+restricted from matching an empty string at the beginning (or right
+after a previous match) or at the end.
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), @scheme[null] is returned. Otherwise, each item
@@ -525,7 +528,7 @@ strings (if @scheme[pattern] is a string or character regexp and
 @scheme[input] that are separated by matches to
 @scheme[pattern]. Adjacent matches are separated with @scheme[""] or
 @scheme[#""]. Zero-length matches are treated the same as in
-@scheme[regexp-match*].
+@scheme[regexp-match*], but are more useful in this case.
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), the result is a list containing @scheme[input]'s
@@ -539,8 +542,11 @@ case splitting goes to the end of @scheme[input] (which corresponds to
 an end-of-file if @scheme[input] is an input port).
 
 @examples[
-(regexp-split #rx"x" "12x4x6")
-(regexp-split #rx"." "12x4x6")
+(regexp-split #rx" +" "12  34")
+(regexp-split #rx"." "12  34")
+(regexp-split #rx"" "12  34")
+(regexp-split #rx" *" "12  34")
+(regexp-split #px"\\b" "12, 13 and 14.")
 ]}
 
 @;------------------------------------------------------------------------
