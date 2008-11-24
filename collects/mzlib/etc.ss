@@ -386,6 +386,7 @@
                               [else
                                (list expr)])))
                         exprs)))])
+    (internal-definition-context-seal def-ctx)
     (let loop ([exprs exprs]
                [prev-stx-defns null]
                [prev-defns null]

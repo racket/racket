@@ -333,6 +333,7 @@
   (define-for-syntax (add-context-to-sig sig)
     (let ((def-ctx (syntax-local-make-definition-context)))
       (syntax-local-bind-syntaxes (sig-ext-names sig) #f def-ctx)
+      (internal-definition-context-seal def-ctx)
       (map-sig (lambda (x) x)
                (lambda (x) (localify x def-ctx))
                sig)))
@@ -619,6 +620,7 @@
                          [_ (void)]))
                      expanded-body)
                     table)])
+           (internal-definition-context-seal def-ctx)
            
            ;; Mark exported names and
            ;; check that all exported names are defined (as var):

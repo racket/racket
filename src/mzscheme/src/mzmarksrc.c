@@ -2118,6 +2118,8 @@ lex_rib {
  mark:
   Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
   gcMARK(rib->rename);
+  gcMARK(rib->timestamp);
+  gcMARK(rib->sealed);
   gcMARK(rib->next);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

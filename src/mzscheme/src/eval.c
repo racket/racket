@@ -6453,6 +6453,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
     if (!more) {
       /* We've converted to a letrec or letrec-values+syntaxes */
+      scheme_stx_seal_rib(rib);
       rec[drec].env_already = 1;
 
       if (rec[drec].comp) {
@@ -6472,6 +6473,8 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       }
     }
   }
+
+  scheme_stx_seal_rib(rib);
 
   if (rec[drec].comp) {
     Scheme_Object *vname, *rest;
@@ -9535,6 +9538,11 @@ local_eval(int argc, Scheme_Object **argv)
 
   stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
   rib = SCHEME_PTR2_VAL(argv[2]);
+
+  if (scheme_stx_is_rib_sealed(rib)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: given "
+		     "internal-definition context has been sealed");
+  }
   
   if (!scheme_is_sub_env(stx_env, env)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: transforming context does "

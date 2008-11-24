@@ -543,8 +543,9 @@ transformer binding's value. When @scheme[_id] is bound to a
 @deftech{rename transformer} produced by
 @scheme[make-rename-transformer], it is replaced with the identifier
 passed to @scheme[make-rename-transformer]. Furthermore, the binding
-is also specially handled by @scheme[syntax-local-value] as used by
-@tech{syntax transformer}s.
+is also specially handled by @scheme[syntax-local-value] and
+@scheme[syntax-local-make-delta-introducer] as used by @tech{syntax
+transformer}s.
 
 In addition to using marks to track introduced identifiers, the
 expander tracks the expansion history of a form through @tech{syntax

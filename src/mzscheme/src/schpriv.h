@@ -720,12 +720,17 @@ void scheme_set_rename(Scheme_Object *rnm, int pos, Scheme_Object *oldname);
 Scheme_Object *scheme_make_rename_rib(void);
 void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename);
 void scheme_drop_first_rib_rename(Scheme_Object *ro);
+Scheme_Object *scheme_stx_id_remove_rib(Scheme_Object *stx, Scheme_Object *ro);
+void scheme_stx_seal_rib(Scheme_Object *rib);
+int scheme_stx_is_rib_sealed(Scheme_Object *rib);
 
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
                                              Scheme_Object *uid);
+
+Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 
 #define mzMOD_RENAME_TOPLEVEL 0
 #define mzMOD_RENAME_NORMAL   1
