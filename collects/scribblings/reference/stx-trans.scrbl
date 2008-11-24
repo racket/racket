@@ -243,7 +243,7 @@ Indicates that no further bindings will be added to
          identifier?]{
 
 Removes @scheme[intdef-ctx] from the @tech{lexical information} of
-@scheme[id-stx]. This operation is useful for correlating a identifier
+@scheme[id-stx]. This operation is useful for correlating an identifier
 that is bound in an internal-definition context with its binding
 before the internal-definition context was created.}
 
