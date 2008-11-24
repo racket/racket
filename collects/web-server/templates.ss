@@ -25,7 +25,7 @@
   (syntax-rules ()
     [(_ x xs e ...)
      (for/list ([x xs])
-       (list e ...))]))
+       (begin/text e ...))]))
 
 (provide include-template
          in)

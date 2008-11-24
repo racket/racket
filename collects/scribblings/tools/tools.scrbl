@@ -165,21 +165,19 @@ setup/infotab
 ]
 then the same collection would be expected to contain a
 @File{tool.ss} file. It might contain something like this:
-@schemeblock[
-(module tool mzscheme
-  (require (lib "tool.ss" "drscheme")
-           mred
-           mzlib/unit)
-  
-  (provide tool@)
-  
-  (define tool@
-    (unit
-      (import drscheme:tool^)
-      (export drscheme:tool-exports^)
-      (define (phase1) (message-box "tool example" "phase1"))
-      (define (phase2) (message-box "tool example" "phase2"))
-      (message-box "tool example" "unit invoked"))))
+@schememod[
+scheme/gui
+(require drscheme/tool)
+
+(provide tool@)
+
+(define tool@
+  (unit
+    (import drscheme:tool^)
+    (export drscheme:tool-exports^)
+    (define (phase1) (message-box "tool example" "phase1"))
+    (define (phase2) (message-box "tool example" "phase2"))
+    (message-box "tool example" "unit invoked")))
 ]
 This tool just opens a few windows to indicate that it has
 been loaded and that the @scheme[phase1] and @scheme[phase2]

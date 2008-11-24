@@ -268,7 +268,7 @@ the template to be unescaped, then create a @scheme[cdata] structure:
  Expands into
  @schemeblock[
   (for/list ([x xs])
-   (list e ...))
+   (begin/text e ...))
  ]
  
  Template Example:
@@ -466,7 +466,7 @@ The code associated with these templates is very simple as well:
 
 (define-struct post (title body comments))
 
-(define posts ...)
+(define posts ....)
 
 (define (template section body)
   (list TEXT/HTML-MIME-TYPE

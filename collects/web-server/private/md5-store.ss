@@ -2,7 +2,7 @@
 (require file/md5)
 
 (provide/contract
- [md5-home (parameter/c path?)]
+ [md5-home (parameter/c path-string?)]
  [md5-store (bytes? . -> . bytes?)]
  [md5-lookup (bytes? . -> . bytes?)])
 

@@ -99,7 +99,7 @@ URLs to paths on the filesystem.
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
-@defproc[(make-url->path (base path?))
+@defproc[(make-url->path (base path-string?))
          url->path/c]{
  The @scheme[url-path/c] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL

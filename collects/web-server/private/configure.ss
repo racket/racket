@@ -742,7 +742,7 @@
            [copy-conf
             (lambda (from to)
               (let ([to-path (build-path-unless-absolute conf to)])
-                ; more here - check existance of from path?
+                ; more here - check existance of from path
                 (copy-file* (build-path from-conf from) to-path)))])
       (copy-conf "passwords-refresh.html" (messages-passwords-refreshed messages))
       (copy-conf "servlet-refresh.html" (messages-servlets-refreshed messages))

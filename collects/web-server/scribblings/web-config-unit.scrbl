@@ -58,7 +58,7 @@ Provides contains the following identifiers.
 
 @defmodule[web-server/web-config-unit]{
 
-@defproc[(configuration-table->web-config@ [path path?]
+@defproc[(configuration-table->web-config@ [path path-string?]
                                            [#:port port (or/c false/c port-number?) #f]
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
                                            [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c (make-make-servlet-namespace)])
@@ -68,10 +68,12 @@ Provides contains the following identifiers.
 }
 
 @defproc[(configuration-table-sexpr->web-config@ [sexpr list?]
-                                                 [#:web-server-root web-server-root path? (directory-part default-configuration-table-path)]
+                                                 [#:web-server-root web-server-root path-string?
+                                                                    (directory-part default-configuration-table-path)]
                                                  [#:port port (or/c false/c port-number?) #f]
                                                  [#:listen-ip listen-ip (or/c false/c string?) #f]
-                                                 [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c (make-make-servlet-namespace)])
+                                                 [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c
+                                                                           (make-make-servlet-namespace)])
          (unit? web-config^)]{
  Parses @scheme[sexpr] as a configuration-table and constructs a @scheme[web-config^] unit.
 }

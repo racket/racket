@@ -43,7 +43,7 @@ The following API is provided to customize the server instance:
   @onscreen["Run"].
 }
 
-@defproc[(static-files-path [path path?]) void]{
+@defproc[(static-files-path [path path-string?]) void]{
  This instructs the Web server to serve static files, such as stylesheet and images, from @scheme[path].
 }
 

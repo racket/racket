@@ -22,7 +22,7 @@
  [make-basic-denied?/path
   (authorized?/c . -> . denied?/c)]
  [password-file->authorized?
-  (path? . -> . (values (-> void)
+  (path-string? . -> . (values (-> void)
                         authorized?/c))])
 
 (define interface-version 'v1)

@@ -97,9 +97,9 @@
           servlet-module-specs
           lang-module-specs))
 (provide/contract
- [make-v1.servlet (path? integer? (request? . -> . response?) . -> . servlet?)]
- [make-v2.servlet (path? manager? (request? . -> . response?) . -> . servlet?)]
- [make-stateless.servlet (path? (request? . -> . response?) . -> . servlet?)]
+ [make-v1.servlet (path-string? integer? (request? . -> . response?) . -> . servlet?)]
+ [make-v2.servlet (path-string? manager? (request? . -> . response?) . -> . servlet?)]
+ [make-stateless.servlet (path-string? (request? . -> . response?) . -> . servlet?)]
  [default-module-specs (listof module-path?)])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]

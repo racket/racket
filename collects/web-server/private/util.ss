@@ -7,7 +7,7 @@
          xml/xml
          net/url)
 (define path-element?
-  (or/c string? path? (symbols 'up 'same)))
+  (or/c path-string? (symbols 'up 'same)))
 
 (define port-number? (between/c 1 65535))
 
@@ -16,13 +16,13 @@
  [port-number? contract?]
  [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
  [url-replace-path (((listof path/param?) . -> . (listof path/param?)) url? . -> . url?)]
- [explode-path* (path? . -> . (listof path-element?))]
- [path-without-base (path? path? . -> . (listof path-element?))]
+ [explode-path* (path-string? . -> . (listof path-element?))]
+ [path-without-base (path-string? path-string? . -> . (listof path-element?))]
  [list-prefix? (list? list? . -> . boolean?)]
  [strip-prefix-ups ((listof path-element?) . -> . (listof path-element?))] 
  [url-path->string ((listof path/param?) . -> . string?)]
  [network-error ((symbol? string?) (listof any/c) . ->* . (void))]
- [directory-part (path? . -> . path?)]
+ [directory-part (path-string? . -> . path?)]
  [lowercase-symbol! ((or/c string? bytes?) . -> . symbol?)]
  [exn->string ((or/c exn? any/c) . -> . string?)]
  [build-path-unless-absolute (path-string? path-string? . -> . path?)]
