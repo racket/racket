@@ -72,6 +72,10 @@
     (syntax-rules ()
       [(_ [str num] ...) (begin (test (string->number str) num) ...)]))
 
+  (define-syntax test/approx-string-to-number
+    (syntax-rules ()
+      [(_ [str num] ...) (begin (test/approx (string->number str) num) ...)]))
+
   ;; Definitions ----------------------------------------
 
   (define add3
@@ -968,7 +972,9 @@
      ("#e1e1000" (expt 10 1000))
      ("#e-1e1000" (- (expt 10 1000)))
      ("#e1e-1000" (expt 10 -1000))
-     ("#e-1e-1000" (- (expt 10 -1000)))
+     ("#e-1e-1000" (- (expt 10 -1000))))
+
+    (test/approx-string-to-number
      ("#i1e100" (inexact (expt 10 100)))
      ("#i1e1000" (inexact (expt 10 1000)))
      ("#i-1e1000" (inexact (- (expt 10 1000))))
