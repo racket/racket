@@ -13,8 +13,7 @@
          define*
          define*-values
          define*-syntax
-         define*-syntaxes
-         define*-struct)
+         define*-syntaxes)
 
 (define-for-syntax (do-define-* stx define-values-id)
   (syntax-case stx ()
@@ -61,7 +60,8 @@
               exports)
        (ormap (lambda (h)
                 (and (free-identifier=? id h)
-                     ;; Not at top level, where free-id=? is unreliable:
+                     ;; Not at top level, where free-id=? is unreliable,
+                     ;; and re-definition is ok:
                      (identifier-binding id)
                      ;; Name is inaccessible. Generate a temporary to
                      ;; avoid potential duplicate-definition errors
@@ -392,15 +392,3 @@
   (do-open stx #'define-syntaxes))
 (define-syntax (open*-package stx)
   (do-open stx #'define*-syntaxes))
-
-(define-syntax (define*-struct stx)
-  (syntax-case stx ()
-    [(_ . rest)
-     (let ([ds (quasisyntax/loc stx
-                 (define-struct/derived #,stx . rest))])
-       (quasisyntax/loc stx
-         (begin
-           (define-package p #:all-defined
-             #,ds)
-           (open*-package p))))]))
-
