@@ -9,7 +9,8 @@
          define*-syntax
          define*-syntaxes
          define-package
-         open-package)
+         open-package
+         open*-package)
 
 (define-for-syntax (do-define-* stx define-values-id)
   (syntax-case stx ()
@@ -230,7 +231,8 @@
                      [(begin . rest)
                       (loop (append (syntax->list #'rest) (cdr exprs))
                             rev-forms
-                            defined)]
+                            defined
+                            def-ctxes)]
                      [(def (id ...) rhs)
                       (and (or (free-identifier=? #'def #'define-syntaxes)
                                (free-identifier=? #'def #'define*-syntaxes))
