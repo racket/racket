@@ -380,10 +380,14 @@ his blog. He changes the @scheme[template] function to:
           ,@body))))
 ]
 
+@margin-note{Some of these problems go away by using here strings, as described in the documentation on
+                  @secref[#:doc '(lib "scribblings/reference/reference.scrbl")]{parse-string}.}
+
 The first thing we notice is that encoding CSS as a string is rather primitive. Encoding JavaScript with strings is even worse for two
 reasons: first, we are more likely to need to manually escape characters such as @"\""; second, we need to use a CDATA object, because most
 JavaScript code uses characters that "need" to be escaped in XML, such as &, but most browsers will fail if these characters are
 entity-encoded. These are all problems that go away with templates.
+
 
 Before moving to templates, let's look at the logic functions:
 @schemeblock[
