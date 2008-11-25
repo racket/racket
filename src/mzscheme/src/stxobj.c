@@ -4573,7 +4573,7 @@ static int explain_simp = 0;
 static void print_skips(Scheme_Object *skips)
 {
   while (skips) {
-    printf("  skip %s\n", scheme_write_to_string(SCHEME_CAR(skips), NULL));
+    fprintf(stderr, "  skip %s\n", scheme_write_to_string(SCHEME_CAR(skips), NULL));
     skips = SCHEME_CDR(skips);
   }
 }
@@ -4629,6 +4629,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   old_key = NULL;
 
   v2l = scheme_null;
+
+  EXPLAIN_S(fprintf(stderr, "[in simplify]\n"));
 
   while (!WRAP_POS_END_P(w)) {
     if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
@@ -4704,7 +4706,6 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                       scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
                       return NULL;
                     }
-                    SCHEME_VEC_ELS(rib->rename)[2+vsize+i] = other_env;
                   }
                   WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
                   if (same_marks(&w2, &w, other_env)) {
@@ -4789,6 +4790,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                             scheme_write_to_string(((Scheme_Lexical_Rib *)v)->timestamp, NULL)));
           ribs_stack = SCHEME_CDR(ribs_stack);
           vsize = 0;
+          local_ribs = NULL;
         } else {
           prec_ribs = SCHEME_CAR(SCHEME_CAR(ribs_stack));
           skip_ribs_ht = (Scheme_Hash_Table *)SCHEME_CDR(SCHEME_CAR(ribs_stack));
@@ -4866,8 +4868,14 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 
             other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
             if (SCHEME_VOIDP(other_env)) {
-              other_env = resolve_env(NULL, stx, 0, 0, NULL, prec_ribs, NULL, NULL, 0);
-              SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
+              int rib_dep;
+              other_env = resolve_env(NULL, stx, 0, 0, NULL, prec_ribs, NULL, &rib_dep, 0);
+              if (rib_dep) {
+                scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
+                return NULL;
+              }
+              if (!rib)
+                SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
             }
 
 	    if (!WRAP_POS_END_P(prev)
@@ -5033,7 +5041,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 
     if (!prev_prec_ribs) {
       /* no dependency on ribs, so we can globally cache this result */
-      scheme_hash_set(lex_cache, v, v2l);
+      scheme_hash_set(lex_cache, key, v2l);
       end_mutable = v2l;
     }
 
@@ -6764,7 +6772,7 @@ Scheme_Object *scheme_new_stx_simplify_cache()
 void scheme_simplify_stx(Scheme_Object *stx, Scheme_Object *cache)
 {
 #if 0
-  if (SAME_OBJ(scheme_intern_symbol("x"), SCHEME_STX_VAL(stx))) {
+  if (SAME_OBJ(scheme_intern_symbol("y"), SCHEME_STX_VAL(stx))) {
     fprintf(stderr,
             "simplifying... %s\n",
             scheme_write_to_string(resolve_env(NULL, stx, 0, 0, NULL, NULL, NULL, NULL, 0),

@@ -1,10 +1,44 @@
 #lang scheme/base
 (require (for-syntax scheme/base
                      syntax/kerncase
-                     syntax/boundmap))
+                     syntax/boundmap
+                     syntax/define))
 
-(provide define-package
+(provide define*
+         define*-values
+         define*-syntax
+         define*-syntaxes
+         define-package
          open-package)
+
+(define-for-syntax (do-define-* stx define-values-id)
+  (syntax-case stx ()
+    [(_ (id ...) rhs)
+     (let ([ids (syntax->list #'(id ...))])
+       (for-each (lambda (id)
+                   (unless (identifier? id)
+                     (raise-syntax-error
+                      #f
+                      "expected an identifier for definition"
+                      stx
+                      id)))
+                 ids)
+       (with-syntax ([define-values define-values-id])
+         (syntax/loc stx
+           (define-values (id ...) rhs))))]))
+(define-syntax (define*-values stx)
+  (do-define-* stx #'define-values))
+(define-syntax (define*-syntaxes stx)
+  (do-define-* stx #'define-syntaxes))
+
+(define-syntax (define* stx)
+  (let-values ([(id rhs) (normalize-definition stx #'lambda)])
+    (quasisyntax/loc stx
+      (define*-values (#,id) #,rhs))))
+(define-syntax (define*-syntax stx)
+  (let-values ([(id rhs) (normalize-definition stx #'lambda)])
+    (quasisyntax/loc stx
+      (define*-syntaxes (#,id) #,rhs))))
 
 (begin-for-syntax
  (define-struct package (exports hidden)
@@ -70,14 +104,19 @@
                              (if (pair? orig-ctx)
                                  orig-ctx
                                  null)))]
-                [pre-package-id (lambda (id)
-                                  (identifier-remove-from-definition-context 
-                                   id 
-                                   def-ctx))]
-                [kernel-forms (kernel-form-identifier-list)]
+                [pre-package-id (lambda (id def-ctxes)
+                                  (for/fold ([id id])
+                                      ([def-ctx (in-list def-ctxes)])
+                                    (identifier-remove-from-definition-context 
+                                     id 
+                                     def-ctx)))]
+                [kernel-forms (list*
+                               #'define*-values
+                               #'define*-syntaxes
+                               (kernel-form-identifier-list))]
                 [init-exprs (syntax->list #'(form ...))]
                 [new-bindings (make-bound-identifier-mapping)]
-                [fixup-sub-package (lambda (renamed-exports renamed-defines)
+                [fixup-sub-package (lambda (renamed-exports renamed-defines def-ctxes)
                                      (lambda (stx)
                                        (syntax-case* stx (define-syntaxes #%plain-app make-package quote-syntax 
                                                            list cons #%plain-lambda)
@@ -101,7 +140,7 @@
                                                                                       (bound-identifier=? id e-id))
                                                                                     renamed-defines)))
                                                                     ;; Need to preserve the original
-                                                                    (pre-package-id id)
+                                                                    (pre-package-id id def-ctxes)
                                                                     ;; It's not accessible, so just hide the name
                                                                     ;;  to avoid re-binding errors.
                                                                     (car (generate-temporaries (list id)))))
@@ -127,20 +166,26 @@
                                                                id
                                                                #t))
                               ids))]
-                 [add-package-context (lambda (stx)
-                                        (let ([q (local-expand #`(quote #,stx)
-                                                               ctx
-                                                               (list #'quote)
-                                                               def-ctx)])
-                                          (syntax-case q ()
-                                            [(_ stx) #'stx])))])
+                 [add-package-context (lambda (def-ctxes)
+                                        (lambda (stx)
+                                          (for/fold ([stx stx]) 
+                                              ([def-ctx (in-list (reverse def-ctxes))])
+                                            (let ([q (local-expand #`(quote #,stx)
+                                                                   ctx
+                                                                   (list #'quote)
+                                                                   def-ctx)])
+                                              (syntax-case q ()
+                                                [(_ stx) #'stx])))))])
              (let loop ([exprs init-exprs]
                         [rev-forms null]
-                        [defined null])
+                        [defined null]
+                        [def-ctxes (list def-ctx)])
                (cond
                 [(null? exprs)
-                 (internal-definition-context-seal def-ctx)
-                 (let ([exports-renamed (map add-package-context (or exports null))]
+                 (for-each (lambda (def-ctx)
+                             (internal-definition-context-seal def-ctx))
+                           def-ctxes)
+                 (let ([exports-renamed (map (add-package-context def-ctxes) (or exports null))]
                        [defined-renamed (bound-identifier-mapping-map new-bindings
                                                                       (lambda (k v) k))])
                    (for-each (lambda (ex renamed)
@@ -165,7 +210,8 @@
                                      (bound-identifier-mapping-map new-bindings
                                                                    (lambda (k v) (and v k)))))])
                      #`(begin
-                         #,@(map (fixup-sub-package exports-renamed defined-renamed) (reverse rev-forms))
+                         #,@(map (fixup-sub-package exports-renamed defined-renamed def-ctxes) 
+                                 (reverse rev-forms))
                          (define-syntax pack-id
                            (make-package
                             (lambda ()
@@ -175,40 +221,65 @@
                             (lambda ()
                               (list (quote-syntax hidden) ...)))))))]
                 [else
-                 (let ([expr (local-expand (car exprs) ctx kernel-forms def-ctx)])
-                   (syntax-case expr (begin define-syntaxes define-values)
+                 (let ([expr ((add-package-context (cdr def-ctxes))
+                              (local-expand ((add-package-context (cdr def-ctxes)) (car exprs))
+                                            ctx
+                                            kernel-forms 
+                                            (car def-ctxes)))])
+                   (syntax-case expr (begin)
                      [(begin . rest)
                       (loop (append (syntax->list #'rest) (cdr exprs))
                             rev-forms
                             defined)]
-                     [(define-syntaxes (id ...) rhs)
-                      (andmap identifier? (syntax->list #'(id ...)))
+                     [(def (id ...) rhs)
+                      (and (or (free-identifier=? #'def #'define-syntaxes)
+                               (free-identifier=? #'def #'define*-syntaxes))
+                           (andmap identifier? (syntax->list #'(id ...))))
                       (with-syntax ([rhs (local-transformer-expand
                                           #'rhs
                                           'expression
                                           null)])
-                        (let ([ids (syntax->list #'(id ...))])
-                          (syntax-local-bind-syntaxes ids #'rhs def-ctx)
+                        (let ([star? (free-identifier=? #'def #'define*-syntaxes)]
+                              [ids (syntax->list #'(id ...))])
+                          (let* ([def-ctx (if star?
+                                              (syntax-local-make-definition-context)
+                                              (car def-ctxes))]
+                                 [ids (if star? 
+                                          (map (add-package-context (list def-ctx)) ids)
+                                          ids)])
+                            (syntax-local-bind-syntaxes ids #'rhs def-ctx)
+                            (register-bindings! ids)
+                            (loop (cdr exprs)
+                                  (cons #`(define-syntaxes #,ids rhs)
+                                        rev-forms)
+                                  (cons ids defined)
+                                  (if star? (cons def-ctx def-ctxes) def-ctxes)))))]
+                     [(def (id ...) rhs)
+                      (and (or (free-identifier=? #'def #'define-values)
+                               (free-identifier=? #'def #'define*-values))
+                           (andmap identifier? (syntax->list #'(id ...))))
+                      (let ([star? (free-identifier=? #'def #'define*-values)]
+                            [ids (syntax->list #'(id ...))])
+                        (let* ([def-ctx (if star?
+                                            (syntax-local-make-definition-context)
+                                            (car def-ctxes))]
+                               [ids (if star? 
+                                        (map (add-package-context (list def-ctx)) ids)
+                                        ids)])
+                          (syntax-local-bind-syntaxes ids #f def-ctx)
                           (register-bindings! ids)
                           (loop (cdr exprs)
-                                (cons #'(define-syntaxes (id ...) rhs)
-                                      rev-forms)
-                                (cons ids defined))))]
-                     [(define-values (id ...) rhs)
-                      (andmap identifier? (syntax->list #'(id ...)))
-                      (let ([ids (syntax->list #'(id ...))])
-                        (syntax-local-bind-syntaxes ids #f def-ctx)
-                        (register-bindings! ids)
-                        (loop (cdr exprs)
-                              (cons expr rev-forms)
-                              (cons ids defined)))]
+                                (cons #`(define-values #,ids rhs) rev-forms)
+                                (cons ids defined)
+                                (if star? (cons def-ctx def-ctxes) def-ctxes))))]
                      [else
                       (loop (cdr exprs) 
                             (cons #`(define-values () (begin #,expr (values)))
                                   rev-forms)
-                            defined)]))]))))))]))
+                            defined
+                            def-ctxes)]))]))))))]))
 
-(define-syntax (open-package stx)
+(define-for-syntax (do-open stx define-syntaxes-id)
   (syntax-case stx ()
     [(_ pack-id)
      (let ([id #'pack-id])
@@ -239,8 +310,8 @@
                                                      (syntax-local-introduce (cdr p))))
                                              ((package-exports v)))]
                          [(h ...) (map syntax-local-introduce ((package-hidden v)))])
-             #'(begin
-                 (define-syntaxes (intro ...)
+             #`(begin
+                 (#,define-syntaxes-id (intro ...)
                    (let ([rev-map (lambda (x)
                                     (reverse-mapping
                                      x
@@ -250,3 +321,8 @@
                                      (list (quote-syntax h) ...)))])
                      (values (make-rename-transformer #'defined rev-map)
                              ...))))))))]))
+
+(define-syntax (open-package stx)
+  (do-open stx #'define-syntaxes))
+(define-syntax (open*-package stx)
+  (do-open stx #'define*-syntaxes))
