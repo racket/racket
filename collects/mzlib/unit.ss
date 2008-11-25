@@ -126,8 +126,7 @@
                     ((((int-sid . ext-sid) ...) . sbody) ...))
                    (map-sig (lambda (x) x)
                             (make-syntax-introducer)
-                            sig)
-                   #;(add-context-to-sig sig)])
+                            sig)])
       (list
        #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
           (values
@@ -329,13 +328,6 @@
                          'expression
                          (list #'stop)
                          def-ctx))))
-
-  (define-for-syntax (add-context-to-sig sig)
-    (let ((def-ctx (syntax-local-make-definition-context)))
-      (syntax-local-bind-syntaxes (sig-ext-names sig) #f def-ctx)
-      (map-sig (lambda (x) x)
-               (lambda (x) (localify x def-ctx))
-               sig)))
     
   (define-for-syntax (iota n)
     (let loop ((n n)
@@ -619,6 +611,7 @@
                          [_ (void)]))
                      expanded-body)
                     table)])
+           (internal-definition-context-seal def-ctx)
            
            ;; Mark exported names and
            ;; check that all exported names are defined (as var):

@@ -96,6 +96,9 @@ static Scheme_Object *local_exp_time_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_phase_level(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_make_intdef_context(int argc, Scheme_Object *argv[]);
+static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[]);
+static Scheme_Object *intdef_context_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *id_intdef_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
@@ -108,6 +111,7 @@ static Scheme_Object *local_lift_expr(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_introducer(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_make_delta_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_set_transformer(int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_transformer_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *set_transformer_proc(int argc, Scheme_Object *argv[]);
@@ -150,6 +154,7 @@ typedef struct Compile_Data {
   Scheme_Object **const_names;
   Scheme_Object **const_vals;
   Scheme_Object **const_uids;
+  int *sealed; /* NULL => already sealed */
   int *use;
   Scheme_Object *lifts;
 } Compile_Data;
@@ -510,10 +515,15 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-context", local_context, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-phase-level", local_phase_level, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-make-definition-context", local_make_intdef_context, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-make-delta-introducer", local_make_delta_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-certifier", local_certify, 0, 1, env);
+
   GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-defined-identifiers", local_module_definitions, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-module-required-identifiers", local_module_imports, 2, 2, env);
@@ -523,7 +533,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("set!-transformer?", set_transformer_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("set!-transformer-procedure", set_transformer_proc, 1, 1, env);
 
-  GLOBAL_PRIM_W_ARITY("make-rename-transformer", make_rename_transformer, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("make-rename-transformer", make_rename_transformer, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("rename-transformer?", rename_transformer_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("rename-transformer-target", rename_transformer_target, 1, 1, env);
 
@@ -1759,7 +1769,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
   sym = SCHEME_STX_SYM(id);
 
   if (_skipped)
-    *_skipped = 0;
+    *_skipped = -1;
 
   if (SCHEME_HASHTP((Scheme_Object *)env)) {
     marked_names = (Scheme_Hash_Table *)env;
@@ -2120,6 +2130,12 @@ Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
   if (!SCHEME_STXP(stx) && !SCHEME_RIBP(stx)) {
     scheme_signal_error("internal error: not syntax or rib");
     return NULL;
+  }
+
+  if (SCHEME_RIBP(stx)) {
+    GC_CAN_IGNORE int *s;
+    s = scheme_stx_get_rib_sealed(stx);
+    COMPILE_DATA(env)->sealed = s;
   }
 
   while (env != upto) {
@@ -2525,11 +2541,22 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	    }
 	  }
 
+          if (_lexical_binding_id) {
+            if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME))
+              val = scheme_stx_remove_extra_marks(find_id, COMPILE_DATA(frame)->const_names[i],
+                                                  ((frame->flags & SCHEME_CAPTURE_LIFTED)
+                                                   ? NULL
+                                                   : uid));
+            else
+              val = find_id;
+            *_lexical_binding_id = val;
+          }
+
 	  val = COMPILE_DATA(frame)->const_vals[i];
 	
 	  if (!val) {
-	    scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-				"identifier used out of context");
+            scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
+                                "identifier used out of context");
 	    return NULL;
 	  }
 
@@ -4231,6 +4258,38 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
+intdef_context_p(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_intdef_context_type)
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_intdef_context_type))
+    scheme_wrong_type("internal-definition-context-seal", 
+                      "internal-definition context", 0, argc, argv);
+  
+  scheme_stx_seal_rib(SCHEME_PTR2_VAL(argv[0]));
+  return scheme_void;
+}
+
+static Scheme_Object *
+id_intdef_remove(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
+    scheme_wrong_type("identifier-from-from-definition-context", 
+                      "syntax identifier", 0, argc, argv);
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_intdef_context_type))
+    scheme_wrong_type("identifier-remove-from-definition-context", 
+                      "internal-definition context", 1, argc, argv);
+  
+  return scheme_stx_id_remove_rib(argv[0], SCHEME_PTR2_VAL(argv[1]));
+}
+
+static Scheme_Object *
 local_introduce(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
@@ -4302,8 +4361,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   sym_marks = scheme_stx_extract_marks(sym);
 
   /* Walk backward through the frames, looking for a renaming binding
-     with the same marks as the given identifier, sym. When we find
-     it, rename the given identifier so that it matches frame */
+     with the same marks as the given identifier, sym. Skip over
+     unsealed ribs, though. When we find a match, rename the given
+     identifier so that it matches frame. */
   for (frame = env; frame->next != NULL; frame = frame->next) {
     int i;
 
@@ -4326,19 +4386,21 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     if (uid)
       break;
 
-    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
-	if (SAME_OBJ(SCHEME_STX_VAL(sym), 
-		     SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
-	  esym = COMPILE_DATA(frame)->const_names[i];
-	  env_marks = scheme_stx_extract_marks(esym);
-	  if (scheme_equal(env_marks, sym_marks)) {
-	    sym = esym;
-	    if (COMPILE_DATA(frame)->const_uids) {
-	      uid = COMPILE_DATA(frame)->const_uids[i];
-	    } else
-	      uid = frame->uid;
-	    break;
+    if (!COMPILE_DATA(frame)->sealed || *COMPILE_DATA(frame)->sealed) {
+      for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+        if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
+          if (SAME_OBJ(SCHEME_STX_VAL(sym), 
+                       SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
+            esym = COMPILE_DATA(frame)->const_names[i];
+            env_marks = scheme_stx_extract_marks(esym);
+            if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+              sym = esym;
+              if (COMPILE_DATA(frame)->const_uids)
+                uid = COMPILE_DATA(frame)->const_uids[i];
+              else
+                uid = frame->uid;
+              break;
+            }
 	  }
 	}
       }
@@ -4348,9 +4410,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   }
 
   if (!uid) {
-    /* No lexical shadower, but strip module context and mark barriers, if any. */
+    /* No lexical shadower, but strip module context, if any */
     sym = scheme_stx_strip_module_context(sym);
-    /* Add current module context, if any. */
+    /* Add current module context, if any */
     sym = local_module_introduce(1, &sym);
     return sym;
   }
@@ -4364,7 +4426,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     rn = scheme_make_rename(uid, 1);
     scheme_set_rename(rn, 0, result);
 
-    return scheme_add_rename(result, rn);
+    result = scheme_add_rename(result, rn);
+
+    return result;
   }
 }
 
@@ -4389,6 +4453,115 @@ make_introducer(int argc, Scheme_Object *argv[])
 
   return scheme_make_closed_prim_w_arity(introducer_proc, mark,
 					 "syntax-introducer", 1, 1);
+}
+
+static Scheme_Object *
+delta_introducer_proc(void *_i_plus_m, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = (Scheme_Object *)_i_plus_m, *l, *v, *a[1];
+  const char *who = "delta introducer attached to a rename transformer";
+
+  v = argv[0];
+  if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
+    scheme_wrong_type(who, "identifier", 0, argc, argv);
+  }
+  
+  /* Apply mapping functions: */
+  l = SCHEME_CDR(p);
+  while (SCHEME_PAIRP(l)) {
+    a[0] = v;
+    v = _scheme_apply(SCHEME_CAR(l), 1, a);
+    l = SCHEME_CDR(l);
+  }
+
+  /* Apply delta-introducing functions: */
+  l = SCHEME_CAR(p);
+  while (SCHEME_PAIRP(l)) {
+    a[0] = v;
+    v = _scheme_apply(SCHEME_CAR(l), 1, a);
+    if (!SCHEME_STXP(v) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(v))) {
+      a[0] = v;
+      scheme_wrong_type(who, "identifier", -1, -1, a);
+    }
+    l = SCHEME_CDR(l);
+  }
+
+  return v;
+}
+
+static Scheme_Object *
+local_make_delta_introduce(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *sym, *binder, *introducer, *a[2], *v;
+  Scheme_Object *introducers = scheme_null, *mappers = scheme_null;
+  int renamed = 0;
+  Scheme_Comp_Env *env;
+
+  env = scheme_current_thread->current_local_env;
+  if (!env)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-make-delta-introducer: not currently transforming");
+
+  if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
+    scheme_wrong_type("syntax-local-make-delta-introducer", "syntax identifier", 0, argc, argv);
+
+  sym = argv[0];
+
+  sym = scheme_stx_activate_certs(sym);
+
+  while (1) {
+    binder = NULL;
+
+    v = scheme_lookup_binding(sym, env,
+			      (SCHEME_NULL_FOR_UNBOUND
+			       + SCHEME_RESOLVE_MODIDS
+			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
+			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
+			      scheme_current_thread->current_local_certs, 
+			      scheme_current_thread->current_local_modidx, 
+			      NULL, NULL, &binder);
+    
+    /* Deref globals */
+    if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_variable_type))
+      v = (Scheme_Object *)(SCHEME_VAR_BUCKET(v))->val;
+    
+    if (!v || NOT_SAME_TYPE(SCHEME_TYPE(v), scheme_macro_type)) {
+      scheme_arg_mismatch("syntax-local-make-delta-introducer",
+                          (renamed 
+                           ? "not defined as syntax (after renaming): "
+                           : "not defined as syntax: "),
+                          argv[0]);
+    }
+
+    if (!binder) {
+      /* Not a lexical biding. Tell make-syntax-delta-introducer to
+         use module-binding information. */
+      binder = scheme_false;
+    }
+
+    a[0] = sym;
+    a[1] = binder;
+    introducer = scheme_syntax_make_transfer_intro(2, a);
+    introducers = scheme_make_pair(introducer, introducers);
+    
+    v = SCHEME_PTR_VAL(v);
+    if (SAME_TYPE(SCHEME_TYPE(v), scheme_id_macro_type)) {
+      sym = SCHEME_PTR1_VAL(v);
+
+      v = SCHEME_PTR2_VAL(v);
+      if (!SCHEME_FALSEP(v))
+        mappers = scheme_make_pair(v, mappers);
+
+      renamed = 1;
+      SCHEME_USE_FUEL(1);
+    } else {
+      /* that's the end of the chain */
+      mappers = scheme_reverse(mappers);
+      return scheme_make_closed_prim_w_arity(delta_introducer_proc, 
+                                             scheme_make_pair(introducers, mappers),
+                                             "syntax-delta-introducer", 1, 1);
+    }
+  }
 }
 
 static Scheme_Object *
@@ -4689,9 +4862,13 @@ make_rename_transformer(int argc, Scheme_Object *argv[])
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_type("make-rename-transformer", "syntax identifier", 0, argc, argv);
 
-  v = scheme_alloc_small_object();
+  if (argc > 1)
+    scheme_check_proc_arity("make-rename-transformer", 1, 1, argc, argv);
+  
+  v = scheme_alloc_object();
   v->type = scheme_id_macro_type;
-  SCHEME_PTR_VAL(v) = argv[0];
+  SCHEME_PTR1_VAL(v) = argv[0];
+  SCHEME_PTR2_VAL(v) = ((argc > 1) ? argv[1] : scheme_false);
 
   return v;
 }

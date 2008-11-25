@@ -9,7 +9,8 @@
                               make-provide-transformer)
                      scheme/provide-syntax
                      scheme/provide
-                     scheme/nest))
+                     scheme/nest
+                     scheme/package))
 
 @(define cvt (schemefont "CVT"))
 
@@ -68,10 +69,13 @@ Within such specifications,
 
 @defform[(module id module-path form ...)]{
 
-Declares a module. If the @scheme[current-module-declare-name]
-parameter is set, the parameter value is used for the module name,
-otherwise @scheme[(#,(scheme quote) id)] is the name of the declared
-module.
+Declares a top-level module. If the
+@scheme[current-module-declare-name] parameter is set, the parameter
+value is used for the module name, otherwise @scheme[(#,(scheme quote)
+id)] is the name of the declared module.
+
+@margin-note/ref{For a @scheme[module]-like form for use @emph{within}
+modules and other contexts, see @scheme[define-package].}
 
 The @scheme[module-path] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
@@ -1930,6 +1934,9 @@ is similar to @scheme[#%app] and @scheme[#%module-begin], in that it
 provides a hook to control interactive evaluation through
 @scheme[load] (more precisely, the default @tech{load handler}) or
 @scheme[read-eval-print-loop].}
+
+@;------------------------------------------------------------------------
+@include-section["package.scrbl"]
 
 @;------------------------------------------------------------------------
 @section[#:tag "nest"]{Flattening Syntactic Sequences: @scheme[nest]}

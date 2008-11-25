@@ -52,6 +52,7 @@
            (let ([def-ctx (syntax-local-make-definition-context)]
                  [ctx (list (gensym 'intdef))])
              (syntax-local-bind-syntaxes (apply append all-ids) #f def-ctx)
+             (internal-definition-context-seal def-ctx)
              (let* ([add-context
                      (lambda (expr)
                        (let ([q (local-expand #`(quote #,expr)

@@ -58,15 +58,19 @@ Returns the procedure that was passed to
 @scheme[make-set!-transformer] to create @scheme[transformer].}
 
 
-@defproc[(make-rename-transformer [id-stx syntax?])
+@defproc[(make-rename-transformer [id-stx syntax?]
+                                  [delta-introduce (identifier? . -> . identifier?)
+                                                   (lambda (id) id)])
          rename-transformer?]{
 
-Creates a value that, when used as a @tech{transformer binding},
-inserts the identifier @scheme[id-stx] in place of whatever identifier
-binds the transformer, including in non-application positions, and in
+Creates a @tech{rename transformer} that, when used as a
+@tech{transformer binding}, acts as a transformer that insert the
+identifier @scheme[id-stx] in place of whatever identifier binds the
+transformer, including in non-application positions, and in
 @scheme[set!] expressions. Such a transformer could be written
 manually, but the one created by @scheme[make-rename-transformer]
-cooperates specially with @scheme[syntax-local-value] (see below).}
+cooperates specially with @scheme[syntax-local-value] and
+@scheme[syntax-local-make-delta-introducer].}
 
 
 @defproc[(rename-transformer? [v any/c]) boolean?]{
@@ -184,15 +188,25 @@ expressions are reported as @scheme[define-values] forms (in the
 transformer environment).}
 
 
+@defproc[(internal-definition-context? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is an @tech{internal-definition
+context}, @scheme[#f] otherwise.}
+
+
 @defproc[(syntax-local-make-definition-context) internal-definition-context?]{
 
-Creates an opaque internal-definition context value to be used with
-@scheme[local-expand] and other functions. A transformer should create
-one context for each set of internal definitions to be expanded, and
-use it when expanding any form whose lexical context should include
-the definitions. After discovering an internal @scheme[define-values]
-or @scheme[define-syntaxes] form, use
+Creates an opaque @tech{internal-definition context} value to be used
+with @scheme[local-expand] and other functions. A transformer should
+create one context for each set of internal definitions to be
+expanded, and use it when expanding any form whose lexical context
+should include the definitions. After discovering an internal
+@scheme[define-values] or @scheme[define-syntaxes] form, use
 @scheme[syntax-local-bind-syntaxes] to add bindings to the context.
+Finally, the transformer must call
+@scheme[internal-definition-context-seal] after all bindings have been
+added; if an unsealed @tech{internal-definition context} is detected
+in a fully expanded expression, the @exnraise[exn:fail:contract].
 
 @transform-time[]}
 
@@ -203,7 +217,7 @@ or @scheme[define-syntaxes] form, use
          void?]{
 
 Binds each identifier in @scheme[id-list] within the
-internal-definition context represented by @scheme[intdef-ctx], where
+@tech{internal-definition context} represented by @scheme[intdef-ctx], where
 @scheme[intdef-ctx] is the result of
 @scheme[syntax-local-make-definition-context]. Supply @scheme[#f] for
 @scheme[expr] when the identifiers correspond to
@@ -216,6 +230,24 @@ match the number of identifiers, otherwise the
 @transform-time[]}
 
 
+@defproc[(internal-definition-context-seal [intdef-ctx internal-definition-context?])
+         void?]{
+
+Indicates that no further bindings will be added to
+@scheme[intdef-ctx], which must not be sealed already. See also
+@scheme[syntax-local-make-definition-context].}
+
+
+@defproc[(identifier-remove-from-defininition-context [id-stx identifier?]
+                                                      [intdef-ctx internal-definition-context?])
+         identifier?]{
+
+Removes @scheme[intdef-ctx] from the @tech{lexical information} of
+@scheme[id-stx]. This operation is useful for correlating an identifier
+that is bound in an internal-definition context with its binding
+before the internal-definition context was created.}
+
+
 @defproc[(syntax-local-value [id-stx syntax?]
                              [failure-thunk (or/c (-> any) #f)
                                             #f]
@@ -225,16 +257,16 @@ match the number of identifiers, otherwise the
          any]{
 
 Returns the @tech{transformer binding} value of @scheme[id-stx] in
-either the context asscoiated with @scheme[intdef-ctx] (if not
+either the context associated with @scheme[intdef-ctx] (if not
 @scheme[#f]) or the context of the expression being expanded (if
 @scheme[indef-ctx] is @scheme[#f]).  If @scheme[intdef-ctx] is
 provided, it must be an extension of the context of the expression
 being expanded.
 
-If @scheme[id-stx] is bound to a rename transformer created with
-@scheme[make-rename-transformer], @scheme[syntax-local-value]
+If @scheme[id-stx] is bound to a @tech{rename transformer} created
+with @scheme[make-rename-transformer], @scheme[syntax-local-value]
 effectively calls itself with the target of the rename and returns
-that result, instead of the rename transformer.
+that result, instead of the @tech{rename transformer}.
 
 If @scheme[id-stx] has no @tech{transformer binding} (via
 @scheme[define-syntax], @scheme[let-syntax], etc.) in that
@@ -333,8 +365,8 @@ context}. The identity of the lists's first element (i.e., its
 @scheme[eq?]ness) reflects the identity of the internal-definition
 context; in particular two transformer expansions receive the same
 first value if and only if they are invoked for the same
-internal-definition context. Later values in the list similarly
-identify internal-definition contexts that are still being expanded,
+@tech{internal-definition context}. Later values in the list similarly
+identify @tech{internal-definition contexts} that are still being expanded,
 and that required the expansion of nested internal-definition
 contexts.
 
@@ -440,20 +472,53 @@ mark}. Multiple applications of the same
 @scheme[make-syntax-introducer] result procedure use the same mark,
 and different result procedures use distinct marks.}
 
-@defproc[(make-syntax-delta-introducer [ext-stx syntax?] [base-stx syntax?]) 
+@defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
+                                       [base-stx syntax?]
+                                       [phase-level (or/c #f exact-integer?)
+                                                    (syntax-local-phase-level)])
          (syntax? . -> . syntax?)]{
 
 Produces a procedure that behaves like
-@scheme[syntax-local-introduce], but using the @tech{syntax
-marks} of @scheme[ext-stx] that are not shared with @scheme[base-stx].
+@scheme[syntax-local-introduce], but using the @tech{syntax marks} of
+@scheme[ext-stx] that are not shared with @scheme[base-stx].  If
+@scheme[ext-stx] does not extend the set of marks in @scheme[base-stx]
+but @scheme[ext-stx] has a module binding in the @tech{phase level}
+indicated by @scheme[phase-level], then any marks of @scheme[ext-stx]
+that would be needed to preserve its binding are not transferred in an
+introduction.
 
-This procedure is useful when @scheme[_m-id] has a transformer binding
-that records some @scheme[_orig-id], and a use of @scheme[_m-id]
-introduces a binding of @scheme[_orig-id]. In that case, the
-@tech{syntax marks} in the use of @scheme[_m-id] since the binding of
-@scheme[_m-id] should be transferred to the binding instance of
-@scheme[_orig-id], so that it captures uses with the same lexical
-context as the use of @scheme[_m-id].}
+This procedure is potentially useful when @scheme[_m-id] has a
+transformer binding that records some @scheme[_orig-id], and a use of
+@scheme[_m-id] introduces a binding of @scheme[_orig-id]. In that
+case, the @tech{syntax marks} in the use of @scheme[_m-id] since the
+binding of @scheme[_m-id] should be transferred to the binding
+instance of @scheme[_orig-id], so that it captures uses with the same
+lexical context as the use of @scheme[_m-id].
+
+More typically, however, @scheme[syntax-local-make-delta-introducer]
+should be used, since it cooperates with @tech{rename transformers}.}
+
+@defproc[(syntax-local-make-delta-introducer [id identifier?])
+         (identifier? . -> . identifier?)]{
+
+Determines the binding of @scheme[id]. If the binding is not a
+@tech{rename transformer}, the result is an introducer as created by
+@scheme[make-syntax-delta-introducer] using @scheme[id] and the
+binding of @scheme[id] in the environment of expansion. If the binding
+is a @tech{rename transformer}, then the introducer is one composed
+with the target of the @tech{rename transformer} and its
+binding. Furthermore, the @scheme[_delta-introduce] functions
+associated with the @tech{rename transformers} (supplied as the second
+argument to @scheme[make-rename-transformer]) are composed (in
+first-to-last order) before the introducers created with
+@scheme[make-syntax-delta-introducer] (which are composed
+last-to-first).
+
+The @exnraise[exn:fail:contract] if @scheme[id] or any identifier in
+its rename-transformer chain has no binding.
+
+@transform-time[]}
+         
 
 @defproc[(syntax-local-transforming-module-provides?) boolean?]{
 

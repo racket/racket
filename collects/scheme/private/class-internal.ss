@@ -1214,6 +1214,8 @@
 						     proc))))))
 					methods)))]
 				  [lookup-localize-cdr (lambda (p) (lookup-localize (cdr p)))])
+
+                              (internal-definition-context-seal def-ctx)
 			      
 			      ;; ---- build final result ----
 			      (with-syntax ([public-names (map lookup-localize-cdr publics)]

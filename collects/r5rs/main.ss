@@ -410,6 +410,7 @@
                                                     (cdr exprs)))
                                          (reverse idss) (reverse rhss)
                                          (reverse stx-idss) (reverse stx-rhss))]))))])
+           (internal-definition-context-seal def-ctx)
            (if (and (null? (syntax-e #'(stx-rhs ...)))
                     (andmap (lambda (ids)
                               (= 1 (length (syntax->list ids))))
