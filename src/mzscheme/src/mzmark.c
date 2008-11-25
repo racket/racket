@@ -2765,6 +2765,7 @@ static int mark_comp_env_MARK(void *p) {
   gcMARK(e->data.const_names);
   gcMARK(e->data.const_vals);
   gcMARK(e->data.const_uids);
+  gcMARK(e->data.sealed);
   gcMARK(e->data.use);
   gcMARK(e->data.lifts);
 
@@ -2792,6 +2793,7 @@ static int mark_comp_env_FIXUP(void *p) {
   gcFIXUP(e->data.const_names);
   gcFIXUP(e->data.const_vals);
   gcFIXUP(e->data.const_uids);
+  gcFIXUP(e->data.sealed);
   gcFIXUP(e->data.use);
   gcFIXUP(e->data.lifts);
 

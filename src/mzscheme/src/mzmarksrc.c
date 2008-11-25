@@ -1114,6 +1114,7 @@ mark_comp_env {
   gcMARK(e->data.const_names);
   gcMARK(e->data.const_vals);
   gcMARK(e->data.const_uids);
+  gcMARK(e->data.sealed);
   gcMARK(e->data.use);
   gcMARK(e->data.lifts);
 

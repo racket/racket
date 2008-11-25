@@ -1080,9 +1080,9 @@ void scheme_stx_seal_rib(Scheme_Object *rib)
   *((Scheme_Lexical_Rib *)rib)->sealed = 1;
 }
 
-int scheme_stx_is_rib_sealed(Scheme_Object *rib)
+int *scheme_stx_get_rib_sealed(Scheme_Object *rib)
 {
-  return *((Scheme_Lexical_Rib *)rib)->sealed;
+  return ((Scheme_Lexical_Rib *)rib)->sealed;
 }
 
 Scheme_Object *scheme_stx_id_remove_rib(Scheme_Object *stx, Scheme_Object *ro)
@@ -3453,7 +3453,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *phase = orig_phase;
   Scheme_Object *bdg = NULL, *floating = NULL;
   Scheme_Hash_Table *export_registry = NULL;
-  int mresult_skipped = 0;
+  int mresult_skipped = -1;
   int depends_on_unsealed_rib = 0;
 
   EXPLAIN(fprintf(stderr, "%d Resolving %s [skips: %s]:\n", depth, SCHEME_SYM_VAL(SCHEME_STX_VAL(a)),
@@ -3578,7 +3578,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	      o_rename_stack = scheme_null;
 	    }
 	  } else {
-            skipped = 0;
+            skipped = -1;
 	    glob_id = SCHEME_STX_VAL(a);
           }
 
@@ -3695,7 +3695,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             }
 	  } else {
 	    mresult = scheme_false;
-            mresult_skipped = 0;
+            mresult_skipped = -1;
 	    if (get_names)
 	      get_names[0] = NULL;
 	  }
@@ -3993,7 +3993,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
           if (!rename)
             result = scheme_search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1);
-	  else if (rename) {
+	  else {
 	    /* match; set result: */
 	    if (mrn->kind == mzMOD_RENAME_MARKED)
 	      skip_other_mods = 1;
@@ -4007,8 +4007,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	      }
 	    } else
 	      result = glob_id;
-	  } else
-	    result = NULL;
+	  }
 
           result_from = WRAP_POS_FIRST(wraps);
 	}
@@ -7258,33 +7257,37 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_type("make-syntax-delta-introducer", "syntax identifier", 0, argc, argv);
-  if (!SCHEME_STXP(argv[1]))
-    scheme_wrong_type("make-syntax-delta-introducer", "syntax", 1, argc, argv);
+  if (!SCHEME_STXP(argv[1]) && !SCHEME_FALSEP(argv[1]))
+    scheme_wrong_type("make-syntax-delta-introducer", "syntax or #f", 1, argc, argv);
 
   phase = extract_phase("make-syntax-delta-introducer", 2, argc, argv, scheme_make_integer(0), 1);
 
   m1 = scheme_stx_extract_marks(argv[0]);
   orig_m1 = m1;
-  m2 = scheme_stx_extract_marks(argv[1]);
-
   l1 = scheme_list_length(m1);
-  l2 = scheme_list_length(m2);
-
   delta = scheme_null;
-  while (l1 > l2) {
-    delta = CONS(SCHEME_CAR(m1), delta);
-    m1 = SCHEME_CDR(m1);
-    l1--;
+  if (SCHEME_FALSEP(argv[1])) {
+    m2 = scheme_false;
+  } else {
+    m2 = scheme_stx_extract_marks(argv[1]);
+
+    l2 = scheme_list_length(m2);
+
+    while (l1 > l2) {
+      delta = CONS(SCHEME_CAR(m1), delta);
+      m1 = SCHEME_CDR(m1);
+      l1--;
+    }
   }
 
   if (!scheme_equal(m1, m2)) {
     /* tails don't match, so keep all marks --- except 
        those that determine a module binding */
-    int skipped = 0;
+    int skipped = -1;
 
     resolve_env(NULL, argv[0], phase, 1, NULL, NULL, &skipped, NULL, 0);
 
-    if (skipped) {
+    if (skipped > -1) {
       /* Just keep the first `skipped' marks. */
       delta = scheme_null;
       m1 = orig_m1;

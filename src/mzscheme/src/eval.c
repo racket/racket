@@ -5052,6 +5052,9 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
                                   SCHEME_NULL_FOR_UNBOUND
                                   + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
                                   + SCHEME_DONT_MARK_USE
+                                  + ((!rec[drec].comp && (rec[drec].depth == -2))
+                                     ? SCHEME_OUT_OF_CONTEXT_OK
+                                     : 0)
                                   + ((rec[drec].comp && rec[drec].resolve_module_ids)
                                      ? SCHEME_RESOLVE_MODIDS
                                      : 0),
@@ -5253,7 +5256,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       : 0)
 				    + ((rec[drec].comp && rec[drec].resolve_module_ids)
 				       ? SCHEME_RESOLVE_MODIDS
-				       : 0),
+				       : 0)
+                                    + ((!rec[drec].comp && (rec[drec].depth == -2))
+                                       ? SCHEME_OUT_OF_CONTEXT_OK
+                                       : 0),
 				    rec[drec].certs, env->in_modidx, 
 				    &menv, &protected, &lexical_binding_id);
 
@@ -5357,7 +5363,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				    + SCHEME_DONT_MARK_USE
 				    + ((rec[drec].comp && rec[drec].resolve_module_ids)
 				       ? SCHEME_RESOLVE_MODIDS
-				       : 0),
+				       : 0)
+                                    + ((!rec[drec].comp && (rec[drec].depth == -2))
+                                       ? SCHEME_OUT_OF_CONTEXT_OK
+                                       : 0),
 				    erec1.certs, env->in_modidx, 
 				    &menv, NULL, NULL);
 
@@ -5440,7 +5449,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       var = scheme_lookup_binding(find_name, env,
 				  SCHEME_NULL_FOR_UNBOUND
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-				  + SCHEME_DONT_MARK_USE,
+				  + SCHEME_DONT_MARK_USE
+                                  + ((!rec[drec].comp && (rec[drec].depth == -2))
+                                     ? SCHEME_OUT_OF_CONTEXT_OK
+                                     : 0),
 				  rec[drec].certs, env->in_modidx, 
 				  &menv, NULL, NULL);
 
@@ -5480,7 +5492,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       var = scheme_lookup_binding(stx, env,
 				  SCHEME_NULL_FOR_UNBOUND
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
-				  + SCHEME_DONT_MARK_USE,
+				  + SCHEME_DONT_MARK_USE
+                                  + ((!rec[drec].comp && (rec[drec].depth == -2))
+                                     ? SCHEME_OUT_OF_CONTEXT_OK
+                                     : 0),
 				  rec[drec].certs, env->in_modidx, 
 				  &menv, NULL, NULL);
     }
@@ -9539,7 +9554,7 @@ local_eval(int argc, Scheme_Object **argv)
   stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
   rib = SCHEME_PTR2_VAL(argv[2]);
 
-  if (scheme_stx_is_rib_sealed(rib)) {
+  if (*scheme_stx_get_rib_sealed(rib)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: given "
 		     "internal-definition context has been sealed");
   }

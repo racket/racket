@@ -4,13 +4,17 @@
                      syntax/boundmap
                      syntax/define))
 
-(provide define*
+(provide define-package
+         package-begin
+
+         open-package
+         open*-package
+
+         define*
          define*-values
          define*-syntax
          define*-syntaxes
-         define-package
-         open-package
-         open*-package)
+         define*-struct)
 
 (define-for-syntax (do-define-* stx define-values-id)
   (syntax-case stx ()
@@ -50,13 +54,15 @@
                                 "misuse of a package name"
                                 stx)))
  
- (define (reverse-mapping id exports hidden)
+ (define (reverse-mapping who id exports hidden)
    (or (ormap (lambda (m)
                 (and (free-identifier=? id (cdr m))
                      (car m)))
               exports)
        (ormap (lambda (h)
                 (and (free-identifier=? id h)
+                     ;; Not at top level, where free-id=? is unreliable:
+                     (identifier-binding id)
                      ;; Name is inaccessible. Generate a temporary to
                      ;; avoid potential duplicate-definition errors
                      ;; when the name is bound in the same context as
@@ -65,19 +71,20 @@
               hidden)
        id)))
 
-(define-syntax (define-package stx)
-  (syntax-case stx ()
-    [(_ pack-id exports form ...)
+(define-for-syntax (do-define-package stx exp-stx)
+  (syntax-case exp-stx ()
+    [(_ pack-id mode exports form ...)
      (let ([id #'pack-id]
-           [exports #'exports])
-       (unless (identifier? id)
-         (raise-syntax-error #f
-                             "expected an identifier"
-                             stx
-                             id))
+           [exports #'exports]
+           [mode (syntax-e #'mode)])
+       (unless (eq? mode '#:begin)
+         (unless (identifier? id)
+           (raise-syntax-error #f
+                               "expected an identifier"
+                               stx
+                               id)))
        (let ([exports
               (cond
-               [(eq? (syntax-e exports) 'all-defined) #f]
                [(syntax->list exports)
                 => (lambda (l)
                      (for-each (lambda (i)
@@ -96,7 +103,11 @@
                           dup-id)))
                      l)]
                [else (raise-syntax-error #f
-                                         "expected a parenthesized sequence of identifiers to export"
+                                         (format "expected a parenthesized sequence of identifiers ~a"
+                                                 (case mode
+                                                   [(#:only) "to export"]
+                                                   [(#:all-defined-except) "to exclude from export"]
+                                                   [else (format "for ~a" mode)]))
                                          stx
                                          exports)])])
          (let* ([def-ctx (syntax-local-make-definition-context)]
@@ -154,7 +165,18 @@
                                                                (quote-syntax renamed))
                                                          ...))
                                                  hidden))))]
-                                         [_ stx])))])
+                                         [_ stx])))]
+                [complement (lambda (bindings ids)
+                              (let ([tmp (make-bound-identifier-mapping)])
+                                (bound-identifier-mapping-for-each bindings
+                                                                   (lambda (k v)
+                                                                     (bound-identifier-mapping-put! tmp k #t)))
+                                (for-each (lambda (id)
+                                            (bound-identifier-mapping-put! tmp id #f))
+                                          ids)
+                                (filter
+                                 values
+                                 (bound-identifier-mapping-map tmp (lambda (k v) (and v k))))))])
            (let ([register-bindings!
                   (lambda (ids)
                     (for-each (lambda (id)
@@ -186,7 +208,7 @@
                  (for-each (lambda (def-ctx)
                              (internal-definition-context-seal def-ctx))
                            def-ctxes)
-                 (let ([exports-renamed (map (add-package-context def-ctxes) (or exports null))]
+                 (let ([exports-renamed (map (add-package-context def-ctxes) exports)]
                        [defined-renamed (bound-identifier-mapping-map new-bindings
                                                                       (lambda (k v) k))])
                    (for-each (lambda (ex renamed)
@@ -194,33 +216,55 @@
                                                                      renamed
                                                                      (lambda () #f))
                                  (raise-syntax-error #f
-                                                     "no definition for exported identifier"
+                                                     (format "no definition for ~a identifier"
+                                                             (case mode
+                                                               [(#:only) "exported"]
+                                                               [(#:all-defined-except) "excluded"]))
                                                      stx
                                                      ex)))
-                             (or exports null)
+                             exports
                              exports-renamed)
-                   (with-syntax ([(export ...) exports]
-                                 [(renamed ...) exports-renamed]
-                                 [(hidden ...)
-                                  (begin
-                                    (for-each (lambda (ex)
-                                                (bound-identifier-mapping-put! new-bindings ex #f))
-                                              exports-renamed)
-                                    (filter
-                                     values
-                                     (bound-identifier-mapping-map new-bindings
-                                                                   (lambda (k v) (and v k)))))])
-                     #`(begin
-                         #,@(map (fixup-sub-package exports-renamed defined-renamed def-ctxes) 
-                                 (reverse rev-forms))
-                         (define-syntax pack-id
-                           (make-package
-                            (lambda ()
-                              (list (cons (quote-syntax export)
-                                          (quote-syntax renamed))
-                                    ...))
-                            (lambda ()
-                              (list (quote-syntax hidden) ...)))))))]
+                   (let-values ([(exports exports-renamed)
+                                 (if (memq mode '(#:only #:begin))
+                                     (values exports exports-renamed)
+                                     (let ([all-exports-renamed (complement new-bindings exports-renamed)])
+                                       ;; In case of define*, get only the last definition:
+                                       (let ([tmp (make-bound-identifier-mapping)])
+                                         (for-each (lambda (id)
+                                                     (bound-identifier-mapping-put!
+                                                      tmp
+                                                      ((add-package-context def-ctxes) 
+                                                       (pre-package-id id def-ctxes))
+                                                      #t))
+                                                   all-exports-renamed)
+                                         (let* ([exports-renamed (bound-identifier-mapping-map tmp (lambda (k v) k))]
+                                                [exports (map (lambda (id) (pre-package-id id def-ctxes))
+                                                              exports-renamed)])
+                                           (values exports exports-renamed)))))])
+                     (with-syntax ([(export ...) exports]
+                                   [(renamed ...) exports-renamed]
+                                   [(hidden ...) (complement new-bindings exports-renamed)])
+                       (let ([body (map (fixup-sub-package exports-renamed defined-renamed def-ctxes) 
+                                        (reverse rev-forms))])
+                         (if (eq? mode '#:begin)
+                             (if (eq? 'expression (syntax-local-context))
+                                 (quasisyntax/loc stx (let () #,@body))
+                                 (quasisyntax/loc stx (begin #,@body)))
+                             (quasisyntax/loc stx
+                               (begin
+                                 #,@(if (eq? 'top-level (syntax-local-context))
+                                        ;; delcare all bindings before they are used:
+                                        #`((define-syntaxes #,defined-renamed (values)))
+                                        null)
+                                 #,@body
+                                 (define-syntax pack-id
+                                   (make-package
+                                    (lambda ()
+                                      (list (cons (quote-syntax export)
+                                                  (quote-syntax renamed))
+                                            ...))
+                                    (lambda ()
+                                      (list (quote-syntax hidden) ...)))))))))))]
                 [else
                  (let ([expr ((add-package-context (cdr def-ctxes))
                               (local-expand ((add-package-context (cdr def-ctxes)) (car exprs))
@@ -276,10 +320,29 @@
                                 (if star? (cons def-ctx def-ctxes) def-ctxes))))]
                      [else
                       (loop (cdr exprs) 
-                            (cons #`(define-values () (begin #,expr (values)))
+                            (cons (if (and (eq? mode '#:begin)
+                                           (null? (cdr exprs)))
+                                      expr
+                                      #`(define-values () (begin #,expr (values))))
                                   rev-forms)
                             defined
                             def-ctxes)]))]))))))]))
+
+(define-syntax (define-package stx)
+  (syntax-case stx ()
+    [(_ id #:all-defined form ...)
+     (do-define-package stx #'(define-package id #:all-defined () form ...))]
+    [(_ id #:all-defined-except ids form ...)
+     (do-define-package stx stx)]
+    [(_ id #:only ids form ...)
+     (do-define-package stx stx)]
+    [(_ id ids form ...)
+     (do-define-package stx #'(define-package id #:only ids form ...))]))
+
+(define-syntax (package-begin stx)
+  (syntax-case stx ()
+    [(_ form ...)
+     (do-define-package stx #'(define-package #f #:begin () form ...))]))
 
 (define-for-syntax (do-open stx define-syntaxes-id)
   (syntax-case stx ()
@@ -316,6 +379,7 @@
                  (#,define-syntaxes-id (intro ...)
                    (let ([rev-map (lambda (x)
                                     (reverse-mapping
+                                     'pack-id
                                      x
                                      (list (cons (quote-syntax a)
                                                  (quote-syntax b))
@@ -328,3 +392,15 @@
   (do-open stx #'define-syntaxes))
 (define-syntax (open*-package stx)
   (do-open stx #'define*-syntaxes))
+
+(define-syntax (define*-struct stx)
+  (syntax-case stx ()
+    [(_ . rest)
+     (let ([ds (quasisyntax/loc stx
+                 (define-struct/derived #,stx . rest))])
+       (quasisyntax/loc stx
+         (begin
+           (define-package p #:all-defined
+             #,ds)
+           (open*-package p))))]))
+

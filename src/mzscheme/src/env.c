@@ -154,6 +154,7 @@ typedef struct Compile_Data {
   Scheme_Object **const_names;
   Scheme_Object **const_vals;
   Scheme_Object **const_uids;
+  int *sealed; /* NULL => already sealed */
   int *use;
   Scheme_Object *lifts;
 } Compile_Data;
@@ -1768,7 +1769,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
   sym = SCHEME_STX_SYM(id);
 
   if (_skipped)
-    *_skipped = 0;
+    *_skipped = -1;
 
   if (SCHEME_HASHTP((Scheme_Object *)env)) {
     marked_names = (Scheme_Hash_Table *)env;
@@ -2129,6 +2130,12 @@ Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
   if (!SCHEME_STXP(stx) && !SCHEME_RIBP(stx)) {
     scheme_signal_error("internal error: not syntax or rib");
     return NULL;
+  }
+
+  if (SCHEME_RIBP(stx)) {
+    GC_CAN_IGNORE int *s;
+    s = scheme_stx_get_rib_sealed(stx);
+    COMPILE_DATA(env)->sealed = s;
   }
 
   while (env != upto) {
@@ -2548,8 +2555,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	  val = COMPILE_DATA(frame)->const_vals[i];
 	
 	  if (!val) {
-	    scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-				"identifier used out of context");
+            scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
+                                "identifier used out of context");
 	    return NULL;
 	  }
 
@@ -4354,8 +4361,9 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   sym_marks = scheme_stx_extract_marks(sym);
 
   /* Walk backward through the frames, looking for a renaming binding
-     with the same marks as the given identifier, sym. When we find
-     it, rename the given identifier so that it matches frame */
+     with the same marks as the given identifier, sym. Skip over
+     unsealed ribs, though. When we find a match, rename the given
+     identifier so that it matches frame. */
   for (frame = env; frame->next != NULL; frame = frame->next) {
     int i;
 
@@ -4378,19 +4386,21 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     if (uid)
       break;
 
-    for (i = COMPILE_DATA(frame)->num_const; i--; ) {
-      if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
-	if (SAME_OBJ(SCHEME_STX_VAL(sym), 
-		     SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
-	  esym = COMPILE_DATA(frame)->const_names[i];
-	  env_marks = scheme_stx_extract_marks(esym);
-	  if (1 || scheme_equal(env_marks, sym_marks)) {
-	    sym = esym;
-	    if (COMPILE_DATA(frame)->const_uids) {
-	      uid = COMPILE_DATA(frame)->const_uids[i];
-	    } else
-	      uid = frame->uid;
-	    break;
+    if (!COMPILE_DATA(frame)->sealed || *COMPILE_DATA(frame)->sealed) {
+      for (i = COMPILE_DATA(frame)->num_const; i--; ) {
+        if (!(frame->flags & SCHEME_CAPTURE_WITHOUT_RENAME)) {
+          if (SAME_OBJ(SCHEME_STX_VAL(sym), 
+                       SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
+            esym = COMPILE_DATA(frame)->const_names[i];
+            env_marks = scheme_stx_extract_marks(esym);
+            if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+              sym = esym;
+              if (COMPILE_DATA(frame)->const_uids)
+                uid = COMPILE_DATA(frame)->const_uids[i];
+              else
+                uid = frame->uid;
+              break;
+            }
 	  }
 	}
       }
@@ -4524,9 +4534,9 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
     }
 
     if (!binder) {
-      /* Not a lexical biding, so use empty id */
-      binder = scheme_datum_to_syntax(scheme_intern_symbol("no-binder"), 
-                                      scheme_false, scheme_false, 1, 0);
+      /* Not a lexical biding. Tell make-syntax-delta-introducer to
+         use module-binding information. */
+      binder = scheme_false;
     }
 
     a[0] = sym;
