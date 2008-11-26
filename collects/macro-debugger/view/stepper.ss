@@ -49,6 +49,9 @@
     (define (focused-term)
       (cursor:next terms))
 
+    ;; current-step-index : notify of number/#f
+    (field/notify current-step-index (new notify-box% (value #f)))
+
     ;; add-deriv : Deriv -> void
     (define/public (add-deriv d)
       (let ([trec (new term-record% (stepper this) (raw-deriv d))])
@@ -173,6 +176,28 @@
       (new button% (label "Next term") (parent navigator)
            (callback (lambda (b e) (navigate-down)))))
 
+    (define nav:text
+      (new text-field%
+           (label "Step#")
+           (init-value "00000")
+           (parent extra-navigator)
+           (stretchable-width #f)
+           (stretchable-height #f)
+           (callback
+            (lambda (b e)
+              (when (eq? (send e get-event-type) 'text-field-enter)
+                (let* ([value (send b get-value)]
+                       [step (string->number value)])
+                  (cond [(exact-positive-integer? step)
+                         (navigate-to (sub1 step))]
+                        [(equal? value "end")
+                         (navigate-to-end)])))))))
+    (send nav:text set-value "")
+    (listen-current-step-index
+     (lambda (n)
+       (send nav:text set-value
+             (if (number? n) (number->string (add1 n)) ""))))
+
     (define/private (trim-navigator)
       (if (> (length (cursor->list terms)) 1)
           (send navigator change-children
@@ -223,6 +248,9 @@
     (define/public-final (navigate-next)
       (send (focused-term) navigate-next)
       (update/save-position))
+    (define/public-final (navigate-to n)
+      (send (focused-term) navigate-to n)
+      (update/save-position))
 
     (define/public-final (navigate-up)
       (when (focused-term)
@@ -253,7 +281,7 @@
             #f
             (send text line-start-position (unbox end-box))
             'start))
-    
+
     ;; update/preserve-view : -> void
     (define/public (update/preserve-view)
       (define text (send sbview get-text))
@@ -271,7 +299,7 @@
       (define multiple-terms? (> (length (cursor->list terms)) 1))
       (send text begin-edit-sequence)
       (send sbview erase-all)
-      
+
       (update:show-prefix)
       (when multiple-terms? (send sbview add-separator))
       (set! position-of-interest (send text last-position))
@@ -284,6 +312,7 @@
             #f
             (send text last-position)
             'start)
+      (update-nav-index)
       (enable/disable-buttons))
 
     ;; update:show-prefix : -> void
@@ -305,6 +334,12 @@
                       (send trec display-initial-term))
                     (cdr suffix0)))))
 
+    ;; update-nav-index : -> void
+    (define/private (update-nav-index)
+      (define term (focused-term))
+      (set-current-step-index
+       (and term (send term get-step-index))))
+
     ;; enable/disable-buttons : -> void
     (define/private (enable/disable-buttons)
       (define term (focused-term))
@@ -312,6 +347,7 @@
       (send nav:previous enable (and term (send term has-prev?)))
       (send nav:next enable (and term (send term has-next?)))
       (send nav:end enable (and term (send term has-next?)))
+      (send nav:text enable (and term #t))
       (send nav:up enable (cursor:has-prev? terms))
       (send nav:down enable (cursor:has-next? terms)))
 

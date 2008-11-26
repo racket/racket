@@ -204,6 +204,9 @@
     (define/public-final (has-next?)
       (and (get-steps) (not (cursor:at-end? (get-steps)))))
 
+    (define/public-final (get-step-index)
+      (and (get-steps) (cursor-position (get-steps))))
+
     (define/public-final (navigate-to-start)
       (cursor:move-to-start (get-steps))
       (save-position))
@@ -215,6 +218,9 @@
       (save-position))
     (define/public-final (navigate-next)
       (cursor:move-next (get-steps))
+      (save-position))
+    (define/public-final (navigate-to n)
+      (cursor:skip-to (get-steps) n)
       (save-position))
 
     ;; save-position : -> void
