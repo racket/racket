@@ -794,6 +794,8 @@
                                            (list (send execute-types get-test-classes) null)
                                            (find-examples compilation-units))])
                           #;(printf "ProfJ compilation complete~n")
+                        #;(printf "compilation units- ~a~n" (map syntax->datum 
+                                                               (apply append (map compilation-unit-code compilation-units))))
                         (set! compiled? #t)
                         (set! modules (order compilation-units))
                         (when rep (send rep set-user-types execute-types))
@@ -830,7 +832,6 @@
                                 (send ,test-engine-obj run)
                                 #;(printf "Test methods run~n")
                                 (send ,test-engine-obj setup-display ,rep ,eventspace)
-                                (send ,test-engine-obj summarize-results (current-output-port))
                                 (let ([test-objs (send ,test-engine-obj test-objects)])
                                   (let inner-loop ((os test-objs))
                                     (unless (null? os)
@@ -842,7 +843,9 @@
                                             (write-special (car out))
                                             (loop (cdr out))))
                                         (newline))
-                                      (inner-loop (cdr os)))))))
+                                      (inner-loop (cdr os)))))
+                                (send ,test-engine-obj summarize-results (current-output-port))
+                                ))
                             #f))]
                         [(and (not require?) (null? modules) tests-run?)
                          (begin0

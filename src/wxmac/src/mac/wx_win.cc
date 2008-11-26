@@ -2148,6 +2148,10 @@ Bool wxWindow::PopupMenu(wxMenu *menu, double x, double y)
       theWxMenuItem = (wxMenuItem*) node->Data();
       if (!theWxMenuItem) wxFatalError("No wxMenuItem for wxNode.");
       
+      if (theWxMenuItem->IsCheckable()) {
+        theWxMenuItem->Check(!theWxMenuItem->IsChecked());
+      }
+
       itemId = theWxMenuItem->itemId;
     }
   }

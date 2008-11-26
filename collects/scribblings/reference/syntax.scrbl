@@ -10,7 +10,8 @@
                      scheme/provide-syntax
                      scheme/provide
                      scheme/nest
-                     scheme/package))
+                     scheme/package
+                     scheme/splicing))
 
 @(define cvt (schemefont "CVT"))
 
@@ -1248,6 +1249,8 @@ and in the @scheme[body]s.
 
 @defform[(let-syntax ([id trans-expr] ...) body ...+)]{
 
+@margin-note/ref{See also @scheme[splicing-let-syntax].}
+
 Creates a @tech{transformer binding} (see
 @secref["transformer-model"]) of each @scheme[id] with the value of
 @scheme[trans-expr], which is an expression at @tech{phase level} 1
@@ -1265,16 +1268,22 @@ Each @scheme[id] is bound in the @scheme[body]s, and not in other
 
 @defform[(letrec-syntax ([id trans-expr] ...) body ...+)]{
 
+@margin-note/ref{See also @scheme[splicing-letrec-syntax].}
+
 Like @scheme[let-syntax], except that each @scheme[id] is also bound
 within all @scheme[trans-expr]s.}
 
 @defform[(let-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+@margin-note/ref{See also @scheme[splicing-let-syntaxes].}
 
 Like @scheme[let-syntax], but each @scheme[trans-expr] must produce as
 many values as corresponding @scheme[id]s, each of which is bound to
 the corresponding value.}
 
 @defform[(letrec-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+@margin-note/ref{See also @scheme[splicing-letrec-syntaxes].}
 
 Like @scheme[let-syntax], except that each @scheme[id] is also bound
 within all @scheme[trans-expr]s.}
