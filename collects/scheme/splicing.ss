@@ -1,12 +1,16 @@
 #lang scheme/base
-(require (for-syntax scheme/base))
+(require (for-syntax scheme/base
+                     syntax/kerncase)
+         "stxparam.ss"
+         "private/stxparam.ss")
 
 (provide splicing-let-syntax
          splicing-let-syntaxes
          splicing-letrec-syntax
-         splicing-letrec-syntaxes)
+         splicing-letrec-syntaxes
+         splicing-syntax-parameterize)
 
-(define-for-syntax (do-let-syntax stx rec? multi?)
+(define-for-syntax (do-let-syntax stx rec? multi? let-stx-id)
   (syntax-case stx ()
     [(_ ([ids expr] ...) body ...)
      (let ([all-ids (map (lambda (ids-stx)
@@ -38,13 +42,7 @@
             stx
             dup-id)))
        (if (eq? 'expression (syntax-local-context))
-           (with-syntax ([let-stx (if rec?
-                                      (if multi?
-                                          #'letrec-syntaxes
-                                          #'letrec-syntax)
-                                      (if multi?
-                                          #'let-syntaxes
-                                          #'let-syntax))])
+           (with-syntax ([let-stx let-stx-id])
              (syntax/loc stx
                (let-stx ([ids expr] ...)
                         (#%expression body)
@@ -78,13 +76,68 @@
                      body ...))))))]))
 
 (define-syntax (splicing-let-syntax stx)
-  (do-let-syntax stx #f #f))
+  (do-let-syntax stx #f #f #'let-syntax))
 
 (define-syntax (splicing-let-syntaxes stx)
-  (do-let-syntax stx #f #t))
+  (do-let-syntax stx #f #t #'let-syntaxes))
 
 (define-syntax (splicing-letrec-syntax stx)
-  (do-let-syntax stx #t #f))
+  (do-let-syntax stx #t #f #'letrec-syntax))
 
 (define-syntax (splicing-letrec-syntaxes stx)
-  (do-let-syntax stx #t #t))
+  (do-let-syntax stx #t #t #'letrec-syntaxes))
+
+;; ----------------------------------------
+
+(define-syntax (splicing-syntax-parameterize stx)
+  (if (eq? 'expression (syntax-local-context))
+      ;; Splicing is no help in an expression context:
+      (do-syntax-parameterize stx #'let-syntaxes)
+      ;; Let `syntax-parameterize' check syntax, then continue
+      (do-syntax-parameterize stx #'ssp-let-syntaxes)))
+
+(define-syntax (ssp-let-syntaxes stx)
+  (syntax-case stx ()
+    [(_ ([(id) rhs] ...) body ...)
+     (with-syntax ([(splicing-temp ...) (generate-temporaries #'(id ...))])
+       #'(begin
+           ;; Evaluate each RHS only once:
+           (define-syntax splicing-temp rhs) ...
+           ;; Partially expand `body' to push down `let-syntax':
+           (expand-ssp-body (id ...) (splicing-temp ...) body)
+           ...))]))
+
+(define-syntax (expand-ssp-body stx)
+  (syntax-case stx ()
+    [(_ (sp-id ...) (temp-id ...) body)
+     (let ([body (local-expand #'(letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))]
+                                                   ...)
+                                   (force-expand body))
+                               (syntax-local-context)
+                               null ;; `force-expand' actually determines stopping places
+                               #f)])
+       ;; Extract expanded body out of `body':
+       (syntax-case body (quote)
+         [(ls _ _ (quoute body))
+          (let ([body #'body])
+            (syntax-case body (begin define-values define-syntaxes define-for-syntaxes)
+              [(define-values (id ...) rhs)
+               (syntax/loc body
+                 (define-values (id ...)
+                   (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
+                     rhs)))]
+              [(define-syntaxes . _) body]
+              [(define-for-syntaxes . _) body]
+              [expr (syntax/loc body
+                      (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
+                        expr))]))]))]))
+
+(define-syntax (force-expand stx)
+  (syntax-case stx ()
+    [(_ stx)
+     ;; Expand `stx' to reveal type of form, and then preserve it via
+     ;; `quote':
+     #`(quote #,(local-expand #'stx
+                              'module
+                              (kernel-form-identifier-list)
+                              #f))]))

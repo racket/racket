@@ -3,6 +3,7 @@
   (#%require "private/more-scheme.ss"
              "private/letstx-scheme.ss"
              "private/define.ss"
+             "private/stxparam.ss"
              (for-syntax '#%kernel 
                          "stxparam-exptime.ss"
                          "private/stx.ss" "private/stxcase-scheme.ss" 
@@ -30,36 +31,4 @@
 		   gen-id))))))]))
 
   (define-syntax (syntax-parameterize stx)
-    (syntax-case stx ()
-      [(_ ([id val] ...) body0 body ...)
-       (let ([ids (syntax->list #'(id ...))])
-	 (with-syntax ([(gen-id ...)
-			(map (lambda (id)
-			       (unless (identifier? id)
-				 (raise-syntax-error
-				  #f
-				  "not an identifier"
-				  stx
-				  id))
-			       (let* ([rt (syntax-local-value id (lambda () #f))]
-				      [sp (if (set!-transformer? rt)
-					      (set!-transformer-procedure rt)
-					      rt)])
-				 (unless (syntax-parameter? sp)
-				   (raise-syntax-error
-				    #f
-				    "not bound as a syntax parameter"
-				    stx
-				    id))
-				 (syntax-local-get-shadower 
-				  (syntax-local-introduce (syntax-parameter-target sp)))))
-			     ids)])
-	   (let ([dup (check-duplicate-identifier ids)])
-	     (when dup
-	       (raise-syntax-error
-		#f
-		"duplicate binding"
-		stx
-		dup)))
-	   #'(let-syntaxes ([(gen-id) (convert-renamer val)] ...)
-	       body0 body ...)))])))
+    (do-syntax-parameterize stx #'let-syntaxes)))

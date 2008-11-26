@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
           (for-label scheme/stxparam
-                     scheme/stxparam-exptime))
+                     scheme/stxparam-exptime
+                     scheme/splicing))
 
 @title[#:tag "stxparam"]{Syntax Parameters}
 
@@ -26,6 +27,8 @@ used as a macro that expands to a use of the target identifier, but
 the target's value.}
 
 @defform[(syntax-parameterize ((id expr) ...) body-expr ...+)]{
+
+@margin-note/ref{See also @scheme[splicing-syntax-parameterize].}
 
 Each @scheme[id] must be bound to a @tech{syntax parameter} using
 @scheme[define-syntax-parameter]. Each @scheme[expr] is an expression

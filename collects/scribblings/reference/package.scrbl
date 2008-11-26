@@ -117,3 +117,7 @@ cookies
   (define vii 8)
   (define*-seven vii)
   vii)]}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[pack-eval]
