@@ -2668,7 +2668,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   if (no_call) {
     /* leave actual call to inlining code */
   } else if (!(direct_self && is_tail)
-      && (num_rands >= MAX_SHARED_CALL_RANDS)) {
+             && (num_rands >= MAX_SHARED_CALL_RANDS)) {
     LOG_IT(("<-many args\n"));
     if (is_tail) {
       if (direct_prim) {
@@ -6563,24 +6563,26 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* R0 is arg, R2 is code pointer, V1 is return address */
   for (i = 0; i < 3; i++) {
     int argc, j;
+    void *code, *code_end;
     for (j = 0; j < 2; j++) {
+      code = jit_get_ip().ptr;
       if (!i) {
 	if (!j)
-	  call_original_unary_arith_code = jit_get_ip().ptr;
+	  call_original_unary_arith_code = code;
 	else
-	  call_original_unary_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_unary_arith_for_branch_code = code;
 	argc = 1;
       } else if (i == 1) {
 	if (!j)
-	  call_original_binary_arith_code = jit_get_ip().ptr;
+	  call_original_binary_arith_code = code;
 	else
-	  call_original_binary_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_binary_arith_for_branch_code = code;
 	argc = 2;
       } else {
 	if (!j)
-	  call_original_binary_rev_arith_code = jit_get_ip().ptr;
+	  call_original_binary_rev_arith_code = code;
 	else
-	  call_original_binary_rev_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_binary_rev_arith_for_branch_code = code;
 	argc = 2;
       }
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
@@ -6595,6 +6597,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
       }
       jit_movi_i(JIT_R1, argc);
+      if (!j) {
+        /* For stack-trace reporting, stuff return address into LOCAL2 */
+        mz_set_local_p(JIT_V1, JIT_LOCAL2);
+      }
       JIT_UPDATE_THREAD_RSPTR();
       mz_prepare(2);
       jit_pusharg_p(JIT_RUNSTACK);
@@ -6618,6 +6624,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	__END_TINY_JUMPS__(1);
       }
       CHECK_LIMIT();
+
+      code_end = jit_get_ip().ptr;
+      if (jitter->retain_start)
+        add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_void, 0);
     }
   }
 
@@ -8121,17 +8131,32 @@ Scheme_Object *scheme_native_stack_trace(void)
     q = ((void **)p)[RETURN_ADDRESS_OFFSET];
 
     name = find_symbol((unsigned long)q);
-    if (SCHEME_FALSEP(name)) {
+    if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
       /* JIT_LOCAL2 has the next return address */
       q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
-      /* Push after local stack of return-address proc
-	 has the next return address */
-      q = *(void **)p;
-      q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+      if (SCHEME_VOIDP(name)) {
+        /* JIT_LOCAL2 has the next return address */
+        q = *(void **)p;
+        if (STK_COMP((unsigned long)q, stack_end)
+            && STK_COMP(stack_start, (unsigned long)q)) {
+          q = ((void **)q)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+        } else 
+          q = NULL;
+      } else {
+        /* Push after local stack of return-address proc
+           has the next return address */
+        q = *(void **)p;
+        if (STK_COMP((unsigned long)q, stack_end)
+            && STK_COMP(stack_start, (unsigned long)q)) {
+          q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+        } else {
+          q = NULL;
+        }
+      }
 #endif
       name = find_symbol((unsigned long)q);
     }
