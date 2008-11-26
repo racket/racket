@@ -1834,7 +1834,8 @@ typedef struct Scheme_Comp_Env
 typedef struct Scheme_Compile_Expand_Info
 {
   MZTAG_IF_REQUIRED
-  int comp;
+  short comp;
+  short comp_flags;
   Scheme_Object *value_name;
   Scheme_Object *certs;
   Scheme_Object *observer;
@@ -1844,6 +1845,9 @@ typedef struct Scheme_Compile_Expand_Info
   int depth;
   int env_already;
 } Scheme_Compile_Expand_Info;
+
+#define COMP_ALLOW_SET_UNDEFINED 0x1
+#define COMP_CAN_INLINE 0x2
 
 typedef Scheme_Compile_Expand_Info Scheme_Compile_Info;
 typedef Scheme_Compile_Expand_Info Scheme_Expand_Info;

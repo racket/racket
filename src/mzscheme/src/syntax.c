@@ -1738,8 +1738,7 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
     }
   }
   
-  set_undef = SCHEME_TRUEP(scheme_get_param(scheme_current_config(),
-					    MZCONFIG_ALLOW_SET_UNDEFINED));
+  set_undef = (rec[drec].comp_flags & COMP_ALLOW_SET_UNDEFINED);
   
   return scheme_make_syntax_compiled(SET_EXPD, 
 				     cons(set_undef
@@ -5400,6 +5399,8 @@ static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_
   val = SCHEME_CDR(data);
 
   einfo = scheme_optimize_info_create();
+  if (info->inline_fuel < 0)
+    einfo->inline_fuel = -1;
 
   val = scheme_optimize_expr(val, einfo);
 
@@ -5541,6 +5542,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   rec1.observer = NULL;
   rec1.pre_unwrapped = 0;
   rec1.env_already = 0;
+  rec1.comp_flags = rec[drec].comp_flags;
 
   if (for_stx) {
     names = defn_targets_syntax(names, exp_env, &rec1, 0);
@@ -5733,6 +5735,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.observer = NULL;
   mrec.pre_unwrapped = 0;
   mrec.env_already = 0;
+  mrec.comp_flags = rec[drec].comp_flags;
 
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
 
@@ -5743,6 +5746,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   rp = scheme_resolve_prefix(eenv->genv->phase, eenv->prefix, 0);
 
   oi = scheme_optimize_info_create();
+  if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
+    oi->inline_fuel = -1;
   a = scheme_optimize_expr(a, oi);
 
   ri = scheme_resolve_info_create(rp);

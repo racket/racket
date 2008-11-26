@@ -5774,6 +5774,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
         erec1.observer = rec[drec].observer;
         erec1.pre_unwrapped = 0;
         erec1.env_already = 0;
+        erec1.comp_flags = rec[drec].comp_flags;
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
       }
 
@@ -5977,6 +5978,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           mrec.observer = NULL;
           mrec.pre_unwrapped = 0;
           mrec.env_already = 0;
+          mrec.comp_flags = rec[drec].comp_flags;
 
 	  if (!rec[drec].comp) {
 	    Scheme_Expand_Info erec1;
@@ -5987,6 +5989,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
             erec1.observer = rec[drec].observer;
             erec1.pre_unwrapped = 0;
             erec1.env_already = 0;
+            erec1.comp_flags = rec[drec].comp_flags;
 	    SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);
 	    code = scheme_expand_expr_lift_to_let(code, eenv, &erec1, 0);
 	  }
@@ -5994,6 +5997,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  oi = scheme_optimize_info_create();
           oi->context = (Scheme_Object *)env->genv->module;
+          if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
+            oi->inline_fuel = -1;
 	  m = scheme_optimize_expr(m, oi);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
