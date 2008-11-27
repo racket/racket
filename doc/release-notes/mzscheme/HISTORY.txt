@@ -1,5 +1,6 @@
 Version 4.1.3.3
 Added compile-context-preservation-enabled
+Added exception-backtrace support for x86_84+JIT
 Added scheme/package, scheme/splicing
 
 Version 4.1.3.2
