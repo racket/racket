@@ -41,6 +41,9 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#ifdef USE_DWARF_LIBUNWIND
+# include "unwind/libunwind.h"
+#endif
 
 #ifdef MZ_USE_JIT
 
@@ -8113,6 +8116,11 @@ Scheme_Object *scheme_native_stack_trace(void)
   Get_Stack_Proc gs;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
   int set_next_push = 0, prev_had_name = 0;
+#ifdef USE_DWARF_LIBUNWIND
+  unw_context_t cx;
+  unw_cursor_t c;
+#endif
+  int use_unw = 0;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -8121,8 +8129,15 @@ Scheme_Object *scheme_native_stack_trace(void)
   check_stack();
 #endif
 
+#ifdef USE_DWARF_LIBUNWIND
+  unw_getcontext(&cx);
+  unw_init_local(&c, &cx);
+  use_unw = 1;
+#else
   gs = (Get_Stack_Proc)get_stack_pointer_code;
   p = gs();
+#endif
+
   stack_start = scheme_approx_sp();
 
   if (stack_cache_stack_pos) {
@@ -8145,9 +8160,21 @@ Scheme_Object *scheme_native_stack_trace(void)
 #endif
   }
 
-  while (STK_COMP((unsigned long)p, stack_end)
-	 && STK_COMP(stack_start, (unsigned long)p)) {
-    q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+  while (1) {
+#ifdef USE_DWARF_LIBUNWIND
+    if (use_unw) {
+      p = unw_get_frame_pointer(&c);
+      q = unw_get_ip(&c);
+    }
+#endif
+
+    if (!use_unw) {
+      if (!(STK_COMP((unsigned long)p, stack_end)
+            && STK_COMP(stack_start, (unsigned long)p)))
+        break;
+      
+      q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+    }
 
     name = find_symbol((unsigned long)q);
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
@@ -8223,10 +8250,28 @@ Scheme_Object *scheme_native_stack_trace(void)
 
     prev_had_name = !!name;
 
-    q = *(void **)p;
-    if (STK_COMP((unsigned long)q, (unsigned long)p))
-      break;
-    p = q;
+#ifdef USE_DWARF_LIBUNWIND
+    if (use_unw) {
+      if (name) {
+        /* A JIT-generated function, so we unwind ourselves... */
+        /* For now, once we cross into JIT world, stay there. */
+        use_uwn = 0;
+      } else {
+        void *prev_q = q;
+        unw_step(&c);
+        q = unw_get_ip(&c);
+        if (q == prev_q)
+          break;
+      }
+    }
+#endif
+
+    if (!use_unw) {
+      q = *(void **)p;
+      if (STK_COMP((unsigned long)q, (unsigned long)p))
+        break;
+      p = q;
+    }
   }
 
   if (last)
@@ -8256,9 +8301,7 @@ void scheme_dump_stack_trace(void)
   stack_end = (unsigned long)scheme_current_thread->stack_start;
 
   while (STK_COMP((unsigned long)p, stack_end)
-	 && STK_COMP(stack_start, (unsigned long)p)) {
-    q = ((void **)p)[RETURN_ADDRESS_OFFSET];
-
+         && STK_COMP(stack_start, (unsigned long)p)) {
     name = find_symbol((unsigned long)q);
     if (SCHEME_FALSEP(name)) {
       /* Code uses special calling convention */
