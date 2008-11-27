@@ -87,6 +87,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 # define unlikely(x)	(x)
 #endif
 
+#undef HIDDEN
+#define HIDDEN static
+
 #define ARRAY_SIZE(a)	(sizeof (a) / sizeof ((a)[0]))
 
 /* Make it easy to write thread-safe code which may or may not be
@@ -618,37 +621,37 @@ struct dwarf_rs_cache
 #define dwarf_read_encoded_pointer	UNW_OBJ (dwarf_read_encoded_pointer)
 #define dwarf_step			UNW_OBJ (dwarf_step)
 
-extern int dwarf_init (void);
-extern int dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
+HIDDEN int dwarf_init (void);
+HIDDEN int dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 				 unw_proc_info_t *pi,
 				 int need_unwind_info, void *arg);
-extern int dwarf_search_unwind_table (unw_addr_space_t as,
+HIDDEN int dwarf_search_unwind_table (unw_addr_space_t as,
 				      unw_word_t ip,
 				      unw_dyn_info_t *di,
 				      unw_proc_info_t *pi,
 				      int need_unwind_info, void *arg);
-extern void dwarf_put_unwind_info (unw_addr_space_t as,
+HIDDEN void dwarf_put_unwind_info (unw_addr_space_t as,
 				   unw_proc_info_t *pi, void *arg);
-extern int dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t *addr,
+HIDDEN int dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t *addr,
 			    unw_word_t len, unw_word_t *valp,
 			    int *is_register);
-extern int dwarf_extract_proc_info_from_fde (unw_addr_space_t as,
+HIDDEN int dwarf_extract_proc_info_from_fde (unw_addr_space_t as,
 					     unw_accessors_t *a,
 					     unw_word_t *fde_addr,
 					     unw_proc_info_t *pi,
 					     int need_unwind_info,
 					     void *arg);
-extern int dwarf_find_save_locs (struct dwarf_cursor *c);
-extern int dwarf_create_state_record (struct dwarf_cursor *c,
+HIDDEN int dwarf_find_save_locs (struct dwarf_cursor *c);
+HIDDEN int dwarf_create_state_record (struct dwarf_cursor *c,
 				      dwarf_state_record_t *sr);
-extern int dwarf_make_proc_info (struct dwarf_cursor *c);
-extern int dwarf_read_encoded_pointer (unw_addr_space_t as,
+HIDDEN int dwarf_make_proc_info (struct dwarf_cursor *c);
+HIDDEN int dwarf_read_encoded_pointer (unw_addr_space_t as,
 				       unw_accessors_t *a,
 				       unw_word_t *addr,
 				       unsigned char encoding,
 				       const unw_proc_info_t *pi,
 				       unw_word_t *valp, void *arg);
-extern int dwarf_step (struct dwarf_cursor *c);
+HIDDEN int dwarf_step (struct dwarf_cursor *c);
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXX End dwarf.h XXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
@@ -768,7 +771,7 @@ extern int tdep_access_fpreg (struct cursor *c, unw_regnum_t reg,
 
 #define dwarf_to_unw_regnum_map		UNW_OBJ (dwarf_to_unw_regnum_map)
 
-int dwarf_to_unw_regnum(int reg);
+HIDDEN int dwarf_to_unw_regnum(int reg);
 
 /* In the local-only case, we can let the compiler directly access
    memory and don't need to worry about differing byte-order.  */
