@@ -2327,6 +2327,15 @@ static void register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *p
     add_symbol((unsigned long)code, (unsigned long)code_end - 1, protocol, 0);
 }
 
+static void register_helper_func(mz_jit_state *jitter, void *code)
+{
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  /* Null indicates that there's no function name to report, but the
+     stack should be unwound manually using the JJIT-generated convention. */
+  register_sub_func(jitter, code, scheme_null);
+#endif  
+}
+
 int do_generate_shared_call(mz_jit_state *jitter, void *_data)
 {
   Generate_Call_Data *data = (Generate_Call_Data *)_data;
@@ -2336,10 +2345,19 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
 #endif
 
   if (data->is_tail) {
+    int ok;
+    void *code;
+
+    code = jit_get_ip().ptr;
+
     if (data->direct_prim)
-      return generate_direct_prim_tail_call(jitter, data->num_rands);
+      ok = generate_direct_prim_tail_call(jitter, data->num_rands);
     else
-      return generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
+      ok = generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
+
+    register_helper_func(jitter, code);
+
+    return ok;
   } else {
     int ok;
     void *code;
@@ -6721,6 +6739,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
+  register_helper_func(jitter, on_demand_jit_code);
 
   /* *** app_values_tail_slow_code *** */
   /* RELIES ON jit_prolog(3) FROM ABOVE */
@@ -6742,9 +6761,11 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   finish_tail_call_code = jit_get_ip().ptr;
   generate_finish_tail_call(jitter, 0);
   CHECK_LIMIT();
+  register_helper_func(jitter, finish_tail_call_code);
   finish_tail_call_fixup_code = jit_get_ip().ptr;
   generate_finish_tail_call(jitter, 2);
   CHECK_LIMIT();
+  register_helper_func(jitter, finish_tail_call_fixup_code);
 
   /* *** get_stack_pointer_code *** */
   get_stack_pointer_code = jit_get_ip().ptr;
@@ -7614,6 +7635,10 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   
   if (data->name) {
     add_symbol((unsigned long)code, (unsigned long)gdata.code_end - 1, data->name, 1);
+  } else {
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    add_symbol((unsigned long)code, (unsigned long)gdata.code_end - 1, scheme_null, 1);
+#endif
   }
   
   has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
@@ -8118,6 +8143,8 @@ Scheme_Object *scheme_native_stack_trace(void)
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
+  int manual_unw;
+  unw_word_t stack_addr;
 #else
   Get_Stack_Proc gs;
 #endif
@@ -8176,18 +8203,15 @@ Scheme_Object *scheme_native_stack_trace(void)
 	    && STK_COMP(stack_start, (unsigned long)p)))
 	break;
       q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+      /* p is the frame pointer for the function called by q,
+	 not for q. */
     }
 
     name = find_symbol((unsigned long)q);
 #ifdef MZ_USE_DWARF_LIBUNWIND
-    if (name && use_unw) {
-      use_unw = 0;
-      p = (void *)unw_get_frame_pointer(&c);
-      if (!(STK_COMP((unsigned long)p, stack_end)
-	    && STK_COMP(stack_start, (unsigned long)p)))
-	break;
-    }
+    if (name) manual_unw = 1;
 #endif
+
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
@@ -8195,30 +8219,34 @@ Scheme_Object *scheme_native_stack_trace(void)
       q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
-      if (SCHEME_VOIDP(name)) {
-        /* JIT_LOCAL2 has the next return address */
-        q = *(void **)p;
-        if (STK_COMP((unsigned long)q, stack_end)
-            && STK_COMP(stack_start, (unsigned long)q)) {
-          q = ((void **)q)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
-        } else 
-          q = NULL;
+
+# ifdef MZ_USE_DWARF_LIBUNWIND
+      if (use_unw) {
+	q = (void *)unw_get_frame_pointer(&c);
+      } else
+# endif
+	q = *(void **)p;
+
+      /* q is now the frame pointer for the former q,
+	 so we can find the actual q */
+      if (STK_COMP((unsigned long)q, stack_end)
+	  && STK_COMP(stack_start, (unsigned long)q)) {
+	if (SCHEME_VOIDP(name)) {
+	  /* JIT_LOCAL2 has the next return address */
+	  q = ((void **)q)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	} else {
+	  /* Push after local stack of return-address proc
+	     has the next return address */
+	  q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+	}
       } else {
-        /* Push after local stack of return-address proc
-           has the next return address */
-        q = *(void **)p;
-        if (STK_COMP((unsigned long)q, stack_end)
-            && STK_COMP(stack_start, (unsigned long)q)) {
-          q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
-        } else {
-          q = NULL;
-        }
+	q = NULL;
       }
 #endif
       name = find_symbol((unsigned long)q);
     }
 
-    if (name) {
+    if (name && !SCHEME_NULLP(name)) { /* null is used to help unwind without a true name */
       name = scheme_make_pair(name, scheme_null);
       if (last)
 	SCHEME_CDR(last) = name;
@@ -8263,10 +8291,17 @@ Scheme_Object *scheme_native_stack_trace(void)
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
-      if (name) {
+      if (manual_unw) {
         /* A JIT-generated function, so we unwind ourselves... */
-        /* For now, once we cross into JIT world, stay there. */
-        use_unw = 0;
+	void **pp;
+	pp = (void **)unw_get_frame_pointer(&c);
+	if (!(STK_COMP((unsigned long)pp, stack_end)
+	      && STK_COMP(stack_start, (unsigned long)pp)))
+	  break;
+	stack_addr = (unw_word_t)&(pp[RETURN_ADDRESS_OFFSET+1]);
+	unw_manual_step(&c, &pp[RETURN_ADDRESS_OFFSET], &pp[0],
+			&stack_addr, &pp[-1], &pp[-2], &pp[-3]);
+	manual_unw = 0;
       } else {
         void *prev_q = q;
         unw_step(&c);

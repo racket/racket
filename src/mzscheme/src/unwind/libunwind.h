@@ -466,6 +466,14 @@ extern unw_word_t unw_get_ip(unw_cursor_t *);
 extern unw_word_t unw_get_frame_pointer(unw_cursor_t *);
 extern const char *unw_strerror (int);
 
+void unw_manual_step(unw_cursor_t *_c, 
+		     void *ip_addr,
+		     void *bp_addr,
+		     void *sp_addr,
+		     void *bx_addr,
+		     void *r12_addr,
+		     void *r13_addr);
+  
 extern unw_addr_space_t unw_local_addr_space;
 
 #define unw_tdep_is_fpreg		UNW_ARCH_OBJ(is_fpreg)

@@ -2473,7 +2473,32 @@ unw_word_t unw_get_ip(unw_cursor_t *c)
 
 unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
 {
-  return ((struct cursor *)c)->dwarf.loc[6].val;
+  return *(unw_word_t *)((struct cursor *)c)->dwarf.loc[6 /* = BP */].val;
+}
+
+void unw_manual_step(unw_cursor_t *_c, 
+		     void *ip_addr,
+		     void *bp_addr,
+		     void *sp_addr,
+		     void *bx_addr,
+		     void *r12_addr,
+		     void *r13_addr)
+{
+  struct cursor *c = (struct cursor *)_c;
+
+  c->dwarf.loc[3].val = (unw_word_t)bx_addr;
+  c->dwarf.loc[6].val = (unw_word_t)bp_addr;
+  c->dwarf.loc[7].val = (unw_word_t)sp_addr;
+  c->dwarf.loc[12].val = (unw_word_t)r12_addr;
+  c->dwarf.loc[13].val = (unw_word_t)r13_addr;
+  c->dwarf.loc[16].val = (unw_word_t)ip_addr;
+
+  c->dwarf.ip = *(unw_word_t *)ip_addr;
+  c->dwarf.cfa = *(unw_word_t *)sp_addr;
+  c->dwarf.ret_addr_column = RIP;
+  c->dwarf.pi_valid = 0;
+  c->dwarf.hint = 0;
+  c->dwarf.prev_rs = 0;
 }
 
 #endif
