@@ -2315,6 +2315,15 @@ typedef struct {
   int direct_prim, direct_native, nontail_self;
 } Generate_Call_Data;
 
+static void register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol)
+{
+  void *code_end;
+
+  code_end = jit_get_ip().ptr;
+  if (jitter->retain_start)
+    add_symbol((unsigned long)code, (unsigned long)code_end - 1, protocol, 0);
+}
+
 int do_generate_shared_call(mz_jit_state *jitter, void *_data)
 {
   Generate_Call_Data *data = (Generate_Call_Data *)_data;
@@ -2330,7 +2339,7 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
       return generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
   } else {
     int ok;
-    void *code, *code_end;
+    void *code;
 
     code = jit_get_ip().ptr;
 
@@ -2339,9 +2348,7 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
     else
       ok = generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, data->multi_ok, data->nontail_self, 1);
 
-    code_end = jit_get_ip().ptr;
-    if (jitter->retain_start)
-      add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_false, 0);
+    register_sub_func(jitter, code, scheme_false);
 
     return ok;
   }
@@ -3923,22 +3930,22 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
           __END_TINY_JUMPS__(1);
           if (steps == 1) {
             if (name[1] == 'a') {
-              (void)jit_jmpi(bad_car_code);
+              (void)jit_calli(bad_car_code);
             } else {
-              (void)jit_jmpi(bad_cdr_code);
+              (void)jit_calli(bad_cdr_code);
             }
           } else {
             if (name[1] == 'a') {
               if (name[2] == 'a') {
-                (void)jit_jmpi(bad_caar_code);
+                (void)jit_calli(bad_caar_code);
               } else {
-                (void)jit_jmpi(bad_cadr_code);
+                (void)jit_calli(bad_cadr_code);
               }
             } else {
               if (name[2] == 'a') {
-                (void)jit_jmpi(bad_cdar_code);
+                (void)jit_calli(bad_cdar_code);
               } else {
-                (void)jit_jmpi(bad_cddr_code);
+                (void)jit_calli(bad_cddr_code);
               }
             }
           }
@@ -3980,9 +3987,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       reffail = _jit.x.pc;
       __END_TINY_JUMPS__(1);
       if (name[2] == 'a') {
-        (void)jit_jmpi(bad_mcar_code);
+        (void)jit_calli(bad_mcar_code);
       } else {
-        (void)jit_jmpi(bad_mcdr_code);
+        (void)jit_calli(bad_mcdr_code);
       }
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4015,7 +4022,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       reffail = _jit.x.pc;
-      (void)jit_jmpi(bad_vector_length_code);
+      (void)jit_calli(bad_vector_length_code);
 
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4045,7 +4052,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       reffail = _jit.x.pc;
-      (void)jit_jmpi(bad_unbox_code);
+      (void)jit_calli(bad_unbox_code);
 
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4552,9 +4559,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       reffail = _jit.x.pc;
       __END_TINY_JUMPS__(1);
       if (set_mcar)
-        (void)jit_jmpi(bad_set_mcar_code);
+        (void)jit_calli(bad_set_mcar_code);
       else
-        (void)jit_jmpi(bad_set_mcdr_code);
+        (void)jit_calli(bad_set_mcdr_code);
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
@@ -6443,32 +6450,36 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** bad_[m]{car,cdr,...}_code *** */
   /* Bad argument is in R0 for car/cdr, R2 otherwise */
   for (i = 0; i < 8; i++) {
+    void *code;
+    
+    code = jit_get_ip().ptr;
     switch (i) {
     case 0:
-      bad_car_code = jit_get_ip().ptr;
+      bad_car_code = code;
       break;
     case 1:
-      bad_cdr_code = jit_get_ip().ptr;
+      bad_cdr_code = code;
       break;
     case 2:
-      bad_caar_code = jit_get_ip().ptr;
+      bad_caar_code = code;
       break;
     case 3:
-      bad_cadr_code = jit_get_ip().ptr;
+      bad_cadr_code = code;
       break;
     case 4:
-      bad_cdar_code = jit_get_ip().ptr;
+      bad_cdar_code = code;
       break;
     case 5:
-      bad_cddr_code = jit_get_ip().ptr;      
+      bad_cddr_code = code;      
       break;
     case 6:
-      bad_mcar_code = jit_get_ip().ptr;
+      bad_mcar_code = code;
       break;
     case 7:
-      bad_mcdr_code = jit_get_ip().ptr;
+      bad_mcdr_code = code;
       break;
     }
+    mz_prolog(JIT_R1);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
     if ((i < 2) || (i > 5)) {
@@ -6509,19 +6520,24 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     CHECK_LIMIT();
+
+    register_sub_func(jitter, code, scheme_false);
   }
 
   /* *** bad_set_{car,cdr}_code *** */
   /* Bad argument is in R0, other is in R1 */
   for (i = 0; i < 2; i++) {
+    void *code;
+    code = jit_get_ip().ptr;
     switch (i) {
     case 0:
-      bad_set_mcar_code = jit_get_ip().ptr;
+      bad_set_mcar_code = code;
       break;
     case 1:
-      bad_set_mcdr_code = jit_get_ip().ptr;
+      bad_set_mcdr_code = code;
       break;
     }
+    mz_prolog(JIT_R1);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
     CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
@@ -6541,29 +6557,34 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     CHECK_LIMIT();
+    register_sub_func(jitter, code, scheme_false);
   }
 
   /* *** bad_unbox_code *** */
   /* R0 is argument */
   bad_unbox_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_unbox);
   CHECK_LIMIT();
+  register_sub_func(jitter, bad_unbox_code, scheme_false);
 
   /* *** bad_vector_length_code *** */
   /* R0 is argument */
   bad_vector_length_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_vector_length);
   CHECK_LIMIT();
+  register_sub_func(jitter, bad_vector_length_code, scheme_false);
 
   /* *** call_original_unary_arith_code *** */
   /* R0 is arg, R2 is code pointer, V1 is return address */
   for (i = 0; i < 3; i++) {
     int argc, j;
-    void *code, *code_end;
+    void *code;
     for (j = 0; j < 2; j++) {
       code = jit_get_ip().ptr;
       if (!i) {
@@ -6625,9 +6646,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       }
       CHECK_LIMIT();
 
-      code_end = jit_get_ip().ptr;
-      if (jitter->retain_start)
-        add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_void, 0);
+      register_sub_func(jitter, code, scheme_void);
     }
   }
 
