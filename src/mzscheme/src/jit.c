@@ -41,7 +41,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
 # include "unwind/libunwind.h"
 #endif
 
@@ -8113,12 +8113,13 @@ Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q;
   unsigned long stack_end, stack_start, halfway;
-  Get_Stack_Proc gs;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
   int set_next_push = 0, prev_had_name = 0;
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
   unw_cursor_t c;
+#else
+  Get_Stack_Proc gs;
 #endif
   int use_unw = 0;
 
@@ -8129,10 +8130,11 @@ Scheme_Object *scheme_native_stack_trace(void)
   check_stack();
 #endif
 
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
   unw_getcontext(&cx);
   unw_init_local(&c, &cx);
   use_unw = 1;
+  p = NULL;
 #else
   gs = (Get_Stack_Proc)get_stack_pointer_code;
   p = gs();
@@ -8161,22 +8163,31 @@ Scheme_Object *scheme_native_stack_trace(void)
   }
 
   while (1) {
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
-      p = unw_get_frame_pointer(&c);
-      q = unw_get_ip(&c);
+      q = (void *)unw_get_ip(&c);
+    } else {
+      q = NULL;
     }
 #endif
 
     if (!use_unw) {
       if (!(STK_COMP((unsigned long)p, stack_end)
-            && STK_COMP(stack_start, (unsigned long)p)))
-        break;
-      
+	    && STK_COMP(stack_start, (unsigned long)p)))
+	break;
       q = ((void **)p)[RETURN_ADDRESS_OFFSET];
     }
 
     name = find_symbol((unsigned long)q);
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    if (name && use_unw) {
+      use_unw = 0;
+      p = (void *)unw_get_frame_pointer(&c);
+      if (!(STK_COMP((unsigned long)p, stack_end)
+	    && STK_COMP(stack_start, (unsigned long)p)))
+	break;
+    }
+#endif
     if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
@@ -8250,16 +8261,16 @@ Scheme_Object *scheme_native_stack_trace(void)
 
     prev_had_name = !!name;
 
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
     if (use_unw) {
       if (name) {
         /* A JIT-generated function, so we unwind ourselves... */
         /* For now, once we cross into JIT world, stay there. */
-        use_uwn = 0;
+        use_unw = 0;
       } else {
         void *prev_q = q;
         unw_step(&c);
-        q = unw_get_ip(&c);
+        q = (void *)unw_get_ip(&c);
         if (q == prev_q)
           break;
       }

@@ -463,6 +463,7 @@ extern int unw_get_save_loc (unw_cursor_t *, int, unw_save_loc_t *);
 extern int unw_is_signal_frame (unw_cursor_t *);
 extern int unw_get_proc_name (unw_cursor_t *, char *, size_t, unw_word_t *);
 extern unw_word_t unw_get_ip(unw_cursor_t *);
+extern unw_word_t unw_get_frame_pointer(unw_cursor_t *);
 extern const char *unw_strerror (int);
 
 extern unw_addr_space_t unw_local_addr_space;

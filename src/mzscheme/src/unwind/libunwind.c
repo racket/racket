@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 
 #include "../../sconfig.h"
 
-#ifdef USE_DWARF_LIBUNWIND
+#ifdef MZ_USE_DWARF_LIBUNWIND
 
 #include <stddef.h>
 #include "libunwind_i.h"
@@ -2466,10 +2466,14 @@ int unw_step (unw_cursor_t *c)
 int unwi_debug_level = 100;
 #endif
 
-
 unw_word_t unw_get_ip(unw_cursor_t *c)
 {
   return tdep_get_ip(((struct cursor *)c));
+}
+
+unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
+{
+  return ((struct cursor *)c)->dwarf.loc[6].val;
 }
 
 #endif
