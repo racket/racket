@@ -695,12 +695,14 @@ struct cursor
 # define DWARF_FPREG_LOC(c,r)	(DWARF_LOC((unw_word_t)			     \
 				 tdep_uc_addr((c)->as_arg, (r)), 0))
 
+static void *safe_pointer(unw_word_t);
+
 static inline int
 dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
 {
   if (!DWARF_GET_LOC (loc))
     return -1;
-  *val = *(unw_fpreg_t *) DWARF_GET_LOC (loc);
+  *val = *(unw_fpreg_t *) safe_pointer(DWARF_GET_LOC (loc));
   return 0;
 }
 
@@ -709,7 +711,7 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
 {
   if (!DWARF_GET_LOC (loc))
     return -1;
-  *(unw_fpreg_t *) DWARF_GET_LOC (loc) = val;
+  *(unw_fpreg_t *) safe_pointer(DWARF_GET_LOC (loc)) = val;
   return 0;
 }
 
@@ -718,7 +720,7 @@ dwarf_get (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t *val)
 {
   if (!DWARF_GET_LOC (loc))
     return -1;
-  *val = *(unw_word_t *) DWARF_GET_LOC (loc);
+  *val = *(unw_word_t *) safe_pointer(DWARF_GET_LOC (loc));
   return 0;
 }
 
@@ -727,7 +729,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 {
   if (!DWARF_GET_LOC (loc))
     return -1;
-  *(unw_word_t *) DWARF_GET_LOC (loc) = val;
+  *(unw_word_t *) safe_pointer(DWARF_GET_LOC (loc)) = val;
   return 0;
 }
 

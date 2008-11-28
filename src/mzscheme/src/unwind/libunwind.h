@@ -476,6 +476,9 @@ void unw_manual_step(unw_cursor_t *_c,
   
 extern unw_addr_space_t unw_local_addr_space;
 
+extern int unw_reset_bad_ptr_flag();
+extern void unw_set_safe_pointer_range(unw_word_t s, unw_word_t e);
+
 #define unw_tdep_is_fpreg		UNW_ARCH_OBJ(is_fpreg)
 extern int unw_tdep_is_fpreg (int);
 

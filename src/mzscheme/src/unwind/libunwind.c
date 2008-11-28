@@ -2462,6 +2462,35 @@ int unw_step (unw_cursor_t *c)
   return dwarf_step(&((struct cursor *)c)->dwarf);
 }
 
+static int saw_bad_ptr = 0;
+static char safe_space[8];
+static unw_word_t safe_start_address, safe_end_address;
+
+void unw_set_safe_pointer_range(unw_word_t s, unw_word_t e)
+{
+  safe_start_address = s;
+  safe_end_address = e;
+}
+
+int unw_reset_bad_ptr_flag()
+{
+  int v = saw_bad_ptr;
+  saw_bad_ptr = 0;
+  return v;
+}
+
+static void *safe_pointer(unw_word_t p)
+{
+  if (safe_start_address != safe_end_address)
+    if ((p < safe_start_address)
+	|| (p >= safe_end_address)) {
+      saw_bad_ptr = 1;
+      return safe_space;
+    }
+
+  return (void *)p;
+}
+
 #if UNW_DEBUG
 int unwi_debug_level = 100;
 #endif
@@ -2473,7 +2502,7 @@ unw_word_t unw_get_ip(unw_cursor_t *c)
 
 unw_word_t unw_get_frame_pointer(unw_cursor_t *c)
 {
-  return *(unw_word_t *)((struct cursor *)c)->dwarf.loc[6 /* = BP */].val;
+  return *(unw_word_t *)safe_pointer(((struct cursor *)c)->dwarf.loc[6 /* = BP */].val);
 }
 
 void unw_manual_step(unw_cursor_t *_c, 
@@ -2493,8 +2522,8 @@ void unw_manual_step(unw_cursor_t *_c,
   c->dwarf.loc[13].val = (unw_word_t)r13_addr;
   c->dwarf.loc[16].val = (unw_word_t)ip_addr;
 
-  c->dwarf.ip = *(unw_word_t *)ip_addr;
-  c->dwarf.cfa = *(unw_word_t *)sp_addr;
+  c->dwarf.ip = *(unw_word_t *)safe_pointer(ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer(sp_addr);
   c->dwarf.ret_addr_column = RIP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;

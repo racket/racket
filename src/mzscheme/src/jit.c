@@ -8178,6 +8178,11 @@ Scheme_Object *scheme_native_stack_trace(void)
     tail = scheme_null;
   }
 
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_set_safe_pointer_range(stack_start, stack_end);
+  unw_reset_bad_ptr_flag();
+#endif
+
   halfway = STK_DIFF(stack_end, (unsigned long)p) / 2;
   if (halfway < CACHE_STACK_MIN_TRIGGER)
     halfway = stack_end;
@@ -8306,7 +8311,8 @@ Scheme_Object *scheme_native_stack_trace(void)
         void *prev_q = q;
         unw_step(&c);
         q = (void *)unw_get_ip(&c);
-        if (q == prev_q)
+        if ((q == prev_q)
+	    || unw_reset_bad_ptr_flag())
           break;
       }
     }
