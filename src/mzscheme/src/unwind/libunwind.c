@@ -1759,26 +1759,6 @@ apply:
   return 0;
 }
 
-/* The proc-info must be valid for IP before this routine can be
-   called.  */
-HIDDEN int
-dwarf_create_state_record (struct dwarf_cursor *c, dwarf_state_record_t *sr)
-{
-  return create_state_record_for (c, sr, c->ip);
-}
-
-HIDDEN int
-dwarf_make_proc_info (struct dwarf_cursor *c)
-{
-#if 0
-  if (c->as->caching_policy == UNW_CACHE_NONE
-      || get_cached_proc_info (c) < 0)
-#endif
-    /* Lookup it up the slow way... */
-    return fetch_proc_info (c, c->ip, 0);
-  return 0;
-}
-
 HIDDEN int
 dwarf_step (struct dwarf_cursor *c)
 {
@@ -2130,12 +2110,6 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
     return -UNW_ENOINFO;
 
   return 0;
-}
-
-void
-dwarf_put_unwind_info (unw_addr_space_t as, unw_proc_info_t *pi, void *arg)
-{
-  return;	/* always a nop */
 }
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
@@ -2522,8 +2496,8 @@ void unw_manual_step(unw_cursor_t *_c,
   c->dwarf.loc[13].val = (unw_word_t)r13_addr;
   c->dwarf.loc[16].val = (unw_word_t)ip_addr;
 
-  c->dwarf.ip = *(unw_word_t *)safe_pointer(ip_addr);
-  c->dwarf.cfa = *(unw_word_t *)safe_pointer(sp_addr);
+  c->dwarf.ip = *(unw_word_t *)safe_pointer((unw_word_t)ip_addr);
+  c->dwarf.cfa = *(unw_word_t *)safe_pointer((unw_word_t)sp_addr);
   c->dwarf.ret_addr_column = RIP;
   c->dwarf.pi_valid = 0;
   c->dwarf.hint = 0;

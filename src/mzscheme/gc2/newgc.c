@@ -707,8 +707,6 @@ long GC_initial_word(int sizeb)
   info.size = (sizeb >> gcLOG_WORD_SIZE);
   memcpy(&w, &info, sizeof(struct objhead));
 
-  ((struct objhead*)&w)->size = (sizeb >> gcLOG_WORD_SIZE);
-
   return w;
 }
 

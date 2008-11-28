@@ -621,7 +621,6 @@ struct dwarf_rs_cache
 #define dwarf_read_encoded_pointer	UNW_OBJ (dwarf_read_encoded_pointer)
 #define dwarf_step			UNW_OBJ (dwarf_step)
 
-HIDDEN int dwarf_init (void);
 HIDDEN int dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 				 unw_proc_info_t *pi,
 				 int need_unwind_info, void *arg);
@@ -630,8 +629,6 @@ HIDDEN int dwarf_search_unwind_table (unw_addr_space_t as,
 				      unw_dyn_info_t *di,
 				      unw_proc_info_t *pi,
 				      int need_unwind_info, void *arg);
-HIDDEN void dwarf_put_unwind_info (unw_addr_space_t as,
-				   unw_proc_info_t *pi, void *arg);
 HIDDEN int dwarf_eval_expr (struct dwarf_cursor *c, unw_word_t *addr,
 			    unw_word_t len, unw_word_t *valp,
 			    int *is_register);
@@ -642,9 +639,6 @@ HIDDEN int dwarf_extract_proc_info_from_fde (unw_addr_space_t as,
 					     int need_unwind_info,
 					     void *arg);
 HIDDEN int dwarf_find_save_locs (struct dwarf_cursor *c);
-HIDDEN int dwarf_create_state_record (struct dwarf_cursor *c,
-				      dwarf_state_record_t *sr);
-HIDDEN int dwarf_make_proc_info (struct dwarf_cursor *c);
 HIDDEN int dwarf_read_encoded_pointer (unw_addr_space_t as,
 				       unw_accessors_t *a,
 				       unw_word_t *addr,
