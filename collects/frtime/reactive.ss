@@ -1,7 +1,6 @@
 (module reactive "mzscheme-utils.ss"
   (require "lang-ext.ss")
   (require "frp-snip.ss")
-  (require "ft-qq.ss")
   (require frtime/list)
   (require frtime/etc)
   (require (as-is:unchecked "frp-core.ss"
@@ -25,5 +24,4 @@
            (all-from frtime/etc)
 	   (all-from "mzscheme-utils.ss")
            (all-from-except "lang-ext.ss" lift)
-           (all-from "frp-snip.ss")
-           (all-from "ft-qq.ss")))
+           (all-from "frp-snip.ss")))

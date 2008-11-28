@@ -166,7 +166,7 @@
    raise raise-exceptions raise-type-error error exit let/ec
 
    ;; no equiv because I haven't completely thought through these
-   lambda quote quasiquote unquote unquote-splicing make-parameter parameterize
+   lambda quote unquote unquote-splicing make-parameter parameterize
    procedure-arity-includes? dynamic-require)
 
   (provide #%app #%top #%datum require require-for-syntax provide define)

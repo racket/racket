@@ -1,11 +1,9 @@
 (module mzscheme-core mzscheme
-  ;(require (all-except mzscheme provide module if require letrec null?)
-           ;mzlib/list)
   (require-for-syntax frtime/struct mzlib/list)
   (require mzlib/list
            frtime/frp-core
            (only srfi/43/vector-lib vector-any)
-           (only frtime/lang-ext lift new-cell switch ==> changes)
+           (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
            (only mzlib/etc build-vector rec build-list opt-lambda identity))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -23,10 +21,6 @@
          ...
          expr ...)]))
   
-  ;(define-syntax frp:match
-  ;  (syntax-rules ()
-  ;    [(_ expr clause ...) (lift #t (match-lambda clause ...) expr)]))
-  
   (define (->boolean x)
     (if x #t #f))
   
@@ -42,7 +36,6 @@
       [(_ test-exp then-exp else-exp undef-exp)
        (super-lift
         (lambda (b)
-          ;(printf "~n\t******\tIF CONDITION IS ~a~n" b)
           (cond
             [(undefined? b) undef-exp]
             [b then-exp]
@@ -93,21 +86,6 @@
                       (map translate-clause (syntax->list #'(clause ...)))])
          #'(case-lambda
              new-clause ...))]))
-  #|
-  (define (split-list acc lst)
-    (if (null? (cdr lst))
-        (values acc lst)
-        (split-list (append acc (list (car lst))) (cdr lst))))
-  
-  (define (frp:apply fn . args)
-    (let-values ([(first-args rest-args) (split-list () args)])
-      (if (behavior? rest-args)
-          (super-lift
-           (lambda (rest-args)
-             (apply apply fn (append first-args rest-args)))
-           args)
-          (apply apply fn (append first-args rest-args)))))
-  |#
   
   (define any-nested-reactivity?
     (opt-lambda (obj [mem empty])
@@ -141,7 +119,8 @@
          [(absent) (hash-table-put! deps obj 'new)]
          [(old)    (hash-table-put! deps obj 'alive)]
          [(new)    (void)])
-       (deep-value-now/update-deps (signal-value obj) deps table)]
+       (deep-value-now/update-deps (signal-value obj) deps
+                                   (cons (list obj (signal-value obj)) table))]
       [(cons? obj)
        (let* ([result (cons #f #f)]
               [new-table (cons (list obj result) table)]
@@ -178,48 +157,9 @@
                result)))]
       [else obj]))
   
-  (define (deep-value-now obj table)
-    (cond
-      [(assq obj table) => second]
-      [(behavior? obj)
-       (deep-value-now (signal-value obj) table)]
-      [(cons? obj)
-       (let* ([result (cons #f #f)]
-              [new-table (cons (list obj result) table)]
-              [car-val (deep-value-now (car obj) new-table)]
-              [cdr-val (deep-value-now (cdr obj) new-table)])
-         (if (and (eq? car-val (car obj))
-                  (eq? cdr-val (cdr obj)))
-             obj
-             (cons car-val cdr-val)))]
-      ; won't work in the presence of super structs or immutable fields
-      [(struct? obj)
-       (let*-values ([(info skipped) (struct-info obj)]
-                     [(name init-k auto-k acc mut! immut sup skipped?) (struct-type-info info)]
-                     [(ctor) (struct-type-make-constructor info)]
-                     [(indices) (build-list init-k identity)]
-                     [(result) (apply ctor (build-list init-k (lambda (i) #f)))]
-                     [(new-table) (cons (list obj result) table)]
-                     [(elts) (build-list init-k (lambda (i)
-                                                  (deep-value-now (acc obj i) new-table)))])
-         (if (andmap (lambda (i e) (eq? (acc obj i) e)) indices elts)
-             obj
-             (begin
-               (for-each (lambda (i e) (mut! result i e)) indices elts)
-               result)))]
-      [(vector? obj)
-       (let* ([len (vector-length obj)]
-              [indices (build-list len identity)]
-              [result (build-vector len (lambda (_) #f))]
-              [new-table (cons (list obj result) table)]
-              [elts (build-list len (lambda (i)
-                                      (deep-value-now (vector-ref obj i) new-table)))])
-         (if (andmap (lambda (i e) (eq? (vector-ref obj i) e)) indices elts)
-             obj
-             (begin
-               (for-each (lambda (i e) (vector-set! result i e)) indices elts)
-               result)))]
-      [else obj]))
+  (define (public-dvn obj)
+    (do-in-manager-after
+     (deep-value-now obj empty)))
 
   (define any-spinal-reactivity?
     (opt-lambda (lst [mem empty])
@@ -261,8 +201,7 @@
                                 (iq-enqueue rtn))]
                       [(alive) (hash-table-put! deps k 'old)]
                       [(old)   (hash-table-remove! deps k)
-                               (unregister rtn k)])))
-                 #;(printf "count = ~a~n" (hash-table-count deps))))))
+                               (unregister rtn k)])))))))
           (do-in-manager
            (iq-enqueue rtn))
           rtn)
@@ -284,8 +223,7 @@
                            (register rtn k)]
                   [(alive) (hash-table-put! deps k 'old)]
                   [(old)   (hash-table-remove! deps k)
-                           (unregister rtn k)])))
-             #;(printf "count = ~a~n" (hash-table-count deps))))))
+                           (unregister rtn k)])))))))
       (do-in-manager
        (iq-enqueue rtn))
       rtn))
@@ -299,7 +237,6 @@
            (begin0
              (let/ec esc
                (begin0
-                 ;;(with-handlers ([exn:fail? (lambda (exn) #f)])
                  (proc (lambda (obj)
                          (if (behavior? obj)
                              (begin
@@ -320,8 +257,7 @@
                     (case v
                       [(new alive) (hash-table-put! deps k 'old)]
                       [(old)   (hash-table-remove! deps k)
-                               (unregister rtn k)])))
-                 #;(printf "count = ~a~n" (hash-table-count deps))))))))
+                               (unregister rtn k)])))))))))
       (iq-enqueue rtn)
       rtn))
   
@@ -334,29 +270,14 @@
   ;; CONS
   
   
-  (define (frp:cons f r)
-    (cons f r)
-    #;(lift #f cons f r)
-    #;(if (or (behavior? f) (behavior? r))
-        (procs->signal:compound
-         cons
-         (lambda (p i)
-           (if (zero? i)
-               (lambda (v) (set-car! p v))
-               (lambda (v) (set-cdr! p v))))
-         f r)
-        (cons f r)))
+  (define frp:cons cons)
   
   (define (make-accessor acc)
     (lambda (v)
       (let loop ([v v])
         (cond
           [(signal:compound? v) (acc (signal:compound-content v))]
-          [(signal? v) #;(printf "access to ~a in ~a~n" acc
-                                 (value-now/no-copy v))
-                       #;(lift #t acc v)
-                       #;(switch ((changes v) . ==> . acc) (acc (value-now v)))
-                       (super-lift acc v)]
+          [(signal? v) (super-lift acc v)]
           [(signal:switching? v) (super-lift
                                   (lambda (_)
                                     (loop (unbox (signal:switching-current v))))
@@ -390,10 +311,7 @@
          [(empty? lst) (ef)]
          [else (error "list-match: expected a list, got ~a" lst)]))
      lst))
-  
-  #;(define (frp:append . args)
-    (apply lift #t append args))
-  
+    
   (define frp:append
     (case-lambda
       [() ()]
@@ -401,18 +319,9 @@
       [(lst1 lst2 . lsts)
        (list-match lst1
                    (lambda (f r) (cons f (apply frp:append r lst2 lsts)))
-                   (lambda () (apply frp:append lst2 lsts)))                          
-       #;(frp:if (frp:empty? lst1)
-               (apply frp:append lst2 lsts)
-               (frp:cons (frp:car lst1)
-                         (apply frp:append (frp:cdr lst1) lst2 lsts)))]))
+                   (lambda () (apply frp:append lst2 lsts)))]))
   
-  (define frp:list list
-    #;(lambda elts
-     (frp:if (frp:empty? elts)
-              '()
-              (frp:cons (frp:car elts)
-                        (apply frp:list (frp:cdr elts))))))
+  (define frp:list list)
   
   (define frp:list*
     (lambda elts
@@ -426,7 +335,6 @@
   (define (frp:list? itm)
     (if (signal:compound? itm)
         (let ([ctnt (signal:compound-content itm)])
-          ;        (let ([ctnt (value-now itm)])
           (if (cons? ctnt)
               (frp:list? (cdr ctnt))
               #f))
@@ -442,23 +350,10 @@
   
   
   (define frp:vector vector)
-  #;(define (frp:vector . args)
-    (if (ormap behavior? args)
-        (apply procs->signal:compound
-               vector
-               (lambda (vec idx)
-                 (lambda (x)
-                   (vector-set! vec idx x)))
-               args)        
-        (apply vector args)))
   
   (define (frp:vector-ref v i)
     (cond
-      [(behavior? v) (super-lift (lambda (v) (frp:vector-ref v i)) v)
-       #;(switch ((changes v) . ==> . (lambda (vv) (vector-ref vv i)))
-                           (vector-ref (value-now v) i)) ;; rewrite as super-lift
-                           #;(lift #t vector-ref v i)]
-      #;[(signal:compound? v) (vector-ref (signal:compound-content v) i)]
+      [(behavior? v) (super-lift (lambda (v) (frp:vector-ref v i)) v)]
       [else (lift #t vector-ref v i)]))
   
   
@@ -472,16 +367,7 @@
                          args)])
       (values
        desc
-       #;(lambda fields
-         (if (ormap behavior? fields)
-             (apply procs->signal:compound
-                    ctor
-                    (lambda (strct idx)
-                      (lambda (val)
-                        (mut strct idx val)))
-                    fields)
-             (apply ctor fields)))
-         ctor
+       ctor
        (lambda (v) (if (signal:compound? v)
                        (pred (value-now/no-copy v))
                        (lift #t pred v)))
@@ -646,14 +532,13 @@
            #%top-interaction
            raise-reactivity
            raise-list-for-apply
-           deep-value-now
+           (rename public-dvn deep-value-now)
            any-nested-reactivity?
            compound-lift
            list-match
            (rename frp:if if)
            (rename frp:lambda lambda)
            (rename frp:case-lambda case-lambda)
-           ;(rename frp:apply apply)
            (rename frp:letrec letrec)
            (rename frp:cons cons)
            (rename frp:car car)
