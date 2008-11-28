@@ -6558,7 +6558,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       bad_set_mcdr_code = code;
       break;
     }
-    mz_prolog(JIT_R1);
+    mz_prolog(JIT_R2);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
     CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
