@@ -1470,6 +1470,9 @@ rs_lookup (struct dwarf_rs_cache *cache, struct dwarf_cursor *c)
         }
       if (rs->coll_chain >= DWARF_UNW_HASH_SIZE)
         return 0;
+      if (!rs->coll_chain)
+        /* Something went wrong */
+        return 0;
       rs = cache->buckets + rs->coll_chain;
     }
 }
