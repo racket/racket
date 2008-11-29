@@ -65,12 +65,12 @@
 
 (test (pick-from-list '(a b c) (make-random 1)) 'b)
 
-(test (pick-number 3 (make-random .5)) 2)
-(test (pick-number 109 (make-random 0 0 .5)) -6)
-(test (pick-number 509 (make-random 0 0 1 .5 .25)) 3/7)
-(test (pick-number 1009 (make-random 0 0 0 .5 1 .5)) 6.0)
-(test (pick-number 2009 (make-random 0 0 0 0 2 .5 1 .5 0 0 .5))
-      (make-rectangular 6.0 -6))
+(test (pick-number 24 (make-random 1/5)) 3)
+(test (pick-number 224 (make-random 0 0 1/5)) -5)
+(test (pick-number 524 (make-random 0 0 1 1/5 1/5)) 3/4)
+(test (pick-number 1624 (make-random 0 0 0 .5 1 .5)) 3.0)
+(test (pick-number 2624 (make-random 0 0 0 0 1 1 1/5 1/5 2 .5 0 .5))
+      (make-rectangular 7/8 -3.0))
 
 (let* ([lits '("bcd" "cbd")]
        [chars (sort (unique-chars lits) char<=?)])
@@ -101,7 +101,8 @@
            (make-exn-not-raised))))]))
 
 (define (patterns . selectors) 
-  (map (λ (selector) (λ (prods . _) (selector prods))) selectors))
+  (map (λ (selector) (λ (name prods vars size) (list (selector prods))))
+       selectors))
 
 (define (iterator name items)
   (let ([bi (box items)])
@@ -124,13 +125,18 @@
   (define-syntax decision
     (syntax-rules ()
       [(_ d) (if (procedure? d) (λ () d) (iterator (quote d) d))]))
-  (unit (import) (export decisions^)
-        (define next-variable-decision (decision var))
-        (define next-non-terminal-decision (decision nt))
-        (define next-number-decision (decision num))
-        (define next-string-decision (decision str))
-        (define next-any-decision (decision any))
-        (define next-sequence-decision (decision seq))))
+  (λ (lang)
+    (unit (import) (export decisions^)
+          (define next-variable-decision (decision var))
+          (define next-non-terminal-decision
+            (if (procedure? nt) 
+                (let ([next (nt lang)])
+                  (λ () next))
+                (iterator 'nt nt)))
+          (define next-number-decision (decision num))
+          (define next-string-decision (decision str))
+          (define next-any-decision (decision any))
+          (define next-sequence-decision (decision seq)))))
 
 (let ()
   (define-language lc
@@ -152,22 +158,13 @@
     (decisions #:var (list (λ _ 'x) (λ _ 'y)))) 
    '(x x y y))
   
-  ;; Minimum rhs is chosen with zero size
-  (test 
-   (let/ec k
-     (generate/decisions 
-      lc e 0 0
-      (decisions #:nt (list (λ (prods . _) (k (map rhs-pattern prods))))))) 
-   '(x))
-  
-  ;; Size decremented
-  (let ([size 5])
-    (test 
-     (let/ec k
-       (generate/decisions 
-        lc e size 0
-        (decisions #:nt (list (λ (prods . _) (cadr prods)) (λ (p b s) (k s)))))) 
-     (sub1 size))))
+  ; After choosing (e e), size decremented forces each e to x.
+  (test
+   (generate/decisions 
+    lc e 1 0
+    (decisions #:nt (patterns first)
+               #:var (list (λ _ 'x) (λ _ 'y))))
+   '(x y)))
 
 ;; #:binds
 (let ()
@@ -230,7 +227,7 @@
   (test (generate/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
   (test (exn:fail-message (generate lang e 5)) 
-        #rx"generate: unable to generate pattern \\(n_1 ..._!_1 n_2 ..._!_1 \\(n_1 n_2\\) ..._3\\)")
+        #rx"generate: unable to generate pattern e")
   (test (generate/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate/decisions lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
                   (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 4)
@@ -460,6 +457,9 @@
                              #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
 
+; preferred productions
+
+
 ;; current-error-port-output : (-> (-> any) string)
 (define (current-error-port-output thunk)
   (let ([p (open-output-string)])
@@ -484,7 +484,7 @@
   (test (current-error-port-output (λ () (check lang d 2 (error 'pred-raised))))
         "failed after 1 attempts:\n5\n"))
 
-;; check-metafunction
+;; check-metafunction-contract
 (let ()
   (define-language empty)
   (define-metafunction empty
@@ -504,19 +504,22 @@
     [(i any ...) (any ...)])
   
   ;; Dom(f) < Ctc(f)
-  (test (current-error-port-output (λ () (check-metafunction f (decisions #:num (list (λ _ 2) (λ _ 5))))))
+  (test (current-error-port-output 
+         (λ () (check-metafunction-contract f (decisions #:num (list (λ _ 2) (λ _ 5))))))
         "failed after 1 attempts:\n(5)\n")
   ;; Rng(f) > Codom(f)
-  (test (current-error-port-output (λ () (check-metafunction f (decisions #:num (list (λ _ 3))))))
+  (test (current-error-port-output
+         (λ () (check-metafunction-contract f (decisions #:num (list (λ _ 3))))))
         "failed after 1 attempts:\n(3)\n")
   ;; LHS matches multiple ways
-  (test (current-error-port-output (λ () (check-metafunction g (decisions #:num (list (λ _ 1) (λ _ 1))
-                                                                          #:seq (list (λ _ 2))))))
+  (test (current-error-port-output
+         (λ () (check-metafunction-contract g (decisions #:num (list (λ _ 1) (λ _ 1))
+                                                         #:seq (list (λ _ 2))))))
         "failed after 1 attempts:\n(1 1)\n")
   ;; OK -- generated from Dom(h)
-  (test (check-metafunction h) #t)
+  (test (check-metafunction-contract h) #t)
   ;; OK -- generated from pattern (any ...)
-  (test (check-metafunction i) #t))
+  (test (check-metafunction-contract i) #t))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
