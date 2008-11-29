@@ -585,7 +585,8 @@ static void ExtensionCallback(NavEventCallbackMessage callBackSelector,
     }
     break;
   case kNavCBStart:
-    {
+    if (0) {
+      /* No longer needed */
       EventTypeSpec spec[1];
       spec[0].eventClass = kEventClassKeyboard;
       spec[0].eventKind = kEventRawKeyDown;
@@ -638,6 +639,40 @@ static char *GetNthPath(NavReplyRecord *reply, int index)
 
 static NavEventUPP extProc = NewNavEventUPP((NavEventProcPtr)ExtensionCallback);
 
+
+static WindowPtr extract_sheet_parent(wxWindow *parent)
+{
+  if (parent) {
+    wxFrame *f;
+  
+    if (wxSubType(parent->__type, wxTYPE_FRAME)) {
+      f = (wxFrame *)parent;
+    } else if (wxSubType(parent->__type, wxTYPE_DIALOG_BOX)) {
+      f = (wxFrame *)parent->GetParent();
+    } else
+      f = NULL;
+    
+    if (f)
+      f = f->GetSheetParent();
+    
+    if (f) {
+      CGrafPtr graf;
+      wxMacDC *mdc;
+      WindowPtr win;
+      mdc = f->MacDC();
+      graf = mdc->macGrafPort();
+      win = GetWindowFromPort(graf);
+      if (IsWindowVisible(win))
+        return win;
+    }
+  }
+
+  return NULL;
+}
+	
+
+extern "C" void wx_set_nav_file_types(NavDialogRef dlg, int cnt, char **exts, char *def_ext);
+
 char *wxFileSelector(char *message, char *default_path,
                      char *default_filename, char *default_extension,
                      char *wildcard, int flags,
@@ -652,6 +687,8 @@ char *wxFileSelector(char *message, char *default_path,
     NavUserAction action;
     NavReplyRecord *reply;
     char *temp;
+    char **acceptable_extensions = NULL;
+    int num_acceptable = 0, single_type = 0;
 
     if (!navinited) {
       if (!NavLoad()) {
@@ -691,10 +728,14 @@ char *wxFileSelector(char *message, char *default_path,
 	if (s2) {
 	  int len, flen;
 	  len = strlen(default_extension);
-	  if ((s1[0] == '*')
+          if ((s1[0] == '*')
 	      && (s1[1] == '.')
 	      && ((s2 - s1) == (len + 2))
-	      && !strncmp(default_extension, s1+2, len)) {
+	      && !strncmp(default_extension, s1+2, len)
+              && (!s1[len+2]
+                  || ((s1[len+2] == '|')
+                      && !s1[len+3]))) {
+            single_type = 1;
 	    dialogOptions.optionFlags |= kNavPreserveSaveFileExtension;
 	    /* Make sure initial name has specified extension: */
 	    if (!default_filename)
@@ -714,6 +755,44 @@ char *wxFileSelector(char *message, char *default_path,
 	  }
 	}
       }
+      
+      if (!single_type) {
+        /* Extract defaults */
+        int cnt = 0;
+        char **a, *ext;
+        s1 = wildcard;
+        while (s1) {
+          s1 = strchr(s1, '|');
+          if (s1) {
+            if ((s1[1] == '*')
+                && (s1[2] == '.')) {
+              cnt++;
+              s1 = strchr(s1 + 1, '|');
+              if (s1) s1++;
+            } else
+              s1 = 0;
+          }
+        }
+        if (cnt) {
+          int i;
+          a = new WXGC_PTRS char*[cnt];
+          s1 = wildcard;
+          for (i = 0; i < cnt; i++) {
+            s1 = strchr(s1, '|');
+            s1 += 3;
+            s2 = strchr(s1, '|');
+            if (!s2)
+              s2 = s1 + strlen(s1);
+            ext = new WXGC_ATOMIC char[s2 - s1 + 1];
+            memcpy(ext, s1, s2 - s1);
+            ext[s2 - s1] = 0;
+            a[i] = ext;
+            s1 = s2 + 1;
+          }
+          acceptable_extensions = a;
+          num_acceptable = cnt;
+        }
+      }
     }
 
     if (default_filename)  {
@@ -723,30 +802,13 @@ char *wxFileSelector(char *message, char *default_path,
     cbi->has_parent = 1;
 
     if (parent) {
-      wxFrame *f;
-
-      if (wxSubType(parent->__type, wxTYPE_FRAME)) {
-	f = (wxFrame *)parent;
-      } else if (wxSubType(parent->__type, wxTYPE_DIALOG_BOX)) {
-	f = (wxFrame *)parent->GetParent();
-      } else
-	f = NULL;
-
-      if (f)
-	f = f->GetSheetParent();
-
-      if (f) {
-	CGrafPtr graf;
-	wxMacDC *mdc;
-	WindowPtr win;
-	mdc = f->MacDC();
-	graf = mdc->macGrafPort();
-	win = GetWindowFromPort(graf);
-	if (IsWindowVisible(win)) {
-	  dialogOptions.parentWindow = win;
-	  dialogOptions.modality = kWindowModalityWindowModal;
-	  cbi->has_parent = 1;
-	}
+      WindowPtr win;
+      win = extract_sheet_parent(parent);
+      
+      if (win) {
+        dialogOptions.parentWindow = win;
+        dialogOptions.modality = kWindowModalityWindowModal;
+        cbi->has_parent = 1;
       }
     }
 
@@ -767,6 +829,9 @@ char *wxFileSelector(char *message, char *default_path,
 				    extProc, cbi_sr,
 				    &outDialog);
       cbi->is_put = 1;
+      if (derr == noErr)
+        wx_set_nav_file_types(outDialog, num_acceptable, acceptable_extensions,
+                              default_extension);
     }
 
     cbi->dialog = outDialog;

@@ -118,21 +118,23 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
  to have an extension mapping @scheme[extension].
 
-Under Mac OS X, if @scheme[extension] is not @scheme[#f]
- and @scheme[filters] contains the single
- pattern @scheme[(string-append "*." extension)], then the result pathname is
- guaranteed to have an extension mapping @scheme[extension]. Otherwise,
- @scheme[extension] and @scheme[filters] are ignored.
+Under Mac OS X, if @scheme[extension] is not @scheme[#f], the returned
+ path will get a default extension if the user does not supply one.
+ If @scheme[filters] contains as @scheme["*.*"] pattern, then the user
+ can supply any extension that is recognized by the system; otherwise,
+ the extension on the returned path will be either @scheme[extension]
+ or @scheme[_other-extension] for any @scheme[(string-append "*."
+ _other-extension)] pattern in @scheme[filters]. In particular, if the
+ only pattern in @scheme[filters] is empty or contains only
+ @scheme[(string-append "*." extension)], then the result pathname is
+ guaranteed to have an extension mapping @scheme[extension].
 
-The @scheme[extension] argument is ignored under X, and @scheme[filters]
- can be used to specify glob-patterns.
+The @scheme[extension] argument is ignored under X, and
+ @scheme[filters] can be used to specify glob-patterns.
 
-The @scheme[style] list is treated as for
-@scheme[get-file].
+The @scheme[style] list is treated as for @scheme[get-file].
 
 See also @scheme[path-dialog%].
-
-
 
 }
 
