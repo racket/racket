@@ -31,7 +31,7 @@ void wx_set_nav_file_types(NavDialogRef dlg, int cnt, char **exts, char *def_ext
     [sp setAllowedFileTypes:a];
     [sp setCanSelectHiddenExtension:TRUE];
     if (!allow_others)
-      sp.allowsOtherFileTypes = FALSE;
+      [sp setAllowsOtherFileTypes:FALSE];
     
     for (i = 0; i < j; i++) {
       [objs[i] release];
