@@ -396,14 +396,16 @@ exports of the module.
 @defproc[(syntax-local-get-shadower [id-stx identifier?]) identifier?]{
 
 Returns @scheme[id-stx] if no binding in the current expansion context
-shadows @scheme[id-stx], if @scheme[id-stx] has no module bindings in
-its lexical information, and if the current expansion context is not a
+shadows @scheme[id-stx] (ignoring unsealed @tech{internal-definition
+contexts}), if @scheme[id-stx] has no module bindings in its lexical
+information, and if the current expansion context is not a
 @tech{module context}.
 
 If a binding of @scheme[inner-identifier] shadows @scheme[id-stx], the
-result is the same as
-@scheme[(syntax-local-get-shadower inner-identifier)], except that it
-has the location and properties of @scheme[id-stx].
+result is the same as @scheme[(syntax-local-get-shadower
+inner-identifier)], except that it has the location and properties of
+@scheme[id-stx]. When searching for a shadowing binding, bindings from
+unsealed @tech{internal-definition contexts} are ignored.
 
 Otherwise, the result is the same as @scheme[id-stx] with its module
 bindings (if any) removed from its lexical information, and the
@@ -473,7 +475,7 @@ mark}. Multiple applications of the same
 and different result procedures use distinct marks.}
 
 @defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
-                                       [base-stx syntax?]
+                                       [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)
                                                     (syntax-local-phase-level)])
          (syntax? . -> . syntax?)]{
@@ -482,10 +484,10 @@ Produces a procedure that behaves like
 @scheme[syntax-local-introduce], but using the @tech{syntax marks} of
 @scheme[ext-stx] that are not shared with @scheme[base-stx].  If
 @scheme[ext-stx] does not extend the set of marks in @scheme[base-stx]
-but @scheme[ext-stx] has a module binding in the @tech{phase level}
-indicated by @scheme[phase-level], then any marks of @scheme[ext-stx]
-that would be needed to preserve its binding are not transferred in an
-introduction.
+or if @scheme[base-stx] is @scheme[#f], and if @scheme[ext-stx] has a
+module binding in the @tech{phase level} indicated by
+@scheme[phase-level], then any marks of @scheme[ext-stx] that would be
+needed to preserve its binding are not transferred in an introduction.
 
 This procedure is potentially useful when @scheme[_m-id] has a
 transformer binding that records some @scheme[_orig-id], and a use of
