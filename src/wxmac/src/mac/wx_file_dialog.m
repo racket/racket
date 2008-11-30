@@ -29,7 +29,7 @@ void wx_set_nav_file_types(NavDialogRef dlg, int cnt, char **exts, char *def_ext
     a = [NSArray arrayWithObjects:objs count:j];
 
     [sp setAllowedFileTypes:a];
-    sp.canSelectHiddenExtension = TRUE;
+    [sp setCanSelectHiddenExtension:TRUE];
     if (!allow_others)
       sp.allowsOtherFileTypes = FALSE;
     
