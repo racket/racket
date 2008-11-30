@@ -142,6 +142,7 @@
        [p (if horiz?
 	      this
 	      (let ([p (make-object wx-vertical-pane% #f proxy this null)])
+                (send p skip-subwindow-events? #t)
 		(send (send p area-parent) add-child p)
 		p))])
       (sequence
@@ -166,7 +167,9 @@
 				'(hide-hscroll))
 			    '(hide-vscroll hide-hscroll))))])
       (sequence
+        (send c skip-subwindow-events? #t)
 	(when l
+          (send l skip-subwindow-events? #t)
 	  (send l x-margin 0))
 	(send c set-x-margin 2)
 	(send c set-y-margin 2)
