@@ -118,16 +118,22 @@ Under Windows, if @scheme[extension] is not @scheme[#f], the returned path
  is @scheme[(string-append "*." extension)], then the result pathname is guaranteed
  to have an extension mapping @scheme[extension].
 
-Under Mac OS X, if @scheme[extension] is not @scheme[#f], the returned
- path will get a default extension if the user does not supply one.
- If @scheme[filters] contains as @scheme["*.*"] pattern, then the user
- can supply any extension that is recognized by the system; otherwise,
- the extension on the returned path will be either @scheme[extension]
- or @scheme[_other-extension] for any @scheme[(string-append "*."
- _other-extension)] pattern in @scheme[filters]. In particular, if the
- only pattern in @scheme[filters] is empty or contains only
- @scheme[(string-append "*." extension)], then the result pathname is
- guaranteed to have an extension mapping @scheme[extension].
+Under Mac OS X 10.5 and later, if @scheme[extension] is not
+ @scheme[#f], the returned path will get a default extension if the
+ user does not supply one.  If @scheme[filters] contains as
+ @scheme["*.*"] pattern, then the user can supply any extension that
+ is recognized by the system; otherwise, the extension on the returned
+ path will be either @scheme[extension] or @scheme[_other-extension]
+ for any @scheme[(string-append "*."  _other-extension)] pattern in
+ @scheme[filters]. In particular, if the only pattern in
+ @scheme[filters] is empty or contains only @scheme[(string-append
+ "*." extension)], then the result pathname is guaranteed to have an
+ extension mapping @scheme[extension].
+
+Under Mac OS X versions before 10.5, the returned path will get a
+ default extension only if @scheme[extension] is not @scheme[#f] and
+ @scheme[filters] contains only @scheme[(string-append "*."
+ extension)].
 
 The @scheme[extension] argument is ignored under X, and
  @scheme[filters] can be used to specify glob-patterns.
