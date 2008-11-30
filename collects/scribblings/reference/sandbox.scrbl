@@ -448,6 +448,12 @@ collection libraries (including
 @scheme[make-evalautor] for more information.}
 
 
+@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
+
+A parameter that determines the initial @scheme[(exit-handler)] for
+sandboxed evaluations.  The default handler simply throws an error.}
+
+
 @defparam[sandbox-network-guard proc
           (symbol?
            (or/c (and/c string? immutable?) #f)
