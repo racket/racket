@@ -575,6 +575,11 @@ Returns the currently active tab.
 
 }
 
+@defmethod[#:mode public-final (close-current-tab) void?]{
+  Closes the current tab, making some other tab visible.
+  If there is only one tab open, this method does nothing.
+}
+
 @defmethod[(get-definitions-canvas)
            (is-a?/c drscheme:unit:definitions-canvas%)]{
 

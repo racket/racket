@@ -1334,6 +1334,7 @@ module browser threading seems wrong.
         execute-callback
         get-current-tab
         open-in-new-tab
+        close-current-tab
         on-tab-change
         enable-evaluation
         disable-evaluation
@@ -1343,6 +1344,7 @@ module browser threading seems wrong.
         ensure-rep-shown
         ensure-rep-hidden
         ensure-defs-shown
+        
         
         get-language-menu
         register-toolbar-button
@@ -2505,7 +2507,7 @@ module browser threading seems wrong.
         (define/private (change-to-delta-tab dt)
           (change-to-nth-tab (modulo (+ (send current-tab get-i) dt) (length tabs))))
         
-        (define/private (close-current-tab)
+        (define/public-final (close-current-tab)
           (cond
             [(null? tabs) (void)]
             [(null? (cdr tabs)) (void)]
@@ -2528,6 +2530,7 @@ module browser threading seems wrong.
                                            [else (last tabs)])))
                         (loop (cdr l-tabs))))]))]))
         
+        ;; a helper private method for close-current-tab -- doesn't close an arbitrary tab.
         (define/private (close-tab tab)
           (cond
             [(send tab can-close?)
