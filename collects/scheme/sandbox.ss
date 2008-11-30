@@ -15,8 +15,9 @@
          sandbox-coverage-enabled
          sandbox-namespace-specs
          sandbox-override-collection-paths
-         sandbox-security-guard
          sandbox-path-permissions
+         sandbox-security-guard
+         sandbox-exit-handler
          sandbox-network-guard
          sandbox-make-inspector
          sandbox-make-logger
@@ -137,6 +138,11 @@
      (lambda args (apply (sandbox-network-guard) args)))))
 
 (define sandbox-security-guard (make-parameter default-sandbox-guard))
+
+(define (default-sandbox-exit-handler _)
+  (error 'exit "sandboxed code cannot exit"))
+
+(define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
 (define sandbox-make-inspector (make-parameter make-inspector))
 
@@ -594,7 +600,7 @@
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
     [current-security-guard (sandbox-security-guard)]
-    [exit-handler (lambda x (error 'exit "user code cannot exit"))]
+    [exit-handler (sandbox-exit-handler)]
     [current-inspector ((sandbox-make-inspector))]
     [current-logger ((sandbox-make-logger))]
     ;; This breaks because we need to load some libraries that are trusted
