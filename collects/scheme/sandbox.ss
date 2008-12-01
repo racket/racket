@@ -443,7 +443,7 @@
 (define-evaluator-messenger get-namespace 'namespace)
 
 (define (make-evaluator* init-hook require-perms program-maker)
-  (define cust          (make-custodian))
+  (define user-cust     (make-custodian))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -458,7 +458,7 @@
     (when user-thread
       (let ([t user-thread])
         (set! user-thread #f)
-        (custodian-shutdown-all cust)
+        (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
   (define (user-break)
@@ -567,7 +567,7 @@
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
-    [current-custodian cust]
+    [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
     [current-namespace (make-evaluation-namespace)]
     ;; set up the IO context
