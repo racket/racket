@@ -552,14 +552,17 @@
           [(output-port? out) out]
           [(eq? out 'pipe) (let-values ([(i o) (make-pipe)]) (set-out! i) o)]
           [(memq out '(bytes string))
-           (let* ([bytes? (eq? 'bytes out)]
-                  ;; the following doesn't really matter: they're the same
-                  [out ((if bytes? open-output-bytes open-output-string))])
+           (let* ([bytes? (eq? out 'bytes)]
+                  ;; create the port under the user's custodian
+                  [out (parameterize ([current-custodian user-cust])
+                         (call-in-nested-thread
+                          ;; this doesn't really matter: they're the same anyway
+                          (if bytes? open-output-bytes open-output-string)))])
              (set-out!
               (lambda ()
-                (parameterize ([current-custodian orig-cust])
-                  (let ([buf (get-output-bytes out #t)])
-                    (if bytes? buf (bytes->string/utf-8 buf #\?))))))
+                ;; this will run in the user context
+                (let ([buf (get-output-bytes out #t)])
+                  (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
   (parameterize* ; the order in these matters
