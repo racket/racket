@@ -3,7 +3,7 @@
 
 (Section 'sandbox)
 
-(require mzlib/sandbox)
+(require scheme/sandbox)
 
 (let ([ev void])
   (define (run thunk)
@@ -44,7 +44,7 @@
 
    ;; basic stuff, limits
    --top--
-   (set! ev (make-evaluator 'mzscheme '()
+   (set! ev (make-evaluator 'scheme/base
               (make-prog "(define x 1)"
                          "(define (id x) x)"
                          "(define (plus1 x) x)"
@@ -112,7 +112,7 @@
    (set! ev (parameterize ([sandbox-input "3\n"]
                            [sandbox-output 'string]
                            [sandbox-error-output current-output-port])
-              (make-evaluator 'mzscheme '() '(define x 123))))
+              (make-evaluator 'scheme/base '(define x 123))))
    --eval-- (printf "x = ~s\n" x) => (void)
    --top--  (get-output ev) => "x = 123\n"
    --eval-- (printf "x = ~s\n" x) => (void)
@@ -128,7 +128,7 @@
    --top--
    (set! ev (parameterize ([sandbox-output 'string]
                            [sandbox-error-output 'string])
-              (make-evaluator 'mzscheme '())))
+              (make-evaluator 'scheme/base)))
    --eval-- (begin (printf "a\n") (fprintf (current-error-port) "b\n"))
    --top--  (get-output ev) => "a\n"
             (get-error-output ev) => "b\n"
@@ -137,7 +137,7 @@
                            [sandbox-output 'bytes]
                            [sandbox-error-output current-output-port]
                            [sandbox-eval-limits '(0.25 10)])
-              (make-evaluator 'mzscheme '() '(define x 123))))
+              (make-evaluator 'scheme/base '(define x 123))))
    --eval--  (begin (printf "x = ~s\n" x)
                     (fprintf (current-error-port) "err\n"))
    --top--   (get-output ev) => #"x = 123\nerr\n"
@@ -163,7 +163,7 @@
    (let-values ([(i1 o1) (make-pipe)] [(i2 o2) (make-pipe)])
      ;; o1 -> i1 -ev-> o2 -> i2
      (set! ev (parameterize ([sandbox-input i1] [sandbox-output o2])
-                (make-evaluator 'mzscheme '() '(define x 123))))
+                (make-evaluator 'scheme/base '(define x 123))))
      (t --eval-- (printf "x = ~s\n" x) => (void)
         --top--  (read-line i2) => "x = 123"
         --eval-- (printf "x = ~s\n" x) => (void)
@@ -179,62 +179,63 @@
 
    ;; sexprs as a program
    --top--
-   (set! ev (make-evaluator 'mzscheme '() '(define id (lambda (x) x))))
+   (set! ev (make-evaluator 'scheme/base '(define id (lambda (x) x))))
    --eval--
    (id 123) => 123
    --top--
-   (set! ev (make-evaluator 'mzscheme '() '(define id (lambda (x) x))
-                                          '(define fooo 999)))
+   (set! ev (make-evaluator 'scheme/base '(define id (lambda (x) x))
+                                         '(define fooo 999)))
    --eval--
    (id fooo) => 999
 
    ;; test source locations too
    --top--
-   (make-evaluator 'mzscheme '() 0 1 2 '(define foo))
+   (make-evaluator 'scheme/base 0 1 2 '(define foo))
      =err> "program:4:0: define"
 
    ;; empty program for clean repls
    --top--
-   (set! ev (make-evaluator '(begin) '()))
+   (set! ev (make-evaluator '(begin)))
    --eval--
    (define x (+ 1 2 3)) => (void)
    x => 6
    (define x (+ x 10)) => (void)
    x => 16
    --top--
-   (set! ev (make-evaluator 'mzscheme '()))
+   (set! ev (make-evaluator 'scheme/base))
    --eval--
    (define x (+ 1 2 3)) => (void)
    x => 6
    (define x (+ x 10)) => (void)
    x => 16
    --top--
-   (set! ev (make-evaluator 'mzscheme '() '(define x (+ 1 2 3))))
+   (set! ev (make-evaluator 'scheme/base '(define x (+ 1 2 3))))
    --eval--
    (define x (+ x 10)) =err> "cannot re-define a constant"
 
    ;; whole program argument
    --top--
-   (set! ev (make-evaluator '(module foo mzscheme (define x 1))))
+   (set! ev (make-module-evaluator '(module foo scheme/base (define x 1))))
    --eval--
    x => 1
    --top--
-   (set! ev (make-evaluator '(module foo mzscheme (provide x) (define x 1))))
+   (set! ev (make-module-evaluator
+             '(module foo scheme/base (provide x) (define x 1))))
    --eval--
    x => 1
    (define x 2) =err> "cannot re-define a constant"
 
    ;; limited FS access, allowed for requires
    --top--
-   (let* ([tmp      (find-system-path 'temp-dir)]
-          [mzlib    (path->string (collection-path "mzlib"))]
-          [list-lib (path->string (build-path mzlib "list.ss"))]
-          [test-lib (path->string (build-path tmp "sandbox-test.ss"))])
+   (let* ([tmp       (find-system-path 'temp-dir)]
+          [schemelib (path->string (collection-path "scheme"))]
+          [list-lib  (path->string (build-path schemelib "list.ss"))]
+          [test-lib  (path->string (build-path tmp "sandbox-test.ss"))])
        (t --top--
-          (set! ev (make-evaluator 'mzscheme '()))
+          (set! ev (make-evaluator 'scheme/base))
           --eval--
           ;; reading from collects is allowed
-          (list (directory-list ,mzlib))
+          (list (directory-list ,schemelib))
           (file-exists? ,list-lib) => #t
           (input-port? (open-input-file ,list-lib)) => #t
           ;; writing is forbidden
@@ -242,15 +243,16 @@
           ;; reading from other places is forbidden
           (directory-list ,tmp) =err> "`read' access denied"
           ;; no network too
+          (require scheme/tcp)
           (tcp-listen 12345) =err> "network access denied"
           --top--
           ;; reading from a specified require is fine
           (with-output-to-file test-lib
             (lambda ()
-              (printf "~s\n" '(module sandbox-test mzscheme
+              (printf "~s\n" '(module sandbox-test scheme/base
                                 (define x 123) (provide x))))
             #:exists 'replace)
-          (set! ev (make-evaluator 'mzscheme `(,test-lib)))
+          (set! ev (make-evaluator 'scheme/base #:requires `(,test-lib)))
           --eval--
           x => 123
           (length (with-input-from-file ,test-lib read)) => 5
@@ -259,7 +261,7 @@
           --top--
           ;; should work also for module evaluators
           ;; --> NO!  Shouldn't make user code require whatever it wants
-          ;; (set! ev (make-evaluator `(module foo mzscheme
+          ;; (set! ev (make-evaluator `(module foo scheme/base
           ;;                             (require (file ,test-lib)))))
           ;; --eval--
           ;; x => 123
@@ -271,7 +273,7 @@
           (set! ev (parameterize ([sandbox-path-permissions
                                    `((read ,tmp)
                                      ,@(sandbox-path-permissions))])
-                     (make-evaluator 'mzscheme '())))
+                     (make-evaluator 'scheme/base)))
           --eval--
           (length (with-input-from-file ,test-lib read)) => 5
           (list? (directory-list ,tmp))
@@ -281,24 +283,24 @@
 
    ;; languages and requires
    --top--
-   (set! ev (make-evaluator 'r5rs '() "(define x (eq? 'x 'X))"))
+   (set! ev (make-evaluator '(special r5rs) "(define x (eq? 'x 'X))"))
    --eval--
    x => #t
    --top--
-   (set! ev (make-evaluator 'mzscheme '() "(define l null)"))
+   (set! ev (make-evaluator 'scheme/base "(define l null)"))
    --eval--
    (cond [null? l 0]) => 0
    (last-pair l) =err> "reference to an identifier"
    --top--
-   (set! ev (make-evaluator 'beginner '() (make-prog "(define l null)"
-                                                     "(define x 3.5)")))
+   (set! ev (make-evaluator '(special beginner)
+                            (make-prog "(define l null)" "(define x 3.5)")))
    --eval--
    (cond [null? l 0]) =err> "expected an open parenthesis"
    --top--
    (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
    (eq? (ev "6") (ev "(sub1 (* 2 x))"))
    --top--
-   (set! ev (make-evaluator 'mzscheme '(mzlib/list) '()))
+   (set! ev (make-evaluator 'scheme/base #:requires '(scheme/list)))
    --eval--
    (last-pair '(1 2 3)) => '(3)
    (last-pair null) =err> "expected argument of type"
@@ -306,7 +308,7 @@
    ;; coverage
    --top--
    (set! ev (parameterize ([sandbox-coverage-enabled #t])
-              (make-evaluator 'mzscheme '()
+              (make-evaluator 'scheme/base
                               (make-prog "(define (foo x) (+ x 1))"
                                          "(define (bar x) (+ x 2))"
                                          "(equal? (foo 3) 4)"))))
@@ -327,7 +329,7 @@
                                 (old)
                                 (compile-enforce-module-constants #f)
                                 (compile-allow-set!-undefined #t)))])
-              (make-evaluator 'mzscheme '() '(define x 123))))
+              (make-evaluator 'scheme/base '(define x 123))))
    --eval--
    (set! x 456) ; would be an error without the `enforce' parameter
    x => 456
