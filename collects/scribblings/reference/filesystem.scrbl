@@ -225,7 +225,7 @@ exception.}
 
 @defproc[(delete-file [path path-string?]) void?]{
 
-Feletes the file with path @scheme[path] if it exists, otherwise the
+Deletes the file with path @scheme[path] if it exists, otherwise the
 @exnraise[exn:fail:filesystem]. If @scheme[path] is a link, the link
 is deleted rather than the destination of the link.}
 
