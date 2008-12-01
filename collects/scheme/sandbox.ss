@@ -382,16 +382,14 @@
                     (lambda (x) (abort-current-continuation deftag x)))
                    (loop (car exprs) (cdr exprs))))))))))
 
-(define (evaluate-program program limits uncovered!)
+(define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
     (eval `(,#'#%require scheme/private/sandbox-coverage)))
-  ;; the actual evaluation happens under specified limits, if given
-  (let ([run (if (and (pair? program) (eq? 'begin (car program)))
-                 (lambda () (eval* (cdr program)))
-                 (lambda () (eval program)))]
-        [sec (and limits (car limits))]
-        [mb  (and limits (cadr limits))])
-    (if (or sec mb) (call-with-limits sec mb run) (run)))
+  ;; the actual evaluation happens under the specified limits
+  ((limit-thunk (lambda ()
+                  (if (and (pair? program) (eq? 'begin (car program)))
+                    (eval* (cdr program))
+                    (eval program)))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
@@ -453,7 +451,11 @@
   (define error-output  #f)
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
-  (define orig-cust (current-custodian))
+  (define orig-cust     (current-custodian))
+  (define (limit-thunk thunk)
+    (let* ([sec (and limits (car limits))]
+           [mb  (and limits (cadr limits))])
+      (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
   (define (user-kill)
     (when user-thread
       (let ([t user-thread])
@@ -471,7 +473,7 @@
       ;; now read and evaluate the input program
       (evaluate-program
        (if (procedure? program-maker) (program-maker) program-maker)
-       limits
+       limit-thunk
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
     ;; finally wait for interaction expressions
@@ -481,20 +483,15 @@
           (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
-            (let* ([run (if (evaluator-message? expr)
-                          (lambda ()
-                            (apply (evaluator-message-msg expr)
-                                   (evaluator-message-args expr)))
-                          (lambda ()
-                            (set! n (add1 n))
-                            (eval* (input->code (list expr) 'eval n))))]
-                   [sec (and limits (car limits))]
-                   [mb  (and limits (cadr limits))]
-                   [run (if (or sec mb)
-                          (lambda () (with-limits sec mb (run)))
-                          run)])
-              (channel-put result-ch
-                           (cons 'vals (call-with-values run list)))))
+            (define run
+              (limit-thunk (if (evaluator-message? expr)
+                             (lambda ()
+                               (apply (evaluator-message-msg expr)
+                                      (evaluator-message-args expr)))
+                             (lambda ()
+                               (set! n (add1 n))
+                               (eval* (input->code (list expr) 'eval n))))))
+            (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (user-eval expr)
     (let ([r (if user-thread
