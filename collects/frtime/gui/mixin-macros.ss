@@ -1,6 +1,5 @@
 (module mixin-macros frtime
-  (require mzlib/class)
-  
+  (require mzlib/class)  
   
   (define-syntax events->callbacks
     (lambda (stx)
@@ -47,10 +46,14 @@
                  (define name-e (event-receiver))
                  (define processed-events (processor name-e))
                  (super-new)
+                 (define ft-last-evt #f)
                  ;what about when the super call returns an error?
                  (define/override method-name
                    (lambda args 
-                     (send-event name-e args)
+                     (when (or (< (length args) 2)
+                               (and (not (eq? (cadr args) ft-last-evt))
+                                    (set! ft-last-evt (cadr args))))
+                       (send-event name-e args))
                      (super method-name . args)))
                  (define/public (g-name) processed-events))))])))
   

@@ -51,6 +51,7 @@ OBJS =  salloc.@LTO@ \
 	syntax.@LTO@ \
 	thread.@LTO@ \
 	type.@LTO@ \
+        unwind.@LTO@ \
 	vector.@LTO@  @EXTRA_GMP_OBJ@
 
 SRCS =  $(srcdir)/salloc.c \
@@ -92,6 +93,7 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/syntax.c \
 	$(srcdir)/thread.c \
 	$(srcdir)/type.c \
+	$(srcdir)/unwind/libunwind.c \
 	$(srcdir)/vector.c
 
 wrong:
@@ -222,6 +224,8 @@ thread.@LTO@: $(srcdir)/thread.c
 	$(CC) $(CFLAGS) -c $(srcdir)/thread.c -o thread.@LTO@
 type.@LTO@: $(srcdir)/type.c
 	$(CC) $(CFLAGS) -c $(srcdir)/type.c -o type.@LTO@
+unwind.@LTO@: $(srcdir)/unwind/libunwind.c $(srcdir)/unwind/libunwind.h $(srcdir)/unwind/libunwind_i.h
+	$(CC) $(CFLAGS) -c $(srcdir)/unwind/libunwind.c -o unwind.@LTO@
 vector.@LTO@: $(srcdir)/vector.c
 	$(CC) $(CFLAGS) -c $(srcdir)/vector.c -o vector.@LTO@
 

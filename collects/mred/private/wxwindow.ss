@@ -18,29 +18,36 @@
 	 [focus? #f]
 	 [container this]
 	 [visible? #f]
-	 [active? #f])
+	 [active? #f]
+         [skip-sub-events? #f])
 	(public
 	  [on-visible
 	   (lambda ()
 	     (let ([vis? (is-shown-to-root?)])
 	       (unless (eq? vis? visible?)
 		 (set! visible? vis?)
-		 (as-exit
-		  (lambda ()
-		    (send (wx->proxy this) on-superwindow-show vis?))))))]
+                 (unless skip-sub-events?
+                   (as-exit
+                    (lambda ()
+                      (send (wx->proxy this) on-superwindow-show vis?)))))))]
 	  [queue-visible
 	   (lambda ()
 	     (parameterize ([wx:current-eventspace (send (get-top-level) get-eventspace)])
-	       (wx:queue-callback (entry-point (lambda () (on-visible))) wx:middle-queue-key)))])
+	       (wx:queue-callback (entry-point (lambda () (on-visible))) wx:middle-queue-key)))]
+          [skip-subwindow-events?
+           (case-lambda
+            [() skip-sub-events?]
+            [(skip?) (set! skip-sub-events? skip?)])])
 	(public
 	  [on-active
 	   (lambda ()
 	     (let ([act? (is-enabled-to-root?)])
 	       (unless (eq? act? active?)
 		 (set! active? act?)
-		 (as-exit
-		  (lambda ()
-		    (send (wx->proxy this) on-superwindow-enable act?))))))]
+                 (unless skip-sub-events?
+                   (as-exit
+                    (lambda ()
+                      (send (wx->proxy this) on-superwindow-enable act?)))))))]
 	  [queue-active
 	   (lambda ()
 	     (parameterize ([wx:current-eventspace (send (get-top-level) get-eventspace)])
@@ -127,7 +134,7 @@
 
   (define (make-window-glue% %)  ; implies make-glue%
     (class100 (make-glue% %) (mred proxy . args)
-      (inherit get-x get-y get-width get-height area-parent get-mred get-proxy)
+      (inherit get-x get-y get-width get-height area-parent get-mred get-proxy skip-subwindow-events?)
       (private-field
        [pre-wx->proxy (lambda (orig-w e k)
 			;; MacOS: w may not be something the user knows
@@ -211,16 +218,20 @@
 			  (as-exit (lambda () (super on-kill-focus)))))]
 	[pre-on-char (lambda (w e)
 		       (or (super pre-on-char w e)
-			   (as-entry
-			    (lambda ()
-			      (pre-wx->proxy w e
-					     (lambda (m e)
-					       (as-exit (lambda () 
-							  (send (get-proxy) on-subwindow-char m e)))))))))]
+                           (if (skip-subwindow-events?)
+                               #f
+                               (as-entry
+                                (lambda ()
+                                  (pre-wx->proxy w e
+                                                 (lambda (m e)
+                                                   (as-exit (lambda () 
+                                                              (send (get-proxy) on-subwindow-char m e))))))))))]
 	[pre-on-event (entry-point
 		       (lambda (w e)
-			 (pre-wx->proxy w e
-					(lambda (m e) 
-					  (as-exit (lambda () 
-						     (send (get-proxy) on-subwindow-event m e)))))))])
+                         (if (skip-subwindow-events?)
+                             #f
+                             (pre-wx->proxy w e
+                                            (lambda (m e) 
+                                              (as-exit (lambda () 
+                                                         (send (get-proxy) on-subwindow-event m e))))))))])
       (sequence (apply super-init mred proxy args)))))

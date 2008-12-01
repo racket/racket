@@ -594,7 +594,7 @@
     (call-with-parameterization 
      plain-params 
      (lambda () 
-       (with-handlers ([exn:fail:read? (lambda () 'no-good)])
+       (with-handlers ([exn:fail:read? (lambda (x) 'no-good)])
          (read port)))))
 
   ;; ----------------------------------------

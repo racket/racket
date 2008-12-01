@@ -116,6 +116,13 @@
       
       (define mode-surrogate% 
         (class color:text-mode%
+          
+          (define/override (put-file text sup directory default-name)
+            (parameterize ([finder:default-extension "java"]
+                           [finder:default-filters '(("Any" "*.*"))])
+              ;; don't call the surrogate's super, since it sets the default extension
+              (sup directory default-name)))
+          
           (define/override (on-disable-surrogate text)
             (keymap:remove-chained-keymap text java-keymap)
             (super on-disable-surrogate text))

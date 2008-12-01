@@ -174,6 +174,20 @@
     [super-new super-new-param])
 
   ;;--------------------------------------------------------------------
+  ;;  local member name lookup
+  ;;--------------------------------------------------------------------
+
+  (define-for-syntax (localize orig-id)
+    (do-localize orig-id #'validate-local-member))
+
+  (define (validate-local-member orig s)
+    (if (symbol? s)
+        s
+        (error 'local-member-name
+               "used before its definition: ~a"
+               orig)))
+
+  ;;--------------------------------------------------------------------
   ;;  class macros
   ;;--------------------------------------------------------------------
 

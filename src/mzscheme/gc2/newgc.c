@@ -707,8 +707,6 @@ long GC_initial_word(int sizeb)
   info.size = (sizeb >> gcLOG_WORD_SIZE);
   memcpy(&w, &info, sizeof(struct objhead));
 
-  ((struct objhead*)&w)->size = (sizeb >> gcLOG_WORD_SIZE);
-
   return w;
 }
 
@@ -1247,7 +1245,7 @@ typedef struct MarkSegment {
   struct MarkSegment *next;
   void **top;
   void **end;
-  void **stop_here; /* this is only used for its address */
+  void *stop_here; /* this is only used for its address */
 } MarkSegment;
 
 static THREAD_LOCAL MarkSegment *mark_stack = NULL;
@@ -1255,7 +1253,7 @@ static THREAD_LOCAL MarkSegment *mark_stack = NULL;
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
-  mark_frame->top  = PPTR(&(mark_frame->stop_here));
+  mark_frame->top  = &(mark_frame->stop_here);
   mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
   return mark_frame;
 }
@@ -1274,7 +1272,7 @@ inline static void push_ptr(void *ptr)
     if(mark_stack->next) {
       /* we do, so just use it */
       mark_stack = mark_stack->next;
-      mark_stack->top = PPTR(&(mark_stack->stop_here));
+      mark_stack->top = &(mark_stack->stop_here);
     } else {
       /* we don't, so we need to allocate one */
       mark_stack->next = mark_stack_create_frame();
@@ -1289,7 +1287,7 @@ inline static void push_ptr(void *ptr)
 
 inline static int pop_ptr(void **ptr)
 {
-  if(mark_stack->top == PPTR(&mark_stack->stop_here)) {
+  if(mark_stack->top == &mark_stack->stop_here) {
     if(mark_stack->prev) {
       /* if there is a previous page, go to it */
       mark_stack = mark_stack->prev;

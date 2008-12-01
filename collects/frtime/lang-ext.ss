@@ -15,9 +15,52 @@
        (define name
          (let ([val (parameterize ([snap? #f])
                       expr)])
-           (lambda () (deep-value-now val))))]))
+           (lambda () (deep-value-now val empty))))]))
   
-  (define deep-value-now
+  (define (deep-value-now obj table)
+    (cond
+      [(assq obj table) => second]
+      [(behavior? obj)
+       (deep-value-now (signal-value obj) (cons (list obj (signal-value obj)) table))]
+      [(cons? obj)
+       (let* ([result (cons #f #f)]
+              [new-table (cons (list obj result) table)]
+              [car-val (deep-value-now (car obj) new-table)]
+              [cdr-val (deep-value-now (cdr obj) new-table)])
+         (if (and (eq? car-val (car obj))
+                  (eq? cdr-val (cdr obj)))
+             obj
+             (cons car-val cdr-val)))]
+      ; won't work in the presence of super structs or immutable fields
+      [(struct? obj)
+       (let*-values ([(info skipped) (struct-info obj)]
+                     [(name init-k auto-k acc mut! immut sup skipped?) (struct-type-info info)]
+                     [(ctor) (struct-type-make-constructor info)]
+                     [(indices) (build-list init-k identity)]
+                     [(result) (apply ctor (build-list init-k (lambda (i) #f)))]
+                     [(new-table) (cons (list obj result) table)]
+                     [(elts) (build-list init-k (lambda (i)
+                                                  (deep-value-now (acc obj i) new-table)))])
+         (if (andmap (lambda (i e) (eq? (acc obj i) e)) indices elts)
+             obj
+             (begin
+               (for-each (lambda (i e) (mut! result i e)) indices elts)
+               result)))]
+      [(vector? obj)
+       (let* ([len (vector-length obj)]
+              [indices (build-list len identity)]
+              [result (build-vector len (lambda (_) #f))]
+              [new-table (cons (list obj result) table)]
+              [elts (build-list len (lambda (i)
+                                      (deep-value-now (vector-ref obj i) new-table)))])
+         (if (andmap (lambda (i e) (eq? (vector-ref obj i) e)) indices elts)
+             obj
+             (begin
+               (for-each (lambda (i e) (vector-set! result i e)) indices elts)
+               result)))]
+      [else obj]))
+
+  #;(define deep-value-now
     (case-lambda
       [(obj) (deep-value-now obj empty)]
       [(obj table)
@@ -166,7 +209,7 @@
                    (make-events-now
                     (if first-time
                         empty
-                        (list (deep-value-now bh))))
+                        (list (deep-value-now bh empty))))
                    (set! first-time #f))))
           b))
   
@@ -389,7 +432,7 @@
              [consumer (proc->signal
                         (lambda ()
                           (let* ([now (current-inexact-milliseconds)]
-                                 [new (deep-value-now beh)]
+                                 [new (deep-value-now beh empty)]
                                  [ms (value-now ms-b)])
                             (when (not (equal? new (car (mcar last))))
                               (set-mcdr! last (mcons (cons new now)
@@ -786,6 +829,7 @@
 
   
   (provide raise-exceptions
+           deep-value-now
            nothing
            nothing?
            ;general-event-processor

@@ -1,6 +1,6 @@
 
 /* The easiest way to find out whether a font is fixed-width is to
-   jump over the to Coacao world. The ATS and Cocoa worlds are
+   jump over the to Cocao world. The ATS and Cocoa worlds are
    connected through the PostScript name of a font. */
 
 #import <Cocoa/Cocoa.h>

@@ -45,6 +45,13 @@
                                           spec
                                           spec)]
                           [_ spec])))])
+       (for-each (lambda (id)
+                   (unless (identifier? id)
+                     (raise-syntax-error #f
+                                         "expected an identifier for a literal"
+                                         stx
+                                         id)))
+                 (syntax->list #'(lit ...)))
        #'(with-togetherable-scheme-variables
           (lit ...)
           ([form spec] [form spec1] ... 
@@ -109,13 +116,21 @@
 (define-syntax (defform/none stx)
   (syntax-case stx ()
     [(_ #:literals (lit ...) spec desc ...)
-     #'(with-togetherable-scheme-variables
-        (lit ...)
-        ([form spec])
-        (*defforms #f
-                   '(spec) (list (lambda (ignored) (schemeblock0/form spec)))
-                   null null
-                   (lambda () (list desc ...))))]
+     (begin
+       (for-each (lambda (id)
+                   (unless (identifier? id)
+                     (raise-syntax-error #f
+                                         "expected an identifier for a literal"
+                                         stx
+                                         id)))
+                 (syntax->list #'(lit ...)))
+       #'(with-togetherable-scheme-variables
+          (lit ...)
+          ([form spec])
+          (*defforms #f
+                     '(spec) (list (lambda (ignored) (schemeblock0/form spec)))
+                     null null
+                     (lambda () (list desc ...)))))]
     [(_ spec desc ...)
      #'(defform/none #:literals () spec desc ...)]))
 

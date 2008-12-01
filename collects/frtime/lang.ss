@@ -1,6 +1,5 @@
 (module lang frtime/mzscheme-utils
   (require frtime/lang-ext)
-  (require frtime/ft-qq)
   (require (as-is:unchecked frtime/frp-core
 	    event-set? signal-value))
   
@@ -18,5 +17,4 @@
   
   (provide value-nowable? behaviorof
 	   (all-from frtime/mzscheme-utils)
-           (all-from-except frtime/lang-ext lift)
-           (all-from frtime/ft-qq)))
+           (all-from-except frtime/lang-ext lift)))

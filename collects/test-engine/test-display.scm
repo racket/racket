@@ -225,7 +225,7 @@
     (super-instantiate ())))
 
 (define test-window%
-  (class* frame% ()
+  (class* frame:standard-menus% ()
 
     (super-instantiate
      ((string-constant test-engine-window-title) #f 400 350))
@@ -234,11 +234,13 @@
     (define disable-func void)
     (define close-cleanup void)
 
+    (inherit get-area-container)
+    
     (define content
-      (make-object editor-canvas% this #f '(auto-vscroll)))
+      (make-object editor-canvas% (get-area-container) #f '(auto-vscroll)))
 
     (define button-panel
-      (make-object horizontal-panel% this
+      (make-object horizontal-panel% (get-area-container)
                    '() #t 0 0 0 0 '(right bottom) 0 0 #t #f))
 
     (define buttons
@@ -260,6 +262,8 @@
                              (switch-func))))
             (make-object grow-box-spacer-pane% button-panel)))
 
+    (define/override (edit-menu:between-select-all-and-find menu) (void))
+    
     (define/public (update-editor e)
       (send content set-editor e))
 
