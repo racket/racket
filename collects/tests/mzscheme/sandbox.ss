@@ -336,6 +336,33 @@
    (set! y 789) ; would be an error without the `set!' parameter
    y => 789
 
+   ;; test that output is also collected under the limit
+   --top--
+   (set! ev (parameterize ([sandbox-output 'bytes]
+                           [sandbox-error-output current-output-port]
+                           [sandbox-eval-limits '(0.25 1/2)])
+              (make-evaluator 'scheme/base)))
+   ;; GCing is needed to allow these to happen
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   ;; EB: for some reason, the first thing doesn't throw an error, and I think
+   ;; that the second should break much sooner than 100 iterations
+   ;; --eval--  (let ([400k (make-bytes 400000 65)])
+   ;;             (for ([i (in-range 2)]) (display 400k)))
+   ;; --top--   (bytes-length (get-output ev))
+   ;;           =err> "out of memory"
+   ;; --eval--  (let ([400k (make-bytes 400000 65)])
+   ;;             (for ([i (in-range 100)]) (display 400k)))
+   ;;           =err> "out of memory"
+
    ))
 
 (report-errs)

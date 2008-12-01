@@ -571,9 +571,10 @@ in a way that depends on the setting of @scheme[(sandbox-output)] or
       input port end of the created pipe;}
 
  @item{if it was @scheme['bytes] or @scheme['string], then the result
-       is the accumulated output, and the output is directed to a new
-       output string or byte string (so each call returns a different
-       piece of the evaluator's output);}
+       is the accumulated output, and the output port is reset so each
+       call returns a different piece of the evaluator's output (note
+       that any allocations of such output are still subject to the
+       sandbox memory limit);}
 
   @item{otherwise, it returns @scheme[#f].}
 ]}
