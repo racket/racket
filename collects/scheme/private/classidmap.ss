@@ -293,15 +293,17 @@
 
   (define-struct private-name (orig-id gen-id))
 
-  (define (localize orig-id)
+  (define (do-localize orig-id validate-local-member-stx)
     (let loop ([id orig-id])
       (let ([v (syntax-local-value id (lambda () #f))])
 	(cond
 	 [(and v (private-name? v))
 	  (list 'unquote 
-		(binding (private-name-orig-id v)
-			 id
-			 (private-name-gen-id v)))]
+                (list validate-local-member-stx
+                      (list 'quote orig-id)
+                      (binding (private-name-orig-id v)
+                               id
+                               (private-name-gen-id v))))]
 	 [(and (set!-transformer? v)
 	       (s!t? (set!-transformer-procedure v)))
 	  (s!t-ref (set!-transformer-procedure v) 1)]
@@ -353,6 +355,6 @@
                         make-init-error-map make-init-redirect super-error-map 
                         make-with-method-map
                         flatten-args make-method-call
-                        make-private-name localize
+                        do-localize make-private-name
                         generate-super-call generate-inner-call
                         generate-class-expand-context class-top-level-context?)))
