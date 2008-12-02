@@ -477,18 +477,13 @@ of the input program.  Its value should be a list of two numbers, the
 first is a timeout value in seconds, and the second is a memory limit
 in megabytes.  Either one can be @scheme[#f] for disabling the
 corresponding limit; alternately, the parameter can be set to
-@scheme[#f] to disable all limits (in case more are available in
-future versions). The default is @scheme[(list 30 20)].
+@scheme[#f] to disable all limits (useful in case more limit kinds are
+available in future versions). The default is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
 fail if the limits are strict enough.  Therefore, to avoid surprises
 you need to catch errors that happen when the sandbox is created.
-
-so, for example, if the memory that is required to
-create the sandbox is higher than the limit, then
-@scheme[make-evaluator] will fail with a memory limit exception.
-
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
