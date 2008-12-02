@@ -129,6 +129,7 @@ static void initialize_signal_handler(GCTYPE *gc)
       gc->generations_available = 0;
   }
 # endif
+}
 
 static void remove_signal_handler(GCTYPE *gc)
 {
