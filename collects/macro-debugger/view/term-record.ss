@@ -12,8 +12,6 @@
          "extensions.ss"
          "warning.ss"
          "hiding-panel.ss"
-         (prefix-in s: "../syntax-browser/widget.ss")
-         (prefix-in s: "../syntax-browser/params.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/deriv-find.ss"

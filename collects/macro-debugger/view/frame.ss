@@ -14,7 +14,6 @@
          "warning.ss"
          "hiding-panel.ss"
          (prefix-in sb: "../syntax-browser/embed.ss")
-         (prefix-in sb: "../syntax-browser/params.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/trace.ss"
@@ -120,8 +119,8 @@
            (callback (lambda _ (send widget show-in-new-frame)))))
 
     (menu-option/notify-box stepper-menu
-                            "Show syntax properties"
-                            (get-field show-syntax-properties? config))
+                            "View syntax properties"
+                            (get-field props-shown? config))
 
     (let ([id-menu
            (new (get-menu%)
@@ -175,10 +174,10 @@
            (parent extras-menu)
            (callback
             (lambda (i e)
-              (sb:current-suffix-option
-               (if (send i is-checked?)
-                   'always
-                   'over-limit))
+              (send config set-suffix-option
+                    (if (send i is-checked?)
+                        'always
+                        'over-limit))
               (send widget update/preserve-view))))
       (menu-option/notify-box extras-menu
                               "Highlight redex/contractum"

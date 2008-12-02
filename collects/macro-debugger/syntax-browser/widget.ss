@@ -8,7 +8,6 @@
          mzlib/kw
          syntax/boundmap
          "interfaces.ss"
-         "params.ss"
          "controller.ss"
          "display.ss"
          "keymap.ss"
@@ -48,15 +47,10 @@
     (send -text set-styles-sticky #f)
     (send -text lock #t)
 
-    ;; syntax-properties-controller<%> methods
-
-    (define/public (props-shown?)
-      (send -props-panel is-shown?))
-
-    (define/public (toggle-props)
-      (show-props (not (send -props-panel is-shown?))))
-
     (define/public (show-props show?)
+      (internal-show-props show?))
+
+    (define/private (internal-show-props show?)
       (if show?
           (unless (send -props-panel is-shown?)
             (let ([p (send config get-props-percentage)])
@@ -67,27 +61,25 @@
             (send -split-panel delete-child -props-panel)
             (send -props-panel show #f))))
 
-    (send config listen-props-percentage
-          (lambda (p)
-            (update-props-percentage p)))
-    (send config listen-props-shown?
-          (lambda (show?)
-            (show-props show?)))
-
     (define/private (update-props-percentage p)
       (send -split-panel set-percentages
             (list (- 1 p) p)))
 
+    (define/private (props-panel-shown?)
+      (send -props-panel is-shown?))
+
     ;;
 
-    (define/public (get-controller) controller)
+    (define/public (get-controller)
+      controller)
 
     ;;
 
-    (define/public (get-main-panel) -main-panel)
+    (define/public (get-main-panel)
+      -main-panel)
 
     (define/public (shutdown)
-      (when (props-shown?)
+      (when (props-panel-shown?)
         (send config set-props-percentage
               (cadr (send -split-panel get-percentages)))))
 
@@ -187,23 +179,31 @@
     ;; internal-add-syntax : syntax -> display
     (define/private (internal-add-syntax stx)
       (with-unlock -text
-        (parameterize ((current-default-columns (calculate-columns)))
-          (let ([display (print-syntax-to-editor stx -text controller)])
-            (send* -text
-              (insert "\n")
-              ;(scroll-to-position current-position)
-              )
-            display))))
+        (let ([display (print-syntax-to-editor stx -text controller config)])
+          (send* -text
+            (insert "\n")
+            ;;(scroll-to-position current-position)
+            )
+          display)))
 
     (define/private (calculate-columns)
-      (define style (code-style -text))
+      (define style (code-style -text (send config get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
       (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
 
     ;; Initialize
     (super-new)
-    (setup-keymap)))
+    (setup-keymap)
+
+    (send config listen-props-shown?
+          (lambda (show?)
+            (show-props show?)))
+    (send config listen-props-percentage
+          (lambda (p)
+            (update-props-percentage p)))
+    (internal-show-props (send config get-props-shown?))))
+
 
 (define clickback-style
   (let ([sd (new style-delta%)])
