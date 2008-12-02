@@ -438,6 +438,7 @@ struct Scheme_Custodian {
 #ifdef MZ_PRECISE_GC
   int gc_owner_set;
   Scheme_Object *cust_boxes;
+  int num_cust_boxes, checked_cust_boxes;
 #endif
 };
 

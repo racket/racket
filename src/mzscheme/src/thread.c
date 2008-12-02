@@ -1467,12 +1467,27 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
       }
     }
 
+#ifdef MZ_PRECISE_GC
+    {
+      Scheme_Object *pr = m->cust_boxes, *wb;
+      Scheme_Custodian_Box *cb;
+      while (pr) {
+        wb = SCHEME_CAR(pr);
+        cb = (Scheme_Custodian_Box *)SCHEME_BOX_VAL(wb);
+        if (cb) cb->v = NULL;
+        pr = SCHEME_CDR(pr);
+      }
+      m->cust_boxes = NULL;
+    }
+#endif
+
     m->count = 0;
     m->alloc = 0;
     m->boxes = NULL;
     m->closers = NULL;
     m->data = NULL;
     m->mrefs = NULL;
+    m->shut_down = 1;
     
     if (SAME_OBJ(m, start))
       break;
@@ -1715,10 +1730,29 @@ static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
 #ifdef MZ_PRECISE_GC
   /* 3m  */
   {
-    Scheme_Object *wb, *pr;
+    Scheme_Object *wb, *pr, *prev;
     wb = GC_malloc_weak_box(cb, NULL, 0);
     pr = scheme_make_raw_pair(wb, cb->cust->cust_boxes);
     cb->cust->cust_boxes = pr;
+    cb->cust->num_cust_boxes++;
+    
+    /* The GC prunes the list of custodian boxes in accounting mode,
+       but prune here in case accounting is never triggered. */
+    if (cb->cust->num_cust_boxes > 2 * cb->cust->checked_cust_boxes) {
+      prev = pr;
+      pr = SCHEME_CDR(pr);
+      while (pr) {
+        wb = SCHEME_CAR(pr);
+        if (!SCHEME_BOX_VAL(pr)) {
+          SCHEME_CDR(prev) = SCHEME_CDR(pr);
+          --cb->cust->num_cust_boxes;
+        } else {
+          prev = pr;
+        }
+        pr = SCHEME_CDR(pr);
+      } 
+      cb->cust->checked_cust_boxes = cb->cust->num_cust_boxes;
+    }
   }
 #else
   /* CGC */

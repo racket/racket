@@ -116,6 +116,15 @@
                       ((current-memory-use c) . >= . 100000))
           c)))
 
+(let ()
+  (define c1 (make-custodian (current-custodian)))
+  (define b1 (make-custodian-box c1 #t))
+  (define c2 (make-custodian c1))
+  (define b2 (make-custodian-box c2 #t))
+  (test '(#t #t) map custodian-box-value (list b1 b2))
+  (custodian-shutdown-all c1)
+  (test '(#f #f) map custodian-box-value (list b1 b2)))
+
 ;; ----------------------------------------
 
 (report-errs)
