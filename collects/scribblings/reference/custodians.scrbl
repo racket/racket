@@ -66,7 +66,7 @@ per-custodian memory accounting, otherwise the
 If a check is registered, and if PLT Scheme later reaches a state after
 garbage collection (see @secref["gc-model"]) where allocating
 @scheme[need-amt] bytes charged to @scheme[limit-cust] would fail or
-tigger some shutdown, then @scheme[stop-cust] is shut down.}
+trigger some shutdown, then @scheme[stop-cust] is shut down.}
 
 @defproc[(custodian-limit-memory [limit-cust custodian?]
                                  [limit-amt exact-nonnegative-integer?]
@@ -85,7 +85,7 @@ For reliable shutdown, @scheme[limit-amt] for
 @scheme[custodian-limit-memory] must be much lower than the total
 amount of memory available (minus the size of memory that is
 potentially used and not charged to @scheme[limit-cust]). Moreover, if
-indvidual allocations that are initially charged to
+individual allocations that are initially charged to
 @scheme[limit-cust] can be arbitrarily large, then @scheme[stop-cust]
 must be the same as @scheme[limit-cust], so that excessively large
 immediate allocations can be rejected with an
@@ -100,6 +100,6 @@ Returns a @deftech{custodian box} that contains @scheme[v] as long as
  @scheme[v] is a @tech{custodian box} produced by
  @scheme[make-custodian-box], @scheme[#f] otherwise.}
 
-@defproc[(custodian-box-value [cb custodian-box?]) any]{Rturns the
+@defproc[(custodian-box-value [cb custodian-box?]) any]{Returns the
  value in the given @tech{custodian box}, or @scheme[#f] if the value
  has been removed.}
