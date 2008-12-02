@@ -363,6 +363,30 @@
    ;;             (for ([i (in-range 100)]) (display 400k)))
    ;;           =err> "out of memory"
 
+   ;; test that killing the custodian works fine
+   ;; first try it without limits (which imply a nester thread/custodian)
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   --eval--
+   (kill-thread (current-thread)) =err> "terminated"
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   --eval--
+   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   --top--
+   ;; also happens when it's done directly
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
+   =err> "terminated"
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   (call-in-sandbox-context ev
+     (lambda () (custodian-shutdown-all (current-custodian))))
+   =err> "terminated"
+
    ))
 
 (report-errs)

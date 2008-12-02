@@ -623,10 +623,18 @@ the @scheme[src] argument.  Using a sequence of S-expressions (not
 coverage results, since each expression may be assigned a single
 source location.}
 
-@defproc[(get-namespace [evaluator (any/c . -> . any)])
-         namespace?]{
+@defproc[(call-in-sandbox-context [evaluator (any/c . -> . any)]
+                                  [thunk (-> any)])
+         any]{
 
-Retrieves the namespace that is used in an evaluator.}
+Calls the given @scheme[thunk] in the context of a sandboxed
+evaluator.  The call is performed under the resource limits that are
+used for evaluating expressions.
+
+This is usually similar to @scheme[(evaluator (list thunk))], except
+that this relies on the common meaning of list expressions as function
+application (which is not true in all languages), and it relies on
+MzScheme's @scheme[eval] forgiving a non-S-expression input.}
 
 @; ----------------------------------------------------------------------
 
