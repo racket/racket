@@ -32,6 +32,7 @@
          call-in-sandbox-context
          make-evaluator
          make-module-evaluator
+         call-in-nested-thread*
          call-with-limits
          with-limits
          exn:fail:resource?
@@ -212,45 +213,61 @@
 
 (define memory-accounting? (custodian-memory-accounting-available?))
 
+;; similar to `call-in-nested-thread', but propagates killing the thread,
+;; shutting down the custodian or setting parameters and thread cells;
+;; optionally with thunks to call for kill/shutdown.
+(define (call-in-nested-thread*
+         thunk
+         [kill     (lambda () (kill-thread (current-thread)))]
+         [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
+  (let* ([p #f]
+         [c (make-custodian)]
+         [b (make-custodian-box c #t)])
+    (with-handlers ([(lambda (_) (not p))
+                     ;; if the after thunk was not called, then this error is
+                     ;; about the thread dying unnaturally, so propagate
+                     ;; whatever it did
+                     (lambda (_) ((if (custodian-box-value b) kill shutdown)))])
+      (dynamic-wind void
+        (lambda ()
+          (parameterize ([current-custodian c])
+            (call-in-nested-thread
+             (lambda ()
+               (dynamic-wind void thunk
+                 ;; this should always be called unless the thread is killed or
+                 ;; the custodian is shutdown, distinguish the two cases
+                 ;; through the above box
+                 (lambda ()
+                   (set! p (current-preserved-thread-cell-values))))))))
+        (lambda () (when p (current-preserved-thread-cell-values p)))))))
+
 (define (call-with-limits sec mb thunk)
-  (let ([r #f]
-        [c (make-custodian)]
-        ;; used to copy parameter changes from the nested thread
-        [p current-preserved-thread-cell-values])
-    (when (and mb memory-accounting?)
-      (custodian-limit-memory c (* mb 1024 1024) c))
-    (parameterize ([current-custodian c])
-      ;; The nested-thread can die on a time-out or memory-limit,
-      ;; and never throws an exception, so we never throw an error,
-      ;; just assume the a death means the custodian was shut down
-      ;; due to memory limit.  Note: cannot copy the
-      ;; parameterization in this case.
-      (with-handlers ([exn:fail? (lambda (e)
-                                   (unless r (set! r (cons #f 'memory))))])
-        (call-in-nested-thread
-         (lambda ()
-           (define this (current-thread))
-           (define timer
-             (and sec
-                  (thread (lambda ()
-                            (sleep sec)
-                            ;; even in this case there are no parameters
-                            ;; to copy, since it is on a different thread
-                            (set! r (cons #f 'time))
-                            (kill-thread this)))))
-           (set! r
-                 (with-handlers ([void (lambda (e) (list (p) raise e))])
-                   (call-with-values thunk (lambda vs (list* (p) values vs)))))
-           (when timer (kill-thread timer))))))
-    (custodian-shutdown-all c)
-    (unless r (error 'call-with-limits "internal error"))
-    ;; apply parameter changes first
-    (when (car r) (p (car r)))
-    (if (pair? (cdr r))
-      (apply (cadr r) (cddr r))
-      (raise (make-exn:fail:resource (format "with-limit: out of ~a" (cdr r))
-                                     (current-continuation-marks)
-                                     (cdr r))))))
+  ;; note that when the thread is killed after using too much memory or time,
+  ;; then all thread-local changes (parameters and thread cells) are discarded
+  (let ([r #f])
+    (call-in-nested-thread*
+     (lambda ()
+       ;; memory limit
+       (when (and mb memory-accounting?)
+         (custodian-limit-memory (current-custodian) (* mb 1024 1024)))
+       ;; time limit
+       (when sec
+         (let ([t (current-thread)])
+           (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
+       (set! r (with-handlers ([void (lambda (e) (list raise e))])
+                 (call-with-values thunk (lambda vs (list* values vs))))))
+     (lambda () (unless r (set! r 'kill)))
+     (lambda () (unless r (set! r 'shut))))
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [(memory time)
+       (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
+                                      (current-continuation-marks)
+                                      r))]
+      [else (if (pair? r)
+              (apply (car r) (cdr r))
+              (error 'call-with-limits "internal error in nested: ~e" r))])))
 
 (define-syntax with-limits
   (syntax-rules ()

@@ -5,6 +5,28 @@
 
 (require scheme/sandbox)
 
+;; test call-in-nested-thread*
+(let ()
+  (define-syntax-rule (nested body ...)
+    (call-in-nested-thread* (lambda () body ...)))
+  (test 1 values (nested 1))
+  ;; propagates parameters
+  (let ([p (make-parameter #f)])
+    (nested (p 1))
+    (test 1 p)
+    (with-handlers ([void void]) (nested (p 2) (error "foo") (p 3)))
+    (test 2 p))
+  ;; propagates kill-thread
+  (test (void) thread-wait
+        (thread (lambda ()
+                  (nested (kill-thread (current-thread)))
+                  ;; never reach here
+                  (semaphore-wait (make-semaphore 0)))))
+  ;; propagates custodian-shutdown-all
+  (test (void) values
+        (parameterize ([current-custodian (make-custodian)])
+          (nested (custodian-shutdown-all (current-custodian))))))
+
 (let ([ev void])
   (define (run thunk)
     (with-handlers ([void (lambda (e) (list 'exn: e))])
@@ -383,6 +405,23 @@
    =err> "terminated"
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
+   (call-in-sandbox-context ev
+     (lambda () (custodian-shutdown-all (current-custodian))))
+   =err> "terminated"
+   --top--
+   ;; now make sure it works with per-expression limits too
+   (set! ev (make-evaluator 'scheme/base))
+   --eval--
+   (kill-thread (current-thread)) =err> "terminated"
+   --top--
+   (set! ev (make-evaluator 'scheme/base))
+   --eval--
+   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   --top--
+   (set! ev (make-evaluator 'scheme/base))
+   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
+   =err> "terminated"
+   (set! ev (make-evaluator 'scheme/base))
    (call-in-sandbox-context ev
      (lambda () (custodian-shutdown-all (current-custodian))))
    =err> "terminated"
