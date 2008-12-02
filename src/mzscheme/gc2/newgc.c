@@ -15,7 +15,7 @@
    The following page map invariants are required:
 
    Outside of collection, only pages in the older generation should
-   be in the global poitner -> page map.
+   be in the gc->page_maps.
 
    During the mark phase of collection, only pages which contain
    objects which may be marked should be in the page map. This means
@@ -1953,49 +1953,48 @@ void *GC_next_tagged_start(void *p)
 /* garbage collection                                                        */
 /*****************************************************************************/
 
-static void prepare_pages_for_collection(NewGC *gc)
+static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 {
   Page_Range *protect_range = gc->protect_range;
-  struct mpage *work;
+  mpage *work;
   int i;
 
-  GCDEBUG((DEBUGOUTF, "PREPPING PAGES.\n"));
-  if(gc->gc_full) {
-    /* we need to make sure that previous_size for every page is reset, so
-       we don't accidentally screw up the mark routine */
-    if (gc->generations_available) {
-      for(i = 0; i < PAGE_TYPES; i++)
-        for(work = gc->gen1_pages[i]; work; work = work->next) {
-          if (work->mprotected) {
-            work->mprotected = 0;
-            add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
-          }
-        }
-      flush_protect_page_ranges(protect_range, 1);
+  GCDEBUG((DEBUGOUTF, "MAJOR COLLECTION - PREPPING PAGES - reset live_size, reset previous_size, unprotect.\n"));
+  /* we need to make sure that previous_size for every page is reset, so
+     we don't accidentally screw up the mark routine */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for(work = gc->gen1_pages[i]; work; work = work->next) {
+      if (gc->generations_available && work->mprotected) {
+        work->mprotected = 0;
+        add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+      }
+      work->live_size = 0;
+      work->previous_size = PREFIX_SIZE;
     }
-    for(i = 0; i < PAGE_TYPES; i++)
-      for(work = gc->gen1_pages[i]; work; work = work->next) {
-        work->live_size = 0;
-        work->previous_size = PREFIX_SIZE;
-      }
-  } else {
-    /* if we're not doing a major collection, then we need to remove all the
-       pages in gc->gen1_pages[] from the page map */
-    PageMap pagemap = gc->page_maps;
-    for(i = 0; i < PAGE_TYPES; i++)
-      for(work = gc->gen1_pages[i]; work; work = work->next) {
-        if (gc->generations_available) {
-          if (work->back_pointers) {
-            if (work->mprotected) {
-              work->mprotected = 0;
-              add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
-            }
-          }
-        }
-        pagemap_remove(pagemap, work);
-      }
-    flush_protect_page_ranges(protect_range, 1);
   }
+  flush_protect_page_ranges(protect_range, 1);
+}
+
+static void remove_all_gen1_pages_from_pagemap(NewGC *gc)
+{
+  Page_Range *protect_range = gc->protect_range;
+  PageMap pagemap = gc->page_maps;
+  mpage *work;
+  int i;
+
+  GCDEBUG((DEBUGOUTF, "MINOR COLLECTION - PREPPING PAGES - remove all gen1 pages from pagemap.\n"));
+  /* if we're not doing a major collection, then we need to remove all the
+     pages in gc->gen1_pages[] from the page map */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for(work = gc->gen1_pages[i]; work; work = work->next) {
+      if (gc->generations_available && work->back_pointers && work->mprotected) {
+        work->mprotected = 0;
+        add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+      }
+      pagemap_remove(pagemap, work);
+    }
+  }
+  flush_protect_page_ranges(protect_range, 1);
 }
 
 static void mark_backpointers(NewGC *gc)
@@ -2435,7 +2434,11 @@ static void garbage_collect(NewGC *gc, int force_full)
 
   gc->no_further_modifications = 1;
 
-  prepare_pages_for_collection(gc);
+  if (gc->gc_full)
+    reset_gen1_pages_live_and_previous_sizes(gc);
+  else /* minor collection */
+    remove_all_gen1_pages_from_pagemap(gc);
+
   init_weak_boxes(gc);
   init_weak_arrays(gc);
   init_ephemerons(gc);
