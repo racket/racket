@@ -563,7 +563,6 @@
                                 (car (evaluator-message-args expr)) '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
-  (define linked-outputs? #f)
   (define (make-output what out set-out! allow-link?)
     (cond [(not out) (open-output-nowhere)]
           [(and (procedure? out) (procedure-arity-includes? out 0)) (out)]
