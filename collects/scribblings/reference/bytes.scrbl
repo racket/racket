@@ -335,7 +335,7 @@ string.
 @defproc[(bytes-open-converter [from-name string?][to-name string?])
          bytes-converter?]{
 
-Produces a string converter to go from the encoding named by
+Produces a @deftech{byte converter} to go from the encoding named by
 @scheme[from-name] to the encoding named by @scheme[to-name]. If the
 requested conversion pair is not available, @scheme[#f] is returned
 instead of a converter.
@@ -534,8 +534,8 @@ The result of @scheme[bytes-convert-end] is two values:
 
 @defproc[(bytes-converter? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a byte converter produced by
-@scheme[bytes-open-converter], @scheme[#f] otherwise.}
+Returns @scheme[#t] if @scheme[v] is a @tech{byte converter} produced
+by @scheme[bytes-open-converter], @scheme[#f] otherwise.}
 
 
 @defproc[(locale-string-encoding) any]{
