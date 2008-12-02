@@ -433,7 +433,7 @@
 
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
-(define-evaluator-messenger (set-eval-limits . xs) 'limits)
+(define-evaluator-messenger (set-eval-limits secs mb) 'limits)
 (define-evaluator-messenger (put-input . xs) 'input)
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
