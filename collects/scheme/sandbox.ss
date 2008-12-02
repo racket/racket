@@ -29,7 +29,7 @@
          get-output
          get-error-output
          get-uncovered-expressions
-         get-namespace
+         call-in-sandbox-context
          make-evaluator
          make-module-evaluator
          call-with-limits
@@ -241,16 +241,16 @@
            (set! r
                  (with-handlers ([void (lambda (e) (list (p) raise e))])
                    (call-with-values thunk (lambda vs (list* (p) values vs)))))
-           (when timer (kill-thread timer)))))
-      (custodian-shutdown-all c)
-      (unless r (error 'call-with-limits "internal error"))
-      ;; apply parameter changes first
-      (when (car r) (p (car r)))
-      (if (pair? (cdr r))
-          (apply (cadr r) (cddr r))
-          (raise (make-exn:fail:resource (format "with-limit: out of ~a" (cdr r))
-                                         (current-continuation-marks)
-                                         (cdr r)))))))
+           (when timer (kill-thread timer))))))
+    (custodian-shutdown-all c)
+    (unless r (error 'call-with-limits "internal error"))
+    ;; apply parameter changes first
+    (when (car r) (p (car r)))
+    (if (pair? (cdr r))
+      (apply (cadr r) (cddr r))
+      (raise (make-exn:fail:resource (format "with-limit: out of ~a" (cdr r))
+                                     (current-continuation-marks)
+                                     (cdr r))))))
 
 (define-syntax with-limits
   (syntax-rules ()
@@ -438,7 +438,7 @@
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
-(define-evaluator-messenger get-namespace 'namespace)
+(define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
 (define (make-evaluator* init-hook require-perms program-maker)
   (define user-cust     (make-custodian))
@@ -451,6 +451,7 @@
   (define error-output  #f)
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
+  (define user-done-evt #t) ; set in the same place
   (define orig-cust     (current-custodian))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
@@ -503,7 +504,7 @@
                                          (lambda (e)
                                            (user-break)
                                            (loop))])
-                          (channel-get result-ch))))
+                          (sync user-done-evt result-ch))))
                eof)])
       (cond [(eof-object? r) (error 'evaluator "terminated")]
             [(eq? (car r) 'exn) (raise (cdr r))]
@@ -541,8 +542,8 @@
           [(output) (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
-          [(namespace) (user-eval (make-evaluator-message
-                                   current-namespace '()))]
+          [(thunk)  (user-eval (make-evaluator-message
+                                (car (evaluator-message-args expr)) '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define linked-outputs? #f)
@@ -613,6 +614,7 @@
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
    (set! user-thread (bg-run->thread (run-in-bg user-process)))
+   (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
          ;; initial program executed ok, so return an evaluator
