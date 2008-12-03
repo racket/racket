@@ -354,7 +354,7 @@
         [else
          ;; Must be big-endian
          (test (get-u8) 0)
-         (test (get-u8) (char->integer #\a))]))
+         (test (get-u8) 97)]))
       (test/unspec (close-port p)))
 
     (let ([bytevector->string-via-file
