@@ -571,24 +571,17 @@
                (lambda () 'ok))])
       (test/unspec (port-position p))
       (test (get-string-n p 3) "abc")
-      (let ([pos3 (port-position p)])
-        (test (lookahead-char p) #\d)
-        (test (lookahead-char p) #\d)
-        (test (port-position p) pos3)
-        (test (get-string-n p 7) "defghij")
-        (let ([pos10 (port-position p)])
-          (get-string-n p 2)
-          (test (get-string-n p 2) "mn")
-          (test/unspec (set-port-position! p pos10))
-          (get-string-n p 2)
-          (test (get-string-n p 2) "mn"))
-        (test (get-string-n p 2) "op")
-        (test (get-string-n p 2) (eof-object))
-        (test/unspec (set-port-position! p pos3))
-        (test (get-string-n p 3) "def")
-        (test/unspec (close-port p))))
+      (test (lookahead-char p) #\d)
+      (test (lookahead-char p) #\d)
+      (test (get-string-n p 7) "defghij")
+      (get-string-n p 2)
+      (test (get-string-n p 2) "mn")
+      (test (get-string-n p 2) "op")
+      (test (get-string-n p 2) (eof-object))
+      (test/unspec (close-port p)))
 
-    (test-positions make-custom-textual-input-port)
+    ;; textual port positions are hopelessly broken in R6RS
+    #;(test-positions make-custom-textual-input-port)
     
     (let* ([accum '()]
            [p (make-custom-binary-output-port
@@ -647,7 +640,8 @@
       (test accum '(#\z #\b #\a))
       (test/unspec (close-port p)))
 
-    (test-positions make-custom-textual-output-port)
+    ;; textual port positions are hopelessly broken in R6RS
+    #;(test-positions make-custom-textual-output-port)
 
     (let* ([save #f]
            [p (make-custom-binary-input/output-port
@@ -685,9 +679,10 @@
       (test (get-char p) #\!)
       (close-port p))
     
-    (test-positions (lambda (id r/w get set close)
-                      (make-custom-textual-input/output-port
-                       id r/w r/w get set close)))
+    ;; textual port positions are hopelessly broken in R6RS
+    #;(test-positions (lambda (id r/w get set close)
+                        (make-custom-textual-input/output-port
+                         id r/w r/w get set close)))
 
     ;; ----------------------------------------
     ;; stdin, stderr, stdout
