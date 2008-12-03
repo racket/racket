@@ -300,8 +300,8 @@
     (ModuleProvide/Inner
      [() #f]
      [(!!) $1]
-     [(EE/Interrupted) $1]
-     [(EE (? ModuleProvide/Inner)) $2])
+     [((? EE) (? ModuleProvide/Inner))
+      $2])
 
     ;; Definitions
     (PrimDefineSyntaxes

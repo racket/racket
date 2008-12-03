@@ -136,9 +136,6 @@
            (stepper this)
            (config config)))
 
-    #;
-    (send config listen-show-syntax-properties?
-          (lambda (show?) (send sbview show-props show?)))
     (send config listen-show-hiding-panel?
           (lambda (show?) (show-macro-hiding-panel show?)))
     (send sbc listen-selected-syntax
@@ -378,6 +375,7 @@
         (send (focused-term) on-get-focus))
       (update))
 
+#|
     ;; delayed-recache-errors : (list-of (cons exn string))
     (define delayed-recache-errors null)
 
@@ -407,6 +405,7 @@
                        "")))
                  (set! delayed-recache-errors null)))))
           (raise exn)))
+|#
 
     (define/private (foci x) (if (list? x) x (list x)))
 
@@ -422,7 +421,6 @@
     ;; Initialization
 
     (super-new)
-    #;(send sbview show-props (send config get-show-syntax-properties?))
     (show-macro-hiding-panel (send config get-show-hiding-panel?))
     (show-extra-navigation (send config get-extra-navigation?))
     (refresh/move)
