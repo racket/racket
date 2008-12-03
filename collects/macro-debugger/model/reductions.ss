@@ -194,9 +194,23 @@
         [#:pattern (?top . ?var)]
         [#:learn (list #'?var)])]
 
-    [(Wrap p:provide (e1 e2 rs ?1))
-     (R [! ?1]
-        [#:walk e2 'provide])]
+    [(Wrap p:provide (e1 e2 rs ?1 inners ?2))
+     (let ([wrapped-inners
+            (for/list ([inner inners])
+              (match inner
+                [(Wrap deriv (e1 e2))
+                 (make local-expansion e1 e2
+                       #f e1 inner #f e2 #f)]))])
+       (R [! ?1]
+          [#:pattern ?form]
+          [#:pass1]
+          [#:left-foot]
+          [LocalActions ?form wrapped-inners]
+          [! ?2]
+          [#:pass2]
+          [#:set-syntax e2]
+          [#:step 'provide]
+          [#:set-syntax e2]))]
 
     [(Wrap p:stop (e1 e2 rs ?1))
      (R [! ?1])]
