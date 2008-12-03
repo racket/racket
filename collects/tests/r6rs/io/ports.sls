@@ -350,7 +350,11 @@
         [(equal? b1 #xFF)
          (test (get-u8 p) #xFE)
          (test (get-u8 p) 97)
-         (test (get-u8 p) 0)]))
+         (test (get-u8 p) 0)]
+        [else
+         ;; Must be big-endian
+         (test (get-u8) 0)
+         (test (get-u8) (char->integer #\a))]))
       (test/unspec (close-port p)))
 
     (let ([bytevector->string-via-file
