@@ -9,6 +9,7 @@
           test/output
           test/unspec
           test/unspec-or-exn
+          test/unspec-flonum-or-exn
           test/output/unspec
           run-test
           report-test-results)
@@ -122,6 +123,19 @@
                         'unspec])
                     (begin expr 'unspec))
              'unspec)]))
+
+  (define-syntax test/unspec-flonum-or-exn
+    (syntax-rules ()
+      [(_ expr condition)
+       (test (guard (c [((condition-predicate (record-type-descriptor condition)) c)
+                        'unspec-or-flonum])
+                    (let ([v expr])
+                      (if (flonum? v)
+                          'unspec-or-flonum
+                          (if (eq? v 'unspec-or-flonum)
+                              (list v)
+                              v))))
+             'unspec-or-flonum)]))
 
   (define-syntax test/output/unspec
     (syntax-rules ()
