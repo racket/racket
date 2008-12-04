@@ -311,16 +311,17 @@
   (bytevector->int-list 'bytevector->sint-list bytevector-sint-ref bv endianness size))
 
 (define (int-list->bytevector who signed? set l endianness size)
-  (unless (list? l)
+  (unless (mlist? l)
     (raise-type-error who "list" l))
   (check-endian endianness)
   (unless (exact-positive-integer? size)
     (raise-type-error who "exact positive integer" size))
-  (let* ([len (length l)]
+  (let* ([l (mlist->list l)]
+         [len (length l)]
          [bv (make-bytes (* size len))])
     (for ([v (in-list l)]
           [k (in-naturals)])
-      (set l k v endianness size))
+      (set bv (* k size) v endianness size))
     bv))
 
 (define (uint-list->bytevector l endianness size)

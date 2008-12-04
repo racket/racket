@@ -51,11 +51,11 @@ supported or IPv6 sockets are not configurable, then the IPv6
 addresses are ignored; otherwise, each IPv6 listener accepts only IPv6
 connections.)
 
-The return value of @scheme[tcp-listen] is a TCP listener value. This
-value can be used in future calls to @scheme[tcp-accept],
-@scheme[tcp-accept-ready?], and @scheme[tcp-close].  Each new TCP
-listener value is placed into the management of the current custodian
-(see @secref["custodians"]).
+The return value of @scheme[tcp-listen] is a @deftech{TCP
+listener}. This value can be used in future calls to
+@scheme[tcp-accept], @scheme[tcp-accept-ready?], and
+@scheme[tcp-close].  Each new TCP listener value is placed into the
+management of the current custodian (see @secref["custodians"]).
 
 If the server cannot be started by @scheme[tcp-listen], the
 @exnraise[exn:fail:network].}
@@ -137,8 +137,7 @@ not both.}
          (values input-port? output-port?)]{
 
 Accepts a client connection for the server associated with
-@scheme[listener], which is a TCP listener value returned by
-@scheme[tcp-listen]. If no client connection is waiting on the
+@scheme[listener]. If no client connection is waiting on the
 listening port, the call to @scheme[tcp-accept] will block. (See also
 @scheme[tcp-accept-ready?].)
 
@@ -168,8 +167,7 @@ raised, but not both.}
 @defproc[(tcp-accept-ready? [listener tcp-listener?]) boolean?]{
 
 Tests whether an unaccepted client has connected to the server
-associated with @scheme[listener]. The @scheme[listener] argument is a
-TCP listener value returned by @scheme[tcp-listen]. If a client is
+associated with @scheme[listener]. If a client is
 waiting, the return value is @scheme[#t], otherwise it is
 @scheme[#f]. A client is accepted with the @scheme[tcp-accept]
 procedure, which returns ports for communicating with the client and
@@ -180,10 +178,9 @@ If the listener has been closed, the @exnraise[exn:fail:network].}
 
 @defproc[(tcp-close [listener tcp-listener?]) void?]{
 
-Shuts down the server associated with @scheme[listener]. The
-@scheme[listener] argument is a TCP listener value returned by
-@scheme[tcp-listen]. All unaccepted clients receive an end-of-file
-from the server; connections to accepted clients are unaffected.
+Shuts down the server associated with @scheme[listener]. All
+unaccepted clients receive an end-of-file from the server; connections
+to accepted clients are unaffected.
 
 If the listener has already been closed, the @exnraise[exn:fail:network].
 
@@ -195,7 +192,7 @@ explanation of the @tt{TIME_WAIT} TCP state.}
 
 @defproc[(tcp-listener? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a TCP listener value created by
+Returns @scheme[#t] if @scheme[v] is a @tech{TCP listener} created by
 @scheme[tcp-listen], @scheme[#f] otherwise.}
 
 
@@ -220,7 +217,7 @@ closed.
 
 The TCP protocol does not include a ``no longer reading'' state on
 connections, so @scheme[tcp-abandon-port] is equivalent to
-@scheme[close-input-port] on input TCP ports.}
+@scheme[close-input-port] on input @tech{TCP ports}.}
 
 
 @defproc[(tcp-addresses [tcp-port tcp-port?]
@@ -231,7 +228,7 @@ connections, so @scheme[tcp-abandon-port] is equivalent to
 
 Returns two strings when @scheme[port-numbers?] is @scheme[#f] (the
 default). The first string is the Internet address for the local
-machine a viewed by the given TCP port's connection. (For most
+machine a viewed by the given @tech{TCP port}'s connection. (For most
 machines, the answer corresponds to the current machine's only
 Internet address, but when a machine serves multiple addresses, the
 result is connection-specific.) The second string is the Internet
@@ -248,10 +245,10 @@ If the given port has been closed, the @exnraise[exn:fail:network].}
 
 @defproc[(tcp-port? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a port returned by
-@scheme[tcp-accept], @scheme[tcp-connect],
+Returns @scheme[#t] if @scheme[v] is a @deftech{TCP port}---which is a
+port returned by @scheme[tcp-accept], @scheme[tcp-connect],
 @scheme[tcp-accept/enable-break], or
-@scheme[tcp-connect/enable-break], @scheme[#f] otherwise.}
+@scheme[tcp-connect/enable-break]---@scheme[#f] otherwise.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "udp"]{UDP}
@@ -265,7 +262,7 @@ Volume 1} by W. Richard Stevens.
                           [family-port-no (or/c string? #f) #f])
          udp?]{
 
-Creates and returns a UDP socket to send and receive
+Creates and returns a @deftech{UDP socket} to send and receive
 datagrams (broadcasting is allowed). Initially, the socket is not
 bound or connected to any address or port.
 

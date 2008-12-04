@@ -1182,7 +1182,8 @@
            (values lexeme type paren start end)))))
     
     (define/override (put-file text sup directory default-name)
-      (parameterize ([finder:default-extension "ss"])
+      (parameterize ([finder:default-extension "ss"]
+                     [finder:default-filters '(("SCM" "*.scm") ("Any" "*.*"))])
         ;; don't call the surrogate's super, since it sets the default extension
         (sup directory default-name)))
     
@@ -1223,8 +1224,6 @@
                    color:text%)))))
 
 (define text-mode% (text-mode-mixin color:text-mode%))
-
-
 
 (define (setup-keymap keymap)
   (let ([add-pos-function

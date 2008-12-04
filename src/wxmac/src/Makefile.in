@@ -146,6 +146,7 @@ OBJS = \
    wx_xbm.o \
 \
    wx_font.o \
+   wx_file_dialog.o \
 \
    $(MIN_OBJS)
 
@@ -385,9 +386,11 @@ ALSelectors.o : $(ALISTDEPS) $(ALISTDIR)/ALSelectors.c
 	$(CC) $(ALISTCCFLAGS) -o ALSelectors.o -c $(ALISTDIR)/ALSelectors.c
 
 ########################################
-#             Cocoa fonts             #
+#                Cocoa                 #
 ########################################
 
+wx_file_dialog.o : $(srcdir)/mac/wx_file_dialog.m
+	$(CXX) -o wx_file_dialog.o -c $(srcdir)/mac/wx_file_dialog.m
 wx_font.o : $(srcdir)/mac/wx_font.m
 	$(CXX) -o wx_font.o -c $(srcdir)/mac/wx_font.m
 

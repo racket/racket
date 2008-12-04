@@ -10,7 +10,6 @@
                        if
                        lambda
                        case-lambda
-                       ;apply
                        reverse
                        list-ref
                        require
@@ -24,8 +23,6 @@
                        make-struct-field-mutator
                        vector
                        vector-ref
-		       quasiquote
-                       ;qq-append
                        define-struct
                        list
 		       list*
@@ -33,8 +30,7 @@
 		       append
                        and
                        or
-                       cond when unless ;case
-                       ; else =>
+                       cond when unless
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
            (rename "lang-ext.ss" lift lift)
@@ -59,11 +55,7 @@
     (if (lift #t positive? idx)
         (list-ref (cdr lst) (lift #t sub1 idx))
         (car lst)))
-  
-  ;(define (frp:eq? itm1 itm2)
-  ;  (lift #t eq? itm1 itm2))
-
-  
+    
   (define-syntax cond
     (syntax-rules (else =>)
       [(_ [else result1 result2 ...])
@@ -189,14 +181,7 @@
   
   (define (cddddr v)
     (cdr (cdddr v)))
- 
-  #|
-  (define-syntax frp:case
-    (syntax-rules ()
-      [(_ expr clause ...)
-       (super-lift (lambda (v) (case v clause ...)) expr)]))
-  |#
-  
+   
   (define (split-list acc lst)
     (if (null? (cdr lst))
         (values acc (car lst))
@@ -215,45 +200,7 @@
          (lambda (last-args)
            (apply apply fn (append first-args (cons last-args empty))))
          last-args))))
-  
-  #|
-  ;; taken from startup.ss
-  (define-syntax frp:case
-    (lambda (x)
-      (syntax-case x (else)
-	((_ v)
-	 (syntax (begin v (cond))))
-	((_ v (else e1 e2 ...))
-	 (syntax/loc x (begin v e1 e2 ...)))
-	((_ v ((k ...) e1 e2 ...))
-	 (syntax/loc x (if (memv v '(k ...)) (begin e1 e2 ...))))
-	((_ v ((k ...) e1 e2 ...) c1 c2 ...)
-	 (syntax/loc x (let ((x v))
-			 (if (memv x '(k ...))
-			     (begin e1 e2 ...)
-			     (frp:case x c1 c2 ...)))))
-	((_ v (bad e1 e2 ...) . rest)
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (not a datum sequence)"
-	  x
-	  (syntax bad)))
-	((_ v clause . rest)
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (missing expression after datum sequence)"
-	  x
-	  (syntax clause)))
-	((_ . v)
-	 (not (null? (syntax-e (syntax v))))
-	 (raise-syntax-error 
-	  #f
-	  "bad syntax (illegal use of `.')"
-	  x)))))
-  
-  
-|#
-  
+    
   (define-syntax frp:case
     (syntax-rules ()
       [(_ exp clause ...)
@@ -274,10 +221,7 @@
   
   (define map
     (case-lambda
-      [(f l) #;(if (pair? l)
-                 (cons (f (car l)) (map f (cdr l)))
-                 null)
-             (list-match
+      [(f l) (list-match
               l
               (lambda (a d) (cons (f a) (map f d)))
               (lambda () null))]
@@ -292,10 +236,7 @@
                     (list-match
                      l2
                      (lambda (a2 d2) (error "map expected lists of same length but got" l1 l2))
-                     (lambda () null))))
-      #;(if (and (pair? l1) (pair? l2))
-          (cons (f (car l1) (car l2)) (map f (cdr l1) (cdr l2)))
-          null)]
+                     (lambda () null))))]
       [(f l . ls) (if (and (pair? l) (andmap pair? ls))
                       (cons (apply f (car l) (map car ls)) (apply map f (cdr l) (map cdr ls)))
                       null)]))
@@ -323,7 +264,6 @@
   (define (dont-optimize x) x)
 
   (provide cond 
-           ; else =>
            and 
            or 
            or-undef 
@@ -342,7 +282,6 @@
            cdddr
            cadddr
            cddddr
-           ;case
            build-path
            collection-path
            
@@ -357,7 +296,7 @@
                    eq? 
                    equal? eqv? < > <= >= 
                    add1 cos sin tan symbol->string symbol?
-                   number->string string->symbol eof-object? exp expt even? odd? string-append eval ; list-ref
+                   number->string string->symbol eof-object? exp expt even? odd? string-append eval
                    sub1 sqrt not number? string string? zero? min max modulo
                    string->number void? rational? char? char-upcase char-ci>=? char-ci<=?
                    string>=? char-upper-case? char-alphabetic?
@@ -374,8 +313,7 @@
                    date-minute date-second make-date char-downcase char>=? char<=? char->integer integer->char boolean?
                    integer? quotient remainder positive? negative? inexact->exact exact->inexact
                    make-polar denominator truncate bitwise-not bitwise-xor bitwise-and bitwise-ior inexact?
-                   char-whitespace? assq assv memq memv list-tail ;reverse
-                   ;length
+                   char-whitespace? assq assv memq memv list-tail
                    seconds->date
                    expand syntax-object->datum exn-message continuation-mark-set->list exn-continuation-marks
                    exn:fail? regexp-match
@@ -393,12 +331,8 @@
            procedure-arity-includes? raise-type-error raise thread
            current-continuation-marks
            raise-mismatch-error require-for-syntax define-syntax define-syntaxes syntax-rules syntax-case
-          ; set-eventspace
-	   ;install-errortrace-key
            (lifted:nonstrict format)
            print-struct
-           ;lambda
-           ;case-lambda
            define
            let
            let*
@@ -409,6 +343,7 @@
            begin
            begin0
            quote
+           quasiquote
            unquote
            unquote-splicing
 
@@ -442,8 +377,6 @@
          
            dont-optimize
            
-          ; null
-        ;   make-struct-field-mutator
            )
   
   ; from core

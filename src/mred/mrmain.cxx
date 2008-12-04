@@ -345,7 +345,7 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
   argv = (char **)param;
   
   len = gl = strlen(MRED_GUID);
-  len += 4 + sizeof(WORD);
+  len += 4 + sizeof(DWORD);
   for (i = 1; argv[i]; i++) {
     len += sizeof(DWORD) + strlen(argv[i]);
   }

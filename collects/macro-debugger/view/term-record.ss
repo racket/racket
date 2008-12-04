@@ -12,8 +12,6 @@
          "extensions.ss"
          "warning.ss"
          "hiding-panel.ss"
-         (prefix-in s: "../syntax-browser/widget.ss")
-         (prefix-in s: "../syntax-browser/params.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/deriv-find.ss"
@@ -204,6 +202,9 @@
     (define/public-final (has-next?)
       (and (get-steps) (not (cursor:at-end? (get-steps)))))
 
+    (define/public-final (get-step-index)
+      (and (get-steps) (cursor-position (get-steps))))
+
     (define/public-final (navigate-to-start)
       (cursor:move-to-start (get-steps))
       (save-position))
@@ -215,6 +216,9 @@
       (save-position))
     (define/public-final (navigate-next)
       (cursor:move-next (get-steps))
+      (save-position))
+    (define/public-final (navigate-to n)
+      (cursor:skip-to (get-steps) n)
       (save-position))
 
     ;; save-position : -> void
@@ -271,13 +275,16 @@
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
-      (recache-synth!)
+      (recache-steps!)
       (cond [(syntax? raw-steps-estx)
              (add-syntax raw-steps-estx binders definites)]
             [(exn? error)
              (add-error error)]
             [raw-steps-oops
-             (add-internal-error "steps" raw-steps-oops #f)]))
+             (add-internal-error "steps" raw-steps-oops #f)]
+            [else
+             (error 'term-record::display-final-term
+                    "internal error")]))
 
     ;; display-step : -> void
     (define/public (display-step)

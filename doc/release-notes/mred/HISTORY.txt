@@ -1,3 +1,9 @@
+Version 4.1.3, November 2008
+
+Minor bug fixes
+
+----------------------------------------------------------------------
+
 Version 4.1.2, October 2008
 
 Changed -z/--text-repl to a configuration option

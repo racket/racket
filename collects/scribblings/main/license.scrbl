@@ -129,6 +129,11 @@ PLT software includes or extends the following copyrighted material:
 }
 
 @copyright{
+  libunwind
+  Copyright (c) 2003-2005 Hewlett-Packard Development Company, L.P.
+}
+
+@copyright{
   GNU Classpath
   GNU Public License with special exception
 }

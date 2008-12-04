@@ -240,7 +240,7 @@ instances can be applied as procedures. In particular, when
 an application expression, a procedure is extracted from the instance
 and used to complete the procedure call.
 
-If the @scheme[prop:procedure] property value is an integer, it
+If the @scheme[prop:procedure] property value is an exact non-negative integer, it
 designates a field within the structure that should contain a
 procedure. The integer must be between @scheme[0] (inclusive) and the
 number of non-automatic fields in the structure type (exclusive, not
@@ -317,7 +317,11 @@ is disallowed).
 (fish-weight wanda)
 (for-each wanda '(1 2 3))
 (fish-weight wanda)
-]}
+]
+
+If the value supplied for the @scheme[prop:procedure] property is not
+an exact non-negative integer or a procedure, the
+@exnraise[exn:fail:contract].}
 
 @defproc[(procedure-struct-type? [type struct-type?]) boolean?]{
 

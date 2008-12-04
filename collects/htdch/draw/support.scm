@@ -74,7 +74,7 @@
   (define (check-arg value method argument)
     (or (> value 0)
         (raise-error
-         (format "Method ~a expects an int >= 0 for ~a argument, given ~a" method argument value))))
+         (format "Method ~a expects an int > 0 for ~a argument, given ~a" method argument value))))
   
   (define (to-lower-case s)
     (letrec ((lower 

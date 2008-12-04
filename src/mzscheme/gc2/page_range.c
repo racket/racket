@@ -89,8 +89,8 @@ static int add_page_range(Page_Range *pr, void *_start, unsigned long len, unsig
 
   if (range_root) {
     if (try_extend(range_root, start, len)
-	|| try_extend(range_root->prev, start, len)
-	|| try_extend(range_root->next, start, len)) {
+        || try_extend(range_root->prev, start, len)
+        || try_extend(range_root->next, start, len)) {
       pr->range_root = range_root;
       return 1;
     }
@@ -104,19 +104,19 @@ static int add_page_range(Page_Range *pr, void *_start, unsigned long len, unsig
     r->len = len;
     if (range_root) {
       if (start < range_root->start) {
-	r->next = range_root;
-	r->prev = range_root->prev;
-	if (r->prev)
-	  r->prev->next = r;
-	else
-	  pr->range_start = r;
-	range_root->prev = r;
+        r->next = range_root;
+        r->prev = range_root->prev;
+        if (r->prev)
+          r->prev->next = r;
+        else
+          pr->range_start = r;
+        range_root->prev = r;
       } else {
-	r->prev = range_root;
-	r->next = range_root->next;
-	if (r->next)
-	  r->next->prev = r;
-	range_root->next = r;
+        r->prev = range_root;
+        r->next = range_root->next;
+        if (r->next)
+          r->next->prev = r;
+        range_root->next = r;
       }
       range_root = range_splay_insert(start, r, range_root);
     } else {

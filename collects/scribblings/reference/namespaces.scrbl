@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss")
 
-@title{Namespaces}
+@title[#:tag "Namespaces"]{Namespaces}
 
 See @secref["namespace-model"] for basic information on the
 @tech{namespace} model.

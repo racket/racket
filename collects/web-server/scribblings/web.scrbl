@@ -2,7 +2,9 @@
 @(require "web-server.ss")
 
 @title[#:tag "web.ss"]{Web Interaction}
-@(require (for-label web-server/servlet/web))
+@(require (for-label web-server/servlet/web
+                     web-server/servlet/servlet-structs
+                     web-server/http))
 
 @defmodule[web-server/servlet/web]{The
 @schememodname[web-server/servlet/web] library provides the primary
@@ -23,7 +25,7 @@ functions of interest for the servlet developer.
  ]
 }
 
-@defproc[(send/suspend [make-response response-generator?]
+@defproc[(send/suspend [make-response response-generator/c]
                        [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
          request?]{
  Captures the current continuation, stores it with @scheme[exp] as the expiration
@@ -81,7 +83,7 @@ functions of interest for the servlet developer.
  your application and you may think of it as ``embedding'' value-less callbacks.
 }
 
-@defproc[(send/forward [make-response response-generator?]
+@defproc[(send/forward [make-response response-generator/c]
                        [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
          request?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
@@ -126,7 +128,7 @@ functions of interest for the servlet developer.
         (lambda (req)
           `(html (head (title "Custom Expiration!"))))])
     (send/suspend
-     ...))
+     ....))
   ]               
 }
 

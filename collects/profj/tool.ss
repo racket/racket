@@ -28,7 +28,7 @@
                               (dynamic-require the-file 'id))])
                (apply orig-fn x)))
            ...)]))
-  
+    
   (dr "compile.ss"
       compile-java compile-interactions compile-files compile-ast compile-interactions-ast
       compilation-unit-code compilation-unit-contains set-compilation-unit-code!
@@ -116,6 +116,13 @@
       
       (define mode-surrogate% 
         (class color:text-mode%
+          
+          (define/override (put-file text sup directory default-name)
+            (parameterize ([finder:default-extension "java"]
+                           [finder:default-filters '(("Any" "*.*"))])
+              ;; don't call the surrogate's super, since it sets the default extension
+              (sup directory default-name)))
+          
           (define/override (on-disable-surrogate text)
             (keymap:remove-chained-keymap text java-keymap)
             (super on-disable-surrogate text))
@@ -506,7 +513,7 @@
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate intermediate+access advanced))
-                (make-profj-settings 'field #f #t #f #t #t null)
+                (make-profj-settings 'field #f #t #f #t #f null)
                 (make-profj-settings 'type #f #t #t #f #f null)))
           ;default-settings? any -> bool
           (define/public (default-settings? s) (equal? s (default-settings)))
@@ -763,11 +770,12 @@
                      (send collect-coverage enable #f))
                  (install-classpath (profj-settings-classpath settings))])))
                                
+          (define eventspace (current-eventspace))
           (define/public (front-end/complete-program port settings)
             (mred? #t)
             (let ([name (object-name port)]
                   [rep (drscheme:rep:current-rep)]
-                  [eventspace (current-eventspace)]
+                  #;[eventspace (current-eventspace)]
                   [execute-types (create-type-record)])
               (let ([name-to-require #f]
                     [require? #f]
@@ -793,6 +801,8 @@
                                            (list (send execute-types get-test-classes) null)
                                            (find-examples compilation-units))])
                           #;(printf "ProfJ compilation complete~n")
+                        #;(printf "compilation units- ~a~n" (map syntax->datum 
+                                                               (apply append (map compilation-unit-code compilation-units))))
                         (set! compiled? #t)
                         (set! modules (order compilation-units))
                         (when rep (send rep set-user-types execute-types))
@@ -829,7 +839,6 @@
                                 (send ,test-engine-obj run)
                                 #;(printf "Test methods run~n")
                                 (send ,test-engine-obj setup-display ,rep ,eventspace)
-                                (send ,test-engine-obj summarize-results (current-output-port))
                                 (let ([test-objs (send ,test-engine-obj test-objects)])
                                   (let inner-loop ((os test-objs))
                                     (unless (null? os)
@@ -841,7 +850,9 @@
                                             (write-special (car out))
                                             (loop (cdr out))))
                                         (newline))
-                                      (inner-loop (cdr os)))))))
+                                      (inner-loop (cdr os)))))
+                                (send ,test-engine-obj summarize-results (current-output-port))
+                                ))
                             #f))]
                         [(and (not require?) (null? modules) tests-run?)
                          (begin0

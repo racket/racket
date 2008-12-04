@@ -1,7 +1,6 @@
 (module frtime "mzscheme-utils.ss"
-  (require "lang-ext.ss")
+  (require (all-except "lang-ext.ss" lift deep-value-now))
   (require "frp-snip.ss")
-  (require "ft-qq.ss")
   (require (as-is:unchecked "frp-core.ss"
                             event-set? signal-value))
 
@@ -18,7 +17,6 @@
   ;(provide-for-syntax (rename frtime/mzscheme-utils syntax->list syntax->list))
   
   (provide value-nowable? behaviorof
+           (all-from "lang-ext.ss")
 	   (all-from "mzscheme-utils.ss")
-           (all-from-except "lang-ext.ss" lift)
-           (all-from "frp-snip.ss")
-           (all-from "ft-qq.ss")))
+           (all-from "frp-snip.ss")))

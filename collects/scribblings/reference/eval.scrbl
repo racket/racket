@@ -408,6 +408,14 @@ is not defined at the time the @scheme[set!] is performed.  Note that
 this parameter is used when an expression is @italic{compiled}, not
 when it is @italic{evaluated}.}
 
+@defboolparam[compile-context-preservation-enabled on?]{
+
+A parameter that determines whether compilation should avoid
+function-call inlining and other optimizations that may cause
+information to be lost from stack traces (as reported by
+@scheme[continuation-mark-set->context]). The default is @scheme[#f],
+which allows such optimizations.}
+
 @defboolparam[eval-jit-enabled on?]{
 
 A parameter that determines whether the native-code just-in-time

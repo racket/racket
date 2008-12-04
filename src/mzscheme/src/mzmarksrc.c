@@ -1114,6 +1114,7 @@ mark_comp_env {
   gcMARK(e->data.const_names);
   gcMARK(e->data.const_vals);
   gcMARK(e->data.const_uids);
+  gcMARK(e->data.sealed);
   gcMARK(e->data.use);
   gcMARK(e->data.lifts);
 
@@ -2118,6 +2119,8 @@ lex_rib {
  mark:
   Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
   gcMARK(rib->rename);
+  gcMARK(rib->timestamp);
+  gcMARK(rib->sealed);
   gcMARK(rib->next);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

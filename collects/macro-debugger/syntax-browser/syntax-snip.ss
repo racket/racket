@@ -60,7 +60,9 @@
       (send text begin-edit-sequence)
       (send text change-style (make-object style-delta% 'change-alignment 'top))
       (define display
-        (print-syntax-to-editor stx text (send host get-controller)))
+        (print-syntax-to-editor stx text
+                                (send host get-controller)
+                                (send host get-config)))
       (send text lock #t)
       (send text end-edit-sequence)
       (send text hide-caret #t)

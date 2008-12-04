@@ -43,7 +43,7 @@ Enables the Run button, and the Run menu item and unlocks
            (values (or/c thread? false/c) (or/c custodian? false/c))]{}
 
 @defmethod[(get-defs)
-           (is-a?/c @scheme[drscheme:unit:definitions-text<%>])]{
+           (is-a?/c drscheme:unit:definitions-text<%>)]{
 This text is initially the top half of the drscheme window and
 contains the users program.
 
@@ -73,13 +73,13 @@ is already running (in another thread).
 }
 
 @defmethod[(get-frame)
-           (is-a?/c @scheme[drscheme:unit:frame%])]{
+           (is-a?/c drscheme:unit:frame%)]{
 Returns the frame that this tab is inside.
 
 }
 
 @defmethod[(get-ints)
-           (is-a?/c @scheme[drscheme:rep:text%])]{
+           (is-a?/c drscheme:rep:text%)]{
 This text is initially the bottom half of the drscheme window and
 contains the users interactions with the REPL.
 
@@ -216,7 +216,7 @@ Passes all arguments to @scheme[super-init].
 }
 
 @defmethod[#:mode override 
-           (add-show-menu-items [show-menu (is-a?/c @scheme[menu%])])
+           (add-show-menu-items [show-menu (is-a?/c menu%)])
            void?]{
 
 Adds the ``Show Definitions'', ``Show Interactions'' and
@@ -570,9 +570,14 @@ Shows the interactions window
 }
 
 @defmethod[(get-current-tab)
-           (is-a?/c @scheme[drscheme:unit:tab<%>])]{
+           (is-a?/c drscheme:unit:tab<%>)]{
 Returns the currently active tab.
 
+}
+
+@defmethod[#:mode public-final (close-current-tab) void?]{
+  Closes the current tab, making some other tab visible.
+  If there is only one tab open, this method does nothing.
 }
 
 @defmethod[(get-definitions-canvas)
@@ -607,7 +612,7 @@ Returns the Insert menu.
 }}
 
 @defmethod[(get-interactions-canvas)
-           (instanceof (derivedfrom @scheme[drscheme:unit:interactions-canvas%]))]{
+           (instanceof (derivedfrom drscheme:unit:interactions-canvas%))]{
 
 This canvas is the canvas containing the 
 @method[drscheme:unit:frame<%> get-interactions-text]. It is initially the bottom half of the drscheme window.
@@ -621,7 +626,7 @@ it will use the extended class to create the canvas.
 }
 
 @defmethod[(get-interactions-text)
-           (instanceof (derivedfrom @scheme[drscheme:rep:text%]))]{
+           (instanceof (derivedfrom drscheme:rep:text%))]{
 
 Calls result of
 @method[drscheme:unit:frame<%> get-current-tab]'s 
@@ -631,7 +636,7 @@ Calls result of
 }
 
 @defmethod[(get-tabs)
-           (listof @scheme[drscheme:unit:tab<%>])]{
+           (listof drscheme:unit:tab<%>)]{
 Returns the list of tabs in this frame.
 
 }
@@ -656,7 +661,7 @@ The @scheme[from-tab] argument is the previously selected tab, and the
 }}
 
 @defmethod[(register-capability-menu-item [key symbol]
-                                          [menu (is-a? @scheme[menu%])])
+                                          [menu (is-a? menu%)])
            void?]{
 Registers the menu item that was most recently added as
 being controlled by the capability @scheme[key]. This means
@@ -773,7 +778,7 @@ the editor should be used.)
 }
 
 @defmethod[(get-tab)
-           (instanceof @scheme[drscheme:unit:tab%])]{
+           (instanceof drscheme:unit:tab%)]{
 Returns the editor's enclosing tab.
 
 }
@@ -807,7 +812,7 @@ an interaction (unless the Runs first).
 }}
 
 @defmethod[(set-next-settings [language-settings language-settings]
-                              [update-prefs? any/c @scheme[#t]])
+                              [update-prefs? any/c #t])
            void?]{
 
 Changes the language settings for this window. If

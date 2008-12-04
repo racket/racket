@@ -27,15 +27,33 @@
             (generator? (syntax-local-value #'name (lambda () #f))))]
       [_ #f]))
   
-  (require (lib "stx.ss" "syntax"))  
-  (define (filter-clause? clause-stx)
-    (syntax-case* clause-stx (if not and or) module-or-top-identifier=?
-      [(if  . more) #t]
-      [(not . more) #t]
-      [(and . more) #t]
-      [(or  . more) #t]
-      [_            #f]))
+  (require (lib "stx.ss" "syntax"))
+  (require (prefix base: scheme)
+           (for-meta 1 (prefix base: scheme)))
   
+  (define (if-filter? stx)
+      (syntax-case stx ()
+        [(head expr)
+         (and (identifier? #'head)
+              (eq? 'if (syntax-e #'head)))]
+        [else #f]))
+  
+  (require (prefix new- scheme))
+  
+  #;(define (if-filter? stx)
+    (syntax-case* stx (if new-if) module-or-top-identifier=?
+      [(if expr) #t]
+      [(new-if expr) #t]
+      [_ #f]))
+  
+  (define (filter-clause? clause-stx)
+    (or (if-filter? clause-stx)
+        (syntax-case* clause-stx (if base:if not and or) module-or-top-identifier=?
+          [(not . more) #t]
+          [(and . more) #t]
+          [(or  . more) #t]
+          [_            #f])))
+      
   (define (begin-clause? clause-stx)
     (syntax-case clause-stx (begin)
       [(begin  . more) #t]
@@ -115,18 +133,26 @@
                             (loop2... body-stx)))]
            [(filter-clause? #'clause1)
             (let ([loop2... (expand-clauses #'(clause2 ...))])
-              (syntax-case* #'clause1 (if not and or) module-or-top-identifier=?  ; due to not
-                [(if expr)
-                 #`(if expr #,(loop2... body-stx))]
-                [(not expr)
-                 #`(if (not expr) #,(loop2... body-stx))]
-                [(or expr ...)
-                 #`(if (or expr ...) #,(loop2... body-stx))]
-                [(and expr ...)
-                 #`(if (and expr ...) #,(loop2... body-stx))]
-                [_
-                 (raise-syntax-error 'expand-clauses 
-                                     "unimplemented <filter>" #'clause1)]))]
+              (cond
+                [(if-filter? #'clause1)
+                 (syntax-case #'clause1 ()
+                   [(the-if expr)
+                    #`(if expr #,(loop2... body-stx))]
+                   [else (raise-syntax-error 'expand-clauses 
+                                             "internal error: <if-filter> expected" #'clause1)])] 
+                [else
+                 (syntax-case* #'clause1 (if not and or) module-or-top-identifier=?  ; due to not
+                   #;[(if expr)  
+                      #`(if expr #,(loop2... body-stx))]
+                   [(not expr)
+                    #`(if (not expr) #,(loop2... body-stx))]
+                   [(or expr ...)
+                    #`(if (or expr ...) #,(loop2... body-stx))]
+                   [(and expr ...)
+                    #`(if (and expr ...) #,(loop2... body-stx))]
+                   [_
+                    (raise-syntax-error 'expand-clauses 
+                                        "unimplemented <filter>" #'clause1)])]))]
            [(begin-clause? #'clause1)
             (let ([loop2... (expand-clauses #'(clause2 ...))])
               (syntax-case #'clause1 ()

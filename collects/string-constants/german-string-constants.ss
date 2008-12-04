@@ -901,6 +901,8 @@
  (enforce-primitives-group-box-label "Initiale Bindungen")
  (enforce-primitives-check-box-label "Änderungen von initialen Bindungen verbieten")
 
+ (automatically-compile? "Quelldateien automatisch compilieren?")
+
  ;; used in the bottom left of the drscheme frame as the label
  ;; above the programming language's name
  ;; used the popup menu from the just above; greyed out and only

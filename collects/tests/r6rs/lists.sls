@@ -15,7 +15,7 @@
     
     (test (for-all even? '()) #t)
     (test (for-all even? '(3 1 4 1 5 9)) #f)
-    (test (for-all even? '(3 1 4 1 5 9 . 2)) #f)
+    ;; (test (for-all even? '(3 1 4 1 5 9 . 2)) #f) ; removed from R6RS
     (test (for-all even? '(2 4 14)) #t)
     (test/exn (for-all even? '(2 4 14 . 9)) &assertion)
     (test (for-all (lambda (n) (and (even? n) n))
@@ -121,7 +121,7 @@
     (test (for-all (lambda (x) x) '(12 14)) 14)
     (test (for-all (lambda (x) x) '(12)) 12)
     (test (for-all (lambda (x) x) '()) #t)
-    (test (for-all even? '(13 . 14)) #f)
+    ;; (test (for-all even? '(13 . 14)) #f) ; removed from R6RS
     (test (for-all cons '(1 2 3) '(a b c)) '(3 . c))
     (test (for-all (lambda (a b) (= a 1)) '(1 2 3) '(a b c)) #f)
     ;; R6RS merely says that this *should* work, but not must:

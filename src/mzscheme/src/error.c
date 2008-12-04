@@ -778,7 +778,7 @@ scheme_signal_error (const char *msg, ...)
   if (scheme_current_thread->current_local_env) {
     char *s2 = " [during expansion]";
     strcpy(buffer + len, s2);
-    len = strlen(s2);
+    len += strlen(s2);
   }
 
   buffer[len] = 0;

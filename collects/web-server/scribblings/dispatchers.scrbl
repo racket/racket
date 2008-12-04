@@ -1,5 +1,13 @@
 #lang scribble/doc
 @(require "web-server.ss"
+          (for-label web-server/http
+                     net/url
+                     web-server/servlet/setup
+                     web-server/configuration/responders
+                     web-server/private/servlet
+                     scheme/date
+                     web-server/private/util
+                     web-server/private/connection-manager)
           (for-syntax scheme/base))
 
 @(define-syntax (a-dispatcher stx)
@@ -70,7 +78,7 @@ Consider the following example dispatcher, that captures the essence of URL rewr
      (code:comment "Call the inner dispatcher...")
      (inner conn
             (code:comment "with a new request object...")
-            (copy-struct request req
+            (struct-copy request req
                          (code:comment "with a new URL!")
                          [request-uri (rule (request-uri req))]))))
 ]
@@ -91,7 +99,7 @@ URLs to paths on the filesystem.
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
-@defproc[(make-url->path (base path?))
+@defproc[(make-url->path (base path-string?))
          url->path/c]{
  The @scheme[url-path/c] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
@@ -109,7 +117,7 @@ URLs to paths on the filesystem.
  by a file. The most prominent example is obviously servlets.}
                     
 @defproc[(filter-url->path [regex regexp?]
-                                 [url->path url-path/c])
+                                 [url->path url->path/c])
          url->path/c]{
  Runs the underlying @scheme[url->path] but will only return if the path, when considered as a string,
  matches the @scheme[regex]. This is useful to disallow strange files, like GIFs, from being considered
@@ -286,7 +294,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 
  @scheme[password-file] is parsed as:
  @schemeblock[(list ([domain : string?]
-                     [path : string-regexp?]
+                     [path : string?] (code:comment "This string is interpreted as a regex")
                      (list [user : symbol?]
                            [pass : string?])
                      ...)
@@ -351,16 +359,16 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
-                ((url url?) (exn exn?) . -> . response?)
+                (url? exn? . -> . response?)
                 servlet-loading-responder]
                [#:responders-servlet
                 responders-servlet
-                ((url url?) (exn exn?) . -> . response?)
+                (url? exn? . -> . response?)
                 servlet-error-responder])
          dispatcher/c]{
  This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
  If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
- @scheme[responders-servlet].
+ @scheme[responders-servlet]. If a servlet raises calls @scheme[next-dispatcher], then the signal is propagated by this dispatcher.
 }
                       
 }

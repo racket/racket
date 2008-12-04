@@ -55,8 +55,8 @@
   ;; really idempotent, on the structure. Assume that
   ;; the test case is broken, not expand.
   (define (ensure-good-test-case o1 o2)
-    (let ([d1 (syntax-object->datum o1)]
-          [d2 (syntax-object->datum o2)])
+    (let ([d1 (syntax->datum o1)]
+          [d2 (syntax->datum o2)])
       (unless (equal? d1 d2)
         (error 'compare-objs "bad test case: ~e ~e" d1 d2))))
   
@@ -64,19 +64,16 @@
   (define (both? p? o1 o2) (and (p? o1) (p? o2)))
   
   (compare-expansion #''())
-  (compare-expansion #'(#%datum . 1))
-  (compare-expansion #'(#%datum . #t))
   (compare-expansion #'(quote 1))
   (compare-expansion #'(#%top . x))
   (compare-expansion #'(if (#%top . a) (#%top . b) (#%top . c)))
-  (compare-expansion #'(if (#%top . a) (#%top . b)))
-  (compare-expansion #'(lambda () (#%top . x)))
-  (compare-expansion #'(lambda (x) x))
-  (compare-expansion #'(lambda (x y z) x))
-  (compare-expansion #'(lambda (x) x x x))
+  (compare-expansion #'(#%plain-lambda () (#%top . x)))
+  (compare-expansion #'(#%plain-lambda (x) x))
+  (compare-expansion #'(#%plain-lambda (x y z) x))
+  (compare-expansion #'(#%plain-lambda (x) x x x))
   (compare-expansion #'(case-lambda))
-  (compare-expansion #'(case-lambda [() (#%datum . 1)]))
-  (compare-expansion #'(case-lambda [() (#%datum . 1)] [(x) x]))
+  (compare-expansion #'(case-lambda [() (quote 1)]))
+  (compare-expansion #'(case-lambda [() (quote 1)] [(x) x]))
   (compare-expansion #'(case-lambda [(x y) x]))
   (compare-expansion #'(define-values () (#%top . x)))
   (compare-expansion #'(define-values (x) (#%top . x)))
@@ -84,37 +81,37 @@
   (compare-expansion #'(define-syntaxes () (#%top . x)))
   (compare-expansion #'(define-syntaxes (s) (#%top . x)))
   (compare-expansion #'(define-syntaxes (s x y) (#%top . x)))
-  (compare-expansion #'(require mzscheme))
-  (compare-expansion #'(require (lib "list.ss")))
-  (compare-expansion #'(require (lib "list.ss") mzscheme))
-  (compare-expansion #'(require-for-syntax mzscheme))
-  (compare-expansion #'(require-for-syntax (lib "list.ss")))
-  (compare-expansion #'(require-for-syntax (lib "list.ss") mzscheme))
+  (compare-expansion #'(#%require mzscheme))
+  (compare-expansion #'(#%require (lib "list.ss")))
+  (compare-expansion #'(#%require (lib "list.ss") mzscheme))
+  (compare-expansion #'(#%require (for-syntax mzscheme)))
+  (compare-expansion #'(#%require (for-syntax (lib "list.ss"))))
+  (compare-expansion #'(#%require (for-syntax (lib "list.ss") mzscheme)))
   (compare-expansion #'(begin))
   (compare-expansion #'(begin (#%top . x)))
-  (compare-expansion #'(begin (#%top . x) (#%datum . 2)))
+  (compare-expansion #'(begin (#%top . x) (quote 2)))
   (compare-expansion #'(begin0 (#%top . x)))
-  (compare-expansion #'(begin0 (#%top . x) (#%datum . 2)))
-  (compare-expansion #'(begin0 (#%top . x) (#%datum . 2) (#%datum . 2)))
+  (compare-expansion #'(begin0 (#%top . x) (quote 2)))
+  (compare-expansion #'(begin0 (#%top . x) (quote 2) (quote 2)))
   (compare-expansion #'(let-values () (#%top . q)))
   (compare-expansion #'(let-values (((x y) (#%top . p))) (#%top . q)))
-  (compare-expansion #'(let-values (((x y) (#%top . p)) ((z) (#%datum . 12))) (#%top . q)))
+  (compare-expansion #'(let-values (((x y) (#%top . p)) ((z) (quote 12))) (#%top . q)))
   (compare-expansion #'(let-values (((x y) (#%top . p))) (#%top . q) (#%top . p)))
   (compare-expansion #'(letrec-values () (#%top . q)))
   (compare-expansion #'(letrec-values (((x y) (#%top . p))) (#%top . q)))
-  (compare-expansion #'(letrec-values (((x y) (#%top . p)) ((z) (#%datum . 12))) (#%top . q)))
+  (compare-expansion #'(letrec-values (((x y) (#%top . p)) ((z) (quote 12))) (#%top . q)))
   (compare-expansion #'(letrec-values (((x y) (#%top . p))) (#%top . q) (#%top . p)))
   (compare-expansion #'(set! x (#%top . y)))
   (compare-expansion #'(quote-syntax x))
   (compare-expansion #'(with-continuation-mark (#%top . x) (#%top . x) (#%top . x)))
-  (compare-expansion #'(#%app (#%top . f)))
-  (compare-expansion #'(#%app (#%top . f) (#%datum . 1))))
+  (compare-expansion #'(#%plain-app (#%top . f)))
+  (compare-expansion #'(#%plain-app (#%top . f) (quote 1))))
 
 (define expand-test-use-toplevel? #f)
 
-(define datum->top-level-syntax-object
+(define datum->top-level-syntax
   (lambda (v)
-    (namespace-syntax-introduce (datum->syntax-object #f v))))
+    (namespace-syntax-introduce (datum->syntax #f v))))
 
 (define now-expanding (make-parameter #f))
 
@@ -139,13 +136,13 @@
 	      (let ([x (if (or (compiled-expression? x)
 			       (and (syntax? x) (compiled-expression? (syntax-e x))))
 			   x
-			   (parameterize ([current-module-name-prefix #f]
+			   (parameterize ([current-module-declare-name #f]
 					  [now-expanding expand-test-use-toplevel?])
 			     (expand-syntax
 			      ((if expand-test-use-toplevel?
 				   expand-top-level-with-compile-time-evals
 				   expand-syntax)
-			       ((if (syntax? x) values datum->top-level-syntax-object) x)))))])
+			       ((if (syntax? x) values datum->top-level-syntax) x)))))])
 		(set! mz-test-syntax-errors-allowed? #f)
 		(orig x)))))))
    (lambda ()

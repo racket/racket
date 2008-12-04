@@ -9,15 +9,6 @@
   (define (get-bitmap file)
     (make-object mred:bitmap% file))
 
-  (define (make-semi bm-in w h)
-    (let* ([bm (make-object mred:bitmap% (floor (/ w 2)) h)]
-	   [mdc (make-object mred:bitmap-dc%)])
-      (send mdc set-bitmap bm)
-      (send mdc set-scale 0.5 1)
-      (send mdc draw-bitmap bm-in 0 0)
-      (send mdc set-bitmap #f)
-      bm))
-
   (define (make-dim bm-in)
     (let ([w (send bm-in get-width)]
 	  [h (send bm-in get-height)])
@@ -46,11 +37,6 @@
 
   (define back (get-bitmap (here "card-back.png")))
 
-  (define semi-back 
-    (let ([w (send back get-width)]
-	  [h (send back get-height)])
-      (make-semi back w h)))
-
   (define dim-back
     (make-dim back))
 
@@ -74,9 +60,9 @@
 			    value
 			    w h
 			    front back
-			    (make-semi front w h) semi-back
 			    (lambda () (make-dim front))
-			    (lambda () dim-back))
+			    (lambda () dim-back)
+                            (make-hash-table 'equal))
 			  (vloop (sub1 value))))))))))
   
   (define (make-card front-bm back-bm suit-id value)
@@ -87,12 +73,9 @@
 		   value
 		   w h
 		   front-bm (or back-bm back)
-		   (make-semi front-bm w h)
-		   (if back-bm 
-		       (make-semi back-bm w h)
-		       semi-back)
 		   (lambda () (make-dim front-bm))
 		   (lambda ()
 		     (if back-bm 
 			 (make-dim back)
-			 dim-back))))))
+			 dim-back))
+                   (make-hash-table 'equal)))))

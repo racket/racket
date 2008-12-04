@@ -286,9 +286,9 @@
             w
             h))))
   
-  (define (filled-rounded-rectangle w h [corner-radius 0.25] #:angle [angle 0])
+  (define (filled-rounded-rectangle w h [corner-radius -0.25] #:angle [angle 0])
     (let ([dc-path (new dc-path%)])
-      (send dc-path rounded-rectangle 0 0 w h (- corner-radius))
+      (send dc-path rounded-rectangle 0 0 w h corner-radius)
       (send dc-path rotate angle)
       (let-values ([(x y w h) (send dc-path get-bounding-box)])
         (dc (λ (dc dx dy) 

@@ -1156,9 +1156,11 @@
                                                                  [(_) (+ 2 (abcdefg 9))]
                                                                  [(_ ?) 77])])
                                                      (abcdefg))))
+(define expand-test-use-toplevel? #t)
 (splicing-let-syntax ([abcdefg (syntax-rules ()
                                  [(_) 8])])
                      (define hijklmn (abcdefg)))
+(define expand-test-use-toplevel? #f)
 (test 8 'hijklmn hijklmn)
 (test 30 'local-hijklmn (let ()
                           (splicing-let-syntax ([abcdefg (syntax-rules ()

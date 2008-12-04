@@ -615,7 +615,7 @@ To do this, we set aside a path to store these files, and then tell
 the web server where that directory is.  The function
 @scheme[static-files-path],
 
-@defthing[static-files-path (path? -> void)]
+@defthing[static-files-path (path-string? -> void)]
 
 tells the web server to look in the given path when it receives a URL
 that looks like a static resource request.

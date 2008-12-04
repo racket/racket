@@ -2,6 +2,8 @@
 
 (require
  scheme/list
+ scheme/tcp
+ scheme
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in '#%kernel [apply kernel:apply])
@@ -481,3 +483,20 @@
 [read-accept-reader (-Param B B)]
 
 [maybe-print-message (-String . -> . -Void)]
+
+;; scheme/tcp
+[tcp-listener? (make-pred-ty -TCP-Listener)]
+[tcp-abandon-port (-Port . -> . -Void)]
+[tcp-accept (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
+[tcp-accept/enable-break (-TCP-Listener . -> . (-values (list -Input-Port -Output-Port)) )]
+[tcp-accept-ready? (-TCP-Listener . -> . B )]
+[tcp-addresses (-Port . -> . (-values (list N N)))]
+[tcp-close (-TCP-Listener . -> . -Void )]
+[tcp-connect (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
+[tcp-connect/enable-break (-String -Integer . -> . (-values (list -Input-Port -Output-Port)))]
+[tcp-listen (N . -> . -TCP-Listener)]
+
+;; scheme/bool
+[boolean=? (B B . -> . B)]
+[symbol=? (Sym Sym . -> . B)]
+[false? (make-pred-ty (-val #f))]

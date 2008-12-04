@@ -13,12 +13,9 @@
 (define launch-browser? #t)
 
 (provide/contract
- [static-files-path ((or/c string? path?) . -> . void?)])
+ [static-files-path (path-string? . -> . void?)])
 (define (static-files-path path)
-  (set! extra-files-path 
-        (if (path? path) 
-            path
-            (string->path path))))
+  (set! extra-files-path path))
 
 (provide/contract
  [no-web-browser (-> void)])
@@ -64,7 +61,7 @@
           (provide/contract (#,start (request? . -> . response?)))
           (if extra-files-path
               (serve/servlet #,start
-                             #:extra-files-path extra-files-path
+                             #:extra-files-paths (list extra-files-path)
                              #:launch-browser? launch-browser?)
               (serve/servlet #,start
                              #:launch-browser? launch-browser?)))))]))

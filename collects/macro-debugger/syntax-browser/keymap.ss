@@ -2,6 +2,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
+         "../util/notify.ss"
          "interfaces.ss"
          "partition.ss")
 (provide smart-keymap%
@@ -48,6 +49,7 @@
       (set! on-demand-actions (cons p on-demand-actions)))
 
     (define/override (on-demand)
+      (super on-demand)
       (for-each (lambda (p) (p)) on-demand-actions))
 
     (super-new)))
@@ -92,28 +94,42 @@
                   (lambda (i e)
                     (send config set-props-shown? #f)))
 
-    (define/public (add-edit-items)
+    (define/private (selected-syntax)
+      (send controller get-selected-syntax))
+
+    (define/public (add-menu-items)
       (set! copy-menu
             (new menu-item% (label "Copy") (parent the-context-menu)
-                 (callback (lambda (i e)
-                             (call-function "copy-text" i e)))))
-      (void))
-
-    (define/public (after-edit-items)
-      (void))
-
-    (define/public (add-selection-items)
+                 (demand-callback
+                  (lambda (i)
+                    (send i enable (and (selected-syntax) #t))))
+                 (callback
+                  (lambda (i e)
+                    (call-function "copy-text" i e)))))
+      (add-separator)
       (set! clear-menu
             (new menu-item%
                  (label "Clear selection")
                  (parent the-context-menu)
+                 (demand-callback
+                  (lambda (i)
+                    (send i enable (and (selected-syntax) #t))))
                  (callback 
                   (lambda (i e)
                     (call-function "clear-syntax-selection" i e)))))
       (set! props-menu
+            (menu-option/notify-box the-context-menu
+                                    "View syntax properties"
+                                    (get-field props-shown? config))
+            #;
             (new menu-item%
                  (label "Show syntax properties")
                  (parent the-context-menu)
+                 (demand-callback
+                  (lambda (i)
+                    (if (send config get-props-shown?)
+                        (send i set-label "Hide syntax properties")
+                        (send i set-label "Show syntax properties"))))
                  (callback 
                   (lambda (i e)
                     (if (send config get-props-shown?)
@@ -121,55 +137,10 @@
                         (call-function "show-syntax-properties" i e))))))
       (void))
 
-    (define/public (after-selection-items)
-      (void))
-
-    (define/public (add-partition-items)
-      (let ([secondary (new menu% (label "identifier=?") (parent the-context-menu))])
-        (for-each
-         (lambda (name func)
-           (let ([this-choice
-                  (new checkable-menu-item%
-                       (label name)
-                       (parent secondary)
-                       (callback 
-                        (lambda (i e)
-                          (send controller set-identifier=? 
-                                (cons name func)))))])
-             (send controller listen-identifier=?
-                   (lambda (name+proc)
-                     (send this-choice check (eq? name (car name+proc)))))))
-         (map car (identifier=-choices))
-         (map cdr (identifier=-choices))))
-      (void))
-
-    (define/public (after-partition-items)
-      (void))
-
     (define/public (add-separator)
       (new separator-menu-item% (parent the-context-menu)))
 
     ;; Initialize menu
 
-    (add-edit-items)
-    (after-edit-items)
-
-    (add-separator)
-    (add-selection-items)
-    (after-selection-items)
-
-    (add-separator)
-    (add-partition-items)
-    (after-partition-items)
-
-    (send the-context-menu add-on-demand
-          (lambda ()
-            (define stx (send controller get-selected-syntax))
-            (send copy-menu enable (and stx #t))
-            (send clear-menu enable (and stx #t))))
-    (send config listen-props-shown?
-          (lambda (shown?)
-            (send props-menu set-label
-                  (if shown?
-                      "Hide syntax properties"
-                      "Show syntax properties"))))))
+    (add-menu-items)
+    ))

@@ -158,7 +158,10 @@
 					      [else (list defn-or-expr)])))
 					defns&exprs)))
 				    values)])
+
 			(let ([all-expanded (expand-all (syntax->list (syntax (defn&expr ...))))])
+                          (when def-ctx
+                            (internal-definition-context-seal def-ctx))
 			  ;; Get all the defined names, sorting out variable definitions
 			  ;; from syntax definitions.
 			  (let* ([definition?

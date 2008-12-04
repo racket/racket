@@ -260,7 +260,13 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_cons_proc;
+extern Scheme_Object *scheme_mcons_proc;
 extern Scheme_Object *scheme_list_proc;
+extern Scheme_Object *scheme_list_star_proc;
+extern Scheme_Object *scheme_vector_proc;
+extern Scheme_Object *scheme_vector_immutable_proc;
+extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
@@ -432,6 +438,7 @@ struct Scheme_Custodian {
 #ifdef MZ_PRECISE_GC
   int gc_owner_set;
   Scheme_Object *cust_boxes;
+  int num_cust_boxes, checked_cust_boxes;
 #endif
 };
 
@@ -576,7 +583,7 @@ typedef struct Scheme_Struct_Type {
   int num_props; /* < 0 => props is really a hash table */
 
   Scheme_Object *proc_attr; /* int (position) or proc, only for proc_struct */
-  char *immutables;
+  char *immutables; /* for immediate slots, only (not parent) */
 
   Scheme_Object *guard;
 
@@ -714,12 +721,17 @@ void scheme_set_rename(Scheme_Object *rnm, int pos, Scheme_Object *oldname);
 Scheme_Object *scheme_make_rename_rib(void);
 void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename);
 void scheme_drop_first_rib_rename(Scheme_Object *ro);
+Scheme_Object *scheme_stx_id_remove_rib(Scheme_Object *stx, Scheme_Object *ro);
+void scheme_stx_seal_rib(Scheme_Object *rib);
+int *scheme_stx_get_rib_sealed(Scheme_Object *rib);
 
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
                                              Scheme_Object *uid);
+
+Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 
 #define mzMOD_RENAME_TOPLEVEL 0
 #define mzMOD_RENAME_NORMAL   1
@@ -1823,7 +1835,8 @@ typedef struct Scheme_Comp_Env
 typedef struct Scheme_Compile_Expand_Info
 {
   MZTAG_IF_REQUIRED
-  int comp;
+  short comp;
+  short comp_flags;
   Scheme_Object *value_name;
   Scheme_Object *certs;
   Scheme_Object *observer;
@@ -1831,7 +1844,11 @@ typedef struct Scheme_Compile_Expand_Info
   char resolve_module_ids;
   char pre_unwrapped;
   int depth;
+  int env_already;
 } Scheme_Compile_Expand_Info;
+
+#define COMP_ALLOW_SET_UNDEFINED 0x1
+#define COMP_CAN_INLINE 0x2
 
 typedef Scheme_Compile_Expand_Info Scheme_Compile_Info;
 typedef Scheme_Compile_Expand_Info Scheme_Expand_Info;
@@ -2295,6 +2312,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_FOR_STOPS 128
 #define SCHEME_FOR_INTDEF 256
 #define SCHEME_CAPTURE_LIFTED 512
+#define SCHEME_INTDEF_SHADOW 1024
 
 /* Flags used with scheme_static_distance */
 #define SCHEME_ELIM_CONST 1

@@ -519,6 +519,27 @@
 		 (flip-step (lambda () (for-each (lambda (c) (send c semi-flip)) cards)))
 		 (flip-step (lambda () (for-each (lambda (c) (send c flip)) cards)))
 		 (flip-step (lambda () (for-each (lambda (c) (send c semi-flip)) cards))))))]
+        [rotate-card
+         (lambda (card mode) (rotate-cards (list card) mode))]
+        [rotate-cards
+         (lambda (cards mode)
+           (begin-card-sequence)
+           (let ([tw (table-width)]
+                 [th (table-height)])
+             (map (lambda (c)
+                    (let ([w (send c card-width)]
+                          [h (send c card-height)])
+                      (send c rotate mode)
+                      (let ([w2 (send c card-width)]
+                            [h2 (send c card-height)]
+                            [x (box 0)]
+                            [y (box 0)])
+                        (send pb get-snip-location c x y)
+                        (send pb move-to c 
+                              (min (max 0 (+ (unbox x) (/ (- w w2) 2))) (- tw w2))
+                              (min (max 0 (+ (unbox y) (/ (- h h2) 2))) (- th h2))))))
+                  cards)
+             (end-card-sequence)))]
 	[card-face-up
 	 (lambda (card)
 	   (cards-face-up (list card)))]
@@ -695,27 +716,28 @@
 	     (send pb only-front-selected)))]
 	[position-cards-in-region
 	 (lambda (cards r set)
-	   (let-values ([(x y w h) (send pb get-region-box r)]
-			[(len) (sub1 (length cards))]
-			[(cw ch) (values (send back get-width)
-					 (send back get-height))])
-	     (let* ([pretty (lambda (cw) (+ (* (add1 len) cw) (* len PRETTY-CARD-SEP-AMOUNT)))]
-		    [pw (pretty cw)]
-		    [ph (pretty ch)])
-	       (let-values ([(x w) (if (> w pw)
-				       (values (+ x (/ (- w pw) 2)) pw)
-				       (values x w))]
-			    [(y h) (if (> h ph)
-				       (values (+ y (/ (- h ph) 2)) ph)
-				       (values y h))])
-		 (position-cards cards x y
-				 (lambda (p)
-				   (if (zero? len)
-				       (values (/ (- w cw) 2)
-					       (/ (- h ch) 2))
-				       (values (* (- len p) (/ (- w cw) len))
-					       (* (- len p) (/ (- h ch) len)))))
-				 set)))))])
+           (unless (null? cards)
+             (let-values ([(x y w h) (send pb get-region-box r)]
+                          [(len) (sub1 (length cards))]
+                          [(cw ch) (values (send (car cards) card-width)
+                                           (send (car cards) card-height))])
+               (let* ([pretty (lambda (cw) (+ (* (add1 len) cw) (* len PRETTY-CARD-SEP-AMOUNT)))]
+                      [pw (pretty cw)]
+                      [ph (pretty ch)])
+                 (let-values ([(x w) (if (> w pw)
+                                         (values (+ x (/ (- w pw) 2)) pw)
+                                         (values x w))]
+                              [(y h) (if (> h ph)
+                                         (values (+ y (/ (- h ph) 2)) ph)
+                                         (values y h))])
+                   (position-cards cards x y
+                                   (lambda (p)
+                                     (if (zero? len)
+                                         (values (/ (- w cw) 2)
+                                                 (/ (- h ch) 2))
+                                         (values (* (- len p) (/ (- w cw) len))
+                                                 (* (- len p) (/ (- h ch) len)))))
+                                   set))))))])
       (super-new [label title] [style '(metal no-resize-border)])
       (begin
         (define c (make-object mred:editor-canvas% this #f '(no-vscroll no-hscroll)))

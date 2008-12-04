@@ -34,7 +34,7 @@ You are given the entire @schememodname[web-server/servlet] API.
 
 @subsection{Customization API}
 
-@defmodule[web-server/insta/insta] {
+@defmodule[web-server/insta/insta]{
 
 The following API is provided to customize the server instance:
 
@@ -43,7 +43,7 @@ The following API is provided to customize the server instance:
   @onscreen["Run"].
 }
 
-@defproc[(static-files-path [path path?]) void]{
+@defproc[(static-files-path [path path-string?]) void]{
  This instructs the Web server to serve static files, such as stylesheet and images, from @scheme[path].
 }
 
@@ -81,11 +81,15 @@ To run the web server with MrEd, use
 
 @; ------------------------------------------------------------
 @section[#:tag "web-server.ss"]{Functional}
-@(require (for-label web-server/web-server))
-@(require (for-label web-server/dispatchers/filesystem-map)
-          (for-label web-server/web-config-unit)
-          (for-label web-server/web-config-sig)
-          (for-label web-server/configuration/configuration-table)
+@(require (for-label web-server/web-server
+                     web-server/dispatchers/filesystem-map
+                     web-server/web-config-unit
+                     web-server/web-config-sig
+                     web-server/private/dispatch-server-unit
+                     web-server/private/dispatch-server-sig
+                     web-server/dispatchers/dispatch
+                     web-server/configuration/configuration-table)
+          (prefix-in raw: (for-label net/tcp-unit))
           (prefix-in files: (for-label web-server/dispatchers/dispatch-files)))
 
 @defmodule[web-server/web-server]{
@@ -94,14 +98,14 @@ To run the web server with MrEd, use
 of the @web-server in other applications, or loading a custom
 dispatcher. 
 
-@defproc[(serve [#:dispatch dispatch dispatcher?]
+@defproc[(serve [#:dispatch dispatch dispatcher/c]
                 [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                 [#:port port integer? 80]
                 [#:listen-ip listen-ip (or/c string? false/c) #f]
                 [#:max-waiting max-waiting integer? 40]
                 [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
- Constructs an appropriate @scheme[dispatch-config^], invokes the
+ Constructs an appropriate @scheme[dispatch-server-config^], invokes the
  @scheme[dispatch-server@], and calls its @scheme[serve] function.
  
  The @scheme[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
@@ -122,7 +126,7 @@ from a given path:
    #:port 8080))
 ]
 
-@defproc[(serve/ports [#:dispatch dispatch dispatcher?]
+@defproc[(serve/ports [#:dispatch dispatch dispatcher/c]
                       [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                       [#:ports ports (listof integer?) (list 80)]
                       [#:listen-ip listen-ip (or/c string? false/c) #f]
@@ -133,7 +137,7 @@ from a given path:
  a function that shuts down all of the server instances.
 }
 
-@defproc[(serve/ips+ports [#:dispatch dispatch dispatcher?]
+@defproc[(serve/ips+ports [#:dispatch dispatch dispatcher/c]
                           [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                           [#:ips+ports ips+ports (listof (cons/c (or/c string? false/c) (listof integer?))) (list (cons #f (list 80)))]
                           [#:max-waiting max-waiting integer? 40]

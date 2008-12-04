@@ -2,13 +2,11 @@
   <head><title>@title </title></head>
   <body>
     <table>
-      @in[c @clients]{
-       @t{
+      @in[c clients]{
         <tr>
          <td>@(client-surname c), @(client-firstname c)</td>
          <td><a href="mailto:@(client-email c)">@(client-email c)</a></td>
         </tr>
-       }
       }
     </table>
   </body>

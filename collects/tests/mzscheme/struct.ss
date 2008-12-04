@@ -927,4 +927,54 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-struct foo (a [b #:mutable]) #:transparent)
+  (define-struct (bar foo) (f g)
+    #:transparent
+    #:property
+    prop:procedure
+    (struct-field-index f))
+  (test '(1) (make-bar 1 2 list 4) 1)
+  (test '(foo 2 0 (0)) call-with-values 
+        (lambda () (struct-type-info struct:foo))
+        (lambda (name cnt auto-cnt acc mut imm super skipped?)
+          (list name cnt auto-cnt imm)))
+  (test '(bar 2 0 (0 1)) call-with-values 
+        (lambda () (struct-type-info struct:bar))
+        (lambda (name cnt auto-cnt acc mut imm super skipped?)
+          (list name cnt auto-cnt imm))))
+
+(let ()
+  (define-struct foo (a [b #:mutable] [z #:auto]) #:transparent)
+  (define-struct (bar foo) (f g)
+    #:transparent
+    #:property
+    prop:procedure
+    (struct-field-index f))
+  (test '#&1 (make-bar 1 2 box 4) 1)
+  (test '(foo 2 1 (0)) call-with-values 
+        (lambda () (struct-type-info struct:foo))
+        (lambda (name cnt auto-cnt acc mut imm super skipped?)
+          (list name cnt auto-cnt imm)))
+  (test '(bar 2 0 (0 1)) call-with-values 
+        (lambda () (struct-type-info struct:bar))
+        (lambda (name cnt auto-cnt acc mut imm super skipped?)
+          (list name cnt auto-cnt imm))))
+
+(let ()
+  (define-struct foo (a [b #:mutable] [z #:auto]) #:transparent)
+  (define (try v)
+    (define-struct (bar foo) ([f #:mutable] g [q #:auto])
+      #:property
+      prop:procedure
+      v)
+    10)
+  (err/rt-test (try 0))
+  (err/rt-test (try 2))
+  (err/rt-test (try -1))
+  (err/rt-test (try 'x))
+  (test 10 try 1))
+
+;; ----------------------------------------
+
 (report-errs)

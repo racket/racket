@@ -39,6 +39,7 @@
   (define (->b x)
     (cond [(list? x) (map ->b x)]
           [(string? x) (string->bytes/utf-8 x)]
+          [(pregexp? x) (byte-pregexp (->b (object-name x)))]
           [else x]))
   (define fun* #f)
   (define t
@@ -126,8 +127,8 @@
   (t '((0 . 1) (2 . 3) (4 . 5)) "a b c" "[abc]" "a b c" 0 #f)
   (t '((0 . 1) (2 . 3) (4 . 5)) "a b c" "[abc]" "a b c" 0 5)
   ;; ---------- tests with zero-length matches ----------
-  ;; Many of these tests can be repeated with Perl.  To try something
-  ;; in Perl, put this code in a file:
+  ;; Many of these tests can be repeated with Perl.  To try something in Perl,
+  ;; put this code in a file:
   ;;   #!/usr/bin/perl
   ;;   sub test {
   ;;     my ($rx,$str) = @_; @words = split /$rx/, $str;
@@ -136,15 +137,16 @@
   ;;     print ") eof \"$rx\" \"$str\")\n";
   ;;   };
   ;;   test("[abc]","1a2b3");
-  ;; and it will print a test that does what perl is doing.  Tests
-  ;; that differ from Perl have explanations.
+  ;; and it will print a test that does what perl is doing.  Tests that differ
+  ;; from Perl have explanations.
   ;;
   (t regexp-split)
   ;; test("a","a");
   ;; (t '() eof "a" "a")
-  ;;   perl returns an empty list, we return '("" ""), and this is a
-  ;;   difference that is unrelated to dealing with empty matches,
-  ;;   just the way that perl's split throws out some empty matches.
+  ;;   perl returns an empty list, we return '("" ""), and this is a difference
+  ;;   that is unrelated to dealing with empty matches, just the way that
+  ;;   perl's split throws out some empty matches (it throws empty matches at
+  ;;   the end (but not at the beginning for some reason...))
   (t '("" "") eof "a" "a")
   ;; test("3","123");
   ;; (t '("12") eof "3" "123")
@@ -162,49 +164,51 @@
   (t '("1" "2" "3" "4") eof " *" "12 34")
   ;; test(" *"," 12 34 ");
   ;; (t '("" "1" "2" "3" "4") eof " *" " 12 34 ")
-  ;;   perl drops the last empty string, we don't -- unrelated to
-  ;;   empty matches (same as the <"a","a"> case above)
+  ;;   again, perl drops the last empty string but we don't
   (t '("" "1" "2" "3" "4" "") eof " *" " 12 34 ")
   ;; test("2|", "1234");
   (t '("1" "3" "4") eof "2|" "1234")
   ;; test("1|", "1234");
   (t '("" "2" "3" "4") eof "1|" "1234")
   ;; test("4|", "1234");
-  ;;   perl drops the last empty string, we don't, same as above
+  ;; (t '("1" "2" "3") eof "4|" "1234")
+  ;;   perl perl drops the last empty string again
   (t '("1" "2" "3" "") eof "4|" "1234")
   ;; test("|2", "1234");
-  ;; (t '("1" "" "3" "4") eof "|2" "1234")
-  ;;   perl will find the "2", we can't do that since we'll always
-  ;;   find the empty match first, so it's just like using "" (to do
-  ;;   the perl thing, we'll need a hook into the matcher's C code, or
-  ;;   some way of saying `match this pattern but prefer a non-empty
-  ;;   match if possible')
-  (t '("1" "2" "3" "4") eof "|2" "1234")
+  (t '("1" "" "3" "4") eof "|2" "1234")
   ;; test("2|3", "1234");
   (t '("1" "" "4") eof "2|3" "1234")
+  ;; test("2|3|4", "12345");
+  (t '("1" "" "" "5") eof "2|3|4" "12345")
   ;; test("1|2", "1234");
   (t '("" "" "34") eof "1|2" "1234")
   ;; test("3|4", "1234");
   ;; (t '("12") eof "3|4" "1234")
-  ;;   again, perl dumps empty matches at the end, even two
+  ;;   perl perl drops the last empty string again -- even two here
   (t '("12" "" "") eof "3|4" "1234")
+  ;; test("2|3|4", "1234");
+  ;; (t '("1") eof "2|3|4" "1234")
+  ;;   ...and even three in this example
+  (t '("1" "" "" "") eof "2|3|4" "1234")
   ;; test('$',"123");
   (t '("123") eof "$" "123")
   ;; test('^',"123");
   ;; (t '("123") eof "^" "123")
-  ;;   this is a technicality: perl matches "^" once, but mzscheme
-  ;;   matches on whatever `start' may be; perl is treating it as a
-  ;;   beginning-of-line instead of a ...-of-string behind your back
-  ;;   "since it isn't much use otherwise"
-  ;;   (http://perldoc.perl.org/functions/split.html); so our correct
-  ;;   test is:
-  (t '("1" "2" "3") eof "^" "123")
-  ;;   and we can get the same with "(m?:^)":
-  (t '("123") eof "(m?:^)" "123")
+  ;;   this is a technicality: perl matches "^" once, but mzscheme matches on
+  ;;   whatever `start' may be; perl is treating it as a beginning-of-line
+  ;;   instead of a beginning-of-string behind your back "since it isn't much
+  ;;   use otherwise" (http://perldoc.perl.org/functions/split.html); but we
+  ;;   don't allow empty matches at the beginning, so a `^' will never match,
+  ;;   and we get the same behavior anyway:
+  (t '("123") eof "^" "123")
+  ;; test('^',"123\n456");
+  ;; (t '("123\n" "456") eof "^" "123\n456")
+  ;;   we can get the same behavior as perl's with "(m?:^)":
+  (t '("123\n" "456") eof "(?m:^)" "123\n456")
+  ;; test("\\b", "123 456");
+  (t '("123" " " "456") eof #px"\\b" "123 456")
   ;; test("^|a", "abc");
-  ;; (t '("" "bc") eof "^|a" "abc")
-  ;;   same deal here, use "(m?:^)":
-  (t '("" "bc") eof "(m?:^|a)" "abc")
+  (t '("" "bc") eof "^|a" "abc")
   ;; some tests with bounds (these have no perl equivalences)
   (t '("1" "2" " " "3" "4") eof "" "12 34" 0)
   (t '("1" "2" " " "3" "4") eof "" "12 34" 0 #f)
@@ -244,12 +248,13 @@
               (apply (if (string? (car s)) string-append bytes-append)
                      (car s)
                      (append-map list m (cdr s)))))))
-  (t "12 34" #f   " " "12 34")
+  (t "12 34"   #f " " "12 34")
   (t " 12 34 " #f " " " 12 34 ")
-  (t "12 34" #f   " *" "12 34")
+  (t "12 34"   #f " *" "12 34")
   (t " 12 34 " #f " *" " 12 34 ")
-  (t "12 34" #f   "" "12 34")
-  (t " 12 34 " #f "" " 12 34 "))
+  (t "12 34"   #f "" "12 34")
+  (t " 12 34 " #f "" " 12 34 ")
+  )
 
 ;; ---------- string-append* ----------
 (let ()

@@ -89,6 +89,9 @@
   (srenames sbindrhss vrenames vrhss body tag)
   #:transparent)
 
+;;   (make-p:provide <Base> (listof Deriv) ?exn)
+(define-struct (p:provide prule) (inners ?2) #:transparent)
+
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
 ;;   (make-p:#%top <Base> Stx)
@@ -98,7 +101,6 @@
 ;;   (make-p:require <Base>)
 ;;   (make-p:require-for-syntax <Base>)
 ;;   (make-p:require-for-template <Base>)
-;;   (make-p:provide <Base>)
 ;;   (make-p:#%variable-reference <Base>)
 (define-struct (p::STOP prule) () #:transparent)
 (define-struct (p:stop p::STOP) () #:transparent)
@@ -110,7 +112,6 @@
 (define-struct (p:require p::STOP) () #:transparent)
 (define-struct (p:require-for-syntax p::STOP) () #:transparent)
 (define-struct (p:require-for-template p::STOP) () #:transparent)
-(define-struct (p:provide p::STOP) () #:transparent)
 (define-struct (p:#%variable-reference p::STOP) () #:transparent)
 
 ;; A LDeriv is

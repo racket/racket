@@ -15,7 +15,7 @@
    The following page map invariants are required:
 
    Outside of collection, only pages in the older generation should
-   be in the global poitner -> page map.
+   be in the gc->page_maps.
 
    During the mark phase of collection, only pages which contain
    objects which may be marked should be in the page map. This means
@@ -130,14 +130,30 @@ static THREAD_LOCAL NewGC *GC;
 #define GENERATIONS 1
 
 /* the externals */
-void (*GC_collect_start_callback)(void);
-void (*GC_collect_end_callback)(void);
-void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 void (*GC_out_of_memory)(void);
 void (*GC_report_out_of_memory)(void);
-unsigned long (*GC_get_thread_stack_base)(void);
 void (*GC_mark_xtagged)(void *obj);
 void (*GC_fixup_xtagged)(void *obj);
+
+GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
+  NewGC *gc = GC_get_GC();
+  GC_collect_start_callback_Proc old;
+  old = gc->GC_collect_start_callback;
+  gc->GC_collect_start_callback = func;
+  return old;
+}
+GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc func) {
+  NewGC *gc = GC_get_GC();
+  GC_collect_end_callback_Proc old;
+  old = gc->GC_collect_end_callback;
+  gc->GC_collect_end_callback = func;
+  return old;
+}
+void GC_set_collect_inform_callback(void (*func)(int major_gc, long pre_used, long post_used)) {
+  NewGC *gc = GC_get_GC();
+  gc->GC_collect_inform_callback = func;
+}
+
 
 #include "my_qsort.c"
 
@@ -691,8 +707,6 @@ long GC_initial_word(int sizeb)
   info.size = (sizeb >> gcLOG_WORD_SIZE);
   memcpy(&w, &info, sizeof(struct objhead));
 
-  ((struct objhead*)&w)->size = (sizeb >> gcLOG_WORD_SIZE);
-
   return w;
 }
 
@@ -982,8 +996,13 @@ unsigned long GC_get_stack_base()
   return gc->stack_base;
 }
 
+void GC_set_get_thread_stack_base(unsigned long (*func)(void)) {
+  NewGC *gc = GC_get_GC();
+  gc->GC_get_thread_stack_base = func;
+}
+
 static inline void *get_stack_base(NewGC *gc) {
-  if (GC_get_thread_stack_base) return (void*) GC_get_thread_stack_base();
+  if (gc->GC_get_thread_stack_base) return (void*) gc->GC_get_thread_stack_base();
   return (void*) gc->stack_base;
 }
 
@@ -1226,7 +1245,7 @@ typedef struct MarkSegment {
   struct MarkSegment *next;
   void **top;
   void **end;
-  void **stop_here; /* this is only used for its address */
+  void *stop_here; /* this is only used for its address */
 } MarkSegment;
 
 static THREAD_LOCAL MarkSegment *mark_stack = NULL;
@@ -1234,7 +1253,7 @@ static THREAD_LOCAL MarkSegment *mark_stack = NULL;
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
-  mark_frame->top  = PPTR(&(mark_frame->stop_here));
+  mark_frame->top  = &(mark_frame->stop_here);
   mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
   return mark_frame;
 }
@@ -1253,7 +1272,7 @@ inline static void push_ptr(void *ptr)
     if(mark_stack->next) {
       /* we do, so just use it */
       mark_stack = mark_stack->next;
-      mark_stack->top = PPTR(&(mark_stack->stop_here));
+      mark_stack->top = &(mark_stack->stop_here);
     } else {
       /* we don't, so we need to allocate one */
       mark_stack->next = mark_stack_create_frame();
@@ -1268,7 +1287,7 @@ inline static void push_ptr(void *ptr)
 
 inline static int pop_ptr(void **ptr)
 {
-  if(mark_stack->top == PPTR(&mark_stack->stop_here)) {
+  if(mark_stack->top == &mark_stack->stop_here) {
     if(mark_stack->prev) {
       /* if there is a previous page, go to it */
       mark_stack = mark_stack->prev;
@@ -1934,49 +1953,48 @@ void *GC_next_tagged_start(void *p)
 /* garbage collection                                                        */
 /*****************************************************************************/
 
-static void prepare_pages_for_collection(NewGC *gc)
+static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 {
   Page_Range *protect_range = gc->protect_range;
-  struct mpage *work;
+  mpage *work;
   int i;
 
-  GCDEBUG((DEBUGOUTF, "PREPPING PAGES.\n"));
-  if(gc->gc_full) {
-    /* we need to make sure that previous_size for every page is reset, so
-       we don't accidentally screw up the mark routine */
-    if (gc->generations_available) {
-      for(i = 0; i < PAGE_TYPES; i++)
-        for(work = gc->gen1_pages[i]; work; work = work->next) {
-          if (work->mprotected) {
-            work->mprotected = 0;
-            add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
-          }
-        }
-      flush_protect_page_ranges(protect_range, 1);
+  GCDEBUG((DEBUGOUTF, "MAJOR COLLECTION - PREPPING PAGES - reset live_size, reset previous_size, unprotect.\n"));
+  /* we need to make sure that previous_size for every page is reset, so
+     we don't accidentally screw up the mark routine */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for(work = gc->gen1_pages[i]; work; work = work->next) {
+      if (gc->generations_available && work->mprotected) {
+        work->mprotected = 0;
+        add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+      }
+      work->live_size = 0;
+      work->previous_size = PREFIX_SIZE;
     }
-    for(i = 0; i < PAGE_TYPES; i++)
-      for(work = gc->gen1_pages[i]; work; work = work->next) {
-        work->live_size = 0;
-        work->previous_size = PREFIX_SIZE;
-      }
-  } else {
-    /* if we're not doing a major collection, then we need to remove all the
-       pages in gc->gen1_pages[] from the page map */
-    PageMap pagemap = gc->page_maps;
-    for(i = 0; i < PAGE_TYPES; i++)
-      for(work = gc->gen1_pages[i]; work; work = work->next) {
-        if (gc->generations_available) {
-          if (work->back_pointers) {
-            if (work->mprotected) {
-              work->mprotected = 0;
-              add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
-            }
-          }
-        }
-        pagemap_remove(pagemap, work);
-      }
-    flush_protect_page_ranges(protect_range, 1);
   }
+  flush_protect_page_ranges(protect_range, 1);
+}
+
+static void remove_all_gen1_pages_from_pagemap(NewGC *gc)
+{
+  Page_Range *protect_range = gc->protect_range;
+  PageMap pagemap = gc->page_maps;
+  mpage *work;
+  int i;
+
+  GCDEBUG((DEBUGOUTF, "MINOR COLLECTION - PREPPING PAGES - remove all gen1 pages from pagemap.\n"));
+  /* if we're not doing a major collection, then we need to remove all the
+     pages in gc->gen1_pages[] from the page map */
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for(work = gc->gen1_pages[i]; work; work = work->next) {
+      if (gc->generations_available && work->back_pointers && work->mprotected) {
+        work->mprotected = 0;
+        add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
+      }
+      pagemap_remove(pagemap, work);
+    }
+  }
+  flush_protect_page_ranges(protect_range, 1);
 }
 
 static void mark_backpointers(NewGC *gc)
@@ -2409,14 +2427,18 @@ static void garbage_collect(NewGC *gc, int force_full)
   TIME_INIT();
 
   /* inform the system (if it wants us to) that we're starting collection */
-  if(GC_collect_start_callback)
-    GC_collect_start_callback();
+  if(gc->GC_collect_start_callback)
+    gc->GC_collect_start_callback();
 
   TIME_STEP("started");
 
   gc->no_further_modifications = 1;
 
-  prepare_pages_for_collection(gc);
+  if (gc->gc_full)
+    reset_gen1_pages_live_and_previous_sizes(gc);
+  else /* minor collection */
+    remove_all_gen1_pages_from_pagemap(gc);
+
   init_weak_boxes(gc);
   init_weak_arrays(gc);
   init_ephemerons(gc);
@@ -2530,10 +2552,10 @@ static void garbage_collect(NewGC *gc, int force_full)
     gc->last_full_mem_use = gc->memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
-  if (GC_collect_start_callback)
-    GC_collect_end_callback();
-  if (GC_collect_inform_callback)
-    GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
+  if (gc->GC_collect_start_callback)
+    gc->GC_collect_end_callback();
+  if (gc->GC_collect_inform_callback)
+    gc->GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
 
   TIME_STEP("ended");
 

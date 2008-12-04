@@ -23,8 +23,9 @@
                      (path-replace-suffix (file-name-from-path (car d))
                                           #"")))])
       (and (not (and (len . >= . 3) (memq 'omit (caddr d))))
-           (let ([d (doc-path dir name flags 'false-if-missing)])
-             (and d (build-path d "out.sxref")))))))
+           (let* ([d (doc-path dir name flags 'false-if-missing)]
+                  [p (and d (build-path d "out.sxref"))])
+             (and p (file-exists? p) p))))))
 
 (define (get-reader-thunks)
   (map (lambda (dest)

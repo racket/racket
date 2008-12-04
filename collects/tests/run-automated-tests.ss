@@ -37,6 +37,7 @@
     [require "match/plt-match-tests.ss"]
     ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
     [require "lazy/main.ss"]
+    [require "scribble/main.ss"]
     ))
 
 

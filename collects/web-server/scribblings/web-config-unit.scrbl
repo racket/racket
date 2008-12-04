@@ -3,8 +3,15 @@
 
 @title[#:tag "web-config-unit.ss"
              #:style 'toc]{Web Config Unit}
-@(require (for-label web-server/web-config-unit)
-          (for-label web-server/web-config-sig))
+@(require (for-label web-server/web-config-unit
+                     web-server/configuration/namespace
+                     web-server/configuration/configuration-table
+                     web-server/configuration/configuration-table-structs
+                     web-server/private/util
+                     web-server/servlet/setup
+                     scheme/tcp
+                     (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
+                     web-server/web-config-sig))
 
 The @web-server offers a unit-based approach to configuring the server.
 
@@ -40,8 +47,8 @@ Provides contains the following identifiers.
  Passed to @scheme[tcp-accept].
 }
 
-@defthing[make-servlet-namespace make-servlet-namespace?]{
- Passed to @scheme[servlets:make].
+@defthing[make-servlet-namespace make-servlet-namespace/c]{
+ Passed to @scheme[servlets:make] through @scheme[make-default-path->servlet].
 }
 }
              
@@ -51,20 +58,22 @@ Provides contains the following identifiers.
 
 @defmodule[web-server/web-config-unit]{
 
-@defproc[(configuration-table->web-config@ [path path?]
+@defproc[(configuration-table->web-config@ [path path-string?]
                                            [#:port port (or/c false/c port-number?) #f]
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
-                                           [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace? (make-make-servlet-namespace)])
+                                           [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c (make-make-servlet-namespace)])
          (unit? web-config^)]{
  Reads the S-expression at @scheme[path] and calls
  @scheme[configuration-table-sexpr->web-config@] appropriately.
 }
 
 @defproc[(configuration-table-sexpr->web-config@ [sexpr list?]
-                                                 [#:web-server-root web-server-root path? (directory-part default-configuration-table-path)]
+                                                 [#:web-server-root web-server-root path-string?
+                                                                    (directory-part default-configuration-table-path)]
                                                  [#:port port (or/c false/c port-number?) #f]
                                                  [#:listen-ip listen-ip (or/c false/c string?) #f]
-                                                 [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace? (make-make-servlet-namespace)])
+                                                 [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c
+                                                                           (make-make-servlet-namespace)])
          (unit? web-config^)]{
  Parses @scheme[sexpr] as a configuration-table and constructs a @scheme[web-config^] unit.
 }

@@ -577,7 +577,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_svector_type, svector_val);
 
   GC_REG_TRAV(scheme_set_macro_type, small_object);
-  GC_REG_TRAV(scheme_id_macro_type, small_object);
+  GC_REG_TRAV(scheme_id_macro_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_stx_type, stx_val);
   GC_REG_TRAV(scheme_stx_offset_type, stx_off_val);

@@ -41,6 +41,9 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#ifdef MZ_USE_DWARF_LIBUNWIND
+# include "unwind/libunwind.h"
+#endif
 
 #ifdef MZ_USE_JIT
 
@@ -1256,13 +1259,23 @@ static void *malloc_double(void)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-static void *make_list_code;
-# define make_list make_list_code
+static void *make_list_code, *make_list_star_code;
 #else
 static Scheme_Object *make_list(long n)
 {
   GC_CAN_IGNORE Scheme_Object *l = scheme_null;
   GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
+  
+  while (n--) {
+    l = cons(rs[n], l);
+  }
+
+  return l;
+}
+static Scheme_Object *make_list_star(long n)
+{
+  GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
+  GC_CAN_IGNORE Scheme_Object *l = rs[--n];
   
   while (n--) {
     l = cons(rs[n], l);
@@ -2305,6 +2318,24 @@ typedef struct {
   int direct_prim, direct_native, nontail_self;
 } Generate_Call_Data;
 
+static void register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol)
+{
+  void *code_end;
+
+  code_end = jit_get_ip().ptr;
+  if (jitter->retain_start)
+    add_symbol((unsigned long)code, (unsigned long)code_end - 1, protocol, 0);
+}
+
+static void register_helper_func(mz_jit_state *jitter, void *code)
+{
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  /* Null indicates that there's no function name to report, but the
+     stack should be unwound manually using the JJIT-generated convention. */
+  register_sub_func(jitter, code, scheme_null);
+#endif  
+}
+
 int do_generate_shared_call(mz_jit_state *jitter, void *_data)
 {
   Generate_Call_Data *data = (Generate_Call_Data *)_data;
@@ -2314,13 +2345,22 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
 #endif
 
   if (data->is_tail) {
+    int ok;
+    void *code;
+
+    code = jit_get_ip().ptr;
+
     if (data->direct_prim)
-      return generate_direct_prim_tail_call(jitter, data->num_rands);
+      ok = generate_direct_prim_tail_call(jitter, data->num_rands);
     else
-      return generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
+      ok = generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
+
+    register_helper_func(jitter, code);
+
+    return ok;
   } else {
     int ok;
-    void *code, *code_end;
+    void *code;
 
     code = jit_get_ip().ptr;
 
@@ -2329,9 +2369,7 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
     else
       ok = generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, data->multi_ok, data->nontail_self, 1);
 
-    code_end = jit_get_ip().ptr;
-    if (jitter->retain_start)
-      add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_false, 0);
+    register_sub_func(jitter, code, scheme_false);
 
     return ok;
   }
@@ -2658,7 +2696,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   if (no_call) {
     /* leave actual call to inlining code */
   } else if (!(direct_self && is_tail)
-      && (num_rands >= MAX_SHARED_CALL_RANDS)) {
+             && (num_rands >= MAX_SHARED_CALL_RANDS)) {
     LOG_IT(("<-many args\n"));
     if (is_tail) {
       if (direct_prim) {
@@ -3913,22 +3951,22 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
           __END_TINY_JUMPS__(1);
           if (steps == 1) {
             if (name[1] == 'a') {
-              (void)jit_jmpi(bad_car_code);
+              (void)jit_calli(bad_car_code);
             } else {
-              (void)jit_jmpi(bad_cdr_code);
+              (void)jit_calli(bad_cdr_code);
             }
           } else {
             if (name[1] == 'a') {
               if (name[2] == 'a') {
-                (void)jit_jmpi(bad_caar_code);
+                (void)jit_calli(bad_caar_code);
               } else {
-                (void)jit_jmpi(bad_cadr_code);
+                (void)jit_calli(bad_cadr_code);
               }
             } else {
               if (name[2] == 'a') {
-                (void)jit_jmpi(bad_cdar_code);
+                (void)jit_calli(bad_cdar_code);
               } else {
-                (void)jit_jmpi(bad_cddr_code);
+                (void)jit_calli(bad_cddr_code);
               }
             }
           }
@@ -3970,9 +4008,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       reffail = _jit.x.pc;
       __END_TINY_JUMPS__(1);
       if (name[2] == 'a') {
-        (void)jit_jmpi(bad_mcar_code);
+        (void)jit_calli(bad_mcar_code);
       } else {
-        (void)jit_jmpi(bad_mcdr_code);
+        (void)jit_calli(bad_mcdr_code);
       }
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4005,7 +4043,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       reffail = _jit.x.pc;
-      (void)jit_jmpi(bad_vector_length_code);
+      (void)jit_calli(bad_vector_length_code);
 
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4035,7 +4073,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       reffail = _jit.x.pc;
-      (void)jit_jmpi(bad_unbox_code);
+      (void)jit_calli(bad_unbox_code);
 
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
@@ -4077,6 +4115,13 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, app, NULL);
+    } else if (IS_NAMED_PRIM(rator, "list*")) {
+      /* on a single argument, `list*' is identity */
+      mz_runstack_skipped(jitter, 1);
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "list")) {
       mz_runstack_skipped(jitter, 1);
       generate_non_tail(app->rand, jitter, 0, 1);
@@ -4535,9 +4580,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       reffail = _jit.x.pc;
       __END_TINY_JUMPS__(1);
       if (set_mcar)
-        (void)jit_jmpi(bad_set_mcar_code);
+        (void)jit_calli(bad_set_mcar_code);
       else
-        (void)jit_jmpi(bad_set_mcdr_code);
+        (void)jit_calli(bad_set_mcdr_code);
       __START_TINY_JUMPS__(1);
       mz_patch_branch(ref);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
@@ -4553,7 +4598,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       (void)jit_movi_p(JIT_R0, scheme_void);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "cons")) {
+    } else if (IS_NAMED_PRIM(rator, "cons")
+               || IS_NAMED_PRIM(rator, "list*")) {
       LOG_IT(("inlined cons\n"));
 
       generate_two_args(app->rand1, app->rand2, jitter, 1);
@@ -4748,8 +4794,12 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, app, NULL, NULL);
-    } else if (IS_NAMED_PRIM(rator, "list")) {
+    } else if (IS_NAMED_PRIM(rator, "list")
+               || IS_NAMED_PRIM(rator, "list*")) {
       int c = app->num_args;
+      int star;
+
+      star = IS_NAMED_PRIM(rator, "list*");
 
       if (c)
         generate_app(app, NULL, c, jitter, 0, 0, 1);
@@ -4757,13 +4807,19 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
 #ifdef CAN_INLINE_ALLOC
       jit_movi_l(JIT_R2, c);
-      (void)jit_calli(make_list_code);
+      if (star)
+        (void)jit_calli(make_list_star_code);
+      else
+        (void)jit_calli(make_list_code);
 #else
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       jit_movi_l(JIT_R0, c);
       mz_prepare(1);
       jit_pusharg_l(JIT_R0);
-      (void)mz_finish(make_list);
+      if (star)
+        (void)mz_finish(make_list_star);
+      else
+        (void)mz_finish(make_list);
       jit_retval(JIT_R0);
 #endif
 
@@ -6415,32 +6471,36 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** bad_[m]{car,cdr,...}_code *** */
   /* Bad argument is in R0 for car/cdr, R2 otherwise */
   for (i = 0; i < 8; i++) {
+    void *code;
+    
+    code = jit_get_ip().ptr;
     switch (i) {
     case 0:
-      bad_car_code = jit_get_ip().ptr;
+      bad_car_code = code;
       break;
     case 1:
-      bad_cdr_code = jit_get_ip().ptr;
+      bad_cdr_code = code;
       break;
     case 2:
-      bad_caar_code = jit_get_ip().ptr;
+      bad_caar_code = code;
       break;
     case 3:
-      bad_cadr_code = jit_get_ip().ptr;
+      bad_cadr_code = code;
       break;
     case 4:
-      bad_cdar_code = jit_get_ip().ptr;
+      bad_cdar_code = code;
       break;
     case 5:
-      bad_cddr_code = jit_get_ip().ptr;      
+      bad_cddr_code = code;      
       break;
     case 6:
-      bad_mcar_code = jit_get_ip().ptr;
+      bad_mcar_code = code;
       break;
     case 7:
-      bad_mcdr_code = jit_get_ip().ptr;
+      bad_mcdr_code = code;
       break;
     }
+    mz_prolog(JIT_R1);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     CHECK_RUNSTACK_OVERFLOW();
     if ((i < 2) || (i > 5)) {
@@ -6481,19 +6541,24 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     CHECK_LIMIT();
+
+    register_sub_func(jitter, code, scheme_false);
   }
 
   /* *** bad_set_{car,cdr}_code *** */
   /* Bad argument is in R0, other is in R1 */
   for (i = 0; i < 2; i++) {
+    void *code;
+    code = jit_get_ip().ptr;
     switch (i) {
     case 0:
-      bad_set_mcar_code = jit_get_ip().ptr;
+      bad_set_mcar_code = code;
       break;
     case 1:
-      bad_set_mcdr_code = jit_get_ip().ptr;
+      bad_set_mcdr_code = code;
       break;
     }
+    mz_prolog(JIT_R2);
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
     CHECK_RUNSTACK_OVERFLOW();
     jit_str_p(JIT_RUNSTACK, JIT_R0);
@@ -6513,46 +6578,53 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       break;
     }
     CHECK_LIMIT();
+    register_sub_func(jitter, code, scheme_false);
   }
 
   /* *** bad_unbox_code *** */
   /* R0 is argument */
   bad_unbox_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_unbox);
   CHECK_LIMIT();
+  register_sub_func(jitter, bad_unbox_code, scheme_false);
 
   /* *** bad_vector_length_code *** */
   /* R0 is argument */
   bad_vector_length_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
   (void)mz_finish(scheme_vector_length);
   CHECK_LIMIT();
+  register_sub_func(jitter, bad_vector_length_code, scheme_false);
 
   /* *** call_original_unary_arith_code *** */
   /* R0 is arg, R2 is code pointer, V1 is return address */
   for (i = 0; i < 3; i++) {
     int argc, j;
+    void *code;
     for (j = 0; j < 2; j++) {
+      code = jit_get_ip().ptr;
       if (!i) {
 	if (!j)
-	  call_original_unary_arith_code = jit_get_ip().ptr;
+	  call_original_unary_arith_code = code;
 	else
-	  call_original_unary_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_unary_arith_for_branch_code = code;
 	argc = 1;
       } else if (i == 1) {
 	if (!j)
-	  call_original_binary_arith_code = jit_get_ip().ptr;
+	  call_original_binary_arith_code = code;
 	else
-	  call_original_binary_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_binary_arith_for_branch_code = code;
 	argc = 2;
       } else {
 	if (!j)
-	  call_original_binary_rev_arith_code = jit_get_ip().ptr;
+	  call_original_binary_rev_arith_code = code;
 	else
-	  call_original_binary_rev_arith_for_branch_code = jit_get_ip().ptr;
+	  call_original_binary_rev_arith_for_branch_code = code;
 	argc = 2;
       }
       jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
@@ -6567,6 +6639,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	jit_str_p(JIT_RUNSTACK, JIT_R0);
       }
       jit_movi_i(JIT_R1, argc);
+      if (!j) {
+        /* For stack-trace reporting, stuff return address into LOCAL2 */
+        mz_set_local_p(JIT_V1, JIT_LOCAL2);
+      }
       JIT_UPDATE_THREAD_RSPTR();
       mz_prepare(2);
       jit_pusharg_p(JIT_RUNSTACK);
@@ -6590,6 +6666,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	__END_TINY_JUMPS__(1);
       }
       CHECK_LIMIT();
+
+      register_sub_func(jitter, code, scheme_void);
     }
   }
 
@@ -6661,6 +6739,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
+  register_helper_func(jitter, on_demand_jit_code);
 
   /* *** app_values_tail_slow_code *** */
   /* RELIES ON jit_prolog(3) FROM ABOVE */
@@ -6682,9 +6761,11 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   finish_tail_call_code = jit_get_ip().ptr;
   generate_finish_tail_call(jitter, 0);
   CHECK_LIMIT();
+  register_helper_func(jitter, finish_tail_call_code);
   finish_tail_call_fixup_code = jit_get_ip().ptr;
   generate_finish_tail_call(jitter, 2);
   CHECK_LIMIT();
+  register_helper_func(jitter, finish_tail_call_fixup_code);
 
   /* *** get_stack_pointer_code *** */
   get_stack_pointer_code = jit_get_ip().ptr;
@@ -7252,13 +7333,21 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 #ifdef CAN_INLINE_ALLOC
   /* *** make_list_code *** */
   /* R2 has length, args are on runstack */
-  {
+  for (i = 0; i < 2; i++) {
     jit_insn *ref, *refnext;
 
-    make_list_code = jit_get_ip().ptr;  
+    if (i == 0)
+      make_list_code = jit_get_ip().ptr;  
+    else
+      make_list_star_code = jit_get_ip().ptr;  
     mz_prolog(JIT_R1);
     jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
-    (void)jit_movi_p(JIT_R0, &scheme_null);
+    if (i == 0)
+      (void)jit_movi_p(JIT_R0, &scheme_null);
+    else {
+      jit_subi_l(JIT_R2, JIT_R2, JIT_WORD_SIZE);
+      jit_ldxr_p(JIT_R0, JIT_RUNSTACK, JIT_R2);
+    }
 
     __START_SHORT_JUMPS__(1);
     ref = jit_beqi_l(jit_forward(), JIT_R2, 0);
@@ -7546,6 +7635,10 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   
   if (data->name) {
     add_symbol((unsigned long)code, (unsigned long)gdata.code_end - 1, data->name, 1);
+  } else {
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    add_symbol((unsigned long)code, (unsigned long)gdata.code_end - 1, scheme_null, 1);
+#endif
   }
   
   has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
@@ -8045,9 +8138,17 @@ Scheme_Object *scheme_native_stack_trace(void)
 {
   void *p, *q;
   unsigned long stack_end, stack_start, halfway;
-  Get_Stack_Proc gs;
   Scheme_Object *name, *last = NULL, *first = NULL, *tail;
   int set_next_push = 0, prev_had_name = 0;
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_context_t cx;
+  unw_cursor_t c;
+  int manual_unw;
+  unw_word_t stack_addr;
+#else
+  Get_Stack_Proc gs;
+#endif
+  int use_unw = 0;
 
   if (!get_stack_pointer_code)
     return NULL;
@@ -8056,8 +8157,16 @@ Scheme_Object *scheme_native_stack_trace(void)
   check_stack();
 #endif
 
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_getcontext(&cx);
+  unw_init_local(&c, &cx);
+  use_unw = 1;
+  p = NULL;
+#else
   gs = (Get_Stack_Proc)get_stack_pointer_code;
   p = gs();
+#endif
+
   stack_start = scheme_approx_sp();
 
   if (stack_cache_stack_pos) {
@@ -8068,6 +8177,11 @@ Scheme_Object *scheme_native_stack_trace(void)
     stack_end = (unsigned long)scheme_current_thread->stack_start;
     tail = scheme_null;
   }
+
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_set_safe_pointer_range(stack_start, stack_end);
+  unw_reset_bad_ptr_flag();
+#endif
 
   halfway = STK_DIFF(stack_end, (unsigned long)p) / 2;
   if (halfway < CACHE_STACK_MIN_TRIGGER)
@@ -8080,27 +8194,64 @@ Scheme_Object *scheme_native_stack_trace(void)
 #endif
   }
 
-  while (STK_COMP((unsigned long)p, stack_end)
-	 && STK_COMP(stack_start, (unsigned long)p)) {
-    q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+  while (1) {
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    if (use_unw) {
+      q = (void *)unw_get_ip(&c);
+    } else {
+      q = NULL;
+    }
+#endif
+
+    if (!use_unw) {
+      if (!(STK_COMP((unsigned long)p, stack_end)
+	    && STK_COMP(stack_start, (unsigned long)p)))
+	break;
+      q = ((void **)p)[RETURN_ADDRESS_OFFSET];
+      /* p is the frame pointer for the function called by q,
+	 not for q. */
+    }
 
     name = find_symbol((unsigned long)q);
-    if (SCHEME_FALSEP(name)) {
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    if (name) manual_unw = 1;
+#endif
+
+    if (SCHEME_FALSEP(name) || SCHEME_VOIDP(name)) {
       /* Code uses special calling convention */
 #ifdef MZ_USE_JIT_PPC
       /* JIT_LOCAL2 has the next return address */
       q = ((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
 #endif
 #ifdef MZ_USE_JIT_I386
-      /* Push after local stack of return-address proc
-	 has the next return address */
-      q = *(void **)p;
-      q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+
+# ifdef MZ_USE_DWARF_LIBUNWIND
+      if (use_unw) {
+	q = (void *)unw_get_frame_pointer(&c);
+      } else
+# endif
+	q = *(void **)p;
+
+      /* q is now the frame pointer for the former q,
+	 so we can find the actual q */
+      if (STK_COMP((unsigned long)q, stack_end)
+	  && STK_COMP(stack_start, (unsigned long)q)) {
+	if (SCHEME_VOIDP(name)) {
+	  /* JIT_LOCAL2 has the next return address */
+	  q = ((void **)q)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+	} else {
+	  /* Push after local stack of return-address proc
+	     has the next return address */
+	  q = ((void **)q)[-(3 + LOCAL_FRAME_SIZE + 1)];
+	}
+      } else {
+	q = NULL;
+      }
 #endif
       name = find_symbol((unsigned long)q);
     }
 
-    if (name) {
+    if (name && !SCHEME_NULLP(name)) { /* null is used to help unwind without a true name */
       name = scheme_make_pair(name, scheme_null);
       if (last)
 	SCHEME_CDR(last) = name;
@@ -8143,10 +8294,36 @@ Scheme_Object *scheme_native_stack_trace(void)
 
     prev_had_name = !!name;
 
-    q = *(void **)p;
-    if (STK_COMP((unsigned long)q, (unsigned long)p))
-      break;
-    p = q;
+#ifdef MZ_USE_DWARF_LIBUNWIND
+    if (use_unw) {
+      if (manual_unw) {
+        /* A JIT-generated function, so we unwind ourselves... */
+	void **pp;
+	pp = (void **)unw_get_frame_pointer(&c);
+	if (!(STK_COMP((unsigned long)pp, stack_end)
+	      && STK_COMP(stack_start, (unsigned long)pp)))
+	  break;
+	stack_addr = (unw_word_t)&(pp[RETURN_ADDRESS_OFFSET+1]);
+	unw_manual_step(&c, &pp[RETURN_ADDRESS_OFFSET], &pp[0],
+			&stack_addr, &pp[-1], &pp[-2], &pp[-3]);
+	manual_unw = 0;
+      } else {
+        void *prev_q = q;
+        unw_step(&c);
+        q = (void *)unw_get_ip(&c);
+        if ((q == prev_q)
+	    || unw_reset_bad_ptr_flag())
+          break;
+      }
+    }
+#endif
+
+    if (!use_unw) {
+      q = *(void **)p;
+      if (STK_COMP((unsigned long)q, (unsigned long)p))
+        break;
+      p = q;
+    }
   }
 
   if (last)
@@ -8176,9 +8353,7 @@ void scheme_dump_stack_trace(void)
   stack_end = (unsigned long)scheme_current_thread->stack_start;
 
   while (STK_COMP((unsigned long)p, stack_end)
-	 && STK_COMP(stack_start, (unsigned long)p)) {
-    q = ((void **)p)[RETURN_ADDRESS_OFFSET];
-
+         && STK_COMP(stack_start, (unsigned long)p)) {
     name = find_symbol((unsigned long)q);
     if (SCHEME_FALSEP(name)) {
       /* Code uses special calling convention */

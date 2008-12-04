@@ -2,6 +2,7 @@
 
 (require scheme/match 
 	 scheme/mpair
+         scheme/control
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
          (only-in srfi/13 string-contains))
@@ -577,5 +578,24 @@
            [(vector a b) a]
            [else 'bad]))
 
+   (comp '(1 2)
+         (call-with-values 
+          (lambda () 
+            (match 'foo [_ (=> skip) (skip)] [_ (values 1 2)]))
+          list))
+   (comp 0
+         (let ([z (make-parameter 0)])
+           (match 1
+             [(? number?) (=> f) (parameterize ([z 1]) (f))] 
+             [(? number?) (z)])))
+   
+   ;; make sure the prompts don't interfere
+   (comp 12
+         (%
+          (let ([z (make-parameter 0)])
+            (match 1
+              [(? number?) (=> f) (parameterize ([z 1]) (fcontrol 5))] 
+              [(? number?) (z)]))
+          (lambda _ 12)))
 
    ))

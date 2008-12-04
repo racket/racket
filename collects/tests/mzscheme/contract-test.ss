@@ -1,3 +1,4 @@
+
 (load-relative "loadtest.ss")
 (Section 'contract)
 
@@ -2203,14 +2204,14 @@
    '(let ()
       (define/contract i (-> integer? integer?) (lambda (x) 1))
       (i #f))
-   "the top level")
+   "module top-level")
   
   (test/spec-failed
    'define/contract5
    '(let ()
       (define/contract (i x) (-> integer? integer?) 1)
       (i #f))
-   "the top level")
+   "module top-level")
   
   (test/spec-passed
    'define/contract6
@@ -2297,7 +2298,7 @@
 		 (+ n 1))
 	       (foo-dc13 #t)))
       (eval '(require 'foo-dc13)))
-   "module foo-dc13")
+   "module 'foo-dc13")
   
   (test/spec-failed
    'define/contract14
@@ -2312,7 +2313,7 @@
 	       (require 'foo-dc14)
 	       (foo-dc14 #t)))
       (eval '(require 'bar-dc14)))
-   "module bar-dc14")
+   "module 'bar-dc14")
 
   (test/spec-failed
    'define/contract15
@@ -2325,7 +2326,7 @@
 		 (+ n 1))))
       (eval '(require 'foo-dc15))
       (eval '(foo-dc15 #t)))
-   "the top level")
+   "module top-level")
   
 
 ;                                                                                  
@@ -2369,7 +2370,7 @@
         (define (even? n)
           (if (zero? n) #t (odd? (sub1 n)))))
       (odd? #t))
-   "the top level")
+   "module top-level")
   
   (test/spec-failed
    'with-contract3

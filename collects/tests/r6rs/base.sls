@@ -62,15 +62,19 @@
     (syntax-rules ()
       [(_ op)
        (begin
-         (test/exn (op 1 0) &assertion)
-         (test/exn (op 1 0.0) &assertion)
-         (test/exn (op +inf.0 1) &assertion)
-         (test/exn (op -inf.0 1) &assertion)
-         (test/exn (op +nan.0 1) &assertion))]))
+         (test/unspec-flonum-or-exn (op 1 0) &assertion)
+         (test/unspec-flonum-or-exn (op 1 0.0) &assertion)
+         (test/unspec-flonum-or-exn (op +inf.0 1) &assertion)
+         (test/unspec-flonum-or-exn (op -inf.0 1) &assertion)
+         (test/unspec-flonum-or-exn (op +nan.0 1) &assertion))]))
 
   (define-syntax test-string-to-number
     (syntax-rules ()
       [(_ [str num] ...) (begin (test (string->number str) num) ...)]))
+
+  (define-syntax test/approx-string-to-number
+    (syntax-rules ()
+      [(_ [str num] ...) (begin (test/approx (string->number str) num) ...)]))
 
   ;; Definitions ----------------------------------------
 
@@ -920,7 +924,7 @@
     (for-each 
      (lambda (n)
        (test (string->number (number->string n)) n)
-       (test (string->number (number->string n 10 5)) n)
+       (test (string->number (number->string (inexact n) 10 5)) (inexact n))
        (when (exact? n)
          (test (string->number (number->string n 16) 16) n)
          (test (string->number (string-append "#x" (number->string n 16))) n)
@@ -968,7 +972,9 @@
      ("#e1e1000" (expt 10 1000))
      ("#e-1e1000" (- (expt 10 1000)))
      ("#e1e-1000" (expt 10 -1000))
-     ("#e-1e-1000" (- (expt 10 -1000)))
+     ("#e-1e-1000" (- (expt 10 -1000))))
+
+    (test/approx-string-to-number
      ("#i1e100" (inexact (expt 10 100)))
      ("#i1e1000" (inexact (expt 10 1000)))
      ("#i-1e1000" (inexact (- (expt 10 1000))))
@@ -1005,6 +1011,8 @@
     (test (boolean=? #t #t) #t)
     (test (boolean=? #t #f) #f)
     (test (boolean=? #f #t) #f)
+    (test (boolean=? #t #t #f) #f)
+    (test (boolean=? #t #t #t #t) #t)
 
     ;; 11.9
     (test (pair? '(a . b))         #t)
@@ -1126,6 +1134,8 @@
     (test (symbol=? 'a 'a)         #t)
     (test (symbol=? 'a 'A)         #f)
     (test (symbol=? 'a 'b)         #f)
+    (test (symbol=? 'a 'a 'b)      #f)
+    (test (symbol=? 'a 'a 'a 'a)   #t)
     
     (test (symbol->string 'flying-fish)     
           "flying-fish")

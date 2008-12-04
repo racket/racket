@@ -865,28 +865,46 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
 
       if (SCHEME_INTP(v))
 	pos = SCHEME_INT_VAL(v);
-      else
+      else if (SCHEME_BIGPOS(v))
 	pos = t->num_slots; /* too big */
+      else
+        pos = -1; /* negative bignum */
 
-      if (pos >= t->num_islots) {
-	scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", v);
-	return NULL;
-      }
-
-      if (t->name_pos > 0) {
+      if (pos >= 0) {
         Scheme_Struct_Type *parent_type;
-        parent_type = t->parent_types[t->name_pos - 1];
 
-	pos += parent_type->num_slots;
-	v = scheme_make_integer(pos);
-      }
+        if (t->name_pos > 0)
+          parent_type = t->parent_types[t->name_pos - 1];
+        else
+          parent_type = NULL;
+
+        if (pos >= (t->num_islots - (parent_type ? parent_type->num_islots : 0))) {
+          scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", v);
+          return NULL;
+        }
+
+        if (parent_type) {
+          /* proc_attr needs to be in terms of the whole field array */
+          pos += parent_type->num_slots;
+          v = scheme_make_integer(pos);
+        }
+      } else
+        v = scheme_false; /* complain below */
+    }
+
+    if (SCHEME_INTP(v) || SCHEME_PROCP(v)) {
+      /* ok */
+    } else {
+      scheme_arg_mismatch("make-struct-type", 
+                          "prop:procedure value is not a procedure or exact non-negative integer: ", 
+                          orig_v);
     }
 
     t->proc_attr = v;
 
     if (SCHEME_INTP(v)) {
       long pos;
-      pos = SCHEME_INT_VAL(v);
+      pos = SCHEME_INT_VAL(orig_v);
       if (!t->immutables || !t->immutables[pos]) {
         scheme_arg_mismatch("make-struct-type", 
                             "field is not specified as immutable for a prop:procedure index: ", 
@@ -1676,7 +1694,7 @@ static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object 
   ims = scheme_null;
   if (stype->immutables) {
     int i;
-    for (i = stype->num_islots; i--; ) {
+    for (i = stype->num_islots - (parent ? parent->num_islots : 0); i--; ) {
       if (stype->immutables[i])
 	ims = scheme_make_pair(scheme_make_integer(i), ims);
     }
@@ -2856,19 +2874,20 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       || (proc_attr && SCHEME_INTP(proc_attr))) {
     Scheme_Object *l, *a;
     char *ims;
-    int n, p;
+    int n, ni, p;
 
     n = struct_type->num_slots;
-    if (parent_type)
+    ni = struct_type->num_islots;
+    if (parent_type) {
       n -= parent_type->num_slots;
+      ni -= parent_type->num_islots;
+    }
     ims = (char *)scheme_malloc_atomic(n);
     memset(ims, 0, n);
 
     if (proc_attr && SCHEME_INTP(proc_attr)) {
       p = SCHEME_INT_VAL(proc_attr);
-      if (parent_type)
-        p += parent_type->num_slots;
-      if (p < struct_type->num_slots)
+      if (p < ni)
         ims[p] = 1;
     }
 
@@ -2877,12 +2896,14 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       if (SCHEME_INTP(a))
 	p = SCHEME_INT_VAL(a);
       else
-	p = struct_type->num_slots; /* too big */
+	p = n; /* too big */
 
-      if (p >= struct_type->num_islots) {
+      if (p >= n) {
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT,
 			 "make-struct-type: index %V for immutable field >= initialized-field count %d in list: %V", 
-			 a, struct_type->num_islots, immutable_pos_list);
+			 a, 
+                         ni, 
+                         immutable_pos_list);
 	return NULL;
       }
 

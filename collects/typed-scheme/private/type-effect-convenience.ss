@@ -12,7 +12,7 @@
          scheme/promise
          (for-syntax macro-debugger/stxclass/stxclass)
          (for-syntax scheme/base)
-         (for-template scheme/base scheme/contract))
+         (for-template scheme/base scheme/contract scheme/tcp))
 
 (provide (all-defined-out) 
          ;; these should all eventually go away
@@ -134,6 +134,7 @@
 (define -Namespace (make-Base 'Namespace #'namespace?))
 (define -Output-Port (make-Base 'Output-Port #'output-port?))
 (define -Input-Port (make-Base 'Input-Port #'input-port?))
+(define -TCP-Listener (make-Base 'TCP-Listener #'tcp-listener?))
 
 (define -Syntax make-Syntax)
 (define -HT make-Hashtable)

@@ -15,7 +15,7 @@ class affect the implementation that uses it.
 
 
 
-@defconstructor/make[([context (implements @scheme[drscheme:rep:context<%>])])]{
+@defconstructor/make[([context (implements drscheme:rep:context<%>)])]{
 }
 
 @defmethod[#:mode override 
@@ -155,7 +155,7 @@ for more information about parameters.
 
 }
 
-@defmethod[(highlight-errors [locs (listof (list (instance (implements @scheme[text:basic<%>])) small-integer small-integer))])
+@defmethod[(highlight-errors [locs (listof (list (instance (implements text:basic<%>)) small-integer small-integer))])
            void?]{
 Call this method to highlight errors associated with this repl.
 See also
@@ -382,7 +382,7 @@ See also
 
 }
 
-@defmethod[(ensure-rep-shown [rep (is-a?/c @scheme[drscheme:rep:text<%>])])
+@defmethod[(ensure-rep-shown [rep (is-a?/c drscheme:rep:text<%>)])
            void?]{
 
 This method is called to force the rep window to be visible when, for

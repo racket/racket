@@ -1017,13 +1017,15 @@ extern void GC_thr_init GC_PROTO((void));/* Needed for Solaris/X86	*/
 #if defined(GC_REDIRECT_TO_LOCAL) && !defined(GC_LOCAL_ALLOC_H)
 #  include  "gc_local_alloc.h"
 #endif
+typedef void (*GC_collect_start_callback_Proc)(void);
+typedef void (*GC_collect_end_callback_Proc)(void);
 
 /* PLTSCHEME: */
 GC_API void (*GC_custom_finalize)(void);
 GC_API void (*GC_push_last_roots)(void);
 GC_API void (*GC_push_last_roots_again)(void);
-GC_API void (*GC_collect_start_callback)(void);
-GC_API void (*GC_collect_end_callback)(void);
+GC_API GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc);
+GC_API GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
 GC_API void (*GC_out_of_memory)(void);
 GC_API int GC_did_mark_stack_overflow(void);
 GC_API void GC_mark_from_mark_stack(void);

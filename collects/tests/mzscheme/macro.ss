@@ -214,7 +214,7 @@
 
 (arity-test make-set!-transformer 1 1)
 (arity-test set!-transformer? 1 1)
-(arity-test make-rename-transformer 1 1)
+(arity-test make-rename-transformer 1 2)
 (arity-test rename-transformer? 1 1)
 
 ;; Test inheritance of context when . is used in a pattern
@@ -336,6 +336,99 @@
 
 (test 10 'vector-pattern (syntax-case #() () [#() 10]))
 (test 'b 'vector-pattern (syntax-case #(a b c) () [#(x y z) (syntax-e #'y)]))
+
+;; ----------------------------------------
+
+(require (only-in mzlib/etc begin-with-definitions))
+
+(define-syntax (def stx)
+  (syntax-case stx ()
+    [(_ id)
+     (with-syntax ([x:id (datum->syntax #'id 'x)])
+       #'(begin
+           (define x:id 50)
+           (define-syntax id #'x:id)))]))
+(define-syntax (look stx)
+  (syntax-case stx ()
+    [(_ id) (syntax-local-value #'id)]))
+
+(test 50 'look
+      (let ()
+        (def foo)
+        (look foo)))
+
+(test 50 'look
+      (begin-with-definitions
+       (def foo)
+       (look foo)))
+
+(test #t 'bwd-struct
+      (let ()
+        (begin-with-definitions
+         (define-struct a (x y))
+         (define-struct (b a) (z))
+         (b? (make-b 1 2 3)))))
+
+(test 5 'intdef
+      (let ()
+        (define-syntax foo
+          (syntax-rules ()
+            [(_ id) (begin
+                      (define x 5)
+                      (define id x))]))
+        (foo x)
+        x))
+
+(test 6 'intdef-values
+      (let ()
+        (define-syntax foo
+          (syntax-rules ()
+            [(_ id) (define-values (x id) 
+                      (values 6 (lambda () x)))]))
+        (foo x)
+        (x)))
+
+(test 75 'bwd
+      (begin-with-definitions
+       (define-syntax foo
+         (syntax-rules ()
+           [(_ id) (begin
+                     (define x 75)
+                     (define id x))]))
+       (foo x)
+       x))
+
+;; ----------------------------------------
+
+(define-syntax (bind stx)
+  (syntax-case stx ()
+    [(_ handle def)
+     (let ([def-ctx (syntax-local-make-definition-context)]
+           [ctx (cons (gensym 'intdef)
+                      (let ([orig-ctx (syntax-local-context)])
+                        (if (pair? orig-ctx)
+                            orig-ctx
+                            null)))]
+           [kernel-forms (list #'define-values)])
+       (let ([def (local-expand #'def ctx kernel-forms def-ctx)])
+         (syntax-case def ()
+           [(define-values (id) rhs)
+            (begin
+              (syntax-local-bind-syntaxes (list #'id) #f def-ctx)
+              #'(begin
+                  (define-values (id) rhs)
+                  (define-syntax handle (quote-syntax id))))]
+           [_ (error "no")])))]))
+
+(define-syntax (nab stx)
+  (syntax-case stx ()
+    [(_ handle)
+     (syntax-local-value #'handle)]))
+
+(let ()
+  (bind h (define q 5))
+  (define q 8)
+  (nab h))
 
 ;; ----------------------------------------
 

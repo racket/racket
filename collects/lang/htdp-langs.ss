@@ -1072,6 +1072,7 @@
                             (send off-sd set-delta-background "darkblue"))
                           
                           ;; picture 5.png
+                          #;
                           (begin
                             (send on-sd set-delta-foreground (make-object color% 0 80 0))
                             (send off-sd set-delta-foreground "orange")
@@ -1082,7 +1083,13 @@
                             (send on-sd set-delta-foreground "black")
                             (send off-sd set-delta-foreground "orange")
                             (send off-sd set-delta-background "black"))
-                          ])
+                          
+                          ;; mike's preferred color scheme, but looks just like the selection
+                          #;
+                          (begin
+                            (send on-sd set-delta-foreground "black")
+                            (send off-sd set-delta-background "lightblue")
+                            (send off-sd set-delta-foreground "black"))])
                        (send rep set-test-coverage-info ht on-sd off-sd #f)))))))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht

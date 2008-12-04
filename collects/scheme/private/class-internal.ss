@@ -174,6 +174,20 @@
     [super-new super-new-param])
 
   ;;--------------------------------------------------------------------
+  ;;  local member name lookup
+  ;;--------------------------------------------------------------------
+
+  (define-for-syntax (localize orig-id)
+    (do-localize orig-id #'validate-local-member))
+
+  (define (validate-local-member orig s)
+    (if (symbol? s)
+        s
+        (error 'local-member-name
+               "used before its definition: ~a"
+               orig)))
+
+  ;;--------------------------------------------------------------------
   ;;  class macros
   ;;--------------------------------------------------------------------
 
@@ -1214,6 +1228,8 @@
 						     proc))))))
 					methods)))]
 				  [lookup-localize-cdr (lambda (p) (lookup-localize (cdr p)))])
+
+                              (internal-definition-context-seal def-ctx)
 			      
 			      ;; ---- build final result ----
 			      (with-syntax ([public-names (map lookup-localize-cdr publics)]

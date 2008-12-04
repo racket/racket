@@ -75,6 +75,8 @@
        (join (loops rhss) (loop body))]
       [(Wrap p:letrec-syntaxes+values (_ _ _ _ _ srhss _ vrhss body _))
        (join (loops srhss) (loops vrhss) (loop body))]
+      [(Wrap p:provide (_ _ _ _ inners _))
+       (loops inners)]
       [(Wrap p:module (_ _ _ _ _ _ _ check _ _ body _))
        (join (loop check) (loop body))]
       [(Wrap p:#%module-begin (_ _ _ _ _ pass1 pass2 _))

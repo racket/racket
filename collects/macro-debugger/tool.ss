@@ -99,7 +99,10 @@
                  get-definitions-text)
 
         (define macro-debug-panel
-          (new vertical-pane% (parent (get-button-panel))))
+          (new horizontal-pane%
+               (parent (get-button-panel))
+               (stretchable-height #f)
+               (stretchable-width #f)))
         (define macro-debug-button
           (new switchable-button%
                (label "Macro Stepper")
@@ -198,36 +201,44 @@
         (define/private (make-stepper filename)
           (new drscheme-macro-stepper-director% (filename filename)))
 
+        (define/private (inner-eval original-eval-handler e-expr)
+          (original-eval-handler e-expr))
+
         (define/private (make-handlers original-eval-handler
                                        original-module-name-resolver)
-          (let* ([filename (send (send (get-top-level-window)
-                                       get-definitions-text)
-                                 get-filename/untitled-name)]
-                 [director (make-stepper filename)]
-                 [debugging? debugging?])
-            (set! current-stepper-director director)
-            (values
-             (lambda (expr)
-               (if (and debugging? (syntax? expr))
-                   (let-values ([(e-expr events derivp) (trace* expr expand)])
-                     (show-deriv director events)
-                     (if (syntax? e-expr)
-                         (parameterize ((current-eval original-eval-handler))
-                           (original-eval-handler e-expr))
-                         (raise e-expr)))
-                   (original-eval-handler expr)))
-             (lambda args
-               (let ([eo (current-expand-observe)]
-                     [saved-debugging? debugging?])
-                 (dynamic-wind
-                     (lambda ()
-                       (set! debugging? #f)
-                       (when eo (current-expand-observe void)))
-                     (lambda ()
-                       (apply original-module-name-resolver args))
-                     (lambda ()
-                       (set! debugging? saved-debugging?)
-                       (when eo (current-expand-observe eo)))))))))
+          (define filename (send (send (get-top-level-window) get-definitions-text)
+                                 get-filename/untitled-name))
+          (define director (make-stepper filename))
+          (define local-debugging? debugging?)
+          (define (call-without-debugging thunk)
+            (let ([eo (current-expand-observe)]
+                  [saved-debugging? local-debugging?])
+              (dynamic-wind
+                  (lambda ()
+                    (set! local-debugging? #f)
+                    (when eo (current-expand-observe void)))
+                  thunk
+                  (lambda ()
+                    (set! local-debugging? saved-debugging?)
+                    (when eo (current-expand-observe eo))))))
+          (define (the-eval expr)
+            (if (and local-debugging? (syntax? expr))
+                (let-values ([(e-expr events derivp) (trace* expr expand)])
+                  (show-deriv director events)
+                  (if (syntax? e-expr)
+                      (inner-eval e-expr)
+                      (raise e-expr)))
+                (original-eval-handler expr)))
+          (define (inner-eval e-expr)
+            (if #f ;; fixme: turn into parameter/preference???
+                (call-without-debugging (lambda () (original-eval-handler e-expr)))
+                (original-eval-handler e-expr)))
+          (define (the-module-resolver . args)
+            (call-without-debugging
+             (lambda () (apply original-module-name-resolver args))))
+          (set! current-stepper-director director)
+          (values the-eval
+                  the-module-resolver))
 
         (define/private (show-deriv director events)
           (parameterize ([current-eventspace drscheme-eventspace])

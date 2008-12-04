@@ -667,6 +667,7 @@
 	      (let loop ([pre-lines null][lines (append import-stxes body)][port #f][port-name #f][body null][vars null])
 		(cond
 		 [(and (null? pre-lines) (not port) (null? lines))
+                  (internal-definition-context-seal def-ctx)
 		  (make-parsed-unit imports 
 				    renames 
 				    vars 

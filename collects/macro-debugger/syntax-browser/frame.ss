@@ -54,8 +54,7 @@
 (define syntax-widget/controls%
   (class* widget% ()
     (inherit get-main-panel
-             get-controller
-             toggle-props)
+             get-controller)
     (super-new)
     (inherit-field config)
 
@@ -85,7 +84,10 @@
     (new button%
          (label "Properties")
          (parent -control-panel)
-         (callback (lambda _ (toggle-props))))
+         (callback
+          (lambda _ 
+            (send config set-props-shown? 
+                  (not (send config get-props-shown?))))))
 
     (send (get-controller) listen-identifier=?
           (lambda (name+func)

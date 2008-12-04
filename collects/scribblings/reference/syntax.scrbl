@@ -9,7 +9,9 @@
                               make-provide-transformer)
                      scheme/provide-syntax
                      scheme/provide
-                     scheme/nest))
+                     scheme/nest
+                     scheme/package
+                     scheme/splicing))
 
 @(define cvt (schemefont "CVT"))
 
@@ -68,10 +70,13 @@ Within such specifications,
 
 @defform[(module id module-path form ...)]{
 
-Declares a module. If the @scheme[current-module-declare-name]
-parameter is set, the parameter value is used for the module name,
-otherwise @scheme[(#,(scheme quote) id)] is the name of the declared
-module.
+Declares a top-level module. If the
+@scheme[current-module-declare-name] parameter is set, the parameter
+value is used for the module name, otherwise @scheme[(#,(scheme quote)
+id)] is the name of the declared module.
+
+@margin-note/ref{For a @scheme[module]-like form for use @emph{within}
+modules and other contexts, see @scheme[define-package].}
 
 The @scheme[module-path] must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
@@ -1244,6 +1249,8 @@ and in the @scheme[body]s.
 
 @defform[(let-syntax ([id trans-expr] ...) body ...+)]{
 
+@margin-note/ref{See also @scheme[splicing-let-syntax].}
+
 Creates a @tech{transformer binding} (see
 @secref["transformer-model"]) of each @scheme[id] with the value of
 @scheme[trans-expr], which is an expression at @tech{phase level} 1
@@ -1261,16 +1268,22 @@ Each @scheme[id] is bound in the @scheme[body]s, and not in other
 
 @defform[(letrec-syntax ([id trans-expr] ...) body ...+)]{
 
+@margin-note/ref{See also @scheme[splicing-letrec-syntax].}
+
 Like @scheme[let-syntax], except that each @scheme[id] is also bound
 within all @scheme[trans-expr]s.}
 
 @defform[(let-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+@margin-note/ref{See also @scheme[splicing-let-syntaxes].}
 
 Like @scheme[let-syntax], but each @scheme[trans-expr] must produce as
 many values as corresponding @scheme[id]s, each of which is bound to
 the corresponding value.}
 
 @defform[(letrec-syntaxes ([(id ...) trans-expr] ...) body ...+)]{
+
+@margin-note/ref{See also @scheme[splicing-letrec-syntaxes].}
 
 Like @scheme[let-syntax], except that each @scheme[id] is also bound
 within all @scheme[trans-expr]s.}
@@ -1930,6 +1943,9 @@ is similar to @scheme[#%app] and @scheme[#%module-begin], in that it
 provides a hook to control interactive evaluation through
 @scheme[load] (more precisely, the default @tech{load handler}) or
 @scheme[read-eval-print-loop].}
+
+@;------------------------------------------------------------------------
+@include-section["package.scrbl"]
 
 @;------------------------------------------------------------------------
 @section[#:tag "nest"]{Flattening Syntactic Sequences: @scheme[nest]}
