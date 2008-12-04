@@ -125,6 +125,14 @@
   (custodian-shutdown-all c1)
   (test '(#f #f) map custodian-box-value (list b1 b2)))
 
+(let ()
+  (let ([c (make-custodian)])
+    (let ([l (for/list ([i (in-range 32)])
+               (make-custodian-box c 7))])
+      (test #t andmap (lambda (b) (number? (custodian-box-value b))) l)
+      (custodian-shutdown-all c)
+      (test #f ormap (lambda (b) (number? (custodian-box-value b))) l))))
+
 ;; ----------------------------------------
 
 (report-errs)
