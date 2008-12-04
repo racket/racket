@@ -5,6 +5,7 @@
 
 ;; Signatures
 
+#;
 (define-signature view^
   (macro-stepper-frame%
    macro-stepper-widget%
@@ -12,12 +13,15 @@
    go
    go/deriv))
 
+#;
 (define-signature view-base^
   (base-frame%))
 
+#;
 (define-signature prefs^
   (pref:width
    pref:height
+   pref:props-shown?
    pref:props-percentage
    pref:macro-hiding-mode
    pref:show-syntax-properties?

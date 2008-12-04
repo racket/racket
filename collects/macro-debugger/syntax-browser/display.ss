@@ -3,7 +3,6 @@
 (require scheme/class
          scheme/gui
          scheme/match
-         "params.ss"
          "pretty-printer.ss"
          "interfaces.ss"
          "util.ss")
@@ -11,8 +10,8 @@
          code-style)
 
 ;; print-syntax-to-editor : syntax text controller<%> -> display<%>
-(define (print-syntax-to-editor stx text controller)
-  (new display% (syntax stx) (text text) (controller controller)))
+(define (print-syntax-to-editor stx text controller config)
+  (new display% (syntax stx) (text text) (controller controller) (config config)))
 
 ;; FIXME: assumes text never moves
 
@@ -22,6 +21,7 @@
     (init ((stx syntax)))
     (init-field text)
     (init-field controller)
+    (init-field config)
 
     (define start-anchor (new anchor-snip%))
     (define end-anchor (new anchor-snip%))
@@ -33,7 +33,7 @@
       (with-unlock text
         (send text delete (get-start-position) (get-end-position))
         (set! range
-              (print-syntax stx text controller
+              (print-syntax stx text controller config
                             (lambda () (get-start-position))
                             (lambda () (get-end-position))))
         (apply-primary-partition-styles))
@@ -131,7 +131,7 @@
         (let ([delta (new style-delta%)])
           (send delta set-delta-foreground color)
           delta))
-      (define color-styles (list->vector (map color-style (current-colors))))
+      (define color-styles (list->vector (map color-style (send config get-colors))))
       (define overflow-style (color-style "darkgray"))
       (define color-partition (send controller get-primary-partition))
       (define offset (get-start-position))
@@ -162,16 +162,20 @@
     (render-syntax stx)
     (send controller add-syntax-display this)))
 
-;; print-syntax : syntax controller (-> number) (-> number)
+;; print-syntax : syntax text% controller config (-> number) (-> number)
 ;;                -> range%
-(define (print-syntax stx text controller
+(define (print-syntax stx text controller config
                       get-start-position get-end-position)
   (define primary-partition (send controller get-primary-partition))
   (define real-output-port (make-text-port text get-end-position))
   (define output-port (open-output-string))
+  (define colors (send config get-colors))
+  (define suffix-option (send config get-suffix-option))
+  (define columns (send config get-columns))
 
   (port-count-lines! output-port)
-  (let ([range (pretty-print-syntax stx output-port primary-partition)])
+  (let ([range (pretty-print-syntax stx output-port primary-partition 
+                                    colors suffix-option columns)])
     (write-string (get-output-string output-port) real-output-port)
     (let ([end (get-end-position)])
       ;; Pretty printer always inserts final newline; we remove it here.
@@ -189,7 +193,7 @@
        (send range all-ranges)))
     ;; Set font to standard
     (send text change-style
-          (code-style text)
+          (code-style text (send config get-syntax-font-size))
           (get-start-position)
           (get-end-position))
     range))
@@ -212,11 +216,10 @@
     (send text insert char pos (add1 pos)))
   (for-each fixup (send range all-ranges)))
 
-;; code-style : text<%> -> style<%>
-(define (code-style text)
+;; code-style : text<%> number/#f -> style<%>
+(define (code-style text font-size)
   (let* ([style-list (send text get-style-list)]
-         [style (send style-list find-named-style "Standard")]
-         [font-size (current-syntax-font-size)])
+         [style (send style-list find-named-style "Standard")])
     (if font-size
         (send style-list find-or-create-style
               style

@@ -61,7 +61,7 @@
           (provide/contract (#,start (request? . -> . response?)))
           (if extra-files-path
               (serve/servlet #,start
-                             #:extra-files-path extra-files-path
+                             #:extra-files-paths (list extra-files-path)
                              #:launch-browser? launch-browser?)
               (serve/servlet #,start
                              #:launch-browser? launch-browser?)))))]))

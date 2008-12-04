@@ -57,8 +57,8 @@
 
     (inherit add-separator)
 
-    (define/override (after-selection-items)
-      (super after-selection-items)
+    (define/override (add-menu-items)
+      (super add-menu-items)
       (add-separator)
       (set! show-macro
             (new menu-item% (label "Show selected identifier") (parent the-context-menu)

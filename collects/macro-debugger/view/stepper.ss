@@ -13,8 +13,6 @@
          "warning.ss"
          "hiding-panel.ss"
          "term-record.ss"
-         (prefix-in s: "../syntax-browser/widget.ss")
-         (prefix-in s: "../syntax-browser/params.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/deriv-find.ss"
@@ -138,10 +136,8 @@
            (stepper this)
            (config config)))
 
-    (send config listen-show-syntax-properties?
-          (lambda (show?) (send sbview show-props show?)))
     (send config listen-show-hiding-panel?
-          (lambda (show?) (show-macro-hiding-prefs show?)))
+          (lambda (show?) (show-macro-hiding-panel show?)))
     (send sbc listen-selected-syntax
           (lambda (stx) (send macro-hiding-prefs set-syntax stx)))
     (send config listen-highlight-foci?
@@ -215,7 +211,7 @@
                         nav:next
                         nav:end)))))
 
-    (define/public (show-macro-hiding-prefs show?)
+    (define/public (show-macro-hiding-panel show?)
       (send area change-children
             (lambda (children)
               (if show?
@@ -379,6 +375,7 @@
         (send (focused-term) on-get-focus))
       (update))
 
+#|
     ;; delayed-recache-errors : (list-of (cons exn string))
     (define delayed-recache-errors null)
 
@@ -408,6 +405,7 @@
                        "")))
                  (set! delayed-recache-errors null)))))
           (raise exn)))
+|#
 
     (define/private (foci x) (if (list? x) x (list x)))
 
@@ -423,8 +421,7 @@
     ;; Initialization
 
     (super-new)
-    (send sbview show-props (send config get-show-syntax-properties?))
-    (show-macro-hiding-prefs (send config get-show-hiding-panel?))
+    (show-macro-hiding-panel (send config get-show-hiding-panel?))
     (show-extra-navigation (send config get-extra-navigation?))
     (refresh/move)
     ))

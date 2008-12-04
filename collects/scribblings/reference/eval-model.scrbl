@@ -744,12 +744,12 @@ outermost frame of the continuation for any new thread.
 
 @margin-note/ref{See @secref["custodians"] for custodian functions.}
 
-A @deftech{custodian} manages a collection of threads, file-stream
-ports, TCP ports, TCP listeners, UDP sockets, and byte converters.
-Whenever a thread, file-stream port, TCP port, TCP listener, or UDP
-socket is created, it is placed under the management of the
-@deftech{current custodian} as determined by the
-@scheme[current-custodian] @tech{parameter}.
+A @deftech{custodian} manages a collection of threads,
+@tech{file-stream ports}, TCP ports, @tech{TCP listeners}, @tech{UDP
+sockets}, and @tech{byte converters}.  Whenever a thread, etc. is
+created, it is placed under the management of the @deftech{current
+custodian} as determined by the @scheme[current-custodian]
+@tech{parameter}.
 
 @margin-note{In MrEd, custodians also manage eventspaces.}
 
@@ -785,7 +785,7 @@ collected, at which point its subordinates become immediately
 subordinate to the collected custodian's superordinate custodian.
 
 In addition to the other entities managed by a custodian, a
-@defterm{custodian box} created with @scheme[make-custodian-box]
+@deftech{custodian box} created with @scheme[make-custodian-box]
 strongly holds onto a value placed in the box until the box's
 custodian is shut down. The custodian only weakly retains the box
 itself, however (so the box and its content can be collected if there

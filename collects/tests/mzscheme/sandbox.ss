@@ -5,6 +5,28 @@
 
 (require scheme/sandbox)
 
+;; test call-in-nested-thread*
+(let ()
+  (define-syntax-rule (nested body ...)
+    (call-in-nested-thread* (lambda () body ...)))
+  (test 1 values (nested 1))
+  ;; propagates parameters
+  (let ([p (make-parameter #f)])
+    (nested (p 1))
+    (test 1 p)
+    (with-handlers ([void void]) (nested (p 2) (error "foo") (p 3)))
+    (test 2 p))
+  ;; propagates kill-thread
+  (test (void) thread-wait
+        (thread (lambda ()
+                  (nested (kill-thread (current-thread)))
+                  ;; never reach here
+                  (semaphore-wait (make-semaphore 0)))))
+  ;; propagates custodian-shutdown-all
+  (test (void) values
+        (parameterize ([current-custodian (make-custodian)])
+          (nested (custodian-shutdown-all (current-custodian))))))
+
 (let ([ev void])
   (define (run thunk)
     (with-handlers ([void (lambda (e) (list 'exn: e))])
@@ -335,6 +357,74 @@
    x => 456
    (set! y 789) ; would be an error without the `set!' parameter
    y => 789
+
+   ;; test that output is also collected under the limit
+   --top--
+   (set! ev (parameterize ([sandbox-output 'bytes]
+                           [sandbox-error-output current-output-port]
+                           [sandbox-eval-limits '(0.25 1/2)])
+              (make-evaluator 'scheme/base)))
+   ;; GCing is needed to allow these to happen
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65))
+   --top--   (bytes-length (get-output ev)) => 400000
+   ;; EB: for some reason, the first thing doesn't throw an error, and I think
+   ;; that the second should break much sooner than 100 iterations
+   ;; --eval--  (let ([400k (make-bytes 400000 65)])
+   ;;             (for ([i (in-range 2)]) (display 400k)))
+   ;; --top--   (bytes-length (get-output ev))
+   ;;           =err> "out of memory"
+   ;; --eval--  (let ([400k (make-bytes 400000 65)])
+   ;;             (for ([i (in-range 100)]) (display 400k)))
+   ;;           =err> "out of memory"
+
+   ;; test that killing the custodian works fine
+   ;; first try it without limits (which imply a nester thread/custodian)
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   --eval--
+   (kill-thread (current-thread)) =err> "terminated"
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   --eval--
+   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   --top--
+   ;; also happens when it's done directly
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
+   =err> "terminated"
+   (set! ev (parameterize ([sandbox-eval-limits #f])
+              (make-evaluator 'scheme/base)))
+   (call-in-sandbox-context ev
+     (lambda () (custodian-shutdown-all (current-custodian))))
+   =err> "terminated"
+   --top--
+   ;; now make sure it works with per-expression limits too
+   (set! ev (make-evaluator 'scheme/base))
+   --eval--
+   (kill-thread (current-thread)) =err> "terminated"
+   --top--
+   (set! ev (make-evaluator 'scheme/base))
+   --eval--
+   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   --top--
+   (set! ev (make-evaluator 'scheme/base))
+   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
+   =err> "terminated"
+   (set! ev (make-evaluator 'scheme/base))
+   (call-in-sandbox-context ev
+     (lambda () (custodian-shutdown-all (current-custodian))))
+   =err> "terminated"
 
    ))
 

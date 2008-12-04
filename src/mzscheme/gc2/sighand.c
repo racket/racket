@@ -118,16 +118,14 @@ static void initialize_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGWIN
   {
     HMODULE hm;
-    PVOID (WINAPI*aveh)(ULONG, gcPVECTORED_EXCEPTION_HANDLER);
 
     hm = LoadLibrary("kernel32.dll");
-    if (hm)
+    if (hm) {
+      PVOID (WINAPI*aveh)(ULONG, gcPVECTORED_EXCEPTION_HANDLER);
       aveh = (PVOID (WINAPI*)(ULONG, gcPVECTORED_EXCEPTION_HANDLER))GetProcAddress(hm, "AddVectoredExceptionHandler");
-    else
-      aveh = NULL;
-    if (aveh)
       aveh(TRUE, fault_handler);
-    else
+    }
+    else  /* WINDOWS 95 */
       gc->generations_available = 0;
   }
 # endif
@@ -150,15 +148,13 @@ static void remove_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGWIN
   if (gc->generations_available) {
     HMODULE hm;
-    ULONG (WINAPI*rveh)(gcPVECTORED_EXCEPTION_HANDLER);
 
     hm = LoadLibrary("kernel32.dll");
-    if (hm)
+    if (hm) {
+      ULONG (WINAPI*rveh)(gcPVECTORED_EXCEPTION_HANDLER);
       rveh = (ULONG (WINAPI*)(gcPVECTORED_EXCEPTION_HANDLER))GetProcAddress(hm, "RemoveVectoredExceptionHandler");
-    else
-      rveh = NULL;
-    if (rveh)
       rveh(fault_handler);
+    }
   }
 # endif
 }

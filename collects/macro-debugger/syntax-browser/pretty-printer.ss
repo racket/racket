@@ -7,19 +7,18 @@
          scheme/pretty
          scheme/gui
          "pretty-helper.ss"
-         "interfaces.ss"
-         "params.ss"
-         "prefs.ss")
-
+         "interfaces.ss")
 (provide pretty-print-syntax)
 
-;; pretty-print-syntax : syntax port partition -> range%
-(define (pretty-print-syntax stx port primary-partition)
+;; pretty-print-syntax :
+;;   syntax port partition (listof string) SuffixOption number
+;;   -> range%
+(define (pretty-print-syntax stx port primary-partition colors suffix-option columns)
   (define range-builder (new range-builder%))
   (define-values (datum ht:flat=>stx ht:stx=>flat)
     (syntax->datum/tables stx primary-partition
-                          (length (current-colors))
-                          (current-suffix-option)))
+                          (length colors)
+                          suffix-option))
   (define identifier-list
     (filter identifier? (hash-map ht:stx=>flat (lambda (k v) k))))
   (define (flat=>stx obj)
@@ -53,7 +52,7 @@
     [pretty-print-size-hook pp-size-hook]
     [pretty-print-print-hook pp-print-hook]
     [pretty-print-current-style-table (pp-extend-style-table identifier-list)]
-    [pretty-print-columns (current-default-columns)]
+    [pretty-print-columns columns]
     ;; Printing parameters (mzscheme manual 7.9.1.4)
     [print-unreadable #t]
     [print-graph #f]

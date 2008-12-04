@@ -651,6 +651,9 @@
 (define (procedure/arity? proc arity)
   (and (procedure? proc) (procedure-arity-includes? proc arity)))
 
+(define (get-namespace evaluator)
+  (call-in-sandbox-context evaluator (lambda () (current-namespace))))
+
 (provide !defined)
 (define-syntax-rule (!defined id ...)
   ;; expected to be used only with identifiers

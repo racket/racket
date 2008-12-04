@@ -66,6 +66,7 @@
       (define response
         (with-handlers ([exn:fail:filesystem:exists?
                          (lambda (the-exn) (next-dispatcher))]
+                        [exn:dispatcher? raise]
                         [(lambda (x) #t)
                          (lambda (the-exn) (responders-servlet-loading uri the-exn))])
           (define the-servlet (url->servlet uri))
@@ -73,7 +74,8 @@
                          [current-custodian (servlet-custodian the-servlet)]
                          [current-directory (servlet-directory the-servlet)]
                          [current-namespace (servlet-namespace the-servlet)])
-            (with-handlers ([(lambda (x) #t)
+            (with-handlers ([exn:dispatcher? raise]
+                            [(lambda (x) #t)
                              (lambda (exn) (responders-servlet uri exn))])
               (call-with-continuation-barrier 
                (lambda ()

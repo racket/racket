@@ -368,7 +368,7 @@ a URL that refreshes the password file, servlet cache, etc.}
          dispatcher/c]{
  This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
  If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
- @scheme[responders-servlet].
+ @scheme[responders-servlet]. If a servlet raises calls @scheme[next-dispatcher], then the signal is propagated by this dispatcher.
 }
                       
 }

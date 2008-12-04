@@ -12,8 +12,6 @@
          "extensions.ss"
          "warning.ss"
          "hiding-panel.ss"
-         (prefix-in s: "../syntax-browser/widget.ss")
-         (prefix-in s: "../syntax-browser/params.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/deriv-find.ss"
@@ -277,13 +275,16 @@
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
-      (recache-synth!)
+      (recache-steps!)
       (cond [(syntax? raw-steps-estx)
              (add-syntax raw-steps-estx binders definites)]
             [(exn? error)
              (add-error error)]
             [raw-steps-oops
-             (add-internal-error "steps" raw-steps-oops #f)]))
+             (add-internal-error "steps" raw-steps-oops #f)]
+            [else
+             (error 'term-record::display-final-term
+                    "internal error")]))
 
     ;; display-step : -> void
     (define/public (display-step)

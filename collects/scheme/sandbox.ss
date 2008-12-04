@@ -29,9 +29,10 @@
          get-output
          get-error-output
          get-uncovered-expressions
-         get-namespace
+         call-in-sandbox-context
          make-evaluator
          make-module-evaluator
+         call-in-nested-thread*
          call-with-limits
          with-limits
          exn:fail:resource?
@@ -212,45 +213,61 @@
 
 (define memory-accounting? (custodian-memory-accounting-available?))
 
+;; similar to `call-in-nested-thread', but propagates killing the thread,
+;; shutting down the custodian or setting parameters and thread cells;
+;; optionally with thunks to call for kill/shutdown.
+(define (call-in-nested-thread*
+         thunk
+         [kill     (lambda () (kill-thread (current-thread)))]
+         [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
+  (let* ([p #f]
+         [c (make-custodian)]
+         [b (make-custodian-box c #t)])
+    (with-handlers ([(lambda (_) (not p))
+                     ;; if the after thunk was not called, then this error is
+                     ;; about the thread dying unnaturally, so propagate
+                     ;; whatever it did
+                     (lambda (_) ((if (custodian-box-value b) kill shutdown)))])
+      (dynamic-wind void
+        (lambda ()
+          (parameterize ([current-custodian c])
+            (call-in-nested-thread
+             (lambda ()
+               (dynamic-wind void thunk
+                 ;; this should always be called unless the thread is killed or
+                 ;; the custodian is shutdown, distinguish the two cases
+                 ;; through the above box
+                 (lambda ()
+                   (set! p (current-preserved-thread-cell-values))))))))
+        (lambda () (when p (current-preserved-thread-cell-values p)))))))
+
 (define (call-with-limits sec mb thunk)
-  (let ([r #f]
-        [c (make-custodian)]
-        ;; used to copy parameter changes from the nested thread
-        [p current-preserved-thread-cell-values])
-    (when (and mb memory-accounting?)
-      (custodian-limit-memory c (* mb 1024 1024) c))
-    (parameterize ([current-custodian c])
-      ;; The nested-thread can die on a time-out or memory-limit,
-      ;; and never throws an exception, so we never throw an error,
-      ;; just assume the a death means the custodian was shut down
-      ;; due to memory limit.  Note: cannot copy the
-      ;; parameterization in this case.
-      (with-handlers ([exn:fail? (lambda (e)
-                                   (unless r (set! r (cons #f 'memory))))])
-        (call-in-nested-thread
-         (lambda ()
-           (define this (current-thread))
-           (define timer
-             (and sec
-                  (thread (lambda ()
-                            (sleep sec)
-                            ;; even in this case there are no parameters
-                            ;; to copy, since it is on a different thread
-                            (set! r (cons #f 'time))
-                            (kill-thread this)))))
-           (set! r
-                 (with-handlers ([void (lambda (e) (list (p) raise e))])
-                   (call-with-values thunk (lambda vs (list* (p) values vs)))))
-           (when timer (kill-thread timer)))))
-      (custodian-shutdown-all c)
-      (unless r (error 'call-with-limits "internal error"))
-      ;; apply parameter changes first
-      (when (car r) (p (car r)))
-      (if (pair? (cdr r))
-          (apply (cadr r) (cddr r))
-          (raise (make-exn:fail:resource (format "with-limit: out of ~a" (cdr r))
-                                         (current-continuation-marks)
-                                         (cdr r)))))))
+  ;; note that when the thread is killed after using too much memory or time,
+  ;; then all thread-local changes (parameters and thread cells) are discarded
+  (let ([r #f])
+    (call-in-nested-thread*
+     (lambda ()
+       ;; memory limit
+       (when (and mb memory-accounting?)
+         (custodian-limit-memory (current-custodian) (* mb 1024 1024)))
+       ;; time limit
+       (when sec
+         (let ([t (current-thread)])
+           (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
+       (set! r (with-handlers ([void (lambda (e) (list raise e))])
+                 (call-with-values thunk (lambda vs (list* values vs))))))
+     (lambda () (unless r (set! r 'kill)))
+     (lambda () (unless r (set! r 'shut))))
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [(memory time)
+       (raise (make-exn:fail:resource (format "with-limit: out of ~a" r)
+                                      (current-continuation-marks)
+                                      r))]
+      [else (if (pair? r)
+              (apply (car r) (cdr r))
+              (error 'call-with-limits "internal error in nested: ~e" r))])))
 
 (define-syntax with-limits
   (syntax-rules ()
@@ -382,16 +399,14 @@
                     (lambda (x) (abort-current-continuation deftag x)))
                    (loop (car exprs) (cdr exprs))))))))))
 
-(define (evaluate-program program limits uncovered!)
+(define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
     (eval `(,#'#%require scheme/private/sandbox-coverage)))
-  ;; the actual evaluation happens under specified limits, if given
-  (let ([run (if (and (pair? program) (eq? 'begin (car program)))
-                 (lambda () (eval* (cdr program)))
-                 (lambda () (eval program)))]
-        [sec (and limits (car limits))]
-        [mb  (and limits (cadr limits))])
-    (if (or sec mb) (call-with-limits sec mb run) (run)))
+  ;; the actual evaluation happens under the specified limits
+  ((limit-thunk (lambda ()
+                  (if (and (pair? program) (eq? 'begin (car program)))
+                    (eval* (cdr program))
+                    (eval program)))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
@@ -435,15 +450,15 @@
 
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
-(define-evaluator-messenger (set-eval-limits . xs) 'limits)
+(define-evaluator-messenger (set-eval-limits secs mb) 'limits)
 (define-evaluator-messenger (put-input . xs) 'input)
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
-(define-evaluator-messenger get-namespace 'namespace)
+(define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
 (define (make-evaluator* init-hook require-perms program-maker)
-  (define cust          (make-custodian))
+  (define user-cust     (make-custodian))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -453,12 +468,17 @@
   (define error-output  #f)
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
-  (define orig-cust (current-custodian))
+  (define user-done-evt #t) ; set in the same place
+  (define orig-cust     (current-custodian))
+  (define (limit-thunk thunk)
+    (let* ([sec (and limits (car limits))]
+           [mb  (and limits (cadr limits))])
+      (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
   (define (user-kill)
     (when user-thread
       (let ([t user-thread])
         (set! user-thread #f)
-        (custodian-shutdown-all cust)
+        (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
   (define (user-break)
@@ -471,7 +491,7 @@
       ;; now read and evaluate the input program
       (evaluate-program
        (if (procedure? program-maker) (program-maker) program-maker)
-       limits
+       limit-thunk
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
     ;; finally wait for interaction expressions
@@ -481,20 +501,15 @@
           (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
-            (let* ([run (if (evaluator-message? expr)
-                          (lambda ()
-                            (apply (evaluator-message-msg expr)
-                                   (evaluator-message-args expr)))
-                          (lambda ()
-                            (set! n (add1 n))
-                            (eval* (input->code (list expr) 'eval n))))]
-                   [sec (and limits (car limits))]
-                   [mb  (and limits (cadr limits))]
-                   [run (if (or sec mb)
-                          (lambda () (with-limits sec mb (run)))
-                          run)])
-              (channel-put result-ch
-                           (cons 'vals (call-with-values run list)))))
+            (define run
+              (limit-thunk (if (evaluator-message? expr)
+                             (lambda ()
+                               (apply (evaluator-message-msg expr)
+                                      (evaluator-message-args expr)))
+                             (lambda ()
+                               (set! n (add1 n))
+                               (eval* (input->code (list expr) 'eval n))))))
+            (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (user-eval expr)
     (let ([r (if user-thread
@@ -506,7 +521,7 @@
                                          (lambda (e)
                                            (user-break)
                                            (loop))])
-                          (channel-get result-ch))))
+                          (sync user-done-evt result-ch))))
                eof)])
       (cond [(eof-object? r) (error 'evaluator "terminated")]
             [(eq? (car r) 'exn) (raise (cdr r))]
@@ -544,30 +559,32 @@
           [(output) (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
-          [(namespace) (user-eval (make-evaluator-message
-                                   current-namespace '()))]
+          [(thunk)  (user-eval (make-evaluator-message
+                                (car (evaluator-message-args expr)) '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
-  (define linked-outputs? #f)
   (define (make-output what out set-out! allow-link?)
     (cond [(not out) (open-output-nowhere)]
           [(and (procedure? out) (procedure-arity-includes? out 0)) (out)]
           [(output-port? out) out]
           [(eq? out 'pipe) (let-values ([(i o) (make-pipe)]) (set-out! i) o)]
           [(memq out '(bytes string))
-           (let* ([bytes? (eq? 'bytes out)]
-                  ;; the following doesn't really matter: they're the same
-                  [out ((if bytes? open-output-bytes open-output-string))])
+           (let* ([bytes? (eq? out 'bytes)]
+                  ;; create the port under the user's custodian
+                  [out (parameterize ([current-custodian user-cust])
+                         (call-in-nested-thread
+                          ;; this doesn't really matter: they're the same anyway
+                          (if bytes? open-output-bytes open-output-string)))])
              (set-out!
               (lambda ()
-                (parameterize ([current-custodian orig-cust])
-                  (let ([buf (get-output-bytes out #t)])
-                    (if bytes? buf (bytes->string/utf-8 buf #\?))))))
+                ;; this will run in the user context
+                (let ([buf (get-output-bytes out #t)])
+                  (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
-    [current-custodian cust]
+    [current-custodian user-cust]
     [current-thread-group (make-thread-group)]
     [current-namespace (make-evaluation-namespace)]
     ;; set up the IO context
@@ -613,6 +630,7 @@
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
    (set! user-thread (bg-run->thread (run-in-bg user-process)))
+   (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
          ;; initial program executed ok, so return an evaluator

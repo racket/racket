@@ -264,10 +264,11 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
         SCHEME_CDR(prev) = next;
       else
         cur->cust_boxes = next;
+      --cur->num_cust_boxes;
     }
     pr = next;
   }
-  cur->cust_boxes = NULL;
+  cur->checked_cust_boxes = cur->num_cust_boxes;
 }
 
 int BTC_thread_mark(void *p)

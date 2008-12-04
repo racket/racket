@@ -288,8 +288,8 @@
      [()
       (make mod:skip)]
      ;; provide: special
-     [(enter-prim prim-provide (? ModuleProvide/Inner) exit-prim)
-      (make mod:cons (make p:provide $1 $4 null $3))]
+     [(enter-prim prim-provide (? ModuleProvide/Inner) ! exit-prim)
+      (make mod:cons (make p:provide $1 $5 null #f $3 $4))]
      ;; normal: expand completely
      [((? EE))
       (make mod:cons $1)]
@@ -298,10 +298,10 @@
       (make mod:lift $1 #f $2)])
 
     (ModuleProvide/Inner
-     [() #f]
-     [(!!) $1]
-     [(EE/Interrupted) $1]
-     [(EE (? ModuleProvide/Inner)) $2])
+     (#:skipped null)
+     [() null]
+     [((? EE) (? ModuleProvide/Inner))
+      (cons $1 $2)])
 
     ;; Definitions
     (PrimDefineSyntaxes
@@ -442,7 +442,7 @@
 
     (PrimProvide 
      (#:args e1 e2 rs)
-     [(prim-provide !) (make p:provide e1 e2 rs $2)])
+     [(prim-provide !) (make p:provide e1 e2 rs $2 null #f)])
 
     (PrimVarRef
      (#:args e1 e2 rs)

@@ -64,21 +64,13 @@ pinholes are at position @scheme[(0,0)].
            [w natural-number/c]
            [h natural-number/c]
            [r number?]
-           [create-image (-> natural-number/c scene)]
-           [gifs? boolean? #f])
+           [create-image (-> natural-number/c scene)])
          true]{
    creates and shows a canvas of width @scheme[w] and height @scheme[h] , 
    starts a clock, making it tick every @scheme[r] (usually fractional)
    seconds. Every time the clock ticks, drscheme applies @scheme[create-image] to
    the number of ticks passed since this function call. The results of
    these applications are displayed in the canvas.
-
-   The fifth (and last) argument is optional. Providing @scheme[true] as
-   the fifth argument causes drscheme to collect the scenes that the
-   animation generates and to create an animated GIF from the results. Both
-   the intermediate images as well as the final animated GIF are saved in a
-   user-specified directory. This is useful for writing documentation and
-   for describing students work.  
 }
 
 Example:
