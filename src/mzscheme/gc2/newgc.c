@@ -1621,7 +1621,10 @@ void GC_mark(const void *const_p)
       /* now either fetch where we're going to put this object or make
          a new page if we couldn't find a page with space to spare */
       if(work) {
-        pagemap_add(gc->page_maps, work);
+        if (!work->added) {
+          pagemap_add(gc->page_maps, work);
+          work->added = 1;
+        }
         work->marked_on = 1;
         if (work->mprotected) {
           work->mprotected = 0;
@@ -1642,6 +1645,7 @@ void GC_mark(const void *const_p)
         if(work->next)
           work->next->prev = work;
         pagemap_add(gc->page_maps, work);
+        work->added = 1;
         gc->gen1_pages[type] = work;
         newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
       }
@@ -1992,6 +1996,7 @@ static void remove_all_gen1_pages_from_pagemap(NewGC *gc)
         add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
       }
       pagemap_remove(pagemap, work);
+      work->added = 0;
     }
   }
   flush_protect_page_ranges(protect_range, 1);

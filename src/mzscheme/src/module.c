@@ -3212,7 +3212,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 	supplied (not both). For unprotected access, both prot_insp
 	and stx+certs should be supplied. */
 {
-  symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL, NULL);
+  if (!SCHEME_SYMBOLP(symbol))
+    symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL, NULL);
 
   if (scheme_is_kernel_env(env)
       || ((env->module->primitive && !env->module->provide_protects))

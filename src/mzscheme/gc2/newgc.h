@@ -22,6 +22,7 @@ typedef struct mpage {
   unsigned char marked_on     ;
   unsigned char has_new       ;
   unsigned char mprotected    ;
+  unsigned char added         ;
   unsigned short live_size;
   void **backtrace;
 } mpage;
