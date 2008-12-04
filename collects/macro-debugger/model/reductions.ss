@@ -272,7 +272,7 @@
           [#:pass1]
           [Expr ?form first]
           [#:do (when (pair? (available-lift-stxs))
-                  (error 'lift-deriv "available lifts left over"))]
+                  (lift-error 'lift-deriv "available lifts left over"))]
           [#:let begin-stx (stx-car lifted-stx)]
           [#:with-visible-form
            ;; If no lifts visible, then don't show begin-wrapping
@@ -299,7 +299,7 @@
           [#:pass1]
           [Expr ?form first]
           [#:do (when (pair? (available-lift-stxs))
-                  (error 'lift/let-deriv "available lifts left over"))]
+                  (lift-error 'lift/let-deriv "available lifts left over"))]
           [#:let visible-lifts (visible-lift-stxs)]
           [#:with-visible-form
            [#:left-foot]
@@ -388,7 +388,7 @@
          [#:pass1]
          [Expr ?form inner]
          [#:do (when (pair? (available-lift-stxs))
-                 (error 'local-expand/capture-lifts "available lifts left over"))]
+                 (lift-error 'local-expand/capture-lifts "available lifts left over"))]
          [#:let visible-lifts (visible-lift-stxs)]
          [#:with-visible-form
           [#:left-foot]
@@ -402,7 +402,7 @@
     [(struct local-lift (expr id))
      ;; FIXME: add action
      (R [#:do (unless (pair? (available-lift-stxs))
-                (error 'local-lift "out of lifts!"))
+                (lift-error 'local-lift "out of lifts!"))
               (when (pair? (available-lift-stxs))
                 (let ([lift-d (car (available-lift-stxs))]
                       [lift-stx (car (available-lift-stxs))])
@@ -576,7 +576,7 @@
           [#:pass1]
           [Expr ?firstL head]
           [#:do (when (pair? (available-lift-stxs))
-                  (error 'mod:lift "available lifts left over"))]
+                  (lift-error 'mod:lift "available lifts left over"))]
           [#:let visible-lifts (visible-lift-stxs)]
           [#:pattern ?forms]
           [#:pass2]
@@ -602,3 +602,10 @@
      (R [#:pattern (?firstC . ?rest)]
         [Expr ?firstC head]
         [ModulePass ?rest rest])]))
+
+
+;; lift-error
+(define (lift-error sym . args)
+  (apply fprintf (current-error-port) args)
+  (when #t
+    (apply error sym args)))
