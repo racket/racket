@@ -26,7 +26,10 @@
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])
     (syntax-case* stx ()
-      symbolic-identifier=?             
+      symbolic-identifier=?  
+      [t
+       (Type? (syntax-e #'t))
+       (syntax-e #'t)]
       [(fst . rst)
        (not (syntax->list #'rst))
        (-pair (parse-type #'fst) (parse-type #'rst))]

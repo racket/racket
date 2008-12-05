@@ -23,15 +23,21 @@
  (for-template scheme/base scheme/contract (only-in scheme/class object% is-a?/c subclass?/c)))
 
 (define (define/fixup-contract? stx)
-  (syntax-property stx 'typechecker:contract-def))
+  (or (syntax-property stx 'typechecker:contract-def)
+      (syntax-property stx 'typechecker:contract-def/maker)))
 
 (define (generate-contract-def stx)
-  (define prop (syntax-property stx 'typechecker:contract-def))
+  (define prop (or (syntax-property stx 'typechecker:contract-def)
+                   (syntax-property stx 'typechecker:contract-def/maker)))
+  (define maker? (syntax-property stx 'typechecker:contract-def/maker))
   (define typ (parse-type prop))
   (syntax-case stx (define-values)
     [(_ (n) __)
-     (with-syntax ([cnt (type->contract typ (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
-       (syntax/loc stx (define-values (n) cnt)))]
+     (let ([typ (if maker?
+                    ((Struct-flds (lookup-type-name (Name-id typ))) #f . t:->* . typ)
+                    typ)])
+       (with-syntax ([cnt (type->contract typ (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
+         (syntax/loc stx (define-values (n) cnt))))]
     [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
 
 (define (change-contract-fixups forms)

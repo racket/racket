@@ -57,6 +57,15 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-case* stx (rename) (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(_ lib [nm ty] ...)
      #'(begin (require/typed nm ty lib) ...)]
+    [(_ nm ty lib #:struct-maker parent)
+     (with-syntax ([(cnt*) (generate-temporaries #'(nm))])
+       (quasisyntax/loc stx (begin 
+                              #,(syntax-property (syntax-property #'(define cnt* #f)
+                                                                  'typechecker:contract-def/maker #'ty)
+                                                 'typechecker:ignore #t)
+                              #,(internal #'(require/typed-internal nm ty #:struct-maker parent))
+                              #,(syntax-property #'(require/contract nm cnt* lib)
+                                                 'typechecker:ignore #t))))]
     [(_ nm ty lib)
      (identifier? #'nm)
      (with-syntax ([(cnt*) (generate-temporaries #'(nm))])
@@ -346,9 +355,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ nm ([fld : ty] ...) lib)
      (identifier? #'nm)
      (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
-                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
-                    [oty #'(Opaque pred)])
-                   #'(begin
+                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))])
+                   #`(begin
                        (require (only-in lib struct-info))
                        (define-syntax nm (make-struct-info 
                                           (lambda ()
@@ -358,9 +366,33 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                   (list #'sel ...)
                                                   (list mut ...)
                                                   #f))))
-                       (require/opaque-type nm pred lib #:name-exists)
-                       (require/typed maker (ty ... -> oty) lib)
-                       (require/typed sel (oty -> ty) lib) ...))]))
+                       #,(internal #'(define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
+                       #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
+                       #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
+                       (require/typed maker nm lib #:struct-maker #f)
+                       (require/typed lib 
+                         [sel (nm -> ty)]) ...))]
+    [(_ (nm parent) ([fld : ty] ...) lib)
+     (and (identifier? #'nm) (identifier? #'parent))
+     (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
+                    [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))]
+                    #;[(parent-tys ...) (Struct-flds (parse-type #'parent))])
+                   #`(begin
+                       (require (only-in lib struct-info))
+                       (define-syntax nm (make-struct-info 
+                                          (lambda ()
+                                            (list #'struct-info
+                                                  #'maker
+                                                  #'pred
+                                                  (list #'sel ...)
+                                                  (list mut ...)
+                                                  #f))))
+                       #,(internal #'(define-typed-struct-internal (nm parent) ([fld : ty] ...) #:type-only))
+                       #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
+                       #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
+                       (require/typed maker nm lib #:struct-maker parent)
+                       (require/typed lib                          
+                         [sel (nm -> ty)]) ...))]))
 
 (define-syntax (do: stx)
   (syntax-case stx (:)

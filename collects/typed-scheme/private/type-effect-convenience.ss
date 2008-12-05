@@ -3,6 +3,7 @@
 
 (require (rep type-rep effect-rep)
          (utils tc-utils)
+         scheme/list
          scheme/match
          "type-comparison.ss"
          "type-effect-printer.ss"
@@ -84,7 +85,7 @@
   (define (funty-arities f)
     (match f
       [(Function: as) as]))
-  (make-Function (map car (map funty-arities args))))
+  (make-Function (apply append (map funty-arities args))))
 
 (define-syntax (->key stx)
   (syntax-parse stx
@@ -142,6 +143,8 @@
 
 (define Univ (make-Univ))
 (define Err (make-Error))
+
+(define -Nat -Integer)
 
 (define-syntax -v 
   (syntax-rules ()
@@ -277,3 +280,9 @@
 
 
 
+(define (opt-fn args opt-args result)
+  (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         
+                 (make-Function (list (make-arr* (append args (take opt-args i)) result))))))
+
+(define-syntax-rule (->opt args ... [opt ...] res)
+  (opt-fn (list args ...) (list opt ...) res))

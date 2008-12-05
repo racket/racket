@@ -7,6 +7,7 @@
          scheme/match
          "signatures.ss"
          "tc-structs.ss"
+         (rep type-rep)
          (private type-utils type-effect-convenience parse-type type-annotation mutated-vars type-contract)
 	 (env type-env init-envs type-name-env type-alias-env)
 	 (utils tc-utils)
@@ -44,6 +45,13 @@
          (register-type #'nm t)
          (list (make-def-binding #'nm t)))]
       
+      [(define-values () (begin (quote-syntax (require/typed-internal nm ty #:struct-maker parent)) (#%plain-app values)))
+       (let* ([t (parse-type #'ty)]
+              [flds (Struct-flds (lookup-type-name (Name-id t)))]
+              [mk-ty (flds #f . ->* . t)])
+         (register-type #'nm mk-ty)
+         (list (make-def-binding #'nm mk-ty)))]
+      
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
@@ -52,6 +60,9 @@
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:constructor-return t)) 
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:constructor-return #'t)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
+                                (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:type-only #t)]
       ;; define-typed-struct w/ polymorphism
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]    
