@@ -1654,8 +1654,7 @@
 			      ;; Need to attach srcloc to this definition:
 			      (syntax/loc stx
 				(define-syntaxes (id ...)
-				  (values (make-private-name (quote-syntax id) 
-							     ((syntax-local-certifier) (quote-syntax gen-id)))
+				  (values (make-private-name (quote-syntax id) (quote-syntax gen-id))
 					  ...)))])
 		 (syntax/loc stx
 		   (begin

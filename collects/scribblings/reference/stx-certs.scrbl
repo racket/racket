@@ -3,6 +3,8 @@
 
 @title[#:tag "stxcerts"]{Syntax Certificates}
 
+@guideintro["stx-certs"]{syntax certificates}
+
 A @deftech{syntax certificate} combines a @tech{syntax mark} (see
 @secref["transformer-model"]), a @tech{module path index} or symbol
 module name (see @secref["modpathidx"]), an @tech{inspector} (see
@@ -112,8 +114,12 @@ expansion context:
 
  @item{When the expander encounters a @scheme[quote-syntax] form, it
    attaches all accumulated @tech{active certificates} from the
-   expressions's context to the quoted syntax objects. The
-   certificates are attached as @tech{inactive certificates}.}
+   expressions's context to the quoted syntax objects. A certificate
+   for the enclosing module (if any) is also included. The
+   certificates are attached as @tech{inactive certificates} to the
+   immediate syntax object (i.e., not to any nested syntax
+   objects). In addition, any inactive certificates within the quoted
+   syntax object are lifted to the immediate syntax object.}
 
 }
 

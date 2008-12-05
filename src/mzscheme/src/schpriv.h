@@ -2563,8 +2563,8 @@ typedef struct Scheme_Module
 
   Scheme_Object *self_modidx;
 
-  Scheme_Hash_Table *accessible;
-  Scheme_Hash_Table *et_accessible;
+  Scheme_Hash_Table *accessible; /* (symbol -> ...) */
+  Scheme_Hash_Table *et_accessible; /* phase -> (symbol -> ...) */
   Scheme_Object *insp; /* declaration-time inspector, for creating certificates
 			  and for module instantiation */
 
