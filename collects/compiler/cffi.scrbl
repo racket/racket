@@ -272,7 +272,6 @@ Expands to a use of @scheme[c-declare] with the content of
 @scheme[path-spec]. The @scheme[path-spec] has the same form as for
 @schememodname[mzlib/include]'s @scheme[include].}
 
-
 @(bibliography
   (bib-entry
    #:key "Feeley98"
