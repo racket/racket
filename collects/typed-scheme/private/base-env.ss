@@ -558,3 +558,5 @@
 
 ;; string.ss
 [real->decimal-string (N [-Nat] . ->opt .  -String)]
+
+[current-continuation-marks (-> -Cont-Mark-Set)]

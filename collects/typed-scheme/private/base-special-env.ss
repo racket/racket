@@ -29,8 +29,8 @@
         [year : N] [weekday : N] [year-day : N] [dst? : B] [time-zone-offset : N])
        ())
   (d-s exn ([message : -String] [continuation-marks : Univ]) ())
-  (d-s (exn:fail exn) () (-String Univ))
-  (d-s (exn:fail:read exn:fail) ([srclocs : (-lst Univ)]) (-String Univ))
+  (d-s (exn:fail exn) () (-String -Cont-Mark-Set))
+  (d-s (exn:fail:read exn:fail) ([srclocs : (-lst Univ)]) (-String -Cont-Mark-Set))
   )
 
 (provide (for-syntax initial-env/special-case initialize-others initialize-type-env)

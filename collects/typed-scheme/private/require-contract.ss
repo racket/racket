@@ -6,13 +6,19 @@
 (define-syntax (define-ignored stx)
   (syntax-case stx ()
     [(_ name expr)
-     (syntax-case (local-expand/capture-lifts #'expr 'expression 
+     (syntax-case (local-expand/capture-lifts #'expr
+                                              'expression 
                                               (list #'define-values))
        (begin define-values)
        [(begin (define-values (n) e) e*)
-        #'(begin (define-values (n) e)
-                 (define name e*))]
-       [e #'(define name e)])]))
+        #`(begin (define-values (n) e)
+                 (define name #,(syntax-property #'e*
+                                                 'inferred-name
+                                                 (syntax-e #'name))))]
+       [(begin (begin e))
+        #`(define name #,(syntax-property #'e
+                                          'inferred-name
+                                          (syntax-e #'name)))])]))
 
 (define-syntax (require/contract stx)
   (syntax-case stx ()
