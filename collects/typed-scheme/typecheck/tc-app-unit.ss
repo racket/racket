@@ -685,7 +685,9 @@
      (tc/app/internal #'(#%plain-app apply . args) expected)]
     ;; special-er case for (apply values (list x y z))
     [(#%plain-app apply values e)
-     (cond [(untuple (tc-expr/t #'e)) => (lambda (t) (ret (-values t)))]
+     (cond [(with-handlers ([exn:fail? (lambda _ #f)])
+               (untuple (tc-expr/t #'e)))
+            => (lambda (t) (ret (-values t)))]
            [else (tc/apply #'values #'(e))])]
     ;; special case for `apply'
     [(#%plain-app apply f . args) (tc/apply #'f #'args)]
