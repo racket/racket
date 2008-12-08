@@ -14,6 +14,7 @@
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base)
          (for-template 
+          (only-in '#%kernel [apply k:apply])
           "internal-forms.ss" scheme/base 
           (only-in scheme/private/class-internal make-object do-make-object)))
 (require (r:infer constraint-structs))
@@ -620,7 +621,7 @@
 
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
-    (values apply not list list* call-with-values do-make-object make-object cons
+    (values apply k:apply not list list* call-with-values do-make-object make-object cons
             andmap ormap) ;; the special-cased functions
     ;; special case for delay
     [(#%plain-app 
@@ -680,6 +681,14 @@
        ;; if arg was a predicate application, we swap the effects
        [(tc-result: t thn-eff els-eff)
         (ret B (map var->type-eff els-eff) (map var->type-eff thn-eff))])]
+    [(#%plain-app k:apply . args)
+     (tc/app/internal #'(#%plain-app apply . args) expected)]
+    ;; special-er case for (apply values (list x y z))
+    [(#%plain-app apply values e)
+     (cond [(with-handlers ([exn:fail? (lambda _ #f)])
+               (untuple (tc-expr/t #'e)))
+            => (lambda (t) (ret (-values t)))]
+           [else (tc/apply #'values #'(e))])]
     ;; special case for `apply'
     [(#%plain-app apply f . args) (tc/apply #'f #'args)]
     ;; special case for keywords

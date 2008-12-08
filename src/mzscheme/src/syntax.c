@@ -5184,6 +5184,10 @@ quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_In
 
   /* Push all certificates in the environment down to the syntax object. */
   stx = scheme_stx_add_inactive_certs(stx, rec[drec].certs);
+  if (env->genv->module) {
+    /* Also certify access to the enclosing module: */
+    stx = scheme_stx_cert(stx, scheme_false, env->genv, NULL, NULL, 0);
+  }
   
   if (rec[drec].comp) {
     return scheme_register_stx_in_prefix(stx, env, rec, drec);

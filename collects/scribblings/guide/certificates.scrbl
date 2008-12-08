@@ -170,7 +170,7 @@ be transferred from one syntax object to another. Such transfers are
 allowed because a macro transformer with access to the syntax object
 could already wrap it with an arbitrary context before activating the
 certificates. In practice, transferring inactive certificates is
-useful mainly to macros that implement to new template forms, such as
+useful mainly to macros that implement new template forms, such as
 @scheme[syntax/loc].
 
 @;------------------------------------------------------------------------

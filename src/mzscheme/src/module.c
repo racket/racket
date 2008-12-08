@@ -244,7 +244,11 @@ static char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash
                                     Scheme_Module_Exports *me,
                                     Scheme_Env *genv,
                                     int reprovide_kernel,
-                                    Scheme_Object *form);
+                                    Scheme_Object *form,
+                                    char **_phase1_protects);
+static Scheme_Object **compute_indirects(Scheme_Env *genv, 
+                                         Scheme_Module_Phase_Exports *pt,
+                                         int *_count);
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, 
                          int eval_exp, int eval_run, long base_phase, Scheme_Object *cycle_list);
 static void finish_expstart_module(Scheme_Env *menv);
@@ -3100,28 +3104,51 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
 static void setup_accessible_table(Scheme_Module *m)
 {
   if (!m->accessible) {
-    Scheme_Hash_Table *ht;
-    int i, count, nvp;
+    Scheme_Module_Phase_Exports *pt;
+    int j;
 
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    nvp = m->me->rt->num_var_provides;
-    for (i = 0; i < nvp; i++) {
-      if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
-	scheme_hash_set(ht, m->me->rt->provide_src_names[i], scheme_make_integer(i));
-      }
-    }
+    for (j = 0; j < 2; j++) {
+      if (!j)
+        pt = m->me->rt;
+      else
+        pt = m->me->et;
+      
+      if (pt) {
+        Scheme_Hash_Table *ht;
+        int i, count, nvp;
+        
+        ht = scheme_make_hash_table(SCHEME_hash_ptr);
+        nvp = pt->num_var_provides;
+        for (i = 0; i < nvp; i++) {
+          if (SCHEME_FALSEP(pt->provide_srcs[i])) {
+            scheme_hash_set(ht, pt->provide_src_names[i], scheme_make_integer(i));
+          }
+        }
+        
+        if (j == 0) {
+          count = m->num_indirect_provides;
+          for (i = 0; i < count; i++) {
+            scheme_hash_set(ht, m->indirect_provides[i], scheme_make_integer(i + nvp));
+          }
+        } else {
+          count = m->num_indirect_et_provides;
+          for (i = 0; i < count; i++) {
+            scheme_hash_set(ht, m->et_indirect_provides[i], scheme_make_integer(i + nvp));
+          }
+        }
+        
+        /* Add syntax as negative ids: */
+        count = pt->num_provides;
+        for (i = nvp; i < count; i++) {
+          if (SCHEME_FALSEP(pt->provide_srcs[i])) {
+            scheme_hash_set(ht, pt->provide_src_names[i], scheme_make_integer(-(i+1)));
+          }
+        }
 
-    count = m->num_indirect_provides;
-    for (i = 0; i < count; i++) {
-      scheme_hash_set(ht, m->indirect_provides[i], scheme_make_integer(i + nvp));
-    }
-    m->accessible = ht;
-    
-    /* Add syntax as negative ids: */
-    count = m->me->rt->num_provides;
-    for (i = nvp; i < count; i++) {
-      if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
-	scheme_hash_set(ht, m->me->rt->provide_src_names[i], scheme_make_integer(-(i+1)));
+        if (!j)
+          m->accessible = ht;
+        else
+          m->et_accessible = ht;
       }
     }
   }
@@ -3212,110 +3239,163 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 	supplied (not both). For unprotected access, both prot_insp
 	and stx+certs should be supplied. */
 {
-  symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL, NULL);
+  Scheme_Module_Phase_Exports *pt;
+
+  if (!SCHEME_SYMBOLP(symbol))
+    symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL, NULL);
 
   if (scheme_is_kernel_env(env)
-      || ((env->module->primitive && !env->module->provide_protects))
-      /* For now[?], we're pretending that all definitions exists for
-	 non-0 local phase. */
-      || env->mod_phase) {
+      || ((env->module->primitive && !env->module->provide_protects))) {
     if (want_pos)
       return scheme_make_integer(-1);
     else
       return symbol;
   }
 
-  if (position >= 0) {
-    /* Check whether the symbol at `pos' matches the string part of
-       the expected symbol.  */
-    Scheme_Object *isym;
-    int need_cert = 0;
+  switch (env->mod_phase) {
+  case 0:
+    pt = env->module->me->rt;
+    break;
+  case 1:
+    pt = env->module->me->et;
+    break;
+  default:
+    pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(env->module->me->other_phases,
+                                                        scheme_make_integer(env->mod_phase));
+    break;
+  }
 
-    if (position < env->module->me->rt->num_var_provides) {
-      if (!env->module->me->rt->provide_srcs
-          || SCHEME_FALSEP(env->module->me->rt->provide_srcs[position]))
-	isym = env->module->me->rt->provide_src_names[position];
-      else
-	isym = NULL;
-    } else {
-      int ipos = position - env->module->me->rt->num_var_provides;
-      if (ipos < env->module->num_indirect_provides) {
-	isym = env->module->indirect_provides[ipos];
-	need_cert = 1;
-	if (_protected)
-	  *_protected = 1;
-      } else
-	isym = NULL;
-    }
+  if (pt) {
+    if (position >= 0) {
+      /* Check whether the symbol at `pos' matches the string part of
+         the expected symbol.  */
+      Scheme_Object *isym;
+      int need_cert = 0;
 
-    if (isym) {
-      if (SAME_OBJ(isym, symbol)
-	  || (SCHEME_SYM_LEN(isym) == SCHEME_SYM_LEN(symbol)
-	      && !memcmp(SCHEME_SYM_VAL(isym), SCHEME_SYM_VAL(symbol), SCHEME_SYM_LEN(isym)))) {
-	
-	if ((position < env->module->me->rt->num_var_provides)
-	    && scheme_module_protected_wrt(env->insp, prot_insp)
-	    && env->module->provide_protects
-	    && env->module->provide_protects[position]) {
-	  if (_protected)
-	    *_protected = 1;
-	  check_certified(stx, certs, prot_insp, in_modidx, env, symbol, 1, 1);
-	}
-
-	if (need_cert)
-	  check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 1, 0);
-	
-	if (want_pos)
-	  return scheme_make_integer(position);
-	else
-	  return isym;
-      } 
-    }
-    /* failure */
-  } else {
-    Scheme_Object *pos;
-
-    pos = scheme_hash_get(env->module->accessible, symbol);
-
-    if (pos) {
-      if (position < -1) {
-	if (SCHEME_INT_VAL(pos) < 0)
-	  pos = scheme_make_integer(-SCHEME_INT_VAL(pos) - 1);
-	else
-	  pos = NULL;
+      if (position < pt->num_var_provides) {
+        if (!pt->provide_srcs
+            || SCHEME_FALSEP(pt->provide_srcs[position]))
+          isym = pt->provide_src_names[position];
+        else
+          isym = NULL;
       } else {
-	if (SCHEME_INT_VAL(pos) < 0)
-	  pos = NULL;
-      }
-    }
+        int ipos = position - pt->num_var_provides;
+        int num_indirect_provides;
+        Scheme_Object **indirect_provides;
 
-    if (pos) {
-      if (env->module->provide_protects
-	  && (SCHEME_INT_VAL(pos) < env->module->me->rt->num_provides)
-	  && env->module->provide_protects[SCHEME_INT_VAL(pos)]) {
-	if (_protected)
-	  *_protected = 1;
-	check_certified(stx, certs, prot_insp, in_modidx, env, symbol, 1, 1);
+        if (env->mod_phase == 0) {
+          num_indirect_provides = env->module->num_indirect_provides;
+          indirect_provides = env->module->indirect_provides;
+        } else if (env->mod_phase == 1) {
+          num_indirect_provides = env->module->num_indirect_et_provides;
+          indirect_provides = env->module->et_indirect_provides;
+        } else {
+          num_indirect_provides = 0;
+          indirect_provides = NULL;
+        }
+
+        if (ipos < num_indirect_provides) {
+          isym = indirect_provides[ipos];
+          need_cert = 1;
+          if (_protected)
+            *_protected = 1;
+        } else
+          isym = NULL;
       }
 
-      if ((position >= -1) 
-	  && (SCHEME_INT_VAL(pos) >= env->module->me->rt->num_var_provides)) {
-	/* unexported var -- need cert */
-	if (_protected)
-	  *_protected = 1;
-	check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 1, 0);
-      }
+      if (isym) {
+        if (SAME_OBJ(isym, symbol)
+            || (SCHEME_SYM_LEN(isym) == SCHEME_SYM_LEN(symbol)
+                && !memcmp(SCHEME_SYM_VAL(isym), SCHEME_SYM_VAL(symbol), SCHEME_SYM_LEN(isym)))) {
+	
+          if ((position < pt->num_var_provides)
+              && scheme_module_protected_wrt(env->insp, prot_insp)) {
+            char *provide_protects;
+            
+            if (env->mod_phase == 0)
+              provide_protects = env->module->provide_protects;
+            else if (env->mod_phase == 0)
+              provide_protects = env->module->et_provide_protects;
+            else
+              provide_protects = NULL;
+            
+            if (provide_protects
+                && provide_protects[position]) {
+              if (_protected)
+                *_protected = 1;
+              check_certified(stx, certs, prot_insp, in_modidx, env, symbol, 1, 1);
+            }
+          }
 
-      if (want_pos)
-        return pos;
+          if (need_cert)
+            check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 1, 0);
+	
+          if (want_pos)
+            return scheme_make_integer(position);
+          else
+            return isym;
+        } 
+      }
+      /* failure */
+    } else {
+      Scheme_Object *pos;
+
+      if (!env->mod_phase)
+        pos = scheme_hash_get(env->module->accessible, symbol);
+      else if (env->mod_phase == 1)
+        pos = scheme_hash_get(env->module->et_accessible, symbol);
       else
-	return symbol;
-    }
+        pos = NULL;
 
-    if (position < -1) {
-      /* unexported syntax -- need cert */
-      check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 0, 0);
-      return NULL;
+      if (pos) {
+        if (position < -1) {
+          if (SCHEME_INT_VAL(pos) < 0)
+            pos = scheme_make_integer(-SCHEME_INT_VAL(pos) - 1);
+          else
+            pos = NULL;
+        } else {
+          if (SCHEME_INT_VAL(pos) < 0)
+            pos = NULL;
+        }
+      }
+
+      if (pos) {
+        char *provide_protects;
+
+        if (env->mod_phase == 0)
+          provide_protects = env->module->provide_protects;
+        else if (env->mod_phase == 1)
+          provide_protects = env->module->et_provide_protects;
+        else
+          provide_protects = NULL;
+
+        if (provide_protects
+            && (SCHEME_INT_VAL(pos) < pt->num_provides)
+            && provide_protects[SCHEME_INT_VAL(pos)]) {
+          if (_protected)
+            *_protected = 1;
+          check_certified(stx, certs, prot_insp, in_modidx, env, symbol, 1, 1);
+        }
+
+        if ((position >= -1) 
+            && (SCHEME_INT_VAL(pos) >= pt->num_var_provides)) {
+          /* unexported var -- need cert */
+          if (_protected)
+            *_protected = 1;
+          check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 1, 0);
+        }
+
+        if (want_pos)
+          return pos;
+        else
+          return symbol;
+      }
+
+      if (position < -1) {
+        /* unexported syntax -- need cert */
+        check_certified(stx, certs, unexp_insp, in_modidx, env, symbol, 0, 0);
+        return NULL;
+      }
     }
   }
 
@@ -3335,14 +3415,15 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
       srcstr = "";
       srclen = 0;
     }
-    
+
     scheme_wrong_syntax("link", stx, symbol, 
                         "module mismatch, probably from old bytecode whose dependencies have changed: "
-                        "variable not provided (directly or indirectly%s) from module: %D %s%t",
+                        "variable not provided (directly or indirectly%s) from module: %D%s%t at source phase level: %d",
                         (position >= 0) ? " and at the expected position" : "",
                         env->module->modname,
-                        srclen ? "accessed from module: " : "",
-                        srcstr, srclen);
+                        srclen ? " accessed from module: " : "",
+                        srcstr, srclen,
+                        env->mod_phase);
   }
 
   return NULL;
@@ -5597,10 +5678,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *post_ex_rn_set; /* phase -> post_ex_rn-like rename */
   Scheme_Hash_Table *tables; /* phase -> (vector toplevels requires syntaxes) */
   Scheme_Object *exclude_hint = scheme_false, *lift_data;
-  Scheme_Object **exis;
+  Scheme_Object **exis, **et_exis;
   Scheme_Object *lift_ctx;
-  int exicount;
-  char *exps;
+  int exicount, et_exicount;
+  char *exps, *et_exps;
   int all_simple_renames = 1;
   int maybe_has_lifts = 0;
   int reprovide_kernel;
@@ -5979,13 +6060,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           mrec.pre_unwrapped = 0;
           mrec.env_already = 0;
           mrec.comp_flags = rec[drec].comp_flags;
+          scheme_rec_add_certs(&mrec, 0, e);
 
 	  if (!rec[drec].comp) {
 	    Scheme_Expand_Info erec1;
 	    erec1.comp = 0;
 	    erec1.depth = -1;
 	    erec1.value_name = boundname;
-	    erec1.certs = rec[drec].certs;
+	    erec1.certs = mrec.certs;
             erec1.observer = rec[drec].observer;
             erec1.pre_unwrapped = 0;
             erec1.env_already = 0;
@@ -6310,49 +6392,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
                                 env->genv->module->me,
                                 env->genv,
                                 reprovide_kernel,
-                                form);
+                                form, &et_exps);
   
+  /* Compute indirect provides (which is everything at the top-level): */
+  exis = compute_indirects(env->genv, env->genv->module->me->rt, &exicount);
+  et_exis = compute_indirects(env->genv->exp_env, env->genv->module->me->et, &et_exicount);
+
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     scheme_clean_dead_env(env->genv);
-  }
-
-  /* Compute indirect provides (which is everything at the top-level): */
-  {
-    int i, count, j;
-    Scheme_Bucket **bs, *b;
-    Scheme_Object **exsns = env->genv->module->me->rt->provide_src_names;
-    int exvcount = env->genv->module->me->rt->num_var_provides;
-    
-    bs = env->genv->toplevel->buckets;
-    for (count = 0, i = env->genv->toplevel->size; i--; ) {
-      b = bs[i];
-      if (b && b->val)
-	count++;
-    }
-
-    exis = MALLOC_N(Scheme_Object *, count);
-
-    for (count = 0, i = env->genv->toplevel->size; i--; ) {
-      b = bs[i];
-      if (b && b->val) {
-	Scheme_Object *name;
-	  
-	name = (Scheme_Object *)b->key;
-	
-	/* If the name is directly provided, no need for indirect... */
-	for (j = 0; j < exvcount; j++) {
-	  if (SAME_OBJ(name, exsns[j]))
-	    break;
-	}
-	
-	if (j == exvcount)
-	  exis[count++] = name;
-      }
-    }
-
-    exicount = count;
-
-    qsort_provides(exis, NULL, NULL, NULL, NULL, NULL, 0, exicount, 1);
   }
 
   if (!rec[drec].comp) {
@@ -6464,12 +6511,16 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     env->genv->module->et_body = exp_body_r;
 
     env->genv->module->provide_protects = exps;
+    env->genv->module->et_provide_protects = et_exps;
 
     env->genv->module->me->rt->reprovide_kernel = reprovide_kernel;
     env->genv->module->me->rt->kernel_exclusion = exclude_hint;
 
     env->genv->module->indirect_provides = exis;
     env->genv->module->num_indirect_provides = exicount;
+
+    env->genv->module->et_indirect_provides = et_exis;
+    env->genv->module->num_indirect_et_provides = et_exicount;
 
     env->genv->module->comp_prefix = cenv->prefix;
 
@@ -6877,6 +6928,64 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
   return reprovide_kernel;
 }
 
+static Scheme_Object **compute_indirects(Scheme_Env *genv, 
+                                         Scheme_Module_Phase_Exports *pt,
+                                         int *_count)
+{
+  int i, count, j;
+  Scheme_Bucket **bs, *b;
+  Scheme_Object **exsns = pt->provide_src_names, **exis;
+  int exvcount = pt->num_var_provides, exicount;
+
+  if (!genv->toplevel)
+    count = 0;
+  else {
+    bs = genv->toplevel->buckets;
+    for (count = 0, i = genv->toplevel->size; i--; ) {
+      b = bs[i];
+      if (b && b->val)
+        count++;
+    }
+  }
+
+  if (!count) {
+    *_count = 0;
+    return NULL;
+  }
+  
+  exis = MALLOC_N(Scheme_Object *, count);
+
+  for (count = 0, i = genv->toplevel->size; i--; ) {
+    b = bs[i];
+    if (b && b->val) {
+      Scheme_Object *name;
+      
+      name = (Scheme_Object *)b->key;
+      
+      /* If the name is directly provided, no need for indirect... */
+      for (j = 0; j < exvcount; j++) {
+        if (SAME_OBJ(name, exsns[j]))
+          break;
+      }
+	
+      if (j == exvcount)
+        exis[count++] = name;
+    }
+  }
+
+  if (!count) {
+    *_count = 0;
+    return NULL;
+  }
+  
+  exicount = count;
+
+  qsort_provides(exis, NULL, NULL, NULL, NULL, NULL, 0, exicount, 1);
+
+  *_count = exicount;
+  return exis;
+}
+
 Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bindings, Scheme_Object *modpath,
                                            Scheme_Object *mode)
 {
@@ -6978,12 +7087,13 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
                              Scheme_Module_Exports *me,
                              Scheme_Env *genv,
                              int reprovide_kernel,
-                             Scheme_Object *form)
+                             Scheme_Object *form,
+                             char **_phase1_protects)
 {
   int i, count, z;
   Scheme_Object **exs, **exsns, **exss, **exsnoms, *phase;
   Scheme_Hash_Table *provided, *required;
-  char *exps, *exets, *phase0_exps = NULL;
+  char *exps, *exets, *phase0_exps = NULL, *phase1_exps = NULL;
   int excount, exvcount;
   Scheme_Module_Phase_Exports *pt;
   
@@ -7189,8 +7299,12 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
 
       if (SAME_OBJ(phase, scheme_make_integer(0)))
         phase0_exps = exps;
+      else if (SAME_OBJ(phase, scheme_make_integer(1)))
+        phase1_exps = exps;
     }
   }
+
+  *_phase1_protects = phase1_exps;
     
   return phase0_exps;
 }
@@ -8944,7 +9058,6 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   l = cons(scheme_make_integer(cnt), l);
 
   count = m->me->rt->num_provides;
-
   if (m->provide_protects) {
     for (i = 0; i < count; i++) {
       if (m->provide_protects[i])
@@ -8961,13 +9074,36 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   } else
     l = cons(scheme_false, l);
   
-  l = cons(scheme_make_integer(m->num_indirect_provides), l);
-
+  count = m->me->et->num_provides;
+  if (m->et_provide_protects) {
+    for (i = 0; i < count; i++) {
+      if (m->et_provide_protects[i])
+	break;
+    }
+    if (i < count) {
+      v = scheme_make_vector(count, NULL);
+      for (i = 0; i < count; i++) {
+	SCHEME_VEC_ELS(v)[i] = (m->et_provide_protects[i] ? scheme_true : scheme_false);
+      }
+    } else
+      v = scheme_false;
+    l = cons(v, l);
+  } else
+    l = cons(scheme_false, l);
+  
   count = m->num_indirect_provides;
-
+  l = cons(scheme_make_integer(count), l);
   v = scheme_make_vector(count, NULL);
   for (i = 0; i < count; i++) {
     SCHEME_VEC_ELS(v)[i] = m->indirect_provides[i];
+  }
+  l = cons(v, l);
+
+  count = m->num_indirect_et_provides;
+  l = cons(scheme_make_integer(count), l);
+  v = scheme_make_vector(count, NULL);
+  for (i = 0; i < count; i++) {
+    SCHEME_VEC_ELS(v)[i] = m->et_indirect_provides[i];
   }
   l = cons(v, l);
 
@@ -9017,7 +9153,7 @@ static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
   Scheme_Object *ie, *nie;
-  Scheme_Object *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
+  Scheme_Object *eesp, *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
   Scheme_Module_Phase_Exports *pt;
   char *ps, *sps;
@@ -9100,8 +9236,30 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   for (i = 0; i < count; i++) {
     v[i] = SCHEME_VEC_ELS(ie)[i];
   }
+  m->et_indirect_provides = v;
+  m->num_indirect_et_provides = count;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  ie = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  nie = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+  
+  count = SCHEME_INT_VAL(nie);
+
+  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
+  v = MALLOC_N(Scheme_Object *, count);
+  for (i = 0; i < count; i++) {
+    v[i] = SCHEME_VEC_ELS(ie)[i];
+  }
   m->indirect_provides = v;
   m->num_indirect_provides = count;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  eesp = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   esp = SCHEME_CAR(obj);
@@ -9228,6 +9386,17 @@ static Scheme_Object *read_module(Scheme_Object *obj)
       ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(esp)[i]);
     }
     m->provide_protects = ps;
+  }
+
+  if (SCHEME_FALSEP(eesp)) {
+    m->et_provide_protects = NULL;
+  } else {
+    if (!SCHEME_VECTORP(eesp) || (SCHEME_VEC_SIZE(eesp) != count)) return_NULL();
+    ps = MALLOC_N_ATOMIC(char, count);
+    for (i = 0; i < count; i++) {
+      ps[i] = SCHEME_TRUEP(SCHEME_VEC_ELS(eesp)[i]);
+    }
+    m->et_provide_protects = ps;
   }
 
   if (!SCHEME_PAIRP(obj)) return_NULL();

@@ -168,18 +168,23 @@
      (check-for-break)))
 
   (define (select-handler/no-breaks e bpz l)
-    (cond
-     [(null? l)
-      (raise e)]
-     [((caar l) e)
-      (begin0
-       ((cdar l) e)
-       (with-continuation-mark 
-	   break-enabled-key
-	   bpz
-	 (check-for-break)))]
-     [else
-      (select-handler/no-breaks e bpz (cdr l))]))
+    (with-continuation-mark 
+        break-enabled-key
+        ;; make a fresh thread cell so that the shared one isn't mutated
+        (make-thread-cell #f)
+      (let loop ([l l])
+        (cond
+         [(null? l)
+          (raise e)]
+         [((caar l) e)
+          (begin0
+           ((cdar l) e)
+           (with-continuation-mark 
+               break-enabled-key
+               bpz
+             (check-for-break)))]
+         [else
+          (loop (cdr l))]))))
 
   (define (select-handler/breaks-as-is e bpz l)
     (cond

@@ -1244,35 +1244,37 @@ typedef struct MarkSegment {
   struct MarkSegment *prev;
   struct MarkSegment *next;
   void **top;
-  void **end;
-  void *stop_here; /* this is only used for its address */
 } MarkSegment;
+
+#define MARK_STACK_START(ms) ((void **)(void *)&ms[1])
+#define MARK_STACK_END(ms) ((void **)((char *)ms + STACK_PART_SIZE))
 
 static THREAD_LOCAL MarkSegment *mark_stack = NULL;
 
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
-  mark_frame->top  = &(mark_frame->stop_here);
-  mark_frame->end  = PPTR(NUM(mark_frame) + STACK_PART_SIZE);
+  mark_frame->top  = MARK_STACK_START(mark_frame);
   return mark_frame;
 }
 
-inline static void push_ptr(void *ptr)
+inline static void init_mark_stack()
 {
-  /* This happens at the very beginning */
   if(!mark_stack) {
     mark_stack = mark_stack_create_frame();
     mark_stack->prev = NULL;
   }
+}
 
+inline static void push_ptr(void *ptr)
+{
   /* This happens during propoagation if we go past the end of this MarkSegment*/
-  if(mark_stack->top == mark_stack->end) {
+  if(mark_stack->top == MARK_STACK_END(mark_stack)) {
     /* test to see if we already have another stack page ready */
     if(mark_stack->next) {
       /* we do, so just use it */
       mark_stack = mark_stack->next;
-      mark_stack->top = &(mark_stack->stop_here);
+      mark_stack->top = MARK_STACK_START(mark_stack);
     } else {
       /* we don't, so we need to allocate one */
       mark_stack->next = mark_stack_create_frame();
@@ -1287,7 +1289,7 @@ inline static void push_ptr(void *ptr)
 
 inline static int pop_ptr(void **ptr)
 {
-  if(mark_stack->top == &mark_stack->stop_here) {
+  if(mark_stack->top == MARK_STACK_START(mark_stack)) {
     if(mark_stack->prev) {
       /* if there is a previous page, go to it */
       mark_stack = mark_stack->prev;
@@ -1323,7 +1325,7 @@ inline static void clear_stack_pages(void)
         free(mark_stack);
     }
     mark_stack = base;
-    mark_stack->top = PPTR(mark_stack) + 4;
+    mark_stack->top = MARK_STACK_START(mark_stack);
   }
 }
 
@@ -1332,7 +1334,7 @@ inline static void reset_pointer_stack(void)
   /* go to the head of the list */
   for(; mark_stack->prev; mark_stack = mark_stack->prev) {}
   /* reset the stack */
-  mark_stack->top = PPTR(mark_stack) + 4;
+  mark_stack->top = MARK_STACK_START(mark_stack);
 }
 
 /*****************************************************************************/
@@ -1424,6 +1426,8 @@ void NewGC_initialize(NewGC *newgc) {
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
   newgc->new_btc_mark = 1;
+
+  init_mark_stack();
 }
 
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
@@ -1558,7 +1562,7 @@ void GC_mark(const void *const_p)
       /* if we're doing memory accounting, then we need to make sure the
          btc_mark is right */
 #ifdef NEWGC_BTC_ACCOUNT
-        BTC_set_btc_mark(gc, PTR(NUM(page->addr) + PREFIX_SIZE));
+      BTC_set_btc_mark(gc, PTR(NUM(page->addr) + PREFIX_SIZE));
 #endif
     }
 
@@ -1621,7 +1625,10 @@ void GC_mark(const void *const_p)
       /* now either fetch where we're going to put this object or make
          a new page if we couldn't find a page with space to spare */
       if(work) {
-        pagemap_add(gc->page_maps, work);
+        if (!work->added) {
+          pagemap_add(gc->page_maps, work);
+          work->added = 1;
+        }
         work->marked_on = 1;
         if (work->mprotected) {
           work->mprotected = 0;
@@ -1642,6 +1649,7 @@ void GC_mark(const void *const_p)
         if(work->next)
           work->next->prev = work;
         pagemap_add(gc->page_maps, work);
+        work->added = 1;
         gc->gen1_pages[type] = work;
         newplace = PTR(NUM(work->addr) + PREFIX_SIZE);
       }
@@ -1651,11 +1659,11 @@ void GC_mark(const void *const_p)
       work->has_new = 1;
 
       /* transfer the object */
+      ohead->mark = 1; /* mark is copied to newplace, too */
       memcpy(newplace, (const void *)ohead, size);
       /* mark the old location as marked and moved, and the new location
          as marked */
-      ohead->mark = ohead->moved = 1;
-      ((struct objhead *)newplace)->mark = 1;
+      ohead->moved = 1;
       /* if we're doing memory accounting, then we need the btc_mark
          to be set properly */
 #ifdef NEWGC_BTC_ACCOUNT
@@ -1668,7 +1676,7 @@ void GC_mark(const void *const_p)
       record_backtrace(work, newplace);
       /* set forwarding pointer */
       GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", 
-            p, newplace, work));
+               p, newplace, work));
       *(void**)p = newplace;
       push_ptr(newplace);
     }
@@ -1992,6 +2000,7 @@ static void remove_all_gen1_pages_from_pagemap(NewGC *gc)
         add_protect_page_range(protect_range, work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, APAGE_SIZE, 1);
       }
       pagemap_remove(pagemap, work);
+      work->added = 0;
     }
   }
   flush_protect_page_ranges(protect_range, 1);

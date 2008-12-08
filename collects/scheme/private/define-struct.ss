@@ -424,47 +424,46 @@
                             (let ([protect (lambda (sel)
                                              (and sel
                                                   (if (syntax-e sel)
-                                                      #`(c (quote-syntax #,sel))
+                                                      #`(quote-syntax #,sel)
                                                       sel)))]
 				  [mk-info (if super-info-checked?
 					       #'make-checked-struct-info
 					       #'make-struct-info)])
                               (quasisyntax/loc stx
                                 (define-syntaxes (#,id)
-                                  (let ([c (syntax-local-certifier)])
-                                    (#,mk-info
-                                     (lambda ()
-                                       (list
-                                        (c (quote-syntax #,struct:))
-                                        (c (quote-syntax #,make-))
-                                        (c (quote-syntax #,?))
-                                        (list
-                                         #,@(map protect (reverse sels))
-                                         #,@(if super-info
-                                                (map protect (list-ref super-info 3))
-                                                (if super-expr
-                                                    '(#f)
-                                                    null)))
-                                        (list
-                                         #,@(reverse
-                                             (let loop ([fields fields][sets sets])
-                                               (cond
-                                                [(null? fields) null]
-                                                [(not (or mutable? (field-mutable? (car fields))))
-                                                 (cons #f (loop (cdr fields) sets))]
-                                                [else
-                                                 (cons (protect (car sets))
-                                                       (loop (cdr fields) (cdr sets)))])))
-                                         #,@(if super-info
-                                                (map protect (list-ref super-info 4))
-                                                (if super-expr
-                                                    '(#f)
-                                                    null)))
-                                        #,(if super-id
-                                              (protect super-id)
+                                  (#,mk-info
+                                   (lambda ()
+                                     (list
+                                      (quote-syntax #,struct:)
+                                      (quote-syntax #,make-)
+                                      (quote-syntax #,?)
+                                      (list
+                                       #,@(map protect (reverse sels))
+                                       #,@(if super-info
+                                              (map protect (list-ref super-info 3))
                                               (if super-expr
-                                                  #f
-                                                  #t))))))))))])
+                                                  '(#f)
+                                                  null)))
+                                      (list
+                                       #,@(reverse
+                                           (let loop ([fields fields][sets sets])
+                                             (cond
+                                              [(null? fields) null]
+                                              [(not (or mutable? (field-mutable? (car fields))))
+                                               (cons #f (loop (cdr fields) sets))]
+                                              [else
+                                               (cons (protect (car sets))
+                                                     (loop (cdr fields) (cdr sets)))])))
+                                       #,@(if super-info
+                                              (map protect (list-ref super-info 4))
+                                              (if super-expr
+                                                  '(#f)
+                                                  null)))
+                                      #,(if super-id
+                                            (protect super-id)
+                                            (if super-expr
+                                                #f
+                                                #t)))))))))])
                      (let ([result
                             (cond
                              [(and (not omit-define-values?) (not omit-define-syntaxes?))

@@ -185,8 +185,10 @@ typedef struct Scheme_Cert {
 /* Certs encoding:
     - NULL: no inactive or active certs; 
             maybe inactive certs in nested parts
-    - cons(c1, c2): active certs c1 (maybe NULL), inactive certs c2 (maybe NULL); 
-                    no inactive certs in nested parts */
+    - rcons(c1, c2): active certs c1 (maybe NULL), inactive certs c2 (maybe NULL); 
+            maybe inactive certs in nested parts 
+    - immutable-rcons(c1, c2): active certs c1 (maybe NULL), inactive certs c2 (maybe NULL); 
+            no inactive certs in nested parts (using the immutable flag as a hack!) */
 #define ACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CAR((stx)->certs) : (stx)->certs) : NULL))
 #define INACTIVE_CERTS(stx) ((Scheme_Cert *)((stx)->certs ? (SCHEME_RPAIRP((stx)->certs) ? SCHEME_CDR((stx)->certs) : NULL) : NULL))
 static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp);
@@ -557,6 +559,7 @@ void scheme_init_stx(Scheme_Env *env)
 
   REGISTER_SO(no_nested_inactive_certs);
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
+  SCHEME_SET_IMMUTABLE(no_nested_inactive_certs);
 }
 
 /*========================================================================*/
@@ -1983,15 +1986,20 @@ static void phase_shift_certs(Scheme_Object *o, Scheme_Object *owner_wraps, int 
 	icerts = first;
     }
 
-    /* Even if icerts is NULL, preserve the pair in ->certs, 
-       to indicate no nested inactive certs. */
-
-    if (icerts || SCHEME_RPAIRP(((Scheme_Stx *)o)->certs)) {
-      nc = scheme_make_raw_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
-    } else
-      nc = (Scheme_Object *)acerts;
-
-    ((Scheme_Stx *)o)->certs = nc;
+    /* Even if icerts is NULL, may preserve the pair in ->certs, 
+       to indicate no nested inactive certs: */
+    {
+      int no_sub = (SCHEME_RPAIRP(((Scheme_Stx *)o)->certs)
+                    && SCHEME_IMMUTABLEP(((Scheme_Stx *)o)->certs));
+      if (icerts || no_sub) {
+        nc = scheme_make_raw_pair((Scheme_Object *)acerts, (Scheme_Object *)icerts);
+        if (no_sub)
+          SCHEME_SET_IMMUTABLE(nc);
+      } else
+        nc = (Scheme_Object *)acerts;
+      
+      ((Scheme_Stx *)o)->certs = nc;
+    }
   }
 }
 
@@ -2396,7 +2404,6 @@ static Scheme_Cert *append_certs(Scheme_Cert *a, Scheme_Cert *b)
 }
 
 static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
-/* If !active, then inactive certs must have been lifted already. */
 {
   Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs;
   Scheme_Stx *stx = (Scheme_Stx *)o, *res;
@@ -2469,9 +2476,13 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
 	if (!active) {
 	  pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
 	  res->certs = pr;
+          if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_IMMUTABLEP(stx->certs))
+            SCHEME_SET_IMMUTABLE(pr);
 	} else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
 	  pr = scheme_make_raw_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
 	  res->certs = pr;
+          if (SCHEME_IMMUTABLEP(stx->certs))
+            SCHEME_SET_IMMUTABLE(pr);
 	} else
 	  res->certs = (Scheme_Object *)orig_certs;
 	stx = res;
@@ -2529,7 +2540,8 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
 			       int active)
      /* If `name' is module-bound, add the module's certification.
 	Also copy any certifications from plus_stx.
-	If active and mark is non-NULL, make inactive certificates active. */
+	If active and mark is non-NULL, make inactive certificates active.
+        Existing inactive are lifted when adding from plus_stx_or_certs. */
 {
   if (mark && active) {
     o = scheme_stx_activate_certs(o);
@@ -2574,21 +2586,25 @@ Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env
       cert = ACTIVE_CERTS(stx);
     else
       cert = INACTIVE_CERTS(stx);
-    
+
     cert = cons_cert(mark, menv->link_midx ? menv->link_midx : menv->module->me->src_modidx, 
-		     menv->module->insp, key, cert);
+                     menv->module->insp, key, cert);
 
     if (active) {
       if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
 	Scheme_Object *pr;
 	pr = scheme_make_raw_pair((Scheme_Object *)cert, SCHEME_CDR(stx->certs));
 	res->certs = pr;
+        if (SCHEME_IMMUTABLEP(stx->certs))
+          SCHEME_SET_IMMUTABLE(pr);
       } else
 	res->certs = (Scheme_Object *)cert;
     } else {
       Scheme_Object *pr;
       pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)cert);
       res->certs = pr;
+      if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_IMMUTABLEP(stx->certs))
+        SCHEME_SET_IMMUTABLE(pr);
     }
     
     o = (Scheme_Object *)res;
@@ -2871,28 +2887,38 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp)
     Scheme_Stx *stx = (Scheme_Stx *)o;
 
     if (INACTIVE_CERTS(stx)) {
-      /* Change inactive certs to active certs. (No
-	 sub-object has inactive certs, because they
-	 are always lifted when inactive certs are added.) */
-      Scheme_Object *np;
+      /* Change inactive certs to active certs. */
+      Scheme_Object *np, *v;
       Scheme_Stx *res;
       Scheme_Cert *certs;
 
-      res = (Scheme_Stx *)scheme_make_stx(stx->val, 
+      if (SCHEME_IMMUTABLEP(stx->certs)) {
+        /* No sub-object has other inactive certs */
+        v = stx->val;
+      } else {
+        v = stx_activate_certs(stx->val, cp);
+      }
+
+      res = (Scheme_Stx *)scheme_make_stx(v, 
 					  stx->srcloc,
 					  stx->props);
       res->wraps = stx->wraps;
       res->u.lazy_prefix = stx->u.lazy_prefix;
-      np = scheme_make_raw_pair(SCHEME_CAR(stx->certs), NULL);
+      if (!ACTIVE_CERTS(stx))
+        np = no_nested_inactive_certs;
+      else {
+        np = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), NULL);
+        SCHEME_SET_IMMUTABLE(np);
+      }
       res->certs = np;
 
       certs = append_certs(INACTIVE_CERTS(stx), *cp);
       *cp = certs;
 
       return (Scheme_Object *)res;
-    } else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-      /* Explicit pair but NULL for inactive certs means no
-	 inactive certs anywhere in this object. */
+    } else if (stx->certs && SCHEME_RPAIRP(stx->certs) 
+               && SCHEME_IMMUTABLEP(stx->certs)) {
+      /* Explicit pair, but no inactive certs anywhere in this object. */
       return (Scheme_Object *)stx;
     } else {
       o = stx_activate_certs(stx->val, cp);
@@ -2904,14 +2930,11 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp)
 					    stx->props);
 	res->wraps = stx->wraps;
 	res->u.lazy_prefix = stx->u.lazy_prefix;
-	/* stx->certs must not be a pair, otherwise we
-	   would have taken an earlier branch; allocate
-	   a pair with an explicitl NULL now to inidicate 
-	   that there are no nested certs here */
-	if (stx->certs) {
+	if (ACTIVE_CERTS(stx)) {
 	  Scheme_Object *np;
-	  np = scheme_make_raw_pair(stx->certs, NULL);
+	  np = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), NULL);
 	  res->certs = np;
+          SCHEME_SET_IMMUTABLE(np);
 	} else
 	  res->certs = no_nested_inactive_certs;
 
@@ -2922,6 +2945,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp)
 	  Scheme_Object *np;
 	  np = scheme_make_raw_pair(stx->certs, NULL);
 	  stx->certs = np;
+          SCHEME_SET_IMMUTABLE(np);
 	} else
 	  stx->certs = no_nested_inactive_certs;
         
@@ -2937,6 +2961,8 @@ static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active)
   Scheme_Cert *certs = NULL;
 
   o = stx_activate_certs(o, &certs);
+  /* the inactive certs collected into `certs'
+     have been stripped from `o' at this point */
 
   if (certs)
     o = add_certs(o, certs, NULL, as_active);
@@ -6925,10 +6951,8 @@ static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
     ((Scheme_Stx *)src)->props = properties;
   }
 
-  if (certs) {
-    src = lift_inactive_certs(src, 0);
+  if (certs)
     src = add_certs(src, (Scheme_Cert *)certs, NULL, 0);    
-  }
 
   return src;
 }

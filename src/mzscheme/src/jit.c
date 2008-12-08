@@ -3185,10 +3185,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   }
   CHECK_LIMIT();
 
-  if (arith == 2) {
-    if (rand2 || ((v != 0) && (v != 1)))
-      has_fixnum_fast = 0;
-  } else if (arith == -2) {
+  if (arith == -2) {
     if (rand2 || (v != 1) || reversed)
       has_fixnum_fast = 0;
   }
@@ -3326,10 +3323,10 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	}
 	jit_ori_ul(JIT_R0, JIT_R2, 0x1);
       } else if (arith == 2) {
-        if (has_fixnum_fast) {
-          /* No fast path for fixnum multiplication, yet */
-          (void)jit_jmpi(refslow);
-        }
+        jit_andi_ul(JIT_R2, JIT_R1, (~0x1));
+        jit_rshi_l(JIT_V1, JIT_R0, 0x1);
+        (void)jit_bomulr_l(refslow, JIT_V1, JIT_R2);
+        jit_ori_ul(JIT_R0, JIT_V1, 0x1);
       } else if (arith == -2) {
         if (has_fixnum_fast) {
           /* No fast path for fixnum division, yet */
@@ -3432,11 +3429,11 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         } else if (v == 0) {
           (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
         } else {
-          if (has_fixnum_fast) {
-            /* No general fast path for fixnum multiplication, yet */
-            (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
-            (void)jit_jmpi(refslow);
-          }
+          (void)jit_movi_p(JIT_R1, scheme_make_integer(v));
+          jit_andi_ul(JIT_R2, JIT_R1, (~0x1));
+          jit_rshi_l(JIT_V1, JIT_R0, 0x1);
+          (void)jit_bomulr_l(refslow, JIT_V1, JIT_R2);
+          jit_ori_ul(JIT_R0, JIT_V1, 0x1);
         }
       } else if (arith == -2) {
         if ((v == 1) && !reversed) {

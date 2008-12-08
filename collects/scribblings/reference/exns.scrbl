@@ -15,7 +15,7 @@ handler} for a primitive error is always an instance of the
 @scheme[message] field that is a string, the primitive error message.
 The default exception handler recognizes exception values with the
 @scheme[exn?] predicate and passes the error message to the current
-error display handler (see @scheme[error-display-handler]).
+@tech{error display handler} (see @scheme[error-display-handler]).
 
 Primitive procedures that accept a procedure argument with a
 particular required arity (e.g., @scheme[call-with-input-file],
@@ -80,7 +80,7 @@ In all cases, the constructed message string is passed to
 
 Like @scheme[error], but constructs an exception with
 @scheme[make-exn:fail:user] instead of @scheme[make-exn:fail]. The
-default error display handler does not show a ``stack trace'' for
+default @tech{error display handler} does not show a ``stack trace'' for
 @scheme[exn:fail:user] exceptions (see @secref["contmarks"]), so
 @scheme[raise-user-error] should be used for errors that are intended
 for end users.}
@@ -221,16 +221,16 @@ it returns, an exception is raised (to be handled by an exception
 handler that reports both the original and newly raised exception).
 
 The default uncaught-exception handler prints an error message using
-the current error display handler (see @scheme[error-display-handler])
+the current @tech{error display handler} (see @scheme[error-display-handler])
 and then escapes by calling the current error escape handler (see
 @scheme[error-escape-handler]). The call to each handler is
 @scheme[parameterize]d to set @scheme[error-display-handler] to the
-default error display handler, and it is @scheme[parameterize-break]ed
+default @tech{error display handler}, and it is @scheme[parameterize-break]ed
 to disable breaks. The call to the error escape handler is further
 parameterized to set @scheme[error-escape-handler] to the default
 error escape handler.
 
-When the current error display handler is the default handler, then the
+When the current @tech{error display handler} is the default handler, then the
 error-display call is parameterized to install an emergency error
 display handler that attempts to print directly to a console and never
 fails.}
@@ -322,7 +322,7 @@ argument if it is an @scheme[exn] value but not an
 the second argument to highlight source locations.}
 
 To report a run-time error, use @scheme[raise] or procedures like
-@scheme[error], instead of calling the error display procedure
+@scheme[error], instead of calling the error display handler
 directly.}
 
 @defparam[error-print-width width (and exact-integer? (>=/c 3))]{
@@ -333,7 +333,7 @@ message.}
 
 @defparam[error-print-context-length cnt exact-nonnegative-integer?]{
 
-A parameter whose value is used by the default error display handler
+A parameter whose value is used by the default @tech{error display handler}
 as the maximum number of lines of context (or ``stack trace'') to
 print; a single ``...'' line is printed if more lines are available
 after the first @scheme[cnt] lines. A @scheme[0] value for
@@ -504,13 +504,14 @@ interrupted computation.}
 
 @defthing[prop:exn:srclocs struct-type-property?]{
 
-A property that identifiers structure types that provide a list of
+A property that identifies structure types that provide a list of
 @scheme[srcloc] values. The property is normally attached to structure
 types used to represent exception information.
 
 The property value must be a procedure that accepts a single
 value---the structure type instance from which to extract source
-locations---and returns a list of @scheme[srcloc]s.}
+locations---and returns a list of @scheme[srcloc]s. Some @tech{error
+display handlers} use only the first returned location.}
 
 
 @defproc[(exn:srclocs? [v any/c]) boolean?]{
@@ -520,7 +521,7 @@ property, @scheme[#f] otherwise.}
 
 
 @defproc[(exn:srclocs-accessor [v exn:srclocs?])
-         (exn:srclocs?. -> . (listof srcloc))]{
+         (exn:srclocs? . -> . (listof srcloc))]{
 
 Returns the @scheme[srcloc]-getting procedure associated with @scheme[v].}
 

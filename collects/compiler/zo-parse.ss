@@ -197,7 +197,9 @@
     [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
              ,prefix ,kernel-exclusion ,reprovide-kernel?
-             ,indirect-provides ,num-indirect-provides ,protects
+             ,indirect-provides ,num-indirect-provides 
+             ,indirect-et-provides ,num-indirect-et-provides 
+             ,protects ,et-protects
              ,provide-phase-count . ,rest)
      (let ([phase-data (take rest (* 8 provide-phase-count))])
        (match (list-tail rest (* 8 provide-phase-count))

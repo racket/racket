@@ -91,7 +91,8 @@
                          #:proc-ty [proc-ty #f]
                          #:maker [maker* #f]
                          #:constructor-return [cret #f]
-                         #:poly? [poly? #f])
+                         #:poly? [poly? #f]
+                         #:type-only [type-only #f])
   ;; create the approriate names that define-struct will bind
   (define-values (maker pred getters setters) (struct-names nm flds setters?))
   (let* ([name (syntax-e nm)]
@@ -99,17 +100,19 @@
          [sty (make-Struct name parent fld-types proc-ty poly? pred (syntax-local-certifier))]
          [external-fld-types/no-parent types]
          [external-fld-types fld-types])
-    (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters? 
-                           #:wrapper wrapper
-                           #:type-wrapper type-wrapper
-                           #:maker (or maker* maker)
-                           #:constructor-return cret)))
+    (if type-only
+        (register-type-name nm (wrapper sty))
+        (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters? 
+                               #:wrapper wrapper
+                               #:type-wrapper type-wrapper
+                               #:maker (or maker* maker)
+                               #:constructor-return cret))))
 
 ;; generate names, and register the approriate types give field types and structure type
 ;; optionally wrap things
 ;; identifier Type Listof[identifer] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
 (define (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
-                               #:wrapper [wrapper (lambda (x) x)]
+                               #:wrapper [wrapper values]
                                #:type-wrapper [type-wrapper values]
                                #:maker [maker* #f]
                                #:constructor-return [cret #f])
@@ -168,7 +171,9 @@
 
 ;; typecheck a non-polymophic struct and register the approriate types
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
-(define (tc/struct nm/par flds tys [proc-ty #f] #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f])
+(define (tc/struct nm/par flds tys [proc-ty #f] 
+                   #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f]
+                   #:type-only [type-only #f])
   ;; get the parent info and create some types and type variables
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
   ;; parse the field types, and determine if the type is recursive
@@ -184,7 +189,8 @@
                    #:proc-ty proc-ty-parsed
                    #:maker maker
 		   #:constructor-return (and cret (parse-type cret))
-                   #:mutable mutable))
+                   #:mutable mutable
+                   #:type-only type-only))
 
 ;; register a struct type
 ;; convenience function for built-in structs

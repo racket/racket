@@ -1077,7 +1077,7 @@ static Scheme_Object *make_application(Scheme_Object *v)
     app->rator = SCHEME_CAR(v);
     v = SCHEME_CDR(v);
     app->rand = SCHEME_CAR(v);
-
+    
     return (Scheme_Object *)app;
   } else if (n == 3) {
     Scheme_App3_Rec *app;
@@ -1351,7 +1351,7 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
     orig_info->max_let_depth = info->max_let_depth;
 
   set_app2_eval_type(app);
-
+        
   return (Scheme_Object *)app;
 }
 
@@ -2219,6 +2219,11 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (info->inline_fuel < 0)
     return NULL;
+  
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
+    /* Found a `((lambda' */
+    single_use = 1;
+  }
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
@@ -2458,6 +2463,16 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
     le = scheme_optimize_expr(app->args[i], info);
     app->args[i] = le;
 
+    if (!i) {
+      if (SAME_TYPE(SCHEME_TYPE(app->args[0]),scheme_compiled_unclosed_procedure_type)) {
+        /* Found "((lambda" after optimizing; try again */
+        le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags);
+        if (le)
+          return le;
+      }
+    }
+
+
     if (i && (SCHEME_TYPE(le) < _scheme_compiled_values_types_))
       all_vals = 0;
   }
@@ -2500,6 +2515,13 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
   le = scheme_optimize_expr(app->rator, info);
   app->rator = le;
+
+  if (SAME_TYPE(SCHEME_TYPE(app->rator),scheme_compiled_unclosed_procedure_type)) {
+    /* Found "((lambda" after optimizing; try again */
+    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags);
+    if (le)
+      return le;
+  }
 
   le = scheme_optimize_expr(app->rand, info);
   app->rand = le;
@@ -2563,6 +2585,13 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   le = scheme_optimize_expr(app->rator, info);
   app->rator = le;
+
+  if (SAME_TYPE(SCHEME_TYPE(app->rator),scheme_compiled_unclosed_procedure_type)) {
+    /* Found "((lambda" after optimizing; try again */
+    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags);
+    if (le)
+      return le;
+  }
 
   /* 1st arg */
 

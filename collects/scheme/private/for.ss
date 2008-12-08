@@ -100,8 +100,7 @@
       ;; down to all the relevant identifiers and expressions:
       (define (recert s) (syntax-recertify s src-stx (current-inspector) cert-key))
       (define (cert s) (certifier (recert s) cert-key introducer))
-      (define (map-cert s) (map (lambda (s) (certifier (recert s) cert-key #;introducer))
-                                (syntax->list s)))
+      (define (map-cert s) (map cert (syntax->list s)))
 
       (syntax-case clause (:do-in)
         [[(id ...) (:do-in ([(outer-id ...) outer-expr] ...)

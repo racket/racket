@@ -217,6 +217,11 @@ typedef _uc		jit_insn;
 # define _qOr(       OP,R                       ) _Or(OP,R) 
 #endif
 #define	 _OO(	     OP				)  ( _jit_B((OP)>>8), _jit_B( (OP)	)				  )
+#ifdef JIT_X86_64
+# define _qOO(OP)  ( _REX(0,0,0), _OO(OP))
+#else
+# define _qOO(OP) _OO(OP)
+#endif
 #define	 _OOr(	     OP,R			)  ( _jit_B((OP)>>8), _jit_B( (OP)|_r(R))				  )
 #define	  _Os(	     OP,B			)  (	_s8P(B) ? _jit_B(((OP)|_b10)) : _jit_B(OP)			  )
 #ifdef JIT_X86_64
@@ -240,6 +245,7 @@ typedef _uc		jit_insn;
 #define	  _O_Mrm(    OP	 ,MO,R,M		)  (	    _O	    (  OP  ),_Mrm(MO,R,M	    )		  )
 #define	 _qO_Mrm(    OP	 ,MO,R,M		)  (	    _qO	    (  OP,R,0,M),_qMrm(MO,R,M	    )		  )
 #define	 _OO_Mrm(    OP	 ,MO,R,M		)  (	   _OO	    (  OP  ),_Mrm(MO,R,M	    )		  )
+#define	 _qOO_Mrm(   OP	 ,MO,R,M		)  (	   _qOO	    (  OP  ),_Mrm(MO,R,M	    )		  )
 #define	  _O_Mrm_B(  OP	 ,MO,R,M	    ,B	)  (	    _O	    (  OP  ),_Mrm(MO,R,M	    ) ,_jit_B(B)	  )
 #define	 _qO_Mrm_B(  OP	 ,MO,R,M	    ,B	)  (	    _qO	    (  OP,R,0,M),_qMrm(MO,R,M	    ) ,_jit_B(B)	  )
 #define	  _O_Mrm_W(  OP	 ,MO,R,M	    ,W	)  (	    _O	    (  OP  ),_Mrm(MO,R,M	    ) ,_jit_W(W)	  )
@@ -500,6 +506,7 @@ typedef _uc		jit_insn;
 #define IMULLirr(IM,RS,RD)		_Os_Mrm_sL	(0x69		,_b11,_r4(RS),_r4(RD)			,IM	)
 #define IMULLimr(IM,MD,MB,MI,MS,RD)	_Os_r_X_sL	(0x69		     ,_r4(RD)		,MD,MB,MI,MS	,IM	)
 
+#define IMULQrr(RS,RD)			_qOO_Mrm	(0x0faf		,_b11,_r4(RD),_r4(RS)				)
 
 #define INCBr(RD)			_O_Mrm		(0xfe		,_b11,_b000  ,_r1(RD)				)
 #define INCBm(MD,MB,MI,MS)		_O_r_X		(0xfe		     ,_b000		,MD,MB,MI,MS		)

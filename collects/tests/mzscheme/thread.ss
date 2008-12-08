@@ -1275,4 +1275,13 @@
 
 ; --------------------
 
+;; Make sure shared thread cell is not exposed:
+(test #f 'no-breaks (with-handlers ([void (lambda (x) (break-enabled))]) (/ 0)))
+(test #t 'no-breaks (with-handlers ([void (lambda (x) (break-enabled #t) (break-enabled))]) (/ 0)))
+(test #f 'no-breaks (with-handlers ([void (lambda (x) (break-enabled))]) (/ 0)))
+(test #t 'no-breaks (with-handlers ([(lambda (x) (break-enabled #t)) (lambda (x) (break-enabled))]) (/ 0)))
+(test #f 'no-breaks (with-handlers ([void (lambda (x) (break-enabled))]) (/ 0)))
+
+; --------------------
+
 (report-errs)
