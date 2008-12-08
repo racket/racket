@@ -251,154 +251,157 @@
       (parameterize ([match-equality-test type-equal?]
                      [current-seen (remember S T (current-seen))])
         (match* 
-         (S T)
-         [(a a) empty]
-         [(_ (Univ:)) empty]
-         
-         [((F: (? (lambda (e) (memq e X)) v)) S)
-          (when (match S
-                  [(F: v*)
-                   (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
-                  [_ #f])
-            (fail! S T))
-          (singleton (Un) v (var-demote S V))]
-         [(S (F: (? (lambda (e) (memq e X)) v)))
-          (when (match S
-                  [(F: v*)
-                   (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
-                  [_ #f])
-            (fail! S T))
-          (singleton (var-promote S V) v Univ)]
-         
-         ;; two unions with the same number of elements, so we just try to unify them pairwise
-         #;[((Union: l1) (Union: l2))
-            (=> unmatch)
-            (unless (= (length l1) (length l2))
-              (unmatch))
-            (cgen-union V X l1 l2)]
-         
-         #;[((Poly: v1 b1) (Poly: v2 b2))
-          (unless (= (length v1) (length v2))
-            (fail! S T))
-          (let ([b2* (subst-all (map list v2 v1) b2)])
-            (cg b1 b2*))]
-         
-         #;[((PolyDots: (list v1 ... r1) b1) (PolyDots: (list v2 ... r2) b2))
-          (unless (= (length v1) (length v2))
-            (fail! S T))
-          (let ([b2* (substitute-dotted v1 v1 v2 (subst-all (map list v2 v1) b2))])
-            (cg b1 b2*))]
-         
-         [((Poly: v1 b1) T)
-          (cgen (append v1 V) X b1 T)]
-
-         #;[((PolyDots: (list v1 ... r1) b1) T)
-          (let ([b1* (var-demote b1 (cons r1 v1))])
-            (cg b1* T))]
-
-         #;
-         [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
-          (unless (= n n*)
-            (fail! S T))
-          (cg b b*)]
-         
-         
-         [((Union: es) S) (cset-meet* (cons empty (for/list ([e es]) (cg e S))))]
-         ;; we might want to use multiple csets here, but I don't think it makes a difference
-         [(S (Union: es)) (or
-                           (for/or 
-                            ([e es]) 
-                            (with-handlers
-                                ([exn:infer? (lambda _ #f)])
-                              (cg S e)))
-                           (fail! S T))]
-         
-         [((Struct: nm p flds proc _ _ _) (Struct: nm p flds* proc* _ _ _))
-          (let-values ([(flds flds*)
-                        (cond [(and proc proc*)
-                               (values (cons proc flds) (cons proc* flds*))]
-                              [(or proc proc*)
-                               (fail! S T)]
-                              [else (values flds flds*)])])
-            (cgen/list V X flds flds*))]
-         [((Name: n) (Name: n*))
-          (if (free-identifier=? n n*)
-              null
-              (fail! S T))]
-         [((Pair: a b) (Pair: a* b*))
-          (cset-meet (cg a a*) (cg b b*))]
-         ;; if we have two mu's, we rename them to have the same variable
-         ;; and then compare the bodies
-         [((Mu-unsafe: s) (Mu-unsafe: t)) 
-          (cg s t)]
-         ;; other mu's just get unfolded
-         [(s (? Mu? t)) (cg s (unfold t))]
-         [((? Mu? s) t) (cg (unfold s) t)]
-         ;; type application          
-         [((App: (Name: n) args _)
-           (App: (Name: n*) args* _))
-          (unless (free-identifier=? n n*)
-            (fail! S T))
-          (let ([x (instantiate-poly (lookup-type-name n) args)]
-                [y (instantiate-poly (lookup-type-name n) args*)])
-            (cg x y))]
-         [((Values: ss) (Values: ts))
-          (unless (= (length ss) (length ts))
-            (fail! ss ts))
-          (cgen/list V X ss ts)]
-         [((Values: ss) (ValuesDots: ts t-dty dbound))
-          (unless (>= (length ss) (length ts))
-            (fail! ss ts))
-          (unless (memq dbound X)
-            (fail! S T))
-          (let* ([num-vars (- (length ss) (length ts))]
-                 [vars     (for/list ([n (in-range num-vars)])
-                                     (gensym dbound))]
-                 [new-tys  (for/list ([var vars])
-                                     (substitute (make-F var) dbound t-dty))]
-                 [new-cset (cgen/list V (append vars X) ss (append ts new-tys))])
-            (move-vars-to-dmap new-cset dbound vars))]
-         [((ValuesDots: ss s-dty dbound) (Values: ts))
-          (unless (>= (length ts) (length ss))
-            (fail! ss ts))
-          (unless (memq dbound X)
-            (fail! S T))
-          (let* ([num-vars (- (length ts) (length ss))]
-                 [vars     (for/list ([n (in-range num-vars)])
-                                     (gensym dbound))]
-                 [new-tys  (for/list ([var vars])
-                                     (substitute (make-F var) dbound s-dty))]
-                 [new-cset (cgen/list V (append vars X) (append ss new-tys) ts)])
-            (move-vars-to-dmap new-cset dbound vars))]
-         [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
-          (when (memq dbound X) (fail! ss ts))          
-          (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
-         [((Vector: e) (Vector: e*))
-          (cset-meet (cg e e*) (cg e* e))]
-         [((Box: e) (Box: e*))
-          (cset-meet (cg e e*) (cg e* e))]
-         [((Hashtable: s1 s2) (Hashtable: t1 t2))
-          ;; the key is covariant, the value is invariant
-          (cset-meet* (list (cg s1 t1) (cg t2 s2) (cg s2 t2)))]
-         [((Syntax: s1) (Syntax: s2))
-          (cg s1 s2)]
-         ;; parameters are just like one-arg functions
-         [((Param: in1 out1) (Param: in2 out2))
-          (cset-meet (cg in2 in1) (cg out1 out2))]
-         [((Function: (list t-arr ...))
-           (Function: (list s-arr ...)))
-          (=> unmatch)
-          (cset-combine
-           (filter 
-            values ;; only generate the successful csets
-            (for*/list 
-             ([t-arr t-arr] [s-arr s-arr])
-             (with-handlers ([exn:infer? (lambda (_) #f)])
-               (cgen/arr V X t-arr s-arr)))))]
-         [(_ _)
-          (cond [(subtype S T) empty]
-                ;; or, nothing worked, and we fail
-                [else (fail! S T)])]))))
+            (S T)
+          [(a a) empty]
+          [(_ (Univ:)) empty]
+          
+          [((F: (? (lambda (e) (memq e X)) v)) S)
+           (when (match S
+                   [(F: v*)
+                    (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                   [_ #f])
+             (fail! S T))
+           (singleton (Un) v (var-demote S V))]
+          [(S (F: (? (lambda (e) (memq e X)) v)))
+           (when (match S
+                   [(F: v*)
+                    (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                   [_ #f])
+             (fail! S T))
+           (singleton (var-promote S V) v Univ)]
+          
+          ;; two unions with the same number of elements, so we just try to unify them pairwise
+          #;[((Union: l1) (Union: l2))
+             (=> unmatch)
+             (unless (= (length l1) (length l2))
+               (unmatch))
+             (cgen-union V X l1 l2)]
+          
+          #;[((Poly: v1 b1) (Poly: v2 b2))
+             (unless (= (length v1) (length v2))
+               (fail! S T))
+             (let ([b2* (subst-all (map list v2 v1) b2)])
+               (cg b1 b2*))]
+          
+          #;[((PolyDots: (list v1 ... r1) b1) (PolyDots: (list v2 ... r2) b2))
+             (unless (= (length v1) (length v2))
+               (fail! S T))
+             (let ([b2* (substitute-dotted v1 v1 v2 (subst-all (map list v2 v1) b2))])
+               (cg b1 b2*))]
+          
+          [((Poly: v1 b1) T)
+           (cgen (append v1 V) X b1 T)]
+          
+          #;[((PolyDots: (list v1 ... r1) b1) T)
+             (let ([b1* (var-demote b1 (cons r1 v1))])
+               (cg b1* T))]
+          
+          #;
+          [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
+           (unless (= n n*)
+             (fail! S T))
+           (cg b b*)]
+          
+          
+          [((Union: es) S) (cset-meet* (cons empty (for/list ([e es]) (cg e S))))]
+          ;; we might want to use multiple csets here, but I don't think it makes a difference
+          [(S (Union: es)) (or
+                            (for/or 
+                             ([e es]) 
+                             (with-handlers
+                                 ([exn:infer? (lambda _ #f)])
+                               (cg S e)))
+                            (fail! S T))]
+          
+          [((Struct: nm p flds proc _ _ _) (Struct: nm p flds* proc* _ _ _))
+           (let-values ([(flds flds*)
+                         (cond [(and proc proc*)
+                                (values (cons proc flds) (cons proc* flds*))]
+                               [(or proc proc*)
+                                (fail! S T)]
+                               [else (values flds flds*)])])
+             (cgen/list V X flds flds*))]
+          [((Name: n) (Name: n*))
+           (if (free-identifier=? n n*)
+               null
+               (fail! S T))]
+          [((Pair: a b) (Pair: a* b*))
+           (cset-meet (cg a a*) (cg b b*))]
+          ;; if we have two mu's, we rename them to have the same variable
+          ;; and then compare the bodies
+          [((Mu-unsafe: s) (Mu-unsafe: t)) 
+           (cg s t)]
+          ;; other mu's just get unfolded
+          [(s (? Mu? t)) (cg s (unfold t))]
+          [((? Mu? s) t) (cg (unfold s) t)]
+          ;; type application          
+          [((App: (Name: n) args _)
+            (App: (Name: n*) args* _))
+           (unless (free-identifier=? n n*)
+             (fail! S T))
+           (let ([x (instantiate-poly (lookup-type-name n) args)]
+                 [y (instantiate-poly (lookup-type-name n) args*)])
+             (cg x y))]
+          [((Values: ss) (Values: ts))
+           (unless (= (length ss) (length ts))
+             (fail! ss ts))
+           (cgen/list V X ss ts)]
+          [((Values: ss) (ValuesDots: ts t-dty dbound))
+           (unless (>= (length ss) (length ts))
+             (fail! ss ts))
+           (unless (memq dbound X)
+             (fail! S T))
+           (let* ([num-vars (- (length ss) (length ts))]
+                  [vars     (for/list ([n (in-range num-vars)])
+                              (gensym dbound))]
+                  [new-tys  (for/list ([var vars])
+                              (substitute (make-F var) dbound t-dty))]
+                  [new-cset (cgen/list V (append vars X) ss (append ts new-tys))])
+             (move-vars-to-dmap new-cset dbound vars))]
+          [((ValuesDots: ss s-dty dbound) (Values: ts))
+           (unless (>= (length ts) (length ss))
+             (fail! ss ts))
+           (unless (memq dbound X)
+             (fail! S T))
+           (let* ([num-vars (- (length ts) (length ss))]
+                  [vars     (for/list ([n (in-range num-vars)])
+                              (gensym dbound))]
+                  [new-tys  (for/list ([var vars])
+                              (substitute (make-F var) dbound s-dty))]
+                  [new-cset (cgen/list V (append vars X) (append ss new-tys) ts)])
+             (move-vars-to-dmap new-cset dbound vars))]
+          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
+           (when (memq dbound X) (fail! ss ts))          
+           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
+          [((Vector: e) (Vector: e*))
+           (cset-meet (cg e e*) (cg e* e))]
+          [((Box: e) (Box: e*))
+           (cset-meet (cg e e*) (cg e* e))]
+          [((Hashtable: s1 s2) (Hashtable: t1 t2))
+           ;; the key is covariant, the value is invariant
+           (cset-meet* (list (cg s1 t1) (cg t2 s2) (cg s2 t2)))]
+          [((Syntax: s1) (Syntax: s2))
+           (cg s1 s2)]
+          ;; parameters are just like one-arg functions
+          [((Param: in1 out1) (Param: in2 out2))
+           (cset-meet (cg in2 in1) (cg out1 out2))]
+          [((Function: _)
+            (Function: (list (top-arr:))))
+           empty]
+          [((Function: (list t-arr ...))
+            (Function: (list s-arr ...)))
+           (=> unmatch)
+           (cset-combine
+            (filter 
+             values ;; only generate the successful csets
+             (for*/list 
+              ([t-arr t-arr] [s-arr s-arr])
+              (with-handlers ([exn:infer? (lambda (_) #f)])
+                (cgen/arr V X t-arr s-arr)))))]
+          [(_ _)
+           (cond [(subtype S T) empty]
+                 ;; or, nothing worked, and we fail
+                 [else (fail! S T)])]))))
 
 (define (check-vars must-vars subst)
   (and (for/and ([v must-vars])
@@ -488,4 +491,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen/arr #;cgen #;cgen/list)
+;(trace cgen)

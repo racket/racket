@@ -17,10 +17,12 @@
 
 (provide (all-defined-out) 
          ;; these should all eventually go away
-         make-Name make-ValuesDots make-Function make-top-arr make-Latent-Restrict-Effect make-Latent-Remove-Effect)
+         make-Name make-ValuesDots make-Function make-Latent-Restrict-Effect make-Latent-Remove-Effect)
 
 (define (one-of/c . args)
   (apply Un (map -val args)))
+
+(define top-func (make-Function (list (make-top-arr))))
 
 (define (-vet id) (make-Var-True-Effect id))
 (define (-vef id) (make-Var-False-Effect id))
