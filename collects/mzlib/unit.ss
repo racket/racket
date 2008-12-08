@@ -123,7 +123,8 @@
   (define-for-syntax (build-val+macro-defs sig)
     (with-syntax ([(((int-ivar . ext-ivar) ...)
                     ((((int-vid . ext-vid) ...) . vbody) ...)
-                    ((((int-sid . ext-sid) ...) . sbody) ...))
+                    ((((int-sid . ext-sid) ...) . sbody) ...)
+                    (((int-cid . ext-cid) . cbody) ...))
                    (map-sig (lambda (x) x)
                             (make-syntax-introducer)
                             sig)])
@@ -164,13 +165,17 @@
     (cons (map syntax-local-introduce (car d))
           (syntax-local-introduce (cdr d))))
   
+  (define-for-syntax (introduce-ctc-pair cp)
+    (cons (syntax-local-introduce (car cp))
+          (syntax-local-introduce (cdr cp))))
+  
   ;; build-define-syntax : identifier (or/c identifier #f) syntax-object -> syntax-object
   (define-for-syntax (build-define-signature sigid super-sigid sig-exprs)
     (unless (or (stx-null? sig-exprs) (stx-pair? sig-exprs))
       (raise-stx-err "expected syntax matching (sig-expr ...)" sig-exprs))
     (let ([ses (checked-syntax->list sig-exprs)])
       (define-values (super-names super-ctimes super-rtimes super-bindings
-                                  super-val-defs super-stx-defs)
+                                  super-val-defs super-stx-defs super-ctc-pairs)
         (if super-sigid
             (let* ([super-sig (lookup-signature super-sigid)]
                    [super-siginfo (signature-siginfo super-sig)])
@@ -180,17 +185,20 @@
                            (siginfo-rtime-ids super-siginfo))
                       (map syntax-local-introduce (signature-vars super-sig))
                       (map introduce-def (signature-val-defs super-sig))
-                      (map introduce-def (signature-stx-defs super-sig))))
-            (values '() '() '() '() '() '())))
+                      (map introduce-def (signature-stx-defs super-sig))
+                      (map introduce-ctc-pair (signature-ctc-pairs super-sig))))
+            (values '() '() '() '() '() '() '())))
       (let loop ((sig-exprs ses)
                  (bindings null)
                  (val-defs null)
-                 (stx-defs null))
+                 (stx-defs null)
+                 (ctc-pairs null))
         (cond
           ((null? sig-exprs)
            (let* ([all-bindings (append super-bindings (reverse bindings))]
                   [all-val-defs (append super-val-defs (reverse val-defs))]
                   [all-stx-defs (append super-stx-defs (reverse stx-defs))]
+                  [all-ctc-pairs (append super-ctc-pairs (reverse ctc-pairs))]
                   [dup
                    (check-duplicate-identifier
                     (append all-bindings
@@ -202,7 +210,8 @@
                            ((super-name ...) super-names)
                            ((var ...) all-bindings)
                            ((((vid ...) . vbody) ...) all-val-defs)
-                           ((((sid ...) . sbody) ...) all-stx-defs))
+                           ((((sid ...) . sbody) ...) all-stx-defs)
+                           (((cid . cbody) ...) all-ctc-pairs))
                #`(begin
                    (define signature-tag (gensym))
                    (define-syntax #,sigid
@@ -221,12 +230,25 @@
                                    ((syntax-local-certifier)
                                     (quote-syntax sbody)))
                              ...)
+                       (list (cons (quote-syntax cid)
+                                   ((syntax-local-certifier)
+                                    (quote-syntax cbody)))
+                             ...)
                        (quote-syntax #,sigid))))))))
           (else
-           (syntax-case (car sig-exprs) (define-values define-syntaxes)
+           (syntax-case (car sig-exprs) (define-values define-syntaxes contracted)
              (x
               (identifier? #'x)
-              (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs))
+              (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs ctc-pairs))
+             ((x y z)
+              (and (identifier? #'x)
+                   (module-identifier=? #'x #'contracted)
+                   (identifier? #'y))
+              (loop (cdr sig-exprs)
+                    (cons #'y bindings)
+                    val-defs
+                    stx-defs
+                    (cons (cons #'y #'z) ctc-pairs)))
              ((x . y)
               (and (identifier? #'x)
                    (or (module-identifier=? #'x #'define-values)
@@ -248,7 +270,8 @@
                              (if (module-identifier=? #'x #'define-syntaxes)
                                  (cons (cons (syntax->list #'(name ...)) b)
                                        stx-defs)
-                                 stx-defs))))))))
+                                 stx-defs)
+                             ctc-pairs)))))))
              ((x . y)
               (let ((trans 
                      (set!-trans-extract
@@ -266,7 +289,8 @@
                   (loop (append results (cdr sig-exprs))
                         bindings
                         val-defs
-                        stx-defs))))
+                        stx-defs
+                        ctc-pairs))))
              (x (raise-stx-err 
                  "expected either an identifier or signature form"
                  #'x))))))))
