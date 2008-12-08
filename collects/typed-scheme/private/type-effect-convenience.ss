@@ -216,6 +216,14 @@
 
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
+
+(define (untuple t)
+  (match t
+    [(Value: '()) null]
+    [(Pair: a b) (cond [(untuple b) => (lambda (l) (cons a l))]
+                       [else #f])]
+    [_ #f]))
+
 (define -box make-Box)
 (define -vec make-Vector)
 
