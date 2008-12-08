@@ -1,10 +1,12 @@
 #lang scheme/base
 
-(require "../utils/utils.ss")
+(require (rename-in "../utils/utils.ss" [infer r:infer]))
 
 (require (for-syntax (private type-effect-convenience)
                      (env init-envs)
                      scheme/base
+                     (r:infer infer)
+                     (only-in (r:infer infer-dummy) infer-param)
                      (except-in (rep effect-rep type-rep) make-arr)
                      "type-effect-convenience.ss"
                      (only-in "type-effect-convenience.ss" [make-arr* make-arr])
@@ -20,7 +22,8 @@
           (begin
             (require . args)
             (define-for-syntax e
-              (make-env [id ty] ...))
+              (parameterize ([infer-param infer])
+                (make-env [id ty] ...)))
             (begin-for-syntax
               (initialize-type-env e)))))]
     [(mb . rest)
@@ -31,5 +34,5 @@
          (all-from-out scheme/base)
          (for-syntax
           (all-from-out scheme/base
-                        "type-effect-convenience.ss"
+                        "type-effect-convenience.ss"                        
                         "union.ss")))
