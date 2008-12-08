@@ -3,13 +3,14 @@
 (require typed/private/utils)
 
 (require-typed-struct cgi-error () net/cgi)
-(require-typed-struct incomplete-%-suffix  ([chars : (Listof Char)]) net/cgi) 
-(require-typed-struct invalid-%-suffix  ([char : Char]) net/cgi)
+(require-typed-struct (incomplete-%-suffix cgi-error)  ([chars : (Listof Char)]) net/cgi) 
+(require-typed-struct (invalid-%-suffix cgi-error)  ([char : Char]) net/cgi)
   
+
 (require/typed/provide net/cgi
   [get-bindings (-> (Listof (cons (U Symbol String) String)))]
   [get-bindings/post (-> (Listof (Pair (U Symbol String) String)))]
-  [get-bindings/get (-> (Listof (Pair (U Symbol String) String)) )]
+  [get-bindings/get (-> (Listof (Pair (U Symbol String) String)))]
   [output-http-headers (-> Void)]
   [generate-html-output (case-lambda (String (Listof String) -> Void) 
 				     (String (Listof String) String String String String String -> Void))]
@@ -20,6 +21,7 @@
   [get-cgi-method (-> (U "GET" "POST"))]
   [string->html (String -> String)]
   [generate-link-text (String String -> String)])
+
 
 (provide
  (struct-out cgi-error)

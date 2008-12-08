@@ -2,8 +2,9 @@
   
 (require typed/private/utils)
 
-(require-typed-struct communicator ([sender : Number] [receiver : Number] [server : String] [port : Number])
-		      net/nntp)
+(require-typed-struct/provide
+ communicator ([sender : Number] [receiver : Number] [server : String] [port : Number])
+ net/nntp)
 
 (require/typed/provide net/nntp  
   [connect-to-server (case-lambda (String -> communicator) (String Number -> communicator))]
@@ -14,18 +15,17 @@
   [body-of-message (communicator Number -> (Listof String))]
   [newnews-since  (communicator Number -> (Listof String))]
   [generic-message-command (communicator Number -> (Listof String))]
-  [make-desired-header  (String -> String)] ;;-> Regexp
-  [extract-desired-headers ((Listof String) (Listof String) -> (Listof String))]) ;;2nd: Of Regexp
-#|
-;; requires structure inheritance
-(require-typed-struct nntp ()]
-(require-typed-struct unexpected-response ([code : Number] [text : String])]
-(require-typed-struct bad-status-line ([line : String])]
-(require-typed-struct premature-close ([communicator : communicator])]
-(require-typed-struct bad-newsgroup-line ([line : String])]
-(require-typed-struct non-existent-group ([group : String])]
-(require-typed-struct article-not-in-group ([article : Number])]
-(require-typed-struct no-group-selected ()]
-(require-typed-struct article-not-found ([article : Number])]
-(require-typed-struct authentication-rejected ()]
-|#
+  [make-desired-header  (String -> String)]
+  [extract-desired-headers ((Listof String) (Listof String) -> (Listof String))])
+
+(require-typed-struct/provide (nntp exn:fail) () net/nntp)
+(require-typed-struct/provide (unexpected-response nntp) ([code : Number] [text : String]) net/nntp)
+(require-typed-struct/provide (bad-status-line nntp) ([line : String]) net/nntp)
+(require-typed-struct/provide (premature-close nntp) ([communicator : communicator]) net/nntp)
+(require-typed-struct/provide (bad-newsgroup-line nntp) ([line : String]) net/nntp)
+(require-typed-struct/provide (non-existent-group nntp) ([group : String]) net/nntp)
+(require-typed-struct/provide (article-not-in-group nntp) ([article : Number]) net/nntp)
+(require-typed-struct/provide (no-group-selected nntp) () net/nntp)
+(require-typed-struct/provide (article-not-found nntp) ([article : Number]) net/nntp)
+(require-typed-struct/provide (authentication-rejected nntp) () net/nntp)
+
