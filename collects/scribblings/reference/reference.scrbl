@@ -146,6 +146,12 @@ languages.}
              #:url "http://srfi.schemers.org/srfi-42/"
              #:date "2003")
 
+  (bib-entry #:key "Waddell99"
+             #:author "Oscar Waddell and R. Kent Dybvig"
+             #:title "Extending the Scope of Syntactic Abstraction"
+             #:location "Principles of Programming Languages"
+             #:date "1999")
+
   )
 
 @;------------------------------------------------------------------------

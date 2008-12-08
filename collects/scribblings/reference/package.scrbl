@@ -18,6 +18,9 @@
                         (code:line #:all-defined-except (id ...))])]
 )]{
 
+@margin-note{The @scheme[define-package] form is based on the @schemeidfont{module}
+             form of Chez Scheme @cite["Waddell99"].}
+
 The @scheme[define-package] form is similar to @scheme[module], except
 that it can appear in any definition context. The @scheme[form]s
 within a @scheme[define-package] form can be definitions or
