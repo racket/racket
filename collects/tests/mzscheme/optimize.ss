@@ -253,6 +253,10 @@
     (bin -12 '* -3 4)
     (bin -12 '* 3 -4)
     (bin 12 '* -3 -4)
+    (bin (expt 2 70) '* 2 (expt 2 69))
+    (bin (expt 2 30) '* 2 (expt 2 29))
+    (bin (expt 2 31) '* 2 (expt 2 30))
+    (bin (- (expt 2 30)) '* 2 (- (expt 2 29)))
 
     (bin 0 '/ 0 4)
     (bin 1/4 '/ 1 4)

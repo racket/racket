@@ -177,6 +177,7 @@ struct jit_local_state {
 #define jit_bosubi_ui(label, rs, is)	(jit_chk_ims ((is), SUBICri((rs), (rs), is), SUBCrr((rs), JIT_AUX)),       MCRXRi(0), BEQi((label)), _jit.x.pc)
 #define jit_boaddr_ui(label, s1, s2)	(		  			     ADDCrr((s1), (s1), (s2)), 	   MCRXRi(0), BEQi((label)), _jit.x.pc)
 #define jit_bosubr_ui(label, s1, s2)	(		  			     SUBCrr((s1), (s1), (s2)), 	   MCRXRi(0), BEQi((label)), _jit.x.pc)
+#define jit_bomulr_i(label, s1, s2)	(		         MULLWOrrr((s1), (s1), (s2)), 	   MCRXRi(0), BGTi((label)), _jit.x.pc)
 #define jit_calli(label)	        ((void)jit_movi_p(JIT_AUX, (label)), MTCTRr(JIT_AUX), BCTRL(), _jitl.nextarg_puti = _jitl.nextarg_putf = _jitl.nextarg_putd = 0, _jit.x.pc)
 #define jit_callr(reg)			(MTCTRr(reg), BCTRL())
 #define jit_divi_i(d, rs, is)		jit_big_ims((is), DIVWrrr ((d), (rs), JIT_AUX))
