@@ -27,5 +27,5 @@
 [Boxof (-poly (a) (make-Box a))]
 [Syntax Any-Syntax]
 [Identifier Ident]
-[Procedure (make-Function (list (make-top-arr)))]
+[Procedure top-func]
 

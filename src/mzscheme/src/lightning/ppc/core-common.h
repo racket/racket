@@ -609,6 +609,7 @@ static jit_state 			_jit;
 #define jit_boaddi_l(label, rs, is)	jit_boaddi_i((label), (rs), (is))
 #define jit_bosubr_l(label, s1, s2)	jit_bosubr_i((label), (s1), (s2))
 #define jit_bosubi_l(label, rs, is)	jit_bosubi_i((label), (rs), (is))
+#define jit_bomulr_l(label, s1, s2)	jit_bomulr_i((label), (s1), (s2))
 #define jit_bltr_ul(label, s1, s2)	jit_bltr_ui((label), (s1), (s2))
 #define jit_blti_ul(label, rs, is)	jit_blti_ui((label), (rs), (is))
 #define jit_bler_ul(label, s1, s2)	jit_bler_ui((label), (s1), (s2))

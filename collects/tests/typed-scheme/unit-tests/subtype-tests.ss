@@ -23,6 +23,8 @@
 			      (begin (test-suite "Tests for subtyping"
 						 new-cl ...))))]))
 
+(infer-param infer)
+
 (define (subtype-tests)
   (subtyping-tests
    ;; trivial examples
@@ -121,6 +123,8 @@
 
    (FAIL (-poly (a b) (-> a a)) (-poly (a b) (-> a b)))
    
+   ;; polymorphic function types should be subtypes of the function top
+   [(-poly (a) (a . -> . a)) top-func]   
    ))
 
 (define-go 

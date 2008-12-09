@@ -110,7 +110,7 @@
 
 ;; end choices-canvas%
 
-(define (cancel-on-right?) (eq? (system-type) 'windows))
+(define (cancel-on-right?) (system-position-ok-before-cancel?))
 
 (define ok/cancel-buttons
   (lambda (parent 
@@ -333,6 +333,8 @@
   ()
   @{Returns @scheme[#t] if cancel should be on the right-hand side (or below)
             in a dialog and @scheme[#f] otherwise.
+            
+            Just returns what @scheme[system-position-ok-before-cancel?] does.
             
             See also @scheme[gui-utils:ok/cancel-buttons].})
  (proc-doc/names

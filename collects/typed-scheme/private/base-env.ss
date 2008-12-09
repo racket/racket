@@ -90,7 +90,7 @@
 [symbol? (make-pred-ty Sym)]
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
-[procedure? (make-pred-ty (make-Function (list (make-top-arr))))]
+[procedure? (make-pred-ty top-func)]
 [map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-lst a))
                          ((-lst b) b) . ->... .(-lst c)))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))

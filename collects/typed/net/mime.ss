@@ -30,42 +30,35 @@
 
 
 ;; -- exceptions raised --
-(require/typed mime-error? (Any -> Boolean : (Opaque mime-error?)) net/mime)
-(require/typed unexpected-termination? (Any -> Boolean :(Opaque unexpected-termination?)) net/mime)
-(require/typed unexpected-termination-msg ((Opaque unexpected-termination?) -> message) net/mime)
-(require/typed missing-multipart-boundary-parameter? (Any -> Boolean : (Opaque missing-multipart-boundary-parameter?)) net/mime)
-(require/typed malformed-multipart-entity? (Any -> Boolean : (Opaque malformed-multipart-entity?)) net/mime)
-(require/typed malformed-multipart-entity-msg ((Opaque malformed-multipart-entity?)-> message) net/mime)
-(require/typed empty-mechanism? (Any -> Boolean : (Opaque empty-mechanism?)) net/mime)
-(require/typed empty-type? (Any -> Boolean : (Opaque empty-type?)) net/mime)
-(require/typed empty-subtype? (Any -> Boolean : (Opaque empty-subtype?)) net/mime)
-(require/typed empty-disposition-type? (Any -> Boolean : (Opaque empty-disposition-type?)) net/mime)
-
+#|
+(require-typed-struct mime-error () net/mime)
+(require-typed-struct (unexpected-termination mime-error) ([msg : String]) net/mime)
+(require-typed-struct (missing-multipart-boundary-parameter mime-error) () net/mime)
+(require-typed-struct (malformed-multipart-entity mime-error) ([msg : String]) net/mime)
+(require-typed-struct (empty-mechanism mime-error) () net/mime)
+(require-typed-struct (empty-type mime-error) () net/mime)
+(require-typed-struct (empty-subtype mime-error) () net/mime)
+(require-typed-struct (empty-disposition-type mime-error) () net/mime)
+|#
 
 ;; -- mime methods --
 (require/typed/provide net/mime
   [mime-analyze ((U Bytes Input-Port) Any -> message)])
 
 (provide
- ;; -- exceptions raised --
- mime-error? 
- unexpected-termination? 
- unexpected-termination-msg
- missing-multipart-boundary-parameter? 
- malformed-multipart-entity?
- malformed-multipart-entity-msg
- empty-mechanism? 
- empty-type? 
- empty-subtype?
- empty-disposition-type? 
- 
  ;; -- basic mime structures --
- message 
- entity
- 
- disposition
- 
- ;; -- mime methods --
- mime-analyze
-)
+ (struct-out message)
+ (struct-out entity) 
+ (struct-out disposition)
+ #|
+ (struct-out mime-error)
+ (struct-out unexpected-termination)
+ (struct-out missing-multipart-boundary)
+ (struct-out malformed-multipart-entity)
+ (struct-out empty-mechanism)
+ (struct-out empty-type)
+ (struct-out empty-subtype)
+ (struct-out empty-disposition-type)
+|#
+ )
 
