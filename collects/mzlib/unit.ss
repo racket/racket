@@ -451,10 +451,11 @@
   (define-for-syntax process-unit-export
     (process-unit-import/export process-tagged-export))
   
-  (define-for-syntax (make-import-unboxing loc ctc name)
+  (define-for-syntax (make-import-unboxing var loc ctc name)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name)))
+          (quote-syntax (let ([#,var (unbox #,loc)])
+                          (contract #,ctc #,var 'cant-happen '#,name))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -538,8 +539,9 @@
                                                     (quasisyntax/loc (error-syntax)
                                                       [#,ivs
                                                        (make-id-mappers
-                                                        #,@(map (lambda (l c)
-                                                                  (make-import-unboxing l c #'name))
+                                                        #,@(map (lambda (v l c)
+                                                                  (make-import-unboxing v l c #'name))
+                                                                (syntax->list ivs)
                                                                 (syntax->list ils)
                                                                 ics))]))
                                                   (syntax->list #'((int-ivar ...) ...))
@@ -1220,11 +1222,13 @@
                         (map 
                          (lambda (os ov)
                            (map 
-                            (lambda (i c)
+                            (lambda (i iv c)
                               (if c
-                                  #`(contract #,c (unbox (vector-ref #,ov #,i)) 'cant-happen (#%variable-reference))
+                                  #`(let ([#,iv (unbox (vector-ref #,ov #,i))])
+                                      (contract #,c #,iv 'cant-happen (#%variable-reference)))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
+                            (map car (car os))
                             (cadddr os)))
                          out-sigs
                          out-vec)))
