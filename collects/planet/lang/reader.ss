@@ -29,7 +29,9 @@
                      `(planet ,(string->symbol (string-append str lang-mod)))
                      #f))])
           (if parsed-spec
-              (dynamic-require parsed-spec export-sym (mk-fail-thunk spec))
+              (begin
+                ((current-reader-guard) parsed-spec)
+                (dynamic-require parsed-spec export-sym (mk-fail-thunk spec)))
               (bad (cadr spec) #f))))))
 
 (define (get-info in mod line col pos)
