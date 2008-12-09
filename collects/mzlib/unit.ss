@@ -9,7 +9,8 @@
                       "private/unit-compiletime.ss"
                       "private/unit-syntax.ss")
   
-  (require mzlib/etc
+  (require mzlib/contract
+           mzlib/etc
            "private/unit-keywords.ss"
            "private/unit-runtime.ss")
   
@@ -124,7 +125,7 @@
     (with-syntax ([(((int-ivar . ext-ivar) ...)
                     ((((int-vid . ext-vid) ...) . vbody) ...)
                     ((((int-sid . ext-sid) ...) . sbody) ...)
-                    (((int-cid . ext-cid) . cbody) ...))
+                    (cbody ...))
                    (map-sig (lambda (x) x)
                             (make-syntax-introducer)
                             sig)])
@@ -165,17 +166,13 @@
     (cons (map syntax-local-introduce (car d))
           (syntax-local-introduce (cdr d))))
   
-  (define-for-syntax (introduce-ctc-pair cp)
-    (cons (syntax-local-introduce (car cp))
-          (syntax-local-introduce (cdr cp))))
-  
   ;; build-define-syntax : identifier (or/c identifier #f) syntax-object -> syntax-object
   (define-for-syntax (build-define-signature sigid super-sigid sig-exprs)
     (unless (or (stx-null? sig-exprs) (stx-pair? sig-exprs))
       (raise-stx-err "expected syntax matching (sig-expr ...)" sig-exprs))
     (let ([ses (checked-syntax->list sig-exprs)])
       (define-values (super-names super-ctimes super-rtimes super-bindings
-                                  super-val-defs super-stx-defs super-ctc-pairs)
+                                  super-val-defs super-stx-defs super-ctcs)
         (if super-sigid
             (let* ([super-sig (lookup-signature super-sigid)]
                    [super-siginfo (signature-siginfo super-sig)])
@@ -186,19 +183,23 @@
                       (map syntax-local-introduce (signature-vars super-sig))
                       (map introduce-def (signature-val-defs super-sig))
                       (map introduce-def (signature-stx-defs super-sig))
-                      (map introduce-ctc-pair (signature-ctc-pairs super-sig))))
+                      (map (lambda (ctc)
+                             (if ctc
+                                 (syntax-local-introduce ctc)
+                                 ctc))
+                           (signature-ctcs super-sig))))
             (values '() '() '() '() '() '() '())))
       (let loop ((sig-exprs ses)
                  (bindings null)
                  (val-defs null)
                  (stx-defs null)
-                 (ctc-pairs null))
+                 (ctcs null))
         (cond
           ((null? sig-exprs)
            (let* ([all-bindings (append super-bindings (reverse bindings))]
                   [all-val-defs (append super-val-defs (reverse val-defs))]
                   [all-stx-defs (append super-stx-defs (reverse stx-defs))]
-                  [all-ctc-pairs (append super-ctc-pairs (reverse ctc-pairs))]
+                  [all-ctcs (append super-ctcs (reverse ctcs))]
                   [dup
                    (check-duplicate-identifier
                     (append all-bindings
@@ -210,8 +211,7 @@
                            ((super-name ...) super-names)
                            ((var ...) all-bindings)
                            ((((vid ...) . vbody) ...) all-val-defs)
-                           ((((sid ...) . sbody) ...) all-stx-defs)
-                           (((cid . cbody) ...) all-ctc-pairs))
+                           ((((sid ...) . sbody) ...) all-stx-defs))
                #`(begin
                    (define signature-tag (gensym))
                    (define-syntax #,sigid
@@ -230,16 +230,18 @@
                                    ((syntax-local-certifier)
                                     (quote-syntax sbody)))
                              ...)
-                       (list (cons (quote-syntax cid)
-                                   ((syntax-local-certifier)
-                                    (quote-syntax cbody)))
-                             ...)
+                       (list #,@(map (lambda (c) 
+                                       (if c
+                                           #`((syntax-local-certifier)
+                                              (quote-syntax #,c))
+                                           #'#f))
+                                     all-ctcs))
                        (quote-syntax #,sigid))))))))
           (else
            (syntax-case (car sig-exprs) (define-values define-syntaxes contracted)
              (x
               (identifier? #'x)
-              (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs ctc-pairs))
+              (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs (cons #f ctcs)))
              ((x y z)
               (and (identifier? #'x)
                    (module-identifier=? #'x #'contracted)
@@ -248,7 +250,7 @@
                     (cons #'y bindings)
                     val-defs
                     stx-defs
-                    (cons (cons #'y #'z) ctc-pairs)))
+                    (cons #'z ctcs)))
              ((x . y)
               (and (identifier? #'x)
                    (or (module-identifier=? #'x #'define-values)
@@ -271,7 +273,7 @@
                                  (cons (cons (syntax->list #'(name ...)) b)
                                        stx-defs)
                                  stx-defs)
-                             ctc-pairs)))))))
+                             ctcs)))))))
              ((x . y)
               (let ((trans 
                      (set!-trans-extract
@@ -290,7 +292,7 @@
                         bindings
                         val-defs
                         stx-defs
-                        ctc-pairs))))
+                        ctcs))))
              (x (raise-stx-err 
                  "expected either an identifier or signature form"
                  #'x))))))))
@@ -449,6 +451,13 @@
   (define-for-syntax process-unit-export
     (process-unit-import/export process-tagged-export))
   
+  (define-for-syntax (make-import-unboxing loc ctc name)
+    (if ctc
+        (quasisyntax/loc (error-syntax)
+          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name)))
+        (quasisyntax/loc (error-syntax)
+          (quote-syntax (unbox #,loc)))))
+  
   ;; build-unit : syntax-object -> 
   ;;             (values syntax-object (listof identifier) (listof identifier))
   ;; constructs the code for a unit expression.  stx must be
@@ -525,11 +534,17 @@
                       (let-values ([(iloc ...)
                                     (vector->values (hash-table-get import-table import-key) 0 icount)]
                                    ...)
-                        (letrec-syntaxes ([(int-ivar ...)
-                                           (make-id-mappers
-                                            (quote-syntax (unbox iloc))
-                                            ...)]
-                                          ...
+                        (letrec-syntaxes (#,@(map (lambda (ivs ils ics)
+                                                    (quasisyntax/loc (error-syntax)
+                                                      [#,ivs
+                                                       (make-id-mappers
+                                                        #,@(map (lambda (l c)
+                                                                  (make-import-unboxing l c #'name))
+                                                                (syntax->list ils)
+                                                                ics))]))
+                                                  (syntax->list #'((int-ivar ...) ...))
+                                                  (syntax->list #'((iloc ...) ...))
+                                                  (map cadddr import-sigs))
                                           [(int-evar ...)
                                            (make-id-mappers
                                             (quote-syntax (unbox eloc))
@@ -1205,9 +1220,12 @@
                         (map 
                          (lambda (os ov)
                            (map 
-                            (lambda (i)
-                              #`(vector-ref #,ov #,i))
-                            (iota (length (car os)))))
+                            (lambda (i c)
+                              (if c
+                                  #`(contract #,c (unbox (vector-ref #,ov #,i)) 'cant-happen (#%variable-reference))
+                                  #`(unbox (vector-ref #,ov #,i))))
+                            (iota (length (car os)))
+                            (cadddr os)))
                          out-sigs
                          out-vec)))
            (quasisyntax/loc stx
@@ -1225,7 +1243,7 @@
                                      ((unit-go unit-tmp))))
                          (let ([out-vec (hash-table-get export-table key1)] ...)
                            (unit-fn #f)
-                           (values (unbox out-code) ... ...))))))
+                           (values out-code ... ...))))))
                (define-syntaxes . renames) ...
                (define-syntaxes (mac-name ...) mac-body) ... ...
                (define-values (val-name ...) val-body) ... ...)))))

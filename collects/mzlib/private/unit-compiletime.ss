@@ -57,10 +57,11 @@
   ;; - (cons identifier identifier)
   ;; A def is
   ;; - (listof (cons (listof int/ext) syntax-object))
-  ;; A ctc-pair is
-  ;; - (cons int/ext syntax-object)
+  ;; A ctc is
+  ;; - syntax-object
+  ;; - #f
   ;; A sig is
-  ;; - (list (listof int/ext) (listof def) (listof def) (listof ctc-pair))
+  ;; - (list (listof int/ext) (listof def) (listof def) (listof ctc))
   ;; A tagged-sig is 
   ;; - (listof (cons #f siginfo) (cons #f identifier) sig)
   ;; - (listof (cons symbol siginfo) (cons symbol identifier) sig)
@@ -97,9 +98,9 @@
   ;;                 (listof identifier)
   ;;                 (listof (cons (listof identifier) syntax-object))
   ;;                 (listof (cons (listof identifier) syntax-object))
-  ;;                 (listof (cons identifier syntax-object))
+  ;;                 (listof syntax-object)
   ;;                 identifier)
-  (define-struct/proc signature (siginfo vars val-defs stx-defs ctc-pairs orig-binder)
+  (define-struct/proc signature (siginfo vars val-defs stx-defs ctcs orig-binder)
     (lambda (_ stx)
       (parameterize ((error-syntax stx))
         (raise-stx-err "illegal use of signature name"))))
@@ -222,7 +223,7 @@
            (vars (signature-vars sig))
            (vals (signature-val-defs sig))
            (stxs (signature-stx-defs sig))
-           (cps  (signature-ctc-pairs sig))
+           (ctcs  (signature-ctcs sig))
            (delta-introduce (if bind?
                                 (let ([f (syntax-local-make-delta-introducer
                                           spec)])
@@ -248,11 +249,7 @@
                                    (car stx))
                               (cdr stx)))
                       stxs)
-                     (map
-                      (λ (cp)
-                        (cons (cons (car cp) (car cp))
-                              (cdr cp)))
-                      cps)))))
+                     ctcs))))
   
   (define (sig-names sig)
     (append (car sig)
@@ -273,10 +270,11 @@
                (car def))
           (g (cdr def))))
   
-  ;; map-ctc-pair : (identifier -> identifier) (syntax-object -> syntax-object) ctc-pair -> ctc-pair
-  (define (map-ctc-pair f g cp)
-    (cons (cons (f (caar cp)) (g (cdar cp)))
-          (g (cdr cp))))
+  ;; map-ctc : (identifier -> identifier) (syntax-object -> syntax-object) ctc -> ctc
+  (define (map-ctc f g ctc)
+    (if ctc
+        (g ctc)
+        ctc))
   
   ;; map-sig : (identifier -> identifier) (sytnax-object -> syntax-object)  sig -> sig
   ;; applies f to the internal parts, and g to the external parts.
@@ -284,7 +282,7 @@
     (list (map (lambda (x) (cons (f (car x)) (g (cdr x)))) (car sig))
           (map (lambda (x) (map-def f g x)) (cadr sig))
           (map (lambda (x) (map-def f g x)) (caddr sig))
-          (map (lambda (x) (map-ctc-pair f g x)) (cadddr sig))))
+          (map (lambda (x) (map-ctc f g x)) (cadddr sig))))
   
   ;; An import-spec is one of
   ;; - signature-name
