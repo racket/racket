@@ -439,18 +439,31 @@
                         (λ (port)
                           (cond
                             [(is-wxme-stream? port)
-                             (let-values ([(snip-class-names data-class-names)
-                                           (extract-used-classes port)])
-                               (list*
-                                '(lib "wxme/read.ss")
-                                '(lib "mred/mred.ss")
-                                reader-module
-                                (filter
-                                 values
-                                 (map (λ (x) (string->lib-path x #t))
-                                      (append
-                                       snip-class-names
-                                       data-class-names)))))]
+                             (append
+                              ;; Extract snip-related modules:
+                              (let-values ([(snip-class-names data-class-names)
+                                            (extract-used-classes port)])
+                                (list*
+                                 '(lib "wxme/read.ss")
+                                 '(lib "mred/mred.ss")
+                                 reader-module
+                                 (filter
+                                  values
+                                  (map (λ (x) (string->lib-path x #t))
+                                       (append
+                                        snip-class-names
+                                        data-class-names)))))
+                              ;; Extract reader-related modules:
+                              (begin
+                                (file-position port 0)
+                                (let ([mods null])
+                                  (parameterize ([current-reader-guard
+                                                  (let ([g (current-reader-guard)])
+                                                    (lambda (p)
+                                                      (set! mods (cons p mods))
+                                                      (g p)))])
+                                    (read-language (wxme-port->port port) (lambda () #f)))
+                                  mods)))]
                             [else
                              '()]))))
                     #:mred? #t))))))
