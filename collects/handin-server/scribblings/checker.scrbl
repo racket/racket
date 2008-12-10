@@ -16,7 +16,7 @@ language module---a typical checker that uses it looks like this:
 
 @schemeblock[
    (module checker (lib "checker.ss" "handin-server")
-     (check: :language  'intermediate
+     (check: :language  '(special intermediate)
              :users     pairs-or-singles-with-warning
              :coverage? #t
        (!procedure Fahrenheit->Celsius 1)
@@ -350,16 +350,20 @@ code.}
   integers.}
 
 @defform*[((!test expr)
+           (!test/exn expr)
            (!test expr result)
            (!test expr result equal?))]{
 
   The first form checks that the given expression evaluates to a
   non-@scheme[#f] value in the submission context, throwing an error
-  otherwise.  The second form compares the result of evaluation,
-  requiring it to be equal to @scheme[result]. The third allows
+  otherwise.  The second form checks that the given expression throws
+  an @scheme[exn:fail?] error, throwing an error otherwise.
+  The third form compares the result of evaluation,
+  requiring it to be equal to @scheme[result]. The fourth allows
   specifying an equality procedure.  Note that the @scheme[result] and
   @scheme[equal?] forms are @italic{not} evaluated in the submission
   context.}
+
 
 @defform[(!eval expr)]{
 
