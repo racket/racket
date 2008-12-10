@@ -454,8 +454,7 @@
   (define-for-syntax (make-import-unboxing int-var ext-var loc ctc name)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (let ([#,int-var (contract #,ctc (unbox #,loc) 'cant-happen '#,name (quote-syntax #,ext-var))])
-                          #,int-var)))
+          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name (quote-syntax #,ext-var))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -1245,10 +1244,9 @@
                            (map 
                             (lambda (i iv c)
                               (if c
-                                  #`(let ([#,iv (contract #,c (unbox (vector-ref #,ov #,i))
-                                                          'cant-happen (#%variable-reference)
-                                                          (quote-syntax #,iv))])
-                                      #,iv)
+                                  #`(contract #,c (unbox (vector-ref #,ov #,i))
+                                              'cant-happen (#%variable-reference)
+                                              (quote-syntax #,iv))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
                             (map cdr (car os))
