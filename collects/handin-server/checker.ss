@@ -726,8 +726,10 @@
 (define-syntax (!test/exn stx)
   (syntax-case stx ()
      [(_ test-exp)
-      #`(with-handlers ([exn:fail? (lambda (exn) #t)])
-	  ((submission-eval) `test-exp)
+      #`(unless
+	 (with-handlers ([exn:fail? (lambda (exn) #t)])
+	     ((submission-eval) `test-exp)
+	     #f)
 	  (error* "expected exception on test expression: ~v" 
 		  (->disp 'test-exp)))]))
 

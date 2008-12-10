@@ -326,6 +326,11 @@
       (or (and (pair? a)
                (eq? 'lib (car a)))
           (symbol? a)))
+
+    (define (symbol-to-lib-form l)
+      (if (symbol? l)
+          `(lib ,(symbol->string l))
+          l))
       
     (define (unix-style-split p)
       (let ([m (regexp-match #rx"^([^/]*)/(.*)$" p)])
@@ -423,7 +428,7 @@
                                                          (not (and (pair? x)
                                                                    (eq? 'quote (car x))))))
                                                      (apply append (map cdr importss)))]
-                           [extra-paths (get-extra-imports filename code)])
+                           [extra-paths (map symbol-to-lib-form (get-extra-imports filename code))])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]
                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
