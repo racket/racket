@@ -46,7 +46,7 @@
                  
         
   ;; (make-var-info bool bool identifier)
-  (define-struct var-info (syntax? [exported? #:mutable] id))
+  (define-struct var-info (syntax? [exported? #:mutable] id [ctc #:mutable]))
   
   (define-syntax define-struct/proc
     (syntax-rules ()
