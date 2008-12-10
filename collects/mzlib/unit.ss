@@ -451,11 +451,11 @@
   (define-for-syntax process-unit-export
     (process-unit-import/export process-tagged-export))
   
-  (define-for-syntax (make-import-unboxing var loc ctc name)
+  (define-for-syntax (make-import-unboxing int-var ext-var loc ctc name)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (let ([#,var (contract #,ctc (unbox #,loc) 'cant-happen '#,name)])
-                          #,var)))
+          (quote-syntax (let ([#,int-var (contract #,ctc (unbox #,loc) 'cant-happen '#,name (quote-syntax #,ext-var))])
+                          #,int-var)))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -537,16 +537,18 @@
                       (let-values ([(iloc ...)
                                     (vector->values (hash-table-get import-table import-key) 0 icount)]
                                    ...)
-                        (letrec-syntaxes (#,@(map (lambda (ivs ils ics)
+                        (letrec-syntaxes (#,@(map (lambda (ivs evs ils ics)
                                                     (quasisyntax/loc (error-syntax)
                                                       [#,ivs
                                                        (make-id-mappers
-                                                        #,@(map (lambda (v l c)
-                                                                  (make-import-unboxing v l c #'name))
+                                                        #,@(map (lambda (iv ev l c)
+                                                                  (make-import-unboxing iv ev l c #'name))
                                                                 (syntax->list ivs)
+                                                                (syntax->list evs)
                                                                 (syntax->list ils)
                                                                 ics))]))
                                                   (syntax->list #'((int-ivar ...) ...))
+                                                  (syntax->list #'((ext-ivar ...) ...))
                                                   (syntax->list #'((iloc ...) ...))
                                                   (map cadddr import-sigs))
                                           [(int-evar ...)
@@ -560,6 +562,7 @@
                             (unit-body #,(error-syntax)
                                        (int-ivar ... ...)
                                        (int-evar ... ...)
+                                       (ext-evar ... ...)
                                        (eloc ... ...)
                                        (ectc ... ...)
                                        . body)))))
@@ -577,7 +580,7 @@
   
   (define-syntax (unit-body stx)
     (syntax-case stx ()
-      ((_ err-stx ivars evars elocs ectcs body ...)
+      ((_ err-stx ivars evars ext-evars elocs ectcs body ...)
        (parameterize ((error-syntax #'err-stx))
          (let* ([expand-context (generate-expand-context)]
                 [def-ctx (syntax-local-make-definition-context)]
@@ -650,7 +653,7 @@
                                    (make-var-info (module-identifier=? #'dv (quote-syntax define-syntaxes))
                                                   #f
                                                   id
-                                                  #'#f)))
+                                                  #f)))
                                 (syntax->list #'(id ...)))]
                               [_ (void)])))
                          [_ (void)]))
@@ -661,18 +664,23 @@
            ;; Mark exported names and
            ;; check that all exported names are defined (as var):
            (for-each
-            (lambda (name loc ctc)
+            (lambda (name loc var ctc)
               (let ([v (bound-identifier-mapping-get defined-names-table
                                                      name
-                                                     (lambda () #f))])
+                                                     (lambda () #f))]
+                    [unit-name (syntax-local-infer-name (error-syntax))])
                 (unless v
                   (raise-stx-err (format "undefined export ~a" (syntax-e name))))
                 (when (var-info-syntax? v)
                   (raise-stx-err "cannot export syntax from a unit" name))
                 (set-var-info-exported?! v loc)
-                (set-var-info-ctc! v ctc)))
+                (set-var-info-add-ctc! v (lambda (e)
+                                       #`(if #,ctc
+                                             (contract #,ctc #,e '#,unit-name 'cant-happen (quote-syntax #,var))
+                                             #,e)))))
             local-evars
             (syntax->list #'elocs)
+            (syntax->list #'ext-evars)
             (syntax->list #'ectcs))
            
            ;; Check that none of the imports are defined
@@ -717,8 +725,8 @@
                                                       (bound-identifier-mapping-get
                                                        defined-names-table
                                                        id))]
-                                                    [ctc
-                                                     (var-info-ctc
+                                                    [add-ctc
+                                                     (var-info-add-ctc
                                                       (bound-identifier-mapping-get
                                                        defined-names-table
                                                        id))])
@@ -728,9 +736,7 @@
                                                    (quasisyntax/loc defn-or-expr
                                                      (set-box! #,export-loc 
                                                                #,(if name
-                                                                     #`(let ([#,name (if #,ctc
-                                                                                         (contract #,ctc #,tmp '#,unit-name 'cant-happen)
-                                                                                         #,tmp)])
+                                                                     #`(let ([#,name #,(if add-ctc (add-ctc tmp) tmp)])
                                                                          #,name)
                                                                      tmp))))
                                                   (else
@@ -1239,11 +1245,13 @@
                            (map 
                             (lambda (i iv c)
                               (if c
-                                  #`(let ([#,iv (contract #,c (unbox (vector-ref #,ov #,i)) 'cant-happen (#%variable-reference))])
+                                  #`(let ([#,iv (contract #,c (unbox (vector-ref #,ov #,i))
+                                                          'cant-happen (#%variable-reference)
+                                                          (quote-syntax #,iv))])
                                       #,iv)
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
-                            (map car (car os))
+                            (map cdr (car os))
                             (cadddr os)))
                          out-sigs
                          out-vec)))
@@ -1317,7 +1325,8 @@
       ((_ name . rest)
        (begin
          (check-id #'name)
-         (let-values (((exp i e d) (build #'rest)))
+         (let-values (((exp i e d) (parameterize ([error-syntax (syntax-property (error-syntax) 'inferred-name (syntax-e #'name))])
+                                     (build #'rest ))))
            (with-syntax ((((itag . isig) ...) i)
                          (((etag . esig) ...) e)
                          (((deptag . depsig) ...) d))
