@@ -2557,6 +2557,10 @@ typedef struct Scheme_Module
   Scheme_Object **indirect_provides; /* symbols (internal names) */
   int num_indirect_provides;
 
+  /* Only if needed to reconstruct the renaming: */
+  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
+  int num_indirect_syntax_provides;
+
   char *et_provide_protects;            /* 1 => protected, 0 => not */
   Scheme_Object **et_indirect_provides; /* symbols (internal names) */
   int num_indirect_et_provides;

@@ -268,8 +268,12 @@ jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../includ
         $(srcdir)/../src/stypes.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
+        $(srcdir)/lightning/i386/funcs.h $(srcdir)/lightning/i386/funcs-common.h \
+        $(srcdir)/lightning/i386/fp.h $(srcdir)/lightning/i386/fp-common.h \
         $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \
-        $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h
+        $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
+        $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
+        $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h
 list.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \

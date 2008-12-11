@@ -30,9 +30,6 @@ XSRCDIR = xsrc
 XFORM = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_NOPRECOMP)
 SRCDIR = $(srcdir)/../src
 
-XFORM_COMPACT_GC_NOPRECOMP = $(XFORM_SETUP) --cpp "$(CPP) $(CPPFLAGS) -DUSE_COMPACT_3M_GC" @XFORMFLAGS@ -o
-XFORM_COMPACT_GC = env XFORM_USE_PRECOMP=$(XSRCDIR)/precomp.h $(XFORM_COMPACT_GC_NOPRECOMP)
-
 FOREIGN_USED_OBJ = foreign.@LTO@
 FOREIGN_NOT_USED_OBJ = 
 
@@ -49,6 +46,7 @@ OBJS =  salloc.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
 	hash.@LTO@ \
+	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
 	mzrt.@LTO@ \
@@ -137,6 +135,15 @@ XFORMDEP = $(srcdir)/gc2.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss \
            $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
            $(srcdir)/../src/stypes.h 
 
+LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning/i386/core-common.h \
+               $(srcdir)/../src/lightning/i386/asm.h $(srcdir)/../src/lightning/i386/asm-common.h \
+               $(srcdir)/../src/lightning/i386/fp.h $(srcdir)/../src/lightning/i386/fp-common.h \
+               $(srcdir)/../src/lightning/i386/funcs.h $(srcdir)/../src/lightning/i386/funcs-common.h \
+               $(srcdir)/../src/lightning/ppc/core.h $(srcdir)/../src/lightning/ppc/core-common.h \
+               $(srcdir)/../src/lightning/ppc/asm.h $(srcdir)/../src/lightning/ppc/asm-common.h \
+               $(srcdir)/../src/lightning/ppc/fp.h $(srcdir)/../src/lightning/ppc/fp-common.h \
+               $(srcdir)/../src/lightning/ppc/funcs.h $(srcdir)/../src/lightning/ppc/funcs-common.h
+
 $(XSRCDIR)/precomp.h : $(XFORMDEP)  $(srcdir)/../src/schvers.h
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
@@ -166,7 +173,7 @@ $(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
 $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
-$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
@@ -221,9 +228,6 @@ $(XSRCDIR)/foreign.c: ../../foreign/foreign.@LTO@ $(XFORMDEP)
 $(XSRCDIR)/main.c: ../main.@LTO@ $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_COLLECTS_DIR) $(srcdir)/../main.c
 
-$(XSRCDIR)/jit_compact_gc.c: ../src/jit.@LTO@ $(XFORMDEP)
-	$(XFORM_COMPACT_GC) $(XSRCDIR)/jit_compact_gc.c $(SRCDIR)/jit.c
-
 salloc.@LTO@: $(XSRCDIR)/salloc.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
 bignum.@LTO@: $(XSRCDIR)/bignum.c
@@ -252,8 +256,6 @@ hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
-jit_compact_gc.@LTO@: $(XSRCDIR)/jit_compact_gc.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit_compact_gc.c -o jit_compact_gc.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
@@ -318,30 +320,6 @@ gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
        $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
 	$(CC) $(CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
 
-new_gc.@LTO@: $(srcdir)/newgc.c $(srcdir)/gc2.h \
-       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
-       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
-       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
-       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
-       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
-	$(CC) $(CFLAGS) -c $(srcdir)/newgc.c -o new_gc.@LTO@
-
-copy_gc.@LTO@: $(srcdir)/copy.c $(srcdir)/gc2.h \
-       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
-       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
-       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
-       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
-       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
-	$(CC) $(CFLAGS) -c $(srcdir)/copy.c -o copy_gc.@LTO@
-
-compact_gc.@LTO@: $(srcdir)/compact.c $(srcdir)/gc2.h \
-       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
-       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
-       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
-       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
-       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
-	$(CC) $(CFLAGS) -c $(srcdir)/compact.c -o compact_gc.@LTO@
-
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@
 FOREIGN_LIB = ../../foreign/gcc/libffi/libffi@FOREIGN_CONVENIENCE@.la
 FOREIGN_OBJSLIB = @FOREIGN_OBJSLIB@
@@ -354,19 +332,12 @@ FOREIGN_NOT_USED_OBJSLIB =
 EXTRA_OBJS_T = ../src/gmp.@LTO@ ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
 EXTRA_OBJS_L = ../src/gmp.@LTO@ ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
-../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) jit.@LTO@ gc2.@LTO@
-	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) jit.@LTO@ gc2.@LTO@
+../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
+	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 	$(RANLIB) ../libmzscheme3m.@LIBSFX@
-
-../libmzscheme_compact_gc.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) jit_compact_gc.@LTO@ compact_gc.@LTO@
-	$(AR) $(ARFLAGS) ../libmzscheme_compact_gc.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) jit_compact_gc.@LTO@ compact_gc.@LTO@
-	$(RANLIB) ../libmzscheme_compact_gc.@LIBSFX@
 
 ../mzscheme@MMM@@NOT_OSX@: main.@LTO@ ../libmzscheme3m.@LIBSFX@
 	cd ..; @MZLINKER@ -o mzscheme@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libmzscheme3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
-
-../mzscheme_compact_gc@NOT_OSX@: main.@LTO@ ../libmzscheme_compact_gc.@LIBSFX@
-	cd ..; @MZLINKER@ -o mzscheme_compact_gc @PROFFLAGS@ gc2/main.@LTO@ libmzscheme_compact_gc.@LIBSFX@ @LDFLAGS@ $(LIBS)
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
@@ -385,9 +356,6 @@ $(MZFWMMM): ../libmzscheme3m.@LIBSFX@
 	mkdir -p "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m"
 	cp "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme"
 	/usr/bin/install_name_tool -change "PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "../mzscheme@MMM@"
-
-../mzscheme_compact_gc@OSX@:
-	echo "../mzscheme_compact_gc does not currently build on Mac OS X; use --enable-compact with configure, instead"
 
 clean:
 	/bin/rm -f ../mzscheme@MMM@ *.@LTO@ $(XSRCDIR)/*
