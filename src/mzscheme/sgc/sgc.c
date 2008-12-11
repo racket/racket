@@ -782,17 +782,17 @@ GC_collect_start_callback_Proc GC_collect_start_callback;
 GC_collect_end_callback_Proc GC_collect_end_callback;
 void (*GC_custom_finalize)(void);
 
-GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc) {
+GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc func) {
   GC_collect_start_callback_Proc old;
   old = GC_collect_start_callback;
   GC_collect_start_callback = func;
-  return old
+  return old;
 }
-GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc) {
-  GC_collect_end_callback_Proc old
+GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc func) {
+  GC_collect_end_callback_Proc old;
   old = GC_collect_end_callback;
   GC_collect_end_callback = func;
-  return old
+  return old;
 }
 
 static long roots_count;
