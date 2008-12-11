@@ -149,6 +149,11 @@
 
 (define sandbox-make-logger (make-parameter current-logger))
 
+(define (compute-permissions paths+require-perms)
+  (let-values ([(paths require-perms) (partition path? paths+require-perms)])
+    (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+            (module-specs->path-permissions require-perms))))
+
 ;; computes permissions that are needed for require specs (`read' for all
 ;; files and "compiled" subdirs, `exists' for the base-dir)
 (define (module-specs->path-permissions mods)
@@ -322,9 +327,9 @@
       (cond [(and p (null? (cdr inps)))
              (port-count-lines! p)
              (parameterize ([current-input-port p])
-               ((sandbox-reader) source)
-               ;; close a port if we opened it
-               (unless (eq? p (car inps)) (close-input-port p)))]
+               (begin0 ((sandbox-reader) source)
+                 ;; close a port if we opened it
+                 (unless (eq? p (car inps)) (close-input-port p))))]
             [p (error 'input->code "ambiguous inputs: ~e" inps)]
             [else (let loop ([inps inps] [n n] [r '()])
                     (if (null? inps)
@@ -355,7 +360,7 @@
 ;;
 ;; FIXME: inserting `#%require's here is bad if the language has a
 ;; `#%module-begin' that processes top-level forms specially.
-;; A more general solution would be to create anew module that exports
+;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
 ;; We use `#%requre' because, unlike the `require' of scheme/base,
@@ -459,7 +464,7 @@
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
-(define (make-evaluator* init-hook require-perms program-maker)
+(define (make-evaluator* init-hook allow program-maker)
   (define user-cust     (make-custodian))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
@@ -613,7 +618,7 @@
     [sandbox-path-permissions
      (append (map (lambda (p) `(read ,p))
                   (current-library-collection-paths))
-             (module-specs->path-permissions require-perms)
+             (compute-permissions allow)
              (sandbox-path-permissions))]
     ;; general info
     [current-command-line-arguments '#()]
@@ -635,10 +640,10 @@
    (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
-         ;; initial program executed ok, so return an evaluator
-         evaluator
-         ;; program didn't execute
-         (raise r)))))
+       ;; initial program executed ok, so return an evaluator
+       evaluator
+       ;; program didn't execute
+       (raise r)))))
 
 (define (make-evaluator language
                         #:requires [requires null] #:allow-read [allow null]
@@ -656,14 +661,16 @@
                          `(file ,(path->string (simplify-path* r)))))
                      requires))])
     (make-evaluator* (init-for-language lang)
-                     (append (extract-required (or (decode-language lang)
-                                                   lang)
+                     (append (extract-required (or (decode-language lang) lang)
                                                reqs)
                              allow)
                      (lambda () (build-program lang reqs input-program)))))
 
 (define (make-module-evaluator
-         input-program #:allow-read [allow null] #:language [reqlang #f])
+         input-program
+         #:allow-read [allow
+                       (if (path? input-program) (list input-program) null)]
+         #:language [reqlang #f])
   ;; this is for a complete module input program
   (define (make-program)
     (let ([prog (input->code (list input-program) 'program #f)])
