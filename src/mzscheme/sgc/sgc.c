@@ -776,8 +776,6 @@ static long mem_traced;
 static long num_chunks;
 static long num_blocks;
 
-typedef void (*GC_collect_start_callback_Proc)(void);
-typedef void (*GC_collect_end_callback_Proc)(void);
 GC_collect_start_callback_Proc GC_collect_start_callback;
 GC_collect_end_callback_Proc GC_collect_end_callback;
 void (*GC_custom_finalize)(void);
@@ -794,6 +792,7 @@ GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback
   GC_collect_end_callback = func;
   return old;
 }
+
 
 static long roots_count;
 static long roots_size;
