@@ -317,23 +317,25 @@
 ;; (path/string/bytes) value.
 (define (input->code inps source n)
   (if (null? inps)
-      '()
-      (let ([p (input->port (car inps))])
-        (cond [(and p (null? (cdr inps)))
-               (port-count-lines! p)
-               (parameterize ([current-input-port p])
-                 ((sandbox-reader) source))]
-              [p (error 'input->code "ambiguous inputs: ~e" inps)]
-              [else (let loop ([inps inps] [n n] [r '()])
-                      (if (null? inps)
-                          (reverse r)
-                          (loop (cdr inps) (and n (add1 n))
-                                ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
-                                ;; (starting from the `n' argument)
-                                (cons (datum->syntax
-                                       #f (car inps)
-                                       (list source n (and n 0) n (and n 1)))
-                                      r))))]))))
+    '()
+    (let ([p (input->port (car inps))])
+      (cond [(and p (null? (cdr inps)))
+             (port-count-lines! p)
+             (parameterize ([current-input-port p])
+               ((sandbox-reader) source)
+               ;; close a port if we opened it
+               (unless (eq? p (car inps)) (close-input-port p)))]
+            [p (error 'input->code "ambiguous inputs: ~e" inps)]
+            [else (let loop ([inps inps] [n n] [r '()])
+                    (if (null? inps)
+                      (reverse r)
+                      (loop (cdr inps) (and n (add1 n))
+                            ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
+                            ;; (starting from the `n' argument)
+                            (cons (datum->syntax
+                                   #f (car inps)
+                                   (list source n (and n 0) n (and n 1)))
+                                  r))))]))))
 
 (define ((init-for-language language))
   (cond [(or (not (pair? language))
