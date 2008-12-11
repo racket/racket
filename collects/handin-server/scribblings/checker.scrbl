@@ -327,15 +327,19 @@ code.}
 
 @defform[(!defined id ...)]{
   Checks that the given identifiers are defined in the (evaluated)
-  submission, and throws an error otherwise.}
+  submission, and throws an error otherwise.  The identifiers can be
+  bound as either a plain value or as a syntax.}
 
-@defform[(!procedure id arity)]{
-
-  Checks that @scheme[id] is defined, and is bound to a procedure.}
+@defform[(!bound id ...)]{
+  Checks that the given identifiers are defined in the (evaluated)
+  submission as a plain value.  Throws an error if not, or if an
+  identifier is bound to a syntax.}
 
 @defform[(!syntax id arity)]{
-
   Checks that @scheme[id] is defined, and is bound as a macro.}
+
+@defform[(!procedure id arity)]{
+  Checks that @scheme[id] is defined, and is bound to a procedure.}
 
 @defform[(!procedure* expr arity)]{
 

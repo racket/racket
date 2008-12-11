@@ -655,8 +655,21 @@
 (define (get-namespace evaluator)
   (call-in-sandbox-context evaluator (lambda () (current-namespace))))
 
+;; checks that ids are defined, either as variables or syntaxes
 (provide !defined)
 (define-syntax-rule (!defined id ...)
+  ;; expected to be used only with identifiers
+  (begin (with-handlers ([exn:fail:contract:variable?
+                          (lambda (_)
+                            (error* "missing binding: ~e" (->disp 'id)))]
+                         [exn:fail:syntax? void])
+           (parameterize ([current-namespace (get-namespace (submission-eval))])
+             (namespace-variable-value `id)))
+         ...))
+
+;; checks that ids are defined as variables, not syntaxes
+(provide !bound)
+(define-syntax-rule (!bound id ...)
   ;; expected to be used only with identifiers
   (begin (with-handlers ([exn:fail:contract:variable?
                           (lambda (_)
@@ -669,6 +682,7 @@
              (namespace-variable-value `id)))
          ...))
 
+;; checks that ids are defined as syntaxes, not variables
 (provide !syntax)
 (define-syntax-rule (!syntax id ...)
   ;; expected to be used only with identifiers
