@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base) "utils.ss" scheme/file scheme/list scheme/class mred)
+(require (for-syntax scheme/base) "utils.ss"
+         scheme/file scheme/list scheme/class mred)
 
 (provide (except-out (all-from-out scheme/base) #%module-begin)
          (all-from-out "utils.ss"))
@@ -726,11 +727,10 @@
 (define-syntax (!test/exn stx)
   (syntax-case stx ()
      [(_ test-exp)
-      #`(unless
-	 (with-handlers ([exn:fail? (lambda (exn) #t)])
-	     ((submission-eval) `test-exp)
-	     #f)
-	  (error* "expected exception on test expression: ~v" 
+      #`(unless (with-handlers ([exn:fail? (lambda (exn) #t)])
+                  ((submission-eval) `test-exp)
+                  #f)
+	  (error* "expected exception on test expression: ~v"
 		  (->disp 'test-exp)))]))
 
 (provide !all-covered)

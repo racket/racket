@@ -364,7 +364,6 @@ code.}
   @scheme[equal?] forms are @italic{not} evaluated in the submission
   context.}
 
-
 @defform[(!eval expr)]{
 
   Evaluate an arbitrary expession in the submission context.  This is
