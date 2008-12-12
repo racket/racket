@@ -147,8 +147,6 @@ typedef struct NewGC {
   AccountHook *hooks;
 
 
-
-
   unsigned long number_of_gc_runs;
   unsigned int since_last_full;
   unsigned long last_full_mem_use;
@@ -157,6 +155,13 @@ typedef struct NewGC {
   unsigned long peak_memory_use;
   unsigned long num_minor_collects;
   unsigned long num_major_collects;
+  
+  /* THREAD_LOCAL variables that need to be saved off */
+  MarkSegment *saved_mark_stack;
+  void *saved_GC_variable_stack;
+  unsigned long saved_GC_gen0_alloc_page_ptr;
+  unsigned long saved_GC_gen0_alloc_page_end;
+
 
   /* Callbacks */
   void (*GC_collect_start_callback)(void);

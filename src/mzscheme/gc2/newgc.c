@@ -1528,12 +1528,27 @@ void GC_construct_child_gc() {
     newgc->primoridal_gc = MASTERGC;
 }
 
+static inline void save_globals_to_gc(NewGC *gc) {
+  gc->saved_mark_stack              = mark_stack;
+  gc->saved_GC_variable_stack       = GC_variable_stack;
+  gc->saved_GC_gen0_alloc_page_ptr  = GC_gen0_alloc_page_ptr;
+  gc->saved_GC_gen0_alloc_page_end  = GC_gen0_alloc_page_end;
+}
+
+static inline void restore_globals_from_gc(NewGC *gc) {
+  mark_stack              = gc->saved_mark_stack;
+  GC_variable_stack       = gc->saved_GC_variable_stack;
+  GC_gen0_alloc_page_ptr  = gc->saved_GC_gen0_alloc_page_ptr;
+  GC_gen0_alloc_page_end  = gc->saved_GC_gen0_alloc_page_end;
+}
+
 void GC_switch_out_master_gc() {
   static int initialized = 0;
 
   if(!initialized) {
     initialized = 1;
     MASTERGC = GC_get_GC();
+    save_globals_to_gc(MASTERGC);
     GC_construct_child_gc();
   }
   else {
@@ -1544,8 +1559,8 @@ void GC_switch_out_master_gc() {
 
 void GC_switch_in_master_gc() {
   GC_set_GC(MASTERGC);
+  restore_globals_from_gc(MASTERGC);
 }
-
 
 void GC_gcollect(void)
 {
