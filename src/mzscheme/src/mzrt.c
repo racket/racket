@@ -265,6 +265,38 @@ int mzrt_mutex_destroy(mzrt_mutex *mutex) {
   return pthread_mutex_destroy(&mutex->mutex);
 }
 
+struct mzrt_cond {
+  pthread_cond_t cond;
+};
+
+int mzrt_cond_create(mzrt_cond **cond) {
+  *cond = malloc(sizeof(mzrt_cond));
+  return pthread_cond_init(&(*cond)->cond, NULL);
+}
+
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_wait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds) {
+  struct timespec timeout;
+  timeout.tv_sec  = seconds;
+  timeout.tv_nsec = nanoseconds;
+  return pthread_cond_timedwait(&cond->cond, &mutex->mutex, &timeout);
+}
+
+int mzrt_cond_signal(mzrt_cond *cond) {
+  return pthread_cond_signal(&cond->cond);
+}
+
+int mzrt_cond_broadcast(mzrt_cond *cond) {
+  return pthread_cond_broadcast(&cond->cond);
+}
+
+int mzrt_cond_destroy(mzrt_cond *cond) {
+  return pthread_cond_destroy(&cond->cond);
+}
+
 
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
@@ -408,6 +440,35 @@ int mzrt_mutex_unlock(mzrt_mutex *mutex) {
 int mzrt_mutex_destroy(mzrt_mutex *mutex) {
   DeleteCriticalSection(&(*mutex)->critical_section);
   return 0;
+}
+
+struct mzrt_cond {
+  pthread_cond_t cond;
+};
+
+int mzrt_cond_create(mzrt_cond **cond) {
+  *cond = malloc(sizeof(mzrt_cond));
+  return pthread_cond_init(&(*cond)->cond, NULL);
+}
+
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_wait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_timedwait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_signal(mzrt_cond *cond) {
+  return pthread_cond_signal(&cond->cond);
+}
+
+int mzrt_cond_broadcast(mzrt_cond *cond) {
+  return pthread_cond_broadcast(&cond->cond);
+}
+
+int mzrt_cond_destroy(mzrt_cond *cond) {
+  return pthread_cond_destroy(&cond->cond);
 }
 
 #ifdef MZ_XFORM

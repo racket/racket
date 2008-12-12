@@ -58,6 +58,15 @@ int mzrt_mutex_trylock(mzrt_mutex *mutex);
 int mzrt_mutex_unlock(mzrt_mutex *mutex);
 int mzrt_mutex_destroy(mzrt_mutex *mutex);
 
+/****************** THREAD COND *******************************************/
+typedef struct mzrt_cond mzrt_cond; /* OPAQUE DEFINITION */
+int mzrt_cond_create(mzrt_cond **cond);
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex);
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds);
+int mzrt_cond_signal(mzrt_cond *cond);
+int mzrt_cond_broadcast(mzrt_cond *cond);
+int mzrt_cond_destroy(mzrt_cond *cond);
+
 
 #endif
 
