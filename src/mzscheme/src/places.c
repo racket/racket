@@ -171,6 +171,10 @@ static void load_namespace_utf8(Scheme_Object *namespace_name) {
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
 {
   Scheme_Object *new_so = so;
+  if (SCHEME_INTP(so)) {
+    return so;
+  }
+
   switch (so->type) {
     case scheme_char_string_type: /*43*/
       new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
