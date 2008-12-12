@@ -7,8 +7,14 @@
 
 ;; test call-in-nested-thread*
 (let ()
+  (define (kill) (kill-thread (current-thread)))
+  (define (shut) (custodian-shutdown-all (current-custodian)))
   (define-syntax-rule (nested body ...)
     (call-in-nested-thread* (lambda () body ...)))
+  (define-syntax-rule (nested* body ...)
+    (call-in-nested-thread* (lambda () body ...)
+                            (lambda () 'kill)
+                            (lambda () 'shut)))
   (test 1 values (nested 1))
   ;; propagates parameters
   (let ([p (make-parameter #f)])
@@ -19,13 +25,15 @@
   ;; propagates kill-thread
   (test (void) thread-wait
         (thread (lambda ()
-                  (nested (kill-thread (current-thread)))
+                  (nested (kill))
                   ;; never reach here
                   (semaphore-wait (make-semaphore 0)))))
   ;; propagates custodian-shutdown-all
   (test (void) values
-        (parameterize ([current-custodian (make-custodian)])
-          (nested (custodian-shutdown-all (current-custodian))))))
+        (parameterize ([current-custodian (make-custodian)]) (nested (shut))))
+  ;; test handlers parameters
+  (test 'kill (lambda () (nested* (kill))))
+  (test 'shut (lambda () (nested* (shut)))))
 
 (let ([ev void])
   (define (run thunk)
