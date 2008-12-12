@@ -172,6 +172,9 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
 {
   Scheme_Object *new_so = so;
   switch (so->type) {
+    case scheme_char_string_type: /*43*/
+      new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
+      break;
     case scheme_unix_path_type:
       new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
       break;
