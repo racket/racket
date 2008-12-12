@@ -250,19 +250,29 @@
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
   (let ([r #f])
-    (call-in-nested-thread*
-     (lambda ()
-       ;; memory limit
-       (when (and mb memory-accounting?)
-         (custodian-limit-memory (current-custodian) (* mb 1024 1024)))
-       ;; time limit
-       (when sec
-         (let ([t (current-thread)])
-           (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
-       (set! r (with-handlers ([void (lambda (e) (list raise e))])
-                 (call-with-values thunk (lambda vs (list* values vs))))))
-     (lambda () (unless r (set! r 'kill)))
-     (lambda () (unless r (set! r 'shut))))
+    ;; memory limit, set on a new custodian so if there's an out-of-memory
+    ;; error, the user's custodian is still alive
+    (define-values (cust cust-box)
+      (if (and mb memory-accounting?)
+        (let ([c (make-custodian (current-custodian))])
+          (custodian-limit-memory c (* mb 1024 1024) c)
+          (values c (make-custodian-box c #t)))
+        (values (current-custodian) #f)))
+    (parameterize ([current-custodian cust])
+      (call-in-nested-thread*
+       (lambda ()
+         ;; time limit
+         (when sec
+           (let ([t (current-thread)])
+             (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
+         (set! r (with-handlers ([void (lambda (e) (list raise e))])
+                   (call-with-values thunk (lambda vs (list* values vs))))))
+       (lambda () (unless r (set! r 'kill)))
+       (lambda () (unless r (set! r 'shut)))))
+    (unless (custodian-box-value cust-box)
+      (if (memq r '(kill shut)) ; should always be 'shut
+        (set! r 'memory)
+        (format "cust died with: ~a" r))) ; throw internal error below
     (case r
       [(kill) (kill-thread (current-thread))]
       [(shut) (custodian-shutdown-all (current-custodian))]
