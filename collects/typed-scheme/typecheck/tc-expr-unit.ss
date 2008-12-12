@@ -190,7 +190,6 @@
          (begin (tc-exprs/check (syntax->list #'es) Univ)
                 (tc-expr/check #'e expected))]          
         ;; if
-        [(if tst body) (tc/if-onearm/check #'tst #'body expected)]
         [(if tst thn els) (tc/if-twoarm/check #'tst #'thn #'els expected)]
         ;; lambda
         [(#%plain-lambda formals . body)

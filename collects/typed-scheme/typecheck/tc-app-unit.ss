@@ -368,8 +368,8 @@
                      (let ([substitution (infer vars ... rng)])
                        (and substitution
                             (log-result substitution)
-                            (or expected
-                                (ret (subst-all substitution rng))))))             
+                            (ret (or expected
+                                     (subst-all substitution rng))))))
              (poly-fail t argtypes #:name (and (identifier? f-stx) f-stx)))))]))
 
 (define (poly-fail t argtypes #:name [name #f])

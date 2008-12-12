@@ -12,20 +12,20 @@
        (begin define-values)
        [(begin (define-values (n) e) e*)
         #`(begin (define-values (n) e)
-                 (define name #,(syntax-property #'e*
-                                                 'inferred-name
-                                                 (syntax-e #'name))))]
+                 (define name e*))]
        [(begin (begin e))
-        #`(define name #,(syntax-property #'e
-                                          'inferred-name
-                                          (syntax-e #'name)))])]))
+        #`(define name e)])]))
 
 (define-syntax (require/contract stx)
   (syntax-case stx ()
     [(require/contract nm cnt lib)
      (identifier? #'nm)
      #`(begin (require (only-in lib [nm tmp]))     
-              (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]
+              (define-ignored nm (contract (let ([nm cnt]) nm) tmp 
+                                           '#,(syntax->datum #'nm)
+                                           'never-happen
+                                           (list (make-srcloc tmp #f #f #f #f) (symbol->string 'nm)))))]
     [(require/contract (orig-nm nm) cnt lib)     
      #`(begin (require (only-in lib [orig-nm tmp]))
-              (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]))
+              (define-ignored nm (contract (let ([nm cnt]) nm)
+                                           tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]))

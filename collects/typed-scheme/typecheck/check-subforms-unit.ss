@@ -12,7 +12,7 @@
 (export check-subforms^)
 
 ;; find the subexpressions that need to be typechecked in an ignored form
-;; syntax -> void
+;; syntax -> any
 (define (check-subforms/with-handlers form)
   (define handler-tys '())
   (define body-ty #f)    
@@ -48,6 +48,7 @@
         [_ (void)])))
   (ret (apply Un body-ty handler-tys)))
 
+;; syntax type -> any
 (define (check-subforms/with-handlers/check form expected)
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
@@ -73,7 +74,7 @@
   (ret expected))
 
 ;; typecheck the expansion of a with-handlers form
-;; syntax -> type
+;; syntax -> any
 (define (check-subforms/ignore form)
   (let loop ([form form])
     (kernel-syntax-case* form #f ()
