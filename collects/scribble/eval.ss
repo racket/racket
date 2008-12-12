@@ -243,6 +243,7 @@
                    [sandbox-output 'string]
                    [sandbox-error-output 'string]
                    [sandbox-eval-limits #f]
+                   [sandbox-memory-limit #f]
                    [sandbox-make-inspector current-inspector])
       (make-evaluator '(begin (require scheme/base)))))
 
