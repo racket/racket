@@ -35,6 +35,7 @@
 #include "gc2.h"
 #include "gc2_dump.h"
 
+
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
 
@@ -262,10 +263,33 @@ int GC_mtrace_union_current_with(int newval)
 /*****************************************************************************/
 /* Page Map Routines                                                         */
 /*****************************************************************************/
+inline static void free_page_maps(PageMap page_maps1) {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+  unsigned long i;
+  unsigned long j;
+  mpage ***page_maps2;
+  mpage **page_maps3;
+
+  for (i=0; i<PAGEMAP64_LEVEL1_SIZE; i++) {
+    page_maps2 = page_maps1[i];
+    if (page_maps2) {
+      for (j=0; j<PAGEMAP64_LEVEL2_SIZE; j++) {
+        page_maps3 = page_maps2[pos];
+        if (page_maps3) {
+          free(page_maps3);
+        }
+      }
+      free(page_maps2);
+    }
+  }
+  free(page_maps1);
+#else
+  free(page_maps1);
+#endif
+}
 
 /* the page map makes a nice mapping from addresses to pages, allowing
    fairly fast lookup. this is useful. */
-
 inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   unsigned long pos;
@@ -1425,11 +1449,13 @@ void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
     newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
     newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
   }
+
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   newgc->page_maps = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
   newgc->page_maps = ofm_malloc_zero(PAGEMAP32_SIZE * sizeof (mpage*)); 
 #endif
+
   newgc->vm = vm_create();
   newgc->protect_range = ofm_malloc_zero(sizeof(Page_Range));
   
@@ -2717,6 +2743,13 @@ void GC_free_all(void)
       gen1_free_mpage(pagemap, work);
     }
   }
+
+  free(gc->mark_table);
+  free(gc->fixup_table);
+
+  free_page_maps(gc->page_maps);
+
+  free(gc->protect_range);
 
   vm_flush_freed_pages(gc->vm);
   vm_free(gc->vm);
