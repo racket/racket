@@ -43,29 +43,30 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int))
 #endif
 }
 
-static void segfault_handler(int signal_num) {
+static void rungdb() {
 #ifdef WIN32
 #else
   pid_t pid = getpid();
-  char buffer[500];
-  char buf[500];
-  signal(SIGSEGV, segfault_handler);
+  char outbuffer[100];
+  char inbuffer[10];
 
-  fprintf(stderr, "%i %i resume(r)/gdb(d)/exit(e)?\n", signal_num, pid);
+  fprintf(stderr, "pid # %i resume(r)/gdb(d)/exit(e)?\n", pid);
   fflush(stderr);
 
-  while(read(fileno(stdin), buf, 100) <= 0){
-    if(errno != EINTR){
-      fprintf(stderr, "\nCould not read response, sleeping for 20 seconds.\n");
+  while(1) {
+    while(read(fileno(stdin), inbuffer, 10) <= 0){
+      if(errno != EINTR){
+        fprintf(stderr, "Error detected %i\n", errno);
+      }
     }
-    switch(buf[0]) {
+    switch(inbuffer[0]) {
       case 'r':
         return;
         break;
       case 'd':
-        snprintf(buffer, 500, "xterm -e gdb ./mzschemecgc %d &", pid);
-        fprintf(stderr, "%i %i Launching GDB", signal_num, pid);
-        system(buffer);
+        snprintf(outbuffer, 100, "xterm -e gdb ./mzscheme3m %d &", pid);
+        fprintf(stderr, "%s\n", outbuffer);
+        system(outbuffer);
         break;
       case 'e':
       default:
@@ -75,6 +76,13 @@ static void segfault_handler(int signal_num) {
   }
 #endif
 }
+
+static void segfault_handler(int signal_num) {
+  pid_t pid = getpid();
+  fprintf(stderr, "sig# %i pid# %i\n", signal_num, pid);
+  rungdb();
+}
+
 
 void mzrt_set_segfault_debug_handler()
 {
