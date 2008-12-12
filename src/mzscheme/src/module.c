@@ -2716,6 +2716,12 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
   return scheme_make_modidx(argv[0], argv[1], scheme_false);
 }
 
+void scheme_init_module_path_table()
+{
+  REGISTER_SO(modpath_table);
+  modpath_table = scheme_make_weak_equal_table();
+}
+
 Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
 {
   Scheme_Object *rmp;
@@ -2723,11 +2729,6 @@ Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
   Scheme_Object *return_value;
 
   mzrt_mutex_lock(modpath_table_mutex);
-
-  if (!modpath_table) {
-    REGISTER_SO(modpath_table);
-    modpath_table = scheme_make_weak_equal_table();
-  }
 
   rmp = scheme_alloc_small_object();
   rmp->type = scheme_resolved_module_path_type;
