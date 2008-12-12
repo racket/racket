@@ -480,8 +480,9 @@
 
 (define (make-evaluator* init-hook allow program-maker)
   (define orig-cust     (current-custodian))
-  (define user-cust     (make-custodian orig-cust))
-  (define user-cust-box (make-custodian-box user-cust #t))
+  (define memory-cust   (make-custodian orig-cust))
+  (define memory-cust-box (make-custodian-box memory-cust #t))
+  (define user-cust     (make-custodian memory-cust))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -545,7 +546,9 @@
                                            (loop))])
                           (sync user-done-evt result-ch))))
                eof)])
-      (cond [(eof-object? r) (error 'evaluator "terminated")]
+      (cond [(eof-object? r) (error 'evaluator "terminated~a"
+                                    (if (custodian-box-value memory-cust-box)
+                                      "" " (memory exceeded)"))]
             [(eq? (car r) 'exn) (raise (cdr r))]
             [else (apply values (cdr r))])))
   (define get-uncovered
@@ -574,9 +577,7 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
-          [(alive?) (and (custodian-box-value user-cust-box)
-                         user-thread
-                         (not (thread-dead? user-thread)))]
+          [(alive?) (and user-thread (not (thread-dead? user-thread)))]
           [(kill)   (user-kill)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
@@ -610,7 +611,7 @@
   ;; set global memory limit
   (when (sandbox-memory-limit)
     (custodian-limit-memory
-     user-cust (* (sandbox-memory-limit) 1024 1024) user-cust))
+     memory-cust (* (sandbox-memory-limit) 1024 1024) memory-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [current-custodian user-cust]
