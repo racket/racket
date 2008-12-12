@@ -270,13 +270,19 @@
              (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
          (set! r (with-handlers ([void (lambda (e) (list raise e))])
                    (call-with-values thunk (lambda vs (list* values vs))))))
+       ;; The thread might be killed by the timer thread, so don't let
+       ;; call-in-nested-thread* kill it -- if user code did so, then just
+       ;; register the request and kill it below.  Do this for a
+       ;; custodian-shutdown to, just in case.
        (lambda ()
          (unless r (set! r 'kill))
-         (kill-thread (current-thread)))
+         ;; (kill-thread (current-thread))
+         )
        (lambda ()
          (unless r (set! r 'shut))
-         (custodian-shutdown-all (current-custodian)))))
-    (unless (custodian-box-value cust-box)
+         ;; (custodian-shutdown-all (current-custodian))
+         )))
+    (when (and cust-box (not (custodian-box-value cust-box)))
       (if (memq r '(kill shut)) ; should always be 'shut
         (set! r 'memory)
         (format "cust died with: ~a" r))) ; throw internal error below
