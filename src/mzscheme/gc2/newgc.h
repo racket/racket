@@ -116,10 +116,7 @@ typedef struct NewGC {
   void (*unsafe_allocation_abort)(struct NewGC *);
   unsigned long memory_in_use; /* the amount of memory in use */
 
-  /* blame the child saved off Mark_Proc pointers */
-  Mark_Proc normal_thread_mark;
-  Mark_Proc normal_custodian_mark;
-  Mark_Proc normal_cust_box_mark;
+  /* blame the child thread infos */
   GC_Thread_Info *thread_infos;
 
   mpage *release_pages;

@@ -1447,16 +1447,16 @@ void GC_write_barrier(void *p)
 #include "sighand.c"
 
 void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
-  memset(newgc, 0, sizeof(NewGC));
   if (parentgc) {
-    newgc->mark_table  = ofm_malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-    newgc->fixup_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
-    memcpy(newgc->mark_table,  parentgc->mark_table,  NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-    memcpy(newgc->fixup_table, parentgc->fixup_table, NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+    newgc->mark_table  = parentgc->mark_table;
+    newgc->fixup_table = parentgc->fixup_table;
   }
   else {
     newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
     newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+# ifdef NEWGC_BTC_ACCOUNT
+    BTC_initialize_mark_table(newgc);
+#endif
   }
 
   mark_stack_initialize();
@@ -1480,10 +1480,9 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
 {
   NewGC *gc;
 
-  gc = ofm_malloc(sizeof(NewGC));
+  gc = ofm_malloc_zero(sizeof(NewGC));
   /* NOTE sets the constructed GC as the new Thread Specific GC. */
   GC_set_GC(gc);
-  NewGC_initialize(gc, parentgc);
 
   gc->weak_box_tag    = weakbox;
   gc->ephemeron_tag   = ephemeron;
@@ -1491,6 +1490,9 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
 # ifdef NEWGC_BTC_ACCOUNT
   gc->cust_box_tag    = custbox;
 # endif
+
+  NewGC_initialize(gc, parentgc);
+
 
   /* Our best guess at what the OS will let us allocate: */
   gc->max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
@@ -1502,9 +1504,11 @@ static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mu
 
   resize_gen0(gc, GEN0_INITIAL_SIZE);
 
-  GC_register_traversers(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
-  GC_register_traversers(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
-  GC_register_traversers(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+  if (!parentgc) {
+    GC_register_traversers(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
+    GC_register_traversers(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
+    GC_register_traversers(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+  }
   initialize_signal_handler(gc);
   GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
   GC_add_roots(&gc->park_save, (char *)&gc->park_save + sizeof(gc->park_save) + 1);
@@ -1579,8 +1583,15 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
     Fixup_Proc fixup, int constant_Size, int atomic)
 {
   NewGC *gc = GC_get_GC();
-  gc->mark_table[tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
-  gc->fixup_table[tag] = fixup;
+
+  int mark_tag = tag;
+
+#ifdef NEWGC_BTC_ACCOUNT
+  mark_tag = BTC_get_redirect_tag(gc, mark_tag);
+#endif
+
+  gc->mark_table[mark_tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
+  gc->fixup_table[tag]      = fixup;
 }
 
 long GC_get_memory_use(void *o) 
