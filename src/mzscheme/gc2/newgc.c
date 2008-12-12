@@ -80,6 +80,11 @@ static THREAD_LOCAL NewGC *GC;
 #define GC_get_GC() (GC)
 #define GC_set_GC(gc) (GC = gc)
 
+inline static int is_master_gc(NewGC *gc) {
+  return (MASTERGC == gc);
+}
+
+
 #include "msgprint.c"
 
 /*****************************************************************************/
@@ -1548,6 +1553,7 @@ void GC_switch_out_master_gc() {
   if(!initialized) {
     initialized = 1;
     MASTERGC = GC_get_GC();
+    MASTERGC->dumping_avoid_collection = 1;
     save_globals_to_gc(MASTERGC);
     GC_construct_child_gc();
   }
@@ -2554,7 +2560,8 @@ static void garbage_collect(NewGC *gc, int force_full)
   mark_roots(gc);
   mark_immobiles(gc);
   TIME_STEP("rooted");
-  GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+  if (!is_master_gc(gc))
+    GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
 
   TIME_STEP("stacked");
 
@@ -2602,7 +2609,8 @@ static void garbage_collect(NewGC *gc, int force_full)
   repair_weak_finalizer_structs(gc);
   repair_roots(gc);
   repair_immobiles(gc);
-  GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+  if (!is_master_gc(gc))
+    GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
   TIME_STEP("reparied roots");
   repair_heap(gc);
   TIME_STEP("repaired");
