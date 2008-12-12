@@ -35,6 +35,12 @@ typedef struct Gen0 {
  unsigned long max_size;
 } Gen0;
 
+typedef struct MarkSegment {
+  struct MarkSegment *prev;
+  struct MarkSegment *next;
+  void **top;
+} MarkSegment;
+
 typedef struct Weak_Finalizer {
   void *p;
   int offset;

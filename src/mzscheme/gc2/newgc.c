@@ -1266,11 +1266,6 @@ inline static void reset_weak_finalizers(NewGC *gc)
 /* This is the code we use to implement the mark stack. We can't, sadly, use
    the standard C stack because we'll blow it; propagation makes for a *very*
    deep stack. So we use this instead. */
-typedef struct MarkSegment {
-  struct MarkSegment *prev;
-  struct MarkSegment *next;
-  void **top;
-} MarkSegment;
 
 #define MARK_STACK_START(ms) ((void **)(void *)&ms[1])
 #define MARK_STACK_END(ms) ((void **)((char *)ms + STACK_PART_SIZE))
@@ -1284,8 +1279,8 @@ inline static MarkSegment* mark_stack_create_frame() {
   return mark_frame;
 }
 
-inline static void init_mark_stack()
-{
+inline static void mark_stack_initialize() {
+  /* This happens at the very beginning */
   if(!mark_stack) {
     mark_stack = mark_stack_create_frame();
     mark_stack->prev = NULL;
@@ -1458,6 +1453,8 @@ void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
     newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
   }
 
+  mark_stack_initialize();
+
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   newgc->page_maps = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
@@ -1470,8 +1467,6 @@ void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   newgc->generations_available = 1;
   newgc->last_full_mem_use = (20 * 1024 * 1024);
   newgc->new_btc_mark = 1;
-
-  init_mark_stack();
 }
 
 /* NOTE This method sets the constructed GC as the new Thread Specific GC. */
