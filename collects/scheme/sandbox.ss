@@ -223,7 +223,7 @@
 
 ;; similar to `call-in-nested-thread', but propagates killing the thread,
 ;; shutting down the custodian or setting parameters and thread cells;
-;; optionally with thunks to call for kill/shutdown.
+;; optionally with thunks to call for kill/shutdown instead.
 (define (call-in-nested-thread*
          thunk
          [kill     (lambda () (kill-thread (current-thread)))]
@@ -270,8 +270,12 @@
              (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
          (set! r (with-handlers ([void (lambda (e) (list raise e))])
                    (call-with-values thunk (lambda vs (list* values vs))))))
-       (lambda () (unless r (set! r 'kill)))
-       (lambda () (unless r (set! r 'shut)))))
+       (lambda ()
+         (unless r (set! r 'kill))
+         (kill-thread (current-thread)))
+       (lambda ()
+         (unless r (set! r 'shut))
+         (custodian-shutdown-all (current-custodian)))))
     (unless (custodian-box-value cust-box)
       (if (memq r '(kill shut)) ; should always be 'shut
         (set! r 'memory)
