@@ -297,6 +297,59 @@ int mzrt_cond_destroy(mzrt_cond *cond) {
   return pthread_cond_destroy(&cond->cond);
 }
 
+/****************** PROCESS THREAD MAIL BOX *******************************/
+
+pt_mbox *pt_mbox_create() {
+  pt_mbox *mbox = (pt_mbox *)malloc(sizeof(pt_mbox));
+  mbox->count = 0;
+  mbox->in    = 0;
+  mbox->out   = 0;
+  mzrt_mutex_create(&mbox->mutex);
+  mzrt_cond_create(&mbox->nonempty);
+  mzrt_cond_create(&mbox->nonfull);
+  return mbox;
+}
+
+void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin) {
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 5 ) {
+    mzrt_cond_wait(mbox->nonfull, mbox->mutex);
+  }
+  mbox->queue[mbox->in].type = type;
+  mbox->queue[mbox->in].payload = payload;
+  mbox->queue[mbox->in].origin = origin;
+  mbox->in = (mbox->in + 1) % 5;
+  mbox->count++;
+  mzrt_cond_signal(mbox->nonempty);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin){
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 0 ) {
+    mzrt_cond_wait(mbox->nonempty, mbox->mutex);
+  }
+  *type    = mbox->queue[mbox->out].type;
+  *payload = mbox->queue[mbox->out].payload;
+  *origin  = mbox->queue[mbox->out].origin;
+  mbox->out = (mbox->out + 1) % 5;
+  mbox->count--;
+  mzrt_cond_signal(mbox->nonfull);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload) {
+  pt_mbox *return_origin;
+  pt_mbox_send(mbox, type, payload, origin);
+  pt_mbox_recv(origin, return_type, return_payload, &return_origin);
+}
+
+void pt_mbox_destroy(pt_mbox *mbox) {
+  mzrt_mutex_destroy(mbox->mutex);
+  mzrt_cond_destroy(mbox->nonempty);
+  mzrt_cond_destroy(mbox->nonfull);
+  free(mbox);
+}
 
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;

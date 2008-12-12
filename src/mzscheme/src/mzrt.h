@@ -67,6 +67,28 @@ int mzrt_cond_signal(mzrt_cond *cond);
 int mzrt_cond_broadcast(mzrt_cond *cond);
 int mzrt_cond_destroy(mzrt_cond *cond);
 
+/****************** PROCESS THREAD MAIL BOX *******************************/
+typedef struct pt_mbox_msg {
+  int     type;
+  void    *payload;
+  struct pt_mbox *origin;
+} pt_mbox_msg;
+
+typedef struct pt_mbox {
+  struct pt_mbox_msg queue[5];
+  int count;
+  int in;
+  int out;
+  mzrt_mutex *mutex;
+  mzrt_cond *nonempty;
+  mzrt_cond *nonfull;
+} pt_mbox;
+
+pt_mbox *pt_mbox_create();
+void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin);
+void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin);
+void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload);
+void pt_mbox_destroy(pt_mbox *mbox);
 
 #endif
 
