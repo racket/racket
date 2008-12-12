@@ -2716,7 +2716,7 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
   return scheme_make_modidx(argv[0], argv[1], scheme_false);
 }
 
-Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
+Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
 {
   Scheme_Object *rmp;
   Scheme_Bucket *b;
@@ -2742,6 +2742,21 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   mzrt_mutex_unlock(modpath_table_mutex);
 
   return return_value;
+}
+
+Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
+{
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  mz_proc_thread *self;
+  self = proc_thread_self;
+  if ( scheme_master_proc_thread && scheme_master_proc_thread != proc_thread_self ) {
+    int return_msg_type;
+    void *return_payload;
+    pt_mbox_send_recv(scheme_master_proc_thread->mbox, 1, o, self->mbox, &return_msg_type, &return_payload);
+    return (Scheme_Object*) return_payload;
+  }
+#endif
+  return scheme_intern_resolved_module_path_worker(o);
 }
 
 static Scheme_Object *resolved_module_path_p(int argc, Scheme_Object *argv[])

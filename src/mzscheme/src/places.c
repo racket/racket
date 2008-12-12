@@ -218,15 +218,44 @@ static void *place_start_proc(void *data_arg) {
   return scheme_true;
 }
 
-static void *master_scheme_place(void *data) {
 #ifdef MZ_PRECISE_GC
-#endif
+static void *master_scheme_place(void *data) {
+  GC_switch_in_master_gc();
+  while(1) {
+    int recv_type;
+    void *recv_payload;
+    pt_mbox *origin;
+    Scheme_Object *o;
+
+    pt_mbox_recv(scheme_master_proc_thread->mbox, &recv_type, &recv_payload, &origin);
+    switch(recv_type) {
+      case 1:
+        o = scheme_intern_resolved_module_path_worker((Scheme_Object *)recv_payload);
+        pt_mbox_send(origin, 2, (void *) o, NULL);
+        break;
+      case 3:
+        break;
+      case 5:
+        break;
+    }
+  }
   return NULL;
 }
 
 void spawn_master_scheme_place() {
+  mz_proc_thread *thread;
+  pt_mbox *mbox;
+  unsigned int threadid;
+  thread    = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  mbox      = pt_mbox_create();
+  threadid  = mz_proc_thread_self();
+  thread->threadid  = threadid;
+  thread->mbox      = mbox;
+  proc_thread_self  = thread;
+
   scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL);
 }
+#endif
 
 /*========================================================================*/
 /*                       precise GC traversers                            */

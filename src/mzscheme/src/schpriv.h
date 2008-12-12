@@ -356,6 +356,9 @@ extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
 #define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
 #define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
+#include "mzrt.h"
+extern mz_proc_thread *scheme_master_proc_thread;
+extern THREAD_LOCAL mz_proc_thread *proc_thread_self;
 #endif
 
 typedef struct Scheme_Thread_Set {
@@ -2687,6 +2690,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_to_modidx);
 
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o);
+Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o);
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
@@ -3121,7 +3125,7 @@ typedef struct Scheme_Place {
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
-
+void spawn_master_scheme_place();
 
 /*========================================================================*/
 /*                           engine                                       */

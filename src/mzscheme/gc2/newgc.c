@@ -1547,6 +1547,11 @@ void GC_switch_out_master_gc() {
   }
 }
 
+void GC_switch_in_master_gc() {
+  GC_set_GC(MASTERGC);
+}
+
+
 void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
