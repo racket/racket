@@ -17,8 +17,21 @@
 # include <signal.h>
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
-  if (!designate_modified(si->si_addr))
+  void *p = si->si_addr;
+  if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
+    printf("SIGSEGV fault on %p\n", p);
     abort();
+  }
+
+  if (!designate_modified(p)) {
+    if (si->si_code == SEGV_ACCERR) {
+      printf("mprotect fault on %p\n", p);
+    }
+    else {
+      printf("?? %i fault on %p\n", si->si_code, p);
+    }
+    abort();
+  }
 #  define NEED_SIGACTION
 #  define USE_SIGACTON_SIGNAL_KIND SIGSEGV
 }
