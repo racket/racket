@@ -246,7 +246,10 @@ static void *place_start_proc(void *data_arg) {
 #ifdef MZ_PRECISE_GC
 
 static void *master_scheme_place(void *data) {
+  mz_proc_thread *myself;
+  myself = proc_thread_self;
   GC_switch_in_master_gc();
+
   while(1) {
     int recv_type;
     void *recv_payload;
@@ -254,7 +257,7 @@ static void *master_scheme_place(void *data) {
     Scheme_Object *o;
     Scheme_Object *copied_o;
 
-    pt_mbox_recv(scheme_master_proc_thread->mbox, &recv_type, &recv_payload, &origin);
+    pt_mbox_recv(myself->mbox, &recv_type, &recv_payload, &origin);
     switch(recv_type) {
       case 1:
         copied_o = scheme_places_deep_copy((Scheme_Object *)recv_payload);
