@@ -23,7 +23,15 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int));
 
 /****************** PROCESS WEIGHT THREADS ********************************/
 /* mzrt_threads.c */
-typedef struct mz_proc_thread mz_proc_thread; /* OPAQUE DEFINITION */
+typedef struct mz_proc_thread {
+#ifdef WIN32
+  HANDLE threadid;
+#else
+  pthread_t threadid;
+#endif
+  struct pt_mbox *mbox;
+} mz_proc_thread;
+
 
 #ifdef WIN32
 typedef DWORD (WINAPI *mz_proc_thread_start)(void*);
@@ -36,8 +44,8 @@ void *mz_proc_thread_wait(mz_proc_thread *thread);
 
 void mzrt_sleep(int seconds);
 
-int mz_proc_thread_self();
-int mz_proc_thread_id(mz_proc_thread* thread);
+unsigned int mz_proc_thread_self();
+unsigned int mz_proc_thread_id(mz_proc_thread* thread);
 
 /****************** THREAD RWLOCK ******************************************/
 /* mzrt_rwlock_*.c */

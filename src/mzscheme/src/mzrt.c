@@ -5,7 +5,7 @@
 /************************************************************************/
 /************************************************************************/
 /************************************************************************/
-
+#define MZRT_INTERNAL
 #include "mzrt.h"
 #include "schgc.h"
 
@@ -138,42 +138,55 @@ MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
 /***********************************************************************/
 /*                Threads                                              */
 /***********************************************************************/
+typedef struct mzrt_thread_stub_data {
+  void * (*start_proc)(void *);
+  void *data;
+  mz_proc_thread *thread;
+} mzrt_thread_stub_data;
 
-struct mz_proc_thread {
-#ifdef WIN32
-  HANDLE threadid;
-#else
-  pthread_t threadid;
-#endif
-};
+void *mzrt_thread_stub(void *data){
+  mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
+  void * (*start_proc)(void *)        = stub_data->start_proc;
+  void *start_proc_data               = stub_data->data;
+  proc_thread_self                    = stub_data->thread;
 
-int mz_proc_thread_self() {
+  free(data);
+
+  return start_proc(start_proc_data);
+}
+
+unsigned int mz_proc_thread_self() {
 #ifdef WIN32
 #error !!!mz_proc_thread_id not implemented!!!
 #else
-  return (int) pthread_self();
+  return (unsigned int) pthread_self();
 #endif
 }
 
-int mz_proc_thread_id(mz_proc_thread* thread) {
+unsigned int mz_proc_thread_id(mz_proc_thread* thread) {
 
-  return (int) thread->threadid;
+  return (unsigned int) thread->threadid;
 }
 
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
-#ifdef WIN32
-#   ifndef MZ_PRECISE_GC
+#ifdef MZ_PRECISE_GC
+  mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
+  thread->mbox = pt_mbox_create();
+  stub_data->start_proc = start_proc;
+  stub_data->data       = data;
+  stub_data->thread     = thread;
+#   ifdef WIN32
   thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
+  pthread_create(&thread->threadid, NULL, mzrt_thread_stub, stub_data);
 #   endif
 #else
-#   ifndef MZ_PRECISE_GC
-  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
+#   ifdef WIN32
+  thread->threadid = GC_CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  pthread_create(&thread->threadid, NULL, start_proc, data);
+  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
 #   endif
 #endif
   return thread;
@@ -245,7 +258,7 @@ struct mzrt_mutex {
 };
 
 int mzrt_mutex_create(mzrt_mutex **mutex) {
-  *mutex = malloc(sizeof(mzrt_mutex));
+  *mutex = malloc(sizeof(struct mzrt_mutex));
   return pthread_mutex_init(&(*mutex)->mutex, NULL);
 }
 
@@ -270,7 +283,7 @@ struct mzrt_cond {
 };
 
 int mzrt_cond_create(mzrt_cond **cond) {
-  *cond = malloc(sizeof(mzrt_cond));
+  *cond = malloc(sizeof(struct mzrt_cond));
   return pthread_cond_init(&(*cond)->cond, NULL);
 }
 
