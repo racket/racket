@@ -39,6 +39,7 @@ typedef DWORD (WINAPI *mz_proc_thread_start)(void*);
 typedef void *(mz_proc_thread_start)(void*);
 #endif
 
+mz_proc_thread* mzrt_proc_first_thread_init();
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start*, void* data);
 void *mz_proc_thread_wait(mz_proc_thread *thread);
 

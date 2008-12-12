@@ -176,6 +176,15 @@ unsigned int mz_proc_thread_id(mz_proc_thread* thread) {
   return (unsigned int) thread->threadid;
 }
 
+mz_proc_thread* mzrt_proc_first_thread_init() {
+  /* initialize mz_proc_thread struct for first thread myself that wasn't created with mz_proc_thread_create,
+   * so it can communicate with other mz_proc_thread_created threads via pt_mboxes */
+  mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  thread->mbox      = pt_mbox_create();
+  thread->threadid  = mz_proc_thread_self();
+  proc_thread_self  = thread;
+  return thread;
+}
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));

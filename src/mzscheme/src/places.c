@@ -280,15 +280,7 @@ static void *master_scheme_place(void *data) {
 }
 
 void spawn_master_scheme_place() {
-  mz_proc_thread *thread;
-  pt_mbox *mbox;
-  unsigned int threadid;
-  thread    = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
-  mbox      = pt_mbox_create();
-  threadid  = mz_proc_thread_self();
-  thread->threadid  = threadid;
-  thread->mbox      = mbox;
-  proc_thread_self  = thread;
+  mzrt_proc_first_thread_init();
 
   scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL);
 }
