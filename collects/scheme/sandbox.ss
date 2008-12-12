@@ -226,7 +226,7 @@
          [kill     (lambda () (kill-thread (current-thread)))]
          [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
   (let* ([p #f]
-         [c (make-custodian)]
+         [c (make-custodian (current-custodian))]
          [b (make-custodian-box c #t)])
     (with-handlers ([(lambda (_) (not p))
                      ;; if the after thunk was not called, then this error is
@@ -465,7 +465,8 @@
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
 (define (make-evaluator* init-hook allow program-maker)
-  (define user-cust     (make-custodian))
+  (define orig-cust     (current-custodian))
+  (define user-cust     (make-custodian orig-cust))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -476,7 +477,6 @@
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
-  (define orig-cust     (current-custodian))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
@@ -667,10 +667,7 @@
                      (lambda () (build-program lang reqs input-program)))))
 
 (define (make-module-evaluator
-         input-program
-         #:allow-read [allow
-                       (if (path? input-program) (list input-program) null)]
-         #:language [reqlang #f])
+         input-program #:allow-read [allow null] #:language [reqlang #f])
   ;; this is for a complete module input program
   (define (make-program)
     (let ([prog (input->code (list input-program) 'program #f)])
@@ -688,5 +685,6 @@
                   (syntax->datum #'lang) reqlang))]
         [_else (error 'make-evaluator "expecting a `module' program; got ~e"
                       (syntax->datum (car prog)))])))
-  (make-evaluator* void allow make-program))
-
+  (make-evaluator* void
+                   (if (path? input-program) (cons input-program allow) allow)
+                   make-program))
