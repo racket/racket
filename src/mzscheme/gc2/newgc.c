@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "platforms.h"
 #include "gc2.h"
 #include "gc2_dump.h"
@@ -1803,8 +1804,10 @@ static void propagate_marks(NewGC *gc)
             unsigned short tag = *(unsigned short*)start;
             if((unsigned long)mark_table[tag] < PAGE_TYPES) {
               /* atomic */
-            } else
+            } else {
+              assert(mark_table[tag]);
               mark_table[tag](start); break;
+            }
           }
         case PAGE_ATOMIC: break;
         case PAGE_ARRAY: while(start < end) gcMARK(*(start++)); break;
@@ -1812,7 +1815,10 @@ static void propagate_marks(NewGC *gc)
         case PAGE_TARRAY: {
                             unsigned short tag = *(unsigned short *)start;
                             end -= INSET_WORDS;
-                            while(start < end) start += mark_table[tag](start);
+                            while(start < end) {
+                              assert(mark_table[tag]);
+                              start += mark_table[tag](start);
+                            }
                             break;
                           }
       }
@@ -1822,7 +1828,13 @@ static void propagate_marks(NewGC *gc)
       set_backtrace_source(p, info->type);
 
       switch(info->type) {
-        case PAGE_TAGGED: mark_table[*(unsigned short*)p](p); break;
+        case PAGE_TAGGED: 
+          {
+            unsigned short tag = *(unsigned short*)p;
+            assert(mark_table[tag]);
+            mark_table[tag](p);
+            break;
+          }
         case PAGE_ATOMIC: break;
         case PAGE_ARRAY: {
                            void **start = p;
@@ -1834,7 +1846,10 @@ static void propagate_marks(NewGC *gc)
                             void **start = p;
                             void **end = PPTR(info) + (info->size - INSET_WORDS);
                             unsigned short tag = *(unsigned short *)start;
-                            while(start < end) start += mark_table[tag](start);
+                            while(start < end) {
+                              assert(mark_table[tag]);
+                              start += mark_table[tag](start);
+                            }
                             break;
                           }
         case PAGE_XTAGGED: GC_mark_xtagged(p); break;
@@ -2567,9 +2582,18 @@ static void garbage_collect(NewGC *gc, int force_full)
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  propagate_marks(gc); mark_ready_ephemerons(gc); propagate_marks(gc); 
-  check_finalizers(gc, 1); mark_ready_ephemerons(gc); propagate_marks(gc);
-  check_finalizers(gc, 2); mark_ready_ephemerons(gc); propagate_marks(gc);
+  propagate_marks(gc);
+  mark_ready_ephemerons(gc); 
+  propagate_marks(gc); 
+
+  check_finalizers(gc, 1);
+  mark_ready_ephemerons(gc);
+  propagate_marks(gc);
+
+  check_finalizers(gc, 2);
+  mark_ready_ephemerons(gc);
+  propagate_marks(gc);
+
   if(gc->gc_full) zero_weak_finalizers(gc);
   do_ordered_level3(gc); propagate_marks(gc);
   check_finalizers(gc, 3); propagate_marks(gc);
