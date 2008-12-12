@@ -288,7 +288,6 @@ static void init_toplevel_local_offsets_hashtable_caches()
   }
 }
 
-
 /* READ-ONLY GLOBAL structures ONE-TIME initialization */
 Scheme_Env *scheme_engine_instance_init() {
   Scheme_Env *env;
@@ -328,6 +327,7 @@ Scheme_Env *scheme_engine_instance_init() {
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_switch_out_master_gc();
+  spawn_master_scheme_place();
 #endif
   
   place_instance_init_pre_kernel(stack_base);

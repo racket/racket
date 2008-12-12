@@ -154,7 +154,7 @@ static void load_namespace_utf8(Scheme_Object *namespace_name) {
   Scheme_Object *a[1];
   Scheme_Thread * volatile p;
   mz_jmp_buf * volatile saved_error_buf;
-  mz_jmp_buf volatile new_error_buf;
+  mz_jmp_buf new_error_buf;
 
   nsreq = scheme_builtin_value("namespace-require");
   a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
@@ -218,6 +218,15 @@ static void *place_start_proc(void *data_arg) {
   return scheme_true;
 }
 
+static void *master_scheme_place(void *data) {
+#ifdef MZ_PRECISE_GC
+#endif
+  return NULL;
+}
+
+void spawn_master_scheme_place() {
+  scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL);
+}
 
 /*========================================================================*/
 /*                       precise GC traversers                            */
