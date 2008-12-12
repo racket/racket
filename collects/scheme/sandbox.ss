@@ -230,24 +230,28 @@
          [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
   (let* ([p #f]
          [c (make-custodian (current-custodian))]
-         [b (make-custodian-box c #t)])
-    (with-handlers ([(lambda (_) (not p))
-                     ;; if the after thunk was not called, then this error is
-                     ;; about the thread dying unnaturally, so propagate
-                     ;; whatever it did
-                     (lambda (_) ((if (custodian-box-value b) kill shutdown)))])
-      (dynamic-wind void
-        (lambda ()
-          (parameterize ([current-custodian c])
-            (call-in-nested-thread
-             (lambda ()
-               (dynamic-wind void thunk
-                 ;; this should always be called unless the thread is killed or
-                 ;; the custodian is shutdown, distinguish the two cases
-                 ;; through the above box
-                 (lambda ()
-                   (set! p (current-preserved-thread-cell-values))))))))
-        (lambda () (when p (current-preserved-thread-cell-values p)))))))
+         [b (make-custodian-box c #t)]
+         [break? (break-enabled)])
+    (parameterize-break #f
+      (with-handlers ([(lambda (_) (not p))
+                       ;; if the after thunk was not called, then this error is
+                       ;; about the thread dying unnaturally, so propagate
+                       ;; whatever it did
+                       (lambda (_)
+                         ((if (custodian-box-value b) kill shutdown)))])
+        (dynamic-wind void
+          (lambda ()
+            (parameterize ([current-custodian c])
+              (call-in-nested-thread
+               (lambda ()
+                 (break-enabled break?)
+                 (dynamic-wind void thunk
+                   ;; this should always be called unless the thread is killed
+                   ;; or the custodian is shutdown, distinguish the two cases
+                   ;; through the above box
+                   (lambda ()
+                     (set! p (current-preserved-thread-cell-values))))))))
+          (lambda () (when p (current-preserved-thread-cell-values p))))))))
 
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
