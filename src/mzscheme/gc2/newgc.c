@@ -280,7 +280,7 @@ inline static void free_page_maps(PageMap page_maps1) {
     page_maps2 = page_maps1[i];
     if (page_maps2) {
       for (j=0; j<PAGEMAP64_LEVEL2_SIZE; j++) {
-        page_maps3 = page_maps2[pos];
+        page_maps3 = page_maps2[j];
         if (page_maps3) {
           free(page_maps3);
         }
