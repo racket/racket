@@ -376,6 +376,15 @@ GC2_EXTERN void GC_write_barrier(void *p);
    Explicit write barrier to ensure that a write-barrier signal is not
    triggered by a memory write.
 */
+GC2_EXTERN void GC_switch_out_master_gc();
+/*
+   Makes the current GC the master GC.
+   Creates a new place specific GC and links it to the master GC.
+*/
+GC2_EXTERN void GC_construct_child_gc();
+/*
+   Creates a new place specific GC and links to the master GC.
+*/
 
 # ifdef __cplusplus
 };

@@ -73,9 +73,11 @@ static const char *type_name[PAGE_TYPES] = {
 
 
 #include "newgc.h"
+static NewGC *MASTERGC;
 static THREAD_LOCAL NewGC *GC;
 #define GCTYPE NewGC
 #define GC_get_GC() (GC)
+#define GC_set_GC(gc) (GC = gc)
 
 #include "msgprint.c"
 
@@ -1411,10 +1413,18 @@ void GC_write_barrier(void *p)
 
 #include "sighand.c"
 
-void NewGC_initialize(NewGC *newgc) {
+void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   memset(newgc, 0, sizeof(NewGC));
-  newgc->mark_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
-  newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+  if (parentgc) {
+    newgc->mark_table  = ofm_malloc(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+    newgc->fixup_table = ofm_malloc(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+    memcpy(newgc->mark_table,  parentgc->mark_table,  NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+    memcpy(newgc->fixup_table, parentgc->fixup_table, NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+  }
+  else {
+    newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
+    newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
+  }
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   newgc->page_maps = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
 #else
@@ -1430,46 +1440,75 @@ void NewGC_initialize(NewGC *newgc) {
   init_mark_stack();
 }
 
+/* NOTE This method sets the constructed GC as the new Thread Specific GC. */
+static NewGC *init_type_tags_worker(NewGC *parentgc, int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
+{
+  NewGC *gc;
+
+  gc = ofm_malloc(sizeof(NewGC));
+  /* NOTE sets the constructed GC as the new Thread Specific GC. */
+  GC_set_GC(gc);
+  NewGC_initialize(gc, parentgc);
+
+  gc->weak_box_tag    = weakbox;
+  gc->ephemeron_tag   = ephemeron;
+  gc->weak_array_tag  = weakarray;
+# ifdef NEWGC_BTC_ACCOUNT
+  gc->cust_box_tag    = custbox;
+# endif
+
+  /* Our best guess at what the OS will let us allocate: */
+  gc->max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
+  /* Not all of that memory is available for allocating GCable
+     objects.  There's the memory used by the stack, code,
+     malloc()/free()ed memory, etc., and there's also the
+     administrative structures for the GC itself. */
+  gc->max_pages_for_use = gc->max_pages_in_heap / 2;
+
+  resize_gen0(gc, GEN0_INITIAL_SIZE);
+
+  GC_register_traversers(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
+  GC_register_traversers(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
+  GC_register_traversers(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
+  initialize_signal_handler(gc);
+  GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
+  GC_add_roots(&gc->park_save, (char *)&gc->park_save + sizeof(gc->park_save) + 1);
+
+  initialize_protect_page_ranges(gc->protect_range, malloc_dirty_pages(gc, APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
+
+  return gc;
+}
+
 void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int ephemeron, int weakarray, int custbox)
 {
   static int initialized = 0;
 
   if(!initialized) {
-    NewGC *gc;
     initialized = 1;
-
-    gc = ofm_malloc(sizeof(NewGC));
-    GC = gc;
-    NewGC_initialize(gc);
-
-    gc->weak_box_tag    = weakbox;
-    gc->ephemeron_tag   = ephemeron;
-    gc->weak_array_tag  = weakarray;
-# ifdef NEWGC_BTC_ACCOUNT
-    gc->cust_box_tag    = custbox;
-# endif
-
-    /* Our best guess at what the OS will let us allocate: */
-    gc->max_pages_in_heap = determine_max_heap_size() / APAGE_SIZE;
-    /* Not all of that memory is available for allocating GCable
-       objects.  There's the memory used by the stack, code,
-       malloc()/free()ed memory, etc., and there's also the
-       administrative structures for the GC itself. */
-    gc->max_pages_for_use = gc->max_pages_in_heap / 2;
-
-    resize_gen0(gc, GEN0_INITIAL_SIZE);
-
-    GC_register_traversers(gc->weak_box_tag, size_weak_box, mark_weak_box, fixup_weak_box, 0, 0);
-    GC_register_traversers(gc->ephemeron_tag, size_ephemeron, mark_ephemeron, fixup_ephemeron, 0, 0);
-    GC_register_traversers(gc->weak_array_tag, size_weak_array, mark_weak_array, fixup_weak_array, 0, 0);
-    initialize_signal_handler(gc);
-    GC_add_roots(&gc->park, (char *)&gc->park + sizeof(gc->park) + 1);
-    GC_add_roots(&gc->park_save, (char *)&gc->park_save + sizeof(gc->park_save) + 1);
-
-    initialize_protect_page_ranges(gc->protect_range, malloc_dirty_pages(gc, APAGE_SIZE, APAGE_SIZE), APAGE_SIZE);
+    init_type_tags_worker(NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, custbox);
   }
   else {
-    GCPRINT(GCOUTF, "HEY WHATS UP.\n");
+    GCPRINT(GCOUTF, "GC_init_type_tags should only be called once!\n");
+    abort();
+  }
+}
+
+void GC_construct_child_gc() {
+    NewGC *gc = MASTERGC;
+    NewGC *newgc = init_type_tags_worker(gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
+    newgc->primoridal_gc = MASTERGC;
+}
+
+void GC_switch_out_master_gc() {
+  static int initialized = 0;
+
+  if(!initialized) {
+    initialized = 1;
+    MASTERGC = GC_get_GC();
+    GC_construct_child_gc();
+  }
+  else {
+    GCPRINT(GCOUTF, "GC_switch_out_master_gc should only be called once!\n");
     abort();
   }
 }

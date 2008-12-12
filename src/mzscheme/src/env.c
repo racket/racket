@@ -325,6 +325,10 @@ Scheme_Env *scheme_engine_instance_init() {
 #ifndef MZ_PRECISE_GC
   scheme_init_ephemerons();
 #endif
+
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_switch_out_master_gc();
+#endif
   
   place_instance_init_pre_kernel(stack_base);
   make_kernel_env();
