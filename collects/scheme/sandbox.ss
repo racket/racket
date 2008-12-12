@@ -21,7 +21,9 @@
          sandbox-network-guard
          sandbox-make-inspector
          sandbox-make-logger
+         sandbox-memory-limit
          sandbox-eval-limits
+         evaluator-alive?
          kill-evaluator
          break-evaluator
          set-eval-limits
@@ -52,6 +54,7 @@
 (define sandbox-output       (make-parameter #f))
 (define sandbox-error-output
   (make-parameter (lambda () (dup-output-port (current-error-port)))))
+(define sandbox-memory-limit (make-parameter 20))       ; 30mb total
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
@@ -465,6 +468,7 @@
        (let ([evmsg (make-evaluator-message msg '())])
          (lambda (evaluator) (evaluator evmsg))))]))
 
+(define-evaluator-messenger evaluator-alive? 'alive?)
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
 (define-evaluator-messenger (set-eval-limits secs mb) 'limits)
@@ -477,6 +481,7 @@
 (define (make-evaluator* init-hook allow program-maker)
   (define orig-cust     (current-custodian))
   (define user-cust     (make-custodian orig-cust))
+  (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -569,6 +574,9 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
+          [(alive?) (and (custodian-box-value user-cust-box)
+                         user-thread
+                         (not (thread-dead? user-thread)))]
           [(kill)   (user-kill)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
@@ -599,6 +607,10 @@
                   (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
+  ;; set global memory limit
+  (when (sandbox-memory-limit)
+    (custodian-limit-memory
+     user-cust (* (sandbox-memory-limit) 1024 1024) user-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [current-custodian user-cust]

@@ -176,8 +176,11 @@ environment:
  @item{The evaluator works under the @scheme[sandbox-security-guard],
        which restricts file system and network access.}
 
- @item{Each evaluation is wrapped in a @scheme[call-with-limits]; see
-       also @scheme[sandbox-eval-limits] and @scheme[set-eval-limits].}
+ @item{The evaluator is contained in a memory-restricted environment,
+       and each evaluation is wrapped in a @scheme[call-with-limits]
+       (when memory accounting is available); see also
+       @scheme[sandbox-memory-limit], @scheme[sandbox-eval-limits] and
+       @scheme[set-eval-limits].}
 ]
 Note that these limits apply to the creation of the sandbox
 environment too --- so, for example, if the memory that is required to
@@ -466,6 +469,15 @@ default @scheme[sandbox-security-guard].  The default forbids all
 network connection.}
 
 
+@defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{
+
+A parameter that determines the total memory limit on the sandbox.
+When this limit is exceeded, the sandbox is terminated.  This value is
+used when the sandbox is created and the limit cannot be changed
+afterwards.  See @scheme[sandbox-eval-limits] for per-evaluation
+limits and a description of how the two limits work together.}
+
+
 @defparam[sandbox-eval-limits limits
           (or/c (list/c (or/c exact-nonnegative-integer? #f)
                         (or/c exact-nonnegative-integer? #f))
@@ -473,12 +485,13 @@ network connection.}
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
-of the input program.  Its value should be a list of two numbers, the
-first is a timeout value in seconds, and the second is a memory limit
-in megabytes.  Either one can be @scheme[#f] for disabling the
-corresponding limit; alternately, the parameter can be set to
-@scheme[#f] to disable all limits (useful in case more limit kinds are
-available in future versions). The default is @scheme[(list 30 20)].
+of the input program.  Its value should be a list of two numbers;
+where the first is a timeout value in seconds, and the second is a
+memory limit in megabytes.  Either one can be @scheme[#f] for
+disabling the corresponding limit; alternately, the parameter can be
+set to @scheme[#f] to disable all per-evaluation limits (useful in
+case more limit kinds are available in future versions). The default
+is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
@@ -488,7 +501,45 @@ you need to catch errors that happen when the sandbox is created.
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
 results in an exception.  Change the limits of a running evaluator
-using @scheme[set-eval-limits].}
+using @scheme[set-eval-limits].
+
+@margin-note{A custodian's limit is checked only after a garbage
+             collection, except that it may also be checked during
+             certain large allocations that are individually larger
+             than the custodian's limit.}
+
+The memory limit that is specified by this parameter applies to each
+individual evaluation, but not to the whole sandbox --- that limit is
+specified via @scheme[sandbox-memory-limit].  When the global limit is
+exceeded, the sandbox is terminated, but when the per-evaluation limit
+is exceeded the @exnraise[exn:fail:resource].  For example, say that
+you evaluate an expression like
+@schemeblock[
+  (for ([i (in-range 1000)])
+    (set! a (cons (make-bytes 1000000) a))
+    (collect-garbage))
+]
+then, assuming sufficiently small limits,
+@itemize[
+
+ @item{if a global limit is set but no per-evaluation limit, the
+       sandbox will eventually be terminated and no further
+       evaluations possible;}
+
+ @item{if there is a per-evaluation limit, but no global limit, the
+       evaluation will abort with an error and it can be used again
+       --- specifically, @scheme[a] will still hold a number of
+       blocks, and you can evaluate the same expression again which
+       will add more blocks to it;}
+
+  @item{if both limits are set, with the global one larger than the
+        per-evaluation limit, then the evaluation will abort and you
+        will be able to repeat it, but doing so several times will
+        eventually terminate the sandbox (this will be indicated by
+        the error message, and by the @scheme[evaluator-alive?]
+        predicate).}
+
+]}
 
 
 @defparam[sandbox-make-inspector make (-> inspector?)]{
@@ -509,6 +560,12 @@ evaluator, and the default parameter value is @scheme[current-logger].}
 
 The following functions are used to interact with a sandboxed
 evaluator in addition to using it to evaluate code.
+
+
+@defproc[(evaluator-alive? [evaluator (any/c . -> . any)]) boolean?]{
+
+Determines whether the evaluator is still alive.}
+
 
 @defproc[(kill-evaluator [evaluator (any/c . -> . any)]) void?]{
 
