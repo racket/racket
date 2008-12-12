@@ -161,7 +161,7 @@ $(XSRCDIR)/complex.c: ../src/complex.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/complex.c $(SRCDIR)/complex.c
 $(XSRCDIR)/dynext.c: ../src/dynext.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/dynext.c $(SRCDIR)/dynext.c
-$(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/env.c: ../src/env.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/env.c $(SRCDIR)/env.c
 $(XSRCDIR)/error.c: ../src/error.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/error.c $(SRCDIR)/error.c
@@ -175,7 +175,7 @@ $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
-$(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/module.c $(SRCDIR)/module.c
 $(XSRCDIR)/list.c: ../src/list.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/list.c $(SRCDIR)/list.c
@@ -189,7 +189,7 @@ $(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
 $(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
-$(XSRCDIR)/places.c: ../src/places.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/places.c: ../src/places.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/places.c $(SRCDIR)/places.c
 $(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
@@ -213,7 +213,7 @@ $(XSRCDIR)/struct.c: ../src/struct.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
 $(XSRCDIR)/stxobj.c: ../src/stxobj.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/stxobj.c $(SRCDIR)/stxobj.c
-$(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP)
+$(XSRCDIR)/symbol.c: ../src/symbol.@LTO@ $(XFORMDEP) $(SRCDIR)/mzrt.h
 	$(XFORM) $(XSRCDIR)/symbol.c $(SRCDIR)/symbol.c
 $(XSRCDIR)/syntax.c: ../src/syntax.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/syntax.c $(SRCDIR)/syntax.c
@@ -260,7 +260,7 @@ list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
-mzrt.@LTO@: $(SRCDIR)/mzrt.c
+mzrt.@LTO@: $(SRCDIR)/mzrt.c $(SRCDIR)/mzrt.h
 	$(CC) $(CFLAGS) -DMZ_PRECISE_GC -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
