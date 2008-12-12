@@ -3088,6 +3088,7 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
+Scheme_Object *scheme_intern_exact_symbol_in_table_worker(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len);
 Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, unsigned int len);
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);
@@ -3119,6 +3120,15 @@ Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *
 /*                           places                                       */
 /*========================================================================*/
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+typedef struct Scheme_Symbol_Parts {
+  Scheme_Hash_Table *table;
+  int kind;
+  unsigned int len;
+  const char *name;
+} Scheme_Symbol_Parts;
+#endif
+
 typedef struct Scheme_Place {
   Scheme_Object so;
   void *proc_thread;
@@ -3126,6 +3136,7 @@ typedef struct Scheme_Place {
 
 Scheme_Env *scheme_place_instance_init();
 void spawn_master_scheme_place();
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 
 /*========================================================================*/
 /*                           engine                                       */

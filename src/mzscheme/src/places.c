@@ -168,9 +168,27 @@ static void load_namespace_utf8(Scheme_Object *namespace_name) {
   p->error_buf = saved_error_buf;
 }
 
-static Scheme_Object *places_deep_copy(Scheme_Object *so)
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
 {
-  return so;
+  Scheme_Object *new_so = so;
+  switch (so->type) {
+    case scheme_unix_path_type:
+      new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
+      break;
+    case scheme_symbol_type:
+      {
+        Scheme_Symbol *sym = (Scheme_Symbol *)so;
+        new_so = scheme_intern_exact_symbol(sym->s, sym->len);
+      }
+      break;
+    case scheme_resolved_module_path_type:
+      abort();
+      break;
+    default:
+      abort();
+      break;
+  }
+  return new_so;
 }
 
 static void *place_start_proc(void *data_arg) {
@@ -207,11 +225,11 @@ static void *place_start_proc(void *data_arg) {
     stack_base = NULL;
   } else {
     Scheme_Object *place_main;
-    a[0] = places_deep_copy(place_data->module);
+    a[0] = scheme_places_deep_copy(place_data->module);
     a[1] = place_main_symbol;
     place_main = scheme_dynamic_require(2, a);
 
-    a[0] = places_deep_copy(place_data->channel);
+    a[0] = scheme_places_deep_copy(place_data->channel);
     scheme_apply(place_main, 1, a);
   }
 
@@ -219,6 +237,7 @@ static void *place_start_proc(void *data_arg) {
 }
 
 #ifdef MZ_PRECISE_GC
+
 static void *master_scheme_place(void *data) {
   GC_switch_in_master_gc();
   while(1) {
@@ -226,14 +245,22 @@ static void *master_scheme_place(void *data) {
     void *recv_payload;
     pt_mbox *origin;
     Scheme_Object *o;
+    Scheme_Object *copied_o;
 
     pt_mbox_recv(scheme_master_proc_thread->mbox, &recv_type, &recv_payload, &origin);
     switch(recv_type) {
       case 1:
-        o = scheme_intern_resolved_module_path_worker((Scheme_Object *)recv_payload);
+        copied_o = scheme_places_deep_copy((Scheme_Object *)recv_payload);
+        o = scheme_intern_resolved_module_path_worker(copied_o);
         pt_mbox_send(origin, 2, (void *) o, NULL);
         break;
       case 3:
+        {
+          Scheme_Symbol_Parts *parts;
+          parts = (Scheme_Symbol_Parts *) recv_payload;
+          o = (Scheme_Object *)scheme_intern_exact_symbol_in_table_worker(parts->table, parts->kind, parts->name, parts->len);
+          pt_mbox_send(origin, 4, (void *) o, NULL);
+        }
         break;
       case 5:
         break;
