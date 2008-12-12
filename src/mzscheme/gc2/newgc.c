@@ -1407,9 +1407,8 @@ void GC_register_new_thread(void *t, void *c)
 /* administration / initialization                                           */
 /*****************************************************************************/
 
-static int designate_modified(void *p)
+static int designate_modified_gc(NewGC *gc, void *p)
 {
-  NewGC *gc = GC_get_GC();
   struct mpage *page = pagemap_find_page(gc->page_maps, p);
 
   if (gc->no_further_modifications) {
@@ -1425,10 +1424,19 @@ static int designate_modified(void *p)
       return 1;
     }
   } else {
+    if (gc->primoridal_gc) {
+      return designate_modified_gc(gc->primoridal_gc, p);
+    }
     GCPRINT(GCOUTF, "Seg fault (internal error) at %p\n", p);
   }
   return 0;
 }
+
+static int designate_modified(void *p) {
+  NewGC *gc = GC_get_GC();
+  return designate_modified_gc(gc, p);
+}
+
 
 void GC_write_barrier(void *p) 
 {
