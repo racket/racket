@@ -5,7 +5,8 @@
          "interfaces.ss"
          "../util/notify.ss"
          "../util/misc.ss")
-(provide syntax-prefs-base%
+(provide prefs-base%
+         syntax-prefs-base%
          syntax-prefs%
          syntax-prefs/readonly%)
 
@@ -19,7 +20,7 @@
 (pref:get/set pref:props-percentage SyntaxBrowser:PropertiesPanelPercentage)
 (pref:get/set pref:props-shown? SyntaxBrowser:PropertiesPanelShown)
 
-(define syntax-prefs-base%
+(define prefs-base%
   (class object%
     ;; columns : number
     (field/notify columns (new notify-box% (value 60)))
@@ -41,6 +42,10 @@
                     "indigo" "purple" 
                     "orange" "salmon" "darkgoldenrod" "olive"))))
 
+    (super-new)))
+
+(define syntax-prefs-base%
+  (class prefs-base%
     ;; width, height : number
     (notify-methods width)
     (notify-methods height)
