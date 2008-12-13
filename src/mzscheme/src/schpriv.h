@@ -1863,8 +1863,7 @@ typedef struct Resolve_Prefix
   int num_toplevels, num_stxes, num_lifts;
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
-  int delay_refcount;
-  struct Scheme_Load_Delay *delay_info;
+  Scheme_Object *delay_info_rpair; /* (rcons refcount Scheme_Load_Delay*) */
 } Resolve_Prefix;
 
 typedef struct Resolve_Info
@@ -2393,6 +2392,11 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   Scheme_Object *src_modix, Scheme_Object *now_modix,
 				   int src_phase, int now_phase);
 void scheme_pop_prefix(Scheme_Object **rs);
+
+Scheme_Object *scheme_eval_clone(Scheme_Object *expr);
+Resolve_Prefix *scheme_prefix_eval_clone(Resolve_Prefix *rp);
+Scheme_Object *scheme_module_eval_clone(Scheme_Object *data);
+Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *form);
 
 Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env);
 Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy);

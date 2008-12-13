@@ -870,7 +870,7 @@ resolve_prefix_val {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
-  gcMARK(rp->delay_info);
+  gcMARK(rp->delay_info_rpair);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));

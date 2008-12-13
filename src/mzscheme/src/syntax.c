@@ -5294,29 +5294,44 @@ define_for_syntaxes_execute(Scheme_Object *form)
   return do_define_syntaxes_execute(form, NULL, 1);
 }
 
-static Scheme_Object *do_define_syntaxes_jit(Scheme_Object *expr)
+static Scheme_Object *do_define_syntaxes_jit(Scheme_Object *expr, int jit)
 {
-  Scheme_Object *naya;
+  Resolve_Prefix *rp, *orig_rp;
+  Scheme_Object *naya, *rhs;
   
-  naya = scheme_jit_expr(SCHEME_VEC_ELS(expr)[0]);
+  rhs = SCHEME_VEC_ELS(expr)[0];
+  if (jit)
+    naya = scheme_jit_expr(rhs);
+  else
+    naya = rhs;
+
+  orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(expr)[1];
+  rp = scheme_prefix_eval_clone(orig_rp);
   
-  if (SAME_OBJ(naya, expr))
+  if (SAME_OBJ(naya, rhs)
+      && SAME_OBJ(orig_rp, rp))
     return expr;
   else {
     expr = clone_vector(expr, 0);
     SCHEME_VEC_ELS(expr)[0] = naya;
+    SCHEME_VEC_ELS(expr)[1] = (Scheme_Object *)rp;
     return expr;
   }
 }
 
 static Scheme_Object *define_syntaxes_jit(Scheme_Object *expr)
 {
-  return do_define_syntaxes_jit(expr);
+  return do_define_syntaxes_jit(expr, 1);
 }
 
 static Scheme_Object *define_for_syntaxes_jit(Scheme_Object *expr)
 {
-  return do_define_syntaxes_jit(expr);
+  return do_define_syntaxes_jit(expr, 1);
+}
+
+Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *expr)
+{
+  return do_define_syntaxes_jit(expr, 0);
 }
 
 static void do_define_syntaxes_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -5611,10 +5626,9 @@ define_for_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Exp
 Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env)
 { 
   /* Get a prefixed-based accessor for a dummy top-level bucket. It's
-     used to "link" to the right environment at run time. The `begin'
-     symbol is arbitrary; the top-level/prefix support handles a symbol
-     as a "toplevel" specially. */
-  return scheme_register_toplevel_in_prefix(begin_symbol, env, NULL, 0);
+     used to "link" to the right environment at run time. The #f as
+     a toplevel is handled in the prefix linker specially. */
+  return scheme_register_toplevel_in_prefix(scheme_false, env, NULL, 0);
 }
 
 Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy)

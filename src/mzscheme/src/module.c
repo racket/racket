@@ -3942,6 +3942,9 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
     for_stx = SCHEME_TRUEP(SCHEME_VEC_ELS(e)[4]);
     e = SCHEME_VEC_ELS(e)[1];
       
+    if (SCHEME_SYMBOLP(names))
+      names = scheme_make_pair(names, scheme_null);
+
     eval_exptime(names, scheme_list_length(names), e, exp_env, rhs_env,
                  rp, let_depth, 1, (for_stx ? for_stx_globals : syntax), for_stx,
                  NULL);
@@ -4602,7 +4605,7 @@ module_execute(Scheme_Object *data)
   return scheme_void;
 }
 
-static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec)
+static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
 {
   Scheme_Object *vec2;
   int i;
@@ -4613,23 +4616,35 @@ static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec)
     SCHEME_VEC_ELS(vec2)[i] = SCHEME_VEC_ELS(vec)[i];
   }
   SCHEME_VEC_ELS(vec2)[1] = naya;
+  SCHEME_VEC_ELS(vec2)[3] = (Scheme_Object *)rp;
 
   return vec2;
 }
 
-static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
+static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec, int jit)
 {
   Scheme_Object *orig, *naya = NULL;
+  Resolve_Prefix *orig_rp, *rp;
   int i, cnt;
 
   cnt = SCHEME_VEC_SIZE(orig_l);
   for (i = 0; i < cnt; i++) {
     orig = SCHEME_VEC_ELS(orig_l)[i];
-    if (in_vec)
+    if (in_vec) {
+      orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(orig)[3];
+      rp = scheme_prefix_eval_clone(orig_rp);
       orig = SCHEME_VEC_ELS(orig)[1];
+    } else {
+      orig_rp = rp = NULL;
+    }
 
-    naya = scheme_jit_expr(orig);
-    if (!SAME_OBJ(orig, naya))
+    if (jit)
+      naya = scheme_jit_expr(orig);
+    else
+      naya = orig;
+
+    if (!SAME_OBJ(orig, naya)
+        || !SAME_OBJ(orig_rp, rp))
       break;
   }
 
@@ -4641,16 +4656,27 @@ static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
       SCHEME_VEC_ELS(new_l)[j] = SCHEME_VEC_ELS(orig_l)[j];
     }
     if (in_vec)
-      naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i]);
+      naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i], rp);
     SCHEME_VEC_ELS(new_l)[i] = naya;
     for (i++; i < cnt; i++) {
       orig = SCHEME_VEC_ELS(orig_l)[i];
-      if (in_vec)
-        orig = SCHEME_VEC_ELS(orig)[1];
-      naya = scheme_jit_expr(orig);
       if (in_vec) {
-	if (!SAME_OBJ(orig, naya))
-	  naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i]);
+        orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(orig)[3];
+        rp = scheme_prefix_eval_clone(orig_rp);
+        orig = SCHEME_VEC_ELS(orig)[1];        
+      } else {
+        orig_rp = rp = NULL;
+      }
+
+      if (jit)
+        naya = scheme_jit_expr(orig);
+      else
+        naya = orig;
+
+      if (in_vec) {
+	if (!SAME_OBJ(orig, naya)
+            || !SAME_OBJ(rp, orig_rp))
+	  naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i], rp);
 	else
 	  naya = SCHEME_VEC_ELS(orig_l)[i];
       }
@@ -4661,23 +4687,42 @@ static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
     return orig_l;
 }
 
-static Scheme_Object *module_jit(Scheme_Object *data)
+static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *l1, *l2;
+  Resolve_Prefix *rp;
+  
+  rp = scheme_prefix_eval_clone(m->prefix);
 
-  l1 = jit_vector(m->body, 0);
-  l2 = jit_vector(m->et_body, 1);
+  if (jit)
+    l1 = jit_vector(m->body, 0, jit);
+  else
+    l1 = m->body;
+  l2 = jit_vector(m->et_body, 1, jit);
 
-  if (SAME_OBJ(l1, m->body) && SAME_OBJ(l2, m->body))
+  if (SAME_OBJ(l1, m->body) 
+      && SAME_OBJ(l2, m->body)
+      && SAME_OBJ(rp, m->prefix))
     return data;
   
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
   m->body = l1;
   m->et_body = l2;
+  m->prefix = rp;
 
   return (Scheme_Object *)m;
+}
+
+static Scheme_Object *module_jit(Scheme_Object *data)
+{
+  return do_module_clone(data, 1);
+}
+
+Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
+{
+  return do_module_clone(data, 0);
 }
 
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -6115,7 +6160,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add code with names and lexical depth to exp-time body: */
 	  vec = scheme_make_vector(5, NULL);
-	  SCHEME_VEC_ELS(vec)[0] = names;
+	  SCHEME_VEC_ELS(vec)[0] = ((SCHEME_PAIRP(names) && SCHEME_NULLP(SCHEME_CDR(names)))
+                                    ? SCHEME_CAR(names)
+                                    : names);
 	  SCHEME_VEC_ELS(vec)[1] = m;
 	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(ri->max_let_depth);
 	  SCHEME_VEC_ELS(vec)[3] = (Scheme_Object *)rp;
@@ -6125,6 +6172,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           m = scheme_sfs(m, NULL, ri->max_let_depth);
 	  if (ri->use_jit)
 	    m = scheme_jit_expr(m);
+          rp = scheme_prefix_eval_clone(rp);
 	
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, ri->max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,

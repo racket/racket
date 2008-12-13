@@ -103,7 +103,7 @@ Represents an element.}
 
 Returns @scheme[#t] if @scheme[v] is a @scheme[pcdata] instance,
 @scheme[element] instance, an @scheme[entity] instance,
-@scheme[comment], or @scheme[pcdata] instance.}
+@scheme[comment], or @scheme[cdata] instance.}
 
 @defstruct[(attribute source) ([name symbol?] [value string?])]{
 

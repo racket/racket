@@ -198,7 +198,8 @@ Removes @scheme[card] from the table.}
 @defmethod[(move-cards [cards (listof (is-a?/c card<%>))]
                        [x real?]
                        [y real?]
-                       [offset-proc (exact-nonnegative-integer? . -> . (values real? real?))
+                       [offset-proc (exact-nonnegative-integer? 
+                                     . -> . (values real? real?))
                                     (lambda (i) (values 0 0))])
             void?]{
 

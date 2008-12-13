@@ -2191,7 +2191,7 @@ static int resolve_prefix_val_MARK(void *p) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
-  gcMARK(rp->delay_info);
+  gcMARK(rp->delay_info_rpair);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2201,7 +2201,7 @@ static int resolve_prefix_val_FIXUP(void *p) {
   Resolve_Prefix *rp = (Resolve_Prefix *)p;
   gcFIXUP(rp->toplevels);
   gcFIXUP(rp->stxes);
-  gcFIXUP(rp->delay_info);
+  gcFIXUP(rp->delay_info_rpair);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));

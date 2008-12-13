@@ -123,6 +123,8 @@ static Scheme_Object *write_toplevel(Scheme_Object *obj);
 static Scheme_Object *read_toplevel(Scheme_Object *obj);
 static Scheme_Object *write_variable(Scheme_Object *obj);
 static Scheme_Object *read_variable(Scheme_Object *obj);
+static Scheme_Object *write_module_variable(Scheme_Object *obj);
+static Scheme_Object *read_module_variable(Scheme_Object *obj);
 static Scheme_Object *write_local(Scheme_Object *obj);
 static Scheme_Object *read_local(Scheme_Object *obj);
 static Scheme_Object *read_local_unbox(Scheme_Object *obj);
@@ -561,8 +563,8 @@ static void make_kernel_env(void)
   scheme_install_type_reader(scheme_toplevel_type, read_toplevel);
   scheme_install_type_writer(scheme_variable_type, write_variable);
   scheme_install_type_reader(scheme_variable_type, read_variable);
-  scheme_install_type_writer(scheme_module_variable_type, write_variable);
-  scheme_install_type_reader(scheme_module_variable_type, read_variable);
+  scheme_install_type_writer(scheme_module_variable_type, write_module_variable);
+  scheme_install_type_reader(scheme_module_variable_type, read_module_variable);
   scheme_install_type_writer(scheme_local_type, write_local);
   scheme_install_type_reader(scheme_local_type, read_local);
   scheme_install_type_writer(scheme_local_unbox_type, write_local);
@@ -3319,7 +3321,7 @@ void scheme_optimize_info_done(Optimize_Info *info)
 Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
 {
   Resolve_Prefix *rp;
-  Scheme_Object **tls, **stxes, *simplify_cache;
+  Scheme_Object **tls, **stxes, *simplify_cache, *m;
   Scheme_Hash_Table *ht;
   int i;
 
@@ -3344,7 +3346,15 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
   if (ht) {
     for (i = 0; i < ht->size; i++) {
       if (ht->vals[i]) {
-	tls[SCHEME_TOPLEVEL_POS(ht->vals[i])] = ht->keys[i];
+        m = ht->keys[i];
+        if (SAME_TYPE(SCHEME_TYPE(m), scheme_module_variable_type)) {
+          if (SCHEME_FALSEP(((Scheme_Modidx *)((Module_Variable *)m)->modidx)->base)
+              && SCHEME_FALSEP(((Scheme_Modidx *)((Module_Variable *)m)->modidx)->path)) {
+            /* Reduce self-referece to just a symbol: */
+            m = ((Module_Variable *)m)->sym;
+          }
+        }
+	tls[SCHEME_TOPLEVEL_POS(ht->vals[i])] = m;
       }
     }
   }
@@ -4941,90 +4951,52 @@ static Scheme_Object *read_toplevel(Scheme_Object *obj)
 }
 
 static Scheme_Object *write_variable(Scheme_Object *obj)
-  /* WARNING: phase-0 module variables and #%kernel references
-     are handled in print.c, instead */
+  /* #%kernel references are handled in print.c, instead */
 {
-  if (SAME_TYPE(scheme_variable_type, SCHEME_TYPE(obj))) {
-    Scheme_Object *sym;
-    Scheme_Env *home;
-    Scheme_Module *m;
+  Scheme_Object *sym;
+  Scheme_Env *home;
+  Scheme_Module *m;
     
-    sym = (Scheme_Object *)(SCHEME_VAR_BUCKET(obj))->key;
+  sym = (Scheme_Object *)(SCHEME_VAR_BUCKET(obj))->key;
     
-    home = ((Scheme_Bucket_With_Home *)obj)->home;
-    m = home->module;
+  home = ((Scheme_Bucket_With_Home *)obj)->home;
+  m = home->module;
     
-    /* If we get a writeable variable (instead of a module variable),
-       it must be a reference to a module referenced directly by its
-       a symbolic name (i.e., no path). */
+  /* If we get a writeable variable (instead of a module variable),
+     it must be a reference to a module referenced directly by its
+     a symbolic name (i.e., no path). */
     
-    if (m) {
-      sym = scheme_make_pair(m->modname, sym);
-      if (home->mod_phase)
-	sym = scheme_make_pair(scheme_make_integer(home->mod_phase), sym);
-    }
-
-    return sym;
-  } else {
-    Module_Variable *mv = (Module_Variable *)obj;
-
-    return scheme_make_pair(scheme_make_integer(mv->mod_phase),
-			    scheme_make_pair(mv->modidx,
-					     mv->sym));
+  if (m) {
+    sym = scheme_make_pair(m->modname, sym);
+    if (home->mod_phase)
+      sym = scheme_make_pair(scheme_make_integer(home->mod_phase), sym);
   }
+
+  return sym;
 }
 
 static Scheme_Object *read_variable(Scheme_Object *obj)
-  /* WARNING: phase-0 module variables and #%kernel references
-     are handled in read.c, instead */
+  /* #%kernel references are handled in read.c, instead */
 {
   Scheme_Env *env;
 
   env = scheme_get_env(NULL);
 
-  if (!SCHEME_SYMBOLP(obj)) {
-    /* Find variable from module. */
-    Scheme_Object *modname, *varname;
-    int mod_phase = 0;
-
-    if (!SCHEME_PAIRP(obj)) return NULL;
-
-    modname = SCHEME_CAR(obj);
-    
-    if (SCHEME_INTP(modname)) {
-      mod_phase = SCHEME_INT_VAL(modname);
-      if (mod_phase != 1) return NULL;
-
-      obj = SCHEME_CDR(obj);
-
-      if (!SCHEME_PAIRP(obj)) return NULL;
-      modname = SCHEME_CAR(obj);
-    }
-
-    varname = SCHEME_CDR(obj);
-
-    if (SAME_OBJ(modname, kernel_symbol) && !mod_phase) {
-      return (Scheme_Object *)scheme_global_bucket(varname, scheme_get_kernel_env());
-    } else {
-      Module_Variable *mv;
-      Scheme_Object *insp;
-
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-      
-      mv = MALLOC_ONE_TAGGED(Module_Variable);
-      mv->so.type = scheme_module_variable_type;
-      
-      mv->modidx = modname;
-      mv->sym = varname;
-      mv->insp = insp;
-      mv->pos = -1;
-      mv->mod_phase = mod_phase;
-
-      return (Scheme_Object *)mv;
-    }
-  }
+  if (!SCHEME_SYMBOLP(obj)) return NULL;
 
   return (Scheme_Object *)scheme_global_bucket(obj, env);
+}
+
+static Scheme_Object *write_module_variable(Scheme_Object *obj)
+{
+  scheme_signal_error("module variables should have been handled in print.c");
+  return NULL;
+}
+
+static Scheme_Object *read_module_variable(Scheme_Object *obj)
+{
+  scheme_signal_error("module variables should have been handled in read.c");
+  return NULL;
 }
 
 static Scheme_Object *write_local(Scheme_Object *obj)
@@ -5128,9 +5100,16 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
     if (SCHEME_FALSEP(stx)) {
       stx = NULL;
     } else if (SCHEME_RPAIRP(stx)) {
-      rp->delay_info = (struct Scheme_Load_Delay *)SCHEME_CDR(stx);
-      rp->delay_refcount++;
+      struct Scheme_Load_Delay *d;
+      Scheme_Object *pr;
+      d = (struct Scheme_Load_Delay *)SCHEME_CDR(stx);
       stx = SCHEME_CAR(stx);
+      pr = rp->delay_info_rpair;
+      if (!pr) {
+        pr = scheme_make_raw_pair(scheme_make_integer(0), (Scheme_Object *)d);
+        rp->delay_info_rpair = pr;
+      }
+      SCHEME_CAR(pr) = scheme_make_integer(SCHEME_INT_VAL(SCHEME_CAR(pr)) + 1);
     } else {
       if (!SCHEME_STXP(stx)) return NULL;
     }

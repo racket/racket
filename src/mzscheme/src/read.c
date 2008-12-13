@@ -4357,7 +4357,7 @@ static Scheme_Object *read_compact_svector(CPort *port, int l)
   return o;
 }
 
-static int cpt_branch[256];
+static unsigned char cpt_branch[256];
 
 static Scheme_Object *read_compact(CPort *port, int use_stack);
 
@@ -4377,8 +4377,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
   unsigned int l;
   char *s, buffer[BLK_BUF_SIZE];
   int ch;
-  int need_car = 0, proper = 0;
-  Scheme_Object *v, *first = NULL, *last = NULL;
+  Scheme_Object *v;
 
 #ifdef DO_STACK_CHECK
   {
@@ -4392,7 +4391,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
   }
 #endif
 
-  while (1) {
+  {
     ZO_CHECK(port->pos < port->size);
     ch = CP_GETC(port);
 
@@ -4530,30 +4529,22 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       SCHEME_SET_IMMUTABLE(v);
       break;
     case CPT_PAIR:
-      if (need_car) {
+      {
 	Scheme_Object *car, *cdr;
 	car = read_compact(port, 0);
 	cdr = read_compact(port, 0);
 	v = scheme_make_pair(car, cdr);
-      } else {
-	need_car = 1;
-	continue;
       }
       break;
     case CPT_LIST:
       l = read_compact_number(port);
-      if (need_car) {
-	if (l == 1) {
-	  Scheme_Object *car, *cdr;
-	  car = read_compact(port, 0);
-	  cdr = read_compact(port, 0);
-	  v = scheme_make_pair(car, cdr);
-	} else
-	  v = read_compact_list(l, 0, 0, port);
-      } else {
-	need_car = l;
-	continue;
-      }
+      if (l == 1) {
+        Scheme_Object *car, *cdr;
+        car = read_compact(port, 0);
+        cdr = read_compact(port, 0);
+        v = scheme_make_pair(car, cdr);
+      } else
+        v = read_compact_list(l, 0, 0, port);
       break;
     case CPT_VECTOR:
       {
@@ -4761,7 +4752,12 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	mv->modidx = mod;
 	mv->insp = port->insp;
 	mv->sym = var;
-	mv->pos = pos;
+        if (pos == -2) {
+          mv->mod_phase = 1;
+          pos = read_compact_number(port);
+          mv->pos = pos;
+        } else
+          mv->pos = pos;
 
 	v = (Scheme_Object *)mv;
       }
@@ -4887,21 +4883,15 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       {
 	int ppr = CPT_BETWEEN(ch, SMALL_PROPER_LIST);
 	l = ch - (ppr ? CPT_SMALL_PROPER_LIST_START : CPT_SMALL_LIST_START);
-      	if (need_car) {
-	  if (l == 1) {
-	    Scheme_Object *car, *cdr;
-	    car = read_compact(port, 0);
-	    cdr = (ppr
-		   ? scheme_null
-		   : read_compact(port, 0));
-	    v = scheme_make_pair(car, cdr);
-	  } else
-	    v = read_compact_list(l, ppr, /* use_stack */ 0, port);
-	} else {
-	  proper = ppr;
-	  need_car = l;
-	  continue;
-	}
+      	if (l == 1) {
+          Scheme_Object *car, *cdr;
+          car = read_compact(port, 0);
+          cdr = (ppr
+                 ? scheme_null
+                 : read_compact(port, 0));
+          v = scheme_make_pair(car, cdr);
+        } else
+          v = read_compact_list(l, ppr, /* use_stack */ 0, port);
       }
       break;
     case CPT_SMALL_APPLICATION_START:
@@ -4975,28 +4965,9 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 
     if (!v)
       scheme_ill_formed_code(port);
-
-    if (need_car) {
-      Scheme_Object *pair;
-
-      pair = scheme_make_pair(v, scheme_null);
-
-      if (last)
-	SCHEME_CDR(last) = pair;
-      else
-	first = pair;
-      last = pair;
-      --need_car;
-      if (!need_car && proper)
-	break;
-    } else {
-      if (last)
-	SCHEME_CDR(last) = v;
-      break;
-    }
   }
 
-  return first ? first : v;
+  return v;
 }
 
 static Scheme_Object *read_compact_list(int c, int proper, int use_stack, CPort *port)

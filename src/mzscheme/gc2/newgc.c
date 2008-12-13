@@ -934,7 +934,7 @@ static void backtrace_new_page(NewGC *gc, mpage *page)
 
 static void free_backtrace(struct mpage *page)
 {
-  free_pages(page->backtrace, APAGE_SIZE);
+  free_pages(GC, page->backtrace, APAGE_SIZE);
 }
 
 static void *bt_source;
@@ -1590,6 +1590,11 @@ void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark,
   mark_tag = BTC_get_redirect_tag(gc, mark_tag);
 #endif
 
+#if MZ_GC_BACKTRACE
+  /* Keep tagged objects in tagged space: */
+  atomic = 0;
+#endif
+
   gc->mark_table[mark_tag]  = atomic ? (Mark_Proc)PAGE_ATOMIC : mark;
   gc->fixup_table[tag]      = fixup;
 }
@@ -2145,7 +2150,7 @@ static void mark_backpointers(NewGC *gc)
           pagemap_add(pagemap, work);
           if(work->big_page) {
             work->big_page = 2;
-            push_ptr(PPTR(NUM(work->addr) + PREFIX_SIZE));
+            push_ptr(PPTR(NUM(work->addr) + PREFIX_SIZE + sizeof(struct objhead)));
           } else {
             if(work->page_type != PAGE_ATOMIC) {
               void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
