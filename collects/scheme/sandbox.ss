@@ -670,7 +670,7 @@
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
   ;; set global memory limit
-  (when (sandbox-memory-limit)
+  (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory
      memory-cust (* (sandbox-memory-limit) 1024 1024) memory-cust))
   (parameterize* ; the order in these matters

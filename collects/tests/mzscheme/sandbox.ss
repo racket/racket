@@ -146,12 +146,13 @@
    (set! ev (parameterize ([sandbox-eval-limits '(0.25 5)])
               (make-evaluator 'scheme/base '(sleep 2))))
    =err> "out of time"
-   (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
-              (make-evaluator 'scheme/base
-                              '(define a (for/list ([i (in-range 10)])
-                                           (collect-garbage)
-                                           (make-string 1000))))))
-   =err> "out of memory"
+   (when (custodian-memory-accounting-available?)
+     (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
+                (make-evaluator 'scheme/base
+                                '(define a (for/list ([i (in-range 10)])
+                                             (collect-garbage)
+                                             (make-string 1000))))))
+     (t --top-- =err> "out of memory"))
 
    ;; i/o
    --top--
@@ -456,17 +457,19 @@
 
    ;; when an expression is out of memory, the sandbox should stay alive
    --top--
-   (set! ev (parameterize ([sandbox-eval-limits '(2 5)]
-                           [sandbox-memory-limit 100])
-              (make-evaluator 'scheme/base)))
-   --eval--
-   (define a '())
-   (define b 1)
-   (for ([i (in-range 20)])
-     (set! a (cons (make-bytes 500000) a))
-     (collect-garbage))
-   =err> "out of memory"
-   b => 1
+   (when (custodian-memory-accounting-available?)
+     (t --top--
+        (set! ev (parameterize ([sandbox-eval-limits '(2 5)]
+                                [sandbox-memory-limit 100])
+                   (make-evaluator 'scheme/base)))
+        --eval--
+        (define a '())
+        (define b 1)
+        (for ([i (in-range 20)])
+          (set! a (cons (make-bytes 500000) a))
+          (collect-garbage))
+        =err> "out of memory"
+        b => 1))
 
    ))
 
