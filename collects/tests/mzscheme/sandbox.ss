@@ -137,6 +137,18 @@
    x =err> "terminated"
    ,eof =err> "terminated"
 
+   ;; eval-limits apply to the sandbox creation too
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits '(0.25 5)])
+              (make-evaluator 'scheme/base '(sleep 2))))
+   =err> "out of time"
+   (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
+              (make-evaluator 'scheme/base
+                              '(define a (for/list ([i (in-range 10)])
+                                           (collect-garbage)
+                                           (make-string 1000))))))
+   =err> "out of memory"
+
    ;; i/o
    --top--
    (set! ev (parameterize ([sandbox-input "3\n"]

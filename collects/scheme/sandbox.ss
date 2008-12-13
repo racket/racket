@@ -443,18 +443,20 @@
 (define (evaluate-program program limit-thunk uncovered!)
   (when uncovered!
     (eval `(,#'#%require scheme/private/sandbox-coverage)))
-  ;; the actual evaluation happens under the specified limits
-  ((limit-thunk (lambda ()
-                  (if (and (pair? program) (eq? 'begin (car program)))
-                    (eval* (cdr program))
-                    (eval program)))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
                (let ([mod #'mod])
-                 (eval `(,#'require (quote ,mod)))
-                 (module->namespace `(quote ,(syntax-e mod))))]
+                 (lambda ()
+                   (eval `(,#'require (quote ,mod)))
+                   (module->namespace `(quote ,(syntax-e mod)))))]
               [_else #f])])
+    ;; the actual evaluation happens under the specified limits
+    ((limit-thunk (lambda ()
+                    (if (and (pair? program) (eq? 'begin (car program)))
+                      (eval* (cdr program))
+                      (eval program))
+                    (when ns (set! ns (ns))))))
     (when uncovered!
       (let ([get (let ([ns (current-namespace)])
                    (lambda () (eval '(get-uncovered-expressions) ns)))])
