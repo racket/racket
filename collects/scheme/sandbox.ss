@@ -39,6 +39,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         exn:fail:sandbox-terminated?
+         exn:fail:sandbox-terminated-reason
          exn:fail:resource?
          exn:fail:resource-resource)
 
@@ -152,8 +154,8 @@
          'sandbox-security-guard
          "security-guard or a security-guard translator procedure" x)))))
 
-(define (default-sandbox-exit-handler _)
-  (error 'exit "sandboxed code cannot exit"))
+;; this is never really used (see where it's used in the evaluator)
+(define (default-sandbox-exit-handler _) (error 'exit "sandbox exits"))
 
 (define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
@@ -516,6 +518,14 @@
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
+
+(define-struct (exn:fail:sandbox-terminated exn:fail) (reason) #:transparent)
+(define (make-terminated reason)
+  (make-exn:fail:sandbox-terminated
+   (format "evaluator: terminated (~a)" reason)
+   (current-continuation-marks)
+   reason))
+
 (define (make-evaluator* init-hook allow program-maker)
   (define orig-code-inspector (current-code-inspector))
   (define orig-cust     (current-custodian))
@@ -532,6 +542,12 @@
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
+  (define terminated?   #f) ; set to an exception value when the sandbox dies
+  (define (terminated! reason)
+    (unless terminated?
+      (set! terminated?
+            (make-terminated ; use #f to detect internal errors
+             (or reason "internal error: no termination reason")))))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
@@ -540,6 +556,7 @@
     (when user-thread
       (let ([t user-thread])
         (set! user-thread #f)
+        (terminated! #f)
         (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
@@ -560,7 +577,8 @@
     (let ([n 0])
       (let loop ()
         (let ([expr (channel-get input-ch)])
-          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
+          (when (eof-object? expr)
+            (terminated! 'eof) (channel-put result-ch expr) (user-kill))
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
@@ -585,9 +603,12 @@
                                            (loop))])
                           (sync user-done-evt result-ch))))
                eof)])
-      (cond [(eof-object? r) (error 'evaluator "terminated~a"
-                                    (if (custodian-box-value memory-cust-box)
-                                      "" " (memory exceeded)"))]
+      (cond [(eof-object? r)
+             (unless terminated?
+               (if (custodian-box-value memory-cust-box)
+                 (terminated! 'out-of-memory)
+                 (terminated! #f)))
+             (raise terminated?)]
             [(eq? (car r) 'exn) (raise (cdr r))]
             [else (apply values (cdr r))])))
   (define get-uncovered
@@ -617,7 +638,7 @@
       (let ([msg (evaluator-message-msg expr)])
         (case msg
           [(alive?) (and user-thread (not (thread-dead? user-thread)))]
-          [(kill)   (user-kill)]
+          [(kill)   (terminated! 'evaluator-killed) (user-kill)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
           [(input)  (apply input-putter (evaluator-message-args expr))]
@@ -687,7 +708,11 @@
     ;; restrict the sandbox context from this point
     [current-security-guard
      (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
-    [exit-handler (sandbox-exit-handler)]
+    [exit-handler
+     (let ([h (sandbox-exit-handler)])
+       (if (eq? h default-sandbox-exit-handler)
+         (lambda _ (terminated! 'exited) (user-kill))
+         h))]
     [current-inspector ((sandbox-make-inspector))]
     [current-logger ((sandbox-make-logger))]
     [current-code-inspector (make-inspector)]
