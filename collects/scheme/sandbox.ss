@@ -532,6 +532,7 @@
   (define memory-cust   (make-custodian orig-cust))
   (define memory-cust-box (make-custodian-box memory-cust #t))
   (define user-cust     (make-custodian memory-cust))
+  (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -733,8 +734,15 @@
     ;; must be nested in the above (which is what paramaterize* does), or
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
-   (set! user-thread (bg-run->thread (run-in-bg user-process)))
-   (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
+   (let ([t (bg-run->thread (run-in-bg user-process))])
+     (define (on-done _)
+       (terminated! (if (custodian-box-value user-cust-box)
+                      'thread-killed
+                      'custodian-shutdown))
+       (user-kill)
+       eof)
+     (set! user-done-evt (handle-evt t on-done))
+     (set! user-thread t))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
        ;; initial program executed ok, so return an evaluator
