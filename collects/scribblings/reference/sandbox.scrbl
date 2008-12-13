@@ -16,7 +16,10 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem access, and network access.
+filesystem access, and network access.  The common use case for this
+module is for a restricted sandboxed environment, so the defaults are
+set up to make it safe.  For other uses you will likely need to change
+mane of these settings.
 
 @defproc*[([(make-evaluator [language (or/c module-path? 
                                             (list/c 'special symbol?)
@@ -498,8 +501,14 @@ is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
-fail if the limits are strict enough.  Therefore, to avoid surprises
-you need to catch errors that happen when the sandbox is created.
+fail if the limits are strict enough.  For example,
+@schemeblock[
+  (parameterize ([sandbox-eval-limits '(0.25 5)])
+    (make-evaluator 'scheme/base '(sleep 2)))
+]
+will throw an error instead of creating an evaluator.  Therefore, to
+avoid surprises you need to catch errors that happen when the sandbox
+is created.
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
@@ -701,7 +710,17 @@ used for evaluating expressions.
 This is usually similar to @scheme[(evaluator (list thunk))], except
 that this relies on the common meaning of list expressions as function
 application (which is not true in all languages), and it relies on
-MzScheme's @scheme[eval] forgiving a non-S-expression input.}
+MzScheme's @scheme[eval] forgiving a non-S-expression input.  In
+addition, you can avoid some of the sandboxed restrictions by using
+your own permissions, for example,
+@codebox[
+  (let ([guard (current-security-guard)])
+    (call-in-sandbox-context
+      (lambda ()
+        (parameterize ([current-security-guard guard])
+          (code:comment #, @t{can access anything you want here})
+          ))))
+]}
 
 @; ----------------------------------------------------------------------
 
