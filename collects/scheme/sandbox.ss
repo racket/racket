@@ -119,27 +119,28 @@
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
 
-(define (make-default-sandbox-guard orig-security)
-  (make-security-guard
-   orig-security
-   (lambda (what path modes)
-     (when path
-       (let ([needed (let loop ([order permission-order])
-                       (cond [(null? order)
-                              (error 'default-sandbox-guard
-                                     "unknown access modes: ~e" modes)]
-                             [(memq (car order) modes) (car order)]
-                             [else (loop (cdr order))]))]
-             [bpath (parameterize ([current-security-guard orig-security])
-                      (path->bytes (simplify-path* path)))])
-         (unless (ormap (lambda (perm)
-                          (and (perm<=? needed (car perm))
-                               (regexp-match (cadr perm) bpath)))
-                        (sandbox-path-permissions))
-           (error what "`~a' access denied for ~a"
-                  (string-append* (add-between (map symbol->string modes) "+"))
-                  path)))))
-   (lambda args (apply (sandbox-network-guard) args))))
+(define (make-default-sandbox-guard)
+  (let ([orig-security (current-security-guard)])
+    (make-security-guard
+     orig-security
+     (lambda (what path modes)
+       (when path
+         (let ([needed (let loop ([order permission-order])
+                         (cond [(null? order)
+                                (error 'default-sandbox-guard
+                                       "unknown access modes: ~e" modes)]
+                               [(memq (car order) modes) (car order)]
+                               [else (loop (cdr order))]))]
+               [bpath (parameterize ([current-security-guard orig-security])
+                        (path->bytes (simplify-path* path)))])
+           (unless (ormap (lambda (perm)
+                            (and (perm<=? needed (car perm))
+                                 (regexp-match (cadr perm) bpath)))
+                          (sandbox-path-permissions))
+             (error what "`~a' access denied for ~a"
+                    (string-append* (add-between (map symbol->string modes) "+"))
+                    path)))))
+     (lambda args (apply (sandbox-network-guard) args)))))
 
 (define sandbox-security-guard
   (make-parameter make-default-sandbox-guard
