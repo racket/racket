@@ -106,16 +106,16 @@
          [suffix-re (bytes-append #"(?:$|" sep-re #")")])
     (lambda (path)
       (if (byte-regexp? path)
-          path
-          (let* ([path (path->bytes (simplify-path* path))]
-                 [path (regexp-quote (regexp-replace last-sep path #""))])
-            (byte-regexp (bytes-append #"^" path suffix-re)))))))
+        path
+        (let* ([path (path->bytes (simplify-path* path))]
+               [path (regexp-quote (regexp-replace last-sep path #""))])
+          (byte-regexp (bytes-append #"^" path suffix-re)))))))
 
 (define sandbox-path-permissions
   (make-parameter '()
-                  (lambda (new)
-                    (map (lambda (perm) (cons (car perm) (map path->bregexp (cdr perm))))
-                         new))))
+    (lambda (new)
+      (map (lambda (perm) (cons (car perm) (map path->bregexp (cdr perm))))
+           new))))
 
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
