@@ -713,7 +713,7 @@ application (which is not true in all languages), and it relies on
 MzScheme's @scheme[eval] forgiving a non-S-expression input.  In
 addition, you can avoid some of the sandboxed restrictions by using
 your own permissions, for example,
-@codebox[
+@schemeblock[
   (let ([guard (current-security-guard)])
     (call-in-sandbox-context
       (lambda ()
