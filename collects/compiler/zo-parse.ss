@@ -85,15 +85,10 @@
 (define (read-variable v)
   (if (symbol? v)
       (make-global-bucket v)
-      (let-values ([(phase modname varname)
-                    (match v
-                      [(list* phase modname varname)
-                       (values phase modname varname)]
-                      [(list* modname varname)
-                       (values 0 modname varname)])])
-        (if (and (zero? phase) (eq? modname '#%kernel))
-            (error 'bucket "var ~a" varname)
-            (make-module-variable modname varname -1 phase)))))
+      (error "expected a symbol")))
+
+(define (do-not-read-variable v)
+  (error "should not get here"))
 
 (define (read-compilation-top v)
   (match v
@@ -198,6 +193,7 @@
              ,rename ,max-let-depth ,dummy
              ,prefix ,kernel-exclusion ,reprovide-kernel?
              ,indirect-provides ,num-indirect-provides 
+             ,indirect-syntax-provides ,num-indirect-syntax-provides 
              ,indirect-et-provides ,num-indirect-et-provides 
              ,protects ,et-protects
              ,provide-phase-count . ,rest)
@@ -282,7 +278,7 @@
     (cons 'with-cont-mark-type read-with-cont-mark)
     (cons 'quote-syntax-type read-topsyntax)
     (cons 'variable-type read-variable)
-    (cons 'module-variable-type read-variable)
+    (cons 'module-variable-type do-not-read-variable)
     (cons 'compilation-top-type read-compilation-top)
     (cons 'case-lambda-sequence-type read-case-lambda)
     (cons 'begin0-sequence-type read-sequence)
@@ -719,7 +715,11 @@
            (let ([mod (read-compact cp)]
                  [var (read-compact cp)]
                  [pos (read-compact-number cp)])
-             (make-module-variable mod var pos 0))]
+             (let-values ([(mod-phase pos)
+                           (if (= pos -2)
+                                  (values 1 (read-compact-number cp))
+                                  (values 0 pos))])
+               (make-module-variable mod var pos mod-phase)))]
           [(local-unbox)
            (let* ([p* (read-compact-number cp)]
                   [p (if (< p* 0)
