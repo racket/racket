@@ -414,13 +414,16 @@ done using a fake library that provides the same interface but no
 actual interaction. The default is @scheme[null].}
 
 
-@defparam[sandbox-security-guard guard security-guard?]{
+@defparam[sandbox-security-guard guard
+          (or/c security-guard? (security-guard? . -> . security-guard?))]{
 
 A parameter that determines the initial
-@scheme[(current-security-guard)] for sandboxed evaluations.  The
-default forbids all filesystem I/O except for things in
-@scheme[sandbox-path-permissions], and it uses
-@scheme[sandbox-network-guard] for network connections.}
+@scheme[(current-security-guard)] for sandboxed evaluations.  It can
+be either a security guard, or a function that constructs a security
+guard from a given one.  The default is a function that restricts the
+access of the current security guard by forbidding all filesystem I/O
+except for specifications in @scheme[sandbox-path-permissions], and it
+uses @scheme[sandbox-network-guard] for network connections.}
 
 
 @defparam[sandbox-path-permissions perms
@@ -451,12 +454,6 @@ collection libraries (including
 @scheme[make-evalautor] for more information.}
 
 
-@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
-
-A parameter that determines the initial @scheme[(exit-handler)] for
-sandboxed evaluations.  The default handler simply throws an error.}
-
-
 @defparam[sandbox-network-guard proc
           (symbol?
            (or/c (and/c string? immutable?) #f)
@@ -467,6 +464,12 @@ sandboxed evaluations.  The default handler simply throws an error.}
 A parameter that specifieds a procedure to be used (as is) by the
 default @scheme[sandbox-security-guard].  The default forbids all
 network connection.}
+
+
+@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
+
+A parameter that determines the initial @scheme[(exit-handler)] for
+sandboxed evaluations.  The default handler simply throws an error.}
 
 
 @defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{

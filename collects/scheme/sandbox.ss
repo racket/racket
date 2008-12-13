@@ -2,6 +2,7 @@
 
 (require scheme/port
          scheme/list
+         scheme/string
          syntax/moddep
          scheme/gui/dynamic)
 
@@ -17,8 +18,8 @@
          sandbox-override-collection-paths
          sandbox-path-permissions
          sandbox-security-guard
-         sandbox-exit-handler
          sandbox-network-guard
+         sandbox-exit-handler
          sandbox-make-inspector
          sandbox-make-logger
          sandbox-memory-limit
@@ -117,31 +118,37 @@
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
 
-(define default-sandbox-guard
-  (let ([orig-security (current-security-guard)])
-    (make-security-guard
-     orig-security
-     (lambda (what path modes)
-       (when path
-         (let ([needed (let loop ([order permission-order])
-                         (cond [(null? order)
-                                (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)]
-                               [(memq (car order) modes) (car order)]
-                               [else (loop (cdr order))]))]
-               [bpath (parameterize ([current-security-guard orig-security])
-                        (path->bytes (simplify-path* path)))])
-           (unless (ormap (lambda (perm)
-                            (and (perm<=? needed (car perm))
-                                 (regexp-match (cadr perm) bpath)))
-                          (sandbox-path-permissions))
-             (error what "`~a' access denied for ~a"
-                    (apply string-append
-                           (add-between (map symbol->string modes) "+"))
-                    path)))))
-     (lambda args (apply (sandbox-network-guard) args)))))
+(define (make-default-sandbox-guard orig-security)
+  (make-security-guard
+   orig-security
+   (lambda (what path modes)
+     (when path
+       (let ([needed (let loop ([order permission-order])
+                       (cond [(null? order)
+                              (error 'default-sandbox-guard
+                                     "unknown access modes: ~e" modes)]
+                             [(memq (car order) modes) (car order)]
+                             [else (loop (cdr order))]))]
+             [bpath (parameterize ([current-security-guard orig-security])
+                      (path->bytes (simplify-path* path)))])
+         (unless (ormap (lambda (perm)
+                          (and (perm<=? needed (car perm))
+                               (regexp-match (cadr perm) bpath)))
+                        (sandbox-path-permissions))
+           (error what "`~a' access denied for ~a"
+                  (string-append* (add-between (map symbol->string modes) "+"))
+                  path)))))
+   (lambda args (apply (sandbox-network-guard) args))))
 
-(define sandbox-security-guard (make-parameter default-sandbox-guard))
+(define sandbox-security-guard
+  (make-parameter make-default-sandbox-guard
+    (lambda (x)
+      (if (or (security-guard? x)
+              (and (procedure? x) (procedure-arity-includes? x 1)))
+        x
+        (raise-type-error
+         'sandbox-security-guard
+         "security-guard or a security-guard translator procedure" x)))))
 
 (define (default-sandbox-exit-handler _)
   (error 'exit "sandboxed code cannot exit"))
@@ -660,7 +667,9 @@
     ;; general info
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
-    [current-security-guard (sandbox-security-guard)]
+    [current-security-guard
+     (let ([g (sandbox-security-guard)])
+       (if (security-guard? g) g (g (current-security-guard))))]
     [exit-handler (sandbox-exit-handler)]
     [current-inspector ((sandbox-make-inspector))]
     [current-logger ((sandbox-make-logger))]
