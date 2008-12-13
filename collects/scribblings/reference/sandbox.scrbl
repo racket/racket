@@ -415,15 +415,15 @@ actual interaction. The default is @scheme[null].}
 
 
 @defparam[sandbox-security-guard guard
-          (or/c security-guard? (security-guard? . -> . security-guard?))]{
+          (or/c security-guard? (-> security-guard?))]{
 
 A parameter that determines the initial
 @scheme[(current-security-guard)] for sandboxed evaluations.  It can
-be either a security guard, or a function that constructs a security
-guard from a given one.  The default is a function that restricts the
-access of the current security guard by forbidding all filesystem I/O
-except for specifications in @scheme[sandbox-path-permissions], and it
-uses @scheme[sandbox-network-guard] for network connections.}
+be either a security guard, or a function to construct one.  The
+default is a function that restricts the access of the current
+security guard by forbidding all filesystem I/O except for
+specifications in @scheme[sandbox-path-permissions], and it uses
+@scheme[sandbox-network-guard] for network connections.}
 
 
 @defparam[sandbox-path-permissions perms
@@ -548,14 +548,26 @@ then, assuming sufficiently small limits,
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
 A parameter that determines the procedure used to create the inspector
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[make-inspector].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[make-inspector].}
+
+
+@defparam[sandbox-make-code-inspector make (-> inspector?)]{
+
+A parameter that determines the procedure used to create the code
+inspector for sandboxed evaluation.  The procedure is called when
+initializing an evaluator, and the default parameter value is
+@scheme[make-inspector].}
+
 
 @defparam[sandbox-make-logger make (-> logger?)]{
 
 A parameter that determines the procedure used to create the logger
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[current-logger].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[current-logger].  This means that it is not creating a new
+logger (this might change in the future).}
 
 @; ----------------------------------------------------------------------
 

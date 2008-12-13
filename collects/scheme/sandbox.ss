@@ -21,6 +21,7 @@
          sandbox-network-guard
          sandbox-exit-handler
          sandbox-make-inspector
+         sandbox-make-code-inspector
          sandbox-make-logger
          sandbox-memory-limit
          sandbox-eval-limits
@@ -144,7 +145,7 @@
   (make-parameter make-default-sandbox-guard
     (lambda (x)
       (if (or (security-guard? x)
-              (and (procedure? x) (procedure-arity-includes? x 1)))
+              (and (procedure? x) (procedure-arity-includes? x 0)))
         x
         (raise-type-error
          'sandbox-security-guard
@@ -156,6 +157,8 @@
 (define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
 (define sandbox-make-inspector (make-parameter make-inspector))
+
+(define sandbox-make-code-inspector (make-parameter make-inspector))
 
 (define sandbox-make-logger (make-parameter current-logger))
 
@@ -440,9 +443,20 @@
                     (lambda (x) (abort-current-continuation deftag x)))
                    (loop (car exprs) (cdr exprs))))))))))
 
+;; We need a powerful enough code inspector to invoke the errortrace library
+;; (indirectly through private/sandbox-coverage).  But there is a small problem
+;; here -- errortrace/stacktrace.ss will grab the global code inspector value
+;; at the time it is invoked.  So we grab it here too, and use it to wrap the
+;; code that invokes errortrace.  If errortrace/stacktrace.ss is changed to
+;; grab the current inspector, then it would be better to avoid this here, and
+;; pass `evaluate-program' the inspector that was in effect when the sandbox
+;; was created.
+(define orig-code-inspector (current-code-inspector))
+
 (define (evaluate-program program limit-thunk uncovered!)
-  (when uncovered!
-    (eval `(,#'#%require scheme/private/sandbox-coverage)))
+  (parameterize ([current-code-inspector orig-code-inspector])
+    (when uncovered!
+      (eval `(,#'#%require scheme/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
@@ -502,6 +516,7 @@
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
 (define (make-evaluator* init-hook allow program-maker)
+  (define orig-code-inspector (current-code-inspector))
   (define orig-cust     (current-custodian))
   (define memory-cust   (make-custodian orig-cust))
   (define memory-cust-box (make-custodian-box memory-cust #t))
@@ -670,13 +685,21 @@
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
     [current-security-guard
-     (let ([g (sandbox-security-guard)])
-       (if (security-guard? g) g (g (current-security-guard))))]
+     (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
     [exit-handler (sandbox-exit-handler)]
     [current-inspector ((sandbox-make-inspector))]
     [current-logger ((sandbox-make-logger))]
-    ;; This breaks because we need to load some libraries that are trusted
-    ;; [current-code-inspector (make-inspector)]
+    [current-code-inspector (make-inspector)]
+    ;; The code inspector serves two purposes -- making sure that only trusted
+    ;; byte-code is loaded, and avoiding using protected moduel bindings, like
+    ;; the foreign library's `unsafe!'.  We don't need the first because we
+    ;; control it indirectly through the security guard, so this handler makes
+    ;; sure that byte-code is loaded using the original inspector.
+    [current-load/use-compiled
+     (let ([handler (current-load/use-compiled)])
+       (lambda (path modname)
+         (parameterize ([current-code-inspector orig-code-inspector])
+           (handler path modname))))]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
