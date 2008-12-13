@@ -8,6 +8,7 @@
 (sandbox-error-output #f)
 
 ;; no limits -- the handin server uses per-session limits
+(sandbox-memory-limit #f)
 (sandbox-eval-limits #f)
 
 ;; share these with evaluators
