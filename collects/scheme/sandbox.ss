@@ -547,8 +547,14 @@
   (define (terminated! reason)
     (unless terminated?
       (set! terminated?
-            (make-terminated ; use #f to detect internal errors
-             (or reason "internal error: no termination reason")))))
+            (make-terminated
+             (cond [(eq? reason #t) ; => guess
+                    (if (custodian-box-value user-cust-box)
+                      'thread-killed
+                      'custodian-shutdown)]
+                   [reason reason] ; => explicit
+                   ;; otherwise it's an indication of an internal error
+                   [else "internal error: no termination reason"])))))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
@@ -593,25 +599,28 @@
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (user-eval expr)
-    (let ([r (if user-thread
-               (begin (channel-put input-ch expr)
-                      (let loop ()
-                        (with-handlers ([(lambda (e)
-                                           (and (sandbox-propagate-breaks)
-                                                (exn:break? e)))
-                                         (lambda (e)
-                                           (user-break)
-                                           (loop))])
-                          (sync user-done-evt result-ch))))
-               eof)])
-      (cond [(eof-object? r)
-             (unless terminated?
-               (if (custodian-box-value memory-cust-box)
-                 (terminated! 'out-of-memory)
-                 (terminated! #f)))
-             (raise terminated?)]
-            [(eq? (car r) 'exn) (raise (cdr r))]
-            [else (apply values (cdr r))])))
+    ;; the thread will usually be running, but it might be killed outside of
+    ;; the sandboxed environment, for example, if you do something like
+    ;; (kill-thread (ev '(current-thread))) when there are no per-expression
+    ;; limits (since then you get a different thread, which is already dead).
+    (when (and user-thread (thread-dead? user-thread))
+      (terminated! #t))
+    (cond
+      [terminated? => raise]
+      [(not user-thread) (error 'sandbox "internal error (user-thread is #f)")]
+      [else
+       (channel-put input-ch expr)
+       (let ([r (let loop ()
+                  (with-handlers ([(if (sandbox-propagate-breaks)
+                                     exn:break? (lambda (_) #f))
+                                   (lambda (e) (user-break) (loop))])
+                    (sync user-done-evt result-ch)))])
+         (cond [(eof-object? r)
+                (terminated! (and (not (custodian-box-value memory-cust-box))
+                                  'out-of-memory))
+                (raise terminated?)]
+               [(eq? (car r) 'exn) (raise (cdr r))]
+               [else (apply values (cdr r))]))]))
   (define get-uncovered
     (case-lambda
      [() (get-uncovered #t)]
@@ -735,13 +744,8 @@
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
    (let ([t (bg-run->thread (run-in-bg user-process))])
-     (define (on-done _)
-       (terminated! (if (custodian-box-value user-cust-box)
-                      'thread-killed
-                      'custodian-shutdown))
-       (user-kill)
-       eof)
-     (set! user-done-evt (handle-evt t on-done))
+     (set! user-done-evt
+           (handle-evt t (lambda (_) (terminated! #t) (user-kill) eof)))
      (set! user-thread t))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)

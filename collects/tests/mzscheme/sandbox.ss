@@ -80,7 +80,7 @@
                          "(define (plus1 x) x)"
                          "(define (loop) (loop))"
                          "(define (memory x) (make-vector x))")))
-   (set-eval-limits ev 1 3)
+   (set-eval-limits ev 0.5 5)
    --eval--
    x => 1
    (id 1) => 1
@@ -102,7 +102,7 @@
    (loop) =err> "out of time"
    --top--
    (when (custodian-memory-accounting-available?)
-     (t --eval-- (memory 1000000) =err> "out of memory"))
+     (t --eval-- (memory 3000000) =err> "out of memory"))
    ;; test parameter settings (tricky to get this right since
    ;; with-limits runs stuff in a different thread)
    (set-eval-limits ev #f #f)
@@ -147,12 +147,13 @@
               (make-evaluator 'scheme/base '(sleep 2))))
    =err> "out of time"
    (when (custodian-memory-accounting-available?)
-     (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
-                (make-evaluator 'scheme/base
-                                '(define a (for/list ([i (in-range 10)])
-                                             (collect-garbage)
-                                             (make-string 1000))))))
-     (t --top-- =err> "out of memory"))
+     (t --top--
+        (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
+                   (make-evaluator 'scheme/base
+                                   '(define a (for/list ([i (in-range 10)])
+                                                (collect-garbage)
+                                                (make-string 1000))))))
+        =err> "out of memory"))
 
    ;; i/o
    --top--
