@@ -2346,6 +2346,8 @@ static int module_val_MARK(void *p) {
   gcMARK(m->provide_protects);
   gcMARK(m->indirect_provides);
 
+  gcMARK(m->indirect_syntax_provides);
+
   gcMARK(m->et_provide_protects);
   gcMARK(m->et_indirect_provides);
 
@@ -2389,6 +2391,8 @@ static int module_val_FIXUP(void *p) {
 
   gcFIXUP(m->provide_protects);
   gcFIXUP(m->indirect_provides);
+
+  gcFIXUP(m->indirect_syntax_provides);
 
   gcFIXUP(m->et_provide_protects);
   gcFIXUP(m->et_indirect_provides);

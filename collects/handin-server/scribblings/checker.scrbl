@@ -16,7 +16,7 @@ language module---a typical checker that uses it looks like this:
 
 @schemeblock[
    (module checker (lib "checker.ss" "handin-server")
-     (check: :language  'intermediate
+     (check: :language  '(special intermediate)
              :users     pairs-or-singles-with-warning
              :coverage? #t
        (!procedure Fahrenheit->Celsius 1)
@@ -327,15 +327,19 @@ code.}
 
 @defform[(!defined id ...)]{
   Checks that the given identifiers are defined in the (evaluated)
-  submission, and throws an error otherwise.}
+  submission, and throws an error otherwise.  The identifiers can be
+  bound as either a plain value or as a syntax.}
 
-@defform[(!procedure id arity)]{
-
-  Checks that @scheme[id] is defined, and is bound to a procedure.}
+@defform[(!bound id ...)]{
+  Checks that the given identifiers are defined in the (evaluated)
+  submission as a plain value.  Throws an error if not, or if an
+  identifier is bound to a syntax.}
 
 @defform[(!syntax id arity)]{
-
   Checks that @scheme[id] is defined, and is bound as a macro.}
+
+@defform[(!procedure id arity)]{
+  Checks that @scheme[id] is defined, and is bound to a procedure.}
 
 @defform[(!procedure* expr arity)]{
 
@@ -350,13 +354,16 @@ code.}
   integers.}
 
 @defform*[((!test expr)
+           (!test/exn expr)
            (!test expr result)
            (!test expr result equal?))]{
 
   The first form checks that the given expression evaluates to a
   non-@scheme[#f] value in the submission context, throwing an error
-  otherwise.  The second form compares the result of evaluation,
-  requiring it to be equal to @scheme[result]. The third allows
+  otherwise.  The second form checks that the given expression throws
+  an @scheme[exn:fail?] error, throwing an error otherwise.
+  The third form compares the result of evaluation,
+  requiring it to be equal to @scheme[result]. The fourth allows
   specifying an equality procedure.  Note that the @scheme[result] and
   @scheme[equal?] forms are @italic{not} evaluated in the submission
   context.}

@@ -937,6 +937,8 @@ module_val {
   gcMARK(m->provide_protects);
   gcMARK(m->indirect_provides);
 
+  gcMARK(m->indirect_syntax_provides);
+
   gcMARK(m->et_provide_protects);
   gcMARK(m->et_indirect_provides);
 

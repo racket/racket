@@ -51,7 +51,7 @@ static void init_type_arrays()
   REGISTER_SO(scheme_type_hash2s);
   
   maxtype = _scheme_last_type_;
-  allocmax = maxtype + 10;
+  allocmax = maxtype + 100;
 
   type_names = MALLOC_N(char *, allocmax);
   scheme_type_readers = MALLOC_N_ATOMIC(Scheme_Type_Reader, allocmax);

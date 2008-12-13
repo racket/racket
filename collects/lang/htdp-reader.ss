@@ -41,6 +41,8 @@
                 `(module ,modname ,spec
                    ,@(map (λ (x) `(require ,x))
                           (lookup 'teachpacks table))
-                   ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)])
+                   ,@(parameterize ([read-case-sensitive (lookup 'read-case-sensitive table)]
+                                    [read-decimal-as-inexact #f]
+                                    [read-accept-dot #f])
                        (get-all-exps source-name port))))))])
       read-syntax)))

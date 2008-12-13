@@ -288,7 +288,6 @@ static void init_toplevel_local_offsets_hashtable_caches()
   }
 }
 
-
 /* READ-ONLY GLOBAL structures ONE-TIME initialization */
 Scheme_Env *scheme_engine_instance_init() {
   Scheme_Env *env;
@@ -324,6 +323,16 @@ Scheme_Env *scheme_engine_instance_init() {
 
 #ifndef MZ_PRECISE_GC
   scheme_init_ephemerons();
+#endif
+
+/* These calls must be made here so that they allocate out of the master GC */
+  scheme_init_symbol_table();
+  scheme_init_module_path_table();
+
+
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_switch_out_master_gc();
+  spawn_master_scheme_place();
 #endif
   
   place_instance_init_pre_kernel(stack_base);
@@ -455,7 +464,6 @@ static void make_kernel_env(void)
 
   /* The ordering of the first few init calls is important, so add to
      the end of the list, not the beginning. */
-  MZTIMEIT(symbol-table, scheme_init_symbol_table());
   MZTIMEIT(type, scheme_init_type(env));
   MZTIMEIT(symbol-type, scheme_init_symbol_type(env));
   MZTIMEIT(fun, scheme_init_fun(env));

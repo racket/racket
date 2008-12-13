@@ -2147,7 +2147,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     scheme_fuel_counter_ptr = &scheme_fuel_counter;
 #endif
     
-#if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
+#if defined(MZ_PRECISE_GC)
     GC_set_get_thread_stack_base(scheme_get_current_thread_stack_start);
 #endif
     process->stack_start = stack_base;

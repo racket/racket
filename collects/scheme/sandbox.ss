@@ -21,7 +21,9 @@
          sandbox-network-guard
          sandbox-make-inspector
          sandbox-make-logger
+         sandbox-memory-limit
          sandbox-eval-limits
+         evaluator-alive?
          kill-evaluator
          break-evaluator
          set-eval-limits
@@ -52,6 +54,7 @@
 (define sandbox-output       (make-parameter #f))
 (define sandbox-error-output
   (make-parameter (lambda () (dup-output-port (current-error-port)))))
+(define sandbox-memory-limit (make-parameter 20))       ; 30mb total
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
@@ -149,6 +152,11 @@
 
 (define sandbox-make-logger (make-parameter current-logger))
 
+(define (compute-permissions paths+require-perms)
+  (let-values ([(paths require-perms) (partition path? paths+require-perms)])
+    (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+            (module-specs->path-permissions require-perms))))
+
 ;; computes permissions that are needed for require specs (`read' for all
 ;; files and "compiled" subdirs, `exists' for the base-dir)
 (define (module-specs->path-permissions mods)
@@ -215,49 +223,73 @@
 
 ;; similar to `call-in-nested-thread', but propagates killing the thread,
 ;; shutting down the custodian or setting parameters and thread cells;
-;; optionally with thunks to call for kill/shutdown.
+;; optionally with thunks to call for kill/shutdown instead.
 (define (call-in-nested-thread*
          thunk
          [kill     (lambda () (kill-thread (current-thread)))]
          [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
   (let* ([p #f]
-         [c (make-custodian)]
-         [b (make-custodian-box c #t)])
-    (with-handlers ([(lambda (_) (not p))
-                     ;; if the after thunk was not called, then this error is
-                     ;; about the thread dying unnaturally, so propagate
-                     ;; whatever it did
-                     (lambda (_) ((if (custodian-box-value b) kill shutdown)))])
-      (dynamic-wind void
-        (lambda ()
-          (parameterize ([current-custodian c])
-            (call-in-nested-thread
-             (lambda ()
-               (dynamic-wind void thunk
-                 ;; this should always be called unless the thread is killed or
-                 ;; the custodian is shutdown, distinguish the two cases
-                 ;; through the above box
-                 (lambda ()
-                   (set! p (current-preserved-thread-cell-values))))))))
-        (lambda () (when p (current-preserved-thread-cell-values p)))))))
+         [c (make-custodian (current-custodian))]
+         [b (make-custodian-box c #t)]
+         [break? (break-enabled)])
+    (parameterize-break #f
+      (with-handlers ([(lambda (_) (not p))
+                       ;; if the after thunk was not called, then this error is
+                       ;; about the thread dying unnaturally, so propagate
+                       ;; whatever it did
+                       (lambda (_)
+                         ((if (custodian-box-value b) kill shutdown)))])
+        (dynamic-wind void
+          (lambda ()
+            (parameterize ([current-custodian c])
+              (call-in-nested-thread
+               (lambda ()
+                 (break-enabled break?)
+                 (dynamic-wind void thunk
+                   ;; this should always be called unless the thread is killed
+                   ;; or the custodian is shutdown, distinguish the two cases
+                   ;; through the above box
+                   (lambda ()
+                     (set! p (current-preserved-thread-cell-values))))))))
+          (lambda () (when p (current-preserved-thread-cell-values p))))))))
 
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
   (let ([r #f])
-    (call-in-nested-thread*
-     (lambda ()
-       ;; memory limit
-       (when (and mb memory-accounting?)
-         (custodian-limit-memory (current-custodian) (* mb 1024 1024)))
-       ;; time limit
-       (when sec
-         (let ([t (current-thread)])
-           (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
-       (set! r (with-handlers ([void (lambda (e) (list raise e))])
-                 (call-with-values thunk (lambda vs (list* values vs))))))
-     (lambda () (unless r (set! r 'kill)))
-     (lambda () (unless r (set! r 'shut))))
+    ;; memory limit, set on a new custodian so if there's an out-of-memory
+    ;; error, the user's custodian is still alive
+    (define-values (cust cust-box)
+      (if (and mb memory-accounting?)
+        (let ([c (make-custodian (current-custodian))])
+          (custodian-limit-memory c (* mb 1024 1024) c)
+          (values c (make-custodian-box c #t)))
+        (values (current-custodian) #f)))
+    (parameterize ([current-custodian cust])
+      (call-in-nested-thread*
+       (lambda ()
+         ;; time limit
+         (when sec
+           (let ([t (current-thread)])
+             (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
+         (set! r (with-handlers ([void (lambda (e) (list raise e))])
+                   (call-with-values thunk (lambda vs (list* values vs))))))
+       ;; The thread might be killed by the timer thread, so don't let
+       ;; call-in-nested-thread* kill it -- if user code did so, then just
+       ;; register the request and kill it below.  Do this for a
+       ;; custodian-shutdown to, just in case.
+       (lambda ()
+         (unless r (set! r 'kill))
+         ;; (kill-thread (current-thread))
+         )
+       (lambda ()
+         (unless r (set! r 'shut))
+         ;; (custodian-shutdown-all (current-custodian))
+         )))
+    (when (and cust-box (not (custodian-box-value cust-box)))
+      (if (memq r '(kill shut)) ; should always be 'shut
+        (set! r 'memory)
+        (format "cust died with: ~a" r))) ; throw internal error below
     (case r
       [(kill) (kill-thread (current-thread))]
       [(shut) (custodian-shutdown-all (current-custodian))]
@@ -317,23 +349,25 @@
 ;; (path/string/bytes) value.
 (define (input->code inps source n)
   (if (null? inps)
-      '()
-      (let ([p (input->port (car inps))])
-        (cond [(and p (null? (cdr inps)))
-               (port-count-lines! p)
-               (parameterize ([current-input-port p])
-                 ((sandbox-reader) source))]
-              [p (error 'input->code "ambiguous inputs: ~e" inps)]
-              [else (let loop ([inps inps] [n n] [r '()])
-                      (if (null? inps)
-                          (reverse r)
-                          (loop (cdr inps) (and n (add1 n))
-                                ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
-                                ;; (starting from the `n' argument)
-                                (cons (datum->syntax
-                                       #f (car inps)
-                                       (list source n (and n 0) n (and n 1)))
-                                      r))))]))))
+    '()
+    (let ([p (input->port (car inps))])
+      (cond [(and p (null? (cdr inps)))
+             (port-count-lines! p)
+             (parameterize ([current-input-port p])
+               (begin0 ((sandbox-reader) source)
+                 ;; close a port if we opened it
+                 (unless (eq? p (car inps)) (close-input-port p))))]
+            [p (error 'input->code "ambiguous inputs: ~e" inps)]
+            [else (let loop ([inps inps] [n n] [r '()])
+                    (if (null? inps)
+                      (reverse r)
+                      (loop (cdr inps) (and n (add1 n))
+                            ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
+                            ;; (starting from the `n' argument)
+                            (cons (datum->syntax
+                                   #f (car inps)
+                                   (list source n (and n 0) n (and n 1)))
+                                  r))))]))))
 
 (define ((init-for-language language))
   (cond [(or (not (pair? language))
@@ -353,7 +387,7 @@
 ;;
 ;; FIXME: inserting `#%require's here is bad if the language has a
 ;; `#%module-begin' that processes top-level forms specially.
-;; A more general solution would be to create anew module that exports
+;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
 ;; We use `#%requre' because, unlike the `require' of scheme/base,
@@ -448,6 +482,7 @@
        (let ([evmsg (make-evaluator-message msg '())])
          (lambda (evaluator) (evaluator evmsg))))]))
 
+(define-evaluator-messenger evaluator-alive? 'alive?)
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
 (define-evaluator-messenger (set-eval-limits secs mb) 'limits)
@@ -457,8 +492,11 @@
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
-(define (make-evaluator* init-hook require-perms program-maker)
-  (define user-cust     (make-custodian))
+(define (make-evaluator* init-hook allow program-maker)
+  (define orig-cust     (current-custodian))
+  (define memory-cust   (make-custodian orig-cust))
+  (define memory-cust-box (make-custodian-box memory-cust #t))
+  (define user-cust     (make-custodian memory-cust))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -469,7 +507,6 @@
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
-  (define orig-cust     (current-custodian))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
@@ -523,7 +560,9 @@
                                            (loop))])
                           (sync user-done-evt result-ch))))
                eof)])
-      (cond [(eof-object? r) (error 'evaluator "terminated")]
+      (cond [(eof-object? r) (error 'evaluator "terminated~a"
+                                    (if (custodian-box-value memory-cust-box)
+                                      "" " (memory exceeded)"))]
             [(eq? (car r) 'exn) (raise (cdr r))]
             [else (apply values (cdr r))])))
   (define get-uncovered
@@ -552,6 +591,7 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
+          [(alive?) (and user-thread (not (thread-dead? user-thread)))]
           [(kill)   (user-kill)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
@@ -582,6 +622,10 @@
                   (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
+  ;; set global memory limit
+  (when (sandbox-memory-limit)
+    (custodian-limit-memory
+     memory-cust (* (sandbox-memory-limit) 1024 1024) memory-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [current-custodian user-cust]
@@ -611,7 +655,7 @@
     [sandbox-path-permissions
      (append (map (lambda (p) `(read ,p))
                   (current-library-collection-paths))
-             (module-specs->path-permissions require-perms)
+             (compute-permissions allow)
              (sandbox-path-permissions))]
     ;; general info
     [current-command-line-arguments '#()]
@@ -633,10 +677,10 @@
    (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
-         ;; initial program executed ok, so return an evaluator
-         evaluator
-         ;; program didn't execute
-         (raise r)))))
+       ;; initial program executed ok, so return an evaluator
+       evaluator
+       ;; program didn't execute
+       (raise r)))))
 
 (define (make-evaluator language
                         #:requires [requires null] #:allow-read [allow null]
@@ -654,8 +698,7 @@
                          `(file ,(path->string (simplify-path* r)))))
                      requires))])
     (make-evaluator* (init-for-language lang)
-                     (append (extract-required (or (decode-language lang)
-                                                   lang)
+                     (append (extract-required (or (decode-language lang) lang)
                                                reqs)
                              allow)
                      (lambda () (build-program lang reqs input-program)))))
@@ -679,5 +722,6 @@
                   (syntax->datum #'lang) reqlang))]
         [_else (error 'make-evaluator "expecting a `module' program; got ~e"
                       (syntax->datum (car prog)))])))
-  (make-evaluator* void allow make-program))
-
+  (make-evaluator* void
+                   (if (path? input-program) (cons input-program allow) allow)
+                   make-program))

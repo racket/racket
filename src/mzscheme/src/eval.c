@@ -8431,15 +8431,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_with_cont_mark_type:
 	{
 	  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)obj;
-	  GC_CAN_IGNORE Scheme_Object *key, *val;
+	  Scheme_Object *key;
+	  GC_CAN_IGNORE Scheme_Object *val;
 	  
 	  UPDATE_THREAD_RSPTR();
 	  key = wcm->key;
 	  if (SCHEME_TYPE(key) < _scheme_values_types_)
-	    key = _scheme_eval_linked_expr_wp(wcm->key, p);
+	    key = _scheme_eval_linked_expr_wp(key, p);
 	  val = wcm->val;
 	  if (SCHEME_TYPE(val) < _scheme_values_types_)
-	    val = _scheme_eval_linked_expr_wp(wcm->val, p);
+	    val = _scheme_eval_linked_expr_wp(val, p);
 
 	  scheme_set_cont_mark(key, val);
 

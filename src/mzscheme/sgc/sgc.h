@@ -36,6 +36,11 @@ void *GC_malloc_stubborn(size_t size_in_bytes);
 void *GC_malloc_uncollectable(size_t size_in_bytes);
 void *GC_malloc_atomic_uncollectable(size_t size_in_bytes);
 
+typedef void (*GC_collect_start_callback_Proc)(void);
+typedef void (*GC_collect_end_callback_Proc)(void);
+GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_collect_start_callback_Proc);
+GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
+
 void GC_free(void *); /* ... but only if it's turned on in sgc.c. */
 
 struct GC_Set;

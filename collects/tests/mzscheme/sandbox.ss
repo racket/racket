@@ -7,8 +7,14 @@
 
 ;; test call-in-nested-thread*
 (let ()
+  (define (kill) (kill-thread (current-thread)))
+  (define (shut) (custodian-shutdown-all (current-custodian)))
   (define-syntax-rule (nested body ...)
     (call-in-nested-thread* (lambda () body ...)))
+  (define-syntax-rule (nested* body ...)
+    (call-in-nested-thread* (lambda () body ...)
+                            (lambda () 'kill)
+                            (lambda () 'shut)))
   (test 1 values (nested 1))
   ;; propagates parameters
   (let ([p (make-parameter #f)])
@@ -19,13 +25,15 @@
   ;; propagates kill-thread
   (test (void) thread-wait
         (thread (lambda ()
-                  (nested (kill-thread (current-thread)))
+                  (nested (kill))
                   ;; never reach here
                   (semaphore-wait (make-semaphore 0)))))
   ;; propagates custodian-shutdown-all
   (test (void) values
-        (parameterize ([current-custodian (make-custodian)])
-          (nested (custodian-shutdown-all (current-custodian))))))
+        (parameterize ([current-custodian (make-custodian)]) (nested (shut))))
+  ;; test handlers parameters
+  (test 'kill (lambda () (nested* (kill))))
+  (test 'shut (lambda () (nested* (shut)))))
 
 (let ([ev void])
   (define (run thunk)
@@ -362,31 +370,33 @@
    --top--
    (set! ev (parameterize ([sandbox-output 'bytes]
                            [sandbox-error-output current-output-port]
+                           [sandbox-memory-limit 5]
                            [sandbox-eval-limits '(0.25 1/2)])
               (make-evaluator 'scheme/base)))
    ;; GCing is needed to allow these to happen
-   --eval--  (display (make-bytes 400000 65))
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65))
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65))
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65))
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65))
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
-   ;; EB: for some reason, the first thing doesn't throw an error, and I think
-   ;; that the second should break much sooner than 100 iterations
-   ;; --eval--  (let ([400k (make-bytes 400000 65)])
-   ;;             (for ([i (in-range 2)]) (display 400k)))
-   ;; --top--   (bytes-length (get-output ev))
-   ;;           =err> "out of memory"
-   ;; --eval--  (let ([400k (make-bytes 400000 65)])
-   ;;             (for ([i (in-range 100)]) (display 400k)))
-   ;;           =err> "out of memory"
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+   --top--   (bytes-length (get-output ev)) => 400000
+   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+   --top--   (bytes-length (get-output ev)) => 400000
 
    ;; test that killing the custodian works fine
-   ;; first try it without limits (which imply a nester thread/custodian)
+   ;; first try it without limits (limits imply a nested thread/custodian)
    --top--
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
@@ -425,6 +435,20 @@
    (call-in-sandbox-context ev
      (lambda () (custodian-shutdown-all (current-custodian))))
    =err> "terminated"
+
+   ;; when an expression is out of memory, the sandbox should stay alive
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits '(2 5)]
+                           [sandbox-memory-limit 100])
+              (make-evaluator 'scheme/base)))
+   --eval--
+   (define a '())
+   (define b 1)
+   (for ([i (in-range 20)])
+     (set! a (cons (make-bytes 500000) a))
+     (collect-garbage))
+   =err> "out of memory"
+   b => 1
 
    ))
 
