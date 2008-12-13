@@ -130,12 +130,16 @@
    (thread (lambda () (sleep 1) (break-evaluator ev)))
    --eval--
    (sleep 2) =err> "user break"
+   (printf "x = ~s\n" x) => (void)
    ;; termination
    --eval--
-   (printf "x = ~s\n" x) => (void)
-   ,eof =err> "terminated"
-   x =err> "terminated"
-   ,eof =err> "terminated"
+   ,eof =err> "terminated .eof.$"
+   123  =err> "terminated .eof.$"
+   ,eof =err> "terminated .eof.$"
+
+   ;; other termination messages
+   --top-- (set! ev (make-evaluator 'scheme/base)) (kill-evaluator ev)
+   --eval-- 123 =err> "terminated .evaluator-killed."
 
    ;; eval-limits apply to the sandbox creation too
    --top--
@@ -198,9 +202,9 @@
    --top--
    (kill-evaluator ev) => (void)
    --eval--
-   x =err> "terminated"
-   y =err> "terminated"
-   ,eof =err> "terminated"
+   x =err> "terminated .evaluator-killed."
+   y =err> "terminated .evaluator-killed."
+   ,eof =err> "terminated .evaluator-killed."
    --top--
    (let-values ([(i1 o1) (make-pipe)] [(i2 o2) (make-pipe)])
      ;; o1 -> i1 -ev-> o2 -> i2

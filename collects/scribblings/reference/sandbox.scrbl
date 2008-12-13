@@ -243,6 +243,19 @@ used from a module (by using a new namespace):
 
 }
 
+
+@defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
+           [(exn:fail:sandbox-terminated-reason [exn exn:fail:sandbox-terminated?])
+            symbol/c])]{
+
+A predicate and accessor for exceptions that are raised when a sandbox
+is terminated.  Once a sandbox raises such an exception, it will
+continue to raise it on further evaluation attempts.
+
+@scheme[call-with-limits].  The @scheme[resource] field holds a symbol,
+either @scheme['time] or @scheme['memory].}
+
+
 @; ----------------------------------------------------------------------
 
 @section{Customizing Evaluators}
@@ -472,7 +485,9 @@ network connection.}
 @defparam[sandbox-exit-handler handler (any/c . -> . any)]{
 
 A parameter that determines the initial @scheme[(exit-handler)] for
-sandboxed evaluations.  The default handler simply throws an error.}
+sandboxed evaluations.  The default kills the evaluator with an
+appropriate error message (see
+@scheme[exn:fail:sandbox-terminated-reason]).}
 
 
 @defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{
