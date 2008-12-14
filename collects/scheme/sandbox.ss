@@ -114,7 +114,7 @@
 (define sandbox-path-permissions
   (make-parameter '()
     (lambda (new)
-      (map (lambda (perm) (cons (car perm) (map path->bregexp (cdr perm))))
+      (map (lambda (perm) (list (car perm) (path->bregexp (cadr perm))))
            new))))
 
 (define sandbox-network-guard
@@ -127,12 +127,10 @@
      orig-security
      (lambda (what path modes)
        (when path
-         (let ([needed (let loop ([order permission-order])
-                         (cond [(null? order)
+         (let ([needed (car (or (for/or ([p (in-list permission-order)])
+                                  (memq p modes))
                                 (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)]
-                               [(memq (car order) modes) (car order)]
-                               [else (loop (cdr order))]))]
+                                       "unknown access modes: ~e" modes)))]
                [bpath (parameterize ([current-security-guard orig-security])
                         (path->bytes (simplify-path* path)))])
            (unless (ormap (lambda (perm)
@@ -182,7 +180,7 @@
             (let ([base (simplify-path* base)])
               (loop (cdr paths)
                     (if (member base bases) bases (cons base bases))))))))
-  (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+  (append (map (lambda (p) `(read ,p)) paths)
           (map (lambda (b) `(read ,(build-path b "compiled"))) bases)
           (map (lambda (b) `(exists ,b)) bases)))
 
