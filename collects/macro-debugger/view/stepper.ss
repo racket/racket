@@ -13,6 +13,7 @@
          "warning.ss"
          "hiding-panel.ss"
          "term-record.ss"
+         "step-display.ss"
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/deriv-find.ss"
@@ -95,6 +96,7 @@
     (define/public (get-config) config)
     (define/public (get-controller) sbc)
     (define/public (get-view) sbview)
+    (define/public (get-step-displayer) step-displayer)
     (define/public (get-warnings-area) warnings-area)
     (define/public (get-macro-hiding-prefs) macro-hiding-prefs)
 
@@ -127,6 +129,9 @@
     (define sbview (new stepper-syntax-widget% 
                         (parent area)
                         (macro-stepper this)))
+    (define step-displayer (new step-display%
+                                (config config)
+                                (syntax-widget sbview)))
     (define sbc (send sbview get-controller))
     (define control-pane
       (new vertical-panel% (parent area) (stretchable-height #f)))

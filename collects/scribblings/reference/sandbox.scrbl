@@ -16,7 +16,10 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem access, and network access.
+filesystem access, and network access.  The common use case for this
+module is for a restricted sandboxed environment, so the defaults are
+set up to make it safe.  For other uses you will likely need to change
+mane of these settings.
 
 @defproc*[([(make-evaluator [language (or/c module-path? 
                                             (list/c 'special symbol?)
@@ -240,6 +243,19 @@ used from a module (by using a new namespace):
 
 }
 
+
+@defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
+           [(exn:fail:sandbox-terminated-reason [exn exn:fail:sandbox-terminated?])
+            symbol/c])]{
+
+A predicate and accessor for exceptions that are raised when a sandbox
+is terminated.  Once a sandbox raises such an exception, it will
+continue to raise it on further evaluation attempts.
+
+@scheme[call-with-limits].  The @scheme[resource] field holds a symbol,
+either @scheme['time] or @scheme['memory].}
+
+
 @; ----------------------------------------------------------------------
 
 @section{Customizing Evaluators}
@@ -414,12 +430,15 @@ done using a fake library that provides the same interface but no
 actual interaction. The default is @scheme[null].}
 
 
-@defparam[sandbox-security-guard guard security-guard?]{
+@defparam[sandbox-security-guard guard
+          (or/c security-guard? (-> security-guard?))]{
 
 A parameter that determines the initial
-@scheme[(current-security-guard)] for sandboxed evaluations.  The
-default forbids all filesystem I/O except for things in
-@scheme[sandbox-path-permissions], and it uses
+@scheme[(current-security-guard)] for sandboxed evaluations.  It can
+be either a security guard, or a function to construct one.  The
+default is a function that restricts the access of the current
+security guard by forbidding all filesystem I/O except for
+specifications in @scheme[sandbox-path-permissions], and it uses
 @scheme[sandbox-network-guard] for network connections.}
 
 
@@ -451,12 +470,6 @@ collection libraries (including
 @scheme[make-evalautor] for more information.}
 
 
-@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
-
-A parameter that determines the initial @scheme[(exit-handler)] for
-sandboxed evaluations.  The default handler simply throws an error.}
-
-
 @defparam[sandbox-network-guard proc
           (symbol?
            (or/c (and/c string? immutable?) #f)
@@ -467,6 +480,14 @@ sandboxed evaluations.  The default handler simply throws an error.}
 A parameter that specifieds a procedure to be used (as is) by the
 default @scheme[sandbox-security-guard].  The default forbids all
 network connection.}
+
+
+@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
+
+A parameter that determines the initial @scheme[(exit-handler)] for
+sandboxed evaluations.  The default kills the evaluator with an
+appropriate error message (see
+@scheme[exn:fail:sandbox-terminated-reason]).}
 
 
 @defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{
@@ -495,8 +516,14 @@ is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
-fail if the limits are strict enough.  Therefore, to avoid surprises
-you need to catch errors that happen when the sandbox is created.
+fail if the limits are strict enough.  For example,
+@schemeblock[
+  (parameterize ([sandbox-eval-limits '(0.25 5)])
+    (make-evaluator 'scheme/base '(sleep 2)))
+]
+will throw an error instead of creating an evaluator.  Therefore, to
+avoid surprises you need to catch errors that happen when the sandbox
+is created.
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
@@ -545,14 +572,26 @@ then, assuming sufficiently small limits,
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
 A parameter that determines the procedure used to create the inspector
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[make-inspector].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[make-inspector].}
+
+
+@defparam[sandbox-make-code-inspector make (-> inspector?)]{
+
+A parameter that determines the procedure used to create the code
+inspector for sandboxed evaluation.  The procedure is called when
+initializing an evaluator, and the default parameter value is
+@scheme[make-inspector].}
+
 
 @defparam[sandbox-make-logger make (-> logger?)]{
 
 A parameter that determines the procedure used to create the logger
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[current-logger].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[current-logger].  This means that it is not creating a new
+logger (this might change in the future).}
 
 @; ----------------------------------------------------------------------
 
@@ -686,7 +725,17 @@ used for evaluating expressions.
 This is usually similar to @scheme[(evaluator (list thunk))], except
 that this relies on the common meaning of list expressions as function
 application (which is not true in all languages), and it relies on
-MzScheme's @scheme[eval] forgiving a non-S-expression input.}
+MzScheme's @scheme[eval] forgiving a non-S-expression input.  In
+addition, you can avoid some of the sandboxed restrictions by using
+your own permissions, for example,
+@schemeblock[
+  (let ([guard (current-security-guard)])
+    (call-in-sandbox-context
+      (lambda ()
+        (parameterize ([current-security-guard guard])
+          (code:comment #, @t{can access anything you want here})
+          ))))
+]}
 
 @; ----------------------------------------------------------------------
 

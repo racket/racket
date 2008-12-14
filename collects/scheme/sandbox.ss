@@ -2,6 +2,7 @@
 
 (require scheme/port
          scheme/list
+         scheme/string
          syntax/moddep
          scheme/gui/dynamic)
 
@@ -17,9 +18,10 @@
          sandbox-override-collection-paths
          sandbox-path-permissions
          sandbox-security-guard
-         sandbox-exit-handler
          sandbox-network-guard
+         sandbox-exit-handler
          sandbox-make-inspector
+         sandbox-make-code-inspector
          sandbox-make-logger
          sandbox-memory-limit
          sandbox-eval-limits
@@ -37,6 +39,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         exn:fail:sandbox-terminated?
+         exn:fail:sandbox-terminated-reason
          exn:fail:resource?
          exn:fail:resource-resource)
 
@@ -102,33 +106,31 @@
          [suffix-re (bytes-append #"(?:$|" sep-re #")")])
     (lambda (path)
       (if (byte-regexp? path)
-          path
-          (let* ([path (path->bytes (simplify-path* path))]
-                 [path (regexp-quote (regexp-replace last-sep path #""))])
-            (byte-regexp (bytes-append #"^" path suffix-re)))))))
+        path
+        (let* ([path (path->bytes (simplify-path* path))]
+               [path (regexp-quote (regexp-replace last-sep path #""))])
+          (byte-regexp (bytes-append #"^" path suffix-re)))))))
 
 (define sandbox-path-permissions
   (make-parameter '()
-                  (lambda (new)
-                    (map (lambda (perm) (cons (car perm) (map path->bregexp (cdr perm))))
-                         new))))
+    (lambda (new)
+      (map (lambda (perm) (list (car perm) (path->bregexp (cadr perm))))
+           new))))
 
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
 
-(define default-sandbox-guard
+(define (make-default-sandbox-guard)
   (let ([orig-security (current-security-guard)])
     (make-security-guard
      orig-security
      (lambda (what path modes)
        (when path
-         (let ([needed (let loop ([order permission-order])
-                         (cond [(null? order)
+         (let ([needed (car (or (for/or ([p (in-list permission-order)])
+                                  (memq p modes))
                                 (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)]
-                               [(memq (car order) modes) (car order)]
-                               [else (loop (cdr order))]))]
+                                       "unknown access modes: ~e" modes)))]
                [bpath (parameterize ([current-security-guard orig-security])
                         (path->bytes (simplify-path* path)))])
            (unless (ormap (lambda (perm)
@@ -136,19 +138,28 @@
                                  (regexp-match (cadr perm) bpath)))
                           (sandbox-path-permissions))
              (error what "`~a' access denied for ~a"
-                    (apply string-append
-                           (add-between (map symbol->string modes) "+"))
+                    (string-append* (add-between (map symbol->string modes) "+"))
                     path)))))
      (lambda args (apply (sandbox-network-guard) args)))))
 
-(define sandbox-security-guard (make-parameter default-sandbox-guard))
+(define sandbox-security-guard
+  (make-parameter make-default-sandbox-guard
+    (lambda (x)
+      (if (or (security-guard? x)
+              (and (procedure? x) (procedure-arity-includes? x 0)))
+        x
+        (raise-type-error
+         'sandbox-security-guard
+         "security-guard or a security-guard translator procedure" x)))))
 
-(define (default-sandbox-exit-handler _)
-  (error 'exit "sandboxed code cannot exit"))
+;; this is never really used (see where it's used in the evaluator)
+(define (default-sandbox-exit-handler _) (error 'exit "sandbox exits"))
 
 (define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
 (define sandbox-make-inspector (make-parameter make-inspector))
+
+(define sandbox-make-code-inspector (make-parameter make-inspector))
 
 (define sandbox-make-logger (make-parameter current-logger))
 
@@ -169,7 +180,7 @@
             (let ([base (simplify-path* base)])
               (loop (cdr paths)
                     (if (member base bases) bases (cons base bases))))))))
-  (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+  (append (map (lambda (p) `(read ,p)) paths)
           (map (lambda (b) `(read ,(build-path b "compiled"))) bases)
           (map (lambda (b) `(exists ,b)) bases)))
 
@@ -433,21 +444,34 @@
                     (lambda (x) (abort-current-continuation deftag x)))
                    (loop (car exprs) (cdr exprs))))))))))
 
+;; We need a powerful enough code inspector to invoke the errortrace library
+;; (indirectly through private/sandbox-coverage).  But there is a small problem
+;; here -- errortrace/stacktrace.ss will grab the global code inspector value
+;; at the time it is invoked.  So we grab it here too, and use it to wrap the
+;; code that invokes errortrace.  If errortrace/stacktrace.ss is changed to
+;; grab the current inspector, then it would be better to avoid this here, and
+;; pass `evaluate-program' the inspector that was in effect when the sandbox
+;; was created.
+(define orig-code-inspector (current-code-inspector))
+
 (define (evaluate-program program limit-thunk uncovered!)
-  (when uncovered!
-    (eval `(,#'#%require scheme/private/sandbox-coverage)))
-  ;; the actual evaluation happens under the specified limits
-  ((limit-thunk (lambda ()
-                  (if (and (pair? program) (eq? 'begin (car program)))
-                    (eval* (cdr program))
-                    (eval program)))))
+  (parameterize ([current-code-inspector orig-code-inspector])
+    (when uncovered!
+      (eval `(,#'#%require scheme/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
                (let ([mod #'mod])
-                 (eval `(,#'require (quote ,mod)))
-                 (module->namespace `(quote ,(syntax-e mod))))]
+                 (lambda ()
+                   (eval `(,#'require (quote ,mod)))
+                   (module->namespace `(quote ,(syntax-e mod)))))]
               [_else #f])])
+    ;; the actual evaluation happens under the specified limits
+    ((limit-thunk (lambda ()
+                    (if (and (pair? program) (eq? 'begin (car program)))
+                      (eval* (cdr program))
+                      (eval program))
+                    (when ns (set! ns (ns))))))
     (when uncovered!
       (let ([get (let ([ns (current-namespace)])
                    (lambda () (eval '(get-uncovered-expressions) ns)))])
@@ -492,11 +516,21 @@
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
+
+(define-struct (exn:fail:sandbox-terminated exn:fail) (reason) #:transparent)
+(define (make-terminated reason)
+  (make-exn:fail:sandbox-terminated
+   (format "evaluator: terminated (~a)" reason)
+   (current-continuation-marks)
+   reason))
+
 (define (make-evaluator* init-hook allow program-maker)
+  (define orig-code-inspector (current-code-inspector))
   (define orig-cust     (current-custodian))
   (define memory-cust   (make-custodian orig-cust))
   (define memory-cust-box (make-custodian-box memory-cust #t))
   (define user-cust     (make-custodian memory-cust))
+  (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -507,6 +541,18 @@
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
+  (define terminated?   #f) ; set to an exception value when the sandbox dies
+  (define (terminated! reason)
+    (unless terminated?
+      (set! terminated?
+            (make-terminated
+             (cond [(eq? reason #t) ; => guess
+                    (if (custodian-box-value user-cust-box)
+                      'thread-killed
+                      'custodian-shutdown)]
+                   [reason reason] ; => explicit
+                   ;; otherwise it's an indication of an internal error
+                   [else "internal error: no termination reason"])))))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
@@ -515,6 +561,7 @@
     (when user-thread
       (let ([t user-thread])
         (set! user-thread #f)
+        (terminated! #f)
         (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
@@ -535,7 +582,8 @@
     (let ([n 0])
       (let loop ()
         (let ([expr (channel-get input-ch)])
-          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
+          (when (eof-object? expr)
+            (terminated! 'eof) (channel-put result-ch expr) (user-kill))
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
@@ -549,22 +597,28 @@
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (user-eval expr)
-    (let ([r (if user-thread
-               (begin (channel-put input-ch expr)
-                      (let loop ()
-                        (with-handlers ([(lambda (e)
-                                           (and (sandbox-propagate-breaks)
-                                                (exn:break? e)))
-                                         (lambda (e)
-                                           (user-break)
-                                           (loop))])
-                          (sync user-done-evt result-ch))))
-               eof)])
-      (cond [(eof-object? r) (error 'evaluator "terminated~a"
-                                    (if (custodian-box-value memory-cust-box)
-                                      "" " (memory exceeded)"))]
-            [(eq? (car r) 'exn) (raise (cdr r))]
-            [else (apply values (cdr r))])))
+    ;; the thread will usually be running, but it might be killed outside of
+    ;; the sandboxed environment, for example, if you do something like
+    ;; (kill-thread (ev '(current-thread))) when there are no per-expression
+    ;; limits (since then you get a different thread, which is already dead).
+    (when (and user-thread (thread-dead? user-thread))
+      (terminated! #t))
+    (cond
+      [terminated? => raise]
+      [(not user-thread) (error 'sandbox "internal error (user-thread is #f)")]
+      [else
+       (channel-put input-ch expr)
+       (let ([r (let loop ()
+                  (with-handlers ([(if (sandbox-propagate-breaks)
+                                     exn:break? (lambda (_) #f))
+                                   (lambda (e) (user-break) (loop))])
+                    (sync user-done-evt result-ch)))])
+         (cond [(eof-object? r)
+                (terminated! (and (not (custodian-box-value memory-cust-box))
+                                  'out-of-memory))
+                (raise terminated?)]
+               [(eq? (car r) 'exn) (raise (cdr r))]
+               [else (apply values (cdr r))]))]))
   (define get-uncovered
     (case-lambda
      [() (get-uncovered #t)]
@@ -592,7 +646,7 @@
       (let ([msg (evaluator-message-msg expr)])
         (case msg
           [(alive?) (and user-thread (not (thread-dead? user-thread)))]
-          [(kill)   (user-kill)]
+          [(kill)   (terminated! 'evaluator-killed) (user-kill)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
           [(input)  (apply input-putter (evaluator-message-args expr))]
@@ -623,7 +677,7 @@
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
   ;; set global memory limit
-  (when (sandbox-memory-limit)
+  (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory
      memory-cust (* (sandbox-memory-limit) 1024 1024) memory-cust))
   (parameterize* ; the order in these matters
@@ -660,12 +714,26 @@
     ;; general info
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
-    [current-security-guard (sandbox-security-guard)]
-    [exit-handler (sandbox-exit-handler)]
+    [current-security-guard
+     (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
+    [exit-handler
+     (let ([h (sandbox-exit-handler)])
+       (if (eq? h default-sandbox-exit-handler)
+         (lambda _ (terminated! 'exited) (user-kill))
+         h))]
     [current-inspector ((sandbox-make-inspector))]
     [current-logger ((sandbox-make-logger))]
-    ;; This breaks because we need to load some libraries that are trusted
-    ;; [current-code-inspector (make-inspector)]
+    [current-code-inspector (make-inspector)]
+    ;; The code inspector serves two purposes -- making sure that only trusted
+    ;; byte-code is loaded, and avoiding using protected moduel bindings, like
+    ;; the foreign library's `unsafe!'.  We don't need the first because we
+    ;; control it indirectly through the security guard, so this handler makes
+    ;; sure that byte-code is loaded using the original inspector.
+    [current-load/use-compiled
+     (let ([handler (current-load/use-compiled)])
+       (lambda (path modname)
+         (parameterize ([current-code-inspector orig-code-inspector])
+           (handler path modname))))]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
@@ -673,8 +741,10 @@
     ;; must be nested in the above (which is what paramaterize* does), or
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
-   (set! user-thread (bg-run->thread (run-in-bg user-process)))
-   (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
+   (let ([t (bg-run->thread (run-in-bg user-process))])
+     (set! user-done-evt
+           (handle-evt t (lambda (_) (terminated! #t) (user-kill) eof)))
+     (set! user-thread t))
    (let ([r (channel-get result-ch)])
      (if (eq? r 'ok)
        ;; initial program executed ok, so return an evaluator

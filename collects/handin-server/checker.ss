@@ -653,7 +653,7 @@
   (and (procedure? proc) (procedure-arity-includes? proc arity)))
 
 (define (get-namespace evaluator)
-  (call-in-sandbox-context evaluator (lambda () (current-namespace))))
+  (call-in-sandbox-context evaluator current-namespace))
 
 ;; checks that ids are defined, either as variables or syntaxes
 (provide !defined)

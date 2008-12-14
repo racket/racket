@@ -80,7 +80,7 @@
                          "(define (plus1 x) x)"
                          "(define (loop) (loop))"
                          "(define (memory x) (make-vector x))")))
-   (set-eval-limits ev 1 3)
+   (set-eval-limits ev 0.5 5)
    --eval--
    x => 1
    (id 1) => 1
@@ -102,7 +102,7 @@
    (loop) =err> "out of time"
    --top--
    (when (custodian-memory-accounting-available?)
-     (t --eval-- (memory 1000000) =err> "out of memory"))
+     (t --eval-- (memory 3000000) =err> "out of memory"))
    ;; test parameter settings (tricky to get this right since
    ;; with-limits runs stuff in a different thread)
    (set-eval-limits ev #f #f)
@@ -130,12 +130,30 @@
    (thread (lambda () (sleep 1) (break-evaluator ev)))
    --eval--
    (sleep 2) =err> "user break"
+   (printf "x = ~s\n" x) => (void)
    ;; termination
    --eval--
-   (printf "x = ~s\n" x) => (void)
-   ,eof =err> "terminated"
-   x =err> "terminated"
-   ,eof =err> "terminated"
+   ,eof =err> "terminated .eof.$"
+   123  =err> "terminated .eof.$"
+   ,eof =err> "terminated .eof.$"
+
+   ;; other termination messages
+   --top-- (set! ev (make-evaluator 'scheme/base)) (kill-evaluator ev)
+   --eval-- 123 =err> "terminated .evaluator-killed.$"
+
+   ;; eval-limits apply to the sandbox creation too
+   --top--
+   (set! ev (parameterize ([sandbox-eval-limits '(0.25 5)])
+              (make-evaluator 'scheme/base '(sleep 2))))
+   =err> "out of time"
+   (when (custodian-memory-accounting-available?)
+     (t --top--
+        (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
+                   (make-evaluator 'scheme/base
+                                   '(define a (for/list ([i (in-range 10)])
+                                                (collect-garbage)
+                                                (make-string 1000))))))
+        =err> "out of memory"))
 
    ;; i/o
    --top--
@@ -186,9 +204,9 @@
    --top--
    (kill-evaluator ev) => (void)
    --eval--
-   x =err> "terminated"
-   y =err> "terminated"
-   ,eof =err> "terminated"
+   x =err> "terminated .evaluator-killed.$"
+   y =err> "terminated .evaluator-killed.$"
+   ,eof =err> "terminated .evaluator-killed.$"
    --top--
    (let-values ([(i1 o1) (make-pipe)] [(i2 o2) (make-pipe)])
      ;; o1 -> i1 -ev-> o2 -> i2
@@ -401,54 +419,58 @@
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
    --eval--
-   (kill-thread (current-thread)) =err> "terminated"
+   (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
    --top--
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
    --eval--
-   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   (custodian-shutdown-all (current-custodian))
+   =err> "terminated .custodian-shutdown.$"
    --top--
    ;; also happens when it's done directly
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
    (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
-   =err> "terminated"
+   =err> "terminated .thread-killed.$"
    (set! ev (parameterize ([sandbox-eval-limits #f])
               (make-evaluator 'scheme/base)))
    (call-in-sandbox-context ev
      (lambda () (custodian-shutdown-all (current-custodian))))
-   =err> "terminated"
+   =err> "terminated .custodian-shutdown.$"
    --top--
    ;; now make sure it works with per-expression limits too
    (set! ev (make-evaluator 'scheme/base))
    --eval--
-   (kill-thread (current-thread)) =err> "terminated"
+   (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
    --top--
    (set! ev (make-evaluator 'scheme/base))
    --eval--
-   (custodian-shutdown-all (current-custodian)) =err> "terminated"
+   (custodian-shutdown-all (current-custodian))
+   =err> "terminated .custodian-shutdown.$"
    --top--
    (set! ev (make-evaluator 'scheme/base))
    (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
-   =err> "terminated"
+   =err> "terminated .thread-killed.$"
    (set! ev (make-evaluator 'scheme/base))
    (call-in-sandbox-context ev
      (lambda () (custodian-shutdown-all (current-custodian))))
-   =err> "terminated"
+   =err> "terminated .custodian-shutdown.$"
 
    ;; when an expression is out of memory, the sandbox should stay alive
    --top--
-   (set! ev (parameterize ([sandbox-eval-limits '(2 5)]
-                           [sandbox-memory-limit 100])
-              (make-evaluator 'scheme/base)))
-   --eval--
-   (define a '())
-   (define b 1)
-   (for ([i (in-range 20)])
-     (set! a (cons (make-bytes 500000) a))
-     (collect-garbage))
-   =err> "out of memory"
-   b => 1
+   (when (custodian-memory-accounting-available?)
+     (t --top--
+        (set! ev (parameterize ([sandbox-eval-limits '(2 5)]
+                                [sandbox-memory-limit 100])
+                   (make-evaluator 'scheme/base)))
+        --eval--
+        (define a '())
+        (define b 1)
+        (for ([i (in-range 20)])
+          (set! a (cons (make-bytes 500000) a))
+          (collect-garbage))
+        =err> "out of memory"
+        b => 1))
 
    ))
 

@@ -2,12 +2,14 @@
 #lang scheme/base
 (require scheme/match
          scheme/list
+         syntax/stx
          "deriv-c.ss"
          "deriv-util.ss")
 (provide find-derivs
          find-deriv
          find-derivs/syntax
          extract-all-fresh-names
+         compute-shift-table
          flatten-identifiers)
 
 ;; Utilities for finding subderivations
@@ -126,8 +128,12 @@
                (lambda _ #f)
                d))
 
-;; extract-all-fresh-names : Derivation -> syntaxlike
+;; extract-all-fresh-names : Derivation -> (listof identifier)
 (define (extract-all-fresh-names d)
+  (define ht (make-hasheq))
+  (define (add stxish)
+    (for-each (lambda (id) (hash-set! ht id #t))
+              (flatten-identifiers stxish)))
   (define (renaming-node? x)
     (or (p:lambda? x)
         ;;(p:case-lambda? x)
@@ -142,69 +148,83 @@
   (define (extract-fresh-names d)
     (match d
       [(Wrap p:lambda (e1 e2 rs ?1 renames body))
-       (if renames
-           (with-syntax ([(?formals . ?body) renames])
-             #'?formals)
-           null)]
+       (when renames
+         (with-syntax ([(?formals . ?body) renames])
+           (add #'?formals)))]
       [(Wrap clc (_ renames _))
-       (if renames
-           (with-syntax ([(?formals . ?body) renames])
-             #'?formals)
-           null)]
+       (when renames
+         (with-syntax ([(?formals . ?body) renames])
+           (add #'?formals)))]
       [(Wrap p:let-values (e1 e2 rs ?1 renames rhss body))
-       (if renames
-           (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
-             #'(?vars ...))
-           null)]
+       (when renames
+         (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
+           (add #'(?vars ...))))]
       [(Wrap p:letrec-values (e1 e2 rs ?1 renames rhss body))
-       (if renames
-           (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
-             #'(?vars ...))
-           null)]
-      [(Wrap p:letrec-syntaxes+values (e1 e2 rs ?1 srenames srhss vrenames vrhss body _))
-       (cons
-        (if srenames
-            (with-syntax ([(((?svars ?srhs) ...) ((?vvars ?vrhs) ...) . ?body)
-                           srenames])
-              #'(?svars ... ?vvars ...))
-            null)
-        (if vrenames
-            (with-syntax ([(((?vvars ?vrhs) ...) . ?body) vrenames])
-              #'(?vvars ...))
-            null))]
+       (when renames
+         (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
+           (add #'(?vars ...))))]
+      [(Wrap p:letrec-syntaxes+values (e1 e2 rs ?1 srenames srhss vrenames _ _ _))
+       (when srenames
+         (with-syntax ([(((?svars ?srhs) ...) ((?vvars ?vrhs) ...) . ?body)
+                        srenames])
+           (add #'(?svars ... ?vvars ...))))
+       (when vrenames
+         (with-syntax ([(((?vvars ?vrhs) ...) . ?body) vrenames])
+           (add #'(?vvars ...))))]
       [(Wrap b:defvals (rename head ?1 rename2 ?2))
        (let ([head-e2 (wderiv-e2 head)])
-         (if head-e2
-             (with-syntax ([(?dv ?vars ?rhs) head-e2])
-               #'?vars)
-             null))]
+         (when head-e2
+           (with-syntax ([(?dv ?vars ?rhs) head-e2])
+             (add #'?vars))))]
       [(Wrap b:defstx (rename head ?1 rename2 ?2 rhs))
        (let ([head-e2 (wderiv-e2 head)])
-         (if head-e2
-             (with-syntax ([(?ds ?svars ?rhs) head-e2])
-               #'?svars)
-             null))]
+         (when head-e2
+           (with-syntax ([(?ds ?svars ?rhs) head-e2])
+             (add #'?svars))))]
       [(Wrap p:define-values (e1 e2 rs ?1 rhs))
-       (if rhs
-           (with-syntax ([(?dv ?vars ?rhs) e1])
-             #'?vars)
-           null)]
+       (when rhs
+         (with-syntax ([(?dv ?vars ?rhs) e1])
+           (add #'?vars)))]
       [(Wrap p:define-syntaxes (e1 e2 rs ?1 rhs _))
-       (if rhs
-           (with-syntax ([(?ds ?svars ?srhs) e1])
-             #'?svars)
-           null)]
-      [_ null]))
+       (when rhs
+         (with-syntax ([(?ds ?svars ?srhs) e1])
+           (add #'?svars)))]
+      [_ (void)]))
+  (define renaming-forms
+    (find-deriv/unit+join+zero renaming-node?
+                               (lambda (d) #f)
+                               d
+                               list
+                               append
+                               null))
+  (for ([rf renaming-forms])
+    (extract-fresh-names rf))
+  (hash-map ht (lambda (k v) k)))
 
-  (let ([all-renaming-forms
-         (find-deriv/unit+join+zero
-          renaming-node?
-          (lambda (d) #f)
-          d
-          list
-          append
-          null)])
-    (flatten-identifiers (map extract-fresh-names all-renaming-forms))))
+;; compute-shift-table : deriv -> hash[id => (listof id)]
+(define (compute-shift-table d)
+  (define ht (make-hasheq))
+  (define module-forms
+    (find-derivs p:module? (lambda _ #f) d))
+  (define module-shift-renamers
+    (for/list ([mf module-forms])
+      (let ([shift (p:module-shift mf)]
+            [body (p:module-body mf)])
+        (and shift body
+             (with-syntax ([(_module _name _lang shifted-body) shift])
+               (add-rename-mapping ht (wderiv-e2 body) #'shifted-body))))))
+  ht)
+
+(define (add-rename-mapping ht from to)
+  (define (loop from to)
+    (cond [(and (stx-pair? from) (stx-pair? to))
+           (loop (stx-car from) (stx-car to))
+           (loop (stx-cdr from) (stx-cdr to))]
+          [(and (identifier? from) (identifier? to))
+           (hash-set! ht from (cons to (hash-ref ht from null)))]
+          [else (void)]))
+  (loop from to)
+  (void))
 
 ;; flatten-identifiers : syntaxlike -> (list-of identifier)
 (define (flatten-identifiers stx)

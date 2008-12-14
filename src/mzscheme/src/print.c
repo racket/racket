@@ -2358,8 +2358,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         symtab_set(pp, mt, obj);
       }
     }
-  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_variable_type)
-	   && !((Module_Variable *)obj)->mod_phase)
+  else if (compact && SAME_TYPE(SCHEME_TYPE(obj), scheme_module_variable_type))
     {
       Scheme_Object *idx;
 
@@ -2378,7 +2377,11 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
           print(mv->modidx, notdisplay, 1, ht, mt, pp);
         }
 	print(mv->sym, notdisplay, 1, ht, mt, pp);
-	print_compact_number(pp, mv->pos);
+        if (((Module_Variable *)obj)->mod_phase) {
+          /* mod_phase must be 1 */
+          print_compact_number(pp, -2);
+        }
+        print_compact_number(pp, mv->pos);
 
         symtab_set(pp, mt, obj);
       }

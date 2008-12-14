@@ -57,7 +57,8 @@
        (values (append 
                 (map (lambda (tl)
                        (match tl
-                         [(? symbol?) '#%linkage]
+                         [#f '#%linkage]
+                         [(? symbol?) (string->symbol (format "_~a" tl))]
                          [(struct global-bucket (name)) 
                           (string->symbol (format "_~a" name))]
                          [(struct module-variable (modidx sym pos phase))
