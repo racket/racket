@@ -95,36 +95,41 @@
       (send sbview add-text "\n"))
 
     (define/public (add-step step
-                             #:binders binders)
+                             #:binders binders
+                             #:shift-table [shift-table #f])
       (cond [(step? step)
-             (show-step step binders)]
+             (show-step step binders shift-table)]
             [(misstep? step)
-             (show-misstep step binders)]
+             (show-misstep step binders shift-table)]
             [(prestep? step)
-             (show-prestep step binders)]
+             (show-prestep step binders shift-table)]
             [(poststep? step)
-             (show-poststep step binders)]))
+             (show-poststep step binders shift-table)]))
 
     (define/public (add-syntax stx
                                #:binders binders
+                               #:shift-table [shift-table #f]
                                #:definites definites)
       (send sbview add-syntax stx
-            #:alpha-table binders
+            #:binder-table binders
+            #:shift-table shift-table
             #:definites (or definites null)))
 
     (define/public (add-final stx error
                               #:binders binders
+                              #:shift-table [shift-table #f]
                               #:definites definites)
       (when stx
         (send sbview add-text "Expansion finished\n")
         (send sbview add-syntax stx
-              #:alpha-table binders
+              #:binder-table binders
+              #:shift-table shift-table
               #:definites (or definites null)))
       (when error
         (add-error error)))
 
     ;; show-lctx : Step -> void
-    (define/private (show-lctx step binders)
+    (define/private (show-lctx step binders shift-table)
       (define state (protostep-s1 step))
       (define lctx (state-lctx state))
       (when (pair? lctx)
@@ -135,6 +140,7 @@
                     (insert-syntax/redex (bigframe-term bf)
                                          (bigframe-foci bf)
                                          binders
+                                         shift-table
                                          (state-uses state)
                                          (state-frontier state)))
                   (reverse lctx))))
@@ -149,72 +155,81 @@
        (step-type->string (protostep-type step))))
     
     ;; show-step : Step -> void
-    (define/private (show-step step binders)
-      (show-state/redex (protostep-s1 step) binders)
+    (define/private (show-step step binders shift-table)
+      (show-state/redex (protostep-s1 step) binders shift-table)
       (separator step)
-      (show-state/contractum (step-s2 step) binders)
-      (show-lctx step binders))
+      (show-state/contractum (step-s2 step) binders shift-table)
+      (show-lctx step binders shift-table))
 
-    (define/private (show-state/redex state binders)
+    (define/private (show-state/redex state binders shift-table)
       (insert-syntax/redex (state-term state)
                            (state-foci state)
                            binders
+                           shift-table
                            (state-uses state)
                            (state-frontier state)))
 
-    (define/private (show-state/contractum state binders)
+    (define/private (show-state/contractum state binders shift-table)
       (insert-syntax/contractum (state-term state)
                                 (state-foci state)
                                 binders
+                                shift-table
                                 (state-uses state)
                                 (state-frontier state)))
 
     ;; show-prestep : Step -> void
-    (define/private (show-prestep step binders)
+    (define/private (show-prestep step binders shift-table)
       (separator/small step)
-      (show-state/redex (protostep-s1 step) binders)
-      (show-lctx step binders))
+      (show-state/redex (protostep-s1 step) binders shift-table)
+      (show-lctx step binders shift-table))
 
     ;; show-poststep : Step -> void
-    (define/private (show-poststep step binders)
+    (define/private (show-poststep step binders shift-table)
       (separator/small step)
-      (show-state/contractum (protostep-s1 step) binders)
-      (show-lctx step binders))
+      (show-state/contractum (protostep-s1 step) binders shift-table)
+      (show-lctx step binders shift-table))
 
     ;; show-misstep : Step -> void
-    (define/private (show-misstep step binders)
+    (define/private (show-misstep step binders shift-table)
       (define state (protostep-s1 step))
-      (show-state/redex state binders)
+      (show-state/redex state binders shift-table)
       (separator step)
       (send sbview add-error-text (exn-message (misstep-exn step)))
       (send sbview add-text "\n")
       (when (exn:fail:syntax? (misstep-exn step))
         (for-each (lambda (e)
                     (send sbview add-syntax e
-                          #:alpha-table binders
+                          #:binder-table binders
+                          #:shift-table shift-table
                           #:definites (or (state-uses state) null)))
                   (exn:fail:syntax-exprs (misstep-exn step))))
-      (show-lctx step binders))
+      (show-lctx step binders shift-table))
 
-    ;; insert-syntax/color : syntax syntaxes identifiers syntaxes string -> void
-    (define/private (insert-syntax/color stx foci binders definites frontier hi-color)
+    ;; insert-syntax/color
+    (define/private (insert-syntax/color stx foci binders shift-table
+                                         definites frontier hi-color)
       (define highlight-foci? (send config get-highlight-foci?))
       (define highlight-frontier? (send config get-highlight-frontier?))
       (send sbview add-syntax stx
             #:definites (or definites null)
-            #:alpha-table binders
+            #:binder-table binders
+            #:shift-table shift-table
             #:hi-colors (list hi-color
                               "WhiteSmoke")
             #:hi-stxss (list (if highlight-foci? foci null)
                              (if highlight-frontier? frontier null))))
 
-    ;; insert-syntax/redex : syntax syntaxes identifiers syntaxes -> void
-    (define/private (insert-syntax/redex stx foci binders definites frontier)
-      (insert-syntax/color stx foci binders definites frontier "MistyRose"))
+    ;; insert-syntax/redex
+    (define/private (insert-syntax/redex stx foci binders shift-table
+                                         definites frontier)
+      (insert-syntax/color stx foci binders shift-table
+                           definites frontier "MistyRose"))
 
-    ;; insert-syntax/contractum : syntax syntaxes identifiers syntaxes -> void
-    (define/private (insert-syntax/contractum stx foci binders definites frontier)
-      (insert-syntax/color stx foci binders definites frontier "LightCyan"))
+    ;; insert-syntax/contractum 
+    (define/private (insert-syntax/contractum stx foci binders shift-table
+                                              definites frontier)
+      (insert-syntax/color stx foci binders shift-table
+                           definites frontier "LightCyan"))
 
     ;; insert-step-separator : string -> void
     (define/private (insert-step-separator text)
