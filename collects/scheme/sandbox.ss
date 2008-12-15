@@ -312,7 +312,9 @@
          ;; time limit
          (when sec
            (let ([t (current-thread)])
-             (thread (lambda () (unless (sync/timeout sec t) (set! r 'time)) (kill-thread t)))))
+             (thread (lambda ()
+                       (unless (sync/timeout sec t) (set! r 'time))
+                       (kill-thread t)))))
          (set! r (with-handlers ([void (lambda (e) (list raise e))])
                    (call-with-values thunk (lambda vs (list* values vs))))))
        ;; The thread might be killed by the timer thread, so don't let
@@ -573,21 +575,25 @@
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
   (define terminated?   #f) ; set to an exception value when the sandbox dies
-  (define (terminated! reason)
-    (unless terminated?
-      (set! terminated?
-            (make-terminated
-             (cond [(eq? reason #t) ; => guess
-                    (if (custodian-box-value user-cust-box)
-                      'thread-killed
-                      'custodian-shutdown)]
-                   [reason reason] ; => explicit
-                   ;; otherwise it's an indication of an internal error
-                   [else "internal error: no termination reason"])))))
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
       (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
+  (define (terminated! reason)
+    (unless terminated?
+      (set! terminated?
+            (make-terminated
+             (cond
+               ;; #f is used as an indication of an internal error, when we
+               ;; don't know why the sandbox is killed
+               [(not reason) "internal error: no termination reason"]
+               ;; explicit reason given
+               [(not (eq? reason #t)) reason]
+               ;; reason = #t => guess the reason
+               [(not (custodian-box-value memory-cust-box)) 'out-of-memory]
+               [(not (custodian-box-value user-cust-box)) 'custodian-shutdown]
+               [(thread-dead? user-thread) 'thread-killed]
+               [else "internal error: cannot guess termination reason"])))))
   (define (user-kill)
     (when user-thread
       (let ([t user-thread])
@@ -596,6 +602,10 @@
         (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
+  (define (terminate+kill! reason raise?)
+    (terminated! reason)
+    (user-kill)
+    (when raise? (raise terminated?)))
   (define (user-break)
     (when user-thread (break-thread user-thread)))
   (define (user-process)
@@ -627,27 +637,24 @@
                                (eval* (input->code (list expr) 'eval n))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
+  (define (get-user-result)
+    (with-handlers ([(if (sandbox-propagate-breaks) exn:break? (lambda (_) #f))
+                     (lambda (e) (user-break) (get-user-result))])
+      (sync user-done-evt result-ch)))
   (define (user-eval expr)
     ;; the thread will usually be running, but it might be killed outside of
     ;; the sandboxed environment, for example, if you do something like
     ;; (kill-thread (ev '(current-thread))) when there are no per-expression
     ;; limits (since then you get a different thread, which is already dead).
     (when (and user-thread (thread-dead? user-thread))
-      (terminated! #t))
+      (terminate+kill! #t #t))
     (cond
       [terminated? => raise]
       [(not user-thread) (error 'sandbox "internal error (user-thread is #f)")]
       [else
        (channel-put input-ch expr)
-       (let ([r (let loop ()
-                  (with-handlers ([(if (sandbox-propagate-breaks)
-                                     exn:break? (lambda (_) #f))
-                                   (lambda (e) (user-break) (loop))])
-                    (sync user-done-evt result-ch)))])
-         (cond [(eof-object? r)
-                (terminated! (and (not (custodian-box-value memory-cust-box))
-                                  'out-of-memory))
-                (raise terminated?)]
+       (let ([r (get-user-result)])
+         (cond [(eof-object? r) (terminate+kill! #t #t)]
                [(eq? (car r) 'exn) (raise (cdr r))]
                [else (apply values (cdr r))]))]))
   (define get-uncovered
@@ -677,7 +684,7 @@
       (let ([msg (evaluator-message-msg expr)])
         (case msg
           [(alive?) (and user-thread (not (thread-dead? user-thread)))]
-          [(kill)   (terminated! 'evaluator-killed) (user-kill)]
+          [(kill)   (terminate+kill! 'evaluator-killed #f)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
           [(input)  (apply input-putter (evaluator-message-args expr))]
@@ -773,7 +780,7 @@
     [exit-handler
      (let ([h (sandbox-exit-handler)])
        (if (eq? h default-sandbox-exit-handler)
-         (lambda _ (terminated! 'exited) (user-kill))
+         (lambda _ (terminate+kill! 'exited #f))
          h))]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
@@ -783,10 +790,9 @@
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
    (let ([t (bg-run->thread (run-in-bg user-process))])
-     (set! user-done-evt
-           (handle-evt t (lambda (_) (terminated! #t) (user-kill) eof)))
+     (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
      (set! user-thread t))
-   (let ([r (channel-get result-ch)])
+   (let ([r (get-user-result)])
      (if (eq? r 'ok)
        ;; initial program executed ok, so return an evaluator
        evaluator
