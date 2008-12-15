@@ -24,6 +24,7 @@ typedef cairo_matrix_t cairo_matrix_p;
 #  define cairo_default_matrix(dev) cairo_identity_matrix(dev)
 #  undef cairo_init_clip
 #  define cairo_init_clip(dev) cairo_reset_clip(dev)
+#  define cairo_destroy_it(c) (cairo_surface_destroy(cairo_get_target(c)), cairo_destroy(c))
 # else
   /* Old Cairo API (0.5 and up) */
 typedef cairo_matrix_t *cairo_matrix_p;
@@ -31,5 +32,6 @@ typedef cairo_matrix_t *cairo_matrix_p;
 #  define cairo__set_matrix(CAIRO_DEV, m) cairo_set_matrix(CAIRO_DEV, m)
 #  define cairo_set_create_xlib(dev, display, drawable, vis, w, h) \
           dev = cairo_create(); cairo_set_target_drawable(dev, wxAPP_DISPLAY, DRAWABLE)
+#  define cairo_destroy_it(c) cairo_destroy(c)
 # endif
 #endif
