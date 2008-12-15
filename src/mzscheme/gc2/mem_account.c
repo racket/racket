@@ -430,6 +430,11 @@ static void BTC_do_accounting(NewGC *gc)
       if(owner_table[i])
         owner_table[i]->memory_use = 0;
 
+    /* start with root: */
+    while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
+      cur = SCHEME_PTR1_VAL(cur->parent);
+    }
+
     /* walk forward for the order we want (blame parents instead of children) */
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
