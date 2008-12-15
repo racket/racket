@@ -512,8 +512,9 @@ A parameter that determines the total memory limit on the sandbox in
 megabytes (it can hold a rational or a floating point number).  When
 this limit is exceeded, the sandbox is terminated.  This value is used
 when the sandbox is created and the limit cannot be changed
-afterwards.  See @scheme[sandbox-eval-limits] for per-evaluation
-limits and a description of how the two limits work together.}
+afterwards.  It defaults to 30mb.  See @scheme[sandbox-eval-limits]
+for per-evaluation limits and a description of how the two limits work
+together.}
 
 
 @defparam[sandbox-eval-limits limits
