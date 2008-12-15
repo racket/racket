@@ -514,7 +514,14 @@ this limit is exceeded, the sandbox is terminated.  This value is used
 when the sandbox is created and the limit cannot be changed
 afterwards.  It defaults to 30mb.  See @scheme[sandbox-eval-limits]
 for per-evaluation limits and a description of how the two limits work
-together.}
+together.
+
+Note that (when memory accounting is enabled) memory is attributed to
+the highest custodian that refers to it.  This means that if you
+inspect a value that sandboxed evaluation returns outside of the
+sandbox, your own custodian will be charged for it.  To ensure that it
+is charged back to the sandbox, you should remove references to such
+values when the code is done inspecting it.}
 
 
 @defparam[sandbox-eval-limits limits
