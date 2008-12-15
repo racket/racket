@@ -506,29 +506,30 @@ appropriate error message (see
 @scheme[exn:fail:sandbox-terminated-reason]).}
 
 
-@defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{
+@defparam[sandbox-memory-limit limit (or/c nonnegative-number? #f)]{
 
-A parameter that determines the total memory limit on the sandbox.
-When this limit is exceeded, the sandbox is terminated.  This value is
-used when the sandbox is created and the limit cannot be changed
+A parameter that determines the total memory limit on the sandbox in
+megabytes (it can hold a rational or a floating point number).  When
+this limit is exceeded, the sandbox is terminated.  This value is used
+when the sandbox is created and the limit cannot be changed
 afterwards.  See @scheme[sandbox-eval-limits] for per-evaluation
 limits and a description of how the two limits work together.}
 
 
 @defparam[sandbox-eval-limits limits
-          (or/c (list/c (or/c exact-nonnegative-integer? #f)
-                        (or/c exact-nonnegative-integer? #f))
+          (or/c (list/c (or/c nonnegative-number? #f)
+                        (or/c nonnegative-number? #f))
                 #f)]{
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
 of the input program.  Its value should be a list of two numbers;
 where the first is a timeout value in seconds, and the second is a
-memory limit in megabytes.  Either one can be @scheme[#f] for
-disabling the corresponding limit; alternately, the parameter can be
-set to @scheme[#f] to disable all per-evaluation limits (useful in
-case more limit kinds are available in future versions). The default
-is @scheme[(list 30 20)].
+memory limit in megabytes (note that they don't have to be integers).
+Either one can be @scheme[#f] for disabling the corresponding limit;
+alternately, the parameter can be set to @scheme[#f] to disable all
+per-evaluation limits (useful in case more limit kinds are available
+in future versions). The default is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can

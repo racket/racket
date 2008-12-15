@@ -302,7 +302,8 @@
     (define-values (cust cust-box)
       (if (and mb memory-accounting?)
         (let ([c (make-custodian (current-custodian))])
-          (custodian-limit-memory c (* mb 1024 1024) c)
+          (custodian-limit-memory
+           c (inexact->exact (round (* mb 1024 1024))) c)
           (values c (make-custodian-box c #t)))
         (values (current-custodian) #f)))
     (parameterize ([current-custodian cust])
@@ -709,7 +710,9 @@
   ;; set global memory limit
   (when (and memory-accounting? (sandbox-memory-limit))
     (custodian-limit-memory
-     memory-cust (* (sandbox-memory-limit) 1024 1024) memory-cust))
+     memory-cust
+     (inexact->exact (round (* (sandbox-memory-limit) 1024 1024)))
+     memory-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [current-custodian user-cust]
