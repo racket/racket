@@ -148,11 +148,11 @@
    =err> "out of time"
    (when (custodian-memory-accounting-available?)
      (t --top--
-        (set! ev (parameterize ([sandbox-eval-limits '(0.25 2)])
+        (set! ev (parameterize ([sandbox-eval-limits '(2 2)])
                    (make-evaluator 'scheme/base
                                    '(define a (for/list ([i (in-range 10)])
                                                 (collect-garbage)
-                                                (make-string 200000))))))
+                                                (make-bytes 500000))))))
         =err> "out of memory"))
 
    ;; i/o
