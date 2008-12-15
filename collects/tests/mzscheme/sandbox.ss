@@ -152,7 +152,7 @@
                    (make-evaluator 'scheme/base
                                    '(define a (for/list ([i (in-range 10)])
                                                 (collect-garbage)
-                                                (make-string 500000))))))
+                                                (make-string 200000))))))
         =err> "out of memory"))
 
    ;; i/o
@@ -423,8 +423,8 @@
    --top--
    (set! ev (parameterize ([sandbox-output 'bytes]
                            [sandbox-error-output current-output-port]
-                           [sandbox-memory-limit 20]
-                           [sandbox-eval-limits '(0.25 15)])
+                           [sandbox-memory-limit 2]
+                           [sandbox-eval-limits '(0.25 1)])
               (make-evaluator 'scheme/base)))
    ;; GCing is needed to allow these to happen (note: the memory limit is very
    ;; tight here, this test usually fails if the sandbox library is not
@@ -490,10 +490,11 @@
         (define b 1)
         (length
          (for/fold ([v null]) ([i (in-range 20)])
-           ;; Increases size of sandbox:
+           ;; increases size of sandbox: it's reachable from it (outside of
+           ;; this evaluation) because `a' is defined there
            (set! a (cons (make-bytes 500000) a))
            (collect-garbage)
-           ;; Increases size of evaluation:
+           ;; increases size of the current evaluation
            (cons (make-bytes 500000) v)))
         =err> "out of memory"
         b => 1))
