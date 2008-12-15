@@ -900,6 +900,28 @@ static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[])
 /*                              custodians                                */
 /*========================================================================*/
 
+static void adjust_limit_table(Scheme_Custodian *c)
+{
+  /* If a custodian has a limit and any object or children, then it
+     must not be collected and merged with its parent. To prevent
+     collection, we register the custodian in the `limite_custodians'
+     table. */
+  if (c->has_limit) {
+    if (c->elems || CUSTODIAN_FAM(c->children)) {
+      if (!c->recorded) {
+        c->recorded = 1;
+        if (!limited_custodians)
+          limited_custodians = scheme_make_hash_table(SCHEME_hash_ptr);
+        scheme_hash_set(limited_custodians, (Scheme_Object *)c, scheme_true);
+      }
+    } else if (c->recorded) {
+      c->recorded = 0;
+      if (limited_custodians)
+        scheme_hash_set(limited_custodians, (Scheme_Object *)c, NULL);
+    }
+  }
+}
+
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[])
 {
   long lim;
@@ -975,13 +997,11 @@ static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[])
     }
   }
 
-  if (!limited_custodians)
-    limited_custodians = scheme_make_hash_table(SCHEME_hash_ptr);
-  scheme_hash_set(limited_custodians, args[0], scheme_true);
   ((Scheme_Custodian *)args[0])->has_limit = 1;
+  adjust_limit_table((Scheme_Custodian *)args[0]);
   if (argc > 2) {
-    scheme_hash_set(limited_custodians, args[2], scheme_true);
     ((Scheme_Custodian *)args[2])->has_limit = 1;
+    adjust_limit_table((Scheme_Custodian *)args[2]);
   }
 
 #ifdef NEWGC_BTC_ACCOUNT
@@ -1075,6 +1095,9 @@ static void add_managed_box(Scheme_Custodian *m,
       m->data[i] = data;
       m->mrefs[i] = mref;
 
+      m->elems++;
+      adjust_limit_table(m);
+
       return;
     }
   }
@@ -1085,6 +1108,9 @@ static void add_managed_box(Scheme_Custodian *m,
   m->closers[m->count] = f;
   m->data[m->count] = data;
   m->mrefs[m->count] = mref;
+
+  m->elems++;
+  adjust_limit_table(m);
 
   m->count++;
 }
@@ -1112,6 +1138,8 @@ static void remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o,
       if (old_data)
 	*old_data = m->data[i];
       m->data[i] = NULL;
+      --m->elems;
+      adjust_limit_table(m);
       break;
     }
   }
@@ -1163,6 +1191,8 @@ static void adjust_custodian_family(void *mgr, void *skip_move)
 
       m = next;
     }
+
+    adjust_limit_table(parent);
 
     /* Add remaining managed items to parent: */
     if (!skip_move) {
@@ -1221,6 +1251,9 @@ void insert_custodian(Scheme_Custodian *m, Scheme_Custodian *parent)
     CUSTODIAN_FAM(m->global_next) = NULL;
     CUSTODIAN_FAM(m->global_prev) = NULL;
   }
+
+  if (parent)
+    adjust_limit_table(parent);
 }
 
 Scheme_Custodian *scheme_make_custodian(Scheme_Custodian *parent) 
@@ -1483,6 +1516,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
 
     m->count = 0;
     m->alloc = 0;
+    m->elems = 0;
     m->boxes = NULL;
     m->closers = NULL;
     m->data = NULL;
@@ -1496,9 +1530,7 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
     /* Remove this custodian from its parent */
     adjust_custodian_family(m, m);
 
-    if (m->has_limit) {
-      scheme_hash_set(limited_custodians, (Scheme_Object *)m, NULL);
-    }
+    adjust_limit_table(m);
     
     m = next_m;
   }

@@ -1509,6 +1509,7 @@ static void print_tagged_value(const char *prefix,
 			       void *v, int xtagged, unsigned long diff, int max_w,
 			       const char *suffix)
 {
+  char buffer[256];
   char *type, *sep, diffstr[30];
   long len;
   
@@ -1520,7 +1521,6 @@ static void print_tagged_value(const char *prefix,
     type = scheme_write_to_string_w_max((Scheme_Object *)v, &len, max_w);
     if (!scheme_strncmp(type, "#<thread", 8) 
 	&& ((type[8] == '>') || (type[8] == ':'))) {
-      char buffer[256];
       char *run, *sus, *kill, *clean, *deq, *all, *t2;
       int state = ((Scheme_Thread *)v)->running, len2;
 	    
@@ -1541,7 +1541,6 @@ static void print_tagged_value(const char *prefix,
       len += len2;
       type = t2;
     } else if (!scheme_strncmp(type, "#<continuation>", 15)) {
-      char buffer[256];
       char *t2;
       int len2;
 	    
@@ -1561,8 +1560,20 @@ static void print_tagged_value(const char *prefix,
       memcpy(t2 + len, buffer, len2 + 1);
       len += len2;
       type = t2;
+    } else if (!scheme_strncmp(type, "#<custodian>", 13)) {
+      char *t2;
+      int len2;
+
+      sprintf(buffer, "[%d]",
+              ((Scheme_Custodian *)v)->elems);
+
+      len2 = strlen(buffer);
+      t2 = (char *)scheme_malloc_atomic(len + len2 + 1);
+      memcpy(t2, type, len);
+      memcpy(t2 + len, buffer, len2 + 1);
+      len += len2;
+      type = t2;      
     } else if (!scheme_strncmp(type, "#<namespace", 11)) {
-      char buffer[256];
       char *t2;
       int len2;
 	    
@@ -1596,7 +1607,6 @@ static void print_tagged_value(const char *prefix,
       type = t2;
     } else if (!scheme_strncmp(type, "#<hash-table>", 13)
 	       || !scheme_strncmp(type, "#<hash-table:", 13)) {
-      char buffer[256];
       char *t2;
       int len2;
       int htype, size, count;
