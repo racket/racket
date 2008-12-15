@@ -275,59 +275,94 @@
 
    ;; limited FS access, allowed for requires
    --top--
-   (let* ([tmp       (find-system-path 'temp-dir)]
-          [schemelib (path->string (collection-path "scheme"))]
-          [list-lib  (path->string (build-path schemelib "list.ss"))]
-          [test-lib  (path->string (build-path tmp "sandbox-test.ss"))])
-       (t --top--
-          (set! ev (make-evaluator 'scheme/base))
-          --eval--
-          ;; reading from collects is allowed
-          (list (directory-list ,schemelib))
-          (file-exists? ,list-lib) => #t
-          (input-port? (open-input-file ,list-lib)) => #t
-          ;; writing is forbidden
-          (open-output-file ,list-lib) =err> "`write' access denied"
-          ;; reading from other places is forbidden
-          (directory-list ,tmp) =err> "`read' access denied"
-          ;; no network too
-          (require scheme/tcp)
-          (tcp-listen 12345) =err> "network access denied"
-          --top--
-          ;; reading from a specified require is fine
-          (with-output-to-file test-lib
-            (lambda ()
-              (printf "~s\n" '(module sandbox-test scheme/base
-                                (define x 123) (provide x))))
-            #:exists 'replace)
-          (set! ev (make-evaluator 'scheme/base #:requires `(,test-lib)))
-          --eval--
-          x => 123
-          (length (with-input-from-file ,test-lib read)) => 5
-          ;; the directory is still not kosher
-          (directory-list ,tmp) =err> "`read' access denied"
-          --top--
-          ;; should work also for module evaluators
-          ;; --> NO!  Shouldn't make user code require whatever it wants
-          ;; (set! ev (make-evaluator `(module foo scheme/base
-          ;;                             (require (file ,test-lib)))))
-          ;; --eval--
-          ;; x => 123
-          ;; (length (with-input-from-file ,test-lib read)) => 5
-          ;; ;; the directory is still not kosher
-          ;; (directory-list tmp) =err> "file access denied"
-          --top--
-          ;; explicitly allow access to tmp
-          (set! ev (parameterize ([sandbox-path-permissions
-                                   `((read ,tmp)
-                                     ,@(sandbox-path-permissions))])
-                     (make-evaluator 'scheme/base)))
-          --eval--
-          (length (with-input-from-file ,test-lib read)) => 5
-          (list? (directory-list ,tmp))
-          (open-output-file ,(build-path tmp "blah")) =err> "access denied"
-          (delete-directory ,(build-path tmp "blah")) =err> "access denied")
-       (delete-file test-lib))
+   (let* ([tmp       (make-temporary-file "sandboxtest~a" 'directory)]
+          [strpath   (lambda xs (path->string (apply build-path xs)))]
+          [schemelib (strpath (collection-path "scheme"))]
+          [list-lib  (strpath schemelib "list.ss")]
+          [list-zo   (strpath schemelib "compiled" "list_ss.zo")]
+          [test-lib  (strpath tmp "sandbox-test.ss")]
+          [test-zo   (strpath tmp "compiled" "sandbox-test_ss.zo")]
+          [test2-lib (strpath tmp "sandbox-test2.ss")]
+          [test2-zo  (strpath tmp "compiled" "sandbox-test2_ss.zo")])
+     (t --top--
+        (set! ev (make-evaluator 'scheme/base))
+        --eval--
+        ;; reading from collects is allowed
+        (list? (directory-list ,schemelib))
+        (file-exists? ,list-lib) => #t
+        (input-port? (open-input-file ,list-lib)) => #t
+        ;; writing is forbidden
+        (open-output-file ,list-lib) =err> "`write' access denied"
+        ;; reading from other places is forbidden
+        (directory-list ,tmp) =err> "`read' access denied"
+        ;; no network too
+        (require scheme/tcp)
+        (tcp-listen 12345) =err> "network access denied"
+        --top--
+        ;; reading from a specified require is fine
+        (with-output-to-file test-lib
+          (lambda ()
+            (printf "~s\n" '(module sandbox-test scheme/base
+                              (define x 123) (provide x)))))
+        (set! ev (make-evaluator 'scheme/base #:requires `(,test-lib)))
+        --eval--
+        x => 123
+        (length (with-input-from-file ,test-lib read)) => 5
+        ;; the directory is still not kosher
+        (directory-list ,tmp) =err> "`read' access denied"
+        --top--
+        ;; should work also for module evaluators
+        ;; --> NO!  Shouldn't make user code require whatever it wants
+        ;; (set! ev (make-evaluator `(module foo scheme/base
+        ;;                             (require (file ,test-lib)))))
+        ;; --eval--
+        ;; x => 123
+        ;; (length (with-input-from-file ,test-lib read)) => 5
+        ;; ;; the directory is still not kosher
+        ;; (directory-list tmp) =err> "file access denied"
+        --top--
+        ;; explicitly allow access to tmp, and write access to a single file
+        (make-directory (build-path tmp "compiled"))
+        (set! ev (parameterize ([sandbox-path-permissions
+                                 `((read ,tmp)
+                                   (write ,test-zo)
+                                   ,@(sandbox-path-permissions))])
+                   (make-evaluator 'scheme/base)))
+        --eval--
+        (length (with-input-from-file ,test-lib read)) => 5
+        (list? (directory-list ,tmp))
+        (open-output-file ,(build-path tmp "blah")) =err> "access denied"
+        (delete-directory ,(build-path tmp "blah")) =err> "access denied"
+        (list? (directory-list ,schemelib))
+        ;; we can read/write/delete list-zo, but we can't load bytecode from
+        ;; it due to the code inspector
+        (copy-file ,list-zo ,test-zo) => (void)
+        (copy-file ,test-zo ,list-zo) =err> "access denied"
+        (load/use-compiled ,test-lib) => (void)
+        (require 'list) =err> "access from an uncertified context"
+        (delete-file ,test-zo) => (void)
+        (delete-file ,test-lib) =err> "`delete' access denied"
+        --top--
+        ;; a more explicit test of bytcode loading, allowing rw access to the
+        ;; complete tmp directory, but read-bytecode only for test2-lib
+        (set! ev (parameterize ([sandbox-path-permissions
+                                 `((write ,tmp)
+                                   (read-bytecode ,test2-lib)
+                                   ,@(sandbox-path-permissions))])
+                   (make-evaluator 'scheme/base)))
+        --eval--
+        (define (cp from to)
+          (when (file-exists? to) (delete-file to))
+          (copy-file from to))
+        (cp ,list-lib ,test-lib)  (cp ,list-zo ,test-zo)
+        (cp ,list-lib ,test2-lib) (cp ,list-zo   ,test2-zo)
+        ;; bytecode from test-lib is bad, even when we can read/write to it
+        (load/use-compiled ,test-zo)
+        (require 'list) =err> "access from an uncertified context"
+        ;; bytecode from test2-lib is explicitly allowed
+        (load/use-compiled ,test2-lib)
+        (require 'list) => (void))
+     ((dynamic-require 'scheme/file 'delete-directory/files) tmp))
 
    ;; languages and requires
    --top--
@@ -391,7 +426,9 @@
                            [sandbox-memory-limit 5]
                            [sandbox-eval-limits '(0.25 1/2)])
               (make-evaluator 'scheme/base)))
-   ;; GCing is needed to allow these to happen
+   ;; GCing is needed to allow these to happen (note: the memory limit is very
+   ;; tight here, this test usually fails if the sandbox library is not
+   ;; compiled)
    --eval--  (display (make-bytes 400000 65)) (collect-garbage)
    --top--   (bytes-length (get-output ev)) => 400000
    --eval--  (display (make-bytes 400000 65)) (collect-garbage)

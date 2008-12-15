@@ -94,9 +94,14 @@
                                           [(string? path) (string->path path)]
                                           [else path]))))))
 
-(define permission-order '(execute write delete read exists))
+;; 'read-bytecode is special, it's higher than 'read, but not lower than
+;; 'delete.
+(define permission-order '(execute write delete read-bytecode read exists))
 (define (perm<=? p1 p2)
-  (memq p1 (memq p2 permission-order)))
+  (or (eq? p1 p2)
+      (and (not (eq? 'read-bytecode p1))
+           (memq p1 (memq p2 permission-order))
+           #t)))
 
 ;; gets a path (can be bytes/string), returns a regexp for that path that
 ;; matches also subdirs (if it's a directory)
@@ -117,6 +122,29 @@
       (map (lambda (perm) (list (car perm) (path->bregexp (cadr perm))))
            new))))
 
+;; compresses the (sandbox-path-permissions) value to a "compressed" list of
+;; (permission regexp ...) where each permission appears exactly once (so it's
+;; quicker to test it later, no need to scan the whole permission list).
+(define compressed-path-permissions
+  (let ([t (make-weak-hasheq)])
+    (define (compress-permissions ps)
+      (map (lambda (perm)
+             (let* ([ps (filter (lambda (p) (perm<=? perm (car p))) ps)]
+                    [ps (remove-duplicates (map cadr ps))])
+               (cons perm ps)))
+           permission-order))
+    (lambda ()
+      (let ([ps (sandbox-path-permissions)])
+        (or (hash-ref t ps #f)
+            (let ([c (compress-permissions ps)]) (hash-set! t ps c) c))))))
+
+;; similar to the security guard, only with a single mode for simplification;
+;; assumes valid mode and simplified path
+(define (check-sandbox-path-permissions path needed)
+  (let ([bpath (path->bytes path)]
+        [perms (compressed-path-permissions)])
+    (ormap (lambda (rx) (regexp-match? rx bpath)) (cdr (assq needed perms)))))
+
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
@@ -127,16 +155,17 @@
      orig-security
      (lambda (what path modes)
        (when path
-         (let ([needed (car (or (for/or ([p (in-list permission-order)])
-                                  (memq p modes))
-                                (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)))]
-               [bpath (parameterize ([current-security-guard orig-security])
-                        (path->bytes (simplify-path* path)))])
-           (unless (ormap (lambda (perm)
-                            (and (perm<=? needed (car perm))
-                                 (regexp-match (cadr perm) bpath)))
-                          (sandbox-path-permissions))
+         (let ([spath (parameterize ([current-security-guard orig-security])
+                        (simplify-path* path))]
+               [maxperm
+                ;; assumes that the modes are valid (ie, in the above list)
+                (cond [(null? modes) (error 'default-sandbox-guard
+                                            "got empty mode list for ~e and ~e"
+                                            what path)]
+                      [(null? (cdr modes)) (car modes)] ; common case
+                      [else (foldl (lambda (x max) (if (perm<=? max x) x max))
+                                   (car modes) (cdr modes))])])
+           (unless (check-sandbox-path-permissions spath maxperm)
              (error what "`~a' access denied for ~a"
                     (string-append* (add-between (map symbol->string modes) "+"))
                     path)))))
@@ -168,8 +197,8 @@
     (append (map (lambda (p) `(read ,(path->bytes p))) paths)
             (module-specs->path-permissions require-perms))))
 
-;; computes permissions that are needed for require specs (`read' for all
-;; files and "compiled" subdirs, `exists' for the base-dir)
+;; computes permissions that are needed for require specs (`read-bytecode' for
+;; all files and "compiled" subdirs, `exists' for the base-dir)
 (define (module-specs->path-permissions mods)
   (define paths (module-specs->non-lib-paths mods))
   (define bases
@@ -180,8 +209,8 @@
             (let ([base (simplify-path* base)])
               (loop (cdr paths)
                     (if (member base bases) bases (cons base bases))))))))
-  (append (map (lambda (p) `(read ,p)) paths)
-          (map (lambda (b) `(read ,(build-path b "compiled"))) bases)
+  (append (map (lambda (p) `(read-bytecode ,p)) paths)
+          (map (lambda (b) `(read-bytecode ,(build-path b "compiled"))) bases)
           (map (lambda (b) `(exists ,b)) bases)))
 
 ;; takes a module-spec list and returns all module paths that are needed
@@ -526,6 +555,7 @@
 
 (define (make-evaluator* init-hook allow program-maker)
   (define orig-code-inspector (current-code-inspector))
+  (define orig-security-guard (current-security-guard))
   (define orig-cust     (current-custodian))
   (define memory-cust   (make-custodian orig-cust))
   (define memory-cust-box (make-custodian-box memory-cust #t))
@@ -707,7 +737,7 @@
              (append (sandbox-override-collection-paths)
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
-     (append (map (lambda (p) `(read ,p))
+     (append (map (lambda (p) `(read-bytecode ,p))
                   (current-library-collection-paths))
              (compute-permissions allow)
              (sandbox-path-permissions))]
@@ -716,24 +746,31 @@
     ;; restrict the sandbox context from this point
     [current-security-guard
      (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
+    [current-logger ((sandbox-make-logger))]
+    [current-inspector ((sandbox-make-inspector))]
+    [current-code-inspector ((sandbox-make-code-inspector))]
+    ;; The code inspector serves two purposes -- making sure that only trusted
+    ;; byte-code is loaded, and avoiding using protected module bindings, like
+    ;; the foreign library's `unsafe!'.  We control the first through the path
+    ;; permissions -- using the 'read-bytecode permissionn level, so this
+    ;; handler just checks for that permission then goes on to load the file
+    ;; using the original inspector.
+    [current-load/use-compiled
+     (let ([handler (current-load/use-compiled)])
+       (lambda (path modname)
+         (if (check-sandbox-path-permissions
+              (parameterize ([current-security-guard orig-security-guard])
+                (simplify-path* path))
+              'read-bytecode)
+           (parameterize ([current-code-inspector orig-code-inspector])
+             (handler path modname))
+           ;; otherwise, just let the old handler throw a proper error
+           (handler path modname))))]
     [exit-handler
      (let ([h (sandbox-exit-handler)])
        (if (eq? h default-sandbox-exit-handler)
          (lambda _ (terminated! 'exited) (user-kill))
          h))]
-    [current-inspector ((sandbox-make-inspector))]
-    [current-logger ((sandbox-make-logger))]
-    [current-code-inspector (make-inspector)]
-    ;; The code inspector serves two purposes -- making sure that only trusted
-    ;; byte-code is loaded, and avoiding using protected moduel bindings, like
-    ;; the foreign library's `unsafe!'.  We don't need the first because we
-    ;; control it indirectly through the security guard, so this handler makes
-    ;; sure that byte-code is loaded using the original inspector.
-    [current-load/use-compiled
-     (let ([handler (current-load/use-compiled)])
-       (lambda (path modname)
-         (parameterize ([current-code-inspector orig-code-inspector])
-           (handler path modname))))]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which

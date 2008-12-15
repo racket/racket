@@ -443,7 +443,7 @@ specifications in @scheme[sandbox-path-permissions], and it uses
 
 
 @defparam[sandbox-path-permissions perms
-          (listof (list/c (or/c 'execute 'write 'delete 'read 'exists)
+          (listof (list/c (or/c 'execute 'write 'delete 'read-bytecode 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
 A parameter that configures the behavior of the default sandbox
@@ -453,9 +453,9 @@ each is an access mode and a byte-regexp for paths that are granted this
 access.
 
 The access mode symbol is one of: @scheme['execute], @scheme['write],
-@scheme['delete], @scheme['read], or @scheme['exists].  These symbols are
-in decreasing order: each implies access for the following modes too
-(e.g., @scheme['read] allows reading or checking for existence).
+@scheme['delete], @scheme['read], or @scheme['exists].  These symbols
+are in decreasing order: each implies access for the following modes
+too (e.g., @scheme['read] allows reading or checking for existence).
 
 The path regexp is used to identify paths that are granted access.  It
 can also be given as a path (or a string or a byte string), which is
@@ -463,9 +463,25 @@ can also be given as a path (or a string or a byte string), which is
 to a regexp that allows the path and sub-directories; e.g.,
 @scheme["/foo/bar"] applies to @scheme["/foo/bar/baz"].
 
+An additional mode symbol, @scheme['read-bytecode], is not part of the
+linear order of these modes.  Specifying this mode is similar to
+specifying @scheme['read], but it is not implied by any other mode.
+(For example, even if you specify @scheme['write] for a certain path,
+you need to also specify @scheme['read-bytecode] to grant this
+permission.)  The sandbox usually works in the context of a lower code
+inspector (see @scheme[sandbox-make-code-inspector]) which prevents
+loading of untrusted bytecode files --- the sandbox is set-up to allow
+loading bytecode from files that are specified with
+@scheme['read-bytecode].  This specification is given by default to
+the PLT collection hierarchy (including user-specific libraries) and
+to libraries that are explicitly specified in an @scheme[#:allow-read]
+argument.  (Note that this applies for loading bytecode files only,
+under a lower code inspector it is still impossible to use protected
+module bindings (see @secref["modprotect"]).)
+
 The default value is null, but when an evaluator is created, it is
-augmented by @scheme['read] permissions that make it possible to use
-collection libraries (including
+augmented by @scheme['read-bytecode] permissions that make it possible
+to use collection libraries (including
 @scheme[sandbox-override-collection-paths]). See
 @scheme[make-evalautor] for more information.}
 
@@ -582,7 +598,11 @@ an evaluator, and the default parameter value is
 A parameter that determines the procedure used to create the code
 inspector for sandboxed evaluation.  The procedure is called when
 initializing an evaluator, and the default parameter value is
-@scheme[make-inspector].}
+@scheme[make-inspector].  The @scheme[current-load/use-compiled]
+handler is setup to still allow loading of bytecode files under the
+original code inspector when @scheme[sandbox-path-permissions] allows
+it through a @scheme['read-bytecode] mode symbol, to make it possible
+to load libraries.}
 
 
 @defparam[sandbox-make-logger make (-> logger?)]{
