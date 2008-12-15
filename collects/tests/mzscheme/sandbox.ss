@@ -430,8 +430,8 @@
    ;; tight here, this test usually fails if the sandbox library is not
    ;; compiled)
    (let ([t (lambda ()
-              (t --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-                 --top--   (bytes-length (get-output ev)) => 400000))])
+              (t --eval-- (display (make-bytes 400000 65)) (collect-garbage)
+                 --top--  (bytes-length (get-output ev)) => 400000))])
      ;; can go arbitrarily high here
      (for ([i (in-range 20)]) (t)))
 
