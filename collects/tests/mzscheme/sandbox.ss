@@ -423,32 +423,17 @@
    --top--
    (set! ev (parameterize ([sandbox-output 'bytes]
                            [sandbox-error-output current-output-port]
-                           [sandbox-memory-limit 5]
-                           [sandbox-eval-limits '(0.25 1/2)])
+                           [sandbox-memory-limit 20]
+                           [sandbox-eval-limits '(0.25 15)])
               (make-evaluator 'scheme/base)))
    ;; GCing is needed to allow these to happen (note: the memory limit is very
    ;; tight here, this test usually fails if the sandbox library is not
    ;; compiled)
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
-   --eval--  (display (make-bytes 400000 65)) (collect-garbage)
-   --top--   (bytes-length (get-output ev)) => 400000
+   (let ([t (lambda ()
+              (t --eval--  (display (make-bytes 400000 65)) (collect-garbage)
+                 --top--   (bytes-length (get-output ev)) => 400000))])
+     ;; can go arbitrarily high here
+     (for ([i (in-range 20)]) (t)))
 
    ;; test that killing the custodian works fine
    ;; first try it without limits (limits imply a nested thread/custodian)
