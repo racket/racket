@@ -521,7 +521,23 @@ the highest custodian that refers to it.  This means that if you
 inspect a value that sandboxed evaluation returns outside of the
 sandbox, your own custodian will be charged for it.  To ensure that it
 is charged back to the sandbox, you should remove references to such
-values when the code is done inspecting it.}
+values when the code is done inspecting it.
+
+This policy has an impact on how the sandbox memory limit interacts
+with the the per-expression limit specified by
+@scheme[sandbox-eval-limits]: values that are reachable from the
+sandbox, as well as from the interaction will count against the
+sandbox limit.  For example, in the last interaction of this code,
+@schemeblock[
+  (define e (make-evaluator 'scheme/base))
+  (e '(define a 1))
+  (e '(for ([i (in-range 20)]) (set! a (cons (make-bytes 500000) a))))
+]
+the memory blocks are allocated within the interaction limit, but
+since they're chained to the defined variable, they're also reachable
+from the sandbox --- so they will count against the sandbox memory
+limit but not against the interaction limit (more precisely, no more
+than one block counts against the interaction limit).}
 
 
 @defparam[sandbox-eval-limits limits
