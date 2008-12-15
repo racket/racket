@@ -58,7 +58,7 @@
 (define sandbox-output       (make-parameter #f))
 (define sandbox-error-output
   (make-parameter (lambda () (dup-output-port (current-error-port)))))
-(define sandbox-memory-limit (make-parameter 20))       ; 30mb total
+(define sandbox-memory-limit (make-parameter 30))       ; 30mb total
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
