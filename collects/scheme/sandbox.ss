@@ -737,10 +737,11 @@
              (append (sandbox-override-collection-paths)
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
-     (append (map (lambda (p) `(read-bytecode ,p))
-                  (current-library-collection-paths))
-             (compute-permissions allow)
-             (sandbox-path-permissions))]
+     `(,@(map (lambda (p) `(read-bytecode ,p))
+              (current-library-collection-paths))
+       (exists ,(find-system-path 'addon-dir))
+       ,@(compute-permissions allow)
+       ,@(sandbox-path-permissions))]
     ;; general info
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
