@@ -312,7 +312,7 @@
          ;; time limit
          (when sec
            (let ([t (current-thread)])
-             (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
+             (thread (lambda () (unless (sync/timeout sec t) (set! r 'time)) (kill-thread t)))))
          (set! r (with-handlers ([void (lambda (e) (list raise e))])
                    (call-with-values thunk (lambda vs (list* values vs))))))
        ;; The thread might be killed by the timer thread, so don't let
