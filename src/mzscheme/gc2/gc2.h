@@ -371,6 +371,13 @@ GC2_EXTERN void GC_fixup_variable_stack(void **var_stack,
    The `stack_mem' argument indicates the start of the allocated memory
    that contains `var_stack'. It is used for backtraces. */
 
+GC2_EXTERN int GC_merely_accounting();
+/*
+   Can be called by a mark or fixup traversal proc to determine whether
+   the traversal is merely for accounting, in which case some marking
+   can be skipped if the corresponding data should be charged to a
+   different object. */
+
 GC2_EXTERN void GC_write_barrier(void *p);
 /* 
    Explicit write barrier to ensure that a write-barrier signal is not

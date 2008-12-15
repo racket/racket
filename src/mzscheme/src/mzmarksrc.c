@@ -355,8 +355,10 @@ cont_proc {
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->ss);
   gcMARK(c->barrier_prompt);
-  gcMARK(c->runstack_start);
-  gcMARK(c->runstack_saved);
+  if (!GC_merely_accounting()) {
+    gcMARK(c->runstack_start);
+    gcMARK(c->runstack_saved);
+  }
 
   gcMARK(c->prompt_id);
   gcMARK(c->prompt_buf);
@@ -615,12 +617,16 @@ thread_val {
   gcMARK(pr->init_config);
   gcMARK(pr->init_break_cell);
 
-  {
+  if (!pr->runstack_owner
+      || !GC_merely_accounting()
+      || (*pr->runstack_owner == pr)) {
     Scheme_Object **rs = pr->runstack_start;
     gcFIXUP_TYPED_NOW(Scheme_Object **, pr->runstack_start);
-    pr->runstack = pr->runstack_start + (pr->runstack - rs);
+    if (pr->runstack != pr->runstack_start + (pr->runstack - rs))
+      pr->runstack = pr->runstack_start + (pr->runstack - rs);
+
+    gcMARK(pr->runstack_saved);
   }
-  gcMARK(pr->runstack_saved);
   gcMARK(pr->runstack_owner);
   gcMARK(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
@@ -738,7 +744,8 @@ prompt_val {
  mark: 
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK(pr->boundary_overflow_id);
-  gcMARK(pr->runstack_boundary_start);
+  if (!GC_merely_accounting())
+    gcMARK(pr->runstack_boundary_start);
   gcMARK(pr->tag);
   gcMARK(pr->id);
  size:

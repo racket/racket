@@ -1404,6 +1404,12 @@ void GC_register_new_thread(void *t, void *c)
 #endif
 }
 
+int GC_merely_accounting()
+{
+  NewGC *gc = GC_get_GC();
+  return gc->doing_memory_accounting;
+}
+
 /*****************************************************************************/
 /* administration / initialization                                           */
 /*****************************************************************************/

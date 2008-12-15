@@ -152,7 +152,7 @@
                    (make-evaluator 'scheme/base
                                    '(define a (for/list ([i (in-range 10)])
                                                 (collect-garbage)
-                                                (make-string 1000))))))
+                                                (make-string 500000))))))
         =err> "out of memory"))
 
    ;; i/o
@@ -488,9 +488,13 @@
         --eval--
         (define a '())
         (define b 1)
-        (for ([i (in-range 20)])
-          (set! a (cons (make-bytes 500000) a))
-          (collect-garbage))
+        (length
+         (for/fold ([v null]) ([i (in-range 20)])
+           ;; Increases size of sandbox:
+           (set! a (cons (make-bytes 500000) a))
+           (collect-garbage)
+           ;; Increases size of evaluation:
+           (cons (make-bytes 500000) v)))
         =err> "out of memory"
         b => 1))
 
