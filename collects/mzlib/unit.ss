@@ -451,10 +451,20 @@
   (define-for-syntax process-unit-export
     (process-unit-import/export process-tagged-export))
   
+  ;; id->contract-src-info : identifier -> syntax
+  ;; constructs the last argument to the contract, given an identifier
+  (define-for-syntax (id->contract-src-info id)
+    #`(list (make-srcloc (quote-syntax #,id)
+                         #,(syntax-line id)
+                         #,(syntax-column id)
+                         #,(syntax-position id)
+                         #,(syntax-span id))
+            #,(format "~s" (syntax-object->datum id))))
+  
   (define-for-syntax (make-import-unboxing int-var ext-var loc ctc name)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name (quote-syntax #,ext-var))))
+          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name #,(id->contract-src-info ext-var))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -675,7 +685,7 @@
                 (set-var-info-exported?! v loc)
                 (set-var-info-add-ctc! v (lambda (e)
                                        #`(if #,ctc
-                                             (contract #,ctc #,e '#,unit-name 'cant-happen (quote-syntax #,var))
+                                             (contract #,ctc #,e '#,unit-name 'cant-happen #,(id->contract-src-info var))
                                              #,e)))))
             local-evars
             (syntax->list #'elocs)
@@ -1246,7 +1256,7 @@
                               (if c
                                   #`(contract #,c (unbox (vector-ref #,ov #,i))
                                               'cant-happen (#%variable-reference)
-                                              (quote-syntax #,iv))
+                                              #,(id->contract-src-info iv))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
                             (map cdr (car os))
