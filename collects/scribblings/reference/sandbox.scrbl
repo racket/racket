@@ -16,7 +16,10 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem access, and network access.
+filesystem access, and network access.  The common use case for this
+module is for a restricted sandboxed environment, so the defaults are
+set up to make it safe.  For other uses you will likely need to change
+mane of these settings.
 
 @defproc*[([(make-evaluator [language (or/c module-path? 
                                             (list/c 'special symbol?)
@@ -176,8 +179,11 @@ environment:
  @item{The evaluator works under the @scheme[sandbox-security-guard],
        which restricts file system and network access.}
 
- @item{Each evaluation is wrapped in a @scheme[call-with-limits]; see
-       also @scheme[sandbox-eval-limits] and @scheme[set-eval-limits].}
+ @item{The evaluator is contained in a memory-restricted environment,
+       and each evaluation is wrapped in a @scheme[call-with-limits]
+       (when memory accounting is available); see also
+       @scheme[sandbox-memory-limit], @scheme[sandbox-eval-limits] and
+       @scheme[set-eval-limits].}
 ]
 Note that these limits apply to the creation of the sandbox
 environment too --- so, for example, if the memory that is required to
@@ -236,6 +242,19 @@ used from a module (by using a new namespace):
 ]
 
 }
+
+
+@defproc*[([(exn:fail:sandbox-terminated? [v any/c]) boolean?]
+           [(exn:fail:sandbox-terminated-reason [exn exn:fail:sandbox-terminated?])
+            symbol/c])]{
+
+A predicate and accessor for exceptions that are raised when a sandbox
+is terminated.  Once a sandbox raises such an exception, it will
+continue to raise it on further evaluation attempts.
+
+@scheme[call-with-limits].  The @scheme[resource] field holds a symbol,
+either @scheme['time] or @scheme['memory].}
+
 
 @; ----------------------------------------------------------------------
 
@@ -411,17 +430,20 @@ done using a fake library that provides the same interface but no
 actual interaction. The default is @scheme[null].}
 
 
-@defparam[sandbox-security-guard guard security-guard?]{
+@defparam[sandbox-security-guard guard
+          (or/c security-guard? (-> security-guard?))]{
 
 A parameter that determines the initial
-@scheme[(current-security-guard)] for sandboxed evaluations.  The
-default forbids all filesystem I/O except for things in
-@scheme[sandbox-path-permissions], and it uses
+@scheme[(current-security-guard)] for sandboxed evaluations.  It can
+be either a security guard, or a function to construct one.  The
+default is a function that restricts the access of the current
+security guard by forbidding all filesystem I/O except for
+specifications in @scheme[sandbox-path-permissions], and it uses
 @scheme[sandbox-network-guard] for network connections.}
 
 
 @defparam[sandbox-path-permissions perms
-          (listof (list/c (or/c 'execute 'write 'delete 'read 'exists)
+          (listof (list/c (or/c 'execute 'write 'delete 'read-bytecode 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
 A parameter that configures the behavior of the default sandbox
@@ -431,9 +453,9 @@ each is an access mode and a byte-regexp for paths that are granted this
 access.
 
 The access mode symbol is one of: @scheme['execute], @scheme['write],
-@scheme['delete], @scheme['read], or @scheme['exists].  These symbols are
-in decreasing order: each implies access for the following modes too
-(e.g., @scheme['read] allows reading or checking for existence).
+@scheme['delete], @scheme['read], or @scheme['exists].  These symbols
+are in decreasing order: each implies access for the following modes
+too (e.g., @scheme['read] allows reading or checking for existence).
 
 The path regexp is used to identify paths that are granted access.  It
 can also be given as a path (or a string or a byte string), which is
@@ -441,17 +463,27 @@ can also be given as a path (or a string or a byte string), which is
 to a regexp that allows the path and sub-directories; e.g.,
 @scheme["/foo/bar"] applies to @scheme["/foo/bar/baz"].
 
+An additional mode symbol, @scheme['read-bytecode], is not part of the
+linear order of these modes.  Specifying this mode is similar to
+specifying @scheme['read], but it is not implied by any other mode.
+(For example, even if you specify @scheme['write] for a certain path,
+you need to also specify @scheme['read-bytecode] to grant this
+permission.)  The sandbox usually works in the context of a lower code
+inspector (see @scheme[sandbox-make-code-inspector]) which prevents
+loading of untrusted bytecode files --- the sandbox is set-up to allow
+loading bytecode from files that are specified with
+@scheme['read-bytecode].  This specification is given by default to
+the PLT collection hierarchy (including user-specific libraries) and
+to libraries that are explicitly specified in an @scheme[#:allow-read]
+argument.  (Note that this applies for loading bytecode files only,
+under a lower code inspector it is still impossible to use protected
+module bindings (see @secref["modprotect"]).)
+
 The default value is null, but when an evaluator is created, it is
-augmented by @scheme['read] permissions that make it possible to use
-collection libraries (including
+augmented by @scheme['read-bytecode] permissions that make it possible
+to use collection libraries (including
 @scheme[sandbox-override-collection-paths]). See
 @scheme[make-evalautor] for more information.}
-
-
-@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
-
-A parameter that determines the initial @scheme[(exit-handler)] for
-sandboxed evaluations.  The default handler simply throws an error.}
 
 
 @defparam[sandbox-network-guard proc
@@ -466,42 +498,145 @@ default @scheme[sandbox-security-guard].  The default forbids all
 network connection.}
 
 
+@defparam[sandbox-exit-handler handler (any/c . -> . any)]{
+
+A parameter that determines the initial @scheme[(exit-handler)] for
+sandboxed evaluations.  The default kills the evaluator with an
+appropriate error message (see
+@scheme[exn:fail:sandbox-terminated-reason]).}
+
+
+@defparam[sandbox-memory-limit limit (or/c nonnegative-number? #f)]{
+
+A parameter that determines the total memory limit on the sandbox in
+megabytes (it can hold a rational or a floating point number).  When
+this limit is exceeded, the sandbox is terminated.  This value is used
+when the sandbox is created and the limit cannot be changed
+afterwards.  It defaults to 30mb.  See @scheme[sandbox-eval-limits]
+for per-evaluation limits and a description of how the two limits work
+together.
+
+Note that (when memory accounting is enabled) memory is attributed to
+the highest custodian that refers to it.  This means that if you
+inspect a value that sandboxed evaluation returns outside of the
+sandbox, your own custodian will be charged for it.  To ensure that it
+is charged back to the sandbox, you should remove references to such
+values when the code is done inspecting it.
+
+This policy has an impact on how the sandbox memory limit interacts
+with the the per-expression limit specified by
+@scheme[sandbox-eval-limits]: values that are reachable from the
+sandbox, as well as from the interaction will count against the
+sandbox limit.  For example, in the last interaction of this code,
+@schemeblock[
+  (define e (make-evaluator 'scheme/base))
+  (e '(define a 1))
+  (e '(for ([i (in-range 20)]) (set! a (cons (make-bytes 500000) a))))
+]
+the memory blocks are allocated within the interaction limit, but
+since they're chained to the defined variable, they're also reachable
+from the sandbox --- so they will count against the sandbox memory
+limit but not against the interaction limit (more precisely, no more
+than one block counts against the interaction limit).}
+
+
 @defparam[sandbox-eval-limits limits
-          (or/c (list/c (or/c exact-nonnegative-integer? #f)
-                        (or/c exact-nonnegative-integer? #f))
+          (or/c (list/c (or/c nonnegative-number? #f)
+                        (or/c nonnegative-number? #f))
                 #f)]{
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
-of the input program.  Its value should be a list of two numbers, the
-first is a timeout value in seconds, and the second is a memory limit
-in megabytes.  Either one can be @scheme[#f] for disabling the
-corresponding limit; alternately, the parameter can be set to
-@scheme[#f] to disable all limits (useful in case more limit kinds are
-available in future versions). The default is @scheme[(list 30 20)].
+of the input program.  Its value should be a list of two numbers;
+where the first is a timeout value in seconds, and the second is a
+memory limit in megabytes (note that they don't have to be integers).
+Either one can be @scheme[#f] for disabling the corresponding limit;
+alternately, the parameter can be set to @scheme[#f] to disable all
+per-evaluation limits (useful in case more limit kinds are available
+in future versions). The default is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
-fail if the limits are strict enough.  Therefore, to avoid surprises
-you need to catch errors that happen when the sandbox is created.
+fail if the limits are strict enough.  For example,
+@schemeblock[
+  (parameterize ([sandbox-eval-limits '(0.25 5)])
+    (make-evaluator 'scheme/base '(sleep 2)))
+]
+will throw an error instead of creating an evaluator.  Therefore, to
+avoid surprises you need to catch errors that happen when the sandbox
+is created.
 
 When limits are set, @scheme[call-with-limits] (see below) is wrapped
 around each use of the evaluator, so consuming too much time or memory
 results in an exception.  Change the limits of a running evaluator
-using @scheme[set-eval-limits].}
+using @scheme[set-eval-limits].
+
+@margin-note{A custodian's limit is checked only after a garbage
+             collection, except that it may also be checked during
+             certain large allocations that are individually larger
+             than the custodian's limit.}
+
+The memory limit that is specified by this parameter applies to each
+individual evaluation, but not to the whole sandbox --- that limit is
+specified via @scheme[sandbox-memory-limit].  When the global limit is
+exceeded, the sandbox is terminated, but when the per-evaluation limit
+is exceeded the @exnraise[exn:fail:resource].  For example, say that
+you evaluate an expression like
+@schemeblock[
+  (for ([i (in-range 1000)])
+    (set! a (cons (make-bytes 1000000) a))
+    (collect-garbage))
+]
+then, assuming sufficiently small limits,
+@itemize[
+
+ @item{if a global limit is set but no per-evaluation limit, the
+       sandbox will eventually be terminated and no further
+       evaluations possible;}
+
+ @item{if there is a per-evaluation limit, but no global limit, the
+       evaluation will abort with an error and it can be used again
+       --- specifically, @scheme[a] will still hold a number of
+       blocks, and you can evaluate the same expression again which
+       will add more blocks to it;}
+
+  @item{if both limits are set, with the global one larger than the
+        per-evaluation limit, then the evaluation will abort and you
+        will be able to repeat it, but doing so several times will
+        eventually terminate the sandbox (this will be indicated by
+        the error message, and by the @scheme[evaluator-alive?]
+        predicate).}
+
+]}
 
 
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
 A parameter that determines the procedure used to create the inspector
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[make-inspector].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[make-inspector].}
+
+
+@defparam[sandbox-make-code-inspector make (-> inspector?)]{
+
+A parameter that determines the procedure used to create the code
+inspector for sandboxed evaluation.  The procedure is called when
+initializing an evaluator, and the default parameter value is
+@scheme[make-inspector].  The @scheme[current-load/use-compiled]
+handler is setup to still allow loading of bytecode files under the
+original code inspector when @scheme[sandbox-path-permissions] allows
+it through a @scheme['read-bytecode] mode symbol, to make it possible
+to load libraries.}
+
 
 @defparam[sandbox-make-logger make (-> logger?)]{
 
 A parameter that determines the procedure used to create the logger
-for sandboxed evaluation. The procedure is called when initializing an
-evaluator, and the default parameter value is @scheme[current-logger].}
+for sandboxed evaluation.  The procedure is called when initializing
+an evaluator, and the default parameter value is
+@scheme[current-logger].  This means that it is not creating a new
+logger (this might change in the future).}
 
 @; ----------------------------------------------------------------------
 
@@ -509,6 +644,12 @@ evaluator, and the default parameter value is @scheme[current-logger].}
 
 The following functions are used to interact with a sandboxed
 evaluator in addition to using it to evaluate code.
+
+
+@defproc[(evaluator-alive? [evaluator (any/c . -> . any)]) boolean?]{
+
+Determines whether the evaluator is still alive.}
+
 
 @defproc[(kill-evaluator [evaluator (any/c . -> . any)]) void?]{
 
@@ -629,7 +770,17 @@ used for evaluating expressions.
 This is usually similar to @scheme[(evaluator (list thunk))], except
 that this relies on the common meaning of list expressions as function
 application (which is not true in all languages), and it relies on
-MzScheme's @scheme[eval] forgiving a non-S-expression input.}
+MzScheme's @scheme[eval] forgiving a non-S-expression input.  In
+addition, you can avoid some of the sandboxed restrictions by using
+your own permissions, for example,
+@schemeblock[
+  (let ([guard (current-security-guard)])
+    (call-in-sandbox-context
+      (lambda ()
+        (parameterize ([current-security-guard guard])
+          (code:comment #, @t{can access anything you want here})
+          ))))
+]}
 
 @; ----------------------------------------------------------------------
 

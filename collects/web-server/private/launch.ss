@@ -61,7 +61,7 @@
    (lambda (flags)
      (configuration-table->web-config@
       (extract-flag 'config flags default-configuration-table-path)
-      #:port (or (port) 80)
+      #:port (port)
       #:listen-ip (extract-flag 'ip-address flags #f)))
    '()))
 

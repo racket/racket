@@ -52,10 +52,18 @@ functions of interest for the servlet developer.
                   
 @defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
          any/c]{
- Calls @scheme[make-response] with a function that, when called with a procedure from
+ Calls @scheme[make-response] with a function (@scheme[embed/url]) that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
  the function with the @scheme[request?] object and return the result to the caller of
- @scheme[send/suspend/dispatch].
+ @scheme[send/suspend/dispatch]. Therefore, if you pass @scheme[embed/url] the identity function,
+ @scheme[send/suspend/dispatch] devolves into @scheme[send/suspend]:
+ 
+ @schemeblock[
+  (define (send/suspend response-generator)
+    (send/suspend/dispatch
+     (lambda (embed/url)
+       (response-generator (embed/url (lambda (x) x))))))
+  ]
  
  Use @scheme[send/suspend/dispatch] when there are multiple `logical' continuations of a page.
  For example, we could either add to a number or subtract from it:
@@ -79,8 +87,28 @@ functions of interest for the servlet developer.
                         (add1 i)))])
                   "+"))))))))
   ]
- It is very common that the return value of @scheme[send/suspend/dispatch] is irrevelant in
- your application and you may think of it as ``embedding'' value-less callbacks.
+ Notice that in this example the result of the handlers are returned to the continuation of @scheme[send/suspend/dispatch].
+ However, it is very common that the return value of @scheme[send/suspend/dispatch] is irrevelant in
+ your application and you may think of it as ``embedding'' value-less callbacks. Here is the same example in this style:
+ @schemeblock[
+  (define (count-dot-com i)
+    (send/suspend/dispatch
+     (lambda (embed/url)
+       `(html 
+         (head (title "Count!"))
+         (body
+          (h2 (a ([href
+                   ,(embed/url
+                     (lambda (req)
+                       (count-dot-com (sub1 i))))])
+                 "-"))
+          (h1 ,(number->string i))
+          (h2 (a ([href
+                   ,(embed/url
+                     (lambda (req)
+                       (count-dot-com (add1 i))))])
+                 "+")))))))
+  ]
 }
 
 @defproc[(send/forward [make-response response-generator/c]

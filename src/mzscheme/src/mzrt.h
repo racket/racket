@@ -23,7 +23,15 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int));
 
 /****************** PROCESS WEIGHT THREADS ********************************/
 /* mzrt_threads.c */
-typedef struct mz_proc_thread mz_proc_thread; /* OPAQUE DEFINITION */
+typedef struct mz_proc_thread {
+#ifdef WIN32
+  HANDLE threadid;
+#else
+  pthread_t threadid;
+#endif
+  struct pt_mbox *mbox;
+} mz_proc_thread;
+
 
 #ifdef WIN32
 typedef DWORD (WINAPI *mz_proc_thread_start)(void*);
@@ -31,13 +39,14 @@ typedef DWORD (WINAPI *mz_proc_thread_start)(void*);
 typedef void *(mz_proc_thread_start)(void*);
 #endif
 
+mz_proc_thread* mzrt_proc_first_thread_init();
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start*, void* data);
 void *mz_proc_thread_wait(mz_proc_thread *thread);
 
 void mzrt_sleep(int seconds);
 
-int mz_proc_thread_self();
-int mz_proc_thread_id(mz_proc_thread* thread);
+unsigned int mz_proc_thread_self();
+unsigned int mz_proc_thread_id(mz_proc_thread* thread);
 
 /****************** THREAD RWLOCK ******************************************/
 /* mzrt_rwlock_*.c */
@@ -58,6 +67,37 @@ int mzrt_mutex_trylock(mzrt_mutex *mutex);
 int mzrt_mutex_unlock(mzrt_mutex *mutex);
 int mzrt_mutex_destroy(mzrt_mutex *mutex);
 
+/****************** THREAD COND *******************************************/
+typedef struct mzrt_cond mzrt_cond; /* OPAQUE DEFINITION */
+int mzrt_cond_create(mzrt_cond **cond);
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex);
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds);
+int mzrt_cond_signal(mzrt_cond *cond);
+int mzrt_cond_broadcast(mzrt_cond *cond);
+int mzrt_cond_destroy(mzrt_cond *cond);
+
+/****************** PROCESS THREAD MAIL BOX *******************************/
+typedef struct pt_mbox_msg {
+  int     type;
+  void    *payload;
+  struct pt_mbox *origin;
+} pt_mbox_msg;
+
+typedef struct pt_mbox {
+  struct pt_mbox_msg queue[5];
+  int count;
+  int in;
+  int out;
+  mzrt_mutex *mutex;
+  mzrt_cond *nonempty;
+  mzrt_cond *nonfull;
+} pt_mbox;
+
+pt_mbox *pt_mbox_create();
+void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin);
+void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin);
+void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload);
+void pt_mbox_destroy(pt_mbox *mbox);
 
 #endif
 

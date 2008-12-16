@@ -326,6 +326,11 @@
       (or (and (pair? a)
                (eq? 'lib (car a)))
           (symbol? a)))
+
+    (define (symbol-to-lib-form l)
+      (if (symbol? l)
+          `(lib ,(symbol->string l))
+          l))
       
     (define (unix-style-split p)
       (let ([m (regexp-match #rx"^([^/]*)/(.*)$" p)])
@@ -423,7 +428,7 @@
                                                          (not (and (pair? x)
                                                                    (eq? 'quote (car x))))))
                                                      (apply append (map cdr importss)))]
-                           [extra-paths (get-extra-imports filename code)])
+                           [extra-paths (map symbol-to-lib-form (get-extra-imports filename code))])
                        (let ([sub-files (map (lambda (i) (normalize (resolve-module-path-index i filename)))
                                              all-file-imports)]
                              [sub-paths (map (lambda (i) (collapse-module-path-index i module-path))
@@ -735,7 +740,7 @@
     
     ;; Write a module bundle that can be loaded with 'load' (do not embed it
     ;; into an executable). The bundle is written to the current output port.
-    (define (do-write-module-bundle verbose? modules literal-files literal-expressions collects-dest
+    (define (do-write-module-bundle outp verbose? modules literal-files literal-expressions collects-dest
                                     on-extension program-name compiler expand-namespace 
                                     src-filter get-extra-imports)
       (let* ([module-paths (map cadr modules)]
@@ -773,11 +778,11 @@
         ;; Drop elements of `codes' that just record copied libs:
         (set-box! codes (filter mod-code (unbox codes)))
         ;; Bind `module' to get started:
-        (write (compile-using-kernel '(namespace-require '(only '#%kernel module))))
+        (write (compile-using-kernel '(namespace-require '(only '#%kernel module))) outp)
         ;; Install a module name resolver that redirects
         ;; to the embedded modules
-        (write (make-module-name-resolver (filter mod-code (unbox codes))))
-        (write (compile-using-kernel '(namespace-require ''#%resolver)))
+        (write (make-module-name-resolver (filter mod-code (unbox codes))) outp)
+        (write (compile-using-kernel '(namespace-require ''#%resolver)) outp)
         ;; Write the extension table and copy module code:
         (let* ([l (reverse (unbox codes))]
                [extensions (filter (lambda (m) (extension? (mod-code m))) l)]
@@ -820,15 +825,17 @@
                                                              (path->complete-path p (current-directory))))
                                                        (current-directory d)))
                                                     p))))
-                            eXtEnSiOn-modules))))
-            (write (compile-using-kernel '(namespace-require ''#%extension-table))))
+                            eXtEnSiOn-modules)))
+             outp)
+            (write (compile-using-kernel '(namespace-require ''#%extension-table)) outp))
           ;; Runtime-path table:
           (unless (null? runtimes)
             (unless table-mod
               (error 'create-embedding-executable "cannot find module for runtime-path table"))
             (write (compile-using-kernel
                     `(current-module-declare-name (make-resolved-module-path 
-                                                   ',(mod-full-name table-mod)))))
+                                                   ',(mod-full-name table-mod))))
+                   outp)
             (write `(module runtime-path-table '#%kernel
                       (#%provide table)
                       (define-values (table)
@@ -879,7 +886,8 @@
                                                                (bytes-append #"................." (path->bytes program-name))))
                                                             (mod-runtime-paths nc)))
                                                      runtimes))])
-                           rUnTiMe-paths))))))
+                           rUnTiMe-paths))))
+                   outp))
           ;; Copy module code:
           (for-each
            (lambda (nc)
@@ -890,26 +898,27 @@
                (write (compile-using-kernel
                        `(current-module-declare-name 
                          (make-resolved-module-path
-                          ',(mod-full-name nc)))))
+                          ',(mod-full-name nc))))
+                      outp)
                (if (src-filter (mod-file nc))
-                   (with-input-from-file (mod-file nc)
-                     (lambda ()
-                       (copy-port (current-input-port) (current-output-port))))
-                   (write (mod-code nc)))))
+                   (call-with-input-file* (mod-file nc)
+                     (lambda (inp)
+                       (copy-port inp outp)))
+                   (write (mod-code nc) outp))))
            l))
-        (write (compile-using-kernel '(current-module-declare-name #f)))
+        (write (compile-using-kernel '(current-module-declare-name #f)) outp)
         ;; Remove `module' binding before we start running user code:
-        (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)))
-        (write (compile-using-kernel '(namespace-undefine-variable! 'module)))
-        (newline)
+        (write (compile-using-kernel '(namespace-set-variable-value! 'module #f #t)) outp)
+        (write (compile-using-kernel '(namespace-undefine-variable! 'module)) outp)
+        (newline outp)
         (for-each (lambda (f)
                     (when verbose?
                       (fprintf (current-error-port) "Copying from ~s~n" f))
                     (call-with-input-file* f
                       (lambda (i)
-                        (copy-port i (current-output-port)))))
+                        (copy-port i outp))))
                   literal-files)
-        (for-each write literal-expressions)))
+        (for-each (lambda (v) (write v outp)) literal-expressions)))
 
     (define (write-module-bundle #:verbose? [verbose? #f]
                                  #:modules [modules null]
@@ -922,7 +931,7 @@
                                                           (compile expr)))]
                                  #:src-filter [src-filter (lambda (filename) #f)]
                                  #:get-extra-imports [get-extra-imports (lambda (filename code) null)])
-      (do-write-module-bundle verbose? modules literal-files literal-expressions
+      (do-write-module-bundle (current-output-port) verbose? modules literal-files literal-expressions
                               #f ; collects-dest
                               on-extension
                               "?" ; program-name 
@@ -1067,8 +1076,9 @@
                                                             (path->complete-path orig-exe))])
                           (update-dll-dir dest (build-path orig-dir dir))))))))
             (let ([write-module
-                   (lambda ()
-                     (do-write-module-bundle verbose? modules literal-files literal-expressions collects-dest
+                   (lambda (s)
+                     (do-write-module-bundle s
+                                             verbose? modules literal-files literal-expressions collects-dest
                                              on-extension
                                              (file-name-from-path dest)
                                              compiler
@@ -1080,16 +1090,15 @@
                                      (not unix-starter?))
                                 ;; For Mach-O, we know how to add a proper segment
                                 (let ([s (open-output-bytes)])
-                                  (parameterize ([current-output-port s])
-                                    (write-module))
+                                  (write-module s)
                                   (let ([s (get-output-bytes s)])
                                     (let ([start (add-plt-segment dest-exe s)])
                                       (values start
                                               (+ start (bytes-length s))))))
                                 ;; Other platforms: just add to the end of the file:
                                 (let ([start (file-size dest-exe)])
-                                  (with-output-to-file dest-exe write-module 
-						       #:exists 'append)
+                                  (call-with-output-file* dest-exe write-module 
+                                                          #:exists 'append)
                                   (values start (file-size dest-exe))))])
                 (when verbose?
                   (fprintf (current-error-port) "Setting command line~n"))

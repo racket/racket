@@ -5,7 +5,7 @@
 /************************************************************************/
 /************************************************************************/
 /************************************************************************/
-
+#define MZRT_INTERNAL
 #include "mzrt.h"
 #include "schgc.h"
 
@@ -43,29 +43,30 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int))
 #endif
 }
 
-static void segfault_handler(int signal_num) {
+static void rungdb() {
 #ifdef WIN32
 #else
   pid_t pid = getpid();
-  char buffer[500];
-  char buf[500];
-  signal(SIGSEGV, segfault_handler);
+  char outbuffer[100];
+  char inbuffer[10];
 
-  fprintf(stderr, "%i %i resume(r)/gdb(d)/exit(e)?\n", signal_num, pid);
+  fprintf(stderr, "pid # %i resume(r)/gdb(d)/exit(e)?\n", pid);
   fflush(stderr);
 
-  while(read(fileno(stdin), buf, 100) <= 0){
-    if(errno != EINTR){
-      fprintf(stderr, "\nCould not read response, sleeping for 20 seconds.\n");
+  while(1) {
+    while(read(fileno(stdin), inbuffer, 10) <= 0){
+      if(errno != EINTR){
+        fprintf(stderr, "Error detected %i\n", errno);
+      }
     }
-    switch(buf[0]) {
+    switch(inbuffer[0]) {
       case 'r':
         return;
         break;
       case 'd':
-        snprintf(buffer, 500, "xterm -e gdb ./mzschemecgc %d &", pid);
-        fprintf(stderr, "%i %i Launching GDB", signal_num, pid);
-        system(buffer);
+        snprintf(outbuffer, 100, "xterm -e gdb ./mzscheme3m %d &", pid);
+        fprintf(stderr, "%s\n", outbuffer);
+        system(outbuffer);
         break;
       case 'e':
       default:
@@ -75,6 +76,13 @@ static void segfault_handler(int signal_num) {
   }
 #endif
 }
+
+static void segfault_handler(int signal_num) {
+  pid_t pid = getpid();
+  fprintf(stderr, "sig# %i pid# %i\n", signal_num, pid);
+  rungdb();
+}
+
 
 void mzrt_set_segfault_debug_handler()
 {
@@ -138,42 +146,64 @@ MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
 /***********************************************************************/
 /*                Threads                                              */
 /***********************************************************************/
+typedef struct mzrt_thread_stub_data {
+  void * (*start_proc)(void *);
+  void *data;
+  mz_proc_thread *thread;
+} mzrt_thread_stub_data;
 
-struct mz_proc_thread {
-#ifdef WIN32
-  HANDLE threadid;
-#else
-  pthread_t threadid;
-#endif
-};
+void *mzrt_thread_stub(void *data){
+  mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
+  void * (*start_proc)(void *)        = stub_data->start_proc;
+  void *start_proc_data               = stub_data->data;
+  proc_thread_self                    = stub_data->thread;
 
-int mz_proc_thread_self() {
+  free(data);
+
+  return start_proc(start_proc_data);
+}
+
+unsigned int mz_proc_thread_self() {
 #ifdef WIN32
 #error !!!mz_proc_thread_id not implemented!!!
 #else
-  return (int) pthread_self();
+  return (unsigned int) pthread_self();
 #endif
 }
 
-int mz_proc_thread_id(mz_proc_thread* thread) {
+unsigned int mz_proc_thread_id(mz_proc_thread* thread) {
 
-  return (int) thread->threadid;
+  return (unsigned int) thread->threadid;
 }
 
+mz_proc_thread* mzrt_proc_first_thread_init() {
+  /* initialize mz_proc_thread struct for first thread myself that wasn't created with mz_proc_thread_create,
+   * so it can communicate with other mz_proc_thread_created threads via pt_mboxes */
+  mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  thread->mbox      = pt_mbox_create();
+  thread->threadid  = mz_proc_thread_self();
+  proc_thread_self  = thread;
+  return thread;
+}
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
-#ifdef WIN32
-#   ifndef MZ_PRECISE_GC
+#ifdef MZ_PRECISE_GC
+  mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
+  thread->mbox = pt_mbox_create();
+  stub_data->start_proc = start_proc;
+  stub_data->data       = data;
+  stub_data->thread     = thread;
+#   ifdef WIN32
   thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
+  pthread_create(&thread->threadid, NULL, mzrt_thread_stub, stub_data);
 #   endif
 #else
-#   ifndef MZ_PRECISE_GC
-  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
+#   ifdef WIN32
+  thread->threadid = GC_CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  pthread_create(&thread->threadid, NULL, start_proc, data);
+  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
 #   endif
 #endif
   return thread;
@@ -245,7 +275,7 @@ struct mzrt_mutex {
 };
 
 int mzrt_mutex_create(mzrt_mutex **mutex) {
-  *mutex = malloc(sizeof(mzrt_mutex));
+  *mutex = malloc(sizeof(struct mzrt_mutex));
   return pthread_mutex_init(&(*mutex)->mutex, NULL);
 }
 
@@ -265,6 +295,91 @@ int mzrt_mutex_destroy(mzrt_mutex *mutex) {
   return pthread_mutex_destroy(&mutex->mutex);
 }
 
+struct mzrt_cond {
+  pthread_cond_t cond;
+};
+
+int mzrt_cond_create(mzrt_cond **cond) {
+  *cond = malloc(sizeof(struct mzrt_cond));
+  return pthread_cond_init(&(*cond)->cond, NULL);
+}
+
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_wait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long nanoseconds) {
+  struct timespec timeout;
+  timeout.tv_sec  = seconds;
+  timeout.tv_nsec = nanoseconds;
+  return pthread_cond_timedwait(&cond->cond, &mutex->mutex, &timeout);
+}
+
+int mzrt_cond_signal(mzrt_cond *cond) {
+  return pthread_cond_signal(&cond->cond);
+}
+
+int mzrt_cond_broadcast(mzrt_cond *cond) {
+  return pthread_cond_broadcast(&cond->cond);
+}
+
+int mzrt_cond_destroy(mzrt_cond *cond) {
+  return pthread_cond_destroy(&cond->cond);
+}
+
+/****************** PROCESS THREAD MAIL BOX *******************************/
+
+pt_mbox *pt_mbox_create() {
+  pt_mbox *mbox = (pt_mbox *)malloc(sizeof(pt_mbox));
+  mbox->count = 0;
+  mbox->in    = 0;
+  mbox->out   = 0;
+  mzrt_mutex_create(&mbox->mutex);
+  mzrt_cond_create(&mbox->nonempty);
+  mzrt_cond_create(&mbox->nonfull);
+  return mbox;
+}
+
+void pt_mbox_send(pt_mbox *mbox, int type, void *payload, pt_mbox *origin) {
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 5 ) {
+    mzrt_cond_wait(mbox->nonfull, mbox->mutex);
+  }
+  mbox->queue[mbox->in].type = type;
+  mbox->queue[mbox->in].payload = payload;
+  mbox->queue[mbox->in].origin = origin;
+  mbox->in = (mbox->in + 1) % 5;
+  mbox->count++;
+  mzrt_cond_signal(mbox->nonempty);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin){
+  mzrt_mutex_lock(mbox->mutex);
+  while ( mbox->count == 0 ) {
+    mzrt_cond_wait(mbox->nonempty, mbox->mutex);
+  }
+  *type    = mbox->queue[mbox->out].type;
+  *payload = mbox->queue[mbox->out].payload;
+  *origin  = mbox->queue[mbox->out].origin;
+  mbox->out = (mbox->out + 1) % 5;
+  mbox->count--;
+  mzrt_cond_signal(mbox->nonfull);
+  mzrt_mutex_unlock(mbox->mutex);
+}
+
+void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload) {
+  pt_mbox *return_origin;
+  pt_mbox_send(mbox, type, payload, origin);
+  pt_mbox_recv(origin, return_type, return_payload, &return_origin);
+}
+
+void pt_mbox_destroy(pt_mbox *mbox) {
+  mzrt_mutex_destroy(mbox->mutex);
+  mzrt_cond_destroy(mbox->nonempty);
+  mzrt_cond_destroy(mbox->nonfull);
+  free(mbox);
+}
 
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
@@ -408,6 +523,35 @@ int mzrt_mutex_unlock(mzrt_mutex *mutex) {
 int mzrt_mutex_destroy(mzrt_mutex *mutex) {
   DeleteCriticalSection(&(*mutex)->critical_section);
   return 0;
+}
+
+struct mzrt_cond {
+  pthread_cond_t cond;
+};
+
+int mzrt_cond_create(mzrt_cond **cond) {
+  *cond = malloc(sizeof(mzrt_cond));
+  return pthread_cond_init(&(*cond)->cond, NULL);
+}
+
+int mzrt_cond_wait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_wait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex) {
+  return pthread_cond_timedwait(&cond->cond, &mutex->mutex);
+}
+
+int mzrt_cond_signal(mzrt_cond *cond) {
+  return pthread_cond_signal(&cond->cond);
+}
+
+int mzrt_cond_broadcast(mzrt_cond *cond) {
+  return pthread_cond_broadcast(&cond->cond);
+}
+
+int mzrt_cond_destroy(mzrt_cond *cond) {
+  return pthread_cond_destroy(&cond->cond);
 }
 
 #ifdef MZ_XFORM

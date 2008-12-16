@@ -1,9 +1,16 @@
 
 #include "schpriv.h"
 
+/* READ ONLY SHARABLE GLOBALS */
+static Scheme_Object *place_main_symbol;
+
 #ifdef MZ_USE_PLACES
 
 #include "mzrt.h"
+
+
+mz_proc_thread *scheme_master_proc_thread;
+THREAD_LOCAL mz_proc_thread *proc_thread_self;
 
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
@@ -47,9 +54,10 @@ void scheme_init_place(Scheme_Env *env)
   register_traversers();
 #endif
   
+  place_main_symbol = scheme_intern_symbol("place-main");
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 2, plenv);
   PLACE_PRIM_W_ARITY("place-sleep", scheme_place_sleep, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",  scheme_place_wait,  1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",      scheme_place_p,     1, 1, plenv);
@@ -66,7 +74,10 @@ void scheme_init_place(Scheme_Env *env)
 /* FIXME this struct probably will need to be garbage collected as stuff
  * is added to it */
 typedef struct Place_Start_Data {
+  int argc;
   Scheme_Object *thunk;
+  Scheme_Object *module;
+  Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
 } Place_Start_Data;
 
@@ -98,7 +109,17 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
   /* pass critical info to new place */
   place_data = MALLOC_ONE(Place_Start_Data);
-  place_data->thunk  = args[0];
+  place_data->argc = argc;
+  if (argc == 1) {
+    place_data->thunk    = args[0];
+  }
+  else if (argc == 2 ) {
+    place_data->module   = args[0];
+    place_data->channel  = args[1];
+  }
+  else {
+    scheme_wrong_count_m("place", 1, 2, argc, args, 0);
+  }
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   place_data->current_library_collection_paths = collection_paths;
 
@@ -133,7 +154,7 @@ static void load_namespace_utf8(Scheme_Object *namespace_name) {
   Scheme_Object *a[1];
   Scheme_Thread * volatile p;
   mz_jmp_buf * volatile saved_error_buf;
-  mz_jmp_buf volatile new_error_buf;
+  mz_jmp_buf new_error_buf;
 
   nsreq = scheme_builtin_value("namespace-require");
   a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
@@ -147,11 +168,41 @@ static void load_namespace_utf8(Scheme_Object *namespace_name) {
   p->error_buf = saved_error_buf;
 }
 
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
+{
+  Scheme_Object *new_so = so;
+  if (SCHEME_INTP(so)) {
+    return so;
+  }
+
+  switch (so->type) {
+    case scheme_char_string_type: /*43*/
+      new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
+      break;
+    case scheme_unix_path_type:
+      new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
+      break;
+    case scheme_symbol_type:
+      {
+        Scheme_Symbol *sym = (Scheme_Symbol *)so;
+        new_so = scheme_intern_exact_symbol(sym->s, sym->len);
+      }
+      break;
+    case scheme_resolved_module_path_type:
+      abort();
+      break;
+    default:
+      abort();
+      break;
+  }
+  return new_so;
+}
+
 static void *place_start_proc(void *data_arg) {
   void *stack_base;
   Scheme_Object *thunk;
   Place_Start_Data *place_data;
-  Scheme_Object *a[1];
+  Scheme_Object *a[2];
   int ptid;
   ptid = mz_proc_thread_self();
 
@@ -165,21 +216,75 @@ static void *place_start_proc(void *data_arg) {
   null_out_runtime_globals();
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
+#ifdef MZ_PRECISE_GC
+  GC_construct_child_gc();
+#endif
   scheme_place_instance_init(stack_base);
   a[0] = place_data->current_library_collection_paths;
   scheme_current_library_collection_paths(1, a);
 
-  load_namespace("scheme/init");
 
-  thunk = place_data->thunk;
+  if (place_data->argc == 1)
+  {
+    load_namespace("scheme/init");
+    thunk = place_data->thunk;
+    scheme_apply(thunk, 0, NULL);
+    stack_base = NULL;
+  } else {
+    Scheme_Object *place_main;
+    a[0] = scheme_places_deep_copy(place_data->module);
+    a[1] = place_main_symbol;
+    place_main = scheme_dynamic_require(2, a);
 
-  scheme_apply(thunk, 0, NULL);
-
-  stack_base = NULL;
+    a[0] = scheme_places_deep_copy(place_data->channel);
+    scheme_apply(place_main, 1, a);
+  }
 
   return scheme_true;
 }
 
+#ifdef MZ_PRECISE_GC
+
+static void *master_scheme_place(void *data) {
+  mz_proc_thread *myself;
+  myself = proc_thread_self;
+  GC_switch_in_master_gc();
+
+  while(1) {
+    int recv_type;
+    void *recv_payload;
+    pt_mbox *origin;
+    Scheme_Object *o;
+    Scheme_Object *copied_o;
+
+    pt_mbox_recv(myself->mbox, &recv_type, &recv_payload, &origin);
+    switch(recv_type) {
+      case 1:
+        copied_o = scheme_places_deep_copy((Scheme_Object *)recv_payload);
+        o = scheme_intern_resolved_module_path_worker(copied_o);
+        pt_mbox_send(origin, 2, (void *) o, NULL);
+        break;
+      case 3:
+        {
+          Scheme_Symbol_Parts *parts;
+          parts = (Scheme_Symbol_Parts *) recv_payload;
+          o = (Scheme_Object *)scheme_intern_exact_symbol_in_table_worker(parts->table, parts->kind, parts->name, parts->len);
+          pt_mbox_send(origin, 4, (void *) o, NULL);
+        }
+        break;
+      case 5:
+        break;
+    }
+  }
+  return NULL;
+}
+
+void spawn_master_scheme_place() {
+  mzrt_proc_first_thread_init();
+
+  scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL);
+}
+#endif
 
 /*========================================================================*/
 /*                       precise GC traversers                            */

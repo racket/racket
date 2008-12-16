@@ -234,12 +234,17 @@ static int mark_ephemeron(void *p)
 #ifdef NEWGC_BTC_ACCOUNT
 static int BTC_ephemeron_mark(void *p)
 {
-  GC_Ephemeron *eph = (GC_Ephemeron *)p;
-  
-  gcMARK(eph->key);
-  gcMARK(eph->val);
+  GCTYPE *gc = GC_get_GC();
+  if (gc->doing_memory_accounting) {
 
-  return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
+    GC_Ephemeron *eph = (GC_Ephemeron *)p;
+
+    gcMARK(eph->key);
+    gcMARK(eph->val);
+
+    return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
+  }
+  return mark_ephemeron(p);
 }
 #endif
 

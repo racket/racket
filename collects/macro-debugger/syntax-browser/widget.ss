@@ -1,11 +1,10 @@
 
-#lang mzscheme
+#lang scheme/base
 (require scheme/class
          mred
          framework/framework
          scheme/list
          scheme/match
-         mzlib/kw
          syntax/boundmap
          "interfaces.ss"
          "controller.ss"
@@ -14,7 +13,8 @@
          "hrule-snip.ss"
          "properties.ss"
          "text.ss"
-         "util.ss")
+         "util.ss"
+         "../util/mpi.ss")
 (provide widget%)
 
 ;; widget%
@@ -104,63 +104,73 @@
             (send -text set-clickback a b handler)
             (send -text change-style clickback-style a b)))))
 
-    (define/public add-syntax
-      (lambda/kw (stx #:key [hi-stxs null] hi-color alpha-table [definites null]
-                      hi2-color [hi2-stxs null])
-        (define (get-binder id)
+    (define/public (add-syntax stx
+                               #:binder-table [alpha-table #f]
+                               #:shift-table [shift-table #f]
+                               #:definites [definites null]
+                               #:hi-colors [hi-colors null]
+                               #:hi-stxss [hi-stxss null])
+      (define (get-binders id)
+        (define binder
           (module-identifier-mapping-get alpha-table id (lambda () #f)))
-        (when (and (pair? hi-stxs) (not hi-color))
-          (error 'syntax-widget%::add-syntax "no highlight color specified"))
-        (let ([display (internal-add-syntax stx)]
-              [definite-table (make-hash-table)])
-          (when (and hi2-color (pair? hi2-stxs))
-            (send display highlight-syntaxes hi2-stxs hi2-color))
-          (when (and hi-color (pair? hi-stxs))
-            (send display highlight-syntaxes hi-stxs hi-color))
-          (for-each (lambda (x) (hash-table-put! definite-table x #t)) definites)
-          (when alpha-table
-            (let ([range (send display get-range)]
-                  [start (send display get-start-position)])
-              (define (adjust n) (+ start n))
-              (for-each
-               (lambda (id)
-                 #; ;; DISABLED
-                 (match (identifier-binding id)
-                   [(list src-mod src-name nom-mod nom-name _)
-                    (for-each (lambda (id-r)
-                                (send -text add-billboard
-                                      (adjust (car id-r))
-                                      (adjust (cdr id-r))
-                                      (string-append "from "
-                                                     (mpi->string src-mod))
-                                      (if (hash-table-get definite-table id #f)
-                                          "blue"
-                                          "purple")))
-                              (send range get-ranges id))]
-                   [_ (void)])
+        (if shift-table
+            (cons binder (hash-ref shift-table binder null))
+            (list binder)))
+      (let ([display (internal-add-syntax stx)]
+            [definite-table (make-hasheq)])
+        (for-each (lambda (hi-stxs hi-color)
+                    (send display highlight-syntaxes hi-stxs hi-color))
+                  hi-stxss
+                  hi-colors)
+        (for ([definite definites])
+          (hash-set! definite-table definite #t)
+          (when shift-table
+            (for ([shifted-definite (hash-ref shift-table definite null)])
+              (hash-set! definite-table shifted-definite #t))))
+        (when alpha-table
+          (let ([range (send display get-range)]
+                [start (send display get-start-position)])
+            (let* ([binders0
+                    (module-identifier-mapping-map alpha-table (lambda (k v) k))]
+                   [binders
+                    (apply append (map get-binders binders0))])
+              (send display underline-syntaxes binders))
+            (for ([id (send range get-identifier-list)])
+              (define definite? (hash-ref definite-table id #f))
+              (when #f ;; DISABLED
+                (add-binding-billboard start range id definite?))
+              (for ([binder (get-binders id)])
+                (for ([binder-r (send range get-ranges binder)])
+                  (for ([id-r (send range get-ranges id)])
+                    (add-binding-arrow start binder-r id-r definite?)))))))
+        display))
 
-                 (let ([binder (get-binder id)])
-                   (when binder
-                     (for-each
-                      (lambda (binder-r)
-                        (for-each (lambda (id-r)
-                                    (if (hash-table-get definite-table id #f)
-                                        (send -text add-arrow
-                                              (adjust (car binder-r))
-                                              (adjust (cdr binder-r))
-                                              (adjust (car id-r))
-                                              (adjust (cdr id-r))
-                                              "blue")
-                                        (send -text add-question-arrow
-                                              (adjust (car binder-r))
-                                              (adjust (cdr binder-r))
-                                              (adjust (car id-r))
-                                              (adjust (cdr id-r))
-                                              "purple")))
-                                  (send range get-ranges id)))
-                      (send range get-ranges binder)))))
-               (send range get-identifier-list))))
-          display)))
+    (define/private (add-binding-arrow start binder-r id-r definite?)
+      (if definite?
+          (send -text add-arrow
+                (+ start (car binder-r))
+                (+ start (cdr binder-r))
+                (+ start (car id-r))
+                (+ start (cdr id-r))
+                "blue")
+          (send -text add-question-arrow
+                (+ start (car binder-r))
+                (+ start (cdr binder-r))
+                (+ start (car id-r))
+                (+ start (cdr id-r))
+                "purple")))
+
+    (define/private (add-binding-billboard start range id definite?)
+      (match (identifier-binding id)
+        [(list-rest src-mod src-name nom-mod nom-name _)
+         (for-each (lambda (id-r)
+                     (send -text add-billboard
+                           (+ start (car id-r))
+                           (+ start (cdr id-r))
+                           (string-append "from " (mpi->string src-mod))
+                           (if definite? "blue" "purple")))
+                   (send range get-ranges id))]
+        [_ (void)]))
 
     (define/public (add-separator)
       (with-unlock -text

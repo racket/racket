@@ -166,6 +166,7 @@ void scheme_init_type(Scheme_Env *env);
 void scheme_init_list(Scheme_Env *env);
 void scheme_init_stx(Scheme_Env *env);
 void scheme_init_module(Scheme_Env *env);
+void scheme_init_module_path_table(void);
 void scheme_init_port(Scheme_Env *env);
 void scheme_init_port_fun(Scheme_Env *env);
 void scheme_init_network(Scheme_Env *env);
@@ -356,6 +357,9 @@ extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
 #define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
 #define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
+#include "mzrt.h"
+extern mz_proc_thread *scheme_master_proc_thread;
+extern THREAD_LOCAL mz_proc_thread *proc_thread_self;
 #endif
 
 typedef struct Scheme_Thread_Set {
@@ -420,8 +424,8 @@ extern int scheme_overflow_count;
 
 struct Scheme_Custodian {
   Scheme_Object so;
-  char shut_down, has_limit;
-  int count, alloc;
+  char shut_down, has_limit, recorded;
+  int count, alloc, elems;
   Scheme_Object ***boxes;
   Scheme_Custodian_Reference **mrefs;
   Scheme_Close_Custodian_Client **closers;
@@ -1859,8 +1863,7 @@ typedef struct Resolve_Prefix
   int num_toplevels, num_stxes, num_lifts;
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
-  int delay_refcount;
-  struct Scheme_Load_Delay *delay_info;
+  Scheme_Object *delay_info_rpair; /* (rcons refcount Scheme_Load_Delay*) */
 } Resolve_Prefix;
 
 typedef struct Resolve_Info
@@ -2390,6 +2393,11 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   int src_phase, int now_phase);
 void scheme_pop_prefix(Scheme_Object **rs);
 
+Scheme_Object *scheme_eval_clone(Scheme_Object *expr);
+Resolve_Prefix *scheme_prefix_eval_clone(Resolve_Prefix *rp);
+Scheme_Object *scheme_module_eval_clone(Scheme_Object *data);
+Scheme_Object *scheme_syntaxes_eval_clone(Scheme_Object *form);
+
 Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env);
 Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy);
 
@@ -2557,6 +2565,10 @@ typedef struct Scheme_Module
   Scheme_Object **indirect_provides; /* symbols (internal names) */
   int num_indirect_provides;
 
+  /* Only if needed to reconstruct the renaming: */
+  Scheme_Object **indirect_syntax_provides; /* symbols (internal names) */
+  int num_indirect_syntax_provides;
+
   char *et_provide_protects;            /* 1 => protected, 0 => not */
   Scheme_Object **et_indirect_provides; /* symbols (internal names) */
   int num_indirect_et_provides;
@@ -2683,6 +2695,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_to_modidx);
 
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o);
+Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o);
 
 Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modidx, 
 					   Scheme_Object *stxsym, Scheme_Object *insp,
@@ -3080,6 +3093,7 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 
+Scheme_Object *scheme_intern_exact_symbol_in_table_worker(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len);
 Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, unsigned int len);
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);
@@ -3111,13 +3125,23 @@ Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *
 /*                           places                                       */
 /*========================================================================*/
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+typedef struct Scheme_Symbol_Parts {
+  Scheme_Hash_Table *table;
+  int kind;
+  unsigned int len;
+  const char *name;
+} Scheme_Symbol_Parts;
+#endif
+
 typedef struct Scheme_Place {
   Scheme_Object so;
   void *proc_thread;
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
-
+void spawn_master_scheme_place();
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 
 /*========================================================================*/
 /*                           engine                                       */

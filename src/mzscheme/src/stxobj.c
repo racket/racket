@@ -1823,12 +1823,18 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
 void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i)
 {
   Scheme_Object *stx;
+  int c;
+
   stx = scheme_load_delayed_code(SCHEME_INT_VAL(rp->stxes[i]),
-                                 rp->delay_info);
+                                 (struct Scheme_Load_Delay *)SCHEME_CDR(rp->delay_info_rpair));
   rp->stxes[i] = stx;
-  --rp->delay_refcount;
-  if (!rp->delay_refcount)
-    rp->delay_info = NULL;
+  c = SCHEME_INT_VAL(SCHEME_CAR(rp->delay_info_rpair));
+  --c;
+  SCHEME_CAR(rp->delay_info_rpair) = scheme_make_integer(c);
+  if (!c) {
+    SCHEME_CDR(rp->delay_info_rpair) = NULL;
+    rp->delay_info_rpair = NULL;
+  } 
 }
 
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)

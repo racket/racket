@@ -65,8 +65,8 @@
 (define (internal-error label)
   (error 'scribble-reader "internal error [~a]" label))
 
-;; like `regexp-match/fail-without-reading', without extras; the regexp that
-;; is used must be anchored -- nothing is dropped
+;; like `regexp-try-match', without extras; the regexp that is used
+;; must be anchored -- nothing is dropped
 (define (*regexp-match-peek-positions pattern input-port)
   #; ; sanity checks, not needed unless this file is edited
   (unless (and (byte-regexp? pattern)

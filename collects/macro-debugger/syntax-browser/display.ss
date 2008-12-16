@@ -75,22 +75,32 @@
 
     ;; get-range : -> range<%>
     (define/public (get-range) range)
-    
+
     ;; highlight-syntaxes : (list-of syntax) string -> void
     (define/public (highlight-syntaxes stxs hi-color)
       (let ([style-delta (highlight-style-delta hi-color #f)])
-        (for-each (lambda (stx) (hash-set! extra-styles stx style-delta))
-                  stxs))
+        (for ([stx stxs])
+          (add-extra-styles stx (list style-delta))))
       (refresh))
+
+    ;; underline-syntaxes : (listof syntax) -> void
+    (define/public (underline-syntaxes stxs)
+      (for ([stx stxs])
+        (add-extra-styles stx (list underline-style-delta)))
+      (refresh))
+
+    (define/public (add-extra-styles stx styles)
+      (hash-set! extra-styles stx
+                 (append (hash-ref extra-styles stx null)
+                         styles)))
 
     ;; apply-extra-styles : -> void
     ;; Applies externally-added styles (such as highlighting)
     (define/private (apply-extra-styles)
-      (hash-for-each
-       extra-styles
-       (lambda (hi-stx style-delta)
-         (let ([rs (send range get-ranges hi-stx)])
-           (for-each (lambda (r) (restyle-range r style-delta)) rs)))))
+      (for ([(stx style-deltas) extra-styles])
+        (for ([r (send range get-ranges stx)])
+          (for ([style-delta style-deltas])
+            (restyle-range r style-delta)))))
 
     ;; apply-secondary-partition-styles : selected-syntax -> void
     ;; If the selected syntax is an identifier, then styles all identifiers
@@ -241,6 +251,11 @@
     (when em? (send sd set-weight-on 'bold))
     (unless em? (send sd set-underlined-off #t)
       (send sd set-weight-off 'bold))
+    sd))
+
+(define underline-style-delta
+  (let ([sd (new style-delta%)])
+    (send sd set-underlined-on #t)
     sd))
 
 (define selection-color "yellow")

@@ -57,19 +57,19 @@ or indirectly). If @scheme[cust] is not strictly subordinate to
 
 @defproc[(custodian-memory-accounting-available?) boolean?]{
 
-Returns @scheme[#t] if PLT Scheme is compiled with support for
-per-custodian memory accounting, @scheme[#f] otherwise.
-
 @margin-note{Memory accounting is normally available in PLT Scheme 3m,
 which is the main variant of PLT Scheme, and not normally available in
-PLT Scheme CGC.}}
+PLT Scheme CGC.}
+
+Returns @scheme[#t] if PLT Scheme is compiled with support for
+per-custodian memory accounting, @scheme[#f] otherwise.}
 
 @defproc[(custodian-require-memory [limit-cust custodian?]
                                    [need-amt exact-nonnegative-integer?]
                                    [stop-cust custodian?]) void?]{
 
-Registers a require check if PLT Scheme is compiled with support for
-per-custodian memory accounting, otherwise the
+Registers a required-memory check if PLT Scheme is compiled with
+support for per-custodian memory accounting, otherwise the
 @exnraise[exn:fail:unsupported].
 
 If a check is registered, and if PLT Scheme later reaches a state after
@@ -81,8 +81,8 @@ trigger some shutdown, then @scheme[stop-cust] is shut down.}
                                  [limit-amt exact-nonnegative-integer?]
                                  [stop-cust custodian? limit-cust]) void?]{
 
-Registers a limit check if PLT Scheme is compiled with support for
-per-custodian memory accounting, otherwise the
+Registers a limited-memory check if PLT Scheme is compiled with
+support for per-custodian memory accounting, otherwise the
 @exnraise[exn:fail:unsupported].
 
 If a check is registered, and if PLT Scheme later reaches a state
@@ -93,7 +93,10 @@ after garbage collection (see @secref["gc-model"]) where
 @margin-note{A custodian's limit is checked only after a garbage
              collection, except that it may also be checked during
              certain large allocations that are individually larger
-             than the custodian's limit.}
+             than the custodian's limit. A single garbage collection
+             may shut down multiple custodians, even if shutting down
+             only one of the custodians would have reduced memory use
+             for other custodians.}
 
 For reliable shutdown, @scheme[limit-amt] for
 @scheme[custodian-limit-memory] must be much lower than the total

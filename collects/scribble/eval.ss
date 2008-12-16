@@ -243,7 +243,9 @@
                    [sandbox-output 'string]
                    [sandbox-error-output 'string]
                    [sandbox-eval-limits #f]
-                   [sandbox-make-inspector current-inspector])
+                   [sandbox-memory-limit #f]
+                   [sandbox-make-inspector current-inspector]
+                   [sandbox-make-code-inspector current-code-inspector])
       (make-evaluator '(begin (require scheme/base)))))
 
   (define (close-eval e)

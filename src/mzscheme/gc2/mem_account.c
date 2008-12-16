@@ -1,9 +1,16 @@
 /*****************************************************************************/
-/* blame-the-child accounting                                                */
+/* memory accounting                                                         */
 /*****************************************************************************/
 #ifdef NEWGC_BTC_ACCOUNT
 
 #include "../src/schpriv.h"
+/* BTC_ prefixed functions are called by newgc.c */
+/* btc_ prefixed functions are internal to mem_account.c */
+
+static const int btc_redirect_thread    = 511;
+static const int btc_redirect_custodian = 510;
+static const int btc_redirect_ephemeron = 509;
+static const int btc_redirect_cust_box  = 508;
 
 /*****************************************************************************/
 /* thread list                                                               */
@@ -36,11 +43,12 @@ inline static void BTC_register_thread(void *t, void *c)
 inline static void mark_threads(NewGC *gc, int owner)
 {
   GC_Thread_Info *work;
+  Mark_Proc thread_mark = gc->mark_table[btc_redirect_thread];
 
   for(work = gc->thread_infos; work; work = work->next)
     if(work->owner == owner) {
       if (((Scheme_Thread *)work->thread)->running) {
-        gc->normal_thread_mark(work->thread);
+        thread_mark(work->thread);
         if (work->thread == scheme_current_thread) {
           GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
         }
@@ -249,6 +257,7 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
 {
   Scheme_Object *pr, *prev = NULL, *next;
   GC_Weak_Box *wb;
+  Mark_Proc cust_box_mark = gc->mark_table[btc_redirect_cust_box];
 
   /* cust boxes is a list of weak boxes to cust boxes */
 
@@ -257,7 +266,7 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
     wb = (GC_Weak_Box *)SCHEME_CAR(pr);
     next = SCHEME_CDR(pr);
     if (wb->val) {
-      gc->normal_cust_box_mark(wb->val);
+      cust_box_mark(wb->val);
       prev = pr;
     } else {
       if (prev)
@@ -273,21 +282,32 @@ inline static void mark_cust_boxes(NewGC *gc, Scheme_Custodian *cur)
 
 int BTC_thread_mark(void *p)
 {
-  return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  NewGC *gc = GC_get_GC();
+  if (gc->doing_memory_accounting) {
+    return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  }
+  return gc->mark_table[btc_redirect_thread](p);
 }
 
 int BTC_custodian_mark(void *p)
 {
   NewGC *gc = GC_get_GC();
-  if(custodian_to_owner_set(gc, p) == gc->current_mark_owner)
-    return gc->normal_custodian_mark(p);
-  else
-    return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  if (gc->doing_memory_accounting) {
+    if(custodian_to_owner_set(gc, p) == gc->current_mark_owner)
+      return gc->mark_table[btc_redirect_custodian](p);
+    else
+      return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  }
+  return gc->mark_table[btc_redirect_custodian](p);
 }
 
 int BTC_cust_box_mark(void *p)
 {
-  return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  NewGC *gc = GC_get_GC();
+  if (gc->doing_memory_accounting) {
+    return ((struct objhead *)(NUM(p) - WORD_SIZE))->size;
+  }
+  return gc->mark_table[btc_redirect_cust_box](p);
 }
 
 inline static void mark_normal_obj(NewGC *gc, mpage *page, void *ptr)
@@ -375,6 +395,21 @@ static void propagate_accounting_marks(NewGC *gc)
     reset_pointer_stack();
 }
 
+inline static void BTC_initialize_mark_table(NewGC *gc) {
+  gc->mark_table[scheme_thread_type]    = BTC_thread_mark;
+  gc->mark_table[scheme_custodian_type] = BTC_custodian_mark;
+  gc->mark_table[gc->ephemeron_tag]     = BTC_ephemeron_mark;
+  gc->mark_table[gc->cust_box_tag]      = BTC_cust_box_mark;
+}
+
+inline static int BTC_get_redirect_tag(NewGC *gc, int tag) {
+  if (tag == scheme_thread_type )         { tag = btc_redirect_thread; }
+  else if (tag == scheme_custodian_type ) { tag = btc_redirect_custodian; }
+  else if (tag == gc->ephemeron_tag )     { tag = btc_redirect_ephemeron; }
+  else if (tag == gc->cust_box_tag )      { tag = btc_redirect_cust_box; }
+  return tag;
+}
+
 static void BTC_do_accounting(NewGC *gc)
 {
   const int table_size = gc->owner_table_size;
@@ -390,29 +425,17 @@ static void BTC_do_accounting(NewGC *gc)
     gc->in_unsafe_allocation_mode = 1;
     gc->unsafe_allocation_abort = btc_overmem_abort;
 
-    if(!gc->normal_thread_mark) {
-      gc->normal_thread_mark    = gc->mark_table[scheme_thread_type];
-      gc->normal_custodian_mark = gc->mark_table[scheme_custodian_type];
-      gc->normal_cust_box_mark  = gc->mark_table[gc->cust_box_tag];
-    }
-
-    gc->mark_table[scheme_thread_type]    = BTC_thread_mark;
-    gc->mark_table[scheme_custodian_type] = BTC_custodian_mark;
-    gc->mark_table[gc->ephemeron_tag]     = BTC_ephemeron_mark;
-    gc->mark_table[gc->cust_box_tag]      = BTC_cust_box_mark;
-
     /* clear the memory use numbers out */
     for(i = 1; i < table_size; i++)
       if(owner_table[i])
         owner_table[i]->memory_use = 0;
 
-    /* the end of the custodian list is where we want to start */
-    while(SCHEME_PTR1_VAL(box)) {
-      cur = (Scheme_Custodian*)SCHEME_PTR1_VAL(box);
-      box = cur->global_next;
+    /* start with root: */
+    while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
+      cur = SCHEME_PTR1_VAL(cur->parent);
     }
 
-    /* walk backwards for the order we want */
+    /* walk forward for the order we want (blame parents instead of children) */
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
 
@@ -424,13 +447,8 @@ static void BTC_do_accounting(NewGC *gc)
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
       propagate_accounting_marks(gc);
 
-      box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+      box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
-
-    gc->mark_table[scheme_thread_type]    = gc->normal_thread_mark;
-    gc->mark_table[scheme_custodian_type] = gc->normal_custodian_mark;
-    gc->mark_table[gc->ephemeron_tag]     = mark_ephemeron;
-    gc->mark_table[gc->cust_box_tag]      = gc->normal_cust_box_mark;
 
     gc->in_unsafe_allocation_mode = 0;
     gc->doing_memory_accounting = 0;

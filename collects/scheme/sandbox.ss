@@ -2,6 +2,7 @@
 
 (require scheme/port
          scheme/list
+         scheme/string
          syntax/moddep
          scheme/gui/dynamic)
 
@@ -17,11 +18,14 @@
          sandbox-override-collection-paths
          sandbox-path-permissions
          sandbox-security-guard
-         sandbox-exit-handler
          sandbox-network-guard
+         sandbox-exit-handler
          sandbox-make-inspector
+         sandbox-make-code-inspector
          sandbox-make-logger
+         sandbox-memory-limit
          sandbox-eval-limits
+         evaluator-alive?
          kill-evaluator
          break-evaluator
          set-eval-limits
@@ -35,6 +39,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         exn:fail:sandbox-terminated?
+         exn:fail:sandbox-terminated-reason
          exn:fail:resource?
          exn:fail:resource-resource)
 
@@ -52,6 +58,7 @@
 (define sandbox-output       (make-parameter #f))
 (define sandbox-error-output
   (make-parameter (lambda () (dup-output-port (current-error-port)))))
+(define sandbox-memory-limit (make-parameter 30))       ; 30mb total
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
@@ -87,9 +94,14 @@
                                           [(string? path) (string->path path)]
                                           [else path]))))))
 
-(define permission-order '(execute write delete read exists))
+;; 'read-bytecode is special, it's higher than 'read, but not lower than
+;; 'delete.
+(define permission-order '(execute write delete read-bytecode read exists))
 (define (perm<=? p1 p2)
-  (memq p1 (memq p2 permission-order)))
+  (or (eq? p1 p2)
+      (and (not (eq? 'read-bytecode p1))
+           (memq p1 (memq p2 permission-order))
+           #t)))
 
 ;; gets a path (can be bytes/string), returns a regexp for that path that
 ;; matches also subdirs (if it's a directory)
@@ -99,58 +111,94 @@
          [suffix-re (bytes-append #"(?:$|" sep-re #")")])
     (lambda (path)
       (if (byte-regexp? path)
-          path
-          (let* ([path (path->bytes (simplify-path* path))]
-                 [path (regexp-quote (regexp-replace last-sep path #""))])
-            (byte-regexp (bytes-append #"^" path suffix-re)))))))
+        path
+        (let* ([path (path->bytes (simplify-path* path))]
+               [path (regexp-quote (regexp-replace last-sep path #""))])
+          (byte-regexp (bytes-append #"^" path suffix-re)))))))
 
 (define sandbox-path-permissions
   (make-parameter '()
-                  (lambda (new)
-                    (map (lambda (perm) (cons (car perm) (map path->bregexp (cdr perm))))
-                         new))))
+    (lambda (new)
+      (map (lambda (perm) (list (car perm) (path->bregexp (cadr perm))))
+           new))))
+
+;; compresses the (sandbox-path-permissions) value to a "compressed" list of
+;; (permission regexp ...) where each permission appears exactly once (so it's
+;; quicker to test it later, no need to scan the whole permission list).
+(define compressed-path-permissions
+  (let ([t (make-weak-hasheq)])
+    (define (compress-permissions ps)
+      (map (lambda (perm)
+             (let* ([ps (filter (lambda (p) (perm<=? perm (car p))) ps)]
+                    [ps (remove-duplicates (map cadr ps))])
+               (cons perm ps)))
+           permission-order))
+    (lambda ()
+      (let ([ps (sandbox-path-permissions)])
+        (or (hash-ref t ps #f)
+            (let ([c (compress-permissions ps)]) (hash-set! t ps c) c))))))
+
+;; similar to the security guard, only with a single mode for simplification;
+;; assumes valid mode and simplified path
+(define (check-sandbox-path-permissions path needed)
+  (let ([bpath (path->bytes path)]
+        [perms (compressed-path-permissions)])
+    (ormap (lambda (rx) (regexp-match? rx bpath)) (cdr (assq needed perms)))))
 
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
 
-(define default-sandbox-guard
+(define (make-default-sandbox-guard)
   (let ([orig-security (current-security-guard)])
     (make-security-guard
      orig-security
      (lambda (what path modes)
        (when path
-         (let ([needed (let loop ([order permission-order])
-                         (cond [(null? order)
-                                (error 'default-sandbox-guard
-                                       "unknown access modes: ~e" modes)]
-                               [(memq (car order) modes) (car order)]
-                               [else (loop (cdr order))]))]
-               [bpath (parameterize ([current-security-guard orig-security])
-                        (path->bytes (simplify-path* path)))])
-           (unless (ormap (lambda (perm)
-                            (and (perm<=? needed (car perm))
-                                 (regexp-match (cadr perm) bpath)))
-                          (sandbox-path-permissions))
+         (let ([spath (parameterize ([current-security-guard orig-security])
+                        (simplify-path* path))]
+               [maxperm
+                ;; assumes that the modes are valid (ie, in the above list)
+                (cond [(null? modes) (error 'default-sandbox-guard
+                                            "got empty mode list for ~e and ~e"
+                                            what path)]
+                      [(null? (cdr modes)) (car modes)] ; common case
+                      [else (foldl (lambda (x max) (if (perm<=? max x) x max))
+                                   (car modes) (cdr modes))])])
+           (unless (check-sandbox-path-permissions spath maxperm)
              (error what "`~a' access denied for ~a"
-                    (apply string-append
-                           (add-between (map symbol->string modes) "+"))
+                    (string-append* (add-between (map symbol->string modes) "+"))
                     path)))))
      (lambda args (apply (sandbox-network-guard) args)))))
 
-(define sandbox-security-guard (make-parameter default-sandbox-guard))
+(define sandbox-security-guard
+  (make-parameter make-default-sandbox-guard
+    (lambda (x)
+      (if (or (security-guard? x)
+              (and (procedure? x) (procedure-arity-includes? x 0)))
+        x
+        (raise-type-error
+         'sandbox-security-guard
+         "security-guard or a security-guard translator procedure" x)))))
 
-(define (default-sandbox-exit-handler _)
-  (error 'exit "sandboxed code cannot exit"))
+;; this is never really used (see where it's used in the evaluator)
+(define (default-sandbox-exit-handler _) (error 'exit "sandbox exits"))
 
 (define sandbox-exit-handler (make-parameter default-sandbox-exit-handler))
 
 (define sandbox-make-inspector (make-parameter make-inspector))
 
+(define sandbox-make-code-inspector (make-parameter make-inspector))
+
 (define sandbox-make-logger (make-parameter current-logger))
 
-;; computes permissions that are needed for require specs (`read' for all
-;; files and "compiled" subdirs, `exists' for the base-dir)
+(define (compute-permissions paths+require-perms)
+  (let-values ([(paths require-perms) (partition path? paths+require-perms)])
+    (append (map (lambda (p) `(read ,(path->bytes p))) paths)
+            (module-specs->path-permissions require-perms))))
+
+;; computes permissions that are needed for require specs (`read-bytecode' for
+;; all files and "compiled" subdirs, `exists' for the base-dir)
 (define (module-specs->path-permissions mods)
   (define paths (module-specs->non-lib-paths mods))
   (define bases
@@ -161,8 +209,8 @@
             (let ([base (simplify-path* base)])
               (loop (cdr paths)
                     (if (member base bases) bases (cons base bases))))))))
-  (append (map (lambda (p) `(read ,(path->bytes p))) paths)
-          (map (lambda (b) `(read ,(build-path b "compiled"))) bases)
+  (append (map (lambda (p) `(read-bytecode ,p)) paths)
+          (map (lambda (b) `(read-bytecode ,(build-path b "compiled"))) bases)
           (map (lambda (b) `(exists ,b)) bases)))
 
 ;; takes a module-spec list and returns all module paths that are needed
@@ -215,49 +263,76 @@
 
 ;; similar to `call-in-nested-thread', but propagates killing the thread,
 ;; shutting down the custodian or setting parameters and thread cells;
-;; optionally with thunks to call for kill/shutdown.
+;; optionally with thunks to call for kill/shutdown instead.
 (define (call-in-nested-thread*
          thunk
          [kill     (lambda () (kill-thread (current-thread)))]
          [shutdown (lambda () (custodian-shutdown-all (current-custodian)))])
   (let* ([p #f]
-         [c (make-custodian)]
-         [b (make-custodian-box c #t)])
-    (with-handlers ([(lambda (_) (not p))
-                     ;; if the after thunk was not called, then this error is
-                     ;; about the thread dying unnaturally, so propagate
-                     ;; whatever it did
-                     (lambda (_) ((if (custodian-box-value b) kill shutdown)))])
-      (dynamic-wind void
-        (lambda ()
-          (parameterize ([current-custodian c])
-            (call-in-nested-thread
-             (lambda ()
-               (dynamic-wind void thunk
-                 ;; this should always be called unless the thread is killed or
-                 ;; the custodian is shutdown, distinguish the two cases
-                 ;; through the above box
-                 (lambda ()
-                   (set! p (current-preserved-thread-cell-values))))))))
-        (lambda () (when p (current-preserved-thread-cell-values p)))))))
+         [c (make-custodian (current-custodian))]
+         [b (make-custodian-box c #t)]
+         [break? (break-enabled)])
+    (parameterize-break #f
+      (with-handlers ([(lambda (_) (not p))
+                       ;; if the after thunk was not called, then this error is
+                       ;; about the thread dying unnaturally, so propagate
+                       ;; whatever it did
+                       (lambda (_)
+                         ((if (custodian-box-value b) kill shutdown)))])
+        (dynamic-wind void
+          (lambda ()
+            (parameterize ([current-custodian c])
+              (call-in-nested-thread
+               (lambda ()
+                 (break-enabled break?)
+                 (dynamic-wind void thunk
+                   ;; this should always be called unless the thread is killed
+                   ;; or the custodian is shutdown, distinguish the two cases
+                   ;; through the above box
+                   (lambda ()
+                     (set! p (current-preserved-thread-cell-values))))))))
+          (lambda () (when p (current-preserved-thread-cell-values p))))))))
 
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
   (let ([r #f])
-    (call-in-nested-thread*
-     (lambda ()
-       ;; memory limit
-       (when (and mb memory-accounting?)
-         (custodian-limit-memory (current-custodian) (* mb 1024 1024)))
-       ;; time limit
-       (when sec
-         (let ([t (current-thread)])
-           (thread (lambda () (sleep sec) (set! r 'time) (kill-thread t)))))
-       (set! r (with-handlers ([void (lambda (e) (list raise e))])
-                 (call-with-values thunk (lambda vs (list* values vs))))))
-     (lambda () (unless r (set! r 'kill)))
-     (lambda () (unless r (set! r 'shut))))
+    ;; memory limit, set on a new custodian so if there's an out-of-memory
+    ;; error, the user's custodian is still alive
+    (define-values (cust cust-box)
+      (if (and mb memory-accounting?)
+        (let ([c (make-custodian (current-custodian))])
+          (custodian-limit-memory
+           c (inexact->exact (round (* mb 1024 1024))) c)
+          (values c (make-custodian-box c #t)))
+        (values (current-custodian) #f)))
+    (parameterize ([current-custodian cust])
+      (call-in-nested-thread*
+       (lambda ()
+         ;; time limit
+         (when sec
+           (let ([t (current-thread)])
+             (thread (lambda ()
+                       (unless (sync/timeout sec t) (set! r 'time))
+                       (kill-thread t)))))
+         (set! r (with-handlers ([void (lambda (e) (list raise e))])
+                   (call-with-values thunk (lambda vs (list* values vs))))))
+       ;; The thread might be killed by the timer thread, so don't let
+       ;; call-in-nested-thread* kill it -- if user code did so, then just
+       ;; register the request and kill it below.  Do this for a
+       ;; custodian-shutdown to, just in case.
+       (lambda ()
+         (unless r (set! r 'kill))
+         ;; (kill-thread (current-thread))
+         )
+       (lambda ()
+         (unless r (set! r 'shut))
+         ;; (custodian-shutdown-all (current-custodian))
+         )))
+    (when (and cust-box (not (custodian-box-value cust-box)))
+      (if (memq r '(kill shut)) ; should always be 'shut
+        (set! r 'memory)
+        (format "cust died with: ~a" r))) ; throw internal error below
     (case r
       [(kill) (kill-thread (current-thread))]
       [(shut) (custodian-shutdown-all (current-custodian))]
@@ -317,23 +392,25 @@
 ;; (path/string/bytes) value.
 (define (input->code inps source n)
   (if (null? inps)
-      '()
-      (let ([p (input->port (car inps))])
-        (cond [(and p (null? (cdr inps)))
-               (port-count-lines! p)
-               (parameterize ([current-input-port p])
-                 ((sandbox-reader) source))]
-              [p (error 'input->code "ambiguous inputs: ~e" inps)]
-              [else (let loop ([inps inps] [n n] [r '()])
-                      (if (null? inps)
-                          (reverse r)
-                          (loop (cdr inps) (and n (add1 n))
-                                ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
-                                ;; (starting from the `n' argument)
-                                (cons (datum->syntax
-                                       #f (car inps)
-                                       (list source n (and n 0) n (and n 1)))
-                                      r))))]))))
+    '()
+    (let ([p (input->port (car inps))])
+      (cond [(and p (null? (cdr inps)))
+             (port-count-lines! p)
+             (parameterize ([current-input-port p])
+               (begin0 ((sandbox-reader) source)
+                 ;; close a port if we opened it
+                 (unless (eq? p (car inps)) (close-input-port p))))]
+            [p (error 'input->code "ambiguous inputs: ~e" inps)]
+            [else (let loop ([inps inps] [n n] [r '()])
+                    (if (null? inps)
+                      (reverse r)
+                      (loop (cdr inps) (and n (add1 n))
+                            ;; 1st at line#1, pos#1, 2nd at line#2, pos#2 etc
+                            ;; (starting from the `n' argument)
+                            (cons (datum->syntax
+                                   #f (car inps)
+                                   (list source n (and n 0) n (and n 1)))
+                                  r))))]))))
 
 (define ((init-for-language language))
   (cond [(or (not (pair? language))
@@ -353,7 +430,7 @@
 ;;
 ;; FIXME: inserting `#%require's here is bad if the language has a
 ;; `#%module-begin' that processes top-level forms specially.
-;; A more general solution would be to create anew module that exports
+;; A more general solution would be to create a new module that exports
 ;; the given language plus all of the given extra requires.
 ;;
 ;; We use `#%requre' because, unlike the `require' of scheme/base,
@@ -399,21 +476,34 @@
                     (lambda (x) (abort-current-continuation deftag x)))
                    (loop (car exprs) (cdr exprs))))))))))
 
+;; We need a powerful enough code inspector to invoke the errortrace library
+;; (indirectly through private/sandbox-coverage).  But there is a small problem
+;; here -- errortrace/stacktrace.ss will grab the global code inspector value
+;; at the time it is invoked.  So we grab it here too, and use it to wrap the
+;; code that invokes errortrace.  If errortrace/stacktrace.ss is changed to
+;; grab the current inspector, then it would be better to avoid this here, and
+;; pass `evaluate-program' the inspector that was in effect when the sandbox
+;; was created.
+(define orig-code-inspector (current-code-inspector))
+
 (define (evaluate-program program limit-thunk uncovered!)
-  (when uncovered!
-    (eval `(,#'#%require scheme/private/sandbox-coverage)))
-  ;; the actual evaluation happens under the specified limits
-  ((limit-thunk (lambda ()
-                  (if (and (pair? program) (eq? 'begin (car program)))
-                    (eval* (cdr program))
-                    (eval program)))))
+  (parameterize ([current-code-inspector orig-code-inspector])
+    (when uncovered!
+      (eval `(,#'#%require scheme/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
                (identifier? #'mod)
                (let ([mod #'mod])
-                 (eval `(,#'require (quote ,mod)))
-                 (module->namespace `(quote ,(syntax-e mod))))]
+                 (lambda ()
+                   (eval `(,#'require (quote ,mod)))
+                   (module->namespace `(quote ,(syntax-e mod)))))]
               [_else #f])])
+    ;; the actual evaluation happens under the specified limits
+    ((limit-thunk (lambda ()
+                    (if (and (pair? program) (eq? 'begin (car program)))
+                      (eval* (cdr program))
+                      (eval program))
+                    (when ns (set! ns (ns))))))
     (when uncovered!
       (let ([get (let ([ns (current-namespace)])
                    (lambda () (eval '(get-uncovered-expressions) ns)))])
@@ -448,6 +538,7 @@
        (let ([evmsg (make-evaluator-message msg '())])
          (lambda (evaluator) (evaluator evmsg))))]))
 
+(define-evaluator-messenger evaluator-alive? 'alive?)
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
 (define-evaluator-messenger (set-eval-limits secs mb) 'limits)
@@ -457,8 +548,22 @@
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 (define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
 
-(define (make-evaluator* init-hook require-perms program-maker)
-  (define user-cust     (make-custodian))
+
+(define-struct (exn:fail:sandbox-terminated exn:fail) (reason) #:transparent)
+(define (make-terminated reason)
+  (make-exn:fail:sandbox-terminated
+   (format "evaluator: terminated (~a)" reason)
+   (current-continuation-marks)
+   reason))
+
+(define (make-evaluator* init-hook allow program-maker)
+  (define orig-code-inspector (current-code-inspector))
+  (define orig-security-guard (current-security-guard))
+  (define orig-cust     (current-custodian))
+  (define memory-cust   (make-custodian orig-cust))
+  (define memory-cust-box (make-custodian-box memory-cust #t))
+  (define user-cust     (make-custodian memory-cust))
+  (define user-cust-box (make-custodian-box user-cust #t))
   (define coverage?     (sandbox-coverage-enabled))
   (define uncovered     #f)
   (define input-ch      (make-channel))
@@ -469,18 +574,38 @@
   (define limits        (sandbox-eval-limits))
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
-  (define orig-cust     (current-custodian))
+  (define terminated?   #f) ; set to an exception value when the sandbox dies
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
            [mb  (and limits (cadr limits))])
       (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
+  (define (terminated! reason)
+    (unless terminated?
+      (set! terminated?
+            (make-terminated
+             (cond
+               ;; #f is used as an indication of an internal error, when we
+               ;; don't know why the sandbox is killed
+               [(not reason) "internal error: no termination reason"]
+               ;; explicit reason given
+               [(not (eq? reason #t)) reason]
+               ;; reason = #t => guess the reason
+               [(not (custodian-box-value memory-cust-box)) 'out-of-memory]
+               [(not (custodian-box-value user-cust-box)) 'custodian-shutdown]
+               [(thread-dead? user-thread) 'thread-killed]
+               [else "internal error: cannot guess termination reason"])))))
   (define (user-kill)
     (when user-thread
       (let ([t user-thread])
         (set! user-thread #f)
+        (terminated! #f)
         (custodian-shutdown-all user-cust)
         (kill-thread t))) ; just in case
     (void))
+  (define (terminate+kill! reason raise?)
+    (terminated! reason)
+    (user-kill)
+    (when raise? (raise terminated?)))
   (define (user-break)
     (when user-thread (break-thread user-thread)))
   (define (user-process)
@@ -498,7 +623,8 @@
     (let ([n 0])
       (let loop ()
         (let ([expr (channel-get input-ch)])
-          (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
+          (when (eof-object? expr)
+            (terminated! 'eof) (channel-put result-ch expr) (user-kill))
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
@@ -511,21 +637,26 @@
                                (eval* (input->code (list expr) 'eval n))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
+  (define (get-user-result)
+    (with-handlers ([(if (sandbox-propagate-breaks) exn:break? (lambda (_) #f))
+                     (lambda (e) (user-break) (get-user-result))])
+      (sync user-done-evt result-ch)))
   (define (user-eval expr)
-    (let ([r (if user-thread
-               (begin (channel-put input-ch expr)
-                      (let loop ()
-                        (with-handlers ([(lambda (e)
-                                           (and (sandbox-propagate-breaks)
-                                                (exn:break? e)))
-                                         (lambda (e)
-                                           (user-break)
-                                           (loop))])
-                          (sync user-done-evt result-ch))))
-               eof)])
-      (cond [(eof-object? r) (error 'evaluator "terminated")]
-            [(eq? (car r) 'exn) (raise (cdr r))]
-            [else (apply values (cdr r))])))
+    ;; the thread will usually be running, but it might be killed outside of
+    ;; the sandboxed environment, for example, if you do something like
+    ;; (kill-thread (ev '(current-thread))) when there are no per-expression
+    ;; limits (since then you get a different thread, which is already dead).
+    (when (and user-thread (thread-dead? user-thread))
+      (terminate+kill! #t #t))
+    (cond
+      [terminated? => raise]
+      [(not user-thread) (error 'sandbox "internal error (user-thread is #f)")]
+      [else
+       (channel-put input-ch expr)
+       (let ([r (get-user-result)])
+         (cond [(eof-object? r) (terminate+kill! #t #t)]
+               [(eq? (car r) 'exn) (raise (cdr r))]
+               [else (apply values (cdr r))]))]))
   (define get-uncovered
     (case-lambda
      [() (get-uncovered #t)]
@@ -552,7 +683,8 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
-          [(kill)   (user-kill)]
+          [(alive?) (and user-thread (not (thread-dead? user-thread)))]
+          [(kill)   (terminate+kill! 'evaluator-killed #f)]
           [(break)  (user-break)]
           [(limits) (set! limits (evaluator-message-args expr))]
           [(input)  (apply input-putter (evaluator-message-args expr))]
@@ -582,6 +714,12 @@
                   (if bytes? buf (bytes->string/utf-8 buf #\?)))))
              out)]
           [else (error 'make-evaluator "bad sandox-~a spec: ~e" what out)]))
+  ;; set global memory limit
+  (when (and memory-accounting? (sandbox-memory-limit))
+    (custodian-limit-memory
+     memory-cust
+     (inexact->exact (round (* (sandbox-memory-limit) 1024 1024)))
+     memory-cust))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [current-custodian user-cust]
@@ -609,19 +747,41 @@
              (append (sandbox-override-collection-paths)
                      (current-library-collection-paths)))]
     [sandbox-path-permissions
-     (append (map (lambda (p) `(read ,p))
-                  (current-library-collection-paths))
-             (module-specs->path-permissions require-perms)
-             (sandbox-path-permissions))]
+     `(,@(map (lambda (p) `(read-bytecode ,p))
+              (current-library-collection-paths))
+       (exists ,(find-system-path 'addon-dir))
+       ,@(compute-permissions allow)
+       ,@(sandbox-path-permissions))]
     ;; general info
     [current-command-line-arguments '#()]
     ;; restrict the sandbox context from this point
-    [current-security-guard (sandbox-security-guard)]
-    [exit-handler (sandbox-exit-handler)]
-    [current-inspector ((sandbox-make-inspector))]
+    [current-security-guard
+     (let ([g (sandbox-security-guard)]) (if (security-guard? g) g (g)))]
     [current-logger ((sandbox-make-logger))]
-    ;; This breaks because we need to load some libraries that are trusted
-    ;; [current-code-inspector (make-inspector)]
+    [current-inspector ((sandbox-make-inspector))]
+    [current-code-inspector ((sandbox-make-code-inspector))]
+    ;; The code inspector serves two purposes -- making sure that only trusted
+    ;; byte-code is loaded, and avoiding using protected module bindings, like
+    ;; the foreign library's `unsafe!'.  We control the first through the path
+    ;; permissions -- using the 'read-bytecode permissionn level, so this
+    ;; handler just checks for that permission then goes on to load the file
+    ;; using the original inspector.
+    [current-load/use-compiled
+     (let ([handler (current-load/use-compiled)])
+       (lambda (path modname)
+         (if (check-sandbox-path-permissions
+              (parameterize ([current-security-guard orig-security-guard])
+                (simplify-path* path))
+              'read-bytecode)
+           (parameterize ([current-code-inspector orig-code-inspector])
+             (handler path modname))
+           ;; otherwise, just let the old handler throw a proper error
+           (handler path modname))))]
+    [exit-handler
+     (let ([h (sandbox-exit-handler)])
+       (if (eq? h default-sandbox-exit-handler)
+         (lambda _ (terminate+kill! 'exited #f))
+         h))]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
     ;; is an unused parameter.  Also note that creating an eventspace
     ;; starts a thread that will eventually run the callback code (which
@@ -629,14 +789,15 @@
     ;; must be nested in the above (which is what paramaterize* does), or
     ;; it will not use the new namespace.
     [current-eventspace (make-eventspace)])
-   (set! user-thread (bg-run->thread (run-in-bg user-process)))
-   (set! user-done-evt (handle-evt user-thread (lambda (_) (user-kill) eof)))
-   (let ([r (channel-get result-ch)])
+   (let ([t (bg-run->thread (run-in-bg user-process))])
+     (set! user-done-evt (handle-evt t (lambda (_) (terminate+kill! #t #t))))
+     (set! user-thread t))
+   (let ([r (get-user-result)])
      (if (eq? r 'ok)
-         ;; initial program executed ok, so return an evaluator
-         evaluator
-         ;; program didn't execute
-         (raise r)))))
+       ;; initial program executed ok, so return an evaluator
+       evaluator
+       ;; program didn't execute
+       (raise r)))))
 
 (define (make-evaluator language
                         #:requires [requires null] #:allow-read [allow null]
@@ -654,8 +815,7 @@
                          `(file ,(path->string (simplify-path* r)))))
                      requires))])
     (make-evaluator* (init-for-language lang)
-                     (append (extract-required (or (decode-language lang)
-                                                   lang)
+                     (append (extract-required (or (decode-language lang) lang)
                                                reqs)
                              allow)
                      (lambda () (build-program lang reqs input-program)))))
@@ -679,5 +839,6 @@
                   (syntax->datum #'lang) reqlang))]
         [_else (error 'make-evaluator "expecting a `module' program; got ~e"
                       (syntax->datum (car prog)))])))
-  (make-evaluator* void allow make-program))
-
+  (make-evaluator* void
+                   (if (path? input-program) (cons input-program allow) allow)
+                   make-program))

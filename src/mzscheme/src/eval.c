@@ -1721,20 +1721,23 @@ Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data)
 
 static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 					   Scheme_Object *varname,
-					   Scheme_Object *insp,
+					   int check_access, Scheme_Object *insp,
 					   int pos, int mod_phase,
-					   Scheme_Env *env)
+					   Scheme_Env *env, 
+                                           Scheme_Object **exprs, int which)
 {
   Scheme_Object *modname;
   Scheme_Env *menv;
+  int self = 0;
 
   /* If it's a name id, resolve the name. */
   modname = scheme_module_resolve(modidx, 1);
 
   if (env->module && SAME_OBJ(env->module->modname, modname)
-      && (env->mod_phase == mod_phase))
+      && (env->mod_phase == mod_phase)) {
+    self = 1;
     menv = env;
-  else {
+  } else {
     menv = scheme_module_access(modname, env, mod_phase);
     
     if (!menv && env->phase) {
@@ -1757,22 +1760,57 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
       return NULL;
     }
 
-    if (!SAME_OBJ(menv, env)) {
+    if (check_access && !SAME_OBJ(menv, env)) {
       varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, 
                                                   insp, pos, 0, NULL, env);
+    }
+  }
+
+  if (exprs) {
+    if (self) {
+      exprs[which] = varname;
+    } else {
+      if (mod_phase != 0)
+        modname = scheme_make_pair(modname, scheme_make_integer(mod_phase));
+      modname = scheme_make_pair(varname, modname);
+      exprs[which] = modname;
     }
   }
 
   return (Scheme_Object *)scheme_global_bucket(varname, menv);
 }
 
-static Scheme_Object *link_toplevel(Scheme_Object *expr, Scheme_Env *env,
+static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env *env,
                                     Scheme_Object *src_modidx, 
                                     Scheme_Object *dest_modidx)
 {
-  if (SCHEME_SYMBOLP(expr)) {
+  Scheme_Object *expr = exprs[which];
+
+  if (SCHEME_FALSEP(expr)) {
     /* See scheme_make_environment_dummy */
     return (Scheme_Object *)scheme_global_bucket(begin_symbol, env);
+  } else if (SCHEME_PAIRP(expr) || SCHEME_SYMBOLP(expr)) {
+    /* Simplified module reference */
+    Scheme_Object *modname, *varname;
+    int mod_phase = 0;
+    if (SCHEME_SYMBOLP(expr)) {
+      varname = expr;
+      modname = env->module->modname;
+      mod_phase = env->mod_phase;
+    } else {
+      varname = SCHEME_CAR(expr);
+      modname = SCHEME_CDR(expr);
+      if (SCHEME_PAIRP(modname)) {
+        mod_phase = SCHEME_INT_VAL(SCHEME_CDR(modname));
+        modname = SCHEME_CAR(modname);
+      }
+    }
+    return link_module_variable(modname,
+                                varname,
+                                0, NULL,
+                                -1, mod_phase,
+                                env, 
+                                NULL, 0);
   } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket_With_Home *b = (Scheme_Bucket_With_Home *)expr;
     
@@ -1781,18 +1819,20 @@ static Scheme_Object *link_toplevel(Scheme_Object *expr, Scheme_Env *env,
     else
       return link_module_variable(b->home->module->modname,
 				  (Scheme_Object *)b->bucket.bucket.key,
-				  b->home->module->insp,
+				  1, b->home->module->insp,
 				  -1, b->home->mod_phase,
-				  env);
+				  env, 
+                                  exprs, which);
   } else {
     Module_Variable *mv = (Module_Variable *)expr;
     
     return link_module_variable(scheme_modidx_shift(mv->modidx,
-						    src_modidx,
-						    dest_modidx),
-				mv->sym, mv->insp,
+                                                    src_modidx,
+                                                    dest_modidx),
+				mv->sym, 1, mv->insp,
 				mv->pos, mv->mod_phase,
-				env);
+				env,
+                                exprs, which);
   }
 }
 
@@ -8431,15 +8471,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_with_cont_mark_type:
 	{
 	  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)obj;
-	  GC_CAN_IGNORE Scheme_Object *key, *val;
+	  Scheme_Object *key;
+	  GC_CAN_IGNORE Scheme_Object *val;
 	  
 	  UPDATE_THREAD_RSPTR();
 	  key = wcm->key;
 	  if (SCHEME_TYPE(key) < _scheme_values_types_)
-	    key = _scheme_eval_linked_expr_wp(wcm->key, p);
+	    key = _scheme_eval_linked_expr_wp(key, p);
 	  val = wcm->val;
 	  if (SCHEME_TYPE(val) < _scheme_values_types_)
-	    val = _scheme_eval_linked_expr_wp(wcm->val, p);
+	    val = _scheme_eval_linked_expr_wp(val, p);
 
 	  scheme_set_cont_mark(key, val);
 
@@ -8588,6 +8629,7 @@ static void *eval_k(void)
       v = _scheme_eval_linked_expr_wp(v, p);
   } else if (SAME_TYPE(SCHEME_TYPE(v), scheme_compilation_top_type)) {
     Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)v;
+    Resolve_Prefix *rp;
     int depth;
 
     depth = top->max_let_depth + scheme_prefix_depth(top->prefix);
@@ -8603,6 +8645,9 @@ static void *eval_k(void)
 
     if (use_jit)
       v = scheme_jit_expr(v);
+    else
+      v = scheme_eval_clone(v);
+    rp = scheme_prefix_eval_clone(top->prefix);
 
     save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase);
 
@@ -9689,6 +9734,60 @@ local_eval(int argc, Scheme_Object **argv)
 }
 
 /*========================================================================*/
+/*                       cloning prefix information                       */
+/*========================================================================*/
+
+Scheme_Object *scheme_eval_clone(Scheme_Object *expr)
+{
+  /* Clone as much as necessary of `expr' so that prefixes are
+     cloned. Cloned prefixes, in turn, can be updated by linking to
+     reduce the overhead of cross-module references. */
+  if (SAME_TYPE(SCHEME_TYPE(expr), scheme_syntax_type)) {
+    int kind;
+    Scheme_Object *orig, *naya;
+    
+    kind = SCHEME_PINT_VAL(expr);
+    orig = SCHEME_IPTR_VAL(expr);
+    switch (kind) {
+    case MODULE_EXPD:
+      naya = scheme_module_eval_clone(orig);
+      break;
+    case DEFINE_SYNTAX_EXPD:
+    case DEFINE_FOR_SYNTAX_EXPD:
+      naya = scheme_syntaxes_eval_clone(orig);
+      break;
+    default:
+      naya = orig;
+      break;
+    }
+
+    if (SAME_OBJ(orig, naya))
+      return expr;
+    
+    return scheme_make_syntax_resolved(kind, naya);
+  } else
+    return expr;
+}
+
+Resolve_Prefix *scheme_prefix_eval_clone(Resolve_Prefix *rp)
+{
+  Resolve_Prefix *naya;
+  Scheme_Object **tls;
+
+  if (!rp->num_toplevels)
+    return rp;
+
+  naya = MALLOC_ONE_TAGGED(Resolve_Prefix);
+  memcpy(naya, rp, sizeof(Resolve_Prefix));
+  
+  tls = MALLOC_N(Scheme_Object*, rp->num_toplevels);
+  memcpy(tls, rp->toplevels, sizeof(Scheme_Object *) * rp->num_toplevels);
+  naya->toplevels = tls;
+
+  return naya;
+}
+
+/*========================================================================*/
 /*        creating/pushing prefix for top-levels and syntax objects       */
 /*========================================================================*/
 
@@ -9724,7 +9823,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     for (i = 0; i < rp->num_toplevels; i++) {
       v = rp->toplevels[i];
       if (genv)
-	v = link_toplevel(rp->toplevels[i], genv, src_modidx, now_modidx);
+	v = link_toplevel(rp->toplevels, i, genv, src_modidx, now_modidx);
       a[i] = v;
     }
 
@@ -9732,7 +9831,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       i = rp->num_toplevels;
       v = scheme_stx_phase_shift_as_rename(now_phase - src_phase, src_modidx, now_modidx, 
 					   genv ? genv->export_registry : NULL);
-      if (v || rp->delay_info) {
+      if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in a[i]: */
         Scheme_Object **ls;
         ls = MALLOC_N(Scheme_Object *, 2);
@@ -9925,15 +10024,17 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                                     int num_toplevels, int num_stxes, int num_lifts)
 {
   Scheme_Closure_Data *data = NULL;
+  Scheme_Type ty;
 
   while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_closure_type)) {
+    ty = SCHEME_TYPE(app_rator);
+    if (SAME_TYPE(ty, scheme_closure_type)) {
       data = SCHEME_COMPILED_CLOS_CODE(app_rator);
       break;
-    } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_unclosed_procedure_type)) {
+    } else if (SAME_TYPE(ty, scheme_unclosed_procedure_type)) {
       data = (Scheme_Closure_Data *)app_rator;
       break;
-    } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_toplevel_type)) {
+    } else if (SAME_TYPE(ty, scheme_toplevel_type)) {
       int p;
       p = SCHEME_TOPLEVEL_POS(app_rator);
       while (1) {

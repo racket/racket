@@ -248,7 +248,8 @@ static char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash
                                     char **_phase1_protects);
 static Scheme_Object **compute_indirects(Scheme_Env *genv, 
                                          Scheme_Module_Phase_Exports *pt,
-                                         int *_count);
+                                         int *_count,
+                                         int vars);
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx, 
                          int eval_exp, int eval_run, long base_phase, Scheme_Object *cycle_list);
 static void finish_expstart_module(Scheme_Env *menv);
@@ -2369,6 +2370,11 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	  scheme_extend_module_rename(one_rn, m->self_modidx, name, name, m->self_modidx, name, 0, 
                                       scheme_make_integer(0), NULL, 0);
 	}
+        for (i = 0; i < m->num_indirect_syntax_provides; i++) {
+	  name = m->indirect_syntax_provides[i];
+	  scheme_extend_module_rename(one_rn, m->self_modidx, name, name, m->self_modidx, name, 0, 
+                                      scheme_make_integer(0), NULL, 0);
+	}
 
         one_rn = scheme_get_module_rename_from_set(rns, scheme_make_integer(1), 1);
 
@@ -2710,18 +2716,19 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
   return scheme_make_modidx(argv[0], argv[1], scheme_false);
 }
 
-Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
+void scheme_init_module_path_table()
+{
+  REGISTER_SO(modpath_table);
+  modpath_table = scheme_make_weak_equal_table();
+}
+
+Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
 {
   Scheme_Object *rmp;
   Scheme_Bucket *b;
   Scheme_Object *return_value;
 
   mzrt_mutex_lock(modpath_table_mutex);
-
-  if (!modpath_table) {
-    REGISTER_SO(modpath_table);
-    modpath_table = scheme_make_weak_equal_table();
-  }
 
   rmp = scheme_alloc_small_object();
   rmp->type = scheme_resolved_module_path_type;
@@ -2736,6 +2743,21 @@ Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
   mzrt_mutex_unlock(modpath_table_mutex);
 
   return return_value;
+}
+
+Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
+{
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  mz_proc_thread *self;
+  self = proc_thread_self;
+  if ( scheme_master_proc_thread && scheme_master_proc_thread != proc_thread_self ) {
+    int return_msg_type;
+    void *return_payload;
+    pt_mbox_send_recv(scheme_master_proc_thread->mbox, 1, o, self->mbox, &return_msg_type, &return_payload);
+    return (Scheme_Object*) return_payload;
+  }
+#endif
+  return scheme_intern_resolved_module_path_worker(o);
 }
 
 static Scheme_Object *resolved_module_path_p(int argc, Scheme_Object *argv[])
@@ -3920,6 +3942,9 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
     for_stx = SCHEME_TRUEP(SCHEME_VEC_ELS(e)[4]);
     e = SCHEME_VEC_ELS(e)[1];
       
+    if (SCHEME_SYMBOLP(names))
+      names = scheme_make_pair(names, scheme_null);
+
     eval_exptime(names, scheme_list_length(names), e, exp_env, rhs_env,
                  rp, let_depth, 1, (for_stx ? for_stx_globals : syntax), for_stx,
                  NULL);
@@ -4580,7 +4605,7 @@ module_execute(Scheme_Object *data)
   return scheme_void;
 }
 
-static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec)
+static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec, Resolve_Prefix *rp)
 {
   Scheme_Object *vec2;
   int i;
@@ -4591,23 +4616,35 @@ static Scheme_Object *rebuild_et_vec(Scheme_Object *naya, Scheme_Object *vec)
     SCHEME_VEC_ELS(vec2)[i] = SCHEME_VEC_ELS(vec)[i];
   }
   SCHEME_VEC_ELS(vec2)[1] = naya;
+  SCHEME_VEC_ELS(vec2)[3] = (Scheme_Object *)rp;
 
   return vec2;
 }
 
-static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
+static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec, int jit)
 {
   Scheme_Object *orig, *naya = NULL;
+  Resolve_Prefix *orig_rp, *rp;
   int i, cnt;
 
   cnt = SCHEME_VEC_SIZE(orig_l);
   for (i = 0; i < cnt; i++) {
     orig = SCHEME_VEC_ELS(orig_l)[i];
-    if (in_vec)
+    if (in_vec) {
+      orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(orig)[3];
+      rp = scheme_prefix_eval_clone(orig_rp);
       orig = SCHEME_VEC_ELS(orig)[1];
+    } else {
+      orig_rp = rp = NULL;
+    }
 
-    naya = scheme_jit_expr(orig);
-    if (!SAME_OBJ(orig, naya))
+    if (jit)
+      naya = scheme_jit_expr(orig);
+    else
+      naya = orig;
+
+    if (!SAME_OBJ(orig, naya)
+        || !SAME_OBJ(orig_rp, rp))
       break;
   }
 
@@ -4619,16 +4656,27 @@ static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
       SCHEME_VEC_ELS(new_l)[j] = SCHEME_VEC_ELS(orig_l)[j];
     }
     if (in_vec)
-      naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i]);
+      naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i], rp);
     SCHEME_VEC_ELS(new_l)[i] = naya;
     for (i++; i < cnt; i++) {
       orig = SCHEME_VEC_ELS(orig_l)[i];
-      if (in_vec)
-        orig = SCHEME_VEC_ELS(orig)[1];
-      naya = scheme_jit_expr(orig);
       if (in_vec) {
-	if (!SAME_OBJ(orig, naya))
-	  naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i]);
+        orig_rp = (Resolve_Prefix *)SCHEME_VEC_ELS(orig)[3];
+        rp = scheme_prefix_eval_clone(orig_rp);
+        orig = SCHEME_VEC_ELS(orig)[1];        
+      } else {
+        orig_rp = rp = NULL;
+      }
+
+      if (jit)
+        naya = scheme_jit_expr(orig);
+      else
+        naya = orig;
+
+      if (in_vec) {
+	if (!SAME_OBJ(orig, naya)
+            || !SAME_OBJ(rp, orig_rp))
+	  naya = rebuild_et_vec(naya, SCHEME_VEC_ELS(orig_l)[i], rp);
 	else
 	  naya = SCHEME_VEC_ELS(orig_l)[i];
       }
@@ -4639,23 +4687,42 @@ static Scheme_Object *jit_vector(Scheme_Object *orig_l, int in_vec)
     return orig_l;
 }
 
-static Scheme_Object *module_jit(Scheme_Object *data)
+static Scheme_Object *do_module_clone(Scheme_Object *data, int jit)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *l1, *l2;
+  Resolve_Prefix *rp;
+  
+  rp = scheme_prefix_eval_clone(m->prefix);
 
-  l1 = jit_vector(m->body, 0);
-  l2 = jit_vector(m->et_body, 1);
+  if (jit)
+    l1 = jit_vector(m->body, 0, jit);
+  else
+    l1 = m->body;
+  l2 = jit_vector(m->et_body, 1, jit);
 
-  if (SAME_OBJ(l1, m->body) && SAME_OBJ(l2, m->body))
+  if (SAME_OBJ(l1, m->body) 
+      && SAME_OBJ(l2, m->body)
+      && SAME_OBJ(rp, m->prefix))
     return data;
   
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
   m->body = l1;
   m->et_body = l2;
+  m->prefix = rp;
 
   return (Scheme_Object *)m;
+}
+
+static Scheme_Object *module_jit(Scheme_Object *data)
+{
+  return do_module_clone(data, 1);
+}
+
+Scheme_Object *scheme_module_eval_clone(Scheme_Object *data)
+{
+  return do_module_clone(data, 0);
 }
 
 static void module_validate(Scheme_Object *data, Mz_CPort *port, 
@@ -5678,9 +5745,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *post_ex_rn_set; /* phase -> post_ex_rn-like rename */
   Scheme_Hash_Table *tables; /* phase -> (vector toplevels requires syntaxes) */
   Scheme_Object *exclude_hint = scheme_false, *lift_data;
-  Scheme_Object **exis, **et_exis;
+  Scheme_Object **exis, **et_exis, **exsis;
   Scheme_Object *lift_ctx;
-  int exicount, et_exicount;
+  int exicount, et_exicount, exsicount;
   char *exps, *et_exps;
   int all_simple_renames = 1;
   int maybe_has_lifts = 0;
@@ -6093,7 +6160,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	  /* Add code with names and lexical depth to exp-time body: */
 	  vec = scheme_make_vector(5, NULL);
-	  SCHEME_VEC_ELS(vec)[0] = names;
+	  SCHEME_VEC_ELS(vec)[0] = ((SCHEME_PAIRP(names) && SCHEME_NULLP(SCHEME_CDR(names)))
+                                    ? SCHEME_CAR(names)
+                                    : names);
 	  SCHEME_VEC_ELS(vec)[1] = m;
 	  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(ri->max_let_depth);
 	  SCHEME_VEC_ELS(vec)[3] = (Scheme_Object *)rp;
@@ -6103,6 +6172,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           m = scheme_sfs(m, NULL, ri->max_let_depth);
 	  if (ri->use_jit)
 	    m = scheme_jit_expr(m);
+          rp = scheme_prefix_eval_clone(rp);
 	
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, ri->max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,
@@ -6395,8 +6465,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
                                 form, &et_exps);
   
   /* Compute indirect provides (which is everything at the top-level): */
-  exis = compute_indirects(env->genv, env->genv->module->me->rt, &exicount);
-  et_exis = compute_indirects(env->genv->exp_env, env->genv->module->me->et, &et_exicount);
+  exis = compute_indirects(env->genv, env->genv->module->me->rt, &exicount, 1);
+  exsis = compute_indirects(env->genv, env->genv->module->me->rt, &exsicount, 0);
+  et_exis = compute_indirects(env->genv->exp_env, env->genv->module->me->et, &et_exicount, 1);
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     scheme_clean_dead_env(env->genv);
@@ -6518,6 +6589,14 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     env->genv->module->indirect_provides = exis;
     env->genv->module->num_indirect_provides = exicount;
+
+    if (all_simple_renames) {
+      env->genv->module->indirect_syntax_provides = exsis;
+      env->genv->module->num_indirect_syntax_provides = exsicount;
+    } else {
+      env->genv->module->indirect_syntax_provides = NULL;
+      env->genv->module->num_indirect_syntax_provides = 0;
+    }
 
     env->genv->module->et_indirect_provides = et_exis;
     env->genv->module->num_indirect_et_provides = et_exicount;
@@ -6930,18 +7009,34 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
 
 static Scheme_Object **compute_indirects(Scheme_Env *genv, 
                                          Scheme_Module_Phase_Exports *pt,
-                                         int *_count)
+                                         int *_count,
+                                         int vars)
 {
-  int i, count, j;
+  int i, count, j, start, end;
   Scheme_Bucket **bs, *b;
   Scheme_Object **exsns = pt->provide_src_names, **exis;
-  int exvcount = pt->num_var_provides, exicount;
+  int exicount;
+  Scheme_Bucket_Table *t;
 
-  if (!genv->toplevel)
+  if (vars) {
+    start = 0;
+    end = pt->num_var_provides;
+  } else {
+    start = pt->num_var_provides;
+    end = pt->num_provides;
+  }
+
+  if (vars)
+    t = genv->toplevel;
+  else
+    t = genv->syntax;
+    
+
+  if (!t)
     count = 0;
   else {
-    bs = genv->toplevel->buckets;
-    for (count = 0, i = genv->toplevel->size; i--; ) {
+    bs = t->buckets;
+    for (count = 0, i = t->size; i--; ) {
       b = bs[i];
       if (b && b->val)
         count++;
@@ -6955,7 +7050,7 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
   
   exis = MALLOC_N(Scheme_Object *, count);
 
-  for (count = 0, i = genv->toplevel->size; i--; ) {
+  for (count = 0, i = t->size; i--; ) {
     b = bs[i];
     if (b && b->val) {
       Scheme_Object *name;
@@ -6963,12 +7058,12 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
       name = (Scheme_Object *)b->key;
       
       /* If the name is directly provided, no need for indirect... */
-      for (j = 0; j < exvcount; j++) {
+      for (j = start; j < end; j++) {
         if (SAME_OBJ(name, exsns[j]))
           break;
       }
 	
-      if (j == exvcount)
+      if (j == end)
         exis[count++] = name;
     }
   }
@@ -9099,6 +9194,14 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   }
   l = cons(v, l);
 
+  count = m->num_indirect_syntax_provides;
+  l = cons(scheme_make_integer(count), l);
+  v = scheme_make_vector(count, NULL);
+  for (i = 0; i < count; i++) {
+    SCHEME_VEC_ELS(v)[i] = m->indirect_syntax_provides[i];
+  }
+  l = cons(v, l);
+
   count = m->num_indirect_et_provides;
   l = cons(scheme_make_integer(count), l);
   v = scheme_make_vector(count, NULL);
@@ -9238,6 +9341,24 @@ static Scheme_Object *read_module(Scheme_Object *obj)
   }
   m->et_indirect_provides = v;
   m->num_indirect_et_provides = count;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  ie = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  nie = SCHEME_CAR(obj);
+  obj = SCHEME_CDR(obj);
+  
+  count = SCHEME_INT_VAL(nie);
+
+  if (!SCHEME_VECTORP(ie) || (SCHEME_VEC_SIZE(ie) != count)) return_NULL();
+  v = MALLOC_N(Scheme_Object *, count);
+  for (i = 0; i < count; i++) {
+    v[i] = SCHEME_VEC_ELS(ie)[i];
+  }
+  m->indirect_syntax_provides = v;
+  m->num_indirect_syntax_provides = count;
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   ie = SCHEME_CAR(obj);
