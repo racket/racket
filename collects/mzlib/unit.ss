@@ -461,7 +461,7 @@
                          #,(syntax-span id))
             #,(format "~s" (syntax-object->datum id))))
   
-  (define-for-syntax (make-import-unboxing int-var ext-var loc ctc name)
+  (define-for-syntax (make-import-unboxing ext-var loc ctc name)
     (if ctc
         (quasisyntax/loc (error-syntax)
           (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen '#,name #,(id->contract-src-info ext-var))))
@@ -550,9 +550,8 @@
                                                     (quasisyntax/loc (error-syntax)
                                                       [#,ivs
                                                        (make-id-mappers
-                                                        #,@(map (lambda (iv ev l c)
-                                                                  (make-import-unboxing iv ev l c #'name))
-                                                                (syntax->list ivs)
+                                                        #,@(map (lambda (ev l c)
+                                                                  (make-import-unboxing ev l c #'name))
                                                                 (syntax->list evs)
                                                                 (syntax->list ils)
                                                                 ics))]))
