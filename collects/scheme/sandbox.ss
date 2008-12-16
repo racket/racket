@@ -25,6 +25,7 @@
          sandbox-make-logger
          sandbox-memory-limit
          sandbox-eval-limits
+         call-with-trusted-sandbox-configuration
          evaluator-alive?
          kill-evaluator
          break-evaluator
@@ -62,6 +63,18 @@
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
+
+(define (call-with-trusted-sandbox-configuration thunk)
+  (parameterize ([sandbox-propagate-breaks    #t]
+                 [sandbox-override-collection-paths '()]
+                 [sandbox-security-guard      current-security-guard]
+                 [sandbox-exit-handler        (current-exit-handler)]
+                 [sandbox-make-inspector      current-inspector]
+                 [sandbox-make-code-inspector current-code-inspector]
+                 [sandbox-make-logger         current-logger]
+                 [sandbox-memory-limit        #f]
+                 [sandbox-eval-limits         #f])
+    (thunk)))
 
 (define sandbox-namespace-specs
   (make-parameter `(,(mz/mr make-base-namespace make-gui-namespace)
