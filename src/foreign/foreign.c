@@ -2347,7 +2347,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     offset = 0;
     p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), 0, argv[i], &basetype,
                  &offset, 0);
-    if (p != NULL) {
+    if ((p != NULL) || offset) {
       avalues[i] = p;
       ivals[i].x_fixnum = basetype; /* remember the base type */
     } else {
@@ -2370,7 +2370,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   /* We finished with all possible mallocs, clear up the avalues and offsets
    * mess */
   for (i=0; i<nargs; i++) {
-    if (avalues[i] == NULL)     /* if this was a non-pointer... */
+    if ((avalues[i] == NULL) && !offsets[i]) /* if this was a non-pointer... */
       avalues[i] = &(ivals[i]); /* ... set the avalues pointer */
     else if (ivals[i].x_fixnum != FOREIGN_struct) { /* if *not* a struct... */
       /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
