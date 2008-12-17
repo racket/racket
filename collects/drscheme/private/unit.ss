@@ -3292,10 +3292,10 @@ module browser threading seems wrong.
                         (when num
                           (cond
                             [(eq? num #t)
-                             (preferences:set 'drscheme:memory-limit #f)
+                             (preferences:set 'drscheme:child-only-memory-limit #f)
                              (send interactions-text set-custodian-limit #f)]
                             [else
-                             (preferences:set 'drscheme:memory-limit 
+                             (preferences:set 'drscheme:child-only-memory-limit 
                                               (* 1024 1024 num))
                              (send interactions-text set-custodian-limit
                                    (* 1024 1024 num))]))))]))
@@ -3844,7 +3844,7 @@ module browser threading seems wrong.
              [parent hp]
              [init-value (if current-limit
                              (format "~a" current-limit)
-                             "128")]
+                             "64")]
              [stretchable-width #f]
              [min-width 100]
              [callback
@@ -3886,7 +3886,7 @@ module browser threading seems wrong.
         (let* ([n (string->number (send txt get-text))])
           (and n
                (integer? n)
-               (100 . <= . n))))
+               (1 . <= . n))))
       
       (define (background sd)
         (let ([txt (send tb get-editor)])

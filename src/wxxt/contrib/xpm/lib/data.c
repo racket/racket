@@ -39,6 +39,11 @@ static char *RCS_Version = "$XpmVersion: 3.4g $";
 
 #include "xpmP.h"
 #include <ctype.h>
+#if defined(SYSV) || defined(SVR4) || defined(VMS) || defined(__GNUC__)
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 
 
 LFUNC(ParseComment, int, (xpmData * mdata));

@@ -16,12 +16,11 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem access, and network access.  The common use case for this
-module is for a restricted sandboxed environment, so the defaults are
-set up to make it safe.  For other uses you will likely need to change
-mane of these settings.
+filesystem and network access, and much.  Sandboxed evaluators can be
+configured through numerous parameters --- and the defaults are set
+for the common use case where sandboxes are very limited.
 
-@defproc*[([(make-evaluator [language (or/c module-path? 
+@defproc*[([(make-evaluator [language (or/c module-path?
                                             (list/c 'special symbol?)
                                             (cons/c 'begin list?))]
                             [input-program any/c] ...
@@ -260,9 +259,29 @@ either @scheme['time] or @scheme['memory].}
 
 @section{Customizing Evaluators}
 
-The evaluators that @scheme[make-evaluator] creates can be customized
-via several parameters.  These parameters affect newly created
-evaluators; changing them has no effect on already-running evaluators.
+The sandboxed evaluators that @scheme[make-evaluator] creates can be
+customized via many parameters.  Most of the configuration parameters
+affect newly created evaluators; changing them has no effect on
+already-running evaluators.
+
+The default configuration options are set for a very restricted
+sandboxed environment --- one that is safe to make publicly available.
+Further customizations might be needed in case more privileges are
+needed, or if you want tighter restrictions.  Another useful approach
+for customizing an evaluator is to begin with a relatively
+unrestricted configuration and add the desired restrictions.  This is
+possible by the @scheme[call-with-trusted-sandbox-configuration]
+function.
+
+@defproc[(call-with-trusted-sandbox-configuration [thunk (-> any)])
+         any]{
+
+Invokes the @scheme[thunk] in a context where sandbox configuration
+parameters are set for minimal restrictions.  More specifically, there
+are no memory or time limits, and the existing existing inspectors,
+security guard, exit handler, and logger are used.  (Note that the I/O
+ports settings are not included.)}
+
 
 @defparam[sandbox-init-hook thunk (-> any)]{
 
