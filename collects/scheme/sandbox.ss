@@ -68,7 +68,7 @@
   (parameterize ([sandbox-propagate-breaks    #t]
                  [sandbox-override-collection-paths '()]
                  [sandbox-security-guard      current-security-guard]
-                 [sandbox-exit-handler        (current-exit-handler)]
+                 [sandbox-exit-handler        (exit-handler)]
                  [sandbox-make-inspector      current-inspector]
                  [sandbox-make-code-inspector current-code-inspector]
                  [sandbox-make-logger         current-logger]
