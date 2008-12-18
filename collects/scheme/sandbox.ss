@@ -77,7 +77,8 @@
                  [sandbox-make-code-inspector current-code-inspector]
                  [sandbox-make-logger         current-logger]
                  [sandbox-memory-limit        #f]
-                 [sandbox-eval-limits         #f])
+                 [sandbox-eval-limits         #f]
+                 [sandbox-eval-handlers       '(#f #f)])
     (thunk)))
 
 (define sandbox-namespace-specs
@@ -310,6 +311,17 @@
                      (set! p (current-preserved-thread-cell-values))))))))
           (lambda () (when p (current-preserved-thread-cell-values p))))))))
 
+;; useful wrapper around the above: run thunk, return one of:
+;; - (list values val ...)
+;; - (list raise exn)
+;; - 'kill or 'shut
+(define (nested thunk)
+  (call-in-nested-thread*
+   (lambda ()
+     (with-handlers ([void (lambda (e) (list raise e))])
+       (call-with-values thunk (lambda vs (list* values vs)))))
+   (lambda () 'kill) (lambda () 'shut)))
+
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
@@ -323,33 +335,25 @@
            c (inexact->exact (round (* mb 1024 1024))) c)
           (values c (make-custodian-box c #t)))
         (values (current-custodian) #f)))
-    (parameterize ([current-custodian cust])
-      (call-in-nested-thread*
-       (lambda ()
-         ;; time limit
-         (when sec
-           (let ([t (current-thread)])
-             (thread (lambda ()
-                       (unless (sync/timeout sec t) (set! r 'time))
-                       (kill-thread t)))))
-         (set! r (with-handlers ([void (lambda (e) (list raise e))])
-                   (call-with-values thunk (lambda vs (list* values vs))))))
-       ;; The thread might be killed by the timer thread, so don't let
-       ;; call-in-nested-thread* kill it -- if user code did so, then just
-       ;; register the request and kill it below.  Do this for a
-       ;; custodian-shutdown to, just in case.
-       (lambda ()
-         (unless r (set! r 'kill))
-         ;; (kill-thread (current-thread))
-         )
-       (lambda ()
-         (unless r (set! r 'shut))
-         ;; (custodian-shutdown-all (current-custodian))
-         )))
-    (when (and cust-box (not (custodian-box-value cust-box)))
-      (if (memq r '(kill shut)) ; should always be 'shut
-        (set! r 'memory)
-        (format "cust died with: ~a" r))) ; throw internal error below
+    (define timeout? #f)
+    (define r
+      (parameterize ([current-custodian cust])
+        (if sec
+          (nested
+           (lambda ()
+             ;; time limit
+             (when sec
+               (let ([t (current-thread)])
+                 (thread (lambda ()
+                           (unless (sync/timeout sec t) (set! timeout? #t))
+                           (kill-thread t)))))
+             (thunk)))
+          (nested thunk))))
+    (cond [timeout? (set! r 'time)]
+          [(and cust-box (not (custodian-box-value cust-box)))
+           (if (memq r '(kill shut)) ; should always be 'shut
+             (set! r 'memory)
+             (format "cust died with: ~a" r))]) ; throw internal error below
     (case r
       [(kill) (kill-thread (current-thread))]
       [(shut) (custodian-shutdown-all (current-custodian))]
@@ -369,21 +373,23 @@
 ;; other resource utilities
 
 (define (call-with-custodian-shutdown thunk)
-  (let ([cust (make-custodian (current-custodian))])
-    (dynamic-wind
-      void
-      (lambda () (parameterize ([current-custodian cust]) (thunk)))
-      (lambda () (custodian-shutdown-all cust)))))
+  (let* ([cust (make-custodian (current-custodian))]
+         [r (parameterize ([current-custodian cust]) (nested thunk))])
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [else (apply (car r) (cdr r))])))
 
 (define (call-with-killing-threads thunk)
   (let* ([cur (current-custodian)] [sub (make-custodian cur)])
-    (define (kill-all x)
+    (define r (parameterize ([current-custodian sub]) (nested thunk)))
+    (let kill-all ([x sub])
       (cond [(custodian? x) (for-each kill-all (custodian-managed-list x cur))]
             [(thread? x) (kill-thread x)]))
-    (dynamic-wind
-      void
-      (lambda () (parameterize ([current-custodian sub]) (thunk)))
-      (lambda () (kill-all sub)))))
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [else (apply (car r) (cdr r))])))
 
 (define sandbox-eval-handlers
   (make-parameter (list #f call-with-custodian-shutdown)))
