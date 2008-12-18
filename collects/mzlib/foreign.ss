@@ -58,7 +58,7 @@
           (unsafe malloc) (unsafe free) (unsafe end-stubborn-change)
           cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!)
           ptr-offset ptr-add! offset-ptr? set-ptr-offset!
-          ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string)
+          ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string) ctype->layout
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
@@ -1493,6 +1493,26 @@
                   (let ([v (ephemeron-value xs)])
                     (if v (apply values v) (msg/fail-thunk))))]
             [else (msg/fail-thunk)]))))
+
+;; ----------------------------------------------------------------------------
+;;
+
+(define prim-synonyms
+  #hasheq((double* . double)
+          (fixint . long)
+          (ufixint . ulong)
+          (fixnum . long)
+          (ufixnum . ulong)
+          (path . bytes)
+          (symbol . bytes)
+          (scheme . pointer)))
+
+(define (ctype->layout c)
+  (let ([b (ctype-basetype c)])
+    (cond
+     [(ctype? b) (ctype->layout b)]
+     [(list? b) (map ctype->layout b)]
+     [else (hash-ref prim-synonyms b b)])))
 
 ;; ----------------------------------------------------------------------------
 ;; Misc utilities

@@ -35,10 +35,27 @@ otherwise.}
 
 
 @defproc*[([(ctype-sizeof [type ctype?]) exact-nonnegative-integer?]
-           [(ctype-alignof [ctype ctype?]) exact-nonnegative-integer?])]{
+           [(ctype-alignof [type ctype?]) exact-nonnegative-integer?])]{
 
 Returns the size or alignment of a given @scheme[type] for the current
 platform.}
+
+
+@defproc[(ctype->layout [type ctype?]) (flat-rec-contract rep
+                                         symbol?
+                                         (listof rep))]{
+
+Returns a value to describe the eventual C representation of the
+type. It can be any of the following symbols:
+
+@schemeblock[
+  'int8 'uint8 'int16 'uint16 'int32 'uint32 'int64 'uint64
+  'float 'double 'bool 'void 'pointer 'fpointer 
+  'bytes 'string/ucs-4 'string/utf-16
+]
+
+The result can also be a list, which describes a C struct whose
+element representations are provided in order within the list.}
 
 
 @defproc[(compiler-sizeof [sym symbol?]) exact-nonnegative-integer?]{

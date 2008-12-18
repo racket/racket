@@ -1222,13 +1222,6 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
  * is used for both the function definition and calls, but the actual code in
  * the function is different: in the relevant cases zero an int and offset the
  * ptr */
-#ifdef SCHEME_BIG_ENDIAN
-#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) \
-          scheme_to_c(typ,dst,delta,val,basep,_offset,retloc)
-#else
-#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) \
-          scheme_to_c(typ,dst,delta,val,basep,_offset)
-#endif
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
@@ -1257,7 +1250,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void:
-      scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      break;
     case FOREIGN_int8:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tsint8)<sizeof(int) && ret_loc) {
@@ -1600,7 +1594,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         return NULL; /* hush the compiler */
       }
     case FOREIGN_fpointer:
-      scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      break;
     case FOREIGN_struct:
       if (!SCHEME_FFIANYPTRP(val))
         scheme_wrong_type("Scheme->C", "pointer", 0, 1, &val);
