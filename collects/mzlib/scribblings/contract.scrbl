@@ -110,24 +110,4 @@ provided by @scheme[provide/contract], because
 @scheme[define/contract] cannot detect the name of the definition
 where the reference to the defined variable occurs. Instead, it uses
 the source location of the reference to the variable as the name of
-that definition.
-
-@examples[#:eval (parameterize ([sandbox-output 'string]
-                                [sandbox-error-output 'string]
-                                [sandbox-eval-limits #f])
-                   (make-evaluator 'mzscheme))
-                 (require mzlib/contract)
-                 (define/contract f
-                   (-> number? number?)
-                   (lambda (x) (+ x 1)))
-                 (define/contract g
-                   (-> number? number?)
-                   (lambda (x) (f #t)))
-                 (define/contract i
-                   (-> number? number?)
-                   (lambda (x)
-                     (if (number? x) (i #t) 0)))
-                 (f 4)
-                 (f #t)
-                 (g 4)
-                 (i 3)]}
+that definition.}
