@@ -1677,6 +1677,9 @@ static Scheme_Object *do_memop(const char *who, int mode,
                                        len, 0);
 }
 
+/* *** Calling Scheme code while the GC is working leads to subtle bugs, so
+   *** this is implemented now in Scheme using will executors. */
+
 /* internal: apply Scheme finalizer */
 void do_scm_finalizer(void *p, void *finalizer)
 {
@@ -1706,9 +1709,6 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
 /*
-
-  *** Calling Scheme code while the GC is working leads to subtle bugs, so
-  *** this is implemented now in Scheme using will executors.
 
 {:"(defsymbols pointer)":}
 {:"(cdefine register-finalizer 2 3)":}
@@ -1961,7 +1961,7 @@ typedef struct closure_and_cif_struct {
 void free_cl_cif_args(void *ignored, void *p)
 {
   /*
-  scheme_warning("Releaseing cl+cif+args %V %V (%d)",
+  scheme_warning("Releasing cl+cif+args %V %V (%d)",
                  ignored,
                  (((closure_and_cif*)p)->data),
                  SAME_OBJ(ignored,(((closure_and_cif*)p)->data)));
