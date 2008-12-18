@@ -42,6 +42,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         call-with-custodian-shutdown
+         call-with-killing-threads
          exn:fail:sandbox-terminated?
          exn:fail:sandbox-terminated-reason
          exn:fail:resource?
@@ -584,8 +586,9 @@
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
-(define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
-
+(define (call-in-sandbox-context evaluator thunk [unrestricted? #f])
+  (evaluator (make-evaluator-message (if unrestricted? 'thunk* 'thunk)
+                                     (list thunk))))
 
 (define-struct (exn:fail:sandbox-terminated exn:fail) (reason) #:transparent)
 (define (make-terminated reason)
@@ -672,13 +675,14 @@
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
-              (restrict-thunk (if (evaluator-message? expr)
-                                (lambda ()
-                                  (apply (evaluator-message-msg expr)
-                                         (evaluator-message-args expr)))
-                                (lambda ()
-                                  (set! n (add1 n))
-                                  (eval* (input->code (list expr) 'eval n))))))
+              (if (evaluator-message? expr)
+                (case (evaluator-message-msg expr)
+                  [(thunk) (limit-thunk (car (evaluator-message-args expr)))]
+                  [(thunk*) (car (evaluator-message-args expr))]
+                  [else (error 'sandbox "internal error (bad message)")])
+                (limit-thunk (lambda ()
+                               (set! n (add1 n))
+                               (eval* (input->code (list expr) 'eval n))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (get-user-result)
@@ -713,7 +717,7 @@
             (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
             uncovered))]))
   (define (output-getter p)
-    (if (procedure? p) (user-eval (make-evaluator-message p '())) p))
+    (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
   (define input-putter
     (case-lambda
      [() (input-putter input)]
@@ -736,8 +740,7 @@
           [(output)  (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
-          [(thunk)   (user-eval (make-evaluator-message
-                                 (car (evaluator-message-args expr)) '()))]
+          [(thunk thunk*) (user-eval expr)]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define (make-output what out set-out! allow-link?)
