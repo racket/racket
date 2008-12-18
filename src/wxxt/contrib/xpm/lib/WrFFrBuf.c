@@ -33,6 +33,11 @@
 \*****************************************************************************/
 
 #include "xpmP.h"
+#if defined(SYSV) || defined(SVR4) || defined(VMS) || defined(__GNUC__)
+#include <string.h>
+#else
+#include <strings.h>
+#endif
 
 int
 XpmWriteFileFromBuffer(filename, buffer)

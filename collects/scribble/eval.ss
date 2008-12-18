@@ -239,18 +239,16 @@
       [else stx]))
 
   (define (make-base-eval)
-    (parameterize ([sandbox-security-guard (current-security-guard)]
-                   [sandbox-output 'string]
-                   [sandbox-error-output 'string]
-                   [sandbox-eval-limits #f]
-                   [sandbox-memory-limit #f]
-                   [sandbox-make-inspector current-inspector])
-      (make-evaluator '(begin (require scheme/base)))))
+    (call-with-trusted-sandbox-configuration
+     (lambda ()
+       (parameterize ([sandbox-output 'string]
+                      [sandbox-error-output 'string])
+         (make-evaluator '(begin (require scheme/base)))))))
 
   (define (close-eval e)
     (kill-evaluator e)
     "")
-      
+
   (define (do-plain-eval ev s catching-exns?)
     (call-with-values (lambda () 
                         ((scribble-eval-handler) 

@@ -1500,7 +1500,7 @@
 ;; Used by set-ffi-obj! to get the actual value so it can be kept around
 (define (get-lowlevel-object x type)
   (let ([basetype (ctype-basetype type)])
-    (if basetype
+    (if (ctype? basetype)
       (let ([s->c (ctype-scheme->c type)])
         (get-lowlevel-object (if s->c (s->c x) x) basetype))
       (values x type))))

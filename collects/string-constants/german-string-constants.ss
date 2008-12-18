@@ -763,7 +763,7 @@
  (force-quit-menu-item-help-string "Benutzt custodian-shutdown-all, um die Auswertung abzubrechen")
  (limit-memory-menu-item-label "Speicherverbrauch einschränken...")
  (limit-memory-msg-1 "Das Limit wird beim nächsten Programmstart aktiv")
- (limit-memory-msg-2 "und muß mindestens 100 Megabytes betragen.")
+ (limit-memory-msg-2 "und muß mindestens 1 Megabyte betragen.")
  (limit-memory-unlimited "nicht einschränken")
  (limit-memory-limited "einschränken")
  (limit-memory-megabytes "Megabytes")

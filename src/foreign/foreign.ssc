@@ -10,6 +10,8 @@ exec mzpp -s "---begin" -o `echo "$0" | sed 's/ssc$/c/'` "$0"
  ** to make changes, edit that file and
  ** run it to generate an updated version
  ** of this file.
+ ** NOTE: This is no longer true, foreign.ssc needs to be updated to work with
+ ** the scribble/text preprocessor instead.
  ********************************************/
 
 {:(load "ssc-utils.ss"):}
@@ -445,7 +447,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 (define *type-counter* 0)
 
-(define (describe-type stype cname ftype ctype pred s->c c->s offset)
+(define (describe-type type stype cname ftype ctype pred s->c c->s offset)
   (set! *type-counter* (add1 *type-counter*))
   (~ "#define FOREIGN_"cname" ("*type-counter*")" \\
      "/* Type Name:   "stype (and (not (equal? cname stype))
@@ -466,7 +468,10 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
      " * C->Scheme:   "(cond [(not c->s) "-none-"]
                              [(procedure? c->s) (c->s "<C>")]
                              [else (list c->s"(<C>)")]) \\
-     " */" \\))
+     " */" \\
+     ;; no need for these, at least for now:
+     ;; "static Scheme_Object *"cname"_sym;"\\
+     ))
 
 (define (make-ctype type args)
   (define (prop p . default)
@@ -491,7 +496,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
          [s->c  (prop 's->c (and macro (list "SCHEME_"macro"_VAL")))]
          [c->s  (prop 'c->s)]
          [offset (prop 'offset #f)])
-    (describe-type stype cname ftype ctype pred s->c c->s offset)
+    (describe-type type stype cname ftype ctype pred s->c c->s offset)
     `(,type (stype ,stype) (cname ,cname) (ftype ,ftype) (ctype ,ctype)
       (macro ,macro) (pred ,pred) (s->c ,s->c) (c->s ,c->s) (offset ,offset))))
 
@@ -726,17 +731,24 @@ typedef union _ForeignAny {
 /* Type objects */
 
 /* This struct is used for both user types and primitive types (including
- * struct types).  If it is a primitive type then basetype will be NULL, and
+ * struct types).  If it is a user type then basetype will be another ctype,
+ * otherwise,
+ * - if it's a primitive type, then basetype will be a symbol naming that type
+ * - if it's a struct, then basetype will be the list of ctypes that
+ *   made this struct
  * scheme_to_c will have the &ffi_type pointer, and c_to_scheme will have an
- * integer (a label value) for non-struct type. */
+ * integer (a label value) for non-struct type.  (Note that the
+ * integer is not really needed, since it is possible to identify the
+ * type by the basetype field.)
+ */
 {:(cdefstruct ctype
     (basetype    "Scheme_Object*")
     (scheme_to_c "Scheme_Object*")
     (c_to_scheme "Scheme_Object*")):}
 
 #define CTYPE_BASETYPE(x)  (((ctype_struct*)(x))->basetype)
-#define CTYPE_PRIMP(x)     (NULL == (CTYPE_BASETYPE(x)))
-#define CTYPE_USERP(x)     (!(CTYPE_PRIMP(x)))
+#define CTYPE_USERP(x)     (CTYPE_BASETYPE(x) != NULL && SCHEME_CTYPEP(CTYPE_BASETYPE(x)))
+#define CTYPE_PRIMP(x)     (!CTYPE_USERP(x))
 #define CTYPE_PRIMTYPE(x)  ((ffi_type*)(((ctype_struct*)(x))->scheme_to_c))
 #define CTYPE_PRIMLABEL(x) ((long)(((ctype_struct*)(x))->c_to_scheme))
 #define CTYPE_USER_S2C(x)  (((ctype_struct*)(x))->scheme_to_c)
@@ -745,12 +757,9 @@ typedef union _ForeignAny {
 /* Returns #f for primitive types. */
 {:(cdefine ctype-basetype 1):}
 {
-  Scheme_Object *base;
   if (!SCHEME_CTYPEP(argv[0]))
     scheme_wrong_type(MYNAME, "ctype", 0, argc, argv);
-  base = CTYPE_BASETYPE(argv[0]);
-  if (NULL == base) return scheme_false;
-  else              return base;
+  return CTYPE_BASETYPE(argv[0]);
 }
 
 {:(cdefine ctype-scheme->c 1):}
@@ -892,7 +901,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   dummy = &libffi_type;
   if (ffi_prep_cif(&cif, abi, 1, &ffi_type_void, dummy) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
-  {:(cmake-object "type" ctype "NULL"
+  {:(cmake-object "type" ctype "argv[0]"
                   "(Scheme_Object*)libffi_type"
                   "(Scheme_Object*)FOREIGN_struct"):}
   scheme_register_finalizer(type, free_libffi_type, libffi_type, NULL, NULL);
@@ -974,12 +983,11 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
                                int delta, int args_loc)
 {
-  Scheme_Object *res, *base;
+  Scheme_Object *res;
   if (!SCHEME_CTYPEP(type))
     scheme_wrong_type("C->Scheme", "C-type", 0, 1, &type);
-  base = CTYPE_BASETYPE(type);
-  if (base != NULL) {
-    res = C2SCHEME(base, src, delta, args_loc);
+  if (CTYPE_USERP(type)) {
+    res = C2SCHEME(CTYPE_BASETYPE(type), src, delta, args_loc);
     if (SCHEME_FALSEP(CTYPE_USER_C2S(type)))
       return res;
     else
@@ -1677,6 +1685,9 @@ static Scheme_Object *do_memop(const char *who, int mode,
                                        len, 0);
 }
 
+/* *** Calling Scheme code while the GC is working leads to subtle bugs, so
+   *** this is implemented now in Scheme using will executors. */
+
 /* internal: apply Scheme finalizer */
 void do_scm_finalizer(void *p, void *finalizer)
 {
@@ -1706,9 +1717,6 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
 /*
-
-  *** Calling Scheme code while the GC is working leads to subtle bugs, so
-  *** this is implemented now in Scheme using will executors.
 
 {:"(defsymbols pointer)":}
 {:"(cdefine register-finalizer 2 3)":}
@@ -1789,7 +1797,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     offset = 0;
     p = SCHEME2C(SCHEME_CAR(itypes), &(ivals[i]), 0, argv[i], &basetype,
                  &offset, 0);
-    if (p != NULL) {
+    if ((p != NULL) || offset) {
       avalues[i] = p;
       ivals[i].x_fixnum = basetype; /* remember the base type */
     } else {
@@ -1812,7 +1820,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   /* We finished with all possible mallocs, clear up the avalues and offsets
    * mess */
   for (i=0; i<nargs; i++) {
-    if (avalues[i] == NULL)     /* if this was a non-pointer... */
+    if ((avalues[i] == NULL) && !offsets[i]) /* if this was a non-pointer... */
       avalues[i] = &(ivals[i]); /* ... set the avalues pointer */
     else if (ivals[i].x_fixnum != FOREIGN_struct) { /* if *not* a struct... */
       /* ... set the ivals pointer (pointer type doesn't matter) and avalues */
@@ -1961,7 +1969,7 @@ typedef struct closure_and_cif_struct {
 void free_cl_cif_args(void *ignored, void *p)
 {
   /*
-  scheme_warning("Releaseing cl+cif+args %V %V (%d)",
+  scheme_warning("Releasing cl+cif+args %V %V (%d)",
                  ignored,
                  (((closure_and_cif*)p)->data),
                  SAME_OBJ(ignored,(((closure_and_cif*)p)->data)));
@@ -2066,6 +2074,7 @@ void scheme_init_foreign(Scheme_Env *env)
 {
   Scheme_Env *menv;
   ctype_struct *t;
+  Scheme_Object *s;
   menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   {:(for-each (lambda (x)
                 (~ (cadr x)"_tag = scheme_make_type(\"<"(car x)">\");"))
@@ -2090,7 +2099,11 @@ void scheme_init_foreign(Scheme_Env *env)
                 (cadr x)", \""(car x)"\", "(caddr x)", "(cadddr x)"), menv);"))
       (reverse! cfunctions))
     (for-each-type
-      (cmake-object "t" ctype "NULL"
+      ;; no need for these, at least for now:
+      ;; (~ "MZ_REGISTER_STATIC("cname"_sym);" \\
+      ;;    cname"_sym = scheme_intern_symbol(\""stype"\");")
+      (~ "s = scheme_intern_symbol(\""stype"\");")
+      (cmake-object "t" ctype "s"
         (list "(Scheme_Object*)(void*)(&ffi_type_"ftype")")
         (list "(Scheme_Object*)FOREIGN_"cname))
       (~ "scheme_add_global(\"_"stype"\", (Scheme_Object*)t, menv);")):}

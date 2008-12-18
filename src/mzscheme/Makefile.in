@@ -271,6 +271,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
 	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
+	cd ..; strip -S "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
@@ -316,6 +317,7 @@ osx-install-cgc:
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)"
 	cp $(MZFW) $(MZFWDIR)/Versions/$(FWVERSION)/
 	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)/PLT_MzScheme" "$(bindir)/mzscheme@CGC_INSTALLED@"
+	/usr/bin/strip -S "$(bindir)/mzscheme@CGC_INSTALLED@"
 
 osx-install-cgc-final:
 	$(MAKE) unix-install-cgc-final
@@ -326,6 +328,7 @@ osx-install-3m:
 	mkdir -p "$(MZFWDIR)/Versions/$(FWVERSION)_3m"
 	cp $(MZFWMMM) $(MZFWDIR)/Versions/$(FWVERSION)_3m/
 	/usr/bin/install_name_tool -change "@executable_path/PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "@FRAMEWORK_PREFIX@PLT_MzScheme.framework/Versions/$(FWVERSION)_3m/PLT_MzScheme" "$(bindir)/mzscheme@MMM_INSTALLED@"
+	/usr/bin/strip -S "$(bindir)/mzscheme@MMM_INSTALLED@"
 
 osx-install-3m-final:
 	$(MAKE) unix-install-3m-final

@@ -801,7 +801,9 @@ object is reachable from two custodians where neither is an ancestor
 of the other, an object is arbitrarily charged to one of the other,
 and the choice can change after each collection; objects reachable
 from both a custodian and its descendant, however, are reliably
-charged to the descendant.  Reachability for per-custodian accounting
-does not include weak references, references to threads managed by
-non-descendant custodians, references to non-descendant custodians, or
-references to custodian boxes for non-descendant custodians.
+charged to the custodian and not to the descendants, unless the
+custodian can reach the objects only through a descendant custodian or
+a descendant's thread.  Reachability for per-custodian accounting does
+not include weak references, references to threads managed by other
+custodians, references to other custodians, or references to custodian
+boxes for other custodians.

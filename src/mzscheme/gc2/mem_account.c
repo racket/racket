@@ -1,11 +1,11 @@
 /*****************************************************************************/
-/* blame-the-child accounting                                                */
+/* memory accounting                                                         */
 /*****************************************************************************/
 #ifdef NEWGC_BTC_ACCOUNT
 
 #include "../src/schpriv.h"
 /* BTC_ prefixed functions are called by newgc.c */
-/* btc_ prefixed functions are internal to blame_the_child.c */
+/* btc_ prefixed functions are internal to mem_account.c */
 
 static const int btc_redirect_thread    = 511;
 static const int btc_redirect_custodian = 510;
@@ -430,13 +430,12 @@ static void BTC_do_accounting(NewGC *gc)
       if(owner_table[i])
         owner_table[i]->memory_use = 0;
 
-    /* the end of the custodian list is where we want to start */
-    while(SCHEME_PTR1_VAL(box)) {
-      cur = (Scheme_Custodian*)SCHEME_PTR1_VAL(box);
-      box = cur->global_next;
+    /* start with root: */
+    while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
+      cur = SCHEME_PTR1_VAL(cur->parent);
     }
 
-    /* walk backwards for the order we want */
+    /* walk forward for the order we want (blame parents instead of children) */
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
 
@@ -448,7 +447,7 @@ static void BTC_do_accounting(NewGC *gc)
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
       propagate_accounting_marks(gc);
 
-      box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+      box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
 
     gc->in_unsafe_allocation_mode = 0;

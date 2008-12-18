@@ -2867,6 +2867,10 @@ void wxWindowDC::Initialize(wxWindowDC_Xinit* init)
 
 void wxWindowDC::Destroy(void)
 {
+#ifdef WX_USE_CAIRO
+    ReleaseCairoDev();
+#endif
+
     if (PEN_GC)    XFreeGC(DPY, PEN_GC);
     if (BRUSH_GC)  XFreeGC(DPY, BRUSH_GC);
     if (TEXT_GC)   XFreeGC(DPY, TEXT_GC);
@@ -3726,7 +3730,7 @@ void wxWindowDC::InitCairoDev()
 void wxWindowDC::ReleaseCairoDev()
 {
   if (X->cairo_dev) {
-    cairo_destroy(CAIRO_DEV);
+    cairo_destroy_it(CAIRO_DEV);
     X->cairo_dev = 0;
   }
 }

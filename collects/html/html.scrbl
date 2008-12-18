@@ -4,8 +4,9 @@
           (for-label html)
           (for-label xml))
 
-@title{@bold{HTML}: Parsing Library}
+@(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 
+@title{@bold{HTML}: Parsing Library}
 
 @defmodule[html]{The @schememodname[html] library provides
 functions to read html documents and structures to represent them.}
@@ -25,12 +26,27 @@ Reads (X)HTML from a port, producing an @scheme[html] instance.}
 @defproc[(read-html-as-xml [port input-port?])
          (listof content?)]{
  
-Reads HTML from a port, producing an xexpr compatible with the
+Reads HTML from a port, producing an @xexpr compatible with the
 @schememodname[xml] library (which defines @scheme[content?]).}
 
+@defboolparam[read-html-comments v]{
+ If @scheme[v] is not @scheme[#f], then comments are read and returned. Defaults to @scheme[#f].
+}
 
+@defboolparam[use-html-spec v]{
+ If @scheme[v] is not @scheme[#f], then the HTML must respect the HTML specification 
+ with regards to what elements are allowed to be the children of
+ other elements. For example, the top-level @scheme["<html>"]
+ element may only contain a @scheme["<body>"] and @scheme["<head>"]
+ element. Defaults to @scheme[#f].
+}                               
 
 @section{Example}
+@(require (only-in (for-label scheme)
+                   open-input-string string-append
+                   list cond match apply append map printf define require module)
+          (for-label (prefix-in h: html))
+          (for-label (prefix-in x: xml)))
 @def+int[
 (module html-example scheme
 

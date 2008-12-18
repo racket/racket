@@ -37,8 +37,8 @@ host platform.
                                               (or/c (integer-in 1 65535) #f)
                                               (or/c 'server 'client)
                                               . -> . any)]
-                              [link (or/c (symbol? path? path? . -> . any) #f)
-                                    #f])
+                              [link-guard (or/c (symbol? path? path? . -> . any) #f)
+                                          #f])
           security-guard?]{
 
 Creates a new security guard as child of @scheme[parent].

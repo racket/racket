@@ -424,8 +424,8 @@ extern int scheme_overflow_count;
 
 struct Scheme_Custodian {
   Scheme_Object so;
-  char shut_down, has_limit;
-  int count, alloc;
+  char shut_down, has_limit, recorded;
+  int count, alloc, elems;
   Scheme_Object ***boxes;
   Scheme_Custodian_Reference **mrefs;
   Scheme_Close_Custodian_Client **closers;

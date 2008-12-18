@@ -867,7 +867,7 @@ TODO
              (memory-killed-thread #f)
              (user-custodian #f)
              (custodian-limit (and (custodian-memory-accounting-available?)
-                                   (preferences:get 'drscheme:memory-limit)))
+                                   (preferences:get 'drscheme:child-only-memory-limit)))
              (user-eventspace-box (make-weak-box #f))
              (user-namespace-box (make-weak-box #f))
              (user-eventspace-main-thread #f)
@@ -925,7 +925,7 @@ TODO
       (field (need-interaction-cleanup? #f))
       
       (define/private (no-user-evaluation-message frame exit-code memory-killed?)
-        (let* ([new-limit (and custodian-limit (+ (* 1024 1024 128) custodian-limit))]
+        (let* ([new-limit (and custodian-limit (+ custodian-limit custodian-limit))]
                [ans (message-box/custom
                      (string-constant evaluation-terminated)
                      (string-append
@@ -953,7 +953,7 @@ TODO
                      )])
           (when (equal? ans 3)
             (set-custodian-limit new-limit)
-            (preferences:set 'drscheme:memory-limit new-limit))
+            (preferences:set 'drscheme:child-only-memory-limit new-limit))
           (set-insertion-point (last-position))
           (insert-warning "\nInteractions disabled")))
       

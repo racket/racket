@@ -16,12 +16,11 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem access, and network access.  The common use case for this
-module is for a restricted sandboxed environment, so the defaults are
-set up to make it safe.  For other uses you will likely need to change
-mane of these settings.
+filesystem and network access, and much.  Sandboxed evaluators can be
+configured through numerous parameters --- and the defaults are set
+for the common use case where sandboxes are very limited.
 
-@defproc*[([(make-evaluator [language (or/c module-path? 
+@defproc*[([(make-evaluator [language (or/c module-path?
                                             (list/c 'special symbol?)
                                             (cons/c 'begin list?))]
                             [input-program any/c] ...
@@ -260,9 +259,29 @@ either @scheme['time] or @scheme['memory].}
 
 @section{Customizing Evaluators}
 
-The evaluators that @scheme[make-evaluator] creates can be customized
-via several parameters.  These parameters affect newly created
-evaluators; changing them has no effect on already-running evaluators.
+The sandboxed evaluators that @scheme[make-evaluator] creates can be
+customized via many parameters.  Most of the configuration parameters
+affect newly created evaluators; changing them has no effect on
+already-running evaluators.
+
+The default configuration options are set for a very restricted
+sandboxed environment --- one that is safe to make publicly available.
+Further customizations might be needed in case more privileges are
+needed, or if you want tighter restrictions.  Another useful approach
+for customizing an evaluator is to begin with a relatively
+unrestricted configuration and add the desired restrictions.  This is
+possible by the @scheme[call-with-trusted-sandbox-configuration]
+function.
+
+@defproc[(call-with-trusted-sandbox-configuration [thunk (-> any)])
+         any]{
+
+Invokes the @scheme[thunk] in a context where sandbox configuration
+parameters are set for minimal restrictions.  More specifically, there
+are no memory or time limits, and the existing existing inspectors,
+security guard, exit handler, and logger are used.  (Note that the I/O
+ports settings are not included.)}
+
 
 @defparam[sandbox-init-hook thunk (-> any)]{
 
@@ -443,7 +462,7 @@ specifications in @scheme[sandbox-path-permissions], and it uses
 
 
 @defparam[sandbox-path-permissions perms
-          (listof (list/c (or/c 'execute 'write 'delete 'read 'exists)
+          (listof (list/c (or/c 'execute 'write 'delete 'read-bytecode 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
 A parameter that configures the behavior of the default sandbox
@@ -453,9 +472,9 @@ each is an access mode and a byte-regexp for paths that are granted this
 access.
 
 The access mode symbol is one of: @scheme['execute], @scheme['write],
-@scheme['delete], @scheme['read], or @scheme['exists].  These symbols are
-in decreasing order: each implies access for the following modes too
-(e.g., @scheme['read] allows reading or checking for existence).
+@scheme['delete], @scheme['read], or @scheme['exists].  These symbols
+are in decreasing order: each implies access for the following modes
+too (e.g., @scheme['read] allows reading or checking for existence).
 
 The path regexp is used to identify paths that are granted access.  It
 can also be given as a path (or a string or a byte string), which is
@@ -463,9 +482,25 @@ can also be given as a path (or a string or a byte string), which is
 to a regexp that allows the path and sub-directories; e.g.,
 @scheme["/foo/bar"] applies to @scheme["/foo/bar/baz"].
 
+An additional mode symbol, @scheme['read-bytecode], is not part of the
+linear order of these modes.  Specifying this mode is similar to
+specifying @scheme['read], but it is not implied by any other mode.
+(For example, even if you specify @scheme['write] for a certain path,
+you need to also specify @scheme['read-bytecode] to grant this
+permission.)  The sandbox usually works in the context of a lower code
+inspector (see @scheme[sandbox-make-code-inspector]) which prevents
+loading of untrusted bytecode files --- the sandbox is set-up to allow
+loading bytecode from files that are specified with
+@scheme['read-bytecode].  This specification is given by default to
+the PLT collection hierarchy (including user-specific libraries) and
+to libraries that are explicitly specified in an @scheme[#:allow-read]
+argument.  (Note that this applies for loading bytecode files only,
+under a lower code inspector it is still impossible to use protected
+module bindings (see @secref["modprotect"]).)
+
 The default value is null, but when an evaluator is created, it is
-augmented by @scheme['read] permissions that make it possible to use
-collection libraries (including
+augmented by @scheme['read-bytecode] permissions that make it possible
+to use collection libraries (including
 @scheme[sandbox-override-collection-paths]). See
 @scheme[make-evalautor] for more information.}
 
@@ -490,29 +525,54 @@ appropriate error message (see
 @scheme[exn:fail:sandbox-terminated-reason]).}
 
 
-@defparam[sandbox-memory-limit limit (or/c exact-nonnegative-integer? #f)]{
+@defparam[sandbox-memory-limit limit (or/c nonnegative-number? #f)]{
 
-A parameter that determines the total memory limit on the sandbox.
-When this limit is exceeded, the sandbox is terminated.  This value is
-used when the sandbox is created and the limit cannot be changed
-afterwards.  See @scheme[sandbox-eval-limits] for per-evaluation
-limits and a description of how the two limits work together.}
+A parameter that determines the total memory limit on the sandbox in
+megabytes (it can hold a rational or a floating point number).  When
+this limit is exceeded, the sandbox is terminated.  This value is used
+when the sandbox is created and the limit cannot be changed
+afterwards.  It defaults to 30mb.  See @scheme[sandbox-eval-limits]
+for per-evaluation limits and a description of how the two limits work
+together.
+
+Note that (when memory accounting is enabled) memory is attributed to
+the highest custodian that refers to it.  This means that if you
+inspect a value that sandboxed evaluation returns outside of the
+sandbox, your own custodian will be charged for it.  To ensure that it
+is charged back to the sandbox, you should remove references to such
+values when the code is done inspecting it.
+
+This policy has an impact on how the sandbox memory limit interacts
+with the the per-expression limit specified by
+@scheme[sandbox-eval-limits]: values that are reachable from the
+sandbox, as well as from the interaction will count against the
+sandbox limit.  For example, in the last interaction of this code,
+@schemeblock[
+  (define e (make-evaluator 'scheme/base))
+  (e '(define a 1))
+  (e '(for ([i (in-range 20)]) (set! a (cons (make-bytes 500000) a))))
+]
+the memory blocks are allocated within the interaction limit, but
+since they're chained to the defined variable, they're also reachable
+from the sandbox --- so they will count against the sandbox memory
+limit but not against the interaction limit (more precisely, no more
+than one block counts against the interaction limit).}
 
 
 @defparam[sandbox-eval-limits limits
-          (or/c (list/c (or/c exact-nonnegative-integer? #f)
-                        (or/c exact-nonnegative-integer? #f))
+          (or/c (list/c (or/c nonnegative-number? #f)
+                        (or/c nonnegative-number? #f))
                 #f)]{
 
 A parameter that determines the default limits on @italic{each} use of
 a @scheme[make-evaluator] function, including the initial evaluation
 of the input program.  Its value should be a list of two numbers;
 where the first is a timeout value in seconds, and the second is a
-memory limit in megabytes.  Either one can be @scheme[#f] for
-disabling the corresponding limit; alternately, the parameter can be
-set to @scheme[#f] to disable all per-evaluation limits (useful in
-case more limit kinds are available in future versions). The default
-is @scheme[(list 30 20)].
+memory limit in megabytes (note that they don't have to be integers).
+Either one can be @scheme[#f] for disabling the corresponding limit;
+alternately, the parameter can be set to @scheme[#f] to disable all
+per-evaluation limits (useful in case more limit kinds are available
+in future versions). The default is @scheme[(list 30 20)].
 
 Note that these limits apply to the creation of the sandbox
 environment too --- even @scheme[(make-evaluator 'scheme/base)] can
@@ -582,7 +642,11 @@ an evaluator, and the default parameter value is
 A parameter that determines the procedure used to create the code
 inspector for sandboxed evaluation.  The procedure is called when
 initializing an evaluator, and the default parameter value is
-@scheme[make-inspector].}
+@scheme[make-inspector].  The @scheme[current-load/use-compiled]
+handler is setup to still allow loading of bytecode files under the
+original code inspector when @scheme[sandbox-path-permissions] allows
+it through a @scheme['read-bytecode] mode symbol, to make it possible
+to load libraries.}
 
 
 @defparam[sandbox-make-logger make (-> logger?)]{

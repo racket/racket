@@ -77,17 +77,13 @@ transcript.
 (define number-of-exn-tests 0)
 
 (define (load-in-sandbox file)
-  (let ([e (parameterize ([(dynamic-require 'scheme/sandbox 'sandbox-security-guard)
-                           (current-security-guard)]
-                          [(dynamic-require 'scheme/sandbox 'sandbox-input)
-                           current-input-port]
-                          [(dynamic-require 'scheme/sandbox 'sandbox-output)
-                           current-output-port]
-                          [(dynamic-require 'scheme/sandbox 'sandbox-error-output)
-                           current-error-port]
-                          [(dynamic-require 'scheme/sandbox 'sandbox-eval-limits)
-                           #f])
-             ((dynamic-require 'scheme/sandbox 'make-evaluator) '(begin) #:requires (list 'scheme)))])
+  (define-syntax-rule (S id) (dynamic-require 'scheme/sandbox 'id))
+  (let ([e ((S call-with-trusted-sandbox-configuration)
+            (parameterize ([(S sandbox-input) current-input-port]
+                           [(S sandbox-output) current-output-port]
+                           [(S sandbox-error-output) current-error-port]
+                           [(S sandbox-memory-limit) 100]) ; 100mb per box
+              ((S make-evaluator) '(begin) #:requires (list 'scheme))))])
     (e `(load-relative "testing.ss"))
     (e `(define real-error-port (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))

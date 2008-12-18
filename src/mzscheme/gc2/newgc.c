@@ -93,7 +93,7 @@ inline static int is_master_gc(NewGC *gc) {
 /* particular collector you want.                                            */
 /*****************************************************************************/
 
-/* This turns on blame-the-child automatic memory accounting */
+/* This turns on automatic memory accounting */
 /* #define NEWGC_BTC_ACCOUNT */
 /* #undef NEWGC_BTC_ACCOUNT */
 
@@ -1365,11 +1365,11 @@ inline static void reset_pointer_stack(void)
 }
 
 /*****************************************************************************/
-/* BLAME THE CHILD                                                           */
+/* MEMORY ACCOUNTING                                                         */
 /*****************************************************************************/
 
 #ifdef NEWGC_BTC_ACCOUNT
-# include "blame_the_child.c"
+# include "mem_account.c"
 #else
 # define clean_up_thread_list() /* */
 #endif
@@ -1402,6 +1402,12 @@ void GC_register_new_thread(void *t, void *c)
 #ifdef NEWGC_BTC_ACCOUNT
   BTC_register_new_thread(t, c);
 #endif
+}
+
+int GC_merely_accounting()
+{
+  NewGC *gc = GC_get_GC();
+  return gc->doing_memory_accounting;
 }
 
 /*****************************************************************************/

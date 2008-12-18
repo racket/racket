@@ -923,8 +923,10 @@ static int cont_proc_MARK(void *p) {
   MARK_cjs(&c->cjs);
   MARK_stack_state(&c->ss);
   gcMARK(c->barrier_prompt);
-  gcMARK(c->runstack_start);
-  gcMARK(c->runstack_saved);
+  if (!GC_merely_accounting()) {
+    gcMARK(c->runstack_start);
+    gcMARK(c->runstack_saved);
+  }
 
   gcMARK(c->prompt_id);
   gcMARK(c->prompt_buf);
@@ -961,8 +963,10 @@ static int cont_proc_FIXUP(void *p) {
   FIXUP_cjs(&c->cjs);
   FIXUP_stack_state(&c->ss);
   gcFIXUP(c->barrier_prompt);
-  gcFIXUP(c->runstack_start);
-  gcFIXUP(c->runstack_saved);
+  if (!GC_merely_accounting()) {
+    gcFIXUP(c->runstack_start);
+    gcFIXUP(c->runstack_saved);
+  }
 
   gcFIXUP(c->prompt_id);
   gcFIXUP(c->prompt_buf);
@@ -1600,12 +1604,16 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->init_config);
   gcMARK(pr->init_break_cell);
 
-  {
+  if (!pr->runstack_owner
+      || !GC_merely_accounting()
+      || (*pr->runstack_owner == pr)) {
     Scheme_Object **rs = pr->runstack_start;
     gcMARK( pr->runstack_start);
-    pr->runstack = pr->runstack_start + (pr->runstack - rs);
+    if (pr->runstack != pr->runstack_start + (pr->runstack - rs))
+      pr->runstack = pr->runstack_start + (pr->runstack - rs);
+
+    gcMARK(pr->runstack_saved);
   }
-  gcMARK(pr->runstack_saved);
   gcMARK(pr->runstack_owner);
   gcMARK(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
@@ -1706,12 +1714,16 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->init_config);
   gcFIXUP(pr->init_break_cell);
 
-  {
+  if (!pr->runstack_owner
+      || !GC_merely_accounting()
+      || (*pr->runstack_owner == pr)) {
     Scheme_Object **rs = pr->runstack_start;
     gcFIXUP_TYPED_NOW(Scheme_Object **, pr->runstack_start);
-    pr->runstack = pr->runstack_start + (pr->runstack - rs);
+    if (pr->runstack != pr->runstack_start + (pr->runstack - rs))
+      pr->runstack = pr->runstack_start + (pr->runstack - rs);
+
+    gcFIXUP(pr->runstack_saved);
   }
-  gcFIXUP(pr->runstack_saved);
   gcFIXUP(pr->runstack_owner);
   gcFIXUP(pr->runstack_swapped);
   pr->spare_runstack = NULL; /* just in case */
@@ -1858,7 +1870,8 @@ static int prompt_val_SIZE(void *p) {
 static int prompt_val_MARK(void *p) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcMARK(pr->boundary_overflow_id);
-  gcMARK(pr->runstack_boundary_start);
+  if (!GC_merely_accounting())
+    gcMARK(pr->runstack_boundary_start);
   gcMARK(pr->tag);
   gcMARK(pr->id);
   return
@@ -1868,7 +1881,8 @@ static int prompt_val_MARK(void *p) {
 static int prompt_val_FIXUP(void *p) {
   Scheme_Prompt *pr = (Scheme_Prompt *)p;
   gcFIXUP(pr->boundary_overflow_id);
-  gcFIXUP(pr->runstack_boundary_start);
+  if (!GC_merely_accounting())
+    gcFIXUP(pr->runstack_boundary_start);
   gcFIXUP(pr->tag);
   gcFIXUP(pr->id);
   return

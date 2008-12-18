@@ -805,7 +805,7 @@ please adhere to these guidelines:
  (kill-menu-item-help-string "現在の評価を強制終了します")
  (limit-memory-menu-item-label "メモリを制限する...")
  (limit-memory-msg-1 "ここで指定したメモリ制限値は、プログラムを次に実行するときに有効になります。")
- (limit-memory-msg-2 "制限値は 100MB 以上にしてください。")
+ (limit-memory-msg-2 "制限値は 1MB 以上にしてください。")
  (limit-memory-unlimited "制限しない")
  (limit-memory-limited "制限する")
  (limit-memory-megabytes "MB")
