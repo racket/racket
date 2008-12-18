@@ -39,8 +39,9 @@ These values can also be used as C pointer objects.}
            [(ctype-c->scheme [type ctype?]) procedure?])]{
 
 Accessors for the components of a C type object, made by
-@scheme[make-ctype].  The @scheme[ctype-basetype] selector returns
-@scheme[#f] for primitive types (including cstruct types).}
+@scheme[make-ctype].  The @scheme[ctype-basetype] selector returns a
+symbol for primitive types that names the type, a list of ctypes for
+cstructs, and another ctype for user-defined ctypes.}
 
 
 @defproc[(ffi-call [ptr any/c] [in-types (listof ctype?)] [out-type ctype?]
