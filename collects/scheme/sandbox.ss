@@ -25,11 +25,13 @@
          sandbox-make-logger
          sandbox-memory-limit
          sandbox-eval-limits
+         sandbox-eval-handlers
          call-with-trusted-sandbox-configuration
          evaluator-alive?
          kill-evaluator
          break-evaluator
          set-eval-limits
+         set-eval-handler
          put-input
          get-output
          get-error-output
@@ -362,6 +364,28 @@
     [(with-limits sec mb body ...)
      (call-with-limits sec mb (lambda () body ...))]))
 
+;; other resource utilities
+
+(define (call-with-custodian-shutdown thunk)
+  (let ([cust (make-custodian (current-custodian))])
+    (dynamic-wind
+      void
+      (lambda () (parameterize ([current-custodian cust]) (thunk)))
+      (lambda () (custodian-shutdown-all cust)))))
+
+(define (call-with-killing-threads thunk)
+  (let* ([cur (current-custodian)] [sub (make-custodian cur)])
+    (define (kill-all x)
+      (cond [(custodian? x) (for-each kill-all (custodian-managed-list x cur))]
+            [(thread? x) (kill-thread x)]))
+    (dynamic-wind
+      void
+      (lambda () (parameterize ([current-custodian sub]) (thunk)))
+      (lambda () (kill-all sub)))))
+
+(define sandbox-eval-handlers
+  (make-parameter (list #f call-with-custodian-shutdown)))
+
 ;; Execution ----------------------------------------------------------------
 
 (define (literal-identifier=? x y)
@@ -555,6 +579,7 @@
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
 (define-evaluator-messenger (set-eval-limits secs mb) 'limits)
+(define-evaluator-messenger (set-eval-handler handler) 'handler)
 (define-evaluator-messenger (put-input . xs) 'input)
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
@@ -585,13 +610,18 @@
   (define output        #f)
   (define error-output  #f)
   (define limits        (sandbox-eval-limits))
+  (define eval-handler  (car (sandbox-eval-handlers))) ; 1st handler on startup
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
   (define terminated?   #f) ; set to an exception value when the sandbox dies
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
-           [mb  (and limits (cadr limits))])
-      (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
+           [mb  (and limits (cadr limits))]
+           [thunk (if (or sec mb)
+                    (lambda () (call-with-limits sec mb thunk))
+                    thunk)]
+           [thunk (if eval-handler (lambda () (eval-handler thunk)) thunk)])
+      thunk))
   (define (terminated! reason)
     (unless terminated?
       (set! terminated?
@@ -632,6 +662,7 @@
        limit-thunk
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
+    (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
     ;; finally wait for interaction expressions
     (let ([n 0])
       (let loop ()
@@ -641,13 +672,13 @@
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
-              (limit-thunk (if (evaluator-message? expr)
-                             (lambda ()
-                               (apply (evaluator-message-msg expr)
-                                      (evaluator-message-args expr)))
-                             (lambda ()
-                               (set! n (add1 n))
-                               (eval* (input->code (list expr) 'eval n))))))
+              (restrict-thunk (if (evaluator-message? expr)
+                                (lambda ()
+                                  (apply (evaluator-message-msg expr)
+                                         (evaluator-message-args expr)))
+                                (lambda ()
+                                  (set! n (add1 n))
+                                  (eval* (input->code (list expr) 'eval n))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (get-user-result)
@@ -696,16 +727,17 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
-          [(alive?) (and user-thread (not (thread-dead? user-thread)))]
-          [(kill)   (terminate+kill! 'evaluator-killed #f)]
-          [(break)  (user-break)]
-          [(limits) (set! limits (evaluator-message-args expr))]
-          [(input)  (apply input-putter (evaluator-message-args expr))]
-          [(output) (output-getter output)]
+          [(alive?)  (and user-thread (not (thread-dead? user-thread)))]
+          [(kill)    (terminate+kill! 'evaluator-killed #f)]
+          [(break)   (user-break)]
+          [(limits)  (set! limits (evaluator-message-args expr))]
+          [(handler) (set! eval-handler (car (evaluator-message-args expr)))]
+          [(input)   (apply input-putter (evaluator-message-args expr))]
+          [(output)  (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
-          [(thunk)  (user-eval (make-evaluator-message
-                                (car (evaluator-message-args expr)) '()))]
+          [(thunk)   (user-eval (make-evaluator-message
+                                 (car (evaluator-message-args expr)) '()))]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define (make-output what out set-out! allow-link?)
