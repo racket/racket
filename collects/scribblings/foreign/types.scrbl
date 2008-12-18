@@ -20,9 +20,11 @@ along with conversion functions to and from the existing types.
                      [c-to-scheme (or/c #f (any/c . -> . any))])
          ctype?]{
 
-Creates a new @tech{C type} value, with the given conversions
-functions.  The conversion functions can be @scheme[#f] meaning that
-there is no conversion for the corresponding direction.  If both
+Creates a new @tech{C type} value whose representation for foreign
+code is the same as @scheme[type]'s. The given conversions functions
+convert to and from the Scheme representation of @scheme[type]. Either
+conversion function can be @scheme[#f], meaning that the conversion
+for the corresponding direction is the identity function.  If both
 functions are @scheme[#f], @scheme[type] is returned.}
 
 
@@ -338,7 +340,7 @@ values: @itemize[
   the callback value will be stored in the box, overriding any value
   that was in the box (making it useful for holding a single callback
   value).  When you know that it is no longer needed, you can
-  `release' the callback value by changing the box contents, or by
+  ``release'' the callback value by changing the box contents, or by
   allowing the box itself to be garbage-collected.  This is can be
   useful if the box is held for a dynamic extent that corresponds to
   when the callback is needed; for example, you might encapsulate some
@@ -400,7 +402,7 @@ used to access the actual foreign return value.
 
 In rare cases where complete control over the input arguments is needed, the
 wrapper's argument list can be specified as @scheme[args], in any form (including
-a `rest' argument).  Identifiers in this place are related to type labels, so
+a ``rest'' argument).  Identifiers in this place are related to type labels, so
 if an argument is there is no need to use an expression.
 
 For example,
@@ -746,7 +748,7 @@ than the struct itself.  The following works as expected:
 
 As described above, @scheme[_list-struct]s should be used in cases where
 efficiency is not an issue.  We continue using @scheme[define-cstruct], first
-define a type for @cpp{A} which makes it possible to use `@cpp{makeA}:
+define a type for @cpp{A} which makes it possible to use @cpp{makeA}:
 
 @schemeblock[
 (define-cstruct #,(schemeidfont "_A") ([x _int] [y _byte]))
@@ -785,7 +787,7 @@ We can access all values of @scheme[b] using a naive approach:
 ]
 
 but this is inefficient as it allocates and copies an instance of
-`@cpp{A}' on every access.  Inspecting the tags @scheme[(cpointer-tag
+@cpp{A} on every access.  Inspecting the tags @scheme[(cpointer-tag
 b)] we can see that @cpp{A}'s tag is included, so we can simply use
 its accessors and mutators, as well as any function that is defined to
 take an @cpp{A} pointer:
