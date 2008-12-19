@@ -1010,7 +1010,7 @@ define_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 	&& (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED))) {
       a = scheme_toplevel_to_flagged_toplevel(a, SCHEME_TOPLEVEL_CONST);
     }
-    a = scheme_resolve_toplevel(rslv, a);
+    a = scheme_resolve_toplevel(rslv, a, 0);
     SCHEME_CAR(l) = a;
     cnt++;
   }

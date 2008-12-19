@@ -37,7 +37,7 @@
 
 (define-form-struct localref (unbox? offset clear?)) ; access local via stack
 
-(define-form-struct toplevel (depth pos const? mutated?))  ; access binding via prefix array (which is on stack)
+(define-form-struct toplevel (depth pos const? ready?))  ; access binding via prefix array (which is on stack)
 (define-form-struct topsyntax (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
 
 (define-form-struct application (rator rands)) ; function call
@@ -68,12 +68,12 @@
 
 (define (read-toplevel v)
   (define SCHEME_TOPLEVEL_CONST #x01)
-  (define SCHEME_TOPLEVEL_MUTATED #x02)
+  (define SCHEME_TOPLEVEL_READY #x02)
   (match v
     [(cons depth (cons pos flags))
      (make-toplevel depth pos 
                     (positive? (bitwise-and flags SCHEME_TOPLEVEL_CONST))
-                    (positive? (bitwise-and flags SCHEME_TOPLEVEL_MUTATED)))]
+                    (positive? (bitwise-and flags SCHEME_TOPLEVEL_READY)))]
     [(cons depth pos)
      (make-toplevel depth pos #f #f)]))
 
