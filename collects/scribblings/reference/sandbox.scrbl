@@ -629,7 +629,7 @@ then, assuming sufficiently small limits,
 ]}
 
 
-@defparam[sandbox-eval-handlers
+@defparam[sandbox-eval-handlers handlers
           (list/c (or/c #f ((-> any) . -> . any))
                   (or/c #f ((-> any) . -> . any)))]{
 
