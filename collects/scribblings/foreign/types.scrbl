@@ -163,15 +163,24 @@ strings, which corresponds to C's @cpp{char*} type.  In addition to
 translating byte strings, @scheme[#f] corresponds to the @cpp{NULL}
 pointer.
 
-@defthing[_string/ucs-4 ctype?]{
+@deftogether[(
+@defthing[_string/ucs-4 ctype?]
+@defthing[_string/ucs-4/null ctype?]
+)]{
 
 A type for Scheme's native Unicode strings, which are in UCS-4 format.
-These correspond to the C @cpp{mzchar*} type used by PLT Scheme.}
+These correspond to the C @cpp{mzchar*} type used by PLT Scheme.  The
+@schemeidfont{/null} variant treats @scheme[#f] as @cpp{NULL} and
+vice-versa.}
 
 
-@defthing[_string/utf-16 ctype?]{
+@deftogether[(
+@defthing[_string/utf-16 ctype?]
+@defthing[_string/utf-16/null ctype?]
+)]{
 
-Unicode strings in UTF-16 format.}
+Unicode strings in UTF-16 format.  The @schemeidfont{/null} variant
+treats @scheme[#f] as @cpp{NULL} and vice-versa.}
 
 
 @defthing[_path ctype?]{
