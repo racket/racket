@@ -2166,13 +2166,15 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
   if (NULL == (base = get_ctype_base(argv[1])))
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   else size = ctype_sizeof(base);
+
   if (CTYPE_PRIMLABEL(base) == FOREIGN_fpointer) {
-    if (argc > 3) {
-      scheme_signal_error
-        (MYNAME": setting fpointer value with extra arguments");
-    } else if (SCHEME_CPTRP(argv[0])) {
-      ptr = SCHEME_CPTR_VAL(argv[0]);
+    if (SCHEME_CPTRP(argv[0])) {
+      /* offset is ok */
     } else if SCHEME_FFIOBJP(argv[0]) {
+      if (argc > 3) {
+        scheme_signal_error
+          (MYNAME": cannot set fpointer value with offset");
+      }
       ptr = ((ffi_obj_struct*)(argv[0]))->obj;
     } else {
       scheme_signal_error
@@ -2183,9 +2185,11 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   } else if (size == 0) {
     scheme_wrong_type(MYNAME, "non-void-C-type", 1, argc, argv);
-  } else if (argc > 4) {
+  }
+
+  if (argc > 4) {
     if (!SAME_OBJ(argv[2],abs_sym))
-      scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
+      scheme_wrong_type(MYNAME, "'abs", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
     delta += SCHEME_INT_VAL(argv[3]);
