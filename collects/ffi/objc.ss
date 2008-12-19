@@ -397,8 +397,8 @@
      (cond
       [(list? l)
        (apply string-append 
-              (for ([l (in-list l)]
-                    [i (in-naturals)])
+              (for/list ([l (in-list l)]
+                         [i (in-naturals)])
                 (format "f~a=~a" i (layout->string l))))]
       [(eq? l (ctype->layout _int)) "i"]
       [(eq? l (ctype->layout _uint)) "I"]
