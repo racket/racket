@@ -20,7 +20,8 @@
 
 ;; ----------------------------------------
 
-(provide _id _BOOL _SEL)
+(provide _id _Class _BOOL _SEL _Ivar
+         make-objc_super _objc_super)
 
 (define _id (_cpointer/null 'id))
 
@@ -103,9 +104,9 @@
      (syntax/loc stx (begin (import-class id) ...))]))
 
 ;; ----------------------------------------
-;; iget-value and iset-value work only with fields that contain Scheme values
+;; iget-value and set-ivar! work only with fields that contain Scheme values
 
-(provide iget-value iset-value)
+(provide get-ivar set-ivar!)
 
 (define-for-syntax (check-ivar ivar stx)
   (unless (identifier? ivar)
@@ -114,7 +115,7 @@
                       stx
                       ivar)))
 
-(define-syntax (iget-value stx)
+(define-syntax (get-ivar stx)
   (syntax-case stx ()
     [(_ obj ivar)
      (begin
@@ -127,7 +128,7 @@
     (and p (ptr-ref p _scheme))))
       
 
-(define-syntax (iset-value stx)
+(define-syntax (set-ivar! stx)
   (syntax-case stx ()
     [(_ obj ivar val)
      (begin
@@ -254,7 +255,7 @@
                                   arg)))
              (loop (cdr rest))))))))
 
-(provide tell)
+(provide tell tellv)
 (define-for-syntax (build-send stx result-type send/typed send-args l-stx)
   (let ([l (syntax->list  l-stx)])
     (with-syntax ([((tag type arg) ...) (parse-arg-list l stx #f)]
@@ -298,6 +299,9 @@
      (build-send stx #'_id 
                  #'objc_msgSend/typed #'(target)
                  #'(method/arg ...))]))
+
+(define-syntax-rule (tellv a ...)
+  (tell #:type _void a ...))
 
 (define-for-syntax liftable-type?
   (let ([prims 
@@ -377,11 +381,11 @@
      (lambda (stx)
        (syntax-case stx (set!)
          [(set! _ val)
-          (syntax/loc stx (iset-value self sym val))]
+          (syntax/loc stx (set-ivar! self sym val))]
          [(_ arg ...)
-          (quasisyntax/loc stx (#,(quasisyntax/loc #'sym #'(iget-value self sym)) 
+          (quasisyntax/loc stx (#,(quasisyntax/loc #'sym #'(get-ivar self sym)) 
                                 arg ...))]
-         [_ (quasisyntax/loc #'sym (iget-value self sym))])))))
+         [_ (quasisyntax/loc #'sym (get-ivar self sym))])))))
 
 (define (layout->string l)
   (case l

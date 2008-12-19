@@ -13,7 +13,7 @@ along with conversion functions to and from the existing types.
 
 @; ----------------------------------------------------------------------
 
-@section{Type Constructors}
+@section[#:tag "ctype"]{Type Constructors}
 
 @defproc[(make-ctype [type ctype?]
                      [scheme-to-c (or/c #f (any/c . -> . any))]
