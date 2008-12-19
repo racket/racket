@@ -1222,13 +1222,6 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
  * is used for both the function definition and calls, but the actual code in
  * the function is different: in the relevant cases zero an int and offset the
  * ptr */
-#ifdef SCHEME_BIG_ENDIAN
-#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) \
-          scheme_to_c(typ,dst,delta,val,basep,_offset,retloc)
-#else
-#define SCHEME2C(typ,dst,delta,val,basep,_offset,retloc) \
-          scheme_to_c(typ,dst,delta,val,basep,_offset)
-#endif
 
 /* Usually writes the C object to dst and returns NULL.  When basetype_p is not
  * NULL, then any pointer value (any pointer or a struct) is returned, and the
@@ -1257,7 +1250,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void:
-      scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      break;
     case FOREIGN_int8:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(Tsint8)<sizeof(int) && ret_loc) {
@@ -1600,7 +1594,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         return NULL; /* hush the compiler */
       }
     case FOREIGN_fpointer:
-      scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      break;
     case FOREIGN_struct:
       if (!SCHEME_FFIANYPTRP(val))
         scheme_wrong_type("Scheme->C", "pointer", 0, 1, &val);
@@ -2629,6 +2624,28 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 }
 
 /*****************************************************************************/
+
+void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
+{
+  char *str;
+  if (!SCHEME_CTYPEP(ctype))
+    scheme_wrong_type("Scheme->C", "C-type", 0, 1, &ctype);
+  if (CTYPE_PRIMP(ctype)) {
+    scheme_print_bytes(pp, "#<ctype:", 0, 8);
+    ctype = CTYPE_BASETYPE(ctype);
+    if (SCHEME_SYMBOLP(ctype)) {
+      str = SCHEME_SYM_VAL(ctype);
+      scheme_print_bytes(pp, str, 0, strlen(str));
+    } else {
+      scheme_print_bytes(pp, "cstruct", 0, 7);
+    }
+    scheme_print_bytes(pp, ">", 0, 1);
+  } else {
+    scheme_print_bytes(pp, "#<ctype>", 0, 8);
+  }
+}
+
+/*****************************************************************************/
 /* Initialization */
 
 void scheme_init_foreign(Scheme_Env *env)
@@ -2647,6 +2664,7 @@ void scheme_init_foreign(Scheme_Env *env)
   GC_register_traversers(ctype_tag, ctype_SIZE, ctype_MARK, ctype_FIXUP, 1, 0);
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
 #endif
+  scheme_set_type_printer(ctype_tag, ctype_printer);
   MZ_REGISTER_STATIC(opened_libs);
   opened_libs = scheme_make_hash_table(SCHEME_hash_string);
   MZ_REGISTER_STATIC(default_sym);
