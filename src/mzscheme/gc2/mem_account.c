@@ -213,7 +213,7 @@ inline static void clean_up_owner_table(NewGC *gc)
 
 inline static unsigned long custodian_usage(NewGC*gc, void *custodian)
 {
-  OTEntry **owner_table = gc->owner_table;
+  OTEntry **owner_table;
   unsigned long retval = 0;
   int i;
 
@@ -226,6 +226,8 @@ inline static unsigned long custodian_usage(NewGC*gc, void *custodian)
   }
 
   i = custodian_to_owner_set(gc, (Scheme_Custodian *)custodian);
+
+  owner_table = gc->owner_table;
   if (owner_table[i])
     retval = owner_table[i]->memory_use;
   else
