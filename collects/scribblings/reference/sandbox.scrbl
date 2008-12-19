@@ -629,6 +629,24 @@ then, assuming sufficiently small limits,
 ]}
 
 
+@defparam[sandbox-eval-handlers handlers
+          (list/c (or/c #f ((-> any) . -> . any))
+                  (or/c #f ((-> any) . -> . any)))]{
+
+A parameter that determines two (optional) handlers that wrap
+sandboxed evaluations.  The first one is used when evaluating the
+initial program when the sandbox is being set-up, and the second is
+used for each interaction.  Each of these handlers should expect a
+thunk as an argument, and they should execute these thunks ---
+possibly imposing further restrictions.  The default values are
+@scheme[#f] and @scheme[call-with-custodian-shutdown], meaning no
+additional restrictions on initial sandbox code (e.g., it can start
+background threads), and a custodian-shutdown around each interaction
+that follows.  Another useful function for this is
+@scheme[call-with-killing-threads] which kills all threads, but leaves
+other resources intact.}
+
+
 @defparam[sandbox-make-inspector make (-> inspector?)]{
 
 A parameter that determines the procedure used to create the inspector
@@ -691,7 +709,8 @@ propagates the break to the evaluator's context.}
 
 @defproc[(set-eval-limits [evaluator (any/c . -> . any)]
                           [secs (or/c exact-nonnegative-integer? #f)]
-                          [mb (or/c exact-nonnegative-integer? #f)]) void?]{
+                          [mb (or/c exact-nonnegative-integer? #f)])
+         void?]{
 
 Changes the per-expression limits that @scheme[evaluator] uses to
 @scheme[sec] seconds and @scheme[mb] megabytes (either one can be
@@ -700,6 +719,33 @@ Changes the per-expression limits that @scheme[evaluator] uses to
 This procedure should be used to modify an existing evaluator limits,
 because changing the @scheme[sandbox-eval-limits] parameter does not
 affect existing evaluators. See also @scheme[call-with-limits].}
+
+
+@defproc[(set-eval-handler [evaluator (any/c . -> . any)]
+                           [handler (or/c #f ((-> any) . -> . any))])
+         void?]{
+
+Changes the per-expression handler that the @scheme[evaluator] uses
+around each interaction.  A @scheme[#f] value means no handler is
+used.
+
+This procedure should be used to modify an existing evaluator handler,
+because changing the @scheme[sandbox-eval-handlers] parameter does not
+affect existing evaluators. See also
+@scheme[call-with-custodian-shutdown] and
+@scheme[call-with-killing-threads] for two useful handlers that are
+provided.}
+
+
+@defproc*[([(call-with-custodian-shutdown [thunk (-> any)]) any]
+           [(call-with-killing-threads [thunk (-> any)]) any])]{
+
+These functions are useful for use as an evaluation handler.
+@scheme[call-with-custodian-shutdown] will execute the @scheme[thunk]
+in a fresh custodian, then shutdown that custodian, making sure that
+@scheme[thunk] could not have left behind any resources.
+@scheme[call-with-killing-threads] is similar, except that it kills
+threads that were left, but leaves other resources as is.}
 
 
 @defproc*[([(put-input [evaluator (any/c . -> . any)]) output-port?]
@@ -779,12 +825,14 @@ coverage results, since each expression may be assigned a single
 source location.}
 
 @defproc[(call-in-sandbox-context [evaluator (any/c . -> . any)]
-                                  [thunk (-> any)])
+                                  [thunk (-> any)]
+                                  [unrestricted? boolean? #f])
          any]{
 
 Calls the given @scheme[thunk] in the context of a sandboxed
-evaluator.  The call is performed under the resource limits that are
-used for evaluating expressions.
+evaluator.  The call is performed under the resource limits and
+evaluation handler that are used for evaluating expressions, unless
+@scheme[unrestricted?] is specified as true.
 
 This is usually similar to @scheme[(evaluator (list thunk))], except
 that this relies on the common meaning of list expressions as function

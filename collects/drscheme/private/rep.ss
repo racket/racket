@@ -925,7 +925,7 @@ TODO
       (field (need-interaction-cleanup? #f))
       
       (define/private (no-user-evaluation-message frame exit-code memory-killed?)
-        (let* ([new-limit (and custodian-limit (+ (* 1024 1024 32) custodian-limit))]
+        (let* ([new-limit (and custodian-limit (+ custodian-limit custodian-limit))]
                [ans (message-box/custom
                      (string-constant evaluation-terminated)
                      (string-append

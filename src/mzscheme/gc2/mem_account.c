@@ -214,7 +214,6 @@ inline static void clean_up_owner_table(NewGC *gc)
 inline static unsigned long custodian_usage(NewGC*gc, void *custodian)
 {
   OTEntry **owner_table = gc->owner_table;
-  const int table_size = gc->owner_table_size;
   unsigned long retval = 0;
   int i;
 
@@ -225,9 +224,13 @@ inline static unsigned long custodian_usage(NewGC*gc, void *custodian)
     custodian = gc->park[0]; 
     gc->park[0] = NULL;
   }
-  for(i = 1; i < table_size; i++)
-    if(owner_table[i] && custodian_member_owner_set(gc, custodian, i)) 
-      retval += owner_table[i]->memory_use;
+
+  i = custodian_to_owner_set(gc, (Scheme_Custodian *)custodian);
+  if (owner_table[i])
+    retval = owner_table[i]->memory_use;
+  else
+    retval = 0;
+
   return gcWORDS_TO_BYTES(retval);
 }
 
@@ -416,7 +419,7 @@ static void BTC_do_accounting(NewGC *gc)
   OTEntry **owner_table = gc->owner_table;
 
   if(gc->really_doing_accounting) {
-    Scheme_Custodian *cur = owner_table[current_owner(gc, NULL)]->originator;
+    Scheme_Custodian *cur = owner_table[current_owner(gc, NULL)]->originator, *last, *parent;
     Scheme_Custodian_Reference *box = cur->global_next;
     int i;
 
@@ -429,13 +432,14 @@ static void BTC_do_accounting(NewGC *gc)
     for(i = 1; i < table_size; i++)
       if(owner_table[i])
         owner_table[i]->memory_use = 0;
-
+    
     /* start with root: */
     while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
       cur = SCHEME_PTR1_VAL(cur->parent);
     }
 
     /* walk forward for the order we want (blame parents instead of children) */
+    last = cur;
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
 
@@ -447,7 +451,23 @@ static void BTC_do_accounting(NewGC *gc)
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
       propagate_accounting_marks(gc);
 
+      last = cur;
       box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+    }
+
+    /* walk backward folding totals int parent */
+    cur = last;
+    while (cur) {
+      int owner = custodian_to_owner_set(gc, cur);
+      
+      box = cur->parent; parent = box ? SCHEME_PTR1_VAL(box) : NULL;
+      if (parent) {
+        int powner = custodian_to_owner_set(gc, parent);
+
+        owner_table[powner]->memory_use += owner_table[owner]->memory_use;
+      }
+
+      box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
     }
 
     gc->in_unsafe_allocation_mode = 0;

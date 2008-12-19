@@ -25,11 +25,13 @@
          sandbox-make-logger
          sandbox-memory-limit
          sandbox-eval-limits
+         sandbox-eval-handlers
          call-with-trusted-sandbox-configuration
          evaluator-alive?
          kill-evaluator
          break-evaluator
          set-eval-limits
+         set-eval-handler
          put-input
          get-output
          get-error-output
@@ -40,6 +42,8 @@
          call-in-nested-thread*
          call-with-limits
          with-limits
+         call-with-custodian-shutdown
+         call-with-killing-threads
          exn:fail:sandbox-terminated?
          exn:fail:sandbox-terminated-reason
          exn:fail:resource?
@@ -73,7 +77,8 @@
                  [sandbox-make-code-inspector current-code-inspector]
                  [sandbox-make-logger         current-logger]
                  [sandbox-memory-limit        #f]
-                 [sandbox-eval-limits         #f])
+                 [sandbox-eval-limits         #f]
+                 [sandbox-eval-handlers       '(#f #f)])
     (thunk)))
 
 (define sandbox-namespace-specs
@@ -306,6 +311,17 @@
                      (set! p (current-preserved-thread-cell-values))))))))
           (lambda () (when p (current-preserved-thread-cell-values p))))))))
 
+;; useful wrapper around the above: run thunk, return one of:
+;; - (list values val ...)
+;; - (list raise exn)
+;; - 'kill or 'shut
+(define (nested thunk)
+  (call-in-nested-thread*
+   (lambda ()
+     (with-handlers ([void (lambda (e) (list raise e))])
+       (call-with-values thunk (lambda vs (list* values vs)))))
+   (lambda () 'kill) (lambda () 'shut)))
+
 (define (call-with-limits sec mb thunk)
   ;; note that when the thread is killed after using too much memory or time,
   ;; then all thread-local changes (parameters and thread cells) are discarded
@@ -319,33 +335,25 @@
            c (inexact->exact (round (* mb 1024 1024))) c)
           (values c (make-custodian-box c #t)))
         (values (current-custodian) #f)))
-    (parameterize ([current-custodian cust])
-      (call-in-nested-thread*
-       (lambda ()
-         ;; time limit
-         (when sec
-           (let ([t (current-thread)])
-             (thread (lambda ()
-                       (unless (sync/timeout sec t) (set! r 'time))
-                       (kill-thread t)))))
-         (set! r (with-handlers ([void (lambda (e) (list raise e))])
-                   (call-with-values thunk (lambda vs (list* values vs))))))
-       ;; The thread might be killed by the timer thread, so don't let
-       ;; call-in-nested-thread* kill it -- if user code did so, then just
-       ;; register the request and kill it below.  Do this for a
-       ;; custodian-shutdown to, just in case.
-       (lambda ()
-         (unless r (set! r 'kill))
-         ;; (kill-thread (current-thread))
-         )
-       (lambda ()
-         (unless r (set! r 'shut))
-         ;; (custodian-shutdown-all (current-custodian))
-         )))
-    (when (and cust-box (not (custodian-box-value cust-box)))
-      (if (memq r '(kill shut)) ; should always be 'shut
-        (set! r 'memory)
-        (format "cust died with: ~a" r))) ; throw internal error below
+    (define timeout? #f)
+    (define r
+      (parameterize ([current-custodian cust])
+        (if sec
+          (nested
+           (lambda ()
+             ;; time limit
+             (when sec
+               (let ([t (current-thread)])
+                 (thread (lambda ()
+                           (unless (sync/timeout sec t) (set! timeout? #t))
+                           (kill-thread t)))))
+             (thunk)))
+          (nested thunk))))
+    (cond [timeout? (set! r 'time)]
+          [(and cust-box (not (custodian-box-value cust-box)))
+           (if (memq r '(kill shut)) ; should always be 'shut
+             (set! r 'memory)
+             (format "cust died with: ~a" r))]) ; throw internal error below
     (case r
       [(kill) (kill-thread (current-thread))]
       [(shut) (custodian-shutdown-all (current-custodian))]
@@ -361,6 +369,30 @@
   (syntax-rules ()
     [(with-limits sec mb body ...)
      (call-with-limits sec mb (lambda () body ...))]))
+
+;; other resource utilities
+
+(define (call-with-custodian-shutdown thunk)
+  (let* ([cust (make-custodian (current-custodian))]
+         [r (parameterize ([current-custodian cust]) (nested thunk))])
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [else (apply (car r) (cdr r))])))
+
+(define (call-with-killing-threads thunk)
+  (let* ([cur (current-custodian)] [sub (make-custodian cur)])
+    (define r (parameterize ([current-custodian sub]) (nested thunk)))
+    (let kill-all ([x sub])
+      (cond [(custodian? x) (for-each kill-all (custodian-managed-list x cur))]
+            [(thread? x) (kill-thread x)]))
+    (case r
+      [(kill) (kill-thread (current-thread))]
+      [(shut) (custodian-shutdown-all (current-custodian))]
+      [else (apply (car r) (cdr r))])))
+
+(define sandbox-eval-handlers
+  (make-parameter (list #f call-with-custodian-shutdown)))
 
 ;; Execution ----------------------------------------------------------------
 
@@ -555,12 +587,14 @@
 (define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
 (define-evaluator-messenger (set-eval-limits secs mb) 'limits)
+(define-evaluator-messenger (set-eval-handler handler) 'handler)
 (define-evaluator-messenger (put-input . xs) 'input)
 (define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
 (define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
-(define-evaluator-messenger (call-in-sandbox-context thunk) 'thunk)
-
+(define (call-in-sandbox-context evaluator thunk [unrestricted? #f])
+  (evaluator (make-evaluator-message (if unrestricted? 'thunk* 'thunk)
+                                     (list thunk))))
 
 (define-struct (exn:fail:sandbox-terminated exn:fail) (reason) #:transparent)
 (define (make-terminated reason)
@@ -585,13 +619,18 @@
   (define output        #f)
   (define error-output  #f)
   (define limits        (sandbox-eval-limits))
+  (define eval-handler  (car (sandbox-eval-handlers))) ; 1st handler on startup
   (define user-thread   #t) ; set later to the thread
   (define user-done-evt #t) ; set in the same place
   (define terminated?   #f) ; set to an exception value when the sandbox dies
   (define (limit-thunk thunk)
     (let* ([sec (and limits (car limits))]
-           [mb  (and limits (cadr limits))])
-      (if (or sec mb) (lambda () (call-with-limits sec mb thunk)) thunk)))
+           [mb  (and limits (cadr limits))]
+           [thunk (if (or sec mb)
+                    (lambda () (call-with-limits sec mb thunk))
+                    thunk)]
+           [thunk (if eval-handler (lambda () (eval-handler thunk)) thunk)])
+      thunk))
   (define (terminated! reason)
     (unless terminated?
       (set! terminated?
@@ -632,6 +671,7 @@
        limit-thunk
        (and coverage? (lambda (es+get) (set! uncovered es+get))))
       (channel-put result-ch 'ok))
+    (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
     ;; finally wait for interaction expressions
     (let ([n 0])
       (let loop ()
@@ -641,11 +681,12 @@
           (with-handlers ([void (lambda (exn)
                                   (channel-put result-ch (cons 'exn exn)))])
             (define run
-              (limit-thunk (if (evaluator-message? expr)
-                             (lambda ()
-                               (apply (evaluator-message-msg expr)
-                                      (evaluator-message-args expr)))
-                             (lambda ()
+              (if (evaluator-message? expr)
+                (case (evaluator-message-msg expr)
+                  [(thunk) (limit-thunk (car (evaluator-message-args expr)))]
+                  [(thunk*) (car (evaluator-message-args expr))]
+                  [else (error 'sandbox "internal error (bad message)")])
+                (limit-thunk (lambda ()
                                (set! n (add1 n))
                                (eval* (input->code (list expr) 'eval n))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
@@ -682,7 +723,7 @@
             (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
             uncovered))]))
   (define (output-getter p)
-    (if (procedure? p) (user-eval (make-evaluator-message p '())) p))
+    (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
   (define input-putter
     (case-lambda
      [() (input-putter input)]
@@ -696,16 +737,16 @@
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
         (case msg
-          [(alive?) (and user-thread (not (thread-dead? user-thread)))]
-          [(kill)   (terminate+kill! 'evaluator-killed #f)]
-          [(break)  (user-break)]
-          [(limits) (set! limits (evaluator-message-args expr))]
-          [(input)  (apply input-putter (evaluator-message-args expr))]
-          [(output) (output-getter output)]
+          [(alive?)  (and user-thread (not (thread-dead? user-thread)))]
+          [(kill)    (terminate+kill! 'evaluator-killed #f)]
+          [(break)   (user-break)]
+          [(limits)  (set! limits (evaluator-message-args expr))]
+          [(handler) (set! eval-handler (car (evaluator-message-args expr)))]
+          [(input)   (apply input-putter (evaluator-message-args expr))]
+          [(output)  (output-getter output)]
           [(error-output) (output-getter error-output)]
           [(uncovered) (apply get-uncovered (evaluator-message-args expr))]
-          [(thunk)  (user-eval (make-evaluator-message
-                                (car (evaluator-message-args expr)) '()))]
+          [(thunk thunk*) (user-eval expr)]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
   (define (make-output what out set-out! allow-link?)
