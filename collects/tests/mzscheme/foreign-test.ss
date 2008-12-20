@@ -101,9 +101,15 @@
   (test* 14 'ho (_fun (_fun _int -> _int) _int -> (_fun _int -> _int))
          (lambda (p) ((p (ffi 'add1_byte_byte (_fun _byte -> _byte)) 3) 10)))
   ;; ---
+  (test* 4 'g2 _int (lambda (p) p))
+  ;; ---
   (set-ffi-obj! "g3" test-lib (_fun _int -> _int) add1)
   (t 4 'use_g3 (_fun _int -> _int) 3)
-  (test* 4 'g3 _pointer (lambda (p) ((ptr-ref p (_fun _int -> _int)) 3)))
+  (test* 4 'g3 _pointer (lambda (p) ((function-ptr p (_fun _int -> _int)) 3)))
+  ;; Equivalentlly, 'g3 is a static variable that holds a function pointer. By
+  ;; looking it up with _fpointer, we get its address, which then works
+  ;; with ptr-ref to extract the function.
+  (test* 7 'g3 _fpointer (lambda (p) ((ptr-ref p (_fun _int -> _int)) 6)))
   ;; ---
   (test ((lambda (x f) ((f (+ x 1)) (- x 1)))
          3 (lambda (x) (lambda (y) (+ y (* x x)))))

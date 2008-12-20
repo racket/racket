@@ -62,7 +62,7 @@
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
-          _bool _pointer _scheme _fpointer
+          _bool _pointer _scheme _fpointer function-ptr
           (unsafe memcpy) (unsafe memmove) (unsafe memset)
           (unsafe malloc-immobile-cell) (unsafe free-immobile-cell))
 
@@ -675,6 +675,13 @@
                       #,abi #f #,keep)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
+
+(define (function-ptr p fun-ctype)
+  (if (cpointer? p)
+      (if (eq? (ctype->layout fun-ctype) 'fpointer)
+          ((ctype-c->scheme fun-ctype) p)
+          (raise-type-error 'function-ptr "function ctype" fun-ctype))
+      (raise-type-error 'function-ptr "cpointer" p)))
 
 ;; ----------------------------------------------------------------------------
 ;; String types

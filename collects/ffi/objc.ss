@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/foreign (only-in '#%foreign ffi-call)
+(require scheme/foreign
          scheme/stxparam
          (for-syntax scheme/base))
 (unsafe!)
@@ -73,12 +73,13 @@
 (define (lookup-send types msgSends msgSend msgSend_fpret first-arg-type)
   ;; First type in `types' vector is the result type
   (or (hash-ref msgSends types #f)
-      (let ([m (ffi-call (if (memq (ctype->layout (vector-ref types 0))
-                                   '(float double double*))
-                             msgSend_fpret
-                             msgSend)
-                         (list* first-arg-type _SEL (cdr (vector->list types)))
-                         (vector-ref types 0))])
+      (let ([m (function-ptr (if (memq (ctype->layout (vector-ref types 0))
+                                       '(float double double*))
+                                 msgSend_fpret
+                                 msgSend)
+                             (_cprocedure
+                              (list* first-arg-type _SEL (cdr (vector->list types)))
+                              (vector-ref types 0)))])
         (hash-set! msgSends types m)
         m)))
 

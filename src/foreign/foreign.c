@@ -805,7 +805,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 #define FOREIGN_fpointer (27)
 /* Type Name:   fpointer
  * LibFfi type: ffi_type_pointer
- * C type:      -none-
+ * C type:      void*
  * Predicate:   -none-
  * Scheme->C:   -none-
  * S->C offset: 0
@@ -838,6 +838,7 @@ typedef union _ForeignAny {
   char* x_symbol;
   void* x_pointer;
   Scheme_Object* x_scheme;
+  void* x_fpointer;
 } ForeignAny;
 
 /* This is a tag that is used to identify user-made struct types. */
@@ -970,7 +971,7 @@ static int ctype_sizeof(Scheme_Object *type)
   case FOREIGN_symbol: return sizeof(char*);
   case FOREIGN_pointer: return sizeof(void*);
   case FOREIGN_scheme: return sizeof(Scheme_Object*);
-  case FOREIGN_fpointer: return 0;
+  case FOREIGN_fpointer: return sizeof(void*);
   /* for structs */
   default: return CTYPE_PRIMTYPE(type)->size;
   }
@@ -1219,8 +1220,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     else
       return _scheme_apply(CTYPE_USER_C2S(type), 1, (Scheme_Object**)(&res));
   } else if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
-    /* No need for the REF_CTYPE trick for pointers */
-    return (Scheme_Object*)W_OFFSET(src, delta);
+    return scheme_make_foreign_cpointer(*(void **)W_OFFSET(src, delta));
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void: return scheme_void;
     case FOREIGN_int8: return scheme_make_integer(REF_CTYPE(Tsint8));
@@ -1248,7 +1248,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_symbol: return scheme_intern_symbol(REF_CTYPE(char*));
     case FOREIGN_pointer: return scheme_make_foreign_cpointer(REF_CTYPE(void*));
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
-    case FOREIGN_fpointer: return scheme_void;
+    case FOREIGN_fpointer: return (REF_CTYPE(void*));
     case FOREIGN_struct:
            return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
     default: scheme_signal_error("corrupt foreign type: %V", type);
@@ -1280,7 +1280,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
     type = CTYPE_BASETYPE(type);
   }
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
-    /* No need for the SET_CTYPE trick for pointers */
+    /* No need for the SET_CTYPE trick for pointers. */
     if (SCHEME_FFICALLBACKP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_callback_struct*)val)->callback;
     else if (SCHEME_CPTRP(val))
@@ -2202,19 +2202,24 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
     scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
   if (NULL == (base = get_ctype_base(argv[1])))
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
-  else size = ctype_sizeof(base);
+  size = ctype_sizeof(base);
+
   if (CTYPE_PRIMLABEL(base) == FOREIGN_fpointer) {
-    if (argc > 2)
-      scheme_signal_error
-        (MYNAME": referencing fpointer with extra arguments");
-    else
+    if (SCHEME_FFIOBJP(argv[0])) {
+      /* The ffiobj pointer is the function pointer. */
       ptr = argv[0];
-  } else if (size < 0) {
+      delta = (long)&(((ffi_obj_struct*)0x0)->obj);
+    }
+  }
+
+  if (size < 0) {
     /* should not happen */
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   } else if (size == 0) {
     scheme_wrong_type(MYNAME, "non-void-C-type", 1, argc, argv);
-  } else if (argc > 3) {
+  }
+
+  if (argc > 3) {
     if (!SAME_OBJ(argv[2],abs_sym))
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
@@ -2223,6 +2228,8 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
   } else if (argc > 2) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+    if (!size)
+      scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
   }
   return C2SCHEME(argv[1], ptr, delta, 0);
@@ -2248,22 +2255,9 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
     scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
   if (NULL == (base = get_ctype_base(argv[1])))
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
-  else size = ctype_sizeof(base);
+  size = ctype_sizeof(base);
 
-  if (CTYPE_PRIMLABEL(base) == FOREIGN_fpointer) {
-    if (SCHEME_CPTRP(argv[0])) {
-      /* offset is ok */
-    } else if SCHEME_FFIOBJP(argv[0]) {
-      if (argc > 3) {
-        scheme_signal_error
-          (MYNAME": cannot set fpointer value with offset");
-      }
-      ptr = ((ffi_obj_struct*)(argv[0]))->obj;
-    } else {
-      scheme_signal_error
-        (MYNAME": bad lvalue (NULL or string)");
-    }
-  } else if (size < 0) {
+  if (size < 0) {
     /* should not happen */
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   } else if (size == 0) {
@@ -2279,6 +2273,8 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+    if (!size)
+      scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
   }
   SCHEME2C(argv[1], ptr, delta, val, NULL, NULL, 0);
@@ -2475,9 +2471,6 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */
   avalues = NULL;
   switch (CTYPE_PRIMLABEL(base)) {
-  case FOREIGN_fpointer: /* need to allocate a pointer */
-    p = scheme_make_foreign_cpointer(oval.x_pointer);
-    break;
   case FOREIGN_struct:
     memcpy(newp, p, CTYPE_PRIMTYPE(base)->size);
     free(p);
