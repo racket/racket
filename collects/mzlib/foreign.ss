@@ -1478,7 +1478,7 @@
           (identifiers? #'(slot ...)))
      (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...))]
     [(_ (_TYPE _SUPER) ([slot slot-type] ...))
-     (and (_-identifier? #'_TYPE) (identifiers? #'(slot ...)))
+     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
        (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...)))]))
 
