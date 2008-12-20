@@ -676,6 +676,8 @@ please adhere to these guidelines:
   (complete-word "Complete Word") ; the complete word menu item in the edit menu
   (no-completions "... no completions available") ; shows up in the completions menu when there are no completions (in italics)
   
+  (overwrite-mode "Overwrite Mode")
+  
  (preferences-info "Configure your preferences")
  (preferences-menu-item "Preferences...")
 
@@ -845,7 +847,7 @@ please adhere to these guidelines:
  (close-tab "Close Tab") ;; must not have any &s in it.
  (close-tab-amp "&Close Tab") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
   
- ;;; edit-menu
+ ;;; edit menu
  (split-menu-item-label "&Split")
  (collapse-menu-item-label "C&ollapse")
  
