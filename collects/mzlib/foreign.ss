@@ -677,9 +677,11 @@
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
 (define (function-ptr p fun-ctype)
-  (if (cpointer? p)
+  (if (or (cpointer? p) (procedure? p))
       (if (eq? (ctype->layout fun-ctype) 'fpointer)
-          ((ctype-c->scheme fun-ctype) p)
+           (if (procedure? p)
+               ((ctype-scheme->c fun-ctype) p)
+               ((ctype-c->scheme fun-ctype) p))
           (raise-type-error 'function-ptr "function ctype" fun-ctype))
       (raise-type-error 'function-ptr "cpointer" p)))
 

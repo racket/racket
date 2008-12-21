@@ -14,7 +14,7 @@
 
 @author["Sam Tobin-Hochstadt"]
 
-@index["typecheck"]
+@section-index["typechecking"]
 
 Typed Scheme is a Scheme-like language, with a type system that
 supports common Scheme programming idioms.  Explicit type declarations
