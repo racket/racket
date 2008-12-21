@@ -219,7 +219,7 @@ Like @scheme[index], but the word to index is determined by applying
 
 Creates a @scheme[part-index-decl] to be associated with the enclosing
 section by @scheme[decode]. The @scheme[word]s serve as both the keys
-and as the rendered forms of the keys.}
+and as the rendered forms of the keys within the index.}
 
 
 @defproc[(index-section [#:tag tag (or/c false/c string?) "doc-index"])
