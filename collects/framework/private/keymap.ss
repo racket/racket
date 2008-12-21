@@ -860,8 +860,9 @@
            
            [toggle-overwrite
             (λ (edit event)
-              (send edit set-overwrite-mode
-                    (not (send edit get-overwrite-mode))))]
+              (when (preferences:get 'framework:overwrite-mode-keybindings)
+                (send edit set-overwrite-mode
+                      (not (send edit get-overwrite-mode)))))]
            
            [down-into-embedded-editor
             (λ (text event)
@@ -1016,7 +1017,7 @@
           (add "forward-to-next-embedded-editor" forward-to-next-embedded-editor)
           (add "back-to-prev-embedded-editor" back-to-prev-embedded-editor)
           
-          (add "toggle-overwrite" toggle-overwrite)
+          (add "toggle-overwrite (when enabled in prefs)" toggle-overwrite)
           
           (add "exit" (λ (edit event)
                         (let ([frame (send edit get-frame)])
@@ -1241,8 +1242,8 @@
           
           (map "c:space" "toggle-anchor")
           
-          (map "insert" "toggle-overwrite")
-          (map-meta "o" "toggle-overwrite")
+          (map "insert" "toggle-overwrite (when enabled in prefs)")
+          (map-meta "o" "toggle-overwrite (when enabled in prefs)")
           
           (map-meta "g" "goto-line")
           

@@ -677,6 +677,7 @@ please adhere to these guidelines:
   (no-completions "... no completions available") ; shows up in the completions menu when there are no completions (in italics)
   
   (overwrite-mode "Overwrite Mode")
+  (enable-overwrite-mode-keybindings "Enable overwrite mode keybindings")
   
  (preferences-info "Configure your preferences")
  (preferences-menu-item "Preferences...")
