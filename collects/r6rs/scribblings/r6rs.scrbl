@@ -28,6 +28,10 @@ on the Algorithmic Language Scheme} defines a dialect of Scheme. We
 use @defterm{@|r6rs|} to refer to both the standard and the language
 defined by the standard.
 
+@margin-note{See @seclink[#:doc '(lib "scribblings/guide/guide.scrbl")
+             "dialects"] for general information about different
+             dialects of Scheme within PLT Scheme.}
+
 @|r6rs| defines both @defterm{libraries} and @defterm{top-level
 programs}. Both correspond to PLT Scheme @defterm{modules} (see
 @secref[#:doc guide-src "modules"]). That is, although @|r6rs| defines

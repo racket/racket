@@ -25,6 +25,10 @@ on the Algorithmic Language Scheme} defines a dialect of Scheme. We
 use @defterm{@|r5rs|} to refer to both the standard and the language
 defined by the standard.
 
+@margin-note{See @seclink[#:doc '(lib "scribblings/guide/guide.scrbl")
+             "dialects"] for general information about different
+             dialects of Scheme within PLT Scheme.}
+
 The default dialect of Scheme provided by @exec{mzscheme} and other
 PLT Scheme tools differs from @|r5rs| in many ways, but PLT Scheme
 includes tools and libraries for running @|r5rs| programs.

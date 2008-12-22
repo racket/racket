@@ -17,12 +17,12 @@ in other implementations of Scheme. At the same time, programs that do
 not start with @hash-lang[] (or another PLT Scheme module form) do not
 work with the default mode of most PLT Scheme tools.
 
-``PLT Scheme'' is not, however, the only dialect of Scheme supported
+``PLT Scheme'' is not, however, the only dialect of Scheme that is supported
 by PLT Scheme tools. On the contrary, PLT Scheme tools are designed to
 support multiple dialects of Scheme and even multiple languages, which
 allows the PLT Scheme tool suite to serve multiple communities. PLT
 Scheme also gives programmers and researchers the tools they need to
-create new and improved languages.
+explore and create new languages.
 
 @local-table-of-contents[]
 
