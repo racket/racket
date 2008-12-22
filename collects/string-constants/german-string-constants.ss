@@ -574,8 +574,10 @@
  (complete-word "Wort vervollständigen") ; the complete word menu item in the edit menu
  (no-completions "... keine Vervollständigungen verfügbar") ; shows up in the completions menu when there are no completions (in italics)
   
+ (overwrite-mode "Überschreib-Modus")
+ (enable-overwrite-mode-keybindings "Tastenbelegungen für Überschreib-Modus aktivieren")
 
- (preferences-info "Konfiguriere die Einstellungen")
+ (preferences-info "Die Einstellungen konfigurieren")
  (preferences-menu-item "Einstellungen...")
 
  (keybindings-info "Aktuelle Tastaturbelegung anzeigen")
@@ -741,7 +743,7 @@
 
  (close-tab-amp "Tab &schließen") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
  
- ;;; edit-menu
+ ;;; edit menu
  (split-menu-item-label "&Splitten")
  (collapse-menu-item-label "Einfalten")
  
@@ -763,7 +765,7 @@
  (force-quit-menu-item-help-string "Benutzt custodian-shutdown-all, um die Auswertung abzubrechen")
  (limit-memory-menu-item-label "Speicherverbrauch einschränken...")
  (limit-memory-msg-1 "Das Limit wird beim nächsten Programmstart aktiv")
- (limit-memory-msg-2 "und muß mindestens 1 Megabyte betragen.")
+ (limit-memory-msg-2 "und muss mindestens ein Megabyte betragen.")
  (limit-memory-unlimited "nicht einschränken")
  (limit-memory-limited "einschränken")
  (limit-memory-megabytes "Megabytes")
@@ -802,9 +804,9 @@
  (create "Erzeugen")
  (please-specify-a-filename "Bitte einen Dateinamen angeben.")
  (~a-must-end-with-~a
-  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Der Dateiname muß auf \".~a\" enden.")
+  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Der Dateiname muss auf \".~a\" enden.")
  (macosx-executables-must-end-with-app
-  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Unter Mac OS X muß der Dateiname auf \".app\" enden.")
+  "Der Dateiname auf \".~a\"\n\n  ~a\n\nist nicht zulässig. Unter Mac OS X muss der Dateiname auf \".app\" enden.")
  (warning-directory-will-be-replaced
   "WARNUNG: Das Verzeichnis:\n\n  ~a\n\nsoll überschrieben werden. Weitermachen?")
  
@@ -837,9 +839,9 @@
  (whole-part "Ganzzahliger Anteil")
  (numerator "Zähler")
  (denominator "Nenner")
- (insert-number/bad-whole-part "Der ganzzahlige Anteil muß eine ganze Zahl sein")
- (insert-number/bad-numerator "Der Zähler einer Zahl muß eine nichtnegative ganze Zahl sein")
- (insert-number/bad-denominator "Der Nenner einer Zahl muß eine nichtnegative ganze Zahl sein")
+ (insert-number/bad-whole-part "Der ganzzahlige Anteil muss eine ganze Zahl sein")
+ (insert-number/bad-numerator "Der Zähler einer Zahl muss eine nichtnegative ganze Zahl sein")
+ (insert-number/bad-denominator "Der Nenner einer Zahl muss eine nichtnegative ganze Zahl sein")
 
  (insert-fraction-menu-item-label "Bruch einfügen...")
 
