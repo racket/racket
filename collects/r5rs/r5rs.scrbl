@@ -161,7 +161,7 @@ containing the bindings of @schememodname[r5rs].  Procedure values are
 installed into the namespace using @scheme[namespace-require/copy], so
 that they can be redefined.
 
-The @scheme[scheme-null-environment] function returns a namespace
+The @scheme[null-environment] function returns a namespace
 containing the syntactic forms of @schememodname[r5rs], not including
 @scheme[#%module-begin] (which is not useful outside of a module).
 

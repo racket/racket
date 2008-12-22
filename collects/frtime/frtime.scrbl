@@ -14,7 +14,7 @@
 
 @author["Greg Cooper"]
 
-The @scheme[frtime.ss] language supports declarative construction of
+The @schememodname[frtime] language supports declarative construction of
 reactive systems in a syntax very similar to that of MzScheme.  To
 interact with FrTime, select FrTime from the "Choose Language" menu.
 You can also make FrTime the language for a module:

@@ -16,10 +16,6 @@
 
 @author["Jacob Matthews"]
 
-@PLaneT is PLT Scheme's centralized package repository. It consists of
-two parts: , which contains packages contributed by users, and
-the @PLaneT client, which is built in to PLT Scheme.
-
 The @PLaneT system is a method for automatically sharing code packages,
 both as libraries and as full applications, that gives every user of a
 @PLaneT client the illusion of having a local copy of every code
@@ -60,7 +56,7 @@ package (a library for interacting with the
 @link["http://www.postgresql.org/"]{PostgresQL} database), as of this
 writing you would copy and paste the line:
 
-@scheme[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 3)))]
+@schemeblock[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 3)))]
 
 into your program. This line requires the file @filepath{spgsql.ss} in package
 version 2.3 of the @filepath{spgsql.plt} package written by
@@ -72,7 +68,7 @@ installed. Second, it requires the module in file @filepath{spgsql.ss}
 from that package, making all of its exported bindings available for use.
 
 Unlike with most package-distribution systems, package downloading and
-installation in PLaneT is @italic{transparent} --- there's no need for
+installation in PLaneT is @emph{transparent}: there's no need for
 you to do anything special the first time you want to use a package,
 and there's no need for you to even know whether or not a particular
 package is installed on your computer or the computers where your code
@@ -80,10 +76,10 @@ will be deployed.
 
 @subsection{Shorthand Syntax}
 
-As of PLT Scheme version 4.0, the code snippet in section
-@secref{finding-a-package} can also be written using a new shorter syntax:
+As of PLT Scheme version 4.0, the code snippet above can also be
+written using a new shorter syntax:
 
-@scheme[(require (planet schematics/spgsql:2:3/spgsql))]
+@schemeblock[(require (planet schematics/spgsql:2:3/spgsql))]
 
 The two forms behave identically. In the abbreviated syntax, however,
 it is illegal to write the trailing @scheme{.ss} suffix on the file
@@ -108,11 +104,11 @@ number that encodes backwards-compatibility information.}
 
 The most basic planet require line, which is what is used in the form
 
-@scheme[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 3)))]
+@schemeblock[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 3)))]
 
 in longhand notation, or 
 
-@scheme[(require (planet schematics/spgsql:2:3/spgsql))]
+@schemeblock[(require (planet schematics/spgsql:2:3/spgsql))]
 
 in shorthand notation, should be read ``Require from PLaneT
 @italic{any} release of Schematics' @filepath{spgsql.plt} package that
@@ -121,11 +117,11 @@ package version used is determined by @seclink["search-order"]{the
 PLaneT search order}.) To signal this explicitly, it is possible to
 write
 
-@scheme[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 (+ 3))))]
+@schemeblock[(require (planet "spgsql.ss" ("schematics" "spgsql.plt" 2 (+ 3))))]
 
 or
 
-@scheme[(require (planet schematics/spgsql:2:>=3/spgsql))]
+@schemeblock[(require (planet schematics/spgsql:2:>=3/spgsql))]
 
 both of which mean the same thing as the first pair of require lines.
 
@@ -148,11 +144,12 @@ in third-party libraries was already working around. In those cases,
 it may help to make use of the ``upper bound'' form of the planet
 require, in longhand form:
 
-@scheme[(require (planet "reduction-semantics.ss" ("robby" "redex.plt" 4 (- 3))))]
+@schemeblock[(require (planet "reduction-semantics.ss" 
+                              ("robby" "redex.plt" 4 (- 3))))]
 
 and using shorthand notation:
 
-@scheme[(require (planet robby/redex:4:<=3/reduction-semantics))]
+@schemeblock[(require (planet robby/redex:4:<=3/reduction-semantics))]
 
 In this require line, any version of the package @filepath{redex.plt}
 from package version 4.0 to package version 4.3 will match the require
@@ -163,11 +160,11 @@ which package is actually loaded).
 It is also possible to specify both an upper and a lower bound, using
 the planet require's ``range'' form:
 
-@scheme[(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 (9 10))))]
+@schemeblock[(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 (9 10))))]
 
 or
 
-@scheme[(require (planet schematics/schemeunit:2:9-10/test))]
+@schemeblock[(require (planet schematics/schemeunit:2:9-10/test))]
 
 This form matches any package in the specified range (inclusive on
 both ends), in this example the specifications match either package
@@ -180,11 +177,11 @@ a package as a special case (choosing the upper and lower bounds to be
 equal), but this is a common enough case that it has special support
 with the ``exact-match'' form:
 
-@scheme[(require (planet "unzip.ss" ("dherman" "zip.plt" 2 (= 1))))]
+@schemeblock[(require (planet "unzip.ss" ("dherman" "zip.plt" 2 (= 1))))]
 
 or
 
-@scheme[(require (planet dherman/zip:2:=1/unzip))]
+@schemeblock[(require (planet dherman/zip:2:=1/unzip))]
 
 match only the exact package version 2.1 of the @filepath{zip.plt} package.
 
@@ -384,25 +381,39 @@ within the PLaneT archive named by <plt-file>, to the standard output port.
 
 This command does not unpack or install the named .plt file.
 
+@section[#:tag "hash-lang-planet"]{The @schememodname[planet] Language}
+
+@defmodulelang[planet]
+
+When used with @hash-lang[], @schememodname[planet] must be followed
+by a short-form PLaneT path. The path is used in the same way that
+@hash-lang[] uses plain identifiers: @schemeidfont{/lang/reader} is
+added to the given path to determine a module that supplies a module
+reader.
+
+The @schememodname[planet] module (as opposed to the reader used with
+@hash-lang[]) implements the @exec{planet} command-line tool.
+
 @section{Utility Libraries}
 
 The planet collection provides configuration and utilities for using PLaneT. 
 
-@subsection{config.ss: Client Configuration}
-
-The config.ss library provides several parameters useful for configuring how
-PLaneT works. 
-
-Note that while these parameters can be useful to modify
-programmatically, PLaneT code runs at module-expansion time and so
-most user programs cannot set them until PLaneT has already
-run. Therefore to meaningfully change these settings it is best to
-manually edit the config.ss file.
+@subsection{Client Configuration}
 
 @defmodule[planet/config]
 
+The @schememodname[planet/config] library provides several parameters
+useful for configuring how PLaneT works.
+
+Note that while these parameters can be useful to modify
+programmatically, PLaneT code runs at module-expansion time, so
+most user programs cannot set them until PLaneT has already
+run. Therefore, to meaningfully change these settings, it is best to
+manually edit the config.ss file.
+
 @defparam[PLANET-DIR dir path-string?]{
-The root PLaneT directory. If the environment variable PLTPLANETDIR is
+The root PLaneT directory. If the environment variable 
+@indexed-envvar{PLTPLANETDIR} is
 set, default is its value; otherwise the default is the directory in
 which @filepath{config.ss} is found.}
 
@@ -455,33 +466,42 @@ The port on the server the client should connect to if
 @scheme[USE-HTTP-DOWNLOADS?] is @scheme[#f]. The default value for this parameter is
 @scheme[270].}
 
-@subsection[#:tag "util.ss"]{util.ss: Utilities}
+@subsection[#:tag "util.ss"]{Utilities}
 
-The @filepath{util.ss} library supports examination of the pieces of
+@defmodule[planet/util]
+
+The @schememodname[planet/util] library supports examination of the pieces of
 PLaneT. It is meant primarily to support debugging and to allow easier
 development of higher-level package-management tools. The
 functionality exposed by @seclink["cmdline"]{the @exec{planet} command-line tool} is
 also available programmatically through this library.
 
-@defmodule[planet/util]
-
 @defproc[(download/install-pkg [owner string?]
 			       [pkg string?]
 			       [maj natural-number/c]
 			       [min natural-number/c])
-         (or/c pkg? false/c)]{
+         (or/c pkg? #f)]{
 Downloads and installs the package specifed by the given owner name,
 package name, major and minor version number. Returns false if no such
 package is available; otherwise returns a package structure for the
 installed package.}
 
 @defparam[current-cache-contents contents
-          ((string? ((string? ((natural-number/c (natural-number/c ...)) ...)) ...)) ...)]{
+          (listof
+           (list/c string? 
+                   (listof 
+                    (list/c string? 
+                            (cons/c natural-number/c 
+                                    (listof natural-number/c))))))]{
 Holds a listing of all package names and versions installed in the
 local cache.}
 
 @defproc[(current-linkage)
-         ((path-string? (string? (string?) natural-number/c natural-number/c) ...) ...)]{
+         (listof (list/c path-string? 
+                         (list/c string?
+                                 (list/c string?) 
+                                 natural-number/c
+                                 natural-number/c)))]{
 Returns the current linkage table.
 
 The linkage table is an association between file locations (encoded as path strings)
@@ -489,7 +509,8 @@ and concrete planet package versions. If a require line in the associated file r
 this table is consulted to determine a particular concrete package to satisfy the request.}
 
 @defproc[(make-planet-archive [directory path-string?]
-                              [output-file (or/c path? path-string?) (string-append (path->string name) ".plt")]) 
+                              [output-file (or/c path? path-string?) 
+                                           (string-append (path->string name) ".plt")]) 
          path-string?]{
 Makes a .plt archive file suitable for PLaneT whose contents are all
 files in the given directory and returns that file's name.  If the
