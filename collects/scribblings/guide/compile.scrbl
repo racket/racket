@@ -14,7 +14,7 @@ So far, we have talked about three main PLT Scheme executables:
        running PLT Scheme programs (and that can be used as a
        development environment in interactive mode);}
 
- @item{@exec{mred}, which is like @scheme{mzscheme}, but for GUI
+ @item{@exec{mred}, which is like @exec{mzscheme}, but for GUI
        applications.}
 
 ]

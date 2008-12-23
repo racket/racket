@@ -461,7 +461,15 @@ inline int scheme_get_unsigned_realint_val(Scheme_Object *o, unsigned int *v)
 #endif
 #endif
 
-unsigned short *ucs4_string_to_utf16_pointer(Scheme_Object *ucs)
+#define SCHEME_FALSEP_OR_CHAR_STRINGP(o) (SCHEME_FALSEP(o) || SCHEME_CHAR_STRINGP(o))
+
+static mzchar *ucs4_string_or_null_to_ucs4_pointer(Scheme_Object *ucs)
+{
+  if (SCHEME_FALSEP(ucs)) return NULL;
+  return SCHEME_CHAR_STR_VAL(ucs);
+}
+
+static unsigned short *ucs4_string_to_utf16_pointer(Scheme_Object *ucs)
 {
   long ulen;
   unsigned short *res;
@@ -471,11 +479,18 @@ unsigned short *ucs4_string_to_utf16_pointer(Scheme_Object *ucs)
   return res;
 }
 
+static unsigned short *ucs4_string_or_null_to_utf16_pointer(Scheme_Object *ucs)
+{
+  if (SCHEME_FALSEP(ucs)) return NULL;
+  return ucs4_string_to_utf16_pointer(ucs);
+}
+
 Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 {
   long ulen;
   mzchar *res;
   int end;
+  if (!utf) return scheme_false;
   for (end=0; utf[end] != 0; end++) { /**/ }
   res = scheme_utf16_to_ucs4(utf, 0, end, NULL, -1, &ulen, 0);
   return scheme_make_sized_char_string(res, ulen, 0);
@@ -696,7 +711,17 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Scheme:   scheme_make_char_string_without_copying(<C>)
  */
 
-#define FOREIGN_string_utf_16 (19)
+#define FOREIGN_string_ucs_4_null (19)
+/* Type Name:   string/ucs-4/null (string_ucs_4_null)
+ * LibFfi type: ffi_type_pointer
+ * C type:      mzchar*
+ * Predicate:   SCHEME_FALSEP_OR_CHAR_STRINGP(<Scheme>)
+ * Scheme->C:   ucs4_string_or_null_to_ucs4_pointer(<Scheme>)
+ * S->C offset: 0
+ * C->Scheme:   scheme_make_char_string_without_copying(<C>)
+ */
+
+#define FOREIGN_string_utf_16 (20)
 /* Type Name:   string/utf-16 (string_utf_16)
  * LibFfi type: ffi_type_pointer
  * C type:      unsigned short*
@@ -706,10 +731,20 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Scheme:   utf16_pointer_to_ucs4_string(<C>)
  */
 
+#define FOREIGN_string_utf_16_null (21)
+/* Type Name:   string/utf-16/null (string_utf_16_null)
+ * LibFfi type: ffi_type_pointer
+ * C type:      unsigned short*
+ * Predicate:   SCHEME_FALSEP_OR_CHAR_STRINGP(<Scheme>)
+ * Scheme->C:   ucs4_string_or_null_to_utf16_pointer(<Scheme>)
+ * S->C offset: 0
+ * C->Scheme:   utf16_pointer_to_ucs4_string(<C>)
+ */
+
 /* Byte strings -- not copying C strings, #f is NULL.
  * (note: these are not like char* which is just a pointer) */
 
-#define FOREIGN_bytes (20)
+#define FOREIGN_bytes (22)
 /* Type Name:   bytes
  * LibFfi type: ffi_type_pointer
  * C type:      char*
@@ -719,7 +754,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Scheme:   (<C>==NULL)?scheme_false:scheme_make_byte_string_without_copying(<C>)
  */
 
-#define FOREIGN_path (21)
+#define FOREIGN_path (23)
 /* Type Name:   path
  * LibFfi type: ffi_type_pointer
  * C type:      char*
@@ -729,7 +764,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
  * C->Scheme:   (<C>==NULL)?scheme_false:scheme_make_path_without_copying(<C>)
  */
 
-#define FOREIGN_symbol (22)
+#define FOREIGN_symbol (24)
 /* Type Name:   symbol
  * LibFfi type: ffi_type_pointer
  * C type:      char*
@@ -742,7 +777,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* This is for any C pointer: #f is NULL, cpointer values as well as
  * ffi-obj and string values pass their pointer.  When used as a return
  * value, either a cpointer object or #f is returned. */
-#define FOREIGN_pointer (23)
+#define FOREIGN_pointer (25)
 /* Type Name:   pointer
  * LibFfi type: ffi_type_pointer
  * C type:      void*
@@ -754,7 +789,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 
 /* This is used for passing and Scheme_Object* value as is.  Useful for
  * functions that know about Scheme_Object*s, like MzScheme's. */
-#define FOREIGN_scheme (24)
+#define FOREIGN_scheme (26)
 /* Type Name:   scheme
  * LibFfi type: ffi_type_pointer
  * C type:      Scheme_Object*
@@ -767,10 +802,10 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* Special type, not actually used for anything except to mark values
  * that are treated like pointers but not referenced.  Used for
  * creating function types. */
-#define FOREIGN_fpointer (25)
+#define FOREIGN_fpointer (27)
 /* Type Name:   fpointer
  * LibFfi type: ffi_type_pointer
- * C type:      -none-
+ * C type:      void*
  * Predicate:   -none-
  * Scheme->C:   -none-
  * S->C offset: 0
@@ -795,16 +830,19 @@ typedef union _ForeignAny {
   double x_doubleS;
   int x_bool;
   mzchar* x_string_ucs_4;
+  mzchar* x_string_ucs_4_null;
   unsigned short* x_string_utf_16;
+  unsigned short* x_string_utf_16_null;
   char* x_bytes;
   char* x_path;
   char* x_symbol;
   void* x_pointer;
   Scheme_Object* x_scheme;
+  void* x_fpointer;
 } ForeignAny;
 
 /* This is a tag that is used to identify user-made struct types. */
-#define FOREIGN_struct (26)
+#define FOREIGN_struct (28)
 
 /*****************************************************************************/
 /* Type objects */
@@ -925,13 +963,15 @@ static int ctype_sizeof(Scheme_Object *type)
   case FOREIGN_doubleS: return sizeof(double);
   case FOREIGN_bool: return sizeof(int);
   case FOREIGN_string_ucs_4: return sizeof(mzchar*);
+  case FOREIGN_string_ucs_4_null: return sizeof(mzchar*);
   case FOREIGN_string_utf_16: return sizeof(unsigned short*);
+  case FOREIGN_string_utf_16_null: return sizeof(unsigned short*);
   case FOREIGN_bytes: return sizeof(char*);
   case FOREIGN_path: return sizeof(char*);
   case FOREIGN_symbol: return sizeof(char*);
   case FOREIGN_pointer: return sizeof(void*);
   case FOREIGN_scheme: return sizeof(Scheme_Object*);
-  case FOREIGN_fpointer: return 0;
+  case FOREIGN_fpointer: return sizeof(void*);
   /* for structs */
   default: return CTYPE_PRIMTYPE(type)->size;
   }
@@ -1180,8 +1220,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     else
       return _scheme_apply(CTYPE_USER_C2S(type), 1, (Scheme_Object**)(&res));
   } else if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
-    /* No need for the REF_CTYPE trick for pointers */
-    return (Scheme_Object*)W_OFFSET(src, delta);
+    return scheme_make_foreign_cpointer(*(void **)W_OFFSET(src, delta));
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void: return scheme_void;
     case FOREIGN_int8: return scheme_make_integer(REF_CTYPE(Tsint8));
@@ -1201,13 +1240,15 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     case FOREIGN_doubleS: return scheme_make_double(REF_CTYPE(double));
     case FOREIGN_bool: return (REF_CTYPE(int)?scheme_true:scheme_false);
     case FOREIGN_string_ucs_4: return scheme_make_char_string_without_copying(REF_CTYPE(mzchar*));
+    case FOREIGN_string_ucs_4_null: return scheme_make_char_string_without_copying(REF_CTYPE(mzchar*));
     case FOREIGN_string_utf_16: return utf16_pointer_to_ucs4_string(REF_CTYPE(unsigned short*));
+    case FOREIGN_string_utf_16_null: return utf16_pointer_to_ucs4_string(REF_CTYPE(unsigned short*));
     case FOREIGN_bytes: return (REF_CTYPE(char*)==NULL)?scheme_false:scheme_make_byte_string_without_copying(REF_CTYPE(char*));
     case FOREIGN_path: return (REF_CTYPE(char*)==NULL)?scheme_false:scheme_make_path_without_copying(REF_CTYPE(char*));
     case FOREIGN_symbol: return scheme_intern_symbol(REF_CTYPE(char*));
     case FOREIGN_pointer: return scheme_make_foreign_cpointer(REF_CTYPE(void*));
     case FOREIGN_scheme: return REF_CTYPE(Scheme_Object*);
-    case FOREIGN_fpointer: return scheme_void;
+    case FOREIGN_fpointer: return (REF_CTYPE(void*));
     case FOREIGN_struct:
            return scheme_make_foreign_cpointer(W_OFFSET(src, delta));
     default: scheme_signal_error("corrupt foreign type: %V", type);
@@ -1239,7 +1280,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
     type = CTYPE_BASETYPE(type);
   }
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
-    /* No need for the SET_CTYPE trick for pointers */
+    /* No need for the SET_CTYPE trick for pointers. */
     if (SCHEME_FFICALLBACKP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_callback_struct*)val)->callback;
     else if (SCHEME_CPTRP(val))
@@ -1465,6 +1506,27 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         scheme_wrong_type("Scheme->C","string/ucs-4",0,1,&(val));
         return NULL; /* hush the compiler */
       }
+    case FOREIGN_string_ucs_4_null:
+#ifdef SCHEME_BIG_ENDIAN
+      if (sizeof(mzchar*)<sizeof(int) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(mzchar*));
+      }
+#endif
+      if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
+        mzchar* tmp;
+        tmp = (mzchar*)(ucs4_string_or_null_to_ucs4_pointer(val));
+        if (basetype_p == NULL ||tmp == NULL) {
+          (((mzchar**)W_OFFSET(dst,delta))[0]) = tmp;
+          return NULL;
+        } else {
+          *basetype_p = FOREIGN_string_ucs_4_null;
+          return tmp;
+        }
+      } else {
+        scheme_wrong_type("Scheme->C","string/ucs-4/null",0,1,&(val));
+        return NULL; /* hush the compiler */
+      }
     case FOREIGN_string_utf_16:
 #ifdef SCHEME_BIG_ENDIAN
       if (sizeof(unsigned short*)<sizeof(int) && ret_loc) {
@@ -1484,6 +1546,27 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         }
       } else {
         scheme_wrong_type("Scheme->C","string/utf-16",0,1,&(val));
+        return NULL; /* hush the compiler */
+      }
+    case FOREIGN_string_utf_16_null:
+#ifdef SCHEME_BIG_ENDIAN
+      if (sizeof(unsigned short*)<sizeof(int) && ret_loc) {
+        ((int*)W_OFFSET(dst,delta))[0] = 0;
+        delta += (sizeof(int)-sizeof(unsigned short*));
+      }
+#endif
+      if (SCHEME_FALSEP_OR_CHAR_STRINGP(val)) {
+        unsigned short* tmp;
+        tmp = (unsigned short*)(ucs4_string_or_null_to_utf16_pointer(val));
+        if (basetype_p == NULL ||tmp == NULL) {
+          (((unsigned short**)W_OFFSET(dst,delta))[0]) = tmp;
+          return NULL;
+        } else {
+          *basetype_p = FOREIGN_string_utf_16_null;
+          return tmp;
+        }
+      } else {
+        scheme_wrong_type("Scheme->C","string/utf-16/null",0,1,&(val));
         return NULL; /* hush the compiler */
       }
     case FOREIGN_bytes:
@@ -2119,19 +2202,24 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
     scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
   if (NULL == (base = get_ctype_base(argv[1])))
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
-  else size = ctype_sizeof(base);
+  size = ctype_sizeof(base);
+
   if (CTYPE_PRIMLABEL(base) == FOREIGN_fpointer) {
-    if (argc > 2)
-      scheme_signal_error
-        (MYNAME": referencing fpointer with extra arguments");
-    else
+    if (SCHEME_FFIOBJP(argv[0])) {
+      /* The ffiobj pointer is the function pointer. */
       ptr = argv[0];
-  } else if (size < 0) {
+      delta = (long)&(((ffi_obj_struct*)0x0)->obj);
+    }
+  }
+
+  if (size < 0) {
     /* should not happen */
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   } else if (size == 0) {
     scheme_wrong_type(MYNAME, "non-void-C-type", 1, argc, argv);
-  } else if (argc > 3) {
+  }
+
+  if (argc > 3) {
     if (!SAME_OBJ(argv[2],abs_sym))
       scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
@@ -2140,6 +2228,8 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
   } else if (argc > 2) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+    if (!size)
+      scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
   }
   return C2SCHEME(argv[1], ptr, delta, 0);
@@ -2165,33 +2255,26 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
     scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
   if (NULL == (base = get_ctype_base(argv[1])))
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
-  else size = ctype_sizeof(base);
-  if (CTYPE_PRIMLABEL(base) == FOREIGN_fpointer) {
-    if (argc > 3) {
-      scheme_signal_error
-        (MYNAME": setting fpointer value with extra arguments");
-    } else if (SCHEME_CPTRP(argv[0])) {
-      ptr = SCHEME_CPTR_VAL(argv[0]);
-    } else if SCHEME_FFIOBJP(argv[0]) {
-      ptr = ((ffi_obj_struct*)(argv[0]))->obj;
-    } else {
-      scheme_signal_error
-        (MYNAME": bad lvalue (NULL or string)");
-    }
-  } else if (size < 0) {
+  size = ctype_sizeof(base);
+
+  if (size < 0) {
     /* should not happen */
     scheme_wrong_type(MYNAME, "C-type", 1, argc, argv);
   } else if (size == 0) {
     scheme_wrong_type(MYNAME, "non-void-C-type", 1, argc, argv);
-  } else if (argc > 4) {
+  }
+
+  if (argc > 4) {
     if (!SAME_OBJ(argv[2],abs_sym))
-      scheme_wrong_type(MYNAME, "abs-flag", 2, argc, argv);
+      scheme_wrong_type(MYNAME, "'abs", 2, argc, argv);
     if (!SCHEME_INTP(argv[3]))
       scheme_wrong_type(MYNAME, "integer", 3, argc, argv);
     delta += SCHEME_INT_VAL(argv[3]);
   } else if (argc > 3) {
     if (!SCHEME_INTP(argv[2]))
       scheme_wrong_type(MYNAME, "integer", 2, argc, argv);
+    if (!size)
+      scheme_signal_error(MYNAME": cannot multiply fpointer type by offset");
     delta += (size * SCHEME_INT_VAL(argv[2]));
   }
   SCHEME2C(argv[1], ptr, delta, val, NULL, NULL, 0);
@@ -2388,9 +2471,6 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */
   avalues = NULL;
   switch (CTYPE_PRIMLABEL(base)) {
-  case FOREIGN_fpointer: /* need to allocate a pointer */
-    p = scheme_make_foreign_cpointer(oval.x_pointer);
-    break;
   case FOREIGN_struct:
     memcpy(newp, p, CTYPE_PRIMTYPE(base)->size);
     free(p);
@@ -2897,6 +2977,13 @@ void scheme_init_foreign(Scheme_Env *env)
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_ucs_4);
   scheme_add_global("_string/ucs-4", (Scheme_Object*)t, menv);
+  s = scheme_intern_symbol("string/ucs-4/null");
+  t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
+  t->so.type = ctype_tag;
+  t->basetype = (s);
+  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
+  t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_ucs_4_null);
+  scheme_add_global("_string/ucs-4/null", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("string/utf-16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;
@@ -2904,6 +2991,13 @@ void scheme_init_foreign(Scheme_Env *env)
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_utf_16);
   scheme_add_global("_string/utf-16", (Scheme_Object*)t, menv);
+  s = scheme_intern_symbol("string/utf-16/null");
+  t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
+  t->so.type = ctype_tag;
+  t->basetype = (s);
+  t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
+  t->c_to_scheme = ((Scheme_Object*)FOREIGN_string_utf_16_null);
+  scheme_add_global("_string/utf-16/null", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("bytes");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;

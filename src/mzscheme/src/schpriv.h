@@ -2225,7 +2225,7 @@ int scheme_resolve_toplevel_pos(Resolve_Info *info);
 int scheme_resolve_is_toplevel_available(Resolve_Info *info);
 int scheme_resolve_quote_syntax_offset(int i, Resolve_Info *info);
 int scheme_resolve_quote_syntax_pos(Resolve_Info *info);
-Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr);
+Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready);
 Scheme_Object *scheme_resolve_invent_toplevel(Resolve_Info *info);
 Scheme_Object *scheme_resolve_invented_toplevel_to_defn(Resolve_Info *info, Scheme_Object *tl);
 Scheme_Object *scheme_shift_toplevel(Scheme_Object *expr, int delta);

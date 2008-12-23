@@ -146,6 +146,9 @@
              (pair? (cdr b))
              (string? (cadr b))
              (null? (cddr b))))
+      
+      ; permissive? : parameter bool
+      (define permissive? (make-parameter #f))
 
       ;; xml->xexpr : Content -> Xexpr
       (define (xml->xexpr x)
@@ -169,6 +172,7 @@
               [(entity? x) (entity-text x)]
               [(or (comment? x) (pi? x) (cdata? x)) x]
               [(document? x) (error 'xml->xexpr "Expected content, given ~e\nUse document-element to extract the content." x)]
+              [(permissive?) x]
               [else (error 'xml->xexpr "Expected content, given ~e" x)]))))
 
       ;; attribute->srep : Attribute -> Attribute-srep

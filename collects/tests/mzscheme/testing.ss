@@ -79,11 +79,12 @@ transcript.
 (define (load-in-sandbox file)
   (define-syntax-rule (S id) (dynamic-require 'scheme/sandbox 'id))
   (let ([e ((S call-with-trusted-sandbox-configuration)
-            (parameterize ([(S sandbox-input) current-input-port]
-                           [(S sandbox-output) current-output-port]
-                           [(S sandbox-error-output) current-error-port]
-                           [(S sandbox-memory-limit) 100]) ; 100mb per box
-              ((S make-evaluator) '(begin) #:requires (list 'scheme))))])
+            (lambda ()
+              (parameterize ([(S sandbox-input) current-input-port]
+                             [(S sandbox-output) current-output-port]
+                             [(S sandbox-error-output) current-error-port]
+                             [(S sandbox-memory-limit) 100]) ; 100mb per box
+                ((S make-evaluator) '(begin) #:requires (list 'scheme)))))])
     (e `(load-relative "testing.ss"))
     (e `(define real-error-port (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))

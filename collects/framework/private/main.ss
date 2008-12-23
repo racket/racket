@@ -20,6 +20,8 @@
 
 (application-preferences-handler (λ () (preferences:show-dialog)))
 
+(preferences:set-default 'framework:overwrite-mode-keybindings #f boolean?)
+
 (preferences:set-default 'framework:ask-about-paste-normalization #t boolean?)
 (preferences:set-default 'framework:do-paste-normalization #t boolean?)
 

@@ -3082,7 +3082,7 @@ module browser threading seems wrong.
         
         (define/override (edit-menu:between-find-and-preferences edit-menu)
           (super edit-menu:between-find-and-preferences edit-menu)
-          (new menu-item%
+          (new menu:can-restore-menu-item%
                [label (string-constant complete-word)]
                [shortcut #\/]
                [parent edit-menu]
@@ -3095,6 +3095,21 @@ module browser threading seems wrong.
                [callback (λ (x y)
                            (send (get-edit-target-object) auto-complete))])
           (add-modes-submenu edit-menu))
+        
+        (define/override (edit-menu:between-select-all-and-find edit-menu)
+          (new menu:can-restore-checkable-menu-item%
+               [label (string-constant overwrite-mode)]
+               [parent edit-menu]
+               [demand-callback
+                (λ (mi)
+                  (let ([target (get-edit-target-object)])
+                    (send mi enable (get-edit-target-object))
+                    (send mi check (and target (send target get-overwrite-mode)))))]
+               [callback (λ (x y)
+                           (let ([target (get-edit-target-object)])
+                             (send target set-overwrite-mode
+                                   (not (send target get-overwrite-mode)))))])
+          (super edit-menu:between-select-all-and-find edit-menu))
         
         ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))
         (define capability-menu-items (make-hasheq))

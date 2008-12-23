@@ -14,6 +14,8 @@
 
 @author["Sam Tobin-Hochstadt"]
 
+@section-index["typechecking"]
+
 Typed Scheme is a Scheme-like language, with a type system that
 supports common Scheme programming idioms.  Explicit type declarations
 are required --- that is, there is no type inference.  The language

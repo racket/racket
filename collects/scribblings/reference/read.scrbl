@@ -27,8 +27,8 @@ See @secref["reader"] for information on the default reader in
 @scheme[read-syntax] mode.}
 
 @defproc[(read/recursive [in input-port? (current-input-port)]
-                         [start (or/c character? #f) #f]
-                         [readtable readtable? (current-readtable)]
+                         [start (or/c char? #f) #f]
+                         [readtable (or/c readtable? #f) (current-readtable)]
                          [graph? any/c #f])
           any]{
 
@@ -75,8 +75,8 @@ See @secref["readtables"] for an extended example that uses
 
 @defproc[(read-syntax/recursive [source-name any/c (object-name in)]
                                 [in input-port? (current-input-port)]
-                                [start (or/c character? #f) #f]
-                                [readtable readtable? (current-readtable)]
+                                [start (or/c char? #f) #f]
+                                [readtable (or/c readtable? #f) (current-readtable)]
                                 [graph? any/c #f])
           any]{
 
@@ -315,8 +315,8 @@ Like @scheme[read-syntax], but for Honu mode (see
 @secref["parse-honu"]).}
 
 @defproc[(read-honu/recursive [in input-port? (current-input-port)]
-                              [start (or/c character? #f) #f]
-                              [readtable readtable? (current-readtable)]
+                              [start (or/c char? #f) #f]
+                              [readtable (or/c readtable? #f) (current-readtable)]
                               [graph? any/c #f])
           any]{
 
@@ -325,8 +325,8 @@ Like @scheme[read/recursive], but for Honu mode (see
 
 @defproc[(read-honu-syntax/recursive [source-name any/c (object-name in)]
                                      [in input-port? (current-input-port)]
-                                     [start (or/c character? #f) #f]
-                                     [readtable readtable? (current-readtable)]
+                                     [start (or/c char? #f) #f]
+                                     [readtable (or/c readtable? #f) (current-readtable)]
                                      [graph? any/c #f])
           any]{
 

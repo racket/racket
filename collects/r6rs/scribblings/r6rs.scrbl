@@ -9,6 +9,7 @@
                      rnrs/conditions-6
                      rnrs/io/simple-6
                      rnrs/r5rs-6
+                     r6rs
                      (only-in scheme/base
                               lib
                               current-library-collection-paths
@@ -26,6 +27,10 @@ The @link["../r6rs-std/index.html"]{The Revised@superscript{6} Report
 on the Algorithmic Language Scheme} defines a dialect of Scheme. We
 use @defterm{@|r6rs|} to refer to both the standard and the language
 defined by the standard.
+
+@margin-note{See @seclink[#:doc '(lib "scribblings/guide/guide.scrbl")
+             "dialects"] for general information about different
+             dialects of Scheme within PLT Scheme.}
 
 @|r6rs| defines both @defterm{libraries} and @defterm{top-level
 programs}. Both correspond to PLT Scheme @defterm{modules} (see
@@ -164,6 +169,41 @@ reference @scheme[(duck)] is treated like @scheme[(duck main)] for
 finding the library, as explained in @secref["libpaths"]. Multiple
 paths can be provided with multiple uses of @DPFlag{path}; the paths
 are searched in order, and before the installation's collections.
+
+@; ----------------------------------------
+
+@section[#:tag "r6rs-mod"]{@|r6rs| Module Language}
+
+@defmodulelang[r6rs]
+
+The @schememodname[r6rs] language is usually used in the form
+@schememetafont{#!}@schememodname[r6rs], which is equivalent to
+@scheme[#, @hash-lang[] #, @schememodname[r6rs]] and is also valid
+@|r6rs| syntax.
+
+The @schememodname[r6rs] module language provides only a
+@schemeidfont{#%module-begin} binding, which is used to process the
+entire module body (see @scheme[module]). It allows the body of a
+module to use the syntax of either a @|r6rs| library or a @|r6rs|
+top-level program.
+
+@defform*[#:literals (library import export)
+          [(#%module-begin 
+            (library library-name 
+              (export export-spec ...)
+              (import import-spec ...)
+              library-body ...))
+           (#%module-begin
+            (import import-spec ...)
+            program-body ...)]]{
+
+An @schememodname[r6rs] module that contains a single @scheme[library]
+form defines an @|r6rs| library, while a module body that starts with
+an @scheme[import] form defined an @|r6rs| top-level program.
+
+The @scheme[library], @scheme[export], and @scheme[import] identifiers
+are not exported by the @schememodname[r6rs] library; they are
+recognized through equivalence to unbound identifiers.}
 
 @; ----------------------------------------
 

@@ -778,6 +778,17 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
     }
   }
 
+  if (vtype == scheme_compiled_toplevel_type) {
+    note_match(1, vals, warn_info);
+    if ((vals == 1) || (vals < 0)) {
+      if (SCHEME_TOPLEVEL_FLAGS(o) 
+          & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY))
+        return 1;
+      else
+        return 0;
+    }
+  }
+
   if ((vtype == scheme_syntax_type)
       && (SCHEME_PINT_VAL(o) == CASE_LAMBDA_EXPD)) {
     note_match(1, vals, warn_info);
@@ -1906,7 +1917,7 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
   case scheme_compiled_let_void_type:
     return scheme_resolve_lets(expr, info);
   case scheme_compiled_toplevel_type:
-    return scheme_resolve_toplevel(info, expr);
+    return scheme_resolve_toplevel(info, expr, 1);
   case scheme_compiled_quote_syntax_type:
     {
       Scheme_Quote_Syntax *qs;
