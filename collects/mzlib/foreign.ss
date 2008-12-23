@@ -62,7 +62,7 @@
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
-          _bool _pointer _scheme _fpointer
+          _bool _pointer _scheme _fpointer function-ptr
           (unsafe memcpy) (unsafe memmove) (unsafe memset)
           (unsafe malloc-immobile-cell) (unsafe free-immobile-cell))
 
@@ -676,12 +676,22 @@
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
+(define (function-ptr p fun-ctype)
+  (if (or (cpointer? p) (procedure? p))
+      (if (eq? (ctype->layout fun-ctype) 'fpointer)
+           (if (procedure? p)
+               ((ctype-scheme->c fun-ctype) p)
+               ((ctype-c->scheme fun-ctype) p))
+          (raise-type-error 'function-ptr "function ctype" fun-ctype))
+      (raise-type-error 'function-ptr "cpointer" p)))
+
 ;; ----------------------------------------------------------------------------
 ;; String types
 
 ;; The internal _string type uses the native ucs-4 encoding, also providing a
-;; utf-16 type (note: these do not use #f as NULL).
-(provide _string/ucs-4 _string/utf-16)
+;; utf-16 type (note: the non-/null variants do not use #f as NULL).
+(provide _string/ucs-4 _string/utf-16
+         _string/ucs-4/null _string/utf-16/null)
 
 ;; 8-bit string encodings, #f is NULL
 (define ((false-or-op op) x) (and x (op x)))
@@ -1477,7 +1487,7 @@
           (identifiers? #'(slot ...)))
      (make-syntax #'_TYPE #f #'(slot ...) #'(slot-type ...))]
     [(_ (_TYPE _SUPER) ([slot slot-type] ...))
-     (and (_-identifier? #'_TYPE) (identifiers? #'(slot ...)))
+     (and (_-identifier? #'_TYPE stx) (identifiers? #'(slot ...)))
      (with-syntax ([super (datum->syntax #'_TYPE 'super #'_TYPE)])
        (make-syntax #'_TYPE #t #'(super slot ...) #'(_SUPER slot-type ...)))]))
 

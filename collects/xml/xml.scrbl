@@ -235,9 +235,16 @@ like @scheme[display-xml].}
 
 @section{XML and X-expression Conversions}
 
+@defboolparam[permissive? v]{
+ If this is set to non-false, then @scheme[xml->xexpr] will allow
+ non-XML objects, such as other structs, in the content of the converted XML
+ and leave them in place in the resulting ``@tech{X-expression}''.
+}
+                             
 @defproc[(xml->xexpr [content content?]) xexpr?]{
 
-Converts document content into an @tech{X-expression}.}
+Converts document content into an @tech{X-expression}, using
+@scheme[permissive?] to determine if foreign objects are allowed.}
 
 @defproc[(xexpr->xml [xexpr xexpr?]) content?]{
 

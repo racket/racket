@@ -41,6 +41,7 @@
       xexpr->string
       xexpr-drop-empty-attributes
       xexpr?
+      permissive?
       correct-xexpr?
       validate-xexpr
       (struct exn:invalid-xexpr (code))

@@ -53,7 +53,7 @@
          (let* ([source-name (get-source-name editor)]
                 [port (open-input-text-editor editor 0 'end (xml-snip-filter editor) source-name)]
                 [xml (read-xml port)]
-                [xexpr (xml->xexpr (document-element xml))]
+                [xexpr (parameterize ([permissive? #t]) (xml->xexpr (document-element xml)))]
                 [clean-xexpr (if eliminate-whitespace-in-empty-tags?
                                  (eliminate-whitespace-in-empty-tags xexpr)
                                  xexpr)]

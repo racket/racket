@@ -3690,7 +3690,7 @@ int scheme_resolve_quote_syntax_pos(Resolve_Info *info)
   return info->prefix->num_toplevels;
 }
 
-Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr)
+Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr, int keep_ready)
 {
   int skip;
 
@@ -3699,7 +3699,10 @@ Scheme_Object *scheme_resolve_toplevel(Resolve_Info *info, Scheme_Object *expr)
   return make_toplevel(skip + SCHEME_TOPLEVEL_DEPTH(expr), /* depth is 0 (normal) or 1 (exp-time) */
 		       SCHEME_TOPLEVEL_POS(expr),
 		       1,
-		       SCHEME_TOPLEVEL_FLAGS(expr) & SCHEME_TOPLEVEL_CONST);
+		       SCHEME_TOPLEVEL_FLAGS(expr) & (SCHEME_TOPLEVEL_CONST
+                                                      | (keep_ready 
+                                                         ? SCHEME_TOPLEVEL_READY
+                                                         : 0)));
 }
 
 Scheme_Object *scheme_shift_toplevel(Scheme_Object *expr, int delta)

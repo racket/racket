@@ -13,7 +13,10 @@ Depending on how you look at it, @bold{PLT Scheme} is
 @itemize{
 
  @item{a @defterm{programming language}---a descendant of Scheme, which
-       is a dialect of Lisp;}
+       is a dialect of Lisp;
+
+       @margin-note{See @secref["dialects"] for more information on
+       other dialects of Scheme and how they relate to PLT Scheme.}}
 
  @item{a @defterm{family} of programming languages---variants of
        Scheme, and more; or}
@@ -53,6 +56,9 @@ in DrScheme's top text area, and then click the @onscreen{Run} button
 that's above the text area. DrScheme then understands that you mean to
 work in the normal variant of Scheme (as opposed to the smaller
 @schememodname[scheme/base], or many other possibilities).
+
+@margin-note{@secref["more-hash-lang"] describes some of the other
+             possibilities.}
 
 If you've used DrScheme before with something other than a program
 that starts @hash-lang[], DrScheme will remember the last language

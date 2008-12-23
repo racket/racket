@@ -189,7 +189,13 @@ strings for a hierarchy, such as @scheme['("strings" "plain")] for a
 the strings are ``cleaned'' using @scheme[clean-up-index-strings]. The
 strings (without clean-up) also serve as the text to render in the
 index. The @tech{decode}d @scheme[pre-content] is the text to appear
-inline as the index target.}
+inline as the index target.
+
+Use @scheme[index] when an index entry should point to a specific word
+or phrase within the typeset document (i.e., the
+@scheme[pre-content]). Use @scheme[section-index], instead, to create
+an index entry that leads to a section, instead of a specific word or
+phrase within the section.}
 
 
 @defproc[(index* [words (listof string?)]
@@ -213,7 +219,7 @@ Like @scheme[index], but the word to index is determined by applying
 
 Creates a @scheme[part-index-decl] to be associated with the enclosing
 section by @scheme[decode]. The @scheme[word]s serve as both the keys
-and as the rendered forms of the keys.}
+and as the rendered forms of the keys within the index.}
 
 
 @defproc[(index-section [#:tag tag (or/c false/c string?) "doc-index"])

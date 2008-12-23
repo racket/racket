@@ -403,13 +403,25 @@
 (define vector-map
   (make-mapper "vector" for/list map in-vector vector-length vector->list list->vector))
 
+(define (add-irritants msg irritants)
+  (if (null? irritants)
+      msg
+      (apply
+       string-append
+       msg
+       "\n irritants:"
+       (map (lambda (s)
+              (format "\n  ~e" s))
+            irritants))))
 
 (define (r6rs:error who msg . irritants)
   (raise
    (make-exn:fail:r6rs
-    (if who
-        (format "~a: ~a" who msg)
-        msg)
+    (add-irritants
+     (if who
+         (format "~a: ~a" who msg)
+         msg)
+     irritants)
     (current-continuation-marks)
     msg
     who
@@ -418,9 +430,11 @@
 (define (assertion-violation who msg . irritants)
   (raise
    (make-exn:fail:contract:r6rs
-    (if who
-        (format "~a: ~a" who msg)
-        msg)
+    (add-irritants
+     (if who
+         (format "~a: ~a" who msg)
+         msg)
+     irritants)
     (current-continuation-marks)
     msg
     who

@@ -12,8 +12,14 @@ completely boxed in and thus unable reach the border, you win. If the
 cat does reach the border, you lose.
 
 The game was inspired by this one the one at
-@link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game Design}
-and has essentailly the same rules.
+@link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game
+Design} and has essentially the same rules. It also inspired the final
+project for the introductory programming course at the University of
+Chicago in the fall of 2008.
+
+@;{
+
+This is commented out, waiting for the literate programming stuff.
 
 This game is written in the
 @link["http://www.htdp.org/"]{How to Design Programs}
@@ -54,3 +60,4 @@ the fall of 2008, as below.
      #:mode 'text))
 
 @m[]
+}

@@ -172,9 +172,9 @@
              
 (define (decompile-expr expr globs stack closed)
   (match expr
-    [(struct toplevel (depth pos const? mutated?))
+    [(struct toplevel (depth pos const? ready?))
      (let ([id (list-ref/protect globs pos 'toplevel)])
-       (if const?
+       (if (or const? ready?)
            id
            `(#%checked ,id)))]
     [(struct topsyntax (depth pos midpt))

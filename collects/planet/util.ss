@@ -299,6 +299,44 @@
 ;; or the scribble renderer gets very confused
 (define SCRIBBLE-DOCUMENT-DIR "planet-docs/")
 
+;; scribble-entry? : Any -> Boolean
+;; Recognizes valid list entries in info.ss's scribblings field.
+(define scribble-entry?
+  (match-lambda
+    [(or (list (? string?))
+         (list (? string?) (? scribble-flags?))
+         (list (? string?) (? scribble-flags?) (? scribble-category?))
+         (list (? string?) (? scribble-flags?) (? scribble-category?) (? string?)))
+     #t]
+    [_ #f]))
+
+;; scribble-flags? : Any -> Boolean
+;; Recognizes a list of flags from an info.ss scribblings entry.
+(define scribble-flags?
+  (match-lambda
+    [(list (? symbol?) ...) #t]
+    [_ #f]))
+
+;; scribble-category : Any -> Boolean
+;; Recognizes a category descriptor from an info.ss scribblings entry.
+(define scribble-category?
+  (match-lambda
+    [(or (list (? symbol?))
+         (list (? symbol?) (? real?))) #t]
+    [_ #f]))
+
+;; scribble-entry-file : ScribbleEntry -> String
+;; Produces the filename of an info.ss scribblings entry.
+(define scribble-entry-file
+  (match-lambda [(list file _ ...) file]))
+
+;; scribble-entry-flags : ScribbleEntry -> (Listof Symbol)
+;; Produces the list of flags from an info.ss scribblings entry.
+(define scribble-entry-flags
+  (match-lambda
+    [(list _) null]
+    [(list _ flags _ ...) flags]))
+
 ;; make-planet-archive: path<directory> [path<file>] -> path<file>
 ;; Makes a .plt archive file suitable for PLaneT whose contents are
 ;; all files in the given directory and returns that file's name.
@@ -327,7 +365,7 @@
                      (λ (bad) (set! warnings (cons bad warnings)))
                      (λ (err) (set! critical-errors (cons err critical-errors))))])
                (or real-info (λ (x [y (λ () (error 'info.ss (format "undefined field: ~a" x)))]) (y)))))
-           
+
            (let ([scribble-files (info.ss 'scribblings (λ () '()))])
              
              (define (outdir file-str)
@@ -346,21 +384,22 @@
                    (error (format "malformed scribblings field; expected (listof (list string (listof symbol))), received ~e" 
                                   scribble-files)))
                  (for ([entry scribble-files])
-                   (match entry
-                     [`(,(? string? filename) (,(? symbol? flags) ...))
-                      (unless (and (relative-path? filename) 
-                                   (subpath? abs-dir filename)
-                                   (bytes=? (filename-extension filename) #"scrbl"))
-                        (error "illegal scribblings file ~a (must be a file with extension .scrbl in the package directory or a subdirectory"))
-                      (unless (file-exists? (build-path abs-dir filename))
-                        (error (format "scribblings file ~a not found" filename)))
-                      (printf "Building: ~a\n" filename)
-                      (let* ([name.scrbl (file-name-from-path filename)]
-                             [name       (path-replace-suffix name.scrbl #"")])
-                        (render (build-path filename)
-                                (build-path SCRIBBLE-DOCUMENT-DIR name)
-                                (memq 'multi-page flags)))]
-                     [_ (error "malformed scribblings entry")])))))
+                   (unless (scribble-entry? entry)
+                     (error "malformed scribblings entry"))
+                   (let* ([filename (scribble-entry-file entry)]
+                          [flags (scribble-entry-flags entry)])
+                     (unless (and (relative-path? filename) 
+                                  (subpath? abs-dir filename)
+                                  (bytes=? (filename-extension filename) #"scrbl"))
+                       (error "illegal scribblings file ~a (must be a file with extension .scrbl in the package directory or a subdirectory"))
+                     (unless (file-exists? (build-path abs-dir filename))
+                       (error (format "scribblings file ~a not found" filename)))
+                     (printf "Building: ~a\n" filename)
+                     (let* ([name.scrbl (file-name-from-path filename)]
+                            [name       (path-replace-suffix name.scrbl #"")])
+                       (render (build-path filename)
+                               (build-path SCRIBBLE-DOCUMENT-DIR name)
+                               (memq 'multi-page flags))))))))
            
            (unless 
                (or (null? critical-errors)
@@ -591,12 +630,7 @@
                       [scribblings
                        (lambda (s) 
                          (and (list? s) 
-                              (andmap
-                               (lambda (item)
-                                 (match item
-                                   [`(,(? string?) (,(? symbol?) ...)) #t]
-                                   [_ #f]))
-                               s)))
+                              (andmap scribble-entry? s)))
                        (void)
                        (unless scribblings
                          (warn "Package does not specify a scribblings field. Without a scribblings field, the package will not have browsable online documentation."))]

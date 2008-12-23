@@ -447,6 +447,10 @@ the state transitions / contracts are:
                                'framework:do-paste-normalization
                                (string-constant normalize-string-preference)
                                values values)
+                   (make-check editor-panel
+                               'framework:overwrite-mode-keybindings
+                               (string-constant enable-overwrite-mode-keybindings)
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

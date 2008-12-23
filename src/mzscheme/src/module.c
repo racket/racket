@@ -4803,7 +4803,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
-  int cont;
+  int cont, next_pos_ready = -1;
 
   old_context = info->context;
   info->context = (Scheme_Object *)m;
@@ -4887,14 +4887,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	    /* Test for ISCONST to indicate no set!: */
 	    if (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED)) {
 	      pos = SCHEME_TOPLEVEL_POS(a);
-	
-	      if (!ready_table) {
-		ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
-		if (!consts)
-		  consts = scheme_make_hash_table(SCHEME_hash_ptr);
-		scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
-	      }
-	      scheme_hash_set(ready_table, scheme_make_integer(pos), scheme_true);
+
+              next_pos_ready = pos;
 	    }
 	  }
 	}
@@ -4965,6 +4959,17 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
       consts = NULL;
       re_consts = NULL;
       start_simltaneous = i_m + 1;
+    }
+
+    if (next_pos_ready > -1) {
+      if (!ready_table) {
+        ready_table = scheme_make_hash_table(SCHEME_hash_ptr);
+        if (!consts)
+          consts = scheme_make_hash_table(SCHEME_hash_ptr);
+        scheme_hash_set(consts, scheme_false, (Scheme_Object *)ready_table);
+      }
+      scheme_hash_set(ready_table, scheme_make_integer(next_pos_ready), scheme_true);
+      next_pos_ready = -1;
     }
   }
 
