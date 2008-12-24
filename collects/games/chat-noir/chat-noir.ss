@@ -12,7 +12,7 @@
 ;; data definitions
 
 ;; a world is:
-;;  (make-world board posn state number)
+;;  (make-world board posn state number mouse)
 (define-struct world (board cat state size))
 
 ;; a state is either:
@@ -51,8 +51,8 @@
 ;                                                                          
 
 
-;; world->image : world -> image
-(define (world->image w)
+;; render-world : world -> image
+(define (render-world w)
   (chop-whiskers
    (overlay (board->image (world-board w) 
                           (world-size w)
@@ -66,7 +66,7 @@
              (- (cell-center-y (world-cat w)))))))
   
 (check-expect
- (world->image
+ (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
               'playing
@@ -80,7 +80,7 @@
                 (- (cell-center-y (make-posn 0 1))))))
 
 (check-expect
- (world->image
+ (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
               'cat-won
@@ -94,7 +94,7 @@
                 (- (cell-center-y (make-posn 0 1))))))
 
 (check-expect
- (world->image
+ (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
               'cat-lost
@@ -106,6 +106,34 @@
   (move-pinhole sad-cat 
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
+
+(check-expect
+ (render-world
+  (make-world (list
+               (make-cell (make-posn 0 1) true)
+               (make-cell (make-posn 1 0) true)
+               (make-cell (make-posn 1 1) false)
+               (make-cell (make-posn 1 2) true)
+               (make-cell (make-posn 2 0) true)
+               (make-cell (make-posn 2 1) true)
+               (make-cell (make-posn 2 2) true))
+              (make-posn 1 1)
+              'cat-lost
+              3))
+ (overlay
+  (board->image (list
+                 (make-cell (make-posn 0 1) true)
+                 (make-cell (make-posn 1 0) true)
+                 (make-cell (make-posn 1 1) false)
+                 (make-cell (make-posn 1 2) true)
+                 (make-cell (make-posn 2 0) true)
+                 (make-cell (make-posn 2 1) true)
+                 (make-cell (make-posn 2 2) true))
+                3
+                (lambda (x) false))
+  (move-pinhole sad-cat 
+                (- (cell-center-x (make-posn 1 1)))
+                (- (cell-center-y (make-posn 1 1))))))
 
 ;; chop-whiskers : image -> image
 ;; crops the image so that anything above or to the left of the pinhole is gone
@@ -123,7 +151,7 @@
 
 (check-expect
  (pinhole-x
-  (world->image 
+  (render-world 
    (make-world
     (empty-board 3)
     (make-posn 0 0)
@@ -132,7 +160,7 @@
  0)
 (check-expect
  (pinhole-x
-  (world->image
+  (render-world
    (make-world
     (empty-board 3)
     (make-posn 0 1)
@@ -549,7 +577,7 @@
               '∞)
 
 
-;; on-cats-path? : world -> posn -> boolean
+;; p : world -> posn -> boolean
 ;; returns true when the posn is on the shortest path 
 ;; from the cat to the edge of the board, in the given world
 (define (on-cats-path? w)
@@ -557,16 +585,34 @@
           (define cat-distance-map (build-bfs-table w (world-cat w)))
           (define cat-distance (lookup-in-table edge-distance-map 
                                                 (world-cat w)))]
-    (lambda (p)
-      (equal? (+/f (lookup-in-table cat-distance-map p)
-                   (lookup-in-table edge-distance-map p))
-              cat-distance))))
+    (cond
+      [(equal? cat-distance '∞)
+       (lambda (p) false)]
+      [else
+       (lambda (p)
+         (equal? (+/f (lookup-in-table cat-distance-map p)
+                      (lookup-in-table edge-distance-map p))
+                 cat-distance))])))
 
 (check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1) 'playing 5))
                (make-posn 1 0))
               true)
 (check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1) 'playing 5))
                (make-posn 2 1))
+              false)
+(check-expect ((on-cats-path?
+                (make-world (list
+                             (make-cell (make-posn 0 1) true)
+                             (make-cell (make-posn 1 0) true)
+                             (make-cell (make-posn 1 1) false)
+                             (make-cell (make-posn 1 2) true)
+                             (make-cell (make-posn 2 0) true)
+                             (make-cell (make-posn 2 1) true)
+                             (make-cell (make-posn 2 2) true))
+                            (make-posn 1 1)
+                            'cat-lost
+                            3))
+               (make-posn 0 1))
               false)
 
 ;; neighbors : world (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
@@ -1239,5 +1285,5 @@
                (world-height board-size)
                1 
                initial-world)
-     (on-redraw world->image)
+     (on-redraw render-world)
      (on-mouse-event clack))))
