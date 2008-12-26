@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title{Troubleshooting}
+@title{Troubleshooting and Tips}
 
 @section{What special considerations are there for security with the Web Server?}
 
@@ -89,3 +89,21 @@ We can now start the server with:
 
 The Web Server will start on port 443 (which can be overridden with the @exec{-p} option) using the
 @filepath{private-key.pem} and @filepath{server-cert.pem} we've created.
+
+@section{How do I limit the number of requests serviced at once by the Web Server?}
+
+There is no built-in option for this, but you can easily accomplish it if you assemble your own dispatcher
+by wrapping it in @scheme[call-with-semaphore]:
+@schemeblock[
+(define (make-limit-dispatcher num inner)
+ (let ([sem (make-semaphore num)])
+   (lambda (conn req)
+     (call-with-semaphore sem
+       (lambda () (inner conn req))))))
+]
+
+Once this function is available, rather than providing @scheme[james-gordon] as your dispatcher, you provide:
+@scheme[(make-limit-dispatch 50 james-gordon)] (if you only want 50 concurrent requests.) One interesting
+application of this pattern is to have a limit on certain kinds of requests. For example, you could have a
+limit of 50 servlet requests, but no limit on filesystem requests.
+
