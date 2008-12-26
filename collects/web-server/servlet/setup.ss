@@ -112,22 +112,47 @@
       (define s (load/use-compiled a-path))
       (cond
         [(void? s)
-         (let* ([module-name `(file ,(path->string a-path))]
-                [version (dynamic-require module-name 'interface-version)])
+         (let* ([path-string (path->string a-path)]
+                [path-sym (string->symbol path-string)]
+                [neg-blame 'web-server]
+                [pos-blame path-sym]
+                [module-name `(file ,path-string)]
+                [mk-loc
+                 (lambda (name)
+                   (list (make-srcloc a-path #f #f #f #f)
+                         name))]
+                [version 
+                 (contract (symbols 'v1 'v2 'stateless) 
+                           (dynamic-require module-name 'interface-version)
+                           pos-blame neg-blame
+                           (mk-loc "interface-version"))])
            (case version
              [(v1)
-              (let ([timeout (dynamic-require module-name 'timeout)]
-                    [start (dynamic-require module-name 'start)])
+              (let ([timeout (contract number?
+                                       (dynamic-require module-name 'timeout)
+                                       pos-blame neg-blame
+                                       (mk-loc "timeout"))]
+                    [start (contract (request? . -> . response?)
+                                     (dynamic-require module-name 'start)
+                                     pos-blame neg-blame
+                                     (mk-loc "start"))])
                 (make-v1.servlet (directory-part a-path) timeout start))]
              [(v2)
-              (let ([start (dynamic-require module-name 'start)]
-                    [manager (dynamic-require module-name 'manager)])
+              (let ([start (contract (request? . -> . response?)
+                                     (dynamic-require module-name 'start)
+                                     pos-blame neg-blame
+                                     (mk-loc "start"))]
+                    [manager (contract manager?
+                                       (dynamic-require module-name 'manager)
+                                       pos-blame neg-blame
+                                       (mk-loc "manager"))])
                 (make-v2.servlet (directory-part a-path) manager start))]
              [(stateless)
-              (let ([start (dynamic-require module-name 'start)])
-                (make-stateless.servlet (directory-part a-path) start))]
-             [else
-              (error 'path->servlet "unknown servlet version ~e, must be 'v1, 'v2, or 'stateless" version)]))]
+              (let ([start (contract (request? . -> . response?)
+                                     (dynamic-require module-name 'start)
+                                     pos-blame neg-blame
+                                     (mk-loc "start"))])
+                (make-stateless.servlet (directory-part a-path) start))]))]
         [(response? s)
          (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                           (v0.response->v1.lambda s a-path))]
