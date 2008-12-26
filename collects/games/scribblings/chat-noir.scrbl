@@ -11,6 +11,12 @@ that space, and the cat responds by taking a step. If the cat is
 completely boxed in and thus unable reach the border, you win. If the
 cat does reach the border, you lose.
 
+To get some insight into the cat's behavior, hold down the ``h''
+key. It will show you the cells that are on the cat's shortest path to
+the edge, assuming that the cell underneath the mouse has been
+blocked, so you can experiment to see how the shortest paths change
+by moving your mouse around.
+
 The game was inspired by this one the one at
 @link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game
 Design} and has essentially the same rules. It also inspired the final
