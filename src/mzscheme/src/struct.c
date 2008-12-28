@@ -3301,19 +3301,19 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
     Scheme_Object *parent = argv[1];
     if (!SCHEME_FALSEP(parent) && !((Scheme_Struct_Type *)parent)->prefab_key) {
       bad = ("make-struct-type: generative supertype disallowed"
-             " for non-generative structure type with name: ");
+             " for non-generative structure type with name: %S");
     } else if (!SCHEME_NULLP(props)) {
       bad = ("make-struct-type: properties disallowed"
-             " for non-generative structure type with name: ");
+             " for non-generative structure type with name: %S");
     } else if (proc_attr) {
       bad = ("make-struct-type: procedure specification disallowed"
-             " for non-generative structure type with name: ");
+             " for non-generative structure type with name: %S");
     } else if (guard) {
       bad = ("make-struct-type: guard disallowed"
-             " for non-generative structure type with name: ");
+             " for non-generative structure type with name: %S");
     }
     if (bad) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT, bad, inspector);
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT, bad, argv[0]);
     }
   }
 
