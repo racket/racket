@@ -29,8 +29,8 @@
              define-serializable-class define-serializable-class*
              class?
              mixin
-             interface interface?
-             object% object? externalizable<%> printable<%>
+             interface interface* interface?
+             object% object? externalizable<%> printable<%> equal<%>
              object=?
              new make-object instantiate
              send send/apply send* class-field-accessor class-field-mutator with-method
@@ -2008,7 +2008,7 @@
 		   [method-names (append (reverse public-names) super-method-ids)]
 		   [field-names (append public-field-names super-field-ids)]
 		   [super-interfaces (cons (class-self-interface super) interfaces)]
-		   [i (interface-make name super-interfaces #f method-names #f)]
+		   [i (interface-make name super-interfaces #f method-names #f null)]
 		   [methods (if no-method-changes?
 				(class-methods super)
 				(make-vector method-width))]
@@ -2058,21 +2058,14 @@
 				 (values struct:prim-object prim-object-make prim-object? #f #f)
 				 ;; Normal struct creation:
 				 (make-struct-type obj-name
-						   (class-struct:object super)
+						   (add-properties (class-struct:object super) interfaces)
 						   0 ;; No init fields
 						   ;; Fields for new slots:
 						   num-fields undefined
 						   ;; Map object property to class:
 						   (append
 						    (list (cons prop:object c))
-                                                    (if (interface-extension? i printable<%>)
-                                                        (list (cons prop:custom-write
-                                                                    (lambda (obj port write?)
-                                                                      (if write?
-                                                                          (send obj custom-write port)
-                                                                          (send obj custom-display port)))))
-                                                        null)
-						    (if deserialize-id
+                                                    (if deserialize-id
 							(list
 							 (cons prop:serializable
 							       ;; Serialization:
@@ -2329,6 +2322,30 @@
 			       (for-class name))))
 		syms)))
 
+  (define (add-properties struct-type intfs)
+    (if (ormap (lambda (i)
+                 (pair? (interface-properties i)))
+               intfs)
+        (let ([ht (make-hash)])
+          ;; Hash on gensym to avoid providing the same property multiple
+          ;; times when it originated from a single interface.
+          (for-each (lambda (i)
+                      (for-each (lambda (p)
+                                  (hash-set! ht (vector-ref p 0) p))
+                                (interface-properties i)))
+                    intfs)
+          ;; Create a new structure type to house the properties, so
+          ;; that they can't see any fields directly via guards:
+          (let-values ([(struct: make- ? -ref -set!)
+                        (make-struct-type 'props struct-type 0 0 #f 
+                                          (hash-map ht (lambda (k v)
+                                                         (cons (vector-ref v 1)
+                                                               (vector-ref v 2))))
+                                          #f)])
+            struct:))
+        ;; No properties to add:
+        struct-type))
+
   (define-values (prop:object object? object-ref) (make-struct-type-property 'object))
 
   ;;--------------------------------------------------------------------
@@ -2337,10 +2354,10 @@
   
   ;; >> Simplistic implementation for now <<
 
-  (define-syntax _interface
-    (lambda (stx)
-      (syntax-case stx ()
-	[(_ (interface-expr ...) var ...)
+  (define-for-syntax do-interface
+    (lambda (stx m-stx)
+      (syntax-case m-stx ()
+	[((interface-expr ...) ([prop prop-val] ...) var ...)
 	 (let ([vars (syntax->list (syntax (var ...)))]
 	       [name (syntax-local-infer-name stx)])
 	   (for-each
@@ -2364,7 +2381,33 @@
 	      (compose-interface
 	       'name
 	       (list interface-expr ...)
-	       `(var ...)))))])))
+	       `(var ...)
+               (list prop ...)
+               (list prop-val ...)))))])))
+
+  (define-syntax (_interface stx)
+    (syntax-case stx ()
+      [(_ (interface-expr ...) var ...)
+       (do-interface stx #'((interface-expr ...) () var ...))]))
+
+  (define-syntax (interface* stx)
+    (syntax-case stx ()
+      [(_ (interface-expr ...) ([prop prop-val] ...) var ...)
+       (do-interface stx #'((interface-expr ...) ([prop prop-val] ...) var ...))]
+      [(_ (interface-expr ...) (prop+val ...) var ...)
+       (for-each (lambda (p+v)
+                   (syntax-case p+v ()
+                     [(p v) (void)]
+                     [_ (raise-syntax-error #f
+                                            "expected `[<prop-expr> <val-expr>]'"
+                                            stx
+                                            p+v)]))
+                 (syntax->list #'(prop+val ...)))]
+      [(_ (interface-expr ...) prop+vals . _)
+       (raise-syntax-error #f
+                           "expected `([<prop-expr> <val-expr>] ...)'"
+                           stx
+                           #'prop+vals)]))
 
   (define-struct interface 
                  (name             ; symbol
@@ -2373,18 +2416,27 @@
                    #:mutable]
                   public-ids       ; (listof symbol) (in any order?!?)
                   [class           ; (union #f class) -- means that anything implementing
-                   #:mutable])     ; this interface must be derived from this class
+                   #:mutable]      ; this interface must be derived from this class
+                  properties)      ; (listof (vector gensym prop val))
                  #:inspector insp)
 
-  (define (compose-interface name supers vars)
+  (define (compose-interface name supers vars props vals)
     (for-each
      (lambda (intf)
        (unless (interface? intf)
 	 (obj-error 'interface 
-		    "superinterface expression returned a non-interface: ~a~a" 
+		    "superinterface expression returned a non-interface: ~e~a" 
 		    intf
 		    (for-intf name))))
      supers)
+    (for-each
+     (lambda (p)
+       (unless (struct-type-property? p)
+         (obj-error 'interface
+                    "property expression returned a non-property: ~e~a"
+                    p
+                    (for-intf name))))
+     props)
     (let ([ht (make-hasheq)])
       (for-each
        (lambda (var)
@@ -2405,24 +2457,38 @@
 			       "")))))
 	  (interface-public-ids super)))
        supers)
-      ;; Check for [conflicting] implementation requirements
-      (let ([class (get-implement-requirement supers 'interface (for-intf name))]
-	    [interface-make (if name
-				(make-naming-constructor 
-				 struct:interface
-				 (string->symbol (format "interface:~a" name)))
-				make-interface)])
-	;; Add supervars to table:
-	(for-each
-	 (lambda (super)
-	   (for-each
-	    (lambda (var) (hash-set! ht var #t))
-	    (interface-public-ids super)))
-	 supers)
-	;; Done
-	(let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k)) class)])
-	  (setup-all-implemented! i)
-	  i))))
+      ;; Merge properties:
+      (let ([prop-ht (make-hash)])
+        ;; Hash on gensym to avoid providing the same property multiple
+        ;; times when it originated from a single interface.
+        (for-each (lambda (i)
+                    (for-each (lambda (p)
+                                (hash-set! prop-ht (vector-ref p 0) p))
+                              (interface-properties i)))
+                  supers)
+        (for-each (lambda (p v)
+                    (let ([g (gensym)])
+                      (hash-set! prop-ht g (vector g p v))))
+                  props vals)
+        ;; Check for [conflicting] implementation requirements
+        (let ([class (get-implement-requirement supers 'interface (for-intf name))]
+              [interface-make (if name
+                                  (make-naming-constructor 
+                                   struct:interface
+                                   (string->symbol (format "interface:~a" name)))
+                                  make-interface)])
+          ;; Add supervars to table:
+          (for-each
+           (lambda (super)
+             (for-each
+              (lambda (var) (hash-set! ht var #t))
+              (interface-public-ids super)))
+           supers)
+          ;; Done
+          (let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k)) class 
+                                   (hash-map prop-ht (lambda (k v) v)))])
+            (setup-all-implemented! i)
+            i)))))
 
   ;; setup-all-implemented! : interface -> void
   ;;  Creates the hash table for all implemented interfaces
@@ -2466,7 +2532,7 @@
       make-))
   
   (define object<%> ((make-naming-constructor struct:interface 'interface:object%)
-		     'object% null #f null #f))
+		     'object% null #f null #f null))
   (setup-all-implemented! object<%>)
   (define object% ((make-naming-constructor struct:class 'class:object%)
 		   'object%
@@ -3726,7 +3792,23 @@
     (_interface () externalize internalize))
 
   (define printable<%>
-    (_interface () custom-write custom-display))
+    (interface* () 
+                ([prop:custom-write (lambda (obj port write?)
+                                      (if write?
+                                          (send obj custom-write port)
+                                          (send obj custom-display port)))])
+                custom-write custom-display))
+
+  (define equal<%>
+    (interface* () 
+                ([prop:equal+hash (list
+                                   (lambda (obj obj2 base-equal?)
+                                     (send obj equal-to? obj2 base-equal?))
+                                   (lambda (obj base-hash-code)
+                                     (send obj equal-hash-code-of base-hash-code))
+                                   (lambda (obj base-hash2-code)
+                                     (send obj equal-secondary-hash-code-of base-hash2-code)))])
+                equal-to? equal-hash-code-of equal-secondary-hash-code-of))
 
   ;; Providing traced versions:
   (provide class-traced
@@ -3768,8 +3850,8 @@
            define-serializable-class define-serializable-class*
            class?
            mixin
-	   (rename-out [_interface interface]) interface?
-	   object% object? object=? externalizable<%> printable<%>
+	   (rename-out [_interface interface]) interface* interface?
+	   object% object? object=? externalizable<%> printable<%> equal<%>
            new make-object instantiate
            get-field field-bound? field-names
 	   send send/apply send* class-field-accessor class-field-mutator with-method

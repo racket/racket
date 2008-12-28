@@ -6,7 +6,7 @@
 (require scheme/class)
 
 (Section 'object)
-
+     
 ;; ------------------------------------------------------------
 ;; Test syntax errors
 
@@ -1412,6 +1412,63 @@
   (check #t #f)
   (check #f #t)
   (check #t #t))
+
+;; ----------------------------------------
+;; Implementing equal<%>
+
+(let ()
+  (define c%
+    (class* object% (equal<%>)
+      (init-field x)
+
+      (define/public (get-x) x)
+      (define/public (set-x v) (set! x v))
+
+      (define/public (equal-to? other recur-equal?)
+        (recur-equal? x (send other get-x)))
+      (define/public (equal-hash-code-of recur-hash-code)
+        (+ 1 (recur-hash-code x)))
+      (define/public (equal-secondary-hash-code-of recur-hash-code)
+        (+ 1 (recur-hash-code x)))
+      (super-new)))
+  (test #t equal? (new c% [x 10]) (new c% [x 10]))
+  (test #f equal? (new c% [x 10]) (new c% [x 12]))
+
+  (let ([o (new c% [x 10])]
+        [o2 (new c% [x 10])])
+    (send o set-x o)
+    (send o2 set-x o2)
+    (test #t equal? o o2)
+    (test #t equal? o (new c% [x o]))
+    (test #f equal? o (new c% [x 10]))
+    (let ([ht (make-hash)])
+      (hash-set! ht o o)
+      (hash-set! ht (new c% [x "hello"]) 'hi)
+      (test #t eq? o (hash-ref ht o2))
+      (test #f hash-ref ht (new c% [x 10]) #f)
+      (test 'hi hash-ref ht (new c% [x "hello"]))
+      (let ([d% (class c%
+                  (super-new [x "hello"]))])
+        (test 'hi hash-ref ht (new d%) #f))
+      (let ([d% (class* c% (equal<%>)
+                  (super-new [x "hello"]))])
+        (test 'nope hash-ref ht (new d%) 'nope)))))
+
+;; ----------------------------------------
+;; Implementing new properties
+
+(let ()
+  (define proc<%>
+    (interface* ()
+                ([prop:procedure (lambda (o . args)
+                                   (send/apply o apply args))])
+                apply))
+  (define c%
+    (class* object% (proc<%>)
+      (define/public (apply . args)
+        (cons 'applied-to args))
+      (super-new)))
+  (test '(applied-to 1 2 3) (new c%) 1 2 3))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
