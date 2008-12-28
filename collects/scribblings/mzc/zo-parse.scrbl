@@ -24,14 +24,14 @@ subject to frequent changes across PLT Scheme versons.}
 
 @defstruct+[compilation-top ([max-let-depth exact-nonnegative-integer?]
                              [prefix prefix?]
-                             [code (or/c form? any/c)])]{
+                             [code (or/c form? indirect? any/c)])]{
 
 Wraps compiled code. The @scheme[max-let-depth] field indicates the
 maximum stack depth that @scheme[code] creates (not counting the
-@scheme[prefix] array). The @scheme[prefix] field contains global
-variable, cross-module variable, and syntax-object literal
-mappings. The @scheme[code] field contains executable code; it is
-normally a @scheme[form], but a literal value is represented as
+@scheme[prefix] array). The @scheme[prefix] field describes top-level
+variables, module-level variables, and quoted syntax-objects accessed
+by @scheme[code]. The @scheme[code] field contains executable code; it
+is normally a @scheme[form], but a literal value is represented as
 itself.}
 
 
@@ -39,32 +39,33 @@ itself.}
                     [toplevels (listof (or/c #f symbol? global-bucket? module-variable?))]
                     [stxs (listof stx?)])]{
 
-Represents a closure ``prefix'' that is pushed onto the stack before
-evaluating a top-level sequence. The prefix is an array, where buckets
-holding the values for @scheme[toplevels] are first, then a bucket for
-another array if @scheme[stxs] is non-empty, then @scheme[num-lifts]
-extra buckets for lifted local procedures.
+Represents a ``prefix'' that is pushed onto the stack to initiate
+evaluation. The prefix is an array, where buckets holding the values
+for @scheme[toplevels] are first, then a bucket for another array if
+@scheme[stxs] is non-empty, then @scheme[num-lifts] extra buckets for
+lifted local procedures.
 
-In @scheme[toplevels]:
+In @scheme[toplevels], each element is one of the following:
 
 @itemize[
 
- @item{@scheme[#f] indicates a dummy variable that is used to access
-       the enclosing module/namespace at run time}
+ @item{a @scheme[#f], which indicates a dummy variable that is used to
+       access the enclosing module/namespace at run time;}
 
- @item{a symbol is a reference to a variable defined in the enclosing
-       module}
+ @item{a symbol, which is a reference to a variable defined in the
+       enclosing module;}
 
- @item{a @scheme[global-bucket] is a top-level variable, and it
-       appears only outside of modules}
+ @item{a @scheme[global-bucket], which is a top-level variable
+       (appears only outside of modules); or}
 
- @item{a @scheme[module-variable] indicates a variable imported from
-       another module}
+ @item{a @scheme[module-variable], which indicates a variable imported
+       from another module.}
 
 ]
 
-The variable buckets and syntax objects recorded by a prefix are
-accessed by @scheme[toplevel] and @scheme[topsyntax] expression forms.}
+The variable buckets and syntax objects that are recorded in a prefix
+are accessed by @scheme[toplevel] and @scheme[topsyntax] expression
+forms.}
 
 
 @defstruct+[global-bucket ([name symbol?])]{
@@ -79,9 +80,9 @@ Represents a top-level variable, and used only in a @scheme[prefix].}
 
 Represents a top-level variable, and used only in a @scheme[prefix].
 The @scheme[pos] may record the variable's offset within its module,
-or it can be @scheme[-1] if the variable is always accessed by name.
+or it can be @scheme[-1] if the variable is always located by name.
 The @scheme[phase] indicates the phase level of the definition within
-it module.}
+its module.}
 
 
 @defstruct+[stx ([encoded wrapped?])]{
@@ -94,13 +95,16 @@ Wraps a syntax object in a @scheme[prefix].}
 
 @defstruct+[form ()]{
 
-A supertype for all forms that can appear in compiled code, except for
-literals that are represented as themselves.}
+A supertype for all forms that can appear in compiled code (including
+@scheme[expr]s), except for literals that are represented as
+themselves and @scheme[indirect] structures to create cycles.}
 
 @defstruct+[(def-values form) ([ids (listof toplevel?)]
                                [rhs (or/c expr? seq? indirect? any/c)])]{
 
-Represents a @scheme[define-values] form.
+Represents a @scheme[define-values] form. Each element of @scheme[ids]
+will reference via the prefix either a top-level variable or a local
+module variable.
 
 After @scheme[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @scheme[rhs].}
@@ -120,7 +124,9 @@ Represents a @scheme[define-syntaxes] or
 @scheme[define-values-for-syntax] form. The @scheme[rhs] expression
 has its own @scheme[prefix], which is pushed before evaluating
 @scheme[rhs]; the stack is restored after obtaining the result
-values.}
+values. The @scheme[max-let-depth] field indicates the maximum size of
+the stack that will be created by @scheme[rhs] (not counting
+@scheme[prefix]).}
 
 @defstruct+[(req form) ([reqs (listof module-path?)]
                         [dummy toplevel?])]{
@@ -134,8 +140,9 @@ to the top-level namespace.}
                         [self-modidx module-path-index?]
                         [prefix prefix?]
                         [provides (listof symbol?)]
-                        [requires (listof (cons/c (or/c exact-integer? #f) (listof module-path-index?)))]
-                        [body (listof (or/c form? any/c))]
+                        [requires (listof (cons/c (or/c exact-integer? #f) 
+                                                  (listof module-path-index?)))]
+                        [body (listof (or/c form? indirect? any/c))]
                         [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))]
                         [max-let-depth exact-nonnegative-integer?])]{
 
@@ -145,10 +152,13 @@ declaration itself (and each @scheme[syntax-body] has its own
 prefix). The @scheme[body] field contains the module's run-time code,
 and @scheme[syntax-body] contains the module's compile-time code. The
 @scheme[max-let-depth] field indicates the maximum stack depth created
-by @scheme[body] forms (not counting the @scheme[prefix] array).}
+by @scheme[body] forms (not counting the @scheme[prefix] array).
+
+After each form in @scheme[body] is evaluated, the stack is restored
+to its depth from before evaluating the form.}
 
 
-@defstruct+[(seq form) ([forms (listof (or/c form? any/c))])]{
+@defstruct+[(seq form) ([forms (listof (or/c form? indirect? any/c))])]{
 
 Represents a @scheme[begin] form, either as an expression or at the
 top level (though the latter is more commonly a @scheme[splice] form).
@@ -159,7 +169,7 @@ After each form in @scheme[forms] is evaluated, the stack is restored
 to its depth from before evaluating the form.}
 
 
-@defstruct+[(splice form) ([forms (listof (or/c form? any/c))])]{
+@defstruct+[(splice form) ([forms (listof (or/c form? indirect? any/c))])]{
 
 Represents a top-level @scheme[begin] form where each evaluation is
 wrapped with a continuation prompt.
@@ -174,8 +184,9 @@ to its depth from before evaluating the form.}
 @defstruct+[(expr form) ()]{
 
 A supertype for all expression forms that can appear in compiled code,
-except for literals that are represented as themselves, and except for
-@scheme[seq] (which can appear as an expression as long as it contains
+except for literals that are represented as themselves,
+@scheme[indirect] structures to create cycles, and some @scheme[seq]
+structures (which can appear as an expression as long as it contains
 only other things that can be expressions).}
 
 
@@ -189,7 +200,7 @@ only other things that can be expressions).}
 
 Represents a @scheme[lambda] form. The @scheme[name] field is a name
 for debugging purposes. The @scheme[num-params] field indicates the
-number of argumets accepted by the procedure, not counting a rest
+number of arguments accepted by the procedure, not counting a rest
 argument; the @scheme[rest?] field indicates whether extra arguments
 are accepted and collected into a ``rest'' variable. The
 @scheme[closure-map] field is a vector of stack positions that are
@@ -278,19 +289,20 @@ each shell's closure using the created shells, and then evaluates
 @defstruct+[(boxenv expr) ([pos nonnegative-exact-integer?]
                            [body (or/c expr? seq? indirect? any/c)])]{
 
-Sets the stack slot @scheme[pos] elements deep into the stack to a new
-box containing the slot's old value. This form appears when a
-@scheme[lambda] argument is mutated using @scheme[set!] within its
-body; calling the function initially pushes the value directly on the
-stack, and this form boxes the value so that it can be mutated later.}
+Skips @scheme[pos] elements of the stack, setting the slot afterward
+to a new box containing the slot's old value, and then runs
+@scheme[body]. This form appears when a @scheme[lambda] argument is
+mutated using @scheme[set!] within its body; calling the function
+initially pushes the value directly on the stack, and this form boxes
+the value so that it can be mutated later.}
 
 
 @defstruct+[(localref expr) ([unbox? boolean?]
                              [pos nonnegative-exact-integer?]
                              [clear? boolean?])]{
 
-Represents a local-variable reference; access the value in the stack
-slot skipping the first @scheme[pos] slots. If @scheme[unbox?] is
+Represents a local-variable reference; it accesses the value in the
+stack slot after the first @scheme[pos] slots. If @scheme[unbox?]  is
 @scheme[#t], the stack slot contains a box, and a value is extracted
 from the box. If @scheme[clear?] is @scheme[#t], then after the value
 is obtained, the stack slot is cleared (to avoid retaining a reference
@@ -305,10 +317,14 @@ that can prevent reclamation of the value as garbage).}
 Represents a reference to a top-level or imported variable via the
 @scheme[prefix] array. The @scheme[depth] field indicates the number
 of stack slots to skip to reach the prefix array, and @scheme[pos] is
-the offset into the array. If @scheme[const?] is @scheme[#t], then the
-variable will definitely have a value and the value stays constant. If
-@scheme[ready?] is @scheme[#t], then the variable will definitely have
-a value (but the value might change in the future).}
+the offset into the array.
+
+If @scheme[const?] is @scheme[#t], then the variable definitely will
+be defined, and its value stays constant. If @scheme[ready?] is
+@scheme[#t], then the variable definitely will be defined (but its
+value might change in the future). If @scheme[const?] and
+@scheme[ready?] are both @scheme[#f], then a check is needed to
+determine whether the variable is defined.}
 
 
 @defstruct+[(topsyntax expr) ([depth nonnegative-exact-integer?]
@@ -370,8 +386,8 @@ Represents a @scheme[#%variable-reference] form.}
                            [undef-ok? boolean?])]{
 
 Represents a @scheme[set!] expression that assigns to a top-level or
-module-level variable. (Assignments to local variables are converted
-to @scheme[install-value] expression.)
+module-level variable. (Assignments to local variables are represented
+by @scheme[install-value] expressions.)
 
 After @scheme[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @scheme[rhs].}
@@ -398,12 +414,12 @@ kernel.}
 
 Represents a syntax object, where @scheme[wraps] contain the lexical
 information and @scheme[certs] is certificate information. When the
-@scheme[datum] part it itself compound, its pieces are wrapped, too.}
+@scheme[datum] part is itself compound, its pieces are wrapped, too.}
 
 
 @defstruct+[wrap ()]{
 
-A supertype for lexical information elements.}
+A supertype for lexical-information elements.}
 
 
 @defstruct+[(lexical-rename wrap) ([alist (listof (cons/c identifier? identifier?))])]{
