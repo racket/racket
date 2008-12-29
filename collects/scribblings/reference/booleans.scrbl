@@ -14,13 +14,24 @@ See also: @scheme[and], @scheme[or], @scheme[andmap], @scheme[ormap].
 @defproc[(boolean? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is @scheme[#t] or @scheme[#f],
-@scheme[#f] otherwise.}
+@scheme[#f] otherwise.
+
+@examples[
+(boolean? #f)
+(boolean? #t)
+(boolean? 'true)
+]}
 
 
 @defproc[(not [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is @scheme[#f], @scheme[#f] otherwise.
-}
+
+@examples[
+(not #f)
+(not #t)
+(not 'we-have-no-bananas)
+]}
 
 
 @defproc[(equal? [v1 any/c] [v2 any/c]) boolean?]{
@@ -33,7 +44,15 @@ strings, byte strings, numbers, pairs, mutable pairs, vectors, hash
 tables, and inspectable structures. In the last five cases, equality
 is recursively defined; if both @scheme[v1] and @scheme[v2] contain
 reference cycles, they are equal when the infinite unfoldings of the
-values would be equal. See also @scheme[prop:equal+hash].}
+values would be equal. See also @scheme[prop:equal+hash].
+
+@examples[
+(equal? 'yes 'yes)
+(equal? 'yes 'no)
+(equal? (expt 2 100) (expt 2 100))
+(equal? 2 2.0)
+(equal? (make-string 3 #\z) (make-string 3 #\z))
+]}
 
 
 @defproc[(eqv? [v1 any/c] [v2 any/c]) boolean?]{
@@ -41,14 +60,47 @@ values would be equal. See also @scheme[prop:equal+hash].}
 Two values are @scheme[eqv?] if and only if they are @scheme[eq?],
 unless otherwise specified for a particular datatype.
 
-The number and character datatypes are the only ones for which
-@scheme[eqv?] differs from @scheme[eq?].}
+The @tech{number} and @tech{character} datatypes are the only ones for which
+@scheme[eqv?] differs from @scheme[eq?].
+
+@examples[
+(eqv? 'yes 'yes)
+(eqv? 'yes 'no)
+(eqv? (expt 2 100) (expt 2 100))
+(eqv? 2 2.0)
+(eqv? (integer->char #x3BB) (integer->char #x3BB))
+(eqv? (make-string 3 #\z) (make-string 3 #\z))
+]}
 
 
 @defproc[(eq? [v1 any/c] [v2 any/c]) boolean?]{
 
 Return @scheme[#t] if @scheme[v1] and @scheme[v2] refer to the same
-object, @scheme[#f] otherwise. See also @secref["model-eq"].}
+object, @scheme[#f] otherwise. See also @secref["model-eq"].
+
+@examples[
+(eq? 'yes 'yes)
+(eq? 'yes 'no)
+(let ([v (mcons 1 2)]) (eq? v v))
+(eq? (mcons 1 2) (mcons 1 2))
+(eq? (make-string 3 #\z) (make-string 3 #\z))
+]}
+
+
+@defproc[(equal?/recur [v1 any/c] [v2 any/c] [recur-proc (any/c any/c -> any/c)]) boolean?]{
+
+Like @scheme[equal?], but using @scheme[recur-proc] for recursive
+comparisons (which means that reference cycles are not handled
+automatically). Non-@scheme[#f] results from @scheme[recur-proc] are
+converted to @scheme[#t] before being returned by
+@scheme[equal?/recur].
+
+@examples[
+(equal?/recur 1 1 (lambda (a b) #f))
+(equal?/recur '(1) '(1) (lambda (a b) #f))
+(equal?/recur '#(1 1 1) '#(1 1.2 3/4)
+              (lambda (a b) (<= (abs (- a b)) 0.25)))
+]}
 
 
 @defproc[(immutable? [v any/c]) boolean?]{
@@ -74,7 +126,9 @@ type. The property value must be a list of three procedures:
         The third argument is an @scheme[equal?]  predicate to use for
         recursive equality checks; use the given predicate instead of
         @scheme[equal?] to ensure that data cycles are handled
-        properly.
+        properly and to work with @scheme[equal?/recur] (but beware
+        that an arbitrary function can be provided to
+        @scheme[equal?/recur]).
 
         The @scheme[_equal-proc] is called for a pair of structures
         only when they are not @scheme[eq?], and only when they both

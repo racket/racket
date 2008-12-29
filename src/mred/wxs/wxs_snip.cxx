@@ -6583,6 +6583,92 @@ static Scheme_Object *bundle_symset_bitmapType(int v) {
 
 
 
+extern void wxGetARGBPixels(wxBitmap *bm, double x, double y, int w, int h, char *s, Bool get_alpha);
+static bool EqualTo(wxImageSnip* bm, wxImageSnip* bm2, void *recur);
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+static bool OtherEqualTo(wxImageSnip* snip, wxImageSnip* snip2, void *recur)
+{
+  int w, h;
+  char *s1, *s2;
+  wxBitmap *bm, *bm2, *mask;
+
+  bm = snip->GetSnipBitmap();
+  bm2 = snip2->GetSnipBitmap();
+
+  if (!bm || !bm->Ok()) return FALSE;
+  if (!bm2 || !bm2->Ok()) return FALSE;
+  if (bm->GetDepth() != bm2->GetDepth()) return FALSE;
+  w = bm->GetWidth();
+  h = bm->GetHeight();
+  if (w != bm2->GetWidth()) return FALSE;
+  if (h != bm2->GetHeight()) return FALSE;
+
+  s1 = (char *)scheme_malloc_atomic(w * h * 4);
+  s2 = (char *)scheme_malloc_atomic(w * h * 4);
+
+  memset(s1, 255, w * h * 4);
+  memset(s2, 255, w * h * 4);
+
+  wxGetARGBPixels(bm, 0, 0, w, h, s1, 0);
+  wxGetARGBPixels(bm2, 0, 0, w, h, s2, 0);
+
+  mask = snip->GetSnipBitmapMask();
+  if (mask && mask->Ok() && (mask->GetWidth() == w) && (mask->GetHeight() == h)) {
+    wxGetARGBPixels(mask, 0, 0, w, h, s1, 1);
+  }
+  mask = snip2->GetSnipBitmapMask();
+  if (mask && mask->Ok() && (mask->GetWidth() == w) && (mask->GetHeight() == h)) {
+    wxGetARGBPixels(mask, 0, 0, w, h, s2, 1);
+  }
+  
+  return !memcmp(s1, s2, w * h * 4);
+}
+
+static long HashCodeOf(wxImageSnip *snip, void *recur)
+{
+  int w, h, i;
+  long hk = 0;
+  char *s1;
+  wxBitmap *bm;
+
+  bm = snip->GetSnipBitmap();
+  if (!bm) return 0;
+
+  if (!bm->Ok()) return 0;
+  w = bm->GetWidth();
+  h = bm->GetHeight();
+
+  s1 = (char *)scheme_malloc_atomic(w * h * 4);
+
+  wxGetARGBPixels(bm, 0, 0, w, h, s1, 0);
+
+  for (i = w * h * 4; i; i -= 4) {
+    hk += s1[i - 4] + s1[i - 3] + s1[i - 2];
+    hk = (hk << 1) + hk;
+  }
+  
+  return hk;
+}
+
+static long SecondaryHashCodeOf(wxImageSnip *snip, void *recur)
+{
+  wxBitmap *bm;
+
+  bm = snip->GetSnipBitmap();
+  if (!bm) return 0;
+  
+  return bm->GetWidth() + bm->GetHeight();
+}
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+#define UNKNOWN_OBJ void*
+
+
 
 
 
@@ -6603,6 +6689,7 @@ static Scheme_Object *bundle_symset_bitmapType(int v) {
 
 
 
+
 class os_wxImageSnip : public wxImageSnip {
  public:
 
@@ -6611,6 +6698,8 @@ class os_wxImageSnip : public wxImageSnip {
   os_wxImageSnip CONSTRUCTOR_ARGS((class wxBitmap* x0, class wxBitmap* x1 = NULL));
 #endif
   ~os_wxImageSnip();
+  Bool OtherEqualTo_method(class wxImageSnip* x0, UNKNOWN_OBJ x1);
+  Bool EqualTo_method(class wxImageSnip* x0, UNKNOWN_OBJ x1);
   void SetUnmodified();
   nndouble GetScrollStepOffset(nnlong x0);
   nnlong FindScrollStep(double x0);
@@ -6667,6 +6756,92 @@ CONSTRUCTOR_INIT(: wxImageSnip(x0, x1))
 os_wxImageSnip::~os_wxImageSnip()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxImageSnipOtherEqualTo(int n, Scheme_Object *p[]);
+
+Bool os_wxImageSnip::OtherEqualTo_method(class wxImageSnip* x0, UNKNOWN_OBJ x1)
+{
+  Scheme_Object *p[POFFSET+2] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT INA_comma NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxImageSnip *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(7);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+2);
+  VAR_STACK_PUSH(5, x0);
+  VAR_STACK_PUSH(6, x1);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxImageSnip_class, "other-equal-to?", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxImageSnipOtherEqualTo)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; return OtherEqualTo(SELF__, x0, x1);
+  } else {
+  
+  p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxImageSnip(x0));
+  p[POFFSET+1] = ((Scheme_Object *)x1);
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+2, p));
+  
+  
+  {
+     Bool resval;
+     resval = WITH_VAR_STACK(objscheme_unbundle_bool(v, "other-equal-to? in image-snip%"", extracting return value"));
+     READY_TO_RETURN;
+     return resval;
+  }
+  }
+}
+
+static Scheme_Object *os_wxImageSnipEqualTo(int n, Scheme_Object *p[]);
+
+Bool os_wxImageSnip::EqualTo_method(class wxImageSnip* x0, UNKNOWN_OBJ x1)
+{
+  Scheme_Object *p[POFFSET+2] INIT_NULLED_ARRAY({ NULLED_OUT INA_comma NULLED_OUT INA_comma NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxImageSnip *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(7);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+2);
+  VAR_STACK_PUSH(5, x0);
+  VAR_STACK_PUSH(6, x1);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxImageSnip_class, "equal-to?", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxImageSnipEqualTo)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; return EqualTo(SELF__, x0, x1);
+  } else {
+  
+  p[POFFSET+0] = WITH_VAR_STACK(objscheme_bundle_wxImageSnip(x0));
+  p[POFFSET+1] = ((Scheme_Object *)x1);
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+2, p));
+  
+  
+  {
+     Bool resval;
+     resval = WITH_VAR_STACK(objscheme_unbundle_bool(v, "equal-to? in image-snip%"", extracting return value"));
+     READY_TO_RETURN;
+     return resval;
+  }
+  }
 }
 
 static Scheme_Object *os_wxImageSnipSetUnmodified(int n, Scheme_Object *p[]);
@@ -7639,6 +7814,108 @@ void os_wxImageSnip::GetExtent(class wxDC* x0, double x1, double x2, nndouble* x
   
      READY_TO_RETURN;
   }
+}
+
+static Scheme_Object *os_wxImageSnipSecondaryHashCodeOf(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  long r;
+  objscheme_check_valid(os_wxImageSnip_class, "equal-secondary-hash-code-of in image-snip%", n, p);
+  UNKNOWN_OBJ x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = ((void *)p[POFFSET+0]);
+
+  
+  r = WITH_VAR_STACK(SecondaryHashCodeOf(((wxImageSnip *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_make_integer(r);
+}
+
+static Scheme_Object *os_wxImageSnipHashCodeOf(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  long r;
+  objscheme_check_valid(os_wxImageSnip_class, "equal-hash-code-of in image-snip%", n, p);
+  UNKNOWN_OBJ x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = ((void *)p[POFFSET+0]);
+
+  
+  r = WITH_VAR_STACK(HashCodeOf(((wxImageSnip *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_make_integer(r);
+}
+
+static Scheme_Object *os_wxImageSnipOtherEqualTo(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxImageSnip_class, "other-equal-to? in image-snip%", n, p);
+  class wxImageSnip* x0 INIT_NULLED_OUT;
+  UNKNOWN_OBJ x1 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(3);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+  VAR_STACK_PUSH(2, x1);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_wxImageSnip(p[POFFSET+0], "other-equal-to? in image-snip%", 1));
+  x1 = ((void *)p[POFFSET+1]);
+
+  
+  r = WITH_VAR_STACK(OtherEqualTo(((wxImageSnip *)((Scheme_Class_Object *)p[0])->primdata), x0, x1));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *os_wxImageSnipEqualTo(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxImageSnip_class, "equal-to? in image-snip%", n, p);
+  class wxImageSnip* x0 INIT_NULLED_OUT;
+  UNKNOWN_OBJ x1 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(3);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+  VAR_STACK_PUSH(2, x1);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_wxImageSnip(p[POFFSET+0], "equal-to? in image-snip%", 1));
+  x1 = ((void *)p[POFFSET+1]);
+
+  
+  r = WITH_VAR_STACK(EqualTo(((wxImageSnip *)((Scheme_Class_Object *)p[0])->primdata), x0, x1));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *os_wxImageSnipSetOffset(int n,  Scheme_Object *p[])
@@ -8707,8 +8984,12 @@ void objscheme_setup_wxImageSnip(Scheme_Env *env)
 
   wxREGGLOB(os_wxImageSnip_class);
 
-  os_wxImageSnip_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "image-snip%", "snip%", (Scheme_Method_Prim *)os_wxImageSnip_ConstructScheme, 31));
+  os_wxImageSnip_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "image-snip%", "snip%", (Scheme_Method_Prim *)os_wxImageSnip_ConstructScheme, 35));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "equal-secondary-hash-code-of" " method", (Scheme_Method_Prim *)os_wxImageSnipSecondaryHashCodeOf, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "equal-hash-code-of" " method", (Scheme_Method_Prim *)os_wxImageSnipHashCodeOf, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "other-equal-to?" " method", (Scheme_Method_Prim *)os_wxImageSnipOtherEqualTo, 2, 2));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "equal-to?" " method", (Scheme_Method_Prim *)os_wxImageSnipEqualTo, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "set-offset" " method", (Scheme_Method_Prim *)os_wxImageSnipSetOffset, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "get-bitmap-mask" " method", (Scheme_Method_Prim *)os_wxImageSnipGetSnipBitmapMask, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxImageSnip_class, "get-bitmap" " method", (Scheme_Method_Prim *)os_wxImageSnipGetSnipBitmap, 0, 0));
@@ -8804,6 +9085,15 @@ class wxImageSnip *objscheme_unbundle_wxImageSnip(Scheme_Object *obj, const char
     return (wxImageSnip *)o->primdata;
 }
 
+
+static bool EqualTo(wxImageSnip* bm, wxImageSnip* bm2, void *recur)
+{
+  /* Might redirect to Scheme. 
+     We're relying on the cast succeeding because the method is 
+     not virtual, but I doubt that this is guaranteed to work by the C++
+     spec if wxImageSnip is instantiated instead of os_wxImageSnip */
+  return ((os_wxImageSnip *)bm2)->OtherEqualTo_method(bm, recur);
+}
 
 
 

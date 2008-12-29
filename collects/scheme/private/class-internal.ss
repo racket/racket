@@ -2050,7 +2050,7 @@
 	      ;; --- Make the new object struct ---
 	      (let*-values ([(prim-object-make prim-object? struct:prim-object)
 			     (if make-struct:prim
-				 (make-struct:prim c prop:object preparer dispatcher)
+				 (make-struct:prim c prop:object preparer dispatcher (get-properties interfaces))
 				 (values #f #f #f))]
 			    [(struct:object object-make object? object-field-ref object-field-set!)
 			     (if make-struct:prim
@@ -2322,7 +2322,7 @@
 			       (for-class name))))
 		syms)))
 
-  (define (add-properties struct-type intfs)
+  (define (get-properties intfs)
     (if (ormap (lambda (i)
                  (pair? (interface-properties i)))
                intfs)
@@ -2334,18 +2334,21 @@
                                   (hash-set! ht (vector-ref p 0) p))
                                 (interface-properties i)))
                     intfs)
+          (hash-map ht (lambda (k v) (cons (vector-ref v 1)
+                                           (vector-ref v 2)))))
+        ;; No properties to add:
+        null))
+
+  (define (add-properties struct-type intfs)
+    (let ([props (get-properties intfs)])
+      (if (null? props)
+          struct-type
           ;; Create a new structure type to house the properties, so
           ;; that they can't see any fields directly via guards:
           (let-values ([(struct: make- ? -ref -set!)
-                        (make-struct-type 'props struct-type 0 0 #f 
-                                          (hash-map ht (lambda (k v)
-                                                         (cons (vector-ref v 1)
-                                                               (vector-ref v 2))))
-                                          #f)])
-            struct:))
-        ;; No properties to add:
-        struct-type))
-
+                        (make-struct-type 'props struct-type 0 0 #f props #f)])
+            struct:))))
+  
   (define-values (prop:object object? object-ref) (make-struct-type-property 'object))
 
   ;;--------------------------------------------------------------------
@@ -3428,6 +3431,7 @@
 	   prim-init            ; primitive initializer: takes obj and list of name-arg pairs
 	   name                 ; symbol
 	   super                ; superclass
+           intfs                ; interfaces
 	   init-arg-names       ; #f or list of syms and sym--value lists
 	   override-names       ; overridden method names
 	   new-names            ; new (public) method names
@@ -3435,7 +3439,7 @@
 	   new-methods)         ; list of methods
 
     ; The `make-struct:prim' function takes prop:object, a
-    ;  class, a preparer, and a dispatcher function, and produces:
+    ;  class, a preparer, a dispatcher function, and a property assoc list, and produces:
     ;    * a struct constructor (must have prop:object)
     ;    * a struct predicate
     ;    * a struct type for derived classes (mustn't have prop:object)
@@ -3450,7 +3454,7 @@
 
     (compose-class name
 		   (or super object%)
-		   null
+		   intfs
 		   #f
 		   #f
 		   #f

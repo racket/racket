@@ -1486,7 +1486,7 @@ To customize the way that a class instance is compared to other
 instances by @scheme[equal?], implement the @scheme[equal<%>]
 interface.
 
-@defthing[equal<%> interface?]{
+@definterface[equal<%> ()]{}
 
 The @scheme[equal<%>] interface includes three methods, which are
 analogous to the functions provided for a structure type with
@@ -1523,7 +1523,7 @@ classes whose most specific ancestor to explicitly implement
 
 See @scheme[prop:equal+hash] for more information on equality
 comparisons and hash codes. The @scheme[equal<%>] interface is
-implemented with @scheme[interface*] and @scheme[prop:equal+hash].}
+implemented with @scheme[interface*] and @scheme[prop:equal+hash].
 
 @; ------------------------------------------------------------------------
 
@@ -1602,11 +1602,11 @@ Like @scheme[define-serializable-class*], but with not interface
 expressions (analogous to @scheme[class]).}
 
 
-@defthing[externalizable<%> interface?]{
+@definterface[externalizable<%> ()]{}
 
 The @scheme[externalizable<%>] interface includes only the
 @scheme[externalize] and @scheme[internalize] methods. See
-@scheme[define-serializable-class*] for more information.}
+@scheme[define-serializable-class*] for more information.
 
 @; ------------------------------------------------------------------------
 

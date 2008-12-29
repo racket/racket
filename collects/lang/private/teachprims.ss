@@ -10,8 +10,7 @@ namespace.
 |#
 (module teachprims mzscheme
 
-  (require "../imageeq.ss" 
-           mzlib/list
+  (require mzlib/list
            mzlib/etc)
   
   (define-syntax (define-teach stx)
@@ -202,68 +201,25 @@ namespace.
                                          (hash-table-put! ht a prev)
                                          (loop v))))
                                    prev)))))]
-           [union-equal? (lambda (a b)
-                           (let ([a (union-find a)]
-                                 [b (union-find b)])
-                             (if (eq? a b)
-                                 #t
-                                 (begin
-                                   (hash-table-put! ht b a)
-                                   #f))))])
+           [union-equal!? (lambda (a b)
+                            (let ([a (union-find a)]
+                                  [b (union-find b)])
+                              (if (eq? a b)
+                                  #t
+                                  (begin
+                                    (hash-table-put! ht b a)
+                                    #f))))])
       (let ? ([a a][b b])
-        (or (eqv? a b)
-            (cond
-             [(box? a)
-              (and (box? b)
-                   (? (unbox a) (unbox b)))]
-             [(pair? a)
-              (and (pair? b)
-                   (or (union-equal? a b)
-                       (and (? (car a) (car b))
-                            (? (cdr a) (cdr b)))))]
-             [(vector? a)
-              (and (vector? b)
-                   (= (vector-length a) (vector-length b))
-                   (or (union-equal? a b)
-                       (andmap ?
-                               (vector->list a)
-                               (vector->list b))))]
-             [(image? a)
-              (and (image? b)
-                   (image=? a b))]
-             [(real? a)
-              (and epsilon
-                   (real? b)
-                   (beginner-=~ a b epsilon))]
-             [(struct? a)
-              (and (struct? b)
-                   (let-values ([(ta sa?) (struct-info a)]
-                                [(tb sb?) (struct-info b)])
-                     (and (not sa?)
-                          (not sb?)
-                          (eq? ta tb)
-                          (or (union-equal? a b)
-                              (? (struct->vector a)
-                                 (struct->vector b))))))]
-             [(hash-table? a)
-              (and (hash-table? b)
-                   (eq? (immutable? a) (immutable? b))
-                   (eq? (hash-table? a 'weak) (hash-table? b 'weak))
-                   (eq? (hash-table? a 'equal) (hash-table? b 'equal))
-                   (let ([al (hash-table-map a cons)]
-                         [bl (hash-table-map b cons)])
-                     (and (= (length al) (length bl))
-                          (or (union-equal? a b)
-                              (andmap
-                               (lambda (ai)
-                                 (? (hash-table-get b (car ai) (lambda () (not (cdr ai))))
-                                    (cdr ai)))
-                               al)))))]
-             [else (equal? a b)])))))
+        (cond
+         [(real? a)
+          (and (real? b)
+               (beginner-=~ a b epsilon))]
+         [(union-equal!? a b) #t]
+         [else (equal?/recur a b ?)]))))
 
   (define-teach beginner equal?
     (lambda (a b)
-      (tequal? a b #f)))
+      (equal? a b)))
 
   (define-teach beginner =~
     (lambda (a b c)

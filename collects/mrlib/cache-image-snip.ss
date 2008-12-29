@@ -7,7 +7,11 @@
   
   (provide cache-image-snip%
            cache-image-snip-class%
-           snip-class)
+           snip-class
+
+           coerce-to-cache-image-snip
+           snip-size
+           bitmaps->cache-image-snip)
            
   ;; type argb = (make-argb (vectorof rational[between 0 & 255]) int int)
   (define-struct argb (vector width height))
@@ -38,9 +42,9 @@
     an alpha of 1 means the pixel value is 0
     an alpha of 0 means the pixel value is 255
  |#
-  
+
   (define cache-image-snip%
-    (class snip%
+    (class image-snip%
       
       ;; dc-proc : (union #f ((is-a?/c dc<%>) int[dx] int[dy] -> void))
       ;; used for direct drawing
@@ -85,7 +89,7 @@
       ;; get-bitmap : -> bitmap or false
       ;; returns a bitmap showing what the image would look like, 
       ;; if it were drawn
-      (define/public (get-bitmap)
+      (define/override (get-bitmap)
         (cond
           [(or (zero? width) (zero? height))
            #f]
@@ -141,6 +145,15 @@
       (define/override (get-num-scroll-steps) (inexact->exact (+ (floor (/ height 20)) 1)))
       (define/override (find-scroll-step y) (inexact->exact (floor (/ y 20))))
       (define/override (get-scroll-step-offset offset) (* offset 20))
+
+      (define/override (equal-to? snip recur)
+        (if (snip . is-a? . cache-image-snip%)
+            ;; Support extensions of cache-image-snip%:
+            (send snip other-equal-to? this recur)
+            ;; Use ths object's extension:
+            (other-equal-to? snip recur)))
+      (define/override (other-equal-to? snip recur)
+        (image=? this snip))
       
       (super-new)
       (inherit set-snipclass)
@@ -215,6 +228,138 @@
           (lambda (argb dx dy)
             (overlay-bitmap argb size size dx dy bm bm)))))
   
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; image equality
+  ;;
+
+  (define size-dc (delay (make-object bitmap-dc% (make-object bitmap% 1 1))))
+  
+  (define (snip-size a)
+    (cond
+      [(is-a? a cache-image-snip%)
+       (send a get-size)]
+      [else
+       (let* ([dc (force size-dc)]
+              [wb (box 0)]
+              [hb (box 0)])
+         (send a get-extent dc 0 0 wb hb #f #f #f #f)
+         (values (unbox wb) 
+                 (unbox hb)))]))
+         
+  (define (image=? a-raw b-raw)
+    (let ([a (coerce-to-cache-image-snip a-raw)]
+          [b (coerce-to-cache-image-snip b-raw)])
+      (let-values ([(aw ah) (snip-size a)]
+                   [(bw bh) (snip-size b)]
+                   [(apx apy) (send a get-pinhole)]
+                   [(bpx bpy) (send b get-pinhole)])
+        (and (= aw bw)
+             (= ah bh)
+             (= apx bpx)
+             (= apy bpy)
+             (same/alpha? (argb-vector (send a get-argb))
+                          (argb-vector (send b get-argb)))))))
+  
+  (define (same/alpha? v1 v2)
+    (let loop ([i (vector-length v1)])
+      (or (zero? i)
+          (let ([a1 (vector-ref v1 (- i 4))]
+                [a2 (vector-ref v2 (- i 4))])
+            (and (or (= a1 a2 255)
+                     (and (= a1 a2)
+                          (= (vector-ref v1 (- i 3)) (vector-ref v2 (- i 3)))
+                          (= (vector-ref v1 (- i 2)) (vector-ref v2 (- i 2)))
+                          (= (vector-ref v1 (- i 1)) (vector-ref v2 (- i 1)))))
+                 (loop (- i 4)))))))
+  
+  (define image-snip-cache (make-hash-table 'weak))
+  ;; coerce-to-cache-image-snip : image -> (is-a?/c cache-image-snip%)
+  (define (coerce-to-cache-image-snip snp)
+    (cond
+      [(hash-table-get image-snip-cache snp (λ () #f)) => values]
+      [(is-a? snp image-snip%)
+       (let* ([bmp (send snp get-bitmap)]
+              [cis
+               (if bmp
+                   (let ([bmp-mask (or (send bmp get-loaded-mask)
+                                       (send snp get-bitmap-mask)
+                                       (bitmap->mask bmp))])
+                     (bitmaps->cache-image-snip (copy-bitmap bmp)
+                                                (copy-bitmap bmp-mask)
+                                                (floor (/ (send bmp get-width) 2))
+                                                (floor (/ (send bmp get-height) 2))))
+                   (let-values ([(w h) (snip-size snp)])
+                     (let* ([bmp (make-object bitmap% 
+                                   (inexact->exact (floor w))
+                                   (inexact->exact (floor h)))]
+                            [bdc (make-object bitmap-dc% bmp)])
+                       (send snp draw bdc 0 0 0 0 w h 0 0 'no-caret)
+                       (send bdc set-bitmap #f)
+                       (bitmaps->cache-image-snip bmp 
+                                                  (bitmap->mask bmp)
+                                                  (floor (/ w 2))
+                                                  (floor (/ h 2))))))])
+         (hash-table-put! image-snip-cache snp cis)
+         cis)]
+      [else snp]))
+    
+  ;; copy-bitmap : bitmap -> bitmap
+  ;; does not copy the mask.
+  (define (copy-bitmap bitmap)
+    (let* ([w (send bitmap get-width)]
+           [h (send bitmap get-height)]
+           [copy (make-object bitmap% w h)]
+           [a-dc (make-object bitmap-dc% copy)])
+      (send a-dc clear)
+      (send a-dc draw-bitmap bitmap 0 0)
+      (send a-dc set-bitmap #f)
+      copy))
+  
+  ;; bitmap->mask : bitmap -> bitmap
+  (define (bitmap->mask bitmap)
+    (let* ([w (send bitmap get-width)]
+           [h (send bitmap get-height)]
+           [s (make-bytes (* 4 w h))]
+           [new-bitmap (make-object bitmap% w h)]
+           [dc (make-object bitmap-dc% new-bitmap)])
+      (send dc clear)
+      (send dc draw-bitmap bitmap 0 0)
+      (send dc get-argb-pixels 0 0 w h s)
+      (let loop ([i (* 4 w h)])
+        (unless (zero? i)
+          (let ([r (- i 3)]
+                [g (- i 2)]
+                [b (- i 1)])
+            (unless (and (eq? 255 (bytes-ref s r))
+                         (eq? 255 (bytes-ref s g))
+                         (eq? 255 (bytes-ref s b)))
+              (bytes-set! s r 0)
+              (bytes-set! s g 0)
+              (bytes-set! s b 0))
+            (loop (- i 4)))))
+      (send dc set-argb-pixels 0 0 w h s)
+      (begin0
+        (send dc get-bitmap)
+        (send dc set-bitmap #f))))
+  
+  (define (bitmaps->cache-image-snip color mask px py)
+    (let ([w (send color get-width)]
+          [h (send color get-height)])
+      (new cache-image-snip%
+           [width w]
+           [height h]
+           [dc-proc
+            (lambda (dc dx dy)
+              (send dc draw-bitmap color dx dy 'solid 
+                    (send the-color-database find-color "black")
+                    mask))]
+           [argb-proc
+            (lambda (argb-vector dx dy)
+              (overlay-bitmap argb-vector dx dy color mask))]
+           [px px]
+           [py py])))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; misc. utilities
