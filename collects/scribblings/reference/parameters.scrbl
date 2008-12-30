@@ -3,6 +3,8 @@
 
 @title[#:tag "parameters"]{Parameters}
 
+@guideintro["parameterize"]{parameters}
+
 See @secref["parameter-model"] for basic information on the
 parameter model. Parameters correspond to @defterm{preserved thread
 fluids} in Scsh @cite["Gasbichler02"].
@@ -44,6 +46,8 @@ applied to the initial @scheme[v].}
 
 @defform[(parameterize ((parameter-expr value-expr) ...)
            body ...+)]{
+
+@guideintro["parameterize"]{@scheme[parameterize]}
 
 The result of a @scheme[parameterize] expression is the result of the
 last @scheme[body]. The @scheme[parameter-expr]s determine the

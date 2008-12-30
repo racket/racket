@@ -75,6 +75,8 @@
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
+@guideintro["classes"]{classes and objects}
+
 @note-lib[scheme/class #:use-sources (scheme/private/class-internal)]
 
 A @deftech{class} specifies
