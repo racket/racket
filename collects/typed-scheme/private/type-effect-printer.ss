@@ -32,10 +32,10 @@
   (match c
     [(Restrict-Effect: t v) (fp "(restrict ~a ~a)" t (syntax-e v))]
     [(Remove-Effect: t v) (fp "(remove ~a ~a)" t (syntax-e v))]
-    [(Latent-Restrict-Effect: t) (fp "(restrict ~a)" t)]
-    [(Latent-Remove-Effect: t) (fp "(remove ~a)" t)]
-    [(Latent-Var-True-Effect:) (fp "(var #t)")]
-    [(Latent-Var-False-Effect:) (fp "(var #f)")]
+    [(Latent-Restrict-Effect: t k) (fp "(restrict ~a ~a)" t k)]
+    [(Latent-Remove-Effect: t k) (fp "(remove ~a ~a)" t k)]
+    [(Latent-Var-True-Effect: k) (fp "(var #t ~a)" k)]
+    [(Latent-Var-False-Effect: k) (fp "(var #f ~a)" k)]
     [(True-Effect:) (fp "T")]
     [(False-Effect:) (fp "F")]
     [(Var-True-Effect: v) (fp "(var #t ~a)" (syntax-e v))]
@@ -64,9 +64,10 @@
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
        (fp "-> ~a" rng)
-       (match* (thn-eff els-eff)
+       (match* (thn-eff els-eff)         
          [((list) (list)) (void)]
-         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
+         [((list (Latent-Restrict-Effect: t 0)) (list (Latent-Remove-Effect: t 0))) (fp " : ~a" t)]
+         [((list (Latent-Restrict-Effect: t k)) (list (Latent-Remove-Effect: t k))) (fp " : ~a_~a" t k)]
          [(_ _) (fp " : ~a ~a" thn-eff els-eff)])
        (fp ")")]))
   (define (tuple? t)

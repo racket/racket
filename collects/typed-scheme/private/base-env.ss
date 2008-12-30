@@ -107,8 +107,8 @@
 [filter (-poly (a b) (cl->*
                       ((a . -> . B
                           :
-                          (list (make-Latent-Restrict-Effect b))
-                          (list (make-Latent-Remove-Effect b)))
+                          (list (make-Latent-Restrict-Effect b 0))
+                          (list (make-Latent-Remove-Effect b 0)))
                        (-lst a)
                        . -> .
                        (-lst b))
