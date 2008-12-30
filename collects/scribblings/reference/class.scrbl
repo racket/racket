@@ -150,6 +150,8 @@ Classes, objects, and interfaces are all values. However, a class or
 interface is not an object (i.e., there are no ``meta-classes'' or
 ``meta-interfaces'').
 
+@local-table-of-contents[]
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "createinterface"]{Creating Interfaces}

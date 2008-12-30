@@ -2366,7 +2366,9 @@
            (check-ok + (list 4 (make-arity-at-least 2)) '(2 3 4 10) '(0 1))
            (check-ok + (list 2 (make-arity-at-least 4)) '(2 4 10) '(0 1 3)))])
     (check-all-but-one +)
+    (check-all-but-one (procedure-rename + 'plus))
     (check-all-but-one (lambda args (apply + args)))
+    (check-all-but-one (procedure-rename (lambda args (apply + args)) 'PLUS))
     (check-all-but-one (case-lambda
                         [() 0]
                         [(a b . args) (apply + a b args)]))
@@ -2385,6 +2387,12 @@
                         [(a b c) (+ a b c)]
                         [() 0]
                         [(a b c d . e) (apply + a b c d e)]))))
+
+(test '+ object-name (procedure-reduce-arity + 3))
+(test 'plus object-name (procedure-rename + 'plus))
+(test 'again object-name (procedure-rename (procedure-rename + 'plus) 'again))
+(test 'again object-name (procedure-rename (procedure-reduce-arity + 3) 'again))
+(test 3 procedure-arity (procedure-rename (procedure-reduce-arity + 3) 'again))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
