@@ -450,6 +450,12 @@ recursively matches the corresponding list element. There
 may be a single ellipsis in any list pattern; if one is
 present, the pattern before the ellipses may match multiple
 adjacent elements in the list value (possibly none).  
+
+This form is a lower-level form in Redex, and not really designed to
+be used directly. If you want a @scheme[let]-like form that uses
+Redex's full pattern matching facilities, see @scheme[term-match] and
+@scheme[term-match/single].
+
 }
 
 @defform[(term-match language [#, @|ttpattern| expression] ...)]{
@@ -460,6 +466,10 @@ function returns a list of the values of the expression
 where the pattern matches. If one of the patterns matches
 multiple times, the expression is evaluated multiple times,
 once with the bindings in the pattern for each match.
+
+When evaluating a @scheme[term-match] expression, the patterns are
+compiled in an effort to speed up matching. Using the procedural
+result multiple times to avoid compiling the patterns multiple times.
 }
 
 @defform[(term-match/single language [#, @|ttpattern| expression] ...)]{
@@ -472,6 +482,10 @@ is signaled. If no patterns match, an error is signaled.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
 no clauses match or if one of the clauses matches multiple ways.
+
+When evaluating a @scheme[term-match/single] expression, the patterns
+are compiled in an effort to speed up matching. Using the procedural
+result multiple times to avoid compiling the patterns multiple times.
 }
 
 @defproc[(plug [context any?] [expression any?]) any]{
