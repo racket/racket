@@ -2699,12 +2699,12 @@ Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
 /* Does not include negative marks */
 {
   WRAP_POS awl;
-  Scheme_Object *acur_mark, *first = scheme_null, *last = NULL, *p;
+  Scheme_Object *acur_mark, *p, *marks = scheme_null;
 
   WRAP_POS_INIT(awl, ((Scheme_Stx *)stx)->wraps);
 
   while (1) {
-    /* Skip over renames, cancelled marks, and negative marks: */
+    /* Skip over renames, immediately-canceled marks, and negative marks: */
     acur_mark = NULL;
     while (1) {
       if (WRAP_POS_END_P(awl))
@@ -2727,16 +2727,14 @@ Scheme_Object *scheme_stx_extract_marks(Scheme_Object *stx)
     }
 
     if (acur_mark) {
-      p = scheme_make_pair(acur_mark, scheme_null);
-      if (!last)
-	first = p;
+      if (SCHEME_PAIRP(marks) && SAME_OBJ(acur_mark, SCHEME_CAR(marks)))
+        marks = SCHEME_CDR(marks);
       else
-	SCHEME_CDR(last) = p;
-      last = p;
+        marks = scheme_make_pair(acur_mark, marks);
     }
 
     if (WRAP_POS_END_P(awl))
-      return first;
+      return scheme_reverse(marks);
   }
 }
 
@@ -3082,7 +3080,7 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
   return scheme_false;
 }
 
-XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
+static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
 /* Compares the marks in two wraps lists. A result of 2 means that the
    result depended on a barrier env. For a rib-based renaming, we need
    to check only up to the rib, and the barrier effect important for
@@ -3094,100 +3092,174 @@ XFORM_NONGCING static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Obje
   WRAP_POS awl;
   WRAP_POS bwl;
   Scheme_Object *acur_mark, *bcur_mark;
+# define FAST_STACK_SIZE 4
+  Scheme_Object *a_mark_stack_fast[FAST_STACK_SIZE], *b_mark_stack_fast[FAST_STACK_SIZE];
+  Scheme_Object **a_mark_stack = a_mark_stack_fast, **b_mark_stack = b_mark_stack_fast, **naya;
+  int a_mark_cnt = 0, a_mark_size = FAST_STACK_SIZE, b_mark_cnt = 0, b_mark_size = FAST_STACK_SIZE;
   int used_barrier = 0;
 
   WRAP_POS_COPY(awl, *_awl);
   WRAP_POS_COPY(bwl, *_bwl);
 
+  /* A simple way to compare marks would be to make two lists of
+     marks.  The loop below attempts to speed up that process by
+     discovering common and canceled marks early, so they can be
+     omitted from the lists. The "stack" arrays accumulate the parts
+     of the list that can't be skipped that way. */
+
   while (1) {
-    /* Skip over renames and cancelled marks: */
+    /* Skip over renames and canceled marks: */
     acur_mark = NULL;
-    while (1) {
-      if (WRAP_POS_END_P(awl))
-	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl)) && IS_POSMARK(WRAP_POS_FIRST(awl))) {
-	if (acur_mark) {
-	  if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
-	    acur_mark = NULL;
-	    WRAP_POS_INC(awl);
-	  } else
-	    break;
-	} else {
-	  acur_mark = WRAP_POS_FIRST(awl);
-	  WRAP_POS_INC(awl);
-	}
-      } else if (SCHEME_RIBP(WRAP_POS_FIRST(awl))) {
-	if (SCHEME_FALSEP(barrier_env)) {
-	  WRAP_POS_INC(awl);
-	} else {
-	  /* See if the barrier environment is in this rib. */
-	  Scheme_Lexical_Rib *rib;
-	  rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(awl);
-	  for (rib = rib->next; rib; rib = rib->next) {
-	    if (SAME_OBJ(SCHEME_VEC_ELS(rib->rename)[0], barrier_env))
-	      break;
-	  }
-	  if (!rib) {
-	    WRAP_POS_INC(awl);
-	  } else {
-	    WRAP_POS_INIT_END(awl);
-	    used_barrier = 1;
-	  }
-	}
-      } else {
-	WRAP_POS_INC(awl);
+    while (1) { /* loop for canceling stack */
+      /* this loop handles immediately canceled marks */
+      while (1) {
+        if (WRAP_POS_END_P(awl))
+          break;
+        if (SCHEME_NUMBERP(WRAP_POS_FIRST(awl)) && IS_POSMARK(WRAP_POS_FIRST(awl))) {
+          if (acur_mark) {
+            if (SAME_OBJ(acur_mark, WRAP_POS_FIRST(awl))) {
+              acur_mark = NULL;
+              WRAP_POS_INC(awl);
+            } else
+              break;
+          } else {
+            acur_mark = WRAP_POS_FIRST(awl);
+            WRAP_POS_INC(awl);
+          }
+        } else if (SCHEME_RIBP(WRAP_POS_FIRST(awl))) {
+          if (SCHEME_FALSEP(barrier_env)) {
+            WRAP_POS_INC(awl);
+          } else {
+            /* See if the barrier environment is in this rib. */
+            Scheme_Lexical_Rib *rib;
+            rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(awl);
+            for (rib = rib->next; rib; rib = rib->next) {
+              if (SAME_OBJ(SCHEME_VEC_ELS(rib->rename)[0], barrier_env))
+                break;
+            }
+            if (!rib) {
+              WRAP_POS_INC(awl);
+            } else {
+              WRAP_POS_INIT_END(awl);
+              used_barrier = 1;
+            }
+          }
+        } else {
+          WRAP_POS_INC(awl);
+        }
       }
+      /* Maybe cancel a mark on the stack */
+      if (acur_mark && a_mark_cnt) {
+        if (SAME_OBJ(acur_mark, a_mark_stack[a_mark_cnt - 1])) {
+          --a_mark_cnt;
+          if (a_mark_cnt) {
+            acur_mark = a_mark_stack[a_mark_cnt - 1];
+            --a_mark_cnt;
+            break;
+          } else
+            acur_mark = NULL;
+        } else
+          break;
+      } else
+        break;
     }
+
     bcur_mark = NULL;
-    while (1) {
-      if (WRAP_POS_END_P(bwl))
-	break;
-      if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl)) && IS_POSMARK(WRAP_POS_FIRST(bwl))) {
-	if (bcur_mark) {
-	  if (SAME_OBJ(bcur_mark, WRAP_POS_FIRST(bwl))) {
-	    bcur_mark = NULL;
-	    WRAP_POS_INC(bwl);
-	  } else
-	    break;
-	} else {
-	  bcur_mark = WRAP_POS_FIRST(bwl);
-	  WRAP_POS_INC(bwl);
-	}
-      } else if (SCHEME_RIBP(WRAP_POS_FIRST(bwl))) {
-	if (SCHEME_FALSEP(barrier_env)) {
-	  WRAP_POS_INC(bwl);
-	} else {
-	  /* See if the barrier environment is in this rib. */
-	  Scheme_Lexical_Rib *rib;
-	  rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(bwl);
-	  for (rib = rib->next; rib; rib = rib->next) {
-	    if (SAME_OBJ(SCHEME_VEC_ELS(rib->rename)[0], barrier_env))
-	      break;
-	  }
-	  if (!rib) {
-	    WRAP_POS_INC(bwl);
-	  } else {
-	    WRAP_POS_INIT_END(bwl);
-	    used_barrier = 1;
-	  }
-	}
-      } else {
-	WRAP_POS_INC(bwl);
+    while (1) { /* loop for canceling stack */
+      while (1) {
+        if (WRAP_POS_END_P(bwl))
+          break;
+        if (SCHEME_NUMBERP(WRAP_POS_FIRST(bwl)) && IS_POSMARK(WRAP_POS_FIRST(bwl))) {
+          if (bcur_mark) {
+            if (SAME_OBJ(bcur_mark, WRAP_POS_FIRST(bwl))) {
+              bcur_mark = NULL;
+              WRAP_POS_INC(bwl);
+            } else
+              break;
+          } else {
+            bcur_mark = WRAP_POS_FIRST(bwl);
+            WRAP_POS_INC(bwl);
+          }
+        } else if (SCHEME_RIBP(WRAP_POS_FIRST(bwl))) {
+          if (SCHEME_FALSEP(barrier_env)) {
+            WRAP_POS_INC(bwl);
+          } else {
+            /* See if the barrier environment is in this rib. */
+            Scheme_Lexical_Rib *rib;
+            rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(bwl);
+            for (rib = rib->next; rib; rib = rib->next) {
+              if (SAME_OBJ(SCHEME_VEC_ELS(rib->rename)[0], barrier_env))
+                break;
+            }
+            if (!rib) {
+              WRAP_POS_INC(bwl);
+            } else {
+              WRAP_POS_INIT_END(bwl);
+              used_barrier = 1;
+            }
+          }
+        } else {
+          WRAP_POS_INC(bwl);
+        }
       }
+      /* Maybe cancel a mark on the stack */
+      if (bcur_mark && b_mark_cnt) {
+        if (SAME_OBJ(bcur_mark, b_mark_stack[b_mark_cnt - 1])) {
+          --b_mark_cnt;
+          if (b_mark_cnt) {
+            bcur_mark = b_mark_stack[b_mark_cnt - 1];
+            --b_mark_cnt;
+            break;
+          } else
+            bcur_mark = NULL;
+        } else
+          break;
+      } else
+        break;
     }
 
     /* Same mark? */
-    if (!SAME_OBJ(acur_mark, bcur_mark))
-      return 0;
+    if (a_mark_cnt || b_mark_cnt || !SAME_OBJ(acur_mark, bcur_mark)) {
+      /* Not the same, so far; push onto stacks in case they're
+         cancelled later */
+      if (acur_mark) {
+        if (a_mark_cnt >= a_mark_size) {
+          a_mark_size *= 2;
+          naya = MALLOC_N(Scheme_Object*, a_mark_size);
+          memcpy(naya, a_mark_stack, sizeof(Scheme_Object *)*a_mark_cnt);
+          a_mark_stack = naya;
+        }
+        a_mark_stack[a_mark_cnt++] = acur_mark;
+      }
+      if (bcur_mark) {
+        if (b_mark_cnt >= b_mark_size) {
+          b_mark_size *= 2;
+          naya = MALLOC_N(Scheme_Object*, b_mark_size);
+          memcpy(naya, b_mark_stack, sizeof(Scheme_Object *)*b_mark_cnt);
+          b_mark_stack = naya;
+        }
+        b_mark_stack[b_mark_cnt++] = bcur_mark;
+      }
+    }
 
     /* Done if both reached the end: */
-    if (WRAP_POS_END_P(awl) && WRAP_POS_END_P(bwl))
-      return used_barrier + 1;
+    if (WRAP_POS_END_P(awl) && WRAP_POS_END_P(bwl)) {
+      if (a_mark_cnt == b_mark_cnt) {
+        while (a_mark_cnt--) {
+          if (!SAME_OBJ(a_mark_stack[a_mark_cnt], b_mark_stack[a_mark_cnt]))
+            return 0;
+        }
+        return used_barrier + 1;
+      } else
+        return 0;
+    }
   }
 }
 
 static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark)
-/* Checks for positive or negative (certificate-only) mark */
+/* Checks for positive or negative (certificate-only) mark.
+   FIXME: canceling marks are detected only when they're immediately
+   canceling (i.e., no canceled marks in between). */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark;
@@ -3226,7 +3298,8 @@ static int includes_mark(Scheme_Object *wraps, Scheme_Object *mark)
 }
 
 static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
-/* Adds both positive and negative marks to marks table */
+/* Adds both positive and negative marks to marks table. This may add too many
+   marks, because it detects only immediately canceling marks. */
 {
   WRAP_POS awl;
   Scheme_Object *acur_mark;
