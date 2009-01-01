@@ -672,6 +672,28 @@ returns @scheme[#f].
   (filter-not even? '(1 2 3 4 5 6))
 ]}
 
+@defproc[(argmin [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
+
+This returns the first element in the list @scheme[lst] that minimizes
+the result of @scheme[proc]. 
+
+@mz-examples[#:eval list-eval
+(argmin car '((3 pears) (1 banana) (2 apples)))
+(argmin car '((1 banana) (1 orange)))
+]
+}
+
+@defproc[(argmax [proc (-> any/c real?)] [lst (and/c pair? list?)]) any/c]{
+
+This returns the first element in the list @scheme[lst] that maximizes
+the result of @scheme[proc]. 
+
+@mz-examples[#:eval list-eval
+(argmax car '((3 pears) (1 banana) (2 apples)))
+(argmax car '((3 pears) (3 oranges)))
+]
+}
+
 @close-eval[list-eval]
 
 @; ----------------------------------------
