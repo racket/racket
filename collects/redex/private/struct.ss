@@ -9,7 +9,7 @@
          build-reduction-relation
          reduction-relation?
          empty-reduction-relation
-         make-rewrite-proc rewrite-proc? rewrite-proc-name
+         make-rewrite-proc rewrite-proc? rewrite-proc-name rewrite-proc-lhs
          (struct-out rule-pict))
 
 (define-struct rule-pict (arrow lhs rhs label side-conditions fresh-vars pattern-binds))
@@ -20,13 +20,14 @@
 ;;   we want to avoid doing it multiple times, so it is cached in a reduction-relation struct
 
 
-(define-values (make-rewrite-proc rewrite-proc? rewrite-proc-name)
+(define-values (make-rewrite-proc rewrite-proc? rewrite-proc-name rewrite-proc-lhs)
   (let ()
     (define-values (type constructor predicate accessor mutator) 
-      (make-struct-type 'rewrite-proc #f 2 0 #f '() #f 0))
+      (make-struct-type 'rewrite-proc #f 3 0 #f '() #f 0))
     (values constructor 
             predicate 
-            (make-struct-field-accessor accessor 1 'name))))
+            (make-struct-field-accessor accessor 1 'name)
+            (make-struct-field-accessor accessor 2 'lhs))))
 
 ;; lang : compiled-language
 ;; make-procs = (listof (compiled-lang -> proc))

@@ -1,6 +1,9 @@
 (module tl-test mzscheme
   (require "../reduction-semantics.ss"
-           "test-util.ss")
+           "test-util.ss"
+           (only "matcher.ss" make-bindings make-bind)
+           scheme/match
+           "struct.ss")
   
   (reset-count)
   
@@ -536,6 +539,19 @@
          '((2 3) (4 5)))
         (list '((2 3) 20)
               '(6 (4 5))))
+  
+  ; shortcuts like this fail if compilation fails to preserve
+  ; lexical context for side-conditions expressions.
+  (test (let ([x #t])
+          (apply-reduction-relation
+           (reduction-relation
+            grammar
+            (==> variable variable)
+            with
+            [(--> (a (side-condition number x)) b)
+             (==> a b)])
+           '(x 4)))
+        '(x))
   
   (test (apply-reduction-relation/tag-with-names
          (reduction-relation 
@@ -1098,5 +1114,49 @@
                                   (where y x)))
          'x)
         '(x1))
+  
+  (let ([r (reduction-relation
+            grammar
+            (->1 1 2)
+            (->2 3 4)
+            (->4 5 6)
+            with
+            [(--> (side-condition (a number) (even? (term number))) b)
+             (->1 a b)]
+            [(--> (X 
+                   (number number)
+                   (X_1 X_1)
+                   (M_!_1 M_!_1)
+                   (1 ..._1 1 ..._1)
+                   (1 ..._!_1 1 ..._!_1))
+                  b)
+             (->2 X b)]
+            [(--> (a 1) b)
+             (->3 a b)]
+            [(->3 (a 2) b)
+             (->4 a b)])])
+    
+    ; test that names are properly bound for side-conditions in shortcuts
+    (let* ([lhs (rewrite-proc-lhs (first (reduction-relation-make-procs r)))]
+           [proc (third lhs)]
+           [name (cadadr lhs)]
+           [bind (λ (n) (make-bindings (list (make-bind name n))))])
+      (test (and (proc (bind 4)) (not (proc (bind 3)))) #t))
+    
+    ; test binder renaming
+    (let ([sym-mtch? (λ (rx) (λ (s) (and (symbol? s) (regexp-match? rx (symbol->string s)))))])
+      (match (rewrite-proc-lhs (second (reduction-relation-make-procs r)))
+        [`(3
+           (,(and n1 (? (sym-mtch? #px"^number_\\d+$"))) ,n1)
+           (,(and n2 (? (sym-mtch? #px"^X_1\\d+$"))) ,n2)
+           (,(and m1 (? (sym-mtch? #px"^M_!_1\\d+$"))) ,m1)
+           (1 ,(and ...1 (? (sym-mtch? #px"^\\.\\.\\._1\\d+$"))) 1 ,...1)
+           (1 ,(and ...!1 (? (sym-mtch? #px"^\\.\\.\\._!_1\\d+$"))) 1 ,...!1))
+         #t]
+        [else #f]))
+    
+    ; test shortcut in terms of shortcut
+    (test (rewrite-proc-lhs (third (reduction-relation-make-procs r)))
+          '((5 2) 1)))
   
   (print-tests-passed 'tl-test.ss))

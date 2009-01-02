@@ -20,6 +20,7 @@ To do a better job of not generating programs with free variables,
          "underscore-allowed.ss"
          "term.ss"
          "error.ss"
+         "struct.ss"
          (for-syntax "rewrite-side-conditions.ss")
          (for-syntax "term-fn.ss")
          (for-syntax "reduction-semantics.ss")
@@ -83,13 +84,16 @@ To do a better job of not generating programs with free variables,
 (define (pick-string lang-chars lang-lits attempt [random random])
   (random-string lang-chars lang-lits (random-natural 1/5 random) attempt random))
 
-(define ((pick-nt pref-prods) nt prods bound-vars attempt)
-  (let* ([binders (filter (λ (x) (not (null? (rhs-var-info x)))) prods)]
+(define ((pick-nt pref-prods [random random]) name lang bound-vars attempt)
+  (let* ([prods (nt-rhs (nt-by-name lang name))]
+         [binders (filter (λ (x) (not (null? (rhs-var-info x)))) prods)]
          [do-intro-binder? (and (null? bound-vars)
                                 (not (null? binders))
                                 (try-to-introduce-binder?))])
     (cond [do-intro-binder? binders]
-          [(preferred-production? attempt) (list (hash-ref pref-prods nt))]
+          [(and (not (eq? lang sexp))
+                (preferred-production? attempt random))
+           (hash-ref pref-prods name)]
           [else prods])))
 
 (define (pick-from-list l [random random]) (list-ref l (random (length l))))
@@ -155,7 +159,7 @@ To do a better job of not generating programs with free variables,
          [zip (λ (l m) (map cons l m))])
     (map cdr (filter (λ (x) (equal? min-size (car x))) (zip sizes (nt-rhs nt))))))
 
-(define (generate* lang pat decisions@)
+(define (generate lang decisions@)
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -164,19 +168,16 @@ To do a better job of not generating programs with free variables,
   (define base-table (find-base-cases lang))
   
   (define (generate-nt name fvt-id bound-vars size attempt in-hole state)
-    (let*-values 
-        ([(nt) (findf (λ (nt) (eq? name (nt-name nt))) 
-                      (append (compiled-lang-lang lang)
-                              (compiled-lang-cclang lang)))]
-         [(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
+    (let*-values
+        ([(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
          [(term _)
           (generate/pred 
            name
            (λ () 
              (let ([rhs (pick-from-list
                          (if (zero? size)
-                             (min-prods nt base-table)
-                             ((next-non-terminal-decision) name (nt-rhs nt) bound-vars attempt)))])
+                             (min-prods (nt-by-name lang name) base-table)
+                             ((next-non-terminal-decision) name lang bound-vars attempt)))])
                (((generate-pat bound-vars (max 0 (sub1 size)) attempt) (rhs-pattern rhs) in-hole)
                 (make-state (map fvt-entry (rhs-var-info rhs)) #hash()))))
            (λ (_ env) (mismatches-satisfied? env)))])
@@ -289,7 +290,7 @@ To do a better job of not generating programs with free variables,
       [`(hide-hole ,pattern) ((recur pattern the-hole) state)]
       [`any
        (let*-values ([(lang nt) ((next-any-decision) lang)]
-                     [(term _) ((generate* lang nt decisions@) size attempt)])
+                     [(term _) (((generate lang decisions@) nt) size attempt)])
          (values term state))]
       [(? (is-nt? lang))
        (generate-nt pat pat bound-vars size attempt in-hole state)]
@@ -355,15 +356,17 @@ To do a better job of not generating programs with free variables,
       (state-fvt state))
      (state-env state)))
   
-  (λ (size attempt)
-    (let-values ([(term state)
-                  (generate/pred 
-                   (unparse-pattern pat)
-                   (λ () 
-                     (((generate-pat null size attempt) pat the-hole)
-                      (make-state null #hash())))
-                   (λ (_ env) (mismatches-satisfied? env)))])
-      (values term (bindings (state-env state))))))
+  (λ (pat)
+    (let ([unparsed (unparse-pattern pat)])
+      (λ (size attempt)
+        (let-values ([(term state)
+                      (generate/pred 
+                       unparsed
+                       (λ () 
+                         (((generate-pat null size attempt) pat the-hole)
+                          (make-state null #hash())))
+                       (λ (_ env) (mismatches-satisfied? env)))])
+          (values term (bindings (state-env state))))))))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -445,6 +448,12 @@ To do a better job of not generating programs with free variables,
 ;; built-in? : any -> boolean
 (define (built-in? x)
   (and (memq x underscore-allowed) #t))
+
+;; nt-by-name : lang symbol -> nt
+(define (nt-by-name lang name)
+  (findf (λ (nt) (eq? name (nt-name nt))) 
+         (append (compiled-lang-lang lang)
+                 (compiled-lang-cclang lang))))
 
 (define named-nt-rx #rx"^([^_]+)_[^_]*$")
 (define mismatch-nt-rx #rx"([^_]+)_!_[^_]*$")
@@ -591,7 +600,7 @@ To do a better job of not generating programs with free variables,
         [(struct ellipsis (name sub-pat class vars))
          (make-ellipsis name (recur sub-pat) (rewrite class)
                         (map (λ (v) (if (class? v) (rewrite v) v)) vars))]
-        [(? list?) (map (λ (p) (recur p)) pat)]
+        [(? list?) (map recur pat)]
         [_ pat]))))
 
 ;; used in generating the `any' pattern
@@ -610,15 +619,16 @@ To do a better job of not generating programs with free variables,
        (with-syntax ([(name ...) names]
                      [(name/ellipses ...) names/ellipses])
          (syntax/loc stx
-           (check-property 
-            (term-generator lang pat random-decisions)
-            (λ (_ bindings)
-              (with-handlers ([exn:fail? (λ (_) #f)])
-                (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                          property)))
-            attempts))))]))
+           (or (check-property 
+                (term-generator lang pat random-decisions)
+                (λ (_ bindings)
+                  (with-handlers ([exn:fail? (λ (_) #f)])
+                    (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
+                              property)))
+                attempts)
+               (void)))))]))
 
-(define (check-property generate property attempts)
+(define (check-property generate property attempts [source #f])
   (let loop ([remaining attempts])
     (if (zero? remaining)
         #t
@@ -628,23 +638,21 @@ To do a better job of not generating programs with free variables,
             (if (property term bindings)
                 (loop (sub1 remaining))
                 (begin
-                  (fprintf (current-error-port) 
-                           "failed after ~s attempts:\n" 
-                           attempt)
-                  (pretty-print term (current-error-port)))))))))
+                  (when source
+                    (fprintf (current-error-port) "checking ~a " source))
+                  (fprintf (current-error-port) "failed after ~s attempts:\n" attempt)
+                  (pretty-print term (current-error-port))
+                  #f)))))))
 
-(define-syntax generate
+(define-syntax generate-term
   (syntax-rules ()
-    [(_ lang pat size attempt)
-     (let-values ([(term _) ((term-generator lang pat random-decisions) size attempt)])
+    [(_ lang pat size attempt decisions)
+     (let-values ([(term _) ((term-generator lang pat decisions) size attempt)])
        term)]
-    [(_ lang pat size) (generate lang pat size 0)]))
-
-(define-syntax generate/decisions
-  (syntax-rules ()
-    [(_ lang pat size attempt decisions@)
-     (let-values ([(term _) ((term-generator lang pat decisions@) size attempt)])
-       term)]))
+    [(_ lang pat size attempt)
+     (generate-term lang pat size attempt random-decisions)]
+    [(_ lang pat size)
+     (generate-term lang pat size 1)]))
 
 (define-syntax (term-generator stx)
   (syntax-case stx ()
@@ -655,10 +663,14 @@ To do a better job of not generating programs with free variables,
                      'generate #t #'pat)])
        (syntax/loc stx 
          (let ([lang (parse-language lang)])
-           (generate* 
-            lang
-            (reassign-classes (parse-pattern `pattern lang 'top-level))
-            (decisions lang)))))]))
+           ((generate lang (decisions lang))
+            (reassign-classes (parse-pattern `pattern lang 'top-level))))))]))
+
+(define-for-syntax (metafunc name stx)
+  (let ([tf (syntax-local-value name (λ () #f))])
+    (if (term-fn? tf)
+        (term-fn-get-id tf)
+        (raise-syntax-error #f "not a metafunction" stx name))))
 
 (define-syntax (check-metafunction-contract stx)
   (syntax-case stx ()
@@ -666,21 +678,63 @@ To do a better job of not generating programs with free variables,
      (syntax/loc stx (check-metafunction-contract name random-decisions))]
     [(_ name decisions)
      (identifier? #'name)
-     (with-syntax ([m (let ([tf (syntax-local-value #'name (λ () #f))])
-                        (if (term-fn? tf)
-                            (term-fn-get-id tf)
-                            (raise-syntax-error #f "not a metafunction" stx #'name)))])
+     (with-syntax ([m (metafunc #'name stx)])
        (syntax/loc stx 
         (let ([lang (parse-language (metafunc-proc-lang m))]
               [dom (metafunc-proc-dom-pat m)])
           (check-property 
-           (generate* lang
-                      (reassign-classes (parse-pattern (if dom dom '(any (... ...))) lang 'top-level))
-                      (decisions lang))
+           ((generate lang (decisions lang))
+            (reassign-classes (parse-pattern (if dom dom '(any (... ...))) lang 'top-level)))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
                (begin (term (name ,@t)) #t)))
            default-check-attempts))))]))
+
+(define (check-property-many lang patterns ids prop decisions attempts)
+  (let* ([lang-gen (generate lang (decisions lang))]
+         [pat-gens (map (λ (pat) (lang-gen (reassign-classes (parse-pattern pat lang 'top-level))))
+                        patterns)])
+    (for/and ([pat patterns]
+              [id ids])
+      (check-property
+       (let ([gen (lang-gen (reassign-classes (parse-pattern pat lang 'top-level)))])
+         (λ (size attempt) (gen size attempt)))
+       (λ (term _) (prop term))
+       attempts
+       id))))
+
+(define-syntax (check-metafunction stx)
+  (syntax-case stx ()
+    [(_ name property)
+     (syntax/loc stx (check-metafunction name property default-check-attempts))]
+    [(_ name property attempts)
+     (syntax/loc stx (check-metafunction name property random-decisions attempts))]
+    [(_ name property decisions attempts)
+     (with-syntax ([m (metafunc #'name stx)])
+       (syntax/loc stx
+         (or (check-property-many
+              (parse-language (metafunc-proc-lang m))
+              (metafunc-proc-lhs-pats m)
+              (build-list (length (metafunc-proc-lhs-pats m))
+                          (compose (curry format "clause #~s") add1))
+              property
+              decisions
+              attempts)
+             (void))))]))
+
+(define (check-reduction-relation 
+         relation property 
+         #:decisions [decisions random-decisions]
+         #:attempts [attempts default-check-attempts])
+  (or (check-property-many
+       (parse-language (reduction-relation-lang relation))
+       (map rewrite-proc-lhs (reduction-relation-make-procs relation))
+       (map (λ (proc) (or (rewrite-proc-name proc) 'unnamed))
+            (reduction-relation-make-procs relation))
+       property
+       decisions
+       attempts)
+      (void)))
 
 (define-signature decisions^
   (next-variable-decision
@@ -693,7 +747,7 @@ To do a better job of not generating programs with free variables,
 (define (random-decisions lang)
   (define preferred-productions
     (make-immutable-hasheq
-     (map (λ (nt) (cons (nt-name nt) (pick-from-list (nt-rhs nt))))
+     (map (λ (nt) (cons (nt-name nt) (list (pick-from-list (nt-rhs nt)))))
           (append (compiled-lang-lang lang)
                   (compiled-lang-cclang lang)))))
   (unit (import) (export decisions^)
@@ -705,12 +759,13 @@ To do a better job of not generating programs with free variables,
         (define (next-string-decision) pick-string)))
 
 (provide pick-from-list pick-var min-prods decisions^ pick-sequence-length
-         is-nt? pick-char random-string pick-string check
-         pick-nt unique-chars pick-any sexp generate parse-pattern
+         is-nt? pick-char random-string pick-string check nt-by-name
+         pick-nt unique-chars pick-any sexp generate-term parse-pattern
          class-reassignments reassign-classes unparse-pattern
          (struct-out ellipsis) (struct-out mismatch) (struct-out class)
-         (struct-out binder) generate/decisions check-metafunction-contract
-         pick-number parse-language)
+         (struct-out binder) check-metafunction-contract
+         pick-number parse-language check-reduction-relation 
+         preferred-production-threshold check-metafunction)
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])

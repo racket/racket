@@ -1,9 +1,10 @@
-(module rewrite-side-conditions mzscheme
+(module rewrite-side-conditions scheme/base
   (require (lib "list.ss")
            "underscore-allowed.ss")
-  (require-for-template mzscheme
-                        "term.ss"
-                        "matcher.ss")
+  (require (for-template
+            mzscheme
+            "term.ss"
+            "matcher.ss"))
   
   (provide rewrite-side-conditions/check-errs
            extract-names
@@ -85,7 +86,7 @@
   (define-struct id/depth (id depth))
   
   ;; extract-names : syntax syntax -> (values (listof syntax) (listof syntax[x | (x ...) | ((x ...) ...) | ...]))
-  (define (extract-names all-nts what bind-names? orig-stx)
+  (define (extract-names all-nts what bind-names? orig-stx [rhs-only? #t])
     (let* ([dups
             (let loop ([stx orig-stx]
                        [names null]
@@ -115,8 +116,8 @@
                      [else 
                       (if (or (null? (cdr pats))
                               (not (identifier? (cadr pats)))
-                              (not (or (module-identifier=? (quote-syntax ...)
-                                                            (cadr pats))
+                              (not (or (free-identifier=? (quote-syntax ...)
+                                                          (cadr pats))
                                        (let ([inside (syntax-e (cadr pats))])
                                          (regexp-match #rx"^\\.\\.\\._" (symbol->string inside))))))
                           (i-loop (cdr pats)
@@ -125,7 +126,8 @@
                                   (loop (car pats) names (+ depth 1))))]))]
                 [x
                  (and (identifier? (syntax x))
-                      (binds-in-right-hand-side? all-nts bind-names? (syntax x)))
+                      ((if rhs-only? binds-in-right-hand-side? binds?)
+                       all-nts bind-names? (syntax x)))
                  (cons (make-id/depth (syntax x) depth) names)]
                 [else names]))]
            [no-dups (filter-duplicates what orig-stx dups)])
@@ -141,14 +143,16 @@
                             [dots (quote-syntax ...)])
                 (syntax (rest dots)))])))
   
-  
-  (define (binds-in-right-hand-side? nts bind-names? x)
+  (define (binds? nts bind-names? x)
     (or (and bind-names? (memq (syntax-e x) nts))
         (and bind-names? (memq (syntax-e x) underscore-allowed))
-        (let ([str (symbol->string (syntax-e x))])
-          (and (regexp-match #rx"_" str)
-               (not (regexp-match #rx"^\\.\\.\\._" str))
-               (not (regexp-match #rx"_!_" str))))))
+        (regexp-match #rx"_" (symbol->string (syntax-e x)))))
+  
+  (define (binds-in-right-hand-side? nts bind-names? x)
+    (and (binds? nts bind-names? x)
+         (let ([str (symbol->string (syntax-e x))])
+           (and (not (regexp-match #rx"^\\.\\.\\._" str))
+                (not (regexp-match #rx"_!_" str))))))
   
   (define (filter-duplicates what orig-stx dups)
     (let loop ([dups dups])
@@ -158,8 +162,8 @@
          (cons
           (car dups)
           (filter (lambda (x) 
-                    (let ([same-id? (module-identifier=? (id/depth-id x)
-                                                         (id/depth-id (car dups)))])
+                    (let ([same-id? (free-identifier=? (id/depth-id x)
+                                                       (id/depth-id (car dups)))])
                       (when same-id?
                         (unless (equal? (id/depth-depth x)
                                         (id/depth-depth (car dups)))
@@ -167,7 +171,7 @@
                            (make-exn:fail:syntax
                             (format "~a: found the same binder, ~s, at different depths, ~a and ~a"
                                     what
-                                    (syntax-object->datum (id/depth-id x))
+                                    (syntax->datum (id/depth-id x))
                                     (id/depth-depth x)
                                     (id/depth-depth (car dups)))
                             (current-continuation-marks)
