@@ -210,16 +210,35 @@
 
   (define handler-prompt-key (make-continuation-prompt-tag))
 
-  (define (call-handled-body body-thunk)
+  (define (call-handled-body bpz handle-proc body-thunk)
+    ;; Disable breaks here, so that when the exception handler jumps
+    ;;  to run a handler, breaks are disabled for the handler
     (with-continuation-mark
         break-enabled-key
         false-thread-cell
       (call-with-continuation-prompt
-       body-thunk
+       (lambda (bpz body-thunk)
+         ;; Restore the captured break parameterization for
+         ;;  evaluating the `with-handlers' body. In this
+         ;;  special case, no check for breaks is needed,
+         ;;  because bpz is quickly restored past call/ec.
+         ;;  Thus, `with-handlers' can evaluate its body in
+         ;;  tail position.
+         (with-continuation-mark 
+             break-enabled-key
+             bpz
+           (with-continuation-mark 
+               exception-handler-key
+               (lambda (e)
+                 ;; Deliver the exception to the escape handler:
+                 (abort-current-continuation
+                  handler-prompt-key
+                  e))
+             (body-thunk))))
        handler-prompt-key
-       ;; On escape, apply the handler thunk
-       (lambda (thunk) (thunk)))))
-
+       handle-proc
+       bpz body-thunk)))
+  
   (define-syntaxes (with-handlers with-handlers*)
     (let ([wh 
 	   (lambda (disable-break?)
@@ -234,36 +253,19 @@
 		    (quasisyntax/loc stx
 		      (let-values ([(pred-name) pred] ...
                                    [(handler-name) handler] ...)
-			;; Capture current break parameterization, so we can use it to
-			;;  evaluate the body
-			(let ([bpz (continuation-mark-set-first #f break-enabled-key)])
-			  ;; Disable breaks here, so that when the exception handler jumps
-			  ;;  to run a handler, breaks are disabled for the handler
-			  (call-handled-body
+                        ;; Capture current break parameterization, so we can use it to
+                        ;;  evaluate the body
+                        (let ([bpz (continuation-mark-set-first #f break-enabled-key)])
+                          (call-handled-body
+                           bpz
+                           (lambda (e)
+                             (#,(if disable-break?
+                                    #'select-handler/no-breaks
+                                    #'select-handler/breaks-as-is)
+                              e bpz
+                              (list (cons pred-name handler-name) ...)))
                            (lambda ()
-                             ;; Restore the captured break parameterization for
-                             ;;  evaluating the `with-handlers' body. In this
-                             ;;  special case, no check for breaks is needed,
-                             ;;  because bpz is quickly restored past call/ec.
-                             ;;  Thus, `with-handlers' can evaluate its body in
-                             ;;  tail position.
-                             (with-continuation-mark 
-                                 break-enabled-key
-                                 bpz
-                               (with-continuation-mark 
-                                   exception-handler-key
-                                   (lambda (e)
-                                     ;; Deliver a thunk to the escape handler:
-                                     (abort-current-continuation
-                                      handler-prompt-key
-                                      (lambda ()
-                                        (#,(if disable-break?
-                                               #'select-handler/no-breaks
-                                               #'select-handler/breaks-as-is)
-                                         e bpz
-                                         (list (cons pred-name handler-name) ...)))))
-                                 (let-values ()
-                                   expr1 expr ...)))))))))])))])
+                             expr1 expr ...))))))])))])
       (values (wh #t) (wh #f))))
 
   (define (call-with-exception-handler exnh thunk)

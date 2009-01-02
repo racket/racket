@@ -318,7 +318,7 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(call_with_prompt_proc);
   call_with_prompt_proc = scheme_make_prim_w_arity2(call_with_prompt,
                                                     "call-with-continuation-prompt",
-                                                    1, 3,
+                                                    1, -1,
                                                     0, -1);
   scheme_add_global_constant("call-with-continuation-prompt",
 			     call_with_prompt_proc, 
@@ -6124,12 +6124,28 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   Scheme_Object *proc = in_argv[0], *prompt_tag;
   Scheme_Prompt *prompt;
   int argc, handler_argument_error = 0;
-  Scheme_Object **argv, *a[1], *handler;
+# define QUICK_PROMPT_ARGS 3
+  Scheme_Object **argv, *a[QUICK_PROMPT_ARGS], *handler;
   Scheme_Cont_Frame_Data cframe;
   Scheme_Dynamic_Wind *prompt_dw;
   int cc_count = scheme_cont_capture_count;
 
-  scheme_check_proc_arity("call-with-continuation-prompt", 0, 0, in_argc, in_argv);
+  argc = in_argc - 3;
+  if (argc <= 0) {
+    argc = 0;
+    argv = NULL;
+  } else {
+    int i;
+    if (argc <= QUICK_PROMPT_ARGS)
+      argv = a;
+    else
+      argv = MALLOC_N(Scheme_Object *, argc);
+    for (i = 0; i < argc; i++) {
+      argv[i] = in_argv[i+3];
+    }
+  }
+
+  scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(in_argv[1]))) {
       scheme_wrong_type("call-with-continuation-prompt", "continuation-prompt-tag",
@@ -6145,9 +6161,6 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
     handler = in_argv[2];
   } else
     handler = scheme_false;
-
-  argv = NULL;
-  argc = 0;
 
   do {
     /* loop implements the default prompt handler */

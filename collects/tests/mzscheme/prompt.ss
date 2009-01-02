@@ -8,6 +8,17 @@
 (define (test-breaks-ok)
   (err/rt-test (break-thread (current-thread)) exn:break?))
 
+
+(test (void) call-with-continuation-prompt void)
+(test (void) call-with-continuation-prompt void (default-continuation-prompt-tag))
+(test (void) call-with-continuation-prompt void (default-continuation-prompt-tag) list)
+(test '() call-with-continuation-prompt list (default-continuation-prompt-tag) void)
+(test '(1) call-with-continuation-prompt list (default-continuation-prompt-tag) void 1)
+(test '(1 2) call-with-continuation-prompt list (default-continuation-prompt-tag) void 1 2)
+(test '(1 2 3) call-with-continuation-prompt list (default-continuation-prompt-tag) void 1 2 3)
+(test '(1 2 3 4 5 6 7 8 9 10) call-with-continuation-prompt list (default-continuation-prompt-tag) void 
+      1 2 3 4 5 6 7 8 9 10)
+
 ;;----------------------------------------
 ;; cc variants
 
