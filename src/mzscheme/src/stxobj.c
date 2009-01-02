@@ -2318,7 +2318,7 @@ static Scheme_Object *make_mapped_k(void)
 
 static void make_mapped(Scheme_Cert *cert)
 {
-  Scheme_Cert *stop;
+  Scheme_Cert *stop, *c2;
   Scheme_Object *pr;
   Scheme_Hash_Table *ht;
 
@@ -2349,7 +2349,18 @@ static void make_mapped(Scheme_Cert *cert)
       make_mapped(stop);
   }
 
-  ht = scheme_make_hash_table_equal();
+  /* Check whether an `eq?' table will work: */
+  for (c2 = cert; c2 != stop; c2 = c2->next) {
+    if (c2->key)
+      break;
+    if (!SCHEME_INTP(c2->mark))
+      break;
+  }
+
+  if (c2 == stop)
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  else
+    ht = scheme_make_hash_table_equal();
 
   pr = scheme_make_raw_pair((Scheme_Object *)ht, (Scheme_Object *)stop);
   cert->mapped = pr;

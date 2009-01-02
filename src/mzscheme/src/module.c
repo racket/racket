@@ -4083,6 +4083,18 @@ static void *eval_module_body_k(void)
   return NULL;
 }
 
+#if 0
+# define LOG_RUN_DECLS long start_time
+# define LOG_START_RUN(mod) (start_time = scheme_get_process_milliseconds())
+# define LOG_END_RUN(mod) (printf("Ran %s [%d msec]\n", \
+                                  scheme_write_to_string(mod->modname, NULL), \
+                                  scheme_get_process_milliseconds() - start_time))
+#else
+# define LOG_RUN_DECLS /* empty */
+# define LOG_START_RUN(mod) /* empty */
+# define LOG_END_RUN(mod) /* empty */
+#endif
+
 static void eval_module_body(Scheme_Env *menv)
 {
   Scheme_Thread *p;
@@ -4092,6 +4104,7 @@ static void eval_module_body(Scheme_Env *menv)
   int i, cnt;
   int volatile save_phase_shift;
   mz_jmp_buf newbuf, * volatile savebuf;
+  LOG_RUN_DECLS;
 
   menv->running = 1;
   menv->ran = 1;
@@ -4103,6 +4116,8 @@ static void eval_module_body(Scheme_Env *menv)
     (void)scheme_enlarge_runstack(depth, eval_module_body_k);
     return;
   }
+
+  LOG_START_RUN(menv->module);
 
   save_runstack = scheme_push_prefix(menv, m->prefix,
 				     m->me->src_modidx, menv->link_midx,
@@ -4149,6 +4164,8 @@ static void eval_module_body(Scheme_Env *menv)
 
     scheme_pop_prefix(save_runstack);
   }
+
+  LOG_END_RUN(menv->module);
 }
 
 void scheme_run_module(Scheme_Env *menv, int set_ns)
@@ -5218,6 +5235,18 @@ module_sfs(Scheme_Object *data, SFS_Info *old_info)
   return data;
 }
 
+#if 0
+# define LOG_EXPAND_DECLS long start_time
+# define LOG_START_EXPAND(mod) (start_time = scheme_get_process_milliseconds())
+# define LOG_END_EXPAND(mod) (printf("Expanded/compiled %s [%d msec]\n", \
+                                     scheme_write_to_string(mod->modname, NULL), \
+                                     scheme_get_process_milliseconds() - start_time))
+#else
+# define LOG_EXPAND_DECLS /* empty */
+# define LOG_START_EXPAND(mod) /* empty */
+# define LOG_END_EXPAND(mod) /* empty */
+#endif
+
 static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env, 
 				Scheme_Compile_Expand_Info *rec, int drec)
 {
@@ -5229,6 +5258,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *mbval, *orig_ii;
   int saw_mb, check_mb = 0;
   int restore_confusing_name = 0;
+  LOG_EXPAND_DECLS;
 
   if (!scheme_is_toplevel(env))
     scheme_wrong_syntax(NULL, NULL, form, "illegal use (not at top-level)");
@@ -5255,6 +5285,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   rmp = SCHEME_STX_VAL(nm);
   rmp = scheme_intern_resolved_module_path(rmp);
   m->modname = rmp;
+
+  LOG_START_EXPAND(m);
 
   if (SAME_OBJ(m->modname, kernel_modname)) {
     /* Too confusing. Give it a different name while compiling. */
@@ -5491,6 +5523,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* rename tables no longer needed; NULL them out */
     menv->rename_set = NULL;
   }
+
+  LOG_END_EXPAND(m);
 
   SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
   return fm;
