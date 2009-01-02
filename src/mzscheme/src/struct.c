@@ -2951,7 +2951,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       } else {
 	/* Duplicate the hash table: */
 	Scheme_Hash_Table *oht = (Scheme_Hash_Table *)struct_type->props;
-	for (i =  oht->count; i--; ) {
+	for (i =  oht->size; i--; ) {
 	  if (oht->vals[i]) {
 	    prop = oht->keys[i];
 	    scheme_hash_set(ht, prop, oht->vals[i]);
