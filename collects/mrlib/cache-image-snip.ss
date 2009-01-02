@@ -277,6 +277,7 @@
   ;; coerce-to-cache-image-snip : image -> (is-a?/c cache-image-snip%)
   (define (coerce-to-cache-image-snip snp)
     (cond
+      [(is-a? snp cache-image-snip%) snp]
       [(hash-table-get image-snip-cache snp (λ () #f)) => values]
       [(is-a? snp image-snip%)
        (let* ([bmp (send snp get-bitmap)]
