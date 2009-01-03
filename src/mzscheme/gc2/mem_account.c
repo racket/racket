@@ -466,6 +466,7 @@ static void BTC_do_accounting(NewGC *gc)
       if (parent) {
         int powner = custodian_to_owner_set(gc, parent);
 
+        owner_table = gc->owner_table;
         owner_table[powner]->memory_use += owner_table[owner]->memory_use;
       }
 
