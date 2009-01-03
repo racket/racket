@@ -540,16 +540,17 @@
   (define-language L
     (e (+ e ...) number)
     (E (+ number ... E* e ...))
-    (E* hole E*))
-  (define R
-    (reduction-relation
-     L
-     (==> (+ number ...) whatever)
-     (--> (side-condition number (even? (term number))) whatever)
-     with
-     [(--> (in-hole E a) whatever)
-      (==> a b)]))
-  (let ([generated null])
+    (E* hole E*)
+    (n 4))
+  
+  (let ([generated null]
+        [R (reduction-relation
+            L
+            (==> (+ number ...) whatever)
+            (--> (side-condition number (even? (term number))) whatever)
+            with
+            [(--> (in-hole E a) whatever)
+             (==> a b)])])
     (test (begin
             (check-reduction-relation 
              R (λ (term) (set! generated (cons term generated)))
@@ -558,6 +559,7 @@
              #:attempts 1)
             generated)
           (reverse '((+ (+)) 0))))
+  
   (let ([S (reduction-relation L (--> 1 2 name) (--> 3 4))])
     (test (check-reduction-relation S (λ (x) #t) #:attempts 1) #t)
     (test (current-error-port-output 
@@ -565,7 +567,23 @@
           "checking name failed after 1 attempts:\n1\n")
     (test (current-error-port-output 
            (λ () (check-reduction-relation S (curry eq? 1))))
-          "checking unnamed failed after 1 attempts:\n3\n")))
+          "checking unnamed failed after 1 attempts:\n3\n"))
+  
+  (let ([T (reduction-relation
+            L
+            (==> number number
+                 (where num number)
+                 (side-condition (eq? (term num) 4))
+                 (where numb num)
+                 (side-condition (eq? (term numb) 4)))
+            with
+            [(--> (9 a) b)
+             (==> a b)])])
+    (test (check-reduction-relation 
+           T (curry equal? '(9 4)) 
+           #:attempts 1
+           #:decisions (decisions #:num (build-list 5 (λ (x) (λ _ x)))))
+          #t)))
 
 ; check-metafunction
 (let ()

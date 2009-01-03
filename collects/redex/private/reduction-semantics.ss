@@ -510,16 +510,13 @@
                  p)])))))
   
   (define (do-leaf stx orig-name lang name-table from to extras lang-id)
-    (let ([lang-nts (language-id-nts lang-id orig-name)])
+    (let* ([lang-nts (language-id-nts lang-id orig-name)]
+           [rw-sc (λ (pat) (rewrite-side-conditions/check-errs lang-nts orig-name #t pat))])
       (let-values ([(name fresh-vars side-conditions/withs) (process-extras stx orig-name name-table extras)])
         (let-values ([(names names/ellipses) (extract-names lang-nts orig-name #t from)])
-          (with-syntax ([side-conditions-rewritten 
-                         (rewrite-side-conditions/check-errs 
-                          lang-nts
-                          orig-name
-                          #t
-                          from)]
-                        [to to #;#`,(begin (printf "~s\n" #,name) (term #,to))]
+          (with-syntax ([side-conditions-rewritten (rw-sc from)]
+                        [lhs-w/extras (rw-sc #`(side-condition #,from #,(bind-withs side-conditions/withs #'#t)))]
+                        [to to]
                         [name name]
                         [lang lang]
                         [(names ...) names]
@@ -550,14 +547,15 @@
             #`(do-leaf-match
                name
                `side-conditions-rewritten
+               `lhs-w/extras
                (λ (main bindings)
                  ;; nested term-let's so that the bindings for the variables 
                  ;; show up in the `fresh' side-conditions, the bindings for the variables
                  ;; show up in the withs, and the withs show up in the 'fresh' side-conditions
                  (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                   (term-let (fresh-var-clauses ...)
-                     #,(bind-withs side-conditions/withs
-                                    #'(make-successful (term to))))))))))))
+                           (term-let (fresh-var-clauses ...)
+                                     #,(bind-withs side-conditions/withs
+                                                   #'(make-successful (term to))))))))))))
   
   ;; the withs and side-conditions come in backwards order
   (define (bind-withs stx body)
@@ -756,7 +754,7 @@
    (rewrite-proc-name child-make-proc)
    (subst lhs-frm-id (rewrite-proc-lhs child-make-proc) rhs-from)))
 
-(define (do-leaf-match name pat proc)
+(define (do-leaf-match name pat w/extras proc)
   (make-rewrite-proc
    (λ (lang)
      (let ([cp (compile-pattern lang pat #t)])
@@ -771,7 +769,7 @@
                        other-matches)
                other-matches)))))
    name
-   pat))
+   w/extras))
 
 (define-syntax (test-match stx)
   (syntax-case stx ()

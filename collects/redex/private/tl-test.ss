@@ -1156,7 +1156,9 @@
         [else #f]))
     
     ; test shortcut in terms of shortcut
-    (test (rewrite-proc-lhs (third (reduction-relation-make-procs r)))
-          '((5 2) 1)))
+    (test (match (rewrite-proc-lhs (third (reduction-relation-make-procs r)))
+            [`(((side-condition 5 ,(? procedure?)) 2) 1) #t]
+            [else #f])
+          #t))
   
   (print-tests-passed 'tl-test.ss))
