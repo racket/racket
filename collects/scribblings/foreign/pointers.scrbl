@@ -7,7 +7,7 @@
 
 Returns @scheme[#t] if @scheme[v] is a C pointer or a value that can
 be used as a pointer: @scheme[#f] (used as a @cpp{NULL} pointer), byte
-strings (used as memory blocks), some additional internal objects
+strings (used as memory blocks), or some additional internal objects
 (@scheme[ffi-obj]s and callbacks, see @secref["foreign:c-only"]).
 Returns @scheme[#f] for other values.}
 

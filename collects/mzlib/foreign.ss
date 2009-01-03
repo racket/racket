@@ -477,15 +477,16 @@
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
-        (let ([cb (ffi-callback (wrap x) itypes otype abi)])
-          (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
-                [(box? keep)
-                 (let ([x (unbox keep)])
-                   (set-box! keep
-                             (if (or (null? x) (pair? x)) (cons cb x) cb)))]
-                [(procedure? keep) (keep cb)])
-          cb))
-      (lambda (x) (wrap (ffi-call x itypes otype abi)))))
+        (and x
+             (let ([cb (ffi-callback (wrap x) itypes otype abi)])
+               (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
+                     [(box? keep)
+                      (let ([x (unbox keep)])
+                        (set-box! keep
+                                  (if (or (null? x) (pair? x)) (cons cb x) cb)))]
+                     [(procedure? keep) (keep cb)])
+               cb)))
+      (lambda (x) (and x (wrap (ffi-call x itypes otype abi))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:

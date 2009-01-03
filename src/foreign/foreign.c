@@ -1098,58 +1098,6 @@ static Scheme_Object *foreign_make_cstruct_type(int argc, Scheme_Object *argv[])
 }
 
 /*****************************************************************************/
-/* Pointer objects */
-/* use cpointer (with a NULL tag when creating), #f for NULL */
-
-#define SCHEME_FFIANYPTRP(x) \
-  (SCHEME_FALSEP(x) || SCHEME_CPTRP(x) || SCHEME_FFIOBJP(x) || \
-   SCHEME_BYTE_STRINGP(x))
-#define SCHEME_FFIANYPTR_VAL(x) \
-  (SCHEME_CPTRP(x) ? SCHEME_CPTR_VAL(x) : \
-    (SCHEME_FALSEP(x) ? NULL : \
-      (SCHEME_FFIOBJP(x) ? (((ffi_obj_struct*)x)->obj) : \
-       SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
-         NULL)))
-#define SCHEME_FFIANYPTR_OFFSET(x) \
-  (SCHEME_CPTRP(x) ? SCHEME_CPTR_OFFSET(x) : 0)
-#define SCHEME_FFIANYPTR_OFFSETVAL(x) \
-  W_OFFSET(SCHEME_FFIANYPTR_VAL(x), SCHEME_FFIANYPTR_OFFSET(x))
-
-#define SCHEME_CPOINTER_W_OFFSET_P(x) \
-  SAME_TYPE(SCHEME_TYPE(x), scheme_offset_cpointer_type)
-
-#define scheme_make_foreign_cpointer(x) \
-  ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
-
-#undef MYNAME
-#define MYNAME "cpointer?"
-static Scheme_Object *foreign_cpointer_p(int argc, Scheme_Object *argv[])
-{
-  return SCHEME_FFIANYPTRP(argv[0]) ? scheme_true : scheme_false;
-}
-
-#undef MYNAME
-#define MYNAME "cpointer-tag"
-static Scheme_Object *foreign_cpointer_tag(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *tag = NULL;
-  if (!SCHEME_FFIANYPTRP(argv[0]))
-    scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
-  if (SCHEME_CPTRP(argv[0])) tag = SCHEME_CPTR_TYPE(argv[0]);
-  return (tag == NULL) ? scheme_false : tag;
-}
-
-#undef MYNAME
-#define MYNAME "set-cpointer-tag!"
-static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_CPTRP(argv[0]))
-    scheme_wrong_type(MYNAME, "proper-cpointer", 0, argc, argv);
-  SCHEME_CPTR_TYPE(argv[0]) = argv[1];
-  return scheme_void;
-}
-
-/*****************************************************************************/
 /* Callback type */
 
 /* ffi-callback structure definition */
@@ -1189,6 +1137,59 @@ int ffi_callback_FIXUP(void *p) {
 }
 END_XFORM_SKIP;
 #endif
+
+/*****************************************************************************/
+/* Pointer objects */
+/* use cpointer (with a NULL tag when creating), #f for NULL */
+
+#define SCHEME_FFIANYPTRP(x) \
+  (SCHEME_FALSEP(x) || SCHEME_CPTRP(x) || SCHEME_FFIOBJP(x) || \
+   SCHEME_BYTE_STRINGP(x) || SCHEME_FFICALLBACKP(x))
+#define SCHEME_FFIANYPTR_VAL(x) \
+  (SCHEME_CPTRP(x) ? SCHEME_CPTR_VAL(x) : \
+    (SCHEME_FALSEP(x) ? NULL : \
+      (SCHEME_FFIOBJP(x) ? (((ffi_obj_struct*)x)->obj) : \
+       (SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
+         (SCHEME_FFICALLBACKP(x) ? ((ffi_callback_struct *)x)->callback : \
+          NULL)))))
+#define SCHEME_FFIANYPTR_OFFSET(x) \
+  (SCHEME_CPTRP(x) ? SCHEME_CPTR_OFFSET(x) : 0)
+#define SCHEME_FFIANYPTR_OFFSETVAL(x) \
+  W_OFFSET(SCHEME_FFIANYPTR_VAL(x), SCHEME_FFIANYPTR_OFFSET(x))
+
+#define SCHEME_CPOINTER_W_OFFSET_P(x) \
+  SAME_TYPE(SCHEME_TYPE(x), scheme_offset_cpointer_type)
+
+#define scheme_make_foreign_cpointer(x) \
+  ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
+
+#undef MYNAME
+#define MYNAME "cpointer?"
+static Scheme_Object *foreign_cpointer_p(int argc, Scheme_Object *argv[])
+{
+  return SCHEME_FFIANYPTRP(argv[0]) ? scheme_true : scheme_false;
+}
+
+#undef MYNAME
+#define MYNAME "cpointer-tag"
+static Scheme_Object *foreign_cpointer_tag(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *tag = NULL;
+  if (!SCHEME_FFIANYPTRP(argv[0]))
+    scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
+  if (SCHEME_CPTRP(argv[0])) tag = SCHEME_CPTR_TYPE(argv[0]);
+  return (tag == NULL) ? scheme_false : tag;
+}
+
+#undef MYNAME
+#define MYNAME "set-cpointer-tag!"
+static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_CPTRP(argv[0]))
+    scheme_wrong_type(MYNAME, "proper-cpointer", 0, argc, argv);
+  SCHEME_CPTR_TYPE(argv[0]) = argv[1];
+  return scheme_void;
+}
 
 /*****************************************************************************/
 /* Scheme<-->C conversions */
@@ -1287,6 +1288,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       ((void**)W_OFFSET(dst,delta))[0] = SCHEME_CPTR_VAL(val);
     else if (SCHEME_FFIOBJP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_obj_struct*)val)->obj;
+    else if (SCHEME_FALSEP(val))
+      ((void**)W_OFFSET(dst,delta))[0] = NULL;
     else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
@@ -2799,14 +2802,14 @@ void scheme_init_foreign(Scheme_Env *env)
     scheme_make_prim_w_arity(foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
     scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 1), menv);
+  scheme_add_global("ffi-callback?",
+    scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",
     scheme_make_prim_w_arity(foreign_cpointer_p, "cpointer?", 1, 1), menv);
   scheme_add_global("cpointer-tag",
     scheme_make_prim_w_arity(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
   scheme_add_global("set-cpointer-tag!",
     scheme_make_prim_w_arity(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
-  scheme_add_global("ffi-callback?",
-    scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("ctype-sizeof",
     scheme_make_prim_w_arity(foreign_ctype_sizeof, "ctype-sizeof", 1, 1), menv);
   scheme_add_global("ctype-alignof",

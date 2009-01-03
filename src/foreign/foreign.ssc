@@ -938,18 +938,28 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 }
 
 /*****************************************************************************/
+/* Callback type */
+
+{:(cdefstruct ffi-callback
+    (callback "void*")
+    (proc     "Scheme_Object*")
+    (itypes   "Scheme_Object*")
+    (otype    "Scheme_Object*")):}
+
+/*****************************************************************************/
 /* Pointer objects */
 /* use cpointer (with a NULL tag when creating), #f for NULL */
 
 #define SCHEME_FFIANYPTRP(x) \
   (SCHEME_FALSEP(x) || SCHEME_CPTRP(x) || SCHEME_FFIOBJP(x) || \
-   SCHEME_BYTE_STRINGP(x))
+   SCHEME_BYTE_STRINGP(x) || SCHEME_FFICALLBACKP(x))
 #define SCHEME_FFIANYPTR_VAL(x) \
   (SCHEME_CPTRP(x) ? SCHEME_CPTR_VAL(x) : \
     (SCHEME_FALSEP(x) ? NULL : \
       (SCHEME_FFIOBJP(x) ? (((ffi_obj_struct*)x)->obj) : \
-       SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
-         NULL)))
+       (SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
+         (SCHEME_FFICALLBACKP(x) ? ((ffi_callback_struct *)x)->callback : \
+          NULL)))))
 #define SCHEME_FFIANYPTR_OFFSET(x) \
   (SCHEME_CPTRP(x) ? SCHEME_CPTR_OFFSET(x) : 0)
 #define SCHEME_FFIANYPTR_OFFSETVAL(x) \
@@ -982,15 +992,6 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   SCHEME_CPTR_TYPE(argv[0]) = argv[1];
   return scheme_void;
 }
-
-/*****************************************************************************/
-/* Callback type */
-
-{:(cdefstruct ffi-callback
-    (callback "void*")
-    (proc     "Scheme_Object*")
-    (itypes   "Scheme_Object*")
-    (otype    "Scheme_Object*")):}
 
 /*****************************************************************************/
 /* Scheme<-->C conversions */
@@ -1068,6 +1069,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       ((void**)W_OFFSET(dst,delta))[0] = SCHEME_CPTR_VAL(val);
     else if (SCHEME_FFIOBJP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_obj_struct*)val)->obj;
+    else if (SCHEME_FALSEP(val))
+      ((void**)W_OFFSET(dst,delta))[0] = NULL;
     else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
