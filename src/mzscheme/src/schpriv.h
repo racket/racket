@@ -845,7 +845,8 @@ Scheme_Object *scheme_source_to_name(Scheme_Object *code);
 
 Scheme_Object *scheme_stx_cert(Scheme_Object *o, Scheme_Object *mark, Scheme_Env *menv, Scheme_Object *plus_stx, 
 			       Scheme_Object *mkey, int active);
-int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs, Scheme_Object *modidx, Scheme_Object *home_insp);
+int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs,
+                         Scheme_Object *modidx, Scheme_Object *home_insp);
 int scheme_module_protected_wrt(Scheme_Object *home_insp, Scheme_Object *insp);
 Scheme_Object *scheme_stx_activate_certs(Scheme_Object *stx);
 
@@ -853,7 +854,7 @@ Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_ce
 Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *certs);
 Scheme_Object *scheme_stx_propagate_inactive_certs(Scheme_Object *o, Scheme_Object *orig);
 
-int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs,
+int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs, 
 			      Scheme_Object *than_id, Scheme_Object *than_certs);
 
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i);
@@ -1073,10 +1074,10 @@ typedef struct Scheme_Dynamic_State {
 } Scheme_Dynamic_State;
 
 void scheme_set_dynamic_state(Scheme_Dynamic_State *state, struct Scheme_Comp_Env *env, Scheme_Object *mark, 
-			Scheme_Object *name, 
-			Scheme_Object *certs, 
-			Scheme_Env *menv,
-			Scheme_Object *modidx);
+                              Scheme_Object *name, 
+                              Scheme_Object *certs, 
+                              Scheme_Env *menv,
+                              Scheme_Object *modidx);
 void *scheme_top_level_do(void *(*k)(void), int eb);
 void *scheme_top_level_do_worker(void *(*k)(void), int eb, int newthread, Scheme_Dynamic_State *dyn_state);
 
@@ -1851,6 +1852,7 @@ typedef struct Scheme_Compile_Expand_Info
   char dont_mark_local_use;
   char resolve_module_ids;
   char pre_unwrapped;
+  char no_module_cert;
   int depth;
   int env_already;
 } Scheme_Compile_Expand_Info;

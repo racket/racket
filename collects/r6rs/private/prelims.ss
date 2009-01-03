@@ -6,7 +6,8 @@
 
 (provide
  (rename-out [datum #%datum])
- #%app #%top #%top-interaction)
+ (rename-out [#%plain-app #%app])
+ #%top #%top-interaction)
 
 ;; ----------------------------------------
 ;; Datum

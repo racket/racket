@@ -4643,6 +4643,7 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     dest[i].comp = 1;
     dest[i].dont_mark_local_use = src[drec].dont_mark_local_use;
     dest[i].resolve_module_ids = src[drec].resolve_module_ids;
+    dest[i].no_module_cert = src[drec].no_module_cert;
     dest[i].value_name = scheme_false;
     dest[i].certs = src[drec].certs;
     /* should be always NULL */
@@ -4668,6 +4669,7 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].certs = src[drec].certs;
     dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
+    dest[i].no_module_cert = src[drec].no_module_cert;
     dest[i].env_already = 0;
     dest[i].comp_flags = src[drec].comp_flags;
   }
@@ -4688,6 +4690,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;
+  lam[dlrec].no_module_cert = src[drec].no_module_cert;
   lam[dlrec].value_name = scheme_false;
   lam[dlrec].certs = src[drec].certs;
   lam[dlrec].observer = src[drec].observer;
@@ -4955,6 +4958,7 @@ static void *compile_k(void)
     rec.comp = 1;
     rec.dont_mark_local_use = 0;
     rec.resolve_module_ids = !writeable && !genv->module;
+    rec.no_module_cert = 0;
     rec.value_name = scheme_false;
     rec.certs = NULL;
     rec.observer = NULL;
@@ -8868,6 +8872,7 @@ static void *expand_k(void)
     erec1.certs = certs;
     erec1.observer = observer;
     erec1.pre_unwrapped = 0;
+    erec1.no_module_cert = 0;
     erec1.env_already = 0;
     erec1.comp_flags = comp_flags;
 
@@ -9720,6 +9725,7 @@ local_eval(int argc, Scheme_Object **argv)
     rec.certs = certs;
     rec.observer = observer;
     rec.pre_unwrapped = 0;
+    rec.no_module_cert = 0;
     rec.env_already = 0;
     rec.comp_flags = get_comp_flags(NULL);
     

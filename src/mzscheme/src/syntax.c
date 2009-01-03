@@ -5189,7 +5189,7 @@ quote_syntax_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_In
 
   /* Push all certificates in the environment down to the syntax object. */
   stx = scheme_stx_add_inactive_certs(stx, rec[drec].certs);
-  if (env->genv->module) {
+  if (env->genv->module && !rec[drec].no_module_cert) {
     /* Also certify access to the enclosing module: */
     stx = scheme_stx_cert(stx, scheme_false, env->genv, NULL, NULL, 0);
   }
@@ -5561,6 +5561,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   rec1.comp = 1;
   rec1.dont_mark_local_use = 0;
   rec1.resolve_module_ids = 0;
+  rec1.no_module_cert = 0;
   rec1.value_name = NULL;
   rec1.certs = rec[drec].certs;
   rec1.observer = NULL;
@@ -5753,6 +5754,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.comp = 1;
   mrec.dont_mark_local_use = 0;
   mrec.resolve_module_ids = 1;
+  mrec.no_module_cert = 1;
   mrec.value_name = NULL;
   mrec.certs = certs;
   mrec.observer = NULL;

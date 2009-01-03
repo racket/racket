@@ -2322,6 +2322,9 @@ static void make_mapped(Scheme_Cert *cert)
   Scheme_Object *pr;
   Scheme_Hash_Table *ht;
 
+  if (cert->mapped)
+    return;
+
 #ifdef DO_STACK_CHECK
   {
 # include "mzstkchk.h"
@@ -2334,9 +2337,6 @@ static void make_mapped(Scheme_Cert *cert)
   }
 #endif
   SCHEME_USE_FUEL(1);
-
-  if (cert->mapped)
-    return;
 
   if (cert->depth == 16) {
     stop = NULL;
@@ -2403,18 +2403,32 @@ static int cert_in_chain(Scheme_Object *mark, Scheme_Object *key, Scheme_Cert *c
 
 static Scheme_Cert *append_certs(Scheme_Cert *a, Scheme_Cert *b)
 {
+  Scheme_Cert *c;
+
   if (!a) return b;
   if (!b) return a;
   
   if (a->depth < b->depth) {
-    Scheme_Cert *c = a;
+    c = a;
     a = b;
     b = c;
   }
 
+  c = a;
+  if (b->depth > (a->depth >> 1)) {
+    /* There's a good chance that b shares a tail with a, 
+       so check for that, and b is large enough relative to
+       a that it's worth iterating down to b's depth in a: */
+    while (c->depth > b->depth) {
+      c = c->next;
+    }
+  }
+
   for (; b; b = b->next) {
+    if (b == c) break;
     if (!cert_in_chain(b->mark, b->key, a))
       a = cons_cert(b->mark, b->modidx, b->insp, b->key, a);
+    c = c->next;
   }
 
   return a;
@@ -2422,10 +2436,10 @@ static Scheme_Cert *append_certs(Scheme_Cert *a, Scheme_Cert *b)
 
 static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Object *use_key, int active)
 {
-  Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs;
+  Scheme_Cert *orig_certs, *cl, *now_certs, *next_certs, *check_tail;
   Scheme_Stx *stx = (Scheme_Stx *)o, *res;
   Scheme_Object *pr;
-  int copy_on_write, shortcut;
+  int shortcut;
 
   if (!stx->certs) {
     if (!certs)
@@ -2455,7 +2469,6 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
     }
   }
 
-  copy_on_write = 1;
   if (active)
     orig_certs = ACTIVE_CERTS(stx);
   else
@@ -2465,61 +2478,66 @@ static Scheme_Object *add_certs(Scheme_Object *o, Scheme_Cert *certs, Scheme_Obj
   shortcut = 0;
   if (now_certs && certs && !use_key && CERT_NO_KEY(certs)) {
     if (now_certs->depth < certs->depth) {
-      /* Maybe we can add now_certs onto certs, instead of the other
+      /* We can add now_certs onto certs, instead of the other
          way around. */
-      for (next_certs = certs; next_certs; next_certs = next_certs->next) {
-        if (cert_in_chain(next_certs->mark, use_key, now_certs)) {
-          break;
-        }
-      }
-      if (!next_certs) {
-        /* Yes, we can take that shortcut. */
-        certs = append_certs(now_certs, certs);
-        now_certs = NULL;
-        shortcut = 1;
+      now_certs = certs;
+      certs = orig_certs;
+    }
+  }
+
+  check_tail = now_certs;
+  if (check_tail && certs
+      && (certs->depth  > (check_tail->depth >> 1))) {
+    while (check_tail->depth > certs->depth) {
+      check_tail = check_tail->next;
+    }
+  }
+  
+  for (; certs; certs = next_certs) {
+    next_certs = certs->next;
+    if (check_tail && (check_tail->depth > certs->depth))
+      check_tail = check_tail->next;
+    if (SAME_OBJ(certs, check_tail)) {
+      /* tails match --- no need to keep checking */
+      break;
+    }
+    if (!cert_in_chain(certs->mark, use_key, now_certs)) {
+      if (!now_certs && !use_key && (shortcut || CERT_NO_KEY(certs))) {
+        now_certs = certs;
+        next_certs = NULL;
+      } else {
+        now_certs = cons_cert(certs->mark, certs->modidx, certs->insp, use_key, 
+                              now_certs);
       }
     }
   }
 
-  for (; certs; certs = next_certs) {
-    next_certs = certs->next;
-    if (!cert_in_chain(certs->mark, use_key, now_certs)) {
-      if (copy_on_write) {
-	res = (Scheme_Stx *)scheme_make_stx(stx->val, 
-					    stx->srcloc,
-					    stx->props);
-	res->wraps = stx->wraps;
-	res->u.lazy_prefix = stx->u.lazy_prefix;
-	if (!active) {
-	  pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
-	  res->certs = pr;
-          if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_IMMUTABLEP(stx->certs))
-            SCHEME_SET_IMMUTABLE(pr);
-	} else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
-	  pr = scheme_make_raw_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
-	  res->certs = pr;
-          if (SCHEME_IMMUTABLEP(stx->certs))
-            SCHEME_SET_IMMUTABLE(pr);
-	} else
-	  res->certs = (Scheme_Object *)orig_certs;
-	stx = res;
-	copy_on_write = 0;
-      }
-      if (!now_certs && !use_key && (shortcut || CERT_NO_KEY(certs))) {
-        cl = certs;
-        next_certs = NULL;
-      } else {
-        cl = cons_cert(certs->mark, certs->modidx, certs->insp, use_key, 
-                       active ? ACTIVE_CERTS(stx) : INACTIVE_CERTS(stx));
-      }
-      now_certs = cl;
-      if (!active) {
-	SCHEME_CDR(stx->certs) = (Scheme_Object *)cl;
-      } else if (stx->certs && SCHEME_RPAIRP(stx->certs))
-	SCHEME_CAR(stx->certs) = (Scheme_Object *)cl;
-      else
-	stx->certs = (Scheme_Object *)cl;
-    }
+  if (!SAME_OBJ(now_certs, orig_certs)) {
+    res = (Scheme_Stx *)scheme_make_stx(stx->val, 
+                                        stx->srcloc,
+                                        stx->props);
+    res->wraps = stx->wraps;
+    res->u.lazy_prefix = stx->u.lazy_prefix;
+    if (!active) {
+      pr = scheme_make_raw_pair((Scheme_Object *)ACTIVE_CERTS(stx), (Scheme_Object *)orig_certs);
+      res->certs = pr;
+      if (stx->certs && SCHEME_RPAIRP(stx->certs) && SCHEME_IMMUTABLEP(stx->certs))
+        SCHEME_SET_IMMUTABLE(pr);
+    } else if (stx->certs && SCHEME_RPAIRP(stx->certs)) {
+      pr = scheme_make_raw_pair((Scheme_Object *)orig_certs, SCHEME_CDR(stx->certs));
+      res->certs = pr;
+      if (SCHEME_IMMUTABLEP(stx->certs))
+        SCHEME_SET_IMMUTABLE(pr);
+    } else
+      res->certs = (Scheme_Object *)orig_certs;
+    stx = res;
+
+    if (!active) {
+      SCHEME_CDR(stx->certs) = (Scheme_Object *)now_certs;
+    } else if (stx->certs && SCHEME_RPAIRP(stx->certs))
+      SCHEME_CAR(stx->certs) = (Scheme_Object *)now_certs;
+    else
+      stx->certs = (Scheme_Object *)now_certs;
   }
 
   return (Scheme_Object *)stx;
@@ -3346,7 +3364,15 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
   }
 }
 
-static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache)
+#define EXPLAIN_RESOLVE 0
+#if EXPLAIN_RESOLVE
+static int explain_resolves = 0;
+# define EXPLAIN(x) if (explain_resolves) { x; }
+#else
+# define EXPLAIN(x) /* empty */
+#endif
+
+static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache, int depth)
 {
   int l1, l2;
   Scheme_Object *m1, *m2;
@@ -3355,11 +3381,14 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme
   p = SCHEME_CDR(p); /* skip phase_export */
   if (SCHEME_PAIRP(p)) {
     /* has marks */
+    
+    EXPLAIN(fprintf(stderr, "%d       has marks\n", depth));
 
     m1 = SCHEME_CAR(p);
     if (*marks_cache)
       m2 = *marks_cache;
     else {
+      EXPLAIN(fprintf(stderr, "%d       extract marks\n", depth));
       m2 = scheme_stx_extract_marks(orig_id);
       *marks_cache = m2;
     }
@@ -3382,9 +3411,10 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme
     return 0; /* match empty mark set */
 }
 
-static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, 
-                                               Scheme_Object *glob_id, Scheme_Object *orig_id,
-                                               Scheme_Object **get_names, int get_orig_name)
+static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes, 
+                                        Scheme_Object *glob_id, Scheme_Object *orig_id,
+                                        Scheme_Object **get_names, int get_orig_name,
+                                        int depth)
 {
   Scheme_Object *pr, *idx, *pos, *src, *best_match = NULL;
   Scheme_Module_Phase_Exports *pt;
@@ -3395,8 +3425,11 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes,
   for (pr = shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
     pt = (Scheme_Module_Phase_Exports *)SCHEME_CADR(SCHEME_CAR(pr));
 
+    EXPLAIN(fprintf(stderr, "%d     pes table\n", depth));
+
     if (!pt->ht) {
       /* Lookup table (which is created lazily) not yet created, so do that now... */
+      EXPLAIN(fprintf(stderr, "%d     {create lookup}\n", depth));
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
       for (i = pt->num_provides; i--; ) {
         scheme_hash_set(ht, pt->provides[i], scheme_make_integer(i));
@@ -3408,7 +3441,8 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes,
     if (pos) {
       /* Found it, maybe. Check marks. */
       int mark_len;
-      mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache);
+      EXPLAIN(fprintf(stderr, "%d     found %p\n", depth, pos));
+      mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth);
       if (mark_len > best_match_len) {
         /* Marks match and improve on previously found match. Build suitable rename: */
         best_match_len = mark_len;
@@ -3462,7 +3496,7 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes,
       if (kpr) {
         /* Found it, maybe. Check marks. */
         int mark_len;
-        mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache);
+        mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth);
         if (mark_len > best_match_len) {
           /* Marks match and improve on previously found match. Build suitable rename: */
           best_match_len = mark_len;
@@ -3491,9 +3525,9 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes,
 
 static Module_Renames *extract_renames(Module_Renames_Set *mrns, Scheme_Object *phase)
 {
-  if (SCHEME_INTP(phase) && (SCHEME_INT_VAL(phase) == 0))
+  if (SAME_OBJ(phase, scheme_make_integer(0)))
     return mrns->rt;
-  else if (SCHEME_INTP(phase) && (SCHEME_INT_VAL(phase) == 1))
+  else if (SAME_OBJ(phase, scheme_make_integer(1)))
     return mrns->et;
   else if (mrns->other_phases)
     return (Module_Renames *)scheme_hash_get(mrns->other_phases, phase);
@@ -3530,15 +3564,7 @@ static Scheme_Object *add_skip_set(Scheme_Object *timestamp, Scheme_Object *skip
   return scheme_make_raw_pair(timestamp, skip_ribs);
 }
 
-#define QUICK_STACK_SIZE 10
-
-#define EXPLAIN_RESOLVE 0
-#if EXPLAIN_RESOLVE
-static int explain_resolves = 0;
-# define EXPLAIN(x) if (explain_resolves) { x; }
-#else
-# define EXPLAIN(x) /* empty */
-#endif
+#define QUICK_STACK_SIZE 8
 
 /* Although resolve_env may call itself recursively, the recursion
    depth is bounded (by the fact that modules can't be nested,
@@ -3656,8 +3682,6 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 
       if (mrn && (!is_in_module || (mrn->kind != mzMOD_RENAME_TOPLEVEL)) 
           && !skip_other_mods) {
-        EXPLAIN(fprintf(stderr, "%d  use rename %p %d\n", depth, mrn->phase, mrn->kind));
-
 	if (mrn->kind != mzMOD_RENAME_TOPLEVEL)
 	  is_in_module = 1;
 
@@ -3665,12 +3689,18 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  Scheme_Object *rename, *nominal = NULL, *glob_id;
           int get_names_done;
 
-	  if (mrn->needs_unmarshal)
+          EXPLAIN(fprintf(stderr, "%d  use rename %p %d\n", depth, mrn->phase, mrn->kind));
+
+	  if (mrn->needs_unmarshal) {
+            EXPLAIN(fprintf(stderr, "%d  {unmarshal}\n", depth));
 	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to, export_registry);
+          }
 	  
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
+            EXPLAIN(fprintf(stderr, "%d  tl_id_sym\n", depth));
 	    if (!bdg) {
+              EXPLAIN(fprintf(stderr, "%d   get bdg\n", depth));
 	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs, NULL, NULL, depth+1);
               if (SCHEME_FALSEP(bdg)) {
                 if (!floating_checked) {
@@ -3709,7 +3739,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  }
           get_names_done = 0;
           if (!rename) {
-            rename = scheme_search_shared_pes(mrn->shared_pes, glob_id, a, get_names, 0);
+            EXPLAIN(fprintf(stderr, "%d    in pes\n", depth));
+            rename = search_shared_pes(mrn->shared_pes, glob_id, a, get_names, 0, depth);
             if (rename)
               get_names_done = 1;
           }
@@ -3820,6 +3851,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
     } else if (SCHEME_BOXP(WRAP_POS_FIRST(wraps)) && w_mod) {
       /* Phase shift */
       Scheme_Object *vec, *n, *dest, *src;
+      
+      EXPLAIN(fprintf(stderr, "%d phase shift\n", depth));
+
       vec = SCHEME_PTR_VAL(WRAP_POS_FIRST(wraps));
       n = SCHEME_VEC_ELS(vec)[0];
       if (SCHEME_TRUEP(phase))
@@ -3864,7 +3898,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	is_rib = NULL;
       }
 
-      EXPLAIN(fprintf(stderr, "%d lexical rename (%d)\n", depth, is_rib ? 1 : 0));
+      EXPLAIN(fprintf(stderr, "%d lexical rename (%d) %d%s\n", depth, is_rib ? 1 : 0,
+                      SCHEME_VEC_SIZE(rename), 
+                      SCHEME_FALSEP(SCHEME_VEC_ELS(rename)[1]) ? "" : " hash"));
 
       c = SCHEME_RENAME_LEN(rename);
 
@@ -3992,6 +4028,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
     } else if (SCHEME_HASHTP(WRAP_POS_FIRST(wraps))) {
       Scheme_Hash_Table *ht = (Scheme_Hash_Table *)WRAP_POS_FIRST(wraps);
 
+      EXPLAIN(fprintf(stderr, "%d forwarding table...\n", depth));
+
       did_rib = NULL;
 
       if (!ht->count 
@@ -4001,6 +4039,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       }
 
       if (!scheme_hash_get(ht, SCHEME_STX_VAL(a))) {
+        EXPLAIN(fprintf(stderr, "%d   forwarded\n", depth));
 	set_wraps_to_skip(ht, &wraps);
 
 	continue; /* <<<<< ------ */
@@ -4108,7 +4147,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    rename = scheme_hash_get(krn->ht, glob_id);
 
           if (!rename)
-            result = scheme_search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1);
+            result = search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1, 0);
 	  else {
 	    /* match; set result: */
 	    if (mrn->kind == mzMOD_RENAME_MARKED)
@@ -4211,7 +4250,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, Scheme_Object *phase,
     names[5] = NULL;
 
     modname = resolve_env(NULL, *a, phase, 1, names, NULL, NULL, NULL, 0);
-    
+
     if (names[0]) {
       if (SAME_OBJ(names[0], scheme_undefined)) {
 	return scheme_undefined;
