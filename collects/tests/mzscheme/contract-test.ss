@@ -5265,7 +5265,11 @@ so that propagation occurs.
              (f 3))
            (c)))
   
-  (ctest '(1 1)
+  ;; the tail-call optimization cannot handle two different
+  ;; contracts on the stack one after the other one, so this
+  ;; returns '(4 4) instead of '(1 1) (which would indicate
+  ;; the optimization had happened).
+  (ctest '(4 4)
          'tail->d-mut-rec
          (letrec ([odd-count 0]
                   [pos-count 0]
@@ -5317,6 +5321,28 @@ so that propagation occurs.
                                'neg)])
              (f 4))
            (c)))
+  
+  (ctest '(1)
+         'mut-rec-with-any/c
+         (let ()
+           (define f
+             (contract (-> number? any/c)
+                       (lambda (x)
+                         (if (zero? x)
+                             (continuation-mark-set->list (current-continuation-marks) 'tail-test)
+                             (with-continuation-mark 'tail-test x
+                               (g (- x 1)))))
+                       'pos
+                       'neg))
+           
+           (define g
+             (contract (-> number? any/c)
+                       (lambda (x)
+                         (f x))
+                       'pos
+                       'neg))
+           
+           (f 3)))
   
 ;                                                                
 ;                                                                
