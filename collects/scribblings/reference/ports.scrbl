@@ -7,6 +7,13 @@
 a character-based operation, the port's bytes are decoded; see
 @secref["encodings"].
 
+When a port corresponds to a file, network connection, or some other
+system resource, is must be explicitly closed via
+@scheme[close-input-port] or @scheme[close-output-port] (or indirectly
+via @scheme[custodian-shutdown-all]) to release low-level resources
+associated with the port. For any kind of port, after it is closed,
+attempting to read from or write to the port raises @scheme[exn:fail].
+
 The global variable @scheme[eof] is bound to the end-of-file value,
 and @scheme[eof-object?] returns @scheme[#t] only when applied to this
 value. Reading from a port produces an end-of-file result when the
