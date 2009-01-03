@@ -514,11 +514,15 @@ extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);
 /*                       hash tables and globals                          */
 /*========================================================================*/
 
+/* a primitive constant: */
 #define GLOB_IS_CONST 1
-#define GLOB_IS_PRIMITIVE 4
-#define GLOB_IS_PERMANENT 8
+/* always defined as the same kind of value (e.g., proc with a particular arity): */
+#define GLOB_IS_CONSISTENT 2
+/* a kernel constant: */
 #define GLOB_HAS_REF_ID 16
+/* can cast to Scheme_Bucket_With_Home: */
 #define GLOB_HAS_HOME_PTR 32
+/* Scheme-level constant (cannot be changed further): */
 #define GLOB_IS_IMMUTATED 64
 
 typedef struct {

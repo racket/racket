@@ -48,12 +48,14 @@ static Scheme_Object *boolean_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *equalish_prim (int argc, Scheme_Object *argv[]);
 
 typedef struct Equal_Info {
-  long depth; /* always odd */
-  long car_depth; /* always odd */
+  long depth; /* always odd, so it looks like a fixnum */
+  long car_depth; /* always odd => fixnum */
   Scheme_Hash_Table *ht;
   Scheme_Object *recur;
+  Scheme_Object *next, *next_next;
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -95,6 +97,10 @@ void scheme_init_bool (Scheme_Env *env)
   
   scheme_equal_prim = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);
   scheme_add_global_constant("equal?", scheme_equal_prim, env);
+
+  scheme_add_global_constant("equal?/recur", 
+                             scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3), 
+                             env);
 }
 
 static Scheme_Object *
@@ -130,6 +136,25 @@ equal_prim (int argc, Scheme_Object *argv[])
   eql.car_depth = 1;
   eql.ht = NULL;
   eql.recur = NULL;
+  eql.next = NULL;
+  eql.next_next = NULL;
+
+  return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+equalish_prim (int argc, Scheme_Object *argv[])
+{
+  Equal_Info eql;
+
+  scheme_check_proc_arity("equal?/recur", 2, 2, argc, argv);
+
+  eql.depth = 1;
+  eql.car_depth = 1;
+  eql.ht = NULL;
+  eql.recur = NULL;
+  eql.next = NULL;
+  eql.next_next = argv[2];
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -222,6 +247,8 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
   eql.car_depth = 1;
   eql.ht = NULL;
   eql.recur = NULL;
+  eql.next_next = NULL;
+  eql.next = NULL;
 
   return is_equal(obj1, obj2, &eql);
 }
@@ -252,7 +279,8 @@ static Scheme_Object *union_find(Scheme_Object *obj1, Scheme_Hash_Table *ht)
 static int union_check(Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql) 
 {
   if (eql->depth < 50) {
-    eql->depth += 2;
+    if (!eql->next_next)
+      eql->depth += 2;
     return 0;
   } else {
     Scheme_Hash_Table *ht = eql->ht;
@@ -324,6 +352,17 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   static int equal_counter = EQUAL_COUNT_START;
 
  top:
+  if (eql->next_next) {
+    if (eql->next) {
+      Scheme_Object *a[2];
+      a[0] = obj1;
+      a[1] = obj2;
+      obj1 = _scheme_apply(eql->next, 2, a);
+      return SCHEME_TRUEP(obj1);
+    }
+    eql->next = eql->next_next;
+  }
+
   if (scheme_eqv(obj1, obj2))
     return 1;
   else if (NOT_SAME_TYPE(SCHEME_TYPE(obj1), SCHEME_TYPE(obj2))) {

@@ -23,7 +23,7 @@
                                 (close-output-port out)
                                 in)))])
         (let ([n (match v
-                   [(struct compilation-top (_ prefix (struct primitive (n)))) n]
+                   [(struct compilation-top (_ prefix (struct primval (n)))) n]
                    [else #f])])
           (hash-set! table n (car b)))))
     table))
@@ -77,7 +77,7 @@
                 lift-ids)
                (map (lambda (stx id)
                       `(define ,id ,(if stx
-                                        `(#%decode-syntax ,stx #;(stx-encoded stx))
+                                        `(#%decode-syntax ,(stx-encoded stx))
                                         #f)))
                     stxs stx-ids)))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
@@ -126,7 +126,7 @@
            `(let ()
              ,@defns
              ,(decompile-expr rhs globs '(#%globals) closed))))]
-    [(struct sequence (forms))
+    [(struct seq (forms))
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack closed))
                     forms))]
@@ -179,7 +179,7 @@
            `(#%checked ,id)))]
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect globs (+ midpt pos) 'topsyntax)]
-    [(struct primitive (id))
+    [(struct primval (id))
      (hash-ref primitive-table id)]
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
@@ -249,7 +249,7 @@
     [(struct apply-values (proc args-expr))
      `(#%apply-values ,(decompile-expr proc globs stack closed) 
                       ,(decompile-expr args-expr globs stack closed))]
-    [(struct sequence (exprs))
+    [(struct seq (exprs))
      `(begin ,@(for/list ([expr (in-list exprs)])
                  (decompile-expr expr globs stack closed)))]
     [(struct beg0 (exprs))

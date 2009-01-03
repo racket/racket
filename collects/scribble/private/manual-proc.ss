@@ -486,29 +486,33 @@
 (define-syntax defstruct
   (syntax-rules ()
     [(_ name fields #:mutable #:inspector #f desc ...)
-     (**defstruct name fields #f #t desc ...)]
+     (**defstruct name fields #f #t #f desc ...)]
     [(_ name fields #:mutable #:transparent desc ...)
-     (**defstruct name fields #f #t desc ...)]
+     (**defstruct name fields #f #t #f desc ...)]
+    [(_ name fields #:mutable #:prefab desc ...)
+     (**defstruct name fields #f #t #t desc ...)]
     [(_ name fields #:mutable desc ...)
-     (**defstruct name fields #f #f desc ...)]
+     (**defstruct name fields #f #f #f desc ...)]
     [(_ name fields #:inspector #f desc ...)
-     (**defstruct name fields #t #t desc ...)]
+     (**defstruct name fields #t #t #f desc ...)]
     [(_ name fields #:transparent desc ...)
-     (**defstruct name fields #t #t desc ...)]
+     (**defstruct name fields #t #t #f desc ...)]
+    [(_ name fields #:prefab desc ...)
+     (**defstruct name fields #t #t #t desc ...)]
     [(_ name fields desc ...)
-     (**defstruct name fields #t #f desc ...)]))
+     (**defstruct name fields #t #f #f desc ...)]))
 
 (define-syntax-rule (**defstruct name ([field field-contract] ...) immutable?
-                                 transparent? desc ...)
+                                 transparent? prefab? desc ...)
   (with-togetherable-scheme-variables
    ()
    ()
    (*defstruct (quote-syntax/loc name) 'name
                '([field field-contract] ...)
                (list (lambda () (schemeblock0 field-contract)) ...)
-               immutable? transparent? (lambda () (list desc ...)))))
+               immutable? transparent? prefab? (lambda () (list desc ...)))))
 
-(define (*defstruct stx-id name fields field-contracts immutable? transparent?
+(define (*defstruct stx-id name fields field-contracts immutable? transparent? prefab?
                     content-thunk)
   (define (field-name f) ((if (pair? (car f)) caar car) f))
   (define (field-view f)
@@ -634,7 +638,9 @@
                         (list flow-spacer flow-spacer
                               (to-flow (make-element
                                         #f
-                                        (list (to-element '#:transparent)
+                                        (list (if prefab?
+                                                  (to-element '#:prefab)
+                                                  (to-element '#:transparent))
                                               (schemeparenfont ")"))))
                               'cont
                               'cont))]
@@ -652,7 +658,9 @@
                         (list flow-spacer flow-spacer
                               (to-flow (make-element
                                         #f
-                                        (list (to-element '#:transparent)
+                                        (list (if prefab?
+                                                  (to-element '#:prefab)
+                                                  (to-element '#:transparent))
                                               (schemeparenfont ")"))))
                               'cont
                               'cont))]

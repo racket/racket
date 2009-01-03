@@ -49,20 +49,26 @@ Range    ::= ]                        Range contains _]_ only                   
           |  Mrange-                  Range contains _-_ and everything in Mrange                  #co
 Mrange   ::= ]Lrange                  Mrange contains _]_ and everything in Lrange                 #co
           |  -Lrange                  Mrange contains _-_ and everything in Lrange                 #co
-          |  Lrange                   Mrange contains everything in Lrange                         #co
-Lrange   ::= Rliteral                 Lrange contains a literal character                          #co
+          |  Srange                   Mrange contains everything in Srange                         #co
+Srange   ::= Sliteral                 Srange contains a literal character                          #co
+          |  Sliteral-Rliteral        Srange contains Unicode range inclusive                      #co
+          |  SrangeLrange             Srange contains everything in both                           #co
+Lrange   ::= ^                        Lrange contains _^_                                          #co
           |  Rliteral-Rliteral        Lrange contains Unicode range inclusive                      #co
-          |  LrangeLrange             Lrange contains everything in both                           #co
+          |  ^Lrange                  Lrange contains _^_ and more                                 #co
+          |  Srange                   Lrange contains everything in Srange                         #co
 Look     ::= (?=Regexp)               Match if Regexp matches                                      #mode
           |  (?!Regexp)               Match if Regexp doesn't match                                #mode
           |  (?<=Regexp)              Match if Regexp matches preceeding                           #mode
           |  (?<!Regexp)              Match if Regexp doesn't match preceeding                     #mode
 Pred     ::= (N)                      True if Nth _(_ has a match                                  #mode
           |  Look                     True if Look matches                                         #mode
-Lrange   ::= ...                      ...                                                          #px
-          |  Class                    Lrange contains all characters in Class                      #px
-          |  Posix                    Lrange contains all characters in Posix                      #px
-          |  \\Eliteral               Lrange contains Eliteral                                     #px
+Srange   ::= ...                      ...                                                          #px
+          |  Class                    Srange contains all characters in Class                      #px
+          |  Posix                    Srange contains all characters in Posix                      #px
+          |  \\Eliteral               Srange contains Eliteral                                     #px
+Sliteral :== Any character except _]_, _-_, or _^_                                                 #rx
+Sliteral :== Any character except _]_, _\\_, _-_, or _^_                                           #px
 Rliteral :== Any character except _]_ or _-_                                                       #rx
 Rliteral :== Any character except _]_, _\\_, or _-_                                                #px
 Eliteral :== Any character except _a_-_z_, _A_-_Z_                                                 #px
@@ -119,12 +125,14 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
      [(equal? s "range") "rng"]
      [(equal? s "mrange") "mrng"]
      [(equal? s "lrange") "lrng"]
+     [(equal? s "srange") "lirng"]
+     [(equal? s "sliteral") "riliteral"]
      [(equal? s "pred") "tst"]
      [else s]))
 
   (define (fixup-ids s)
     (let loop ([m (regexp-match-positions
-                   #px"(Regexp)|(Pieces?)|(Atom)|(Repeat)|(Literal)|(Aliteral)|(Eliteral)|(Range)|(Lrange)|(Mrange)|(Rliteral)|(Mode)|(Class)|(Posix)|(Property)|(Category)|(Pred)|(Look)|(\\bN\\b)|(\\bM\\b)"
+                   #px"(Regexp)|(Pieces?)|(Atom)|(Repeat)|(Literal)|(Aliteral)|(Eliteral)|(Range)|(Srange)|(Lrange)|(Mrange)|(Sliteral)|(Rliteral)|(Mode)|(Class)|(Posix)|(Property)|(Category)|(Pred)|(Look)|(\\bN\\b)|(\\bM\\b)"
                    s)])
       (cond
        [m

@@ -363,7 +363,7 @@ results or completely unspecified results (the latter when
 @scheme[any] is specified).
 
 Each @scheme[dom-expr] is a contract on an argument to a
-function, and each @scheme[res-expr] is a contract on a
+function, and each @scheme[range-expr] is a contract on a
 result of the function.
 
 @margin-note{Using an @scheme[->] between two whitespace-delimited
@@ -395,7 +395,7 @@ contract checking is performed on the result of the function, and
 thus any number of values is legal (even different numbers on different
 invocations of the function).
 
-If @scheme[(values res-expr ...)] is used as the last sub-form of
+If @scheme[(values range-expr ...)] is used as the last sub-form of
 @scheme[->], the function must produce a result for each contract, and
 each values must match its respective contract.}
 
@@ -494,10 +494,10 @@ just like that for @scheme[->] and @scheme[->*].
 }
 
 
-@defform[(unconstrained-domain-> res-expr ...)]{
+@defform[(unconstrained-domain-> range-expr ...)]{
 
 Constructs a contract that accepts a function, but makes no constraint
-on the function's domain. The @scheme[res-expr]s determine the number
+on the function's domain. The @scheme[range-expr]s determine the number
 of results and the contract for each result.
 
 Generally, this contract must be combined with another contract to

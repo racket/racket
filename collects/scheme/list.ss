@@ -22,6 +22,9 @@
          filter-map
          partition
 
+         argmin
+         argmax
+         
          ;; convenience
          append-map
          filter-not)
@@ -278,3 +281,33 @@
     (if (null? l)
       (reverse result)
       (loop (cdr l) (if (f (car l)) result (cons (car l) result))))))
+
+
+;; mk-min : (number number -> boolean) symbol (X -> real) (listof X) -> X
+(define (mk-min cmp name f xs)
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-type-error name "procedure (arity 1)" f))
+  (unless (and (list? xs)
+               (pair? xs))
+    (raise-type-error name "non-empty list" xs))
+  (let ([init-min-var (f (car xs))])
+    (unless (real? init-min-var)
+      (raise-type-error name "procedure that returns real numbers" f))
+    (let loop ([min (car xs)]
+               [min-var init-min-var]
+               [xs (cdr xs)])
+      (cond
+        [(null? xs) min]
+        [else
+         (let ([new-min (f (car xs))])
+           (unless (real? new-min)
+             (raise-type-error name "procedure that returns real numbers" f))
+           (cond
+             [(cmp new-min min-var)
+              (loop (car xs) new-min (cdr xs))]
+             [else
+              (loop min min-var (cdr xs))]))]))))
+
+(define (argmin f xs) (mk-min < 'argmin f xs))
+(define (argmax f xs) (mk-min > 'argmax f xs))

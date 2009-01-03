@@ -1311,12 +1311,13 @@
                (send-frame (λ (f) (send f replace&search 'forward))))
           (add "replace & search backward" 
                (send-frame (λ (f) (send f replace&search 'backward))))
-          
+          (add "unhide search and toggle focus"
+               (send-frame (λ (f) (send f unhide-search-and-toggle-focus))))
           (add "hide-search" 
                (send-frame (λ (f) (send f hide-search))))
           
           (map "c:g" "hide-search")
-          (map "f3" "search forward")
+          (map "f3" "unhide search and toggle focus")
           (map "c:s" "search forward")
           (map "c:r" "search backward")
           (case (system-type)

@@ -4,7 +4,7 @@
           "guide-utils.ss"
           (for-label scheme/match))
 
-@title{Simple Dispatch: @scheme[case]}
+@title[#:tag "case"]{Simple Dispatch: @scheme[case]}
 
 The @scheme[case] form dispatches to a clause by matching the result
 of an expression to the values for the clause:

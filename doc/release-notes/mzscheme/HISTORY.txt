@@ -1,3 +1,12 @@
+Version 4.1.3.8
+Added procedure-rename
+Added extra arguments to call-with-continuation-prompt
+
+Version 4.1.3.7
+Added equal?/recur
+Added extra argument to raise-syntax-error
+Added equal<%> and interface* to scheme/class
+
 Version 4.1.3.6
 Memory accounting changed to bias charges to parent instead of children
 

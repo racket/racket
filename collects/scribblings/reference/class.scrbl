@@ -75,9 +75,9 @@
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
-@note-lib[scheme/class #:use-sources (scheme/private/class-internal)]
+@guideintro["classes"]{classes and objects}
 
-@local-table-of-contents[]
+@note-lib[scheme/class #:use-sources (scheme/private/class-internal)]
 
 A @deftech{class} specifies
 
@@ -152,6 +152,8 @@ Classes, objects, and interfaces are all values. However, a class or
 interface is not an object (i.e., there are no ``meta-classes'' or
 ``meta-interfaces'').
 
+@local-table-of-contents[]
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "createinterface"]{Creating Interfaces}
@@ -183,6 +185,23 @@ Otherwise, the implementation requirement of the resulting interface
 is the most specific requirement from its superinterfaces. If the
 superinterfaces specify inconsistent derivation requirements, the
 @exnraise[exn:fail:object].}
+
+@defform[(interface* (super-interface-expr ...) 
+                     ([property-expr val-expr] ...)
+           id ...)]{
+
+Like @scheme[interface], but also associates to the interface the
+structure-type properties produced by the @scheme[property-expr]s with
+the corresponding @scheme[val-expr]s.
+
+Whenever the resulting interface (or a sub-interface derived from it)
+is explicitly implemented by a class through the @scheme[class*] form,
+each property is attached with its value to a structure type that
+instantiated by instances of the class. Specifically, the property is
+attached to a structure type with zero immediate fields, which is
+extended to produce the internal structure type for instances of the
+class (so that no information about fields is accessible to the
+structure type property's guard, if any).}
 
 @; ------------------------------------------------------------------------
 
@@ -1458,6 +1477,60 @@ are subclasses of @scheme[class].}
 
 @; ------------------------------------------------------------------------
 
+@section[#:tag "objectequality"]{Object Equality and Hashing}
+
+But default, objects that are instances of different classes or that
+are instances of a non-transparent class are @scheme[equal?] only if
+they are @scheme[eq?]. Like transparent structures, two objects that
+are instances of the same transparent class (i.e., every superclass of
+the class has @scheme[#f] as its inspector) are @scheme[equal?] when
+their field values are @scheme[equal?].
+
+To customize the way that a class instance is compared to other
+instances by @scheme[equal?], implement the @scheme[equal<%>]
+interface.
+
+@definterface[equal<%> ()]{}
+
+The @scheme[equal<%>] interface includes three methods, which are
+analogous to the functions provided for a structure type with
+@scheme[prop:equal+hash]:
+
+@itemize[
+
+ @item{@scheme[equal-to?] --- Takes two arguments. The first argument
+ is an object that is an instance of the same class (or a subclass
+ that does not re-declare its implementation of @scheme[equal<%>])
+ and that is being compared to the target object. The second argument
+ is a @scheme[equal?]-like procedure of two arguments that should be
+ used for recursive equality testing. The result should be a true
+ value if the object and the first argument of the method are equal,
+ @scheme[#f] otherwise.}
+
+ @item{@scheme[equal-hash-code-of] --- Takes one argument, which is a
+ procedure of one argument that should be used for recursive hash-code
+ computation. The result should be an exact integer representing the
+ target object's hash code.}
+
+ @item{@scheme[equal-secondary-hash-code-of] --- Takes one argument,
+ which is a procedure of one argument that should be used for
+ recursive hash-code computation. The result should be an exact
+ integer representing the target object's secondary hash code.}
+
+]
+
+The @scheme[equal<%>] interface is unusual in that declaring the
+implementation of the interface is different from inheriting the
+interface. Two objects can be equal only if they are instances of
+classes whose most specific ancestor to explicitly implement
+@scheme[equal<%>] is the same ancestor.
+
+See @scheme[prop:equal+hash] for more information on equality
+comparisons and hash codes. The @scheme[equal<%>] interface is
+implemented with @scheme[interface*] and @scheme[prop:equal+hash].
+
+@; ------------------------------------------------------------------------
+
 @section[#:tag "objectserialize"]{Object Serialization}
 
 @defform[
@@ -1533,11 +1606,11 @@ Like @scheme[define-serializable-class*], but with not interface
 expressions (analogous to @scheme[class]).}
 
 
-@defthing[externalizable<%> interface?]{
+@definterface[externalizable<%> ()]{}
 
 The @scheme[externalizable<%>] interface includes only the
 @scheme[externalize] and @scheme[internalize] methods. See
-@scheme[define-serializable-class*] for more information.}
+@scheme[define-serializable-class*] for more information.
 
 @; ------------------------------------------------------------------------
 
@@ -1556,8 +1629,11 @@ a single argument, which is the destination port to @scheme[write] or
 Calls to the @scheme[custom-write] or @scheme[custom-display] are like
 calls to a procedure attached to a structure type through the
 @scheme[prop:custom-write] property. In particular, recursive printing
-can trigger an escape from the call. See @scheme[prop:custom-write]
-for more information.}
+can trigger an escape from the call.
+
+See @scheme[prop:custom-write] for more information. The
+@scheme[printable<%>] interface is implemented with
+@scheme[interface*] and @scheme[prop:custom-write].}
 
 @; ------------------------------------------------------------------------
 

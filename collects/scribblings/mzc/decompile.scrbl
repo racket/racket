@@ -1,7 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
           "common.ss"
-          (for-label scheme/base))
+          (for-label scheme/base
+                     compiler/decompile
+                     (only-in compiler/zo-parse compilation-top?)))
 
 @title[#:tag "decompile"]{Decompiling Bytecode}
 
@@ -84,3 +86,18 @@ Many forms in the decompiled code, such as @scheme[module],
  syntax objects to a readable form.}
 
 ]
+
+@; ------------------------------------------------------------
+
+@section{Scheme API for Decompiling}
+
+@defmodule[compiler/decompile]
+
+@defproc[(decompile [top compilation-top?]) any/c]{
+
+Consumes the result of parsing bytecode and returns an S-expression
+(as described above) that represents the compiled code.}
+
+@; ------------------------------------------------------------
+
+@include-section["zo-parse.scrbl"]

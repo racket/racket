@@ -90,6 +90,21 @@
   (test (pick-char 0 null (make-random 65)) #\a)
   (test (random-string null null 1 0 (make-random 65)) "a"))
 
+(let ()
+  (define-language L
+    (a 5 (x a) #:binds x a)
+    (b 4))
+  (test ((pick-nt 'dontcare) 'a L '(x) 1)
+        (nt-rhs (car (compiled-lang-lang L))))
+  (test ((pick-nt 'dontcare (make-random 1)) 'a L '(x) preferred-production-threshold)
+        (nt-rhs (car (compiled-lang-lang L))))
+  (let ([pref (car (nt-rhs (car (compiled-lang-lang L))))])
+    (test ((pick-nt (make-immutable-hash `((a ,pref))) (make-random 0))
+           'a L '(x) preferred-production-threshold)
+          (list pref)))
+  (test ((pick-nt 'dontcare) 'sexp sexp null preferred-production-threshold)
+        (nt-rhs (car (compiled-lang-lang sexp)))))
+
 (define-syntax exn:fail-message
   (syntax-rules ()
     [(_ expr)
@@ -101,7 +116,9 @@
            (make-exn-not-raised))))]))
 
 (define (patterns . selectors) 
-  (map (λ (selector) (λ (name prods vars size) (list (selector prods))))
+  (map (λ (selector) 
+         (λ (name lang vars size)
+           (list (selector (nt-rhs (nt-by-name lang name))))))
        selectors))
 
 (define (iterator name items)
@@ -145,7 +162,7 @@
   
   ;; Generate (λ (x) x)
   (test 
-   (generate/decisions 
+   (generate-term 
     lc e 1 0
     (decisions #:var (list (λ _ 'x) (λ _'x))
                #:nt (patterns third first first first)))
@@ -153,14 +170,14 @@
   
   ;; Generate pattern that's not a non-terminal
   (test 
-   (generate/decisions 
+   (generate-term 
     lc (x x x_1 x_1) 1 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y)))) 
    '(x x y y))
   
   ; After choosing (e e), size decremented forces each e to x.
   (test
-   (generate/decisions 
+   (generate-term 
     lc e 1 0
     (decisions #:nt (patterns first)
                #:var (list (λ _ 'x) (λ _ 'y))))
@@ -176,7 +193,7 @@
   (let* ([x null]
          [prepend! (λ (c l b a) (begin (set! x (cons (car b) x)) 'x))])
     (test (begin
-            (generate/decisions lang a 5 0 (decisions #:var (list (λ _ 'x) prepend! prepend!)))
+            (generate-term lang a 5 0 (decisions #:var (list (λ _ 'x) prepend! prepend!)))
             x)
           '(x x))))
 
@@ -187,7 +204,7 @@
     (x (variable-except λ)))
   (test 
    (exn:fail-message 
-     (generate/decisions 
+     (generate-term 
       postfix e 2 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y))
                  #:nt (patterns third second first first))))
@@ -198,7 +215,7 @@
   (define-language var
     (e (variable-except x y)))
   (test
-   (generate/decisions
+   (generate-term
     var e 2 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
    'z))
@@ -215,25 +232,25 @@
     (n number)
     (z 4))
   (test
-   (generate/decisions 
+   (generate-term 
     lang a 2 0
     (decisions #:num (build-list 3 (λ (n) (λ (_) n)))
                #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 1))))
    `(0 1 2 "foo" "foo" "foo" "bar" #t))
-  (test (generate/decisions lang b 5 0 (decisions #:seq (list (λ (_) 0))))
+  (test (generate-term lang b 5 0 (decisions #:seq (list (λ (_) 0))))
         null)
-  (test (generate/decisions lang c 5 0 (decisions #:seq (list (λ (_) 0))))
+  (test (generate-term lang c 5 0 (decisions #:seq (list (λ (_) 0))))
         null)
-  (test (generate/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
+  (test (generate-term lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
-  (test (exn:fail-message (generate lang e 5)) 
+  (test (exn:fail-message (generate-term lang e 5)) 
         #rx"generate: unable to generate pattern e")
-  (test (generate/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
-  (test (generate/decisions lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+  (test (generate-term lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
+  (test (generate-term lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
                   (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 4)
                                          (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 1) (λ (_) 3))))
         '((0 0 0) (0 0 0 0) (1 1 1)))
-  (test (generate/decisions lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+  (test (generate-term lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
                   (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 5))))
         '((0 0 0) (0 0 0 0) (1 1 1) (1 1 1 1 1))))
 
@@ -247,7 +264,7 @@
   ;; x and y bound in body
   (test 
    (let/ec k 
-     (generate/decisions 
+     (generate-term 
       lc e 10 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b)))
                  #:nt (patterns first first first third first)
@@ -257,7 +274,7 @@
 (let ()
   (define-language lang (e (variable-prefix pf)))
   (test 
-   (generate/decisions
+   (generate-term
     lang e 5 0
     (decisions #:var (list (λ _ 'x))))
    'pfx))
@@ -271,7 +288,7 @@
   (define-language lang
     (e number (e_1 e_2 e e_1 e_2)))
   (test
-   (generate/decisions
+   (generate-term
     lang e 5 0
     (decisions #:nt (patterns second first first first)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
@@ -283,7 +300,7 @@
     (x variable))
   (test
    (let/ec k
-     (generate/decisions
+     (generate-term
       lang e 5 0
       (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
    '(x)))
@@ -294,17 +311,17 @@
     (b (c_!_1 c_!_1 c_!_1))
     (c 1 2))
   (test
-   (generate/decisions
+   (generate-term
     lang a 5 0
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
   (test
-   (generate/decisions
+   (generate-term
     lang (number_!_1 number_!_2 number_!_1) 5 0
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
   (test
-   (exn:fail-message (generate lang b 5000))
+   (exn:fail-message (generate-term lang b 5000))
    #rx"unable"))
 
 (let ()
@@ -313,7 +330,7 @@
     (f foo bar))
   (test
    (let/ec k 
-     (generate/decisions 
+     (generate-term 
       lang e 5 0 
       (decisions #:str (list (λ (c l a) (k (cons (sort c char<=?) (sort l string<=?))))))))
    (cons '(#\a #\b #\f #\o #\r)
@@ -327,28 +344,28 @@
     (d (side-condition (x_1 x_1 x) (not (eq? (term x_1) 'x))) #:binds x_1 x)
     (e (side-condition (x_1 x_!_2 x_!_2) (not (eq? (term x_1) 'x))))
     (x variable))
-  (test (generate lang b 5) 43)
-  (test (generate lang (side-condition a (odd? (term a))) 5) 43)
-  (test (exn:fail-message (generate lang c 5))
+  (test (generate-term lang b 5) 43)
+  (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
+  (test (exn:fail-message (generate-term lang c 5))
         #rx"unable to generate")
   (test ; binding works for with side-conditions failure/retry
    (let/ec k
-     (generate/decisions
+     (generate-term
       lang d 5 0
       (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b))))))
    '(y))
   (test ; mismatch patterns work with side-condition failure/retry
-   (generate/decisions
+   (generate-term
     lang e 5 0
     (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'x) (λ _ 'y))))
    '(y x y))
   (test ; generate compiles side-conditions in pattern
-   (generate/decisions lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
+   (generate-term lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
              (decisions #:var (list (λ _ 'x) (λ _ 'y))))
    'y)
   (test ; bindings within ellipses collected properly
    (let/ec k
-     (generate/decisions lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
+     (generate-term lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
                (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4))
                           #:num (build-list 7 (λ (n) (λ (_) n))))))
    '((0 1 2) (3 4 5 6))))
@@ -360,9 +377,9 @@
     (c (side-condition (name x d) (zero? (term x))))
     (d 2 1 0)
     (e ((side-condition (name d_1 d) (zero? (term d_1))) d_1)))
-  (test (generate lang a 5) 4)
-  (test (generate lang c 5) 0)
-  (test (generate lang e 5) '(0 0)))
+  (test (generate-term lang a 5) 4)
+  (test (generate-term lang c 5) 0)
+  (test (generate-term lang e 5) '(0 0)))
 
 (let ()
   (define-language lang
@@ -380,28 +397,28 @@
     (y variable))
   
   (test 
-   (generate/decisions 
+   (generate-term 
     lang (in-hole A number ) 5 0
     (decisions 
      #:nt (patterns second second first first third first second first first)
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 1 2) (+ 0 (+ 3 4))))
   
-  (test (generate lang (in-hole (in-hole (1 hole) hole) 5) 5) '(1 5))
-  (test (generate lang (hole 4) 5) (term (hole 4)))
-  (test (generate/decisions lang (variable_1 (in-hole C variable_1)) 5 0
+  (test (generate-term lang (in-hole (in-hole (1 hole) hole) 5) 5) '(1 5))
+  (test (generate-term lang (hole 4) 5) (term (hole 4)))
+  (test (generate-term lang (variable_1 (in-hole C variable_1)) 5 0
                   (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
         '(x x))
-  (test (generate/decisions lang (variable_!_1 (in-hole C variable_!_1)) 5 0
+  (test (generate-term lang (variable_!_1 (in-hole C variable_!_1)) 5 0
                   (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'x) (λ _ 'y))))
         '(x y))
-  (test (let/ec k (generate/decisions lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
+  (test (let/ec k (generate-term lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
         '(x))
-  (test (generate/decisions lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
+  (test (generate-term lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
         '((2 (1 1)) 1))
-  (test (generate/decisions lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
+  (test (generate-term lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
         '(1 0))
-  (test (generate/decisions lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
+  (test (generate-term lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
         '((2 ((3 (2 1)) 3)) 1)))
 
 (let ()
@@ -409,7 +426,7 @@
       (e (e e) (+ e e) x v)
       (v (λ (x) e) number)
       (x variable-not-otherwise-mentioned))
-  (test (generate/decisions lc x 5 0 (decisions #:var (list (λ _ 'λ) (λ _ '+) (λ _ 'x))))
+  (test (generate-term lc x 5 0 (decisions #:var (list (λ _ 'λ) (λ _ '+) (λ _ 'x))))
         'x))
 
 (let ()
@@ -423,14 +440,14 @@
         (list four 'f))
   (test (call-with-values (λ () (pick-any four (make-random 1))) list)
         (list sexp 'sexp))
-  (test (generate/decisions four any 5 0 (decisions #:any (list (λ _ (values four 'e))))) 4)
-  (test (generate/decisions four any 5 0 
+  (test (generate-term four any 5 0 (decisions #:any (list (λ _ (values four 'e))))) 4)
+  (test (generate-term four any 5 0 
                   (decisions #:any (list (λ _ (values sexp 'sexp)))
                              #:nt (patterns fifth second second second)
                              #:seq (list (λ _ 3))
                              #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
         '("foo" "bar" "baz"))
-  (test (generate/decisions empty any 5 0 (decisions #:nt (patterns first)
+  (test (generate-term empty any 5 0 (decisions #:nt (patterns first)
                                                      #:var (list (λ _ 'x))))
         'x))
 
@@ -438,7 +455,7 @@
 (let ()
   (define-language lang
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
-  (test (generate lang e 5) (term (hole 1))))
+  (test (generate-term lang e 5) (term (hole 1))))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
@@ -452,13 +469,10 @@
     (e x (e e) v)
     (v (λ (x) e))
     (x variable-not-otherwise-mentioned))
-  (test (generate/decisions lang (cross e) 3 0 
+  (test (generate-term lang (cross e) 3 0 
                   (decisions #:nt (patterns fourth first first second first first first)
                              #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
-
-; preferred productions
-
 
 ;; current-error-port-output : (-> (-> any) string)
 (define (current-error-port-output thunk)
@@ -520,6 +534,52 @@
   (test (check-metafunction-contract h) #t)
   ;; OK -- generated from pattern (any ...)
   (test (check-metafunction-contract i) #t))
+
+;; check-reduction-relation
+(let ()
+  (define-language L
+    (e (+ e ...) number)
+    (E (+ number ... E* e ...))
+    (E* hole E*))
+  (define R
+    (reduction-relation
+     L
+     (==> (+ number ...) whatever)
+     (--> (side-condition number (even? (term number))) whatever)
+     with
+     [(--> (in-hole E a) whatever)
+      (==> a b)]))
+  (let ([generated null])
+    (test (begin
+            (check-reduction-relation 
+             R (λ (term) (set! generated (cons term generated)))
+             #:decisions (decisions #:seq (list (λ _ 0) (λ _ 0) (λ _ 0))
+                                    #:num (list (λ _ 1) (λ _ 1) (λ _ 0)))
+             #:attempts 1)
+            generated)
+          (reverse '((+ (+)) 0))))
+  (let ([S (reduction-relation L (--> 1 2 name) (--> 3 4))])
+    (test (check-reduction-relation S (λ (x) #t) #:attempts 1) #t)
+    (test (current-error-port-output 
+           (λ () (check-reduction-relation S (λ (x) #f))))
+          "checking name failed after 1 attempts:\n1\n")
+    (test (current-error-port-output 
+           (λ () (check-reduction-relation S (curry eq? 1))))
+          "checking unnamed failed after 1 attempts:\n3\n")))
+
+; check-metafunction
+(let ()
+  (define-language empty)
+  (define-metafunction empty
+    [(m 1) whatever]
+    [(m 2) whatever])
+  (let ([generated null])
+    (test (begin
+            (check-metafunction m (λ (t) (set! generated (cons t generated))) 1)
+            generated) 
+          (reverse '((1) (2)))))
+  (test (current-error-port-output (λ () (check-metafunction m (curry eq? 1))))
+        #rx"checking clause #1 failed after 1 attempt"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])

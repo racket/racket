@@ -16,7 +16,22 @@ bitmap, but with alpha values. It has a maker, two selectors, and a
 predicate.
 
 
-@defclass[cache-image-snip% snip% ()]{
+@defclass[cache-image-snip% image-snip% ()]{
+
+The @scheme[cache-image-snip%] class is a subclass of
+@scheme[image-snip%] simply so that its instances can be compared with
+@scheme[image-snip%] using @scheme[equal?]. All @scheme[image-snip%]
+functionality is overridden or ignored.
+
+@defmethod[#:mode overrride
+           (equal-to? [snip (is-a?/c image-snip%)]
+                      [equal? (any/c any/c . -> . boolean?)])
+           boolean?]{
+
+Calls the @method[cache-image-snip% other-equal-to?] method of
+@scheme[snip] if it is also a @scheme[cache-image-snip%] instance,
+otherwise calls the @method[cache-image-snip% other-equal-to?] of
+@this-obj[].}
 
 
 @defmethod[(get-argb)
@@ -44,7 +59,8 @@ predicate.
 
 }
 
-@defmethod[(get-bitmap) (or/c false/c (is-a?/c bitmap%))]{
+@defmethod[#:mode override
+           (get-bitmap) (or/c false/c (is-a?/c bitmap%))]{
 
     Builds (if not yet built) a bitmap corresponding to
     this snip and returns it.
@@ -75,13 +91,22 @@ predicate.
 
     Returns the width and height for the image.
 
-}}
+}
+
+@defmethod[#:mode override
+           (other-equal-to? [snip (is-a?/c image-snip%)]
+                            [equal? (any/c any/c . -> . boolean?)])
+           boolean?]{
+
+Refines the comparison of @xmethod[image-snip% other-equal-to?] to
+exactly match alpha channels.}}
 
 @; ----------------------------------------
 
 @defthing[snip-class (is-a?/c snip-class%)]{
 
 This snipclass is used for saved cache image snips.}
+
 
 @defproc[(make-argb [vectorof (integer-in 0 255)]
                     [width exact-nonnegative-integer?]

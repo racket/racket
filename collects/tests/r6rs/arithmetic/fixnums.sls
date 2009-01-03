@@ -227,6 +227,11 @@
     (test/exn (fxmod0 1 0) &assertion)
     (test/exn (fxdiv0-and-mod0 1 0) &assertion)
 
+    (test/exn (fxdiv (least-fixnum) -1) &implementation-restriction)
+    (test/exn (fxdiv-and-mod (least-fixnum) -1) &implementation-restriction)
+    (test/exn (fxdiv0 (least-fixnum) -1) &implementation-restriction)
+    (test/exn (fxdiv0-and-mod0 (least-fixnum) -1) &implementation-restriction)
+
     (test (fxnot 0) -1)
     (test (fxnot -2) 1)
     (test (fxnot 1) -2)

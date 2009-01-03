@@ -5,7 +5,7 @@
 
 (define bitmap-message%
   (class canvas%
-    (inherit min-width min-height get-dc)
+    (inherit min-width min-height get-dc refresh)
     (define bm #f)
     (define/override (on-paint)
       (when bm
@@ -14,6 +14,7 @@
     (define/public (set-bm b)
       (set! bm b)
       (min-width (send bm get-width))
-      (min-height (send bm get-height)))
+      (min-height (send bm get-height))
+      (refresh))
     (super-new (stretchable-width #f)
                (stretchable-height #f))))

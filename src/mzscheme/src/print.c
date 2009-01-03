@@ -1977,20 +1977,28 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    src = obj;
 
 	  if (SAME_OBJ(src, obj)) {
+            int l;
+            const char *s;
+            Scheme_Object *name;
+
 	    print_utf8_string(pp, "#<", 0, 2); /* used to have "struct:" prefix */
-	    {
-	      int l;
-	      const char *s;
-	      Scheme_Object *name = SCHEME_STRUCT_NAME_SYM(obj);
-	      
-	      s = scheme_symbol_name_and_size(name, (unsigned int *)&l, 
-					      (pp->print_struct
-					       ? SCHEME_SNF_FOR_TS
-					       : (pp->can_read_pipe_quote 
-						  ? SCHEME_SNF_PIPE_QUOTE
-						  : SCHEME_SNF_NO_PIPE_QUOTE)));
-	      print_utf8_string(pp, s, 0, l);
-	    }
+            if (scheme_reduced_procedure_struct
+                && scheme_is_struct_instance(scheme_reduced_procedure_struct, obj)) {
+              /* Since scheme_proc_struct_name_source() didn't redirect, this one
+                 must have a name. */
+              print_utf8_string(pp, "procedure:", 0, 10);
+              name = ((Scheme_Structure *)obj)->slots[2];
+            } else {
+	      name = SCHEME_STRUCT_NAME_SYM(obj);
+            }
+
+            s = scheme_symbol_name_and_size(name, (unsigned int *)&l, 
+                                            (pp->print_struct
+                                             ? SCHEME_SNF_FOR_TS
+                                             : (pp->can_read_pipe_quote 
+                                                ? SCHEME_SNF_PIPE_QUOTE
+                                                : SCHEME_SNF_NO_PIPE_QUOTE)));
+            print_utf8_string(pp, s, 0, l);
 	    PRINTADDRESS(pp, obj);
 	    print_utf8_string(pp, ">", 0, 1);
 	  } else {

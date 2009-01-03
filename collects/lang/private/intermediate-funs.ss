@@ -1,7 +1,7 @@
 (module intermediate-funs scheme/base
   (require "teachprims.ss"
 	   mzlib/etc
-	   mzlib/list
+	   scheme/list
 	   syntax/docprovide
            (for-syntax scheme/base))
 
@@ -33,6 +33,12 @@
     (ormap ((X -> boolean) (listof X) -> boolean)
 	   "(ormap p (list x-1 ... x-n)) = (or (p x-1) (or ... (p x-n)))")
 
+    (argmin ((X -> real) (listof X) -> X)
+            "to find the (first) element of the list that minimizes the output of the function")
+    
+    (argmax ((X -> real) (listof X) -> X)
+            "to find the (first) element of the list that minimizes the output of the function")
+    
     (memf ((X -> boolean) (listof X) -> (union false (listof X)))
 	  "to determine whether the first argument produces true for some value in the second argument")
     (apply ((X-1 ... X-N -> Y) X-1 ... X-i (list X-i+1 ... X-N) -> Y)

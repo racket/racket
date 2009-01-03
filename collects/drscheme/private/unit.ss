@@ -3103,8 +3103,9 @@ module browser threading seems wrong.
                [demand-callback
                 (λ (mi)
                   (let ([target (get-edit-target-object)])
-                    (send mi enable (get-edit-target-object))
-                    (send mi check (and target (send target get-overwrite-mode)))))]
+                    (send mi enable (is-a? target text%))
+		    (when (is-a? target text%)
+                      (send mi check (and target (send target get-overwrite-mode))))))]
                [callback (λ (x y)
                            (let ([target (get-edit-target-object)])
                              (send target set-overwrite-mode

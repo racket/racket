@@ -4731,6 +4731,7 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   Scheme_Object *id, *local_mark, *expr, *data, *vec, *id_sym;
   Scheme_Lift_Capture_Proc cp;  
   Scheme_Object *orig_expr;
+  char buf[24];
 
   expr = argv[0];
   if (!SCHEME_STXP(expr))
@@ -4753,7 +4754,13 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   
   expr = scheme_add_remove_mark(expr, local_mark);
 
-  id_sym = scheme_intern_exact_parallel_symbol("lifted", 6);
+  /* We don't really need a new symbol each time, since the mark
+     will generate new bindings. But lots of things work better or faster
+     when different bindings have different symbols. Use env->genv->id_counter
+     to help keep name generation deterministic within a module. */
+  sprintf(buf, "lifted.%d", env->genv->id_counter++);
+  id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
+
   id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
   id = scheme_add_remove_mark(id, scheme_new_mark());
 

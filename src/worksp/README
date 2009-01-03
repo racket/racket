@@ -243,7 +243,7 @@ plt\lib\ on start-up.
 
 The relative DLL path is embedded in each executable, and it can be
 replaced with a path of up to 512 characters. The path is stored in
-the exeuctable in wide-character format, and it is stored immediately
+the executable in wide-character format, and it is stored immediately
 after the wide-character tag "dLl dIRECTORy:" with a wide NUL
 terminator. The path can be either absolute or relative; in the latter
 case, the relative path is resolved with respect to the

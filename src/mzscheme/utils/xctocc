@@ -20,6 +20,7 @@ $key_include = '@INCLUDE ';
 $key_boolean = '@BOOLEAN ';
 $key_classbase = '@CLASSBASE ';
 $key_interface = '@INTERFACE ';
+$key_implements = '@IMPLEMENTS ';
 $key_classid = '@CLASSID ';
 $key_global = '@GLOBAL ';
 $key_header = '@HEADER ';
@@ -61,6 +62,7 @@ sub ResetObjParams
     $global = 0;
     $implementor = "";
     $interfacestring = "";
+    $implements = "";
 }
 
 &ResetObjParams();
@@ -85,6 +87,7 @@ sub ReadFile {
     $marks{'H'} = 'H';
     $marks{'v'} = 'v';
     $marks{'m'} = 'm';
+    $marks{'M'} = 'M';
     $ifzero = 0;
 
     open(SOUT, ">${file}.ss");
@@ -168,8 +171,11 @@ sub ReadFile {
 		$oldclassmk = $mkbase;
 		$newclass = 'os_' . $base;
 	    } elsif (&StartsWithKey($_, $key_interface)) {
-		$_ = &Wash(&SkipKey($_, $key_classbase));
+		$_ = &Wash(&SkipKey($_, $key_interface));
 		$interfacestring =$_;
+	    } elsif (&StartsWithKey($_, $key_implements)) {
+		$_ = &Wash(&SkipKey($_, $key_implements));
+		$implements =$_;
 	    } elsif (&StartsWithKey($_, $key_global)) {
 		&ResetObjParams();
 		$global = 1;
@@ -347,6 +353,9 @@ sub ReadFields {
 	$virtual = 1;
     } elsif ($mark eq 'm') {
 	$externalmethod = 1;
+    } elsif ($mark eq 'M') {
+	$externalmethod = 1;
+        $virtual = 1;
     }
 
     ($s, $casename) = split(/<>/, $s);
@@ -805,7 +814,11 @@ sub DoPrintClass
 		if ($virtual) {
 		    &OIStart;
 		    print "  " . &NormalType($returntype) 
-			. " ${globalname}${func}(";
+			. " ${globalname}${func}";
+                    if ($externalmethod) {
+                        print "_method";
+                    }
+                    print "(";
 		    &PrintParams(1);
 		    print ");\n";
 		    &OIEnd;
@@ -1076,6 +1089,7 @@ sub DoPrintClass
 	} else {
 	    print SOUT "#f";
 	}
+        print SOUT " ($implements)";
 	if ($iargnames ne 'BYPOS') {
 	    print SOUT " ($iargnames)";
 	} else {
@@ -1333,7 +1347,13 @@ sub PrintFailureHandling
 	if ($callback) {
 	    print "obj->";
 	}
-	print "ASSELF ${oldclass}::${func}(";
+        if (!$externalmethod) {
+            print "ASSELF ${oldclass}::";
+        }
+        print "${func}(";
+        if ($externalmethod) {
+            printf("SELF__, ");
+        }
 	&PrintArgs(1);
 	print ");";
     } elsif ($exception ne '' && $exception ne 'SUPER') {
@@ -1367,7 +1387,11 @@ sub PrintMethod
     print $func;
     print "(int n, Scheme_Object *p[]);\n\n";
 
-    print &NormalType($returntype) . " ${methodfuncname}(";
+    print &NormalType($returntype) . " ${methodfuncname}";
+    if ($externalmethod) {
+        print "_method";
+    }
+    print "(";
     
     &PrintParams(0);
     $pcount = $paramnum;
@@ -1875,7 +1899,7 @@ sub PrintCallRealMethod
 	print "));\n\n";
     } else {
 	print "$prefix  ";
-	if ($virtual) {
+	if ($virtual && !$externalmethod) {
 	    print "if (((Scheme_Class_Object *)p[0])->primflag)\n";
 	    print "$prefix    ";
 	    print $ret_val if ($returntype ne 'void');
@@ -2205,7 +2229,7 @@ sub PrintBundleVar
 	$symtype = $1;
 	print "$wvs(bundle_symset_${symtype}($var))";
     } else {
-	print STDERR "Unknown type ${paramtype} in $func.\n";
+	print STDERR "Unknown type ${paramtype} in $func [for bundle].\n";
     }
 }
 
@@ -2436,7 +2460,7 @@ sub PrintUnbundleVar
 	$symtype = $1;
 	print "WITH_VAR_STACK(unbundle_symset_${symtype}($var, $stop))";
     } else {
-	print STDERR "Unknown type ${paramtype} in $func.\n";
+	print STDERR "Unknown type ${paramtype} in $func [for unbundle].\n";
     }
 }
 
@@ -2806,7 +2830,7 @@ sub PrintTypecheck
 	$symtype = $1;
 	print "WITH_REMEMBERED_STACK(istype_symset_${symtype}($var, $stop))";
     } else {
-	print STDERR "Unknown type ${paramtype} in $func.\n";
+	print STDERR "Unknown type ${paramtype} in $func [for typecheck].\n";
     }
 }
 

@@ -8,8 +8,6 @@
 
 @guideintro["define-struct"]{structure types via @scheme[define-struct]}
 
-@local-table-of-contents[]
-
 A @deftech{structure type} is a record datatype composing a number of
 @idefterm{fields}. A @deftech{structure}, an instance of a structure
 type, is a first-class value that contains a value for each field of
@@ -73,6 +71,8 @@ instances of the same structure type, no fields are opaque, and the
 results of applying @scheme[struct->vector] to the structs are
 @scheme[equal?]. (Consequently, @scheme[equal?]  testing for
 structures depends on the current inspector.)
+
+@local-table-of-contents[]
 
 @;------------------------------------------------------------------------
 @include-section["define-struct.scrbl"]

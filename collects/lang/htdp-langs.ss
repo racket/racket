@@ -662,11 +662,16 @@
                                 data-class-names)))))))))
       
       (define (get-teachpack-from-user parent)
-        (define tp-dir (collection-path "teachpack" "htdp"))
+        (define tp-dirs (list (collection-path "teachpack" "htdp")
+                              (collection-path "teachpack" "2htdp")))
         (define columns 2)
-        (define tps (filter
-                     (λ (x) (file-exists? (build-path tp-dir x)))
-                     (directory-list tp-dir)))
+        (define tps (apply
+                     append
+                     (map (λ (tp-dir)
+                            (filter
+                             (λ (x) (file-exists? (build-path tp-dir x)))
+                             (directory-list tp-dir)))
+                          tp-dirs)))
         (define sort-order (λ (x y) (string<=? (path->string x) (path->string y))))
         (define pre-installed-tps (sort tps sort-order))
         (define dlg (new dialog% [parent parent] [label (string-constant drscheme)]))
@@ -826,7 +831,7 @@
         (define compiling-message (new message% [parent button-panel] [label ""] [stretchable-width #t]))
         (define-values (ok-button cancel-button)
           (gui-utils:ok/cancel-buttons button-panel
-                                       (λ (b e) 
+                                       (λ (b e)
                                          (set! answer (figure-out-answer))
                                          (send dlg show #f))
                                        (λ (b e) 
@@ -837,9 +842,15 @@
           (cond
             [(send pre-installed-lb get-selection)
              =>
-             (λ (i) `(lib ,(send pre-installed-lb get-string i) 
-                          "teachpack"
-                          "htdp"))]
+             (λ (i)
+               (define f (send pre-installed-lb get-string i))
+               (cond
+                 [(file-exists? (build-path (collection-path "teachpack" "htdp") f))
+                  `(lib ,f "teachpack" "htdp")]
+                 [(file-exists? (build-path (collection-path "teachpack" "2htdp") f))
+                  `(lib ,f "teachpack" "2htdp")]
+                 [else (error 'figuer-out-answer "argh: ~a ~a" 
+                              (collection-path "teachpack" "htdp") f)]))]
             [(send user-installed-lb get-selection)
              =>
              (λ (i) `(lib ,(send user-installed-lb get-string i)
