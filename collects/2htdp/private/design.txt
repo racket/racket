@@ -1,0 +1,17 @@
+
+Files for constructing universe.ss: 
+
+ world.ss              the old world 
+ 		       world%  = (clock-mixin ...) -- the basic world 
+		       aworld% = (class world% ...) -- the world with recording
+
+ universe.ss	       the universe server 
+ 		       universe% = (clock-mixin ...) -- the basic universe
+
+ timer.ss              the clock-mixin
+
+ check-aux.ss          common primitives 
+ image.ss              the world image functions 
+ syn-aux.ss            syntactic auxiliaries 
+ syn-aux-aux.ss        auxiliaries to the syntactic auxiliaries 
+
