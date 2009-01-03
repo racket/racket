@@ -107,13 +107,13 @@
              (show-poststep step binders shift-table)]))
 
     (define/public (add-syntax stx
-                               #:binders binders
+                               #:binders [binders #f]
                                #:shift-table [shift-table #f]
-                               #:definites definites)
+                               #:definites [definites null])
       (send sbview add-syntax stx
             #:binder-table binders
             #:shift-table shift-table
-            #:definites (or definites null)))
+            #:definites definites))
 
     (define/public (add-final stx error
                               #:binders binders
@@ -124,7 +124,7 @@
         (send sbview add-syntax stx
               #:binder-table binders
               #:shift-table shift-table
-              #:definites (or definites null)))
+              #:definites definites))
       (when error
         (add-error error)))
 

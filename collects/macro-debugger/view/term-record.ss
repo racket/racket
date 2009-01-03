@@ -274,7 +274,7 @@
 
     ;; display-initial-term : -> void
     (define/public (display-initial-term)
-      (send displayer add-syntax (wderiv-e1 deriv) #f null))
+      (send displayer add-syntax (wderiv-e1 deriv)))
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
