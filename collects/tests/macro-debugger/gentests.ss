@@ -101,15 +101,15 @@
 (define (check-steps expected actual)
   (check-pred list? actual)
   (check-pred reduction-sequence? actual)
-  (compare-step-sequences expected actual))
+  (compare-step-sequences actual expected))
 
 (define (reduction-sequence? rs)
   (andmap protostep? rs))
 
-(define (compare-step-sequences expected actual)
+(define (compare-step-sequences actual expected)
   (cond [(and (pair? expected) (pair? actual))
-         (begin (compare-steps (car expected) (car actual))
-                (compare-step-sequences (cdr expected) (cdr actual)))]
+         (begin (compare-steps (car actual) (car expected))
+                (compare-step-sequences (cdr actual) (cdr expected)))]
         [(pair? expected)
          (fail (format "missing expected steps:\n~s" expected))]
         [(pair? actual)
@@ -121,7 +121,7 @@
                                         (stx->datum (step-term2 step)))))))]
         [else 'ok]))
 
-(define (compare-steps expected actual)
+(define (compare-steps actual expected)
   (cond [(eq? expected 'error)
          (check-pred misstep? actual)]
         [else
@@ -140,14 +140,16 @@
                                   e-local
                                   "Context frame")))]))
 
-(define-binary-check (check-equal-syntax? a b)
-  (equal-syntax? a b))
+(define-binary-check (check-equal-syntax? a e)
+  (equal-syntax? a e))
 
-(define (equal-syntax? a b)
-  (cond [(and (pair? a) (pair? b))
-         (and (equal-syntax? (car a) (car b))
-              (equal-syntax? (cdr a) (cdr b)))]
-        [(and (symbol? a) (symbol? b))
-         (equal? (string->symbol (symbol->string a))
-                 b)]
-        [else (equal? a b)]))
+(define (equal-syntax? a e)
+  (cond [(and (pair? a) (pair? e))
+         (and (equal-syntax? (car a) (car e))
+              (equal-syntax? (cdr a) (cdr e)))]
+        [(and (symbol? a) (symbol? e))
+         (equal? (symbol->string a)
+                 (symbol->string e))]
+        [(and (symbol? a) (regexp? e))
+         (regexp-match? e (symbol->string a))]
+        [else (equal? a e)]))
