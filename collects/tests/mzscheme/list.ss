@@ -270,6 +270,61 @@
   (test '(1 2 3) am list '(1 2 3))
   (test '(1 1 2 2 3 3) am (lambda (x) (list x x)) '(1 2 3)))
 
+;; ---------- argmin & argmax ----------
+
+(let ()
+  
+  (define ((check-regs . regexps) exn)
+    (and (exn:fail? exn)
+         (andmap (λ (reg) (regexp-match reg (exn-message exn)))
+                 regexps)))
+  
+  (test 'argmin object-name argmin)
+  (test 1 argmin (lambda (x) 0) (list 1))
+  (test 1 argmin (lambda (x) x) (list 1 2 3))
+  (test 1 argmin (lambda (x) 1) (list 1 2 3))
+  
+  (test 3
+        'argmin-makes-right-number-of-calls
+        (let ([c 0])
+          (argmin (lambda (x) (set! c (+ c 1)) 0)
+                  (list 1 2 3))
+          c))
+  
+  (test '(1 banana) argmin car '((3 pears) (1 banana) (2 apples)))
+  
+  (err/rt-test (argmin 1 (list 1)) (check-regs #rx"argmin" #rx"procedure"))
+  (err/rt-test (argmin (lambda (x) x) 3) (check-regs #rx"argmin" #rx"list"))
+  (err/rt-test (argmin (lambda (x) x) (list 1 #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmin (lambda (x) x) (list #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
+  
+  (err/rt-test (argmin (lambda (x) x) (list +i)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmin (lambda (x) x) (list)) (check-regs #rx"argmin" #rx"non-empty list"))
+  
+  (test 'argmax object-name argmax)
+  (test 1 argmax (lambda (x) 0) (list 1))
+  (test 3 argmax (lambda (x) x) (list 1 2 3))
+  (test 1 argmax (lambda (x) 1) (list 1 2 3))
+  
+  (test 3
+        'argmax-makes-right-number-of-calls
+        (let ([c 0])
+          (argmax (lambda (x) (set! c (+ c 1)) 0)
+                  (list 1 2 3))
+          c))
+  
+  (test '(3 pears) argmax car '((3 pears) (1 banana) (2 apples)))
+  
+  (err/rt-test (argmax 1 (list 1)) (check-regs #rx"argmax" #rx"procedure"))
+  (err/rt-test (argmax (lambda (x) x) 3) (check-regs #rx"argmax" #rx"list"))
+  (err/rt-test (argmax (lambda (x) x) (list 1 #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmax (lambda (x) x) (list #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
+  
+  (err/rt-test (argmax (lambda (x) x) (list +i)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
+  (err/rt-test (argmax (lambda (x) x) (list)) (check-regs #rx"argmax" #rx"non-empty list")))
+
+
+
 ;; ---------- check no collisions with srfi/1 ----------
 (test (void)
       eval '(module foo scheme/base (require scheme/base srfi/1/list))

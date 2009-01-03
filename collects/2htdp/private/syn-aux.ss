@@ -1,0 +1,43 @@
+#lang scheme
+
+(provide define-keywords function-with-arity except err check-flat-spec
+         (all-from-out "syn-aux-aux.ss"))
+
+(require "syn-aux-aux.ss"
+ (for-template "syn-aux-aux.ss" 
+               scheme
+               (rename-in lang/prim (first-order->higher-order f2h))))
+
+(define-syntax-rule (define-keywords the-list (kw coerce) ...)
+  (begin
+    (provide kw ...)
+    (define-syntax (kw x)
+      (raise-syntax-error 'kw "used out of context" x))
+    ...
+    (define-for-syntax the-list (list (list 'kw (coerce ''kw)) ...))))
+
+(define-syntax function-with-arity 
+  (syntax-rules (except)
+    [(_ arity)
+     (lambda (tag)
+       (lambda (p)
+         (syntax-case p ()
+           [(x) #`(proc> #,tag (f2h x) arity)]
+           [_ (err tag p)])))]
+    [(_ arity except extra)
+     (lambda (tag)
+       (lambda (p)
+         (syntax-case p ()
+           [(x) #`(proc> #,tag (f2h x) arity)]
+           extra
+           [_ (err tag p)])))]))
+
+(define (err spec p)
+  (raise-syntax-error #f "illegal specification" #`(#,spec . #,p) p))
+
+;; Symbol (Symbol X -> X) -> (X -> X)
+(define (check-flat-spec tag coerce>)
+  (lambda (p)
+    (syntax-case p ()
+      [(b) #'(coerce> tag b)]
+      [_ (err tag p)])))

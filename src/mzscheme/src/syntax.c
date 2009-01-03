@@ -681,26 +681,27 @@ void scheme_install_macro(Scheme_Bucket *b, Scheme_Object *v)
 
 static Scheme_Object *
 define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
-	       Resolve_Prefix *rp, Scheme_Env *dm_env, Scheme_Dynamic_State *dyn_state)
+                                  Resolve_Prefix *rp, Scheme_Env *dm_env, 
+                                  Scheme_Dynamic_State *dyn_state)
 {
-  Scheme_Object *name, *macro, *vals, *var;
+  Scheme_Object *name, *macro, *vals_expr, *vals, *var;
   int i, g, show_any;
   Scheme_Bucket *b;
   Scheme_Object **save_runstack = NULL;
 
-  vals = SCHEME_VEC_ELS(vec)[0];
+  vals_expr = SCHEME_VEC_ELS(vec)[0];
 
   if (dm_env) {
     scheme_prepare_exp_env(dm_env);
 
     save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1);
-    vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals, dyn_state);
+    vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals_expr, dyn_state);
     if (defmacro == 2)
       dm_env = NULL;
     else
       scheme_pop_prefix(save_runstack);
   } else {
-    vals = _scheme_eval_linked_expr_multi(vals);
+    vals = _scheme_eval_linked_expr_multi(vals_expr);
     dm_env = NULL;
   }
 
@@ -735,7 +736,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
 	  scheme_shadow(((Scheme_Bucket_With_Home *)b)->home, (Scheme_Object *)b->key, 1);
 
 	  if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_CONST) {
-	    ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+            ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
 	  }
 	}
       }
@@ -767,7 +768,11 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       scheme_shadow(((Scheme_Bucket_With_Home *)b)->home, (Scheme_Object *)b->key, 1);
       
       if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_CONST) {
-	((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+        int flags = GLOB_IS_IMMUTATED;
+        if (SCHEME_PROCP(vals_expr) 
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type))
+          flags |= GLOB_IS_CONSISTENT;
+        ((Scheme_Bucket_With_Flags *)b)->flags |= flags;
       }
       
       if (defmacro)

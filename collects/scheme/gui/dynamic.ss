@@ -4,9 +4,10 @@
          gui-dynamic-require)
 
 (define (gui-available?)
-  (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
-         'done)))
+  (and (zero? (variable-reference->phase (#%variable-reference)))
+       (with-handlers ([exn:fail? (lambda (exn) #f)])
+         (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
+              'done))))
 
 (define-namespace-anchor anchor)
 

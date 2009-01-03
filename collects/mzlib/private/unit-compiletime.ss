@@ -155,17 +155,17 @@
         (raise-stx-err "not a unit definition" id))
       u))
 
-  ;; check-module-id-subset : (listof syntax-object) (listof identifier) syntax-object -> 
-  ;; ensures each element of i1 is an identifier module-identifier=? to an identifier in i2
-  (define (check-module-id-subset i1 i2)
-    (let ((ht (make-module-identifier-mapping)))
+  ;; check-bound-id-subset : (listof syntax-object) (listof identifier) syntax-object -> 
+  ;; ensures each element of i1 is an identifier bound-identifier=? to an identifier in i2
+  (define (check-bound-id-subset i1 i2)
+    (let ((ht (make-bound-identifier-mapping)))
       (for-each (lambda (id)
-                  (module-identifier-mapping-put! ht id #t))
+                  (bound-identifier-mapping-put! ht id #t))
                 i2)
       (for-each
        (lambda (id)
          (check-id id)
-         (unless (module-identifier-mapping-get ht id (lambda () #f))
+         (unless (bound-identifier-mapping-get ht id (lambda () #f))
            (raise-stx-err "listed identifier not present in signature specification" id)))
        i1)))
         
@@ -173,20 +173,20 @@
   ;; internals and externals must both be of the form (x ...)
   ;; ensures that each x above is an identifier
   (define (do-rename sig internals externals)
-    (check-module-id-subset (syntax->list externals)
+    (check-bound-id-subset (syntax->list externals)
                             (sig-int-names sig))
-    (let ((ht (make-module-identifier-mapping)))
+    (let ((ht (make-bound-identifier-mapping)))
       (for-each
        (lambda (int ext)
          (check-id int)
-         (when (module-identifier-mapping-get ht ext (lambda () #f))
+         (when (bound-identifier-mapping-get ht ext (lambda () #f))
            (raise-stx-err "duplicate renamings" ext))
-         (module-identifier-mapping-put! ht ext int))
+         (bound-identifier-mapping-put! ht ext int))
        (syntax->list internals)
        (syntax->list externals))
       (map-sig
        (lambda (id)
-         (module-identifier-mapping-get ht id (lambda () id)))
+         (bound-identifier-mapping-get ht id (lambda () id)))
        (lambda (x) x)
        sig)))
   
@@ -203,17 +203,17 @@
   ;; do-only/except : sig (listof identifier) -> sig
   ;; ensures that only-ids are identifiers and are mentioned in the signature
   (define (do-only/except sig only/except-ids put get)
-    (check-module-id-subset only/except-ids
+    (check-bound-id-subset only/except-ids
                             (sig-int-names sig))
-    (let ((ht (make-module-identifier-mapping)))
+    (let ((ht (make-bound-identifier-mapping)))
       (for-each (lambda (id)
-                  (module-identifier-mapping-put! ht id (put id)))
+                  (bound-identifier-mapping-put! ht id (put id)))
                 only/except-ids)
       (map-sig
        (lambda (id)
-         (module-identifier-mapping-get ht id
-                                        (lambda () 
-                                          (get id))))
+         (bound-identifier-mapping-get ht id
+                                       (lambda () 
+                                         (get id))))
        (lambda (x) x)
        sig)))
   

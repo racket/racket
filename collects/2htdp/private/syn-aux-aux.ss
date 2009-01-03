@@ -1,0 +1,60 @@
+#lang scheme
+
+(require htdp/error)
+
+;                                                   
+;                                                   
+;                                                   
+;    ;;;                         ;;;                
+;   ;   ;                       ;   ;               
+;   ;                           ;   ;               
+;   ;      ;   ;  ;;;;          ;   ;  ;   ;  ;   ; 
+;    ;;;   ;   ;  ;   ;         ;;;;;  ;   ;   ; ;  
+;       ;  ;   ;  ;   ;         ;   ;  ;   ;    ;   
+;       ;  ;   ;  ;   ;         ;   ;  ;   ;    ;   
+;   ;   ;  ;   ;  ;   ;         ;   ;  ;  ;;   ; ;  
+;    ;;;    ;;;;  ;   ;         ;   ;   ;; ;  ;   ; 
+;              ;                                    
+;          ;   ;                                    
+;           ;;;                                     
+
+(provide nat> nat? proc> bool> num> ip> string> symbol>)
+
+;; Any -> Boolean
+(define (nat? x)
+  (and (number? x) (integer? x) (>= x 0)))
+
+;; Symbol X -> X
+(define (bool> tag x)
+  (check-arg tag (boolean? x) "boolean" "first" x)
+  x)
+
+;; Symbol X -> X
+(define (string> tag x)
+  (check-arg tag (string? x) "string" "first" x)
+  x)
+
+(define ip> string>)
+
+;; Symbol X -> X
+(define (symbol> tag x)
+  (check-arg tag (symbol? x) "symbol" "second" x)
+  x)
+
+;; Symbol X Nat -> X
+(define (proc> tag f ar)
+  (check-proc tag f ar "first" 
+              (if (> ar 1)
+                  (format "~a arguments" ar)
+                  "one argument"))
+  f)
+
+;; Symbol X (Number -> Boolean) String String -> X
+(define (num> tag x pred? spec which)
+  (check-arg tag (and (number? x) (pred? x)) spec which x)
+  x)
+
+;; Symbol X String -> X
+(define (nat> tag x spec)
+  (check-arg tag (nat? x) spec "natural number" x)
+  x)

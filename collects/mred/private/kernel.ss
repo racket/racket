@@ -47,7 +47,7 @@
     (let ([defined null])
       (lambda (stx)
 	(syntax-case stx ()
-	  [(_ name print-name super args id ...)
+	  [(_ name print-name super (intf ...) args id ...)
 	   (let ([nm (syntax-e (syntax name))]
 		 [sn (syntax-e (syntax super))]
 		 [ids (map syntax-e (syntax->list (syntax (id ...))))])
@@ -78,11 +78,11 @@
 		   (syntax
 		    (define name (let ([c (dynamic-require ''#%mred-kernel 'name)])
 				   (make-primitive-class
-				    (lambda (class prop:object preparer dispatcher)
+				    (lambda (class prop:object preparer dispatcher more-props)
 				      (kernel:primitive-class-prepare-struct-type! 
-				       c prop:object class preparer dispatcher))
+				       c prop:object class preparer dispatcher more-props))
 				    kernel:initialize-primitive-object
-				    'print-name super 'args
+				    'print-name super (list intf ...) 'args
 				    '(old ...)
 				    '(new ...)
 				    (list
@@ -110,8 +110,8 @@
 	    (define-a-class name intf super args id ...)
 	    (define intf (class->interface name))
 	    (provide (protect intf))))])))
-  (define-class object% #f #f)
-  (define-class window% object% #f
+  (define-class object% #f () #f)
+  (define-class window% object% () #f
     on-drop-file
     pre-on-event
     pre-on-char
@@ -147,11 +147,11 @@
     set-focus
     gets-focus?
     centre)
-  (define-class item% window% #f
+  (define-class item% window% () #f
     set-label
     get-label
     command)
-  (define-class message% item% #f
+  (define-class message% item% () #f
     get-font
     set-label
     on-drop-file
@@ -160,7 +160,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-private-class editor% editor<%> object% #f
+  (define-private-class editor% editor<%> object% () #f
     dc-location-to-editor-location
     editor-location-to-dc-location
     set-inactive-caret-threshold
@@ -300,7 +300,7 @@
   (define-function write-editor-version)
   (define-function set-editor-print-margin)
   (define-function get-editor-print-margin)
-  (define-class bitmap% object% #f
+  (define-class bitmap% object% () #f
     get-argb-pixels
     get-gl-config
     set-gl-config
@@ -313,7 +313,7 @@
     get-width
     get-height
     get-depth)
-  (define-class button% item% #f
+  (define-class button% item% () #f
     set-border
     set-label
     on-drop-file
@@ -322,7 +322,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class choice% item% #f
+  (define-class choice% item% () #f
     set-selection
     get-selection
     number
@@ -335,7 +335,7 @@
     on-set-focus
     on-kill-focus)
   (define-function set-combo-box-font)
-  (define-class check-box% item% #f
+  (define-class check-box% item% () #f
     set-label
     set-value
     get-value
@@ -345,7 +345,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class canvas% window% #f
+  (define-class canvas% window% () #f
     on-drop-file
     pre-on-event
     pre-on-char
@@ -373,7 +373,7 @@
     on-char
     on-event
     on-paint)
-  (define-private-class dc% dc<%> object% #f
+  (define-private-class dc% dc<%> object% () #f
     get-alpha
     set-alpha
     glyph-exists?
@@ -427,7 +427,7 @@
     clear)
   (define-function draw-tab)
   (define-function draw-tab-base)
-  (define-class bitmap-dc% dc% ()
+  (define-class bitmap-dc% dc% () ()
     get-bitmap
     set-bitmap
     draw-bitmap-section-smooth
@@ -435,13 +435,13 @@
     get-argb-pixels
     set-pixel
     get-pixel)
-  (define-class post-script-dc% dc% ([interactive #t] [parent #f] [use-paper-bbox #f] [eps #t]))
-  (define-class printer-dc% dc% ([parent #f]))
-  (define-private-class gl-context% gl-context<%> object% #f
+  (define-class post-script-dc% dc% () ([interactive #t] [parent #f] [use-paper-bbox #f] [eps #t]))
+  (define-class printer-dc% dc% () ([parent #f]))
+  (define-private-class gl-context% gl-context<%> object% () #f
     call-as-current
     swap-buffers
     ok?)
-  (define-class gl-config% object% #f
+  (define-class gl-config% object% () #f
     get-double-buffered
     set-double-buffered
     get-stereo
@@ -454,23 +454,23 @@
     set-depth-size
     get-multisample-size
     set-multisample-size)
-  (define-class event% object% ([time-stamp 0])
+  (define-class event% object% () ([time-stamp 0])
     get-time-stamp
     set-time-stamp)
-  (define-class control-event% event% (event-type [time-stamp 0])
+  (define-class control-event% event% () (event-type [time-stamp 0])
     get-event-type
     set-event-type)
-  (define-class popup-event% control-event% #f
+  (define-class popup-event% control-event% () #f
     get-menu-id
     set-menu-id)
-  (define-class scroll-event% event% ([event-type thumb] [direction vertical] [position 0] [time-stamp 0])
+  (define-class scroll-event% event% () ([event-type thumb] [direction vertical] [position 0] [time-stamp 0])
     get-event-type
     set-event-type
     get-direction
     set-direction
     get-position
     set-position)
-  (define-class key-event% event% ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0] [caps-down #f])
+  (define-class key-event% event% () ([key-code #\nul] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [x 0] [y 0] [time-stamp 0] [caps-down #f])
     set-other-caps-key-code
     get-other-caps-key-code
     set-other-shift-altgr-key-code
@@ -498,7 +498,7 @@
     get-y
     set-y)
   (define-function key-symbol-to-integer)
-  (define-class mouse-event% event% (event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0] [caps-down #f])
+  (define-class mouse-event% event% () (event-type [left-down #f] [middle-down #f] [right-down #f] [x 0] [y 0] [shift-down #f] [control-down #f] [meta-down #f] [alt-down #f] [time-stamp 0] [caps-down #f])
     moving?
     leaving?
     entering?
@@ -528,7 +528,7 @@
     set-x
     get-y
     set-y)
-  (define-class frame% window% #f
+  (define-class frame% window% () #f
     on-drop-file
     pre-on-event
     pre-on-char
@@ -556,7 +556,7 @@
     set-icon
     iconize
     set-title)
-  (define-class gauge% item% #f
+  (define-class gauge% item% () #f
     get-value
     set-value
     get-range
@@ -567,7 +567,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class font% object% #f
+  (define-class font% object% () #f
     screen-glyph-exists?
     get-font-id
     get-size-in-pixels
@@ -578,32 +578,32 @@
     get-style
     get-face
     get-family)
-  (define-class font-list% object% #f
+  (define-class font-list% object% () #f
     find-or-create-font)
-  (define-class color% object% #f
+  (define-class color% object% () #f
     blue
     green
     red
     set
     ok?
     copy-from)
-  (define-private-class color-database% color-database<%> object% #f
+  (define-private-class color-database% color-database<%> object% () #f
     find-color)
-  (define-class point% object% #f
+  (define-class point% object% () #f
     get-x
     set-x
     get-y
     set-y)
-  (define-class brush% object% #f
+  (define-class brush% object% () #f
     set-style
     get-style
     set-stipple
     get-stipple
     set-color
     get-color)
-  (define-class brush-list% object% #f
+  (define-class brush-list% object% () #f
     find-or-create-brush)
-  (define-class pen% object% #f
+  (define-class pen% object% () #f
     set-style
     get-style
     set-stipple
@@ -616,11 +616,11 @@
     get-cap
     set-width
     get-width)
-  (define-class pen-list% object% #f
+  (define-class pen-list% object% () #f
     find-or-create-pen)
-  (define-class cursor% object% #f
+  (define-class cursor% object% () #f
     ok?)
-  (define-class region% object% (dc)
+  (define-class region% object% () (dc)
     in-region?
     is-empty?
     get-bounding-box
@@ -635,7 +635,7 @@
     set-rounded-rectangle
     set-rectangle
     get-dc)
-  (define-class dc-path% object% #f
+  (define-class dc-path% object% () #f
     get-bounding-box
     append
     reverse
@@ -653,7 +653,7 @@
     open?
     close
     reset)
-  (define-private-class font-name-directory% font-name-directory<%> object% #f
+  (define-private-class font-name-directory% font-name-directory<%> object% () #f
     find-family-default-font-id
     find-or-create-font-id
     get-family
@@ -686,7 +686,7 @@
   (define-function get-display-depth)
   (define-function is-color-display?)
   (define-function file-selector)
-  (define-class list-box% item% #f
+  (define-class list-box% item% () #f
     get-label-font
     set-string
     set-first-visible-item
@@ -710,7 +710,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class editor-canvas% canvas% #f
+  (define-class editor-canvas% canvas% () #f
     on-char
     on-event
     on-paint
@@ -741,7 +741,7 @@
     set-editor
     get-wheel-step
     set-wheel-step)
-  (define-class editor-admin% object% #f
+  (define-class editor-admin% object% () #f
     modified
     refresh-delayed?
     popup-menu
@@ -753,9 +753,9 @@
     get-max-view
     get-view
     get-dc)
-  (define-private-class editor-snip-editor-admin% editor-snip-editor-admin<%> editor-admin% #f
+  (define-private-class editor-snip-editor-admin% editor-snip-editor-admin<%> editor-admin% () #f
     get-snip)
-  (define-class snip-admin% object% #f
+  (define-class snip-admin% object% () #f
     modified
     popup-menu
     update-cursor
@@ -769,7 +769,7 @@
     get-view-size
     get-dc
     get-editor)
-  (define-class snip-class% object% #f
+  (define-class snip-class% object% () #f
     reading-version
     write-header
     read-header
@@ -778,13 +778,13 @@
     set-classname
     get-version
     set-version)
-  (define-private-class snip-class-list% snip-class-list<%> object% #f
+  (define-private-class snip-class-list% snip-class-list<%> object% () #f
     nth
     number
     add
     find-position
     find)
-  (define-class keymap% object% #f
+  (define-class keymap% object% () #f
     remove-chained-keymap
     chain-to-keymap
     set-break-sequence-callback
@@ -800,11 +800,11 @@
     handle-key-event
     set-double-click-interval
     get-double-click-interval)
-  (define-class editor-wordbreak-map% object% #f
+  (define-class editor-wordbreak-map% object% () #f
     get-map
     set-map)
   (define-function get-the-editor-wordbreak-map)
-  (define-class text% editor% #f
+  (define-class text% editor% () #f
     call-clickback
     remove-clickback
     set-clickback
@@ -958,7 +958,7 @@
     on-event
     copy-self-to
     copy-self)
-  (define-class menu% object% #f
+  (define-class menu% object% () #f
     select
     get-font
     set-width
@@ -973,30 +973,30 @@
     delete-by-position
     delete
     append)
-  (define-class menu-bar% object% #f
+  (define-class menu-bar% object% () #f
     set-label-top
     number
     enable-top
     delete
     append)
-  (define-class menu-item% object% #f
+  (define-class menu-item% object% () #f
     id)
   (define-function id-to-menu-item)
-  (define-class editor-stream-in-base% object% #f
+  (define-class editor-stream-in-base% object% () #f
     read
     bad?
     skip
     seek
     tell)
-  (define-class editor-stream-out-base% object% #f
+  (define-class editor-stream-out-base% object% () #f
     write
     bad?
     seek
     tell)
-  (define-class editor-stream-in-bytes-base% editor-stream-in-base% #f)
-  (define-class editor-stream-out-bytes-base% editor-stream-out-base% #f
+  (define-class editor-stream-in-bytes-base% editor-stream-in-base% () #f)
+  (define-class editor-stream-out-bytes-base% editor-stream-out-base% () #f
     get-bytes)
-  (define-class editor-stream-in% object% #f
+  (define-class editor-stream-in% object% () #f
     ok?
     jump-to
     tell
@@ -1009,19 +1009,19 @@
     get-unterminated-bytes
     get-bytes
     get)
-  (define-class editor-stream-out% object% #f
+  (define-class editor-stream-out% object% () #f
     ok?
     pretty-finish
     jump-to
     tell
     put-fixed
     put)
-  (define-class timer% object% ()
+  (define-class timer% object% () ()
     stop
     start
     notify
     interval)
-  (define-private-class clipboard% clipboard<%> object% #f
+  (define-private-class clipboard% clipboard<%> object% () #f
     get-clipboard-bitmap
     set-clipboard-bitmap
     get-clipboard-data
@@ -1030,12 +1030,12 @@
     set-clipboard-client)
   (define-function get-the-x-selection)
   (define-function get-the-clipboard)
-  (define-class clipboard-client% object% ()
+  (define-class clipboard-client% object% () ()
     get-types
     add-type
     get-data
     on-replaced)
-  (define-class ps-setup% object% ()
+  (define-class ps-setup% object% () ()
     copy-from
     set-margin
     set-editor-margin
@@ -1061,7 +1061,7 @@
     get-command)
   (define-function show-print-setup)
   (define-function can-show-print-setup?)
-  (define-class pasteboard% editor% #f
+  (define-class pasteboard% editor% () #f
     set-scroll-step
     get-scroll-step
     set-selection-visible
@@ -1177,7 +1177,7 @@
     paste
     copy
     cut)
-  (define-class panel% window% #f
+  (define-class panel% window% () #f
     get-label-position
     set-label-position
     on-char
@@ -1191,7 +1191,7 @@
     on-kill-focus
     set-item-cursor
     get-item-cursor)
-  (define-class dialog% window% #f
+  (define-class dialog% window% () #f
     system-menu
     set-title
     on-drop-file
@@ -1203,7 +1203,7 @@
     enforce-size
     on-close
     on-activate)
-  (define-class radio-box% item% #f
+  (define-class radio-box% item% () #f
     button-focus
     enable
     set-selection
@@ -1215,7 +1215,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class slider% item% #f
+  (define-class slider% item% () #f
     set-value
     get-value
     on-drop-file
@@ -1224,7 +1224,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class snip% object% #f
+  (define-class snip% object% () #f
     previous
     next
     set-unmodified
@@ -1262,7 +1262,7 @@
     get-style
     get-snipclass
     set-snipclass)
-  (define-class string-snip% snip% #f
+  (define-class string-snip% snip% () #f
     read
     insert
     set-unmodified
@@ -1289,7 +1289,7 @@
     draw
     partial-offset
     get-extent)
-  (define-class tab-snip% string-snip% #f
+  (define-class tab-snip% string-snip% () #f
     set-unmodified
     get-scroll-step-offset
     find-scroll-step
@@ -1314,7 +1314,11 @@
     draw
     partial-offset
     get-extent)
-  (define-class image-snip% snip% #f
+  (define-class image-snip% snip% (equal<%>) #f
+    equal-secondary-hash-code-of
+    equal-hash-code-of
+    other-equal-to?
+    equal-to?
     set-offset
     get-bitmap-mask
     get-bitmap
@@ -1346,7 +1350,7 @@
     draw
     partial-offset
     get-extent)
-  (define-class editor-snip% snip% #f
+  (define-class editor-snip% snip% () #f
     get-inset
     set-inset
     get-margin
@@ -1393,23 +1397,23 @@
     get-extent
     set-editor
     get-editor)
-  (define-class editor-data-class% object% #f
+  (define-class editor-data-class% object% () #f
     read
     get-classname
     set-classname)
-  (define-private-class editor-data-class-list% editor-data-class-list<%> object% #f
+  (define-private-class editor-data-class-list% editor-data-class-list<%> object% () #f
     nth
     number
     add
     find-position
     find)
-  (define-class editor-data% object% #f
+  (define-class editor-data% object% () #f
     set-next
     write
     get-dataclass
     set-dataclass
     get-next)
-  (define-private-class mult-color% mult-color<%> object% #f
+  (define-private-class mult-color% mult-color<%> object% () #f
     set
     get
     get-r
@@ -1418,7 +1422,7 @@
     set-g
     get-b
     set-b)
-  (define-private-class add-color% add-color<%> object% #f
+  (define-private-class add-color% add-color<%> object% () #f
     set
     get
     get-r
@@ -1427,7 +1431,7 @@
     set-g
     get-b
     set-b)
-  (define-class style-delta% object% #f
+  (define-class style-delta% object% () #f
     copy
     collapse
     equal?
@@ -1475,7 +1479,7 @@
     set-alignment-on
     get-alignment-off
     set-alignment-off)
-  (define-private-class style% style<%> object% #f
+  (define-private-class style% style<%> object% () #f
     switch-to
     set-shift-style
     get-shift-style
@@ -1502,7 +1506,7 @@
     get-face
     get-family
     get-name)
-  (define-class style-list% object% #f
+  (define-class style-list% object% () #f
     forget-notification
     notify-on-change
     style-to-index
@@ -1516,7 +1520,7 @@
     number
     basic-style)
   (define-function get-the-style-list)
-  (define-class tab-group% item% #f
+  (define-class tab-group% item% () #f
     button-focus
     set
     set-label
@@ -1532,7 +1536,7 @@
     on-size
     on-set-focus
     on-kill-focus)
-  (define-class group-box% item% #f
+  (define-class group-box% item% () #f
     on-drop-file
     pre-on-event
     pre-on-char

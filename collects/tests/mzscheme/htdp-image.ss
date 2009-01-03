@@ -1021,6 +1021,10 @@
       (image? image-snip2))
 (test #t
       'bs-image=?
+      (image=? image-snip1 (send image-snip1 copy)))
+(test #f
+      'bs-image=?
+      ;; They have different masks:
       (image=? image-snip1 image-snip2))
 (test 2
       'bs-image-width

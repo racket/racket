@@ -18,9 +18,9 @@
         arguments v...
 
       (primitive-class-prepare-struct-type! prim-class gen-property
-        gen-value preparer dispatcher) - prepares a class's struct-type for
-        objects generated C-side; returns a constructor, predicate,
-        and a struct:type for derived classes. The constructor and
+        gen-value preparer dispatcher extra-props) - prepares a class's 
+        struct-type for objects generated C-side; returns a constructor, 
+        predicate, and a struct:type for derived classes. The constructor and
         struct:type map the given dispatcher to the class.
 
         The preparer takes a symbol naming the method. It returns a
@@ -29,6 +29,8 @@
         The dispatcher takes two arguments: an object and a
         method-specific value produced by the prepaper. It returns a
         method procedure.
+
+        The extra-props argument is a list of property--value pairs.
 
       (primitive-class-find-method prim-class sym) - gets the method
         for the given symbol.
@@ -169,6 +171,19 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 3, argc, argv);
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 2, 4, argc, argv);
 
+  props = argv[5];
+  while (SCHEME_PAIRP(props)) {
+    name = SCHEME_CAR(props);
+    if (!SCHEME_PAIRP(name))
+      break;
+    if (SCHEME_TYPE(SCHEME_CAR(name)) != scheme_struct_property_type)
+      break;
+    props = SCHEME_CDR(props);
+  }
+  if (!SCHEME_NULLP(props))
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 5, argc, argv);
+  props = argv[5];
+
   objscheme_something_prepared = 1;
 
   c = ((Scheme_Class *)argv[0]);
@@ -197,7 +212,7 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
 				       (c->sup ? ((Scheme_Class *)c->sup)->base_struct_type : object_struct),
 				       NULL,
 				       0, 0, NULL,
-				       NULL, NULL);
+                                       props, NULL);
   c->base_struct_type = base_stype;
 
   /* Type to use when instantiating from C: */
@@ -522,7 +537,7 @@ void objscheme_init(Scheme_Env *env)
   scheme_install_xc_global("primitive-class-prepare-struct-type!",
 			   scheme_make_prim_w_arity(class_prepare_struct_type,
 						    "primitive-class-prepare-struct-type!",
-						    5, 5),
+						    6, 6),
 			   env);
   
   scheme_install_xc_global("primitive-class-find-method",

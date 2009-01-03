@@ -46,6 +46,15 @@ function consumes.
 ((compose list split-path) (bytes->path #"/a" 'unix))
 ]}
 
+@defproc[(procedure-rename [proc procedure?]
+                           [name symbol?])
+         procedure?]{
+
+Returns a procedure that is like @scheme[proc], except that its name
+as returned by @scheme[object-name] (and as printed for debugging) is
+@scheme[name].}
+
+
 @; ----------------------------------------
 @section{Keywords and Arity}
 

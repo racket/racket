@@ -90,3 +90,4 @@ form, a @scheme[_thing] is either an identifier or a keyword.
 @include-section["quote.scrbl"]
 @include-section["qq.scrbl"]
 @include-section["case.scrbl"]
+@include-section["parameterize.scrbl"]

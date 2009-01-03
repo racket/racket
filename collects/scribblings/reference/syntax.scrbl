@@ -1335,6 +1335,7 @@ position with respect to the @scheme[if] form.
 @mz-examples[
 (if (positive? -5) (error "doesn't get here") 2)
 (if (positive? 5) 1 (error "doesn't get here"))
+(if 'we-have-no-bananas "yes" "no")
 ]}
 
 @defform/subs[#:literals (else =>)

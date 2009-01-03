@@ -353,20 +353,24 @@ code.}
   Similar to @scheme[!procedure] and @scheme[!procedure*] for
   integers.}
 
+@deftogether[(
 @defform*[((!test expr)
-           (!test/exn expr)
            (!test expr result)
-           (!test expr result equal?))]{
+           (!test expr result equal?))]
+@defform[(!test/exn expr)]
+)]{
 
-  The first form checks that the given expression evaluates to a
-  non-@scheme[#f] value in the submission context, throwing an error
-  otherwise.  The second form checks that the given expression throws
-  an @scheme[exn:fail?] error, throwing an error otherwise.
-  The third form compares the result of evaluation,
-  requiring it to be equal to @scheme[result]. The fourth allows
-  specifying an equality procedure.  Note that the @scheme[result] and
-  @scheme[equal?] forms are @italic{not} evaluated in the submission
-  context.}
+  The first @scheme[!test] form checks that the given expression
+  evaluates to a non-@scheme[#f] value in the submission context,
+  throwing an error otherwise.  The second form compares the result of
+  evaluation, requiring it to be equal to @scheme[result]. The third
+  allows specifying an equality procedure. The @scheme[!test/exn] form
+  checks that the given expression throws an @scheme[exn:fail?] error,
+  throwing an error otherwise.
+
+  For the latter two @scheme[!test] forms, note that the
+  @scheme[result] and @scheme[equal?] forms are @italic{not} evaluated
+  in the submission context.}
 
 @defform[(!eval expr)]{
 

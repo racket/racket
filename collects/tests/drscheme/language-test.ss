@@ -59,7 +59,7 @@ the settings above should match r5rs
     
     (test-expression "'|.|" "|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "#f")
+                     "#t")
     (test-expression "(define x 1)(define x 2)" "")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" "#<spider>")
@@ -159,7 +159,7 @@ the settings above should match r5rs
     
     (test-expression "'|.|" "|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "#f")
+                     "#t")
     (test-expression "(define x 1)(define x 2)" "")
     
     (test-expression 

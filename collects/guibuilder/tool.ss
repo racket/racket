@@ -12,6 +12,8 @@
 
   (provide tool@)
 
+  (define-syntax (name stx) (syntax-case stx () [(_ x e) #'(let ((x e)) x)]))
+
   (define tool@
     (unit
       (import drscheme:tool^)
@@ -20,6 +22,7 @@
       (define (phase2) 
 	(drscheme:get/extend:extend-unit-frame 
 	 (lambda (drs:frame%)
+	   (name guibuilder-frame%
 	   (class drs:frame%
 	     (inherit get-insert-menu get-edit-target-object)
 
@@ -69,6 +72,6 @@
 				  (send gb create-main-panel)
 				  (send gb set-caret-owner #f 'display))))))
              (inherit register-capability-menu-item)
-             (register-capability-menu-item 'drscheme:special:insert-gui-tool (get-insert-menu))))))
+             (register-capability-menu-item 'drscheme:special:insert-gui-tool (get-insert-menu)))))))
       
       (drscheme:language:register-capability 'drscheme:special:insert-gui-tool (flat-contract boolean?) #t))))

@@ -137,6 +137,7 @@ static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_includes(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
@@ -317,7 +318,7 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(call_with_prompt_proc);
   call_with_prompt_proc = scheme_make_prim_w_arity2(call_with_prompt,
                                                     "call-with-continuation-prompt",
-                                                    1, 3,
+                                                    1, -1,
                                                     0, -1);
   scheme_add_global_constant("call-with-continuation-prompt",
 			     call_with_prompt_proc, 
@@ -495,6 +496,11 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
 						      "procedure-reduce-arity",
+						      2, 2),
+			     env);
+  scheme_add_global_constant("procedure-rename",
+			     scheme_make_prim_w_arity(procedure_rename,
+						      "procedure-rename",
 						      2, 2),
 			     env);
   scheme_add_global_constant("procedure-closure-contents-eq?",
@@ -3133,15 +3139,21 @@ Scheme_Object *scheme_proc_struct_name_source(Scheme_Object *a)
   Scheme_Object *b;
 
   while (SCHEME_PROC_STRUCTP(a)) {
-    /* Either use struct name, or extract proc, depending
-       whether it's method-style */
-    int is_method;
-    b = scheme_extract_struct_procedure(a, -1, NULL, &is_method);
-    if (!is_method && SCHEME_PROCP(b)) {
-      a = b;
-      SCHEME_USE_FUEL(1);
-    } else
-      break;
+    if (scheme_reduced_procedure_struct
+        && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)
+        && SCHEME_TRUEP(((Scheme_Structure *)a)->slots[2])) {
+      return a;
+    } else {
+      /* Either use struct name, or extract proc, depending
+         whether it's method-style */
+      int is_method;
+      b = scheme_extract_struct_procedure(a, -1, NULL, &is_method);
+      if (!is_method && SCHEME_PROCP(b)) {
+        a = b;
+        SCHEME_USE_FUEL(1);
+      } else
+        break;
+    }
   }
 
   return a;
@@ -3200,15 +3212,28 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
     Scheme_Object *other;
     other = scheme_proc_struct_name_source(p);
     if (SAME_OBJ(other, p)) {
-      Scheme_Object *sym;
-      sym = SCHEME_STRUCT_NAME_SYM(p);
-      *len = SCHEME_SYM_LEN(sym);
-      s = (char *)scheme_malloc_atomic((*len) + 8);
-      memcpy(s, "struct ", 7);
-      memcpy(s + 7, scheme_symbol_val(sym), *len);
-      (*len) += 7;
-      s[*len] = 0;
-      return s;
+      if (scheme_reduced_procedure_struct
+          && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
+        /* It must have a name: */
+        Scheme_Object *sym = ((Scheme_Structure *)p)->slots[2];
+        if (for_error < 0) {
+          s = (char *)sym;
+          *len = -1;
+        } else {
+          *len = SCHEME_SYM_LEN(sym);
+          s = scheme_symbol_val(sym);
+        }
+      } else {
+        Scheme_Object *sym;
+        sym = SCHEME_STRUCT_NAME_SYM(p);
+        *len = SCHEME_SYM_LEN(sym);
+        s = (char *)scheme_malloc_atomic((*len) + 8);
+        memcpy(s, "struct ", 7);
+        memcpy(s + 7, scheme_symbol_val(sym), *len);
+        (*len) += 7;
+        s[*len] = 0;
+        return s;
+      }
     } else {
       p = other;
       goto top;
@@ -3288,8 +3313,16 @@ static Scheme_Object *object_name(int argc, Scheme_Object **argv)
 {
   Scheme_Object *a = argv[0];
 
-  if (SCHEME_PROC_STRUCTP(a))
+  if (SCHEME_PROC_STRUCTP(a)) {
     a = scheme_proc_struct_name_source(a);
+    
+    if (SCHEME_STRUCTP(a)
+        && scheme_reduced_procedure_struct
+        && scheme_is_struct_instance(scheme_reduced_procedure_struct, a)) {
+      /* It must have a name: */
+      return ((Scheme_Structure *)a)->slots[2];
+    }
+  }
 
   if (SCHEME_STRUCTP(a)) {
     return SCHEME_STRUCT_NAME_SYM(a);
@@ -3417,18 +3450,11 @@ static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
   return 0;
 }
 
-static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
+static void init_reduced_proc_struct()
 {
-  Scheme_Object *orig, *req, *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp, *a[3];
-
-  if (!SCHEME_PROCP(argv[0]))
-    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
-
-  if (!is_arity(argv[1], 1, 1)) {
-    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
-  }
-
   if (!scheme_reduced_procedure_struct) {
+    Scheme_Object *pr, *orig;
+
     REGISTER_SO(scheme_reduced_procedure_struct);
     pr = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
     while (((Scheme_Inspector *)pr)->superior->superior) {
@@ -3438,18 +3464,52 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
     scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
                                                                    NULL,
                                                                    pr,
-                                                                   2, 0,
+                                                                   3, 0,
                                                                    scheme_false,
                                                                    scheme_make_integer(0),
                                                                    NULL);
   }
+}
+
+static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty, Scheme_Object *name)
+{
+  Scheme_Object *a[3];
+  
+  if (SCHEME_STRUCTP(proc)
+      && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
+    /* Don't need the intermediate layer */
+    if (!name)
+      name = ((Scheme_Structure *)proc)->slots[2];
+    proc = ((Scheme_Structure *)proc)->slots[0];
+  }
+
+  a[0] = proc;
+  a[1] = aty;
+  a[2] = (name ? name : scheme_false);
+
+  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 3, a);
+}
+
+static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *orig, *req, *aty, *oa, *ra, *ol, *lra, *ara, *prev, *pr, *tmp;
+
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("procedure-reduce-arity", "procedure", 0, argc, argv);
+
+  if (!is_arity(argv[1], 1, 1)) {
+    scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
+  }
+
+  init_reduced_proc_struct();
 
   /* Check whether current arity covers the requested arity.  This is
      a bit complicated, because both the source and target can be
      lists that include arity-at-least records. */
 
   orig = get_or_check_arity(argv[0], -1, NULL);
-  req = argv[1];
+  aty = clone_arity(argv[1]);
+  req = aty;
 
   if (!SCHEME_PAIRP(orig) && !SCHEME_NULLP(orig))
     orig = scheme_make_pair(orig, scheme_null);
@@ -3574,12 +3634,23 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   }
 
   /* Construct a procedure that has the given arity. */
+  return make_reduced_proc(argv[0], aty, NULL);
+}
 
-  a[0] = argv[0];
-  pr = clone_arity(argv[1]);
-  a[1] = pr;
+static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *aty;
 
-  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 2, a);
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_type("procedure-rename", "procedure", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_type("procedure-rename", "symbol", 1, argc, argv);
+
+  init_reduced_proc_struct();
+
+  aty = get_or_check_arity(argv[0], -1, NULL);  
+
+  return make_reduced_proc(argv[0], aty, argv[1]);
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
@@ -6053,12 +6124,28 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   Scheme_Object *proc = in_argv[0], *prompt_tag;
   Scheme_Prompt *prompt;
   int argc, handler_argument_error = 0;
-  Scheme_Object **argv, *a[1], *handler;
+# define QUICK_PROMPT_ARGS 3
+  Scheme_Object **argv, *a[QUICK_PROMPT_ARGS], *handler;
   Scheme_Cont_Frame_Data cframe;
   Scheme_Dynamic_Wind *prompt_dw;
   int cc_count = scheme_cont_capture_count;
 
-  scheme_check_proc_arity("call-with-continuation-prompt", 0, 0, in_argc, in_argv);
+  argc = in_argc - 3;
+  if (argc <= 0) {
+    argc = 0;
+    argv = NULL;
+  } else {
+    int i;
+    if (argc <= QUICK_PROMPT_ARGS)
+      argv = a;
+    else
+      argv = MALLOC_N(Scheme_Object *, argc);
+    for (i = 0; i < argc; i++) {
+      argv[i] = in_argv[i+3];
+    }
+  }
+
+  scheme_check_proc_arity("call-with-continuation-prompt", argc, 0, in_argc, in_argv);
   if (in_argc > 1) {
     if (!SAME_TYPE(scheme_prompt_tag_type, SCHEME_TYPE(in_argv[1]))) {
       scheme_wrong_type("call-with-continuation-prompt", "continuation-prompt-tag",
@@ -6074,9 +6161,6 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
     handler = in_argv[2];
   } else
     handler = scheme_false;
-
-  argv = NULL;
-  argc = 0;
 
   do {
     /* loop implements the default prompt handler */

@@ -47,7 +47,7 @@
     (let ([defined null])
       (lambda (stx)
 	(syntax-case stx ()
-	  [(_ name print-name super args id ...)
+	  [(_ name print-name super (intf ...) args id ...)
 	   (let ([nm (syntax-e (syntax name))]
 		 [sn (syntax-e (syntax super))]
 		 [ids (map syntax-e (syntax->list (syntax (id ...))))])
@@ -78,11 +78,11 @@
 		   (syntax
 		    (define name (let ([c (dynamic-require ''#%mred-kernel 'name)])
 				   (make-primitive-class
-				    (lambda (class prop:object preparer dispatcher)
+				    (lambda (class prop:object preparer dispatcher more-props)
 				      (kernel:primitive-class-prepare-struct-type! 
-				       c prop:object class preparer dispatcher))
+				       c prop:object class preparer dispatcher more-props))
 				    kernel:initialize-primitive-object
-				    'print-name super 'args
+				    'print-name super (list intf ...) 'args
 				    '(old ...)
 				    '(new ...)
 				    (list

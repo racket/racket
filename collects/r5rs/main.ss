@@ -164,6 +164,8 @@
            ;; quote has to create mpairs:
            (syntax-local-lift-expression (let loop ([form #'form])
                                            (syntax-case form ()
+                                             [(a ...)
+                                              #`(mlist . #,(map loop (syntax->list #'(a ...))))]
                                              [(a . b)
                                               #`(mcons #,(loop #'a) #,(loop #'b))]
                                              [#(a ...)

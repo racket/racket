@@ -88,7 +88,96 @@
 
 @INCLUDE wxs_bmt.xci
 
+extern void wxGetARGBPixels(wxBitmap *bm, double x, double y, int w, int h, char *s, Bool get_alpha);
+static bool EqualTo(wxImageSnip* bm, wxImageSnip* bm2, void *recur);
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
+static bool OtherEqualTo(wxImageSnip* snip, wxImageSnip* snip2, void *recur)
+{
+  int w, h;
+  char *s1, *s2;
+  wxBitmap *bm, *bm2, *mask;
+
+  bm = snip->GetSnipBitmap();
+  bm2 = snip2->GetSnipBitmap();
+
+  if (!bm || !bm->Ok()) return FALSE;
+  if (!bm2 || !bm2->Ok()) return FALSE;
+  if (bm->GetDepth() != bm2->GetDepth()) return FALSE;
+  w = bm->GetWidth();
+  h = bm->GetHeight();
+  if (w != bm2->GetWidth()) return FALSE;
+  if (h != bm2->GetHeight()) return FALSE;
+
+  s1 = (char *)scheme_malloc_atomic(w * h * 4);
+  s2 = (char *)scheme_malloc_atomic(w * h * 4);
+
+  memset(s1, 255, w * h * 4);
+  memset(s2, 255, w * h * 4);
+
+  wxGetARGBPixels(bm, 0, 0, w, h, s1, 0);
+  wxGetARGBPixels(bm2, 0, 0, w, h, s2, 0);
+
+  mask = snip->GetSnipBitmapMask();
+  if (mask && mask->Ok() && (mask->GetWidth() == w) && (mask->GetHeight() == h)) {
+    wxGetARGBPixels(mask, 0, 0, w, h, s1, 1);
+  }
+  mask = snip2->GetSnipBitmapMask();
+  if (mask && mask->Ok() && (mask->GetWidth() == w) && (mask->GetHeight() == h)) {
+    wxGetARGBPixels(mask, 0, 0, w, h, s2, 1);
+  }
+  
+  return !memcmp(s1, s2, w * h * 4);
+}
+
+static long HashCodeOf(wxImageSnip *snip, void *recur)
+{
+  int w, h, i;
+  long hk = 0;
+  char *s1;
+  wxBitmap *bm;
+
+  bm = snip->GetSnipBitmap();
+  if (!bm) return 0;
+
+  if (!bm->Ok()) return 0;
+  w = bm->GetWidth();
+  h = bm->GetHeight();
+
+  s1 = (char *)scheme_malloc_atomic(w * h * 4);
+
+  wxGetARGBPixels(bm, 0, 0, w, h, s1, 0);
+
+  for (i = w * h * 4; i; i -= 4) {
+    hk += s1[i - 4] + s1[i - 3] + s1[i - 2];
+    hk = (hk << 1) + hk;
+  }
+  
+  return hk;
+}
+
+static long SecondaryHashCodeOf(wxImageSnip *snip, void *recur)
+{
+  wxBitmap *bm;
+
+  bm = snip->GetSnipBitmap();
+  if (!bm) return 0;
+  
+  return bm->GetWidth() + bm->GetHeight();
+}
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+#define UNKNOWN_OBJ void*
+@MACRO bundleAny = ((Scheme_Object *){x})
+@MACRO unbundleAny = ((void *){x})
+
 @CLASSBASE wxImageSnip "image-snip":"snip" / nofnl
+
+@IMPLEMENTS equal<%>
 
 @CREATOR (nxpathname=NULL,SYM[bitmapType]=0,bool=FALSE,bool=TRUE); : : //USEALLFUEL[x0] <> filename
 @CREATOR (wxBitmap!,wxBitmap^=NULL) : : /CheckBW[1.METHODNAME("image-snip%","initialization")]|CHECKOK[0.METHODNAME("image-snip%","initialization")]|CHECKOK[1.METHODNAME("image-snip%","initialization")]|CheckSizes[0.1.METHODNAME("image-snip%","initialization")] <> bitmap
@@ -111,7 +200,21 @@
 
 @ "set-offset" : void SetOffset(double, double);
 
+@ M "equal-to?" : bool EqualTo(wxImageSnip^,UNKNOWN_OBJ/bundleAny/unbundleAny////push);
+@ M "other-equal-to?" : bool OtherEqualTo(wxImageSnip^,UNKNOWN_OBJ/bundleAny/unbundleAny////push);
+@ m "equal-hash-code-of" : long HashCodeOf(UNKNOWN_OBJ/bundleAny/unbundleAny////push);
+@ m "equal-secondary-hash-code-of" : long SecondaryHashCodeOf(UNKNOWN_OBJ/bundleAny/unbundleAny////push);
+
 @END
+
+static bool EqualTo(wxImageSnip* bm, wxImageSnip* bm2, void *recur)
+{
+  /* Might redirect to Scheme. 
+     We're relying on the cast succeeding because the method is 
+     not virtual, but I doubt that this is guaranteed to work by the C++
+     spec if wxImageSnip is instantiated instead of os_wxImageSnip */
+  return ((os_wxImageSnip *)bm2)->OtherEqualTo_method(bm, recur);
+}
 
 @CLASSBASE wxMediaSnip "editor-snip" : "snip" / nofnl
 

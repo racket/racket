@@ -43,17 +43,18 @@ between the application and the current continuation.
 
 
 @defproc[(call-with-continuation-prompt 
-          [thunk (-> any)]
+          [proc procedure?]
           [prompt-tag continuation-prompt-tag? (default-continuation-prompt-tag)]
-          [handler (or/c procedure? #f) #f])
+          [handler (or/c procedure? #f) #f]
+          [arg any/c] ...)
          any]{
 
-Calls @scheme[thunk] with the current continuation extended by a
-prompt. The prompt is tagged by @scheme[prompt-tag], which must be a
-result from either @scheme[default-continuation-prompt-tag] (the
-default) or @scheme[make-continuation-prompt-tag]. The result of
-@scheme[thunk] is the result of the
-@scheme[call-with-continuation-prompt] call.
+Applies @scheme[proc] to the given @scheme[arg]s with the current
+continuation extended by a prompt. The prompt is tagged by
+@scheme[prompt-tag], which must be a result from either
+@scheme[default-continuation-prompt-tag] (the default) or
+@scheme[make-continuation-prompt-tag]. The result of @scheme[proc] is
+the result of the @scheme[call-with-continuation-prompt] call.
 
 The @scheme[handler] argument specifies a handler procedure to be
 called in tail position with respect to the
@@ -62,8 +63,8 @@ is the target of a @scheme[abort-current-continuation] call with
 @scheme[prompt-tag]; the remaining arguments of
 @scheme[abort-current-continuation] are supplied to the handler
 procedure. If @scheme[handler] is @scheme[#f], the default handler
-accepts a single @scheme[abort-thunk] argument and calls
-@scheme[(call-with-continuation-prompt abort-thunk prompt-tag #f)];
+accepts a single @scheme[_abort-thunk] argument and calls
+@scheme[(call-with-continuation-prompt _abort-thunk prompt-tag #f)];
 that is, the default handler re-installs the prompt and continues with
 a given thunk.}
 

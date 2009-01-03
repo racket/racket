@@ -4,6 +4,7 @@
           scribble/eval
           "../quick/keep.ss"
           (for-label scheme
+                     scheme/enter
                      readline
                      net/url
                      xml
@@ -422,7 +423,7 @@ To parse the incoming URL and to more easily format HTML output, we'll
 require two extra libraries:
 
 @schemeblock[
-(require net/url xml)
+(require xml net/url)
 ]
 
 The @schememodname[xml] library gives us @scheme[xexpr->string], which
@@ -582,15 +583,12 @@ connection. Inside @scheme[accept-and-handle], after the definition of
 
 @whole-prog["7"]
 
-We're assuming that 50MB should be plenty for any servlet. Due to the
-way that memory accounting is defined, @scheme[cust] might also be
-charged for the core server implementation and all of the libraries
-loaded on start-up, so the limit cannot be too small. Also,
-garbage-collector overhead means that the actual memory use of the
-system can be some small multiple of 50 MB. An important guarantee,
-however, is that different connections will not be charged for each
-other's memory use, so one misbehaving connection will not interfere
-with a different one.
+We're assuming that 50MB should be plenty for any
+servlet. Garbage-collector overhead means that the actual memory use
+of the system can be some small multiple of 50 MB. An important
+guarantee, however, is that different connections will not be charged
+for each other's memory use, so one misbehaving connection will not
+interfere with a different one.
 
 So, with the new line above, and assuming that you have a couple of
 hundred megabytes available for the @exec{mzscheme} process to use,

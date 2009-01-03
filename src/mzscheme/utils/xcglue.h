@@ -264,6 +264,7 @@ typedef double nndouble;
 # define CONSTRUCTOR_ARGS(x)             ()
 # define CONSTRUCTOR_INIT(x)             /* empty */
 # define ASSELF                          sElF->
+# define SELF__                          sElF
 # define INIT_NULLED_OUT                 = NULLED_OUT
 # define INIT_NULLED_ARRAY(x)            = x
 # define INA_comma                       ,
@@ -284,6 +285,7 @@ typedef double nndouble;
 # define CONSTRUCTOR_ARGS(x)             x
 # define CONSTRUCTOR_INIT(x)             x
 # define ASSELF                          /* empty */
+# define SELF__                          this
 # define INIT_NULLED_OUT                 /* empty */
 # define INIT_NULLED_ARRAY(x)            /* empty */
 # define INA_comma                       /* empty */

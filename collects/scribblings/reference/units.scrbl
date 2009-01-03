@@ -89,24 +89,25 @@ ways:
  As an export, this form causes definitions using the @scheme[id]
  prefix to satisfy the exports required by @scheme[sig-spec].}
  
- @item{@scheme[(rename sig-spec (id id) ...)] as
- an import binds the same as @scheme[sig-spec], except that the first @scheme[id]
- is used for the binding instead of the second @scheme[id] (where
- @scheme[sig-spec] by itself must imply a binding for the second @scheme[id]).
- As an export, this form causes a definition for the first @scheme[id]
- to satisfy the export named by the second @scheme[id] in @scheme[sig-spec].}
+ @item{@scheme[(rename sig-spec (id id) ...)] as an import binds the
+ same as @scheme[sig-spec], except that the first @scheme[id] is used
+ for the binding instead of the second @scheme[id] (where
+ @scheme[sig-spec] by itself must imply a bindingthat is
+ @scheme[bound-identifier=?] to second @scheme[id]).  As an export,
+ this form causes a definition for the first @scheme[id] to satisfy
+ the export named by the second @scheme[id] in @scheme[sig-spec].}
 
- @item{@scheme[(only sig-spec id ...)] as
- an import binds the same as @scheme[sig-spec], but restricted to just the
- listed @scheme[id]s (where
- @scheme[sig-spec] by itself must imply a binding for each @scheme[id]).
- This form is not allowed for an export.}
+ @item{@scheme[(only sig-spec id ...)] as an import binds the same as
+ @scheme[sig-spec], but restricted to just the listed @scheme[id]s
+ (where @scheme[sig-spec] by itself must imply a binding that is
+ @scheme[bound-identifier=?] to each @scheme[id]).  This form is not
+ allowed for an export.}
 
- @item{@scheme[(except sig-spec id ...)] as
- an import binds the same as @scheme[sig-spec], but excluding all listed
- @scheme[id]s (where
- @scheme[sig-spec] by itself must imply a binding for each @scheme[id]).
- This form is not allowed for an export.}
+ @item{@scheme[(except sig-spec id ...)] as an import binds the same
+ as @scheme[sig-spec], but excluding all listed @scheme[id]s (where
+ @scheme[sig-spec] by itself must imply a binding that is
+ @scheme[bound-identifier=?] to each @scheme[id]).  This form is not
+ allowed for an export.}
 
 }
 

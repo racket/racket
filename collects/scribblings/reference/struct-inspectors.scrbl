@@ -141,10 +141,26 @@ is not controlled by the current inspector, the
 
 Returns a value for the name of @scheme[v] if @scheme[v] has a name,
 @scheme[#f] otherwise. The argument @scheme[v] can be any value, but
-only (some) procedures, structs, struct types, struct type properties,
-regexp values, and ports have names. The name of a procedure, struct,
-struct type, or struct type property is always a symbol. The name of a
-regexp value is a string, and a byte-regexp value's name is a byte
-string. The name of a port is typically a path or a string, but it can
-be arbitrary. See also @secref["infernames"].}
+only (some) procedures, @tech{structures}, @tech{structure types},
+@tech{structure type properties}, @tech{regexp values}, and
+@tech{ports} have names. See also @secref["infernames"].
+
+The name (if any) of a procedure is always a symbol. The
+@scheme[procedure-rename] function creates a procedure with a specific
+name.
+
+The name of a @tech{structure}, @tech{structure type}, @tech{structure
+type property} is always a symbol. If a @tech{structure} is not a
+procedure, its name matches the name of the @tech{structure type} that
+it instantiates.
+
+The name of a @tech{regexp value} is a string or byte string. Passing
+the string or byte string to @scheme[regexp], @scheme[byte-regexp],
+@scheme[pregexp], or @scheme[byte-pregexp] (depending on the kind of
+regexp whose name was extracted) produces a value that matches the
+same inputs.
+
+The name of a port can be any value, but many tools use a path or
+string name as the port's for (to report source locations, for
+example).}
 

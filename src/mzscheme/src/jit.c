@@ -2451,6 +2451,37 @@ static int generate_nontail_self_setup(mz_jit_state *jitter)
   return 0;
 }
 
+static int can_direct_native(Scheme_Object *p, int num_rands, long *extract_case)
+{
+  if (SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
+    if (((Scheme_Native_Closure *)p)->code->closure_size < 0) {
+      /* case-lambda */
+      int cnt, i;
+      mzshort *arities;
+
+      cnt = ((Scheme_Native_Closure *)p)->code->closure_size;
+      cnt = -(cnt + 1);
+      arities = ((Scheme_Native_Closure *)p)->code->u.arities;
+      for (i = 0; i < cnt; i++) {
+        if (arities[i] == num_rands) {
+          *extract_case = (long)&((Scheme_Native_Closure *)0x0)->vals[i];
+          return 1;
+        }
+      }
+    } else {
+      /* not a case-lambda... */
+      if (scheme_native_arity_check(p, num_rands)
+          /* If it also accepts num_rands + 1, then it has a vararg,
+             so don't try direct_native. */
+          && !scheme_native_arity_check(p, num_rands + 1)) {
+        return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok, int no_call)
 {
@@ -2460,6 +2491,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   Scheme_Object *rator, *v, *arg;
   int reorder_ok = 0;
   int args_already_in_place = 0;
+  long extract_case = 0; /* when direct_native, non-0 => offset to extract case-lambda case */
   START_JIT_DATA();
 
   rator = (alt_rands ? alt_rands[0] : app->args[0]);
@@ -2494,32 +2526,36 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	  }
 	}
       }
-    } else if ((t == scheme_toplevel_type)
-	       && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_CONST)) {
-      /* We can re-order evaluation of the rator. */
-      reorder_ok = 1;
+    } else if (t == scheme_toplevel_type) {
+      if (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_CONST) {
+        /* We can re-order evaluation of the rator. */
+        reorder_ok = 1;
 
-      if (jitter->nc) {
-	Scheme_Object *p;
+        if (jitter->nc) {
+          Scheme_Object *p;
 
-	p = extract_global(rator, jitter->nc);
-	p = ((Scheme_Bucket *)p)->val;
-	if (SAME_TYPE(SCHEME_TYPE(p), scheme_native_closure_type)) {
-	  if (scheme_native_arity_check(p, num_rands)
-	      /* If it also accepts num_rands + 1, then it has a vararg,
-		 so don't try direct_native. */
-	      && !scheme_native_arity_check(p, num_rands + 1)) {
-	    direct_native = 1;
-
-	    if ((SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
-		&& (num_rands < MAX_SHARED_CALL_RANDS)) {
+          p = extract_global(rator, jitter->nc);
+          p = ((Scheme_Bucket *)p)->val;
+          if (can_direct_native(p, num_rands, &extract_case)) {
+            direct_native = 1;
+            
+            if ((SCHEME_TOPLEVEL_POS(rator) == jitter->self_toplevel_pos)
+                && (num_rands < MAX_SHARED_CALL_RANDS)) {
               if (is_tail)
                 direct_self = 1;
               else if (jitter->self_nontail_code)
                 nontail_self = 1;
-	    }
-	  }
-	}
+            }
+          }
+        }
+      } else if (jitter->nc) {
+        Scheme_Object *p;
+
+        p = extract_global(rator, jitter->nc);
+        if (((Scheme_Bucket_With_Flags *)p)->flags & GLOB_IS_CONSISTENT) {
+          if (can_direct_native(((Scheme_Bucket *)p)->val, num_rands, &extract_case))
+            direct_native = 1;
+        }
       }
     } else if (SAME_TYPE(t, scheme_closure_type)) {
       Scheme_Closure_Data *data;
@@ -2543,7 +2579,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     }
 
 #ifdef JIT_PRECISE_GC
-    /* We can get this closure's pointer back frmo the Scheme stack. */
+    /* We can get this closure's pointer back from the Scheme stack. */
     if (nontail_self)
       direct_self = 1;
 #endif
@@ -2693,6 +2729,11 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   else
     scheme_indirect_call_count++;
 
+  if (direct_native && extract_case) {
+    /* extract case from case-lambda */
+    jit_ldxi_p(JIT_V1, JIT_V1, extract_case);
+  }
+
   if (no_call) {
     /* leave actual call to inlining code */
   } else if (!(direct_self && is_tail)
@@ -2748,7 +2789,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 	code = generate_shared_call(num_rands, jitter, multi_ok, is_tail, direct_prim, direct_native, nontail_self);
 	shared_non_tail_code[dp][num_rands][mo] = code;
       }
-      LOG_IT(("<-non-tail %d %d %d %d\n", dp, num_rands, mo));
+      LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));
       code = shared_non_tail_code[dp][num_rands][mo];
 
       if (nontail_self) {

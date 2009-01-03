@@ -378,13 +378,9 @@
                            (eq? 'windows (file-url-path-convention-type))
                            (not (equal? host "")))])
        (when win-file?
-         (if (equal? "" port)
-           (set! path (string-append host ":" path))
-           (set! path (if path
-                        (if host
-                          (string-append host "/" path)
-                          path)
-                        host)))
+         (set! path (cond [(equal? "" port) (string-append host ":" path)]
+                          [(and path host) (string-append host "/" path)]
+                          [else (or path host)]))
          (set! port #f)
          (set! host ""))
        (let* ([scheme   (and scheme (string-downcase scheme))]
