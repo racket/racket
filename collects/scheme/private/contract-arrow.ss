@@ -924,10 +924,11 @@ v4 todo:
                         (cond
                           [(and rng
                                 (not (and first-mark
-                                          (eq? this->d-id first-mark))))
+                                          (eq? this->d-id (car first-mark))
+                                          (andmap eq? raw-orig-args (cdr first-mark)))))
                            (call-with-values
                             (λ ()
-                              (with-continuation-mark ->d-tail-key this->d-id
+                              (with-continuation-mark ->d-tail-key (cons this->d-id raw-orig-args)
                                 (thunk)))
                             (λ orig-results
                               (let* ([range-count (length rng)]
