@@ -1045,25 +1045,35 @@
            
   (define (check-clauses stx syn-error-name rest)
     (syntax-case rest ()
-      [([(lhs ...) roc ...] ...)
+      [([(lhs ...) roc1 roc2 ...] ...)
        rest]
+      [([(lhs ...) rhs ...] ...)
+       (begin
+         (for-each 
+          (λ (clause)
+            (syntax-case clause ()
+              [(a b) (void)]
+              [x (raise-syntax-error syn-error-name "expected a pattern and a right-hand side" stx clause)]))
+          (syntax->list #'([(lhs ...) rhs ...] ...)))
+         (raise-syntax-error syn-error-name "error checking failed.3" stx))]
       [([x roc ...] ...)
-       (for-each 
-        (λ (x)
-          (syntax-case x ()
-            [(lhs ...) (void)]
-            [x (raise-syntax-error syn-error-name "expected a function prototype" stx #'x)]))
-        (syntax->list #'(x ...)))
-       (raise-syntax-error syn-error-name "error checking failed.1" stx)]
+       (begin
+         (for-each 
+          (λ (x)
+            (syntax-case x ()
+              [(lhs ...) (void)]
+              [x (raise-syntax-error syn-error-name "expected a function prototype" stx #'x)]))
+          (syntax->list #'(x ...)))
+         (raise-syntax-error syn-error-name "error checking failed.1" stx))]
       [(x ...)
-       (for-each 
-        (λ (x)
-          (syntax-case x ()
-            [(stuff ...) (void)]
-            [x (raise-syntax-error syn-error-name "expected a metafunction clause" stx #'x)]))
-        (syntax->list #'(x ...)))
-       (raise-syntax-error syn-error-name "error checking failed.2" stx)]))
-        
+       (begin
+         (for-each 
+          (λ (x)
+            (syntax-case x ()
+              [(stuff ...) (void)]
+              [x (raise-syntax-error syn-error-name "expected a metafunction clause" stx #'x)]))
+          (syntax->list #'(x ...)))
+         (raise-syntax-error syn-error-name "error checking failed.2" stx))]))
   
   (define (extract-side-conditions name stx stuffs)
     (let loop ([stuffs (syntax->list stuffs)]
