@@ -9,9 +9,11 @@
 ;; using javascript.
 
 (define (send-main-page #:sub [sub "index.html"]
-                        #:fragment [fragment #f] #:query [query #f])
+                        #:fragment [fragment #f] #:query [query #f]
+                        #:notify [notify void])
   (let* ([path (build-path (find-user-doc-dir) sub)]
          [path (if (file-exists? path) path (build-path (find-doc-dir) sub))])
+    (notify path)
     (send-url/file path #:fragment fragment #:query query)))
 
 ;; This is an example of changing this code to use the online manuals.

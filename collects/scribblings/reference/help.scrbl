@@ -32,7 +32,8 @@ browser (using the user's selected browser) to display the results.
 @margin-note{See @schememodname[net/sendurl] for information on how
 the user's browser is launched to display help information.}
 
-A simple @scheme[help] or @scheme[(help)] form opens this page. 
+A simple @scheme[help] or @scheme[(help)] form opens the main
+documentation page.
 
 A @scheme[(help id)] form looks for documentation specific to the
 current binding of @scheme[id]. For example, 
