@@ -79,8 +79,12 @@ All of the exports in this section are provided both by
 all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
-This section covers Redex's @deftech{pattern} language, used
-in various ways:
+This section covers Redex's @deftech{pattern} language, used in many
+of Redex's forms.
+
+Note that pattern matching is caching (including caching the results
+of side-conditions). This means that once a pattern has matched a
+given term, Redex assumes that it will always match that term. 
 
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole side-condition cross) 
    [pattern any 
