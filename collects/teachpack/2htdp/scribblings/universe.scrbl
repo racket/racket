@@ -1,9 +1,9 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.ss" 
-          (for-label scheme ; lang/htdp-beginner
+          (for-label scheme
 	  	     (only-in lang/htdp-beginner check-expect)
-		     "../universe.ss"
+		     teachpack/2htdp/universe
 		     teachpack/htdp/image))
 @(require scribble/struct)
 
@@ -47,7 +47,7 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  have a series of projects available as a small booklet on
  @link["http://world.cs.brown.edu/"]{How to Design Worlds}.
 
-@declare-exporting["../universe.ss" #:use-sources (teachpack/htdp/image)]
+@declare-exporting[teachpack/2htdp/universe #:use-sources (teachpack/htdp/image)]
 
 @; -----------------------------------------------------------------------------
 

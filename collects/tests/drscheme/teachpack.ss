@@ -213,13 +213,16 @@
                         (printf "FAILED built in teachpack test: ~a~n" (path->string teachpack))
                         (printf "       got: ~s~n  expected: ~s~n" got expected)))))))]
            [test-teachpacks
-            (lambda (dir)
-              (for-each (test-teachpack dir) 
-                        (directory-list dir)))]
+            (lambda (paths)
+              (for-each (lambda (dir)
+                          (for-each (test-teachpack dir) 
+                                    (directory-list dir)))
+                        paths))]
            [teachpack-dir (normalize-path (collection-path "teachpack"))])
       (set-language-level! '("How to Design Programs" "Advanced Student"))
       (do-execute drs-frame)
-      (test-teachpacks (build-path teachpack-dir "htdp"))))
+      (test-teachpacks (list (build-path teachpack-dir "2htdp")
+                             (build-path teachpack-dir "htdp")))))
   
   (define (find-leftmost-choice frame)
     (let loop ([p frame])
