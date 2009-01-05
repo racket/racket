@@ -188,22 +188,24 @@ The design of a world program demands that you come up with a data
 @itemize[
 
 @item{
-@defform[(on-tick 
-	  [tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))])]{
+@defform[(on-tick tick-expr)
+         #:contracts
+	 ([tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))])]{
 
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of 28 times per second.}}
 
 @item{
-@defform/none[(on-tick 
-               [tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]
+@defform/none[(on-tick tick-expr rate-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]
                [rate-expr natural-number/c])]{
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of @scheme[rate-expr].}}
 
-@item{An @tech{KeyEvent} represents key board events, e.g., keys pressed or
+@item{A @tech{KeyEvent} represents key board events, e.g., keys pressed or
  released. 
 
 @deftech{KeyEvent} : @scheme[(or/c char? symbol?)]
@@ -230,8 +232,9 @@ A character is used to signal that the user has hit an alphanumeric
 @defproc[(key=? [x key-event?][y key-event?]) boolean?]{
  compares two @tech{KeyEvent} for equality}
 
-@defform[(on-key
-	   [change-expr (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))])]{
+@defform[(on-key change-expr)
+         #:contracts
+	  ([change-expr (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))])]{
  tell DrScheme to call @scheme[change-expr] function on the current world and a 
  @tech{KeyEvent} for every keystroke the user of the computer makes. The result
  of the call becomes the current world.
@@ -282,8 +285,9 @@ All @tech{MouseEvent}s are represented via symbols:
 @defproc[(mouse=? [x mouse-event?][y mouse-event?]) boolean?]{
  compares two @tech{KeyEvent} for equality}
 
-@defform[(on-mouse
-	  [clack-expr 
+@defform[(on-mouse clack-expr)
+         #:contracts
+	 ([clack-expr 
            (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{World}))])]{
  tell DrScheme to call @scheme[clack-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
@@ -297,16 +301,18 @@ All @tech{MouseEvent}s are represented via symbols:
 
 @item{
  
-@defform[(on-draw 
-          [render-expr (-> (unsyntax @tech{World}) scene?)])]{ 
+@defform[(on-draw render-expr)
+         #:contracts
+         ([render-expr (-> (unsyntax @tech{World}) scene?)])]{ 
 
  tell DrScheme to call the function @scheme[render-expr] whenever the
  canvas must be drawn. The external canvas is usually re-drawn after DrScheme has
  dealt with an event. Its size is determined by the size of the first
  generated @tech{scene}.}
 
-@defform/none[(on-draw 
-               [render-expr (-> (unsyntax @tech{World}) scene?)]
+@defform/none[(on-draw render-expr width-expr height-expr)
+              #:contracts
+              ([render-expr (-> (unsyntax @tech{World}) scene?)]
 	       [width-expr natural-number/c]
                [height-expr natural-number/c])]{ 
 
@@ -317,8 +323,9 @@ All @tech{MouseEvent}s are represented via symbols:
 
 @item{
 
-@defform[(stop-when 
-          [last-world? (-> (unsyntax @tech{World}) boolean?)])]{
+@defform[(stop-when last-world?)
+         #:contracts
+         ([last-world? (-> (unsyntax @tech{World}) boolean?)])]{
  tell DrScheme to call the @scheme[last-world?] function whenever the canvas is
  drawn. If this call produces @scheme[true], the world program is shut
           down. Specifically, the  clock is stopped; no more
@@ -328,8 +335,9 @@ All @tech{MouseEvent}s are represented via symbols:
 
 @item{
 
-@defform[(record?
-          [boolean-expr boolean?])]{
+@defform[(record? boolean-expr)
+         #:contracts
+         ([boolean-expr boolean?])]{
  tell DrScheme to record all events and to enable a replay of the entire
  interaction. The replay action also generates one png image per scene and
  an animated gif for the entire sequence.
@@ -728,21 +736,25 @@ Each world-producing callback in a world program---those for handling clock
 As mentioned, all event handlers may return @tech{World}s or @tech{Package}s;
 here are the revised specifications: 
 
-@defform/none[(on-tick
-               [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))])]{
+@defform/none[(on-tick tick-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))])]{
 } 
 
-@defform/none[(on-tick 
-               [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))]
+@defform/none[(on-tick tick-expr rate-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))]
                [rate-expr natural-number/c])]{
 }
 
-@defform/none[(on-key
-               [change (-> (unsyntax @tech{World}) key-event? (or/c (unsyntax @tech{World}) package?))])]{
+@defform/none[(on-key change-expr)
+              #:contracts
+              ([change-expr (-> (unsyntax @tech{World}) key-event? (or/c (unsyntax @tech{World}) package?))])]{
 }
 
-@defform/none[(on-mouse
-               [clack
+@defform/none[(on-mouse clack-expr)
+              #:contracts
+              ([clack-expr
                 (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
                     (or/c (unsyntax @tech{World}) package?))])]{
 }
@@ -780,14 +792,16 @@ following shapes:
 @itemize[
 
 @item{
-@defform[(register [ip-expr string?])]{
+@defform[(register ip-expr) #:contracts ([ip-expr string?])]{
  connect this world to a universe server at the specified @scheme[ip-expr]
  address and set up capabilities for sending and receiving messages.}
 }
 
 @item{
-@defform/none[(register [ip-expr string?]
-                        [name-expr (or/c symbol? string?)])]{
+@defform/none[(register ip-expr name-expr)
+              #:contracts
+              ([ip-expr string?]
+               [name-expr (or/c symbol? string?)])]{
  connect this world to a universe server @emph{under a specific} @scheme[name-expr].}
 }
 
@@ -807,8 +821,9 @@ Finally, the receipt of a message from the server is an event, just like
 The @scheme[on-receive] clause of a @scheme[big-bang] specifies the event handler
  for message receipts. 
 
-@defform[(on-receive
-	  [receive-expr (-> (unsyntax @tech{World}) sexp? (or/c (unsyntax @tech{World}) package?))])]{
+@defform[(on-receive receive-expr)
+         #:contracts
+	 ([receive-expr (-> (unsyntax @tech{World}) sexp? (or/c (unsyntax @tech{World}) package?))])]{
  tell DrScheme to call @scheme[receive-expr] for every message receipt, on the current
  @tech{World} and the received message. The result of the call becomes the current
  @tech{World}. 
@@ -993,15 +1008,17 @@ description. Two of them are mandatory:
 @itemize[
 
 @item{
- @defform[(on-new 
-           [new-expr (-> (unsyntax @tech{Universe}) world? 
+ @defform[(on-new new-expr)
+          #:contracts
+          ([new-expr (-> (unsyntax @tech{Universe}) world? 
 	   	         (cons (unsyntax @tech{Universe}) [listof mail?]))])]{
  tell DrScheme to call the function @scheme[new-expr] every time another world joins the
  universe.}}
 
 @item{
- @defform[(on-msg 
-           [msg-expr (-> (unsyntax @tech{Universe}) world? sexp? 
+ @defform[(on-msg msg-expr)
+          #:contracts
+          ([msg-expr (-> (unsyntax @tech{Universe}) world? sexp? 
 	   	         (cons (unsyntax @tech{Universe}) [listof mail?]))])]{
 
  tell DrScheme to apply @scheme[msg-expr] to the current state of the universe, the world
@@ -1020,15 +1037,17 @@ optional handlers:
 @itemize[
 
 @item{
-@defform/none[(on-tick
-               [tick-expr (-> (unsyntax @tech{Universe}) bundle?)])]{
+@defform/none[(on-tick tick-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{Universe}) bundle?)])]{
  tell DrScheme to apply @scheme[tick-expr] to the current state of the
  universe. The handler is expected to produce a bundle of the new state of
  the universe and a list of mails. 
  }
 
-@defform/none[(on-tick 
-               [tick-expr (-> (unsyntax @tech{Universe}) bundle?)]
+@defform/none[(on-tick tick-expr rate-expr)
+              #:contracts
+              ([tick-expr (-> (unsyntax @tech{Universe}) bundle?)]
                [rate-expr natural-number/c])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
@@ -1036,8 +1055,9 @@ optional handlers:
 }
 
 @item{
- @defform[(on-disconnect 
-           [dis-expr (-> (unsyntax @tech{Universe}) world? bundle?)])]{
+ @defform[(on-disconnect dis-expr)
+          #:contracts
+          ([dis-expr (-> (unsyntax @tech{Universe}) world? bundle?)])]{
  tell DrScheme to invoke @scheme[dis-expr] every time a participating
  @tech{world} drops its connection to the server. The first argument is the
  current state of the universe; the second one is the world that got
@@ -1046,8 +1066,9 @@ optional handlers:
 }
 
 @item{
- @defform[(to-string 
-           [render-expr (-> (unsyntax @tech{Universe}) string?)])]{
+ @defform[(to-string render-expr)
+          #:contracts
+          ([render-expr (-> (unsyntax @tech{Universe}) string?)])]{
  tell DrScheme to render the state of the universe after each event and to
  display this string in the universe console. 
  }
