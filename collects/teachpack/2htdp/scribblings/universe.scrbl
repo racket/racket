@@ -25,11 +25,16 @@
 
 @author{Matthias Felleisen}
 
+@;{FIXME: the following paragraph uses `defterm' instead of `deftech',
+   because the words "world" and "universe" are used as datatypes, and
+   datatypes are currently linked as technical terms --- which is a hack.
+   Fix the paragraph when we have a better way to link datatype names.}
+
 This @tt{universe.ss} teachpack implements and provides the functionality
  for creating interactive, graphical programs that consist of plain
- mathematical functions. We refer to such programs as @deftech{world}
+ mathematical functions. We refer to such programs as @defterm{world}
  programs. In addition, world programs can also become a part of a
- @deftech{universe}, a collection of worlds that can exchange messages.
+ @defterm{universe}, a collection of worlds that can exchange messages.
 
 The purpose of this documentation is to give experienced Schemers and HtDP
  teachers a concise overview for using the library. The first part of the
@@ -55,8 +60,8 @@ The purpose of this documentation is to give experienced Schemers and HtDP
 
 The teachpack assumes working knowledge of the basic image manipulation
  primitives and supports several functions that require a special kind of
- image, called a @deftech{scene}, , which are images whose pinholes are at
- position @scheme[(0,0)]. For example, the teachpack displays only
+ image, called a @deftech{scene}, which is an image whose pinholes are at
+ position @math{(0, 0)}. For example, the teachpack displays only
  @tech{scene}s in its canvas. 
 
 @defproc[(scene? [x any/c]) boolean?]{
@@ -70,9 +75,10 @@ The teachpack assumes working knowledge of the basic image manipulation
 @defproc[(place-image [img image?] [x number?] [y number?]
                       [s scene?])
          scene?]{
- creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
- @scheme[(x,y)] are computer graphics coordinates, i.e., they count right and
- down from the upper-left corner.}
+ creates a scene by placing @scheme[img] at
+ @math{(@scheme[x], @scheme[y])} into @scheme[s];
+ @math{(@scheme[x], @scheme[y])} are computer graphics coordinates,
+ i.e., they count right and down from the upper-left corner.}
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
@@ -85,8 +91,8 @@ The simplest kind of animated @tech{world} program is a time-based
 @defproc[(run-simulation [create-image (-> natural-number/c scene)])
          true]{
 
- opens a canvas and starts a clock that tick 28 times per second
- seconds. Every time the clock ticks, drscheme applies
+ opens a canvas and starts a clock that tick 28 times per second.
+ Every time the clock ticks, DrScheme applies
  @scheme[create-image] to the number of ticks passed since this function
  call. The results of these applications are displayed in the canvas.
 }
@@ -108,7 +114,7 @@ Example:
 
 The step from simulations to interactive programs is relatively
  small. Roughly speaking, a simulation designates one function,
- @emph{create-image}, as a handler for one kind of event: clock ticks.  In
+ @scheme[_create-image], as a handler for one kind of event: clock ticks.  In
  addition to clock ticks, @tech{world} programs can also deal with two
  other kinds of events: keyboard events and mouse events. A keyboard event
  is triggered when a computer user presses or releases a key on the
@@ -119,8 +125,8 @@ Your program may deal with such events via the @emph{designation} of
  @emph{handler} functions.  Specifically, the teachpack provides for the
  installation of three event handlers: @scheme[on-tick], @scheme[on-key],
  and @scheme[on-mouse]. In addition, a @tech{world} program may specify a
- @emph{draw} function, which is called every time your program should
- visualize the current world, and a @emph{stop?} predicate, which is used
+ @scheme[_dra]} function, which is called every time your program should
+ visualize the current world, and a @scheme[_stop?] predicate, which is used
  to determine when the @tech{world} program should shut down. 
 
 Each handler function consumes the current state of the @tech{world} and
@@ -132,20 +138,22 @@ The following picture provides an intuitive overview of the workings of a
 
 @image["nuworld.png"]
 
- The @scheme[big-bang] form installs @emph{World_0} as the initial
- world. The handlers @emph{tock}, @emph{react}, and @emph{click} transform
- one world into another one; each time an event is handled, @emph{done} is
+ The @scheme[big-bang] form installs @scheme[World_0] as the initial
+ world. The handlers @scheme[tock], @scheme[react], and @scheme[click] transform
+ one world into another one; each time an event is handled, @scheme[done] is
  used to check whether the world is final, in which case the program is
- shut down; and finally, @emph{draw} renders each world as a scene, which
+ shut down; and finally, @scheme[draw] renders each world as a scene, which
  is then displayed on an external canvas. 
 
-@deftech{World} : @scheme[any/c] The design of a world program demands that
- you come up with a data definition of all possible states. We use
- @tech{World} to refer to this collection of data, using a capital W to
- distinguish it from the program.  In principle, there are no constraints
- on this data definition though it mustn't be an instance of the
- @tech{Package} structure (see below). You can even keep it implicit, even
- if this violates the Design Recipe.
+@deftech{World} : @scheme[any/c]
+
+The design of a world program demands that you come up with a data
+ definition of all possible states. We use @tech{World} to refer to
+ this collection of data, using a capital W to distinguish it from the
+ program.  In principle, there are no constraints on this data
+ definition though it mustn't be an instance of the @tech{Package}
+ structure (see below). You can even keep it implicit, even if this
+ violates the Design Recipe.
 
 @defform/subs[#:id big-bang
               #:literals 
@@ -188,9 +196,9 @@ world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of 28 times per second.}}
 
 @item{
-@defform[(on-tick 
-	  [tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]
-	  [rate-expr natural-number/c])]{
+@defform/none[(on-tick 
+               [tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]
+               [rate-expr natural-number/c])]{
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of @scheme[rate-expr].}}
@@ -200,8 +208,8 @@ current world. The clock ticks at the rate of @scheme[rate-expr].}}
 
 @deftech{KeyEvent} : @scheme[(or/c char? symbol?)]
 
-A @tech{Char} is used to signal that the user has hit an alphanumeric
- key. A @tech{Symbol} denotes arrow keys or special events:
+A character is used to signal that the user has hit an alphanumeric
+ key. A symbol denotes arrow keys or special events:
 
 @itemize[
 
@@ -271,7 +279,7 @@ All @tech{MouseEvent}s are represented via symbols:
 @defproc[(mouse-event? [x any]) boolean?]{
  determines whether @scheme[x] is a @tech{KeyEvent}}
 
-@defproc[(key=? [x mouse-event?][y mouse-event?]) boolean?]{
+@defproc[(mouse=? [x mouse-event?][y mouse-event?]) boolean?]{
  compares two @tech{KeyEvent} for equality}
 
 @defform[(on-mouse
@@ -297,10 +305,10 @@ All @tech{MouseEvent}s are represented via symbols:
  dealt with an event. Its size is determined by the size of the first
  generated @tech{scene}.}
 
-@defform[(on-draw 
-          [render-expr (-> (unsyntax @tech{World}) scene?)]
-	  [width-expr natural-number/c]
-	  [height-expr natural-number/c])]{ 
+@defform/none[(on-draw 
+               [render-expr (-> (unsyntax @tech{World}) scene?)]
+	       [width-expr natural-number/c]
+               [height-expr natural-number/c])]{ 
 
  tell DrScheme to use a @scheme[width-expr] by @scheme[height-expr]
  canvas instead of one determine by the first generated @tech{scene}.
@@ -363,12 +371,12 @@ are highly useful for creating scenes.
    corner.}
    
 @defproc[(scene+line [s scene?][x0 number?][y0 number?][x1 number?][y1 number?][c Color]) scene?]{
-   creates a scene by placing a line of color @scheme[c] from @scheme[(x0,y0)] to
-   @scheme[(x1,y1)] into @scheme[scene];  
-   @scheme[(x,y)] are computer graphics coordinates.
-   In contrast to the @scheme[add-line] function, @scheme[scene+line] cuts
-   off those portions of the line that go beyond the boundaries of 
-   the given @scheme[s].}
+   creates a scene by placing a line of color @scheme[c] from
+   @math{(@scheme[x0], @scheme[y0])} to @math{(@scheme[x1],
+   @scheme[y1])} using computer graphics coordinates.  In contrast to
+   the @scheme[add-line] function, @scheme[scene+line] cuts off those
+   portions of the line that go beyond the boundaries of the given
+   @scheme[s].}
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "world-example"]{A First Sample World} 
@@ -395,22 +403,22 @@ Here is a diagram that translates our words into a graphical
 @image["door-real.png"]
 
 Like the picture of the general workings of a @tech{world} program, this
- diagram displays a so-called "state machine". The three circled words are
+ diagram displays a so-called ``state machine.'' The three circled words are
  the states that our informal description of the door identified: locked,
  closed (and unlocked), and open. The arrows specify how the door can go
  from one state into another. For example, when the door is open, the
  automatic door closer shuts the door as time passes. This transition is
- indicated by the arrow labeled "time passes." The other arrows represent
+ indicated by the arrow labeled ``time passes.'' The other arrows represent
  transitions in a similar manner:
 
 @itemize[
 
-@item{"push" means a person pushes the door open (and let's go);}
+@item{``push'' means a person pushes the door open (and let's go);}
 
-@item{"lock" refers to the act of inserting a key into the lock and turning
+@item{``lock'' refers to the act of inserting a key into the lock and turning
 it to the locked position; and}
 
-@item{"unlock" is the opposite of "lock".}
+@item{``unlock'' is the opposite of ``lock.''}
 
 ]
 
@@ -712,7 +720,7 @@ Each world-producing callback in a world program---those for handling clock
  predicate.
 
 @defproc[(package? [x any/c]) boolean?]{
- determine whether @scheme[x] is a @deftech{Package}.}
+ determine whether @scheme[x] is a @tech{Package}.}
 
 @defproc[(make-package [w any/c][m sexp?]) package?]{
  create a @tech{Package} from a @tech{World} and an @tech{S-expression}.}
@@ -720,23 +728,23 @@ Each world-producing callback in a world program---those for handling clock
 As mentioned, all event handlers may return @tech{World}s or @tech{Package}s;
 here are the revised specifications: 
 
-@defform[(on-tick
-	  [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))])]{
+@defform/none[(on-tick
+               [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))])]{
 } 
 
-@defform[(on-tick 
-	  [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))]
-	  [rate-expr natural-number/c])]{
+@defform/none[(on-tick 
+               [tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))]
+               [rate-expr natural-number/c])]{
 }
 
-@defform[(on-key
-	  [change (-> (unsyntax @tech{World}) key-event? (or/c (unsyntax @tech{World}) package?))])]{
+@defform/none[(on-key
+               [change (-> (unsyntax @tech{World}) key-event? (or/c (unsyntax @tech{World}) package?))])]{
 }
 
-@defform[(on-mouse
-	  [clack
-	    (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
-	        (or/c (unsyntax @tech{World}) package?))])]{
+@defform/none[(on-mouse
+               [clack
+                (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
+                    (or/c (unsyntax @tech{World}) package?))])]{
 }
 
 If one of these event handlers produces a @tech{Package}, the content of the world
@@ -778,8 +786,8 @@ following shapes:
 }
 
 @item{
-@defform[(register [ip-expr string?]
-	           [name-expr (or/c symbol? string?)])]{
+@defform/none[(register [ip-expr string?]
+                        [name-expr (or/c symbol? string?)])]{
  connect this world to a universe server @emph{under a specific} @scheme[name-expr].}
 }
 
@@ -848,17 +856,17 @@ The teachpack provides a mechanism for designating event handlers for
 
 @itemize[
 
-@item{A server may be a "pass through" channel between two worlds, in which case
+@item{A server may be a ``pass through'' channel between two worlds, in which case
  it has no other function than to communicate whatever message it receives
  from one world to the other, without any interference.}
 
-@item{A server may enforce a "back and forth" protocol, i.e., it may force two
+@item{A server may enforce a ``back and forth'' protocol, i.e., it may force two
  (or more) worlds to engage in a civilized tit-for-tat exchange. Each
  world is given a chance to send a message and must then wait 
  to get a reply before it sends anything again.}
 
 @item{A server may play the role of a special-purpose arbiter, e.g., the referee
- or administrator of a game. It may check that each world "plays" by the rules,
+ or administrator of a game. It may check that each world ``plays'' by the rules,
  and it administrate the resources of the game.}
 
 ]
@@ -1012,16 +1020,16 @@ optional handlers:
 @itemize[
 
 @item{
-@defform[(on-tick
-	  [tick-expr (-> (unsyntax @tech{Universe}) bundle?)])]{
+@defform/none[(on-tick
+               [tick-expr (-> (unsyntax @tech{Universe}) bundle?)])]{
  tell DrScheme to apply @scheme[tick-expr] to the current state of the
  universe. The handler is expected to produce a bundle of the new state of
  the universe and a list of mails. 
  }
 
-@defform[(on-tick 
-	  [tick-expr (-> (unsyntax @tech{Universe}) bundle?)]
-	  [rate-expr natural-number/c])]{ 
+@defform/none[(on-tick 
+               [tick-expr (-> (unsyntax @tech{Universe}) bundle?)]
+               [rate-expr natural-number/c])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
  }
@@ -1058,7 +1066,7 @@ This section uses a simple example to explain the design of a universe,
 @subsection{Two Ball Tossing Worlds}
 
 Say we want to represent a universe that consists of a number of worlds and
- that gives each world a "turn" in a round-robin fashion. If a world is
+ that gives each world a ``turn'' in a round-robin fashion. If a world is
  given its turn, it displays a ball that ascends from the bottom of a
  canvas to the top. It relinquishes its turn at that point and the server
  gives the next world a turn. 
@@ -1097,7 +1105,7 @@ From the perspective of the @tech{universe}, the design of a protocol is
  kinds of @tech{S-expression}s. The data definitions for messages must
  therefore select a subset of suitable @tech{S-expression}s. As for the
  state of the server and the worlds, they must reflect how they currently
- relate to the universe. Later, when we design their "local" behavior, we
+ relate to the universe. Later, when we design their ``local'' behavior, we
  may add more components to their state space. 
 
 In summary, the first step of a protocol design is to introduce: 
@@ -1204,7 +1212,7 @@ From the @tech{universe}'s perspective, each @tech{world} is in one of two state
 @itemize[
 @item{A passive @tech{world} is @emph{resting}. We use @scheme['resting] for this state.}
 @item{An active @tech{world} is not resting. We delay choosing a representation
-for this part of a @tech{world}'s state until we design its "local" behavior.}
+for this part of a @tech{world}'s state until we design its ``local'' behavior.}
 ]
  It is also clear that an active @tech{world} may receive additional messages,
  which it may ignore. When it is done with its turn, it will send a
