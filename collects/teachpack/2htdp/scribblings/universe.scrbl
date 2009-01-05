@@ -10,7 +10,7 @@
 @(define (table* . stuff)
   ;; (list paragraph paragraph) *-> Table
    (define (flow* x) (make-flow (list x)))
-   (make-blockquote 'blockquote
+   (make-blockquote #f
      (list 
        (make-table (make-with-attributes 'boxed
 		     '((cellspacing . "6")))
