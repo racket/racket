@@ -943,7 +943,11 @@ combination of @scheme[envvar] and @scheme[as-index].}
 
  The path is relative to the current directory, which is set by
  @exec{setup-plt} and @exec{scribble} to the directory of the main
- document file.}
+ document file.
+
+ When generating Latex output, if the filename has a @filepath{.gif}
+ suffix, then the suffix is changed to @filepath{.png} (so a PNG file
+ must exist in addition to the GIF file).}
 
 @defproc[(image/plain [filename-relative-to-source string?]
                       [pre-element any/c] ...)
