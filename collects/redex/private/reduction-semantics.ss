@@ -754,22 +754,40 @@
    (rewrite-proc-name child-make-proc)
    (subst lhs-frm-id (rewrite-proc-lhs child-make-proc) rhs-from)))
 
+(define relation-coverage (make-parameter #f))
+
+(define-struct covered-case (name apps) #:inspector (make-inspector))
+
+(define (apply-case c)
+  (struct-copy covered-case c [apps (add1 (covered-case-apps c))]))
+
+(define (cover-case id name relation-coverage)
+  (hash-update! relation-coverage id apply-case (make-covered-case name 0)))
+
+(define (covered-cases relation-coverage)
+  (hash-map relation-coverage (λ (k v) v)))
+
+(define fresh-coverage make-hasheq)
+
 (define (do-leaf-match name pat w/extras proc)
-  (make-rewrite-proc
-   (λ (lang)
-     (let ([cp (compile-pattern lang pat #t)])
-       (λ (main-exp exp f other-matches)
-         (let ([mtchs (match-pattern cp exp)])
-           (if mtchs
-               (map/mt (λ (mtch) 
-                         (let ([really-matched (proc main-exp (mtch-bindings mtch))])
-                           (and really-matched
-                                (list name (f (successful-result really-matched))))))
-                       mtchs
-                       other-matches)
-               other-matches)))))
-   name
-   w/extras))
+  (let ([case-id (gensym)])
+    (make-rewrite-proc
+     (λ (lang)
+       (let ([cp (compile-pattern lang pat #t)])
+         (λ (main-exp exp f other-matches)
+           (let ([mtchs (match-pattern cp exp)])
+             (if mtchs
+                 (map/mt (λ (mtch) 
+                           (let ([really-matched (proc main-exp (mtch-bindings mtch))])
+                             (and really-matched
+                                  (when (relation-coverage)
+                                    (cover-case case-id name (relation-coverage)))
+                                  (list name (f (successful-result really-matched))))))
+                         mtchs
+                         other-matches)
+                 other-matches)))))
+     name
+     w/extras)))
 
 (define-syntax (test-match stx)
   (syntax-case stx ()
@@ -1801,3 +1819,8 @@
          apply-reduction-relation*
          variable-not-in
          variables-not-in)
+
+(provide relation-coverage
+         covered-cases
+         fresh-coverage
+         (struct-out covered-case))

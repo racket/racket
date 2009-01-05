@@ -1,5 +1,8 @@
 (module tl-test mzscheme
   (require "../reduction-semantics.ss"
+           (only "reduction-semantics.ss" 
+                 relation-coverage fresh-coverage covered-cases
+                 make-covered-case covered-case-name)
            "test-util.ss"
            (only "matcher.ss" make-bindings make-bind)
            scheme/match
@@ -1160,5 +1163,33 @@
             [`(((side-condition 5 ,(? procedure?)) 2) 1) #t]
             [else #f])
           #t))
+  
+  (let ([R (reduction-relation
+            empty-language
+            (--> number (q ,(add1 (term number)))
+                 (side-condition (odd? (term number)))
+                 side-condition)
+            (--> 1 4
+                 one)
+            (==> 2 t
+                 shortcut)
+            with
+            [(--> (q a) b)
+             (==> a b)])]
+        [c (fresh-coverage)])
+    (parameterize ([relation-coverage c])
+      (apply-reduction-relation R 4)
+      (test (covered-cases c) null)
+      
+      (apply-reduction-relation R 3)
+      (test (covered-cases c)
+            (list (make-covered-case "side-condition" 1)))
+      
+      (apply-reduction-relation* R 1)
+      (test (sort (covered-cases c)
+                  (λ (c d) (string<? (covered-case-name c) (covered-case-name d))))
+            (list (make-covered-case "one" 1)
+                  (make-covered-case "shortcut" 1)
+                  (make-covered-case "side-condition" 2)))))
   
   (print-tests-passed 'tl-test.ss))
