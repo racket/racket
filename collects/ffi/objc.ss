@@ -15,7 +15,7 @@
 
 (define-syntax-rule (define-objc id type)
   (begin
-    (provide id)
+    (provide* (unsafe id))
     (define-objc/private id id type)))
 
 ;; ----------------------------------------
@@ -86,16 +86,16 @@
 (define msgSends (make-hash))
 (define (objc_msgSend/typed types)
   (lookup-send types msgSends objc_msgSend objc_msgSend_fpret _id))
-(provide objc_msgSend/typed)
+(provide* (unsafe objc_msgSend/typed))
 
 (define msgSendSupers (make-hash))
 (define (objc_msgSendSuper/typed types)
   (lookup-send types msgSendSupers objc_msgSendSuper objc_msgSendSuper_fpret _pointer))
-(provide objc_msgSendSuper/typed)
+(provide* (unsafe objc_msgSendSuper/typed))
 
 ;; ----------------------------------------
 
-(provide import-class)
+(provide* (unsafe import-class))
 (define-syntax (import-class stx)
   (syntax-case stx ()
     [(_ id)
@@ -107,7 +107,7 @@
 ;; ----------------------------------------
 ;; iget-value and set-ivar! work only with fields that contain Scheme values
 
-(provide get-ivar set-ivar!)
+(provide* (unsafe get-ivar) (unsafe set-ivar!))
 
 (define-for-syntax (check-ivar ivar stx)
   (unless (identifier? ivar)
@@ -161,7 +161,7 @@
         (hash-set! method-sels sym id)
         id)))
 
-(provide selector)
+(provide* (unsafe selector))
 (define-syntax (selector stx)
   (syntax-case stx ()
     [(_ id)
@@ -256,7 +256,7 @@
                                   arg)))
              (loop (cdr rest))))))))
 
-(provide tell tellv)
+(provide* (unsafe tell) (unsafe tellv))
 (define-for-syntax (build-send stx result-type send/typed send-args l-stx)
   (let ([l (syntax->list  l-stx)])
     (with-syntax ([((tag type arg) ...) (parse-arg-list l stx #f)]
@@ -329,7 +329,7 @@
 
 ;; ----------------------------------------
 
-(provide define-objc-class self super-tell)
+(provide* (unsafe define-objc-class) self super-tell)
 
 (define-syntax (define-objc-class stx)
   (syntax-case stx ()
@@ -549,3 +549,8 @@
                  #'objc_msgSendSuper/typed
                  #'((make-objc_super self super-class))
                  #'(method/arg ...))]))
+
+;; --------------------------------------------------
+
+(define-unsafer objc-unsafe!)
+

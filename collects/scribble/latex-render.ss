@@ -4,6 +4,7 @@
          mzlib/class
          scheme/runtime-path
          scheme/port
+         scheme/path
          scheme/string
          setup/main-collects)
 (provide render-mixin)
@@ -17,6 +18,11 @@
 (define-struct (toc-paragraph paragraph) ())
 
 (define-runtime-path scribble-tex "scribble.tex")
+
+(define (gif-to-png p)
+  (if (equal? (filename-extension p) #"gif")
+      (path-replace-suffix p #".png")
+      p))
 
 (define (render-mixin %)
   (class %
@@ -194,7 +200,7 @@
                  (void)
                  (let ([fn (install-file
                             (main-collects-relative->path
-                             (image-file-path style)))])
+                             (gif-to-png (image-file-path style))))])
                    (printf "\\includegraphics[scale=~a]{~a}"
                            (image-file-scale style) fn)))]
               [else (super render-element e part ri)])))

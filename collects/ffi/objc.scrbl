@@ -3,7 +3,7 @@
           scribble/eval
           (for-label scheme/base
                      scheme/foreign
-                     ffi/objc))
+                     "private/objc-doc-unsafe.ss"))
 
 @(define objc-eval (make-base-eval))
 @(interaction-eval #:eval objc-eval (define-struct cpointer:id ()))
@@ -13,7 +13,9 @@
 
 @title{@bold{Objective-C} FFI}
 
-@defmodule[ffi/objc]{The @schememodname[ffi/objc] library builds on
+@declare-exporting[ffi/private/objc-doc-unsafe #:use-sources (ffi/objc)]
+
+@defmodule*/no-declare[(ffi/objc)]{The @schememodname[ffi/objc] library builds on
 @schememodname[scheme/foreign] to support interaction with
 @link["http://developer.apple.com/documentation/Cocoa/Conceptual/ObjectiveC/"]{Objective-C}.}
 
@@ -26,7 +28,22 @@ relatively low-level compared to normal Scheme libraries, because
 argument and result types must be declared in terms of FFI C types
 (@seeCtype).
 
+@bold{Important:} Most of the bindings documented here are available
+only after an @scheme[(objc-unsafe!)] declaration in the importing
+module.
+
 @table-of-contents[]
+
+@; ----------------------------------------------------------------------
+
+@section{Using Unsafe Bindings}
+
+@defform[(objc-unsafe!)]{
+
+Analogous to @scheme[(unsafe!)], makes unsafe bindings of
+@schememodname[ffi/objc] available in the importing module.}
+
+@; ----------------------------------------------------------------------
 
 @section{FFI Types and Constants}
 
