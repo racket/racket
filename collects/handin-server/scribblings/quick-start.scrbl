@@ -27,7 +27,7 @@
 
 @item{Create a file @filepath{config.ss} with the following content:
   @schemeblock[((active-dirs ("test"))
-                (https-port-number 9780))]}
+                (https-port-number 7980))]}
 
 @item{In your new directory, run @commandline{mred-text -l handin-server}}
 
