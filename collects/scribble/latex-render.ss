@@ -199,8 +199,9 @@
                (if (disable-images)
                  (void)
                  (let ([fn (install-file
-                            (main-collects-relative->path
-                             (gif-to-png (image-file-path style))))])
+                            (gif-to-png 
+                             (main-collects-relative->path
+                              (image-file-path style))))])
                    (printf "\\includegraphics[scale=~a]{~a}"
                            (image-file-scale style) fn)))]
               [else (super render-element e part ri)])))
