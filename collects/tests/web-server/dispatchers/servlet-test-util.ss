@@ -20,11 +20,16 @@
     (test-equal? 
      t
      (let* ([d (mkd p)]
-            [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-            [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
-                                                               (list (make-binding:form #"number" xs)))))]
-            [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
-                                                   (list (make-binding:form #"number" ys)))))])
+            [r0 (call d url0 empty)]
+            [k0 (first ((sxpath "//form/@action/text()") r0))]
+            [i0 (first ((sxpath "//form/input/@name/text()") r0))]
+            [r1 (call d (format "~a?~a=~a" k0 i0 xs)
+                      (list (make-binding:form (string->bytes/utf-8 i0) xs)))]
+            [k1 (first ((sxpath "//form/@action/text()") r1))]
+            [i1 (first ((sxpath "//form/input/@name/text()") r1))]
+            [r2 (call d (format "~a?~a=~a" k1 i1 ys)
+                      (list (make-binding:form (string->bytes/utf-8 i1) ys)))]
+            [n (first ((sxpath "//p/text()") r2))])
        n)
      (format "The answer is ~a" (+ x y)))))
 

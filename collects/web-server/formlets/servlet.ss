@@ -4,15 +4,23 @@
          "lib.ss")
 
 (provide/contract
- [send/formlet ((formlet/c any/c) . -> . any/c)])
+ [send/formlet (((formlet/c any/c))
+                (#:wrap (xexpr? . -> . response?))                 
+                . ->* . any/c)])
 
-(define (send/formlet f)
+(define (send/formlet f
+                      #:wrap 
+                      [wrapper
+                       (lambda (form-xexpr)
+                         `(html (head (title "Form Entry"))
+                                (body ,form-xexpr)))])
   (formlet-process 
    f
    (send/suspend
     (lambda (k-url)
-      `(form ([action ,k-url])
-             ,@(formlet-display f))))))
+      (wrapper
+       `(form ([action ,k-url])
+              ,@(formlet-display f)))))))
 
 (provide/contract
  [embed-formlet (embed/url/c (formlet/c any/c) . -> . xexpr?)])
