@@ -23,9 +23,9 @@ generating XML. XML can be represented as an instance of the
 @scheme[document] structure type, or as a kind of S-expression that is
 called an @deftech{X-expression}.
 
-The @schememodname[xml] library does not provides Document Type
-Declaration (DTD) processing, validation, expanding user-defined
-entities, or reading user-defined entities in attributes.
+The @schememodname[xml] library does not provide Document Type
+Declaration (DTD) processing, including preservation of DTDs in read documents, or validation.
+It also does not expand user-defined entities or read user-defined entities in attributes.
 
 @; ----------------------------------------------------------------------
 
