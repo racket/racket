@@ -1108,6 +1108,7 @@ typedef struct ffi_callback_struct {
   Scheme_Object* proc;
   Scheme_Object* itypes;
   Scheme_Object* otype;
+  int call_in_scheduler;
 } ffi_callback_struct;
 #define SCHEME_FFICALLBACKP(x) (SCHEME_TYPE(x)==ffi_callback_tag)
 #undef MYNAME
@@ -2580,12 +2581,16 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
     argv = argv_stack;
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
+  if (data->call_in_scheduler)
+    scheme_start_in_scheduler();
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
     v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0);
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
   SCHEME2C(data->otype, resultp, 0, p, NULL, NULL, 1);
+  if (data->call_in_scheduler)
+    scheme_end_in_scheduler();
 }
 
 /* see ffi-callback below */
@@ -2688,6 +2693,7 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   data->proc = (argv[0]);
   data->itypes = (argv[1]);
   data->otype = (argv[2]);
+  data->call_in_scheduler = (((argc > 4) && SCHEME_TRUEP(argv[4])));
 #ifdef MZ_PRECISE_GC
   {
     /* put data in immobile, weak box */
@@ -2853,7 +2859,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("ffi-call",
     scheme_make_prim_w_arity(foreign_ffi_call, "ffi-call", 3, 4), menv);
   scheme_add_global("ffi-callback",
-    scheme_make_prim_w_arity(foreign_ffi_callback, "ffi-callback", 3, 4), menv);
+    scheme_make_prim_w_arity(foreign_ffi_callback, "ffi-callback", 3, 5), menv);
   s = scheme_intern_symbol("void");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
   t->so.type = ctype_tag;

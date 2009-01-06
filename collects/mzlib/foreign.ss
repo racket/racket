@@ -468,17 +468,20 @@
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
-                      #:abi [abi #f] #:wrapper [wrapper #f] #:keep [keep #f])
-  (_cprocedure* itypes otype abi wrapper keep))
+                      #:abi [abi #f] 
+                      #:wrapper [wrapper #f] 
+                      #:keep [keep #f]
+                      #:atomic? [atomic? #f])
+  (_cprocedure* itypes otype abi wrapper keep atomic?))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep)
+(define (_cprocedure* itypes otype abi wrapper keep atomic?)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
         (and x
-             (let ([cb (ffi-callback (wrap x) itypes otype abi)])
+             (let ([cb (ffi-callback (wrap x) itypes otype abi atomic?)])
                (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
                      [(box? keep)
                       (let ([x (unbox keep)])
@@ -514,6 +517,7 @@
   (define xs     #f)
   (define abi    #f)
   (define keep   #f)
+  (define atomic? #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -578,9 +582,10 @@
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k) (kwds [#:abi abi] [#:keep keep]))))
+        (when (keyword? k) (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?]))))
     (unless abi  (set! abi  #'#f))
     (unless keep (set! keep #'#t))
+    (unless atomic? (set! atomic? #'#f))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -671,9 +676,9 @@
                         (string->symbol (string-append "ffi-wrapper:" n)))
                        body))])
         #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                        #,abi (lambda (ffi) #,body) #,keep))
+                        #,abi (lambda (ffi) #,body) #,keep #,atomic?))
       #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                      #,abi #f #,keep)))
+                      #,abi #f #,keep #,atomic?)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 

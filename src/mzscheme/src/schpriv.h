@@ -362,6 +362,8 @@ extern mz_proc_thread *scheme_master_proc_thread;
 extern THREAD_LOCAL mz_proc_thread *proc_thread_self;
 #endif
 
+extern int scheme_no_stack_overflow;
+
 typedef struct Scheme_Thread_Set {
   Scheme_Object so;
   struct Scheme_Thread_Set *parent;

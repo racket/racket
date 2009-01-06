@@ -9,10 +9,11 @@
   unsigned long _stk_pos;
 
   _stk_pos = (unsigned long)&_stk_pos;
-  if (STK_COMP(_stk_pos, (unsigned long)SCHEME_CURRENT_PROCESS->stack_end))
+  if (STK_COMP(_stk_pos, (unsigned long)SCHEME_CURRENT_PROCESS->stack_end)
+      && !scheme_no_stack_overflow)
 #else
 # ifdef USE_STACKAVAIL
-  if (stackavail() < STACK_SAFETY_MARGIN)
+  if ((stackavail() < STACK_SAFETY_MARGIN) && !scheme_no_stack_overflow)
 # endif
 # if defined(UNIX_FIND_STACK_BOUNDS) || defined(WINDOWS_FIND_STACK_BOUNDS) \
      || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
@@ -22,7 +23,8 @@
 
   _stk_pos = (unsigned long)&_stk_pos;
 
-  if (STK_COMP(_stk_pos, SCHEME_STACK_BOUNDARY))
+  if (STK_COMP(_stk_pos, SCHEME_STACK_BOUNDARY)
+      && !scheme_no_stack_overflow)
 # endif
 #endif
 

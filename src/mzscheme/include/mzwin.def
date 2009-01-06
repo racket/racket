@@ -25,6 +25,8 @@ EXPORTS
  scheme_start_atomic
  scheme_end_atomic
  scheme_end_atomic_no_swap
+ scheme_start_in_scheduler
+ scheme_end_in_scheduler
  scheme_out_of_fuel
  scheme_thread
  scheme_thread_w_details
@@ -45,6 +47,8 @@ EXPORTS
  scheme_unless_ready
  scheme_in_main_thread
  scheme_cancel_sleep
+ scheme_start_sleeper_thread
+ scheme_end_sleeper_thread
  scheme_make_thread_cell
  scheme_thread_cell_get
  scheme_thread_cell_set

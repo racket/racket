@@ -297,6 +297,7 @@ and normally @scheme[_cprocedure] should be used instead of
 @defproc[(_cprocedure [input-types (list ctype?)]
                       [output-type ctype?]
                       [#:abi abi (or/c symbol/c #f) #f]
+                      [#:atomic? atomic? any/c #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
                       [#:keep keep (or/c boolean? box? (any/c . -> . any/c))
@@ -327,6 +328,16 @@ platform-dependent default; other possible values are
 @scheme['stdcall] and @scheme['sysv] (the latter corresponds to
 ``cdecl'').  This is especially important on Windows, where most
 system functions are @scheme['stdcall], which is not the default.
+
+If @scheme[atomic?] is true, then when a Scheme procedure is given
+this procedure type and called from foreign code, then the PLT Scheme
+virtual machine is put into atomic mode while evaluating the Scheme
+procedure body. In atomic mode, other Scheme threads cannot run, so
+the Scheme code must not call any function that potentially
+synchronizes with other threads (including I/O functions). In
+addition, the Scheme code must not raise an uncaught exception, it
+must not perform any escaping continuation jumps, and its non-tail
+recursion must be minimal to avoid C-level stack overflow.
 
 The optional @scheme[wrapper], if provided, is expected to be a
 function that can change a callout procedure: when a callout is
@@ -394,7 +405,8 @@ values: @itemize[
               (_fun fun-option ... maybe-args type-spec ... -> type-spec
                     maybe-wrapper)
               ([fun-option (code:line #:abi  abi-expr)
-                           (code:line #:keep keep-expr)]
+                           (code:line #:keep keep-expr)
+                           (code:line #:atomic? atomic?-expr)]
                [maybe-args code:blank
                            (code:line (id ...) ::)
                            (code:line id ::)
