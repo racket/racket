@@ -8391,8 +8391,12 @@ END_XFORM_SKIP;
 
 #else
 
-void scheme_start_sleeper_thread(void *fds, int hit_fd);
-void scheme_end_sleeper_thread();
+void scheme_start_sleeper_thread(void (*given_sleep)(float seconds, void *fds), float secs, void *fds, int hit_fd)
+{
+}
+void scheme_end_sleeper_thread()
+{
+}
 
 #endif
 
