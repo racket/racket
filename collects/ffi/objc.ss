@@ -364,7 +364,7 @@
                                 ;; Given a dealloc extension:
                                 #'()
                                 ;; Need to add one explicitly:
-                                #'((- _void (dealloc) (void)))))])
+                                #'((-a _void (dealloc) (void)))))])
            (syntax/loc stx
              (begin
                (define superclass-id superclass)
@@ -454,10 +454,13 @@
        (syntax-case #'m ()
          [(kind result-type (id arg ...) body0 body ...)
           (or (free-identifier=? #'kind #'+)
-              (free-identifier=? #'kind #'-))
+              (free-identifier=? #'kind #'-)
+              (free-identifier=? #'kind #'+a)
+              (free-identifier=? #'kind #'-a))
           (let ([id #'id]
                 [args (syntax->list #'(arg ...))]
-                [in-class? (free-identifier=? #'kind #'+)])
+                [in-class? (or (free-identifier=? #'kind #'+)
+                               (free-identifier=? #'kind #'+a))])
             (when (null? args)
               (unless (identifier? id)
                 (raise-syntax-error #f
@@ -485,7 +488,9 @@
                                  '())]
                             [in-cls (if in-class?
                                         #'(object_getClass cls)
-                                        #'cls)])
+                                        #'cls)]
+                            [atomic? (or (free-identifier=? #'kind #'+a)
+                                         (free-identifier=? #'kind #'-a))])
                 (syntax/loc stx
                   (let ([rt result-type]
                         [arg-id arg-type] ...)
@@ -498,7 +503,7 @@
                                                                     [super-tell do-super-tell])
                                                 body0 body ...
                                                 dealloc-body ...)))
-                                           (_fun _id _id arg-type ... -> rt)
+                                           (_fun #:atomic? atomic? _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [else (raise-syntax-error #f
                                    "bad method form"

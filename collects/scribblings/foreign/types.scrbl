@@ -334,7 +334,7 @@ this procedure type and called from foreign code, then the PLT Scheme
 process is put into atomic mode while evaluating the Scheme procedure
 body. In atomic mode, other Scheme threads do not run, so the Scheme
 code must not call any function that potentially synchronizes with
-other threads, otherwise it may deadlock. In addition, the Scheme code
+other threads, or else it may deadlock. In addition, the Scheme code
 must not perform any potentially blocking operation (such as I/O), it
 must not raise an uncaught exception, it must not perform any escaping
 continuation jumps, and its non-tail recursion must be minimal to

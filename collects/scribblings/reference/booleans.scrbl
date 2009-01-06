@@ -128,7 +128,9 @@ type. The property value must be a list of three procedures:
         @scheme[equal?] to ensure that data cycles are handled
         properly and to work with @scheme[equal?/recur] (but beware
         that an arbitrary function can be provided to
-        @scheme[equal?/recur]).
+        @scheme[equal?/recur] for recursive checks, which means that
+        arguments provided to the predicate might be exposed to
+        arbitrary code).
 
         The @scheme[_equal-proc] is called for a pair of structures
         only when they are not @scheme[eq?], and only when they both

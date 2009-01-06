@@ -118,13 +118,13 @@ Defines each @scheme[class-id] to the class (a value with FFI type
 (eval:alts (import-class NSString) (void))
 ]}
 
-@defform/subs[#:literals (+ -)
+@defform/subs[#:literals (+ - +a -a)
               (define-objc-class class-id superclass-expr
                 [field-id ...]
                 method)
               ([method (mode result-ctype-expr (method-id) body ...+)
                        (mode result-ctype-expr (arg ...+) body ...+)]
-               [mode + -]
+               [mode + - +a -a]
                [arg (code:line method-id [ctype-expr arg-id])])]{
 
 Defines @scheme[class-id] as a new, registered Objective-C class (of
@@ -138,10 +138,12 @@ directly when the method @scheme[body]s. Outside the object, they can
 be referenced and set with @scheme[get-ivar] and @scheme[set-ivar!].
 
 Each @scheme[method] adds or overrides a method to the class (when
-@scheme[mode] is @scheme[-]) to be called on instances, or it adds a
-method to the meta-class (when @scheme[mode] is @scheme[+]) to be
-called on the class itself. All result and argument types must be
-declared using FFI C types (@seeCtype).
+@scheme[mode] is @scheme[-] or @scheme[-a]) to be called on instances,
+or it adds a method to the meta-class (when @scheme[mode] is
+@scheme[+] or @scheme[+a]) to be called on the class itself. All
+result and argument types must be declared using FFI C types
+(@seeCtype). When @scheme[mode] is @scheme[+a] or @scheme[-a], the
+method is called in atomic mode (see @scheme[_cprocedure]).
 
 If a @scheme[method] is declared with a single @scheme[method-id] and
 no arguments, then @scheme[method-id] must not end with
