@@ -331,13 +331,15 @@ system functions are @scheme['stdcall], which is not the default.
 
 If @scheme[atomic?] is true, then when a Scheme procedure is given
 this procedure type and called from foreign code, then the PLT Scheme
-virtual machine is put into atomic mode while evaluating the Scheme
-procedure body. In atomic mode, other Scheme threads cannot run, so
-the Scheme code must not call any function that potentially
-synchronizes with other threads (including I/O functions). In
-addition, the Scheme code must not raise an uncaught exception, it
-must not perform any escaping continuation jumps, and its non-tail
-recursion must be minimal to avoid C-level stack overflow.
+process is put into atomic mode while evaluating the Scheme procedure
+body. In atomic mode, other Scheme threads do not run, so the Scheme
+code must not call any function that potentially synchronizes with
+other threads, otherwise it may deadlock. In addition, the Scheme code
+must not perform any potentially blocking operation (such as I/O), it
+must not raise an uncaught exception, it must not perform any escaping
+continuation jumps, and its non-tail recursion must be minimal to
+avoid C-level stack overflow; otherwise, the process may crash or
+misbehave.
 
 The optional @scheme[wrapper], if provided, is expected to be a
 function that can change a callout procedure: when a callout is
