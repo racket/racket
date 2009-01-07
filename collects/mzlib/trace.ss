@@ -4,19 +4,16 @@
            (for-syntax scheme/base))
 
   (provide trace untrace
+           current-trace-print-args trace-apply
            current-trace-notify)
 
   (define max-dash-space-depth 10)
   (define number-nesting-depth 6)
 
-  (define as-spaces
-    (lambda (s)
-      (let ((n (string-length s)))
-	(apply string-append
-	       (let loop ((k n))
-		 (if (zero? k) '("")
-		     (cons " " (loop (sub1 k)))))))))
-
+  (define (as-spaces s)
+    (build-string (string-length s)
+                  (lambda (i) #\space)))
+  
   (define-struct prefix-entry (for-first for-rest))
 
   (define prefixes (make-vector 20 #f))
@@ -101,28 +98,29 @@
     (lambda (name args kws kw-vals level)
       (as-trace-notify
        (lambda ()
-         (trace-print-args name args kws kw-vals level)))))
+         ((current-trace-print-args) name args kws kw-vals level)))))
 
-  (define trace-print-args
-    (lambda (name args kws kw-vals level)
-      (let-values (((first rest)
-		    (build-prefixes level)))
-	(parameterize ((pretty-print-print-line
-			(lambda (n port offset width)
-			  (display
-			   (if n
-			       (if (zero? n) first
-				   (format "~n~a" rest))
-			       (format "~n"))
-			   port)
-			  (if n
-			      (if (zero? n)
-				  (string-length first)
-				  (string-length rest))
-			      0))))
-	  (pretty-print (append (cons name args)
-                                (apply append (map list kws kw-vals))))))))
-
+  (define current-trace-print-args
+    (make-parameter
+     (lambda (name args kws kw-vals level)
+       (let-values (((first rest)
+                     (build-prefixes level)))
+         (parameterize ((pretty-print-print-line
+                         (lambda (n port offset width)
+                           (display
+                            (if n
+                                (if (zero? n) first
+                                    (format "~n~a" rest))
+                                (format "~n"))
+                            port)
+                           (if n
+                               (if (zero? n)
+                                   (string-length first)
+                                   (string-length rest))
+                               0))))
+           (pretty-print (append (cons name args)
+                                 (apply append (map list kws kw-vals)))))))))
+  
   (define -:trace-print-results
     (lambda (name results level)
       (as-trace-notify
@@ -197,6 +195,8 @@
   ;;  the nesting depth:
   (define -:trace-level-key (gensym))
 
+  (define (trace-apply id f kws kw-vals . args) (do-traced id args kws kw-vals f))
+  
   ;; Apply a traced procedure to arguments, printing arguments
   ;; and results. We set and inspect the -:trace-level-key continuation
   ;; mark a few times to detect tail calls.
