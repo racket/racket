@@ -149,10 +149,12 @@
   ;; only changed on the reduction thread
   ;; frontier : (listof (is-a?/c graph-editor-snip%))
   (define frontier 
-    (map (lambda (expr) (build-snip snip-cache #f expr pred pp 
-                                    (dark-pen-color) (light-pen-color)
-                                    (dark-text-color) (light-text-color) #f))
-         exprs))
+    (filter
+     (λ (x) x)
+     (map (lambda (expr) (build-snip snip-cache #f expr pred pp 
+                                     (dark-pen-color) (light-pen-color)
+                                     (dark-text-color) (light-text-color) #f))
+          exprs)))
   
   ;; set-font-size : number -> void
   ;; =eventspace main thread=
@@ -516,16 +518,15 @@
 (define (build-snip cache parent-snip expr pred pp light-arrow-color dark-arrow-color dark-label-color light-label-color name)
   (let-values ([(snip new?)
                 (let/ec k
-                  (k
-                   (hash-ref
-                    cache
-                    expr
-                    (lambda ()
-                      (let ([new-snip (make-snip parent-snip expr pred pp)])
-                        (hash-set! cache expr new-snip)
-                        (k new-snip #t))))
-                   #f))])
-    
+                  (values (hash-ref
+                           cache
+                           expr
+                           (lambda ()
+                             (let ([new-snip (make-snip parent-snip expr pred pp)])
+                               (hash-set! cache expr new-snip)
+                               (k new-snip #t))))
+                          #f))])
+
     (when parent-snip
       (send snip record-edge-label parent-snip name)
       (add-links/text-colors parent-snip snip

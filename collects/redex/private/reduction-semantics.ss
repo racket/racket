@@ -5,6 +5,7 @@
          "term.ss"
          "loc-wrapper.ss"
 	 "error.ss"
+         mzlib/trace
          (lib "list.ss")
          (lib "etc.ss"))
 
@@ -1164,20 +1165,31 @@
                                                 `(,name ,@exp)
                                                 (length mtchs))]
                                   [else
-                                   (let ([ans (rhs metafunc (mtch-bindings (car mtchs)))])
+                                   (let ([ans (rhs traced-metafunc (mtch-bindings (car mtchs)))])
                                      (unless (match-pattern codom-compiled-pattern ans)
                                        (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
                                      (hash-set! cache exp ans)
                                      ans)])))]))]
                       [else 
-                       cache-ref])))])
-        metafunc)
+                       cache-ref])))]
+               [ot (current-trace-print-args)]
+               [traced-metafunc (lambda (exp)
+                                  (if (or (eq? (current-traced-metafunctions) 'all)
+                                          (memq name (current-traced-metafunctions)))
+                                      (parameterize ([current-trace-print-args
+                                                      (λ (name args kws kw-args level)
+                                                        (ot name (car args) kws kw-args level))])
+                                        (trace-apply name metafunc '() '() exp))
+                                      (metafunc exp)))])
+        traced-metafunc)
       compiled-patterns
       rhss)
      (if dom-compiled-pattern
          (λ (exp) (and (match-pattern dom-compiled-pattern exp) #t))
          (λ (exp) (and (ormap (λ (pat) (match-pattern pat exp)) compiled-patterns) 
                        #t))))))
+
+(define current-traced-metafunctions (make-parameter '()))
 
 (define-syntax (metafunction-form stx)
   (syntax-case stx ()
@@ -1788,6 +1800,7 @@
          (rename-out [metafunction-form metafunction])
          metafunction? metafunction-proc
          in-domain?
+         current-traced-metafunctions
          metafunc-proc-lang
          metafunc-proc-pict-info
          metafunc-proc-name

@@ -30,7 +30,6 @@
          define-metafunction/extension
          metafunction
          in-domain?
-         
          caching-enabled?)
 
 (provide (rename-out [test-match redex-match])
@@ -45,6 +44,7 @@
          test-results)
 
 (provide/contract
+ [current-traced-metafunctions (parameter/c (or/c 'all (listof symbol?)))]
  [reduction-relation->rule-names (-> reduction-relation? (listof symbol?))]
  [language-nts (-> compiled-lang? (listof symbol?))]
  [set-cache-size! (-> number? void?)]

@@ -944,6 +944,16 @@ legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
 }
 
+@defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{
+
+Controls which metafunctions are currently being traced. If it is
+@scheme['all], all of them are. Otherwise, the elements of the list
+name the metafunctions to trace. 
+
+Defaults to @scheme['()].
+
+}
+
 @section{Testing}
 
 All of the exports in this section are provided both by

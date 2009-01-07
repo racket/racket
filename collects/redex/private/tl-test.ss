@@ -507,6 +507,29 @@
             'no-exn)
           'no-exn))
     
+  ;; test that tracing works properly
+  ;; note that caching comes into play here (which is why we don't see the recursive calls)
+  (let ()
+    (define-metafunction empty-language
+      [(f 0) 0]
+      [(f number) (f ,(- (term number) 1))])
+    
+    (let ([sp (open-output-string)])
+      (parameterize ([current-output-port sp])
+        (term (f 1)))
+      (test (get-output-string sp) ""))
+    
+    (let ([sp (open-output-string)])
+      (parameterize ([current-output-port sp]
+                     [current-traced-metafunctions 'all])
+        (term (f 1)))
+      (test (get-output-string sp) "|(f 1)\n|0\n"))
+    
+    (let ([sp (open-output-string)])
+      (parameterize ([current-output-port sp]
+                     [current-traced-metafunctions '(f)])
+        (term (f 1)))
+      (test (get-output-string sp) "|(f 1)\n|0\n")))
   
 
 ;                                                                                                                                
