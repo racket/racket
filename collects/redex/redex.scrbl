@@ -328,16 +328,28 @@ clause is followed by an ellipsis.  Nested ellipses produce
 nested lists.
 }
 
-@defproc[(set-cache-size! [size (or/c false/c positive-integer?)]) void?]{
+@defproc[(set-cache-size! [size positive-integer?]) void?]{
 
-Changes the cache size; a #f disables the cache
-entirely. The default size is 350.
+Changes the cache size; the default size is @scheme[350].
 
-The cache is per-pattern (ie, each pattern has a cache of
-size at most 350 (by default)) and is a simple table that
-maps expressions to how they matched the pattern. When the
-cache gets full, it is thrown away and a new cache is
-started.
+The cache is per-pattern (ie, each pattern has a cache of size at most
+350 (by default)) and is a simple table that maps expressions to how
+they matched the pattern (ie, the bindings for the pattern
+variables). When the cache gets full, it is thrown away and a new
+cache is started.
+}
+
+@defparam[caching-enabled? on? boolean?]{
+  This is a parameter that controls whether or not a cache
+  is consulted (and updated) while matching and while evaluating
+  metafunctions.
+
+  If it is @scheme[#t], then side-conditions and the right-hand sides
+  of metafunctions are assumed to only depend on the values of the
+  pattern variables in scope (and thus not on any other external
+  state).
+
+  Defaults to @scheme[#t].
 }
 
 @section{Terms}
@@ -859,7 +871,8 @@ no clauses match, if one of the clauses matches multiple ways, or
 if the contract is violated.
 
 Note that metafunctions are assumed to always return the same results
-for the same inputs, and their results are cached. Accordingly, if a
+for the same inputs, and their results are cached, unless
+@scheme[caching-enable?] is set to @scheme[#f]. Accordingly, if a
 metafunction is called with the same inputs twice, then its body is
 only evaluated a single time.
 

@@ -195,6 +195,45 @@
           #t))
   
   
+  ;; test caching
+  (let ()
+    (define match? #t)
+    
+    (define-language lang
+      (x (side-condition any match?)))
+    
+    (test (pair? (redex-match lang x 1)) #t)
+    (set! match? #f)
+    (test (pair? (redex-match lang x 1)) #t)
+    (parameterize ([caching-enabled? #f])
+      (test (pair? (redex-match lang x 1)) #f)))
+  
+  
+  (let ()
+    (define sc-eval-count 0)
+    (define-language lang
+      (x (side-condition any (begin (set! sc-eval-count (+ sc-eval-count 1))
+                                    #t))))
+    
+    (redex-match lang x 1)
+    (redex-match lang x 1)
+    (parameterize ([caching-enabled? #f])
+      (redex-match lang x 1))
+    (test sc-eval-count 2))
+  
+  (let ()
+    (define rhs-eval-count 0)
+    (define-metafunction empty-language
+      [(f any) ,(begin (set! rhs-eval-count (+ rhs-eval-count 1))
+                       1)])
+    
+    (term (f 1))
+    (term (f 1))
+    (parameterize ([caching-enabled? #f])
+      (term (f 1)))
+    (test rhs-eval-count 2))
+  
+  
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        

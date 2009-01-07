@@ -29,7 +29,9 @@
          define-metafunction
          define-metafunction/extension
          metafunction
-         in-domain?)
+         in-domain?
+         
+         caching-enabled?)
 
 (provide (rename-out [test-match redex-match])
          term-match

@@ -1136,7 +1136,7 @@
                 (λ (exp)
                   (let ([cache-ref (hash-ref cache exp not-in-cache)])
                     (cond
-                      [(eq? cache-ref not-in-cache)
+                      [(or (not (caching-enabled?)) (eq? cache-ref not-in-cache))
                        (when dom-compiled-pattern
                          (unless (match-pattern dom-compiled-pattern exp)
                            (redex-error name
