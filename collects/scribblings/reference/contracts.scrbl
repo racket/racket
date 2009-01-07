@@ -81,6 +81,13 @@ Takes any number of predicates and higher-order contracts and returns
 a contract that accepts any value that any one of the contracts
 accepts, individually.
 
+The @scheme[or/c] result tests any value by applying the contracts in
+order, from left to right, with the exception that it always moves the
+non-@tech{flat contracts} (if any) to the end, checking them
+last. Thus, a contract such as @scheme[(or/c (not/c real?) 
+positive?)] is guaranteed to only invoke the @scheme[positive?] 
+predicate on real numbers.
+
 If all of the arguments are procedures or @tech{flat contracts}, the
 result is a @tech{flat contract}. If only one of the arguments is a
 higher-order contract, the result is a contract that just checks the
@@ -95,11 +102,16 @@ calls @scheme[contract-first-order-passes?] with each of the
 higher-order contracts. If only one returns true, @scheme[or/c] uses
 that contract. If none of them return true, it signals a contract
 violation. If more than one returns true, it signals an error
-indicating that the @scheme[or/c] contract is malformed.
-
-The @scheme[or/c] result tests any value by applying the contracts in
-order, from left to right, with the exception that it always moves the
-non-@tech{flat contracts} (if any) to the end, checking them last.}
+indicating that multiple branches of the @scheme[or/c] each might
+apply to the value. For example, this contract
+@schemeblock[
+(or/c (-> number? number?)
+      (-> string? string? string?))
+]
+cannot accept a function like this one: @scheme[(lambda args ...)] 
+since it cannot tell which of the two arrow contracts should be used
+with the function.
+}
  
 @defproc[(and/c [contract (or/c contract? (any/c . -> . any/c))] ...)
          contract?]{
