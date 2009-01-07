@@ -655,25 +655,11 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 (defctype 'string/ucs-4
   'ftype "pointer"
   'ctype "mzchar*"
-  'pred  "SCHEME_CHAR_STRINGP"
-  's->c  "SCHEME_CHAR_STR_VAL"
-  'c->s  "scheme_make_char_string_without_copying")
-
-(defctype 'string/ucs-4/null
-  'ftype "pointer"
-  'ctype "mzchar*"
   'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"
   's->c  "ucs4_string_or_null_to_ucs4_pointer"
   'c->s  "scheme_make_char_string_without_copying")
 
 (defctype 'string/utf-16
-  'ftype "pointer"
-  'ctype "unsigned short*"
-  'pred  "SCHEME_CHAR_STRINGP"
-  's->c  "ucs4_string_to_utf16_pointer"
-  'c->s  "utf16_pointer_to_ucs4_string")
-
-(defctype 'string/utf-16/null
   'ftype "pointer"
   'ctype "unsigned short*"
   'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"

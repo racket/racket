@@ -695,9 +695,8 @@
 ;; String types
 
 ;; The internal _string type uses the native ucs-4 encoding, also providing a
-;; utf-16 type (note: the non-/null variants do not use #f as NULL).
-(provide _string/ucs-4 _string/utf-16
-         _string/ucs-4/null _string/utf-16/null)
+;; utf-16 type
+(provide _string/ucs-4 _string/utf-16)
 
 ;; 8-bit string encodings, #f is NULL
 (define ((false-or-op op) x) (and x (op x)))
