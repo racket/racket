@@ -101,14 +101,14 @@ checks all of the @tech{flat contracts}. If none of them pass, it
 calls @scheme[contract-first-order-passes?] with each of the
 higher-order contracts. If only one returns true, @scheme[or/c] uses
 that contract. If none of them return true, it signals a contract
-violation. If more than one returns true, it signals an error
-indicating that multiple branches of the @scheme[or/c] each might
-apply to the value. For example, this contract
+violation. If more than one returns true, it also signals a contract
+violation.
+For example, this contract
 @schemeblock[
 (or/c (-> number? number?)
       (-> string? string? string?))
 ]
-cannot accept a function like this one: @scheme[(lambda args ...)] 
+does not accept a function like this one: @scheme[(lambda args ...)] 
 since it cannot tell which of the two arrow contracts should be used
 with the function.
 }

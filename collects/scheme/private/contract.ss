@@ -966,13 +966,15 @@ improve method arity mismatch contract violation error messages?
                   (if candidate-proc
                       (candidate-proc val)
                       (raise-contract-error val src-info pos-blame orig-str 
-                                            "none of the branches of the or/c matched"))]
+                                            "none of the branches of the or/c matched, given ~e"
+                                            val))]
                  [((car checks) val)
                   (if candidate-proc
-                      (error 'or/c "two arguments, ~s and ~s, might both match ~s"
-                             (contract-name candidate-contract)
-                             (contract-name (car contracts))
-                             val)
+                      (raise-contract-error val src-info pos-blame orig-str
+                                            "two of the clauses in the or/c might both match: ~s and ~s, given ~e"
+                                            (contract-name candidate-contract)
+                                            (contract-name (car contracts))
+                                            val)
                       (loop (cdr checks)
                             (cdr procs)
                             (cdr contracts)
