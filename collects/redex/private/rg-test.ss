@@ -155,6 +155,12 @@
           (define next-any-decision (decision any))
           (define next-sequence-decision (decision seq)))))
 
+(define-syntax generate-term/decisions
+  (syntax-rules ()
+    [(_ lang pat size attempt decisions)
+     (parameterize ([generation-decisions decisions])
+       (generate-term lang pat size #:attempt attempt))]))
+
 (let ()
   (define-language lc
     (e (e e) x (λ (x) e))
@@ -162,7 +168,7 @@
   
   ;; Generate (λ (x) x)
   (test 
-   (generate-term 
+   (generate-term/decisions 
     lc e 1 0
     (decisions #:var (list (λ _ 'x) (λ _'x))
                #:nt (patterns third first first first)))
@@ -170,14 +176,14 @@
   
   ;; Generate pattern that's not a non-terminal
   (test 
-   (generate-term 
+   (generate-term/decisions 
     lc (x x x_1 x_1) 1 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y)))) 
    '(x x y y))
   
   ; After choosing (e e), size decremented forces each e to x.
   (test
-   (generate-term 
+   (generate-term/decisions 
     lc e 1 0
     (decisions #:nt (patterns first)
                #:var (list (λ _ 'x) (λ _ 'y))))
@@ -193,7 +199,9 @@
   (let* ([x null]
          [prepend! (λ (c l b a) (begin (set! x (cons (car b) x)) 'x))])
     (test (begin
-            (generate-term lang a 5 0 (decisions #:var (list (λ _ 'x) prepend! prepend!)))
+            (generate-term/decisions
+             lang a 5 0
+             (decisions #:var (list (λ _ 'x) prepend! prepend!)))
             x)
           '(x x))))
 
@@ -204,7 +212,7 @@
     (x (variable-except λ)))
   (test 
    (exn:fail-message 
-     (generate-term 
+     (generate-term/decisions 
       postfix e 2 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y))
                  #:nt (patterns third second first first))))
@@ -215,7 +223,7 @@
   (define-language var
     (e (variable-except x y)))
   (test
-   (generate-term
+   (generate-term/decisions
     var e 2 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
    'z))
@@ -232,26 +240,28 @@
     (n number)
     (z 4))
   (test
-   (generate-term 
+   (generate-term/decisions 
     lang a 2 0
     (decisions #:num (build-list 3 (λ (n) (λ (_) n)))
                #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 1))))
    `(0 1 2 "foo" "foo" "foo" "bar" #t))
-  (test (generate-term lang b 5 0 (decisions #:seq (list (λ (_) 0))))
+  (test (generate-term/decisions lang b 5 0 (decisions #:seq (list (λ (_) 0))))
         null)
-  (test (generate-term lang c 5 0 (decisions #:seq (list (λ (_) 0))))
+  (test (generate-term/decisions lang c 5 0 (decisions #:seq (list (λ (_) 0))))
         null)
-  (test (generate-term lang d 5 0 (decisions #:seq (list (λ (_) 2))))
+  (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
   (test (exn:fail-message (generate-term lang e 5)) 
         #rx"generate: unable to generate pattern e")
-  (test (generate-term lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
-  (test (generate-term lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
-                  (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 4)
-                                         (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 1) (λ (_) 3))))
+  (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
+  (test (generate-term/decisions 
+         lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+         (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 4)
+                                (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 1) (λ (_) 3))))
         '((0 0 0) (0 0 0 0) (1 1 1)))
-  (test (generate-term lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
-                  (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 5))))
+  (test (generate-term/decisions 
+         lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
+         (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4) (λ (_) 2) (λ (_) 3) (λ (_) 5))))
         '((0 0 0) (0 0 0 0) (1 1 1) (1 1 1 1 1))))
 
 (let ()
@@ -264,7 +274,7 @@
   ;; x and y bound in body
   (test 
    (let/ec k 
-     (generate-term 
+     (generate-term/decisions 
       lc e 10 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b)))
                  #:nt (patterns first first first third first)
@@ -274,7 +284,7 @@
 (let ()
   (define-language lang (e (variable-prefix pf)))
   (test 
-   (generate-term
+   (generate-term/decisions
     lang e 5 0
     (decisions #:var (list (λ _ 'x))))
    'pfx))
@@ -288,7 +298,7 @@
   (define-language lang
     (e number (e_1 e_2 e e_1 e_2)))
   (test
-   (generate-term
+   (generate-term/decisions
     lang e 5 0
     (decisions #:nt (patterns second first first first)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
@@ -300,7 +310,7 @@
     (x variable))
   (test
    (let/ec k
-     (generate-term
+     (generate-term/decisions
       lang e 5 0
       (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
    '(x)))
@@ -311,12 +321,12 @@
     (b (c_!_1 c_!_1 c_!_1))
     (c 1 2))
   (test
-   (generate-term
+   (generate-term/decisions
     lang a 5 0
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
   (test
-   (generate-term
+   (generate-term/decisions
     lang (number_!_1 number_!_2 number_!_1) 5 0
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
@@ -330,7 +340,7 @@
     (f foo bar))
   (test
    (let/ec k 
-     (generate-term 
+     (generate-term/decisions 
       lang e 5 0 
       (decisions #:str (list (λ (c l a) (k (cons (sort c char<=?) (sort l string<=?))))))))
    (cons '(#\a #\b #\f #\o #\r)
@@ -350,24 +360,26 @@
         #rx"unable to generate")
   (test ; binding works for with side-conditions failure/retry
    (let/ec k
-     (generate-term
+     (generate-term/decisions
       lang d 5 0
       (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b))))))
    '(y))
   (test ; mismatch patterns work with side-condition failure/retry
-   (generate-term
+   (generate-term/decisions
     lang e 5 0
     (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'x) (λ _ 'y))))
    '(y x y))
   (test ; generate compiles side-conditions in pattern
-   (generate-term lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
-             (decisions #:var (list (λ _ 'x) (λ _ 'y))))
+   (generate-term/decisions 
+    lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
+    (decisions #:var (list (λ _ 'x) (λ _ 'y))))
    'y)
   (test ; bindings within ellipses collected properly
    (let/ec k
-     (generate-term lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
-               (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4))
-                          #:num (build-list 7 (λ (n) (λ (_) n))))))
+     (generate-term/decisions 
+      lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
+      (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4))
+                 #:num (build-list 7 (λ (n) (λ (_) n))))))
    '((0 1 2) (3 4 5 6))))
 
 (let ()
@@ -397,7 +409,7 @@
     (y variable))
   
   (test 
-   (generate-term 
+   (generate-term/decisions 
     lang (in-hole A number ) 5 0
     (decisions 
      #:nt (patterns second second first first third first second first first)
@@ -406,19 +418,22 @@
   
   (test (generate-term lang (in-hole (in-hole (1 hole) hole) 5) 5) '(1 5))
   (test (generate-term lang (hole 4) 5) (term (hole 4)))
-  (test (generate-term lang (variable_1 (in-hole C variable_1)) 5 0
-                  (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
+  (test (generate-term/decisions 
+         lang (variable_1 (in-hole C variable_1)) 5 0
+         (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
         '(x x))
-  (test (generate-term lang (variable_!_1 (in-hole C variable_!_1)) 5 0
-                  (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'x) (λ _ 'y))))
+  (test (generate-term/decisions 
+         lang (variable_!_1 (in-hole C variable_!_1)) 5 0
+         (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'x) (λ _ 'y))))
         '(x y))
-  (test (let/ec k (generate-term lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
+  (test (let/ec k 
+          (generate-term/decisions lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
         '(x))
-  (test (generate-term lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
+  (test (generate-term/decisions lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
         '((2 (1 1)) 1))
-  (test (generate-term lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
+  (test (generate-term/decisions lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
         '(1 0))
-  (test (generate-term lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
+  (test (generate-term/decisions lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
         '((2 ((3 (2 1)) 3)) 1)))
 
 (let ()
@@ -426,7 +441,7 @@
       (e (e e) (+ e e) x v)
       (v (λ (x) e) number)
       (x variable-not-otherwise-mentioned))
-  (test (generate-term lc x 5 0 (decisions #:var (list (λ _ 'λ) (λ _ '+) (λ _ 'x))))
+  (test (generate-term/decisions lc x 5 0 (decisions #:var (list (λ _ 'λ) (λ _ '+) (λ _ 'x))))
         'x))
 
 (let ()
@@ -436,19 +451,24 @@
   (define-language empty)
   
   ;; `any' pattern
-  (test (call-with-values (λ () (pick-any four (make-random 0 1))) list)
-        (list four 'f))
-  (test (call-with-values (λ () (pick-any four (make-random 1))) list)
-        (list sexp 'sexp))
-  (test (generate-term four any 5 0 (decisions #:any (list (λ _ (values four 'e))))) 4)
-  (test (generate-term four any 5 0 
-                  (decisions #:any (list (λ _ (values sexp 'sexp)))
-                             #:nt (patterns fifth second second second)
-                             #:seq (list (λ _ 3))
-                             #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
+  (let ([four (prepare-lang four)]
+        [sexp (prepare-lang sexp)])
+    (test (call-with-values (λ () (pick-any four sexp (make-random 0 1))) list)
+          (list four 'f))
+    (test (call-with-values (λ () (pick-any four sexp (make-random 1))) list)
+          (list sexp 'sexp)))
+  (test (generate-term/decisions 
+         four any 5 0 (decisions #:any (list (λ (lang sexp) (values lang 'e))))) 4)
+  (test (generate-term/decisions
+         four any 5 0 
+         (decisions #:any (list (λ (lang sexp) (values sexp 'sexp)))
+                    #:nt (patterns fifth second second second)
+                    #:seq (list (λ _ 3))
+                    #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
         '("foo" "bar" "baz"))
-  (test (generate-term empty any 5 0 (decisions #:nt (patterns first)
-                                                     #:var (list (λ _ 'x))))
+  (test (generate-term/decisions
+         empty any 5 0 (decisions #:nt (patterns first)
+                                  #:var (list (λ _ 'x))))
         'x))
 
 ;; `hide-hole' pattern
@@ -469,15 +489,16 @@
     (e x (e e) v)
     (v (λ (x) e))
     (x variable-not-otherwise-mentioned))
-  (test (generate-term lang (cross e) 3 0 
-                  (decisions #:nt (patterns fourth first first second first first first)
-                             #:var (list (λ _ 'x) (λ _ 'y))))
+  (test (generate-term/decisions
+         lang (cross e) 3 0 
+         (decisions #:nt (patterns fourth first first second first first first)
+                    #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
 
-;; current-error-port-output : (-> (-> any) string)
-(define (current-error-port-output thunk)
+;; current-output : (-> (-> any) string)
+(define (current-output thunk)
   (let ([p (open-output-string)])
-    (parameterize ([current-error-port p])
+    (parameterize ([current-output-port p])
       (thunk))
     (begin0
       (get-output-string p)
@@ -487,16 +508,78 @@
 (let ()
   (define-language lang
     (d 5)
-    (e e 4))
-  (test (current-error-port-output (λ () (check lang d 2 #f))) 
-        "failed after 1 attempts:\n5\n")
+    (e e 4)
+    (n number))
+  (test (current-output (λ () (check lang d #f))) 
+        "counterexample found after 1 attempts:\n5\n")
   (test (check lang d #t) #t)
-  (test (check lang (d e) 2 (and (eq? (term d) 5) (eq? (term e) 4))) #t)
-  (test (check lang (d ...) 2 (zero? (modulo (foldl + 0 (term (d ...))) 5))) #t)
-  (test (current-error-port-output (λ () (check lang (d e) 2 #f)))
-        "failed after 1 attempts:\n(5 4)\n")
-  (test (current-error-port-output (λ () (check lang d 2 (error 'pred-raised))))
-        "failed after 1 attempts:\n5\n"))
+  (test (check lang (d e) (and (eq? (term d) 5) (eq? (term e) 4)) #:attempts 2) #t)
+  (test (check lang (d ...) (zero? (modulo (foldl + 0 (term (d ...))) 5)) #:attempts 2) #t)
+  (test (current-output (λ () (check lang (d e) #f)))
+        "counterexample found after 1 attempts:\n(5 4)\n")
+  (test (current-output (λ () (check lang d (error 'pred-raised))))
+        "counterexample found after 1 attempts:\n5\n")
+  (test (parameterize ([check-randomness (make-random 0 0)])
+          (check lang n (eq? 42 (term n)) 
+                 #:attempts 1
+                 #:source (reduction-relation lang (--> 42 x))))
+        #t)
+  (test (current-output
+         (λ ()
+           (parameterize ([check-randomness (make-random 0 0)])
+             (check lang n (eq? 42 (term n)) 
+                    #:attempts 1
+                    #:source (reduction-relation lang (--> 0 x z))))))
+        "counterexample found (z) after 1 attempts:\n0\n")
+  (test (current-output
+         (λ ()
+           (parameterize ([check-randomness (make-random 1)])
+             (check lang d (eq? 42 (term n)) 
+                    #:attempts 1
+                    #:source (reduction-relation lang (--> 0 x z))))))
+        "counterexample found after 1 attempts:\n5\n")
+  (test (let ([r (reduction-relation lang (--> 0 x z))])
+          (check lang n (number? (term n)) 
+                 #:attempts 10
+                 #:source r))
+        #t)
+  (let ()
+    (define-metafunction lang
+      [(mf 0) 0]
+      [(mf 42) 0])
+    (test (parameterize ([check-randomness (make-random 0 1)])
+            (check lang (n) (eq? 42 (term n)) 
+                   #:attempts 1
+                   #:source mf))
+          #t))
+  (let ()
+    (define-language L)
+    (test (with-handlers ([exn:fail? exn-message])
+            (check lang any #t #:source (reduction-relation L (--> 1 1))))
+          #rx"language for secondary source"))
+  (let ()
+    (test (with-handlers ([exn:fail? exn-message])
+            (check lang n #t #:source (reduction-relation lang (--> x 1))))
+          #rx"x does not match n"))
+  
+  (let ([stx-err (λ (stx)
+                   (with-handlers ([exn:fail:syntax? exn-message])
+                     (expand stx)
+                     'no-syntax-error))])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(require "../reduction-semantics.ss"
+                      "rg.ss"))
+      (eval '(define-language empty))
+      (test (stx-err '(check empty any #t #:typo 3))
+            #rx"check: bad keyword syntax")
+      (test (stx-err '(check empty any #t #:attempts 3 #:attempts 4))
+            #rx"bad keyword syntax")
+      (test (stx-err '(check empty any #t #:attempts))
+            #rx"bad keyword syntax")
+      (test (stx-err '(check empty any #t #:attempts 3 4))
+            #rx"bad keyword syntax")
+      (test (stx-err '(check empty any #t #:source #:attempts))
+            #rx"bad keyword syntax"))))
 
 ;; check-metafunction-contract
 (let ()
@@ -518,22 +601,31 @@
     [(i any ...) (any ...)])
   
   ;; Dom(f) < Ctc(f)
-  (test (current-error-port-output 
-         (λ () (check-metafunction-contract f (decisions #:num (list (λ _ 2) (λ _ 5))))))
-        "failed after 1 attempts:\n(5)\n")
+  (test (current-output 
+         (λ () 
+           (parameterize ([generation-decisions 
+                           (decisions #:num (list (λ _ 2) (λ _ 5)))])
+             (check-metafunction-contract f))))
+        "counterexample found after 1 attempts:\n(5)\n")
   ;; Rng(f) > Codom(f)
-  (test (current-error-port-output
-         (λ () (check-metafunction-contract f (decisions #:num (list (λ _ 3))))))
-        "failed after 1 attempts:\n(3)\n")
+  (test (current-output
+         (λ () 
+           (parameterize ([generation-decisions
+                           (decisions #:num (list (λ _ 3)))])
+             (check-metafunction-contract f))))
+        "counterexample found after 1 attempts:\n(3)\n")
   ;; LHS matches multiple ways
-  (test (current-error-port-output
-         (λ () (check-metafunction-contract g (decisions #:num (list (λ _ 1) (λ _ 1))
-                                                         #:seq (list (λ _ 2))))))
-        "failed after 1 attempts:\n(1 1)\n")
+  (test (current-output
+         (λ () 
+           (parameterize ([generation-decisions
+                           (decisions #:num (list (λ _ 1) (λ _ 1))
+                                      #:seq (list (λ _ 2)))])
+             (check-metafunction-contract g))))
+        "counterexample found after 1 attempts:\n(1 1)\n")
   ;; OK -- generated from Dom(h)
   (test (check-metafunction-contract h) #t)
   ;; OK -- generated from pattern (any ...)
-  (test (check-metafunction-contract i) #t))
+  (test (check-metafunction-contract i #:attempts 5) #t))
 
 ;; check-reduction-relation
 (let ()
@@ -562,12 +654,12 @@
   
   (let ([S (reduction-relation L (--> 1 2 name) (--> 3 4))])
     (test (check-reduction-relation S (λ (x) #t) #:attempts 1) #t)
-    (test (current-error-port-output 
+    (test (current-output 
            (λ () (check-reduction-relation S (λ (x) #f))))
-          "checking name failed after 1 attempts:\n1\n")
-    (test (current-error-port-output 
+          "counterexample found after 1 attempts with name:\n1\n")
+    (test (current-output 
            (λ () (check-reduction-relation S (curry eq? 1))))
-          "checking unnamed failed after 1 attempts:\n3\n"))
+          "counterexample found after 1 attempts with unnamed:\n3\n"))
   
   (let ([T (reduction-relation
             L
@@ -593,11 +685,14 @@
     [(m 2) whatever])
   (let ([generated null])
     (test (begin
-            (check-metafunction m (λ (t) (set! generated (cons t generated))) 1)
+            (check-metafunction m (λ (t) (set! generated (cons t generated))) #:attempts 1)
             generated) 
           (reverse '((1) (2)))))
-  (test (current-error-port-output (λ () (check-metafunction m (curry eq? 1))))
-        #rx"checking clause #1 failed after 1 attempt"))
+  (test (current-output (λ () (check-metafunction m (curry eq? 1))))
+        #rx"counterexample found after 1 attempts with clause #1")
+  (test (with-handlers ([exn:fail:contract? exn-message])
+          (check-metafunction m #t #:attempts 'NaN))
+        #rx"check-metafunction: expected"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
