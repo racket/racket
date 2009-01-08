@@ -77,6 +77,8 @@
   (t 12 'decimal_byte_byte_byte (_fun _byte _byte -> _byte) 1 2)
   ;; ---
   (t  9 'callback3_int_int_int    (_fun (_fun _int  -> _int ) -> _int ) sqr)
+  (t  79 'callback3_int_int_int   (_fun (_fun _int  -> _int ) -> _int ) #f) ; NULL allowed as function pointer
+  (t  9 'callback3_int_int_int    (_fun _pointer -> _int ) (function-ptr sqr (_fun _int  -> _int ))) ; callback allowed as pointer
   (t  9 'callback3_byte_int_int   (_fun (_fun _byte -> _int ) -> _int ) sqr)
   (t  9 'callback3_int_byte_int   (_fun (_fun _int  -> _byte) -> _int ) sqr)
   (t  9 'callback3_byte_byte_int  (_fun (_fun _byte -> _byte) -> _int ) sqr)

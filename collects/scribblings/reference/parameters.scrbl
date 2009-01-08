@@ -45,7 +45,9 @@ reject a change to the parameter's value. The @scheme[guard] is not
 applied to the initial @scheme[v].}
 
 @defform[(parameterize ((parameter-expr value-expr) ...)
-           body ...+)]{
+           body ...+)
+         #:contracts
+         ([parameter-expr parameter?])]{
 
 @guideintro["parameterize"]{@scheme[parameterize]}
 

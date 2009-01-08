@@ -86,7 +86,7 @@
              (raise-syntax-error #f "too few arguments for keyword" #'kw ctx)))]
       [(kw . more)
        (keyword? (syntax-e #'kw))
-       (raise-syntax-error #f "unexpected keyword" #'kw ctx)]
+       (raise-syntax-error #f "unexpected keyword" ctx #'kw)]
       [_
        (values (reverse rchunks) stx)]))
   (loop stx null))

@@ -62,7 +62,8 @@ especially important on Windows, where most system functions are
 
 
 @defproc[(ffi-callback [proc any/c] [in-types any/c] [out-type any/c]
-                       [abi (or/c symbol/c #f) #f])
+                       [abi (or/c symbol/c #f) #f]
+                       [atomic? any/c #f])
          ffi-callback?]{
 
 The symmetric counterpart of @scheme[ffi-call].  It receives a Scheme

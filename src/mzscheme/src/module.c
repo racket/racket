@@ -1,6 +1,6 @@
 /*
   MzScheme
-  Copyright (c) 2004-2008 PLT Scheme Inc.
+  Copyright (c) 2004-2009 PLT Scheme Inc.
   Copyright (c) 2000-2001 Matthew Flatt
  
     This library is free software; you can redistribute it and/or
@@ -5960,6 +5960,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	erec1.certs = rec[drec].certs;
         erec1.observer = rec[drec].observer;
         erec1.pre_unwrapped = 0;
+        erec1.no_module_cert = 0;
         erec1.env_already = 0;
         erec1.comp_flags = rec[drec].comp_flags;
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
@@ -6160,6 +6161,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  mrec.comp = 1;
 	  mrec.dont_mark_local_use = 0;
 	  mrec.resolve_module_ids = 0;
+          mrec.no_module_cert = 0;
 	  mrec.value_name = NULL;
 	  mrec.certs = rec[drec].certs;
           mrec.observer = NULL;
@@ -6176,6 +6178,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    erec1.certs = mrec.certs;
             erec1.observer = rec[drec].observer;
             erec1.pre_unwrapped = 0;
+            erec1.no_module_cert = 0;
             erec1.env_already = 0;
             erec1.comp_flags = rec[drec].comp_flags;
 	    SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);

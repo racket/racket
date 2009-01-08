@@ -903,19 +903,6 @@ v4 todo:
                                    [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
                                                (loop (cdr args)
                                                      (cdr non-kwd-ctcs)))])))))]
-                          [check-and-mark
-                           (λ (marks)
-                             (when (->d-pre-cond ->d-stct)
-                               (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
-                                 (raise-contract-error val
-                                                       src-info
-                                                       neg-blame
-                                                       orig-str
-                                                       "#:pre-cond violation")))
-                             (if marks
-                                 (with-continuation-mark ->d-tail-key (cons this->d-id marks)
-                                   (thunk))
-                                 (thunk)))]
                           [rng (let ([rng (->d-range ->d-stct)])
                                  (cond
                                    [(not rng) #f]
@@ -924,50 +911,62 @@ v4 todo:
                                          (unbox rng))]
                                    [else rng]))]
                           [rng-underscore? (box? (->d-range ->d-stct))])
+                     (when (->d-pre-cond ->d-stct)
+                       (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
+                         (raise-contract-error val
+                                               src-info
+                                               neg-blame
+                                               orig-str
+                                               "#:pre-cond violation")))
                      (call-with-immediate-continuation-mark
                       ->d-tail-key
                       (λ (first-mark)
-                        (if (and rng
-                                 (not (and first-mark
-                                           (member this->d-id first-mark))))
-                            (call-with-values
-                             (λ () (check-and-mark (or first-mark '())))
-                             (λ orig-results
-                               (let* ([range-count (length rng)]
-                                      [post-args (append orig-results raw-orig-args)]
-                                      [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
-                                      [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
-                                                                         post-args (->d-rest-ctc ->d-stct)
-                                                                         (->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
-                                 (when (->d-post-cond ->d-stct)
-                                   (unless (apply (->d-post-cond ->d-stct) dep-post-args)
-                                     (raise-contract-error val
-                                                           src-info
-                                                           pos-blame
-                                                           orig-str
-                                                           "#:post-cond violation")))
-                                 
-                                 (unless (= range-count (length orig-results))
-                                   (raise-contract-error val
-                                                         src-info
-                                                         pos-blame
-                                                         orig-str
-                                                         "expected ~a results, got ~a"
-                                                         range-count
-                                                         (length orig-results)))
-                                 (apply
-                                  values
-                                  (let loop ([results orig-results]
-                                             [result-contracts rng])
-                                    (cond
-                                      [(null? result-contracts) '()]
-                                      [else
-                                       (cons
-                                        (invoke-dep-ctc (car result-contracts)
-                                                        (if rng-underscore? #f dep-post-args)
-                                                        (car results) pos-blame neg-blame src-info orig-str)
-                                        (loop (cdr results) (cdr result-contracts)))]))))))
-                            (check-and-mark #f))))))])
+                        (cond
+                          [(and rng
+                                (not (and first-mark
+                                          (eq? this->d-id (car first-mark))
+                                          (andmap eq? raw-orig-args (cdr first-mark)))))
+                           (call-with-values
+                            (λ ()
+                              (with-continuation-mark ->d-tail-key (cons this->d-id raw-orig-args)
+                                (thunk)))
+                            (λ orig-results
+                              (let* ([range-count (length rng)]
+                                     [post-args (append orig-results raw-orig-args)]
+                                     [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
+                                     [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
+                                                                        post-args (->d-rest-ctc ->d-stct)
+                                                                        (->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
+                                (when (->d-post-cond ->d-stct)
+                                  (unless (apply (->d-post-cond ->d-stct) dep-post-args)
+                                    (raise-contract-error val
+                                                          src-info
+                                                          pos-blame
+                                                          orig-str
+                                                          "#:post-cond violation")))
+                                
+                                (unless (= range-count (length orig-results))
+                                  (raise-contract-error val
+                                                        src-info
+                                                        pos-blame
+                                                        orig-str
+                                                        "expected ~a results, got ~a"
+                                                        range-count
+                                                        (length orig-results)))
+                                (apply
+                                 values
+                                 (let loop ([results orig-results]
+                                            [result-contracts rng])
+                                   (cond
+                                     [(null? result-contracts) '()]
+                                     [else
+                                      (cons
+                                       (invoke-dep-ctc (car result-contracts)
+                                                       (if rng-underscore? #f dep-post-args)
+                                                       (car results) pos-blame neg-blame src-info orig-str)
+                                       (loop (cdr results) (cdr result-contracts)))]))))))]
+                          [else
+                           (thunk)])))))])
             (make-keyword-procedure kwd-proc
                                     ((->d-name-wrapper ->d-stct)
                                      (λ args

@@ -2,7 +2,8 @@
 ;;  % mzscheme --require test.ss
 
 (module test mzscheme
-  (require xml/xml)
+  (require xml/xml
+           scheme/port)
   
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -66,7 +67,7 @@
   ;; permissive?
   (with-handlers ([exn?
                    (lambda (exn)
-                     (regexp-match #rx"Expected content," (exn-message exn)))])    
+                     (regexp-match #rx"Expected content," (exn-message exn)))])
     (report-err "Non-permissive" (xml->xexpr #f) "Exception"))
   
   (with-handlers ([exn?
@@ -76,6 +77,29 @@
       (let ([tmp (xml->xexpr #f)])
         (when tmp
           (report-err "Permissive" tmp "#f")))))
+  
+  ;; doctype
+  (let ()
+    (define source-string #<<END
+<!DOCTYPE html PUBLIC
+ "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"> </html>
+END
+      )
+    
+    (define source-document
+      (read-xml (open-input-string source-string)))
+    (define result-string
+      (with-output-to-string (lambda () (write-xml source-document))))
+    (define expected-string #<<END
+<html xmlns="http://www.w3.org/1999/xhtml"> </html>
+END
+      )
+    (unless (string=? expected-string result-string)
+      (report-err "DOCTYPE dropping"
+                  result-string
+                  expected-string)))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

@@ -32,6 +32,7 @@
   (syntax-case stx ()
     [(_ #:id defined-id #:literals (lit ...) [spec spec1 ...]
         ([non-term-id non-term-form ...] ...)
+        #:contracts ([contract-nonterm contract-expr] ...)
         desc ...)
      (with-syntax ([new-spec
                     (let loop ([spec #'spec])
@@ -65,57 +66,83 @@
                                  (lambda () (schemeblock0/form non-term-form))
                                  ...)
                            ...)
+                     (list (list (lambda () (scheme contract-nonterm))
+                                 (lambda () (schemeblock0 contract-expr)))
+                           ...)
                      (lambda () (list desc ...)))))]
+    [(fm #:id defined-id #:literals (lit ...) [spec spec1 ...]
+         ([non-term-id non-term-form ...] ...)
+         desc ...)
+     (syntax/loc stx
+       (fm #:id defined-id #:literals (lit ...) [spec spec1 ...]
+           ([non-term-id non-term-form ...] ...)
+           #:contracts ()
+           desc ...))]
     [(fm #:id id [spec spec1 ...] ([non-term-id non-term-form ...] ...)
          desc ...)
-     #'(fm #:id id #:literals () [spec spec1 ...]
+     (syntax/loc stx
+       (fm #:id id #:literals () [spec spec1 ...]
            ([non-term-id non-term-form ...] ...)
-           desc ...)]
+           #:contracts ()
+           desc ...))]
     [(fm #:literals lits [(spec-id . spec-rest) spec1 ...]
          ([non-term-id non-term-form ...] ...)
          desc ...)
      (with-syntax ([(_ _ _ [spec . _] . _) stx])
-       #'(fm #:id spec-id #:literals lits [spec spec1 ...]
+       (syntax/loc stx
+         (fm #:id spec-id #:literals lits [spec spec1 ...]
              ([non-term-id non-term-form ...] ...)
-             desc ...))]
+             desc ...)))]
     [(fm [spec spec1 ...] ([non-term-id non-term-form ...] ...) desc ...)
-     #'(fm #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...)
-           desc ...)]))
+     (syntax/loc stx
+       (fm #:literals () [spec spec1 ...] ([non-term-id non-term-form ...] ...)
+           desc ...))]))
 
 (define-syntax (defform* stx)
   (syntax-case stx ()
     [(_ #:id id #:literals lits [spec ...] desc ...)
-     #'(defform*/subs #:id id #:literals lits [spec ...] () desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:id id #:literals lits [spec ...] () desc ...))]
     [(_ #:literals lits [spec ...] desc ...)
-     #'(defform*/subs #:literals lits [spec ...] () desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:literals lits [spec ...] () desc ...))]
     [(_ [spec ...] desc ...)
-     #'(defform*/subs [spec ...] () desc ...)]))
+     (syntax/loc stx
+       (defform*/subs [spec ...] () desc ...))]))
 
 (define-syntax (defform stx)
   (syntax-case stx ()
     [(_ #:id id #:literals (lit ...) spec desc ...)
-     #'(defform*/subs #:id id #:literals (lit ...) [spec] () desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:id id #:literals (lit ...) [spec] () desc ...))]
     [(_ #:id id spec desc ...)
-     #'(defform*/subs #:id id #:literals () [spec] () desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:id id #:literals () [spec] () desc ...))]
     [(_ #:literals (lit ...) spec desc ...)
-     #'(defform*/subs #:literals (lit ...) [spec] () desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:literals (lit ...) [spec] () desc ...))]
     [(_ spec desc ...)
-     #'(defform*/subs [spec] () desc ...)]))
+     (syntax/loc stx
+       (defform*/subs [spec] () desc ...))]))
 
 (define-syntax (defform/subs stx)
   (syntax-case stx ()
     [(_ #:id id #:literals lits spec subs desc ...)
-     #'(defform*/subs #:id id #:literals lits [spec] subs desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:id id #:literals lits [spec] subs desc ...))]
     [(_ #:id id spec subs desc ...)
-     #'(defform*/subs #:id id #:literals () [spec] subs desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:id id #:literals () [spec] subs desc ...))]
     [(_ #:literals lits spec subs desc ...)
-     #'(defform*/subs #:literals lits [spec] subs desc ...)]
+     (syntax/loc stx
+       (defform*/subs #:literals lits [spec] subs desc ...))]
     [(_ spec subs desc ...)
-     #'(defform*/subs [spec] subs desc ...)]))
+     (syntax/loc stx
+       (defform*/subs [spec] subs desc ...))]))
 
 (define-syntax (defform/none stx)
   (syntax-case stx ()
-    [(_ #:literals (lit ...) spec desc ...)
+    [(_ #:literals (lit ...) spec #:contracts ([contract-id contract-expr] ...) desc ...)
      (begin
        (for-each (lambda (id)
                    (unless (identifier? id)
@@ -130,9 +157,16 @@
           (*defforms #f
                      '(spec) (list (lambda (ignored) (schemeblock0/form spec)))
                      null null
+                     (list (list (lambda () (scheme contract-id))
+                                 (lambda () (schemeblock0 contract-expr)))
+                           ...)
                      (lambda () (list desc ...)))))]
-    [(_ spec desc ...)
-     #'(defform/none #:literals () spec desc ...)]))
+    [(fm #:literals (lit ...) spec desc ...)
+     (syntax/loc stx
+       (fm #:literals (lit ...) spec #:contracts () desc ...))]
+    [(fm spec desc ...)
+     (syntax/loc stx
+       (fm #:literals () spec desc ...))]))
 
 (define-syntax (defidform stx)
   (syntax-case stx ()
@@ -143,6 +177,7 @@
         (*defforms (quote-syntax/loc spec-id)
                    '(spec-id)
                    (list (lambda (x) (make-omitable-paragraph (list x))))
+                   null
                    null
                    null
                    (lambda () (list desc ...))))]))
@@ -164,6 +199,7 @@
 (define-syntax spec?form/subs
   (syntax-rules ()
     [(_ has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
+        #:contracts ([contract-nonterm contract-expr] ...)
         desc ...)
      (with-scheme-variables
       (lit ...)
@@ -175,7 +211,15 @@
                                 (lambda () (schemeblock0/form non-term-form))
                                 ...)
                           ...)
-                    (lambda () (list desc ...))))]))
+                    (list (list (lambda () (scheme contract-nonterm))
+                                (lambda () (schemeblock0 contract-expr)))
+                          ...)
+                    (lambda () (list desc ...))))]
+    [(_ has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
+        desc ...)
+     (spec?form/subs has-kw? #:literals (lit ...) spec ([non-term-id non-term-form ...] ...)
+                     #:contracts ()
+                     desc ...)]))
 
 (define-syntax specsubform
   (syntax-rules ()
@@ -220,7 +264,7 @@
   (with-scheme-variables
    ()
    ([form/maybe (#f spec)])
-   (*specsubform 'spec null #f null null (lambda () (list desc ...)))))
+   (*specsubform 'spec null #f null null null (lambda () (list desc ...)))))
 
 (define-syntax schemegrammar
   (syntax-rules ()
@@ -258,7 +302,7 @@
 
 (define (meta-symbol? s) (memq s '(... ...+ ?)))
 
-(define (*defforms kw-id forms form-procs subs sub-procs content-thunk)
+(define (*defforms kw-id forms form-procs subs sub-procs contract-procs content-thunk)
   (parameterize ([current-meta-list '(... ...+)])
     (make-box-splice
      (cons
@@ -307,10 +351,11 @@
                                            sub-procs)])
                                (*schemerawgrammars "specgrammar"
                                                    (map car l)
-                                                   (map cdr l))))))))))
+                                                   (map cdr l))))))))
+        (make-contracts-table contract-procs)))
       (content-thunk)))))
 
-(define (*specsubform form lits form-thunk subs sub-procs content-thunk)
+(define (*specsubform form lits form-thunk subs sub-procs contract-procs content-thunk)
   (parameterize ([current-meta-list '(... ...+)])
     (make-blockquote
      "leftindent"
@@ -324,16 +369,18 @@
            (if form-thunk
              (form-thunk)
              (make-omitable-paragraph (list (to-element form)))))))
-        (if (null? sub-procs)
-          null
-          (list (list flow-empty-line)
-                (list (make-flow
-                       (list (let ([l (map (lambda (sub)
-                                             (map (lambda (f) (f)) sub))
-                                           sub-procs)])
-                               (*schemerawgrammars "specgrammar"
-                                                   (map car l)
-                                                   (map cdr l))))))))))
+        (append
+         (if (null? sub-procs)
+             null
+             (list (list flow-empty-line)
+                   (list (make-flow
+                          (list (let ([l (map (lambda (sub)
+                                                (map (lambda (f) (f)) sub))
+                                              sub-procs)])
+                                  (*schemerawgrammars "specgrammar"
+                                                      (map car l)
+                                                      (map cdr l))))))))
+         (make-contracts-table contract-procs))))
       (flow-paragraphs (decode-flow (content-thunk)))))))
 
 (define (*schemerawgrammars style nonterms clauseses)
@@ -374,3 +421,21 @@
 
 (define (*var-sym id)
   (string->symbol (format "_~a" id)))
+
+(define (make-contracts-table contract-procs)
+  (if (null? contract-procs)
+      null
+      (append
+       (list (list flow-empty-line))
+       (list (list (make-flow
+                    (map (lambda (c)
+                           (make-table
+                            "argcontract"
+                            (list
+                             (list (to-flow (hspace 2))
+                                   (to-flow ((car c)))
+                                   flow-spacer
+                                   (to-flow ":")
+                                   flow-spacer
+                                   (make-flow (list ((cadr c))))))))
+                         contract-procs)))))))

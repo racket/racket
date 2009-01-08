@@ -56,3 +56,26 @@ end with a newline, but it may contain internal newlines. Each call or
 result is converted into a string using @scheme[pretty-print].  The
 parameter's default value prints the given string followed by a newline to
 @scheme[(current-output-port)].}
+
+@defproc[(trace-apply [id symbol?] [proc procedure?] [kws (listof keyword)] [kw-vals list?] [arg any/c] ...) any/c]{
+
+Calls @scheme[proc] with the arguments supplied in
+@scheme[args], @scheme[kws], and @scheme[kw-vals]. Also prints out the
+trace information during the call, as described above in the docs for
+@scheme[trace], using @scheme[id] as the name of @scheme[proc].
+
+}
+
+@defparam[current-trace-print-args trace-print-args 
+	  (-> symbol?
+              (listof keyword?)
+              list? 
+              list?
+              number?)]{
+
+The value of this parameter is invoked to print out the arguments of a
+traced call. It receives the name of the function, the function's
+ordinary arguments, its keywords, the values of the keywords, and a
+number indicating the depth of the call.
+
+}

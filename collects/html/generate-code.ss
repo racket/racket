@@ -2,12 +2,11 @@
 (require mzlib/pretty
          mzlib/date
          mzlib/list
-         mzlib/etc)
+         mzlib/etc
+         "html-spec.ss")
 
 ; date-string : -> String
 (define (date-string) (date->string (seconds->date (current-seconds)) 'seconds-please))
-
-(define html-spec (call-with-input-file (build-path (collection-path "html") "html-spec") read))
 
 (define (empty-name? x) (null? (cdr x)))
 

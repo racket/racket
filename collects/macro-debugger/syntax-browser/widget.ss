@@ -196,7 +196,7 @@
             )
           display)))
 
-    (define/private (calculate-columns)
+    (define/public (calculate-columns)
       (define style (code-style -text (send config get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))

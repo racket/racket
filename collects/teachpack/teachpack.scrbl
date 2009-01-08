@@ -23,7 +23,8 @@ This chapter covers the teachpacks for @italic{How to Design Programs}
 
 @table-of-contents[]
 
-
 @include-section["htdp/scribblings/htdp.scrbl"]
 
 @include-section["htdc/scribblings/htdc.scrbl"]
+
+@include-section["2htdp/scribblings/2htdp.scrbl"]

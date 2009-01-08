@@ -666,7 +666,10 @@ layer is a style for the hyperlink.}
 
 Used as a style for an @scheme[element] to inline an image. The
 @scheme[path] field can be a result of
-@scheme[path->main-collects-relative].}
+@scheme[path->main-collects-relative].
+
+For Latex output, a @filepath{.gif} suffix on @scheme[path] is
+replaced with a @filepath{.png} suffix.}
 
 
 @defproc[(block? [v any/c]) boolean?]{

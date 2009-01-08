@@ -468,24 +468,28 @@
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
-                      #:abi [abi #f] #:wrapper [wrapper #f] #:keep [keep #f])
-  (_cprocedure* itypes otype abi wrapper keep))
+                      #:abi [abi #f] 
+                      #:wrapper [wrapper #f] 
+                      #:keep [keep #f]
+                      #:atomic? [atomic? #f])
+  (_cprocedure* itypes otype abi wrapper keep atomic?))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep)
+(define (_cprocedure* itypes otype abi wrapper keep atomic?)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
-        (let ([cb (ffi-callback (wrap x) itypes otype abi)])
-          (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
-                [(box? keep)
-                 (let ([x (unbox keep)])
-                   (set-box! keep
-                             (if (or (null? x) (pair? x)) (cons cb x) cb)))]
-                [(procedure? keep) (keep cb)])
-          cb))
-      (lambda (x) (wrap (ffi-call x itypes otype abi)))))
+        (and x
+             (let ([cb (ffi-callback (wrap x) itypes otype abi atomic?)])
+               (cond [(eq? keep #t) (hash-set! held-callbacks x cb)]
+                     [(box? keep)
+                      (let ([x (unbox keep)])
+                        (set-box! keep
+                                  (if (or (null? x) (pair? x)) (cons cb x) cb)))]
+                     [(procedure? keep) (keep cb)])
+               cb)))
+      (lambda (x) (and x (wrap (ffi-call x itypes otype abi))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
@@ -513,6 +517,7 @@
   (define xs     #f)
   (define abi    #f)
   (define keep   #f)
+  (define atomic? #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -577,9 +582,10 @@
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k) (kwds [#:abi abi] [#:keep keep]))))
+        (when (keyword? k) (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?]))))
     (unless abi  (set! abi  #'#f))
     (unless keep (set! keep #'#t))
+    (unless atomic? (set! atomic? #'#f))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -670,9 +676,9 @@
                         (string->symbol (string-append "ffi-wrapper:" n)))
                        body))])
         #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                        #,abi (lambda (ffi) #,body) #,keep))
+                        #,abi (lambda (ffi) #,body) #,keep #,atomic?))
       #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                      #,abi #f #,keep)))
+                      #,abi #f #,keep #,atomic?)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
@@ -689,9 +695,8 @@
 ;; String types
 
 ;; The internal _string type uses the native ucs-4 encoding, also providing a
-;; utf-16 type (note: the non-/null variants do not use #f as NULL).
-(provide _string/ucs-4 _string/utf-16
-         _string/ucs-4/null _string/utf-16/null)
+;; utf-16 type
+(provide _string/ucs-4 _string/utf-16)
 
 ;; 8-bit string encodings, #f is NULL
 (define ((false-or-op op) x) (and x (op x)))

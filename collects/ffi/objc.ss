@@ -15,7 +15,7 @@
 
 (define-syntax-rule (define-objc id type)
   (begin
-    (provide id)
+    (provide* (unsafe id))
     (define-objc/private id id type)))
 
 ;; ----------------------------------------
@@ -86,16 +86,16 @@
 (define msgSends (make-hash))
 (define (objc_msgSend/typed types)
   (lookup-send types msgSends objc_msgSend objc_msgSend_fpret _id))
-(provide objc_msgSend/typed)
+(provide* (unsafe objc_msgSend/typed))
 
 (define msgSendSupers (make-hash))
 (define (objc_msgSendSuper/typed types)
   (lookup-send types msgSendSupers objc_msgSendSuper objc_msgSendSuper_fpret _pointer))
-(provide objc_msgSendSuper/typed)
+(provide* (unsafe objc_msgSendSuper/typed))
 
 ;; ----------------------------------------
 
-(provide import-class)
+(provide* (unsafe import-class))
 (define-syntax (import-class stx)
   (syntax-case stx ()
     [(_ id)
@@ -107,7 +107,7 @@
 ;; ----------------------------------------
 ;; iget-value and set-ivar! work only with fields that contain Scheme values
 
-(provide get-ivar set-ivar!)
+(provide* (unsafe get-ivar) (unsafe set-ivar!))
 
 (define-for-syntax (check-ivar ivar stx)
   (unless (identifier? ivar)
@@ -161,7 +161,7 @@
         (hash-set! method-sels sym id)
         id)))
 
-(provide selector)
+(provide* (unsafe selector))
 (define-syntax (selector stx)
   (syntax-case stx ()
     [(_ id)
@@ -256,7 +256,7 @@
                                   arg)))
              (loop (cdr rest))))))))
 
-(provide tell tellv)
+(provide* (unsafe tell) (unsafe tellv))
 (define-for-syntax (build-send stx result-type send/typed send-args l-stx)
   (let ([l (syntax->list  l-stx)])
     (with-syntax ([((tag type arg) ...) (parse-arg-list l stx #f)]
@@ -329,7 +329,7 @@
 
 ;; ----------------------------------------
 
-(provide define-objc-class self super-tell)
+(provide* (unsafe define-objc-class) self super-tell)
 
 (define-syntax (define-objc-class stx)
   (syntax-case stx ()
@@ -364,7 +364,7 @@
                                 ;; Given a dealloc extension:
                                 #'()
                                 ;; Need to add one explicitly:
-                                #'((- _void (dealloc) (void)))))])
+                                #'((-a _void (dealloc) (void)))))])
            (syntax/loc stx
              (begin
                (define superclass-id superclass)
@@ -454,10 +454,13 @@
        (syntax-case #'m ()
          [(kind result-type (id arg ...) body0 body ...)
           (or (free-identifier=? #'kind #'+)
-              (free-identifier=? #'kind #'-))
+              (free-identifier=? #'kind #'-)
+              (free-identifier=? #'kind #'+a)
+              (free-identifier=? #'kind #'-a))
           (let ([id #'id]
                 [args (syntax->list #'(arg ...))]
-                [in-class? (free-identifier=? #'kind #'+)])
+                [in-class? (or (free-identifier=? #'kind #'+)
+                               (free-identifier=? #'kind #'+a))])
             (when (null? args)
               (unless (identifier? id)
                 (raise-syntax-error #f
@@ -485,7 +488,9 @@
                                  '())]
                             [in-cls (if in-class?
                                         #'(object_getClass cls)
-                                        #'cls)])
+                                        #'cls)]
+                            [atomic? (or (free-identifier=? #'kind #'+a)
+                                         (free-identifier=? #'kind #'-a))])
                 (syntax/loc stx
                   (let ([rt result-type]
                         [arg-id arg-type] ...)
@@ -498,7 +503,7 @@
                                                                     [super-tell do-super-tell])
                                                 body0 body ...
                                                 dealloc-body ...)))
-                                           (_fun _id _id arg-type ... -> rt)
+                                           (_fun #:atomic? atomic? _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [else (raise-syntax-error #f
                                    "bad method form"
@@ -549,3 +554,8 @@
                  #'objc_msgSendSuper/typed
                  #'((make-objc_super self super-class))
                  #'(method/arg ...))]))
+
+;; --------------------------------------------------
+
+(define-unsafer objc-unsafe!)
+

@@ -927,72 +927,83 @@ converting from the computer's coordinates, we get:
 
 (define (color-list->image cl in-w in-h px py)
   (check 'color-list->image color-list? cl "list-of-colors" "first")
-  (check-posi-size 'color-list->image in-w "second")
-  (check-posi-size 'color-list->image in-h "third")
+  (check-size/0 'color-list->image in-w "second")
+  (check-size/0 'color-list->image in-h "third")
   (check-coordinate 'color-list->image px "fourth")
   (check-coordinate 'color-list->image py "fifth")
   (let ([w (inexact->exact in-w)]
         [h (inexact->exact in-h)])
-    (unless (and (< 0 w 10000) (< 0 h 10000))
-      (error 'color-list->image "cannot make ~a x ~a image" w h))
+    
     (unless (= (* w h) (length cl))
       (error 'color-list->image
              "given width times given height is ~a, but the given color list has ~a items"
              (* w h) 
              (length cl)))
-    (let* ([bm (make-object bitmap% w h)]
-           [mask-bm (make-object bitmap% w h)]
-           [dc (make-object bitmap-dc% bm)]
-           [mask-dc (make-object bitmap-dc% mask-bm)])
-      (unless (send bm ok?)
-        (error (format "cannot make ~a x ~a image" w h)))
-      (let ([is (make-bytes (* 4 w h) 0)]
-            [mask-is (make-bytes (* 4 w h) 0)]
-            [cols (list->vector (map (λ (x) 
-                                       (or (make-color% x)
-                                           (error 'color-list->image "color ~e is unknown" x)))
-                                     cl))])
-        (let yloop ([y 0][pos 0])
-          (unless (= y h)
-            (let xloop ([x 0][pos pos])
-              (if (= x w)
-                  (yloop (add1 y) pos)
-                  (let* ([col (vector-ref cols (+ x (* y w)))]
-                         [r (pk (send col red))]
-                         [g (pk (send col green))]
-                         [b (pk (send col blue))])
-                    (bytes-set! is (+ 1 pos) r)
-                    (bytes-set! is (+ 2 pos) g)
-                    (bytes-set! is (+ 3 pos) b)
-                    (when (= 255 r g b)
-                      (bytes-set! mask-is (+ 1 pos) 255)
-                      (bytes-set! mask-is (+ 2 pos) 255)
-                      (bytes-set! mask-is (+ 3 pos) 255))
-                    (xloop (add1 x) (+ pos 4)))))))
-        (send dc set-argb-pixels 0 0 w h is)
-        (send mask-dc set-argb-pixels 0 0 w h mask-is))
-      (send dc set-bitmap #f)
-      (send mask-dc set-bitmap #f)
-      (bitmaps->cache-image-snip bm mask-bm px py))))
+    
+    (cond
+      [(or (equal? w 0) (equal? h 0))
+       (put-pinhole (rectangle w h 'solid 'black) px py)]
+      [else
+       (unless (and (< 0 w 10000) (< 0 h 10000))
+         (error 'color-list->image "cannot make ~a x ~a image" w h))
+       
+       (let* ([bm (make-object bitmap% w h)]
+              [mask-bm (make-object bitmap% w h)]
+              [dc (make-object bitmap-dc% bm)]
+              [mask-dc (make-object bitmap-dc% mask-bm)])
+         (unless (send bm ok?)
+           (error (format "cannot make ~a x ~a image" w h)))
+         (let ([is (make-bytes (* 4 w h) 0)]
+               [mask-is (make-bytes (* 4 w h) 0)]
+               [cols (list->vector (map (λ (x) 
+                                          (or (make-color% x)
+                                              (error 'color-list->image "color ~e is unknown" x)))
+                                        cl))])
+           (let yloop ([y 0][pos 0])
+             (unless (= y h)
+               (let xloop ([x 0][pos pos])
+                 (if (= x w)
+                     (yloop (add1 y) pos)
+                     (let* ([col (vector-ref cols (+ x (* y w)))]
+                            [r (pk (send col red))]
+                            [g (pk (send col green))]
+                            [b (pk (send col blue))])
+                       (bytes-set! is (+ 1 pos) r)
+                       (bytes-set! is (+ 2 pos) g)
+                       (bytes-set! is (+ 3 pos) b)
+                       (when (= 255 r g b)
+                         (bytes-set! mask-is (+ 1 pos) 255)
+                         (bytes-set! mask-is (+ 2 pos) 255)
+                         (bytes-set! mask-is (+ 3 pos) 255))
+                       (xloop (add1 x) (+ pos 4)))))))
+           (send dc set-argb-pixels 0 0 w h is)
+           (send mask-dc set-argb-pixels 0 0 w h mask-is))
+         (send dc set-bitmap #f)
+         (send mask-dc set-bitmap #f)
+         (bitmaps->cache-image-snip bm mask-bm px py))])))
 
 (define (pk col) (min 255 (max 0 col)))
 
 (define (alpha-color-list->image cl in-w in-h px py)
   (check 'alpha-color-list->image alpha-color-list? cl "list-of-alpha-colors" "first")
-  (check-posi-size 'alpha-color-list->image in-w "second")
-  (check-posi-size 'alpha-color-list->image in-h "third")
+  (check-size/0 'alpha-color-list->image in-w "second")
+  (check-size/0 'alpha-color-list->image in-h "third")
   (check-coordinate 'alpha-color-list->image px "fourth")
   (check-coordinate 'alpha-color-list->image py "fifth")
   (let ([w (inexact->exact in-w)]
         [h (inexact->exact in-h)])
-    (unless (and (< 0 w 10000) (< 0 h 10000))
-      (error 'alpha-color-list->image format "cannot make ~a x ~a image" w h))
     (unless (= (* w h) (length cl))
       (error 'alpha-color-list->image
              "given width times given height is ~a, but the given color list has ~a items"
              (* w h) (length cl)))
-    (let ([index-list (alpha-colors->ent-list cl)])
-      (argb->cache-image-snip (make-argb (list->vector index-list) w h) px py))))
+    (cond
+      [(or (equal? w 0) (equal? h 0))
+       (put-pinhole (rectangle w h 'solid 'black) px py)]
+      [else
+       (unless (and (< 0 w 10000) (< 0 h 10000))
+         (error 'alpha-color-list->image format "cannot make ~a x ~a image" w h))
+       (let ([index-list (alpha-colors->ent-list cl)])
+         (argb->cache-image-snip (make-argb (list->vector index-list) w h) px py))])))
 
 ;; alpha-colors->ent-list : (listof alpha-color) -> (listof number)
 (define (alpha-colors->ent-list cl)

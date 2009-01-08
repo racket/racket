@@ -1,3 +1,8 @@
+  - Added tracing to metafunctions (see current-traced-metafunctions)
+
+  - added caching-enabled? parameter (changed how set-cache-size! 
+    works)
+
 v4.2
 
   - added white-bracket-sizing to control how the brackets

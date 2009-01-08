@@ -14,7 +14,8 @@ The @scheme[for] iteration forms are based on SRFI-42
 @defform/subs[(for (for-clause ...) body ...+)
               ([for-clause [id seq-expr]
                            [(id ...) seq-expr]
-                           (code:line #:when guard-expr)])]{
+                           (code:line #:when guard-expr)])
+              #:contracts ([seq-expr sequence?])]{
 
 Iteratively evaluates @scheme[body]. The @scheme[for-clause]s
 introduce bindings whose scope includes @scheme[body] and that
@@ -242,7 +243,11 @@ Like @scheme[for*/fold], but the extra @scheme[orig-datum] is used as the source
 
 @defform[(define-sequence-syntax id
            expr-transform-expr
-           clause-transform-expr)]{
+           clause-transform-expr)
+         #:contracts
+         ([expr-transform-expr (or/c (-> identifier?)
+                                     (syntax? . -> . syntax?))]
+          [clause-transform-expr (syntax? . -> . syntax?)])]{
 
 Defines @scheme[id] as syntax. An @scheme[(id . _rest)] form is
 treated specially when used to generate a sequence in a

@@ -3,7 +3,7 @@
  * Purpose:     MrEd MacOS event loop
  * Author:      Matthew Flatt
  * Created:     1996
- * Copyright:   (c) 2004-2008 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2009 PLT Scheme Inc.
  * Copyright:   (c) 1996, Matthew Flatt
  */
 
@@ -1179,103 +1179,20 @@ int MrEdCheckForBreak(void)
 /***************************************************************************/
 
 #include <pthread.h>
-static volatile int thread_running;
-static volatile int need_post; /* 0=>1 transition has a benign race condition, an optimization */
-static SLEEP_PROC_PTR mzsleep;
-static pthread_t watcher;
-static volatile float sleep_secs;
 
-/* These file descriptors act as semaphores: */
-static int watch_read_fd, watch_write_fd;
-static int watch_done_read_fd, watch_done_write_fd;
-
-/* These file descriptors are used for breaking the event loop.
-   See ARGH below. */
+/* These file descriptors are used for breaking the event loop. */
 static int cb_socket_ready;
 static int ready_sock, write_ready_sock;
 
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
-static void *do_watch(void *fds)
-{
-  while (1) {
-    char buf[1];
-
-    read(watch_read_fd, buf, 1);
-
-    mzsleep(sleep_secs, fds);
-    if (need_post) {
-      need_post = 0;
-      if (cb_socket_ready) {
-	/* Sometimes WakeUpProcess() doesn't work. 
-	   Try a notification socket as a backup. 
-	   See ARGH below. */
-	write(write_ready_sock, "y", 1);
-      }
-    }
-
-    write(watch_done_write_fd, "y", 1);
-  }
-
-  return NULL;
-}
-
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
-
 static int StartFDWatcher(void (*mzs)(float secs, void *fds), float secs, void *fds)
 {
-  if (!watch_write_fd) {
-    int fds[2];
-    if (!pipe(fds)) {
-      watch_read_fd = fds[0];
-      watch_write_fd = fds[1];
-    } else {
-      return 0;
-    }
-  }
-
-  if (!watch_done_write_fd) {
-    int fds[2];
-    if (!pipe(fds)) {
-      watch_done_read_fd = fds[0];
-      watch_done_write_fd = fds[1];
-    } else {
-      return 0;
-    }
-  }
-
-  if (!watcher) {
-    if (pthread_create(&watcher, NULL,  do_watch, fds)) {
-      return 0;
-    }
-  }
-
-  mzsleep = mzs;
-  sleep_secs = secs;
-  thread_running = 1; 
-  need_post = 1;
-  write(watch_write_fd, "x", 1);
-
+  scheme_start_sleeper_thread(mzs, secs, fds, write_ready_sock);
   return 1;
 }
 
 static void EndFDWatcher(void)
 {
-  char buf[1];
-
-  if (thread_running) {
-    if (need_post) {
-      need_post = 0;
-      scheme_signal_received();
-    }
-
-    read(watch_done_read_fd, buf, 1);
-    thread_running = 0;
-  }
+  scheme_end_sleeper_thread();
 }
 
 void socket_callback(CFSocketRef s, CFSocketCallBackType type, CFDataRef address, const void *data, void *info)
@@ -1369,11 +1286,8 @@ void MrEdMacSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
 
     going++;
 
-    if (need_post) /* useless check in principle, but an optimization
-		      in the case that the select() succeeds before
-		      we even start */
-      if (WNE(&e, secs ? secs : kEventDurationForever))
-	QueueTransferredEvent(&e);
+    if (WNE(&e, secs ? secs : kEventDurationForever))
+      QueueTransferredEvent(&e);
 
     --going;
 

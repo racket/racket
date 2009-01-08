@@ -28,9 +28,11 @@ See @secref["fully-expanded"] for the core grammar.
 Each syntactic form is described by a BNF-like notation that describes
 a combination of (syntax-wrapped) pairs, symbols, and other data (not
 a sequence of characters). These grammatical specifications are shown
-as follows:
+as in the following specification of a @schemekeywordfont{something}
+form:
 
-@specsubform[(#, @schemekeywordfont{some-form} id ...)]
+@specsubform[(#, @schemekeywordfont{something} id thing-expr ...)
+             #:contracts ([thing-expr number?])]
 
 Within such specifications,
 
@@ -42,26 +44,31 @@ Within such specifications,
  @item{@scheme[...+] indicates one or
        more repetitions of the preceding datum.}
 
- @item{italic meta-identifiers play the role of non-terminals; in
-       particular,
+ @item{Italic meta-identifiers play the role of non-terminals. Some
+       meta-identifier names imply syntactic constraints:
 
       @itemize{
 
-        @item{a meta-identifier that ends in @scheme[_id] stands for an
+        @item{A meta-identifier that ends in @scheme[_id] stands for an
               identifier.}
 
-        @item{a meta-identifier that ends in @scheme[_keyword] stands
+        @item{A meta-identifier that ends in @scheme[_keyword] stands
               for a keyword.}
 
-        @item{a meta-identifier that ends with @scheme[_expr] stands
-              for a sub-form that is expanded as an expression.}
+        @item{A meta-identifier that ends with @scheme[_expr] (such as
+              @scheme[_thing-expr]) stands for a sub-form that is
+              expanded as an expression.}
 
         @item{A meta-identifier that ends with @scheme[_body] stands
               for a sub-form that is expanded in an
               internal-definition context (see
               @secref["intdef-body"]).}
 
-              }} }
+              }} 
+
+ @item{Contracts indicate constraints on sub-expression results. For
+       example, @scheme[_thing-expr #, @elem{:} number?] indicates that
+       the expression @scheme[_thing-expr] must produce a number.}}
 
 @;------------------------------------------------------------------------
 @section[#:tag "module"]{Modules: @scheme[module], ...}

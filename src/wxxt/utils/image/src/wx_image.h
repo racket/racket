@@ -3,7 +3,7 @@
  * Purpose:  
  *
  *                       wxWindows 1.50
- * Copyright (c) 2004-2008 PLT Scheme Inc.
+ * Copyright (c) 2004-2009 PLT Scheme Inc.
  * Copyright (c) 1993 Artificial Intelligence Applications Institute,
  *                   The University of Edinburgh
  *

@@ -469,8 +469,11 @@ limited to one whenever possible.  When multiple assignments are
 active, design a checker to help ensure that the student has selected
 the correct assignment in the handin dialog.
 
-A student can download his/her own submissions through a web server
-that runs concurrently with the handin server.  The starting URL is
+A student can download his/her own submissions through the handin
+dialog.  This can also be done through a web server that runs
+concurrently with the handin server if you use the
+@scheme[https-port-number] option in the configuration file.  The
+starting URL is
 
 @commandline{https://SERVER:PORT/}
 
@@ -478,5 +481,4 @@ to obtain a list of all assignments, or
 
 @commandline{https://SERVER:PORT/?handin=ASSIGNMENT}
 
-to start with a specific assignment (named ASSIGNMENT).  The default
-PORT is 7980.
+to start with a specific assignment (named ASSIGNMENT).
