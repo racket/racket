@@ -88,9 +88,9 @@
 
 ;; A PatternParseResult is one of
 ;;   - (listof value)
-;;   - (make-failed stx sexpr(Pattern) string)
+;;   - (make-failed stx sexpr(Pattern) string frontier/#f)
 (define (ok? x) (or (pair? x) (null? x)))
-(define-struct failed (stx patstx reason)
+(define-struct failed (stx patstx reason frontier)
   #:transparent)
 
 

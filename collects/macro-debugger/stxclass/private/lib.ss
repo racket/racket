@@ -14,11 +14,11 @@
 
 (define-syntax-rule (define-pred-stxclass name pred)
   (define-basic-syntax-class name
-    ([datum 0])
+    () ;; ([datum 0])
     (lambda (x)
       (let ([d (if (syntax? x) (syntax-e x) x)])
         (if (pred d)
-            (list d)
+            null ;; (list d)
             (fail-sc x #:pattern 'name))))))
 
 (define-pred-stxclass identifier symbol?)

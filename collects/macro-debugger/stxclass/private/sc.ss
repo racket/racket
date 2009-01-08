@@ -214,7 +214,7 @@
      (frontier->syntax rest)]))
 
 (define (fail-sc stx #:pattern [pattern #f] #:reason [reason #f])
-  (make-failed stx pattern reason))
+  (make-failed stx pattern reason #f))
 
 (define (syntax-class-fail stx #:reason [reason #f])
-  (make-failed stx #f reason))
+  (make-failed stx #f reason #f))

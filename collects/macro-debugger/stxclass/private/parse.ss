@@ -23,10 +23,12 @@
 ;;   - 'fail' stxparameterized to (non-escaping!) failure procedure
 (define-struct pk (ps k) #:transparent)
 
-;; A FrontierContext (FC) is ({FrontierIndex stx}*)
+;; A FrontierContext (FC) is one of
+;;   - (list  FrontierIndex Syntax)
+;;   - (list* FrontierIndex Syntax FrontierContext)
 ;; A FrontierIndex is one of
 ;;   - nat
-;;   - `(+ ,nat expr ...)
+;;   - `(+ ,nat Syntax ...)
 
 (define (empty-frontier x)
   (list 0 x))
@@ -59,7 +61,7 @@
          (with-syntax ([(arg ...) args])
            #`(lambda (x arg ...)
                (define (fail-rhs x expected reason frontier)
-                 (make-failed x expected reason))
+                 (make-failed x expected reason frontier))
                #,(parse:pks (list #'x)
                             (list (empty-frontier #'x))
                             (rhs->pks rhs relsattrs #'x)
@@ -72,7 +74,7 @@
   (with-syntax ([k k] [x x] [p p] [reason reason]
                 [fc-expr (frontier->expr fc)])
     #`(let ([failcontext fc-expr])
-        #;(printf "failing at ~s\n" failcontext)
+        (printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
         (k x p 'reason failcontext))))
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
@@ -309,7 +311,7 @@
                         [sub-parse-expr
                          #`(#,(ssc-parser-name ssc) #,(car vars) #,@args)])
            #'sub-parse-expr)))]
-    [(struct pk ((cons (struct pat:gseq (orig-stx attrs depth heads tail))
+    [(struct pk ((cons (and the-pattern (struct pat:gseq (orig-stx attrs depth heads tail)))
                        rest-ps)
                  k))
      (let* ([xvar (car (generate-temporaries (list #'x)))]
@@ -360,11 +362,6 @@
                         (if maxrep
                             #`(< #,repvar #,maxrep)
                             #`#t))]
-                     [(minrepclause ...)
-                      (for/list ([repvar reps] [minrep mins] #:when minrep)
-                        #`[(< #,repvar #,minrep)
-                           #,(fail #'enclosing-fail (car vars)
-                                   #:reason "minimum repetition constraint failed")])]
                      [(occurs-binding ...)
                       (for/list ([head heads] [rep reps] #:when (head-occurs head))
                         #`[#,(head-occurs head) (positive? #,rep)])]
@@ -376,10 +373,20 @@
                                  (let ([rep (add1 rep)])
                                    (parse-loop x #,@hid-args #,@reps enclosing-fail))
                                  #,(fail #'enclosing-fail #'var0
+                                         #:fc (frontier:add-index (car fcs) 
+                                                                  #'(calculate-index rep ...))
                                          #:reason "maxiumum repetition constraint failed")))
                            ...]]
                        [tail-rhs
-                        #`(cond minrepclause ...
+                        #`(cond #,@(for/list ([repvar reps] [minrep mins] #:when minrep)
+                                     #`[(< #,repvar #,minrep)
+                                        #,(fail #'enclosing-fail (car vars)
+                                                #:fc (frontier:add-index 
+                                                      (car fcs)
+                                                      #'(calculate-index rep ...))
+                                                #:pattern (expectation-of-constants 
+                                                           #f '(mininum-rep-constraint-failed) '())
+                                                #:reason "minimum repetition constraint failed")])
                                 [else
                                  (let ([hid (finalize hid-arg)] ... ...
                                        occurs-binding ...
