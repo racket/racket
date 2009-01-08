@@ -167,4 +167,25 @@
                               (add1 (g 2))))))])
         (check-pred list? rs)
         (check-true (ormap misstep? rs))))
-    ))
+
+    ;; Added 1/3/2008
+    ;; Based on PR 10000
+    (test-case "eval within module expansion"
+      (let ([freshname (gensym)])
+        (eval `(module ,freshname scheme
+                 (provide meval)
+                 (define-syntax (meval stx)
+                   (syntax-case stx ()
+                     [(meval e)
+                      (parameterize ((current-namespace (make-base-namespace)))
+                        (eval `(define one '1))
+                        (let ([v (eval `(+ 1 ,#'e))])
+                          #`(quote #,v)))]))))
+        (eval `(require ',freshname))
+        (check-pred deriv?
+                    (trace `(meval (+ 1 2))))
+        (check-pred deriv?
+                    (trace `(module m mzscheme
+                              (require ',freshname)
+                              (meval (+ 1 2)))))))
+      ))

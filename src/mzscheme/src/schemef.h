@@ -1,6 +1,6 @@
 /*
   MzScheme
-  Copyright (c) 2004-2008 PLT Scheme Inc.
+  Copyright (c) 2004-2009 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
 
@@ -82,6 +82,8 @@ MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
 MZ_EXTERN void scheme_start_atomic(void);
 MZ_EXTERN void scheme_end_atomic(void);
 MZ_EXTERN void scheme_end_atomic_no_swap(void);
+MZ_EXTERN void scheme_start_in_scheduler(void);
+MZ_EXTERN void scheme_end_in_scheduler(void);
 
 MZ_EXTERN void scheme_out_of_fuel(void);
 
@@ -119,6 +121,9 @@ XFORM_NONGCING MZ_EXTERN int scheme_unless_ready(Scheme_Object *unless);
 MZ_EXTERN int scheme_in_main_thread(void);
 
 MZ_EXTERN void scheme_cancel_sleep(void);
+
+MZ_EXTERN void scheme_start_sleeper_thread(void (*mzsleep)(float seconds, void *fds), float secs, void *fds, int hit_fd);
+MZ_EXTERN void scheme_end_sleeper_thread();
 
 MZ_EXTERN Scheme_Object *scheme_make_thread_cell(Scheme_Object *def_val, int inherited);
 MZ_EXTERN Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells);

@@ -45,9 +45,9 @@ does not define a module system. Typical single-file @|r5rs| programs
 can be converted to PLT Scheme programs by prefixing them with
 @scheme[#, @hash-lang[] #, @schememodname[r5rs]], but other Scheme
 systems do not recognize @scheme[#, @hash-lang[] #,
-@schememodname[r5rs]] (which is not part of the @|r5rs| standard). The
-@exec{plt-r5rs} executable more directly conforms to the @|r5rs|
-standard.
+@schememodname[r5rs]]. The @exec{plt-r5rs} executable (see
+@secref[#:doc '(lib "r5rs/r5rs.scrbl") "plt-r5rs"]) more directly
+conforms to the @|r5rs| standard.
 
 Aside from the module system, the syntactic forms and functions of
 @|r5rs| and PLT Scheme differ. Only simple @|r5rs| become PLT Scheme
@@ -118,7 +118,7 @@ including the following:
 ]
 
 Each of these languages is used by starting module with the language
-name after @hash-lang[]. For example, this source of this very
+name after @hash-lang[]. For example, this source of this
 document starts with @scheme[#, @hash-lang[] scribble/doc].
 
 PLT Scheme users can define their own languages.  A language name maps

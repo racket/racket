@@ -1,6 +1,6 @@
 /*
   MzScheme
-  Copyright (c) 2004-2008 PLT Scheme Inc.
+  Copyright (c) 2004-2009 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
  
     This library is free software; you can redistribute it and/or
@@ -220,6 +220,7 @@ static int missed_context_switch = 0;
 static int have_activity = 0;
 int scheme_active_but_sleeping = 0;
 static int thread_ended_with_activity;
+int scheme_no_stack_overflow;
 
 static int needs_sleep_cancelled;
 
@@ -3437,13 +3438,16 @@ static int check_sleep(int need_activity, int sleep_now)
 {
   Scheme_Thread *p, *p2;
   int end_with_act;
-  
+
 #if defined(USING_FDS)
   DECL_FDSET(set, 3);
   fd_set *set1, *set2;
 #endif
   void *fds;
 
+  if (scheme_no_stack_overflow)
+    return 0;
+  
   /* Is everything blocked? */
   if (!do_atomic) {
     p = scheme_first_thread;
@@ -3641,7 +3645,7 @@ static int can_break_param(Scheme_Thread *p)
 
 int scheme_can_break(Scheme_Thread *p)
 {
-  if (!p->suspend_break) {
+  if (!p->suspend_break && !scheme_no_stack_overflow) {
     return can_break_param(p);
   } else
     return 0;
@@ -4359,6 +4363,18 @@ void scheme_start_atomic(void)
 void scheme_end_atomic_no_swap(void)
 {
   --do_atomic;
+}
+
+void scheme_start_in_scheduler(void)
+{
+  do_atomic++;
+  scheme_no_stack_overflow++;
+}
+      
+void scheme_end_in_scheduler(void)
+{
+  --do_atomic;
+  --scheme_no_stack_overflow;
 }
 
 void scheme_end_atomic(void)

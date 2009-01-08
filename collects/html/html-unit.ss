@@ -6,6 +6,7 @@
 	   mzlib/list
 	   mzlib/etc
 	   mzlib/include
+           "html-spec.ss"
 	   "html-sig.ss"
 	   "sgml-reader-sig.ss"
 	   xml/xml-sig)
@@ -118,7 +119,7 @@
       
       ;; may-contain : Kid-lister
       (define may-contain
-	(sgml:gen-may-contain (call-with-input-file (find-library "html-spec" "html") read)))
+	(sgml:gen-may-contain html-spec))
 
       (define may-contain-anything
 	(sgml:gen-may-contain null))

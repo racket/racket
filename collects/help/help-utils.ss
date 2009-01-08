@@ -14,7 +14,7 @@
          scheme/list
          "search.ss")
 
-(provide search-for find-help find-help/lib)
+(provide search-for find-help find-help/lib go-to-main-page)
 
 (define (search-for strs)
   (perform-search (apply string-append (add-between strs " "))))
@@ -64,9 +64,15 @@
               (printf "  ~a\n" (car libs)))
             (loop (cdr libs))))))))
 
+(define (report-sending-browser file)
+  (printf "Sending to web browser...\n  file: ~a\n" file))
+
+(define (go-to-main-page)
+  (send-main-page #:notify report-sending-browser))
+
 (define (go-to-tag xref t)
   (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
-    (printf "Sending to web browser...\n  file: ~a\n" file)
+    (report-sending-browser file)
     (when anchor (printf "  anchor: ~a\n" anchor))
     (unless (send-url/file file #:fragment (and anchor (uri-encode anchor)))
       (error 'help "browser launch failed"))))

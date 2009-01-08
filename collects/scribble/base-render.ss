@@ -443,7 +443,8 @@
                                                (part-collected-info part ri))))
                                    #t
                                    quiet
-                                   depth)))
+                                   depth
+                                   null)))
 
     (define/public (table-of-contents part ri)
       (do-table-of-contents part ri -1 not +inf.0))
@@ -456,14 +457,17 @@
     (define/public (quiet-table-of-contents part ri)
       (do-table-of-contents part ri 1 (lambda (x) #t) +inf.0))
 
-    (define/private (generate-toc part ri base-len skip? quiet depth)
+    (define/private (generate-toc part ri base-len skip? quiet depth prefixes)
       (let* ([number (collected-info-number (part-collected-info part ri))]
+             [prefixes (if (part-tag-prefix part)
+                           (cons (part-tag-prefix part) prefixes)
+                           prefixes)]
              [subs
               (if (and (quiet (and (part-style? part 'quiet)
                                    (not (= base-len (sub1 (length number))))))
                        (positive? depth))
                   (apply append (map (lambda (p)
-                                       (generate-toc p ri base-len #f quiet (sub1 depth)))
+                                       (generate-toc p ri base-len #f quiet (sub1 depth) prefixes))
                                      (part-parts part)))
                   null)])
         (if skip?
@@ -485,7 +489,9 @@
                                    number
                                    (list (make-element 'hspace '(" "))))
                                   (or (part-title-content part) '("???")))
-                                 (car (part-tags part))))))))
+                                 (for/fold ([t (car (part-tags part))])
+                                     ([prefix (in-list prefixes)])
+                                   (convert-key prefix t))))))))
                       subs)])
               (if (and (= 1 (length number))
                        (or (not (car number)) ((car number) . > . 1)))

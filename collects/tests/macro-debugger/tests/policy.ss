@@ -10,11 +10,13 @@
 (eval '(require (prefix-in base: scheme/base)) ns)
 (eval '(require (prefix-in scheme: scheme)) ns)
 
+(define (make-test-id sym)
+  (parameterize ((current-namespace ns))
+    (namespace-symbol->identifier sym)))
+
 (define-syntax-rule (test-policy policy name show?)
   (test-case (format "~s" 'name)
-    (check-eq? (policy
-                (parameterize ((current-namespace ns))
-                  (namespace-symbol->identifier 'name)))
+    (check-eq? (policy (make-test-id 'name))
                show?)))
 (define-syntax-rule (test-standard name show?)
   (test-policy standard-policy name show?))

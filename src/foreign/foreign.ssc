@@ -655,25 +655,11 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 (defctype 'string/ucs-4
   'ftype "pointer"
   'ctype "mzchar*"
-  'pred  "SCHEME_CHAR_STRINGP"
-  's->c  "SCHEME_CHAR_STR_VAL"
-  'c->s  "scheme_make_char_string_without_copying")
-
-(defctype 'string/ucs-4/null
-  'ftype "pointer"
-  'ctype "mzchar*"
   'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"
   's->c  "ucs4_string_or_null_to_ucs4_pointer"
   'c->s  "scheme_make_char_string_without_copying")
 
 (defctype 'string/utf-16
-  'ftype "pointer"
-  'ctype "unsigned short*"
-  'pred  "SCHEME_CHAR_STRINGP"
-  's->c  "ucs4_string_to_utf16_pointer"
-  'c->s  "utf16_pointer_to_ucs4_string")
-
-(defctype 'string/utf-16/null
   'ftype "pointer"
   'ctype "unsigned short*"
   'pred  "SCHEME_FALSEP_OR_CHAR_STRINGP"
@@ -938,18 +924,29 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 }
 
 /*****************************************************************************/
+/* Callback type */
+
+{:(cdefstruct ffi-callback
+    (callback "void*")
+    (proc     "Scheme_Object*")
+    (itypes   "Scheme_Object*")
+    (otype    "Scheme_Object*")
+    (call_in_scheduler "int")):}
+
+/*****************************************************************************/
 /* Pointer objects */
 /* use cpointer (with a NULL tag when creating), #f for NULL */
 
 #define SCHEME_FFIANYPTRP(x) \
   (SCHEME_FALSEP(x) || SCHEME_CPTRP(x) || SCHEME_FFIOBJP(x) || \
-   SCHEME_BYTE_STRINGP(x))
+   SCHEME_BYTE_STRINGP(x) || SCHEME_FFICALLBACKP(x))
 #define SCHEME_FFIANYPTR_VAL(x) \
   (SCHEME_CPTRP(x) ? SCHEME_CPTR_VAL(x) : \
     (SCHEME_FALSEP(x) ? NULL : \
       (SCHEME_FFIOBJP(x) ? (((ffi_obj_struct*)x)->obj) : \
-       SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
-         NULL)))
+       (SCHEME_BYTE_STRINGP(x) ? SCHEME_BYTE_STR_VAL(x) : \
+         (SCHEME_FFICALLBACKP(x) ? ((ffi_callback_struct *)x)->callback : \
+          NULL)))))
 #define SCHEME_FFIANYPTR_OFFSET(x) \
   (SCHEME_CPTRP(x) ? SCHEME_CPTR_OFFSET(x) : 0)
 #define SCHEME_FFIANYPTR_OFFSETVAL(x) \
@@ -982,15 +979,6 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   SCHEME_CPTR_TYPE(argv[0]) = argv[1];
   return scheme_void;
 }
-
-/*****************************************************************************/
-/* Callback type */
-
-{:(cdefstruct ffi-callback
-    (callback "void*")
-    (proc     "Scheme_Object*")
-    (itypes   "Scheme_Object*")
-    (otype    "Scheme_Object*")):}
 
 /*****************************************************************************/
 /* Scheme<-->C conversions */
@@ -1068,6 +1056,8 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       ((void**)W_OFFSET(dst,delta))[0] = SCHEME_CPTR_VAL(val);
     else if (SCHEME_FFIOBJP(val))
       ((void**)W_OFFSET(dst,delta))[0] = ((ffi_obj_struct*)val)->obj;
+    else if (SCHEME_FALSEP(val))
+      ((void**)W_OFFSET(dst,delta))[0] = NULL;
     else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
          scheme_wrong_type("Scheme->C", "cpointer", 0, 1, &val);
   } else switch (CTYPE_PRIMLABEL(type)) {
@@ -1966,12 +1956,16 @@ void ffi_do_callback(ffi_cif* cif, void* resultp, void** args, void *userdata)
     argv = argv_stack;
   else
     argv = scheme_malloc(argc * sizeof(Scheme_Object*));
+  if (data->call_in_scheduler)
+    scheme_start_in_scheduler();
   for (i=0, p=data->itypes; i<argc; i++, p=SCHEME_CDR(p)) {
     v = C2SCHEME(SCHEME_CAR(p), args[i], 0, 0);
     argv[i] = v;
   }
   p = _scheme_apply(data->proc, argc, argv);
   SCHEME2C(data->otype, resultp, 0, p, NULL, NULL, 1);
+  if (data->call_in_scheduler)
+    scheme_end_in_scheduler();
 }
 
 /* see ffi-callback below */
@@ -2002,7 +1996,7 @@ void free_cl_cif_args(void *ignored, void *p)
 /* (ffi-callback scheme-proc in-types out-type [abi]) -> ffi-callback */
 /* the treatment of in-types and out-types is similar to that in ffi-call */
 /* the real work is done by ffi_do_callback above */
-{:(cdefine ffi-callback 3 4):}
+{:(cdefine ffi-callback 3 5):}
 {
   ffi_callback_struct *data;
   Scheme_Object *itypes = argv[1];
@@ -2067,7 +2061,8 @@ void free_cl_cif_args(void *ignored, void *p)
   if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   {:(cmake-object "data" ffi-callback
-                  "cl_cif_args" "argv[0]" "argv[1]" "argv[2]"):}
+                  "cl_cif_args" "argv[0]" "argv[1]" "argv[2]" 
+                  "((argc > 4) && SCHEME_TRUEP(argv[4]))"):}
 #ifdef MZ_PRECISE_GC
   {
     /* put data in immobile, weak box */

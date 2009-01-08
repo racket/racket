@@ -21,7 +21,7 @@ X byte decimal_byte_int_byte  (byte x, int  y) { return 10*x + y; }
 X byte decimal_int_byte_byte  (int  x, byte y) { return 10*x + y; }
 X byte decimal_byte_byte_byte (byte x, byte y) { return 10*x + y; }
 
-X int  callback3_int_int_int    (int(*f)(int))   { return f(3); }
+X int  callback3_int_int_int    (int(*f)(int))   { if (f) return f(3); else return 79; }
 X int  callback3_byte_int_int   (int(*f)(byte))  { return f(3); }
 X int  callback3_int_byte_int   (byte(*f)(int))  { return f(3); }
 X int  callback3_byte_byte_int  (byte(*f)(byte)) { return f(3); }

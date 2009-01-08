@@ -226,10 +226,16 @@ There are a few basic @tech{formlet}s provided by this library.
 
 A few utilities are provided for using @tech{formlet}s in Web applications.
 
-@defproc[(send/formlet [f (formlet/c any/c)])
+@defproc[(send/formlet [f (formlet/c any/c)]
+                       [#:wrap wrapper
+                               (xexpr? . -> . response?)
+                               (lambda (form-xexpr)
+                                 `(html (head (title "Form Entry"))
+                                        (body ,form-xexpr)))])
          any/c]{
  Uses @scheme[send/suspend] to send @scheme[f]'s rendering (wrapped in a FORM tag whose action is
- the continuation URL) to the client. When the form is submitted, the request is passed to the
+ the continuation URL (wrapped again by @scheme[wrapper])) to the client.
+ When the form is submitted, the request is passed to the
  processing stage of @scheme[f].
 }
                

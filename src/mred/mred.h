@@ -189,7 +189,7 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #  define mrVERSION_SUFFIX " [cgc]"
 # endif
 #endif
-#define BANNER "MrEd v" MZSCHEME_VERSION mrVERSION_SUFFIX ", Copyright (c) 2004-2008 PLT Scheme Inc.\n"
+#define BANNER "MrEd v" MZSCHEME_VERSION mrVERSION_SUFFIX ", Copyright (c) 2004-2009 PLT Scheme Inc.\n"
 
 #ifndef WINDOW_STDIO
 /* Removing "|| defined(wx_msw)" below uses the Windows console.

@@ -191,8 +191,8 @@
 
     (NotReallyLocalAction
      ;; called 'expand' (not 'local-expand') within transformer
-     [(start (? EE))
-      #f])
+     [(start (? EE)) #f]
+     [(start (? CheckImmediateMacro)) #f])
 
     (Prim
      (#:args e1 e2 rs)

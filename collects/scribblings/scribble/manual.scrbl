@@ -387,15 +387,19 @@ can also be defined by a single @scheme[defproc*], for the case that
 it's best to document a related group of procedures at once.}
 
 
-@defform/subs[(defform maybe-id maybe-literals form-datum pre-flow ...)
+@defform/subs[(defform maybe-id maybe-literals form-datum maybe-contracts
+                pre-flow ...)
               ([maybe-id code:blank
                          (code:line #:id id)]
                [maybe-literals code:blank
-                               (code:line #:literals (literal-id ...))])]{
+                               (code:line #:literals (literal-id ...))]
+               [maybe-contracts code:blank
+                                (code:line #:contracts ([subform-datum contract-expr-datum]
+                                                        ...))])]{
 
 Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a syntatic form named by @scheme[id]
-whose syntax described by @scheme[form-datum]. If no @scheme[#:id] is used
+whose syntax is described by @scheme[form-datum]. If no @scheme[#:id] is used
 to specify @scheme[id], then @scheme[form-datum] must have the form
 @scheme[(id . _datum)].
 
@@ -414,16 +418,24 @@ non-terminal. If @scheme[#:literals] clause is provided, however,
 instances of the @scheme[literal-id]s are typeset normally (i.e., as
 determined by the enclosing context).
 
-The typesetting of @scheme[form-datum] preserves the source layout,
-like @scheme[schemeblock].}
+If a @scheme[#:contracts] clause is provided, each
+@scheme[subform-datum] (typically an identifier that serves as a
+meta-variable in @scheme[form-datum]) is shown as producing a value
+that must satisfy the contract described by @scheme[contract-expr-datum].
 
-@defform[(defform* maybe-id maybe-literals [form-datum ...+] pre-flow ...)]{
+The typesetting of @scheme[form-datum], @scheme[subform-datum], and
+@scheme[contract-expr-datum] preserves the source layout, like
+@scheme[schemeblock].}
+
+@defform[(defform* maybe-id maybe-literals [form-datum ...+] maybe-contracts
+           pre-flow ...)]{
 
 Like @scheme[defform], but for multiple forms using the same
 @scheme[_id].}
 
 @defform[(defform/subs maybe-id maybe-literals form-datum
            ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
            pre-flow ...)]{
 
 Like @scheme[defform], but including an auxiliary grammar of
@@ -434,12 +446,14 @@ non-terminals shown with the @scheme[_id] form. Each
 
 
 @defform[(defform*/subs maybe-id maybe-literals [form-datum ...]
+           maybe-contracts
            pre-flow ...)]{
 
 Like @scheme[defform/subs], but for multiple forms for @scheme[_id].}
 
 
-@defform[(defform/none maybe-literal form-datum pre-flow ...)]{
+@defform[(defform/none maybe-literal form-datum maybe-contracts
+           pre-flow ...)]{
 
 Like @scheme[defform], but without registering a definition.}
 
@@ -449,14 +463,16 @@ Like @scheme[defform], but without registering a definition.}
 Like @scheme[defform], but with a plain @scheme[id] as the form.}
 
 
-@defform[(specform maybe-literals datum pre-flow ...)]{
+@defform[(specform maybe-literals datum maybe-contracts
+           pre-flow ...)]{
 
 Like @scheme[defform], but without indexing or registering a
 definition, and with indenting on the left for both the specification
 and the @scheme[pre-flow]s.}
 
 
-@defform[(specsubform maybe-literals datum pre-flow ...)]{
+@defform[(specsubform maybe-literals datum maybe-contracts
+           pre-flow ...)]{
 
 Similar to @scheme[defform], but without any specific identifier being
 defined, and the table and flow are typeset indented. This form is
@@ -472,13 +488,15 @@ procedure. In this description, a reference to any identifier in
 
 @defform[(specsubform/subs maybe-literals datum
            ([nonterm-id clause-datum ...+] ...)
+           maybe-contracts
            pre-flow ...)]{
 
 Like @scheme[specsubform], but with a grammar like
 @scheme[defform/subs].}
 
 
-@defform[(specspecsubform maybe-literals datum pre-flow ...)]{
+@defform[(specspecsubform maybe-literals datum maybe-contracts
+           pre-flow ...)]{
 
 Like @scheme[specsubform], but indented an extra level. Since using
 @scheme[specsubform] within the body of @scheme[specsubform] already
@@ -488,6 +506,7 @@ without nesting a description.}
 
 @defform[(specspecsubform/subs maybe-literals datum
           ([nonterm-id clause-datum ...+] ...)
+          maybe-contracts
           pre-flow ...)]{
 
 Like @scheme[specspecsubform], but with a grammar like
@@ -943,7 +962,11 @@ combination of @scheme[envvar] and @scheme[as-index].}
 
  The path is relative to the current directory, which is set by
  @exec{setup-plt} and @exec{scribble} to the directory of the main
- document file.}
+ document file.
+
+ When generating Latex output, if the filename has a @filepath{.gif}
+ suffix, then the suffix is changed to @filepath{.png} (so a PNG file
+ must exist in addition to the GIF file).}
 
 @defproc[(image/plain [filename-relative-to-source string?]
                       [pre-element any/c] ...)

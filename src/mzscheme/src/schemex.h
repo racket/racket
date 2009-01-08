@@ -1,6 +1,6 @@
 /*
   MzScheme
-  Copyright (c) 2004-2008 PLT Scheme Inc.
+  Copyright (c) 2004-2009 PLT Scheme Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
 
@@ -66,6 +66,8 @@ Scheme_Thread *(*scheme_get_current_thread)();
 void (*scheme_start_atomic)(void);
 void (*scheme_end_atomic)(void);
 void (*scheme_end_atomic_no_swap)(void);
+void (*scheme_start_in_scheduler)(void);
+void (*scheme_end_in_scheduler)(void);
 void (*scheme_out_of_fuel)(void);
 Scheme_Object *(*scheme_thread)(Scheme_Object *thunk);
 Scheme_Object *(*scheme_thread_w_details)(Scheme_Object *thunk, 
@@ -95,6 +97,8 @@ void (*scheme_wait_input_allowed)(Scheme_Input_Port *port, int nonblock);
 int (*scheme_unless_ready)(Scheme_Object *unless);
 int (*scheme_in_main_thread)(void);
 void (*scheme_cancel_sleep)(void);
+void (*scheme_start_sleeper_thread)(void (*mzsleep)(float seconds, void *fds), float secs, void *fds, int hit_fd);
+void (*scheme_end_sleeper_thread)();
 Scheme_Object *(*scheme_make_thread_cell)(Scheme_Object *def_val, int inherited);
 Scheme_Object *(*scheme_thread_cell_get)(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells);
 void (*scheme_thread_cell_set)(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v);

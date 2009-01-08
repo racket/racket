@@ -347,7 +347,7 @@
      (make pat:datum stx null depth (syntax->datum #'datum))]
     [(heads gdots . tail)
      (gdots? #'gdots)
-     (let* ([heads (parse-heads #'heads decls (add1 depth))]
+     (let* ([heads (parse-heads #'heads decls depth)]
             [tail (parse-pattern #'tail decls depth)]
             [hattrs (append-attrs (for/list ([head heads]) (head-attrs head)) stx)]
             [tattrs (pattern-attrs tail)])
@@ -372,40 +372,6 @@
     [(struct pattern (orig-stx iattrs depth))
      (make head orig-stx iattrs depth (list p) #f #f #t #f #f)]))
 
-(define (parse-heads stx decls depth)
-  (syntax-case stx ()
-    [({} . more)
-     (raise-syntax-error 'pattern "empty head sequence not allowed" (stx-car stx))]
-    [({p ...} . more)
-     (let* ([heads
-             (for/list ([p (syntax->list #'(p ...))])
-               (parse-pattern p decls depth))]
-            [heads-attrs
-             (append-attrs (map pattern-attrs heads) (stx-car stx))])
-       (parse-heads-k #'more
-                      heads
-                      heads-attrs
-                      depth
-                      (lambda (more min max as-list? occurs-pvar default)
-                        (let ([occurs-attrs
-                               (if occurs-pvar
-                                   (list (make-attr occurs-pvar depth null))
-                                   null)])
-                          (cons (make head (stx-car stx)
-                                      (append-attrs (list occurs-attrs heads-attrs)
-                                                    (stx-car stx))
-                                      depth
-                                      heads
-                                      min max as-list?
-                                      occurs-pvar
-                                      default)
-                                (parse-heads more decls depth))))))]
-    [()
-     null]
-    [_
-     (raise-syntax-error 'pattern "expected sequence of patterns or sequence directive"
-                         (if (pair? stx) (car stx) stx))]))
-
 (define head-directive-table
   (list (list '#:min check-nat/f)
         (list '#:max check-nat/f)
@@ -414,9 +380,24 @@
         (list '#:opt)
         (list '#:mand)))
 
-(define (parse-heads-k stx heads heads-attrs heads-depth k)
-  (define-values (chunks rest) (chunk-kw-seq/no-dups stx head-directive-table))
-  (reject-duplicate-chunks chunks)
+(define (parse-heads stx decls enclosing-depth)
+  (syntax-case stx ()
+    [({} . more)
+     (raise-syntax-error 'pattern "empty head sequence not allowed" (stx-car stx))]
+    [({p ...} . more)
+     (let-values ([(chunks rest) (chunk-kw-seq/no-dups #'more head-directive-table)])
+       (reject-duplicate-chunks chunks) ;; FIXME: needed?
+       (cons (parse-head/chunks (stx-car stx) decls enclosing-depth chunks)
+             (parse-heads rest decls enclosing-depth)))]
+    [()
+     null]
+    [_
+     (raise-syntax-error 'pattern "expected sequence of patterns or sequence directive"
+                         (cond [(pair? stx) (car stx)]
+                               [(syntax? stx) stx]
+                               [else #f]))]))
+
+(define (parse-head/chunks pstx decls enclosing-depth chunks)
   (let* ([min-row (assq '#:min chunks)]
          [max-row (assq '#:max chunks)]
          [occurs-row (assq '#:occurs chunks)]
@@ -443,20 +424,42 @@
       (unless opt-row
         (raise-syntax-error #f
                             "default only allowed for optional patterns"
-                            (cadr default-row)))
-      (unless (and (pair? head-attrs)
-                   (null? (cdr head-attrs))
-                   (= heads-depth (attr-depth (car head-attrs)))
-                   (null? (attr-inner (car head-attrs))))
+                            (cadr default-row))))
+    (parse-head/options pstx
+                        decls
+                        enclosing-depth
+                        (cond [opt-row 0] [mand-row 1] [else min])
+                        (cond [opt-row 1] [mand-row 1] [else max])
+                        (not (or opt-row mand-row))
+                        (and occurs-row (caddr occurs-row))
+                        default-row)))
+
+(define (parse-head/options pstx decls enclosing-depth 
+                            min max as-list? occurs-pvar default-row)
+  (let* ([depth (if as-list? (add1 enclosing-depth) enclosing-depth)]
+         [heads
+          (for/list ([p (syntax->list pstx)])
+            (parse-pattern p decls depth))]
+         [heads-attrs
+          (append-attrs (map pattern-attrs heads) pstx)])
+    (when default-row
+      (unless (and (= (length heads-attrs) 1)
+                   (= enclosing-depth (attr-depth (car heads-attrs)))
+                   (null? (attr-inner (car heads-attrs))))
         (raise-syntax-error #f
                             "default only allowed for patterns with single simple pattern variable"
                             (cadr default-row))))
-    (k rest
-       (cond [opt-row 0] [mand-row 1] [else min])
-       (cond [opt-row 1] [mand-row 1] [else max])
-       (not (or opt-row mand-row))
-       (and occurs-row (caddr occurs-row))
-       (and default-row (caddr default-row)))))
+    (let ([occurs-attrs
+           (if occurs-pvar
+               (list (make-attr occurs-pvar depth null))
+               null)])
+      (make head pstx
+            (append-attrs (list occurs-attrs heads-attrs) pstx)
+            depth
+            heads
+            min max as-list?
+            occurs-pvar
+            (and default-row (caddr default-row))))))
 
 ;; append-attrs : (listof (listof IAttr)) stx -> (listof IAttr)
 (define (append-attrs attrss stx)

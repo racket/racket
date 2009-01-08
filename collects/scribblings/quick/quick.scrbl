@@ -410,7 +410,7 @@ Modules are named and distributed in various ways:
 
  @item{Some modules live relative to other modules, without
        necessarily belonging to any particular collection or package.
-       For example, in DrScheme, if save your definitions so far in a
+       For example, in DrScheme, if you save your definitions so far in a
        file @filepath{quick.ss} and add the line
 
         @schemeblock[(provide rainbow square)]

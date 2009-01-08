@@ -158,6 +158,8 @@ interface is not an object (i.e., there are no ``meta-classes'' or
 
 @section[#:tag "createinterface"]{Creating Interfaces}
 
+@guideintro["classes"]{classes, objects, and interfaces}
+
 @defform[(interface (super-interface-expr ...) id ...)]{
 
 Produces an interface. The @scheme[id]s must be mutually distinct.
@@ -206,6 +208,8 @@ structure type property's guard, if any).}
 @; ------------------------------------------------------------------------
 
 @section[#:tag "createclass"]{Creating Classes}
+
+@guideintro["classes"]{classes and objects}
 
 @defthing[object% class?]{
 
