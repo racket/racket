@@ -1110,13 +1110,20 @@ The first step in designing a @tech{universe} is to understand the
  throughout a system. We know that the @tech{universe} doesn't exist until
  the server starts and the @tech{world}s are joining. Because of the nature
  of computers and networks, however, we may assume little else. Our network
- connections ensure that if some @tech{world} sends two messages in some
- order, they arrive in the same order at the server. In contrast, it is
- generally impossible to ensure whether one world joins before another or
- whether a message from one world gets to the server before another world's
- message gets there. It is therefore the designer's task to establish a
- protocol that enforces a certain order onto a universe and this activity
- is called @emph{protocol design}. 
+ connections ensure that if some @tech{world} or the @tech{server} sends
+ two messages to the @emph{same} place in some order, they arrive in the
+ same order (if they arrive at all). In contrast, if two distinct
+ @tech{world} programs send one message each, the network does not
+ guarantee the order of arrival at the server; similarly, if the
+ @tech{server} is asked to send some messages to several distinct
+ @tech{world} programs, they may arrive at those worlds in the order sent
+ or in the some other order. In the same vein, it is impossible to ensure
+ that one world joins before another. Worst, when someone removes the
+ connection (cable, wireless) between a computer that runs a @tech{world}
+ program and the rest of the network or if some network cable is cut,
+ messages don't go anywhere. Due to this vagaries, it is therefore the
+ designer's task to establish a protocol that enforces a certain order onto
+ a universe and this activity is called @emph{protocol design}.
 
 From the perspective of the @tech{universe}, the design of a protocol is
  about the design of data representations for tracking universe information
