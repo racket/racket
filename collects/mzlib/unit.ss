@@ -755,8 +755,8 @@
                                     [else (list defn-or-expr)]))
                                 expanded-body))])
              #'(begin-with-definitions
-                 defn&expr ...
-                 (void))))))))
+                 (void)
+                 defn&expr ...)))))))
 
   (define-for-syntax (redirect-imports/exports import?)
     (lambda (table-stx
