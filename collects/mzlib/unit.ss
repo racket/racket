@@ -558,12 +558,7 @@
                                                   (syntax->list #'((int-ivar ...) ...))
                                                   (syntax->list #'((ext-ivar ...) ...))
                                                   (syntax->list #'((iloc ...) ...))
-                                                  (map cadddr import-sigs))
-                                          [(int-evar ...)
-                                           (make-id-mappers
-                                            (quote-syntax (unbox eloc))
-                                            ...)]
-                                          ...)
+                                                  (map cadddr import-sigs)))
                           (letrec-syntaxes+values (renames ...
                                                    mac ... ...)
                             (val ... ...)
@@ -703,83 +698,65 @@
                    (var-info-id defid)))))
             local-ivars)
            
-           (with-syntax ([(intname ...)
-                          (foldr
-                           (lambda (var res)
-                             (cond
-                               ((not (or (var-info-syntax? (cdr var))
-                                         (var-info-exported? (cdr var))))
-                                (cons (car var) res))
-                               (else res)))
-                           null
-                           (bound-identifier-mapping-map defined-names-table cons))]
-                         [(evar ...) #'evars]
-                         [(l-evar ...) local-evars]
-                         [(defn&expr ...) 
-                          (filter
-                           values
+           (with-syntax ([(defn&expr ...) 
+                          (apply
+                           append
                            (map (lambda (defn-or-expr)
                                   (syntax-case defn-or-expr (define-values define-syntaxes)
                                     [(define-values () expr)
-                                     (syntax/loc defn-or-expr (set!-values () expr))]
+                                     defn-or-expr]
                                     [(define-values ids expr)
-                                     (let ([ids (syntax->list #'ids)]
-                                           [do-one
-                                            (lambda (id tmp name)
-                                              (let ([unit-name
-                                                     (syntax-local-infer-name (error-syntax))]
-                                                    [export-loc
-                                                     (var-info-exported?
-                                                      (bound-identifier-mapping-get
-                                                       defined-names-table
-                                                       id))]
-                                                    [add-ctc
-                                                     (var-info-add-ctc
-                                                      (bound-identifier-mapping-get
-                                                       defined-names-table
-                                                       id))])
-                                                (cond
-                                                  (export-loc
-                                                   ;; set! exported id:
-                                                   (quasisyntax/loc defn-or-expr
-                                                     (set-box! #,export-loc 
-                                                               #,(if name
-                                                                     #`(let ([#,name #,(if add-ctc (add-ctc tmp) tmp)])
-                                                                         #,name)
-                                                                     tmp))))
-                                                  (else
-                                                   ;; not an exported id
-                                                   (quasisyntax/loc defn-or-expr
-                                                     (set! #,id #,tmp))))))])
+                                     (let* ([ids (syntax->list #'ids)]
+                                            [tmps (generate-temporaries ids)]
+                                            [new-defn (quasisyntax/loc defn-or-expr
+                                                        (define-values #,(map (lambda (id tmp)
+                                                                                (if (var-info-exported?
+                                                                                     (bound-identifier-mapping-get
+                                                                                      defined-names-table
+                                                                                      id))
+                                                                                    tmp
+                                                                                    id))
+                                                                              ids tmps) expr))]
+                                            [do-one
+                                             (lambda (id tmp name)
+                                               (let ([unit-name
+                                                      (syntax-local-infer-name (error-syntax))]
+                                                     [export-loc
+                                                      (var-info-exported?
+                                                       (bound-identifier-mapping-get
+                                                        defined-names-table
+                                                        id))]
+                                                     [add-ctc
+                                                      (var-info-add-ctc
+                                                       (bound-identifier-mapping-get
+                                                        defined-names-table
+                                                        id))])
+                                                 (cond
+                                                   (export-loc
+                                                    ;; set! exported id:
+                                                    (list 
+                                                     (quasisyntax/loc defn-or-expr
+                                                       (set-box! #,export-loc 
+                                                                 #,(if name
+                                                                       #`(let ([#,name #,(if add-ctc (add-ctc tmp) tmp)])
+                                                                           #,name)
+                                                                       tmp)))
+                                                     (quasisyntax/loc defn-or-expr
+                                                       (define-syntax #,id (make-id-mapper (quote-syntax #,tmp))))))
+                                                   (else
+                                                    ;; not an exported id
+                                                    null))))])
                                        (if (null? (cdr ids))
-                                           (do-one (car ids) (syntax expr) (car ids))
-                                           (let ([tmps (generate-temporaries ids)])
-                                             (with-syntax ([(tmp ...) tmps]
-                                                           [(set ...)
-                                                            (map (lambda (id tmp)
-                                                                   (do-one id tmp #f))
-                                                                 ids tmps)])
-                                               (syntax/loc defn-or-expr
-                                                 (let-values ([(tmp ...) expr])
-                                                   set ...))))))]
-                                    [(define-syntaxes . l) #f]
-                                    [else defn-or-expr]))
-                                expanded-body))]
-                         [(stx-defn ...) 
-                          (filter
-                           values
-                           (map (lambda (defn-or-expr)
-                                  (syntax-case defn-or-expr (define-syntaxes)
-                                    [(define-syntaxes . l) #'l]
-                                    [else #f]))
+                                           (cons new-defn (do-one (car ids) (car tmps) (car ids)))
+                                           (cons new-defn (apply append
+                                                                 (map (lambda (id tmp)
+                                                                        (do-one id tmp #f))
+                                                                      ids tmps)))))]
+                                    [else (list defn-or-expr)]))
                                 expanded-body))])
-             #'(letrec-syntaxes+values (stx-defn
-                                        ...
-                                        ((l-evar) (make-rename-transformer (quote-syntax evar)))
-                                        ...)
-                 ([(intname) undefined] ...)
-                 (void) ; in case the body would be empty
-                 defn&expr ...)))))))
+             #'(begin-with-definitions
+                 defn&expr ...
+                 (void))))))))
 
   (define-for-syntax (redirect-imports/exports import?)
     (lambda (table-stx
