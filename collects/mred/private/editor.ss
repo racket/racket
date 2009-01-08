@@ -358,7 +358,8 @@
 		[(x y) (sp x y 'standard #f #t)]
 		[(x y z) (sp x y z #f #t)]
 		[(x y z f) (sp x y z f #t)]
-		[(x y z f b?) (sp x y z f b?)]))]
+		[(x y z f b?) (sp x y z f b?)]
+		[(x y z f b? eps?) (sp x y z f b? eps?)]))]
 
 	     [on-new-box
 	      (entry-point
