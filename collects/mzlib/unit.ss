@@ -587,13 +587,10 @@
        (parameterize ((error-syntax #'err-stx))
          (let* ([expand-context (generate-expand-context)]
                 [def-ctx (syntax-local-make-definition-context)]
-                [local-ivars (syntax->list (localify #'ivars def-ctx))]
-                [local-evars (syntax->list (localify #'evars def-ctx))]
                 [stop-list
                  (append
                   (kernel-form-identifier-list)
-                  (syntax->list #'ivars)
-                  (syntax->list #'evars))]
+                  (syntax->list #'ivars))]
                 [definition?
                   (lambda (id)
                     (and (identifier? id)
@@ -681,7 +678,7 @@
                                        #`(if #,ctc
                                              (contract #,ctc #,e '#,unit-name 'cant-happen #,(id->contract-src-info var))
                                              #,e)))))
-            local-evars
+            (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
             (syntax->list #'ext-evars)
             (syntax->list #'ectcs))
@@ -696,7 +693,7 @@
                   (raise-stx-err
                    "definition for imported identifier"
                    (var-info-id defid)))))
-            local-ivars)
+            (syntax->list (localify #'ivars def-ctx)))
            
            (with-syntax ([(defn&expr ...) 
                           (apply
@@ -755,7 +752,6 @@
                                     [else (list defn-or-expr)]))
                                 expanded-body))])
              #'(begin-with-definitions
-                 (void)
                  defn&expr ...)))))))
 
   (define-for-syntax (redirect-imports/exports import?)
