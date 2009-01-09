@@ -1,8 +1,7 @@
 (module tl-test mzscheme
   (require "../reduction-semantics.ss"
            (only "reduction-semantics.ss" 
-                 relation-coverage fresh-coverage covered-cases
-                 make-covered-case covered-case-name)
+                 relation-coverage make-coverage covered-cases)
            "test-util.ss"
            (only "matcher.ss" make-bindings make-bind)
            scheme/match
@@ -1226,32 +1225,30 @@
             [else #f])
           #t))
   
-  (let ([R (reduction-relation
-            empty-language
-            (--> number (q ,(add1 (term number)))
-                 (side-condition (odd? (term number)))
-                 side-condition)
-            (--> 1 4
-                 one)
-            (==> 2 t
-                 shortcut)
-            with
-            [(--> (q a) b)
-             (==> a b)])]
-        [c (fresh-coverage)])
+  (let* ([R (reduction-relation
+             empty-language
+             (--> number (q ,(add1 (term number)))
+                  (side-condition (odd? (term number)))
+                  side-condition)
+             (--> 1 4)
+             (==> 2 t
+                  shortcut)
+             with
+             [(--> (q a) b)
+              (==> a b)])]
+         [c (make-coverage R)]
+         [< (λ (c d) (string<? (car c) (car d)))])
     (parameterize ([relation-coverage c])
       (apply-reduction-relation R 4)
-      (test (covered-cases c) null)
+      (test (sort (covered-cases c) <)
+            '(("shortcut" . 0) ("side-condition" . 0) ("unnamed" . 0)))
       
       (apply-reduction-relation R 3)
-      (test (covered-cases c)
-            (list (make-covered-case "side-condition" 1)))
+      (test (sort (covered-cases c) <)
+            '(("shortcut" . 0) ("side-condition" . 1) ("unnamed" . 0)))
       
       (apply-reduction-relation* R 1)
-      (test (sort (covered-cases c)
-                  (λ (c d) (string<? (covered-case-name c) (covered-case-name d))))
-            (list (make-covered-case "one" 1)
-                  (make-covered-case "shortcut" 1)
-                  (make-covered-case "side-condition" 2)))))
+      (test (sort (covered-cases c) <)
+            '(("shortcut" . 1) ("side-condition" . 2) ("unnamed" . 1)))))
   
   (print-tests-passed 'tl-test.ss))
