@@ -5,9 +5,6 @@
 ;;  by dynamically linking to code supplied by the MzLib, dynext, and
 ;;  compiler collections.
 
-;; The Scheme->C compiler is loaded as either sploadr.ss (link in
-;;  real MrSpidey) or loadr.ss (link in trivial MrSpidey stubs).
-
 #lang scheme/base
 
 (require scheme/unit
