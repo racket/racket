@@ -405,33 +405,70 @@
 
     ;; ----------------------------------------
 
+    (define copied-srcs (make-hash))
+    (define copied-dests (make-hash))
+
     (define/public (install-file fn)
       (if refer-to-existing-files
           (if (string? fn)
               (string->path fn)
               fn)
-          (let ([src-dir (path-only fn)]
-                [dest-dir (get-dest-directory #t)]
-                [fn (file-name-from-path fn)])
-            (let ([src-file (build-path (or src-dir (current-directory)) fn)]
-                  [dest-file (build-path (or dest-dir (current-directory)) fn)])
-              (unless (and (file-exists? dest-file)
-                           (call-with-input-file*
-                            src-file
-                            (lambda (src)
-                              (call-with-input-file* 
-                               dest-file
-                               (lambda (dest)
-                                 (or (equal? (port-file-identity src)
-                                             (port-file-identity dest))
-                                     (let loop ()
-                                       (let ([s (read-bytes 4096 src)]
-                                             [d (read-bytes 4096 dest)])
-                                         (and (equal? s d)
-                                              (or (eof-object? s) (loop)))))))))))
-                (when (file-exists? dest-file) (delete-file dest-file))
-                (copy-file src-file dest-file))
-              (path->string fn)))))
+          (let ([normalized (normal-case-path (simplify-path (path->complete-path fn)))])
+            (or (hash-ref copied-srcs normalized #f)
+                (let ([src-dir (path-only fn)]
+                      [dest-dir (get-dest-directory #t)]
+                      [fn (file-name-from-path fn)])
+                  (let ([src-file (build-path (or src-dir (current-directory)) fn)]
+                        [dest-file (build-path (or dest-dir (current-directory)) fn)]
+                        [next-file-name (lambda (dest)
+                                          (let-values ([(base name dir?) (split-path dest)])
+                                            (build-path
+                                             base
+                                             (let ([s (path-element->string (path-replace-suffix name #""))])
+                                               (let ([n (regexp-match #rx"^(.*)_([0-9]+)$" s)])
+                                                 (format "~a_~a~a"
+                                                         (if n (cadr n) s)
+                                                         (if n (add1 (string->number (caddr n))) 2)
+                                                         (let ([ext (filename-extension name)])
+                                                           (if ext
+                                                               (bytes-append #"." ext)
+                                                               ""))))))))])
+                    (let-values ([(dest-file normalized-dest-file)
+                                  (let loop ([dest-file dest-file])
+                                    (let ([normalized-dest-file 
+                                           (normal-case-path (simplify-path (path->complete-path dest-file)))])
+                                      (if (file-exists? dest-file)
+                                          (cond
+                                           [(call-with-input-file*
+                                             src-file
+                                             (lambda (src)
+                                               (call-with-input-file* 
+                                                dest-file
+                                                (lambda (dest)
+                                                  (or (equal? (port-file-identity src)
+                                                              (port-file-identity dest))
+                                                      (let loop ()
+                                                        (let ([s (read-bytes 4096 src)]
+                                                              [d (read-bytes 4096 dest)])
+                                                          (and (equal? s d)
+                                                               (or (eof-object? s) (loop))))))))))
+                                            ;; same content at that destination
+                                            (values dest-file normalized-dest-file)]
+                                           [(hash-ref copied-dests normalized-dest-file #f)
+                                            ;; need a different file
+                                            (loop (next-file-name dest-file))]
+                                           [else
+                                            ;; replace the file
+                                            (delete-file dest-file)
+                                            (values dest-file normalized-dest-file)])
+                                          ;; new file
+                                          (values dest-file normalized-dest-file))))])
+                      (unless (file-exists? dest-file)
+                        (copy-file src-file dest-file))
+                      (hash-set! copied-dests normalized-dest-file #t)
+                      (let ([result (path->string (file-name-from-path dest-file))])
+                        (hash-set! copied-srcs normalized result)
+                        result))))))))
 
     ;; ----------------------------------------
 
