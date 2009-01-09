@@ -47,9 +47,12 @@
      #'((tech "term") args ...)]
     [x (identifier? #'x) #'(tech "term")]))
 
+@(define redex-eval (make-base-eval))
+@(interaction-eval #:eval redex-eval (require redex/reduction-semantics))
+
 @title{@bold{Redex}: Debugging Operational Semantics}
 
-@author["Robert Bruce Findler"]
+@author["Robert Bruce Findler" "Casey Klein"]
 
 PLT Redex consists of a domain-specific language for specifying
 reduction semantics, plus a suite of tools for working with the
@@ -981,6 +984,103 @@ Prints out how many tests passed and failed, and resets the
 counters so that next time this function is called, it
 prints the test results for the next round of tests.
 }
+
+@defproc[(make-coverage [r reduction-relation?]) coverage?]{
+Constructs a structure to contain the per-case test coverage of
+the relation @scheme[r]. Use with @scheme[relation-coverage]
+and @scheme[covered-cases].
+}
+
+@defproc[(coverage? [v any/c]) boolean?]{
+Returns @scheme[#t] for a value produced by @scheme[make-coverage]
+and @scheme[#f] for any other.}
+
+@defparam[relation-coverage c (or/c false/c coverage?)]{
+When @scheme[c] is a @scheme[coverage] structure, rather than 
+@scheme[#f] (the default), procedures such as
+@scheme[apply-reduction-relation], @scheme[traces], etc. count 
+the number applications of each case of the
+@scheme[reduction-relation], storing the results in @scheme[c].
+}
+
+@defproc[(covered-cases 
+          [c coverage?])
+         (listof (cons/c string? natural-number/c))]{
+Extracts the coverage information recorded in @scheme[c], producing
+an association list mapping names to application counts.}
+
+@examples[
+#:eval redex-eval
+       (define-language addition
+         (e (+ number ...)))
+       (define reduce
+         (reduction-relation 
+          addition
+          (--> (+) 0 "zero")
+          (--> (+ number) number)
+          (--> (+ number_1 number_2 number ...)
+               (+ ,(+ (term number_1) (term number_2))
+                  number ...)
+               "add")))
+       (let ([coverage (make-coverage reduce)])
+         (parameterize ([relation-coverage coverage])
+           (apply-reduction-relation* reduce (term (+ 1 2 3)))
+           (covered-cases coverage)))]
+
+@defform*[[(generate-term language #, @|ttpattern| size-exp)
+           (generate-term language #, @|ttpattern| size-exp #:attempt attempt-num-expr)]
+          #:contracts ([size-expr natural-number/c]
+                       [attempt-num-expr natural-number/c])]{
+Generates a random term matching @scheme[pattern] (in the given language).
+
+The argument @scheme[size-expr] bounds the height of the generated term
+(measured as the height of the derivation tree used to produce
+the term). 
+         
+The optional keyword argument @scheme[attempt-num-expr] 
+(default @scheme[1]) provides coarse grained control over the random
+decisions made during generation (e.g., the expected length of 
+@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr]).}
+
+@defform/subs[(check language #, @|ttpattern| property-expr kw-arg ...)
+              ([kw-arg (code:line #:attempts attempts-expr)
+                       (code:line #:source metafunction)
+                       (code:line #:source relation-expr)])
+              #:contracts ([property-expr any/c]
+                           [attempts-expr natural-number/c]
+                           [relation-expr reduction-relation?])]{
+Searches for a counterexample to @scheme[property-expr], interpreted
+as a predicate universally quantified over its free
+@pattech[term]-variables. @scheme[check] chooses substitutions for 
+these free @pattech[term]-variables by generating random terms matching
+@scheme[pattern] and extracting the sub-terms bound by the
+@pattech[names] and non-terminals in @scheme[pattern].
+
+@scheme[check] generates at most @scheme[attempts-expr] (default @scheme[100])
+random terms in its search. The size and complexity of terms it generates
+gradually increases with each failed attempt.
+
+When the optional @scheme[#:source] argument is present, @scheme[check] 
+generates @math{10%} of its terms by randomly choosing a pattern from the
+left-hand sides the definition of the supplied metafunction or relation.
+@scheme[check] raises an exception if a term generated from an alternate
+pattern does not match the @scheme[pattern].}
+
+@defproc[(check-reduction-relation 
+          [relation reduction-relation?]
+          [property (-> any/c any/c)]
+          [#:attempts attempts natural-number/c 100])
+         (or/c true/c void?)]{
+Tests a @scheme[relation] as follows: for each case of @scheme[relation],
+@scheme[check-reduction-relation] generates @scheme[attempts] random
+terms that match that case's left-hand side and applies @scheme[property] 
+to each random term.}
+
+@defform*[[(check-metafunction metafunction property)
+           (check-metafunction metafunction property #:attempts attempts)]
+          #:contracts ([property (-> any/c any/c)]
+                       [attempts natural-number/c])]{
+Like @scheme[check-reduction-relation] but for metafunctions.}
 
 @deftech{Debugging PLT Redex Programs}
 

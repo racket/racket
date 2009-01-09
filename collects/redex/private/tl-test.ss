@@ -1,7 +1,5 @@
 (module tl-test mzscheme
   (require "../reduction-semantics.ss"
-           (only "reduction-semantics.ss" 
-                 relation-coverage make-coverage covered-cases)
            "test-util.ss"
            (only "matcher.ss" make-bindings make-bind)
            scheme/match
