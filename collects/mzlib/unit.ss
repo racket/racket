@@ -514,7 +514,12 @@
                        [((eloc ...) ...)
                         (map (lambda (x) (generate-temporaries (car x))) export-sigs)]
                        [((ectc ...) ...)
-                        (map cadddr export-sigs)]
+                        (map (λ (sig)
+                               (map (λ (ctc)
+                                      (if ctc
+                                          (cons 'contract ctc)
+                                          #f))
+                                    (cadddr sig))) export-sigs)]
                        [((import-key import-super-keys ...) ...)
                         (map tagged-info->keys import-tagged-infos)]
                        [((export-key ...) ...)
@@ -673,10 +678,12 @@
                 (when (var-info-syntax? v)
                   (raise-stx-err "cannot export syntax from a unit" name))
                 (set-var-info-exported?! v loc)
-                (set-var-info-add-ctc! v (lambda (e)
-                                       #`(if #,ctc
-                                             (contract #,ctc #,e '#,unit-name 'cant-happen #,(id->contract-src-info var))
-                                             #,e)))))
+                (when (pair? (syntax-e ctc))
+                  (set-var-info-add-ctc! 
+                   v
+                   (λ (e)
+                     #`(contract #,(cdr (syntax-e ctc)) #,e '#,unit-name 
+                                 'cant-happen #,(id->contract-src-info var)))))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
             (syntax->list #'ext-evars)
