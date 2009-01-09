@@ -715,7 +715,7 @@
                                                                                     id))
                                                                               ids tmps) expr))]
                                             [do-one
-                                             (lambda (id tmp name)
+                                             (lambda (id tmp)
                                                (let ([unit-name
                                                       (syntax-local-infer-name (error-syntax))]
                                                      [export-loc
@@ -734,21 +734,15 @@
                                                     (list 
                                                      (quasisyntax/loc defn-or-expr
                                                        (set-box! #,export-loc 
-                                                                 #,(if name
-                                                                       #`(let ([#,name #,(if add-ctc (add-ctc tmp) tmp)])
-                                                                           #,name)
-                                                                       tmp)))
+                                                                 (let ([#,id #,(if add-ctc (add-ctc tmp) tmp)])
+                                                                   #,id)))
                                                      (quasisyntax/loc defn-or-expr
-                                                       (define-syntax #,id (make-id-mapper (quote-syntax #,tmp))))))
+                                                       (define-syntax #,id
+                                                         (make-id-mapper (quote-syntax #,tmp))))))
                                                    (else
                                                     ;; not an exported id
                                                     null))))])
-                                       (if (null? (cdr ids))
-                                           (cons new-defn (do-one (car ids) (car tmps) (car ids)))
-                                           (cons new-defn (apply append
-                                                                 (map (lambda (id tmp)
-                                                                        (do-one id tmp #f))
-                                                                      ids tmps)))))]
+                                       (cons new-defn (apply append (map do-one ids tmps))))]
                                     [else (list defn-or-expr)]))
                                 expanded-body))])
              #'(begin-with-definitions
