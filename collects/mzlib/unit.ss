@@ -241,15 +241,15 @@
              (x
               (identifier? #'x)
               (loop (cdr sig-exprs) (cons #'x bindings) val-defs stx-defs (cons #f ctcs)))
-             ((x y z)
+             ((x (y z) ...)
               (and (identifier? #'x)
                    (module-identifier=? #'x #'contracted)
-                   (identifier? #'y))
+                   (andmap identifier? (syntax->list #'(y ...))))
               (loop (cdr sig-exprs)
-                    (cons #'y bindings)
+                    (append (syntax->list #'(y ...)) bindings)
                     val-defs
                     stx-defs
-                    (cons #'z ctcs)))
+                    (append (syntax->list #'(z ...)) ctcs)))
              ((x . y)
               (and (identifier? #'x)
                    (or (module-identifier=? #'x #'define-values)
