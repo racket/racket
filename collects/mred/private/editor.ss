@@ -341,24 +341,24 @@
 			((void) after-edit-sequence))
 
 	    (private*
-	     [sp (lambda (x y z f b?)
+	     [sp (lambda (x y z f b? eps?)
 		   ;; let super method report z errors:
 		   (let ([zok? (memq z '(standard postscript))])
 		     (when zok?
 		       (check-top-level-parent/false '(method editor<%> print) f))
 		     (let ([p (and zok? f (mred->wx f))])
-		       (as-exit (lambda () (super print x y z p b?))))))])
+		       (as-exit (lambda () (super print x y z p b? eps?))))))])
 
 	    (override*
 	     [print
 	      (entry-point
 	       (case-lambda 
-		[() (sp #t #t 'standard #f #t)]
-		[(x) (sp x #t 'standard #f #t)]
-		[(x y) (sp x y 'standard #f #t)]
-		[(x y z) (sp x y z #f #t)]
-		[(x y z f) (sp x y z f #t)]
-		[(x y z f b?) (sp x y z f b?)]
+		[() (sp #t #t 'standard #f #t #f)]
+		[(x) (sp x #t 'standard #f #t #f)]
+		[(x y) (sp x y 'standard #f #t #f)]
+		[(x y z) (sp x y z #f #t #f)]
+		[(x y z f) (sp x y z f #t #f)]
+		[(x y z f b?) (sp x y z f b? #f)]
 		[(x y z f b? eps?) (sp x y z f b? eps?)]))]
 
 	     [on-new-box
