@@ -127,7 +127,6 @@
                    #:multiple? [multiple? #f] 
                    #:pred [pred (λ (x) #t)] 
                    #:pp [pp default-pretty-printer] 
-                   #:default-arrow-colors [default-arrow-colors '()]
                    #:scheme-colors? [scheme-colors? #t]
                    #:colors [colors '()]
                    #:layout [layout void])
@@ -137,7 +136,6 @@
                  #:multiple? multiple? 
                  #:pred pred
                  #:pp pp
-                 #:default-arrow-colors default-arrow-colors
                  #:scheme-colors? scheme-colors?
                  #:colors colors
                  #:layout layout)]
@@ -146,7 +144,7 @@
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
     (parameterize ([current-ps-setup ps-setup])
-      (send graph-pb print #t #f 'postscript #f #f))))
+      (send graph-pb print #t #f 'postscript #f #f #t))))
 
 (define (traces reductions pre-exprs 
                 #:multiple? [multiple? #f] 
