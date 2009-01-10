@@ -144,7 +144,7 @@
     (send ps-setup set-file filename)
     (send ps-setup set-mode 'file)
     (parameterize ([current-ps-setup ps-setup])
-      (send graph-pb print #t #f 'postscript #f #f #t))))
+      (send graph-pb print #f #f 'postscript #f #f #t))))
 
 (define (traces reductions pre-exprs 
                 #:multiple? [multiple? #f] 
