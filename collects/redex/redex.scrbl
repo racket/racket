@@ -1117,13 +1117,21 @@ exploring reduction sequences.
                  [expr (or/c any/c (listof any/c))]
                  [#:multiple? multiple? boolean? #f]
                  [#:pred pred
-                         (or/c (sexp -> any) (sexp term-node? any))
+                         (or/c (-> sexp any)
+                               (-> sexp term-node? any))
                          (lambda (x) #t)]
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
                        default-pretty-printer]
-                 [#:colors colors (listof (list string string)) '()])
+                 [#:colors colors 
+                  (listof 
+                   (cons/c string 
+                           (and/c (listof (or/c string? (is-a?/c color%)))
+                                  (lambda (x) (member (length x) '(2 3 4 6))))))]
+
+	         [#:scheme-colors? scheme-colors? boolean?]
+                 [#:layout layout (-> (listof term-node?) void)])
          void?]{
 
 This function opens a new window and inserts each expression
@@ -1163,12 +1171,54 @@ final argument is the text where the port is connected --
 characters written to the port go to the end of the editor.
 
 The @scheme[colors] argument, if provided, specifies a list of
-reduction-name/color-string pairs. The traces gui will color
-arrows drawn because of the given reduction name with the
-given color instead of using the default color.
+reduction-name/color-list pairs. The traces gui will color arrows
+drawn because of the given reduction name with the given color instead
+of using the default color.
+
+The @scheme[cdr] of each of the elements of @scheme[colors] is a list
+of colors, organized in pairs. The first two colors cover the colors
+of the line and the border around the arrow head, the first when the
+mouse is over a graph node that is connected to that arrow, and the
+second for when the mouse is not over that arrow. Similarly, the next
+colors are for the text drawn on the arrow and the last two are for
+the color that fills the arrow head.  If fewer than six colors are
+specified, the colors specified colors are used and then defaults are
+filled in for the remaining colors.
+
+
+
+The @scheme[scheme-colors?] argument, if @scheme[#t] causes
+@scheme[traces] to color the contents of each of the windows according
+to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
+@scheme[traces] just uses black for the color scheme.
+
+The @scheme[layout] argument is called (with all of the terms) each
+time a new term is inserted into the window. See also
+@scheme[term-node-set-position!].
 
 You can save the contents of the window as a postscript file
 from the menus.
+}
+
+@defproc[(traces/ps [reductions reduction-relation?] 
+                    [expr (or/c any/c (listof any/c))]
+                    [file (or/c path-string? path?)]
+                    [#:multiple? multiple? boolean? #f]
+                    [#:pred pred
+                            (or/c (-> sexp any)
+                                  (-> sexp term-node? any))
+                            (lambda (x) #t)]
+                    [#:pp pp
+                          (or/c (any -> string)
+                                (any output-port number (is-a?/c text%) -> void))
+                          default-pretty-printer]
+                    [#:colors colors (listof (list string string)) '()]
+                    [#:layout layout (-> (listof term-node?) void)])
+         void?]{
+
+The arguments behave just like the function @scheme[traces], but
+instead of opening a window to show the reduction graph, it just saves
+the reduction graph to the specified @scheme[file].
 }
 
 @defproc[(stepper [reductions reduction-relation?] 
@@ -1244,6 +1294,24 @@ not colored specially.
 @defproc[(term-node-expr [tn term-node?]) any]{
 
 Returns the expression in this node.
+}
+
+@defproc[(term-node-set-position! [tn term-node?] [x (and/c real? positive?)] [y (and/c real? positive?)]) void?]{
+
+Sets the position of @scheme[tn] in the graph to (@scheme[x],@scheme[y]). 
+}
+
+@defproc[(term-node-x [tn term-node?]) real]{
+Returns the @tt{x} coordinate of @scheme[tn] in the window.
+}
+@defproc[(term-node-y [tn term-node?]) real]{
+Returns the @tt{y} coordinate of @scheme[tn] in the window.
+}
+@defproc[(term-node-width [tn term-node?]) real]{
+Returns the width of @scheme[tn] in the window.
+}
+@defproc[(term-node-height [tn term-node?]) real?]{
+Returns the height of @scheme[tn] in the window.
 }
 
 @defproc[(term-node? [v any/c]) boolean?]{

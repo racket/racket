@@ -33,8 +33,21 @@
                #:pred (or/c (any/c . -> . any)
                             (any/c term-node? . -> . any))
                #:pp pp-contract
-               #:colors (listof any/c))
+               #:colors (listof (list/c string? string?))
+               #:scheme-colors? boolean?
+               #:layout (-> any/c any/c))
               any)]
+ [traces/ps (->* (reduction-relation?
+                  any/c
+                  (or/c path-string? path?))
+                 (#:multiple?
+                  boolean?
+                  #:pred (or/c (any/c . -> . any)
+                               (any/c term-node? . -> . any))
+                  #:pp pp-contract
+                  #:colors (listof any/c)
+                  #:layout (-> any/c any/c))
+                 any)]
  
  [term-node? (-> any/c boolean?)]
  [term-node-parents (-> term-node? (listof term-node?))]
@@ -45,6 +58,11 @@
                            (or/c string? (is-a?/c color%) false/c)
                            void?)]
  [term-node-expr (-> term-node? any)]
+ [term-node-set-position! (-> term-node? real? real? void?)]
+ [term-node-x (-> term-node? real?)]
+ [term-node-y (-> term-node? real?)]
+ [term-node-width (-> term-node? real?)]
+ [term-node-height (-> term-node? real?)]
  
  [stepper
   (->* (reduction-relation?
@@ -55,10 +73,16 @@
   (->* (reduction-relation?
         (cons/c any/c (listof any/c)))
        (pp-contract)
-       void?)])
-
-
-(provide reduction-steps-cutoff initial-font-size initial-char-width
-         dark-pen-color light-pen-color dark-brush-color light-brush-color
-         dark-text-color light-text-color
+       void?)]
+ 
+ [dark-pen-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [light-pen-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [dark-brush-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [light-brush-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [dark-text-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [light-text-color (parameter/c (or/c string? (is-a?/c color%)))]
+ [initial-font-size (parameter/c number?)]
+ [initial-char-width (parameter/c number?)])
+         
+(provide reduction-steps-cutoff
          default-pretty-printer)
