@@ -130,21 +130,21 @@
                    #:scheme-colors? [scheme-colors? #t]
                    #:colors [colors '()]
                    #:layout [layout void])
-  (let ([graph-pb
-         (traces reductions pre-exprs
-                 #:no-show-frame? #t
-                 #:multiple? multiple? 
-                 #:pred pred
-                 #:pp pp
-                 #:scheme-colors? scheme-colors?
-                 #:colors colors
-                 #:layout layout)]
-        [ps-setup (make-object ps-setup%)])
-    (send ps-setup copy-from (current-ps-setup))
-    (send ps-setup set-file filename)
-    (send ps-setup set-mode 'file)
-    (parameterize ([current-ps-setup ps-setup])
-      (send graph-pb print #f #f 'postscript #f #f #t))))
+  (let-values ([(graph-pb frame)
+                (traces reductions pre-exprs
+                        #:no-show-frame? #t
+                        #:multiple? multiple? 
+                        #:pred pred
+                        #:pp pp
+                        #:scheme-colors? scheme-colors?
+                        #:colors colors
+                        #:layout layout)])
+    (let ([ps-setup (make-object ps-setup%)])
+      (send ps-setup copy-from (current-ps-setup))
+      (send ps-setup set-file filename)
+      (send ps-setup set-mode 'file)
+      (parameterize ([current-ps-setup ps-setup])
+        (send graph-pb print #f #f 'postscript #f #f #t)))))
 
 (define (traces reductions pre-exprs 
                 #:multiple? [multiple? #f] 
@@ -471,10 +471,17 @@
   (insert-into init-rightmost-x 0 graph-pb frontier)
   (layout (map (lambda (y) (send y get-term-node)) frontier))
   (set-font-size (initial-font-size))
-  (reduce-button-callback)
-  (if no-show-frame?
-      graph-pb
-      (send f show #t)))
+  (cond
+    [no-show-frame?
+     (let ([s (make-semaphore)]) 
+       (thread (λ () 
+                 (do-some-reductions)
+                 (semaphore-post s)))
+       (yield s))
+     (values graph-pb f)]
+    [else
+     (reduce-button-callback)
+     (send f show #t)]))
 
 (define red-sem-frame%
   (class (frame:standard-menus-mixin (frame:basic-mixin frame%))
