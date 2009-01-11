@@ -355,8 +355,8 @@ with the following program:
                                      [alignment '(center center)]))
 
 (code:comment #, @t{Add @onscreen{Cancel} and @onscreen{Ok} buttons to the horizontal panel})
-(new button% [parent parent] [label "Cancel"])
-(new button% [parent parent] [label "Ok"])
+(new button% [parent panel] [label "Cancel"])
+(new button% [parent panel] [label "Ok"])
 
 (code:comment #, @t{Show the dialog})
 (send dialog #,(:: dialog% show) #t)
