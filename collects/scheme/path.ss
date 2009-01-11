@@ -113,18 +113,19 @@
   (let loop ([path orig-path][rest '()])
     (let-values ([(base name dir?) (split-path path)])
       (when simple?
-        (when (or (and base (not (path? base)))
-                  (not (path? name)))
+        (when (or (and base (not (path-for-some-system? base)))
+                  (not (path-for-some-system? name)))
           (raise-type-error who 
-                            "path in simple form (absolute, complete, and with no same- or up-directory indicators)"
+                            "path (for ay platform) in simple form (absolute, complete, and with no same- or up-directory indicators)"
                             orig-path)))
-      (if (path? base)
+      (if (path-for-some-system? base)
           (loop base (cons name rest))
           (cons name rest)))))
 
 (define (explode-path orig-path)
-  (unless (path-string? orig-path)
-    (raise-type-error 'explode-path "path or string" orig-path))
+  (unless (or (path-string? orig-path)
+              (path-for-some-system? orig-path))
+    (raise-type-error 'explode-path "path (for any platform) or string" orig-path))
   (do-explode-path 'explode-path orig-path #f))
 
 ;; Arguments must be in simple form
@@ -143,20 +144,22 @@
         filename)))
 
 (define (file-name who name)
-  (unless (path-string? name)
-    (raise-type-error who "path or string" name))
+  (unless (or (path-string? name)
+              (path-for-some-system? name))
+    (raise-type-error who "path (for any platform) or string" name))
   (let-values ([(base file dir?) (split-path name)])
-    (and (not dir?) (path? file) file)))
+    (and (not dir?) (path-for-some-system? file) file)))
 
 (define (file-name-from-path name)
   (file-name 'file-name-from-path name))
 
 (define (path-only name)
-  (unless (path-string? name)
-    (raise-type-error 'path-only "path or string" name))
+  (unless (or (path-string? name)
+              (path-for-some-system? name))
+    (raise-type-error 'path-only "path (for any platform) or string" name))
   (let-values ([(base file dir?) (split-path name)])
-    (cond [dir? name]
-          [(path? base) base]
+    (cond [dir? (if (string? name) (string->path name) name)]
+          [(path-for-some-system? base) base]
           [else #f])))
 
 ;; name can be any string; we just look for a dot

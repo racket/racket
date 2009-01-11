@@ -13,14 +13,16 @@ See @scheme[color-database<%>] for information about obtaining a color
 object using a color name.
 
 
-@defconstructor*/make[(([red (integer-in 0 255)]
+@defconstructor*/make[(()
+                       ([red (integer-in 0 255)]
                         [green (integer-in 0 255)]
                         [blue (integer-in 0 255)])
                        ([color-name string?]))]{
 
 Creates a new color with the given RGB values, or matching the given
- color name (using ``black'' if the name is not recognized). See
- @scheme[color-database<%>] for more information on color names.
+ color name (using ``black'' if no color is given or if the name is
+ not recognized). See @scheme[color-database<%>] for more information
+ on color names.
 
 }
 

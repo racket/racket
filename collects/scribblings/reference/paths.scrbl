@@ -494,21 +494,22 @@ to the end.}
 
 @note-lib[scheme/path]
 
-@defproc[(explode-path [path path-string?]) 
-         (listof (or/c path? 'up 'same))]{
+@defproc[(explode-path [path (or/c path-string? path-for-some-system?)]) 
+         (listof (or/c path-for-some-system? 'up 'same))]{
 
 Returns the list of path element that constitute @scheme[path].  If
 @scheme[path] is simplified in the sense of @scheme[simple-form-path],
 then the result is always a list of paths, and the first element of
 the list is a root.}
 
-@defproc[(file-name-from-path [path path-string?]) (or/c path? #f)]{
+@defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
+         (or/c path-for-some-system? #f)]{
 
 Returns the last element of @scheme[path]. If @scheme[path]
 syntactically a directory path (see @scheme[split-path]), then then
 result is @scheme[#f].}
 
-@defproc[(filename-extension [path path-string?]) 
+@defproc[(filename-extension [path (or/c path-string? path-for-some-system?)])
          (or/c bytes? #f)]{
 
 Returns a byte string that is the extension part of the filename in
@@ -516,7 +517,9 @@ Returns a byte string that is the extension part of the filename in
 syntactically a directory (see @scheme[split-path]) or if the path has
 no extension, @scheme[#f] is returned.}
 
-@defproc[(find-relative-path [base path-string?][path path-string?]) path?]{
+@defproc[(find-relative-path [base (or/c path-string? path-for-some-system?)]
+                             [path (or/c path-string?  path-for-some-system?)])
+         path-for-some-system?]{
 
 Finds a relative pathname with respect to @scheme[basepath] that names
 the same file or directory as @scheme[path]. Both @scheme[basepath]
@@ -544,10 +547,12 @@ An error is signaled by @scheme[normalize-path] if the input
 path contains an embedded path for a non-existent directory,
 or if an infinite cycle of soft links is detected.}
 
-@defproc[(path-only [path path-string?]) (or/c path? #f)]{
+@defproc[(path-only [path (or/c path-string? path-for-some-system?)])
+         path-for-some-system?]{
 
 If @scheme[path] is a filename, the file's path is returned. If
-@scheme[path] is syntactically a directory, @scheme[#f] is returned.}
+@scheme[path] is syntactically a directory, @scheme[path] is returned
+(as a path, if it was a string).}
 
 @defproc[(simple-form-path [path path-string?]) path?]{
 
