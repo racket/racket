@@ -65,7 +65,9 @@ Beware that the current locale might not encode every string, in which
 case @scheme[string->path] can produce the same path for different
 @scheme[str]s. See also @scheme[string->path-element], which should be
 used instead of @scheme[string->path] when a string represents a
-single path element.}
+single path element.
+
+See also @scheme[string->some-system-path].}
 
 @defproc[(bytes->path [bstr bytes?]
                       [type (or/c 'unix 'windows) (system-path-convention-type)]) 
@@ -97,7 +99,9 @@ Furthermore, for display and sorting based on individual path elements
 (such as pathless file names), use @scheme[path-element->string],
 instead, to avoid special encodings use to represent some relative
 paths. See @secref["windowspaths"] for specific information about
-the conversion of Windows paths.}
+the conversion of Windows paths.
+
+See also @scheme[some-system-path->string].}
 
 @defproc[(path->bytes [path path?]) bytes?]{
 
@@ -559,6 +563,27 @@ If @scheme[path] is a filename, the file's path is returned. If
 Returns @scheme[(simplify-path (path->complete-path path))], which
 ensures that the result is a complete path containing no up- or
 same-directory indicators.}
+
+@defproc[(some-system-path->string [path path-for-some-system?])
+         string?]{
+
+Converts @scheme[path] to a string using a UTF-8 encoding of the
+path's bytes.
+
+Use this function when working with paths for a different system
+(whose encoding of pathnames might be unrelated to the current
+locale's encoding) and when starting and ending with strings.}
+
+@defproc[(string->some-system-path [str string?]
+                                   [kind (or/c 'unix 'windows)])
+         path-for-some-system?]{
+
+Converts @scheme[str] to a @scheme[kind] path using a UTF-8 encoding
+of the path's bytes.
+
+Use this function when working with paths for a different system
+(whose encoding of pathnames might be unrelated to the current
+locale's encoding) and when starting and ending with strings.}
 
 @;------------------------------------------------------------------------
 @include-section["unix-paths.scrbl"]

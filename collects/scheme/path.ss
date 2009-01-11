@@ -6,7 +6,9 @@
          normalize-path
          filename-extension
          file-name-from-path
-         path-only)
+         path-only
+         some-system-path->string
+         string->some-system-path)
 
 (define (simple-form-path p)
   (unless (path-string? p)
@@ -168,3 +170,18 @@
          [name (and name (path->bytes name))])
     (cond [(and name (regexp-match #rx#"[.]([^.]+)$" name)) => cadr]
           [else #f])))
+
+(define (some-system-path->string path)
+  (unless (path-for-some-system? path)
+    (raise-type-error 'some-system-path->string "path (for any platform)" path))
+  (bytes->string/utf-8 (path->bytes path)))
+
+(define (string->some-system-path path kind)
+  (unless (string? path)
+    (raise-type-error 'string->some-system-path "string" path))
+  (unless (or (eq? kind 'unix)
+              (eq? kind 'windows))
+    (raise-type-error 'string->some-system-path "'unix or 'windows" kind))
+  (bytes->path (string->bytes/utf-8 path) kind))
+
+

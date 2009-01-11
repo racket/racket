@@ -66,4 +66,14 @@
 
 ;; ----------------------------------------
 
+(test "a" some-system-path->string (string->path "a"))
+(test "a" some-system-path->string (bytes->path #"a" 'unix))
+(test "a" some-system-path->string (bytes->path #"a" 'windows))
+(test #t path-for-some-system? (string->some-system-path "a" 'unix))
+(test #t path-for-some-system? (string->some-system-path "a" 'windows))
+(test "a" some-system-path->string (string->some-system-path "a" 'unix))
+(test "a" some-system-path->string (string->some-system-path "a" 'windows))
+
+;; ----------------------------------------
+
 (report-errs)
