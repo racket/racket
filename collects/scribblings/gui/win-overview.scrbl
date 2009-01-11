@@ -357,6 +357,8 @@ with the following program:
 (code:comment #, @t{Add @onscreen{Cancel} and @onscreen{Ok} buttons to the horizontal panel})
 (new button% [parent panel] [label "Cancel"])
 (new button% [parent panel] [label "Ok"])
+(when (system-position-ok-before-cancel?)
+  (send panel #,(:: area-container<%> change-children) reverse))
 
 (code:comment #, @t{Show the dialog})
 (send dialog #,(:: dialog% show) #t)
