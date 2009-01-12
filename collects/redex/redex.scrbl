@@ -1011,20 +1011,20 @@ an association list mapping names to application counts.}
 
 @examples[
 #:eval redex-eval
-       (define-language addition
-         (e (+ number ...)))
-       (define reduce
+       (define-language empty-lang)
+       
+       (define equals
          (reduction-relation 
-          addition
+          empty-lang
           (--> (+) 0 "zero")
           (--> (+ number) number)
           (--> (+ number_1 number_2 number ...)
                (+ ,(+ (term number_1) (term number_2))
                   number ...)
                "add")))
-       (let ([coverage (make-coverage reduce)])
+       (let ([coverage (make-coverage equals)])
          (parameterize ([relation-coverage coverage])
-           (apply-reduction-relation* reduce (term (+ 1 2 3)))
+           (apply-reduction-relation* equals (term (+ 1 2 3)))
            (covered-cases coverage)))]
 
 @defform*[[(generate-term language #, @|ttpattern| size-exp)
@@ -1055,6 +1055,31 @@ as a predicate universally quantified over its free
 these free @pattech[term]-variables by generating random terms matching
 @scheme[pattern] and extracting the sub-terms bound by the
 @pattech[names] and non-terminals in @scheme[pattern].
+
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       
+       (random-seed 0)
+
+       (redex-check 
+        empty-lang
+        ((number_1 ...)
+         (number_2 ...))
+        (equal? (reverse (append (term (number_1 ...))
+                                 (term (number_2 ...))))
+                (append (reverse (term (number_1 ...)))
+                        (reverse (term (number_2 ...))))))
+
+       (redex-check 
+        empty-lang
+        ((number_1 ...)
+         (number_2 ...))
+        (equal? (reverse (append (term (number_1 ...))
+                                 (term (number_2 ...))))
+                (append (reverse (term (number_2 ...)))
+                        (reverse (term (number_1 ...)))))
+        #:attempts 200)]
 
 @scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
 random terms in its search. The size and complexity of terms it generates
