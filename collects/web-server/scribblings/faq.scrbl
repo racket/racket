@@ -104,28 +104,4 @@ The Web Server will start on port 443 (which can be overridden with the @exec{-p
 
 @section{How do I limit the number of requests serviced at once by the Web Server?}
 
-There is no built-in option for this, but you can easily accomplish it if you assemble your own dispatcher
-by wrapping it in @scheme[call-with-semaphore]:
-@schemeblock[
-(require 
- (prefix-in private:
-            web-server/private/web-server-structs))
-(define (make-limit-dispatcher num inner)
-  (let ([sem (make-semaphore num)])
-    (lambda (conn req)
-      (parameterize 
-          ([current-custodian
-            (private:current-server-custodian)])
-        (thread
-         (lambda ()
-           (call-with-semaphore
-            sem
-            (lambda () 
-              (inner conn req)))))))))
-]
-
-Once this function is available, rather than providing @scheme[james-gordon] as your dispatcher, you provide:
-@scheme[(make-limit-dispatch 50 james-gordon)] (if you only want 50 concurrent requests.) One interesting
-application of this pattern is to have a limit on certain kinds of requests. For example, you could have a
-limit of 50 servlet requests, but no limit on filesystem requests.
-
+Refer to @secref["limit.ss"].
