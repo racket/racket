@@ -5039,7 +5039,7 @@ static void *compile_k(void)
 	rl = scheme_frame_get_require_lifts(cenv);
 	if (!SCHEME_NULLP(l)
             || !SCHEME_NULLP(rl)) {
-          l = scheme_append(rl, l);
+          rl = scheme_append(rl, l);
           rl = icons(scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(cenv), 0, 0),
                      rl);
           form = scheme_datum_to_syntax(rl, scheme_false, scheme_false, 0, 0);
