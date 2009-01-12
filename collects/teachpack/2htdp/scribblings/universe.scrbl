@@ -1146,7 +1146,7 @@ From the perspective of the @tech{universe}, the design of a protocol is
  about the design of data representations for tracking universe information
  in the server and the participating worlds and the design of a data
  representation for messages. As for the latter, we know that they must be
- @tech{S-expression}s, but of course @tech{world} programs don't send all
+ @tech{S-expression}s, but usually @tech{world} programs don't send all
  kinds of @tech{S-expression}s. The data definitions for messages must
  therefore select a subset of suitable @tech{S-expression}s. As for the
  state of the server and the worlds, they must reflect how they currently
@@ -1164,8 +1164,8 @@ server tracks, call it @tech{UniverseState};}
 to the universe;}
 
 @item{data definitions for the messages that are sent from the server to
-the worlds and vice versa. Let's call them @deftech{MsgS2W} for messages
-from the server to the worlds and @deftech{MsgW2S} for the other direction;
+the worlds and vice versa. Let's call them @deftech{S2W} for messages
+from the server to the worlds and @deftech{W2S} for the other direction;
 in the most general case you may need one pair per world.}
 ]
 
@@ -1185,7 +1185,22 @@ The second step of a protocol design is to figure out which major
  state of the world. A good tool for writing down these agreements is an
  interaction diagram. 
 
-(interaction diagrams: tbd)
+
+@verbatim{
+ 
+     Server              World1                  World2 
+       |                   |                       |
+       |   'go             |                       |
+       |<------------------|                       |
+       |    'go            |                       |
+       |------------------------------------------>|
+       |                   |                       |
+       |                   |                       |
+}
+
+ Each vertical line is the life line of a @tech{world} program or the
+ @tech{server}. Each horizontal arrow denotes a message sent from one
+ @tech{universe} participant to another. 
 
 The design of the protocol, especially the data definitions, have direct
 implications for the design of event handling functions. For example, in
@@ -1196,18 +1211,19 @@ translates into the design of two functions with the following headers,
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; @tech{UniverseState} world? -> (make-bundle [Listof world?] @tech{UniverseState} [Listof mail?])
-;; create new @tech{UniverseState} when world w is joining the universe,
-;; which is in state s; also send mails as needed 
+;; Bundle is
+;;   (make-bundle [Listof world?] UniverseState [Listof mail?])
+
+;; [Listof world?] UniverseState world? -> Bundle 
+;; compute next list of worlds and new @tech{UniverseState} 
+;; when world w is joining the universe, which is in state s; 
 (define (add-world s w) ...)
 
-;; @tech{UniverseState} world? MsgW2U -> (make-bundle [Listof world?] @tech{UniverseState} [Listof mail?])
-;; create new @tech{UniverseState} when world w is sending message m 
-;; to universe in state s; also send mails as needed 
+;; [Listof world?] UniverseState world? W2U -> Bundle 
+;; compute next list of worlds and new @tech{UniverseState} 
+;; when world w is sending message m to universe in state s
 (define (process s p m) ...)
 ))
-
-Note how both functions return a @emph{bundle}.
 
 Finally, we must also decide how the messages affect the states of the
  worlds; which of their callback may send messages and when; and what to do
@@ -1228,10 +1244,14 @@ As for the server's state, it must obviously keep track of all @tech{world}s tha
  are passive. Of course, initially the @tech{universe} is empty, i.e., there are
  no @tech{world}s and, at that point, the server has nothing to track. 
 
-While there are many different useful ways of representing such a @tech{universe},
- we choose to introduce @tech{UniverseState} as a list of @tech{world}s, and we
- interpret non-empty lists as those where the first @tech{world} is active and the
- remainder are the passive @tech{world}s. As for the two possible events, 
+While there are many different useful ways of representing such a
+ @tech{universe}, we just use the list of @emph{worlds} that is handed to
+ each handler and that handlers return via their bundles. The
+ @tech{UniverseState} itself is useless for this trivial example. We
+ interpret non-empty lists as those where the first @tech{world} is active
+ and the remainder are the passive @tech{world}s. As for the two possible
+ events, 
+
 @itemize[
 
 @item{it is natural to add new @tech{world}s to the end of the list; and}
@@ -1263,6 +1283,34 @@ for this part of a @tech{world}'s state until we design its ``local'' behavior.}
  which it may ignore. When it is done with its turn, it will send a
  message. 
 
+@verbatim{
+     Server
+       |                 World1
+       |<==================|
+       |  'it-is-your-turn |
+       |------------------>|
+       |                   |                    World2 
+       |<==========================================|
+       |  'done            |                       |
+       |<------------------|                       |
+       |  'it-is-your-turn |                       |
+       |------------------------------------------>|
+       |                   |                       |
+       |                   |                       |
+       |  'done            |                       |
+       |<------------------------------------------|
+       |  'it-is-your-turn |                       |
+       |------------------>|                       |
+       |                   |                       |
+       |                   |                       |       
+}
+
+Here the double-lines (horizontal) denote the registration step, the others
+ are message exchanges. The diagram thus shows how the @tech{server}
+ decides to make the first registered world the active one and to enlist
+ all others as they join. 
+
+
 @; -----------------------------------------------------------------------------
 @subsection{Designing the Ball Server}
 
@@ -1273,7 +1321,7 @@ The preceding subsection dictates that our server program starts like this:
 [schemeblock
 ;; teachpack: universe.ss
   
-;; UniverseState is [Listof world?]
+;; UniverseState is '*
 ;; StopMessage is 'done. 
 ;; GoMessage is 'it-is-your-turn.
 ])
@@ -1289,24 +1337,22 @@ The preceding subsection dictates that our server program starts like this:
 #reader scribble/comment-reader
 [schemeblock
 ;; Result is 
-;;   (make-bundle [Listof world?] UniverseState (list (make-mail world? GoMessage)))
+;;   (make-bundle [Listof world?] '* (list (make-mail world? GoMessage)))
 
-;; UniverseState world? -> Result 
+;; [Listof world?] UniverseState world? -> Result 
 ;; add world w to the universe, when server is in state u
 (define (add-world u w) ...)
 
-;; UniverseState world? StopMessage -> Result
+;; [Listof world?] UniverseState world? StopMessage -> Result
 ;; world w sent message m when server is in state u 
 (define (switch u w m) ...)
 ])
 
 Although we could have re-used the generic contracts from this
 documentation, we also know from our protocol that our server sends a
-message to exactly one world. For this reason, both functions return the
-same kind of result: a bundle that contains the new state of the server
-(@tech{UniverseState}) and a list that contains a single mail. These contracts
-are just refinements of the generic ones. (A type-oriented programmer would
-say that the contracts here are subtypes of the generic ones.) 
+message to exactly one world. Note how these contracts are just refinements
+of the generic ones. (A type-oriented programmer would say that the
+contracts here are subtypes of the generic ones.)
 
 The second step of the design recipe calls for functional examples: 
 
@@ -1316,13 +1362,15 @@ The second step of the design recipe calls for functional examples:
 ;; an obvious example for adding a world: 
 (check-expect
   (add-world '() '* world1) 
-  (make-bundle (list world1) '*
+  (make-bundle (list world1)
+               '*
                (list (make-mail world1 'it-is-your-turn))))
 
 ;; an example for receiving a message from the active world:
 (check-expect
  (switch (list world1 world2) '* world1 'it-is-your-turn)
- (make-bundle (list world2 world1) '*
+ (make-bundle (list world2 world1)
+              '*
               (list (make-mail world2 'it-is-your-turn))))
 ])
 
@@ -1335,23 +1383,24 @@ Exercise: Create additional examples for the two functions based on our
 protocol. 
 
 The protocol tells us that @emph{add-world} just adds the given
-@emph{world} structure---recall that this a data representation of the
-actual @tech{world} program---to the @tech{UniverseState} and then sends a
-message to the first world on this list to get things going:
+ @emph{world} structure---recall that this a data representation of the
+ actual @tech{world} program---to the given list of worlds. It then sends a
+ message to the first world on this list to get things going:
 
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (add-world univ wrld)
+(define (add-world univ state wrld)
   (local ((define univ* (append univ (list wrld))))
-    (make-bundle univ* '*
+    (make-bundle univ*
+                 '*
                  (list (make-mail (first univ*) 'it-is-your-turn)))))
 ])
 
 Because @emph{univ*} contains at least @emph{wrld}, it is acceptable to
 create a mail to @scheme[(first univ*)]. Of course, this same reasoning
 also implies that if @emph{univ} isn't empty, its first element is an
-active world and has already received such a message. 
+active world and is about to receive a second @scheme['it-is-your-turn] message. 
 
 Similarly, the protocol says that when @emph{switch} is invoked because a
  @tech{world} program sends a message, the data representation of the
@@ -1361,15 +1410,16 @@ Similarly, the protocol says that when @emph{switch} is invoked because a
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (switch univ wrld m)
+(define (switch univ state wrld m)
   (local ((define univ* (append (rest univ) (list (first univ)))))
-    (make-bundle univ* '*
+    (make-bundle univ*
+                 '*
                  (list (make-mail (first univ*) 'it-is-your-turn)))))
 ])
 
  As before, appending the first world to the end of the list guarantees
- that there is at least this one world on the next @tech{UniverseState}
- (state). It is therefore acceptable to create a mail for this world.
+ that there is at least this one world on this list. It is therefore
+ acceptable to create a mail for this world. 
 
 Exercise: The function definition simply assumes that @emph{wrld} is
  @scheme[world=?] to @scheme[(first univ)] and that the received message
@@ -1381,6 +1431,12 @@ Exercise: The function definition simply assumes that @emph{wrld} is
  to the agreed-upon protocol. How to deal with such situations properly
  depends on the context. For now, stop the @tech{universe} at this point,
  but consider alternative solutions, too.) 
+
+Exercise: An alternative state representation would equate 
+ @tech{UniverseState} with @emph{world} structures, keeping track of the
+ active world. The list of world in the server would track the passive
+ worlds only. Design appropriate @scheme[add-world] and @scheme[switch]
+ functions. 
 
 @; -----------------------------------------------------------------------------
 @subsection{Designing the Ball World}
