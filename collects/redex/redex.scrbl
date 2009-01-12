@@ -1042,7 +1042,7 @@ The optional keyword argument @scheme[attempt-num-expr]
 decisions made during generation (e.g., the expected length of 
 @pattech[pattern-sequence]s increases with @scheme[attempt-num-expr]).}
 
-@defform/subs[(check language #, @|ttpattern| property-expr kw-arg ...)
+@defform/subs[(redex-check language #, @|ttpattern| property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)])
@@ -1051,19 +1051,19 @@ decisions made during generation (e.g., the expected length of
                            [relation-expr reduction-relation?])]{
 Searches for a counterexample to @scheme[property-expr], interpreted
 as a predicate universally quantified over its free
-@pattech[term]-variables. @scheme[check] chooses substitutions for 
+@pattech[term]-variables. @scheme[redex-check] chooses substitutions for 
 these free @pattech[term]-variables by generating random terms matching
 @scheme[pattern] and extracting the sub-terms bound by the
 @pattech[names] and non-terminals in @scheme[pattern].
 
-@scheme[check] generates at most @scheme[attempts-expr] (default @scheme[100])
+@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
 random terms in its search. The size and complexity of terms it generates
 gradually increases with each failed attempt.
 
-When the optional @scheme[#:source] argument is present, @scheme[check] 
+When the optional @scheme[#:source] argument is present, @scheme[redex-check] 
 generates @math{10%} of its terms by randomly choosing a pattern from the
 left-hand sides the definition of the supplied metafunction or relation.
-@scheme[check] raises an exception if a term generated from an alternate
+@scheme[redex-check] raises an exception if a term generated from an alternate
 pattern does not match the @scheme[pattern].}
 
 @defproc[(check-reduction-relation 
