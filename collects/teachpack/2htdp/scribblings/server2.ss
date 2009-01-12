@@ -10,7 +10,7 @@
 
 (define program 
   (apply vl-append (map (lambda (t) (text t '() (- FT 2)))
-                        (list (format "(universe ~a ~a)" initialize proc-msg)))))
+                        (list (format "(universe [on-new ~a] [on-msg ~a])" initialize proc-msg)))))
 
 (define Program 
   (cc-superimpose 

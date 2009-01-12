@@ -835,7 +835,7 @@ The @scheme[on-receive] clause of a @scheme[big-bang] specifies the event handle
 
 The diagram below summarizes the extensions of this section in graphical form. 
 
-@image["universe.png"]
+@image["world.png"]
 
 A registered world program may send a message to the universe server
  at any time by returning a @tech{Package} from an event handler. The
@@ -853,16 +853,15 @@ When messages are sent from any of the worlds to the universe or vice versa,
  the receiving @tech{server} or @tech{world} program take care of them. 
 
 @; -----------------------------------------------------------------------------
-
 @section[#:tag "universe-server"]{The Universe Server}
 
 A @deftech{server} is the central control program of a @tech{universe} and
  deals with receiving and sending of messages between the world
  programs that participate in the @tech{universe}. Like a @tech{world}
  program, a server is a program that reacts to events, though to different
- events. There are two primary kinds of events: when a new @tech{world}
- program joins the @tech{universe} that the server controls and when a
- @tech{world} sends a message. 
+ events than @tech{world}s. The two primary kinds of events are the
+ appearance of a new @tech{world} program in the @tech{universe} 
+ and the receipt of a message from a @tech{world} program. 
 
 The teachpack provides a mechanism for designating event handlers for
  servers that is quite similar to the mechanism for describing @tech{world}
@@ -897,8 +896,9 @@ This section first introduces some basic forms of data that the
 @; -----------------------------------------------------------------------------
 @subsection{Worlds and Messages}
 
-Understanding the server's event handling functions demands three
- concepts. 
+Understanding the server's event handling functions demands several data
+ representations: that of (a connection to) a @tech{world} program and that
+ of a response of a handler to an event. 
 
 @itemize[
 
@@ -915,7 +915,7 @@ Understanding the server's event handling functions demands three
 @defproc[(world=? [u world?][v world?]) boolean?]{
  compares two @emph{world}s for equality.}
 
-defproc[(world-name [w world?]) symbol?]{
+@defproc[(world-name [w world?]) symbol?]{
  extracts the name from a @emph{world} structure.}
 
 @defthing[world1 world?]{a world for testing your programs}
@@ -931,9 +931,20 @@ for universe programs. For example:
 ]
 }
 
-@item{A @emph{mail} represents a message from an event handler to a
-world. The teachpack provides only a predicate and a constructor for these
-structures:
+@item{Each event handler produces a @emph{bundle}, which is a structure
+ that contains the list of @emph{world}s to keep track of; the
+ @tech{server}'s remaining state; and a list of mails to other
+ worlds: 
+
+@defproc[(bundle? [x any/c]) boolean?]{
+ determines whether @scheme[x] is a @emph{bundle}.}
+
+@defproc[(make-bundle [low (listof world?)] [state any/c] [mails (listof mail?)]) bundle?]{
+ creates a @emph{bundle} from a list of worlds, a piece of data that represents a server
+ state, and a list of mails.}
+
+A @emph{mail} represents a message from an event handler to a world. The
+teachpack provides only a predicate and a constructor for these structures:
 
 @defproc[(mail? [x any/c]) boolean?]{
  determines whether @scheme[x] is a @emph{mail}.}
@@ -942,33 +953,22 @@ structures:
  creates a @emph{mail} from a @emph{world} and an @tech{S-expression}.}
 }
 
-@item{Each event handler produces a @emph{bundle}, which is a structure
-that contains the @tech{server}'s state and a list of mails to other
-worlds. Again, the teachpack provides only the predicate and a constructor:  
-
-@defproc[(bundle? [x any/c]) boolean?]{
- determines whether @scheme[x] is a @emph{bundle}.}
-
-@defproc[(make-bundle [listof world?] [state any/c] [mails (listof mail?)]) bundle?]{
- creates a @emph{bundle} from a list of worlds, a piece of data that represents a server
- state, and a list of mails.}
-
-}
 ]
 
 @; -----------------------------------------------------------------------------
 @subsection{Universe Descriptions}
 
 A @tech{server} keeps track of information about the @tech{universe} that
- it manages. Of course, what kind of information it tracks and how it is
- represented depends on the situation and the programmer, just as with
- @tech{world} programs. 
+ it manages. One kind of tracked information is obviously the collection of
+ participating world programs, but in general the kind of information that
+ a server tracks and how the information is represented depends on the
+ situation and the programmer, just as with @tech{world} programs.
 
-@deftech{UniverseState} @scheme[any/c] represent the server's state For running
+@deftech{UniverseState} @scheme[any/c] represents the server's state For running
 @tech{universe}s, the teachpack demands that you come up with a data
 definition for (your state of the) @tech{server}.  Any piece of data can
 represent the state. We just assume that you introduce a data definition
-for the possible states and that your transformation functions are designed
+for the possible states and that your event handlers are designed
 according to the design recipe for this data definition.
 
 The @tech{server} itself is created with a description that includes the
@@ -996,7 +996,7 @@ registration of new worlds, how it disconnects worlds, how it sends
 messages from one world to the rest of the registered worlds, and how it
 renders its current state as a string.}
 
-A @scheme[universe] expression starts a server. Visually it opens
+Evaluating a @scheme[universe] expression starts a server. Visually it opens
  a console window on which you can see that worlds join, which messages are
  received from which world, and which messages are sent to which world. For
  convenience, the console also has two buttons: one for shutting down a
@@ -1004,8 +1004,8 @@ A @scheme[universe] expression starts a server. Visually it opens
  especially useful during the integration of the various pieces of a
  distributed program. 
 
-Now it is possible to explain the clauses in a @scheme[universe] server
-description. Two of them are mandatory: 
+The mandatory clauses of a @scheme[universe] server description are
+@scheme[on-new] and @scheme[on-msg]: 
 
 @itemize[
 
@@ -1015,8 +1015,11 @@ description. Two of them are mandatory:
           ([new-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? bundle?)])]{
  tell DrScheme to call the function @scheme[new-expr] every time another world joins the
  universe. The event handler is called on the current list of worlds and the
- joining world.
-}}
+ joining world, which isn't on the list yet. In particular, the handler may
+ reject a @tech{world} program from participating in a @tech{universe},
+ simply by not including it in the resulting @scheme[bundle] structure. The
+ handler may still send one message to the world that attempts to join. }
+}
 
 @item{
  @defform[(on-msg msg-expr)
@@ -1024,18 +1027,25 @@ description. Two of them are mandatory:
           ([msg-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? sexp? bundle?)])]{
 
  tell DrScheme to apply @scheme[msg-expr] to the list of currently
- participating worlds, the current state of the universe, the world
- that sent the message, and the message itself.}
+ participating worlds @scheme[low], the current state of the universe, the world
+ @scheme[w] that sent the message, and the message itself. Note that
+ @scheme[w] is guaranteed to be on the list @scheme[low]. 
  }
-]
- All event handlers produce a @emph{bundle}. The list of worlds in this
- @emph{bundle} becomes the server's list of worlds; the state in the bundle
- is safe-guarded by the server until the next event; and the mails are
- broadcast as specified. 
+}]
+
+ All proper event handlers produce a @emph{bundle}. The list of worlds in
+ this @emph{bundle} becomes the server's list of worlds, meaning that only
+ the server listens only to messages from "approved" worlds.  The state in
+ the bundle is safe-guarded by the server until the next event, and the
+ mails are broadcast as specified.
 
 The following picture provides a graphical overview of the server's workings. 
 
-@image["server2.png"]
+@; -----------------------------------------------------------------------------
+@;; THE PICTURE IS WRONG
+@; -----------------------------------------------------------------------------
+
+@image["server.png"]
 
 In addition to the mandatory handlers, a program may wish to add some
 optional handlers: 
