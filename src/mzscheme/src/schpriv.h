@@ -2065,10 +2065,21 @@ Scheme_Object *scheme_env_frame_uid(Scheme_Comp_Env *env);
 
 typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object **, Scheme_Object *, Scheme_Comp_Env *);
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data, 
-                                 Scheme_Object *end_stmts, Scheme_Object *context_key);
+                                 Scheme_Object *end_stmts, Scheme_Object *context_key, Scheme_Object *require_lifts);
+void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env);
+Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_generate_lifts_key(void);
+
+Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
+                                                  long phase,
+                                                  Scheme_Comp_Env *cenv,
+                                                  Scheme_Object *mark);
+Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
+                                           long phase,
+                                           Scheme_Object *mark,
+                                           void *data);
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env);
 void scheme_set_local_syntax(int pos, Scheme_Object *name, Scheme_Object *val,

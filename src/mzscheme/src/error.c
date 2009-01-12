@@ -1218,7 +1218,7 @@ char *scheme_make_arity_expect_string(Scheme_Object *proc,
     name = scheme_get_proc_name((Scheme_Object *)proc, &namelen, 1);
 #endif
   } else if (SCHEME_STRUCTP(proc)) {
-    name = proc;
+    name = (const char *)proc;
     mina = -1;
     maxa = 0;
   } else {
