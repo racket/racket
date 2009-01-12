@@ -107,11 +107,21 @@ The Web Server will start on port 443 (which can be overridden with the @exec{-p
 There is no built-in option for this, but you can easily accomplish it if you assemble your own dispatcher
 by wrapping it in @scheme[call-with-semaphore]:
 @schemeblock[
+(require 
+ (prefix-in private:
+            web-server/private/web-server-structs))
 (define (make-limit-dispatcher num inner)
- (let ([sem (make-semaphore num)])
-   (lambda (conn req)
-     (call-with-semaphore sem
-       (lambda () (inner conn req))))))
+  (let ([sem (make-semaphore num)])
+    (lambda (conn req)
+      (parameterize 
+          ([current-custodian
+            (private:current-server-custodian)])
+        (thread
+         (lambda ()
+           (call-with-semaphore
+            sem
+            (lambda () 
+              (inner conn req)))))))))
 ]
 
 Once this function is available, rather than providing @scheme[james-gordon] as your dispatcher, you provide:
