@@ -228,6 +228,7 @@
  ;; type World 
  world?    ;; Any -> Boolean 
  world=?   ;; World World -> Boolean 
+ world-name ;; World -> Symbol 
  world1    ;; sample worlds 
  world2
  world3

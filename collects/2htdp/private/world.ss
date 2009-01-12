@@ -278,7 +278,8 @@
       ;; -------------------------------------------------------------------------
       ;; initialize the world and run 
       (super-new)
-      (start!)))))
+      (start!)
+      (when (stop-when world) (stop! world))))))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))

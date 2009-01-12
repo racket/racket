@@ -61,7 +61,7 @@
               (define u (bundle-state r))
               (set! worlds (bundle-low r))
               (set! universe u)
-              (unless (boolean? to-string) (send gui add (to-string u)))
+              (unless (boolean? to-string) (send gui add (to-string worlds u)))
               (broadcast (bundle-mails r))))))
       
       (def/cback private (pmsg world received) on-msg)
@@ -219,6 +219,7 @@
 (provide 
  world?  ;; Any -> Boolean 
  world=? ;; World World -> Boolean 
+ world-name ;; World -> Symbol 
  world1  ;; sample worlds 
  world2
  world3)
