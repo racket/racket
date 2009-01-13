@@ -22,9 +22,6 @@
 
 (define prefs-base%
   (class object%
-    ;; columns : number
-    (field/notify columns (new notify-box% (value 60)))
-
     ;; suffix-option : SuffixOption
     (field/notify suffix-option (new notify-box% (value 'over-limit)))
 

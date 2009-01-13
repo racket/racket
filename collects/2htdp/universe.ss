@@ -228,12 +228,13 @@
  ;; type World 
  world?    ;; Any -> Boolean 
  world=?   ;; World World -> Boolean 
+ world-name ;; World -> Symbol 
  world1    ;; sample worlds 
  world2
  world3
- ;; type Bundle = (make-bundle Universe [Listof Mail]) 
+ ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
  ;; type Mail = (make-mail World S-expression)
- make-bundle ;; Universe [Listof Mail] -> Bundle 
+ make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
  bundle?     ;; is this a bundle? 
  make-mail   ;; World S-expression -> Mail 
  mail?       ;; is this a real mail? 
@@ -254,10 +255,10 @@
 ;;    in the console 
 
 (define-keywords UniSpec
-  [on-new (function-with-arity 2)]
-  [on-msg (function-with-arity 3)]
-  [on-disconnect (function-with-arity 2)]
-  [to-string (function-with-arity 1)])
+  [on-new (function-with-arity 3)]
+  [on-msg (function-with-arity 4)]
+  [on-disconnect (function-with-arity 3)]
+  [to-string (function-with-arity 2)])
 
 (define-syntax (universe stx)
   (syntax-case stx ()
@@ -297,15 +298,15 @@
 ;; (World World -> U) (U World Msg) -> U
 (define (universe2 create process)
   ;; UniState = '() | (list World) | Universe
-  ;; UniState World -> (cons UniState [Listof (list World S-expression)])
-  (define (nu s p)
+  ;; [Listof World] UniState World -> (cons UniState [Listof (list World S-expression)])
+  (define (nu s x p)
     (cond
-      [(null? s) (make-bundle (list p) '())]
-      [(not (pair? s)) (make-bundle s '())]
+      [(null? s) (make-bundle (list p) '* '())]
+      [(not (pair? s)) (make-bundle s '* '())]
       [(null? (rest s)) (create (first s) p)]
       [else (error 'create "a third world is signing up!")]))
   (universe '() 
             (on-new nu)
             (on-msg process)
             #;
-            (on-tick (lambda (u) (printf "hello!\n") (list u)) 1)))
+            (on-tick (lambda (u x) (printf "hello!\n") (list u)) 1)))

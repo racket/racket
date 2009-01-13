@@ -1,6 +1,5 @@
-Somewhere in there:
- function contracts now preserve tail recursion in many cases; the
- 'any' contract is no longer special.
+Version 4.1.3.10
+Added syntax-local-lift-require
 
 Version 4.1.3.8
 Added procedure-rename
@@ -15,6 +14,7 @@ Version 4.1.3.6
 Memory accounting changed to bias charges to parent instead of children
 
 Version 4.1.3.3
+Function contracts preserve tail recursion in many cases
 Added compile-context-preservation-enabled
 Added exception-backtrace support for x86_84+JIT
 Added scheme/package, scheme/splicing

@@ -606,7 +606,7 @@ export name, though the same binding can be specified with the
 multiple symbolic names.}
 
 
-@defform[(for-meta require-spec ...)]{See @scheme[require] and @scheme[provide].}
+@defform[(for-meta phase-level require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-syntax require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-template require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-label require-spec ...)]{See @scheme[require] and @scheme[provide].}

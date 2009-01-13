@@ -31,7 +31,8 @@
   (last-mixin
    (clock-mixin
     (class* object% (start-stop<%>) (inspect #f) (super-new)
-      (init-field        ;; type Result = (make-bundle Universe [Listof Mail])
+      (init-field        ;; type Result
+                         ; = (make-bundle [Listof World] Universe [Listof Mail])
        universe0         ;; the initial state of the universe
        on-new            ;; Universe World -> Result
        on-msg            ;; Universe World Message -> Result
@@ -56,10 +57,11 @@
           (define (pname a ...) 
             (define (handler e) (stop! e))
             (with-handlers ([exn? handler])
-              (define r (check-state-x-mail 'name (name universe a ...)))
+              (define r (check-state-x-mail 'name (name worlds universe a ...)))
               (define u (bundle-state r))
+              (set! worlds (bundle-low r))
               (set! universe u)
-              (unless (boolean? to-string) (send gui add (to-string u)))
+              (unless (boolean? to-string) (send gui add (to-string worlds u)))
               (broadcast (bundle-mails r))))))
       
       (def/cback private (pmsg world received) on-msg)
@@ -68,9 +70,9 @@
       
       (def/cback private (pnew world) ppnew)
       
-      (define/private (ppnew uni p)
+      (define/private (ppnew low uni p)
         (world-send p 'okay)
-        (on-new uni p))
+        (on-new low uni p))
       
       (def/cback public (ptock) tick)
       
@@ -80,8 +82,9 @@
       (define/private (check-state-x-mail tag r)
         (with-handlers ((exn? (lambda (x) (stop! x))))
           (define s (format "expected from ~a, given: " tag))
+          (define f "(make-bundle [Listof World] Universe [Listof Mail]) ~a~e")
           (unless (bundle? r) 
-            (error tag (format "(make-bundle Universe [Listof Mail]) ~a~e" s r)))
+            (error tag (format f s r)))
           r))
       
       ;; -----------------------------------------------------------------------
@@ -109,7 +112,7 @@
               (match next
                 [(cons 'REGISTER info)
                  (let* ([w (create-world in (second in-out) info)])
-                   (set! worlds (cons w worlds))
+                   ; (set! worlds (cons w worlds))
                    (pnew w)
                    (send gui add (format "~a signed up" info))
                    (loop))]
@@ -216,6 +219,7 @@
 (provide 
  world?  ;; Any -> Boolean 
  world=? ;; World World -> Boolean 
+ world-name ;; World -> Symbol 
  world1  ;; sample worlds 
  world2
  world3)
@@ -334,24 +338,30 @@
 ;                              
 
 (provide
- ;; type Bundle = (make-bundle Universe [Listof Mail]) 
+ ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
  ;; type Mail = (make-mail World S-expression)
- make-bundle ;; Universe [Listof Mail] -> Bundle 
+ make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
  bundle?     ;; is this a bundle? 
  make-mail   ;; World S-expression -> Mail 
  mail?       ;; is this a real mail? 
  )
 
-(define-struct bundle (state mails) #:transparent)
+(define-struct bundle (low state mails) #:transparent)
 
 (set! make-bundle
       (let ([make-bundle make-bundle])
-        (lambda (state mails)
-          (check-arg 'make-bundle (list? mails) "list [of mails]" "second" mails)
-          (for-each (lambda (c) 
-                      (check-arg 'make-bundle (mail? c) "mail" "(elements of) second" c))
-                    mails)
-          (make-bundle state mails))))
+        (lambda (low state mails)
+          (check-arg-list 'make-bundle low world? "world" "first")
+          (check-arg-list 'make-bundle mails mail? "mail" "third")
+          (make-bundle low state mails))))
+
+;; Symbol Any (Any -> Boolean) String String -> Void 
+;; raise a TP exception if low is not a list of world? elements 
+(define (check-arg-list tag low world? msg rank)
+  (check-arg tag (list? low) (format "list [of ~as]" msg) rank low)
+  (for-each (lambda (c) 
+              (check-arg tag (world? c) msg (format "(elements of) ~a" rank) c))
+            low))
 
 (define-struct mail (to content) #:transparent)
 

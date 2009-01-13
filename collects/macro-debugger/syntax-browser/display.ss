@@ -9,34 +9,68 @@
 (provide print-syntax-to-editor
          code-style)
 
-;; print-syntax-to-editor : syntax text controller<%> -> display<%>
-(define (print-syntax-to-editor stx text controller config)
-  (new display% (syntax stx) (text text) (controller controller) (config config)))
-
 ;; FIXME: assumes text never moves
+
+;; print-syntax-to-editor : syntax text controller<%> config number number
+;;                          -> display<%>
+(define (print-syntax-to-editor stx text controller config columns insertion-point)
+  (define output-port (open-output-string/count-lines))
+  (define range
+    (pretty-print-syntax stx output-port 
+                         (send controller get-primary-partition)
+                         (send config get-colors)
+                         (send config get-suffix-option)
+                         columns))
+  (define output-string (get-output-string output-port))
+  (define output-length (sub1 (string-length output-string))) ;; skip final newline
+  (fixup-parentheses output-string range)
+  (let ([display
+         (new display%
+              (text text)
+              (controller controller)
+              (config config)
+              (range range)
+              (start-position insertion-point)
+              (end-position (+ insertion-point output-length)))])
+    (send text begin-edit-sequence)
+    (send text insert output-length output-string insertion-point)
+    (add-clickbacks text range controller insertion-point)
+    (set-standard-font text config insertion-point (+ insertion-point output-length))
+    (send display initialize)
+    (send text end-edit-sequence)
+    display))
+
+;; add-clickbacks : text% range% controller<%> number -> void
+(define (add-clickbacks text range controller insertion-point)
+  (for ([range (send range all-ranges)])
+    (let ([stx (range-obj range)]
+          [start (range-start range)]
+          [end (range-end range)])
+      (send text set-clickback (+ insertion-point start) (+ insertion-point end)
+            (lambda (_1 _2 _3)
+              (send controller set-selected-syntax stx))))))
+
+;; set-standard-font : text% config number number -> void
+(define (set-standard-font text config start end)
+  (send text change-style
+        (code-style text (send config get-syntax-font-size))
+        start end))
 
 ;; display%
 (define display%
   (class* object% (display<%>)
-    (init ((stx syntax)))
     (init-field text)
     (init-field controller)
     (init-field config)
+    (init-field range)
+    (init-field start-position)
+    (init-field end-position)
 
-    (define start-anchor (new anchor-snip%))
-    (define end-anchor (new anchor-snip%))
-    (define range #f)
     (define extra-styles (make-hasheq))
 
-    ;; render-syntax : syntax -> void
-    (define/public (render-syntax stx)
-      (with-unlock text
-        (send text delete (get-start-position) (get-end-position))
-        (set! range
-              (print-syntax stx text controller config
-                            (lambda () (get-start-position))
-                            (lambda () (get-end-position))))
-        (apply-primary-partition-styles))
+    ;; initialize : -> void
+    (define/public (initialize)
+      (apply-primary-partition-styles)
       (refresh))
 
     ;; refresh : -> void
@@ -45,7 +79,7 @@
       (with-unlock text
         (send* text 
           (begin-edit-sequence)
-          (change-style unhighlight-d (get-start-position) (get-end-position)))
+          (change-style unhighlight-d start-position end-position))
         (apply-extra-styles)
         (let ([selected-syntax (send controller get-selected-syntax)])
           (apply-secondary-partition-styles selected-syntax)
@@ -53,28 +87,14 @@
         (send* text
           (end-edit-sequence))))
 
-    ;; cached-start-position : number
-    (define cached-start-position #f)
-
-    ;; get-start-position : -> number
-    (define/public-final (get-start-position)
-      (unless cached-start-position
-        (set! cached-start-position (send text get-snip-position start-anchor)))
-      cached-start-position)
-
-    ;; get-end-position : -> number
-    (define/public-final (get-end-position)
-      (send text get-snip-position end-anchor))
-
-    ;; relative->text-position : number -> number
-    ;; FIXME: might be slow to find start every time!
-    (define/public-final (relative->text-position pos)
-      (+ pos (get-start-position)))
-
-    ;; Styling
-
     ;; get-range : -> range<%>
     (define/public (get-range) range)
+
+    ;; get-start-position : -> number
+    (define/public (get-start-position) start-position)
+
+    ;; get-end-position : -> number
+    (define/public (get-end-position) end-position)
 
     ;; highlight-syntaxes : (list-of syntax) string -> void
     (define/public (highlight-syntaxes stxs hi-color)
@@ -89,10 +109,49 @@
         (add-extra-styles stx (list underline-style-delta)))
       (refresh))
 
+    ;; add-extra-styles : syntax (listof style) -> void
     (define/public (add-extra-styles stx styles)
       (hash-set! extra-styles stx
                  (append (hash-ref extra-styles stx null)
                          styles)))
+
+    ;; Primary styles
+    ;; (Done once on initialization, never repeated)
+
+    ;; apply-primary-partition-styles : -> void
+    ;; Changes the foreground color according to the primary partition.
+    ;; Only called once, when the syntax is first drawn.
+    (define/private (apply-primary-partition-styles)
+      (define (color-style color)
+        (let ([delta (new style-delta%)])
+          (send delta set-delta-foreground color)
+          delta))
+      (define color-styles (list->vector (map color-style (send config get-colors))))
+      (define overflow-style (color-style "darkgray"))
+      (define color-partition (send controller get-primary-partition))
+      (define offset start-position)
+      (for-each
+       (lambda (range)
+         (let ([stx (range-obj range)]
+               [start (range-start range)]
+               [end (range-end range)])
+           (send text change-style
+                 (primary-style stx color-partition color-styles overflow-style)
+                 (+ offset start)
+                 (+ offset end))))
+       (send range all-ranges)))
+
+    ;; primary-style : syntax partition (vector-of style-delta%) style-delta%
+    ;;               -> style-delta%
+    (define/private (primary-style stx partition color-vector overflow)
+      (let ([n (send partition get-partition stx)])
+        (cond [(< n (vector-length color-vector))
+               (vector-ref color-vector n)]
+              [else
+               overflow])))
+
+    ;; Secondary Styling
+    ;; May change in response to user actions
 
     ;; apply-extra-styles : -> void
     ;; Applies externally-added styles (such as highlighting)
@@ -131,100 +190,34 @@
             (relative->text-position (car r))
             (relative->text-position (cdr r))))
 
-    ;; Primary styles
-
-    ;; apply-primary-partition-styles : -> void
-    ;; Changes the foreground color according to the primary partition.
-    ;; Only called once, when the syntax is first drawn.
-    (define/private (apply-primary-partition-styles)
-      (define (color-style color)
-        (let ([delta (new style-delta%)])
-          (send delta set-delta-foreground color)
-          delta))
-      (define color-styles (list->vector (map color-style (send config get-colors))))
-      (define overflow-style (color-style "darkgray"))
-      (define color-partition (send controller get-primary-partition))
-      (define offset (get-start-position))
-      (for-each
-       (lambda (range)
-         (let ([stx (range-obj range)]
-               [start (range-start range)]
-               [end (range-end range)])
-           (send text change-style
-                 (primary-style stx color-partition color-styles overflow-style)
-                 (+ offset start)
-                 (+ offset end))))
-       (send range all-ranges)))
-
-    ;; primary-style : syntax partition (vector-of style-delta%) style-delta%
-    ;;               -> style-delta%
-    (define/private (primary-style stx partition color-vector overflow)
-      (let ([n (send partition get-partition stx)])
-        (cond [(< n (vector-length color-vector))
-               (vector-ref color-vector n)]
-              [else
-               overflow])))
+    ;; relative->text-position : number -> number
+    (define/private (relative->text-position pos)
+      (+ pos start-position))
 
     ;; Initialize
     (super-new)
-    (send text insert start-anchor)
-    (send text insert end-anchor)
-    (render-syntax stx)
     (send controller add-syntax-display this)))
 
-;; print-syntax : syntax text% controller config (-> number) (-> number)
-;;                -> range%
-(define (print-syntax stx text controller config
-                      get-start-position get-end-position)
-  (define primary-partition (send controller get-primary-partition))
-  (define real-output-port (make-text-port text get-end-position))
-  (define output-port (open-output-string))
-  (define colors (send config get-colors))
-  (define suffix-option (send config get-suffix-option))
-  (define columns (send config get-columns))
-
-  (port-count-lines! output-port)
-  (let ([range (pretty-print-syntax stx output-port primary-partition 
-                                    colors suffix-option columns)])
-    (write-string (get-output-string output-port) real-output-port)
-    (let ([end (get-end-position)])
-      ;; Pretty printer always inserts final newline; we remove it here.
-      (send text delete (sub1 end) end))
-    (let ([offset (get-start-position)])
-      (fixup-parentheses text range offset)
-      (for-each
-       (lambda (range)
-         (let* ([stx (range-obj range)]
-                [start (range-start range)]
-                [end (range-end range)])
-           (send text set-clickback (+ offset start) (+ offset end)
-                 (lambda (_1 _2 _3)
-                   (send controller set-selected-syntax stx)))))
-       (send range all-ranges)))
-    ;; Set font to standard
-    (send text change-style
-          (code-style text (send config get-syntax-font-size))
-          (get-start-position)
-          (get-end-position))
-    range))
-
-;; fixup-parentheses : text range -> void
-(define (fixup-parentheses text range offset)
+;; fixup-parentheses : string range -> void
+(define (fixup-parentheses string range)
   (define (fixup r)
     (let ([stx (range-obj r)]
-          [start (+ offset (range-start r))]
-          [end (+ offset (range-end r))])
+          [start (range-start r)]
+          [end (range-end r)])
       (when (and (syntax? stx) (pair? (syntax-e stx)))
         (case (syntax-property stx 'paren-shape)
           ((#\[)
-           (replace start #\[)
-           (replace (sub1 end) #\]))
+           (string-set! string start #\[)
+           (string-set! string (sub1 end) #\]))
           ((#\{) 
-           (replace start #\{)
-           (replace (sub1 end) #\}))))))
-  (define (replace pos char)
-    (send text insert char pos (add1 pos)))
+           (string-set! string start #\{)
+           (string-set! string (sub1 end) #\}))))))
   (for-each fixup (send range all-ranges)))
+
+(define (open-output-string/count-lines)
+  (let ([os (open-output-string)])
+    (port-count-lines! os)
+    os))
 
 ;; code-style : text<%> number/#f -> style<%>
 (define (code-style text font-size)

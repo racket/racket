@@ -54,7 +54,6 @@
     (define/override (on-size w h)
       (send config set-width w)
       (send config set-height h)
-      (send config set-columns (send (send widget get-view) calculate-columns))
       (send widget update/preserve-view))
 
     (define warning-panel

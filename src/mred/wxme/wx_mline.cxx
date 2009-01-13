@@ -321,7 +321,7 @@ void wxMediaLine::Delete(wxMediaLine **root)
   else
     x = v->right;
 
-  x->parent = v->parent;
+  x->parent = v->parent; /* x could be NIL; fixup at end */
 
   if (PTREQ(v->parent, NIL))
     *root = x;
@@ -446,6 +446,11 @@ void wxMediaLine::Delete(wxMediaLine **root)
     }
     
     SET_BLACK(x);
+  }
+
+  if (PTRNE(NIL->parent, NIL)) {
+    /* fixup: we set NIL's parent above */
+    NIL->parent = NIL;
   }
 
   right = left = NIL;
@@ -594,7 +599,8 @@ wxMediaParagraph *wxMediaLine::GetParagraphStyle(Bool *first)
     } else {                                 \
       node = node->parent;                   \
     }                                        \
-  }                                          \
+  }
+
 
 void wxMediaLine::SetLength(long len)
 {
