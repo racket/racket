@@ -69,6 +69,20 @@
                  #:pattern 'static
                  #:reason "not an identifier"))))
 
+(define-basic-syntax-class (static-of name pred)
+  ([value 0])
+  (lambda (x name pred)
+    (let/ec escape
+      (define (bad)
+        (escape (fail-sc x
+                         #:pattern 'name
+                         #:reason (format "not bound as ~a" name))))
+      (if (identifier? x)
+          (let ([value (syntax-local-value x bad)])
+            (unless (pred value) (bad))
+            (list value))
+          (bad)))))
+
 (define-basic-syntax-class struct-name
   ([descriptor 0]
    [constructor 0]
