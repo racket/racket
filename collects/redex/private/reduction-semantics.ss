@@ -753,22 +753,32 @@
                                           acc)))]))
                other-matches)))))
    (rewrite-proc-name child-make-proc)
-   (subst lhs-frm-id (rewrite-proc-lhs child-make-proc) rhs-from)))
+   (subst lhs-frm-id (rewrite-proc-lhs child-make-proc) rhs-from)
+   (rewrite-proc-id child-make-proc)))
 
 (define relation-coverage (make-parameter #f))
 
-(define-struct covered-case (name apps) #:inspector (make-inspector))
+(define (cover-case id name cov)
+  (hash-update! (coverage-unwrap cov) id 
+                (λ (c) (cons (car c) (add1 (cdr c))))
+                (λ () (raise-user-error 
+                       'relation-coverage
+                       "coverage structure not initilized for this relation"))))
 
-(define (apply-case c)
-  (struct-copy covered-case c [apps (add1 (covered-case-apps c))]))
+(define (covered-cases cov)
+  (hash-map (coverage-unwrap cov) (λ (k v) v)))
 
-(define (cover-case id name relation-coverage)
-  (hash-update! relation-coverage id apply-case (make-covered-case name 0)))
+(define-struct coverage (unwrap))
 
-(define (covered-cases relation-coverage)
-  (hash-map relation-coverage (λ (k v) v)))
+(define (fresh-coverage relation)
+  (let ([h (make-hasheq)])
+    (for-each 
+     (λ (rwp) 
+       (hash-set! h (rewrite-proc-id rwp) (cons (or (rewrite-proc-name rwp) "unnamed") 0)))
+     (reduction-relation-make-procs relation))
+    (make-coverage h)))
 
-(define fresh-coverage make-hasheq)
+;(define fresh-coverage (compose make-coverage make-hasheq))
 
 (define (do-leaf-match name pat w/extras proc)
   (let ([case-id (gensym)])
@@ -788,7 +798,8 @@
                          other-matches)
                  other-matches)))))
      name
-     w/extras)))
+     w/extras
+     case-id)))
 
 (define-syntax (test-match stx)
   (syntax-case stx ()
@@ -1835,5 +1846,5 @@
 
 (provide relation-coverage
          covered-cases
-         fresh-coverage
-         (struct-out covered-case))
+         (rename-out [fresh-coverage make-coverage])
+         coverage?)

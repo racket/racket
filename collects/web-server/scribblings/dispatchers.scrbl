@@ -388,3 +388,62 @@ a URL that refreshes the password file, servlet cache, etc.}
          dispatcher/c]{
  Returns a dispatcher that prints memory usage on every request.
 }}
+
+@; ------------------------------------------------------------
+@section[#:tag "limit.ss"]{Limiting Requests}
+@a-dispatcher[web-server/dispatchers/limit
+              @elem{provides a wrapper dispatcher that limits how many requests are serviced at once.}]{
+
+@defproc[(make [limit number?]
+               [inner dispatcher/c])
+         dispatcher/c]{
+ Returns a dispatcher that defers to @scheme[inner] for work, but will forward a maximum of @scheme[limit] requests concurrently.
+}}
+                      
+@(require (for-label
+           web-server/web-server
+           web-server/http
+           (prefix-in limit: web-server/dispatchers/limit)
+           (prefix-in filter: web-server/dispatchers/dispatch-filter)
+           (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)))
+                                                                                                       
+Consider this example:
+@schememod[
+ scheme
+ 
+(require web-server/web-server
+         web-server/http
+         web-server/http/response
+         (prefix-in limit: web-server/dispatchers/limit)
+         (prefix-in filter: web-server/dispatchers/dispatch-filter)
+         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer))
+
+(serve #:dispatch
+       (sequencer:make
+        (filter:make
+         #rx"/limited"
+         (limit:make
+          5
+          (lambda (conn req)
+            (output-response/method
+             conn
+             (make-response/full
+              200 "Okay"
+              (current-seconds) TEXT/HTML-MIME-TYPE
+              empty
+              (list (format "hello world ~a"
+                            (sort (build-list 100000 (λ x (random 1000)))
+                                  <))))
+             (request-method req)))))
+        (lambda (conn req)          
+          (output-response/method
+           conn
+           (make-response/full 200 "Okay"
+                               (current-seconds) TEXT/HTML-MIME-TYPE
+                               empty
+                               (list "<html><body>Unlimited</body></html>"))
+           (request-method req))))
+       #:port 8080)
+
+(do-not-return)
+]

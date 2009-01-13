@@ -65,7 +65,9 @@ Beware that the current locale might not encode every string, in which
 case @scheme[string->path] can produce the same path for different
 @scheme[str]s. See also @scheme[string->path-element], which should be
 used instead of @scheme[string->path] when a string represents a
-single path element.}
+single path element.
+
+See also @scheme[string->some-system-path].}
 
 @defproc[(bytes->path [bstr bytes?]
                       [type (or/c 'unix 'windows) (system-path-convention-type)]) 
@@ -97,7 +99,9 @@ Furthermore, for display and sorting based on individual path elements
 (such as pathless file names), use @scheme[path-element->string],
 instead, to avoid special encodings use to represent some relative
 paths. See @secref["windowspaths"] for specific information about
-the conversion of Windows paths.}
+the conversion of Windows paths.
+
+See also @scheme[some-system-path->string].}
 
 @defproc[(path->bytes [path path?]) bytes?]{
 
@@ -494,21 +498,22 @@ to the end.}
 
 @note-lib[scheme/path]
 
-@defproc[(explode-path [path path-string?]) 
-         (listof (or/c path? 'up 'same))]{
+@defproc[(explode-path [path (or/c path-string? path-for-some-system?)]) 
+         (listof (or/c path-for-some-system? 'up 'same))]{
 
 Returns the list of path element that constitute @scheme[path].  If
 @scheme[path] is simplified in the sense of @scheme[simple-form-path],
 then the result is always a list of paths, and the first element of
 the list is a root.}
 
-@defproc[(file-name-from-path [path path-string?]) (or/c path? #f)]{
+@defproc[(file-name-from-path [path (or/c path-string? path-for-some-system?)])
+         (or/c path-for-some-system? #f)]{
 
 Returns the last element of @scheme[path]. If @scheme[path]
 syntactically a directory path (see @scheme[split-path]), then then
 result is @scheme[#f].}
 
-@defproc[(filename-extension [path path-string?]) 
+@defproc[(filename-extension [path (or/c path-string? path-for-some-system?)])
          (or/c bytes? #f)]{
 
 Returns a byte string that is the extension part of the filename in
@@ -516,7 +521,9 @@ Returns a byte string that is the extension part of the filename in
 syntactically a directory (see @scheme[split-path]) or if the path has
 no extension, @scheme[#f] is returned.}
 
-@defproc[(find-relative-path [base path-string?][path path-string?]) path?]{
+@defproc[(find-relative-path [base (or/c path-string? path-for-some-system?)]
+                             [path (or/c path-string?  path-for-some-system?)])
+         path-for-some-system?]{
 
 Finds a relative pathname with respect to @scheme[basepath] that names
 the same file or directory as @scheme[path]. Both @scheme[basepath]
@@ -544,16 +551,39 @@ An error is signaled by @scheme[normalize-path] if the input
 path contains an embedded path for a non-existent directory,
 or if an infinite cycle of soft links is detected.}
 
-@defproc[(path-only [path path-string?]) (or/c path? #f)]{
+@defproc[(path-only [path (or/c path-string? path-for-some-system?)])
+         path-for-some-system?]{
 
 If @scheme[path] is a filename, the file's path is returned. If
-@scheme[path] is syntactically a directory, @scheme[#f] is returned.}
+@scheme[path] is syntactically a directory, @scheme[path] is returned
+(as a path, if it was a string).}
 
 @defproc[(simple-form-path [path path-string?]) path?]{
 
 Returns @scheme[(simplify-path (path->complete-path path))], which
 ensures that the result is a complete path containing no up- or
 same-directory indicators.}
+
+@defproc[(some-system-path->string [path path-for-some-system?])
+         string?]{
+
+Converts @scheme[path] to a string using a UTF-8 encoding of the
+path's bytes.
+
+Use this function when working with paths for a different system
+(whose encoding of pathnames might be unrelated to the current
+locale's encoding) and when starting and ending with strings.}
+
+@defproc[(string->some-system-path [str string?]
+                                   [kind (or/c 'unix 'windows)])
+         path-for-some-system?]{
+
+Converts @scheme[str] to a @scheme[kind] path using a UTF-8 encoding
+of the path's bytes.
+
+Use this function when working with paths for a different system
+(whose encoding of pathnames might be unrelated to the current
+locale's encoding) and when starting and ending with strings.}
 
 @;------------------------------------------------------------------------
 @include-section["unix-paths.scrbl"]

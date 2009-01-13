@@ -1018,7 +1018,7 @@
 	    (lambda (w e) 
 	      (purge-marked/update-headers)))
       (send global-keymap add-function "gc"
-	    (lambda (w e) (collect-garbage) (collect-garbage)))
+	    (lambda (w e) (collect-garbage) (collect-garbage) (dump-memory-stats)))
       (send global-keymap add-function "show-memory-graph"
 	    (lambda (w e) (show-memory-graph)))
       

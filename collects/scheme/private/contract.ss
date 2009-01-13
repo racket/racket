@@ -51,7 +51,48 @@ improve method arity mismatch contract violation error messages?
                        #,(syntax-span id))
           #,(format "~s" (syntax->datum id))))
 
-
+(define-for-syntax (make-contracted-transformer contract-id id pos-module-source)
+  (make-set!-transformer
+   (let ([saved-id-table (make-hasheq)])
+     (λ (stx)
+       (if (eq? 'expression (syntax-local-context))
+           ;; In an expression context:
+           (let ([key (syntax-local-lift-context)])
+             ;; Already lifted in this lifting context?
+             (let ([lifted-id
+                    (or (hash-ref saved-id-table key #f)
+                        ;; No: lift the contract creation:
+                        (with-syntax ([contract-id contract-id]
+                                      [id id]
+                                      [neg-blame-id (or (syntax-parameter-value #'current-contract-region)
+                                                        #'(#%variable-reference))]
+                                      [pos-module-source pos-module-source])
+                          (syntax-local-introduce
+                           (syntax-local-lift-expression
+                            #`(-contract contract-id
+                                         id
+                                         pos-module-source
+                                         neg-blame-id
+                                         #,(id->contract-src-info #'id))))))])
+               (when key
+                 (hash-set! saved-id-table key lifted-id))
+               ;; Expand to a use of the lifted expression:
+               (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
+                 (syntax-case stx (set!)
+                   [name
+                    (identifier? (syntax name))
+                    (syntax saved-id)]
+                   [(set! id arg) 
+                    (raise-syntax-error 'provide/contract
+                                        "cannot set! a contracted variable" 
+                                        stx 
+                                        (syntax id))]
+                   [(name . more)
+                    (with-syntax ([app (datum->syntax stx '#%app)])
+                      (syntax/loc stx (app saved-id . more)))]))))
+           ;; In case of partial expansion for module-level and internal-defn contexts,
+           ;; delay expansion until it's a good time to lift expressions:
+           (quasisyntax/loc stx (#%expression #,stx)))))))
 
 ;                                                                                                    
 ;                                                                                                    
@@ -135,37 +176,6 @@ improve method arity mismatch contract violation error messages?
 ;                                                                                         
 
 (define-syntax-parameter current-contract-region #f)
-
-(define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
-  (make-set!-transformer
-   (lambda (stx)
-     (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
-                                     #'(#%variable-reference))]
-                   [pos-blame-id pos-blame-id]
-                   [contract-id contract-id]
-                   [id id])
-       (syntax-case stx (set!)
-         [(set! id arg)
-          (raise-syntax-error 'with-contract
-                              "cannot set! a with-contract variable"
-                              stx
-                              (syntax id))]
-         [(f arg ...)
-          (syntax/loc stx
-            ((-contract contract-id
-                        id
-                        pos-blame-id
-                        neg-blame-id
-                        #'f)
-             arg ...))]
-         [ident
-          (identifier? (syntax ident))
-          (syntax/loc stx
-            (-contract contract-id
-                       id
-                       pos-blame-id
-                       neg-blame-id
-                       #'ident))])))))
 
 (define-for-syntax (head-expand-all body-stxs)
   (for/list ([stx body-stxs])
@@ -265,7 +275,7 @@ improve method arity mismatch contract violation error messages?
                      (values unprotected-id ... protected-id ...))))
                contract-def ...
                (define-syntax protected-id
-                 (make-with-contract-transformer 
+                 (make-contracted-transformer 
                   (quote-syntax contract)
                   (quote-syntax id)
                   blame-str)) ...)))))]
@@ -331,48 +341,6 @@ improve method arity mismatch contract violation error messages?
                               "expected a struct name" 
                               provide-stx
                               id)))))
-
-(define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
-  (make-set!-transformer
-   (let ([saved-id-table (make-hasheq)])
-     (λ (stx)
-       (if (eq? 'expression (syntax-local-context))
-           ;; In an expression context:
-           (let ([key (syntax-local-lift-context)])
-             ;; Already lifted in this lifting context?
-             (let ([lifted-id
-                    (or (hash-ref saved-id-table key #f)
-                        ;; No: lift the contract creation:
-                        (with-syntax ([contract-id contract-id]
-                                      [id id]
-                                      [pos-module-source pos-module-source])
-                          (syntax-local-introduce
-                           (syntax-local-lift-expression
-                            #`(-contract contract-id
-                                         id
-                                         pos-module-source
-                                         (#%variable-reference)
-                                         #,(id->contract-src-info #'id))))))])
-               (when key
-                 (hash-set! saved-id-table key lifted-id))
-               ;; Expand to a use of the lifted expression:
-               (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
-                 (syntax-case stx (set!)
-                   [name
-                    (identifier? (syntax name))
-                    (syntax saved-id)]
-                   [(set! id arg) 
-                    (raise-syntax-error 'provide/contract
-                                        "cannot set! a provide/contract variable" 
-                                        stx 
-                                        (syntax id))]
-                   [(name . more)
-                    (with-syntax ([app (datum->syntax stx '#%app)])
-                      (syntax/loc stx (app saved-id . more)))]))))
-           ;; In case of partial expansion for module-level and internal-defn contexts,
-           ;; delay expansion until it's a good time to lift expressions:
-           (quasisyntax/loc stx (#%expression #,stx)))))))
-
 
 ;; (provide/contract p/c-ele ...)
 ;; p/c-ele = (id expr) | (rename id id expr) | (struct id (id expr) ...)
@@ -861,9 +829,9 @@ improve method arity mismatch contract violation error messages?
                                           (list)
                                           (list #'(define contract-id (verify-contract 'provide/contract ctrct))))
                                    (define-syntax id-rename
-                                     (make-provide/contract-transformer (quote-syntax contract-id)
-                                                                        (quote-syntax id)
-                                                                        (quote-syntax pos-module-source)))
+                                     (make-contracted-transformer (quote-syntax contract-id)
+                                                                  (quote-syntax id)
+                                                                  (quote-syntax pos-module-source)))
                                    
                                    (provide (rename-out [id-rename external-name]))))])
                   

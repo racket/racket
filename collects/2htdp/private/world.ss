@@ -278,7 +278,8 @@
       ;; -------------------------------------------------------------------------
       ;; initialize the world and run 
       (super-new)
-      (start!)))))
+      (start!)
+      (when (stop-when world) (stop! world))))))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))
@@ -293,16 +294,17 @@
     (inherit-field world0 tick key mouse rec draw rate width height)
     (inherit show callback-stop!)
     
-    ;; Frame Custodian -> (-> Void)
+    ;; Frame Custodian ->* (-> Void) (-> Void)
     ;; adds the stop animation and image creation button, 
     ;; whose callbacks runs as a thread in the custodian
-    ;; provide a function for switching button enabling 
     (define/augment (create-frame frm play-back-custodian)
       (define p (new horizontal-pane% [parent frm][alignment '(center center)]))
       (define (switch)
         (send stop-button enable #f)
         (send image-button enable #t))
-      (define (stop) (send stop-button enable #f))
+      (define (stop) 
+        (send image-button enable #f)
+        (send stop-button enable #f))
       (define-syntax-rule (btn l a y ...)
         (new button% [parent p] [label l] [style '(border)] 
              [callback (lambda a y ...)]))

@@ -32,9 +32,9 @@
 
 This @tt{universe.ss} teachpack implements and provides the functionality
  for creating interactive, graphical programs that consist of plain
- mathematical functions. We refer to such programs as @defterm{world}
+ mathematical functions. We refer to such programs as @deftech{world}
  programs. In addition, world programs can also become a part of a
- @defterm{universe}, a collection of worlds that can exchange messages.
+ @deftech{universe}, a collection of worlds that can exchange messages.
 
 The purpose of this documentation is to give experienced Schemers and HtDP
  teachers a concise overview for using the library. The first part of the
@@ -42,7 +42,7 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  presents an illustration of how to design such programs for a simple
  domain; it is suited for a novice who knows how to design conditional
  functions for symbols. The second half of the documentation focuses on
- @tech{universe} programs: how it is managed via a server, how @tech{world}
+ "universe" programs: how it is managed via a server, how @tech{world}
  programs register with the server, etc. The last two sections show how to
  design a simple universe of two communicating worlds. 
 
@@ -138,17 +138,17 @@ The following picture provides an intuitive overview of the workings of a
 
 @image["nuworld.png"]
 
- The @scheme[big-bang] form installs @scheme[World_0] as the initial
- world. The handlers @scheme[tock], @scheme[react], and @scheme[click] transform
+ The @scheme[big-bang] form installs @scheme[World_0] as the initial @tech{WorldState}.
+ The handlers @scheme[tock], @scheme[react], and @scheme[click] transform
  one world into another one; each time an event is handled, @scheme[done] is
  used to check whether the world is final, in which case the program is
  shut down; and finally, @scheme[draw] renders each world as a scene, which
  is then displayed on an external canvas. 
 
-@deftech{World} : @scheme[any/c]
+@deftech{WorldState} : @scheme[any/c]
 
 The design of a world program demands that you come up with a data
- definition of all possible states. We use @tech{World} to refer to
+ definition of all possible states. We use @tech{WorldState} to refer to
  this collection of data, using a capital W to distinguish it from the
  program.  In principle, there are no constraints on this data
  definition though it mustn't be an instance of the @tech{Package}
@@ -176,7 +176,7 @@ The design of a world program demands that you come up with a data
 
  starts a @tech{world} program in the initial state specified with
  @scheme[state-expr], which must of course evaluate to an element of
- @tech{World}.  Its behavior is specified via the handler functions
+ @tech{WorldState}.  Its behavior is specified via the handler functions
  designated in the optional @scheme[spec] clauses, especially how the
  @tech{world} program deals with clock ticks, with key events, with mouse
  events, and eventually with messages from the universe; how it renders
@@ -190,7 +190,7 @@ The design of a world program demands that you come up with a data
 @item{
 @defform[(on-tick tick-expr)
          #:contracts
-	 ([tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))])]{
+	 ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))])]{
 
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
@@ -199,7 +199,7 @@ current world. The clock ticks at the rate of 28 times per second.}}
 @item{
 @defform/none[(on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{World}) (unsyntax @tech{World}))]
+              ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))]
                [rate-expr natural-number/c])]{
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
@@ -234,7 +234,7 @@ A character is used to signal that the user has hit an alphanumeric
 
 @defform[(on-key change-expr)
          #:contracts
-	  ([change-expr (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))])]{
+	  ([change-expr (-> (unsyntax @tech{WorldState}) key-event? (unsyntax @tech{WorldState}))])]{
  tell DrScheme to call @scheme[change-expr] function on the current world and a 
  @tech{KeyEvent} for every keystroke the user of the computer makes. The result
  of the call becomes the current world.
@@ -288,7 +288,7 @@ All @tech{MouseEvent}s are represented via symbols:
 @defform[(on-mouse clack-expr)
          #:contracts
 	 ([clack-expr 
-           (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{World}))])]{
+           (-> (unsyntax @tech{WorldState}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{WorldState}))])]{
  tell DrScheme to call @scheme[clack-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
@@ -303,7 +303,7 @@ All @tech{MouseEvent}s are represented via symbols:
  
 @defform[(on-draw render-expr)
          #:contracts
-         ([render-expr (-> (unsyntax @tech{World}) scene?)])]{ 
+         ([render-expr (-> (unsyntax @tech{WorldState}) scene?)])]{ 
 
  tell DrScheme to call the function @scheme[render-expr] whenever the
  canvas must be drawn. The external canvas is usually re-drawn after DrScheme has
@@ -312,7 +312,7 @@ All @tech{MouseEvent}s are represented via symbols:
 
 @defform/none[(on-draw render-expr width-expr height-expr)
               #:contracts
-              ([render-expr (-> (unsyntax @tech{World}) scene?)]
+              ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
 	       [width-expr natural-number/c]
                [height-expr natural-number/c])]{ 
 
@@ -325,7 +325,7 @@ All @tech{MouseEvent}s are represented via symbols:
 
 @defform[(stop-when last-world?)
          #:contracts
-         ([last-world? (-> (unsyntax @tech{World}) boolean?)])]{
+         ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)])]{
  tell DrScheme to call the @scheme[last-world?] function whenever the canvas is
  drawn. If this call produces @scheme[true], the world program is shut
           down. Specifically, the  clock is stopped; no more
@@ -436,7 +436,8 @@ it to the locked position; and}
 Simulating any dynamic behavior via a @tech{world} program demands two
  different activities. First, we must tease out those portions of our
  domain that change over time or in reaction to actions, and we must
- develop a data representation @deftech{D} for this information.  Keep in
+ develop a data representation for this information.  This is what we call
+ @tech{WorldState}. Keep in
  mind that a good data definition makes it easy for readers to map data to
  information in the real world and vice versa. For all others aspects of
  the world, we use global constants, including graphical or visual
@@ -447,7 +448,7 @@ Second, we must translate the actions in our domain---the arrows in the
  teachpack can deal with. Once we have decided to use the passing of time
  for one aspect, key presses for another, and mouse movements for a third,
  we must develop functions that map the current state of the
- world---represented as data from @tech{D}---into the next state of the
+ world---represented as data from @tech{WorldState}---into the next state of the
  world. Put differently, we have just created a wish list with three
  handler functions that have the following general contract and purpose
  statements:
@@ -455,16 +456,16 @@ Second, we must translate the actions in our domain---the arrows in the
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; tick : @tech{D} -> @tech{D}
+;; tick : WorldState -> WorldState
 ;; deal with the passing of time 
 (define (tick w) ...)
 
-;; click : @tech{D} @emph{Number} @emph{Number} @tech{MouseEvent} -> @tech{D}
+;; click : WorldState @emph{Number} @emph{Number} @tech{MouseEvent} -> WorldState
 ;; deal with a mouse click at @emph{(x,y)} of kind @emph{me}
 ;; in the current world @emph{w}
 (define (click w x y me) ...)
 
-;; control : @tech{D} @tech{KeyEvent} -> @tech{D}
+;; control : WorldState @tech{KeyEvent} -> WorldState
 ;; deal with a key event (symbol, char) @emph{ke}
 ;; in the current world @emph{w}
 (define (control w ke) ...)
@@ -487,15 +488,14 @@ Our first and immediate goal is to represent the world as data. In this
  the door is whether it is locked, unlocked but closed, or open. We use
  three symbols to represent the three states:
 
-@deftech{SD} : state of door 
-
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; The state of the door (SD) is one of: 
+;; WorldState is one of: 
 ;; -- @scheme['locked]
 ;; -- @scheme['closed]
 ;; -- @scheme['open]
+;; interpretation: state of door 
 ))
 
 Symbols are particularly well-suited here because they directly express
@@ -535,14 +535,14 @@ a visible scene.}
 
 ]
 
-Let's start with @emph{automatic-closer}. Substituting @tech{SD} for
-@tech{D} and @emph{automatic-closer} for @emph{tick}, we get its contract,
+Let's start with @emph{automatic-closer}. Since @emph{automatic-closer}
+acts as the @scheme[on-tick] handler, we get its contract, 
 and it is easy to refine the purpose statement, too:
 
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; automatic-closer : @tech{SD} -> @tech{SD}
+;; automatic-closer : WorldState -> WorldState
 ;; closes an open door over the period of one tick 
 (define (automatic-closer state-of-door) ...)
 ))
@@ -560,7 +560,7 @@ and it is easy to refine the purpose statement, too:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; automatic-closer : @tech{SD} -> @tech{SD}
+;; automatic-closer : WorldState -> WorldState
 ;; closes an open door over the period of one tick 
 
 (check-expect (automatic-closer 'locked) 'locked)
@@ -604,7 +604,7 @@ For the remaining three arrows of the diagram, we design a function that
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; door-actions : @tech{SD} @tech{KeyEvent} -> @tech{SD}
+;; door-actions : WorldState @tech{KeyEvent} -> WorldState
 ;; key events simulate actions on the door 
 (define (door-actions s k) ...)
 ))
@@ -644,7 +644,7 @@ purpose:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; render : @tech{SD} -> @tech{scene}
+;; render : WorldState -> @tech{scene}
 ;; translate the current state of the door into a large text 
 (define (render s)
   (text (symbol->string s) 40 'red))
@@ -719,9 +719,9 @@ Note the last clause includes @scheme[empty] of course.
 
 Each world-producing callback in a world program---those for handling clock
  tick events, keyboard events, and mouse events---may produce a
- @tech{Package} in addition to just a @tech{World}. 
+ @tech{Package} in addition to just a @tech{WorldState}. 
 
-@deftech{Package} represents a pair consisting of a @tech{World} (state)
+@deftech{Package} represents a pair consisting of a @tech{WorldState}
  and a message from a @tech{world} program to the @tech{server}.  Because
  programs only send messages via @tech{Package}, the teachpack does not
  provide the selectors for the structure, only the constructor and a
@@ -731,38 +731,38 @@ Each world-producing callback in a world program---those for handling clock
  determine whether @scheme[x] is a @tech{Package}.}
 
 @defproc[(make-package [w any/c][m sexp?]) package?]{
- create a @tech{Package} from a @tech{World} and an @tech{S-expression}.}
+ create a @tech{Package} from a @tech{WorldState} and an @tech{S-expression}.}
 
-As mentioned, all event handlers may return @tech{World}s or @tech{Package}s;
+As mentioned, all event handlers may return @tech{WorldState}s or @tech{Package}s;
 here are the revised specifications: 
 
 @defform/none[(on-tick tick-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))])]{
+              ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))])]{
 } 
 
 @defform/none[(on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{World}) (or/c (unsyntax @tech{World}) package?))]
+              ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))]
                [rate-expr natural-number/c])]{
 }
 
 @defform/none[(on-key change-expr)
               #:contracts
-              ([change-expr (-> (unsyntax @tech{World}) key-event? (or/c (unsyntax @tech{World}) package?))])]{
+              ([change-expr (-> (unsyntax @tech{WorldState}) key-event? (or/c (unsyntax @tech{WorldState}) package?))])]{
 }
 
 @defform/none[(on-mouse clack-expr)
               #:contracts
               ([clack-expr
-                (-> (unsyntax @tech{World}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
-                    (or/c (unsyntax @tech{World}) package?))])]{
+                (-> (unsyntax @tech{WorldState}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
+                    (or/c (unsyntax @tech{WorldState}) package?))])]{
 }
 
 If one of these event handlers produces a @tech{Package}, the content of the world
  field becomes the next world and the message field specifies what the
  world sends to the universe. This distinction also explains why the data
- definition for @tech{World} may not include a @tech{Package}.
+ definition for @tech{WorldState} may not include a @tech{Package}.
 
 @subsection{Connecting with the Universe}
 
@@ -823,28 +823,28 @@ The @scheme[on-receive] clause of a @scheme[big-bang] specifies the event handle
 
 @defform[(on-receive receive-expr)
          #:contracts
-	 ([receive-expr (-> (unsyntax @tech{World}) sexp? (or/c (unsyntax @tech{World}) package?))])]{
+	 ([receive-expr (-> (unsyntax @tech{WorldState}) sexp? (or/c (unsyntax @tech{WorldState}) package?))])]{
  tell DrScheme to call @scheme[receive-expr] for every message receipt, on the current
- @tech{World} and the received message. The result of the call becomes the current
- @tech{World}. 
+ @tech{WorldState} and the received message. The result of the call becomes the current
+ @tech{WorldState}. 
 
  Because @scheme[receive-expr] is (or evaluates to) a world-transforming
  function, it too can produce a @tech{Package} instead of just a
- @tech{World}. If the result is a @tech{Package}, its message content is
+ @tech{WorldState}. If the result is a @tech{Package}, its message content is
  sent to the @tech{server}.}
 
 The diagram below summarizes the extensions of this section in graphical form. 
 
-@image["universe.png"]
+@image["world.png"]
 
 A registered world program may send a message to the universe server
  at any time by returning a @tech{Package} from an event handler. The
  message is transmitted to the server, which may forward it to some
  other world program as given or in some massaged form. The arrival of a
  message is just another event that a world program must deal with. Like
- all other event handlers @emph{receive} accepts a @tech{World} and some
+ all other event handlers @emph{receive} accepts a @tech{WorldState} and some
  auxiliary arguments (a message in this case) and produces a
- @tech{World} or a @tech{Package}.
+ @tech{WorldState} or a @tech{Package}.
 
 When messages are sent from any of the worlds to the universe or vice versa,
  there is no need for the sender and receiver to synchronize. Indeed, a sender
@@ -853,16 +853,15 @@ When messages are sent from any of the worlds to the universe or vice versa,
  the receiving @tech{server} or @tech{world} program take care of them. 
 
 @; -----------------------------------------------------------------------------
-
 @section[#:tag "universe-server"]{The Universe Server}
 
 A @deftech{server} is the central control program of a @tech{universe} and
  deals with receiving and sending of messages between the world
  programs that participate in the @tech{universe}. Like a @tech{world}
  program, a server is a program that reacts to events, though to different
- events. There are two primary kinds of events: when a new @tech{world}
- program joins the @tech{universe} that the server controls and when a
- @tech{world} sends a message. 
+ events than @tech{world}s. The two primary kinds of events are the
+ appearance of a new @tech{world} program in the @tech{universe} 
+ and the receipt of a message from a @tech{world} program. 
 
 The teachpack provides a mechanism for designating event handlers for
  servers that is quite similar to the mechanism for describing @tech{world}
@@ -897,8 +896,9 @@ This section first introduces some basic forms of data that the
 @; -----------------------------------------------------------------------------
 @subsection{Worlds and Messages}
 
-Understanding the server's event handling functions demands three
- concepts. 
+Understanding the server's event handling functions demands several data
+ representations: that of (a connection to) a @tech{world} program and that
+ of a response of a handler to an event. 
 
 @itemize[
 
@@ -915,6 +915,9 @@ Understanding the server's event handling functions demands three
 @defproc[(world=? [u world?][v world?]) boolean?]{
  compares two @emph{world}s for equality.}
 
+@defproc[(world-name [w world?]) symbol?]{
+ extracts the name from a @emph{world} structure.}
+
 @defthing[world1 world?]{a world for testing your programs}
 @defthing[world2 world?]{another world for testing your programs}
 @defthing[world3 world?]{and a third one}
@@ -928,9 +931,20 @@ for universe programs. For example:
 ]
 }
 
-@item{A @emph{mail} represents a message from an event handler to a
-world. The teachpack provides only a predicate and a constructor for these
-structures:
+@item{Each event handler produces a @emph{bundle}, which is a structure
+ that contains the list of @emph{world}s to keep track of; the
+ @tech{server}'s remaining state; and a list of mails to other
+ worlds: 
+
+@defproc[(bundle? [x any/c]) boolean?]{
+ determines whether @scheme[x] is a @emph{bundle}.}
+
+@defproc[(make-bundle [low (listof world?)] [state any/c] [mails (listof mail?)]) bundle?]{
+ creates a @emph{bundle} from a list of worlds, a piece of data that represents a server
+ state, and a list of mails.}
+
+A @emph{mail} represents a message from an event handler to a world. The
+teachpack provides only a predicate and a constructor for these structures:
 
 @defproc[(mail? [x any/c]) boolean?]{
  determines whether @scheme[x] is a @emph{mail}.}
@@ -939,33 +953,22 @@ structures:
  creates a @emph{mail} from a @emph{world} and an @tech{S-expression}.}
 }
 
-@item{Each event handler produces a @emph{bundle}, which is a structure
-that contains the @tech{server}'s state and a list of mails to other
-worlds. Again, the teachpack provides only the predicate and a constructor: 
-
-@defproc[(bundle? [x any/c]) boolean?]{
- determines whether @scheme[x] is a @emph{bundle}.}
-
-@defproc[(make-bundle [state any/c] [mails (listof mail?)]) bundle?]{
- creates a @emph{bundle} from a piece of data that represents a server
- state and a list of mails.}
-
-}
 ]
 
 @; -----------------------------------------------------------------------------
 @subsection{Universe Descriptions}
 
 A @tech{server} keeps track of information about the @tech{universe} that
- it manages. Of course, what kind of information it tracks and how it is
- represented depends on the situation and the programmer, just as with
- @tech{world} programs. 
+ it manages. One kind of tracked information is obviously the collection of
+ participating world programs, but in general the kind of information that
+ a server tracks and how the information is represented depends on the
+ situation and the programmer, just as with @tech{world} programs.
 
-@deftech{Universe} @scheme[any/c] represent the server's state For running
+@deftech{UniverseState} @scheme[any/c] represents the server's state For running
 @tech{universe}s, the teachpack demands that you come up with a data
 definition for (your state of the) @tech{server}.  Any piece of data can
 represent the state. We just assume that you introduce a data definition
-for the possible states and that your transformation functions are designed
+for the possible states and that your event handlers are designed
 according to the design recipe for this data definition.
 
 The @tech{server} itself is created with a description that includes the
@@ -993,7 +996,7 @@ registration of new worlds, how it disconnects worlds, how it sends
 messages from one world to the rest of the registered worlds, and how it
 renders its current state as a string.}
 
-A @scheme[universe] expression starts a server. Visually it opens
+Evaluating a @scheme[universe] expression starts a server. Visually it opens
  a console window on which you can see that worlds join, which messages are
  received from which world, and which messages are sent to which world. For
  convenience, the console also has two buttons: one for shutting down a
@@ -1001,35 +1004,48 @@ A @scheme[universe] expression starts a server. Visually it opens
  especially useful during the integration of the various pieces of a
  distributed program. 
 
-
-Now it is possible to explain the clauses in a @scheme[universe] server
-description. Two of them are mandatory: 
+The mandatory clauses of a @scheme[universe] server description are
+@scheme[on-new] and @scheme[on-msg]: 
 
 @itemize[
 
 @item{
  @defform[(on-new new-expr)
           #:contracts
-          ([new-expr (-> (unsyntax @tech{Universe}) world? 
-	   	         (cons (unsyntax @tech{Universe}) [listof mail?]))])]{
+          ([new-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? bundle?)])]{
  tell DrScheme to call the function @scheme[new-expr] every time another world joins the
- universe.}}
+ universe. The event handler is called on the current list of worlds and the
+ joining world, which isn't on the list yet. In particular, the handler may
+ reject a @tech{world} program from participating in a @tech{universe},
+ simply by not including it in the resulting @scheme[bundle] structure. The
+ handler may still send one message to the world that attempts to join. }
+}
 
 @item{
  @defform[(on-msg msg-expr)
           #:contracts
-          ([msg-expr (-> (unsyntax @tech{Universe}) world? sexp? 
-	   	         (cons (unsyntax @tech{Universe}) [listof mail?]))])]{
+          ([msg-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? sexp? bundle?)])]{
 
- tell DrScheme to apply @scheme[msg-expr] to the current state of the universe, the world
- that sent the message, and the message itself. The handler must produce a state of the
- universe and a list of mails.}
+ tell DrScheme to apply @scheme[msg-expr] to the list of currently
+ participating worlds @scheme[low], the current state of the universe, the world
+ @scheme[w] that sent the message, and the message itself. Note that
+ @scheme[w] is guaranteed to be on the list @scheme[low]. 
  }
-]
+}]
+
+ All proper event handlers produce a @emph{bundle}. The list of worlds in
+ this @emph{bundle} becomes the server's list of worlds, meaning that only
+ the server listens only to messages from "approved" worlds.  The state in
+ the bundle is safe-guarded by the server until the next event, and the
+ mails are broadcast as specified.
 
 The following picture provides a graphical overview of the server's workings. 
 
-@image["server2.png"]
+@; -----------------------------------------------------------------------------
+@;; THE PICTURE IS WRONG
+@; -----------------------------------------------------------------------------
+
+@image["server.png"]
 
 In addition to the mandatory handlers, a program may wish to add some
 optional handlers: 
@@ -1039,36 +1055,37 @@ optional handlers:
 @item{
 @defform/none[(on-tick tick-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{Universe}) bundle?)])]{
- tell DrScheme to apply @scheme[tick-expr] to the current state of the
- universe. The handler is expected to produce a bundle of the new state of
- the universe and a list of mails. 
+              ([tick-expr (-> [listof world?] (unsyntax @tech{UniverseState}) bundle?)])]{
+ tell DrScheme to apply @scheme[tick-expr] to the current list of
+ participating worlds and the current state of the
+ universe. 
  }
 
 @defform/none[(on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> (unsyntax @tech{Universe}) bundle?)]
+              ([tick-expr (-> [listof world?] (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr natural-number/c])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
  }
+
 }
 
 @item{
  @defform[(on-disconnect dis-expr)
           #:contracts
-          ([dis-expr (-> (unsyntax @tech{Universe}) world? bundle?)])]{
+          ([dis-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? bundle?)])]{
  tell DrScheme to invoke @scheme[dis-expr] every time a participating
- @tech{world} drops its connection to the server. The first argument is the
- current state of the universe; the second one is the world that got
- disconnected. 
+ @tech{world} drops its connection to the server. The first two arguments
+ are the current list of participating worlds and the state of the
+ universe; the third one is the world that got disconnected. 
  }
 }
 
 @item{
  @defform[(to-string render-expr)
           #:contracts
-          ([render-expr (-> (unsyntax @tech{Universe}) string?)])]{
+          ([render-expr (-> [listof world?] (unsyntax @tech{UniverseState}) string?)])]{
  tell DrScheme to render the state of the universe after each event and to
  display this string in the universe console. 
  }
@@ -1110,19 +1127,26 @@ The first step in designing a @tech{universe} is to understand the
  throughout a system. We know that the @tech{universe} doesn't exist until
  the server starts and the @tech{world}s are joining. Because of the nature
  of computers and networks, however, we may assume little else. Our network
- connections ensure that if some @tech{world} sends two messages in some
- order, they arrive in the same order at the server. In contrast, it is
- generally impossible to ensure whether one world joins before another or
- whether a message from one world gets to the server before another world's
- message gets there. It is therefore the designer's task to establish a
- protocol that enforces a certain order onto a universe and this activity
- is called @emph{protocol design}. 
+ connections ensure that if some @tech{world} or the @tech{server} sends
+ two messages to the @emph{same} place in some order, they arrive in the
+ same order (if they arrive at all). In contrast, if two distinct
+ @tech{world} programs send one message each, the network does not
+ guarantee the order of arrival at the server; similarly, if the
+ @tech{server} is asked to send some messages to several distinct
+ @tech{world} programs, they may arrive at those worlds in the order sent
+ or in the some other order. In the same vein, it is impossible to ensure
+ that one world joins before another. Worst, when someone removes the
+ connection (cable, wireless) between a computer that runs a @tech{world}
+ program and the rest of the network or if some network cable is cut,
+ messages don't go anywhere. Due to this vagaries, it is therefore the
+ designer's task to establish a protocol that enforces a certain order onto
+ a universe and this activity is called @emph{protocol design}.
 
 From the perspective of the @tech{universe}, the design of a protocol is
  about the design of data representations for tracking universe information
  in the server and the participating worlds and the design of a data
  representation for messages. As for the latter, we know that they must be
- @tech{S-expression}s, but of course @tech{world} programs don't send all
+ @tech{S-expression}s, but usually @tech{world} programs don't send all
  kinds of @tech{S-expression}s. The data definitions for messages must
  therefore select a subset of suitable @tech{S-expression}s. As for the
  state of the server and the worlds, they must reflect how they currently
@@ -1134,14 +1158,14 @@ In summary, the first step of a protocol design is to introduce:
 @itemize[
 
 @item{a data definition for the information about the universe that the
-server tracks, call it @tech{Universe};} 
+server tracks, call it @tech{UniverseState};} 
 
 @item{a data definition for the world(s) about their current relationship
 to the universe;}
 
 @item{data definitions for the messages that are sent from the server to
-the worlds and vice versa. Let's call them @deftech{MsgS2W} for messages
-from the server to the worlds and @deftech{MsgW2S} for the other direction;
+the worlds and vice versa. Let's call them @deftech{S2W} for messages
+from the server to the worlds and @deftech{W2S} for the other direction;
 in the most general case you may need one pair per world.}
 ]
 
@@ -1161,7 +1185,22 @@ The second step of a protocol design is to figure out which major
  state of the world. A good tool for writing down these agreements is an
  interaction diagram. 
 
-(interaction diagrams: tbd)
+
+@verbatim{
+ 
+     Server              World1                  World2 
+       |                   |                       |
+       |   'go             |                       |
+       |<------------------|                       |
+       |    'go            |                       |
+       |------------------------------------------>|
+       |                   |                       |
+       |                   |                       |
+}
+
+ Each vertical line is the life line of a @tech{world} program or the
+ @tech{server}. Each horizontal arrow denotes a message sent from one
+ @tech{universe} participant to another. 
 
 The design of the protocol, especially the data definitions, have direct
 implications for the design of event handling functions. For example, in
@@ -1172,18 +1211,19 @@ translates into the design of two functions with the following headers,
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; @tech{Universe} World -> (make-bundle @tech{Universe} [Listof mail?])
-;; create new @tech{Universe} when world w is joining the universe,
-;; which is in state s; also send mails as needed 
+;; Bundle is
+;;   (make-bundle [Listof world?] UniverseState [Listof mail?])
+
+;; [Listof world?] UniverseState world? -> Bundle 
+;; compute next list of worlds and new @tech{UniverseState} 
+;; when world w is joining the universe, which is in state s; 
 (define (add-world s w) ...)
 
-;; @tech{Universe} World MsgW2U -> (make-bundle @tech{Universe} [Listof mail?])
-;; create new @tech{Universe} when world w is sending message m 
-;; to universe in state s; also send mails as needed 
+;; [Listof world?] UniverseState world? W2U -> Bundle 
+;; compute next list of worlds and new @tech{UniverseState} 
+;; when world w is sending message m to universe in state s
 (define (process s p m) ...)
 ))
-
-Note how both functions return a bundle. 
 
 Finally, we must also decide how the messages affect the states of the
  worlds; which of their callback may send messages and when; and what to do
@@ -1204,10 +1244,14 @@ As for the server's state, it must obviously keep track of all @tech{world}s tha
  are passive. Of course, initially the @tech{universe} is empty, i.e., there are
  no @tech{world}s and, at that point, the server has nothing to track. 
 
-While there are many different useful ways of representing such a @tech{universe},
- we choose to introduce @tech{Universe} as a list of @tech{world}s, and we
- interpret non-empty lists as those where the first @tech{world} is active and the
- remainder are the passive @tech{world}s. As for the two possible events, 
+While there are many different useful ways of representing such a
+ @tech{universe}, we just use the list of @emph{worlds} that is handed to
+ each handler and that handlers return via their bundles. The
+ @tech{UniverseState} itself is useless for this trivial example. We
+ interpret non-empty lists as those where the first @tech{world} is active
+ and the remainder are the passive @tech{world}s. As for the two possible
+ events, 
+
 @itemize[
 
 @item{it is natural to add new @tech{world}s to the end of the list; and}
@@ -1239,6 +1283,34 @@ for this part of a @tech{world}'s state until we design its ``local'' behavior.}
  which it may ignore. When it is done with its turn, it will send a
  message. 
 
+@verbatim{
+     Server
+       |                 World1
+       |<==================|
+       |  'it-is-your-turn |
+       |------------------>|
+       |                   |                    World2 
+       |<==========================================|
+       |  'done            |                       |
+       |<------------------|                       |
+       |  'it-is-your-turn |                       |
+       |------------------------------------------>|
+       |                   |                       |
+       |                   |                       |
+       |  'done            |                       |
+       |<------------------------------------------|
+       |  'it-is-your-turn |                       |
+       |------------------>|                       |
+       |                   |                       |
+       |                   |                       |       
+}
+
+Here the double-lines (horizontal) denote the registration step, the others
+ are message exchanges. The diagram thus shows how the @tech{server}
+ decides to make the first registered world the active one and to enlist
+ all others as they join. 
+
+
 @; -----------------------------------------------------------------------------
 @subsection{Designing the Ball Server}
 
@@ -1249,7 +1321,7 @@ The preceding subsection dictates that our server program starts like this:
 [schemeblock
 ;; teachpack: universe.ss
   
-;; Universe is [Listof world?]
+;; UniverseState is '*
 ;; StopMessage is 'done. 
 ;; GoMessage is 'it-is-your-turn.
 ])
@@ -1264,24 +1336,23 @@ The preceding subsection dictates that our server program starts like this:
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-;; Result is (make-bundle Universe (list (make-mail world? GoMessage)))
+;; Result is 
+;;   (make-bundle [Listof world?] '* (list (make-mail world? GoMessage)))
 
-;; Universe world? -> Result 
+;; [Listof world?] UniverseState world? -> Result 
 ;; add world w to the universe, when server is in state u
 (define (add-world u w) ...)
 
-;; Universe world? StopMessage -> Result
+;; [Listof world?] UniverseState world? StopMessage -> Result
 ;; world w sent message m when server is in state u 
 (define (switch u w m) ...)
 ])
 
 Although we could have re-used the generic contracts from this
 documentation, we also know from our protocol that our server sends a
-message to exactly one world. For this reason, both functions return the
-same kind of result: a bundle that contains the new state of the server
-(@tech{Universe}) and a list that contains a single mail. These contracts
-are just refinements of the generic ones. (A type-oriented programmer would
-say that the contracts here are subtypes of the generic ones.) 
+message to exactly one world. Note how these contracts are just refinements
+of the generic ones. (A type-oriented programmer would say that the
+contracts here are subtypes of the generic ones.)
 
 The second step of the design recipe calls for functional examples: 
 
@@ -1290,14 +1361,16 @@ The second step of the design recipe calls for functional examples:
 [schemeblock
 ;; an obvious example for adding a world: 
 (check-expect
-  (add-world '() world1) 
-  (make-bundle (list world1) 
+  (add-world '() '* world1) 
+  (make-bundle (list world1)
+               '*
                (list (make-mail world1 'it-is-your-turn))))
 
 ;; an example for receiving a message from the active world:
 (check-expect
- (switch (list world1 world2) world1 'it-is-your-turn)
+ (switch (list world1 world2) '* world1 'it-is-your-turn)
  (make-bundle (list world2 world1)
+              '*
               (list (make-mail world2 'it-is-your-turn))))
 ])
 
@@ -1310,23 +1383,24 @@ Exercise: Create additional examples for the two functions based on our
 protocol. 
 
 The protocol tells us that @emph{add-world} just adds the given
-@emph{world} structure---recall that this a data representation of the
-actual @tech{world} program---to the @tech{Universe} and then sends a
-message to the first world on this list to get things going:
+ @emph{world} structure---recall that this a data representation of the
+ actual @tech{world} program---to the given list of worlds. It then sends a
+ message to the first world on this list to get things going:
 
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (add-world univ wrld)
+(define (add-world univ state wrld)
   (local ((define univ* (append univ (list wrld))))
-    (make-bundle univ* 
+    (make-bundle univ*
+                 '*
                  (list (make-mail (first univ*) 'it-is-your-turn)))))
 ])
 
 Because @emph{univ*} contains at least @emph{wrld}, it is acceptable to
 create a mail to @scheme[(first univ*)]. Of course, this same reasoning
 also implies that if @emph{univ} isn't empty, its first element is an
-active world and has already received such a message. 
+active world and is about to receive a second @scheme['it-is-your-turn] message. 
 
 Similarly, the protocol says that when @emph{switch} is invoked because a
  @tech{world} program sends a message, the data representation of the
@@ -1336,14 +1410,16 @@ Similarly, the protocol says that when @emph{switch} is invoked because a
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (switch univ wrld m)
+(define (switch univ state wrld m)
   (local ((define univ* (append (rest univ) (list (first univ)))))
-    (make-bundle univ* (list (make-mail (first univ*) 'it-is-your-turn)))))
+    (make-bundle univ*
+                 '*
+                 (list (make-mail (first univ*) 'it-is-your-turn)))))
 ])
 
  As before, appending the first world to the end of the list guarantees
- that there is at least this one world on the next @tech{Universe}
- (state). It is therefore acceptable to create a mail for this world.
+ that there is at least this one world on this list. It is therefore
+ acceptable to create a mail for this world. 
 
 Exercise: The function definition simply assumes that @emph{wrld} is
  @scheme[world=?] to @scheme[(first univ)] and that the received message
@@ -1355,6 +1431,12 @@ Exercise: The function definition simply assumes that @emph{wrld} is
  to the agreed-upon protocol. How to deal with such situations properly
  depends on the context. For now, stop the @tech{universe} at this point,
  but consider alternative solutions, too.) 
+
+Exercise: An alternative state representation would equate 
+ @tech{UniverseState} with @emph{world} structures, keeping track of the
+ active world. The list of world in the server would track the passive
+ worlds only. Design appropriate @scheme[add-world] and @scheme[switch]
+ functions. 
 
 @; -----------------------------------------------------------------------------
 @subsection{Designing the Ball World}
@@ -1371,31 +1453,35 @@ The final step is to design the ball @tech{world}. Recall that each world
 (schemeblock 
 ;; teachpack: universe.ss
 
-;; World is one of 
+;; WorldState is one of:
 ;; -- Number	         %% representing the @emph{y} coordinate 
 ;; -- @scheme['resting]
 
 (define WORLD0 'resting)
+
+;; A WorldResult is one of:
+;; -- WorldState
+;; -- (make-package WorldState StopMessage)
 ))
  The definition says that initially a @tech{world} is passive. 
 
-The communication protocol and the refined data definition of @tech{World}
+The communication protocol and the refined data definition of @tech{WorldState}
  imply a number of contract and purpose statements: 
 
 @(begin
 #reader scribble/comment-reader
 (schemeblock
 
-;; World GoMessage -> World or (make-package World StopMessage)
+;; WorldState GoMessage -> WorldResult 
 ;; make sure the ball is moving 
 (define (receive w n) ...)
 
-;; World -> World or (make-package World StopMessage)
+;; WorldState -> WorldResult
 ;; move this ball upwards for each clock tick 
 ;; or stay @scheme['resting]
 (define (move w) ...) 
 
-;; World -> Scene
+;; WorldState -> Scene
 ;; render the world as a scene
 (define (render w) ...)
 ))
@@ -1403,7 +1489,7 @@ The communication protocol and the refined data definition of @tech{World}
 Let's design one function at a time, starting with @emph{receive}.  Since
  the protocol doesn't spell out what @emph{receive} is to compute, let's
  create a good set of functional examples, exploiting the structure of the
- data organization of @tech{World}:
+ data organization of @tech{WorldState}:
 
 @(begin
 #reader scribble/comment-reader
@@ -1458,7 +1544,7 @@ the scene every time @scheme['it-is-your-turn] is received. Design this function
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-; World -> World or @scheme[(make-package 'resting 'done)]
+; WorldState -> WorldState or @scheme[(make-package 'resting 'done)]
 ; move the ball if it is flying
 
 (check-expect (move 'resting) 'resting)
@@ -1498,7 +1584,7 @@ Finally, here is the third function, which renders the state as a scene:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-; World -> Scene
+; WorldState -> Scene
 ; render the state of the world as a scene 
 
 (check-expect (render HEIGHT) (place-image BALL 50 HEIGHT MT))
@@ -1520,7 +1606,7 @@ Finally, here is the third function, which renders the state as a scene:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-; String -> (World -> Scene)
+; String -> (WorldState -> Scene)
 ; render the state of the world as a scene 
 
 (check-expect 
@@ -1545,7 +1631,7 @@ Finally, here is the third function, which renders the state as a scene:
 #reader scribble/comment-reader
 (schemeblock
 
-; String -> World 
+; String -> WorldState 
 ; create and hook up a world with the @scheme[LOCALHOST] server
 (define (create-world name)
   (big-bang WORLD0

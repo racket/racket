@@ -71,7 +71,8 @@ Gets or sets the border margin for the container in pixels. This
 }
 
 
-@defmethod[(change-children [filter ((listof (is-a?/c subarea<%>)) . -> . (listof (is-a?/c subarea<%>)))])
+@defmethod[(change-children [filter ((listof (is-a?/c subarea<%>)) 
+                                     . -> . (listof (is-a?/c subarea<%>)))])
            void?]{
 
 Takes a filter procedure and changes the container's list of

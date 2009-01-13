@@ -504,62 +504,62 @@
       (get-output-string p)
       (close-output-port p))))
 
-;; check
+;; redex-check
 (let ()
   (define-language lang
     (d 5)
     (e e 4)
     (n number))
-  (test (current-output (λ () (check lang d #f))) 
+  (test (current-output (λ () (redex-check lang d #f))) 
         "counterexample found after 1 attempts:\n5\n")
-  (test (check lang d #t) #t)
-  (test (check lang (d e) (and (eq? (term d) 5) (eq? (term e) 4)) #:attempts 2) #t)
-  (test (check lang (d ...) (zero? (modulo (foldl + 0 (term (d ...))) 5)) #:attempts 2) #t)
-  (test (current-output (λ () (check lang (d e) #f)))
+  (test (redex-check lang d #t) #t)
+  (test (redex-check lang (d e) (and (eq? (term d) 5) (eq? (term e) 4)) #:attempts 2) #t)
+  (test (redex-check lang (d ...) (zero? (modulo (foldl + 0 (term (d ...))) 5)) #:attempts 2) #t)
+  (test (current-output (λ () (redex-check lang (d e) #f)))
         "counterexample found after 1 attempts:\n(5 4)\n")
-  (test (current-output (λ () (check lang d (error 'pred-raised))))
+  (test (current-output (λ () (redex-check lang d (error 'pred-raised))))
         "counterexample found after 1 attempts:\n5\n")
   (test (parameterize ([check-randomness (make-random 0 0)])
-          (check lang n (eq? 42 (term n)) 
-                 #:attempts 1
-                 #:source (reduction-relation lang (--> 42 x))))
+          (redex-check lang n (eq? 42 (term n)) 
+                       #:attempts 1
+                       #:source (reduction-relation lang (--> 42 x))))
         #t)
   (test (current-output
          (λ ()
            (parameterize ([check-randomness (make-random 0 0)])
-             (check lang n (eq? 42 (term n)) 
-                    #:attempts 1
-                    #:source (reduction-relation lang (--> 0 x z))))))
+             (redex-check lang n (eq? 42 (term n)) 
+                          #:attempts 1
+                          #:source (reduction-relation lang (--> 0 x z))))))
         "counterexample found (z) after 1 attempts:\n0\n")
   (test (current-output
          (λ ()
            (parameterize ([check-randomness (make-random 1)])
-             (check lang d (eq? 42 (term n)) 
-                    #:attempts 1
-                    #:source (reduction-relation lang (--> 0 x z))))))
+             (redex-check lang d (eq? 42 (term n)) 
+                          #:attempts 1
+                          #:source (reduction-relation lang (--> 0 x z))))))
         "counterexample found after 1 attempts:\n5\n")
   (test (let ([r (reduction-relation lang (--> 0 x z))])
-          (check lang n (number? (term n)) 
-                 #:attempts 10
-                 #:source r))
+          (redex-check lang n (number? (term n)) 
+                       #:attempts 10
+                       #:source r))
         #t)
   (let ()
     (define-metafunction lang
       [(mf 0) 0]
       [(mf 42) 0])
     (test (parameterize ([check-randomness (make-random 0 1)])
-            (check lang (n) (eq? 42 (term n)) 
-                   #:attempts 1
-                   #:source mf))
+            (redex-check lang (n) (eq? 42 (term n)) 
+                         #:attempts 1
+                         #:source mf))
           #t))
   (let ()
     (define-language L)
     (test (with-handlers ([exn:fail? exn-message])
-            (check lang any #t #:source (reduction-relation L (--> 1 1))))
+            (redex-check lang any #t #:source (reduction-relation L (--> 1 1))))
           #rx"language for secondary source"))
   (let ()
     (test (with-handlers ([exn:fail? exn-message])
-            (check lang n #t #:source (reduction-relation lang (--> x 1))))
+            (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
           #rx"x does not match n"))
   
   (let ([stx-err (λ (stx)
@@ -570,15 +570,15 @@
       (eval '(require "../reduction-semantics.ss"
                       "rg.ss"))
       (eval '(define-language empty))
-      (test (stx-err '(check empty any #t #:typo 3))
-            #rx"check: bad keyword syntax")
-      (test (stx-err '(check empty any #t #:attempts 3 #:attempts 4))
+      (test (stx-err '(redex-check empty any #t #:typo 3))
+            #rx"redex-check: bad keyword syntax")
+      (test (stx-err '(redex-check empty any #t #:attempts 3 #:attempts 4))
             #rx"bad keyword syntax")
-      (test (stx-err '(check empty any #t #:attempts))
+      (test (stx-err '(redex-check empty any #t #:attempts))
             #rx"bad keyword syntax")
-      (test (stx-err '(check empty any #t #:attempts 3 4))
+      (test (stx-err '(redex-check empty any #t #:attempts 3 4))
             #rx"bad keyword syntax")
-      (test (stx-err '(check empty any #t #:source #:attempts))
+      (test (stx-err '(redex-check empty any #t #:source #:attempts))
             #rx"bad keyword syntax"))))
 
 ;; check-metafunction-contract

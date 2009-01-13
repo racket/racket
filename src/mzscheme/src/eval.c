@@ -4911,7 +4911,7 @@ static void *compile_k(void)
   int writeable, for_eval, rename, enforce_consts, comp_flags;
   Scheme_Env *genv;
   Scheme_Compile_Info rec, rec2;
-  Scheme_Object *o, *tl_queue;
+  Scheme_Object *o, *rl, *tl_queue;
   Scheme_Compilation_Top *top;
   Resolve_Prefix *rp;
   Resolve_Info *ri;
@@ -4973,7 +4973,8 @@ static void *compile_k(void)
 	 find one, break it up to eval first expression
 	 before the rest. */
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false, scheme_false);
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
+                                    scheme_false, scheme_false, scheme_null);
 	form = scheme_check_immediate_macro(form, 
 					    cenv, &rec, 0,
 					    0, &gval, NULL, NULL);
@@ -4989,10 +4990,13 @@ static void *compile_k(void)
 	  } else
 	    break;
 	} else {
+	  rl = scheme_frame_get_require_lifts(cenv);
 	  o = scheme_frame_get_lifts(cenv);
-	  if (!SCHEME_NULLP(o)) {
+	  if (!SCHEME_NULLP(o)
+              || !SCHEME_NULLP(rl)) {
 	    tl_queue = scheme_make_pair(form, tl_queue);
 	    tl_queue = scheme_append(o, tl_queue);
+	    tl_queue = scheme_append(rl, tl_queue);
 	    form = SCHEME_CAR(tl_queue);
 	    tl_queue = SCHEME_CDR(tl_queue);
 	  }
@@ -5010,7 +5014,8 @@ static void *compile_k(void)
       Scheme_Object *l, *prev_o = NULL;
 
       while (1) {
-	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), scheme_false, scheme_false);
+	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
+                                    scheme_false, scheme_false, scheme_null);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -5031,10 +5036,13 @@ static void *compile_k(void)
 	/* If any definitions were lifted in the process of compiling o,
 	   we need to fold them in. */
 	l = scheme_frame_get_lifts(cenv);
-	if (!SCHEME_NULLP(l)) {
-	  l = icons(scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(cenv), 0, 0),
-		    l);
-	  form = scheme_datum_to_syntax(l, scheme_false, scheme_false, 0, 0);
+	rl = scheme_frame_get_require_lifts(cenv);
+	if (!SCHEME_NULLP(l)
+            || !SCHEME_NULLP(rl)) {
+          rl = scheme_append(rl, l);
+          rl = icons(scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(cenv), 0, 0),
+                     rl);
+          form = scheme_datum_to_syntax(rl, scheme_false, scheme_false, 0, 0);
 	  prev_o = o;
 	} else 
 	  break;
@@ -6213,7 +6221,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 
   context_key = scheme_generate_lifts_key();
   
-  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false, context_key);
+  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false, context_key, NULL);
 
   if (rec[drec].comp) {
     scheme_init_compile_recs(rec, drec, recs, 2);
@@ -8877,7 +8885,9 @@ static void *expand_k(void)
     erec1.comp_flags = comp_flags;
 
     if (catch_lifts_key)
-      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false, catch_lifts_key);
+      scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), 
+                                  scheme_false, catch_lifts_key, 
+                                  (!as_local && catch_lifts_key) ? scheme_null : NULL);
   
     if (just_to_top) {
       Scheme_Object *gval;
@@ -8886,9 +8896,12 @@ static void *expand_k(void)
       obj = scheme_expand_expr(obj, env, &erec1, 0);
 
     if (catch_lifts_key) {
-      Scheme_Object *l;
+      Scheme_Object *l, *rl;
       l = scheme_frame_get_lifts(env);
-      if (SCHEME_PAIRP(l)) {
+      rl = scheme_frame_get_require_lifts(env);
+      if (SCHEME_PAIRP(l)
+          || SCHEME_PAIRP(rl)) {
+        l = scheme_append(rl, l);
         obj = add_lifts_as_begin(obj, l, env);
         SCHEME_EXPAND_OBSERVE_LIFT_LOOP(erec1.observer,obj);
 	if ((depth >= 0) || as_local)
@@ -9189,6 +9202,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   if (for_stx) {
     scheme_prepare_exp_env(env->genv);
     env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
+    scheme_propagate_require_lift_capture(orig_env, env);
   }
 
   if (for_expr)
@@ -9322,7 +9336,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
     if (catch_lifts_key)
       scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false, 
-                                  catch_lifts_key);
+                                  catch_lifts_key, NULL);
 
     memset(drec, 0, sizeof(drec));
     drec[0].value_name = scheme_false; /* or scheme_current_thread->current_local_name ? */

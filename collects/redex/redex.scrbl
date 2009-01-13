@@ -47,9 +47,12 @@
      #'((tech "term") args ...)]
     [x (identifier? #'x) #'(tech "term")]))
 
+@(define redex-eval (make-base-eval))
+@(interaction-eval #:eval redex-eval (require redex/reduction-semantics))
+
 @title{@bold{Redex}: Debugging Operational Semantics}
 
-@author["Robert Bruce Findler"]
+@author["Robert Bruce Findler" "Casey Klein"]
 
 PLT Redex consists of a domain-specific language for specifying
 reduction semantics, plus a suite of tools for working with the
@@ -982,6 +985,128 @@ counters so that next time this function is called, it
 prints the test results for the next round of tests.
 }
 
+@defproc[(make-coverage [r reduction-relation?]) coverage?]{
+Constructs a structure to contain the per-case test coverage of
+the relation @scheme[r]. Use with @scheme[relation-coverage]
+and @scheme[covered-cases].
+}
+
+@defproc[(coverage? [v any/c]) boolean?]{
+Returns @scheme[#t] for a value produced by @scheme[make-coverage]
+and @scheme[#f] for any other.}
+
+@defparam[relation-coverage c (or/c false/c coverage?)]{
+When @scheme[c] is a @scheme[coverage] structure, rather than 
+@scheme[#f] (the default), procedures such as
+@scheme[apply-reduction-relation], @scheme[traces], etc. count 
+the number applications of each case of the
+@scheme[reduction-relation], storing the results in @scheme[c].
+}
+
+@defproc[(covered-cases 
+          [c coverage?])
+         (listof (cons/c string? natural-number/c))]{
+Extracts the coverage information recorded in @scheme[c], producing
+an association list mapping names to application counts.}
+
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       
+       (define equals
+         (reduction-relation 
+          empty-lang
+          (--> (+) 0 "zero")
+          (--> (+ number) number)
+          (--> (+ number_1 number_2 number ...)
+               (+ ,(+ (term number_1) (term number_2))
+                  number ...)
+               "add")))
+       (let ([coverage (make-coverage equals)])
+         (parameterize ([relation-coverage coverage])
+           (apply-reduction-relation* equals (term (+ 1 2 3)))
+           (covered-cases coverage)))]
+
+@defform*[[(generate-term language #, @|ttpattern| size-exp)
+           (generate-term language #, @|ttpattern| size-exp #:attempt attempt-num-expr)]
+          #:contracts ([size-expr natural-number/c]
+                       [attempt-num-expr natural-number/c])]{
+Generates a random term matching @scheme[pattern] (in the given language).
+
+The argument @scheme[size-expr] bounds the height of the generated term
+(measured as the height of the derivation tree used to produce
+the term). 
+         
+The optional keyword argument @scheme[attempt-num-expr] 
+(default @scheme[1]) provides coarse grained control over the random
+decisions made during generation (e.g., the expected length of 
+@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr]).}
+
+@defform/subs[(redex-check language #, @|ttpattern| property-expr kw-arg ...)
+              ([kw-arg (code:line #:attempts attempts-expr)
+                       (code:line #:source metafunction)
+                       (code:line #:source relation-expr)])
+              #:contracts ([property-expr any/c]
+                           [attempts-expr natural-number/c]
+                           [relation-expr reduction-relation?])]{
+Searches for a counterexample to @scheme[property-expr], interpreted
+as a predicate universally quantified over its free
+@pattech[term]-variables. @scheme[redex-check] chooses substitutions for 
+these free @pattech[term]-variables by generating random terms matching
+@scheme[pattern] and extracting the sub-terms bound by the
+@pattech[names] and non-terminals in @scheme[pattern].
+
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       
+       (random-seed 0)
+
+       (redex-check 
+        empty-lang
+        ((number_1 ...)
+         (number_2 ...))
+        (equal? (reverse (append (term (number_1 ...))
+                                 (term (number_2 ...))))
+                (append (reverse (term (number_1 ...)))
+                        (reverse (term (number_2 ...))))))
+
+       (redex-check 
+        empty-lang
+        ((number_1 ...)
+         (number_2 ...))
+        (equal? (reverse (append (term (number_1 ...))
+                                 (term (number_2 ...))))
+                (append (reverse (term (number_2 ...)))
+                        (reverse (term (number_1 ...)))))
+        #:attempts 200)]
+
+@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
+random terms in its search. The size and complexity of terms it generates
+gradually increases with each failed attempt.
+
+When the optional @scheme[#:source] argument is present, @scheme[redex-check] 
+generates @math{10%} of its terms by randomly choosing a pattern from the
+left-hand sides the definition of the supplied metafunction or relation.
+@scheme[redex-check] raises an exception if a term generated from an alternate
+pattern does not match the @scheme[pattern].}
+
+@defproc[(check-reduction-relation 
+          [relation reduction-relation?]
+          [property (-> any/c any/c)]
+          [#:attempts attempts natural-number/c 100])
+         (or/c true/c void?)]{
+Tests a @scheme[relation] as follows: for each case of @scheme[relation],
+@scheme[check-reduction-relation] generates @scheme[attempts] random
+terms that match that case's left-hand side and applies @scheme[property] 
+to each random term.}
+
+@defform*[[(check-metafunction metafunction property)
+           (check-metafunction metafunction property #:attempts attempts)]
+          #:contracts ([property (-> any/c any/c)]
+                       [attempts natural-number/c])]{
+Like @scheme[check-reduction-relation] but for metafunctions.}
+
 @deftech{Debugging PLT Redex Programs}
 
 It is easy to write grammars and reduction rules that are
@@ -1017,13 +1142,21 @@ exploring reduction sequences.
                  [expr (or/c any/c (listof any/c))]
                  [#:multiple? multiple? boolean? #f]
                  [#:pred pred
-                         (or/c (sexp -> any) (sexp term-node? any))
+                         (or/c (-> sexp any)
+                               (-> sexp term-node? any))
                          (lambda (x) #t)]
                  [#:pp pp
                        (or/c (any -> string)
                              (any output-port number (is-a?/c text%) -> void))
                        default-pretty-printer]
-                 [#:colors colors (listof (list string string)) '()])
+                 [#:colors colors 
+                  (listof 
+                   (cons/c string 
+                           (and/c (listof (or/c string? (is-a?/c color%)))
+                                  (lambda (x) (member (length x) '(2 3 4 6))))))]
+
+	         [#:scheme-colors? scheme-colors? boolean?]
+                 [#:layout layout (-> (listof term-node?) void)])
          void?]{
 
 This function opens a new window and inserts each expression
@@ -1063,12 +1196,54 @@ final argument is the text where the port is connected --
 characters written to the port go to the end of the editor.
 
 The @scheme[colors] argument, if provided, specifies a list of
-reduction-name/color-string pairs. The traces gui will color
-arrows drawn because of the given reduction name with the
-given color instead of using the default color.
+reduction-name/color-list pairs. The traces gui will color arrows
+drawn because of the given reduction name with the given color instead
+of using the default color.
+
+The @scheme[cdr] of each of the elements of @scheme[colors] is a list
+of colors, organized in pairs. The first two colors cover the colors
+of the line and the border around the arrow head, the first when the
+mouse is over a graph node that is connected to that arrow, and the
+second for when the mouse is not over that arrow. Similarly, the next
+colors are for the text drawn on the arrow and the last two are for
+the color that fills the arrow head.  If fewer than six colors are
+specified, the colors specified colors are used and then defaults are
+filled in for the remaining colors.
+
+
+
+The @scheme[scheme-colors?] argument, if @scheme[#t] causes
+@scheme[traces] to color the contents of each of the windows according
+to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
+@scheme[traces] just uses black for the color scheme.
+
+The @scheme[layout] argument is called (with all of the terms) each
+time a new term is inserted into the window. See also
+@scheme[term-node-set-position!].
 
 You can save the contents of the window as a postscript file
 from the menus.
+}
+
+@defproc[(traces/ps [reductions reduction-relation?] 
+                    [expr (or/c any/c (listof any/c))]
+                    [file (or/c path-string? path?)]
+                    [#:multiple? multiple? boolean? #f]
+                    [#:pred pred
+                            (or/c (-> sexp any)
+                                  (-> sexp term-node? any))
+                            (lambda (x) #t)]
+                    [#:pp pp
+                          (or/c (any -> string)
+                                (any output-port number (is-a?/c text%) -> void))
+                          default-pretty-printer]
+                    [#:colors colors (listof (list string string)) '()]
+                    [#:layout layout (-> (listof term-node?) void)])
+         void?]{
+
+The arguments behave just like the function @scheme[traces], but
+instead of opening a window to show the reduction graph, it just saves
+the reduction graph to the specified @scheme[file].
 }
 
 @defproc[(stepper [reductions reduction-relation?] 
@@ -1144,6 +1319,24 @@ not colored specially.
 @defproc[(term-node-expr [tn term-node?]) any]{
 
 Returns the expression in this node.
+}
+
+@defproc[(term-node-set-position! [tn term-node?] [x (and/c real? positive?)] [y (and/c real? positive?)]) void?]{
+
+Sets the position of @scheme[tn] in the graph to (@scheme[x],@scheme[y]). 
+}
+
+@defproc[(term-node-x [tn term-node?]) real]{
+Returns the @tt{x} coordinate of @scheme[tn] in the window.
+}
+@defproc[(term-node-y [tn term-node?]) real]{
+Returns the @tt{y} coordinate of @scheme[tn] in the window.
+}
+@defproc[(term-node-width [tn term-node?]) real]{
+Returns the width of @scheme[tn] in the window.
+}
+@defproc[(term-node-height [tn term-node?]) real?]{
+Returns the height of @scheme[tn] in the window.
 }
 
 @defproc[(term-node? [v any/c]) boolean?]{

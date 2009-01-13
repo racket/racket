@@ -5749,6 +5749,76 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_id, 
   return scheme_make_lifted_defn(scheme_sys_wraps(env), _id, expr, _env);
 }
 
+static Scheme_Object *make_require_form(Scheme_Object *module_path, long phase, Scheme_Object *mark)
+{
+  Scheme_Object *e = module_path;
+
+  if (phase != 0) {
+    e = scheme_make_pair(for_meta_symbol,
+                         scheme_make_pair(scheme_make_integer(phase),
+                                          scheme_make_pair(e,
+                                                           scheme_null)));
+  }
+  e = scheme_make_pair(require_stx, scheme_make_pair(e, scheme_null));
+  e = scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0);
+
+  e = scheme_add_remove_mark(e, mark);
+
+  return e;
+}
+
+Scheme_Object *scheme_parse_lifted_require(Scheme_Object *module_path,
+                                           long phase,
+                                           Scheme_Object *mark,
+                                           void *data)
+{
+  Scheme_Object *e;
+  Scheme_Object *base_modidx = (Scheme_Object *)((void **)data)[1];
+  Scheme_Env *env = (Scheme_Env *)((void **)data)[2];
+  Scheme_Module *for_m = (Scheme_Module *)((void **)data)[3];
+  Scheme_Object *rns = (Scheme_Object *)((void **)data)[4];
+  Scheme_Object *post_ex_rns = (Scheme_Object *)((void **)data)[5];
+  void *tables = ((void **)data)[6];
+  Scheme_Object *redef_modname = (Scheme_Object *)((void **)data)[7];
+  int *all_simple = (int *)((void **)data)[8];
+
+  e = make_require_form(module_path, phase, mark);
+
+  parse_requires(e, base_modidx, env, for_m,
+                 rns, post_ex_rns,
+                 check_require_name, tables,
+                 redef_modname, 
+                 0, 0, 1, 0,
+                 all_simple);
+
+  return e;
+}
+
+static Scheme_Object *package_require_data(Scheme_Object *base_modidx,
+                                           Scheme_Env *env,
+                                           Scheme_Module *for_m,
+                                           Scheme_Object *rns, Scheme_Object *post_ex_rns,
+                                           void *data,
+                                           Scheme_Object *redef_modname,
+                                           int *all_simple)
+{
+  void **vals;
+
+  vals = MALLOC_N(void*, 9);
+  vals[0] = NULL; /* this slot is available */
+  vals[1] = base_modidx;
+  vals[2] = env;
+  vals[3] = for_m;
+  vals[4] = rns;
+  vals[5] = post_ex_rns;
+  vals[6] = data;
+  vals[7] = redef_modname;
+  vals[8] = all_simple;
+
+  return scheme_make_raw_pair((Scheme_Object *)vals, NULL);
+}
+
+
 static void flush_definitions(Scheme_Env *genv)
 {
   if (genv->syntax) {
@@ -5786,9 +5856,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Object *exclude_hint = scheme_false, *lift_data;
   Scheme_Object **exis, **et_exis, **exsis;
   Scheme_Object *lift_ctx;
+  Scheme_Object *lifted_reqs = scheme_null, *req_data;
   int exicount, et_exicount, exsicount;
   char *exps, *et_exps;
-  int all_simple_renames = 1;
+  int *all_simple_renames;
   int maybe_has_lifts = 0;
   int reprovide_kernel;
   Scheme_Object *redef_modname;
@@ -5931,6 +6002,15 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   maybe_has_lifts = 0;
   lift_ctx = scheme_generate_lifts_key();
 
+  all_simple_renames = (int *)scheme_malloc_atomic(sizeof(int));
+  *all_simple_renames = 1;
+
+  req_data = package_require_data(self_modidx, env->genv, env->genv->module,
+                                  rn_set, post_ex_rn_set,
+                                  tables,
+                                  redef_modname, 
+                                  all_simple_renames);
+
   /* Pass 1 */
 
   /* Partially expand all expressions, and process definitions, requires,
@@ -5949,7 +6029,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       p = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(xenv) 
            : scheme_null);
-      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), p, lift_ctx);
+      scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), 
+                                  p, lift_ctx, req_data);
       maybe_has_lifts = 1;
 
       {
@@ -5966,11 +6047,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	e = scheme_expand_expr(e, xenv, &erec1, 0);	
       }
 
+      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(xenv), lifted_reqs);
+
       fst = scheme_frame_get_lifts(xenv);
       if (!SCHEME_NULLP(fst)) {
 	/* Expansion lifted expressions, so add them to
 	   the front and try again. */
-        all_simple_renames = 0;
+        *all_simple_renames = 0;
 	fm = SCHEME_STX_CDR(fm);
         e = scheme_add_rename(e, post_ex_rn_set);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_rn_set);
@@ -6066,7 +6149,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    /* Add a renaming: */
 	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)) {
 	      scheme_extend_module_rename(post_ex_rn, self_modidx, name, name, self_modidx, name, 0, NULL, NULL, 0);
-              all_simple_renames = 0;
+              *all_simple_renames = 0;
 	    } else
 	      scheme_extend_module_rename(rn, self_modidx, name, name, self_modidx, name, 0, NULL, NULL, 0);
 
@@ -6102,6 +6185,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  
 	  scheme_prepare_exp_env(env->genv);
 	  eenv = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
+          scheme_frame_captures_lifts(eenv, NULL, NULL, scheme_false, scheme_false, req_data);
 
 	  oenv = (for_stx ? eenv : env);
 	  
@@ -6148,7 +6232,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)) {
 	      scheme_extend_module_rename(for_stx ? post_ex_et_rn : post_ex_rn, self_modidx, name, name, self_modidx, name,
 					  for_stx ? 1 : 0, NULL, NULL, 0);
-              all_simple_renames = 0;
+              *all_simple_renames = 0;
 	    } else
 	      scheme_extend_module_rename(for_stx ? et_rn : rn, self_modidx, name, name, self_modidx, name,
 					  for_stx ? 1 : 0, NULL, NULL, 0);
@@ -6185,6 +6269,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	    code = scheme_expand_expr_lift_to_let(code, eenv, &erec1, 0);
 	  }
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
+
+          lifted_reqs = scheme_append(scheme_frame_get_require_lifts(eenv), lifted_reqs);
 
 	  oi = scheme_optimize_info_create();
           oi->context = (Scheme_Object *)env->genv->module;
@@ -6243,7 +6329,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
                          check_require_name, tables,
                          redef_modname, 
                          0, 0, 1, 0,
-                         &all_simple_renames);
+                         all_simple_renames);
 
 	  if (rec[drec].comp)
 	    e = NULL;
@@ -6361,7 +6447,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
       l = (maybe_has_lifts 
            ? scheme_frame_get_end_statement_lifts(cenv) 
            : scheme_null);
-      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l, lift_ctx);
+      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l, lift_ctx, req_data);
       maybe_has_lifts = 1;
 
       if (kind == 2)
@@ -6380,6 +6466,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	erec1.value_name = scheme_false;
 	e = scheme_expand_expr(e, nenv, &erec1, 0);
       }
+
+      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(xenv), lifted_reqs);
       
       l = scheme_frame_get_lifts(cenv);
       if (SCHEME_NULLP(l)) {
@@ -6389,7 +6477,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	p = SCHEME_CDR(p);
       } else {
 	/* Lifts - insert them and try again */
-        all_simple_renames = 0;
+        *all_simple_renames = 0;
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, scheme_copy_list(l));
 	e = scheme_make_pair(e, scheme_make_integer(0)); /* don't re-compile/-expand */
 	SCHEME_CAR(p) = e;
@@ -6632,7 +6720,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     env->genv->module->indirect_provides = exis;
     env->genv->module->num_indirect_provides = exicount;
 
-    if (all_simple_renames) {
+    if (*all_simple_renames) {
       env->genv->module->indirect_syntax_provides = exsis;
       env->genv->module->num_indirect_syntax_provides = exsicount;
     } else {
@@ -6645,7 +6733,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
     env->genv->module->comp_prefix = cenv->prefix;
 
-    if (all_simple_renames) {
+    if (*all_simple_renames) {
       env->genv->module->rn_stx = scheme_true;
     }
 
@@ -6659,6 +6747,13 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     }
 
     p = SCHEME_STX_CAR(form);
+
+    /* Add lifted requires */
+    if (!SCHEME_NULLP(lifted_reqs)) {
+      lifted_reqs = scheme_reverse(lifted_reqs);
+      first = scheme_append(lifted_reqs, first);
+    }
+
     return scheme_datum_to_syntax(cons(p, first), form, form, 0, 2);
   }
 }
@@ -9045,10 +9140,10 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
                  0, 0, 0, 0,
                  NULL);
 
-  if (rec[drec].comp) {
+  if (rec && rec[drec].comp) {
     /* Dummy lets us access a top-level environment: */
     dummy = scheme_make_environment_dummy(env);
-
+    
     scheme_compile_rec_done_local(rec, drec);
     scheme_default_compile_rec(rec, drec);
     return scheme_make_syntax_compiled(REQUIRE_EXPD, 
@@ -9069,6 +9164,20 @@ require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 {
   SCHEME_EXPAND_OBSERVE_PRIM_REQUIRE(erec[drec].observer);
   return do_require(form, env, erec, drec);
+}
+
+Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
+                                                  long phase,
+                                                  Scheme_Comp_Env *cenv,
+                                                  Scheme_Object *mark)
+{
+  Scheme_Object *form;
+
+  form = make_require_form(module_path, phase, mark);
+
+  do_require(form, cenv, NULL, 0);
+
+  return form;
 }
 
 /**********************************************************************/

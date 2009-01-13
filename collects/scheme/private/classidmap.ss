@@ -291,7 +291,14 @@
        [else
 	(reverse (cons args accum))])))
 
-  (define-struct private-name (orig-id gen-id))
+  (define-struct private-name (orig-id gen-id)
+    #:property prop:procedure (lambda (self stx)
+                                (if (not (eq? (syntax-local-context) 'expression))
+                                    #`(#%expression #,stx)
+                                    (raise-syntax-error
+                                     #f
+                                     "unbound local member name"
+                                     stx))))
 
   (define (do-localize orig-id validate-local-member-stx)
     (let loop ([id orig-id])

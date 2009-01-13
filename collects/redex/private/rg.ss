@@ -655,11 +655,12 @@ To do a better job of not generating programs with free variables,
 
 (define check-randomness (make-parameter random))
 
-(define-syntax (check stx)
+(define-syntax (redex-check stx)
   (syntax-case stx ()
     [(_ lang pat property . kw-args)
      (let-values ([(names names/ellipses) 
-                   (extract-names (language-id-nts #'lang 'check) 'check #t #'pat)]
+                   (extract-names (language-id-nts #'lang 'redex-check)
+                                  'redex-check #t #'pat)]
                   [(attempts-stx source-stx)
                    (let loop ([args (syntax kw-args)]
                               [attempts #f]
@@ -678,9 +679,9 @@ To do a better job of not generating programs with free variables,
                      [attempts (or attempts-stx #'default-check-attempts)])
          (quasisyntax/loc stx
            (let ([att attempts])
-             (assert-nat 'check att)
+             (assert-nat 'redex-check att)
              (or (check-property 
-                  (cons (list #,(term-generator #'lang #'pat #'random-decisions 'check) #f)
+                  (cons (list #,(term-generator #'lang #'pat #'random-decisions 'redex-check) #f)
                         (let ([lang-gen (generate lang (random-decisions lang))])
                           #,(if (not source-stx)
                                 #'null
@@ -694,16 +695,16 @@ To do a better job of not generating programs with free variables,
                                                 [else
                                                  #`(let ([r #,source-stx])
                                                      (unless (reduction-relation? r)
-                                                       (raise-type-error 'check "reduction-relation" r))
+                                                       (raise-type-error 'redex-check "reduction-relation" r))
                                                      (values
                                                       (map rewrite-proc-lhs (reduction-relation-make-procs r))
                                                       (reduction-relation-srcs r)
                                                       (reduction-relation-lang r)))])])
                                     (unless (eq? src-lang lang)
-                                      (error 'check "language for secondary source must match primary pattern's language"))
+                                      (error 'redex-check "language for secondary source must match primary pattern's language"))
                                     (zip (map lang-gen pats) srcs)))))
                   #,(and source-stx #'(test-match lang pat))
-                  (λ (generated) (error 'check "~s does not match ~s" generated 'pat))
+                  (λ (generated) (error 'redex-check "~s does not match ~s" generated 'pat))
                   (λ (_ bindings)
                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
                               property))
@@ -842,7 +843,7 @@ To do a better job of not generating programs with free variables,
 (define generation-decisions (make-parameter random-decisions))
 
 (provide pick-from-list pick-var min-prods decisions^ pick-sequence-length
-         is-nt? pick-char random-string pick-string check nt-by-name
+         is-nt? pick-char random-string pick-string redex-check nt-by-name
          pick-nt unique-chars pick-any sexp generate-term parse-pattern
          class-reassignments reassign-classes unparse-pattern
          (struct-out ellipsis) (struct-out mismatch) (struct-out class)

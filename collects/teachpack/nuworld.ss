@@ -114,6 +114,6 @@
 
 (draw-pict the-image image-dc 0.0 0.0)
 
-(send image-bm save-file "nuworld.png" 'png)
+(send image-bm save-file "world.png" 'png)
 
 the-image

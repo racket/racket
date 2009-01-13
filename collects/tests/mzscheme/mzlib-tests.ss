@@ -10,6 +10,7 @@
 (load-in-sandbox "async-channel.ss")
 (load-in-sandbox "restart.ss")
 (load-in-sandbox "string-mzlib.ss")
+(load-in-sandbox "pathlib.ss")
 (load-in-sandbox "filelib.ss")
 (load-in-sandbox "portlib.ss")
 (load-in-sandbox "threadlib.ss")
