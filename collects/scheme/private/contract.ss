@@ -276,6 +276,12 @@ improve method arity mismatch contract violation error messages?
                          #`(define-syntax #,u
                              (make-rename-transformer #,(marker u))))
                          unprotected)
+               (define-values ()
+                 (begin
+                   #,@(map (λ (p c)
+                             #`(-contract #,(marker c) #,p blame-str 'ignored #,(id->contract-src-info p)))
+                           protected-ids contracts)
+                   (values)))
                )))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
