@@ -3109,6 +3109,14 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
   return scheme_false;
 }
 
+#define EXPLAIN_RESOLVE 0
+#if EXPLAIN_RESOLVE
+static int explain_resolves = 1;
+# define EXPLAIN(x) if (explain_resolves) { x; }
+#else
+# define EXPLAIN(x) /* empty */
+#endif
+
 static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env)
 /* Compares the marks in two wraps lists. A result of 2 means that the
    result depended on a barrier env. For a rib-based renaming, we need
@@ -3273,6 +3281,7 @@ static int same_marks(WRAP_POS *_awl, WRAP_POS *_bwl, Scheme_Object *barrier_env
 
     /* Done if both reached the end: */
     if (WRAP_POS_END_P(awl) && WRAP_POS_END_P(bwl)) {
+      EXPLAIN(fprintf(stderr, "    %d vs. %d marks\n", a_mark_cnt, b_mark_cnt));
       if (a_mark_cnt == b_mark_cnt) {
         while (a_mark_cnt--) {
           if (!SAME_OBJ(a_mark_stack[a_mark_cnt], b_mark_stack[a_mark_cnt]))
@@ -3363,14 +3372,6 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
       return;
   }
 }
-
-#define EXPLAIN_RESOLVE 0
-#if EXPLAIN_RESOLVE
-static int explain_resolves = 0;
-# define EXPLAIN(x) if (explain_resolves) { x; }
-#else
-# define EXPLAIN(x) /* empty */
-#endif
 
 static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache, int depth)
 {
@@ -3898,8 +3899,9 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	is_rib = NULL;
       }
 
-      EXPLAIN(fprintf(stderr, "%d lexical rename (%d) %d%s\n", depth, is_rib ? 1 : 0,
+      EXPLAIN(fprintf(stderr, "%d lexical rename (%d) %d %s%s\n", depth, is_rib ? 1 : 0,
                       SCHEME_VEC_SIZE(rename), 
+                      SCHEME_SYMBOLP(SCHEME_VEC_ELS(rename)[0]) ? SCHEME_SYM_VAL(SCHEME_VEC_ELS(rename)[0]) : "<simp>",
                       SCHEME_FALSEP(SCHEME_VEC_ELS(rename)[1]) ? "" : " hash"));
 
       c = SCHEME_RENAME_LEN(rename);
