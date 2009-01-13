@@ -260,22 +260,22 @@ improve method arity mismatch contract violation error messages?
            (check-exports (append unprotected protected) expanded-bodies))
          (with-syntax ([(contract-def ...) (map marker (filter values contract-defs))]
                        [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
-                       [(marked-body ...) (map marker expanded-bodies)]
-                       [(unprotected-id ...) unprotected])
+                       [(marked-body ...) (map marker expanded-bodies)])
            (quasisyntax/loc stx
              (splicing-syntax-parameterize ([current-contract-region blame-str])
                marked-body ...
                contract-def ...
                #,@(map (λ (p c)
-                         (if c
-                             #`(define-syntax #,p
-                                 (make-with-contract-transformer
-                                  (quote-syntax #,(marker c))
-                                  (quote-syntax #,(marker p))
-                                  blame-str))
-                             #`(define-syntax #,p
-                                 (make-rename-transformer #,(marker p)))))
+                         #`(define-syntax #,p
+                             (make-with-contract-transformer
+                              (quote-syntax #,(marker c))
+                              (quote-syntax #,(marker p))
+                              blame-str)))
                          protected-ids contracts)
+               #,@(map (λ (u)
+                         #`(define-syntax #,u
+                             (make-rename-transformer #,(marker u))))
+                         unprotected)
                )))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
