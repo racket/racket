@@ -2,7 +2,6 @@
 (require scheme/class
          (for-syntax scheme/base
                      macro-debugger/stxclass/stxclass
-                     ;; "stx.ss"
                      "class-ct.ss"))
 (provide define-interface
          define-interface/dynamic
@@ -19,7 +18,6 @@
 ;; Configuration
 (define-for-syntax warn-on-dynamic-interfaces? #f)
 (define-for-syntax warn-on-dynamic-object-check-generation? #f)
-(define-for-syntax warn-on-dynamic-object-check? #f)
 (define-for-syntax define-dotted-names #f)
 
 ;; define-interface SYNTAX
@@ -52,56 +50,43 @@
                 (define-syntax name
                   (make-static-interface #'dynamic-name '(mname ...)))))]))
 
+;; Helper
+
+(begin-for-syntax
+  (define (check-method-in-interface for-whom method si)
+    (unless (member (syntax-e method) (static-interface-members si))
+      (raise-syntax-error for-whom
+                          "method not in static interface"
+                          method))))
+
 ;; Checked send
 
 (define-syntax (send: stx)
   (syntax-parse stx
     [(send: obj:expr iface:static-interface method:id . args)
-     #`(begin (check-method<-interface method iface)
-              #,(syntax/loc stx
-                  (send (check-object<:interface send: obj iface)
-                        method . args)))]))
+     (begin (check-method-in-interface 'send: #'method #'iface.value)
+            (syntax/loc stx
+              (send (check-object<:interface send: obj iface)
+                    method . args)))]))
 
 (define-syntax (send*: stx)
   (syntax-parse stx
     [(send*: obj:expr iface:static-interface (method:id . args) ...)
-     #`(begin (check-method<-interface method iface) ...
-              #,(syntax/loc stx 
-                  (send* (check-object<:interface send*: obj iface)
-                    (method . args) ...)))]))
+     (begin (for ([method (syntax->list #'(method ...))])
+              (check-method-in-interface 'send*: method #'iface.value))
+            (syntax/loc stx 
+              (send* (check-object<:interface send*: obj iface)
+                (method . args) ...)))]))
 
 (define-syntax (send/apply: stx)
   (syntax-parse stx
     [(send/apply: obj:expr iface:static-interface method:id . args)
-     #`(begin (check-method<-interface method iface)
-              #,(syntax/loc stx 
-                  (send/apply (check-object<:interface send/apply obj iface)
-                              method . args)))]))
+     (begin (check-method-in-interface 'send/apply: #'method #'iface.value)
+            (syntax/loc stx 
+              (send/apply (check-object<:interface send/apply obj iface)
+                          method . args)))]))
 
 ;;
-
-;; check-method<-interface SYNTAX
-(define-syntax (check-method<-interface stx)
-  (syntax-parse stx
-    [(check-method<-interface method:id iface:static-interface)
-     (let ([si #'iface.value])
-       (unless (member (syntax-e #'method) (static-interface-members si))
-               (raise-syntax-error 'checked-send
-                                   "method not in static interface"
-                                   #'method))
-       #''okay)]
-    [(check-method<-interface method:id iface:expr)
-     (begin (when warn-on-dynamic-interfaces?
-              (printf "dynamic interface check: ~s,~s: method: ~a~n"
-                      (syntax-source #'method)
-                      (syntax-line #'method)
-                      (syntax-e #'method)))
-            #`(let ([ifc iface])
-                (unless (method-in-interface? 'method ifc)
-                  (error 'checked-send
-                         "interface does not contain method '~a': ~e"
-                         'method
-                         ifc))))]))
 
 ;; check-object<:interface SYNTAX
 (define-syntax (check-object<:interface stx)
@@ -110,7 +95,9 @@
      (if (eq? (checked-binding-iface #'obj.value) #'iface.value)
          #'obj
          (syntax/loc stx
-           (check-object<:interface for-whom (#%expression obj) (#%expression iface))))]
+           (check-object<:interface for-whom
+                                    (#%expression obj)
+                                    (#%expression iface))))]
     [(_ for-whom obj:expr iface:expr)
      (begin
        (when warn-on-dynamic-object-check-generation?
@@ -122,11 +109,6 @@
 (define (dynamic:check-object<:interface for-whom obj iface)
   (unless (is-a? obj iface)
     (error for-whom "interface check failed on: ~e" obj))
-  (let-syntax ([x (lambda (stx)
-                    (if warn-on-dynamic-object-check?
-                        #'(printf "dynamic: object check passed~n")
-                        #'(void)))])
-    x)
   obj)
 
 ;;
@@ -183,14 +165,21 @@
                checked-definition ...
                (let () . body)))))]))
 
+
+;; FIXME: unsafe due to mutation
+(define-syntax (init-field: stx)
+  (syntax-parse stx
+    [(_ (name:id iface:static-interface) ...)
+     #'(begin (init1: init-field name iface) ...)]))
+
 (define-syntax (init: stx)
   (syntax-parse stx
     [(_ (name:id iface:static-interface) ...)
-     #'(begin (init1: name iface) ...)]))
+     #'(begin (init1: init name iface) ...)]))
 
 (define-syntax (init1: stx)
   (syntax-parse stx
-    [(_ name:id iface:static-interface)
+    [(_ init name:id iface:static-interface)
      (with-syntax ([(name-internal) (generate-temporaries #'(name))])
        #'(begin (init (name name-internal))
                 (void (check-object<:interface init: name-internal iface))
