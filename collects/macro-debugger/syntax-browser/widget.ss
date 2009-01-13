@@ -143,7 +143,7 @@
                 (for ([binder-r (send range get-ranges binder)])
                   (for ([id-r (send range get-ranges id)])
                     (add-binding-arrow start binder-r id-r definite?)))))))
-        display))
+        (void)))
 
     (define/private (add-binding-arrow start binder-r id-r definite?)
       (if definite?
@@ -189,14 +189,17 @@
     ;; internal-add-syntax : syntax -> display
     (define/private (internal-add-syntax stx)
       (with-unlock -text
-        (let ([display (print-syntax-to-editor stx -text controller config)])
+        (let ([display
+               (print-syntax-to-editor stx -text controller config
+                                       (calculate-columns)
+                                       (send -text last-position))])
           (send* -text
             (insert "\n")
             ;;(scroll-to-position current-position)
             )
           display)))
 
-    (define/public (calculate-columns)
+    (define/private (calculate-columns)
       (define style (code-style -text (send config get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
