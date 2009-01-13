@@ -267,11 +267,14 @@ improve method arity mismatch contract violation error messages?
                marked-body ...
                contract-def ...
                #,@(map (λ (p c)
-                         #`(define-syntax #,p
-                             (make-with-contract-transformer
-                              (quote-syntax #,(if c (marker c) c))
-                              (quote-syntax #,(marker p))
-                              blame-str)))
+                         (if c
+                             #`(define-syntax #,p
+                                 (make-with-contract-transformer
+                                  (quote-syntax #,(marker c))
+                                  (quote-syntax #,(marker p))
+                                  blame-str))
+                             #`(define-syntax #,p
+                                 (make-rename-transformer #,(marker p)))))
                          protected-ids contracts)
                )))))]
     [(_ #:type type blame (arg ...) body0 body ...)
