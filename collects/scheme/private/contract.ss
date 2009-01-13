@@ -24,6 +24,7 @@ improve method arity mismatch contract violation error messages?
          (for-syntax syntax/kerncase)
          scheme/promise
          scheme/stxparam
+         scheme/splicing
          mzlib/etc)
 
 (require "contract-arrow.ss"
@@ -168,10 +169,16 @@ improve method arity mismatch contract violation error messages?
                        #'ident))])))))
 
 (define-for-syntax (head-expand-all body-stxs)
-  (for/list ([stx body-stxs])
-    (local-expand stx
-                  (syntax-local-context)
-                  (kernel-form-identifier-list))))
+  (apply append
+         (for/list ([stx body-stxs])
+           (let ([exp-form (local-expand stx
+                                         (syntax-local-context)
+                                         (kernel-form-identifier-list))])
+             (syntax-case exp-form (begin)
+               [(begin form ...)
+                (head-expand-all (syntax->list #'(form ...)))]
+               [_
+                (list exp-form)])))))
 
 (define-for-syntax (check-exports ids body-stxs)
   (let ([defd-ids (for/fold ([id-list null])
@@ -227,22 +234,22 @@ improve method arity mismatch contract violation error messages?
     [(_ #:type type blame (arg ...) body0 body ...)
      (and (identifier? #'blame)
           (identifier? #'type))
-     (let*-values ([(unprotected protected protections)
+     (let*-values ([(marker) (make-syntax-introducer)]
+                   [(unprotected protected protections)
                     (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
-                   [(expanded-bodies) (head-expand-all (cons #'body0
-                                                             (syntax->list #'(body ...))))]
-                   [(protected-ids ids contracts contract-defs)
-                    (for/lists (protected-ids ids contracts contract-defs)
+                   [(expanded-bodies)
+                    (head-expand-all (cons #'body0 (syntax->list #'(body ...))))]
+                   [(protected-ids contracts contract-defs)
+                    (for/lists (protected-ids contracts contract-defs)
                       ([n protected]
                        [c protections])
-                      (let ([new-id (a:mangle-id stx "with-contract-id" n)])
-                        (if (a:known-good-contract? c)
-                            (values n new-id c #f)
-                            (let ([contract-id (a:mangle-id stx "with-contract-contract-id" n)])
-                              (values n new-id contract-id
-                                      (quasisyntax/loc stx
-                                        (define-values (#,contract-id)
-                                          (verify-contract 'with-contract #,c))))))))])
+                      (if (a:known-good-contract? c)
+                          (values n c #f)
+                          (let ([contract-id (a:mangle-id stx "with-contract-contract-id" n)])
+                            (values n contract-id
+                                    (quasisyntax/loc stx
+                                      (define-values (#,contract-id)
+                                        (verify-contract 'with-contract #,c)))))))])
        (begin
          (let* ([all-ids (append unprotected protected)]
                 [dupd-id (check-duplicate-identifier all-ids)])
@@ -251,24 +258,22 @@ improve method arity mismatch contract violation error messages?
                                  "identifier appears twice in exports"
                                  dupd-id))
            (check-exports (append unprotected protected) expanded-bodies))
-         (with-syntax ([((protected-id id contract) ...)
-                        (map list protected-ids ids contracts)]
-                       [(contract-def ...) (filter values contract-defs)]
+         (with-syntax ([(contract-def ...) (map marker (filter values contract-defs))]
                        [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
+                       [(marked-body ...) (map marker expanded-bodies)]
                        [(unprotected-id ...) unprotected])
            (quasisyntax/loc stx
-             (begin 
-               (define-values (unprotected-id ... id ...)
-                 (syntax-parameterize ([current-contract-region blame-str])
-                   (begin-with-definitions
-                     #,@expanded-bodies
-                     (values unprotected-id ... protected-id ...))))
+             (splicing-syntax-parameterize ([current-contract-region blame-str])
+               marked-body ...
                contract-def ...
-               (define-syntax protected-id
-                 (make-with-contract-transformer 
-                  (quote-syntax contract)
-                  (quote-syntax id)
-                  blame-str)) ...)))))]
+               #,@(map (λ (p c)
+                         #`(define-syntax #,p
+                             (make-with-contract-transformer
+                              (quote-syntax #,(if c (marker c) c))
+                              (quote-syntax #,(marker p))
+                              blame-str)))
+                         protected-ids contracts)
+               )))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
