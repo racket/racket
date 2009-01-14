@@ -274,7 +274,7 @@ improve method arity mismatch contract violation error messages?
                          protected-ids contracts)
                #,@(map (λ (u)
                          #`(define-syntax #,u
-                             (make-rename-transformer #,(marker u))))
+                             (make-rename-transformer (quote-syntax #,(marker u)))))
                          unprotected)
                (define-values ()
                  (begin
