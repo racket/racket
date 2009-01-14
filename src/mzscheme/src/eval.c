@@ -5379,7 +5379,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       ? SCHEME_RESOLVE_MODIDS
 				       : 0)
                                     + ((!rec[drec].comp && (rec[drec].depth == -2))
-                                       ? SCHEME_OUT_OF_CONTEXT_OK
+                                       ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                        : 0),
 				    rec[drec].certs, env->in_modidx, 
 				    &menv, &protected, &lexical_binding_id);
@@ -5486,7 +5486,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       ? SCHEME_RESOLVE_MODIDS
 				       : 0)
                                     + ((!rec[drec].comp && (rec[drec].depth == -2))
-                                       ? SCHEME_OUT_OF_CONTEXT_OK
+                                       ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                        : 0),
 				    erec1.certs, env->in_modidx, 
 				    &menv, NULL, NULL);
@@ -5572,7 +5572,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 				  + SCHEME_DONT_MARK_USE
                                   + ((!rec[drec].comp && (rec[drec].depth == -2))
-                                     ? SCHEME_OUT_OF_CONTEXT_OK
+                                     ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                      : 0),
 				  rec[drec].certs, env->in_modidx, 
 				  &menv, NULL, NULL);
@@ -5615,7 +5615,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 				  + SCHEME_DONT_MARK_USE
                                   + ((!rec[drec].comp && (rec[drec].depth == -2))
-                                     ? SCHEME_OUT_OF_CONTEXT_OK
+                                     ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
                                      : 0),
 				  rec[drec].certs, env->in_modidx, 
 				  &menv, NULL, NULL);

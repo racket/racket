@@ -680,41 +680,41 @@ To do a better job of not generating programs with free variables,
          (quasisyntax/loc stx
            (let ([att attempts])
              (assert-nat 'redex-check att)
-             (or (check-property 
-                  (cons (list #,(term-generator #'lang #'pat #'random-decisions 'redex-check) #f)
-                        (let ([lang-gen (generate lang (random-decisions lang))])
-                          #,(if (not source-stx)
-                                #'null
-                                #`(let-values
-                                      ([(pats srcs src-lang)
-                                        #,(cond [(and (identifier? source-stx) (metafunc source-stx))
-                                                 => 
-                                                 (λ (m) #`(values (metafunc-proc-lhs-pats #,m)
-                                                                  (metafunc-srcs #,m)
-                                                                  (metafunc-proc-lang #,m)))]
-                                                [else
-                                                 #`(let ([r #,source-stx])
-                                                     (unless (reduction-relation? r)
-                                                       (raise-type-error 'redex-check "reduction-relation" r))
-                                                     (values
-                                                      (map rewrite-proc-lhs (reduction-relation-make-procs r))
-                                                      (reduction-relation-srcs r)
-                                                      (reduction-relation-lang r)))])])
-                                    (unless (eq? src-lang lang)
-                                      (error 'redex-check "language for secondary source must match primary pattern's language"))
-                                    (zip (map lang-gen pats) srcs)))))
-                  #,(and source-stx #'(test-match lang pat))
-                  (λ (generated) (error 'redex-check "~s does not match ~s" generated 'pat))
-                  (λ (_ bindings)
-                    (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                              property))
-                  att
-                  (λ (term attempt source port)
-                    (fprintf port "counterexample found~aafter ~a attempts:\n"
-                             (if source (format " (~a) " source) " ") attempt)
-                    (pretty-print term port))
-                  (check-randomness))
-                 (void))))))]))
+             (check-property 
+              (cons (list #,(term-generator #'lang #'pat #'random-decisions 'redex-check) #f)
+                    (let ([lang-gen (generate lang (random-decisions lang))])
+                      #,(if (not source-stx)
+                            #'null
+                            #`(let-values
+                                  ([(pats srcs src-lang)
+                                    #,(cond [(and (identifier? source-stx) (metafunc source-stx))
+                                             => 
+                                             (λ (m) #`(values (metafunc-proc-lhs-pats #,m)
+                                                              (metafunc-srcs #,m)
+                                                              (metafunc-proc-lang #,m)))]
+                                            [else
+                                             #`(let ([r #,source-stx])
+                                                 (unless (reduction-relation? r)
+                                                   (raise-type-error 'redex-check "reduction-relation" r))
+                                                 (values
+                                                  (map rewrite-proc-lhs (reduction-relation-make-procs r))
+                                                  (reduction-relation-srcs r)
+                                                  (reduction-relation-lang r)))])])
+                                (unless (eq? src-lang lang)
+                                  (error 'redex-check "language for secondary source must match primary pattern's language"))
+                                (zip (map lang-gen pats) srcs)))))
+              #,(and source-stx #'(test-match lang pat))
+              (λ (generated) (error 'redex-check "~s does not match ~s" generated 'pat))
+              (λ (_ bindings)
+                (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
+                          property))
+              att
+              (λ (term attempt source port)
+                (fprintf port "counterexample found~aafter ~a attempts:\n"
+                         (if source (format " (~a) " source) " ") attempt)
+                (pretty-print term port))
+              (check-randomness))
+             (void)))))]))
 
 (define (check-property gens-srcs match match-fail property attempts display [random random])
   (let loop ([remaining attempts])
@@ -729,7 +729,11 @@ To do a better job of not generating programs with free variables,
                         [(term bindings) 
                          (generator (attempt->size attempt) attempt)])
             (if (andmap (λ (bindings) 
-                          (with-handlers ([exn:fail? (λ (_) #f)])
+                          (with-handlers ([exn:fail? (λ (exn) 
+                                                       (fprintf (current-error-port)
+                                                                "checking ~s raises ~s\n"
+                                                                term exn)
+                                                       (raise exn))])
                             (property term bindings)))
                         (cond [(and match (match term)) 
                                => (curry map (compose make-bindings match-bindings))]
@@ -758,11 +762,14 @@ To do a better job of not generating programs with free variables,
            (list (list ((generate lang (decisions lang)) (if dom dom '(any (... ...)))) #f))
            #f
            #f
-           (λ (t _) (begin (term (name ,@t)) #t))
+           (λ (t _) 
+             (with-handlers ([exn:fail:redex? (λ (_) #f)])
+               (begin (term (name ,@t)) #t)))
            att
            (λ (term attempt _ port)
              (fprintf port "counterexample found after ~a attempts:\n" attempt)
-             (pretty-print term port))))))]))
+             (pretty-print term port)))
+          (void))))]))
 
 (define (check-property-many lang pats srcs prop decisions attempts)
   (let ([lang-gen (generate lang (decisions lang))])
@@ -777,7 +784,8 @@ To do a better job of not generating programs with free variables,
        (λ (term attempt source port)
          (fprintf port "counterexample found after ~a attempts with ~a:\n" 
                   attempt source)
-         (pretty-print term port))))))
+         (pretty-print term port))))
+    (void)))
 
 (define (metafunc-srcs m)
   (build-list (length (metafunc-proc-lhs-pats m))
@@ -792,14 +800,13 @@ To do a better job of not generating programs with free variables,
        (syntax/loc stx
          (let ([att attempts])
            (assert-nat 'check-metafunction att)
-           (or (check-property-many 
-                (metafunc-proc-lang m)
-                (metafunc-proc-lhs-pats m)
-                (metafunc-srcs m)
-                property
-                (generation-decisions)
-                att)
-               (void)))))]))
+           (check-property-many 
+            (metafunc-proc-lang m)
+            (metafunc-proc-lhs-pats m)
+            (metafunc-srcs m)
+            property
+            (generation-decisions)
+            att))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc) 'unnamed))
@@ -809,14 +816,13 @@ To do a better job of not generating programs with free variables,
          relation property 
          #:decisions [decisions random-decisions]
          #:attempts [attempts default-check-attempts])
-  (or (check-property-many
-       (reduction-relation-lang relation)
-       (map rewrite-proc-lhs (reduction-relation-make-procs relation))
-       (reduction-relation-srcs relation)
-       property
-       decisions
-       attempts)
-      (void)))
+  (check-property-many
+   (reduction-relation-lang relation)
+   (map rewrite-proc-lhs (reduction-relation-make-procs relation))
+   (reduction-relation-srcs relation)
+   property
+   decisions
+   attempts))
 
 (define-signature decisions^
   (next-variable-decision
