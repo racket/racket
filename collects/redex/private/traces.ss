@@ -86,7 +86,7 @@
    (λ (ed)
      (let ([yb (box 0)]
            [snip (term-node-snip term-node)])
-       (if (send ed get-snip-location snip yb #f #f)
+       (if (send ed get-snip-location snip #f yb #f)
            (unbox yb)
            0)))))
 
@@ -145,7 +145,7 @@
 
 (define (print-to-ps graph-pb filename)
   (let ([admin (send graph-pb get-admin)]
-        [printing-admin (new printing-editor-admin%)])
+        [printing-admin (new printing-editor-admin% [ed graph-pb])])
     (send graph-pb set-admin printing-admin)
     
     (dynamic-wind
@@ -153,7 +153,7 @@
      (λ ()
        (let loop ([snip (send graph-pb find-first-snip)])
          (when snip
-           (send snip size-cache-invalid)
+           (send (send snip get-admin) resized snip #t)
            (loop (send snip next))))
        (send graph-pb invalidate-bitmap-cache)
        
@@ -178,6 +178,8 @@
 
 (define printing-editor-admin%
   (class editor-admin%
+    
+    (init-field ed)
     
     (define temp-file (make-temporary-file "redex-size-snip-~a"))
     
@@ -270,7 +272,7 @@
                           "Reducing..." 
                           lower-panel
                           (lambda (x y)
-                            (reduce-button-callback))))
+                            (reduce-button-callback #f))))
   (define status-message (instantiate message% ()
                            (label "")
                            (parent lower-panel)
@@ -411,7 +413,6 @@
                         (set! col (+ x-spacing (find-rightmost-x graph-pb))))
                       (begin0
                         (insert-into col y graph-pb new-snips)
-                        (send graph-pb re-run-layout)
                         (send graph-pb end-edit-sequence)
                         (send status-message set-label
                               (string-append (term-count (count-snips)) "...")))))])
@@ -455,9 +456,10 @@
     (send reduce-button enable #t)
     (send font-size enable #t))
   
-  ;; reduce-button-callback : -> void
+  ;; reduce-button-callback : boolean -> void
   ;; =eventspace main thread=
-  (define (reduce-button-callback)
+  (define (reduce-button-callback show-all-at-once?)
+    (when show-all-at-once? (send graph-pb begin-edit-sequence))
     (send reduce-button enable #f)
     (send reduce-button set-label "Reducing...")
     (thread
@@ -465,6 +467,10 @@
        (do-some-reductions)
        (queue-callback
         (lambda () ;; =eventspace main thread=
+          (send graph-pb begin-edit-sequence)
+          (send graph-pb re-run-layout)
+          (send graph-pb end-edit-sequence)
+          (when show-all-at-once? (send graph-pb end-edit-sequence))
           (scroll-to-rightmost-snip)
           (send reduce-button set-label "Reduce")
           (cond
@@ -542,7 +548,6 @@
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
   (insert-into init-rightmost-x 0 graph-pb frontier)
-  (send graph-pb re-run-layout)
   (set-font-size (initial-font-size))
   (cond
     [no-show-frame?
@@ -553,7 +558,7 @@
        (yield s))
      (values graph-pb f)]
     [else
-     (reduce-button-callback)
+     (reduce-button-callback #t)
      (send f show #t)]))
 
 (define red-sem-frame%
