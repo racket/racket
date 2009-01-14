@@ -21,9 +21,10 @@
             #f "expected a module path after #:from" stx #'lib))
          (raise-syntax-error
           #f "expected an identifier before #:from" stx #'id))]
-      [(help str ...)
-       (andmap (lambda (s) (string? (syntax-e s))) (syntax->list #'(str ...)))
-       #'(search-for (list str ...))]
+      [(help str0 str ...)
+       (andmap (lambda (s) (string? (syntax-e s)))
+               (syntax->list #'(str0 str ...)))
+       #'(search-for (list str0 str ...))]
       [(help #:search str ...)
        (with-syntax ([(str ...)
                       (map (lambda (e)
