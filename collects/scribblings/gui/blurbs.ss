@@ -267,8 +267,8 @@ information@|details|, even if the editor currently has delayed refreshing (see
 
   (define (edsnipsize a b c)
     @elem{An @scheme[editor-snip%] normally stretches to wrap around the size
-          of the editor it contains. This method #1 of the snip
-          (and if the editor is #2, #3).})
+          of the editor it contains. This method @|a| of the snip
+          (and if the editor is @|b|, @|c|).})
   (define (edsnipmax n)
     (edsnipsize @elem{limits the @|n|}
                 @elem{larger}
