@@ -25,7 +25,7 @@
           (syntax/loc stx
             ((contract contract-id
                        id
-                       (format "definition ~a" (syntax->datum (quote-syntax f)))
+                       (syntax->datum (quote-syntax f))
                        neg-blame-str
                        (quote-syntax f))
              arg
@@ -35,7 +35,7 @@
           (syntax/loc stx
             (contract contract-id
                       id
-                      (format "definition ~a" (syntax->datum (quote-syntax ident)))
+                      (syntax->datum (quote-syntax ident))
                       neg-blame-str
                       (quote-syntax ident)))])))))
 
