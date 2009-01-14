@@ -213,12 +213,13 @@ looking for a decomposition, it ignores any holes found in
 that @|pattern|.
 }
 
-@item{The @tt{(@defpattech[side-condition] @ttpattern guard)} @pattern matches
-what the embedded @pattern matches, and then the guard expression is
-evaluated. If it returns @scheme[#f], the @pattern fails to match, and if it
-returns anything else, the @pattern matches. In addition, any
-occurrences of `name' in the @pattern are bound using @scheme[term-let]
-in the guard.
+@item{The @tt{(@defpattech[side-condition] @ttpattern guard)} @pattern
+matches what the embedded @pattern matches, and then the guard
+expression is evaluated. If it returns @scheme[#f], the @pattern fails
+to match, and if it returns anything else, the @pattern matches. Any
+occurrences of `name' in the @pattern (including those implicitly
+there via @tt{_} pattersn) are bound using @scheme[term-let] in the
+guard. 
 }
 
 @item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
@@ -1367,9 +1368,18 @@ the stepper and traces.
 @defparam[dark-pen-color color (or/c string? (is-a?/c color<%>))]{}
 @defparam[dark-brush-color color (or/c string? (is-a?/c color<%>))]{}
 @defparam[light-pen-color color (or/c string? (is-a?/c color<%>))]{}
-@defparam[light-brush-color color (or/c string? (is-a?/c color<%>))]{}]]{
+@defparam[light-brush-color color (or/c string? (is-a?/c color<%>))]{}
+@defparam[dark-text-color color (or/c string? (is-a?/c color<%>))]{}
+@defparam[light-text-color color (or/c string? (is-a?/c color<%>))]{}]]{
 
-These four parameters control the color of the edges in the graph.
+These six parameters control the color of the edges in the graph.
+
+The dark colors are used when the mouse is over one of the nodes that
+is connected to this edge. The light colors are used when it isn't.
+
+The pen colors control the color of the line. The brush colors control
+the color used to fill the arrowhead and the text colors control the
+color used to draw the label on the edge.
 }
 
 @defproc[(default-pretty-printer [v any] [port output-port] [width number] [text (is-a?/c text%)]) void?]{

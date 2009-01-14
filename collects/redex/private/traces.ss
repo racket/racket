@@ -1,8 +1,8 @@
+#lang scheme/base
+
 ;; should cache the count of new snips -- dont
 ;; use `count-snips'; use something associated with the
 ;; equal hash-table
-
-#lang scheme
 
 (require mrlib/graph
          "reduction-semantics.ss"
@@ -10,6 +10,8 @@
          "size-snip.ss"
          "dot.ss"
          scheme/gui/base
+         scheme/class
+         scheme/file
          framework)
 
 (preferences:set-default 'plt-reducer:show-bottom #t boolean?)
@@ -139,12 +141,83 @@
                         #:scheme-colors? scheme-colors?
                         #:colors colors
                         #:layout layout)])
-    (let ([ps-setup (make-object ps-setup%)])
-      (send ps-setup copy-from (current-ps-setup))
-      (send ps-setup set-file filename)
-      (send ps-setup set-mode 'file)
-      (parameterize ([current-ps-setup ps-setup])
-        (send graph-pb print #f #f 'postscript #f #f #t)))))
+    (print-to-ps graph-pb filename)))
+
+(define (print-to-ps graph-pb filename)
+  (let ([admin (send graph-pb get-admin)]
+        [printing-admin (new printing-editor-admin%)])
+    (send graph-pb set-admin printing-admin)
+    
+    (dynamic-wind
+     void
+     (λ ()
+       (let loop ([snip (send graph-pb find-first-snip)])
+         (when snip
+           (send snip size-cache-invalid)
+           (loop (send snip next))))
+       (send graph-pb invalidate-bitmap-cache)
+       
+       (send graph-pb re-run-layout)
+       
+       (let ([ps-setup (make-object ps-setup%)])
+         (send ps-setup copy-from (current-ps-setup))
+         (send ps-setup set-file filename)
+         (send ps-setup set-mode 'file)
+         (parameterize ([current-ps-setup ps-setup])
+           (send graph-pb print #f #f 'postscript #f #f #t))))
+     
+     (λ ()
+       (send graph-pb set-admin admin)
+       (send printing-admin shutdown) ;; do this early
+       (let loop ([snip (send graph-pb find-first-snip)])
+         (when snip
+           (send snip size-cache-invalid)
+           (loop (send snip next))))
+       (send graph-pb invalidate-bitmap-cache)
+       (send graph-pb re-run-layout)))))
+
+(define printing-editor-admin%
+  (class editor-admin%
+    
+    (define temp-file (make-temporary-file "redex-size-snip-~a"))
+    
+    (define ps-dc
+      (let ([ps-setup (make-object ps-setup%)])
+        (send ps-setup copy-from (current-ps-setup))
+        (send ps-setup set-file temp-file)
+        (parameterize ([current-ps-setup ps-setup])
+          (make-object post-script-dc% #f #f #f #t))))
+    
+    (send ps-dc start-doc "fake dc")
+    (send ps-dc start-page)
+    (super-new)
+    
+    (define/public (shutdown)
+      (send ps-dc end-page)
+      (send ps-dc end-doc)
+      (delete-file temp-file))
+       
+    
+    (define/override (get-dc [x #f] [y #f])
+      (super get-dc x y)
+      ps-dc)
+    (define/override (get-max-view x y w h [full? #f])
+      (get-view x y w h full?))
+    (define/override (get-view x y w h [full? #f])
+      (super get-view x y w h full?)
+      (when (box? w) (set-box! w 500))
+      (when (box? h) (set-box! h 500)))
+    
+    ;; the following methods are not overridden; they all default to doing nothing.
+    ;;   grab-caret
+    ;;   modified
+    ;;   needs-update
+    ;;   popup-menu
+    ;;   refresh-delayed?
+    ;;   resized
+    ;;   scroll-to
+    ;;   update-cursor
+    ))
 
 (define (traces reductions pre-exprs 
                 #:multiple? [multiple? #f] 
@@ -157,7 +230,7 @@
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
-  (define graph-pb (new graph-pasteboard% [shrink-down? #t]))
+  (define graph-pb (new graph-pasteboard% [layout layout]))
   (define f (instantiate red-sem-frame% ()
               (label "PLT Redex Reduction Graph")
               (style '(toolbar-button))
@@ -275,7 +348,7 @@
       (let loop ([snip (send graph-pb find-first-snip)])
         (when snip
           (when (is-a? snip reflowing-snip<%>)
-            (send snip shrink-down))
+            (send snip reflow-program))
           (loop (send snip next))))))
   
   ;; fill-out : (listof X) (listof X) -> (listof X)
@@ -338,7 +411,7 @@
                         (set! col (+ x-spacing (find-rightmost-x graph-pb))))
                       (begin0
                         (insert-into col y graph-pb new-snips)
-                        (layout (hash-map snip-cache (lambda (x y) (send y get-term-node))))
+                        (send graph-pb re-run-layout)
                         (send graph-pb end-edit-sequence)
                         (send status-message set-label
                               (string-append (term-count (count-snips)) "...")))))])
@@ -469,7 +542,7 @@
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
   (insert-into init-rightmost-x 0 graph-pb frontier)
-  (layout (map (lambda (y) (send y get-term-node)) frontier))
+  (send graph-pb re-run-layout)
   (set-font-size (initial-font-size))
   (cond
     [no-show-frame?
@@ -507,6 +580,10 @@
 (define graph-pasteboard% 
   (class (resizing-pasteboard-mixin
           (graph-pasteboard-mixin pasteboard%))
+    
+    (init-field layout) ;; (-> (listof term-node) void)
+    ;; this is the function supplied by the :#layout argument to traces or traces/ps
+    
     (define dot-callback #f)
     (define/public (set-dot-callback cb) (set! dot-callback cb))
     (define/override (draw-edges dc left top right bottom dx dy)
@@ -520,6 +597,17 @@
     
     (define/augment (can-interactive-move? evt) mobile?)
     (define/augment (can-interactive-resize? evt) mobile?)
+    
+    (inherit find-first-snip)
+    (define/public (re-run-layout)
+      (layout 
+       (let loop ([snip (find-first-snip)])
+         (cond
+           [(not snip) '()]
+           [(is-a? snip reflowing-snip<%>)
+            (cons (send snip get-term-node)
+                  (loop (send snip next)))]
+           [else (loop (send snip next))]))))
     
     (super-new)))
 
@@ -578,7 +666,7 @@
     (super-new)))
 
 (define program-text%
-  (class scheme:text%
+  (class size-text%
     (define bad-color #f)
     (define/public (set-bad color) (set! bad-color color))
     
@@ -688,6 +776,7 @@
                (pp pp)
                (expr expr))])
     (send text set-autowrap-bitmap #f)
+    (send text set-max-width 'none)
     (send text freeze-colorer)
     (send text stop-colorer (not scheme-colors?))
     (send es format-expr)
