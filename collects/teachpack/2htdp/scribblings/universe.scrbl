@@ -125,7 +125,7 @@ Your program may deal with such events via the @emph{designation} of
  @emph{handler} functions.  Specifically, the teachpack provides for the
  installation of three event handlers: @scheme[on-tick], @scheme[on-key],
  and @scheme[on-mouse]. In addition, a @tech{world} program may specify a
- @scheme[_dra]} function, which is called every time your program should
+ @scheme[draw] function, which is called every time your program should
  visualize the current world, and a @scheme[_stop?] predicate, which is used
  to determine when the @tech{world} program should shut down. 
 
