@@ -237,12 +237,12 @@
                   (list navigator)))))
 
     ;; Navigation
-
+#|
     (define/public-final (at-start?)
       (send: (focused-term) term-record<%> at-start?))
     (define/public-final (at-end?)
       (send: (focused-term) term-record<%> at-end?))
-
+|#
     (define/public-final (navigate-to-start)
       (send: (focused-term) term-record<%> navigate-to-start)
       (update/save-position))

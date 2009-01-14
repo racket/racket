@@ -54,8 +54,10 @@
 
    has-prev?
    has-next?
+#|
    at-start?
    at-end?
+|#
    navigate-to-start
    navigate-to-end
    navigate-previous

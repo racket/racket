@@ -68,9 +68,10 @@
     (super-new)))
 
 (define controller%
-  (class (secondary-partition-mixin
-          (selection-manager-mixin
-           (mark-manager-mixin
-            (displays-manager-mixin
-             object%))))
+  (class* (secondary-partition-mixin
+           (selection-manager-mixin
+            (mark-manager-mixin
+             (displays-manager-mixin
+              object%))))
+    (controller<%>)
     (super-new)))

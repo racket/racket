@@ -14,7 +14,7 @@
          go)
 
 (define macro-stepper-director%
-  (class object%
+  (class* object% (director<%>)
     (define stepper-frames (make-hasheq))
 
     ;; Flags is a subset(list) of '(no-obsolete no-new-traces)
