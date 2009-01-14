@@ -135,13 +135,12 @@ improve method arity mismatch contract violation error messages?
 ;                                                                                         
 ;                                                                                         
 
-(define-syntax-parameter current-contract-region #f)
+(define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
 
 (define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
   (make-set!-transformer
    (lambda (stx)
-     (with-syntax ([neg-blame-id (or (syntax-parameter-value #'current-contract-region)
-                                     #'(#%variable-reference))]
+     (with-syntax ([neg-blame-id #'(current-contract-region)]
                    [pos-blame-id pos-blame-id]
                    [contract-id contract-id]
                    [id id])
@@ -259,10 +258,10 @@ improve method arity mismatch contract violation error messages?
                                  dupd-id))
            (check-exports (append unprotected protected) expanded-bodies))
          (with-syntax ([(contract-def ...) (map marker (filter values contract-defs))]
-                       [blame-str (format "~a ~a" (syntax-e #'type) (syntax-e #'blame))]
+                       [blame-stx #''(type blame)]
                        [(marked-body ...) (map marker expanded-bodies)])
            (quasisyntax/loc stx
-             (splicing-syntax-parameterize ([current-contract-region blame-str])
+             (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
                marked-body ...
                contract-def ...
                #,@(map (λ (p c)
@@ -270,7 +269,7 @@ improve method arity mismatch contract violation error messages?
                              (make-with-contract-transformer
                               (quote-syntax #,(marker c))
                               (quote-syntax #,(marker p))
-                              blame-str)))
+                              (quote-syntax blame-stx))))
                          protected-ids contracts)
                #,@(map (λ (u)
                          #`(define-syntax #,u
@@ -279,7 +278,7 @@ improve method arity mismatch contract violation error messages?
                (define-values ()
                  (begin
                    #,@(map (λ (p c)
-                             #`(-contract #,(marker c) #,p blame-str 'ignored #,(id->contract-src-info p)))
+                             #`(-contract #,(marker c) #,p blame-stx 'ignored #,(id->contract-src-info p)))
                            protected-ids contracts)
                    (values)))
                )))))]
