@@ -707,39 +707,40 @@
                    (var-info-id defid)))))
             (syntax->list (localify #'ivars def-ctx)))
            
-           (with-syntax ([(defn-or-expr ...)
-                          (apply append
-                                 (map (λ (defn-or-expr)
-                                        (syntax-case defn-or-expr (define-values)
-                                          [(define-values (id ...) body)
-                                           (let* ([ids (syntax->list #'(id ...))]
-                                                  [tmps (generate-temporaries ids)]
-                                                  [do-one
-                                                   (λ (id tmp)
-                                                     (let ([var-info (bound-identifier-mapping-get
-                                                                      defined-names-table
-                                                                      id)])
-                                                       (cond
-                                                         [(var-info-exported? var-info)
-                                                          =>
-                                                          (λ (export-loc)
-                                                            (let ([add-ctc (var-info-add-ctc var-info)])
-                                                              (list (quasisyntax/loc defn-or-expr
-                                                                      (set-box! #,export-loc 
-                                                                                (let ([#,id #,(if add-ctc (add-ctc tmp) tmp)])
-                                                                                  #,id)))
-                                                                    (quasisyntax/loc defn-or-expr
-                                                                      (define-syntax #,id 
-                                                                        (make-id-mapper (quote-syntax #,tmp)))))))]
-                                                         [else (list (quasisyntax/loc defn-or-expr
-                                                                       (define-syntax #,id
-                                                                         (make-rename-transformer (quote-syntax #,tmp)))))])))])
-                                             (cons (quasisyntax/loc defn-or-expr
-                                                     (define-values #,tmps body))
-                                                   (apply append (map do-one ids tmps))))]
-                                          [else (list defn-or-expr)]))
-                                      expanded-body))])
-             #'(begin-with-definitions defn-or-expr ...)))))))
+           (let ([marker (make-syntax-introducer)])
+             (with-syntax ([(defn-or-expr ...)
+                            (apply append
+                                   (map (λ (defn-or-expr)
+                                          (syntax-case defn-or-expr (define-values)
+                                            [(define-values (id ...) body)
+                                             (let* ([ids (syntax->list #'(id ...))]
+                                                    [tmps (map marker ids)]
+                                                    [do-one
+                                                     (λ (id tmp)
+                                                       (let ([var-info (bound-identifier-mapping-get
+                                                                        defined-names-table
+                                                                        id)])
+                                                         (cond
+                                                           [(var-info-exported? var-info)
+                                                            =>
+                                                            (λ (export-loc)
+                                                              (let ([add-ctc (var-info-add-ctc var-info)])
+                                                                (list (quasisyntax/loc defn-or-expr
+                                                                        (set-box! #,export-loc 
+                                                                                  (let ([#,id #,(if add-ctc (add-ctc tmp) tmp)])
+                                                                                    #,id)))
+                                                                      (quasisyntax/loc defn-or-expr
+                                                                        (define-syntax #,id 
+                                                                          (make-id-mapper (quote-syntax #,tmp)))))))]
+                                                           [else (list (quasisyntax/loc defn-or-expr
+                                                                         (define-syntax #,id
+                                                                           (make-rename-transformer (quote-syntax #,tmp)))))])))])
+                                               (cons (quasisyntax/loc defn-or-expr
+                                                       (define-values #,tmps body))
+                                                     (apply append (map do-one ids tmps))))]
+                                            [else (list defn-or-expr)]))
+                                        expanded-body))])
+               #'(begin-with-definitions defn-or-expr ...))))))))
 
   (define-for-syntax (redirect-imports/exports import?)
     (lambda (table-stx
