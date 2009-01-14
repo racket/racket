@@ -37,7 +37,7 @@
        (raise-syntax-error
         #f
         (string-append "expects a single identifer, any number of literal"
-                       " strings, or a #:search clause;"
+                       " strings, or #:search clauses;"
                        " try `(help help)' for more information")
         stx)])))
 
