@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          scheme/unit
          scheme/list
          scheme/match
@@ -13,6 +14,7 @@
          "hiding-panel.ss"
          (prefix-in s: "../syntax-browser/widget.ss")
          (prefix-in s: "../syntax-browser/keymap.ss")
+         (prefix-in s: "../syntax-browser/interfaces.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/trace.ss"
@@ -26,7 +28,7 @@
 
 (define stepper-keymap%
   (class s:syntax-keymap%
-    (init-field macro-stepper)
+    (init-field: (macro-stepper widget<%>))
     (inherit-field config
                    controller
                    the-context-menu)
@@ -39,17 +41,17 @@
     (super-new)
 
     (define/public (get-hiding-panel)
-      (send macro-stepper get-macro-hiding-prefs))
+      (send: macro-stepper widget<%> get-macro-hiding-prefs))
 
     (add-function "hiding:show-macro"
                   (lambda (i e)
-                    (send* (get-hiding-panel)
+                    (send*: (get-hiding-panel) hiding-prefs<%>
                       (add-show-identifier)
                       (refresh))))
 
     (add-function "hiding:hide-macro"
                   (lambda (i e)
-                    (send* (get-hiding-panel)
+                    (send*: (get-hiding-panel) hiding-prefs<%>
                       (add-hide-identifier)
                       (refresh))))
 
@@ -75,26 +77,27 @@
       (send show-macro enable ?)
       (send hide-macro enable ?))
 
-    (send controller listen-selected-syntax
-          (lambda (stx)
-            (enable/disable-hide/show (identifier? stx))))))
+    (send: controller s:controller<%> listen-selected-syntax
+           (lambda (stx)
+             (enable/disable-hide/show (identifier? stx))))))
 
 (define stepper-syntax-widget%
   (class s:widget%
-    (init-field macro-stepper)
+    (init-field: (macro-stepper widget<%>))
     (inherit get-text)
     (inherit-field controller)
 
     (define/override (setup-keymap)
       (new stepper-keymap%
            (editor (get-text))
-           (config (send macro-stepper get-config))
+           (config (send: macro-stepper widget<%> get-config))
            (controller controller)
            (macro-stepper macro-stepper)))
 
     (define/override (show-props show?)
       (super show-props show?)
-      (send macro-stepper update/preserve-view))
+      (send: macro-stepper widget<%> update/preserve-view))
 
     (super-new
-     (config (send macro-stepper get-config)))))
+     (config (send: macro-stepper widget<%> get-config)))))
+

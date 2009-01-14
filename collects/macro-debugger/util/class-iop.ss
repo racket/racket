@@ -13,6 +13,7 @@
          define:
          lambda:
          init:
+	 init-field:
          init-private:)
 
 ;; Configuration
@@ -25,10 +26,13 @@
 ;; Defines NAME as an interface.
 (define-syntax (define-interface stx)
   (syntax-parse stx
-    [(_ name:id (mname:id ...))
-     #'(define-interface/dynamic name
-         (let ([name (interface () mname ...)]) name)
-         (mname ...))]))
+    [(_ name:id (super:static-interface ...) (mname:id ...))
+     (with-syntax ([((super-method ...) ...)
+                    (map static-interface-members
+                         (syntax->datum #'(super.value ...)))])
+       #'(define-interface/dynamic name
+           (let ([name (interface (super ...) mname ...)]) name)
+           (super-method ... ... mname ...)))]))
 
 ;; define-interface/dynamic SYNTAX
 ;; (define-interface/dynamic NAME EXPR (IDENTIFIER ...))
@@ -181,7 +185,7 @@
   (syntax-parse stx
     [(_ init name:id iface:static-interface)
      (with-syntax ([(name-internal) (generate-temporaries #'(name))])
-       #'(begin (init (name name-internal))
+       #'(begin (init ((name-internal name)))
                 (void (check-object<:interface init: name-internal iface))
                 (define-syntax name 
                   (make-checked-binding

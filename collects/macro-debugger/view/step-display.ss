@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          scheme/unit
          scheme/list
          scheme/match
@@ -21,8 +22,10 @@
          "../model/reductions.ss"
          "../model/steps.ss"
          "../util/notify.ss"
+	 (prefix-in sb: "../syntax-browser/interfaces.ss")
          "cursor.ss"
          "debug-format.ss")
+
 #;
 (provide step-display%
          step-display<%>)
@@ -35,24 +38,6 @@
 (define (prestep-term1 s) (state-term (protostep-s1 s)))
 (define (poststep-term2 s) (state-term (protostep-s1 s)))
 
-
-(define step-display<%>
-  (interface ()
-    ;; add-syntax
-    add-syntax
-
-    ;; add-step
-    add-step
-
-    ;; add-error
-    add-error
-
-    ;; add-final
-    add-final
-
-    ;; add-internal-error
-    add-internal-error))
-
 (define step-display%
   (class* object% (step-display<%>)
 
@@ -61,18 +46,18 @@
     (super-new)
 
     (define/public (add-internal-error part exn stx events)
-      (send sbview add-text
-            (if part
-                (format "Macro stepper error (~a)" part)
-                "Macro stepper error"))
+      (send: sbview sb:syntax-browser<%> add-text
+             (if part
+                 (format "Macro stepper error (~a)" part)
+                 "Macro stepper error"))
       (when (exn? exn)
-        (send sbview add-text " ")
-        (send sbview add-clickback "[details]"
-              (lambda _ (show-internal-error-details exn events))))
-      (send sbview add-text ".  ")
-      (when stx (send sbview add-text "Original syntax:"))
-      (send sbview add-text "\n")
-      (when stx (send sbview add-syntax stx)))
+        (send: sbview sb:syntax-browser<%> add-text " ")
+        (send: sbview sb:syntax-browser<%> add-clickback "[details]"
+               (lambda _ (show-internal-error-details exn events))))
+      (send: sbview sb:syntax-browser<%> add-text ".  ")
+      (when stx (send: sbview sb:syntax-browser<%> add-text "Original syntax:"))
+      (send: sbview sb:syntax-browser<%> add-text "\n")
+      (when stx (send: sbview sb:syntax-browser<%> add-syntax stx)))
 
     (define/private (show-internal-error-details exn events)
       (case (message-box/custom "Macro stepper internal error"
@@ -91,8 +76,9 @@
         ((3 #f) (void))))
 
     (define/public (add-error exn)
-      (send sbview add-error-text (exn-message exn))
-      (send sbview add-text "\n"))
+      (send*: sbview sb:syntax-browser<%>
+        (add-error-text (exn-message exn))
+        (add-text "\n")))
 
     (define/public (add-step step
                              #:binders binders
@@ -110,21 +96,22 @@
                                #:binders [binders #f]
                                #:shift-table [shift-table #f]
                                #:definites [definites null])
-      (send sbview add-syntax stx
-            #:binder-table binders
-            #:shift-table shift-table
-            #:definites definites))
+      (send: sbview sb:syntax-browser<%> add-syntax stx
+             #:binder-table binders
+             #:shift-table shift-table
+             #:definites definites))
 
     (define/public (add-final stx error
                               #:binders binders
                               #:shift-table [shift-table #f]
                               #:definites definites)
       (when stx
-        (send sbview add-text "Expansion finished\n")
-        (send sbview add-syntax stx
-              #:binder-table binders
-              #:shift-table shift-table
-              #:definites definites))
+        (send*: sbview sb:syntax-browser<%>
+          (add-text "Expansion finished\n")
+          (add-syntax stx
+                      #:binder-table binders
+                      #:shift-table shift-table
+                      #:definites definites)))
       (when error
         (add-error error)))
 
@@ -133,17 +120,16 @@
       (define state (protostep-s1 step))
       (define lctx (state-lctx state))
       (when (pair? lctx)
-        (send sbview add-text "\n")
-        (for-each (lambda (bf)
-                    (send sbview add-text 
-                          "while executing macro transformer in:\n")
-                    (insert-syntax/redex (bigframe-term bf)
-                                         (bigframe-foci bf)
-                                         binders
-                                         shift-table
-                                         (state-uses state)
-                                         (state-frontier state)))
-                  (reverse lctx))))
+        (send: sbview sb:syntax-browser<%> add-text "\n")
+        (for ([bf (reverse lctx)])
+          (send: sbview sb:syntax-browser<%> add-text 
+                 "while executing macro transformer in:\n")
+          (insert-syntax/redex (bigframe-term bf)
+                               (bigframe-foci bf)
+                               binders
+                               shift-table
+                               (state-uses state)
+                               (state-frontier state)))))
 
     ;; separator : Step -> void
     (define/private (separator step)
@@ -194,15 +180,15 @@
       (define state (protostep-s1 step))
       (show-state/redex state binders shift-table)
       (separator step)
-      (send sbview add-error-text (exn-message (misstep-exn step)))
-      (send sbview add-text "\n")
+      (send*: sbview sb:syntax-browser<%>
+        (add-error-text (exn-message (misstep-exn step)))
+        (add-text "\n"))
       (when (exn:fail:syntax? (misstep-exn step))
-        (for-each (lambda (e)
-                    (send sbview add-syntax e
-                          #:binder-table binders
-                          #:shift-table shift-table
-                          #:definites (or (state-uses state) null)))
-                  (exn:fail:syntax-exprs (misstep-exn step))))
+        (for ([e (exn:fail:syntax-exprs (misstep-exn step))])
+          (send: sbview sb:syntax-browser<%> add-syntax e
+                 #:binder-table binders
+                 #:shift-table shift-table
+                 #:definites (or (state-uses state) null))))
       (show-lctx step binders shift-table))
 
     ;; insert-syntax/color
@@ -210,14 +196,14 @@
                                          definites frontier hi-color)
       (define highlight-foci? (send config get-highlight-foci?))
       (define highlight-frontier? (send config get-highlight-frontier?))
-      (send sbview add-syntax stx
-            #:definites (or definites null)
-            #:binder-table binders
-            #:shift-table shift-table
-            #:hi-colors (list hi-color
-                              "WhiteSmoke")
-            #:hi-stxss (list (if highlight-foci? foci null)
-                             (if highlight-frontier? frontier null))))
+      (send: sbview sb:syntax-browser<%> add-syntax stx
+             #:definites (or definites null)
+             #:binder-table binders
+             #:shift-table shift-table
+             #:hi-colors (list hi-color
+                               "WhiteSmoke")
+             #:hi-stxss (list (if highlight-foci? foci null)
+                              (if highlight-frontier? frontier null))))
 
     ;; insert-syntax/redex
     (define/private (insert-syntax/redex stx foci binders shift-table
@@ -233,29 +219,32 @@
 
     ;; insert-step-separator : string -> void
     (define/private (insert-step-separator text)
-      (send sbview add-text "\n    ")
-      (send sbview add-text
-            (make-object image-snip% 
-                         (build-path (collection-path "icons")
-                                     "red-arrow.bmp")))
-      (send sbview add-text "  ")
-      (send sbview add-text text)
-      (send sbview add-text "\n\n"))
+      (send*: sbview sb:syntax-browser<%>
+        (add-text "\n    ")
+        (add-text
+         (make-object image-snip% 
+                      (build-path (collection-path "icons")
+                                  "red-arrow.bmp")))
+        (add-text "  ")
+        (add-text text)
+        (add-text "\n\n")))
 
     ;; insert-as-separator : string -> void
     (define/private (insert-as-separator text)
-      (send sbview add-text "\n    ")
-      (send sbview add-text text)
-      (send sbview add-text "\n\n"))
+      (send*: sbview sb:syntax-browser<%>
+        (add-text "\n    ")
+        (add-text text)
+        (add-text "\n\n")))
 
     ;; insert-step-separator/small : string -> void
     (define/private (insert-step-separator/small text)
-      (send sbview add-text "    ")
-      (send sbview add-text
-            (make-object image-snip% 
-                         (build-path (collection-path "icons")
-                                     "red-arrow.bmp")))
-      (send sbview add-text "  ")
-      (send sbview add-text text)
-      (send sbview add-text "\n\n"))
+      (send*: sbview sb:syntax-browser<%>
+        (add-text "    ")
+        (add-text
+         (make-object image-snip% 
+                      (build-path (collection-path "icons")
+                                  "red-arrow.bmp")))
+        (add-text "  ")
+        (add-text text)
+        (add-text "\n\n")))
     ))

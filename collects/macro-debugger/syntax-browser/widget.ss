@@ -21,7 +21,7 @@
 ;; widget%
 ;; A syntax widget creates its own syntax-controller.
 (define widget%
-  (class* object% (widget-hooks<%>)
+  (class* object% (syntax-browser<%> widget-hooks<%>)
     (init parent)
     (init-field config)
 
