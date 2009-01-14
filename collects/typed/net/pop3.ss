@@ -40,5 +40,3 @@
 (require-typed-struct/provide (malformed-server-response pop3) 
 			      ([communicator : communicator]) net/pop3) 
 
-
-  

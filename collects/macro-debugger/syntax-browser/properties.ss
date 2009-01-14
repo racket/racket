@@ -2,6 +2,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
+         macro-debugger/util/class-iop
          "interfaces.ss"
          "util.ss"
          "../util/mpi.ss")
@@ -24,10 +25,10 @@
     (field (text (new text%)))
     (field (pdisplayer (new properties-displayer% (text text))))
 
-    (send controller listen-selected-syntax
-          (lambda (stx)
-            (set! selected-syntax stx)
-            (refresh)))
+    (send: controller selection-manager<%> listen-selected-syntax
+           (lambda (stx)
+             (set! selected-syntax stx)
+             (refresh)))
     (super-new)
 
     ;; get-mode : -> symbol

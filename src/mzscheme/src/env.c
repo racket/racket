@@ -2609,7 +2609,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	  if (SCHEME_FALSEP(val)) {
 	    /* Corresponds to a run-time binding (but will be replaced later
 	       through a renaming to a different binding) */
-	    return NULL;
+            if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
+              return scheme_make_local(scheme_local_type, 0, 0);
+            return NULL;
 	  }
 
 	  if (!(flags & SCHEME_ENV_CONSTANTS_OK)) {
@@ -2647,6 +2649,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
         scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
                             "identifier used out of context");
+      if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
+        return scheme_make_local(scheme_local_type, 0, 0);
       return NULL;
     }
   }

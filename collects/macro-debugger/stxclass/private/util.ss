@@ -214,6 +214,7 @@
                  [_
                   (loop (stx-cdr x) (cons ee ex) #t)]))]
             [(stx-null? x)
+             (internal-definition-context-seal intdef)
              (reverse ex)]))))
 
 

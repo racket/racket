@@ -108,4 +108,3 @@
   (= 0 (list-length '()))
   (= 2 (list-length '(1 2)))
   (= 3 (list-length '(1 2 (1 2 3 4))))
-  

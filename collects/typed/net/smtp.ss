@@ -7,5 +7,3 @@
   [smtp-sending-end-of-message (Parameter (-> Any))])
   
 (provide smtp-send-message smtp-sending-end-of-message)
-  
-  

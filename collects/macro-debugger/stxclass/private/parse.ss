@@ -74,7 +74,7 @@
   (with-syntax ([k k] [x x] [p p] [reason reason]
                 [fc-expr (frontier->expr fc)])
     #`(let ([failcontext fc-expr])
-        (printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
+        #;(printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
         (k x p 'reason failcontext))))
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)

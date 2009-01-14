@@ -2350,6 +2350,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_RESOLVE_MODIDS 1024
 #define SCHEME_NO_CERT_CHECKS 2048
 #define SCHEME_REFERENCING 4096
+#define SCHEME_OUT_OF_CONTEXT_LOCAL 8192
 
 Scheme_Hash_Table *scheme_map_constants_to_globals(void);
 

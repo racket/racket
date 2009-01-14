@@ -6,6 +6,7 @@
          scheme/list
          scheme/match
          syntax/boundmap
+         macro-debugger/util/class-iop
          "interfaces.ss"
          "controller.ss"
          "display.ss"
@@ -20,7 +21,7 @@
 ;; widget%
 ;; A syntax widget creates its own syntax-controller.
 (define widget%
-  (class* object% (widget-hooks<%>)
+  (class* object% (syntax-browser<%> widget-hooks<%>)
     (init parent)
     (init-field config)
 
@@ -119,7 +120,8 @@
       (let ([display (internal-add-syntax stx)]
             [definite-table (make-hasheq)])
         (for-each (lambda (hi-stxs hi-color)
-                    (send display highlight-syntaxes hi-stxs hi-color))
+                    (send: display display<%>
+                           highlight-syntaxes hi-stxs hi-color))
                   hi-stxss
                   hi-colors)
         (for ([definite definites])
@@ -128,20 +130,20 @@
             (for ([shifted-definite (hash-ref shift-table definite null)])
               (hash-set! definite-table shifted-definite #t))))
         (when alpha-table
-          (let ([range (send display get-range)]
-                [start (send display get-start-position)])
+          (let ([range (send: display display<%> get-range)]
+                [start (send: display display<%> get-start-position)])
             (let* ([binders0
                     (module-identifier-mapping-map alpha-table (lambda (k v) k))]
                    [binders
                     (apply append (map get-binders binders0))])
-              (send display underline-syntaxes binders))
-            (for ([id (send range get-identifier-list)])
+              (send: display display<%> underline-syntaxes binders))
+            (for ([id (send: range range<%> get-identifier-list)])
               (define definite? (hash-ref definite-table id #f))
               (when #f ;; DISABLED
                 (add-binding-billboard start range id definite?))
               (for ([binder (get-binders id)])
-                (for ([binder-r (send range get-ranges binder)])
-                  (for ([id-r (send range get-ranges id)])
+                (for ([binder-r (send: range range<%> get-ranges binder)])
+                  (for ([id-r (send: range range<%> get-ranges id)])
                     (add-binding-arrow start binder-r id-r definite?)))))))
         (void)))
 
@@ -169,7 +171,7 @@
                            (+ start (cdr id-r))
                            (string-append "from " (mpi->string src-mod))
                            (if definite? "blue" "purple")))
-                   (send range get-ranges id))]
+                   (send: range range<%> get-ranges id))]
         [_ (void)]))
 
     (define/public (add-separator)
@@ -182,7 +184,7 @@
       (with-unlock -text
         (send -text erase)
         (send -text delete-all-drawings))
-      (send controller remove-all-syntax-displays))
+      (send: controller displays-manager<%> remove-all-syntax-displays))
 
     (define/public (get-text) -text)
 

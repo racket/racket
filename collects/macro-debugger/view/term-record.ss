@@ -1,6 +1,6 @@
-
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          scheme/unit
          scheme/list
          scheme/match
@@ -30,11 +30,12 @@
 ;; TermRecords
 
 (define term-record%
-  (class object%
-    (init-field stepper)
+  (class* object% (term-record<%>)
+    (init-field: (stepper widget<%>))
 
     (define config (send stepper get-config))
-    (define displayer (send stepper get-step-displayer))
+    (define: displayer step-display<%>
+      (send: stepper widget<%> get-step-displayer))
 
     ;; Data
     
@@ -128,7 +129,7 @@
       (unless (or deriv deriv-hidden?)
         (recache-raw-deriv!)
         (when raw-deriv
-          (let ([process (send stepper get-preprocess-deriv)])
+          (let ([process (send: stepper widget<%> get-preprocess-deriv)])
             (let ([d (process raw-deriv)])
               (when (not d)
                 (set! deriv-hidden? #t))
@@ -151,7 +152,7 @@
       (unless (or raw-steps raw-steps-oops)
         (recache-synth!)
         (when deriv
-          (let ([show-macro? (or (send stepper get-show-macro?)
+          (let ([show-macro? (or (send: stepper widget<%> get-show-macro?)
                                  (lambda (id) #t))])
             (with-handlers ([(lambda (e) #t)
                              (lambda (e)
@@ -274,18 +275,18 @@
 
     ;; display-initial-term : -> void
     (define/public (display-initial-term)
-      (send displayer add-syntax (wderiv-e1 deriv)))
+      (send: displayer step-display<%> add-syntax (wderiv-e1 deriv)))
 
     ;; display-final-term : -> void
     (define/public (display-final-term)
       (recache-steps!)
       (cond [(syntax? raw-steps-estx)
-             (send displayer add-syntax raw-steps-estx
-                   #:binders binders
-                   #:shift-table shift-table
-                   #:definites raw-steps-definites)]
+             (send: displayer step-display<%> add-syntax raw-steps-estx
+                    #:binders binders
+                    #:shift-table shift-table
+                    #:definites raw-steps-definites)]
             [(exn? raw-steps-exn)
-             (send displayer add-error raw-steps-exn)]
+             (send: displayer step-display<%> add-error raw-steps-exn)]
             [else (display-oops #f)]))
 
     ;; display-step : -> void
@@ -294,25 +295,25 @@
       (cond [steps
              (let ([step (cursor:next steps)])
                (if step
-                   (send displayer add-step step
-                         #:binders binders
-                         #:shift-table shift-table)
-                   (send displayer add-final raw-steps-estx raw-steps-exn
-                         #:binders binders
-                         #:shift-table shift-table
-                         #:definites raw-steps-definites)))]
+                   (send: displayer step-display<%> add-step step
+                          #:binders binders
+                          #:shift-table shift-table)
+                   (send: displayer step-display<%> add-final raw-steps-estx raw-steps-exn
+                          #:binders binders
+                          #:shift-table shift-table
+                          #:definites raw-steps-definites)))]
             [else (display-oops #t)]))
 
     ;; display-oops : boolean -> void
     (define/private (display-oops show-syntax?)
       (cond [raw-steps-oops
-             (send displayer add-internal-error
-                   "steps" raw-steps-oops
-                   (and show-syntax? (wderiv-e1 deriv))
-                   events)]
+             (send: displayer step-display<%> add-internal-error
+                    "steps" raw-steps-oops
+                    (and show-syntax? (wderiv-e1 deriv))
+                    events)]
             [raw-deriv-oops
-             (send displayer add-internal-error
-                   "derivation" raw-deriv-oops #f events)]
+             (send: displayer step-display<%> add-internal-error
+                    "derivation" raw-deriv-oops #f events)]
             [else
              (error 'term-record::display-oops "internal error")]))
     ))

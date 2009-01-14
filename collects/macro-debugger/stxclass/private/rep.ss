@@ -185,7 +185,9 @@
                     [args (cdr p)])
                 (unless (equal? (length (sc-inputs stxclass)) (length args))
                   (raise-syntax-error 'syntax-class
-                                      "too few arguments for syntax class"
+                                      (format "too few arguments for syntax class ~a (expected ~s)"
+                                              (sc-name stxclass)
+                                              (length (sc-inputs stxclass)))
                                       id))
                 (values id stxclass args (ssc? stxclass))))]
         [else (values id #f null #f)]))

@@ -1,50 +1,77 @@
 
 #lang scheme/base
-(require scheme/unit)
+(require macro-debugger/util/class-iop)
 (provide (all-defined-out))
 
-;; Signatures
+(define-interface widget<%> ()
+  (get-config
+   get-controller
+   get-macro-hiding-prefs
+   get-step-displayer
 
-#;
-(define-signature view^
-  (macro-stepper-frame%
-   macro-stepper-widget%
-   make-macro-stepper
-   go
-   go/deriv))
+   add-trace
+   add-deriv
 
-#;
-(define-signature view-base^
-  (base-frame%))
+   update/preserve-view
+   refresh/resynth
 
-#;
-(define-signature prefs^
-  (pref:width
-   pref:height
-   pref:props-shown?
-   pref:props-percentage
-   pref:macro-hiding-mode
-   pref:show-syntax-properties?
-   pref:show-hiding-panel?
-   pref:identifier=?
-   pref:show-rename-steps?
-   pref:highlight-foci?
-   pref:highlight-frontier?
-   pref:suppress-warnings?
-   pref:one-by-one?
-   pref:extra-navigation?
-   pref:debug-catch-errors?
-   pref:force-letrec-transformation?
+   reset-primary-partition
+   remove-current-term
+   duplicate-stepper
+   show-in-new-frame
+
+   get-preprocess-deriv
+   get-show-macro?
+))
+
+(define-interface stepper-frame<%> ()
+  (get-widget
+   get-controller
+   add-obsoleted-warning))
+
+(define-interface hiding-prefs<%> ()
+  (add-show-identifier
+   add-hide-identifier
+   set-syntax
+   get-policy
+   refresh))
+
+
+(define-interface step-display<%> ()
+  (add-syntax
+   add-step
+   add-error
+   add-final
+   add-internal-error))
+
+
+(define-interface term-record<%> ()
+  (get-raw-deriv
+   get-deriv-hidden?
+   get-step-index
+   invalidate-synth!
+   invalidate-steps!
+
+   has-prev?
+   has-next?
+#|
+   at-start?
+   at-end?
+|#
+   navigate-to-start
+   navigate-to-end
+   navigate-previous
+   navigate-next
+   navigate-to
+
+   on-get-focus
+   on-lose-focus
+
+   display-initial-term
+   display-final-term
+   display-step
    ))
 
-;; macro-stepper-config%
-;;   all fields are notify-box% objects
-;;     width
-;;     height
-;;     macro-hiding?
-;;     hide-primitives?
-;;     hide-libs?
-;;     show-syntax-properties?
-;;     show-hiding-panel?
-;;     show-rename-steps?
-;;     highlight-foci?
+(define-interface director<%> ()
+  (add-deriv
+   new-stepper))

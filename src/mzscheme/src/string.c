@@ -968,7 +968,7 @@ void scheme_get_substring_indices(const char *name, Scheme_Object *str,
 
   if (SCHEME_VECTORP(str))
     len = SCHEME_VEC_SIZE(str);
-  if (SCHEME_CHAR_STRINGP(str))
+  else if (SCHEME_CHAR_STRINGP(str))
     len = SCHEME_CHAR_STRTAG_VAL(str);
   else
     len = SCHEME_BYTE_STRTAG_VAL(str);

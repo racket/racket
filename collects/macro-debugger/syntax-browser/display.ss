@@ -3,6 +3,7 @@
 (require scheme/class
          scheme/gui
          scheme/match
+         macro-debugger/util/class-iop
          "pretty-printer.ss"
          "interfaces.ss"
          "util.ss")
@@ -17,7 +18,7 @@
   (define output-port (open-output-string/count-lines))
   (define range
     (pretty-print-syntax stx output-port 
-                         (send controller get-primary-partition)
+                         (send: controller controller<%> get-primary-partition)
                          (send config get-colors)
                          (send config get-suffix-option)
                          columns))
@@ -42,13 +43,14 @@
 
 ;; add-clickbacks : text% range% controller<%> number -> void
 (define (add-clickbacks text range controller insertion-point)
-  (for ([range (send range all-ranges)])
+  (for ([range (send: range range<%> all-ranges)])
     (let ([stx (range-obj range)]
           [start (range-start range)]
           [end (range-end range)])
       (send text set-clickback (+ insertion-point start) (+ insertion-point end)
             (lambda (_1 _2 _3)
-              (send controller set-selected-syntax stx))))))
+              (send: controller selection-manager<%>
+                     set-selected-syntax stx))))))
 
 ;; set-standard-font : text% config number number -> void
 (define (set-standard-font text config start end)
@@ -81,7 +83,9 @@
           (begin-edit-sequence)
           (change-style unhighlight-d start-position end-position))
         (apply-extra-styles)
-        (let ([selected-syntax (send controller get-selected-syntax)])
+        (let ([selected-syntax
+               (send: controller selection-manager<%>
+                      get-selected-syntax)])
           (apply-secondary-partition-styles selected-syntax)
           (apply-selection-styles selected-syntax))
         (send* text
@@ -126,9 +130,11 @@
         (let ([delta (new style-delta%)])
           (send delta set-delta-foreground color)
           delta))
-      (define color-styles (list->vector (map color-style (send config get-colors))))
+      (define color-styles
+        (list->vector (map color-style (send config get-colors))))
       (define overflow-style (color-style "darkgray"))
-      (define color-partition (send controller get-primary-partition))
+      (define color-partition
+        (send: controller mark-manager<%> get-primary-partition))
       (define offset start-position)
       (for-each
        (lambda (range)
@@ -139,12 +145,12 @@
                  (primary-style stx color-partition color-styles overflow-style)
                  (+ offset start)
                  (+ offset end))))
-       (send range all-ranges)))
+       (send: range range<%> all-ranges)))
 
     ;; primary-style : syntax partition (vector-of style-delta%) style-delta%
     ;;               -> style-delta%
     (define/private (primary-style stx partition color-vector overflow)
-      (let ([n (send partition get-partition stx)])
+      (let ([n (send: partition partition<%> get-partition stx)])
         (cond [(< n (vector-length color-vector))
                (vector-ref color-vector n)]
               [else
@@ -157,7 +163,7 @@
     ;; Applies externally-added styles (such as highlighting)
     (define/private (apply-extra-styles)
       (for ([(stx style-deltas) extra-styles])
-        (for ([r (send range get-ranges stx)])
+        (for ([r (send: range range<%> get-ranges stx)])
           (for ([style-delta style-deltas])
             (restyle-range r style-delta)))))
 
@@ -166,23 +172,25 @@
     ;; in the same partition in blue.
     (define/private (apply-secondary-partition-styles selected-syntax)
       (when (identifier? selected-syntax)
-        (let ([partition (send controller get-secondary-partition)])
+        (let ([partition
+               (send: controller secondary-partition<%>
+                      get-secondary-partition)])
           (when partition
-            (for-each (lambda (id)
-                        (when (send partition same-partition? selected-syntax id)
-                          (draw-secondary-connection id)))
-                      (send range get-identifier-list))))))
+            (for ([id (send: range range<%> get-identifier-list)])
+              (when (send: partition partition<%>
+                           same-partition? selected-syntax id)
+                (draw-secondary-connection id)))))))
 
     ;; apply-selection-styles : syntax -> void
     ;; Styles subterms eq to the selected syntax
     (define/private (apply-selection-styles selected-syntax)
-      (let ([rs (send range get-ranges selected-syntax)])
-        (for-each (lambda (r) (restyle-range r select-highlight-d)) rs)))
+      (for ([r (send: range range<%> get-ranges selected-syntax)])
+        (restyle-range r select-highlight-d)))
 
     ;; draw-secondary-connection : syntax -> void
     (define/private (draw-secondary-connection stx2)
-      (let ([rs (send range get-ranges stx2)])
-        (for-each (lambda (r) (restyle-range r select-sub-highlight-d)) rs)))
+      (for ([r (send range get-ranges stx2)])
+        (restyle-range r select-sub-highlight-d)))
 
     ;; restyle-range : (cons num num) style-delta% -> void
     (define/private (restyle-range r style)
@@ -258,4 +266,3 @@
 (define select-sub-highlight-d (highlight-style-delta subselection-color #f))
 
 (define unhighlight-d (highlight-style-delta "white" #f))
-

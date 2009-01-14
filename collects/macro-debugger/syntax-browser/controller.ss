@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          "interfaces.ss"
          "partition.ss"
          "../util/notify.ss")
@@ -31,7 +32,7 @@
     (super-new)
     (listen-selected-syntax
      (lambda (new-value)
-       (for-each (lambda (display) (send display refresh))
+       (for-each (lambda (display) (send: display display<%> refresh))
                  displays)))))
 
 ;; mark-manager-mixin
@@ -62,14 +63,15 @@
              (new partition% (relation (cdr name+proc)))))))
     (listen-secondary-partition
      (lambda (p)
-       (for-each (lambda (d) (send d refresh))
+       (for-each (lambda (d) (send: d display<%> refresh))
                  displays)))
     (super-new)))
 
 (define controller%
-  (class (secondary-partition-mixin
-          (selection-manager-mixin
-           (mark-manager-mixin
-            (displays-manager-mixin
-             object%))))
+  (class* (secondary-partition-mixin
+           (selection-manager-mixin
+            (mark-manager-mixin
+             (displays-manager-mixin
+              object%))))
+    (controller<%>)
     (super-new)))

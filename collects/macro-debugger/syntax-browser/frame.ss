@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/class
          scheme/gui
@@ -20,10 +19,9 @@
 ;; browse-syntaxes : (list-of syntax) -> void
 (define (browse-syntaxes stxs)
   (let ((w (make-syntax-browser)))
-    (for-each (lambda (stx)
-                (send w add-syntax stx)
-                (send w add-separator))
-              stxs)))
+    (for ([stx stxs])
+      (send w add-syntax stx)
+      (send w add-separator))))
 
 ;; make-syntax-browser : -> syntax-browser<%>
 (define (make-syntax-browser)
