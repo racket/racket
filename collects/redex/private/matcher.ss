@@ -758,7 +758,8 @@ before the pattern compiler is invoked.
           (lambda (exp hole-info)
             (let ([matches (match-pat exp hole-info)])
               (and matches
-                   (let ([filtered (filter (λ (m) (condition (mtch-bindings m))) matches)])
+                   (let ([filtered (filter (λ (m) (condition (mtch-bindings m))) 
+                                           (filter-multiples matches))])
                      (if (null? filtered)
                          #f
                          filtered)))))

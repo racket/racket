@@ -158,7 +158,7 @@
       
       (inherit refresh-delayed? 
                get-canvas
-               get-max-width get-admin)
+               get-admin)
       
       (define/augment (can-save-file? filename format)
         (and (if (equal? filename (get-filename))
