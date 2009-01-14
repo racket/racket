@@ -19,6 +19,7 @@
 
 @deftogether[(
 @defidform[help]
+@defform/none[#:literals (help) (help string ...)]
 @defform/none[#:literals (help) (help id)]
 @defform/none[#:literals (help) (help id #:from module-path)]
 @defform/none[#:literals (help) (help #:search datum ...)]
@@ -34,6 +35,17 @@ the user's browser is launched to display help information.}
 
 A simple @scheme[help] or @scheme[(help)] form opens the main
 documentation page.
+
+The @scheme[(help string ...)] form---using literal strings, as
+opposed to expressions that produce strings---performs a
+string-matching search. For example,
+
+@schemeblock[
+(help "web browser" "firefox")
+]
+
+searches the documentation index for references that include the
+phrase ``web browser'' or ``firefox.''
 
 A @scheme[(help id)] form looks for documentation specific to the
 current binding of @scheme[id]. For example, 
@@ -70,11 +82,10 @@ The @scheme[(help id #:from module-path)] variant is similar to
 (help frame% #:from scheme/gui) (code:comment #, @t{equivalent to the above})
 ]
 
-The @scheme[(help #:search datum ...)] form performs a general
-search. Searching uses strings; each string @scheme[datum] is used
-as-is, and any other form of @scheme[datum] is converted to a string
-using @scheme[display]. No @scheme[datum] is evaluated as an
-expression.
+The @scheme[(help #:search datum ...)] form is similar to
+@scheme[(help string ...)], where any non-string form of
+@scheme[datum] is converted to a string using @scheme[display]. No
+@scheme[datum] is evaluated as an expression.
 
 For example,
 
@@ -82,7 +93,7 @@ For example,
 (help #:search "web browser" firefox)
 ]
 
-searches the documentation index for references that include the
+also searches the documentation index for references that include the
 phrase ``web browser'' or ``firefox.''
 
 }
