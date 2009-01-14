@@ -152,11 +152,7 @@
     (dynamic-wind
      void
      (λ ()
-       (let loop ([snip (send graph-pb find-first-snip)])
-         (when snip
-           (send (send snip get-admin) resized snip #t)
-           (loop (send snip next))))
-       (send graph-pb invalidate-bitmap-cache)
+       (send graph-pb size-cache-invalid)
        
        (send graph-pb re-run-layout)
        
@@ -175,7 +171,7 @@
          (when snip
            (send snip size-cache-invalid)
            (loop (send snip next))))
-       (send graph-pb invalidate-bitmap-cache)
+       (send graph-pb size-cache-invalid)
        (send graph-pb re-run-layout)))))
 
 (define printing-editor-admin%
@@ -208,7 +204,8 @@
     (define/override (get-max-view x y w h [full? #f])
       (get-view x y w h full?))
     (define/override (get-view x y w h [full? #f])
-      (super get-view x y w h full?)
+      (when x (set-box! x 0.0))
+      (when y (set-box! x 0.0))
       (when (box? w) (set-box! w 500))
       (when (box? h) (set-box! h 500)))
     

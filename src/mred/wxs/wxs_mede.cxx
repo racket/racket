@@ -1015,6 +1015,7 @@ class os_wxMediaEdit : public wxMediaEdit {
   Bool CanSaveFile(epathname x0, int x1);
   class wxSnip* OnNewBox(int x0);
   class wxImageSnip* OnNewImageSnip(nxpathname x0, int x1, Bool x2, Bool x3);
+  void SizeCacheInvalid();
   void InvalidateBitmapCache(double x0 = 0.0, double x1 = 0.0, double x2 = -1.0, double x3 = -1.0);
   void OnPaint(Bool x0, class wxDC* x1, double x2, double x3, double x4, double x5, double x6, double x7, int x8);
   Bool WriteFootersToFile(class wxMediaStreamOut* x0);
@@ -2466,6 +2467,40 @@ class wxImageSnip* os_wxMediaEdit::OnNewImageSnip(nxpathname x0, int x1, Bool x2
      READY_TO_RETURN;
      return resval;
   }
+  }
+}
+
+static Scheme_Object *os_wxMediaEditSizeCacheInvalid(int n, Scheme_Object *p[]);
+
+void os_wxMediaEdit::SizeCacheInvalid()
+{
+  Scheme_Object *p[POFFSET+0] INIT_NULLED_ARRAY({ NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxMediaEdit *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(5);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+0);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaEdit_class, "size-cache-invalid", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxMediaEditSizeCacheInvalid)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; ASSELF wxMediaEdit::SizeCacheInvalid();
+  } else {
+  
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
+  
+  
+     READY_TO_RETURN;
   }
 }
 
@@ -7673,6 +7708,29 @@ static Scheme_Object *os_wxMediaEditOnNewImageSnip(int n,  Scheme_Object *p[])
   return WITH_REMEMBERED_STACK(objscheme_bundle_wxImageSnip(r));
 }
 
+static Scheme_Object *os_wxMediaEditSizeCacheInvalid(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaEdit_class, "size-cache-invalid in text%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  if (((Scheme_Class_Object *)p[0])->primflag)
+    WITH_VAR_STACK(((os_wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->wxMediaEdit::SizeCacheInvalid());
+  else
+    WITH_VAR_STACK(((wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->SizeCacheInvalid());
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
 static Scheme_Object *os_wxMediaEditInvalidateBitmapCache(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -8778,7 +8836,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaEdit_class);
 
-  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 153));
+  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 154));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "call-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditCallClickback, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "remove-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditRemoveClickback, 2, 2));
@@ -8896,6 +8954,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "can-save-file?" " method", (Scheme_Method_Prim *)os_wxMediaEditCanSaveFile, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-new-box" " method", (Scheme_Method_Prim *)os_wxMediaEditOnNewBox, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-new-image-snip" " method", (Scheme_Method_Prim *)os_wxMediaEditOnNewImageSnip, 4, 4));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "size-cache-invalid" " method", (Scheme_Method_Prim *)os_wxMediaEditSizeCacheInvalid, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "invalidate-bitmap-cache" " method", (Scheme_Method_Prim *)os_wxMediaEditInvalidateBitmapCache, 0, 4));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-paint" " method", (Scheme_Method_Prim *)os_wxMediaEditOnPaint, 9, 9));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "write-footers-to-file" " method", (Scheme_Method_Prim *)os_wxMediaEditWriteFootersToFile, 1, 1));

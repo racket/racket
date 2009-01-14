@@ -1015,7 +1015,7 @@ The default implementation triggers a redraw of the editor, either
  immediately or at the end of the current edit sequence (if any)
  started by @method[editor<%> begin-edit-sequence].
 
-}
+See also @method[editor<%> size-cache-invalid].}
 
 
 @defmethod[(is-locked?)
@@ -2320,6 +2320,20 @@ Setting the style list is disallowed when the editor is internally
  locked for reflowing (see also @|lockdiscuss|).
 
 }
+
+
+@defmethod[(size-cache-invalid)
+           void?]{
+
+This method is called when the drawing context given to the editor by
+its administrator changes in a way that makes cached size information
+(such as the width of a string) invalid.
+
+The default implementation eventually propagates the message to snips,
+and, more generally, causes @tech{location} information to be
+recalculated on demand.
+
+See also @method[editor<%> invalidate-bitmap-cache].}
 
 
 @defmethod[(style-has-changed [style (or/c (is-a?/c style<%>) false/c)])

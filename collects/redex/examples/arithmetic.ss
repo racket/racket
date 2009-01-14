@@ -38,4 +38,5 @@
    [(--> (in-hole e-ctxt_1 a) (in-hole e-ctxt_1 b))
     (c--> a b)]))
 
-(traces reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2))))
+(traces/ps reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2)))
+           "/home/mflatt/Desktop/p.ps")
