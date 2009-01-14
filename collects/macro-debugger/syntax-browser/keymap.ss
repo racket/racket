@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/class
          scheme/gui

@@ -77,7 +77,6 @@ todo:
     (define upper-hp (new horizontal-panel% [parent dp]))
     (define lower-hp (new horizontal-panel% [alignment '(center center)] [parent f] [stretchable-height #f]))
     (define pb (new columnar-pasteboard% 
-                    [shrink-down? #f]
                     [moved (λ (a b c d) 
                              (when (procedure? moved)
                                (moved a b c d)))]))
@@ -801,7 +800,7 @@ todo:
            flat-to-remove)
           (for-each (λ (x) (insert x)) flat-to-insert)))
       
-      (inherit get-admin move-to resize)
+      (inherit get-admin move-to)
       (define/public (update-heights)
         (let ([admin (get-admin)])
           (let-values ([(w h) (get-view-size)])
@@ -816,9 +815,11 @@ todo:
                       ;; if there is only a single snip in the column, we let it be as long as it wants to be.
                       (let* ([snip (car column)]
                              [sw (get-snip-width snip)]
-                             [sh (get-snip-max-height snip)])
+                             [sh (get-snip-max-height snip)]
+                             [new-height (- (max h sh) (get-border-height snip))])
                         (move-to snip x 0)
-                        (resize snip sw (max h sh))
+                        (send snip set-min-height new-height)
+                        (send snip set-max-height new-height)
                         (loop (cdr columns) (+ x sw)))]
                      [else
                       ;; otherwise, we make all of the snips fit into the visible area
@@ -838,16 +839,39 @@ todo:
                                                     0
                                                     1))])
                                      (move-to snip x y)
-                                     (resize snip sw h)
+                                     (let ([border-height (get-border-height snip)])
+                                       (send snip set-min-height (- h border-height))
+                                       (send snip set-max-height (- h border-height)))
                                      (loop (cdr snips)
                                            (if (zero? extra-space)
                                                0
                                                (- extra-space 1))
                                            (+ y h)
                                            (max widest sw)))]))])
+                          (for-each (λ (snip) 
+                                      (let ([border-width (get-border-width snip)])
+                                        (send snip set-min-width (- widest border-width))
+                                        (send snip set-max-width (- widest border-width))))
+                                    column)
                         (loop (cdr columns)
                               (+ x widest)))]))])))))
 
+      (define/private (get-border-height snip)
+        (let ([lb (box 0)]
+              [tb (box 0)]
+              [rb (box 0)]
+              [bb (box 0)])
+          (send snip get-margin lb tb bb rb)
+          (+ (unbox bb) (unbox tb))))
+      
+      (define/private (get-border-width snip)
+        (let ([lb (box 0)]
+              [tb (box 0)]
+              [rb (box 0)]
+              [bb (box 0)])
+          (send snip get-margin lb tb bb rb)
+          (+ (unbox lb) (unbox rb))))
+      
       (inherit get-snip-location)
       (define/public (get-snip-width snip)
         (let ([lb (box 0)]

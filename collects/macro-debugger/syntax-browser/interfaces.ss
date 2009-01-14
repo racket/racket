@@ -1,11 +1,10 @@
-
 #lang scheme/base
 (require scheme/class
          macro-debugger/util/class-iop)
 (provide (all-defined-out))
 
 ;; displays-manager<%>
-(define-interface displays-manager<%>
+(define-interface displays-manager<%> ()
   (;; add-syntax-display : display<%> -> void
    add-syntax-display
 
@@ -13,7 +12,7 @@
    remove-all-syntax-displays))
 
 ;; selection-manager<%>
-(define-interface selection-manager<%>
+(define-interface selection-manager<%> ()
   (;; selected-syntax : syntax/#f
    set-selected-syntax
    get-selected-syntax
@@ -21,12 +20,15 @@
 
 ;; mark-manager<%>
 ;; Manages marks, mappings from marks to colors
-(define-interface mark-manager<%>
+(define-interface mark-manager<%> ()
   (;; get-primary-partition : -> partition
-   get-primary-partition))
+   get-primary-partition
+
+   ;; reset-primary-partition : -> void
+   reset-primary-partition))
 
 ;; secondary-partition<%>
-(define-interface secondary-partition<%>
+(define-interface secondary-partition<%> ()
   (;; get-secondary-partition : -> partition<%>
    get-secondary-partition
 
@@ -46,27 +48,15 @@
    listen-identifier=?))
 
 ;; controller<%>
-(define-interface/dynamic controller<%>
-  (interface (displays-manager<%>
-              selection-manager<%>
-              mark-manager<%> 
-              secondary-partition<%>))
-  (add-syntax-display
-   remove-all-syntax-displays
-   set-selected-syntax
-   get-selected-syntax
-   listen-selected-syntax
-   get-primary-partition
-   get-secondary-partition
-   set-secondary-partition
-   listen-secondary-partition
-   get-identifier=?
-   set-identifier=?
-   listen-identifier=?))
+(define-interface controller<%> (displays-manager<%>
+                                 selection-manager<%>
+                                 mark-manager<%>
+                                 secondary-partition<%>)
+  ())
 
 
 ;; host<%>
-(define-interface host<%>
+(define-interface host<%> ()
   (;; get-controller : -> controller<%>
    get-controller
 
@@ -74,7 +64,7 @@
    add-keymap))
 
 ;; display<%>
-(define-interface display<%>
+(define-interface display<%> ()
   (;; refresh : -> void
    refresh
 
@@ -94,7 +84,7 @@
    get-range))
 
 ;; range<%>
-(define-interface range<%>
+(define-interface range<%> ()
   (;; get-ranges : datum -> (list-of (cons number number))
    get-ranges
 
@@ -111,14 +101,14 @@
 
 
 ;; syntax-prefs<%>
-(define-interface syntax-prefs<%>
+(define-interface syntax-prefs<%> ()
   (pref:width
    pref:height
    pref:props-percentage
    pref:props-shown?))
 
 ;; widget-hooks<%>
-(define-interface widget-hooks<%>
+(define-interface widget-hooks<%> ()
   (;; setup-keymap : -> void
    setup-keymap
 
@@ -126,7 +116,7 @@
    shutdown))
 
 ;; keymap-hooks<%>
-(define-interface keymap-hooks<%>
+(define-interface keymap-hooks<%> ()
   (;; make-context-menu : -> context-menu<%>
    make-context-menu
 
@@ -134,7 +124,7 @@
    get-context-menu%))
 
 ;; context-menu-hooks<%>
-(define-interface context-menu-hooks<%>
+(define-interface context-menu-hooks<%> ()
   (add-edit-items
    after-edit-items
    add-selection-items
@@ -146,15 +136,16 @@
 ;;----------
 
 ;; Convenience widget, specialized for displaying stx and not much else
-(define-interface syntax-browser<%>
+(define-interface syntax-browser<%> ()
   (add-syntax
    add-text
+   add-error-text
+   add-clickback
    add-separator
    erase-all
-   select-syntax
    get-text))
 
-(define-interface partition<%>
+(define-interface partition<%> ()
   (;; get-partition : any -> number
    get-partition
 
