@@ -132,7 +132,7 @@
                    #:scheme-colors? [scheme-colors? #t]
                    #:colors [colors '()]
                    #:layout [layout void])
-  (let-values ([(graph-pb frame)
+  (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
                         #:multiple? multiple? 
@@ -141,11 +141,12 @@
                         #:scheme-colors? scheme-colors?
                         #:colors colors
                         #:layout layout)])
-    (print-to-ps graph-pb filename)))
+    (print-to-ps graph-pb canvas filename)))
 
-(define (print-to-ps graph-pb filename)
+(define (print-to-ps graph-pb canvas filename)
   (let ([admin (send graph-pb get-admin)]
         [printing-admin (new printing-editor-admin% [ed graph-pb])])
+    (send canvas set-editor #f)
     (send graph-pb set-admin printing-admin)
     
     (dynamic-wind
@@ -168,6 +169,7 @@
      
      (λ ()
        (send graph-pb set-admin admin)
+       (send canvas set-editor graph-pb)
        (send printing-admin shutdown) ;; do this early
        (let loop ([snip (send graph-pb find-first-snip)])
          (when snip
@@ -556,7 +558,7 @@
                  (do-some-reductions)
                  (semaphore-post s)))
        (yield s))
-     (values graph-pb f)]
+     (values graph-pb ec)]
     [else
      (reduce-button-callback #t)
      (send f show #t)]))
