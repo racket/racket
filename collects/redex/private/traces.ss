@@ -549,8 +549,8 @@
               (list bottom-panel)
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
+  (set-font-size (initial-font-size)) ;; have to call this before 'insert-into' or else it triggers resizing
   (insert-into init-rightmost-x 0 graph-pb frontier)
-  (set-font-size (initial-font-size))
   (cond
     [no-show-frame?
      (let ([s (make-semaphore)]) 
