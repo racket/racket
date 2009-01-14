@@ -7,4 +7,3 @@
   [qp-decode ( String -> String )]
   [qp-encode-stream (case-lambda (Input-Port Output-Port -> Void) (Input-Port Output-Port String -> Void) )]
   [qp-decode-stream ( Input-Port Output-Port -> Void )])
-  

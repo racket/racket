@@ -10,4 +10,3 @@
   [base64-decode (Bytes -> Bytes)])
 
 (provide base64-encode-stream base64-decode-stream base64-encode base64-decode)
-  
