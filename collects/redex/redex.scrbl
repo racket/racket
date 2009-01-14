@@ -1095,7 +1095,7 @@ pattern does not match the @scheme[pattern].}
           [relation reduction-relation?]
           [property (-> any/c any/c)]
           [#:attempts attempts natural-number/c 100])
-         (or/c true/c void?)]{
+         void?]{
 Tests a @scheme[relation] as follows: for each case of @scheme[relation],
 @scheme[check-reduction-relation] generates @scheme[attempts] random
 terms that match that case's left-hand side and applies @scheme[property] 
