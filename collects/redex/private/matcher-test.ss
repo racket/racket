@@ -442,6 +442,11 @@
                 '(+ 1 b)
                 #f)
     
+    (test-empty `(side-condition ((any_1 ..._a) (any_2 ..._a))
+                                 ,(lambda (bindings) (error 'should-not-be-called)))
+                '((1 2 3) (4 5))
+                #f)
+    
     (test-xab 'exp_1
               '(+ 1 2)
               (list (make-test-mtch (make-bindings (list (make-bind 'exp_1 '(+ 1 2)))) '(+ 1 2) none)))
