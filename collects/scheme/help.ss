@@ -14,13 +14,13 @@
        (identifier? #'id)
        #'(find-help (quote-syntax id))]
       [(help id #:from lib)
-       (if (identifier? #'id)
-         (if (module-path? (syntax->datum #'lib))
-           #'(find-help/lib (quote id) (quote lib))
-           (raise-syntax-error
-            #f "expected a module path after #:from" stx #'lib))
-         (raise-syntax-error
-          #f "expected an identifier before #:from" stx #'id))]
+       (cond [(not (identifier? #'id))
+              (raise-syntax-error
+               #f "expected an identifier before #:from" stx #'id)]
+             [(not (module-path? (syntax->datum #'lib)))
+              (raise-syntax-error
+               #f "expected a module path after #:from" stx #'lib)]
+             [else #'(find-help/lib (quote id) (quote lib))])]
       [(help str0 str ...)
        (andmap (lambda (s) (string? (syntax-e s)))
                (syntax->list #'(str0 str ...)))
@@ -36,8 +36,9 @@
       [_
        (raise-syntax-error
         #f
-        (string-append "expects any number of literal strings, a single identifer, a #:from clause, or a"
-                       " #:search clause; try `(help help)' for more information")
+        (string-append "expects a single identifer, any number of literal"
+                       " strings, or a #:search clause;"
+                       " try `(help help)' for more information")
         stx)])))
 
 (define (open-help-start)
