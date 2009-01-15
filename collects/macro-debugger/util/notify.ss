@@ -16,9 +16,7 @@
          menu-option/notify-box
          menu-group/notify-box
          check-box/notify-box
-         choice/notify-box
-
-         methods:notify)
+         choice/notify-box)
 
 (define-for-syntax (join . args)
   (define (->string x)
@@ -73,19 +71,6 @@
                   (send name set new-value))
                 (define/public-final (listen-name listener)
                   (send name listen listener))))]))
-
-
-(define-interface-expander methods:notify
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ name ...)
-       (apply append
-              (for/list ([name (syntax->list #'(name ...))])
-                (list ;; (join "init-" #'name)
-                      (join "get-" name)
-                      (join "set-" name)
-                      (join "listen-" name))))])))
-
 
 (define-syntax (connect-to-pref stx)
   (syntax-case stx ()

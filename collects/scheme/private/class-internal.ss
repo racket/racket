@@ -2958,7 +2958,7 @@
 			       (obj-error who "no such field: ~a~a"
 					  name
 					  (for-class (class-name class)))))])
-      (which (cwhich (car p)) (cdr p))))
+      (which (cwhich (car p)) (cdr p) name)))
   
   (define (make-class-field-accessor class name)
     (class-field-X 'class-field-accessor
