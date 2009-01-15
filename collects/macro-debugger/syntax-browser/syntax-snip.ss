@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          scheme/match
          scheme/list
          mzlib/string
@@ -205,8 +206,8 @@
     (define/public (read-special src line col pos)
       (send the-syntax-snip read-special src line col pos))
 
-    (send config listen-props-shown?
-          (lambda (?) (refresh-contents)))
+    (send: config config<%> listen-props-shown?
+           (lambda (?) (refresh-contents)))
 
     (super-new)
     (set-snipclass snip-class)

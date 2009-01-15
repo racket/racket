@@ -43,6 +43,7 @@
     (define/public (setup-keymap)
       (new syntax-keymap% 
            (editor -text)
+           (controller controller)
            (config config)))
 
     (send -text set-styles-sticky #f)
@@ -54,7 +55,7 @@
     (define/private (internal-show-props show?)
       (if show?
           (unless (send -props-panel is-shown?)
-            (let ([p (send config get-props-percentage)])
+            (let ([p (send: config config<%> get-props-percentage)])
               (send -split-panel add-child -props-panel)
               (update-props-percentage p))
             (send -props-panel show #t))
@@ -81,8 +82,8 @@
 
     (define/public (shutdown)
       (when (props-panel-shown?)
-        (send config set-props-percentage
-              (cadr (send -split-panel get-percentages)))))
+        (send: config config<%> set-props-percentage
+               (cadr (send -split-panel get-percentages)))))
 
     ;; syntax-browser<%> Methods
 
@@ -202,7 +203,7 @@
           display)))
 
     (define/private (calculate-columns)
-      (define style (code-style -text (send config get-syntax-font-size)))
+      (define style (code-style -text (send: config config<%> get-syntax-font-size)))
       (define char-width (send style get-text-width (send -ecanvas get-dc)))
       (define-values (canvas-w canvas-h) (send -ecanvas get-client-size))
       (sub1 (inexact->exact (floor (/ canvas-w char-width)))))
@@ -211,13 +212,13 @@
     (super-new)
     (setup-keymap)
 
-    (send config listen-props-shown?
-          (lambda (show?)
-            (show-props show?)))
-    (send config listen-props-percentage
-          (lambda (p)
-            (update-props-percentage p)))
-    (internal-show-props (send config get-props-shown?))))
+    (send: config config<%> listen-props-shown?
+           (lambda (show?)
+             (show-props show?)))
+    (send: config config<%> listen-props-percentage
+           (lambda (p)
+             (update-props-percentage p)))
+    (internal-show-props (send: config config<%> get-props-shown?))))
 
 
 (define clickback-style

@@ -86,7 +86,7 @@
       (let ([term (focused-term)])
         (when term
           (let ([new-stepper (send: director director<%> new-stepper '(no-new-traces))])
-            (send: new-stepper widget<%> add-deriv (send term get-raw-deriv))
+            (send: new-stepper widget<%> add-deriv (send: term term-record<%> get-raw-deriv))
             (void)))))
 
     ;; duplicate-stepper : -> void
@@ -138,7 +138,7 @@
            (config config)
            (syntax-widget sbview)))
     (define: sbc sb:controller<%>
-      (send sbview get-controller))
+      (send: sbview sb:syntax-browser<%> get-controller))
     (define control-pane
       (new vertical-panel% (parent area) (stretchable-height #f)))
     (define: macro-hiding-prefs hiding-prefs<%>
@@ -147,22 +147,24 @@
            (stepper this)
            (config config)))
 
-    (send config listen-show-hiding-panel?
-          (lambda (show?) (show-macro-hiding-panel show?)))
-    (send sbc listen-selected-syntax
-          (lambda (stx) (send: macro-hiding-prefs hiding-prefs<%> set-syntax stx)))
-    (send config listen-highlight-foci?
-          (lambda (_) (update/preserve-view)))
-    (send config listen-highlight-frontier?
-          (lambda (_) (update/preserve-view)))
-    (send config listen-show-rename-steps?
-          (lambda (_) (refresh/re-reduce)))
-    (send config listen-one-by-one?
-          (lambda (_) (refresh/re-reduce)))
-    (send config listen-force-letrec-transformation?
-          (lambda (_) (refresh/resynth)))
-    (send config listen-extra-navigation?
-          (lambda (show?) (show-extra-navigation show?)))
+    (send: sbc sb:controller<%>
+           listen-selected-syntax
+           (lambda (stx) (send: macro-hiding-prefs hiding-prefs<%> set-syntax stx)))
+    (send*: config config<%>
+      (listen-show-hiding-panel?
+       (lambda (show?) (show-macro-hiding-panel show?)))
+      (listen-highlight-foci?
+       (lambda (_) (update/preserve-view)))
+      (listen-highlight-frontier?
+       (lambda (_) (update/preserve-view)))
+      (listen-show-rename-steps?
+       (lambda (_) (refresh/re-reduce)))
+      (listen-one-by-one?
+       (lambda (_) (refresh/re-reduce)))
+      (listen-force-letrec-transformation?
+       (lambda (_) (refresh/resynth)))
+      (listen-extra-navigation?
+       (lambda (show?) (show-extra-navigation show?))))
 
     (define nav:up
       (new button% (label "Previous term") (parent navigator)
@@ -400,8 +402,8 @@
     ;; Initialization
 
     (super-new)
-    (show-macro-hiding-panel (send config get-show-hiding-panel?))
-    (show-extra-navigation (send config get-extra-navigation?))
+    (show-macro-hiding-panel (send: config config<%> get-show-hiding-panel?))
+    (show-extra-navigation (send: config config<%> get-extra-navigation?))
     (refresh/move)
     ))
 

@@ -240,6 +240,7 @@
     can-save-file?
     on-new-box
     on-new-image-snip
+    size-cache-invalid
     invalidate-bitmap-cache
     on-paint
     write-footers-to-file
@@ -921,6 +922,7 @@
     can-save-file?
     on-new-box
     on-new-image-snip
+    size-cache-invalid
     invalidate-bitmap-cache
     on-paint
     write-footers-to-file
@@ -1133,6 +1135,7 @@
     can-save-file?
     on-new-box
     on-new-image-snip
+    size-cache-invalid
     invalidate-bitmap-cache
     on-paint
     write-footers-to-file

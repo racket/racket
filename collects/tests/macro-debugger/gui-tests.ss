@@ -207,7 +207,8 @@
   (sleep 1)
   (parameterize ((current-eventspace (make-eventspace)))
     (let ([frame (new macro-stepper-frame%
-                      (config (new macro-stepper-config/prefs/readonly%)))])
+                      (config (new macro-stepper-config/prefs/readonly%))
+                      (director (new macro-stepper-director%)))])
       (send frame show #t)
       frame)))
 
@@ -270,4 +271,4 @@
               (send frame get-eventspace))))))))))
 
 (define (test-stepper expr)
-  (test-stepper* (list expr) '(none basic normal))))
+  (test-stepper* (list expr) '(none basic normal)))

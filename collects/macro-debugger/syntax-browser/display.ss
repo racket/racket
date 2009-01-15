@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/class
          scheme/gui
@@ -19,8 +18,8 @@
   (define range
     (pretty-print-syntax stx output-port 
                          (send: controller controller<%> get-primary-partition)
-                         (send config get-colors)
-                         (send config get-suffix-option)
+                         (send: config config<%> get-colors)
+                         (send: config config<%> get-suffix-option)
                          columns))
   (define output-string (get-output-string output-port))
   (define output-length (sub1 (string-length output-string))) ;; skip final newline
@@ -55,18 +54,18 @@
 ;; set-standard-font : text% config number number -> void
 (define (set-standard-font text config start end)
   (send text change-style
-        (code-style text (send config get-syntax-font-size))
+        (code-style text (send: config config<%> get-syntax-font-size))
         start end))
 
 ;; display%
 (define display%
   (class* object% (display<%>)
-    (init-field text)
-    (init-field controller)
-    (init-field config)
-    (init-field range)
-    (init-field start-position)
-    (init-field end-position)
+    (init-field: [controller controller<%>]
+                 [config config<%>]
+                 [range range<%>])
+    (init-field text
+                start-position
+                end-position)
 
     (define extra-styles (make-hasheq))
 
@@ -131,7 +130,7 @@
           (send delta set-delta-foreground color)
           delta))
       (define color-styles
-        (list->vector (map color-style (send config get-colors))))
+        (list->vector (map color-style (send: config config<%> get-colors))))
       (define overflow-style (color-style "darkgray"))
       (define color-partition
         (send: controller mark-manager<%> get-primary-partition))
@@ -189,7 +188,7 @@
 
     ;; draw-secondary-connection : syntax -> void
     (define/private (draw-secondary-connection stx2)
-      (for ([r (send range get-ranges stx2)])
+      (for ([r (send: range range<%> get-ranges stx2)])
         (restyle-range r select-sub-highlight-d)))
 
     ;; restyle-range : (cons num num) style-delta% -> void
@@ -204,11 +203,11 @@
 
     ;; Initialize
     (super-new)
-    (send controller add-syntax-display this)))
+    (send: controller controller<%> add-syntax-display this)))
 
 ;; fixup-parentheses : string range -> void
 (define (fixup-parentheses string range)
-  (define (fixup r)
+  (for ([r (send: range range<%> all-ranges)])
     (let ([stx (range-obj r)]
           [start (range-start r)]
           [end (range-end r)])
@@ -219,8 +218,7 @@
            (string-set! string (sub1 end) #\]))
           ((#\{) 
            (string-set! string start #\{)
-           (string-set! string (sub1 end) #\}))))))
-  (for-each fixup (send range all-ranges)))
+           (string-set! string (sub1 end) #\})))))))
 
 (define (open-output-string/count-lines)
   (let ([os (open-output-string)])

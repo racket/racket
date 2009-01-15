@@ -1,7 +1,18 @@
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop)
+         macro-debugger/util/class-iop
+         "../util/notify.ss")
 (provide (all-defined-out))
+
+;; config<%>
+(define-interface config<%> ()
+  ((methods:notify suffix-option
+                   syntax-font-size
+                   colors
+                   width
+                   height
+                   props-percentage
+                   props-shown?)))
 
 ;; displays-manager<%>
 (define-interface displays-manager<%> ()
@@ -13,10 +24,8 @@
 
 ;; selection-manager<%>
 (define-interface selection-manager<%> ()
-  (;; selected-syntax : syntax/#f
-   set-selected-syntax
-   get-selected-syntax
-   listen-selected-syntax))
+  (;; selected-syntax : notify-box of syntax/#f
+   (methods:notify selected-syntax)))
 
 ;; mark-manager<%>
 ;; Manages marks, mappings from marks to colors
@@ -29,23 +38,10 @@
 
 ;; secondary-partition<%>
 (define-interface secondary-partition<%> ()
-  (;; get-secondary-partition : -> partition<%>
-   get-secondary-partition
-
-   ;; set-secondary-partition : partition<%> -> void
-   set-secondary-partition
-
-   ;; listen-secondary-partition : (partition<%> -> void) -> void
-   listen-secondary-partition
-
-   ;; get-identifier=? : -> (cons string procedure)
-   get-identifier=?
-
-   ;; set-identifier=? : (cons string procedure) -> void
-   set-identifier=?
-
-   ;; listen-identifier=? : ((cons string procedure) -> void) -> void
-   listen-identifier=?))
+  (;; secondary-partition : notify-box of partition<%>
+   ;; identifier=? : notify-box of (cons string procedure)
+   (methods:notify secondary-partition
+                   identifier=?)))
 
 ;; controller<%>
 (define-interface controller<%> (displays-manager<%>
@@ -143,6 +139,7 @@
    add-clickback
    add-separator
    erase-all
+   get-controller
    get-text))
 
 (define-interface partition<%> ()

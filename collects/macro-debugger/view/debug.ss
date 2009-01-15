@@ -2,6 +2,8 @@
 #lang scheme/base
 (require scheme/pretty
          scheme/class
+         macro-debugger/util/class-iop
+         "interfaces.ss"
          "debug-format.ss"
          "prefs.ss"
          "view.ss")
@@ -30,5 +32,5 @@
     (pretty-print msg)
     (pretty-print ctx)
     (let* ([w (make-stepper)])
-      (send w add-trace events)
+      (send: w widget<%> add-trace events)
       w)))

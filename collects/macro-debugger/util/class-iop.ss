@@ -5,6 +5,7 @@
                      "class-ct.ss"))
 (provide define-interface
          define-interface/dynamic
+         define-interface-expander
 
          send:
          send*:
@@ -26,13 +27,14 @@
 ;; Defines NAME as an interface.
 (define-syntax (define-interface stx)
   (syntax-parse stx
-    [(_ name:id (super:static-interface ...) (mname:id ...))
+    [(_ name:id (super:static-interface ...) (m:method-entry ...))
      (with-syntax ([((super-method ...) ...)
                     (map static-interface-members
-                         (syntax->datum #'(super.value ...)))])
+                         (syntax->datum #'(super.value ...)))]
+                   [((mname ...) ...) #'(m.methods ...)])
        #'(define-interface/dynamic name
-           (let ([name (interface (super ...) mname ...)]) name)
-           (super-method ... ... mname ...)))]))
+           (let ([name (interface (super ...) mname ... ...)]) name)
+           (super-method ... ... mname ... ...)))]))
 
 ;; define-interface/dynamic SYNTAX
 ;; (define-interface/dynamic NAME EXPR (IDENTIFIER ...))
@@ -53,6 +55,11 @@
                     dynamic-name))
                 (define-syntax name
                   (make-static-interface #'dynamic-name '(mname ...)))))]))
+
+(define-syntax (define-interface-expander stx)
+  (syntax-parse stx
+    [(_ name:id rhs:expr)
+     #'(define-syntax name (make-interface-expander rhs))]))
 
 ;; Helper
 
@@ -173,19 +180,19 @@
 ;; FIXME: unsafe due to mutation
 (define-syntax (init-field: stx)
   (syntax-parse stx
-    [(_ (name:id iface:static-interface) ...)
-     #'(begin (init1: init-field name iface) ...)]))
+    [(_ (name:id iface:static-interface . default) ...)
+     #'(begin (init1: init-field name iface . default) ...)]))
 
 (define-syntax (init: stx)
   (syntax-parse stx
-    [(_ (name:id iface:static-interface) ...)
-     #'(begin (init1: init name iface) ...)]))
+    [(_ (name:id iface:static-interface . default) ...)
+     #'(begin (init1: init name iface . default) ...)]))
 
 (define-syntax (init1: stx)
   (syntax-parse stx
-    [(_ init name:id iface:static-interface)
+    [(_ init name:id iface:static-interface . default)
      (with-syntax ([(name-internal) (generate-temporaries #'(name))])
-       #'(begin (init ((name-internal name)))
+       #'(begin (init ((name-internal name) . default))
                 (void (check-object<:interface init: name-internal iface))
                 (define-syntax name 
                   (make-checked-binding
