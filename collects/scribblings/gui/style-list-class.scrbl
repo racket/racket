@@ -73,11 +73,15 @@ The @scheme[base-style] argument must be a style within this style
 
 Creates a new derived style, or finds an appropriate existing one.
 The returned style is always unnamed.  See @|stylediscuss| for more
-information. 
+information.
 
-The @scheme[base-style] argument must be a style within this style list.
-
-}
+The @scheme[base-style] argument must be a style within this style
+list.  If @scheme[base-style] is not a join style, if it has no name,
+and if its delta can be collapsed with @scheme[delta] (see
+@xmethod[style-delta% collapse]), then the collapsed delta is used in
+place of @scheme[delta], and the base style of @scheme[base-style] is
+used in place of @scheme[base-style]; this collapsing and substitution
+of base styles is performed recursively.}
 
 
 @defmethod[(forget-notification [key any/c])
