@@ -469,13 +469,13 @@
                          #,(syntax-span id))
             #,(format "~s" (syntax-object->datum id))))
   
-  (define-syntax-parameter current-unit-name-stx (lambda (stx) #'(#%variable-reference)))
+  (define-syntax-parameter current-unit-blame-stx (lambda (stx) #'(#%variable-reference)))
   
   (define-for-syntax (make-import-unboxing ext-var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
           (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen
-                                  (current-unit-name-stx)
+                                  (current-unit-blame-stx)
                                   #,(id->contract-src-info ext-var))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
@@ -556,7 +556,7 @@
                (vector-immutable (cons 'export-name 
                                        (vector-immutable export-key ...)) ...)
                (list (cons 'dept depr) ...)
-               (syntax-parameterize ([current-unit-name-stx (lambda (stx) #'(quote name))])
+               (syntax-parameterize ([current-unit-blame-stx (lambda (stx) #'(quote (unit name)))])
                  (lambda ()
                    (let ([eloc (box undefined)] ... ...)
                      (values 
@@ -695,7 +695,7 @@
                   (set-var-info-add-ctc! 
                    v
                    (λ (e)
-                     #`(contract #,(cdr (syntax-e ctc)) #,e (current-unit-name-stx) 
+                     #`(contract #,(cdr (syntax-e ctc)) #,e (current-unit-blame-stx) 
                                  'cant-happen #,(id->contract-src-info var)))))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
@@ -1222,7 +1222,7 @@
                             (lambda (i iv c)
                               (if c
                                   #`(contract #,c (unbox (vector-ref #,ov #,i))
-                                              'cant-happen (current-unit-name-stx)
+                                              'cant-happen (current-unit-blame-stx)
                                               #,(id->contract-src-info iv))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
