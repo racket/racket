@@ -17,7 +17,7 @@
   
   (provide define-signature-form struct open
            define-signature provide-signature-elements
-           only except rename import export prefix link tag init-depend extends
+           only except rename import export prefix link tag init-depend extends contracted
            unit?
            (rename :unit unit) define-unit 
            compound-unit define-compound-unit compound-unit/infer define-compound-unit/infer
@@ -252,6 +252,13 @@
                     val-defs
                     stx-defs
                     (append (syntax->list #'(z ...)) ctcs)))
+             ((x . z)
+              (and (identifier? #'x)
+                   (module-identifier=? #'x #'contracted))
+              (raise-syntax-error 
+               'define-signature
+               "expected a list of [id contract] pairs after the contracted keyword"
+               (car sig-exprs)))
              ((x . y)
               (and (identifier? #'x)
                    (or (module-identifier=? #'x #'define-values)
