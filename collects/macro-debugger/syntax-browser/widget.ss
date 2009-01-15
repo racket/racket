@@ -111,7 +111,8 @@
                                #:shift-table [shift-table #f]
                                #:definites [definites null]
                                #:hi-colors [hi-colors null]
-                               #:hi-stxss [hi-stxss null])
+                               #:hi-stxss [hi-stxss null]
+                               #:substitutions [substitutions null])
       (define (get-binders id)
         (define binder
           (module-identifier-mapping-get alpha-table id (lambda () #f)))
@@ -120,11 +121,21 @@
             (list binder)))
       (let ([display (internal-add-syntax stx)]
             [definite-table (make-hasheq)])
-        (for-each (lambda (hi-stxs hi-color)
-                    (send: display display<%>
-                           highlight-syntaxes hi-stxs hi-color))
-                  hi-stxss
-                  hi-colors)
+        (let ([range (send: display display<%> get-range)]
+              [offset (send: display display<%> get-start-position)])
+          (for ([subst substitutions])
+            (for ([r (send: range range<%> get-ranges (car subst))])
+              (with-unlock -text
+                (send -text insert (cdr subst)
+                      (+ offset (car r))
+                      (+ offset (cdr r))
+                      #f)
+                (send -text change-style
+                      (code-style -text (send: config config<%> get-syntax-font-size))
+                      (+ offset (car r))
+                      (+ offset (cdr r)))))))
+        (for ([hi-stxs hi-stxss] [hi-color hi-colors])
+          (send: display display<%> highlight-syntaxes hi-stxs hi-color))
         (for ([definite definites])
           (hash-set! definite-table definite #t)
           (when shift-table

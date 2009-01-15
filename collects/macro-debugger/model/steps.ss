@@ -40,11 +40,13 @@
 
 ;; context-fill : Context Syntax -> Syntax
 (define (context-fill ctx stx)
-  (let loop ([ctx ctx] [stx stx])
-    (if (null? ctx)
-        stx
-        (let ([frame0 (car ctx)])
-          (loop (cdr ctx) (frame0 stx))))))
+  (datum->syntax
+   #f
+   (let loop ([ctx ctx] [stx stx])
+     (if (null? ctx)
+         stx
+         (let ([frame0 (car ctx)])
+           (loop (cdr ctx) (frame0 stx)))))))
 
 (define (state-term s)
   (context-fill (state-ctx s) (state-e s)))

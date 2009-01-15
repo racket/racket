@@ -139,13 +139,53 @@
     (define/private (separator/small step)
       (insert-step-separator/small
        (step-type->string (protostep-type step))))
-    
+
     ;; show-step : Step -> void
     (define/private (show-step step binders shift-table)
-      (show-state/redex (protostep-s1 step) binders shift-table)
-      (separator step)
-      (show-state/contractum (step-s2 step) binders shift-table)
-      (show-lctx step binders shift-table))
+      (let-values ([(common-context state1 state2)
+                    (factor-common-context (protostep-s1 step)
+                                           (step-s2 step))])
+        (show-state/redex state1 binders shift-table)
+        (separator step)
+        (show-state/contractum state2 binders shift-table)
+        (show-common-context common-context state1 binders shift-table)
+        (show-lctx step binders shift-table)))
+
+    (define/private (factor-common-context state1 state2)
+      (if (send: config config<%> get-split-context?)
+          (factor-common-context* state1 state2)
+          (values null state1 state2)))
+
+    (define/private (factor-common-context* state1 state2)
+      (match-define
+       (struct state (e1 foci1 ctx1 lctx1 binders1 uses1 frontier1 seq1)) state1)
+      (match-define
+       (struct state (e2 foci2 ctx2 lctx2 binders2 uses2 frontier2 seq2)) state2)
+      (define (common xs ys acc)
+        (if (and (pair? xs) (pair? ys) (eq? (car xs) (car ys)))
+            (common (cdr xs) (cdr ys) (cons (car xs) acc))
+            (values (reverse xs) (reverse ys) acc)))
+      (define-values (ctx1z ctx2z common-ctx)
+        (common (reverse ctx1) (reverse ctx2) null))
+      (define state1z
+        (make-state e1 foci1 ctx1z lctx1 binders1 uses1 frontier1 seq1))
+      (define state2z
+        (make-state e2 foci2 ctx2z lctx2 binders2 uses2 frontier2 seq2))
+      (values common-ctx state1z state2z))
+
+    (define/private (show-common-context ctx state1 binders shift-table)
+      (match-define
+       (struct state (_ _ _ _ _ uses1 frontier1 _)) state1)
+      (when (pair? ctx)
+        (let* ([hole-stx #'~~HOLE~~]
+               [the-syntax (context-fill ctx hole-stx)])
+          (send*: sbview sb:syntax-browser<%>
+            (add-text "\nin context:\n")
+            (add-syntax the-syntax
+                        #:binder-table binders
+                        #:shift-table shift-table
+                        #:definites uses1
+                        #:substitutions (list (cons hole-stx "[ HOLE ]")))))))
 
     (define/private (show-state/redex state binders shift-table)
       (insert-syntax/redex (state-term state)
