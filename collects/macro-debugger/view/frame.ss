@@ -184,6 +184,9 @@
                          'over-limit))
               (send: widget widget<%> update/preserve-view))))
       (menu-option/notify-box extras-menu
+                              "Factor out common context?"
+                              (get-field split-context? config))
+      (menu-option/notify-box extras-menu
                               "Highlight redex/contractum"
                               (get-field highlight-foci? config))
       (menu-option/notify-box extras-menu

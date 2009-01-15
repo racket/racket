@@ -126,7 +126,7 @@ Your program may deal with such events via the @emph{designation} of
  installation of three event handlers: @scheme[on-tick], @scheme[on-key],
  and @scheme[on-mouse]. In addition, a @tech{world} program may specify a
  @scheme[draw] function, which is called every time your program should
- visualize the current world, and a @scheme[_stop?] predicate, which is used
+ visualize the current world, and a @scheme[done] predicate, which is used
  to determine when the @tech{world} program should shut down. 
 
 Each handler function consumes the current state of the @tech{world} and
@@ -835,7 +835,7 @@ The @scheme[on-receive] clause of a @scheme[big-bang] specifies the event handle
 
 The diagram below summarizes the extensions of this section in graphical form. 
 
-@image["world.png"]
+@image["universe.png"]
 
 A registered world program may send a message to the universe server
  at any time by returning a @tech{Package} from an event handler. The
@@ -964,7 +964,7 @@ A @tech{server} keeps track of information about the @tech{universe} that
  a server tracks and how the information is represented depends on the
  situation and the programmer, just as with @tech{world} programs.
 
-@deftech{UniverseState} @scheme[any/c] represents the server's state For running
+@deftech{UniverseState} @scheme[any/c] represents the server's state. For running
 @tech{universe}s, the teachpack demands that you come up with a data
 definition for (your state of the) @tech{server}.  Any piece of data can
 represent the state. We just assume that you introduce a data definition
@@ -1368,7 +1368,7 @@ The second step of the design recipe calls for functional examples:
 
 ;; an example for receiving a message from the active world:
 (check-expect
- (switch (list world1 world2) '* world1 'it-is-your-turn)
+ (switch (list world1 world2) '* world1 'done)
  (make-bundle (list world2 world1)
               '*
               (list (make-mail world2 'it-is-your-turn))))
@@ -1421,16 +1421,20 @@ Similarly, the protocol says that when @emph{switch} is invoked because a
  that there is at least this one world on this list. It is therefore
  acceptable to create a mail for this world. 
 
+Start the server now. 
+
+ @schemeblock[(universe '* (on-new add-world) (on-msg switch))]
+          
 Exercise: The function definition simply assumes that @emph{wrld} is
  @scheme[world=?] to @scheme[(first univ)] and that the received message
- @emph{m} is @scheme['it-is-your-turn]. Modify the function definition so that it
+ @emph{m} is @scheme['done]. Modify the function definition so that it
  checks these assumptions and raises an error signal if either of them is
  wrong. Start with functional examples. If stuck, re-read the section on
  checked functions from HtDP. (Note: in a @tech{universe} it is quite
  possible that a program registers with a @tech{server} but fails to stick
  to the agreed-upon protocol. How to deal with such situations properly
- depends on the context. For now, stop the @tech{universe} at this point,
- but consider alternative solutions, too.) 
+ depends on the context. For now, stop the @tech{universe} at this point by
+ returning an empty list of worlds. Consider alternative solutions, too.) 
 
 Exercise: An alternative state representation would equate 
  @tech{UniverseState} with @emph{world} structures, keeping track of the
@@ -1533,7 +1537,7 @@ the scene every time @scheme['it-is-your-turn] is received. Design this function
 
 (define (receive w m)
   (cond
-    [(symbol=? 'resting w) HEIGHT]
+    [(symbol? w) HEIGHT] ;; meaning: @scheme[(symbol=? w 'resting)]
     [else w]))
 ))
 
@@ -1573,7 +1577,7 @@ the scene every time @scheme['it-is-your-turn] is received. Design this function
     [(number? x) (if (<= x 0) (make-package 'resting 'done) (sub1 x))]))
 ))
 
- Exercise: what could happen if we had designed @emph{receive} so that it
+Exercise: what could happen if we had designed @emph{receive} so that it
  produces @scheme['resting] when the state of the world is @scheme[0]?  Use
  your answer to explain why you think it is better to leave this kind of
  state change to the tick event handler instead of the message receipt
@@ -1591,7 +1595,7 @@ Finally, here is the third function, which renders the state as a scene:
 (check-expect (render 'resting)
               (place-image  (text "resting" 11 'red) 10 10 MT))
 
-(define (render name)
+(define (render w)
   (place-image 
     (text name 11 'black) 5 85 
     (cond

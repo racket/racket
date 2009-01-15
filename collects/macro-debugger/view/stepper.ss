@@ -153,6 +153,8 @@
     (send*: config config<%>
       (listen-show-hiding-panel?
        (lambda (show?) (show-macro-hiding-panel show?)))
+      (listen-split-context?
+       (lambda (_) (update/preserve-view)))
       (listen-highlight-foci?
        (lambda (_) (update/preserve-view)))
       (listen-highlight-frontier?
