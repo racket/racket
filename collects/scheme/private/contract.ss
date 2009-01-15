@@ -278,7 +278,7 @@ improve method arity mismatch contract violation error messages?
                (define-values ()
                  (begin
                    #,@(map (λ (p c)
-                             #`(-contract #,(marker c) #,p blame-stx 'ignored #,(id->contract-src-info p)))
+                             #`(-contract #,(marker c) #,(marker p) blame-stx 'ignored #,(id->contract-src-info p)))
                            protected-ids contracts)
                    (values)))
                )))))]
