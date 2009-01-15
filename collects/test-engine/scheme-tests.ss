@@ -90,19 +90,14 @@
 
 ;; check-expect
 (define-syntax (check-expect stx)
+  (unless (check-context?)
+    (raise-syntax-error 'check-expect CHECK-EXPECT-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test actual)
-     (check-context?)
-     (check-expect-maker stx #'check-values-expected (list #`(lambda () test) #`actual) 'comes-from-check-expect)]
-    [(_ test)
-     (check-context?)
-     (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
-    [(_ test actual extra ...)
-     (check-context?)
-     (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
-    [(_ test ...)
-     (not (check-context?))
-     (raise-syntax-error 'check-expect CHECK-EXPECT-DEFN-STR stx)]))
+     (check-expect-maker stx #'check-values-expected
+                         (list #`(lambda () test) #`actual)
+                         'comes-from-check-expect)]
+    [_ (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]))
 
 ;; check-values-expected: (-> scheme-val) scheme-val src -> void
 (define (check-values-expected test actual src test-info)
@@ -113,23 +108,16 @@
                  (lambda (src v1 v2 _) (make-unequal src v1 v2))
                  test actual #f src test-info 'check-expect))
 
+
 (define-syntax (check-within stx)
+  (unless (check-context?)
+    (raise-syntax-error 'check-within CHECK-WITHIN-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test actual within)
-     (check-context?)
-     (check-expect-maker stx #'check-values-within (list #`(lambda () test) #`actual #`within) 'comes-from-check-within)]
-    [(_ test actual)
-     (check-context?)
-     (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
-    [(_ test)
-     (check-context?)
-     (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
-    [(_ test actual within extra ...)
-     (check-context?)
-     (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
-    [(_ test ...)
-     (not (check-context?))
-     (raise-syntax-error 'check-within CHECK-WITHIN-DEFN-STR stx)]))
+     (check-expect-maker stx #'check-values-within
+                         (list #`(lambda () test) #`actual #`within)
+                         'comes-from-check-within)]
+    [_ (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]))
 
 (define (check-values-within test actual within src test-info)
   (error-check number? within CHECK-WITHIN-INEXACT-FMT)
@@ -140,16 +128,14 @@
 
 
 (define-syntax (check-error stx)
+  (unless (check-context?)
+    (raise-syntax-error 'check-error CHECK-ERROR-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test error)
-     (check-context?)
-     (check-expect-maker stx #'check-values-error (list #'(lambda () test) #`error) 'comes-from-check-error)]
-    [(_ test)
-     (check-context?)
-     (raise-syntax-error 'check-error CHECK-ERROR-STR stx)]
-    [(_ test ...)
-     (not (check-context?))
-     (raise-syntax-error 'check-error CHECK-ERROR-DEFN-STR stx)]))
+     (check-expect-maker stx #'check-values-error
+                         (list #'(lambda () test) #`error)
+                         'comes-from-check-error)]
+    [_ (raise-syntax-error 'check-error CHECK-ERROR-STR stx)]))
 
 (define (check-values-error test error src test-info)
   (error-check string? error CHECK-ERROR-STR-FMT)
