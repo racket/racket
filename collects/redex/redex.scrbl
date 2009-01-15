@@ -1157,7 +1157,8 @@ exploring reduction sequences.
                                   (lambda (x) (member (length x) '(2 3 4 6))))))]
 
 	         [#:scheme-colors? scheme-colors? boolean?]
-                 [#:layout layout (-> (listof term-node?) void)])
+                 [#:layout layout (-> (listof term-node?) void)]
+                 [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
          void?]{
 
 This function opens a new window and inserts each expression
@@ -1169,7 +1170,7 @@ found, or no more reductions can occur. It inserts each new
 term into the gui. Clicking the @onscreen{reduce} button reduces
 until reduction-steps-cutoff more terms are found.
 
-The pred function indicates if a term has a particular
+The @scheme[pred] function indicates if a term has a particular
 property. If it returns @scheme[#f], the term is displayed with a
 pink background. If it returns a string or a @scheme[color%] object,
 the term is displayed with a background of that color (using
@@ -1211,8 +1212,6 @@ the color that fills the arrow head.  If fewer than six colors are
 specified, the colors specified colors are used and then defaults are
 filled in for the remaining colors.
 
-
-
 The @scheme[scheme-colors?] argument, if @scheme[#t] causes
 @scheme[traces] to color the contents of each of the windows according
 to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
@@ -1224,8 +1223,10 @@ after new terms are inserted in response to the user clicking on the
 reduce button, and after the initial set of terms is inserted.
 See also @scheme[term-node-set-position!].
 
-You can save the contents of the window as a postscript file
-from the menus.
+The @scheme[edge-label-font] argument is used as the font on the edge
+labels. If nothign is suppled, the @scheme[dc<%>] object's default
+font is used.
+
 }
 
 @defproc[(traces/ps [reductions reduction-relation?] 
@@ -1241,7 +1242,8 @@ from the menus.
                                 (any output-port number (is-a?/c text%) -> void))
                           default-pretty-printer]
                     [#:colors colors (listof (list string string)) '()]
-                    [#:layout layout (-> (listof term-node?) void)])
+                    [#:layout layout (-> (listof term-node?) void)]
+                    [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
          void?]{
 
 The arguments behave just like the function @scheme[traces], but

@@ -231,6 +231,8 @@
     (mixin ((class->interface pasteboard%)) (graph-pasteboard<%>)
       (inherit find-first-snip find-next-selected-snip)
       
+      (init-field [edge-label-font #f])
+      
       (define draw-arrow-heads? #t)
       (inherit refresh get-admin)
       (define/public (set-draw-arrow-heads? x)
@@ -247,6 +249,8 @@
                     (unbox yb)
                     (unbox wb)
                     (unbox hb))))))
+      
+      
       
       (define arrowhead-angle-width (* 1/4 pi))
       (define arrowhead-short-side 8)
@@ -484,7 +488,12 @@
       
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
         (when before?
-          (draw-edges dc left top right bottom dx dy))
+          (let ([old-font (send dc get-font)])
+            (when edge-label-font
+              (send dc set-font edge-label-font))
+            (draw-edges dc left top right bottom dx dy)
+            (when edge-label-font
+              (send dc set-font old-font))))
         (super on-paint before? dc left top right bottom dx dy draw-caret))
       
       (define/public (draw-edges dc left top right bottom dx dy)
