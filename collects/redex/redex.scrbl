@@ -1218,9 +1218,11 @@ The @scheme[scheme-colors?] argument, if @scheme[#t] causes
 to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
 @scheme[traces] just uses black for the color scheme.
 
-The @scheme[layout] argument is called (with all of the terms) each
-time a new term is inserted into the window. See also
-@scheme[term-node-set-position!].
+The @scheme[layout] argument is called (with all of the terms) when
+new terms is inserted into the window. In general, it is called when
+after new terms are inserted in response to the user clicking on the
+reduce button, and after the initial set of terms is inserted.
+See also @scheme[term-node-set-position!].
 
 You can save the contents of the window as a postscript file
 from the menus.

@@ -86,7 +86,7 @@
    (λ (ed)
      (let ([yb (box 0)]
            [snip (term-node-snip term-node)])
-       (if (send ed get-snip-location snip yb #f #f)
+       (if (send ed get-snip-location snip #f yb #f)
            (unbox yb)
            0)))))
 
@@ -132,7 +132,7 @@
                    #:scheme-colors? [scheme-colors? #t]
                    #:colors [colors '()]
                    #:layout [layout void])
-  (let-values ([(graph-pb frame)
+  (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
                         #:multiple? multiple? 
@@ -141,21 +141,18 @@
                         #:scheme-colors? scheme-colors?
                         #:colors colors
                         #:layout layout)])
-    (print-to-ps graph-pb filename)))
+    (print-to-ps graph-pb canvas filename)))
 
-(define (print-to-ps graph-pb filename)
+(define (print-to-ps graph-pb canvas filename)
   (let ([admin (send graph-pb get-admin)]
-        [printing-admin (new printing-editor-admin%)])
+        [printing-admin (new printing-editor-admin% [ed graph-pb])])
+    (send canvas set-editor #f)
     (send graph-pb set-admin printing-admin)
     
     (dynamic-wind
      void
      (λ ()
-       (let loop ([snip (send graph-pb find-first-snip)])
-         (when snip
-           (send snip size-cache-invalid)
-           (loop (send snip next))))
-       (send graph-pb invalidate-bitmap-cache)
+       (send graph-pb size-cache-invalid)
        
        (send graph-pb re-run-layout)
        
@@ -168,16 +165,19 @@
      
      (λ ()
        (send graph-pb set-admin admin)
+       (send canvas set-editor graph-pb)
        (send printing-admin shutdown) ;; do this early
        (let loop ([snip (send graph-pb find-first-snip)])
          (when snip
            (send snip size-cache-invalid)
            (loop (send snip next))))
-       (send graph-pb invalidate-bitmap-cache)
+       (send graph-pb size-cache-invalid)
        (send graph-pb re-run-layout)))))
 
 (define printing-editor-admin%
   (class editor-admin%
+    
+    (init-field ed)
     
     (define temp-file (make-temporary-file "redex-size-snip-~a"))
     
@@ -204,7 +204,8 @@
     (define/override (get-max-view x y w h [full? #f])
       (get-view x y w h full?))
     (define/override (get-view x y w h [full? #f])
-      (super get-view x y w h full?)
+      (when x (set-box! x 0.0))
+      (when y (set-box! x 0.0))
       (when (box? w) (set-box! w 500))
       (when (box? h) (set-box! h 500)))
     
@@ -270,7 +271,7 @@
                           "Reducing..." 
                           lower-panel
                           (lambda (x y)
-                            (reduce-button-callback))))
+                            (reduce-button-callback #f))))
   (define status-message (instantiate message% ()
                            (label "")
                            (parent lower-panel)
@@ -411,7 +412,6 @@
                         (set! col (+ x-spacing (find-rightmost-x graph-pb))))
                       (begin0
                         (insert-into col y graph-pb new-snips)
-                        (send graph-pb re-run-layout)
                         (send graph-pb end-edit-sequence)
                         (send status-message set-label
                               (string-append (term-count (count-snips)) "...")))))])
@@ -455,9 +455,10 @@
     (send reduce-button enable #t)
     (send font-size enable #t))
   
-  ;; reduce-button-callback : -> void
+  ;; reduce-button-callback : boolean -> void
   ;; =eventspace main thread=
-  (define (reduce-button-callback)
+  (define (reduce-button-callback show-all-at-once?)
+    (when show-all-at-once? (send graph-pb begin-edit-sequence))
     (send reduce-button enable #f)
     (send reduce-button set-label "Reducing...")
     (thread
@@ -465,6 +466,10 @@
        (do-some-reductions)
        (queue-callback
         (lambda () ;; =eventspace main thread=
+          (send graph-pb begin-edit-sequence)
+          (send graph-pb re-run-layout)
+          (send graph-pb end-edit-sequence)
+          (when show-all-at-once? (send graph-pb end-edit-sequence))
           (scroll-to-rightmost-snip)
           (send reduce-button set-label "Reduce")
           (cond
@@ -541,9 +546,8 @@
               (list bottom-panel)
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
+  (set-font-size (initial-font-size)) ;; have to call this before 'insert-into' or else it triggers resizing
   (insert-into init-rightmost-x 0 graph-pb frontier)
-  (send graph-pb re-run-layout)
-  (set-font-size (initial-font-size))
   (cond
     [no-show-frame?
      (let ([s (make-semaphore)]) 
@@ -551,9 +555,9 @@
                  (do-some-reductions)
                  (semaphore-post s)))
        (yield s))
-     (values graph-pb f)]
+     (values graph-pb ec)]
     [else
-     (reduce-button-callback)
+     (reduce-button-callback #t)
      (send f show #t)]))
 
 (define red-sem-frame%

@@ -42,7 +42,7 @@
     (super-new)))
 
 (define syntax-prefs-base%
-  (class prefs-base%
+  (class* prefs-base% (config<%>)
     ;; width, height : number
     (notify-methods width)
     (notify-methods height)

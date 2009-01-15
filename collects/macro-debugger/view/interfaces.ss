@@ -1,7 +1,22 @@
 
 #lang scheme/base
-(require macro-debugger/util/class-iop)
+(require macro-debugger/util/class-iop
+         "../util/notify.ss"
+         (prefix-in sb: "../syntax-browser/interfaces.ss"))
 (provide (all-defined-out))
+
+(define-interface config<%> (sb:config<%>)
+  ((methods:notify macro-hiding-mode
+                   show-hiding-panel?
+                   identifier=?
+                   highlight-foci?
+                   highlight-frontier?
+                   show-rename-steps?
+                   suppress-warnings?
+                   one-by-one?
+                   extra-navigation?
+                   debug-catch-errors?
+                   force-letrec-transformation?)))
 
 (define-interface widget<%> ()
   (get-config

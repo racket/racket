@@ -1,8 +1,10 @@
 #lang scheme/base
 (require scheme/class
+         macro-debugger/util/class-iop
          scheme/gui
          framework/framework
          scheme/list
+         "interfaces.ss"
          "partition.ss"
          "prefs.ss"
          "widget.ss")
@@ -20,8 +22,9 @@
 (define (browse-syntaxes stxs)
   (let ((w (make-syntax-browser)))
     (for ([stx stxs])
-      (send w add-syntax stx)
-      (send w add-separator))))
+      (send*: w syntax-browser<%>
+        (add-syntax stx)
+        (add-separator)))))
 
 ;; make-syntax-browser : -> syntax-browser<%>
 (define (make-syntax-browser)
@@ -32,21 +35,23 @@
 ;; syntax-browser-frame%
 (define syntax-browser-frame%
   (class* frame% ()
-    (init-field [config (new syntax-prefs%)])
+    (inherit get-width
+             get-height)
+    (init-field: [config config<%> (new syntax-prefs%)])
     (super-new (label "Syntax Browser")
-               (width (send config pref:width))
-               (height (send config pref:height)))
-    (define widget
+               (width (send: config config<%> get-width))
+               (height (send: config config<%> get-height)))
+    (define: widget syntax-browser<%>
       (new syntax-widget/controls%
            (parent this)
            (config config)))
     (define/public (get-widget) widget)
     (define/augment (on-close)
-      (send config pref:width (send this get-width))
-      (send config pref:height (send this get-height))
+      (send*: config config<%>
+        (set-width (get-width))
+        (set-height (get-height)))
       (send widget shutdown)
-      (inner (void) on-close))
-    ))
+      (inner (void) on-close))))
 
 ;; syntax-widget/controls%
 (define syntax-widget/controls%
@@ -72,23 +77,23 @@
            (choices (map car -identifier=-choices))
            (callback 
             (lambda (c e)
-              (send (get-controller) set-identifier=?
-                    (assoc (send c get-string-selection)
-                           -identifier=-choices))))))
+              (send: (get-controller) controller<%> set-identifier=?
+                     (assoc (send c get-string-selection)
+                            -identifier=-choices))))))
     (new button% 
          (label "Clear")
          (parent -control-panel)
-         (callback (lambda _ (send (get-controller) select-syntax #f))))
+         (callback (lambda _ (send: (get-controller) controller<%> set-selected-syntax #f))))
     (new button%
          (label "Properties")
          (parent -control-panel)
          (callback
           (lambda _ 
-            (send config set-props-shown? 
-                  (not (send config get-props-shown?))))))
+            (send: config config<%> set-props-shown? 
+                   (not (send: config config<%> get-props-shown?))))))
 
-    (send (get-controller) listen-identifier=?
-          (lambda (name+func)
-            (send -choice set-selection
-                  (or (send -choice find-string (car name+func)) 0))))
+    (send: (get-controller) controller<%> listen-identifier=?
+           (lambda (name+func)
+             (send -choice set-selection
+                   (or (send -choice find-string (car name+func)) 0))))
     ))

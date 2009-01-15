@@ -14,7 +14,15 @@
          checked-binding-iface
 
          checked-binding
-         static-interface)
+         static-interface
+
+         interface-expander?
+         make-interface-expander
+         interface-expander-proc
+
+         interface-expander
+         method-entry)
+
 
 (define-struct static-interface (dynamic members)
   #:omit-define-syntaxes
@@ -60,6 +68,11 @@
 (define (checked-binding-iface x)
   (raw-checked-binding-iface (set!-transformer-procedure x)))
 
+
+(define-struct interface-expander (proc)
+  #:omit-define-syntaxes)
+
+
 ;; Syntax
 
 (define-syntax-class static-interface
@@ -71,3 +84,20 @@
   (pattern x
            #:declare x (static-of 'checked-binding checked-binding?)
            #:with value #'x.value))
+
+
+(define-syntax-class interface-expander
+  (pattern x
+           #:declare x (static-of 'interface-expander interface-expander?)
+           #:with value #'x.value))
+
+(define-syntax-class method-entry
+  (pattern method:id
+           #:with methods (list #'method))
+  (pattern (macro:interface-expander . args)
+           #:with methods
+                  (apply append
+                         (for/list ([m ((interface-expander-proc #'macro.value)
+                                        #'(macro . args))])
+                           (syntax-parse m
+                             [m:method-entry #'m.methods])))))

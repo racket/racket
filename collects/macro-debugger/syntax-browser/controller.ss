@@ -38,7 +38,7 @@
 ;; mark-manager-mixin
 (define mark-manager-mixin
   (mixin () (mark-manager<%>)
-    (init-field [primary-partition (new-bound-partition)])
+    (init-field: [primary-partition partition<%> (new-bound-partition)])
     (super-new)
 
     ;; get-primary-partition : -> partition
@@ -63,8 +63,8 @@
              (new partition% (relation (cdr name+proc)))))))
     (listen-secondary-partition
      (lambda (p)
-       (for-each (lambda (d) (send: d display<%> refresh))
-                 displays)))
+       (for ([d displays])
+         (send: d display<%> refresh))))
     (super-new)))
 
 (define controller%

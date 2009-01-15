@@ -57,7 +57,7 @@
               (schememodname lib)
               " and "
               (schememodname scheme/init)
-              " libraries, which means that they ara available when "
+              " libraries, which means that they are available when "
               (exec "mzscheme") " is started with no command-line arguments."
               " They are not provided by " (schememodname scheme/base)
               " or " (schememodname scheme) "."
