@@ -36,8 +36,9 @@
       [_
        (raise-syntax-error
         #f
-        (string-append "expects a single identifer, any number of literal"
-                       " strings, or #:search clauses;"
+        (string-append "expects any number of literal strings, a single"
+                       " identifier, an identifier followed by a #:from clause,"
+                       " or a #:search clause;"
                        " try `(help help)' for more information")
         stx)])))
 

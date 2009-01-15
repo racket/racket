@@ -12,6 +12,7 @@
     "  (on-mouse click)"
     "  (on-key react)"
     "  (on-receive receive)"
+    "  (stop-when done)"
     "  (register LOCALHOST 'jimbob))"))
 
 

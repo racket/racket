@@ -26,6 +26,7 @@
 (preferences:set-default 'MacroStepper:ExtraNavigation? #f boolean?)
 (preferences:set-default 'MacroStepper:DebugCatchErrors? #t boolean?)
 (preferences:set-default 'MacroStepper:ForceLetrecTransformation? #f boolean?)
+(preferences:set-default 'MacroStepper:SplitContext? #f boolean?)
 
 (pref:get/set pref:width MacroStepper:Frame:Width)
 (pref:get/set pref:height MacroStepper:Frame:Height)
@@ -42,6 +43,7 @@
 (pref:get/set pref:extra-navigation? MacroStepper:ExtraNavigation?)
 (pref:get/set pref:debug-catch-errors? MacroStepper:DebugCatchErrors?)
 (pref:get/set pref:force-letrec-transformation? MacroStepper:ForceLetrecTransformation?)
+(pref:get/set pref:split-context? MacroStepper:SplitContext?)
 
 (define macro-stepper-config-base%
   (class* syntax-prefs-base% (config<%>)
@@ -56,6 +58,7 @@
     (notify-methods extra-navigation?)
     (notify-methods debug-catch-errors?)
     (notify-methods force-letrec-transformation?)
+    (notify-methods split-context?)
     (super-new)))
 
 (define macro-stepper-config/prefs%
@@ -75,6 +78,7 @@
     (connect-to-pref extra-navigation? pref:extra-navigation?)
     (connect-to-pref debug-catch-errors? pref:debug-catch-errors?)
     (connect-to-pref force-letrec-transformation? pref:force-letrec-transformation?)
+    (connect-to-pref split-context? pref:split-context?)
     (super-new)))
 
 (define macro-stepper-config/prefs/readonly%
@@ -93,4 +97,5 @@
     (connect-to-pref/readonly extra-navigation? pref:extra-navigation?)
     (connect-to-pref/readonly debug-catch-errors? pref:debug-catch-errors?)
     (connect-to-pref/readonly force-letrec-transformation? pref:force-letrec-transformation?)
+    (connect-to-pref/readonly split-context? pref:split-context?)
     (super-new)))

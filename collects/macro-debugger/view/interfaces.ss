@@ -16,7 +16,8 @@
                    one-by-one?
                    extra-navigation?
                    debug-catch-errors?
-                   force-letrec-transformation?)))
+                   force-letrec-transformation?
+                   split-context?)))
 
 (define-interface widget<%> ()
   (get-config

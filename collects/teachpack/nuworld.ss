@@ -10,7 +10,8 @@
     "  (on-draw render WIDTH HEIGHT)"
     "  (on-tick tock RATE)"
     "  (on-mouse click)"
-    "  (on-key react))"
+    "  (on-key react)"
+    "  (stop-when done))"
     ))
 
 (define program 
@@ -114,6 +115,6 @@
 
 (draw-pict the-image image-dc 0.0 0.0)
 
-(send image-bm save-file "world.png" 'png)
+(send image-bm save-file "nuworld.png" 'png)
 
 the-image
