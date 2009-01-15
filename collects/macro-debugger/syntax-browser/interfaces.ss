@@ -1,8 +1,32 @@
 #lang scheme/base
 (require scheme/class
          macro-debugger/util/class-iop
-         "../util/notify.ss")
+         (for-syntax scheme/base))
 (provide (all-defined-out))
+
+;; Helpers
+
+(define-for-syntax (join . args)
+  (define (->string x)
+    (cond [(string? x) x]
+          [(symbol? x) (symbol->string x)]
+          [(identifier? x) (symbol->string (syntax-e x))]
+          [else (error '->string)]))
+  (string->symbol (apply string-append (map ->string args))))
+
+;; not in notify.ss because notify depends on scheme/gui
+(define-interface-expander methods:notify
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ name ...)
+       (apply append
+              (for/list ([name (syntax->list #'(name ...))])
+                (list ;; (join "init-" #'name)
+                      (join "get-" name)
+                      (join "set-" name)
+                      (join "listen-" name))))])))
+
+;; Interfaces
 
 ;; config<%>
 (define-interface config<%> ()
