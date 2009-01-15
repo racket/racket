@@ -49,40 +49,45 @@
 ;; (make-expected-error src string scheme-val)
 (define-struct (expected-error check-fail) (message value))
 
-;; check-expect-maker : syntax? syntax? (listof syntax?) -> syntax?
+;; check-expect-maker : syntax? syntax? (listof syntax?) symbol? -> syntax?
 ;; the common part of all three test forms.
-(define-for-syntax (check-expect-maker stx checker-proc-stx embedded-stxes hint-tag)
-  (with-syntax ([bogus-name (stepper-syntax-property #`#,(gensym 'test) 'stepper-hide-completed #t)]
-                [src-info (with-stepper-syntax-properties (['stepper-skip-completely #t])
-                            #`(list #,@(list #`(quote #,(syntax-source stx))
-                                             (syntax-line stx)
-                                             (syntax-column stx)
-                                             (syntax-position stx)
-                                             (syntax-span stx))))])
-    (quasisyntax/loc stx
-      (define bogus-name
-        #,(stepper-syntax-property
-           #`(let ([test-info (namespace-variable-value
-                               'test~object #f builder (current-namespace))])
-               (when test-info
-                 (insert-test test-info
-                              (lambda ()
-                                #,(with-stepper-syntax-properties (['stepper-hint hint-tag]
-                                                                   ['stepper-hide-reduction #t]
-                                                                   ['stepper-use-val-as-final #t])
-                                    (quasisyntax/loc stx
-                                      (#,checker-proc-stx
-                                       #,@embedded-stxes 
-                                       src-info
-                                       #,(with-stepper-syntax-properties (['stepper-no-lifting-info #t]
-                                                                          ['stepper-hide-reduction #t])
-                                           #'test-info))))))))
-           'stepper-skipto
-           (append skipto/third ;; let 
-                   skipto/third skipto/second ;; unless (it expands into a begin)
-                   skipto/cdr skipto/third ;; application of insert-test
-                   '(syntax-e cdr cdr syntax-e car) ;; lambda
-                   ))))))
+(define-for-syntax (check-expect-maker stx checker-proc-stx embedded-stxes
+                                       hint-tag)
+  (define bogus-name
+    (stepper-syntax-property #`#,(gensym 'test) 'stepper-hide-completed #t))
+  (define src-info
+    (with-stepper-syntax-properties (['stepper-skip-completely #t])
+      #`(list #,@(list #`(quote #,(syntax-source stx))
+                       (syntax-line stx)
+                       (syntax-column stx)
+                       (syntax-position stx)
+                       (syntax-span stx)))))
+  (quasisyntax/loc stx
+    (define #,bogus-name
+      #,(stepper-syntax-property
+         #`(let ([test-info (namespace-variable-value
+                             'test~object #f builder (current-namespace))])
+             (when test-info
+               (insert-test test-info
+                            (lambda ()
+                              #,(with-stepper-syntax-properties
+                                    (['stepper-hint hint-tag]
+                                     ['stepper-hide-reduction #t]
+                                     ['stepper-use-val-as-final #t])
+                                  (quasisyntax/loc stx
+                                    (#,checker-proc-stx
+                                     #,@embedded-stxes
+                                     #,src-info
+                                     #,(with-stepper-syntax-properties
+                                           (['stepper-no-lifting-info #t]
+                                            ['stepper-hide-reduction #t])
+                                         #'test-info))))))))
+         'stepper-skipto
+         (append skipto/third ;; let
+                 skipto/third skipto/second ;; unless (it expands into a begin)
+                 skipto/cdr skipto/third ;; application of insert-test
+                 '(syntax-e cdr cdr syntax-e car) ;; lambda
+                 )))))
 
 (define-for-syntax (check-context?)
   (let ([c (syntax-local-context)])
