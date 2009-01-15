@@ -471,12 +471,12 @@
   
   (define-syntax-parameter current-unit-blame-stx (lambda (stx) #'(#%variable-reference)))
   
-  (define-for-syntax (make-import-unboxing ext-var loc ctc)
+  (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
           (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen
                                   (current-unit-blame-stx)
-                                  #,(id->contract-src-info ext-var))))
+                                  #,(id->contract-src-info var))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -564,17 +564,16 @@
                         (let-values ([(iloc ...)
                                       (vector->values (hash-table-get import-table import-key) 0 icount)]
                                      ...)
-                          (letrec-syntaxes (#,@(map (lambda (ivs evs ils ics)
+                          (letrec-syntaxes (#,@(map (lambda (ivs ils ics)
                                                       (quasisyntax/loc (error-syntax)
                                                         [#,ivs
                                                          (make-id-mappers
-                                                          #,@(map (lambda (ev l c)
-                                                                    (make-import-unboxing ev l c))
-                                                                  (syntax->list evs)
+                                                          #,@(map (lambda (iv l c)
+                                                                    (make-import-unboxing iv l c))
+                                                                  (syntax->list ivs)
                                                                   (syntax->list ils)
                                                                   ics))]))
                                                     (syntax->list #'((int-ivar ...) ...))
-                                                    (syntax->list #'((ext-ivar ...) ...))
                                                     (syntax->list #'((iloc ...) ...))
                                                     (map cadddr import-sigs)))
                                            (letrec-syntaxes+values (renames ...
@@ -583,7 +582,6 @@
                                              (unit-body #,(error-syntax)
                                                         (int-ivar ... ...)
                                                         (int-evar ... ...)
-                                                        (ext-evar ... ...)
                                                         (eloc ... ...)
                                                         (ectc ... ...)
                                                         . body)))))
@@ -601,7 +599,7 @@
   
   (define-syntax (unit-body stx)
     (syntax-case stx ()
-      ((_ err-stx ivars evars ext-evars elocs ectcs body ...)
+      ((_ err-stx ivars evars elocs ectcs body ...)
        (parameterize ((error-syntax #'err-stx))
          (let* ([expand-context (generate-expand-context)]
                 [def-ctx (syntax-local-make-definition-context)]
@@ -682,7 +680,7 @@
            ;; Mark exported names and
            ;; check that all exported names are defined (as var):
            (for-each
-            (lambda (name loc var ctc)
+            (lambda (name loc ctc)
               (let ([v (bound-identifier-mapping-get defined-names-table
                                                      name
                                                      (lambda () #f))])
@@ -696,10 +694,9 @@
                    v
                    (λ (e)
                      #`(contract #,(cdr (syntax-e ctc)) #,e (current-unit-blame-stx) 
-                                 'cant-happen #,(id->contract-src-info var)))))))
+                                 'cant-happen #,(id->contract-src-info e)))))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
-            (syntax->list #'ext-evars)
             (syntax->list #'ectcs))
            
            ;; Check that none of the imports are defined
