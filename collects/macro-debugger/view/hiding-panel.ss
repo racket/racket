@@ -79,7 +79,7 @@
            (style '(deleted))))
 
     (define/private (get-mode)
-      (send config get-macro-hiding-mode))
+      (send: config config<%> get-macro-hiding-mode))
 
     (define/private (macro-hiding-enabled?)
       (let ([mode (get-mode)])
@@ -89,7 +89,7 @@
 
     (define/private (ensure-custom-mode)
       (unless (equal? (get-mode) mode:custom)
-        (send config set-macro-hiding-mode mode:custom)))
+        (send: config config<%> set-macro-hiding-mode mode:custom)))
 
     (define/private (update-visibility)
       (let ([customizing (equal? (get-mode) mode:custom)])
@@ -104,10 +104,10 @@
                             (list customize-panel)
                             null))))))
 
-    (send config listen-macro-hiding-mode
-          (lambda (value)
-            (update-visibility)
-            (force-refresh)))
+    (send: config config<%> listen-macro-hiding-mode
+           (lambda (value)
+             (update-visibility)
+             (force-refresh)))
 
     (define box:hiding
       (new check-box%

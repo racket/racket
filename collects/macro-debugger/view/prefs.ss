@@ -2,6 +2,7 @@
 #lang scheme/base
 (require scheme/class
          framework/framework
+         "interfaces.ss"
          "../syntax-browser/prefs.ss"
          "../util/notify.ss"
          "../util/misc.ss")
@@ -43,7 +44,7 @@
 (pref:get/set pref:force-letrec-transformation? MacroStepper:ForceLetrecTransformation?)
 
 (define macro-stepper-config-base%
-  (class syntax-prefs-base%
+  (class* syntax-prefs-base% (config<%>)
     (notify-methods macro-hiding-mode)
     (notify-methods show-hiding-panel?)
     (notify-methods identifier=?)

@@ -33,7 +33,8 @@
   (class* object% (term-record<%>)
     (init-field: (stepper widget<%>))
 
-    (define config (send stepper get-config))
+    (define: config config<%>
+      (send: stepper widget<%> get-config))
     (define: displayer step-display<%>
       (send: stepper widget<%> get-step-displayer))
 
@@ -173,12 +174,12 @@
           (set! steps
                 (and raw-steps
                      (let* ([filtered-steps 
-                             (if (send config get-show-rename-steps?)
+                             (if (send: config config<%> get-show-rename-steps?)
                                  raw-steps
                                  (filter (lambda (x) (not (rename-step? x)))
                                          raw-steps))]
                             [processed-steps
-                             (if (send config get-one-by-one?)
+                             (if (send: config config<%> get-one-by-one?)
                                  (reduce:one-by-one filtered-steps)
                                  filtered-steps)])
                        (cursor:new processed-steps))))

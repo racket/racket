@@ -41,7 +41,7 @@
 (define step-display%
   (class* object% (step-display<%>)
 
-    (init-field config)
+    (init-field: (config config<%>))
     (init-field ((sbview syntax-widget)))
     (super-new)
 
@@ -194,8 +194,8 @@
     ;; insert-syntax/color
     (define/private (insert-syntax/color stx foci binders shift-table
                                          definites frontier hi-color)
-      (define highlight-foci? (send config get-highlight-foci?))
-      (define highlight-frontier? (send config get-highlight-frontier?))
+      (define highlight-foci? (send: config config<%> get-highlight-foci?))
+      (define highlight-frontier? (send: config config<%> get-highlight-frontier?))
       (send: sbview sb:syntax-browser<%> add-syntax stx
              #:definites (or definites null)
              #:binder-table binders

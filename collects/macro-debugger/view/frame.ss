@@ -42,8 +42,8 @@
              get-help-menu)
 
     (super-new (label (make-label))
-               (width (send config get-width))
-               (height (send config get-height)))
+               (width (send: config config<%> get-width))
+               (height (send: config config<%> get-height)))
 
     (define/private (make-label)
       (if filename
@@ -54,8 +54,8 @@
           "Macro stepper"))
 
     (define/override (on-size w h)
-      (send config set-width w)
-      (send config set-height h)
+      (send: config config<%> set-width w)
+      (send: config config<%> set-height h)
       (send: widget widget<%> update/preserve-view))
 
     (define warning-panel
@@ -143,7 +143,7 @@
                                    (eq? (car name+func) (car p)))))))
                 (sb:identifier=-choices)))
 
-    (let ([identifier=? (send config get-identifier=?)])
+    (let ([identifier=? (send: config config<%> get-identifier=?)])
       (when identifier=?
         (let ([p (assoc identifier=? (sb:identifier=-choices))])
           (send: controller sb:controller<%> set-identifier=? p))))
@@ -178,10 +178,10 @@
            (parent extras-menu)
            (callback
             (lambda (i e)
-              (send config set-suffix-option
-                    (if (send i is-checked?)
-                        'always
-                        'over-limit))
+              (send: config config<%> set-suffix-option
+                     (if (send i is-checked?)
+                         'always
+                         'over-limit))
               (send: widget widget<%> update/preserve-view))))
       (menu-option/notify-box extras-menu
                               "Highlight redex/contractum"
