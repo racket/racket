@@ -1216,14 +1216,14 @@
                         (map 
                          (lambda (os ov)
                            (map 
-                            (lambda (i iv c)
+                            (lambda (i v c)
                               (if c
                                   #`(contract #,c (unbox (vector-ref #,ov #,i))
                                               'cant-happen (current-unit-blame-stx)
-                                              #,(id->contract-src-info iv))
+                                              #,(id->contract-src-info v))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
-                            (map cdr (car os))
+                            (map car (car os))
                             (cadddr os)))
                          out-sigs
                          out-vec)))
