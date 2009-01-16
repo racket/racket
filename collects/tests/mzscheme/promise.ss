@@ -70,4 +70,25 @@
   (t (force (lazy  (lazy  (lazy  (force (delay (delay _))))))))
   (t (force (lazy  (lazy  (delay (force (lazy (delay _)))))))))
 
+;; more tests
+(let ()
+  (define (force+catch p)
+    (with-handlers ([void (lambda (x) (cons 'catch x))]) (force p)))
+  (define (forced+running? p) (list (promise-forced? p) (promise-running? p)))
+  ;; results are cached
+  (let ([p (delay (random 10000))])
+    (test #t equal? (force p) (force p)))
+  ;; errors are cached
+  (let ([p (delay (error 'foo "blah"))])
+    (test #t equal? (force+catch p) (force+catch p)))
+  ;; other raised values are cached
+  (let ([p (delay (raise (random 10000)))])
+    (test #t equal? (force+catch p) (force+catch p)))
+  ;; test the predicates
+  (letrec ([p (delay (forced+running? p))])
+    (test '(#f #f) forced+running? p)
+    (test '(#f #t) force p)
+    (test '(#t #f) forced+running? p))
+  )
+
 (report-errs)

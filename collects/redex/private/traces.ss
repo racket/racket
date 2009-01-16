@@ -131,7 +131,9 @@
                    #:pp [pp default-pretty-printer] 
                    #:scheme-colors? [scheme-colors? #t]
                    #:colors [colors '()]
-                   #:layout [layout void])
+                   #:layout [layout void]
+                   #:edge-label-font [edge-label-font #f]
+                   )
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
@@ -140,7 +142,8 @@
                         #:pp pp
                         #:scheme-colors? scheme-colors?
                         #:colors colors
-                        #:layout layout)])
+                        #:layout layout
+                        #:edge-label-font edge-label-font)])
     (print-to-ps graph-pb canvas filename)))
 
 (define (print-to-ps graph-pb canvas filename)
@@ -227,11 +230,12 @@
                 #:colors [colors '()]
                 #:scheme-colors? [scheme-colors? #t]
                 #:layout [layout void]
+                #:edge-label-font [edge-label-font #f]
                 #:no-show-frame? [no-show-frame? #f])
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
-  (define graph-pb (new graph-pasteboard% [layout layout]))
+  (define graph-pb (new graph-pasteboard% [layout layout] [edge-label-font edge-label-font]))
   (define f (instantiate red-sem-frame% ()
               (label "PLT Redex Reduction Graph")
               (style '(toolbar-button))

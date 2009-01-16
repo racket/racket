@@ -395,9 +395,16 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{provides a wrapper dispatcher that limits how many requests are serviced at once.}]{
 
 @defproc[(make [limit number?]
-               [inner dispatcher/c])
+               [inner dispatcher/c]
+               [#:over-limit over-limit (symbols 'block 'kill-new 'kill-old) 'block])
          dispatcher/c]{
  Returns a dispatcher that defers to @scheme[inner] for work, but will forward a maximum of @scheme[limit] requests concurrently.
+         
+ If there are no additional spaces inside the limit and a new request is received, the @scheme[over-limit] option determines what is done.
+ The default (@scheme['block]) causes the new request to block until an old request is finished being handled.
+ If @scheme[over-limit] is @scheme['kill-new], then the new request handler is killed---a form of load-shedding.
+ If @scheme[over-limit] is @scheme['kill-old], then the oldest request handler is killed---prioritizing new connections over old.
+ (This setting is a little dangerous because requests might never finish if there is constant load.)
 }}
                       
 @(require (for-label
@@ -434,7 +441,8 @@ Consider this example:
               (list (format "hello world ~a"
                             (sort (build-list 100000 (λ x (random 1000)))
                                   <))))
-             (request-method req)))))
+             (request-method req)))
+          #:over-limit 'block))
         (lambda (conn req)          
           (output-response/method
            conn
