@@ -70,4 +70,19 @@
   (t (force (lazy  (lazy  (lazy  (force (delay (delay _))))))))
   (t (force (lazy  (lazy  (delay (force (lazy (delay _)))))))))
 
+;; more tests
+(let ()
+  (define (force+catch x)
+    (with-handlers ([void (lambda (x) (cons 'catch x))]) (force x)))
+  ;; results are cached
+  (let ([x (delay (random 10000))])
+    (test #t equal? (force x) (force x)))
+  ;; errors are cached
+  (let ([x (delay (error 'foo "blah"))])
+    (test #t equal? (force+catch x) (force+catch x)))
+  ;; other raised values are cached
+  (let ([x (delay (raise (random 10000)))])
+    (test #t equal? (force+catch x) (force+catch x)))
+  )
+
 (report-errs)
