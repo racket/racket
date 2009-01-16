@@ -59,10 +59,24 @@
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
 (define-syntax (lazy stx)
   (syntax-case stx ()
-    [(lazy expr) (with-syntax ([proc (syntax-property
-                                      (syntax/loc stx (lambda () expr))
-                                      'inferred-name (syntax-local-name))])
-                   (syntax/loc stx (make-promise proc)))]))
+    [(lazy expr)
+     (with-syntax ([proc (syntax-property (syntax/loc stx (lambda () expr))
+                                          'inferred-name (syntax-local-name))])
+       (syntax/loc stx (make-promise proc)))]))
+
+;; Creates a promise that does not compose
+;;   X = (force (delay X)) = (force (lazy (delay X)))
+;;                         = (force (lazy^n (delay X)))
+;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
+;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
+;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
+;; (This is not needed with a lazy language (see the above URL for details),
+;; but provided for regular delay/force uses.)
+(define-syntax (delay stx)
+  (syntax-case stx ()
+    [(delay expr)
+     (syntax/loc stx
+       (lazy (make-promise (call-with-values (lambda () expr) list))))]))
 
 ;; For simplicity and efficiency this code uses thunks in promise values for
 ;; exceptions: this way, we don't need to tag exception values in some special
@@ -79,20 +93,6 @@
                                 (if name
                                   (error 'force "reentrant promise ~v" name)
                                   (error 'force "reentrant promise")))))
-
-;; Creates a promise that does not compose
-;;   X = (force (delay X)) = (force (lazy (delay X)))
-;;                         = (force (lazy^n (delay X)))
-;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
-;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
-;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
-;; (This is not needed with a lazy language (see the above URL for details),
-;; but provided for regular delay/force uses.)
-(define-syntax (delay stx)
-  (syntax-case stx ()
-    [(delay expr)
-     (syntax/loc stx
-       (lazy (make-promise (call-with-values (lambda () expr) list))))]))
 
 ;; force iterates on lazy promises (forbids dependency cycles)
 ;; * (force X) = X for non promises
