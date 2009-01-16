@@ -22,6 +22,7 @@ otherwise.}
 Creates a promise that, when @scheme[force]d, evaluates @scheme[expr]
 to produce its value.}
 
+
 @defform[(lazy expr)]{
 
 Like @scheme[delay], except that if @scheme[expr] produces a promise,
@@ -30,6 +31,7 @@ words, this form creates a kind of a composable promise, which is
 mostly useful for implementing lazy libraries and languages.  Also
 note that the @scheme[expr] in this case is restricted to one that
 produces a single value.}
+
 
 @defproc[(force [v any/c]) any]{
 
@@ -44,3 +46,14 @@ If @scheme[v] is @scheme[force]d again before the original call to
 @scheme[force] returns, then the @exnraise[exn:fail].
 
 If @scheme[v] is not a promise, then it is returned as the result.}
+
+
+@defproc[(promise-forced? [promise promise?]) boolean?]{
+
+Returns @scheme[#t] if @scheme[promise] has been forced.}
+
+
+@defproc[(promise-running? [promise promise?]) boolean?]{
+
+Returns @scheme[#t] if @scheme[promise] is currently being forced.
+(Note that a promise can be either running or forced but not both.)}

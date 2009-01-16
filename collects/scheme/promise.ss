@@ -2,7 +2,7 @@
 (#%require "private/small-scheme.ss" "private/more-scheme.ss" "private/define.ss"
            (rename "private/define-struct.ss" define-struct define-struct*)
            (for-syntax '#%kernel "private/stxcase-scheme.ss"))
-(#%provide lazy delay force promise?)
+(#%provide lazy delay force promise? promise-forced? promise-running?)
 
 ;; This module implements "lazy" (composable) promises and a `force'
 ;; that is iterated through them.
@@ -23,6 +23,11 @@
                (fprintf port "#<promise!exn!~a>" (exn-message v))
                (fprintf port (if write? "#<promise!~a>" "#<promise!~s>")
                         `(raise ,v))))]
+          [(running? p)
+           (let ([n (running-name p)])
+             (if n
+               (fprintf port "#<promise:!running!~a>" n)
+               (fprintf port "#<promise:!running>")))]
           [(procedure? p)
            (cond [(object-name p)
                   => (lambda (n) (fprintf port "#<promise:~a>" n))]
@@ -58,12 +63,21 @@
                                       'inferred-name (syntax-local-name))])
                    (syntax/loc stx (make-promise proc)))]))
 
-;; use this to create a value to be raised, make it a procedure so no other
-;; code need to change (we could just use the exceptions -- but any value can
-;; be raised); also make it have a proper printer so we can show such promises
-;; properly.
+;; For simplicity and efficiency this code uses thunks in promise values for
+;; exceptions: this way, we don't need to tag exception values in some special
+;; way and test for them -- we just use a thunk that will raise the exception.
+;; But it's still useful to refer to the exception value, so use an applicable
+;; struct for them.  The same goes for a promise that is being forced: we use a
+;; thunk that will throw a "reentrant promise" error -- and use an applicable
+;; struct so it is identifiable.
 (define-struct reraise (val)
   #:property prop:procedure (lambda (this) (raise (reraise-val this))))
+(define-struct running (name)
+  #:property prop:procedure (lambda (this)
+                              (let ([name (running-name this)])
+                                (if name
+                                  (error 'force "reentrant promise ~v" name)
+                                  (error 'force "reentrant promise")))))
 
 ;; Creates a promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
@@ -100,21 +114,17 @@
         (set-promise-val! root (list v))
         v))))
 
-;; this is used during computation to avoid reentrant loops (which makes it
-;; non-r5rs, but there's no good uses for allowing that)
-(define (running proc)
-  ;; important: be careful not to close over the thunk!
-  (let ([name (object-name proc)])
-    (if name
-      (lambda () (error 'force "reentrant promise ~v" name))
-      (lambda () (error 'force "reentrant promise")))))
-
 (define (force promise)
   (if (promise? promise)
     (let loop ([p (promise-val promise)])
       (cond [(procedure? p)
-             ;; "mark" root as running (avoids cycles)
-             (set-promise-val! promise (running p))
+             ;; mark the root as running: avoids cycles, and no need to keep
+             ;; banging the root promise value; it makes this non-r5rs, but
+             ;; only practical uses of these things could be ones that use
+             ;; state.
+             ;; (careful: avoid holding a reference to the thunk, to allow
+             ;; safe-for-space loops)
+             (set-promise-val! promise (make-running (object-name p)))
              (call-with-exception-handler
                (lambda (e) (set-promise-val! promise (make-reraise e)) e)
                (lambda () (force-proc p promise)))]
@@ -124,5 +134,16 @@
             [else (apply values p)]))
     ;; different from srfi-45: identity for non-promises
     promise))
+
+(define (promise-forced? promise)
+  (if (promise? promise)
+    (let ([p (promise-val promise)])
+      (or (not (procedure? p)) (reraise? p))) ; #f when running
+    (raise-type-error 'promise-forced? "promise" promise)))
+
+(define (promise-running? promise)
+  (if (promise? promise)
+    (running? (promise-val promise))
+    (raise-type-error 'promise-running? "promise" promise)))
 
 )

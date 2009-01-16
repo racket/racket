@@ -72,17 +72,23 @@
 
 ;; more tests
 (let ()
-  (define (force+catch x)
-    (with-handlers ([void (lambda (x) (cons 'catch x))]) (force x)))
+  (define (force+catch p)
+    (with-handlers ([void (lambda (x) (cons 'catch x))]) (force p)))
+  (define (forced+running? p) (list (promise-forced? p) (promise-running? p)))
   ;; results are cached
-  (let ([x (delay (random 10000))])
-    (test #t equal? (force x) (force x)))
+  (let ([p (delay (random 10000))])
+    (test #t equal? (force p) (force p)))
   ;; errors are cached
-  (let ([x (delay (error 'foo "blah"))])
-    (test #t equal? (force+catch x) (force+catch x)))
+  (let ([p (delay (error 'foo "blah"))])
+    (test #t equal? (force+catch p) (force+catch p)))
   ;; other raised values are cached
-  (let ([x (delay (raise (random 10000)))])
-    (test #t equal? (force+catch x) (force+catch x)))
+  (let ([p (delay (raise (random 10000)))])
+    (test #t equal? (force+catch p) (force+catch p)))
+  ;; test the predicates
+  (letrec ([p (delay (forced+running? p))])
+    (test '(#f #f) forced+running? p)
+    (test '(#f #t) force p)
+    (test '(#t #f) forced+running? p))
   )
 
 (report-errs)
