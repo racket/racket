@@ -160,6 +160,7 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
 
  [sig-elem
   id
+  (contracted [id contract] ...)
   (define-syntaxes (id ...) expr)
   (define-values (value-id ...) expr) 
   (open sig-spec) 
@@ -175,6 +176,15 @@ of bindings for import or export:
  @scheme[id]. That is, @scheme[id] is available for use in units
  importing the signature, and @scheme[id] must be defined by units
  exporting the signature.}
+      
+ @item{Each @scheme[contracted] form in a signature declaration means
+ that a unit exporting the signature must supply a variable definition
+ for each @scheme[id] in that form.  If the signature is imported, then
+ uses of @scheme[id] inside the unit are protected by the appropriate
+ contracts using the unit as the negative blame.  If the signature is
+ exported, then the exported values are protected by the appropriate
+ contracts which use the unit as the positive blame, but internal uses
+ of the exported identifiers are not protected.}
 
  @item{Each @scheme[define-syntaxes] form in a signature declaration
  introduces a macro to that is available for use in any unit that
