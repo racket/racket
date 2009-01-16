@@ -2328,6 +2328,79 @@
       (eval '(foo-dc15 #t)))
    "top-level")
   
+  ;; Let's see how units + define/contract interact
+  
+  (test/spec-failed
+   'define/contract16
+   '(begin
+      (eval '(module foo-dc16 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define/contract (foo n)
+                   (-> number? number?)
+                   (define-signature U^
+                     ((contracted [x (-> number? number?)])))
+                   (define-unit U@
+                     (import)
+                     (export U^)
+                     (define (x n) #t))
+                   (define-values/invoke-unit U@
+                     (import)
+                     (export U^))
+                   (x n))
+                 (foo 3))))
+      (eval '(require 'foo-dc16)))
+   "(unit U@)")
+  
+  (test/spec-failed
+   'define/contract17
+   '(begin
+      (eval '(module foo-dc17 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define/contract (foo n)
+                   (-> number? number?)
+                   (define-signature U^
+                     ((contracted [x (-> number? number?)])))
+                   (define-unit U@
+                     (import)
+                     (export U^)
+                     (define (x n) 3))
+                   (define-values/invoke-unit U@
+                     (import)
+                     (export U^))
+                   (x (zero? n)))
+                 (foo 3))))
+      (eval '(require 'foo-dc17)))
+   "(function foo)")
+  
+  (test/spec-failed
+   'define/contract18
+   '(begin
+      (eval '(module foo-dc17 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define-signature U^
+                   ((contracted [x (-> number? number?)])))
+                 (define-unit U@
+                   (import)
+                   (export U^)
+                   ;; Can't define/contract x directly because
+                   ;; x ends up bound to a transformer and thus
+                   ;; is syntax.
+                   (define/contract (y n)
+                     (-> number? boolean?) #t)
+                   (define x y))
+                 (define-values/invoke-unit U@
+                   (import)
+                   (export U^))
+                 (x 3))))
+      (eval '(require 'foo-dc18)))
+   "(unit U@)")
+  
 
 ;                                                                                  
 ;                                                                                  
