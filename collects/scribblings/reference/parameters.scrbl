@@ -126,7 +126,7 @@ is the same as a nested series of single-parameter @scheme[parameterize]
 forms.}
 
 
-@defproc[(make-derived-parameter [v any/c]
+@defproc[(make-derived-parameter [parameter parameter?]
                                  [guard (any/c . -> . any)]
                                  [wrap (any/c . -> . any)])
          parameter?]{

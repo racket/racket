@@ -199,3 +199,7 @@ For example, this remaps the key combination ``control-a'' key to ``!''.
 s-exp framework/keybinding-lang
 (keybinding "c:a" (λ (editor evt) (send editor insert "!")))
 ]
+
+Note that DrScheme does not reload this file automatically when you
+make a change, so you'll need to restart DrScheme to see changes to
+the file.
