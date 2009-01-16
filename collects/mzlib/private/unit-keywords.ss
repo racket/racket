@@ -3,7 +3,7 @@
 
 (provide only except prefix rename tag
          import export init-depend link
-         extends)
+         extends contracted)
 
 (define-syntax-rule (define-syntax-for-error name message)
   (define-syntax name
@@ -33,4 +33,6 @@
 (define-syntax-for-error link
   "misuse of compound-unit keyword")
 (define-syntax-for-error extends
+  "misuse of define-signature keyword")
+(define-syntax-for-error contracted
   "misuse of define-signature keyword")
