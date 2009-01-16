@@ -673,23 +673,36 @@ contract on the fields that the sub-struct shares with its parent are
 only used in the contract for the sub-struct's maker, and the selector
 or mutators for the super-struct are not provided.}
 
-@defform[(define/contract id contract-expr init-value-expr)]{
+@defform/subs[
+ (with-contract blame-id (wc-export ...) body ...+)
+ ([wc-export
+   id
+   (id contract-expr)])]{
+Generates a local contract boundary.  The @scheme[contract-expr]
+form cannot appear in expression position.  The @scheme[body] of the
+form allows definition/expression interleaving like a @scheme[module]
+body.  Names bound within the @scheme[body] must be exported to be
+accessible from outside the @scheme[with-contract] form.  Such
+@scheme[id]s can either be paired with a @scheme[contract-expr] or
+exported without a contract.
 
-Attaches the contract @scheme[contract-expr] to
-@scheme[init-value-expr] and binds that to @scheme[id].
+The @scheme[blame-id] is used for the positive positions of
+contracts paired with exported @scheme[id]s.  Contracts broken
+within the @scheme[with-contract] @scheme[body] will use the
+@scheme[blame-id] for their negative position.}
+
+@defform*[[(define/contract id contract-expr init-value-expr)
+ (define/contract (head args) contract-expr body ...+)]]{
+Works like @scheme[define], except that the contract
+@scheme[contract-expr] is attached to the bound value.
 
 The @scheme[define/contract] form treats individual definitions as
 units of blame. The definition itself is responsible for positive
 (co-variant) positions of the contract and each reference to
 @scheme[id] (including those in the initial value expression) must
-meet the negative positions of the contract.
-
-Error messages with @scheme[define/contract] are not as clear as those
-provided by @scheme[provide/contract], because
-@scheme[define/contract] cannot detect the name of the definition
-where the reference to the defined variable occurs. Instead, it uses
-the source location of the reference to the variable as the name of
-that definition.}
+meet the negative positions of the contract.  It is equivalent to
+wrapping a single @scheme[define] with a @scheme[with-contract] form
+that pairs the @scheme[contract-expr] with the bound identifier.}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)

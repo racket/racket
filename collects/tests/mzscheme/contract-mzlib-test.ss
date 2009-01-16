@@ -81,7 +81,7 @@ of the contract library does not change over time.
         (equal?
          blame
          (cond
-           [(regexp-match #rx"(^| )([^ ]*) broke" msg) 
+           [(regexp-match #rx"(^| )(.*) broke" msg) 
             =>
             (λ (x) (caddr x))]
            [else (format "no blame in error message: \"~a\"" msg)])))
@@ -4820,7 +4820,7 @@ so that propagation occurs.
                             (make-s 1 2)
                             [s-a #f])))
       (eval '(require 'pc11b-n)))
-   'n)
+   "'n")
 |#
   
   (test/spec-passed

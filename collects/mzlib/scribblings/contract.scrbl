@@ -56,7 +56,6 @@ from @schememodname[scheme/contract]:
  contract-violation->string
  contract?
  define-contract-struct
- define/contract
  false/c
  flat-contract
  flat-contract-predicate
@@ -91,3 +90,22 @@ from @schememodname[scheme/contract]:
  vector/c
  vectorof]
 
+It also provides the old version of @scheme[define/contract]:
+
+@defform[(define/contract id contract-expr init-value-expr)]{
+
+Attaches the contract @scheme[contract-expr] to
+@scheme[init-value-expr] and binds that to @scheme[id].
+
+The @scheme[define/contract] form treats individual definitions as
+units of blame. The definition itself is responsible for positive
+(co-variant) positions of the contract and each reference to
+@scheme[id] (including those in the initial value expression) must
+meet the negative positions of the contract.
+
+Error messages with @scheme[define/contract] are not as clear as those
+provided by @scheme[provide/contract], because
+@scheme[define/contract] cannot detect the name of the definition
+where the reference to the defined variable occurs. Instead, it uses
+the source location of the reference to the variable as the name of
+that definition.}

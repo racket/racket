@@ -180,8 +180,7 @@
         [formatted-contract-sexp
          (let ([one-line 
                 (let ([sp (open-output-string)])
-                  (parameterize ([pretty-print-print-line print-contract-liner]
-                                 [pretty-print-columns 'infinity])
+                  (parameterize ([pretty-print-columns 'infinity])
                     (pretty-print contract-sexp sp)
                     (get-output-string sp)))])
            (if (< (string-length one-line) 30)

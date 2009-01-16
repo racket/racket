@@ -1,3 +1,4 @@
+
 (load-relative "loadtest.ss")
 (Section 'contract)
 
@@ -75,7 +76,7 @@
         (equal?
          blame
          (cond
-           [(regexp-match #rx"(^| )([^ ]*) broke" msg) 
+           [(regexp-match #rx"(^| )(.*) broke" msg) 
             =>
             (λ (x) (caddr x))]
            [else (format "no blame in error message: \"~a\"" msg)])))
@@ -2159,6 +2160,323 @@
                'pos 'neg)))
 
   
+
+;                                                                                           
+;                                                                                           
+;                                                                                           
+;        ;          ;;;;                  ;                                                 
+;       ;;         ;   ;                  ;                                                 
+;        ;         ;                     ;                        ;                      ;  
+;        ;         ;                     ;                        ;                      ;  
+;     ;; ;   ;;;  ;;;; ;  ; ;;    ;;;    ;   ;;;     ;;    ; ;;  ;;;; ; ;;  ;;;    ;;;  ;;;;
+;    ;  ;;  ;   ;  ;  ;; ;;;  ;  ;   ;  ;   ;   ;   ;  ;  ;;;  ;  ;  ;;;   ;   ;  ;   ;  ;  
+;   ;    ;  ;;;;;  ;   ;  ;   ;  ;;;;;  ;   ;      ;    ;  ;   ;  ;   ;       ;;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;      ;   ;      ;    ;  ;   ;  ;   ;     ;; ;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;      ;   ;      ;    ;  ;   ;  ;   ;    ;   ;  ;      ;  
+;    ;  ;;; ;   ;  ;   ;  ;   ;  ;   ; ;    ;   ;   ;  ;   ;   ;  ; ; ;    ;  ;;  ;   ;  ; ;
+;     ;; ;   ;;;  ;;;;;;;;;; ;;;  ;;;  ;     ;;;     ;;   ;;; ;;; ;; ;;;    ;; ;;  ;;;   ;; 
+;                                                                                           
+;                                                                                           
+;                                                                                           
+
+  (test/spec-passed
+   'define/contract1
+   '(let ()
+      (define/contract i integer? 1)
+      i))
+  
+  (test/spec-failed
+   'define/contract2
+   '(let ()
+      (define/contract i integer? #t)
+      i)
+   "(definition i)")
+  
+  (test/spec-failed
+   'define/contract3
+   '(let ()
+      (define/contract i (-> integer? integer?) (lambda (x) #t))
+      (i 1))
+   "(definition i)")
+  
+  (test/spec-failed
+   'define/contract4
+   '(let ()
+      (define/contract i (-> integer? integer?) (lambda (x) 1))
+      (i #f))
+   "top-level")
+  
+  (test/spec-failed
+   'define/contract5
+   '(let ()
+      (define/contract (i x) (-> integer? integer?) 1)
+      (i #f))
+   "top-level")
+  
+  (test/spec-passed
+   'define/contract6
+   '(let ()
+      (define/contract (i x) (-> integer? integer?)
+        (cond
+          [(not (integer? x)) 1]
+          [else (i #f)]))
+      (i 1)))
+  
+  (test/spec-passed
+   'define/contract7
+   '(let ()
+      (define/contract (contracted-func label t)
+                       (string?  string? . -> . string?)
+                       t)
+      (contracted-func
+       "I'm a string constant with side effects"
+       "ans")))
+
+  (test/spec-passed
+   'define/contract8
+   '(let ()
+      (eval '(module contract-test-suite-define1 scheme/base
+               (require scheme/contract)
+               (define/contract x string? "a")
+               x))
+      (eval '(require 'contract-test-suite-define1))))
+  
+  (test/spec-failed
+   'define/contract9
+   '(let ()
+      (define/contract (a n)
+        (-> number? number?)
+        (define/contract (b m)
+          (-> number? number?)
+          (+ m 1))
+        (b (zero? n)))
+      (a 5))
+   "(function a)")
+  
+  (test/spec-failed
+   'define/contract10
+   '(let ()
+      (define/contract (a n)
+        (-> number? number?)
+        (define/contract (b m)
+          (-> number? number?)
+          #t)
+        (b (add1 n)))
+      (a 5))
+   "(function b)")
+  
+  (test/spec-passed
+   'define/contract11
+   '(let ()
+      (define/contract (f n)
+        (-> number? number?)
+        (+ n 1))
+      (define/contract (g b m)
+        (-> boolean? number? number?)
+        (if b (f m) (f #t)))
+      (g #t 3)))
+  
+  (test/spec-failed
+   'define/contract12
+   '(let ()
+      (define/contract (f n)
+        (-> number? number?)
+        (+ n 1))
+      (define/contract (g b m)
+        (-> boolean? number? number?)
+        (if b (f m) (f #t)))
+      (g #f 3))
+   "(function g)")
+
+  (test/spec-failed
+   'define/contract13
+   '(begin
+      (eval '(module foo-dc13 scheme/base
+	       (require scheme/contract)
+	       (define/contract (foo-dc13 n)
+		 (-> number? number?)
+		 (+ n 1))
+	       (foo-dc13 #t)))
+      (eval '(require 'foo-dc13)))
+   "'foo-dc13")
+  
+  (test/spec-failed
+   'define/contract14
+   '(begin
+      (eval '(module foo-dc14 scheme/base
+	       (require scheme/contract)
+	       (provide foo-dc14)
+	       (define/contract (foo-dc14 n)
+		 (-> number? number?)
+		 (+ n 1))))
+      (eval '(module bar-dc14 scheme/base
+	       (require 'foo-dc14)
+	       (foo-dc14 #t)))
+      (eval '(require 'bar-dc14)))
+   "'bar-dc14")
+
+  (test/spec-failed
+   'define/contract15
+   '(begin
+      (eval '(module foo-dc15 scheme/base
+	       (require scheme/contract)
+	       (provide foo-dc15)
+	       (define/contract (foo-dc15 n)
+		 (-> number? number?)
+		 (+ n 1))))
+      (eval '(require 'foo-dc15))
+      (eval '(foo-dc15 #t)))
+   "top-level")
+  
+  ;; Let's see how units + define/contract interact
+  
+  (test/spec-failed
+   'define/contract16
+   '(begin
+      (eval '(module foo-dc16 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define/contract (foo n)
+                   (-> number? number?)
+                   (define-signature U^
+                     ((contracted [x (-> number? number?)])))
+                   (define-unit U@
+                     (import)
+                     (export U^)
+                     (define (x n) #t))
+                   (define-values/invoke-unit U@
+                     (import)
+                     (export U^))
+                   (x n))
+                 (foo 3))))
+      (eval '(require 'foo-dc16)))
+   "(unit U@)")
+  
+  (test/spec-failed
+   'define/contract17
+   '(begin
+      (eval '(module foo-dc17 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define/contract (foo n)
+                   (-> number? number?)
+                   (define-signature U^
+                     ((contracted [x (-> number? number?)])))
+                   (define-unit U@
+                     (import)
+                     (export U^)
+                     (define (x n) 3))
+                   (define-values/invoke-unit U@
+                     (import)
+                     (export U^))
+                   (x (zero? n)))
+                 (foo 3))))
+      (eval '(require 'foo-dc17)))
+   "(function foo)")
+  
+  (test/spec-failed
+   'define/contract18
+   '(begin
+      (eval '(module foo-dc17 scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define-signature U^
+                   ((contracted [x (-> number? number?)])))
+                 (define-unit U@
+                   (import)
+                   (export U^)
+                   ;; Can't define/contract x directly because
+                   ;; x ends up bound to a transformer and thus
+                   ;; is syntax.
+                   (define/contract (y n)
+                     (-> number? boolean?) #t)
+                   (define x y))
+                 (define-values/invoke-unit U@
+                   (import)
+                   (export U^))
+                 (x 3))))
+      (eval '(require 'foo-dc18)))
+   "(unit U@)")
+  
+
+;                                                                                  
+;                                                                                  
+;                                                                                  
+;              ;      ;                                                            
+;                    ;;                                                            
+;                 ;   ;                                  ;                      ;  
+;                 ;   ;                                  ;                      ;  
+;  ;;; ;;; ;;; ; ;;;; ; ;;          ;;;     ;;    ; ;;  ;;;; ; ;;  ;;;    ;;;  ;;;;
+;   ;   ;   ; ;;  ;   ;;  ;        ;   ;   ;  ;  ;;;  ;  ;  ;;;   ;   ;  ;   ;  ;  
+;   ;   ;   ;  ;  ;   ;   ;        ;      ;    ;  ;   ;  ;   ;       ;;  ;      ;  
+;    ; ; ; ;   ;  ;   ;   ;  ;;;;  ;      ;    ;  ;   ;  ;   ;     ;; ;  ;      ;  
+;    ; ; ; ;   ;  ;   ;   ;        ;      ;    ;  ;   ;  ;   ;    ;   ;  ;      ;  
+;    ;;  ;;    ;  ; ; ;   ;        ;   ;   ;  ;   ;   ;  ; ; ;    ;  ;;  ;   ;  ; ;
+;     ;   ;   ;;; ;; ;;; ;;;        ;;;     ;;   ;;; ;;; ;; ;;;    ;; ;;  ;;;   ;; 
+;                                                                                  
+;                                                                                  
+;                                                                                  
+
+  (test/spec-passed
+   'with-contract1
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) #f (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? 5)))
+  
+  (test/spec-failed
+   'with-contract2
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) #f (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? #t))
+   "top-level")
+  
+  (test/spec-failed
+   'with-contract3
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (if (zero? n) n (even? (sub1 n))))
+        (define (even? n)
+          (if (zero? n) #t (odd? (sub1 n)))))
+      (odd? 4))
+   "(region odd-even)")
+  
+  ;; Functions within the same with-contract region can call
+  ;; each other however they want, so here we have even?
+  ;; call odd? with a boolean, even though its contract in
+  ;; the odd-even contract says it only takes numbers.
+  (test/spec-passed
+   'with-contract4
+   '(let ()
+      (with-contract odd-even
+        ([odd? (-> number? boolean?)]
+         [even? (-> number? boolean?)])
+        (define (odd? n)
+          (cond
+            [(not (number? n)) #f]
+            [(zero? n) #f]
+            [else (even? (sub1 n))]))
+        (define (even? n)
+          (if (zero? n) #t (odd? (zero? n)))))
+      (odd? 5)))
+
 
 ;                                                                                                                         
 ;                                                                                                                         
@@ -5623,7 +5941,7 @@ so that propagation occurs.
                             (make-s 1 2)
                             [s-a #f])))
       (eval '(require 'pc11b-n)))
-   'n)
+   "'n")
 |#
   
   (test/spec-passed
