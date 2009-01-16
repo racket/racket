@@ -20,8 +20,9 @@
     (cond [(reraise? p)
            (let ([v (reraise-val p)])
              (if (exn? v)
-               (fprintf port "#<promise!exn!~a>" (exn-message v))
-               (fprintf port (if write? "#<promise!~a>" "#<promise!~s>")
+               (fprintf port (if write? "#<promise!exn!~s>" "#<promise!exn!~a>")
+                        (exn-message v))
+               (fprintf port (if write? "#<promise!~s>" "#<promise!~a>")
                         `(raise ,v))))]
           [(running? p)
            (let ([n (running-name p)])
