@@ -59,7 +59,7 @@
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
 (define-syntax (lazy stx)
   (syntax-case stx ()
-    [(lazy expr)
+    [(_ expr)
      (with-syntax ([proc (syntax-property (syntax/loc stx (lambda () expr))
                                           'inferred-name (syntax-local-name))])
        (syntax/loc stx (make-promise proc)))]))
@@ -74,7 +74,7 @@
 ;; but provided for regular delay/force uses.)
 (define-syntax (delay stx)
   (syntax-case stx ()
-    [(delay expr)
+    [(_ expr)
      (syntax/loc stx
        (lazy (make-promise (call-with-values (lambda () expr) list))))]))
 
