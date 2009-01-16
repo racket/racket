@@ -94,16 +94,17 @@
   (define-language L
     (a 5 (x a) #:binds x a)
     (b 4))
-  (test ((pick-nt 'dontcare) 'a L '(x) 1)
+  (test (pick-nt 'a L '(x) 1 'dontcare)
         (nt-rhs (car (compiled-lang-lang L))))
-  (test ((pick-nt 'dontcare (make-random 1)) 'a L '(x) preferred-production-threshold)
+  (test (pick-nt 'a L '(x) preferred-production-threshold 'dontcare (make-random 1))
         (nt-rhs (car (compiled-lang-lang L))))
   (let ([pref (car (nt-rhs (car (compiled-lang-lang L))))])
-    (test ((pick-nt (make-immutable-hash `((a ,pref))) (make-random 0))
-           'a L '(x) preferred-production-threshold)
+    (test (pick-nt 'a L '(x) preferred-production-threshold
+                   (make-immutable-hash `((a ,pref)))
+                   (make-random 0))
           (list pref)))
-  (test ((pick-nt 'dontcare) 'sexp sexp null preferred-production-threshold)
-        (nt-rhs (car (compiled-lang-lang sexp)))))
+  (test (pick-nt 'b L null preferred-production-threshold #f)
+        (nt-rhs (cadr (compiled-lang-lang L)))))
 
 (define-syntax exn:fail-message
   (syntax-rules ()
@@ -117,7 +118,7 @@
 
 (define (patterns . selectors) 
   (map (λ (selector) 
-         (λ (name lang vars size)
+         (λ (name lang vars size pref-prods)
            (list (selector (nt-rhs (nt-by-name lang name))))))
        selectors))
 
@@ -138,22 +139,19 @@
                    #:str [str pick-string]
                    #:num [num pick-number]
                    #:any [any pick-any]
-                   #:seq [seq pick-sequence-length])
+                   #:seq [seq pick-sequence-length]
+                   #:pref [pref pick-preferred-productions])
   (define-syntax decision
     (syntax-rules ()
       [(_ d) (if (procedure? d) (λ () d) (iterator (quote d) d))]))
-  (λ (lang)
-    (unit (import) (export decisions^)
-          (define next-variable-decision (decision var))
-          (define next-non-terminal-decision
-            (if (procedure? nt) 
-                (let ([next (nt lang)])
-                  (λ () next))
-                (iterator 'nt nt)))
-          (define next-number-decision (decision num))
-          (define next-string-decision (decision str))
-          (define next-any-decision (decision any))
-          (define next-sequence-decision (decision seq)))))
+  (unit (import) (export decisions^)
+        (define next-variable-decision (decision var))
+        (define next-non-terminal-decision (decision nt))
+        (define next-number-decision (decision num))
+        (define next-string-decision (decision str))
+        (define next-any-decision (decision any))
+        (define next-sequence-decision (decision seq))
+        (define next-pref-prods-decision (decision pref))))
 
 (define-syntax generate-term/decisions
   (syntax-rules ()
@@ -494,6 +492,47 @@
          (decisions #:nt (patterns fourth first first second first first first)
                     #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
+
+;; preferred productions
+(let ([make-pick-nt (λ opt (λ req (apply pick-nt (append req opt))))])
+  (define-language L
+    (e (+ e e) (* e e) 7))
+  (let ([pats (λ (L) (nt-rhs (car (compiled-lang-lang (parse-language L)))))])
+    (test 
+     (generate-term/decisions
+      L e 2 preferred-production-threshold
+      (decisions #:pref (list (λ (L) (make-immutable-hash `((e ,(car (pats L)))))))
+                 #:nt (make-pick-nt (make-random 0 0 0))))
+     '(+ (+ 7 7) (+ 7 7)))
+    (test
+     (generate-term/decisions
+      L any 2 preferred-production-threshold
+      (decisions #:nt (patterns first)
+                 #:var (list (λ _ 'x))
+                 #:any (list (λ (lang sexp) (values sexp 'sexp)))))
+     'x)
+    (test
+     (generate-term/decisions
+      L any 2 preferred-production-threshold
+      (decisions #:pref (list (λ (L) (make-immutable-hash `((e ,(car (pats L)))))))
+                 #:nt (make-pick-nt (make-random 0 0 0))
+                 #:any (list (λ (lang sexp) (values lang 'e)))))
+     '(+ (+ 7 7) (+ 7 7)))
+    (test
+     (let ([generated null])
+       (check-reduction-relation
+        (reduction-relation L (--> e e))
+        (λ (t) (set! generated (cons t generated)))
+        #:decisions (decisions #:nt (make-pick-nt (make-random)
+                                                  (λ (att rand) #t))
+                               #:pref (list (λ (_) 'dontcare)
+                                            (λ (_) 'dontcare)
+                                            (λ (_) 'dontcare)
+                                            (λ (L) (make-immutable-hash `((e ,(car (pats L))))))
+                                            (λ (L) (make-immutable-hash `((e ,(cadr (pats L))))))))
+        #:attempts 5)
+       generated)
+     '((* 7 7) (+ 7 7) 7 7 7))))
 
 ;; output : (-> (-> void) string)
 (define (output thunk)
