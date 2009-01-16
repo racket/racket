@@ -469,13 +469,11 @@
                          #,(syntax-span id))
             #,(format "~s" (syntax-object->datum id))))
   
-  (define-syntax-parameter current-unit-blame-stx (lambda (stx) #'(#%variable-reference)))
-  
   (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
           (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen
-                                  (current-unit-blame-stx)
+                                  (current-contract-region)
                                   #,(id->contract-src-info var))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
@@ -556,7 +554,7 @@
                (vector-immutable (cons 'export-name 
                                        (vector-immutable export-key ...)) ...)
                (list (cons 'dept depr) ...)
-               (syntax-parameterize ([current-unit-blame-stx (lambda (stx) #'(quote (unit name)))])
+               (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                  (lambda ()
                    (let ([eloc (box undefined)] ... ...)
                      (values 
@@ -693,7 +691,7 @@
                   (set-var-info-add-ctc! 
                    v
                    (λ (e)
-                     #`(contract #,(cdr (syntax-e ctc)) #,e (current-unit-blame-stx) 
+                     #`(contract #,(cdr (syntax-e ctc)) #,e (current-contract-region) 
                                  'cant-happen #,(id->contract-src-info e)))))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
@@ -1219,7 +1217,7 @@
                             (lambda (i v c)
                               (if c
                                   #`(contract #,c (unbox (vector-ref #,ov #,i))
-                                              'cant-happen (current-unit-blame-stx)
+                                              'cant-happen (current-contract-region)
                                               #,(id->contract-src-info v))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
