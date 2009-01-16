@@ -152,3 +152,13 @@
 
 (test-runtime-error exn:fail:contract? "unit9-1 provides wrong value for function f"
   (invoke-unit unit9))
+
+(define-values/invoke-unit
+  (unit
+   (import) (export sig2)
+   (define f values))
+  (import)
+  (export sig2))
+
+(test-runtime-error exn:fail:contract? "top-level misuses f"
+  (f #t))
