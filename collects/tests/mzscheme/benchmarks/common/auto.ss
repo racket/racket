@@ -225,6 +225,13 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-mzscheme-times
                 clean-up-nothing
                 mutable-pair-progs)
+     (make-impl 'mzschemecgc-j
+                mk-mzscheme
+                (lambda (bm)
+                  (system (format "mzschemecgc -jqu ~a.ss" bm)))
+                extract-mzscheme-times
+                clean-up-nothing
+                mutable-pair-progs)
      (make-impl 'mzschemecgc-tl
                 mk-mzscheme-tl
                 (lambda (bm)

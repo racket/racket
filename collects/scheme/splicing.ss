@@ -118,9 +118,12 @@
                                #f)])
        ;; Extract expanded body out of `body':
        (syntax-case body (quote)
-         [(ls _ _ (quoute body))
+         [(ls _ _ (quote body))
           (let ([body #'body])
             (syntax-case body (begin define-values define-syntaxes define-for-syntaxes)
+              [(begin expr ...)
+               (syntax/loc body
+                 (begin (expand-ssp-body (sp-id ...) (temp-id ...) expr) ...))]
               [(define-values (id ...) rhs)
                (syntax/loc body
                  (define-values (id ...)

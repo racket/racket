@@ -11,6 +11,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define base-link-filename (make-parameter #f))
   (define full-page-mode (make-parameter #f))
   (define include-links (make-parameter #f))
+  (define nongc (make-parameter #f))
 
   (command-line
    "tabulate"
@@ -20,6 +21,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
      (include-links #f)]
     [("--multi") name "generate multiple pages for different views of data"
      (base-link-filename name)]
+    [("--nongc") "show times not including GC"
+     (nongc #t)]
     [("--index") "generate full page with an index.html link"
      (full-page-mode #t)]))
   
@@ -111,6 +114,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
   (define forever 1000000000)
 
+  (define (ntime v)
+    (and (caadr v) (- (caadr v) (caddr (cadr v)))))
+
   (define (generate-page relative-to)
     (empty-tag-shorthand html-empty-tags)
     (write-xml/content 
@@ -141,18 +147,21 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   (let ([fastest (apply min (map (lambda (run)
                                                    (or (caadr run) forever))
                                                  (cdr bm-run)))]
+                        [n-fastest (apply min (map (lambda (run)
+                                                     (or (ntime run) forever))
+                                                   (cdr bm-run)))]
                         [c-fastest (apply min (map (lambda (run)
                                                      (let ([v (caddr run)])
                                                        (or (and v (positive? v) v)
                                                            forever)))
                                                    (cdr bm-run)))])
-                    (let-values ([(base c-base)
+                    (let-values ([(base n-base c-base)
                                   (if relative-to
                                       (let ([a (assq relative-to (cdr bm-run))])
                                         (if a
-                                            (values (caadr a) (caddr a))
-                                            (values #f #f)))
-                                      (values fastest c-fastest))])
+                                            (values (caadr a) (ntime a) (caddr a))
+                                            (values #f #f #f)))
+                                      (values fastest n-fastest c-fastest))])
                       `(tr (td ,(if (include-links)
 				    `(a ((href ,(format (string-append "http://svn.plt-scheme.org/plt/trunk/collects/"
 								       "tests/mzscheme/benchmarks/common/~a.sch")
@@ -172,7 +181,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
                               append
                               (map (lambda (impl)
                                      (let* ([a (assq impl (cdr bm-run))]
-                                            [n (and a (caadr a))])
+                                            [n (and a (caadr a))]
+                                            [n2 (and a (ntime a))])
                                        `(,(if (= c-fastest forever)
 					      `(td)
 					      `(td ((align "right")
@@ -192,6 +202,17 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                                         `(font ((color "forestgreen")) (b ,s))
                                                         s))
                                                   "-")
+                                             ,@(if (nongc)
+                                                   `(" / " 
+                                                     ,(if (and n2 n-base)
+                                                          (let ([s (if (zero? base)
+                                                                          "*"
+                                                                          (ratio->string (/ n2 base)))])
+                                                            (if (= n2 n-fastest)
+                                                                `(font ((color "forestgreen")) (b ,s))
+                                                                s))
+                                                          "-"))
+                                                   null)
                                              nbsp))))
                                    sorted-impls))))))
                 sorted-runs)))))
