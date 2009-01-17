@@ -150,7 +150,7 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
 @scheme[import] clause.}
 
 @defform/subs[
-#:literals (define-syntaxes define-values open extends)
+#:literals (define-syntaxes define-values open extends contracted)
 (define-signature id extension-decl
   (sig-elem ...))
 
@@ -214,6 +214,7 @@ the extended signature. Furthermore, any implementation of the new
 signature can be used as an implementation of the extended signature.}
 
 @defkeywords[[(open sig-spec) _sig-elem define-signature]
+             [(contracted [id contract] ...) _sig-elem define-signature]
              [(only sig-spec id ...) _sig-spec unit]
              [(except sig-spec id ...) _sig-spec unit]
              [(rename sig-spec (id id) ...) _sig-spec unit]
