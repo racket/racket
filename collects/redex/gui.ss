@@ -36,7 +36,8 @@
                #:colors (listof (list/c string? string?))
                #:scheme-colors? boolean?
                #:layout (-> any/c any/c)
-               #:edge-label-font (or/c #f (is-a?/c font%)))
+               #:edge-label-font (or/c #f (is-a?/c font%))
+               #:filter (-> any/c (or/c #f string?) any/c))
               any)]
  [traces/ps (->* (reduction-relation?
                   any/c
@@ -48,7 +49,8 @@
                   #:pp pp-contract
                   #:colors (listof any/c)
                   #:layout (-> any/c any/c)
-                  #:edge-label-font (or/c #f (is-a?/c font%)))
+                  #:edge-label-font (or/c #f (is-a?/c font%))
+                  #:filter (-> any/c (or/c #f string?) any/c))
                  any)]
  
  [term-node? (-> any/c boolean?)]
