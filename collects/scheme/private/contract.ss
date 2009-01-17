@@ -90,13 +90,10 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name contract-expr expr)
      (identifier? #'name)
-     (let ([contract (if (a:known-good-contract? #'contract-expr)
-                         #'contract-expr
-                         #'(verify-contract 'define/contract contract-expr))])
-       (quasisyntax/loc define-stx
-         (with-contract #:type definition name
-           ([name #,contract])
-           (define name expr))))]
+     (syntax/loc define-stx
+       (with-contract #:type definition name
+         ([name contract-expr])
+         (define name expr))))]
     [(_ name contract-expr expr0 expr ...)
      (identifier? #'name)
      (raise-syntax-error 'define/contract
@@ -167,33 +164,107 @@ improve method arity mismatch contract violation error messages?
                        neg-blame-id
                        #'ident))])))))
 
-(define-for-syntax (head-expand-all body-stxs)
-  (apply append
-         (for/list ([stx body-stxs])
-           (let ([exp-form (local-expand stx
+(define-for-syntax (partition-ids def-ids p/c-pairs unprotected-ids)
+  (let loop ([ids         def-ids]
+             [used-p/cs   null]
+             [used-us     null]
+             [unused-p/cs p/c-pairs]
+             [unused-us   unprotected-ids])
+    (if (null? ids)
+        (values used-p/cs used-us unused-p/cs unused-us)
+        (let-values ([(matched no-match)
+                      (partition (λ (i)
+                                   (bound-identifier=? i (car ids)))
+                                 unused-us)])
+          (if (null? matched)
+              (let-values ([(matched no-match)
+                            (partition (λ (i)
+                                         (bound-identifier=? (car i) (car ids)))
+                                       unused-p/cs)])
+                (if (null? matched)
+                    (loop (cdr ids)
+                          used-p/cs
+                          used-us
+                          unused-p/cs
+                          unused-us)
+                    (loop (cdr ids)
+                          (append matched used-p/cs)
+                          used-us
+                          no-match
+                          unused-us)))
+              (loop (cdr ids)
+                    used-p/cs
+                    (append matched used-us)
+                    unused-p/cs
+                    no-match))))))
+
+(define-syntax (with-contract-helper stx)
+  (syntax-case stx ()
+    [(_ marker blame-stx () () (def ...))
+     #'(begin def ...)]
+    [(_ marker blame-stx ((p0 c0) (p c) ...) (u ...) (def ...))
+     (raise-syntax-error 'with-contract
+                         "no definition found for identifier"
+                         #'p0)]
+    [(_ marker blame-stx () (u0 u ...) (defs ...))
+     (raise-syntax-error 'with-contract
+                         "no definition found for identifier"
+                         #'u0)]
+    [(_ marker blame-stx ((p c) ...) (u ...) (def ...) body0 body ...)
+     (let ([marker-f (syntax-e #'marker)]
+           [expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (kernel-form-identifier-list))])
-             (syntax-case exp-form (begin)
-               [(begin form ...)
-                (head-expand-all (syntax->list #'(form ...)))]
-               [_
-                (list exp-form)])))))
-
-(define-for-syntax (check-exports ids body-stxs)
-  (let ([defd-ids (for/fold ([id-list null])
-                            ([stx body-stxs])
-                    (kernel-syntax-case stx #f
-                      [(define-values ids expr)
-                       (append (syntax->list #'ids)
-                               id-list)]
-                      [_ id-list]))])
-    (for ([id (in-list ids)])
-         (unless (findf (lambda (s)
-                          (bound-identifier=? s id))
-                        defd-ids)
-           (raise-syntax-error 'with-contract
-                               "identifier not defined in body"
-                               id)))))
+       (syntax-case expanded-body0 (begin define-values)
+         [(begin sub ...)
+          (syntax/loc stx
+            (with-contract-helper marker blame-stx ((p c) ...) (u ...) (def ...) sub ... body ...))]
+         [(define-values (id ...) expr)
+          (let-values ([(used-p/cs used-us unused-p/cs unused-us)
+                        (partition-ids (syntax->list #'(id ...)) 
+                                       (map syntax->list (syntax->list #'((p c) ...)))
+                                       (syntax->list #'(u ...)))])
+            (with-syntax ([(u-def ...)
+                           (map (λ (u)
+                                  #`(define-syntaxes (#,u)
+                                      (make-rename-transformer (quote-syntax #,(marker-f u)))))
+                                used-us)]
+                          [(p/c-def ...)
+                           (apply append
+                                  (map (λ (p/c)
+                                         (let* ([p (car p/c)]
+                                                [c (cadr p/c)]
+                                                [contract-id
+                                                 (if (a:known-good-contract? c)
+                                                     #f
+                                                     (marker-f (a:mangle-id stx "with-contract-contract-id" p)))]
+                                                [always-defined
+                                                 (list #`(define-syntaxes (#,p)
+                                                           (make-with-contract-transformer
+                                                            (quote-syntax #,contract-id)
+                                                            (quote-syntax #,(marker-f p))
+                                                            (quote-syntax blame-stx)))
+                                                       #`(define-values ()
+                                                           (begin
+                                                             (-contract #,(if contract-id contract-id c)
+                                                                        #,(marker-f p)
+                                                                        blame-stx
+                                                                        'cant-happen
+                                                                        #,(id->contract-src-info p))
+                                                             (values))))])
+                                           (if contract-id
+                                               (cons #`(define-values (#,contract-id)
+                                                         (verify-contract 'with-contract #,(marker-f c)))
+                                                     always-defined)
+                                               always-defined)))
+                                       used-p/cs))])
+              (quasisyntax/loc stx
+                (begin #,(marker-f expanded-body0)
+                       (with-contract-helper marker blame-stx #,unused-p/cs #,unused-us
+                                             (def ... u-def ... p/c-def ...) body ...)))))]
+         [else
+          #`(begin #,(marker-f expanded-body0)
+                   (with-contract-helper marker blame-stx ((p c) ...) (u ...) (def ...) body ...))]))]))
 
 (define-for-syntax (check-and-split-with-contract-args args)
   (let loop ([args args]
@@ -235,53 +306,19 @@ improve method arity mismatch contract violation error messages?
           (identifier? #'type))
      (let*-values ([(marker) (make-syntax-introducer)]
                    [(unprotected protected protections)
-                    (check-and-split-with-contract-args (syntax->list #'(arg ...)))]
-                   [(expanded-bodies)
-                    (head-expand-all (cons #'body0 (syntax->list #'(body ...))))]
-                   [(protected-ids contracts contract-defs)
-                    (for/lists (protected-ids contracts contract-defs)
-                      ([n protected]
-                       [c protections])
-                      (if (a:known-good-contract? c)
-                          (values n c #f)
-                          (let ([contract-id (a:mangle-id stx "with-contract-contract-id" n)])
-                            (values n contract-id
-                                    (quasisyntax/loc stx
-                                      (define-values (#,contract-id)
-                                        (verify-contract 'with-contract #,c)))))))])
+                    (check-and-split-with-contract-args (syntax->list #'(arg ...)))])
        (begin
-         (let* ([all-ids (append unprotected protected)]
-                [dupd-id (check-duplicate-identifier all-ids)])
+         (let ([dupd-id (check-duplicate-identifier (append unprotected protected))])
            (when dupd-id
              (raise-syntax-error 'with-contract
                                  "identifier appears twice in exports"
-                                 dupd-id))
-           (check-exports (append unprotected protected) expanded-bodies))
-         (with-syntax ([(contract-def ...) (map marker (filter values contract-defs))]
-                       [blame-stx #''(type blame)]
-                       [(marked-body ...) (map marker expanded-bodies)])
+                                 dupd-id)))
+         (with-syntax ([blame-stx #''(type blame)]
+                       [((p c) ...) (map list protected protections)]
+                       [(u ...) unprotected])
            (quasisyntax/loc stx
              (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
-               marked-body ...
-               contract-def ...
-               #,@(map (λ (p c)
-                         #`(define-syntax #,p
-                             (make-with-contract-transformer
-                              (quote-syntax #,(marker c))
-                              (quote-syntax #,(marker p))
-                              (quote-syntax blame-stx))))
-                         protected-ids contracts)
-               #,@(map (λ (u)
-                         #`(define-syntax #,u
-                             (make-rename-transformer (quote-syntax #,(marker u)))))
-                         unprotected)
-               (define-values ()
-                 (begin
-                   #,@(map (λ (p c)
-                             #`(-contract #,(marker c) #,(marker p) blame-stx 'ignored #,(id->contract-src-info p)))
-                           protected-ids contracts)
-                   (values)))
-               )))))]
+               (with-contract-helper #,marker blame-stx ((p c) ...) (u ...) () body0 body ...))))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
