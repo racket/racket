@@ -93,7 +93,7 @@ improve method arity mismatch contract violation error messages?
      (syntax/loc define-stx
        (with-contract #:type definition name
          ([name contract-expr])
-         (define name expr))))]
+         (define name expr)))]
     [(_ name contract-expr expr0 expr ...)
      (identifier? #'name)
      (raise-syntax-error 'define/contract
