@@ -2424,38 +2424,38 @@
    'with-contract1
    '(let ()
       (with-contract odd-even
-        ([odd? (-> number? boolean?)]
-         [even? (-> number? boolean?)])
-        (define (odd? n)
-          (if (zero? n) #f (even? (sub1 n))))
-        (define (even? n)
-          (if (zero? n) #t (odd? (sub1 n)))))
-      (odd? 5)))
+        ([oddp (-> number? boolean?)]
+         [evenp (-> number? boolean?)])
+        (define (oddp n)
+          (if (zero? n) #f (evenp (sub1 n))))
+        (define (evenp n)
+          (if (zero? n) #t (oddp (sub1 n)))))
+      (oddp 5)))
   
   (test/spec-failed
    'with-contract2
    '(let ()
       (with-contract odd-even
-        ([odd? (-> number? boolean?)]
-         [even? (-> number? boolean?)])
-        (define (odd? n)
-          (if (zero? n) #f (even? (sub1 n))))
-        (define (even? n)
-          (if (zero? n) #t (odd? (sub1 n)))))
-      (odd? #t))
+        ([oddp (-> number? boolean?)]
+         [evenp (-> number? boolean?)])
+        (define (oddp n)
+          (if (zero? n) #f (evenp (sub1 n))))
+        (define (evenp n)
+          (if (zero? n) #t (oddp (sub1 n)))))
+      (oddp #t))
    "top-level")
   
   (test/spec-failed
    'with-contract3
    '(let ()
       (with-contract odd-even
-        ([odd? (-> number? boolean?)]
-         [even? (-> number? boolean?)])
-        (define (odd? n)
-          (if (zero? n) n (even? (sub1 n))))
-        (define (even? n)
-          (if (zero? n) #t (odd? (sub1 n)))))
-      (odd? 4))
+        ([oddp (-> number? boolean?)]
+         [evenp (-> number? boolean?)])
+        (define (oddp n)
+          (if (zero? n) n (evenp (sub1 n))))
+        (define (evenp n)
+          (if (zero? n) #t (oddp (sub1 n)))))
+      (oddp 4))
    "(region odd-even)")
   
   ;; Functions within the same with-contract region can call
@@ -2466,16 +2466,16 @@
    'with-contract4
    '(let ()
       (with-contract odd-even
-        ([odd? (-> number? boolean?)]
-         [even? (-> number? boolean?)])
-        (define (odd? n)
+        ([oddp (-> number? boolean?)]
+         [evenp (-> number? boolean?)])
+        (define (oddp n)
           (cond
             [(not (number? n)) #f]
             [(zero? n) #f]
-            [else (even? (sub1 n))]))
-        (define (even? n)
-          (if (zero? n) #t (odd? (zero? n)))))
-      (odd? 5)))
+            [else (evenp (sub1 n))]))
+        (define (evenp n)
+          (if (zero? n) #t (oddp (zero? n)))))
+      (oddp 5)))
 
 
 ;                                                                                                                         
