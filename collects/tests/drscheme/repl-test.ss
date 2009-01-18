@@ -59,7 +59,9 @@ This produces an ACK message
 
 (define syntax-regexp-prefix
   (string-append
-   (regexp-quote "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp")
+   (regexp-quote "#<syntax:")
+   ".*"
+   (regexp-quote "tests/drscheme/repl-test-tmp")
    "3?"
    (regexp-quote ".ss")))
 
@@ -587,12 +589,12 @@ This produces an ACK message
    
    (mktest "(current-namespace (make-namespace 'empty))\nif"
            
-           ("{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-            "{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-            "{stop-22x22.png} repl-test-tmp3.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-            "{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-            "{stop-multi.png} {stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)")
+           ("{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-22x22.png} repl-test-tmp3.ss:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-multi.png} {stop-22x22.png} compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: compile: unbound identifier (and no #%app syntax transformer is bound) in: #%top-interaction")
            'definitions
            #f
            void
@@ -650,12 +652,12 @@ This produces an ACK message
                           (regexp-quote ":1:21>\"})")))])
      (mktest "(write (list (syntax x)))" 
              
-             ("({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})"
-              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})")
+             (#rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})"
+              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})")
              'interactions
              #f
              void
@@ -691,12 +693,12 @@ This produces an ACK message
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
            
-           ("#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:96>"
-            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:96>")
+           (#rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96>")
            'interactions
            #f
            void
