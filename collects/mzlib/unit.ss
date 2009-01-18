@@ -472,9 +472,10 @@
   (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (contract #,ctc (unbox #,loc) 'cant-happen
-                                  (current-contract-region)
-                                  #,(id->contract-src-info var))))
+          (quote-syntax (let ([v/c (unbox #,loc)])
+                          (contract #,ctc (car v/c) (cdr v/c)
+                                    (current-contract-region)
+                                    #,(id->contract-src-info var)))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (unbox #,loc)))))
   
@@ -688,11 +689,7 @@
                   (raise-stx-err "cannot export syntax from a unit" name))
                 (set-var-info-exported?! v loc)
                 (when (pair? (syntax-e ctc))
-                  (set-var-info-add-ctc! 
-                   v
-                   (λ (e)
-                     #`(contract #,(cdr (syntax-e ctc)) #,e (current-contract-region) 
-                                 'cant-happen #,(id->contract-src-info e)))))))
+                  (set-var-info-ctc! v (cdr (syntax-e ctc))))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
             (syntax->list #'ectcs))
@@ -726,11 +723,20 @@
                                                            [(var-info-exported? var-info)
                                                             =>
                                                             (λ (export-loc)
-                                                              (let ([add-ctc (var-info-add-ctc var-info)])
-                                                                (list (quasisyntax/loc defn-or-expr
-                                                                        (set-box! #,export-loc 
-                                                                                  (let ([#,id #,(if add-ctc (add-ctc tmp) tmp)])
-                                                                                    #,id)))
+                                                              (let ([ctc (var-info-ctc var-info)])
+                                                                (list (if ctc
+                                                                          (quasisyntax/loc defn-or-expr
+                                                                            (begin
+                                                                              (contract #,ctc #,tmp
+                                                                                        (current-contract-region)
+                                                                                        'cant-happen
+                                                                                        #,(id->contract-src-info id))
+                                                                              (set-box! #,export-loc 
+                                                                                        (let ([#,id #,tmp])
+                                                                                          (cons #,id (current-contract-region))))))
+                                                                          (quasisyntax/loc defn-or-expr
+                                                                            (set-box! #,export-loc 
+                                                                                      (let ([#,id #,tmp]) #,id))))
                                                                       (quasisyntax/loc defn-or-expr
                                                                         (define-syntax #,id 
                                                                           (make-id-mapper (quote-syntax #,tmp)))))))]
@@ -1216,9 +1222,10 @@
                            (map 
                             (lambda (i v c)
                               (if c
-                                  #`(contract #,c (unbox (vector-ref #,ov #,i))
-                                              'cant-happen (current-contract-region)
-                                              #,(id->contract-src-info v))
+                                  #`(let ([v/c (unbox (vector-ref #,ov #,i))])
+                                      (contract #,c (car v/c) (cdr v/c)
+                                                (current-contract-region)
+                                                #,(id->contract-src-info v)))
                                   #`(unbox (vector-ref #,ov #,i))))
                             (iota (length (car os)))
                             (map car (car os))

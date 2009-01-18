@@ -45,8 +45,8 @@
             (cons (reverse requires) l)))))))
                  
         
-  ;; (make-var-info bool bool identifier (or #f (syntax-object -> syntax-object)))
-  (define-struct var-info (syntax? [exported? #:mutable] id [add-ctc #:mutable]))
+  ;; (make-var-info bool bool identifier (U #f syntax-object))
+  (define-struct var-info (syntax? [exported? #:mutable] id [ctc #:mutable]))
   
   (define-syntax define-struct/proc
     (syntax-rules ()

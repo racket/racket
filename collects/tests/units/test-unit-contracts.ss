@@ -162,3 +162,36 @@
 
 (test-runtime-error exn:fail:contract? "top-level misuses f"
   (f #t))
+
+(define-unit unit10
+  (import sig1 sig2) (export)
+  (if (zero? x)
+      (f 3)
+      (f #t)))
+
+(let ()
+  (define x 0)
+  (define f (lambda (x) #t))
+  (test-runtime-error exn:fail:contract? "top-level (via anonymous unit) provides improper f"
+    (invoke-unit unit10 (import sig1 sig2))))
+
+(let ()
+  (define x 1)
+  (define f values)
+  (test-runtime-error exn:fail:contract? "unit10 misuses f from top-level"
+    (invoke-unit unit10 (import sig1 sig2))))
+
+;; testing that contracts from extended signatures are checked properly
+(define-unit unit11
+  (import) (export sig3)
+  (define (f n) #t)
+  (define (g n) 3))
+
+(let ()
+  (define-values/invoke-unit unit11
+    (import)
+    (export sig3))
+  (test-runtime-error exn:fail:contract? "unit11 provides improper f"
+    (f 3))
+  (test-runtime-error exn:fail:contract? "top-level misuses f"
+    (f #t)))
