@@ -172,14 +172,15 @@ improve method arity mismatch contract violation error messages?
              [unused-us   unprotected-ids])
     (if (null? ids)
         (values used-p/cs used-us unused-p/cs unused-us)
-        (let-values ([(matched no-match)
-                      (partition (λ (i)
-                                   (bound-identifier=? i (car ids)))
-                                 unused-us)])
+        (let*-values ([(first-id) (car ids)]
+                      [(matched no-match)
+                       (partition (λ (i)
+                                    (bound-identifier=? i first-id))
+                                  unused-us)])
           (if (null? matched)
               (let-values ([(matched no-match)
-                            (partition (λ (i)
-                                         (bound-identifier=? (car i) (car ids)))
+                            (partition (λ (p/c)
+                                         (bound-identifier=? (car p/c) first-id))
                                        unused-p/cs)])
                 (if (null? matched)
                     (loop (cdr ids)
@@ -200,30 +201,34 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
-    [(_ marker blame-stx () () (def ...))
-     #'(begin def ...)]
-    [(_ marker blame-stx ((p0 c0) (p c) ...) (u ...) (def ...))
+    [(_ marker blame-stx () ())
+     (begin #'(define-values () (values)))]
+    [(_ marker blame-stx ((p0 c0) (p c) ...) (u ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ marker blame-stx () (u0 u ...) (defs ...))
+    [(_ marker blame-stx () (u0 u ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'u0)]
-    [(_ marker blame-stx ((p c) ...) (u ...) (def ...) body0 body ...)
-     (let ([marker-f (syntax-e #'marker)]
-           [expanded-body0 (local-expand #'body0
+    [(_ marker blame-stx ((p c) ...) (u ...) body0 body ...)
+     (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (kernel-form-identifier-list))])
        (syntax-case expanded-body0 (begin define-values)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper marker blame-stx ((p c) ...) (u ...) (def ...) sub ... body ...))]
+            (with-contract-helper marker blame-stx ((p c) ...) (u ...) sub ... body ...))]
          [(define-values (id ...) expr)
-          (let-values ([(used-p/cs used-us unused-p/cs unused-us)
-                        (partition-ids (syntax->list #'(id ...)) 
-                                       (map syntax->list (syntax->list #'((p c) ...)))
-                                       (syntax->list #'(u ...)))])
+          (let*-values ([(marker-f) (let ([marker (syntax-e #'marker)])
+                                      (lambda (stx)
+                                        (syntax-local-introduce
+                                         (marker (syntax-local-introduce stx)))))]
+                        [(used-p/cs used-us unused-p/cs unused-us)
+                         (partition-ids marker-f
+                                        (syntax->list #'(id ...)) 
+                                        (map syntax->list (syntax->list #'((p c) ...)))
+                                        (syntax->list #'(u ...)))])
             (with-syntax ([(u-def ...)
                            (map (λ (u)
                                   #`(define-syntaxes (#,u)
@@ -260,11 +265,17 @@ improve method arity mismatch contract violation error messages?
                                        used-p/cs))])
               (quasisyntax/loc stx
                 (begin #,(marker-f expanded-body0)
+                       u-def ... p/c-def ...
                        (with-contract-helper marker blame-stx #,unused-p/cs #,unused-us
-                                             (def ... u-def ... p/c-def ...) body ...)))))]
+                                             body ...)))))]
          [else
-          #`(begin #,(marker-f expanded-body0)
-                   (with-contract-helper marker blame-stx ((p c) ...) (u ...) (def ...) body ...))]))]))
+          (let*-values ([(marker-f) (let ([marker (syntax-e #'marker)])
+                                      (lambda (stx)
+                                        (syntax-local-introduce
+                                         (marker (syntax-local-introduce stx)))))])
+            (quasisyntax/loc stx
+              (begin #,(marker-f expanded-body0)
+                     (with-contract-helper marker blame-stx ((p c) ...) (u ...) body ...))))]))]))
 
 (define-for-syntax (check-and-split-with-contract-args args)
   (let loop ([args args]
@@ -301,7 +312,7 @@ improve method arity mismatch contract violation error messages?
                         "used in expression context"
                         stx))
   (syntax-case stx ()
-    [(_ #:type type blame (arg ...) body0 body ...)
+    [(_ #:type type blame (arg ...) body0 . body)
      (and (identifier? #'blame)
           (identifier? #'type))
      (let*-values ([(marker) (make-syntax-introducer)]
@@ -318,7 +329,7 @@ improve method arity mismatch contract violation error messages?
                        [(u ...) unprotected])
            (quasisyntax/loc stx
              (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
-               (with-contract-helper #,marker blame-stx ((p c) ...) (u ...) () body0 body ...))))))]
+               (with-contract-helper #,marker blame-stx ((p c) ...) (u ...) body0 . body))))))]
     [(_ #:type type blame (arg ...) body0 body ...)
      (raise-syntax-error 'with-contract
                          "expected identifier for blame"
