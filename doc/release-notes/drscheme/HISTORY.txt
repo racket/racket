@@ -2,11 +2,17 @@
         Version 4.1.4
 ------------------------------
 
-  . improved the way extensions are handled when saving files.
+  . got rid of drscheme:debug:profiling-enabled
+    in favor of errortrace/errortrace-lib's
+    profiling-enabled
+
+  . minor bug fixes
 
 ------------------------------
         Version 4.1.3
 ------------------------------
+
+  . improved the way extensions are handled when saving files.
 
   . minor bug fixes
 
@@ -16,6 +22,8 @@
 
   . contract library's function contract 
     combinatiors now preserve tail recursion.
+
+  . keybindings lang is now based on scheme, not mzscheme
 
 ------------------------------
         Version 4.1

@@ -1,0 +1,459 @@
+v4.1.3
+
+  * added redex-check, a tool for automatically generating test cases
+    for Redex specifications.
+
+  * improved traces for use in generating PostScript:
+
+    - added traces/ps
+
+    - added more coloring arguments to traces: #:scheme-colors? 
+    #:default-arrow-highlight-color, and #:default-arrow-color
+
+    - added the #:layout argument to traces 
+
+    - added term-node-set-position! and related term-node functions
+
+  * Added tracing to metafunctions (see current-traced-metafunctions)
+
+  * added caching-enabled? parameter (changed how set-cache-size! 
+    works)
+
+v4.1.2
+
+  - added white-bracket-sizing to control how the brackets
+    are typeset when rendering a metafunction.
+
+  - added render-* functions that make it easier to experiment
+    with typesetting at the REPL.
+
+  - where clauses in metafunctions now are implicitly in
+    `term's (they were not documented at all before)
+
+v4.1 (this is the first version that was included in the PLT
+      distribution. Before this, Redex was in PLaneT).
+
+  EXTENSIONS:
+
+  - added test-equal, test-pred, test-reduces, and test-results
+
+  - removed restriction on apply-reduction-relation*
+    replaced it with additional work while matching
+    non-terminals to remove the redundancy
+
+  - added `in-domain?'
+
+  CHANGES:
+
+  - define-metafunction and co. now use a different syntax.
+
+  - got rid of named holes. This means, eg, that (hole #f) now matches
+    a two element list, not just the hole directly.
+
+  - zero occurrences of a hole when matching an `in-hole' now
+    correctly fails.
+
+  - the `where' keyword in reduction-relation became `with' (and the
+    arguments reversed order)
+
+  - renamed the `rib' struct to `bind' (and mismatch-rib =>
+    mismatch-bind)
+
+  - merged the various traces functions into a single
+    function that accepts keyword arguments.
+
+  - renamed the loc-wrapper struct to lw.
+
+  - language->ps and language->pict's listof-symbols is now
+    optional and thus the language->ps's arguments changed
+    order to make that work.
+
+  - renamed test-match to redex-match
+
+  - no long export mtch struct or bindings struct and
+    test-match's result is not simplified.
+
+  - extend-reduction-relation now uses the names of the
+    rules to replace existing rules (instead of just
+    unioning the rules)
+
+  - in-hole used to substitute into named holes, but now it
+    only substitutes into unnamed holes. Use in-named-hole
+    on the right-hand side to do the substitution
+
+  - removed hole-here
+
+  BUG FIXES:
+
+  - fixed a (not easily noticed) bug in the way hole
+    matching worked for named holes.
+
+  - extending a non-terminal that's been defined together
+    with other non-terminals now works as expected.
+
+  - handling of non-terminals uses that have underscores in
+    them now works properly (only showed up when using them
+    in the definition of a langauge)
+
+  - an extended language can now define multiple non-terminals
+    together
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+below here were the versions of Redex that appeared in PLaneT
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+("robby" "redex.plt" 4 4)
+
+  - undid some changes that broke backwards compatibility
+
+("robby" "redex.plt" 4 3)
+
+  - added extend-reduction-relation
+  - fixed a bug whereby reduction relations that reduced to
+    false were always ignored
+
+("robby" "redex.plt" 4 2)
+
+  - fixed a bug in the way `in-hole' inside
+    an ellipsis on the right-hand side of a
+    reduction rule.
+
+("robby" "redex.plt" 4 1)
+
+  - improved stepper so that scrolling works when large
+    terms are present.
+
+("robby" "redex.plt" 4 0)
+
+  - changed conventions for subscripts. Now, non-terminals
+    w/out subscripts bind in reduction rules (but they still
+    do not bind in grammar definitions).
+
+  - wheres and side-conditions now bind as expected in
+    reduction-rules
+
+  - fixed a bug in metafunction pict generation (parallel
+    fix from 3.28)
+
+  - renamed horizontal-arrow-space to arrow-space.
+  - renamed horizontal-label-space to label-space.
+
+("robby" "redex.plt" 3 27)
+
+  - added horizontal-arrow-space, horizontal-label-space
+  - number & variable now typeset in italics (to match the other non-terminals)
+  - improved fresh variable generation
+  - added `where' for bindings in metafunctions
+  - added 'up-down mode for metafunction typesetting
+  - added optional argument to reduction-relation->pict &
+    reduction-relation->ps
+  - PR 8957
+
+("robby" "redex.plt" 3 26)
+
+  - fixed a bug in pict generation
+
+("robby" "redex.plt" 3 25)
+
+  - added hole-here support for `term'
+
+("robby" "redex.plt" 3 24)
+
+  - added curly-quotes-for-strings and current-text
+
+("robby" "redex.plt" 3 23)
+
+  - fixed a bug that cause typesetting of grammars that
+    defined hole as the first production of some
+    non-terminal.
+
+  - added hide-hole pattern
+
+("robby" "redex.plt" 3 22)
+
+  - ??
+
+("robby" "redex.plt" 3 21)
+
+  - added `where' as a binding form in the individual
+    clauses of a reduction-relation.
+
+  - typesetting: 
+
+    - improved handling of nested term, quote,
+      unquote, and unquote-splicing.
+
+    - fixed up in-named-hole and (hole x) to use subscripts.
+
+    - improved the docs for the loc wrappers to explain
+      logical spacing.
+
+    - improved typesetting of languages built with
+      extend-language. See extend-language-show-union.
+
+    - added set-arrow-pict!
+
+("robby" "redex.plt" 3 20)
+
+  - improved the interface for rewriting aspects of the typesetting.
+
+  - added linebreaks, with-compound-rewriter, and with-atomic-rewriter
+
+("robby" "redex.plt" 3 19)
+
+  - improved source locations for error messages when misusing ellipses, eg:
+    (term-let ([(x ...) '(1 2)] [(y ...) '(1 2 3)]) (term ((x y) ...)))
+    or similar things via reduction-relation, metafunctions, etc.
+
+  - fixed PR 8752: `name' patterns only show the name,
+    leaving the thing defined to the where clause
+
+("robby" "redex.plt" 3 18)
+
+  - fixed PRS relating to pict generation: 8749 8751 8750
+    and a few other bugs along the way.
+
+("robby" "redex.plt" 3 17)
+
+  - initial-char-width now controls both the stepper & traces
+
+("robby" "redex.plt" 3 16)
+
+  - added define-multi-args-metafunction
+  - finished first pass of the pict generation rewriting
+
+("robby" "redex.plt" 3 15)
+
+  - fixed a bug in stepper/seed
+
+("robby" "redex.plt" 3 14)
+
+  - fixed some silly mistakes in the packaging
+
+("robby" "redex.plt" 3 13)
+
+  - added variable-not-otherwise-mentioned as a new pattern
+  - added stepper/seed
+  - added an optional pretty-printing argument to stepper.
+  - improved the ps rendering of the arrows
+    for --> -> => ==> ~> and ~~>
+  - rewrote internals of pict rendering (hopefully no change
+    yet, but there may be bugs introduced ...).
+
+("robby" "redex.plt" 3 12)
+
+  - Added pict and .ps generation functions for
+    reduction-relations, metafunctions, and grammars. These
+    are still primitive; the most obvious missing feature is
+    the inability (without secret knowledge) to replace the
+    pink stuff.
+  - fixed a bug in the way the stepper highlights
+    differences in the presence of quote (by disabling the '
+    shortcuts printing)
+
+    NOTE this version of redex requires not just any
+    369.100, but one from 5/19 in the afternoon (or newer).
+
+("robby" "redex.plt" 3 11)
+
+  - changed the order of the arguments in the new `fresh' clauses
+    introduced in the last release.
+
+("robby" "redex.plt" 3 10)
+
+  - fixed bugs in the way that ..._x patterns work (they 
+    didn't handle binding well).
+  - fixed misc bugs in the stepper
+  - added the ability to generate a sequence of fresh variables
+    in a single rule
+
+("robby" "redex.plt" 3 9)
+
+  - added side-condition specs to metafunctions
+  - added test-reduces and test-reduces/multiple to schemeunit.ss
+  - fixed a bug in the handling of _!_
+  - improved the "found the same binder" error message to show
+    the source locations of the two offending binders
+
+("robby" "redex.plt" 3 8)
+
+  - fixed a bug in the way (hole #f) patterns matched.
+  - fixed a bug in the initial height of the boxes in `traces' 
+  - added reduction->relation-names
+  - added ability to step until a particular reduction (and
+    the reduction labels) in the stepper.
+
+("robby" "redex.plt" 3 7) 
+
+  - improved syntax error message (PR 8576)
+  - added difference highlighting for adjacent terms in the stepper
+
+("robby" "redex.plt" 3 6)
+
+  - added stepper
+
+("robby" "redex.plt" 3 5)
+
+  - bugfix (I think ... this version's changes seem to have been forgotten)
+
+("robby" "redex.plt" 3 4)
+
+  - added term-node-children
+
+("robby" "redex.plt" 3 3)
+
+  - added term-match and term-match/single
+  - added variables-not-in
+  - fixed a bug in metafunctions
+
+("robby" "redex.plt" 3 2)
+
+  - added language-nts
+  - added better error messages when using parts of the
+    pattern language as ordinary things in the grammar.
+
+("robby" "redex.plt" 3 1) 
+
+  - adds the ability to have multi-colored terms, not just
+    pink ones.
+
+("robby" "redex.plt" 3 0)
+
+This release changes the syntax of the reduction relations
+to make it more consistent and more in line with the way
+reduction relations are written in papers. This is the
+precise set of removals and additions:
+
+  - added extend-language
+  - added reduction-rule & apply-reduction-relation
+  - added union-reduction-relations
+  - added define-language
+
+  - changed compatible-closure & context-closure so that the
+    pattern argument is not quoted, but is just the pattern
+    in the last argument.
+
+  - changed term-node-labels so that it can return #f (in
+    the list) when a reduction doesn't have a label.
+
+  - removed language->predicate, compile-pattern,
+    match-pattern (use test-match instead)
+
+  - removed reduction, reduction/name, reduction/context,
+    reduction/context/name (use reduction-relation instead)
+
+  - removed red? (use reduction-relation? instead)
+
+  - removed reduce (use apply-reduction-relation instead)
+
+  - removed reduce-all (use apply-reduction-relation* insetad)
+
+  - removed reduce/tag-with-reduction (use
+    apply-reduction-relation/tag-with-names instead)
+
+  - removed red-name, reduction->name, give-name
+
+  - removed language (use define-language instead)
+
+  - removed helper.ss
+
+Other improvements:
+
+  - check syntax draws arrows for the non-terminals in a
+    `language' now, both to the language and to the
+    reduction rules.
+
+("robby" "redex.plt" 2 6)
+
+  - added reduce-all and note about bad parsing performance
+    issues.
+
+  - added `test-match' and note about how to debug redex
+    programs to doc.txt
+ 
+  - added redex-specific 'check' functions for use with
+    schemeunit.
+
+  - add `metafunction' for defining meta functions using the
+    pattern matching notation used in reductions and grammars.
+
+("robby" "redex.plt" 2 5) 
+
+  - fixed bugs in compatible-closure & context-closure
+
+("robby" "redex.plt" 2 4) 
+
+  - reduced the amount of memory used for caching
+    significantly (with some small speedup for 
+    a largeish reduction semantics test suite)
+
+  - added set-cache-size!
+
+  - added variable-prefix pattern
+
+  - added ..._<id> pattern that can be used to ensure matching
+    lengths of repeated patterns.
+
+  - added _!_ subscripts (both in ... and regular) to ensure
+    that the matched things are different (or have different
+    lengths in the case of ..._!_ subscripts)
+
+("robby" "redex.plt" 2 3) 
+
+  - added the ability to traverse the graph generated by
+    traces in order to decide if a term should be
+    highlighted in red. See the traces/pred documentation
+    for details.
+
+  - added term-node functions
+
+  - added red-name function
+
+  - removed make-plt.ss from archive
+
+("robby" "redex.plt" 2 2)
+
+  - added a blurb, fixed a typo in the docs.
+
+("robby" "redex.plt" 2 1)
+
+  - changed the way a contract is specified on the matcher
+    to get a 30% speed up on the beginner test suite.
+    Thanks, Matthew for spotting that!
+
+("robby" "redex.plt" 2 0)
+
+  - fixed a bug in compatible-closure handling that could
+    result in duplicate matches when there should only have
+    been a single match.
+
+  - added labels to edges for reductions
+    when shown in GUI. See docs for
+    reduction/name
+
+  - small performance improvement to matcher 
+    (10-20% on non-trivial examples)
+
+  - added letrec.ss example (and improved some
+    of the examples to use labels)
+
+("robby" "redex.plt" 1 3)
+
+  - Fixed a bug in the the compatible closure function; otherwise the
+    same as 1.1
+
+("robby" "redex.plt" 1 2)
+
+  - Obsolete'd version. It used to be a first attempt at the 2.0
+    revision, but now should be avoided. 
+
+    Use 2.0 instead of this version.
+
+("robby" "redex.plt" 1 1)
+
+  - fixed packaging error
+
+("robby" "redex.plt" 1 0)
+
+  - initial release to PLaneT
+
