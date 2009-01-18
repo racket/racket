@@ -1156,8 +1156,9 @@ exploring reduction sequences.
                            (and/c (listof (or/c string? (is-a?/c color%)))
                                   (lambda (x) (member (length x) '(2 3 4 6))))))]
 
-	         [#:scheme-colors? scheme-colors? boolean?]
-                 [#:layout layout (-> (listof term-node?) void)]
+	         [#:scheme-colors? scheme-colors? boolean? #t]
+                 [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
+                 [#:layout layout (-> (listof term-node?) void) void]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
          void?]{
 
@@ -1217,6 +1218,10 @@ The @scheme[scheme-colors?] argument, if @scheme[#t] causes
 to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
 @scheme[traces] just uses black for the color scheme.
 
+The @scheme[term-filter] function is called each time a new node is
+about to be inserted into the graph. If the filter returns false, the
+node is not inserted into the graph.
+
 The @scheme[layout] argument is called (with all of the terms) when
 new terms is inserted into the window. In general, it is called when
 after new terms are inserted in response to the user clicking on the
@@ -1242,7 +1247,8 @@ font is used.
                                 (any output-port number (is-a?/c text%) -> void))
                           default-pretty-printer]
                     [#:colors colors (listof (list string string)) '()]
-                    [#:layout layout (-> (listof term-node?) void)]
+                    [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
+                    [#:layout layout (-> (listof term-node?) void) void]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
          void?]{
 

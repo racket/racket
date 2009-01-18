@@ -133,7 +133,7 @@
                    #:colors [colors '()]
                    #:layout [layout void]
                    #:edge-label-font [edge-label-font #f]
-                   )
+                   #:filter [term-filter (lambda (x y) #t)])
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
@@ -143,7 +143,8 @@
                         #:scheme-colors? scheme-colors?
                         #:colors colors
                         #:layout layout
-                        #:edge-label-font edge-label-font)])
+                        #:edge-label-font edge-label-font
+                        #:filter term-filter)])
     (print-to-ps graph-pb canvas filename)))
 
 (define (print-to-ps graph-pb canvas filename)
@@ -231,6 +232,7 @@
                 #:scheme-colors? [scheme-colors? #t]
                 #:layout [layout void]
                 #:edge-label-font [edge-label-font #f]
+                #:filter [term-filter (lambda (x y) #t)]
                 #:no-show-frame? [no-show-frame? #f])
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
@@ -400,13 +402,14 @@
                            (let-values ([(name sexp) (apply values red+sexp)])
                              (call-on-eventspace-main-thread
                               (λ ()
-                                (let-values ([(dark-arrow-color light-arrow-color dark-label-color light-label-color
-                                                                dark-pen-color
-                                                                light-pen-color) 
-                                              (red->colors name)])
-                                  (build-snip snip-cache snip sexp pred pp name scheme-colors? 
-                                              light-arrow-color dark-arrow-color dark-label-color light-label-color
-                                              dark-pen-color light-pen-color))))))
+                                (and (term-filter sexp name)
+                                     (let-values ([(dark-arrow-color light-arrow-color dark-label-color light-label-color
+                                                                     dark-pen-color
+                                                                     light-pen-color) 
+                                                   (red->colors name)])
+                                       (build-snip snip-cache snip sexp pred pp name scheme-colors? 
+                                                   light-arrow-color dark-arrow-color dark-label-color light-label-color
+                                                   dark-pen-color light-pen-color)))))))
                          (apply-reduction-relation/tag-with-names reductions (send snip get-expr))))]
                   [new-y 
                    (call-on-eventspace-main-thread
