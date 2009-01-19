@@ -133,6 +133,8 @@
                    #:colors [colors '()]
                    #:layout [layout void]
                    #:edge-label-font [edge-label-font #f]
+                   #:edge-labels? [edge-labels? #t]
+                   #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
                    #:filter [term-filter (lambda (x y) #t)])
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
@@ -144,6 +146,8 @@
                         #:colors colors
                         #:layout layout
                         #:edge-label-font edge-label-font
+                        #:edge-labels? edge-labels?
+                        #:graph-pasteboard-mixin extra-graph-pasteboard-mixin
                         #:filter term-filter)])
     (print-to-ps graph-pb canvas filename)))
 
@@ -232,12 +236,14 @@
                 #:scheme-colors? [scheme-colors? #t]
                 #:layout [layout void]
                 #:edge-label-font [edge-label-font #f]
+                #:edge-labels? [edge-labels? #t]
                 #:filter [term-filter (lambda (x y) #t)]
+                #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
                 #:no-show-frame? [no-show-frame? #f])
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
-  (define graph-pb (new graph-pasteboard% [layout layout] [edge-label-font edge-label-font]))
+  (define graph-pb (new (extra-graph-pasteboard-mixin graph-pasteboard%) [layout layout] [edge-label-font edge-label-font] [edge-labels? edge-labels?]))
   (define user-char-width (initial-char-width))
   (define f (instantiate red-sem-frame% ()
               (label "PLT Redex Reduction Graph")

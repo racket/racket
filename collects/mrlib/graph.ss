@@ -231,7 +231,8 @@
     (mixin ((class->interface pasteboard%)) (graph-pasteboard<%>)
       (inherit find-first-snip find-next-selected-snip)
       
-      (init-field [edge-label-font #f])
+      (init-field [edge-label-font #f]
+                  [edge-labels? #t])
       
       (define draw-arrow-heads? #t)
       (inherit refresh get-admin)
@@ -535,12 +536,12 @@
                           [(b45x b45y) (values s5x s4y)]
                           [(b56x b56y) (values s5x s6y)])
               
-              (update-polygon s4x s4y sx s4y)
+              (update-arrowhead-polygon s4x s4y sx s4y)
               (send dc draw-spline (+ dx s1x) (+ dy s1y) (+ dx b12x) (+ dy b12y) (+ dx s2x) (+ dy s2y))
               (send dc draw-spline (+ dx s2x) (+ dy s2y) (+ dx b23x) (+ dy b23y) (+ dx s3x) (+ dy s3y))
               (send dc draw-line (+ dx s3x) (+ dy s3y) (+ dx s6x) (+ dy s6y))
               
-              (when (link-label the-link)
+              (when (and edge-labels? (link-label the-link))
                 (let* ((textlen (get-text-length (link-label the-link)))
                        (linelen (- s6x s3x))
                        (offset (* 1/2 (- linelen textlen))))
@@ -606,19 +607,8 @@
                            ;; the snips overlap, draw nothing
                            (void)]
                           [else
-                           (send dc draw-line
-                                 (+ dx from-x) (+ dy from-y) 
-                                 (+ dx to-x) (+ dy to-y))
-                           (update-polygon from-x from-y to-x to-y)
-                           (when (and draw-arrow-heads?
-                                      (arrow-point-ok? (send point1 get-x) (send point1 get-y))
-                                      (arrow-point-ok? (send point2 get-x) (send point2 get-y))
-                                      (arrow-point-ok? (send point3 get-x) (send point3 get-y))
-                                      (arrow-point-ok? (send point4 get-x) (send point4 get-y)))
-                             ;; the arrowhead is not overlapping the snips, so draw it
-                             ;; (this is only an approximate test, but probably good enough)
-                             (send dc draw-polygon points dx dy))
-                           (when (named-link? from-link)
+                           (draw-single-edge dc dx dy from to from-x from-y to-x to-y arrow-point-ok?)
+                           (when (and edge-labels? (link-label from-link))
                              (let-values ([(text-len h d v) (send dc get-text-extent (link-label from-link))])
                                (let* ([arrow-end-x (send point3 get-x)]
                                       [arrow-end-y (send point3 get-y)]
@@ -628,15 +618,14 @@
                                                  (- (* 1/2 vec)
                                                     (make-polar (/ text-len 2) (angle vec))))])
                                  (when (> (sqrt (+ (sqr (- arrow-end-x from-x))
-                                                   (sqr (- arrow-end-y from-y))))
-                                          text-len)
+                                                        (sqr (- arrow-end-y from-y))))
+                                               text-len)
                                    (send dc draw-text (link-label from-link)
                                          (+ dx (real-part middle))
                                          (+ dy (imag-part middle))
                                          #f
                                          0
                                          (- (angle vec)))))))]))))))))
-          (define (named-link? l) (link-label l))
           
           (define (set-pen/brush from-link dark-lines?)
             (send dc set-brush 
@@ -677,6 +666,20 @@
             (send dc set-pen old-pen)
             (send dc set-text-foreground old-fg)
             (send dc set-brush old-brush))))
+      
+      (define/public (draw-single-edge dc dx dy from to from-x from-y to-x to-y arrow-point-ok?)
+        (send dc draw-line
+              (+ dx from-x) (+ dy from-y) 
+              (+ dx to-x) (+ dy to-y))
+        (update-arrowhead-polygon from-x from-y to-x to-y point1 point2 point3 point4)
+        (when (and draw-arrow-heads?
+                   (arrow-point-ok? (send point1 get-x) (send point1 get-y))
+                   (arrow-point-ok? (send point2 get-x) (send point2 get-y))
+                   (arrow-point-ok? (send point3 get-x) (send point3 get-y))
+                   (arrow-point-ok? (send point4 get-x) (send point4 get-y)))
+          ;; the arrowhead is not overlapping the snips, so draw it
+          ;; (this is only an approximate test, but probably good enough)
+          (send dc draw-polygon points dx dy)))
       
       ;; for-each-to-redraw : number number number number (link snip -> void)
       (define/private (for-each-to-redraw left top right bottom f)
@@ -727,11 +730,11 @@
        [point4 (make-object point% 0 0)]
        [points (list point1 point2 point3 point4)])
       
-      ;; update-polygon : number^4 -> void
+      ;; update-arrowhead-polygon : number^4 -> void
       ;; updates points1, 2, and 3 with the arrow head's
       ;; points. Use a turtle-like movement to find the points.
       ;; point3 is the point where the line should end.
-      (define/private (update-polygon from-x from-y to-x to-y)
+      (define/public (update-arrowhead-polygon from-x from-y to-x to-y point1 point2 point3 point4)
         (define (move tx ty ta d) (values (+ tx (* d (cos ta)))
                                           (+ ty (* d (sin ta)))
                                           ta))

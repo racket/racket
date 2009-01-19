@@ -4,11 +4,12 @@
           scribble/eval
           (for-syntax scheme/base)
           (for-label scheme/base
-	  	     scheme/gui
+                     scheme/gui
                      scheme/pretty
                      scheme/contract
-		     (only-in slideshow/pict pict? text dc-for-text-size)
-		     redex))
+		     mrlib/graph
+                     (only-in slideshow/pict pict? text dc-for-text-size)
+                     redex))
 
 @(define-syntax (defpattech stx)
    (syntax-case stx ()
@@ -378,7 +379,7 @@ stands for repetition unless otherwise indicated):
          (in-hole term term)
          hole
          #t #f
-	 string]
+         string]
    [term-sequence 
      term
      ,@scheme-expression
@@ -1156,10 +1157,12 @@ exploring reduction sequences.
                            (and/c (listof (or/c string? (is-a?/c color%)))
                                   (lambda (x) (member (length x) '(2 3 4 6))))))]
 
-	         [#:scheme-colors? scheme-colors? boolean? #t]
+                 [#:scheme-colors? scheme-colors? boolean? #t]
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
                  [#:layout layout (-> (listof term-node?) void) void]
-                 [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
+                 [#:edge-labels? edge-label-font boolean? #t]
+                 [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
+                 [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
          void?]{
 
 This function opens a new window and inserts each expression
@@ -1228,9 +1231,22 @@ after new terms are inserted in response to the user clicking on the
 reduce button, and after the initial set of terms is inserted.
 See also @scheme[term-node-set-position!].
 
+If @scheme[edge-labels?] is @scheme[#t] (the default), then edge labels
+are drawn; otherwise not.
+
 The @scheme[edge-label-font] argument is used as the font on the edge
-labels. If nothign is suppled, the @scheme[dc<%>] object's default
+labels. If @scheme[#f] is suppled, the @scheme[dc<%>] object's default
 font is used.
+
+The traces library an instance of the @schememodname[mrlib/graph]
+library's @scheme[graph-pasteboard<%>] interface to layout
+the graphs.  Sometimes, overriding one of its methods can
+help give finer-grained control over the layout, so the
+@scheme[graph-pasteboard-mixin] is applied to the class
+before it is instantiated. Also note that all of the snips
+inserted into the editor by this library have a
+@tt{get-term-node} method which returns the snip's
+@scheme[term-node].
 
 }
 
@@ -1249,7 +1265,9 @@ font is used.
                     [#:colors colors (listof (list string string)) '()]
                     [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
                     [#:layout layout (-> (listof term-node?) void) void]
-                    [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f])
+                    [#:edge-labels? edge-label-font boolean? #t]
+                    [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
+                    [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
          void?]{
 
 The arguments behave just like the function @scheme[traces], but

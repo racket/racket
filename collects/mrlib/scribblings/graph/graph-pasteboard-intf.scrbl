@@ -60,5 +60,51 @@ different nodes.
   is @scheme[#t].
 }
 
+@defmethod[(draw-single-edge [dc (is-a?/c dc<%>)]
+			     [dx real?]
+			     [dy real?]
+			     [from (is-a?/c graph-snip<%>)]
+			     [to (is-a?/c graph-snip<%>)]
+			     [from-x real?]
+			     [from-y real?]
+			     [to-x real?]
+			     [to-y real?]
+			     [arrow-point-ok? (-> real? real? boolean?)]) void?]{
+
+This method is called to draw each edge in the graph, except
+for the edges that connect a node to itself.
+
+The @scheme[dc], @scheme[dx], and @scheme[dy] arguments are
+the same as in @method[editor<%> on-paint]. 
+
+The
+@scheme[from-x], @scheme[from-y], @scheme[to-x], and
+@scheme[to-y] arguments specify points on the source and
+destination snip's bounding box where a straight line
+between the centers of the snip would intersect.
+
+The @scheme[arrow-point-ok?] function returns @scheme[#t]
+when the point specified by its arguments is inside the the
+smallest rectangle that covers both the source and
+destination snips, but is outside of both of the rectangles
+that surround the source and destination snips themselves.
+
+This default implementation uses @scheme[update-polygon] to compute
+the arrowheads and otherwise draws a straight line between the two
+points and then the arrowheads, unless the arrowhead points
+are not ok according to @scheme[arrow-point-ok?], in which case
+it just draws the line.
+}
+
+@defmethod[(update-arrowhead-polygon [from-x real?] [from-y real?] [to-x real?] [to-y real?] 
+                                     [point1 (is-a?/c point%)]
+                                     [point2 (is-a?/c point%)]
+                                     [point3 (is-a?/c point%)]
+                                     [point4 (is-a?/c point%)]) void?]{
+
+Updates the arguments @scheme[point1], @scheme[point2], @scheme[point3], @scheme[point4] with the coordinates
+of an arrowhead for a line that connects (@scheme[from-x],@scheme[from-y]) to (@scheme[to-x],@scheme[to-y]).
+}
+
 }
 
