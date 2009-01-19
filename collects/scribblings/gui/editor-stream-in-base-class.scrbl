@@ -21,10 +21,10 @@ Returns @scheme[#t] if there has been an error reading from the
 
 }
 
-@defmethod[(read [data (and/c bytes? (not/c immutable?))])
+@defmethod[(read [data (and/c vector? (not immutable?))])
            exact-nonnegative-integer?]{
 
-Reads characters to fill the supplied vector. The return value is the
+Reads Latin-1 characters to fill the supplied vector. The return value is the
  number of characters read, which may be less than the number
  requested if the stream is emptied. If the stream is emptied, the
  next call to @method[editor-stream-in-base% bad?] must return
