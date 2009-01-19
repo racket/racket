@@ -1115,8 +1115,6 @@ profile todo:
                         (send src lock #f))))))
                sorted)
               
-              (printf "sorted ~s\n" sorted)
-              
               ;; clear out old annotations (and thaw colorers)
               (when internal-clear-test-coverage-display
                 (internal-clear-test-coverage-display)
