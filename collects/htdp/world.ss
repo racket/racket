@@ -471,7 +471,6 @@ Matthew
              (define dir (direction x0 y0 x1 y1))
              (define-values (upp low lft rgt) (intersections lin w h))
              (define (add x y) (add-line img x0 y0 x y c)))
-       (printf "up/low: ~s x ~s ~s\n" upp low dir)
        (cond
          [(and (< 0 x0 w) (< 0 y0 h)) ;; (x0,y0) is in the interior
           (case dir
