@@ -9,7 +9,7 @@ A @scheme[text%] object is a standard text editor. A text editor is
 
 
 @defconstructor[([line-spacing (and/c real? (not/c negative?)) 1.0]
-                 [tab-stops (listof real?)]
+                 [tab-stops (listof real?) null]
                  [auto-wrap any/c #f])]{
 
 The @scheme[line-spacing] argument sets the additional amount of space

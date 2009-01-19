@@ -36,9 +36,9 @@ Returns the current stream position.
 
 }
 
-@defmethod[(write [data bytes?])
+@defmethod[(write [data (listof char?)])
            void?]{
 
-Writes data to the stream.
+Writes data (encoded as Latin-1 characters) to the stream.
 
 }}

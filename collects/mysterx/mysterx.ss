@@ -54,6 +54,8 @@
     cci/coclass
     cocreate-instance-from-progid
     cci/progid
+    com-get-active-object-from-coclass
+    gao/coclass
     coclass
     progid
     set-coclass!
@@ -111,6 +113,8 @@
   (define cci/coclass cocreate-instance-from-coclass)
   (define cocreate-instance-from-progid mxprims:cocreate-instance-from-progid)
   (define cci/progid cocreate-instance-from-progid)
+  (define com-get-active-object-from-coclass mxprims:com-get-active-object-from-coclass)
+  (define gao/coclass com-get-active-object-from-coclass)
   (define coclass mxprims:coclass)
   (define progid mxprims:progid)
   (define set-coclass! mxprims:set-coclass!)

@@ -49,6 +49,19 @@
 Like @scheme[cocreate-instance-from-coclass], but using a ProgID.}
 
 
+@deftogether[(
+@defproc[(com-get-active-object-from-coclass [coclass string?]
+                                             [where (or/c (one-of/c 'local 'remote) string?) 'local])
+         com-object?]
+@defproc[(gao/coclass [coclass string?]
+                      [where (or/c (one-of/c 'local 'remote) string?) 'local])
+         com-object?]
+)]{
+
+  Like @scheme[cocreate-instance-from-coclass], but gets an existing
+  active object instead of creating a new one.}
+
+
 @defproc[(coclass [obj com-object?]) string?]{
 
   Returns a string that is the name of the COM class instantiated by
