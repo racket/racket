@@ -42,7 +42,7 @@
 ;; ----------------------------------------
 
 (test (string->path "a") find-relative-path (path->complete-path "b") (path->complete-path "b/a"))
-(test (string->path "../../b/a") find-relative-path (path->complete-path "c/b") (path->complete-path "b/a"))
+(test (build-path 'up 'up "b" "a") find-relative-path (path->complete-path "c/b") (path->complete-path "b/a"))
 (test (bytes->path #"a" 'unix) find-relative-path (bytes->path #"/r/b" 'unix) (bytes->path #"/r/b/a" 'unix))
 (test (bytes->path #"a" 'windows) find-relative-path (bytes->path #"c:/r/b" 'windows) (bytes->path #"c:/r/b/a" 'windows))
 
