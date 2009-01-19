@@ -1,12 +1,5 @@
+
 v4.1.4
-
-  - initial-char-width now accepts functions to give finer grained
-    control of the initial widths of the terms.
-
- - traces & traces/ps: added the ability to specify a mixin
-   to be mixed into the graph pasteboard
-
-v4.1.3
 
   * added redex-check, a tool for automatically generating test cases
     for Redex specifications.
