@@ -558,7 +558,7 @@
              (let* ([status (unbox status-box)]
                     [status (if status (format " while ~a" status) "")])
                (log-line "session killed ~a~a"
-                         (if timed-out? "(timeout) " "(memory)")
+                         (if timed-out? "(timeout)" "(memory)")
                          status)
                (write+flush
                 w (format "handin terminated due to ~a ~a~a"
