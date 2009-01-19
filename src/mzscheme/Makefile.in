@@ -23,6 +23,8 @@ AR = @AR@
 ARFLAGS = @ARFLAGS@
 RANLIB = @RANLIB@
 
+ARLIBFLAGS = @LDFLAGS@ @LIBS@
+
 MZSRC = $(srcdir)/src
 
 FOREIGN_DIR = ../foreign

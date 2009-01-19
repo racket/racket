@@ -290,6 +290,7 @@ AR= @AR@
 ARFLAGS= @ARFLAGS@
 RANLIB= @RANLIB@
 
+ARLIBFLAGS = @LDFLAGS@ @LIBS@
 
 OBJS= alloc.@LTO@ reclaim.@LTO@ allchblk.@LTO@ misc.@LTO@ mach_dep.@LTO@ mach_dep1.@LTO@ os_dep.@LTO@ mark_rts.@LTO@ headers.@LTO@ mark.@LTO@ obj_map.@LTO@ blacklst.@LTO@ finalize.@LTO@ new_hblk.@LTO@ dbg_mlc.@LTO@ malloc.@LTO@ stubborn.@LTO@ checksums.@LTO@ solaris_threads.@LTO@ pthread_support.@LTO@ pthread_stop_world.@LTO@ darwin_stop_world.@LTO@ typd_mlc.@LTO@ ptr_chck.@LTO@ mallocx.@LTO@ solaris_pthreads.@LTO@ gcj_mlc.@LTO@ specific.@LTO@ gc_dlopen.@LTO@ backgraph.@LTO@ win32_threads.@LTO@
 
