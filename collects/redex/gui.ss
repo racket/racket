@@ -86,7 +86,7 @@
  [dark-text-color (parameter/c (or/c string? (is-a?/c color%)))]
  [light-text-color (parameter/c (or/c string? (is-a?/c color%)))]
  [initial-font-size (parameter/c number?)]
- [initial-char-width (parameter/c number?)])
+ [initial-char-width (parameter/c (or/c number? (-> any/c number?)))])
          
 (provide reduction-steps-cutoff
          default-pretty-printer)

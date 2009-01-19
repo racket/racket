@@ -716,7 +716,7 @@ todo:
                    [node node]
                    [editor txt]
                    [expr sexp]
-                   [char-width init-cw])])
+                   [char-width (get-user-char-width init-cw sexp)])])
       (send txt set-autowrap-bitmap #f)
       #;(send txt freeze-colorer)
       (send s format-expr)

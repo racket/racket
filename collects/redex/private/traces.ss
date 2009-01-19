@@ -238,6 +238,7 @@
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
   (define graph-pb (new graph-pasteboard% [layout layout] [edge-label-font edge-label-font]))
+  (define user-char-width (initial-char-width))
   (define f (instantiate red-sem-frame% ()
               (label "PLT Redex Reduction Graph")
               (style '(toolbar-button))
@@ -331,6 +332,7 @@
   (define default-colors (list (dark-pen-color) (light-pen-color) 
                                (dark-text-color) (light-text-color)
                                (dark-brush-color) (light-brush-color)))
+      
   
   ;; only changed on the reduction thread
   ;; frontier : (listof (is-a?/c graph-editor-snip%))
@@ -339,8 +341,10 @@
      (λ (x) x)
      (map (lambda (expr) (apply build-snip
                                 snip-cache #f expr pred pp #f scheme-colors?
+                                (get-user-char-width user-char-width expr)
                                 default-colors))
           exprs)))
+  
   
   ;; set-font-size : number -> void
   ;; =eventspace main thread=
@@ -408,6 +412,7 @@
                                                                      light-pen-color) 
                                                    (red->colors name)])
                                        (build-snip snip-cache snip sexp pred pp name scheme-colors? 
+                                                   (get-user-char-width user-char-width sexp)
                                                    light-arrow-color dark-arrow-color dark-label-color light-label-color
                                                    dark-pen-color light-pen-color)))))))
                          (apply-reduction-relation/tag-with-names reductions (send snip get-expr))))]
@@ -719,12 +724,13 @@
 ;;              sexp -> boolean
 ;;              (any port number -> void)
 ;;              (union #f string)
+;;              number
 ;;              color^6
 ;;           -> (union #f (is-a?/c graph-editor-snip%))
 ;; returns #f if a snip corresponding to the expr has already been created.
 ;; also adds in the links to the parent snip
 ;; =eventspace main thread=
-(define (build-snip cache parent-snip expr pred pp name scheme-colors?
+(define (build-snip cache parent-snip expr pred pp name scheme-colors? cw
                     light-arrow-color dark-arrow-color dark-label-color light-label-color
                     dark-brush-color light-brush-color)
   (let-values ([(snip new?)
@@ -733,7 +739,7 @@
                            cache
                            expr
                            (lambda ()
-                             (let ([new-snip (make-snip parent-snip expr pred pp scheme-colors?)])
+                             (let ([new-snip (make-snip parent-snip expr pred pp scheme-colors? cw)])
                                (hash-set! cache expr new-snip)
                                (k new-snip #t))))
                           #f))])
@@ -775,13 +781,15 @@
 ;;             sexp 
 ;;             sexp -> boolean
 ;;             (any port number -> void)
+;;             boolean
+;;             number
 ;;          -> (is-a?/c graph-editor-snip%)
 ;; unconditionally creates a new graph-editor-snip
 ;; =eventspace main thread=
-(define (make-snip parent-snip expr pred pp scheme-colors?)
+(define (make-snip parent-snip expr pred pp scheme-colors? cw)
   (let* ([text (new program-text%)]
          [es (instantiate graph-editor-snip% ()
-               (char-width (initial-char-width))
+               (char-width cw)
                (editor text)
                (my-eventspace (current-eventspace))
                (pp pp)

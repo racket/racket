@@ -10,9 +10,16 @@
          size-text%
          default-pretty-printer
          initial-char-width
-         resizing-pasteboard-mixin)
+         resizing-pasteboard-mixin
+         get-user-char-width)
 
 (define initial-char-width (make-parameter 30))
+
+;; get-user-char-width : value-bound-to-'initial-char-width'-parameter sexp -> number
+(define (get-user-char-width cw/proc expr)
+  (cond
+    [(number? cw/proc) cw/proc]
+    [else (cw/proc expr)]))
 
 (define (default-pretty-printer v port w spec)
   (parameterize ([pretty-print-columns w]

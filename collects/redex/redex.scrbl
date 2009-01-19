@@ -1367,11 +1367,15 @@ A parameter that controls the initial font size for the terms shown
 in the GUI window.
 }
 
-@defparam[initial-char-width width number?]{
+@defparam[initial-char-width width (or/c number? (-> any/c number?))]{
 
 A parameter that determines the initial width of the boxes
 where terms are displayed (measured in characters) for both
 the stepper and traces.
+
+If its value is a number, then the number is used as the width for 
+every term. If its value is a function, then the function is called
+with each term and the resulting number is used as the width.
 }
 
 @deftogether[[
