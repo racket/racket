@@ -39,6 +39,7 @@
    progid->html
    cocreate-instance-from-coclass
    cocreate-instance-from-progid
+   com-get-active-object-from-coclass
    coclass
    progid
    set-coclass!
@@ -324,6 +325,7 @@
   (define progid->html #f)
   (define cocreate-instance-from-coclass #f)
   (define cocreate-instance-from-progid #f)
+  (define com-get-active-object-from-coclass #f)
   (define coclass #f)
   (define progid #f)
   (define set-coclass! #f)

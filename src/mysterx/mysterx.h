@@ -343,6 +343,7 @@ MX_PRIM_DECL(mx_com_set_property_type);
 MX_PRIM_DECL(mx_com_event_type);
 MX_PRIM_DECL(mx_cocreate_instance_from_coclass);
 MX_PRIM_DECL(mx_cocreate_instance_from_progid);
+MX_PRIM_DECL(mx_com_get_active_object_from_coclass);
 MX_PRIM_DECL(mx_coclass);
 MX_PRIM_DECL(mx_progid);
 MX_PRIM_DECL(mx_set_coclass);

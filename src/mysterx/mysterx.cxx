@@ -151,6 +151,7 @@ static MX_PRIM mxPrims[] = {
   { mx_com_release_object,"com-release-object",1,1 },
   { mx_com_add_ref,"com-add-ref",1,1 },
   { mx_com_ref_count,"com-ref-count",1,1 },
+  { mx_com_get_active_object_from_coclass,"com-get-active-object-from-coclass",1,1 },
 
   // browsers
 
@@ -899,6 +900,64 @@ Scheme_Object *mx_cocreate_instance_from_progid(int argc, Scheme_Object **argv)
   return do_cocreate_instance(schemeProgIdToCLSID(argv[0], "cocreate-instance-from-progid"),
                                schemeToText(argv[0]),
                                location, machine);
+}
+
+Scheme_Object *do_get_active_object(CLSID clsId, LPCTSTR name)
+{
+  HRESULT hr;
+  IUnknown *pUnk;
+  IDispatch *pIDispatch;
+  MX_COM_Object *com_object;
+
+  hr = GetActiveObject(clsId, NULL, &pUnk);
+
+  if (hr != ERROR_SUCCESS) {
+    char errBuff[2048];
+    sprintf(errBuff,
+            "com-get-active-object-from-coclass: "
+            "Unable to get instance of %s",
+            name);
+    codedComError(errBuff, hr);
+  }
+
+  hr = pUnk->QueryInterface(IID_IDispatch, (void **)&pIDispatch);
+
+  if (hr != ERROR_SUCCESS) {
+    char errBuff[2048];
+    sprintf(errBuff,
+            "com-get-active-object-from-coclass: "
+            "Unable to get instance of %s",
+            name);
+    codedComError(errBuff, hr);
+  }
+
+  com_object = (MX_COM_Object *)scheme_malloc_tagged(sizeof(MX_COM_Object));
+
+  com_object->so.type = mx_com_object_type;
+  com_object->pIDispatch = pIDispatch;
+  com_object->pITypeInfo = NULL;
+  com_object->clsId = clsId;
+  com_object->pEventTypeInfo = NULL;
+  com_object->pIConnectionPoint = NULL;
+  com_object->pISink = NULL;
+  com_object->connectionCookie = (DWORD)0;
+  com_object->released = FALSE;
+  com_object->types = NULL;
+
+  mx_register_com_object((Scheme_Object *)com_object, pIDispatch);
+
+  return (Scheme_Object *)com_object;
+}
+
+Scheme_Object *mx_com_get_active_object_from_coclass(int argc, Scheme_Object **argv)
+{
+  LPCTSTR coclass;
+
+  GUARANTEE_STRSYM("com-get-active-object-from-coclass", 0);
+
+  coclass = schemeToText(argv[0]);
+
+  return do_get_active_object(getCLSIDFromCoClass(coclass), coclass);
 }
 
 Scheme_Object *mx_set_coclass(int argc, Scheme_Object **argv)
@@ -4211,7 +4270,8 @@ END_XFORM_SKIP;
   retval = retvalVariantToSchemeObject(&retvalVa);
 
   // all pointers are 32 bits, choose arbitrary one
-  if (retvalVa.vt != VT_VOID)
+  if (retvalVa.vt != VT_VOID &&
+      retvalVa.vt != VT_HRESULT)
     free(retvalVa.pullVal);
 
   return retval;
