@@ -135,7 +135,8 @@
                    #:edge-label-font [edge-label-font #f]
                    #:edge-labels? [edge-labels? #t]
                    #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
-                   #:filter [term-filter (lambda (x y) #t)])
+                   #:filter [term-filter (lambda (x y) #t)]
+                   #:post-process [post-process void])
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
@@ -149,6 +150,7 @@
                         #:edge-labels? edge-labels?
                         #:graph-pasteboard-mixin extra-graph-pasteboard-mixin
                         #:filter term-filter)])
+    (post-process graph-pb)
     (print-to-ps graph-pb canvas filename)))
 
 (define (print-to-ps graph-pb canvas filename)

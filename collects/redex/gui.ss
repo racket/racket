@@ -55,7 +55,8 @@
                   #:edge-label-font (or/c #f (is-a?/c font%))
                   #:edge-labels? boolean?
                   #:filter (-> any/c (or/c #f string?) any/c)
-                  #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>))
+                  #:graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>)
+                  #:post-process (-> (is-a?/c graph-pasteboard<%>) any/c))
                  any)]
  
  [term-node? (-> any/c boolean?)]

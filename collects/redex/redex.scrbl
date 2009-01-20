@@ -1267,12 +1267,17 @@ inserted into the editor by this library have a
                     [#:layout layout (-> (listof term-node?) void) void]
                     [#:edge-labels? edge-label-font boolean? #t]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
-                    [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values])
+                    [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values]
+                    [#:post-process post-process (-> (is-a?/c graph-pasteboard<%>) any/c)])
          void?]{
 
-The arguments behave just like the function @scheme[traces], but
+This function  behaves just like the function @scheme[traces], but
 instead of opening a window to show the reduction graph, it just saves
 the reduction graph to the specified @scheme[file].
+
+All of the arguments behave like the arguments to @scheme[traces],
+with the exception of the @scheme[post-process] argument. It is called
+just before the PostScript is created with the graph pasteboard.
 }
 
 @defproc[(stepper [reductions reduction-relation?] 
