@@ -1234,6 +1234,8 @@
           (map "s:insert" "paste-clipboard")
           
           (map-meta "space" "collapse-space")
+          (when (eq? (system-type) 'macosx)
+            (map "a:space" "collapse-space"))
           ;(map-meta "\\" "remove-space") ; Conflicts with european keyboards.
           (map "c:x;c:o" "collapse-newline")
           (map "c:o" "open-line")
