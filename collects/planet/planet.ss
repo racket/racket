@@ -24,6 +24,7 @@ PLANNED FEATURES:
 
     (make-directory* (PLANET-DIR))
     (make-directory* (CACHE-DIR))
+    (planet-logging-to-stdout #t)
     
     (svn-style-command-line
      #:program "planet"

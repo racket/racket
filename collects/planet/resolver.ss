@@ -560,6 +560,10 @@ subdirectory.
 ;; raises an exception if some protocol failure occurs in the download process
 (define (download-package/planet pkg)
 
+  (define stupid-internal-define-syntax (planet-log "downloading ~a from ~a via planet protocol" 
+                                                    (pkg-spec->string pkg)
+                                                    (PLANET-SERVER-NAME)))
+  
   (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
 
   (define (close-ports) (close-input-port ip) (close-output-port op))
@@ -610,7 +614,8 @@ subdirectory.
   (define (state:failure msg) (list #f msg))
 
   (with-handlers ([void (lambda (e) (close-ports) (raise e))])
-    (begin0 (state:initialize)
+    (begin0 
+      (state:initialize)
       (close-ports))))
 
 ;; ------------------------------------------------------------
@@ -650,6 +655,13 @@ subdirectory.
     (let loop ([attempts 1])
       (when (> attempts 5)
         (return "Download failed too many times (possibly due to an unreliable network connection)"))
+
+      (planet-log "downloading ~a from ~a via HTTP~a" 
+                  (pkg-spec->string pkg)
+                  (PLANET-SERVER-NAME)
+                  (if (= attempts 1)
+                      ""
+                      (format ", attempt #~a" attempts)))
 
       (with-handlers ([exn:fail:network? (λ (e) (return (exn-message e)))])
         (let* ([target            (pkg->download-url pkg)]
@@ -706,6 +718,17 @@ subdirectory.
              (abort (format "Internal error (unknown HTTP response code ~a)"
                             response-code))]))))))
 
+;; formats the pkg-spec back into a string the way the user typed it in.
+;; assumes that the pkg-spec comes from the command-line
+(define (pkg-spec->string pkg)
+  (format "'~a ~a ~a ~a'"
+          (if (pair? (pkg-spec-path pkg))
+              (car (pkg-spec-path pkg))
+              "<<unknown>>") ;; this shouldn't happen
+          (pkg-spec-name pkg)
+          (pkg-spec-maj pkg)
+          (pkg-spec-minor-lo pkg)))
+  
 ;; =============================================================================
 ;; MODULE MANAGEMENT
 ;; Handles interaction with the module system

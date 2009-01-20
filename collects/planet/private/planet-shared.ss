@@ -486,14 +486,36 @@ Various common pieces of code that both the client and server need to access
   
   (define (wrap x) (begin (write x) (newline) x))
   
+  (define planet-logging-to-stdout (make-parameter #f))
+  
+  (define planet-log 
+    (let ([planet-logger (make-logger 'PLaneT (current-logger))])
+      (λ (str . fmt)
+        (parameterize ([current-logger planet-logger])
+          (log-info (apply format str fmt))
+          (when (planet-logging-to-stdout)
+            (apply fprintf (current-output-port) str fmt)
+            (newline (current-output-port)))))))
+  
   (define (with-logging logfile f)
-    (let* ((null-out (open-output-nowhere))
-           (outport
-            (if logfile
-                (with-handlers ((exn:fail:filesystem? (lambda (e) null-out)))
-                  (open-output-file logfile #:exists 'append))
-                null-out)))
-      (parameterize ([current-output-port outport])
+    (let-values ([(in out) (make-pipe)])
+      (thread
+       (λ () 
+         (let ([outport
+                (and logfile
+                     (with-handlers ((exn:fail:filesystem? (lambda (e) #f)))
+                       (open-output-file logfile #:exists 'append)))])
+           (let loop ()
+             (let ([l (read-line in)])
+               (cond
+                 [(eof-object? l)
+                  (close-input-port in) 
+                  (when outport (close-output-port outport))]
+                 [else
+                  (when outport (display l outport))
+                  (planet-log l)
+                  (loop)]))))))
+      (parameterize ([current-output-port out])
         (f))))
   
   
