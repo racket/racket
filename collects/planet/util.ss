@@ -118,8 +118,11 @@
        (lambda () 
          (printf "\n============= Removing ~a =============\n" (list owner name maj min))
          (clean-planet-package path (list owner name '() maj min))))
+      (planet-log "Erasing metadata")
       (erase-metadata p)
+      (planet-log "Deleting files in ~a" (path->string path))
       (delete-directory/files path)
+      (planet-log "Trimming empty directories")
       (trim-directory (CACHE-DIR) path)
       (void))))
 
@@ -219,8 +222,8 @@
 (define (directory-empty? dir)
   (null? (directory-list dir)))
 
-;; trim-directory path path -> void
-;; deletes nonempty directories starting with stem and working down to root
+;; trim-directory: path path -> void
+;; deletes empty directories starting with stem and working down to root
 (define (trim-directory root stem)
   (let* ([rootl (explode-path root)]
          [steml (explode-path stem)]

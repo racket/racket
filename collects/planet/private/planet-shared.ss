@@ -497,6 +497,8 @@ Various common pieces of code that both the client and server need to access
             (apply fprintf (current-output-port) str fmt)
             (newline (current-output-port)))))))
   
+  ;; note that this function assumes that 'f' prints line-by-line
+  ;; output, so that it can be easily logged.
   (define (with-logging logfile f)
     (let-values ([(in out) (make-pipe)])
       (thread
@@ -515,9 +517,10 @@ Various common pieces of code that both the client and server need to access
                   (when outport (display l outport))
                   (planet-log l)
                   (loop)]))))))
-      (parameterize ([current-output-port out])
-        (f))))
-  
+      (begin0
+        (parameterize ([current-output-port out])
+          (f))
+        (close-output-port out))))
   
   ;; pkg->info : PKG -> (symbol (-> TST) -> TST)
   ;; get an info.ss thunk for the given package
