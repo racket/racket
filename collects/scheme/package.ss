@@ -13,7 +13,10 @@
          define*
          define*-values
          define*-syntax
-         define*-syntaxes)
+         define*-syntaxes
+
+         (for-syntax package?
+                     package-exported-identifiers))
 
 (define-for-syntax (do-define-* stx define-values-id)
   (syntax-case stx ()
@@ -117,11 +120,9 @@
                                  orig-ctx
                                  null)))]
                 [pre-package-id (lambda (id def-ctxes)
-                                  (for/fold ([id id])
-                                      ([def-ctx (in-list def-ctxes)])
-                                    (identifier-remove-from-definition-context 
-                                     id 
-                                     def-ctx)))]
+                                  (identifier-remove-from-definition-context 
+                                   id 
+                                   def-ctxes))]
                 [kernel-forms (list*
                                #'define*-values
                                #'define*-syntaxes
@@ -154,7 +155,8 @@
                                                                     ;; Need to preserve the original
                                                                     (pre-package-id id def-ctxes)
                                                                     ;; It's not accessible, so just hide the name
-                                                                    ;;  to avoid re-binding errors.
+                                                                    ;;  to avoid re-binding errors. (Is this necessary,
+                                                                    ;;  or would `pre-package-id' take care of it?)
                                                                     (car (generate-temporaries (list id)))))
                                                               (syntax->list #'(export ...)))])
                                             (syntax/loc stx
@@ -391,4 +393,16 @@
 (define-syntax (open-package stx)
   (do-open stx #'define-syntaxes))
 (define-syntax (open*-package stx)
-  (do-open stx #'define*-syntaxes))
+  (syntax-property (do-open stx #'define*-syntaxes)
+                   'certify-mode
+                   'transparent-binding))
+
+(define-for-syntax (package-exported-identifiers id)
+  (let ([v (and (identifier? id)
+                (syntax-local-value id (lambda () #f)))])
+    (unless (package? v)
+      (raise-type-error 'package-exported-identifiers "identifier bound to a package" id))
+    (let ([introduce (syntax-local-make-delta-introducer 
+                      (syntax-local-introduce id))])
+      (map (lambda (v) (syntax-local-introduce (cdr v)))
+           ((package-exports v))))))

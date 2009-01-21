@@ -4339,15 +4339,46 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 id_intdef_remove(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *l, *res, *skips;
+
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
     scheme_wrong_type("identifier-from-from-definition-context", 
                       "syntax identifier", 0, argc, argv);
-
-  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_intdef_context_type))
-    scheme_wrong_type("identifier-remove-from-definition-context", 
-                      "internal-definition context", 1, argc, argv);
   
-  return scheme_stx_id_remove_rib(argv[0], SCHEME_PTR2_VAL(argv[1]));
+  l = argv[1];
+  if (!SAME_TYPE(SCHEME_TYPE(l), scheme_intdef_context_type)) {
+    while (SCHEME_PAIRP(l)) {
+      if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_intdef_context_type))
+        break;
+      l = SCHEME_CDR(l);
+    }
+    if (!SCHEME_NULLP(l))
+      scheme_wrong_type("identifier-remove-from-definition-context", 
+                        "internal-definition context or list of internal-definition contexts", 
+                        1, argc, argv);
+  }
+
+  l = argv[1];
+  if (SAME_TYPE(SCHEME_TYPE(l), scheme_intdef_context_type))
+    l = scheme_make_pair(l, scheme_null);
+
+  res = argv[0];
+  skips = scheme_null;
+
+  while (SCHEME_PAIRP(l)) {
+    res = scheme_stx_id_remove_rib(res, SCHEME_PTR2_VAL(SCHEME_CAR(l)));
+    skips = scheme_make_pair(SCHEME_PTR2_VAL(SCHEME_CAR(l)), skips);
+    l = SCHEME_CDR(l);
+  }
+
+  if (scheme_stx_ribs_matter(res, skips)) {
+    /* Removing ribs leaves the binding for this identifier in limbo, because
+       the rib that binds it depends on the removed ribs. Invent in inaccessible
+       identifier. */
+    res = scheme_add_remove_mark(res, scheme_new_mark());
+  }
+  
+  return res;
 }
 
 static Scheme_Object *

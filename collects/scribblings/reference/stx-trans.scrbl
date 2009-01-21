@@ -238,14 +238,24 @@ Indicates that no further bindings will be added to
 @scheme[syntax-local-make-definition-context].}
 
 
-@defproc[(identifier-remove-from-defininition-context [id-stx identifier?]
-                                                      [intdef-ctx internal-definition-context?])
+@defproc[(identifier-remove-from-definition-context [id-stx identifier?]
+                                                    [intdef-ctx (or/c internal-definition-context?
+                                                                      (listof internal-definition-context?))])
          identifier?]{
 
-Removes @scheme[intdef-ctx] from the @tech{lexical information} of
-@scheme[id-stx]. This operation is useful for correlating an identifier
-that is bound in an internal-definition context with its binding
-before the internal-definition context was created.}
+Removes @scheme[intdef-ctx] (or each identifier in the list) from the
+@tech{lexical information} of @scheme[id-stx]. This operation is
+useful for correlating an identifier that is bound in an
+internal-definition context with its binding before the
+internal-definition context was created.
+
+If simply removing the contexts produces a different binding than
+completely ignoring the contexts (due to nested internal definition
+contexts, for example), then the resulting identifier is given a
+@tech{syntax mark} to simulate a non-existent lexical context. The
+@scheme[intdef-ctx] argument can be a list because removing
+internal-definition contexts one at a time can produce a different
+intermediate binding then removing them all at once.}
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
@@ -259,7 +269,7 @@ before the internal-definition context was created.}
 Returns the @tech{transformer binding} value of @scheme[id-stx] in
 either the context associated with @scheme[intdef-ctx] (if not
 @scheme[#f]) or the context of the expression being expanded (if
-@scheme[indef-ctx] is @scheme[#f]).  If @scheme[intdef-ctx] is
+@scheme[intdef-ctx] is @scheme[#f]).  If @scheme[intdef-ctx] is
 provided, it must be an extension of the context of the expression
 being expanded.
 
@@ -322,8 +332,6 @@ transformer are moved to the same place. Thus, the result is useful
 for caching lift information to avoid redundant lifts.
 
 @transform-time[]}
-
-
 
 
 @defproc[(syntax-local-lift-module-end-declaration [stx syntax?])

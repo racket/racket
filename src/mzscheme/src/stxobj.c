@@ -4276,6 +4276,22 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **a, Scheme_Object *phase,
     return NULL;
 }
 
+int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs)
+{
+  Scheme_Object *m1, *m2, *skips = NULL;
+
+  while (SCHEME_PAIRP(skip_ribs)) {
+    skips = scheme_make_raw_pair(((Scheme_Lexical_Rib *)SCHEME_CAR(skip_ribs))->timestamp,
+                                 skips);
+    skip_ribs = SCHEME_CDR(skip_ribs);
+  }
+
+  m1 = resolve_env(NULL, a, scheme_make_integer(0), 1, NULL, NULL, NULL, NULL, 0);
+  m2 = resolve_env(NULL, a, scheme_make_integer(0), 1, NULL, skips, NULL, NULL, 0);
+
+  return !SAME_OBJ(m1, m2);
+}
+
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a)
   /* Returns either false, a lexical-rename symbol, or void for "floating" */
 {

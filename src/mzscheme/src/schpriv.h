@@ -806,6 +806,8 @@ Scheme_Object *scheme_stx_module_name(Scheme_Object **name, Scheme_Object *phase
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
+int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs);
+
 int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase);
 int scheme_stx_env_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *uid, Scheme_Object *phase);
 

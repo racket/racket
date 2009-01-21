@@ -171,6 +171,18 @@
 ;; ----------------------------------------
 
 (test-pack-seq
+ 5
+ (define-package p1 #:all-defined
+   (define-package p2 ()
+     (define x 10))
+   (open-package p2))
+ (open-package p1)
+ [#:fail x exn:fail:contract:variable?]
+ 5)
+
+;; ----------------------------------------
+
+(test-pack-seq
  '(17 12)
  (define-syntax-rule (mk id)
    (begin
