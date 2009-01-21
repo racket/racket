@@ -76,4 +76,10 @@
                        (term (((metafun x) y) ...))))
         '((whatever 4) (whatever 5) (whatever 6)))
   
+  #;
+  (test (term-let-fn ((metafun (λ (x) x)))
+                     (term-let (((y ...) '(4 5 6)))
+                       (term ((y (metafun 1)) ...))))
+        '((4 1) (5 1) (6 1)))
+  
   (print-tests-passed 'term-test.ss))
