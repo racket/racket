@@ -285,6 +285,9 @@ static int waiting_for_next_event;
 static int wne_handlersInstalled;
 static int pending_self_ae;
 
+static int ae_target_ready = 0;
+static AEAddressDesc ae_target;
+
 static void EnsureWNEReturn()
 {
   /* Generate an event that WaitNextEvent() will return, but that we can
@@ -298,15 +301,18 @@ static void EnsureWNEReturn()
      dummy AppleEvent and defeat the purpose. */
   if (!pending_self_ae) {
     ProcessSerialNumber psn;
-    AEAddressDesc target;
     AppleEvent ae;
 
     pending_self_ae = 1;
 
     GetCurrentProcess(&psn);
-    AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &target);
-    AECreateAppleEvent('MrEd', 'Smug', &target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
+    if (!ae_target_ready) {
+      AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &ae_target);
+      ae_target_ready = 1;
+      AECreateAppleEvent('MrEd', 'Smug', &ae_target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
+    }
     AESend(&ae, NULL, kAENoReply, kAENormalPriority, kNoTimeOut, NULL, NULL);
+    AEDisposeDesc(&ae);
   }
 }
 
