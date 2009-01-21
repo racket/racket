@@ -1105,8 +1105,6 @@
                           ;; variation on 5.
                           (begin
                             (send on-sd set-delta-foreground "black")
-                            (send on-sd set-transparent-text-backing-off #f)
-                            (send on-sd set-transparent-text-backing-on #t)
                             (send off-sd set-delta-foreground "orange")
                             (send off-sd set-delta-background "black"))
                           

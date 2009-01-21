@@ -51,8 +51,8 @@
 
 ;; check-expect-maker : syntax? syntax? (listof syntax?) symbol? -> syntax?
 ;; the common part of all three test forms.
-(define-for-syntax (check-expect-maker
-                    stx checker-proc-stx test-expr embedded-stxes hint-tag)
+(define-for-syntax (check-expect-maker stx checker-proc-stx embedded-stxes
+                                       hint-tag)
   (define bogus-name
     (stepper-syntax-property #`#,(gensym 'test) 'stepper-hide-completed #t))
   (define src-info
@@ -62,7 +62,8 @@
                        (syntax-column stx)
                        (syntax-position stx)
                        (syntax-span stx)))))
-  #`(define #,bogus-name
+  (quasisyntax/loc stx
+    (define #,bogus-name
       #,(stepper-syntax-property
          #`(let ([test-info (namespace-variable-value
                              'test~object #f builder (current-namespace))])
@@ -70,26 +71,23 @@
                (insert-test test-info
                             (lambda ()
                               #,(with-stepper-syntax-properties
-                                 (['stepper-hint hint-tag]
-                                  ['stepper-hide-reduction #t]
-                                  ['stepper-use-val-as-final #t])
-                                 (quasisyntax/loc stx
-                                   (#,checker-proc-stx
-                                    (car (list
-                                          (lambda () #,test-expr)
-                                          #,(syntax/loc stx (void))))
-                                    #,@embedded-stxes
-                                    #,src-info
-                                    #,(with-stepper-syntax-properties
-                                       (['stepper-no-lifting-info #t]
-                                        ['stepper-hide-reduction #t])
-                                       #'test-info))))))))
+                                    (['stepper-hint hint-tag]
+                                     ['stepper-hide-reduction #t]
+                                     ['stepper-use-val-as-final #t])
+                                  (quasisyntax/loc stx
+                                    (#,checker-proc-stx
+                                     #,@embedded-stxes
+                                     #,src-info
+                                     #,(with-stepper-syntax-properties
+                                           (['stepper-no-lifting-info #t]
+                                            ['stepper-hide-reduction #t])
+                                         #'test-info))))))))
          'stepper-skipto
          (append skipto/third ;; let
                  skipto/third skipto/second ;; unless (it expands into a begin)
                  skipto/cdr skipto/third ;; application of insert-test
                  '(syntax-e cdr cdr syntax-e car) ;; lambda
-                 ))))
+                 )))))
 
 (define-for-syntax (check-context?)
   (let ([c (syntax-local-context)])
@@ -101,7 +99,8 @@
     (raise-syntax-error 'check-expect CHECK-EXPECT-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test actual)
-     (check-expect-maker stx #'check-values-expected #`test (list #`actual)
+     (check-expect-maker stx #'check-values-expected
+                         (list #`(lambda () test) #`actual)
                          'comes-from-check-expect)]
     [_ (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]))
 
@@ -120,7 +119,8 @@
     (raise-syntax-error 'check-within CHECK-WITHIN-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test actual within)
-     (check-expect-maker stx #'check-values-within #`test (list #`actual #`within)
+     (check-expect-maker stx #'check-values-within
+                         (list #`(lambda () test) #`actual #`within)
                          'comes-from-check-within)]
     [_ (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]))
 
@@ -137,7 +137,8 @@
     (raise-syntax-error 'check-error CHECK-ERROR-DEFN-STR stx))
   (syntax-case stx ()
     [(_ test error)
-     (check-expect-maker stx #'check-values-error #`test (list #`error)
+     (check-expect-maker stx #'check-values-error
+                         (list #'(lambda () test) #`error)
                          'comes-from-check-error)]
     [_ (raise-syntax-error 'check-error CHECK-ERROR-STR stx)]))
 
