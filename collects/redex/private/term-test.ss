@@ -30,7 +30,7 @@
                      (term (f 2)))
         (term 3))
   
-  (test (with-syntax ([((x ...) ...) (list (list 1 1) (list 2 2) (list 3 3))])
+  (test (term-let ([((x ...) ...) (list (list 1 1) (list 2 2) (list 3 3))])
           (term-let-fn ((f (λ (x) (car x))))
                        (term ((qq (f x) ...) ...))))
         (term ((qq 1 1) (qq 2 2) (qq 3 3))))
@@ -76,8 +76,7 @@
                        (term (((metafun x) y) ...))))
         '((whatever 4) (whatever 5) (whatever 6)))
   
-  #;
-  (test (term-let-fn ((metafun (λ (x) x)))
+  (test (term-let-fn ((metafun (λ (x) (car x))))
                      (term-let (((y ...) '(4 5 6)))
                        (term ((y (metafun 1)) ...))))
         '((4 1) (5 1) (6 1)))

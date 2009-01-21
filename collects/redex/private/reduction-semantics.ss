@@ -47,7 +47,9 @@
 			    "pattern ~s matched term ~e multiple ways"
 			    'pattern
 			    exp))
-                         (k (term-let ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
+                         (k (term-let/error-name 
+                             term-match/single
+                             ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
                               rhs))))
                      ...
                      (redex-error 'term-match/single "no patterns matched ~e" exp))))))))]))
@@ -74,7 +76,9 @@
                     (let ([matches (match-pattern cp-x exp)])
                       (if matches
                           (map (λ (match)
-                                 (term-let ([names/ellipses (lookup-binding (mtch-bindings match) 'names)] ...)
+                                 (term-let/error-name
+                                  term-match
+                                  ([names/ellipses (lookup-binding (mtch-bindings match) 'names)] ...)
                                    rhs))
                                matches)
                           '())) ...)))))))]))

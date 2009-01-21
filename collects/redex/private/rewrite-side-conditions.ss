@@ -43,8 +43,9 @@
                  (side-condition
                   pat
                   ,(lambda (bindings)
-                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
-                               exp)))))))]
+                     (term-let
+                      ([name/ellipses (lookup-binding bindings 'name)] ...)
+                      exp)))))))]
         [(side-condition a ...) (expected-exact 'side-condition 2 term)]
         [side-condition (expected-arguments 'side-condition term)]
         [(variable-except a ...) #`(variable-except #,@(map loop (syntax->list (syntax (a ...)))))]
