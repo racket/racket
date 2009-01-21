@@ -164,7 +164,7 @@ defined. No expression can refer to a @tech{top-level variable}.
 The evaluation of a @scheme[module] form does not evaluate the
 expressions in the body of the module. Evaluation merely declares a
 module, whose full name depends both on @scheme[id] and
-@scheme[(current-module-name-prefix)].
+@scheme[(current-module-declare-name)].
 
 The module body is executed only when the module is explicitly
 @techlink{instantiate}d via @scheme[require] or
@@ -173,7 +173,12 @@ are evaluated in order as they appear within the module; accessing a
 @tech{module-level variable} before it is defined signals a run-time
 error, just like accessing an undefined global variable.
 
-See also @secref["module-eval-model"] and @secref["mod-parse"].
+If a module (in its fully expanded form) does not contain a
+@scheme[set!]  for an identifier that defined within the module, then
+the identifier is a @defterm{constant} after it is defined; its value
+cannot be changed afterward, not even through reflective
+mechanisms. The @scheme[compile-enforce-module-constants] parameter,
+however, can be used to disable enforcement of constants.
 
 When a @tech{syntax object} representing a @scheme[module] form has a
 @indexed-scheme['module-language] @tech{syntax property} attached, and
@@ -185,6 +190,8 @@ the vector should be printable and @scheme[read]able, so that it can
 be preserved in marshaled bytecode. See also
 @scheme[module-compiled-language-info] and
 @scheme[module->language-info].}
+
+See also @secref["module-eval-model"] and @secref["mod-parse"].
 
 @defform[(#%module-begin form ...)]{
 

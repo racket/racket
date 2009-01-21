@@ -45,14 +45,19 @@ binding.  For essentially the same reason that it helps programmers,
 the prohibition on assignment to imports also allows many programs to
 be executed more efficiently.
 
-Along the same lines, re-declaration of a module is not generally
-allowed. Indeed, for file-based modules, simply changing the file does
-not lead to a re-declaration, because file-based modules are loaded on
+Along the same lines, when a module contains no @scheme[set!] of a
+particular identifier that is defined within the module, then the
+identifier is considered a @defterm{constant} that cannot be
+changed---not even by re-declaring the module.
+
+Consequently, re-declaration of a module is not generally allowed.
+For file-based modules, simply changing the file does not lead to a
+re-declaration in any case, because file-based modules are loaded on
 demand, and the previously loaded declarations satisfy future
 requests. It is possible to use Scheme's reflection support to
 re-declare a module, however, and non-file modules can be re-declared
-in the @tech{REPL}; in such cases, the redeclaration may fail if it
-involves the re-definition of a previously immutable binding.
+in the @tech{REPL}; in such cases, the re-declaration may fail if it
+involves the re-definition of a previously constant binding.
 
 @interaction[
 (module m scheme
