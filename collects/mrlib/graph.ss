@@ -536,7 +536,7 @@
                           [(b45x b45y) (values s5x s4y)]
                           [(b56x b56y) (values s5x s6y)])
               
-              (update-arrowhead-polygon s4x s4y sx s4y)
+              (update-arrowhead-polygon s4x s4y sx s4y point1 point2 point3 point4)
               (send dc draw-spline (+ dx s1x) (+ dy s1y) (+ dx b12x) (+ dy b12y) (+ dx s2x) (+ dy s2y))
               (send dc draw-spline (+ dx s2x) (+ dy s2y) (+ dx b23x) (+ dy b23y) (+ dx s3x) (+ dy s3y))
               (send dc draw-line (+ dx s3x) (+ dy s3y) (+ dx s6x) (+ dy s6y))
