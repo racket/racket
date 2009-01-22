@@ -87,10 +87,11 @@
   (syntax-case stx ()
     [(_ red lang nt)
      (identifier? (syntax nt))
-     (with-syntax ([side-conditions-rewritten (rewrite-side-conditions/check-errs (language-id-nts #'lang 'compatible-closure)
-                                                                                  'compatible-closure 
-                                                                                  #t
-                                                                                  (syntax (cross nt)))])
+     (with-syntax ([side-conditions-rewritten
+                    (rewrite-side-conditions/check-errs (language-id-nts #'lang 'compatible-closure)
+                                                        'compatible-closure 
+                                                        #t
+                                                        (syntax (cross nt)))])
        (syntax (do-context-closure red lang `side-conditions-rewritten 'compatible-closure)))]
     [(_ red lang nt)
      (raise-syntax-error 'compatible-closure "expected a non-terminal as last argument" stx (syntax nt))]))
@@ -98,10 +99,11 @@
 (define-syntax (context-closure stx)
   (syntax-case stx ()
     [(_ red lang pattern)
-     (with-syntax ([side-conditions-rewritten (rewrite-side-conditions/check-errs (language-id-nts #'lang 'context-closure)
-                                                                                  'context-closure
-                                                                                  #t
-                                                                                  (syntax pattern))])
+     (with-syntax ([side-conditions-rewritten
+                    (rewrite-side-conditions/check-errs (language-id-nts #'lang 'context-closure)
+                                                        'context-closure
+                                                        #t
+                                                        (syntax pattern))])
        (syntax
         (do-context-closure
          red
@@ -996,39 +998,41 @@
                                   (map extract-pattern-binds (syntax->list #'(lhs ...)))])
                      #`(begin
                          (define-values (name2 name-predicate)
-                           (build-metafunction 
-                            lang
-                            (list `side-conditions-rewritten ...)
-                            (list rhs-fns ...)
-                            #,(if prev-metafunction
-                                  (let ([term-fn (syntax-local-value prev-metafunction)])
-                                    #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
-                                  #''())
-                            #,(if prev-metafunction
-                                  (let ([term-fn (syntax-local-value prev-metafunction)])
-                                    #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
-                                  #''())
-                            (λ (f/dom cps rhss) 
-                              (make-metafunc-proc
-                               (let ([name (lambda (x) (f/dom x))]) name)
-                               (list (list (to-lw lhs-for-lw)
-                                           (list (to-lw/uq side-cond) ...)
-                                           (list (cons (to-lw bind-id)
-                                                       (to-lw bind-pat))
-                                                 ...)
-                                           (to-lw rhs))
-                                     ...)
-                               lang
-                               #t ;; multi-args?
-                               'name
-                               cps
-                               rhss
-                               (let ([name (lambda (x) (name-predicate x))]) name)
-                               `dom-side-conditions-rewritten
-                               `(side-conditions-rewritten ...)))
-                            `dom-side-conditions-rewritten
-                            `codom-side-conditions-rewritten
-                            'name))
+                           (let ([sc `(side-conditions-rewritten ...)]
+                                 [dsc `dom-side-conditions-rewritten])
+                             (build-metafunction 
+                              lang
+                              sc
+                              (list rhs-fns ...)
+                              #,(if prev-metafunction
+                                    (let ([term-fn (syntax-local-value prev-metafunction)])
+                                      #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
+                                    #''())
+                              #,(if prev-metafunction
+                                    (let ([term-fn (syntax-local-value prev-metafunction)])
+                                      #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
+                                    #''())
+                              (λ (f/dom cps rhss) 
+                                (make-metafunc-proc
+                                 (let ([name (lambda (x) (f/dom x))]) name)
+                                 (list (list (to-lw lhs-for-lw)
+                                             (list (to-lw/uq side-cond) ...)
+                                             (list (cons (to-lw bind-id)
+                                                         (to-lw bind-pat))
+                                                   ...)
+                                             (to-lw rhs))
+                                       ...)
+                                 lang
+                                 #t ;; multi-args?
+                                 'name
+                                 cps
+                                 rhss
+                                 (let ([name (lambda (x) (name-predicate x))]) name)
+                                 dsc
+                                 sc))
+                              dsc
+                              'codom-side-conditions-rewritten
+                              'name)))
                          (term-define-fn name name2)))))))))]
       [(_ prev-metafunction name lang clauses ...)
        (begin
