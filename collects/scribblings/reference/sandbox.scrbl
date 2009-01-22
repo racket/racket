@@ -410,7 +410,7 @@ A parameter that holds a list of values that specify how to create a
 namespace for evaluation in @scheme[make-evaluator] or
 @scheme[make-module-evaluator].  The first item in the list is a thunk
 that creates the namespace, and the rest are module paths for modules
-that to be attached to the created namespace using
+to be attached to the created namespace using
 @scheme[namespace-attach-module].
 
 The default is @scheme[(list make-base-namespace)] if @scheme[gui?] is
