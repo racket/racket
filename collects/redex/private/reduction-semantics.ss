@@ -1012,7 +1012,7 @@
                                     (let ([term-fn (syntax-local-value prev-metafunction)])
                                       #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
                                     #''())
-                              (λ (f/dom cps rhss) 
+                              (λ (f/dom cps rhss)
                                 (make-metafunc-proc
                                  (let ([name (lambda (x) (f/dom x))]) name)
                                  (list (list (to-lw lhs-for-lw)

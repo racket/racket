@@ -659,21 +659,22 @@
              [lhss (map (lambda (eqn) 
                           (wrapper->pict
                            (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                              (car eqn)
+                                              (list-ref eqn 0)
                                               (metafunc-proc-multi-arg? (metafunction-proc mf)))))
                         eqns)]
              [scs (map (lambda (eqn)
-                         (if (and (null? (cadr eqn))
-                                  (null? (caddr eqn)))
+                         (if (and (null? (list-ref eqn 1))
+                                  (null? (list-ref eqn 2)))
                              #f
                              (side-condition-pict null 
-                                                  (map wrapper->pict (cadr eqn)) 
+                                                  (map wrapper->pict (list-ref eqn 1)) 
                                                   (map (lambda (p)
-                                                         (cons (wrapper->pict (car p)) (wrapper->pict (cdr p))))
-                                                       (caddr eqn))
+                                                         (cons (wrapper->pict (car p))
+                                                               (wrapper->pict (cdr p))))
+                                                       (list-ref eqn 2))
                                                   +inf.0)))
                        eqns)]
-             [rhss (map (lambda (eqn) (wrapper->pict (cadddr eqn))) eqns)]
+             [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 3))) eqns)]
              [linebreak-list (or current-linebreaks
                                  (map (lambda (x) #f) eqns))]
              [=-pict (make-=)]

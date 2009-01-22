@@ -42,6 +42,19 @@
 (test (render-metafunction S)
       "metafunction.png")
 
+(define-metafunction lang
+  [(T x y)
+   1
+   (side-condition (not (eq? (term x) (term y))))]
+  [(T x x) 
+   n
+   (where n 2)])
+
+;; in this test, the metafunction has 2 clauses 
+;; with a side-condition on the first clause
+;; and a 'where' in the second clause
+(test (render-metafunction T) "metafunction-T.png")
+
 ;; in this test, teh `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
 (test (render-lw 
        lang 
