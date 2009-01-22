@@ -21,7 +21,7 @@
 (load-in-sandbox "pretty.ss")
 (load-in-sandbox "control.ss")
 (load-in-sandbox "serialize.ss")
-;; (load-in-sandbox "package.ss")
+(load-in-sandbox "package.ss")
 (load-in-sandbox "contract-mzlib-test.ss")
 (load-in-sandbox "sandbox.ss")
 (load-in-sandbox "shared.ss")

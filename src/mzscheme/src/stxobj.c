@@ -3696,7 +3696,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             EXPLAIN(fprintf(stderr, "%d  {unmarshal}\n", depth));
 	    unmarshal_rename(mrn, modidx_shift_from, modidx_shift_to, export_registry);
           }
-	  
+          
 	  if (mrn->marked_names) {
 	    /* Resolve based on rest of wraps: */
             EXPLAIN(fprintf(stderr, "%d  tl_id_sym\n", depth));
@@ -3713,6 +3713,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL, &skipped);
+	  
 	    if (SCHEME_TRUEP(bdg)
 		&& !SAME_OBJ(glob_id, SCHEME_STX_VAL(a))) {
 	      /* Even if this module doesn't match, the lex-renamed id
@@ -7455,8 +7456,24 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
     /* tails don't match, so keep all marks --- except 
        those that determine a module binding */
     int skipped = -1;
+    Scheme_Object *mod;
 
-    resolve_env(NULL, argv[0], phase, 1, NULL, NULL, &skipped, NULL, 0);
+    mod = resolve_env(NULL, argv[0], phase, 1, NULL, NULL, &skipped, NULL, 0);
+
+    if ((skipped == -1) && SCHEME_FALSEP(mod)) {
+      /* For top-level bindings, need to check the current environment's table,
+         because the identifier might not have the top level in its renamings. */
+      Scheme_Env *env;
+
+      if (scheme_current_thread->current_local_env)
+        env = scheme_current_thread->current_local_env->genv;
+      else
+        env = NULL;
+      if (!env) env = scheme_get_env(NULL);
+      if (env) {
+        scheme_tl_id_sym(env, argv[0], NULL, 0, NULL, &skipped);
+      }
+    }
 
     if (skipped > -1) {
       /* Just keep the first `skipped' marks. */
