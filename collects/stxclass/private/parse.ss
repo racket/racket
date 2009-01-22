@@ -100,7 +100,7 @@
 (define (expr:convert-sides sides iattrs main-var k)
   (match sides
     ['() (k iattrs)]
-    [(cons (struct clause:where (e)) rest)
+    [(cons (struct clause:when (e)) rest)
      (let* ([k-rest (expr:convert-sides rest iattrs main-var k)])
        (with-syntax ([(x) (generate-temporaries #'(x))])
          #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 e)])

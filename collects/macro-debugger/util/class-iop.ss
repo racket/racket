@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          (for-syntax scheme/base
-                     macro-debugger/stxclass/stxclass
+                     stxclass
                      "class-ct.ss"))
 (provide define-interface
          define-interface/dynamic

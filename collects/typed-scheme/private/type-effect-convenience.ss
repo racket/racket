@@ -11,7 +11,7 @@
          "subtype.ss"
          "type-utils.ss" 
          scheme/promise
-         (for-syntax macro-debugger/stxclass/stxclass)
+         (for-syntax stxclass)
          (for-syntax scheme/base)
          (for-template scheme/base scheme/contract scheme/tcp))
 

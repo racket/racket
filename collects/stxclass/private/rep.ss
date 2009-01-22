@@ -22,7 +22,7 @@
          (struct-out splice-pattern)
          (struct-out pat:splice-id)
          (struct-out head)
-         (struct-out clause:where)
+         (struct-out clause:when)
          (struct-out clause:with)
 
          get-stxclass
@@ -59,7 +59,7 @@
 
 ;; An RHSPattern is
 ;;   (make-rhs:pattern stx (listof SAttr) Pattern Env Env (listof SideClause))
-(define-struct rhs:pattern (stx attrs pattern decls remap wheres)
+(define-struct rhs:pattern (stx attrs pattern decls remap whens)
   #:transparent)
 
 ;; A Pattern is one of
@@ -68,7 +68,7 @@
 ;;   (make-pat:pair <Pattern> Pattern Pattern)
 ;;   (make-pat:seq <Pattern> Pattern Pattern)
 ;;   (make-pat:gseq <Pattern> (listof Head) Pattern)
-;; where <Pattern> = stx (listof IAttr) number
+;; when <Pattern> = stx (listof IAttr) number
 (define-struct pattern (orig-stx attrs depth) #:transparent)
 (define-struct (pat:id pattern) (name stxclass args) #:transparent)
 (define-struct (pat:datum pattern) (datum) #:transparent)
@@ -91,9 +91,9 @@
 
 ;; A SideClause is one of
 ;;   (make-clause:with pattern stx)
-;;   (make-clause:where stx)
+;;   (make-clause:when stx)
 (define-struct clause:with (pattern expr) #:transparent)
-(define-struct clause:where (expr) #:transparent)
+(define-struct clause:when (expr) #:transparent)
 
 ;; make-empty-sc : identifier => SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
@@ -497,7 +497,7 @@
       (list (list '#:declare check-id values)
             (list '#:rename check-id check-id)
             (list '#:with values values)
-            (list '#:where values)))
+            (list '#:when values)))
     (define-values (chunks rest) (chunk-kw-seq stx directive-table))
     (define directives (map cdr chunks))
 
@@ -534,9 +534,9 @@
          (let* ([pattern (parse-pattern #'p decls 0)])
            (set! rclauses
                  (cons (make clause:with pattern #'expr) rclauses)))]
-        [[#:where expr]
+        [[#:when expr]
          (set! rclauses
-               (cons (make clause:where #'expr) rclauses))]
+               (cons (make clause:when #'expr) rclauses))]
         [_ (void)]))
 
     (for ([literal literals])

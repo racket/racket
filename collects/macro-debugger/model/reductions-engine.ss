@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-syntax "../stxclass/stxclass.ss")
+         (for-syntax stxclass)
          scheme/list
          scheme/contract
          "deriv.ss"

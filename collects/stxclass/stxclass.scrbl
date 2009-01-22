@@ -1,15 +1,25 @@
 #lang scribble/doc
-
 @(require scribble/manual
           scribble/struct
-          (for-label macro-debugger/stxclass/stxclass))
+          scribble/decode
+          (for-label scheme/base stxclass))
+
+@(define ellipses @scheme[...])
+@(define (TODO . pre-flow)
+   (make-splice
+    (cons (bold "TODO: ")
+          (decode-content pre-flow))))
 
 @title{Parsing Syntax and Syntax Classes}
 
-@defmodule[macro-debugger/stxclass/stxclass]
+@defmodule[stxclass]
+
+@bold{Warning: This library is still very volatile! Its interface and
+behavior are subject to frequent change. I highly recommend that you
+avoid creating PLaneT package that depend on this library.}
 
 @section{Parsing Syntax}
-@declare-exporting[macro-debugger/stxclass/stxclass]
+@declare-exporting[stxclass]
 
 @defform/subs[(syntax-parse stx-expr maybe-literals clause ...)
               ([maybe-literals code:blank
@@ -27,6 +37,8 @@ matches fail the corresponding clauses' side conditions), a syntax
 error is raised. The syntax error indicates the first specific subterm
 for which no pattern matches.
 
+@TODO{Allow literal declarations of form @scheme[(_internal-name
+_external-name)].}
 }
 
 @defform[(syntax-parser maybe-literals clause ...)]{
@@ -39,18 +51,18 @@ procedure accepts a single argument, which should be a syntax object.
 The grammar of patterns accepted by @scheme[syntax-parse] and
 @scheme[syntax-parser] follows:
 
-@schemegrammar*[#:literals (_ ... ...*)
+@schemegrammar*[#:literals (_ ...*)
                 [syntax-pattern
                  pvar-id
                  pvar-id:syntax-class-id
                  literal-id
                  atomic-datum
                  (syntax-pattern . syntax-pattern)
-                 (syntax-splice-pattern . syntax-pattern)
-                 (syntax-pattern ... . syntax-pattern)
+                 #|  (syntax-splice-pattern . syntax-pattern)  |#
+                 (syntax-pattern #,ellipses . syntax-pattern)
                  ((head ...+) ...* . syntax-pattern)]
-                [syntax-splice-pattern
-                 pvar-id:syntax-splice-class-id]
+                #| [syntax-splice-pattern
+                    pvar-id:syntax-splice-class-id] |#
                 [pvar-id
                  _
                  id]]
@@ -71,8 +83,10 @@ syntax class's attributes are computed for the subterm and bound to
 the pattern variables formed by prefixing @scheme[_pvar-id.] to the
 name of the attribute. @scheme[_pvar-id] is typically bound to the
 matched subterm, but the syntax class can substitute a transformed
-subterm instead (for example, @scheme[expr/c] wraps the matched
-subterm in a @scheme[contract] expression).
+subterm instead.
+
+@;{(for example, @scheme[expr/c] wraps the matched
+subterm in a @scheme[contract] expression).}
 
 If @scheme[_pvar-id] is @scheme[_], no pattern variables are bound.
 
@@ -96,6 +110,7 @@ Matches a syntax pair whose head matches the first pattern and whose
 tail matches the second.
 
 }
+@;{
 @specsubform[(syntax-splice-pattern . syntax-pattern)]{
 
 Matches a syntax object which consists of any sequence of syntax
@@ -103,7 +118,9 @@ objects matching the splice pattern followed by a tail matching the
 given tail pattern.
 
 }
-@specsubform[(syntax-pattern ... . syntax-pattern)]{
+}
+
+@specsubform[(syntax-pattern #,ellipses . syntax-pattern)]{
 
 Matches a sequence of the first pattern ending in a tail matching the
 second pattern.
@@ -121,9 +138,10 @@ whose tail recursively matches the whole sequence pattern.
                     (code:line #:min min-reps)
                     (code:line #:max max-reps)
                     (code:line #:mand)
-                    (code:line #:opt)
-                    (code:line #:occurs occurs-pvar-id)
-                    (code:line #:default default-form)])]{
+                    #| (code:line #:opt)
+                       (code:line #:occurs occurs-pvar-id)
+                       (code:line #:default default-form)
+                    |#])]{
 
 Matches a sequence of any combination of the heads ending in a tail
 matching the final pattern. The match is subject to constraints
@@ -140,7 +158,8 @@ integer.
 
 Requires that no more than @scheme[max-reps] occurrences of the
 preceeding head to match. @scheme[max-reps] must be a literal exact
-nonnegative integer, and it must be greater than @scheme[min-reps].
+nonnegative integer, and it must be greater than or equal to
+@scheme[min-reps].
 
 }
 @specsubform[#:mand]{
@@ -150,13 +169,15 @@ in the preceding head are not bound at a higher ellipsis nesting
 depth.
 
 }
+@;{
 @specsubform[#:opt]{
 
 (Probably a bad idea.)
 
 }
 }
-
+}
+@;{
 The variants of @scheme[_syntax-splice-pattern] follow:
 
 @specsubform[pvar-id:syntax-splice-class-id]{
@@ -168,7 +189,7 @@ The name @scheme[_pvar-id] is bound, but not allowed within
 expressions or @scheme[syntax] templates (since it does not refer to a
 particular syntax object). Only the prefixed attributes of the splice
 class are usable.
-
+}
 }
 
 Both @scheme[syntax-parse] and @scheme[syntax-parser] support
@@ -179,12 +200,12 @@ conditions. The grammar for pattern directives follows:
                (code:line #:declare pattern-id syntax-class-id)
                (code:line #:declare pattern-id (syntax-class-id expr ...))
                (code:line #:with syntax-pattern expr)
-               (code:line #:where expr)]
+               (code:line #:when expr)]
 
 @specsubform[(code:line #:declare pvar-id syntax-class-id)]
 @specsubform[(code:line #:declare pvar-id (syntax-class-id expr ...))]{
 
-The first form is entirely equivalent to using the
+The first form is equivalent to using the
 @scheme[_pvar-id:syntax-class-id] form in the pattern (but it is
 illegal to use both for a single pattern variable). The
 @scheme[#:declare] form may be preferred when writing macro-defining
@@ -202,11 +223,11 @@ variable bindings and matches it against the pattern. If the match
 succeeds, the new pattern variables are added to the environment for
 the evaluation of subsequent side conditions. If the @scheme[#:with]
 match fails, the matching process backtracks. Since a syntax object
-may match a pattern in several ways, backtracking may try the same
-clause multiple times before continuing to the next clause.
+may match a pattern in several ways, backtracking may cause the same
+clause to be tried multiple times before the next clause is reached.
 
 }
-@specsubform[(code:line #:where expr)]{
+@specsubform[(code:line #:when expr)]{
 
 Evaluates the @scheme[expr] in the context of all previous pattern
 variable bindings. If it produces a false value, the matching process
@@ -222,7 +243,7 @@ generalized sequences. It may not be used as an expression.
 }
 
 @section{Syntax Classes}
-@declare-exporting[macro-debugger/stxclass/stxclass]
+@declare-exporting[stxclass]
 
 Syntax classes provide an abstraction mechanism for the specification
 of syntax. Basic syntax classes include @scheme[identifier] and
@@ -241,11 +262,11 @@ depth is fixed for each syntax class.
 
 @defform*/subs[#:literals (pattern)
                [(define-syntax-class name-id stxclass-option ...
-                  stxclass-variant ...)
+                  stxclass-variant ...+)
                 (define-syntax-class (name-id arg-id ...) stxclass-option ... 
-                  stxclass-variant ...)]
+                  stxclass-variant ...+)]
                ([stxclass-options
-                 (code:line #:description string)
+                 (code:line #:description description)
                  (code:line #:transparent)]
                 [stxclass-variant 
                  (pattern syntax-pattern pattern-directive ...)])]{
@@ -261,13 +282,19 @@ present in every variant. Each such attribute must be defined with the
 same ellipsis nesting depth and the same sub-attributes in each
 component.
 
-@specsubform[(code:line #:description string)]{
+@TODO{Eliminate attribute inference, require explicit attribute
+declaration?}
 
-Specifies a string to use in error messages involving the syntax
-class. For example, if a term is rejected by the syntax class, an
-error of the form @scheme["expected <description>"] may be generated.
+@specsubform[(code:line #:description description)]{
+
+The @scheme[description] argument must be a string literal. It is used
+in error messages involving the syntax class. For example, if a term
+is rejected by the syntax class, an error of the form
+@scheme["expected <description>"] may be generated.
 
 If absent, the name of the syntax class is used instead.
+
+@TODO{Allow string expressions with parameters in scope?}
 }
 
 @specsubform[#:transparent]{
@@ -277,7 +304,7 @@ structure of the syntax class.
 }
 
 @specsubform/subs[#:literals (pattern)
-                  (pattern syntax-pattern pattern-directive ...)
+                  (pattern syntax-pattern stxclass-pattern-directive ...)
                   ([stxclass-pattern-directive
                     pattern-directive
                     (code:line #:rename internal-id external-id)])]{
@@ -305,13 +332,16 @@ syntax class and forward references to syntax classes defined in the
 same scope are allowed. For the purpose of calculating provided
 attributes, recursive and forward syntax-class references generate no
 nested attributes. The full set of attributes is available, however,
-to @scheme[#:with] and @scheme[#:where] expressions.
+to @scheme[#:with] and @scheme[#:when] expressions.
 
 This treatment of recursive and forward references prevents infinitely
 nested attributes.
 
-}
+@TODO{Eliminate attribute inference. Explicit attribute declaration
+eliminates infinitely nested attributes just as well.}
 
+}
+@;{
 @defform*[[(define-syntax-splice-class (name-id arg-id ...) stxclass-body)
            (define-syntax-splice-class name-id stxclass-body)]]{
 
@@ -331,6 +361,7 @@ match only proper lists:
                (syntax-pattern ... . proper-list-pattern)
                ((head ...+) ...* . proper-list-pattern)]
 
+}
 }
 
 @defidform[pattern]{
@@ -357,13 +388,17 @@ syntax-class parameterization arguments. To indicate success, the
 parser should return a list of attribute values, one for each
 attribute listed. (For example, a parser for a syntax class that
 defines no attributes returns the empty list when it succeeds.) To
-indicate failure, the parser procedure should return the result of
-calling @scheme[fail-sc].
+indicate failure, the parser procedure should return @scheme[#f].
 
 The parser procedure is encouraged to avoid side-effects.
 
-}
+@TODO{Add support for better error reporting within basic syntax
+class.}
 
+@TODO{Remove this form in favor of new stxclass-variant form.}
+
+}
+@;{
 @defform[(define-basic-syntax-class* (name-id arg-id ...)
            ([attr-id attr-depth] ...)
            parser-expr)]{
@@ -380,7 +415,9 @@ that add interpretation or constraints to expressions, such as
 @scheme[expr/c], which imposes run-time contracts on expressions.
 
 }
+}
 
+@;{
 @defform[(attrs-of syntax-class-id)]{
 
 For debugging. Returns a representation of the attributes provided by
@@ -395,10 +432,11 @@ the @scheme[arg-expr]s) on the syntax object produced by
 @scheme[stx-expr].
 
 }
+}
 
 
 @section{Library syntax classes}
-@declare-exporting[macro-debugger/stxclass/stxclass]
+@declare-exporting[stxclass]
 
 @(define-syntax-rule (defstxclass name . pre-flows)
    (defidform name . pre-flows))
@@ -406,7 +444,13 @@ the @scheme[arg-expr]s) on the syntax object produced by
 @(define-syntax-rule (defstxclass* (name arg ...) . pre-flows)
    (defform (name arg ...) . pre-flows))
 
-The following basic syntax classes are defined:
+@defstxclass[expr]{
+
+Matches anything except a keyword literal (to distinguish expressions
+from the start of a keyword argument sequence). Does not expand or
+otherwise inspect the term.
+
+}
 
 @deftogether[(
 @defstxclass[identifier]
@@ -418,15 +462,20 @@ The following basic syntax classes are defined:
 @defstxclass[integer]
 @defstxclass[exact-integer]
 @defstxclass[exact-nonnegative-integer]
-@defstxclass[exact-positive-integer])]
+@defstxclass[exact-positive-integer])]{
+
+Match syntax satisfying the corresponding predicates.
+
+}
 
 Two of the above have short aliases:
 
 @defstxclass[id]{ Same as @scheme[identifier]. }
 @defstxclass[nat]{ Same as @scheme[exact-nonnegative-integer]. }
 
-The following syntax classes mirror parts of the macro API. They
-may only be used in phase 1 expressions.
+The following syntax classes mirror parts of the macro API. They may
+only be used during transformation (when @scheme[syntax-transforming?]
+returns true). Otherwise they may raise an error.
 
 @defstxclass[static]{
 
@@ -436,6 +485,17 @@ static information (see @scheme[syntax-local-value]). Attribute
 
 }
 
+@defform[(static-of predicate description)]{
+
+Refines @scheme[static]: matches identifiers that are bound in the
+syntactic environment to static information satisfying the given
+@scheme[predicate]. Attribute @scheme[_value] contains the value the
+name is bound to. The @scheme[description] argument is used for error
+reporting.
+
+}
+
+@;{
 @defstxclass[struct-name]{
 
 Matches identifiers bound to static struct information. Attributes are
@@ -443,7 +503,8 @@ Matches identifiers bound to static struct information. Attributes are
 @scheme[(_accessor ...)], @scheme[_super], and @scheme[_complete?].
 
 }
-
+}
+@;{
 @defstxclass[expr/local-expand]{
 
 Matches any term and @scheme[local-expand]s it as an expression with
@@ -454,10 +515,13 @@ an empty stop list. Attribute @scheme[_expanded] is the expanded form.
 @defstxclass[expr/head-local-expand]
 @defstxclass[block/head-local-expand]
 @defstxclass[internal-definitions]
+}
 
+@;{
 @defform[(expr/c contract-expr-stx)]{
 
 Accepts any term and returns as the match that term wrapped in a
 @scheme[contract] expression enforcing @scheme[contract-expr-stx].
 
+}
 }

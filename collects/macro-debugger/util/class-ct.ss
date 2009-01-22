@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-template scheme/base
                        scheme/class)
-         macro-debugger/stxclass/stxclass)
+         stxclass)
 
 (provide static-interface?
          make-static-interface

@@ -36,7 +36,7 @@
 ;;   #:rename internal-id external-id
 ;;   #:with pattern expr
 ;;     #:with clauses are let*-scoped
-;;   #:where expr
+;;   #:when expr
 
 ;; A HeadDirective is one of
 ;;   #:min nat/#f

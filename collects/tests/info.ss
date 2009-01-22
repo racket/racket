@@ -21,6 +21,7 @@
     "srfi"
     "srpersist"
     "stepper"
+    "stxclass"
     "syntax-color"
     "typed-scheme"
     "units"

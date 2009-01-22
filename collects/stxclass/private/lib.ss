@@ -14,12 +14,13 @@
 
 (define-syntax-rule (define-pred-stxclass name pred)
   (define-basic-syntax-class name
-    () ;; ([datum 0])
+    ([datum 0])
     (lambda (x)
       (let ([d (if (syntax? x) (syntax-e x) x)])
         (if (pred d)
-            null ;; (list d)
-            (fail-sc x #:pattern 'name))))))
+            (list d)
+            ;; (fail-sc x #:pattern 'name)
+            #f)))))
 
 (define-pred-stxclass identifier symbol?)
 (define-pred-stxclass boolean boolean?)
@@ -39,7 +40,8 @@
     (lambda (x)
       (if (and (identifier? x) (free-identifier=? x (quote-syntax kw)))
           null
-          (fail-sc x #:pattern 'name)))))
+          ;; (fail-sc x #:pattern 'name)
+          #f))))
 
 (define-kw-stxclass lambda-kw #%lambda)
 (define-kw-stxclass define-values-kw define-values)
@@ -65,18 +67,20 @@
                       #:reason "not bound as syntax")))
           (let ([value (syntax-local-value x bad)])
             (list (syntax-e x) value)))
-        (fail-sc x
-                 #:pattern 'static
-                 #:reason "not an identifier"))))
+        ;;(fail-sc x
+        ;;         #:pattern 'static
+        ;;         #:reason "not an identifier")
+        #f)))
 
 (define-basic-syntax-class (static-of name pred)
   ([value 0])
   (lambda (x name pred)
     (let/ec escape
       (define (bad)
-        (escape (fail-sc x
-                         #:pattern 'name
-                         #:reason (format "not bound as ~a" name))))
+        (escape ;;(fail-sc x
+                ;;         #:pattern 'name
+                ;;         #:reason (format "not bound as ~a" name))
+         #f))
       (if (identifier? x)
           (let ([value (syntax-local-value x bad)])
             (unless (pred value) (bad))
@@ -95,9 +99,10 @@
         (let/ec escape
           (define (bad)
             (escape
-             (fail-sc x
-                      #:pattern 'struct-name
-                      #:reason "not bound as a struct name")))
+             ;;(fail-sc x
+             ;;         #:pattern 'struct-name
+             ;;         #:reason "not bound as a struct name")
+             #f))
           (let ([value (syntax-local-value x bad)])
             (unless (struct-info? value) (bad))
             (let ([lst (extract-struct-info value)])
@@ -115,9 +120,10 @@
                             r-accessors)
                         super
                         (or (null? r-accessors) (not (eq? #f (car r-accessors))))))))))
-        (fail-sc x
-                 #:pattern 'struct-name
-                 #:reason "not bound as a struct name"))))
+        ;;(fail-sc x
+        ;;         #:pattern 'struct-name
+        ;;         #:reason "not bound as a struct name")
+        #f)))
 
 (define-basic-syntax-class expr/local-expand
   ([expanded 0])
@@ -190,7 +196,8 @@
                               (quote-syntax #,(syntax/loc x (<there>))))
                   x)
             (list x x))
-        (fail-sc x #:pattern 'expr #:reason "keyword"))))
+        ;;(fail-sc x #:pattern 'expr #:reason "keyword")
+        #f)))
 
 (define-basic-syntax-class (term parser)
   ()
@@ -201,7 +208,8 @@
   (lambda (x p)
     (if (p x)
         null
-        (fail-sc x #:pattern 'term/pred))))
+        ;;(fail-sc x #:pattern 'term/pred)
+        #f)))
 
 ;; Aliases
 
