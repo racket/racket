@@ -167,19 +167,25 @@
       (no-good))
     sc))
 
-(define (split-id/get-stxclass id [decls (lambda _ #f)])
-  (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id)))
+(define (split-id/get-stxclass id0 decls)
+  (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
          => (lambda (m)
-              (when (decls id)
-                (raise-syntax-error 'syntax-class
-                                    "name already declared with syntax class"
-                                    id))
-              (let ([sc (get-stxclass (datum->syntax id (string->symbol (caddr m))))])
-                (values (datum->syntax id (string->symbol (cadr m)) id id)
-                        sc
-                        null
-                        (ssc? sc))))]
-        [(decls id)
+              (define id (datum->syntax id0 (string->symbol (cadr m)) id0 id0))
+              (define scname (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
+              (match (decls id)
+                [#t
+                 (raise-syntax-error 'syntax-class
+                                     "name already declared as literal"
+                                     id)]
+                [(list* id2 scname2 args)
+                 (raise-syntax-error 'syntax-class
+                                     (format "name already declared with syntax-class '~s'"
+                                             (syntax-e scname))
+                                     id2)]
+                [_ (void)])
+              (let ([sc (get-stxclass scname)])
+                (values id sc null (ssc? sc))))]
+        [(decls id0)
          => (lambda (p)
               (let ([stxclass (car p)]
                     [args (cdr p)])
@@ -188,9 +194,9 @@
                                       (format "too few arguments for syntax class ~a (expected ~s)"
                                               (sc-name stxclass)
                                               (length (sc-inputs stxclass)))
-                                      id))
-                (values id stxclass args (ssc? stxclass))))]
-        [else (values id #f null #f)]))
+                                      id0))
+                (values id0 stxclass args (ssc? stxclass))))]
+        [else (values id0 #f null #f)]))
 
 (define (atomic-datum? stx)
   (let ([datum (syntax-e stx)])
@@ -250,10 +256,13 @@
              (for/list ([attr-stx (syntax->list #'([attr depth] ...))])
                (syntax-case attr-stx ()
                  [(attr depth)
-                  (begin (unless (and (identifier? #'attr) 
-                                      (exact-nonnegative-integer? (syntax-e #'depth)))
-                           (raise-syntax-error #f "bad attribute declaration" stx attr-stx))
-                         (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]))
+                  (begin
+                    (unless (and (identifier? #'attr) 
+                                 (exact-nonnegative-integer?
+                                  (syntax-e #'depth)))
+                      (raise-syntax-error #f "bad attribute declaration"
+                                          stx attr-stx))
+                    (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]))
              transparent?
              description
              #'parser-expr)]))
@@ -474,8 +483,8 @@
 
 ;; parse-pattern-directives : stxs(PatternDirective) #:literals (listof id)
 ;;                         -> stx DeclEnv env (listof SideClause)
-;; DeclEnv = bound-id-mapping[id => (cons SC (listof stx)) or #t]
-;;   if decls maps a name to #t, it indicates literal
+;; DeclEnv = bound-id-mapping[id => (list* id id (listof stx)) or #t]
+;;   if decls maps a name to #f, it indicates literal
 (define (parse-pattern-directives stx
                                   #:sc? [sc? #f]
                                   #:literals [literals null])
@@ -487,6 +496,8 @@
       (bound-identifier-mapping-get decl-table id (lambda () #f)))
     (define (remap id)
       (bound-identifier-mapping-get remap-table id (lambda () (syntax-e id))))
+    (define (decls-add! id value)
+      (bound-identifier-mapping-put! decl-table id value))
 
     (define (check-in-sc stx)
       (unless sc?
@@ -507,18 +518,18 @@
          (identifier? #'sc)
          (for-decl #'[#:declare name (sc)])]
         [[#:declare name (sc expr ...)]
-         (begin (let ([prev (bound-identifier-mapping-get decl-table #'name (lambda () #f))])
-                  (when (pair? prev)
-                    (raise-syntax-error 'pattern
-                                        "duplicate syntax-class declaration for name"
-                                        #'name))
-                  (when prev
-                    (raise-syntax-error 'pattern
-                                        "name already declared as literal"
-                                        #'name)))
-                (bound-identifier-mapping-put! decl-table #'name
-                                               (cons (get-stxclass #'sc)
-                                                     (syntax->list #'(expr ...)))))]
+         (begin
+           (let ([prev (decls #'name)])
+             (when (pair? prev)
+               (raise-syntax-error 'pattern
+                                   "duplicate syntax-class declaration for name"
+                                   #'name))
+             (when prev
+               (raise-syntax-error 'pattern
+                                   "name already declared as literal"
+                                   #'name)))
+           (decls-add! #'name
+                       (list* #'name #'sc (syntax->list #'(expr ...)))))]
         [[#:declare . _]
          (raise-syntax-error 'pattern "bad #:declare form" stx)]
         [[#:rename id s]
