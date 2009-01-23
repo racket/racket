@@ -157,11 +157,11 @@
     [(struct attr (name depth inner))
      (make attr (datum->syntax id name id) depth inner)]))
 
-(define (get-stxclass id [blame 'syntax-class])
+(define (get-stxclass id)
   (define (no-good)
     (if (allow-unbound-stxclasses)
         (make-empty-sc id)
-        (raise-syntax-error blame "not defined as syntax class" id)))
+        (wrong-syntax id "not defined as syntax class")))
   (let ([sc (syntax-local-value id no-good)])
     (unless (or (sc? sc) (ssc? sc))
       (no-good))
@@ -174,14 +174,11 @@
               (define scname (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
               (match (decls id)
                 [#t
-                 (raise-syntax-error 'syntax-class
-                                     "name already declared as literal"
-                                     id)]
+                 (wrong-syntax id "name already declared as literal")]
                 [(list* id2 scname2 args)
-                 (raise-syntax-error 'syntax-class
-                                     (format "name already declared with syntax-class '~s'"
-                                             (syntax-e scname))
-                                     id2)]
+                 (wrong-syntax id2
+                               "name already declared with syntax-class ~s"
+                               (syntax-e scname))]
                 [_ (void)])
               (let ([sc (get-stxclass scname)])
                 (values id sc null (ssc? sc))))]
@@ -191,11 +188,10 @@
               (define args (cddr p))
               (define stxclass (get-stxclass scname))
               (unless (equal? (length (sc-inputs stxclass)) (length args))
-                (raise-syntax-error 'syntax-class
-                                    (format "too few arguments for syntax class ~a (expected ~s)"
-                                            (sc-name stxclass)
-                                            (length (sc-inputs stxclass)))
-                                    id0))
+                (wrong-syntax id0
+                              "too few arguments for syntax-class ~a (expected ~s)"
+                              (sc-name stxclass)
+                              (length (sc-inputs stxclass))))
               (values id0 stxclass args (ssc? stxclass)))]
         [else (values id0 #f null #f)]))
 
@@ -239,7 +235,7 @@
 (define (parse-splice-rhs stx allow-unbound? ctx)
   (parse-rhs* stx allow-unbound? #t ctx))
 
-;; parse-rhs* : stx boolean boolean -> RHS
+;; parse-rhs* : stx boolean boolean stx -> RHS
 (define (parse-rhs* stx allow-unbound? splice? ctx)
   (define-values (chunks rest)
     (chunk-kw-seq stx rhs-directive-table #:context ctx))
@@ -252,18 +248,18 @@
 
   (define (parse-rhs*-basic rest)
     (syntax-case rest (basic-syntax-class)
-      [((basic-syntax-class ([attr depth] ...) parser-expr))
-       (make rhs:basic stx 
-             (for/list ([attr-stx (syntax->list #'([attr depth] ...))])
+      [((basic-syntax-class (attr-decl ...) parser-expr))
+       (make rhs:basic ctx 
+             (for/list ([attr-stx (syntax->list #'(attr-decl ...))])
                (syntax-case attr-stx ()
                  [(attr depth)
                   (begin
-                    (unless (and (identifier? #'attr) 
-                                 (exact-nonnegative-integer?
-                                  (syntax-e #'depth)))
-                      (raise-syntax-error #f "bad attribute declaration"
-                                          stx attr-stx))
-                    (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]))
+                    (unless (and (identifier? #'attr)
+                                 (exact-nonnegative-integer? (syntax-e #'depth)))
+                      (wrong-syntax attr-stx "bad attribute declaration"))
+                    (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]
+                 [_
+                  (wrong-syntax attr-stx "bad attribute declaration")]))
              transparent?
              description
              #'parser-expr)]))
@@ -278,7 +274,7 @@
          null]))
     (define patterns (gather-patterns rest))
     (when (null? patterns)
-      (raise-syntax-error #f "syntax class has no variants" ctx))
+      (wrong-syntax ctx "syntax class has no variants"))
     (let ([sattrs (intersect-attrss (map rhs:pattern-attrs patterns) ctx)])
       (make rhs:union stx sattrs 
             transparent?
@@ -301,8 +297,8 @@
                                                #:literals literals
                                                #:sc? #t)])
          (unless (stx-null? rest)
-           (raise-syntax-error #f "unexpected terms after pattern directives"
-                               (if (pair? rest) (car rest) rest)))
+           (wrong-syntax (if (pair? rest) (car rest) rest)
+                         "unexpected terms after pattern directives"))
          (let* ([pattern (parse-pattern #'p decls 0)]
                 [_ (when splice?
                      (check-proper-list-pattern pattern))]
@@ -328,7 +324,7 @@
     [dots
      (or (dots? #'dots)
          (gdots? #'dots))
-     (raise-syntax-error 'pattern "ellipses not allowed here" stx)]
+     (wrong-syntax stx "ellipses not allowed here")]
     [id
      (and (identifier? #'id) (eq? (decls #'id) #t))
      (make pat:literal stx null depth stx)]
@@ -337,9 +333,7 @@
      (let-values ([(name sc args splice?) (split-id/get-stxclass #'id decls)])
        (when splice?
          (unless allow-splice?
-           (raise-syntax-error 'pattern
-                               "splice-pattern not allowed here"
-                               stx)))
+           (wrong-syntax stx "splice-pattern not allowed here")))
        (let ([attrs
               (cond [(wildcard? name) null]
                     [(and (epsilon? name) sc)
@@ -395,7 +389,8 @@
 (define (parse-heads stx decls enclosing-depth)
   (syntax-case stx ()
     [({} . more)
-     (raise-syntax-error 'pattern "empty head sequence not allowed" (stx-car stx))]
+     (wrong-syntax (stx-car stx)
+                   "empty head sequence not allowed")]
     [({p ...} . more)
      (let-values ([(chunks rest) (chunk-kw-seq/no-dups #'more head-directive-table)])
        (reject-duplicate-chunks chunks) ;; FIXME: needed?
@@ -404,10 +399,10 @@
     [()
      null]
     [_
-     (raise-syntax-error 'pattern "expected sequence of patterns or sequence directive"
-                         (cond [(pair? stx) (car stx)]
-                               [(syntax? stx) stx]
-                               [else #f]))]))
+     (wrong-syntax (cond [(pair? stx) (car stx)]
+                         [(syntax? stx) stx]
+                         [else #f])
+                   "expected sequence of patterns or sequence directive")]))
 
 (define (parse-head/chunks pstx decls enclosing-depth chunks)
   (let* ([min-row (assq '#:min chunks)]
@@ -421,22 +416,18 @@
          [min (if min-stx (syntax-e min-stx) #f)]
          [max (if max-stx (syntax-e max-stx) #f)])
     (unless (<= (or min 0) (or max +inf.0))
-      (raise-syntax-error #f
-                          "min-constraint must be less than max-constraint"
-                          (or min-stx max-stx)))
+      (wrong-syntax (or min-stx max-stx)
+                    "min-constraint must be less than max-constraint"))
     (when (and opt-row mand-row)
-      (raise-syntax-error #f
-                          "opt and mand directives incompatible"
-                          (cadr opt-row)))
+      (wrong-syntax (cadr opt-row)
+                    "opt and mand directives are incompatible"))
     (when (and (or min-row max-row) (or opt-row mand-row))
-      (raise-syntax-error #f
-                          "min/max-constraints incompatible with opt/mand directives"
-                          (or min-stx max-stx)))
+      (wrong-syntax (or min-stx max-stx)
+                    "min/max-constraints are incompatible with opt/mand directives"))
     (when default-row
       (unless opt-row
-        (raise-syntax-error #f
-                            "default only allowed for optional patterns"
-                            (cadr default-row))))
+        (wrong-syntax (cadr default-row)
+                      "default only allowed for optional patterns")))
     (parse-head/options pstx
                         decls
                         enclosing-depth
@@ -458,9 +449,8 @@
       (unless (and (= (length heads-attrs) 1)
                    (= enclosing-depth (attr-depth (car heads-attrs)))
                    (null? (attr-inner (car heads-attrs))))
-        (raise-syntax-error #f
-                            "default only allowed for patterns with single simple pattern variable"
-                            (cadr default-row))))
+        (wrong-syntax (cadr default-row)
+                      "default only allowed for patterns with single simple pattern variable")))
     (let ([occurs-attrs
            (if occurs-pvar
                (list (make-attr occurs-pvar depth null))
@@ -502,9 +492,8 @@
 
     (define (check-in-sc stx)
       (unless sc?
-        (raise-syntax-error 'pattern
-                            "not within syntax-class definition"
-                            (if (pair? stx) (car stx) stx))))
+        (wrong-syntax (if (pair? stx) (car stx) stx)
+                      "not within syntax-class definition")))
     (define directive-table
       (list (list '#:declare check-id values)
             (list '#:rename check-id check-id)
@@ -522,17 +511,15 @@
          (begin
            (let ([prev (decls #'name)])
              (when (pair? prev)
-               (raise-syntax-error 'pattern
-                                   "duplicate syntax-class declaration for name"
-                                   #'name))
+               (wrong-syntax #'name
+                             "duplicate syntax-class declaration for name"))
              (when prev
-               (raise-syntax-error 'pattern
-                                   "name already declared as literal"
-                                   #'name)))
+               (wrong-syntax #'name
+                             "name already declared as literal")))
            (decls-add! #'name
                        (list* #'name #'sc (syntax->list #'(expr ...)))))]
         [[#:declare . _]
-         (raise-syntax-error 'pattern "bad #:declare form" stx)]
+         (wrong-syntax stx "bad #:declare form")]
         [[#:rename id s]
          (begin (check-in-sc stx)
                 (bound-identifier-mapping-put! remap-table #'id
@@ -565,9 +552,7 @@
 ;; check-proper-list-pattern : Pattern -> void
 (define (check-proper-list-pattern p)
   (define (err stx)
-    (raise-syntax-error 'define-syntax-splice-pattern
-                        "not a proper list pattern"
-                        stx))
+    (wrong-syntax stx "not a proper list pattern"))
   (match p
     [(struct pat:id (orig-stx _ _ _ _ _))
      (err orig-stx)]
@@ -605,7 +590,7 @@
 ;; join-attrs : SAttr SAttr stx -> SAttr
 (define (join-attrs a b blamestx)
   (define (complain str . args)
-    (raise-syntax-error 'syntax-class (apply format str args) blamestx))
+    (apply wrong-syntax blamestx str args))
   (if (not b)
       a
       (begin

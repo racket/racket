@@ -8,6 +8,9 @@
 
 (provide make
 
+         wrong-syntax
+         current-syntax-context
+
          with-temporaries
          generate-temporary
          generate-n-temporaries
@@ -25,15 +28,19 @@
          head-local-expand-syntaxes)
 
 (define-syntax (make stx)
+  (define (bad-struct-name x)
+    (raise-syntax-error #f "expected struct name" stx x))
+  (define (get-struct-info id)
+    (unless (identifier? id)
+      (bad-struct-name id))
+    (let ([value (syntax-local-value id (lambda () #f))])
+      (unless (struct-info? value)
+        (bad-struct-name id))
+      (extract-struct-info value)))
   (syntax-case stx ()
     [(make S expr ...)
-     (unless (identifier? #'S)
-       (raise-syntax-error #f "not an identifier" stx #'S))
      (let ()
-       (define (no-info) (raise-syntax-error #f "not a struct" stx #'S))
-       (define info
-         (extract-struct-info
-          (syntax-local-value #'S no-info)))
+       (define info (get-struct-info #'S))
        (define constructor (list-ref info 1))
        (define accessors (list-ref info 3))
        (unless (identifier? #'constructor)
@@ -51,6 +58,18 @@
             stx)))
        (with-syntax ([constructor constructor])
          #'(constructor expr ...)))]))
+
+(define current-syntax-context (make-parameter #f))
+
+(define (wrong-syntax stx format-string . args)
+  (unless (or (eq? stx #f) (syntax? stx))
+    (raise-type-error 'wrong-syntax "syntax or #f" 0 (list* stx format-string args)))
+  (let* ([ctx (current-syntax-context)]
+         [blame (syntax-property ctx 'report-errors-as)])
+    (raise-syntax-error (if (symbol? blame) blame #f)
+                        (apply format format-string args)
+                        ctx
+                        stx)))
 
 (define-syntax-rule (with-temporaries (temp-name ...) . body)
   (with-syntax ([(temp-name ...) (generate-temporaries (quote-syntax (temp-name ...)))])

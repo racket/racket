@@ -134,10 +134,10 @@
 
 (define (check-literals-list stx)
   (unless (stx-list? stx)
-    (raise-syntax-error #f "expected list of identifiers" stx))
+    (wrong-syntax stx "expected list of identifiers"))
   (for ([id (syntax->list stx)])
     (unless (identifier? id)
-      (raise-syntax-error #f "expected identifier" id)))
+      (wrong-syntax id "expected identifier")))
   (syntax->list stx))
 
 (define clauses-kw-table
@@ -168,9 +168,9 @@
                                                                       0
                                                                       #'b)))))]
            [_
-            (raise-syntax-error #f "expected single body expression" clause)]))]))
+            (wrong-syntax clause "expected single body expression")]))]))
   (unless (stx-list? clauses-stx)
-    (raise-syntax-error #f "expected sequence of clauses" clauses-stx))
+    (wrong-syntax clauses-stx "expected sequence of clauses"))
   (let ([pks (map clause->pk (stx->list clauses-stx))])
     (if (pair? pks)
         (parse:pks (list var)
