@@ -187,15 +187,16 @@
                 (values id sc null (ssc? sc))))]
         [(decls id0)
          => (lambda (p)
-              (let ([stxclass (car p)]
-                    [args (cdr p)])
-                (unless (equal? (length (sc-inputs stxclass)) (length args))
-                  (raise-syntax-error 'syntax-class
-                                      (format "too few arguments for syntax class ~a (expected ~s)"
-                                              (sc-name stxclass)
-                                              (length (sc-inputs stxclass)))
-                                      id0))
-                (values id0 stxclass args (ssc? stxclass))))]
+              (define scname (cadr p))
+              (define args (cddr p))
+              (define stxclass (get-stxclass scname))
+              (unless (equal? (length (sc-inputs stxclass)) (length args))
+                (raise-syntax-error 'syntax-class
+                                    (format "too few arguments for syntax class ~a (expected ~s)"
+                                            (sc-name stxclass)
+                                            (length (sc-inputs stxclass)))
+                                    id0))
+              (values id0 stxclass args (ssc? stxclass)))]
         [else (values id0 #f null #f)]))
 
 (define (atomic-datum? stx)

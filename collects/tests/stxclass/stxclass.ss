@@ -3,6 +3,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2 9))
          (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2 9))
          stxclass
+         stxclass/private/sc
          (for-syntax scheme/base stxclass))
 
 ;; Testing stuff
