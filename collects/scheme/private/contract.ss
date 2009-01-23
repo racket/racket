@@ -134,12 +134,12 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
 
-(define-for-syntax (make-with-contract-transformer contract-id id pos-blame-id)
+(define-for-syntax (make-with-contract-transformer contract-stx id pos-blame-id)
   (make-set!-transformer
    (lambda (stx)
      (with-syntax ([neg-blame-id #'(current-contract-region)]
                    [pos-blame-id pos-blame-id]
-                   [contract-id contract-id]
+                   [contract-stx contract-stx]
                    [id id])
        (syntax-case stx (set!)
          [(set! id arg)
@@ -149,7 +149,7 @@ improve method arity mismatch contract violation error messages?
                               (syntax id))]
          [(f arg ...)
           (syntax/loc stx
-            ((-contract contract-id
+            ((-contract contract-stx
                         id
                         pos-blame-id
                         neg-blame-id
@@ -158,7 +158,7 @@ improve method arity mismatch contract violation error messages?
          [ident
           (identifier? (syntax ident))
           (syntax/loc stx
-            (-contract contract-id
+            (-contract contract-stx
                        id
                        pos-blame-id
                        neg-blame-id
@@ -245,7 +245,7 @@ improve method arity mismatch contract violation error messages?
                                                 [always-defined
                                                  (list #`(define-syntaxes (#,p)
                                                            (make-with-contract-transformer
-                                                            (quote-syntax #,contract-id)
+                                                            (quote-syntax #,(if contract-id contract-id c))
                                                             (quote-syntax #,(marker-f p))
                                                             (quote-syntax blame-stx)))
                                                        #`(define-values ()
