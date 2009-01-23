@@ -2620,12 +2620,14 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
           v2 = SCHEME_INT_VAL(sb2);
           if (v2 >= v1) {
             v2 -= v1;
-            if ((v1 < (sizeof(long) * 8))
-                && (v2 < (sizeof(long) * 8))) {
+            if (v2 < (sizeof(long) * 8)) {
               if (SCHEME_INTP(so)) {
-                long res;
-                res = ((SCHEME_INT_VAL(so) >> v1) & ((1 << v2) - 1));
-                return scheme_make_integer(res);
+                if (v1 < (sizeof(long) * 8)) {
+                  long res;
+                  res = ((SCHEME_INT_VAL(so) >> v1) & ((1 << v2) - 1));
+                  return scheme_make_integer(res);
+                } else if (SCHEME_INT_VAL(so) > 0) 
+                  return scheme_make_integer(0);
               } else if (SCHEME_BIGPOS(so)) {
                 bigdig d;
                 long vd, vb, avail;
