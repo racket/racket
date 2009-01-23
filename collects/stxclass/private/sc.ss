@@ -158,7 +158,7 @@
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()
     [(debug-rhs rhs)
-     (let ([rhs (parse-rhs #'rhs #f)])
+     (let ([rhs (parse-rhs #'rhs #f stx)])
        #`(quote #,rhs))]))
 
 (define-syntax (debug-pattern stx)

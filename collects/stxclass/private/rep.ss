@@ -254,8 +254,8 @@
                                       (exact-nonnegative-integer? (syntax-e #'depth)))
                            (raise-syntax-error #f "bad attribute declaration" stx attr-stx))
                          (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]))
-             description
              transparent?
+             description
              #'parser-expr)]))
 
   (define (parse-rhs*-patterns rest)
@@ -271,10 +271,10 @@
       (raise-syntax-error #f "syntax class has no variants" ctx))
     (let ([sattrs (intersect-attrss (map rhs:pattern-attrs patterns) ctx)])
       (make rhs:union stx sattrs 
-            description
             transparent?
+            description
             patterns)))
-  
+
   (syntax-case rest (pattern basic-syntax-class)
     [((basic-syntax-class . _))
      (parse-rhs*-basic rest)]
