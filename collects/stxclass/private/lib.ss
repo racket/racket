@@ -19,7 +19,6 @@
       (let ([d (if (syntax? x) (syntax-e x) x)])
         (if (pred d)
             (list d)
-            ;; (fail-sc x #:pattern 'name)
             #f)))))
 
 (define-pred-stxclass identifier symbol?)
@@ -40,7 +39,6 @@
     (lambda (x)
       (if (and (identifier? x) (free-identifier=? x (quote-syntax kw)))
           null
-          ;; (fail-sc x #:pattern 'name)
           #f))))
 
 (define-kw-stxclass lambda-kw #%lambda)
@@ -60,27 +58,16 @@
   (lambda (x)
     (if (identifier? x)
         (let/ec escape
-          (define (bad)
-            (escape
-             (fail-sc x
-                      #:pattern 'static
-                      #:reason "not bound as syntax")))
+          (define (bad) (escape #f))
           (let ([value (syntax-local-value x bad)])
             (list (syntax-e x) value)))
-        ;;(fail-sc x
-        ;;         #:pattern 'static
-        ;;         #:reason "not an identifier")
         #f)))
 
 (define-basic-syntax-class (static-of name pred)
   ([value 0])
   (lambda (x name pred)
     (let/ec escape
-      (define (bad)
-        (escape ;;(fail-sc x
-                ;;         #:pattern 'name
-                ;;         #:reason (format "not bound as ~a" name))
-         #f))
+      (define (bad) (escape #f))
       (if (identifier? x)
           (let ([value (syntax-local-value x bad)])
             (unless (pred value) (bad))
@@ -97,12 +84,7 @@
   (lambda (x)
     (if (identifier? x)
         (let/ec escape
-          (define (bad)
-            (escape
-             ;;(fail-sc x
-             ;;         #:pattern 'struct-name
-             ;;         #:reason "not bound as a struct name")
-             #f))
+          (define (bad) (escape #f))
           (let ([value (syntax-local-value x bad)])
             (unless (struct-info? value) (bad))
             (let ([lst (extract-struct-info value)])
@@ -115,14 +97,13 @@
                   (list descriptor
                         constructor
                         predicate
-                        (if (and (pair? r-accessors) (eq? #f (car r-accessors)))
+                        (if (and (pair? r-accessors)
+                                 (eq? #f (car r-accessors)))
                             (cdr r-accessors)
                             r-accessors)
                         super
-                        (or (null? r-accessors) (not (eq? #f (car r-accessors))))))))))
-        ;;(fail-sc x
-        ;;         #:pattern 'struct-name
-        ;;         #:reason "not bound as a struct name")
+                        (or (null? r-accessors)
+                            (not (eq? #f (car r-accessors))))))))))
         #f)))
 
 (define-basic-syntax-class expr/local-expand
@@ -178,7 +159,7 @@
   (lambda (x)
     (if (not (keyword? (syntax-e x)))
         (list x)
-        (fail-sc x #:pattern 'expr #:reason "keyword"))))
+        #f)))
 
 ;; FIXME: hack
 (define expr/c-use-contracts? (make-parameter #t))
@@ -196,7 +177,6 @@
                               (quote-syntax #,(syntax/loc x (<there>))))
                   x)
             (list x x))
-        ;;(fail-sc x #:pattern 'expr #:reason "keyword")
         #f)))
 
 (define-basic-syntax-class (term parser)
@@ -208,7 +188,6 @@
   (lambda (x p)
     (if (p x)
         null
-        ;;(fail-sc x #:pattern 'term/pred)
         #f)))
 
 ;; Aliases

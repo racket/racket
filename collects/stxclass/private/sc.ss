@@ -10,6 +10,7 @@
          syntax/stx
          "kws.ss"
          "messages.ss")
+
 (provide define-syntax-class
          define-basic-syntax-class
          define-basic-syntax-class*
@@ -26,11 +27,56 @@
          pattern
          ...*
 
-         fail-sc
          (struct-out failed)
 
          current-expression
          current-macro-name)
+
+#|
+(begin-for-syntax
+ (define (check-attrlist stx)
+   (syntax-case stx ()
+     [(form ...)
+      (let ([names (for/list ([s (syntax->list #'(form ...))])
+                     (check-attr s)
+                     (stx-car s))])
+        (check-duplicate-identifier names)
+        stx)]
+     [_
+      (raise-syntax-error 'define-syntax-class
+                          "expected attribute table" stx)]))
+ (define stxclass-table
+   `((#:description check-string)
+     (#:attributes check-attrlist)))
+ (define (split-rhss rhss stx)
+   (define-values (chunks rest)
+     (chunk-kw-seq/no-dups rhss stxclass-table  #:context stx))
+   (define (assq* x alist default)
+     (cond [(assq x alist) => cdr]
+           [else default]))
+   (values (cond [(assq '#:attributes chunks) => caddr]
+                 [else null])
+           (cond [(assq '#:description chunks) => caddr]
+                 [else #f])
+           rest)))
+
+(define-syntax (define-syntax-class stx)
+  (syntax-case stx ()
+    [(define-syntax-class (name arg ...) . rhss)
+     (let-values ([(attrs description rhss) (split-rhss #'rhss stx)])
+       #`(begin (define-syntax name
+                  (make sc
+                    'name
+                    '(arg ...)
+                    '#,attrs
+                    ((syntax-local-value) #'parser)
+                    'description))
+                (define parser
+                  (rhs->parser name #,rhss (arg ...) #,stx))))]
+    [(define-syntax-class name . rhss)
+     (syntax/loc stx
+       (define-syntax-class (name) . rhss))]))
+|#
 
 (define-syntax (define-syntax-class stx)
   (syntax-case stx ()
@@ -46,21 +92,6 @@
     [(define-syntax-class name . rhss)
      (syntax/loc stx
        (define-syntax-class (name) . rhss))]))
-
-
-#;
-(define-syntax (define-syntax-splice-class stx)
-  (syntax-case stx ()
-    [(define-syntax-splice-class (name arg ...) . rhss)
-     #`(begin (define-syntax name
-                (make ssc 'name
-                      '(arg ...)
-                      (rhs-attrs
-                       (parse-splice-rhs (quote-syntax rhss) #t (quote-syntax #,stx)))
-                      ((syntax-local-certifier) #'parser)))
-              (define parser (splice-rhs->parser name rhss (arg ...) #,stx)))]
-    [(define-syntax-splice-class name . rhss)
-     (syntax/loc stx (define-syntax-splice-class (name) . rhss))]))
 
 (define-syntax define-basic-syntax-class
   (syntax-rules ()
@@ -212,9 +243,3 @@
      (values x n)]
     [(list-rest _ _ rest)
      (frontier->syntax rest)]))
-
-(define (fail-sc stx #:pattern [pattern #f] #:reason [reason #f])
-  (make-failed stx pattern reason #f))
-
-(define (syntax-class-fail stx #:reason [reason #f])
-  (make-failed stx #f reason #f))
