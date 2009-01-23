@@ -51,7 +51,7 @@
            `(+ ,n ,expr . ,rest)])
         (cdr fc)))
 (define (frontier->expr fc)
-  #`(list #,@(reverse (or fc null))))
+  #`(list #,@(reverse fc)))
 
 ;; parse:rhs : RHS (listof SAttr) (listof identifier) -> stx
 ;; Takes a list of the relevant attrs; order is significant!
@@ -62,15 +62,18 @@
            #`(lambda (x arg ...)
                (define (fail-rhs x expected reason frontier)
                  (make-failed x expected reason frontier))
-               #,(parse:pks (list #'x)
-                            (list (empty-frontier #'x))
-                            (rhs->pks rhs relsattrs #'x)
-                            #'fail-rhs)))]
+               #,(let ([pks (rhs->pks rhs relsattrs #'x)])
+                   (if (pair? pks)
+                       (parse:pks (list #'x)
+                                  (list (empty-frontier #'x))
+                                  pks
+                                  #'fail-rhs)
+                       (fail #'fail-rhs #'x #:fc (empty-frontier #'x))))))]
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
 ;; fail : id id #:pattern datum #:reason datum #:fc FC -> stx
-(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fc [fc #f])
+(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fc fc)
   (with-syntax ([k k] [x x] [p p] [reason reason]
                 [fc-expr (frontier->expr fc)])
     #`(let ([failcontext fc-expr])
@@ -166,13 +169,15 @@
                                                                       #'b)))))]
            [_
             (raise-syntax-error #f "expected single body expression" clause)]))]))
-  #;(printf "literals: ~s\n" literals)
   (unless (stx-list? clauses-stx)
     (raise-syntax-error #f "expected sequence of clauses" clauses-stx))
-  (parse:pks (list var)
-             (list (empty-frontier var))
-             (map clause->pk (stx->list clauses-stx))
-             failid))
+  (let ([pks (map clause->pk (stx->list clauses-stx))])
+    (if (pair? pks)
+        (parse:pks (list var)
+                   (list (empty-frontier var))
+                   pks
+                   failid)
+        (fail failid var #:fc (empty-frontier var)))))
 
 ;; An ExtPK is one of
 ;;   - PK

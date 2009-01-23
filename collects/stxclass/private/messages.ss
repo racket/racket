@@ -4,7 +4,7 @@
 (provide (for-syntax expectation-of-stxclass
                      expectation-of-constants)
          try
-         empty-expectation?
+         expectation-of-null?
          expectation->string)
 
 (define-struct scdyn (name desc)
@@ -28,7 +28,6 @@
                   [pairs? pairs?])
       (certify
        #'(make-expc null 'pairs? (list 'datum ...) (list (quote-syntax literal) ...))))))
-
 
 (define-syntax try
   (syntax-rules ()
@@ -61,20 +60,21 @@
 
 (define (merge-expectations e1 e2)
   (make-expc (union (expc-stxclasses e1) (expc-stxclasses e2))
-            (or (expc-pairs? e1) (expc-pairs? e2))
-            (union (expc-data e1) (expc-data e2))
-            (union (expc-literals e1) (expc-literals e2))))
+             (or (expc-pairs? e1) (expc-pairs? e2))
+             (union (expc-data e1) (expc-data e2))
+             (union (expc-literals e1) (expc-literals e2))))
 
 (define union append)
 
-(define (empty-expectation? e)
+(define (expectation-of-null? e)
   (match e
     [(struct expc (scs pairs? data literals))
      (and (null? scs)
           (not pairs?)
           (null? literals)
           (and (pair? data) (null? (cdr data)))
-          (equal? (car data) '()))]))
+          (equal? (car data) '()))]
+    [#f #f]))
 
 (define (expectation->string e)
   (match e

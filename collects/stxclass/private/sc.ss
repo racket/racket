@@ -167,15 +167,14 @@
      (let ([pattern (parse-pattern #'p)])
        #`(quote #,pattern))]))
 
-(define-syntax (syntax-parser stx)
-  (syntax-case stx ()
-    [(syntax-parser . clauses)
-     #`(lambda (x)
-         (let ([fail (syntax-patterns-fail x)])
-           (parameterize ((current-expression (or (current-expression) x)))
-             #,(parse:clauses #'clauses #'x #'fail))))]))
+(define-syntax-rule (syntax-parse stx-expr . clauses)
+  (let ([x stx-expr])
+    (syntax-parse* x . clauses)))
 
-(define-syntax (syntax-parse stx)
+(define-syntax-rule (syntax-parser . clauses)
+  (lambda (x) (syntax-parse* x . clauses)))
+
+(define-syntax (syntax-parse* stx)
   (syntax-case stx ()
     [(syntax-parse expr . clauses)
      #`(let ([x expr])
@@ -199,20 +198,7 @@
             (current-continuation-marks)
             (list stx))))
   (define-values (stx n) (frontier->syntax frontier))
-  (cond #;
-        [(and (stx-null? x) expected)
-         (err (format "missing ~s" (expectation->string expected))
-              (datum->syntax stx x
-                             (list (syntax-source stx)
-                                   #f
-                                   #f
-                                   (and (syntax-position stx)
-                                        (syntax-span stx)
-                                        (+ (syntax-position stx)
-                                           (syntax-span stx)
-                                           -1))
-                                   1)))]
-        [(empty-expectation? expected)
+  (cond [(expectation-of-null? expected)
          ;; FIXME: "extra term(s) after <pattern>"
          (syntax-case x ()
            [(one)
