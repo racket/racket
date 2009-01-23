@@ -11,7 +11,7 @@
          syntax/stx
          syntax/boundmap
          "rep.ss"
-         "util.ss")
+         "../util.ss")
 (provide/contract
  [parse:rhs (rhs? (listof sattr?) (listof identifier?) . -> . syntax?)]
  [parse:clauses (syntax? identifier? identifier? . -> . syntax?)])

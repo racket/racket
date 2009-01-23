@@ -5,7 +5,7 @@
                      scheme/private/sc
                      "rep.ss"
                      "parse.ss"
-                     "util.ss")
+                     "../util.ss")
          scheme/match
          syntax/stx
          "kws.ss"

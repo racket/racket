@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "sc.ss"
-         "util.ss"
+         "../util.ss"
          syntax/stx
          syntax/kerncase
          scheme/struct-info

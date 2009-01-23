@@ -5,7 +5,7 @@
          scheme/contract
          syntax/boundmap
          syntax/stx
-         "util.ss")
+         "../util.ss")
 (provide (struct-out sc)
          (struct-out attr)
          (struct-out rhs)

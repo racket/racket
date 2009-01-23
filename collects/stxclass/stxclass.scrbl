@@ -525,3 +525,50 @@ Accepts any term and returns as the match that term wrapped in a
 
 }
 }
+
+
+@;{
+
+
+1 How to abstract over similar patterns:
+
+(syntax-parse stx #:literals (blah bleh blaz kwA kwX)
+  [(blah (bleh (kwX y z)) blaz)
+   ___]
+  [(blah (bleh (kwA (b c))) blaz)
+   ___])
+
+=>
+
+(define-syntax-class common
+  #:attributes (inner)
+  #:literals (blah bleh blaz)
+  (pattern (blah (bleh inner) blaz)))
+(syntax-parse stx #:literals (kwA kwX)
+  [c:common
+   #:with (kwX y z) #'c.inner
+   ___]
+  [c:common
+   #:with (kwA (b c)) #'c.inner
+   ___])
+
+
+OR =>
+
+(define-syntax-class (common expected-kw)
+  #:attributes (inner)
+  #:literals (blah bleh blaz)
+  (pattern (blah (bleh (kw . inner)) blaz)
+           #:when (free-identifier=? #'kw expected-kw)))
+(syntax-parse stx
+  [c
+   #:declare c (common #'kwX)
+   #:with (y z) #'c.inner
+   ___]
+  [c
+   #:declare c (common #'kwA)
+   #:with ((b c)) #'c.inner
+   ___])
+
+
+}
