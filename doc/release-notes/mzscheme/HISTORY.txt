@@ -1,3 +1,6 @@
+Version 4.1.4.2
+Added bitwise-bit-field
+
 Version 4.1.4, January 2008
 Changed memory accounting to bias charges to parent instead of children
 Changed function contracts to preserve tail recursion in many cases

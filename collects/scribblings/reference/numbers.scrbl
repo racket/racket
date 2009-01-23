@@ -575,9 +575,31 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
          boolean?]{
 
 Returns @scheme[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
-but normally without allocating intermediate results.
+but faster and in constant time when @scheme[n] is positive.
 
 @mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
+
+
+@defproc[(bitwise-bit-field [n exact-integer?] 
+                            [start exact-nonnegative-integer?] 
+                            [end (and/c exact-nonnegative-integer?
+                                        (start . <= . end))])
+         boolean?]{
+
+Returns
+
+@schemeblock[
+(bitwise-and (sub1 (arithmetic-shift 1 (- end start)))
+             (arithmetic-shift n (- start)))
+]
+
+but in constant time when @scheme[n] is positive, @scheme[start] is no
+more than the maximum width of a fixnum, and @scheme[(- end start)] is
+no more than the maximum width of a fixnum.
+
+@mz-examples[(bitwise-bit-field 13 1 1)
+             (bitwise-bit-field 13 1 3)
+             (bitwise-bit-field 13 1 4)]}
 
 
 @defproc[(arithmetic-shift [n exact-integer?] [m exact-integer?])

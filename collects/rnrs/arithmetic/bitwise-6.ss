@@ -50,16 +50,6 @@
       (bitwise-ior b (arithmetic-shift 1 n))
       (bitwise-and b (bitwise-not (arithmetic-shift 1 n)))))
 
-(define (bitwise-bit-field b start end)
-  (unless (exact-nonnegative-integer? start)
-    (raise-type-error 'bitwise-bit-field "exact nonnegative integer" start))
-  (unless (exact-nonnegative-integer? end)
-    (raise-type-error 'bitwise-bit-field "exact nonnegative integer" end))
-  (unless (start . <= . end)
-    (error 'bitwise-bit-field "ending position ~e is not as big a starting position ~e" start end))
-  (bitwise-and (arithmetic-shift b (- start))
-               (sub1 (arithmetic-shift 1 (- end start)))))
-
 (define (bitwise-copy-bit-field to start end from)
   (unless (exact-nonnegative-integer? start)
     (raise-type-error 'bitwise-copy-bit-field "exact nonnegative integer" start))

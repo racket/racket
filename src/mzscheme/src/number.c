@@ -72,6 +72,7 @@ static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
@@ -312,6 +313,12 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("bitwise-bit-set?", p, env);
+
+  scheme_add_global_constant("bitwise-bit-field",
+                             scheme_make_folding_prim(bitwise_bit_field, 
+                                                      "bitwise_bit_field", 
+                                                      3, 3, 1), 
+                             env);
 
   p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
@@ -2538,6 +2545,8 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
         /* Testing a bit in a negative bignum. Just use the slow way for now. */
         Scheme_Object *bit;
         bit = scheme_bignum_shift(scheme_make_bignum(1), v);
+        if (SCHEME_INTP(bit))
+          bit = scheme_make_bignum(SCHEME_INT_VAL(bit));
         bit = scheme_bignum_and(bit, so);
         return (SAME_OBJ(bit, scheme_make_integer(0)) ? scheme_false : scheme_true);
       }
@@ -2551,6 +2560,98 @@ static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
     scheme_wrong_type("bitwise-bit-set?", "nonnegative exact integer", 1, argc, argv);
     ESCAPED_BEFORE_HERE;
   }
+}
+
+static Scheme_Object *slow_bitwise_bit_field (int argc, Scheme_Object *argv[],
+                                              Scheme_Object *so, Scheme_Object *sb1, Scheme_Object *sb2)
+{
+  Scheme_Object *a[2];
+
+  if (!SCHEME_EXACT_INTEGERP(so))
+    scheme_wrong_type("bitwise-bit-field", "exact integer", 0, argc, argv);
+
+  if (!((SCHEME_INTP(sb1) && (SCHEME_INT_VAL(sb1) >= 0))
+        || (SCHEME_BIGNUMP(sb1) && SCHEME_BIGPOS(sb1))))
+    scheme_wrong_type("bitwise-bit-field", "nonnegative exact integer", 1, argc, argv);
+  if (!((SCHEME_INTP(sb2) && (SCHEME_INT_VAL(sb2) >= 0))
+        || (SCHEME_BIGNUMP(sb2) && SCHEME_BIGPOS(sb2))))
+    scheme_wrong_type("bitwise-bit-field", "nonnegative exact integer", 2, argc, argv);
+
+  if (!scheme_bin_lt_eq(sb1, sb2))
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "bitwise-bit-field: first index: %V is more than second index: %V",
+                     sb1, sb2);
+  
+  sb2 = scheme_bin_minus(sb2, sb1);
+  sb1 = scheme_bin_minus(scheme_make_integer(0), sb1);
+  
+  a[0] = so;
+  a[1] = sb1;
+  so = scheme_bitwise_shift(2, a);
+  
+  a[0] = scheme_make_integer(1);
+  a[1] = sb2;
+  sb2 = scheme_bitwise_shift(2, a);
+  
+  sb2 = scheme_bin_minus(sb2, scheme_make_integer(1));
+  
+  a[0] = so;
+  a[1] = sb2;
+  return scheme_bitwise_and(2, a);    
+}
+
+static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *so, *sb1, *sb2;
+
+  so = argv[0];
+  sb1 = argv[1];
+  sb2 = argv[2];
+  if (SCHEME_EXACT_INTEGERP(so)) {
+    /* Fast path is when sb1 < sizeof(long), sb2 - sb1 < sizeof(long),
+       and argument is positive (though the fixnum negative case is also
+       handled here). */
+    if (SCHEME_INTP(sb1)) {
+      long v1;
+      v1 = SCHEME_INT_VAL(sb1);
+      if (v1 >= 0) {
+        if (SCHEME_INTP(sb2)) {
+          long v2;
+          v2 = SCHEME_INT_VAL(sb2);
+          if (v2 >= v1) {
+            v2 -= v1;
+            if ((v1 < (sizeof(long) * 8))
+                && (v2 < (sizeof(long) * 8))) {
+              if (SCHEME_INTP(so)) {
+                long res;
+                res = ((SCHEME_INT_VAL(so) >> v1) & ((1 << v2) - 1));
+                return scheme_make_integer(res);
+              } else if (SCHEME_BIGPOS(so)) {
+                bigdig d;
+                long vd, vb, avail;
+                vd = v1 / (sizeof(bigdig) * 8);
+                vb = v1 & ((sizeof(bigdig) * 8) - 1);
+                if (vd >= ((Scheme_Bignum *)so)->len)
+                  return scheme_make_integer(0);
+                d = ((Scheme_Bignum *)so)->digits[vd];
+                d >>= vb;
+                avail = (sizeof(bigdig) * 8) - vb;
+                if ((avail < v2)
+                    && ((vd + 1) < ((Scheme_Bignum *)so)->len)) {
+                  /* Pull in more bits from next digit: */
+                  d |= (((Scheme_Bignum *)so)->digits[vd + 1] << avail);
+                }
+                d = (d & ((1 << v2) - 1));
+                return scheme_make_integer(d);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return slow_bitwise_bit_field(argc, argv, so, sb1, sb2);
 }
 
 static Scheme_Object *

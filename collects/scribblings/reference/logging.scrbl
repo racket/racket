@@ -55,7 +55,7 @@ The @scheme[current-logger] @tech{parameter} determines the
 @deftech{current logger} that is used by forms such as
 @scheme[log-warning]. On start-up, the initial value of this parameter
 is the initial logger. The run-time system sometimes uses the current
-logger to report events. For example, he bytecode compiler sometimes
+logger to report events. For example, the bytecode compiler sometimes
 reports @scheme['warning] events when it detects an expression that
 would produce a run-time error if evaluated.
 
