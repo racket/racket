@@ -156,11 +156,11 @@
 
 [sleep (N . -> . -Void)]
 
-[= (->* (list N N) N B)]
+[=  (->* (list N N) N B)]
 [>= (->* (list N N) N B)]
-[< (->* (list N N) N B)]
+[<  (->* (list N N) N B)]
 [<= (->* (list N N) N B)]
-[> (->* (list N) N B)]
+[>  (->* (list N N) N B)]
 [zero? (N . -> . B)]
 [* (cl->* (->* '() -Integer -Integer) (->* '() N N))]
 [/ (cl->* (->* (list N) N N))]
