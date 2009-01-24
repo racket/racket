@@ -593,9 +593,9 @@ Returns
              (arithmetic-shift n (- start)))
 ]
 
-but in constant time when @scheme[n] is positive, @scheme[start] is no
-more than the maximum width of a fixnum, and @scheme[(- end start)] is
-no more than the maximum width of a fixnum.
+but in constant time when @scheme[n] is positive, @scheme[start] and
+@scheme[end] are fixnums, and @scheme[(- end start)] is no more than
+the maximum width of a fixnum.
 
 @mz-examples[(bitwise-bit-field 13 1 1)
              (bitwise-bit-field 13 1 3)

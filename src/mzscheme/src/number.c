@@ -316,7 +316,7 @@ scheme_init_number (Scheme_Env *env)
 
   scheme_add_global_constant("bitwise-bit-field",
                              scheme_make_folding_prim(bitwise_bit_field, 
-                                                      "bitwise_bit_field", 
+                                                      "bitwise-bit-field",
                                                       3, 3, 1), 
                              env);
 

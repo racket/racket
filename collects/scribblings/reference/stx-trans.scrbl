@@ -155,7 +155,11 @@ avoids quadratic expansion times when local expansions are nested.
          syntax?]{
 
 Like @scheme[local-expand], but @scheme[stx] is expanded as a
-transformer expression instead of a run-time expression.}
+transformer expression instead of a run-time expression, and any
+lifted expressions---from calls to
+@scheme[syntax-local-lift-expression] during the expansion of
+@scheme[stx]---are captured into a @scheme[let-values] form in the
+result.}
 
 
 @defproc[(local-expand/capture-lifts [stx syntax?]
@@ -165,7 +169,7 @@ transformer expression instead of a run-time expression.}
                        [lift-ctx any/c (gensym 'lifts)])
          syntax?]{
 
-Like @scheme[local-expand], the result is a syntax object that
+Like @scheme[local-expand], but the result is a syntax object that
 represents a @scheme[begin] expression. Lifted expressions---from
 calls to @scheme[syntax-local-lift-expression] during the expansion of
 @scheme[stx]---appear with their identifiers in @scheme[define-values]
