@@ -1,3 +1,5 @@
+#lang scheme/unit
+
 ;; To do:
 ;;   Handle HTTP/file errors.
 ;;   Not throw away MIME headers.
@@ -9,7 +11,6 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-#lang scheme/unit
 (require scheme/port
          "url-structs.ss"
          "uri-codec.ss"
@@ -71,7 +72,7 @@
     (sa (if scheme (sa scheme ":") "")
         (if (or user host port)
           (sa "//"
-              (if user (sa (uri-encode user) "@") "")
+              (if user (sa (uri-userinfo-encode user) "@") "")
               (if host host "")
               (if port (sa ":" (number->string port)) "")
               ;; There used to be a "/" here, but that causes an
@@ -398,7 +399,9 @@
    (cdr (or (regexp-match url-rx str)
             (url-error "Invalid URL string: ~e" str)))))
 
-(define (uri-decode/maybe f)
+(define (uri-decode/maybe f) (friendly-decode/maybe f uri-decode))
+
+(define (friendly-decode/maybe f uri-decode)
   ;; If #f, and leave unmolested any % that is followed by hex digit
   ;; if a % is not followed by a hex digit, replace it with %25
   ;; in an attempt to be "friendly"

@@ -106,6 +106,7 @@ See more in PR8831.
    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
 
 ;; Characters that sometimes map to themselves
+;; called 'mark' in RFC 3986
 (define safe-mapping (self-map-chars "-_.!~*'()"))
 
 ;; The strict URI mapping
@@ -115,7 +116,22 @@ See more in PR8831.
 (define uri-path-segment-mapping
   (append alphanumeric-mapping
           safe-mapping
-          (map (λ (c) (cons c c)) (string->list "@+,=$&:"))))
+          (self-map-chars "@+,=$&:")))
+
+;; from RFC 3986
+(define unreserved-mapping
+  (append alphanumeric-mapping
+          (self-map-chars "-._~")))
+
+;; from RFC 3986
+(define sub-delims-mapping
+  (self-map-chars "!$&'()*+,;="))
+
+;; The uri userinfo mapping from RFC 3986
+(define uri-userinfo-mapping
+  (append unreserved-mapping
+          sub-delims-mapping
+          (self-map-chars ":")))
 
 ;; The form-urlencoded mapping
 (define form-urlencoded-mapping
@@ -151,6 +167,11 @@ See more in PR8831.
 (define-values (uri-path-segment-encoding-vector
                 uri-path-segment-decoding-vector)
   (make-codec-tables uri-path-segment-mapping))
+
+(define-values (uri-userinfo-encoding-vector
+                uri-userinfo-decoding-vector)
+  (make-codec-tables uri-userinfo-mapping))
+
 
 (define-values (form-urlencoded-encoding-vector
                 form-urlencoded-decoding-vector)
@@ -206,6 +227,15 @@ See more in PR8831.
 ;; string -> string
 (define (uri-path-segment-decode str)
   (decode uri-path-segment-decoding-vector str))
+
+;; string -> string
+(define (uri-userinfo-encode str)
+  (encode uri-userinfo-encoding-vector str))
+
+;; string -> string
+(define (uri-userinfo-decode str)
+  (decode uri-userinfo-decoding-vector str))
+
 
 ;; string -> string
 (define (form-urlencoded-encode str)
