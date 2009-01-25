@@ -1548,6 +1548,8 @@ void wxDC::SetFont(wxFont *the_font)
   dc = ThisDC(FALSE);
   if (!dc) return;
 
+  ReleaseGraphics(dc);
+
   font = the_font;
 
   if (!the_font) {
@@ -1797,8 +1799,11 @@ static Scheme_Hash_Table *wxSizeHashTable(wxFont *font, Bool screen_font, Bool c
 
     szht = scheme_hash_get(ht, theSizeKey);
     if (!szht) {
+      Scheme_Object *k2;
+      k2 = scheme_alloc_byte_string(sizeof(wxSizeKey), 0);
+      memcpy(SCHEME_BYTE_STR_VAL(k2), SCHEME_BYTE_STR_VAL(theSizeKey), sizeof(wxSizeKey));
       szht = (Scheme_Object *)scheme_make_hash_table(SCHEME_hash_ptr);
-      scheme_hash_set(ht, theSizeKey, szht);
+      scheme_hash_set(ht, k2, szht);
     }
     return (Scheme_Hash_Table *)szht;
   }
