@@ -42,7 +42,7 @@
         (cond [(and (eq? 'values (car x)) (eq? 'error (car y)))
                #,(blame x "expected an error; got ~a" #'(show x))]
               [(and (eq? 'error (car x)) (eq? 'error (car y)))
-               (unless (regexp-match (regexp-quote (cadr y)) (cadr x))
+               (unless (regexp-match? (regexp-quote (cadr y)) (cadr x))
                  #,(blame x "bad error message, expected ~s; got ~s"
                           #'(cadr y) #'(cadr x)))]
               [(not (equal? x y))
