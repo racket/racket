@@ -70,10 +70,14 @@ benefit as @onscreen{Constructor} output, in that printed results are
 expressions, but it is more convenient for many kinds of data,
 especially data that represents expressions.
 
-The @as-index{@onscreen{write} output} mode corresponds to traditional
-Scheme printing via the @scheme[write] procedure.
+The @as-index{@onscreen{print} output} mode corresponds to traditional
+Scheme printing via the @scheme[print] procedure, which defaults to
+@scheme[write]-like printing, as shown in the last column.
 
-The @as-index{@onscreen{current-print} output} mode, when available,
-prints results using the value of the @scheme[current-print]
-parameter, which allows the programming running in DrScheme to control
-its own output format.
+DrScheme also sets the @scheme[global-port-print-handler] in order to
+customize a few aspects of the printing for all of these modes, namely
+printing the symbol @scheme[quote] as a single tick mark (mutatis
+mutandis for @scheme[quasiquote], @scheme[unquote], and
+@scheme[unquote-splicing]), and to print rational real numbers using a
+special @scheme[snip%] object that lets the user choose between
+improper fractions, mixed fractions, and repeating decimals.
