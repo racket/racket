@@ -39,7 +39,7 @@
           #,(blame x "expected non-#f single value; got: ~a" #'(show x)))))
   (define (t2 x y)
     #`(let ([x (safe #,x)] [y (safe #,y)])
-        (cond [(and (eq? 'error (car y)) (eq? 'values (car x)))
+        (cond [(and (eq? 'values (car x)) (eq? 'error (car y)))
                #,(blame x "expected an error; got ~a" #'(show x))]
               [(and (eq? 'error (car x)) (eq? 'error (car y)))
                (unless (regexp-match (regexp-quote (cadr y)) (cadr x))
