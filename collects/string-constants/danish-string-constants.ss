@@ -889,7 +889,7 @@ please adhere to these guidelines:
   (constructor-printing-style "Konstruktør")
   (quasiquote-printing-style "Kvasicitering")
   (write-printing-style "write")
-  (print-printing-style "current-print")
+  (print-printing-style "print")
   (sharing-printing-label "Vis deling i værdier")
   (use-pretty-printer-label "Indsæt linjeskift i printede værdier")
   (input-syntax "Input-syntaks")

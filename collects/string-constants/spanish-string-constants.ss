@@ -752,7 +752,7 @@
  (output-style-label "Estilo de salida")
  (constructor-printing-style "Constructor")
  (quasiquote-printing-style "Quasiquote")
- (print-printing-style "current-print")
+ (print-printing-style "print")
  (write-printing-style "write")
  (sharing-printing-label "Show sharing in values")
  (use-pretty-printer-label "Insertar caracteres de nueva línea en valores impresos")

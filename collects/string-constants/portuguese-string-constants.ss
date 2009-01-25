@@ -865,7 +865,7 @@ please adhere to these guidelines:
  (constructor-printing-style "Constructor")
  (quasiquote-printing-style "Quasiquote")
  (write-printing-style "escrever")
- (print-printing-style "print-actual")
+  ;(print-printing-style "print-actual") ;; this is possibly incorrect now -- it shows up in the 'output syntax' part of the language dialog
  (sharing-printing-label "Mostrar partilha nos valores")
  (use-pretty-printer-label "Inserir nova linha nos valores printed")
  (input-syntax "Sintaxe de Entrada")

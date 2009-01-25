@@ -880,7 +880,7 @@
  (constructor-printing-style "Konstruktor")
  (quasiquote-printing-style "Quasiquote")
  (write-printing-style "write")
- (print-printing-style "current-print")
+ (print-printing-style "print")
  (sharing-printing-label "Zeige Sharing an")
  (use-pretty-printer-label "Zeilenumbrüche in Ausdruck einfügen")
  (input-syntax "Eingabesyntax")

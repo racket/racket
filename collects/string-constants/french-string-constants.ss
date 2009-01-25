@@ -974,7 +974,7 @@
   (constructor-printing-style "Constructeur")
   (quasiquote-printing-style "Quasiquote")
   (write-printing-style "write")
-  (print-printing-style "current-print")
+  (print-printing-style "print")
   (sharing-printing-label "Montrer le partage entre valeurs.")
   (use-pretty-printer-label "Insérer des retours-chariots lors de l'impression des résultats.")
   (input-syntax "Syntaxe d'entrée")

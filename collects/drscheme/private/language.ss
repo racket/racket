@@ -243,7 +243,7 @@
                              (string-constant output-style-label)
                              (list (string-constant constructor-printing-style)
                                    (string-constant quasiquote-printing-style)
-                                   (string-constant write-printing-style))
+                                   (string-constant print-printing-style))
                              output-panel
                              (λ (rb evt)
                                (let ([on? (not (= (send rb get-selection) 3))])

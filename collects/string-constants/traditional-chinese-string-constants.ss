@@ -891,7 +891,7 @@
   (constructor-printing-style "构造器")
   (quasiquote-printing-style "Quasiquote")
   (write-printing-style "write")
-  (print-printing-style "current-print")
+  (print-printing-style "print")
   (sharing-printing-label "Show sharing in values")
   (use-pretty-printer-label "print多个对象时自动换行")
   (input-syntax "输入语法")

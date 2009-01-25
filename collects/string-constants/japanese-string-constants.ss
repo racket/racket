@@ -907,7 +907,7 @@ please adhere to these guidelines:
  (constructor-printing-style "コンストラクタ スタイル")
  (quasiquote-printing-style "擬似クォート スタイル")
  (write-printing-style "write スタイル")
- (print-printing-style "current-print スタイル")
+ (print-printing-style "print スタイル")
  (sharing-printing-label "値の表示に shared 構文を使う (値の共有構造を表示する)")
  (use-pretty-printer-label "値を表示するときに改行を挿入する")
  (input-syntax "入力の構文")

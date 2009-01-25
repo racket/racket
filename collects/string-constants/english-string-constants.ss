@@ -242,6 +242,10 @@ please adhere to these guidelines:
  (erase-log-directory-contents "Erase contents of log directory: ~a?")
  (error-erasing-log-directory "Error erasing log directory contents.\n\n~a\n")
 
+  ;; menu items connected to the logger
+  (show-log "Show Log")
+  (hide-log "Hide Log")
+  
  ;; modes
  (mode-submenu-label "Modes")
  (scheme-mode "Scheme mode")
@@ -980,7 +984,7 @@ please adhere to these guidelines:
  (constructor-printing-style "Constructor")
  (quasiquote-printing-style "Quasiquote")
  (write-printing-style "write")
- (print-printing-style "current-print")
+ (print-printing-style "print")
  (sharing-printing-label "Show sharing in values")
  (use-pretty-printer-label "Insert newlines in printed values")
  (input-syntax "Input Syntax")
