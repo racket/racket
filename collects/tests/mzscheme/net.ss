@@ -148,6 +148,14 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(test "hello" uri-userinfo-encode "hello")
+(test "hello%20there" uri-userinfo-encode "hello there")
+(test "hello:there" uri-userinfo-encode "hello:there")
+(test "hello" uri-userinfo-decode "hello")
+(test "hello there" uri-userinfo-decode "hello%20there")
+(test "hello:there" uri-userinfo-decode "hello:there")
+
+
 (let ()
   (define (test-s->u vec str)
     (test vec string->url/vec str)
@@ -239,6 +247,9 @@
              "http://robb%20y@www.drscheme.org/")
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("%a") #("b/") #("c")) () #f)
              "http://www.drscheme.org/%25a/b%2F/c")
+  (test-s->u #("http" "robby:password" "www.drscheme.org" #f #t (#("")) () #f)
+             "http://robby:password@www.drscheme.org/")
+  (test "robby:password" (lambda (x) (url-user (string->url x))) "http://robby%3apassword@www.drscheme.org/")
 
   ;; test the characters that need to be encoded in paths vs those that do not need to
   ;; be encoded in paths
