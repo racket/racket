@@ -149,14 +149,17 @@ static void initialize_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGWIN
   {
     HMODULE hm;
+    PVOID (WINAPI*aveh)(ULONG, gcPVECTORED_EXCEPTION_HANDLER);
 
     hm = LoadLibrary("kernel32.dll");
-    if (hm) {
-      PVOID (WINAPI*aveh)(ULONG, gcPVECTORED_EXCEPTION_HANDLER);
+    if (hm)
       aveh = (PVOID (WINAPI*)(ULONG, gcPVECTORED_EXCEPTION_HANDLER))GetProcAddress(hm, "AddVectoredExceptionHandler");
+    else
+      aveh = NULL;
+    
+    if (aveh)
       aveh(TRUE, fault_handler);
-    }
-    else  /* WINDOWS 95 */
+    else  /* older than Windows XP */
       gc->generations_available = 0;
   }
 # endif
