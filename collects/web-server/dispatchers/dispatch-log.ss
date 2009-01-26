@@ -8,10 +8,12 @@
 (require "dispatch.ss"
          web-server/http)  
 (define format-req/c (request? . -> . string?))
+(define log-format/c (symbols 'parenthesized-default 'extended 'apache-default))
 
 (provide/contract
  [format-req/c contract?]
- [log-format->format (symbol? . -> . format-req/c)]
+ [log-format/c contract?]
+ [log-format->format (log-format/c . -> . format-req/c)]
  [paren-format format-req/c]
  [extended-format format-req/c]
  [apache-default-format format-req/c]

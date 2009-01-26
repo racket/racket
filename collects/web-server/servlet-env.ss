@@ -56,11 +56,13 @@
                   #:stateless? boolean?
                   #:extra-files-paths (listof path-string?)
                   #:servlets-root path-string?
+                  #:servlet-current-directory path-string?
                   #:file-not-found-responder (request? . -> . response?)
                   #:mime-types-path path-string?
                   #:servlet-path string?
                   #:servlet-regexp regexp?
-                  #:log-file (or/c false/c path-string?))
+                  #:log-file (or/c false/c path-string?)
+                  #:log-format log:log-format/c)
                  . ->* .
                  void)])
 

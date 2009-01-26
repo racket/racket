@@ -112,7 +112,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:mime-types-path mime-types-path path-string?
                                            ....]
                         [#:log-file log-file (or/c false/c path-string?) #f]
-                        [#:log-format log-format symbol? 'apache-default])
+                        [#:log-format log-format log-format/c 'apache-default])
                        void]{
  This sets up and starts a fairly default server instance.
       

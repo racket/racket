@@ -237,7 +237,11 @@ a URL that refreshes the password file, servlet cache, etc.}
  Formats a request like Apache's default.
 }
 
-@defproc[(log-format->format [id symbol?])
+@defthing[log-format/c contract?]{
+ Equivalent to @scheme[(symbols 'parenthesized-default 'extended 'apache-default)].
+}
+
+@defproc[(log-format->format [id log-format/c])
          format-req/c]{
  Maps @scheme['parenthesized-default] to @scheme[paren-format],
  @scheme['extended] to @scheme[extended-format], and
