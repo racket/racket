@@ -521,6 +521,28 @@ Like @scheme[define-runtime-path], but @scheme[expr] should produce a
 list of paths.}
 
 
+@defform[(define-runtime-module-path id module-path)]{
+
+Similar to @scheme[define-runtime-path], but @scheme[id] is bound to a
+@tech{resolved module path}. The @tech{resolved module path} for
+@scheme[id] corresponds to @scheme[module-path] (with the same syntax
+as a module path for @scheme[require]), which can be relative to the
+enclosing module.
+
+Use @scheme[define-runtime-module-path] to bind a module path that is
+passed to a reflective function like @scheme[dynamic-require] while
+also creating a module dependency for building and distributing
+executables.
+
+The @scheme[define-runtime-module-path] form creates a
+@scheme[for-label] dependency from an enclosing module to
+@scheme[module-path]. Since the dependency is merely
+@scheme[for-label], @scheme[module-path] is not @tech{instantiate}d or
+@tech{visit}ed when the enclosing module is @tech{instantiate}d or
+@tech{visit}ed (unless such a dependency is created by other
+@scheme[require]s).}
+
+
 @defform[(runtime-paths module-path)]{
 
 This form is mainly for use by tools such as executable builders. It
@@ -529,7 +551,8 @@ expands to a quoted list containing the run-time paths declared by
 declaration @scheme[expr]s, except that paths are converted to byte
 strings. The enclosing module must require (directly or indirectly)
 the module specified by @scheme[module-path], which is an unquoted
-module path.}
+module path. The resulting list does @emph{not} include module paths
+bound through @scheme[define-runtime-module-path].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "file-lib"]{More File and Directory Utilities}
