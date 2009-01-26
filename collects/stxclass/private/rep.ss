@@ -45,7 +45,7 @@
 (define-struct attr (name depth inner)
   #:transparent)
 
-;; RHSBase is stx (listof SAttr) boolean string/#f
+;; RHSBase is stx (listof SAttr) boolean stx/#f
 (define-struct rhs (orig-stx attrs transparent? description)
   #:transparent)
 
@@ -315,7 +315,7 @@
 ;; rhs-directive-table
 (define rhs-directive-table
   (list (list '#:literals check-idlist)
-        (list '#:description check-string)
+        (list '#:description values)
         (list '#:transparent)))
 
 ;; parse-pattern : stx(Pattern) env number -> Pattern

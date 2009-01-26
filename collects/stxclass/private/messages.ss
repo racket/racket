@@ -13,13 +13,17 @@
 (define-struct expc (stxclasses pairs? data literals)
   #:transparent)
 
+(define (make-stxclass-expc scdyn)
+  (make-expc (list scdyn) #f null null))
+
 (begin-for-syntax
   (define certify (syntax-local-certifier))
-  (define (expectation-of-stxclass stxclass)
+  (define (expectation-of-stxclass stxclass args)
     (if stxclass
         (with-syntax ([name (sc-name stxclass)]
-                      [desc (sc-description stxclass)])
-          (certify #'(make-expc (list (make-scdyn 'name 'desc)) #f null null)))
+                      [desc-var (sc-description stxclass)]
+                      [(arg ...) args])
+          (certify #'(make-stxclass-expc (make-scdyn 'name (desc-var arg ...)))))
         #'#f))
 
   (define (expectation-of-constants pairs? data literals)

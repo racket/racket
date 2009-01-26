@@ -63,16 +63,18 @@
             (list (syntax-e x) value)))
         #f)))
 
-(define-basic-syntax-class (static-of name pred)
-  ([value 0])
-  (lambda (x name pred)
-    (let/ec escape
-      (define (bad) (escape #f))
-      (if (identifier? x)
-          (let ([value (syntax-local-value x bad)])
-            (unless (pred value) (bad))
-            (list value))
-          (bad)))))
+(define-syntax-class (static-of name pred)
+  #:description name
+  (basic-syntax-class
+   ([value 0])
+   (lambda (x name pred)
+     (let/ec escape
+       (define (bad) (escape #f))
+       (if (identifier? x)
+           (let ([value (syntax-local-value x bad)])
+             (unless (pred value) (bad))
+             (list x value))
+           (bad))))))
 
 (define-basic-syntax-class struct-name
   ([descriptor 0]

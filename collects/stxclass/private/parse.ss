@@ -225,18 +225,19 @@
 (define (parse:extpk vars fcs extpk failid)
   (match extpk
     [(struct idpks (stxclass args pks))
-     (with-syntax ([sub-parse-expr
-                    (if stxclass
-                        #`(#,(sc-parser-name stxclass) #,(car vars) #,@args)
-                        #`(list #,(car vars)))]
-                   [var0 (car vars)]
+     (with-syntax ([var0 (car vars)]
+                   [(arg ...) args]
+                   [(arg-var ...) (generate-temporaries args)]
                    [(r) (generate-temporaries #'(r))])
-       #`(let ([r sub-parse-expr])
-           (if (ok? r)
-               #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'r) failid)
-               #,(fail failid (car vars)
-                       #:pattern (expectation-of-stxclass stxclass)
-                       #:fc (car fcs)))))]
+       #`(let ([arg-var arg] ...)
+           (let ([r #,(if stxclass
+                          #`(#,(sc-parser-name stxclass) #,(car vars) arg-var ...)
+                          #`(list #,(car vars)))])
+             (if (ok? r)
+                 #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'r) failid)
+                 #,(fail failid (car vars)
+                         #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
+                         #:fc (car fcs))))))]
     [(struct cpks (pairpks datumpkss literalpkss))
      (with-syntax ([var0 (car vars)]
                    [(dvar0) (generate-temporaries (list (car vars)))])

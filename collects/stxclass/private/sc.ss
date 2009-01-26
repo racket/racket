@@ -32,52 +32,6 @@
          current-expression
          current-macro-name)
 
-#|
-(begin-for-syntax
- (define (check-attrlist stx)
-   (syntax-case stx ()
-     [(form ...)
-      (let ([names (for/list ([s (syntax->list #'(form ...))])
-                     (check-attr s)
-                     (stx-car s))])
-        (check-duplicate-identifier names)
-        stx)]
-     [_
-      (raise-syntax-error 'define-syntax-class
-                          "expected attribute table" stx)]))
- (define stxclass-table
-   `((#:description check-string)
-     (#:attributes check-attrlist)))
- (define (split-rhss rhss stx)
-   (define-values (chunks rest)
-     (chunk-kw-seq/no-dups rhss stxclass-table  #:context stx))
-   (define (assq* x alist default)
-     (cond [(assq x alist) => cdr]
-           [else default]))
-   (values (cond [(assq '#:attributes chunks) => caddr]
-                 [else null])
-           (cond [(assq '#:description chunks) => caddr]
-                 [else #f])
-           rest)))
-
-(define-syntax (define-syntax-class stx)
-  (syntax-case stx ()
-    [(define-syntax-class (name arg ...) . rhss)
-     (let-values ([(attrs description rhss) (split-rhss #'rhss stx)])
-       #`(begin (define-syntax name
-                  (make sc
-                    'name
-                    '(arg ...)
-                    '#,attrs
-                    ((syntax-local-value) #'parser)
-                    'description))
-                (define parser
-                  (rhs->parser name #,rhss (arg ...) #,stx))))]
-    [(define-syntax-class name . rhss)
-     (syntax/loc stx
-       (define-syntax-class (name) . rhss))]))
-|#
-
 (define-syntax (define-syntax-class stx)
   (syntax-case stx ()
     [(define-syntax-class (name arg ...) . rhss)
@@ -90,8 +44,9 @@
                         '(arg ...)
                         (rhs-attrs the-rhs)
                         ((syntax-local-certifier) #'parser)
-                        (rhs-description the-rhs))))
-              (define parser (rhs->parser name rhss (arg ...) #,stx)))]
+                        #'description)))
+              (define-values (parser description)
+                (rhs->parser+description name rhss (arg ...) #,stx)))]
     [(define-syntax-class name . rhss)
      (syntax/loc stx
        (define-syntax-class (name) . rhss))]))
@@ -128,15 +83,18 @@
         ([attr-name attr-depth] ...)
         (let ([name parser-expr]) name)))]))
 
-(define-syntax (rhs->parser stx)
+(define-syntax (rhs->parser+description stx)
   (syntax-case stx ()
-    [(rhs->parser name rhss (arg ...) ctx)
+    [(rhs->parser+description name rhss (arg ...) ctx)
      (parameterize ((current-syntax-context #'ctx))
        (let ([rhs (parse-rhs #'rhss #f #'ctx)]
              [sc (syntax-local-value #'name)])
-         (parse:rhs rhs
-                    (sc-attrs sc)
-                    (syntax->list #'(arg ...)))))]))
+         #`(values #,(parse:rhs rhs
+                                (sc-attrs sc)
+                                (syntax->list #'(arg ...)))
+                   (lambda (arg ...)
+                     #,(or (rhs-description rhs)
+                           #'(symbol->string 'name))))))]))
 
 (define-syntax (parse-sc stx)
   (syntax-case stx ()
@@ -237,3 +195,52 @@
      (values x n)]
     [(list-rest _ _ rest)
      (frontier->syntax rest)]))
+
+
+
+#|
+(begin-for-syntax
+ (define (check-attrlist stx)
+   (syntax-case stx ()
+     [(form ...)
+      (let ([names (for/list ([s (syntax->list #'(form ...))])
+                     (check-attr s)
+                     (stx-car s))])
+        (check-duplicate-identifier names)
+        stx)]
+     [_
+      (raise-syntax-error 'define-syntax-class
+                          "expected attribute table" stx)]))
+ (define stxclass-table
+   `((#:description check-string)
+     (#:attributes check-attrlist)))
+ (define (split-rhss rhss stx)
+   (define-values (chunks rest)
+     (chunk-kw-seq/no-dups rhss stxclass-table  #:context stx))
+   (define (assq* x alist default)
+     (cond [(assq x alist) => cdr]
+           [else default]))
+   (values (cond [(assq '#:attributes chunks) => caddr]
+                 [else null])
+           (cond [(assq '#:description chunks) => caddr]
+                 [else #f])
+           rest)))
+
+(define-syntax (define-syntax-class stx)
+  (syntax-case stx ()
+    [(define-syntax-class (name arg ...) . rhss)
+     (let-values ([(attrs description rhss) (split-rhss #'rhss stx)])
+       #`(begin (define-syntax name
+                  (make sc
+                    'name
+                    '(arg ...)
+                    '#,attrs
+                    ((syntax-local-value) #'parser)
+                    '#,description))
+                (define parser
+                  (rhs->parser name #,rhss (arg ...) #,stx))))]
+    [(define-syntax-class name . rhss)
+     (syntax/loc stx
+       (define-syntax-class (name) . rhss))]))
+|#
+
