@@ -10,8 +10,13 @@
     (log-line "(re)loading module from ~a" modspec)
     (parameterize ([current-module-declare-name name]
                    [compile-enforce-module-constants #f])
-      (namespace-require '(only mzscheme module #%top-interaction))
-      (load/use-compiled path))))
+      ;; only notify, it's fine to reset the file timer, since there's no point
+      ;; in attempting to reload it yet again until it is edited.
+      (with-handlers ([exn? (lambda (e)
+                              (log-line "error, module not reloaded (~a)"
+                                        (exn-message e)))])
+        (namespace-require '(only mzscheme module #%top-interaction))
+        (load/use-compiled path)))))
 
 ;; pulls out a value from a module, reloading the module if its source file was
 ;; modified
