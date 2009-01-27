@@ -395,7 +395,7 @@
 
 (define (render-language lang [filename #f] #:nts [nts (render-language-nts)])
   (if filename
-      (save-as-ps (λ () (do-language->pict 'render-language lang)) filename nts)
+      (save-as-ps (λ () (do-language->pict 'render-language lang nts)) filename)
       (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
         (do-language->pict 'render-language lang nts))))
 
