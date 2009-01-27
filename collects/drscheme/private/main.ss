@@ -132,7 +132,11 @@
                            number-between-zero-and-one?)
   (preferences:set-default 'drscheme:module-browser-size-percentage
                            1/5
+                           number-between-zero-and-one?)
+  (preferences:set-default 'drscheme:logging-size-percentage
+                           3/4
                            number-between-zero-and-one?))
+
 (preferences:set-default 'drscheme:module-browser:name-length 1 
                          (λ (x) (memq x '(0 1 2))))
 

@@ -94,6 +94,7 @@
      primitive-eval
      primitive-load
      error-display-handler-message-box-title
+     system-logger
      system-custodian
      system-eventspace
      system-namespace

@@ -189,6 +189,16 @@ match only the exact package version 2.1 of the @filepath{zip.plt} package.
 
 @;@subsection{The Diamond Property}
 
+@subsection{Monitoring PLaneT's progress}
+
+PLaneT logs information about what it is doing to the @tt{info}
+log (via @scheme[log-info]). 
+In DrScheme, you can view the logs from the @onscreen{Show Log}
+menu item in the @onscreen{View} menu, and MzScheme's logging output
+can be controlled via command-line options and via environment
+variables. See 
+@secref["logging" #:doc '(lib "scribblings/reference/reference.scrbl")] 
+for more details.
 
 @section[#:tag "search-order"]{The PLaneT Search Order}
 

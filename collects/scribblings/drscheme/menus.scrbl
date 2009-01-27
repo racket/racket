@@ -201,11 +201,15 @@ appears at any time.
 
  @item{@defmenuitem{Hide Module Browser} Hides the module browser.}
 
- @item{@defmenuitem{Show Toolbar} Makes the toolbar (along the top of
-   DrScheme's window) and the status line (along the bottom) visible.}
+ @item{@defmenuitem{Toolbar} 
+@itemize{
+@item{@defmenuitem{Toolbar on Left} Moves the tool bar (defaultly on the top of DrScheme's window) to the left-hand side, organized vertically.}
+@item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrScheme window.}
+@item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
+@item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}}}
 
- @item{@defmenuitem{Hide Toolbar} Hides the toolbar (along the top of
-   DrScheme's window) and the status line (along the bottom).}
+ @item{@defmenuitem{Show Log} Shows the current log messages.}
+ @item{@defmenuitem{Hide Log} Hides the current log messages.}
 
  @item{@defmenuitem{Show Profile} Shows the current profiling
    report. This menu is useful only if you have enabled profiling in

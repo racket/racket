@@ -238,8 +238,12 @@
       (define/private (update-percentages)
         (let ([len-children (length (get-children))])
           (unless (= len-children (length percentages))
-            (let ([rat (/ 1 len-children)])
-              (set! percentages (build-list len-children (λ (i) (make-percentage rat)))))
+            (cond
+              [(zero? len-children)
+               '()]
+              [else
+               (let ([rat (/ 1 len-children)])
+                 (set! percentages (build-list len-children (λ (i) (make-percentage rat)))))])
             (after-percentage-change))))
       
       (define/override (after-new-child child)
@@ -373,7 +377,10 @@
                                          (list-ref child-info 3)))])
                  (loop (cdr percentages)
                        (cdr children-info)
-                       (max (/ child-major (percentage-% percentage)) major-size)
+                       (max (if (zero? (percentage-% percentage))
+                                0
+                                (/ child-major (percentage-% percentage)))
+                            major-size)
                        (max child-minor minor-size))))])))
       
       (super-instantiate (parent))))

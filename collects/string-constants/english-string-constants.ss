@@ -243,8 +243,9 @@ please adhere to these guidelines:
  (error-erasing-log-directory "Error erasing log directory contents.\n\n~a\n")
 
   ;; menu items connected to the logger
-  (show-log "Show Log")
-  (hide-log "Hide Log")
+  (show-log "Show &Log")
+  (hide-log "Hide &Log")
+  (logging-all "All") ;; in the logging window in drscheme, shows all logs simultaneously
   
  ;; modes
  (mode-submenu-label "Modes")
@@ -725,10 +726,10 @@ please adhere to these guidelines:
   (prev-tab "Previous Tab")
 
  (view-menu-label "&View")
- (show-overview "Show Program Contour") 
- (hide-overview "Hide Program Contour")
- (show-module-browser "Show Module Browser")
- (hide-module-browser "Hide Module Browser")
+ (show-overview "Show &Program Contour") 
+ (hide-overview "Hide &Program Contour")
+ (show-module-browser "Show &Module Browser")
+ (hide-module-browser "Hide &Module Browser")
 
   (help-menu-label "&Help")
  (about-info "Credits and details for this application")

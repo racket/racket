@@ -14,6 +14,8 @@
   (define primitive-eval (current-eval))
   (define primitive-load (current-load))
   
+  (define system-logger (current-logger))
+  
   (define system-custodian (current-custodian))
   (define system-eventspace (current-eventspace))
   (define system-thread (current-thread))
