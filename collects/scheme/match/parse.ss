@@ -38,8 +38,10 @@
      (make-Var #'v)]
     [(and p ...)
      (make-And (map parse (syntax->list #'(p ...))))]
-    [(or p ...)
-     (let ([ps (map parse (syntax->list #'(p ...)))])
+    [(or)
+     (make-Not (make-Dummy stx))]
+    [(or p ps ...)
+     (let ([ps (map parse (syntax->list #'(p ps ...)))])
        (all-vars ps stx)
        (make-Or ps))]
     [(not p ...)

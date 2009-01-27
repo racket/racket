@@ -177,9 +177,9 @@
     #f))
 
 ;; (listof pat) syntax -> void
+;; ps is never null
 ;; check that all the ps bind the same set of variables
-(define (all-vars ps stx)
-  (when (null? ps) (error 'bad))
+(define (all-vars ps stx)  
   (let* ([first-vars (bound-vars (car ps))]
          [l (length ps)]
          [ht (make-free-identifier-mapping)])
