@@ -313,13 +313,23 @@ A 3-D @scheme[data] value is represented as a procedure that takes a
 
 
 @defproc[(points [vecs (listof (vector/c real? real?))]
-                 [#:sym sym (one-of/c 'square 'circle 'odot 'bullet) 'square]
+                 [#:sym sym (or/c character? integer? symbol?) 'fullsquare]
                  [#:color color plot-color? 'black])
          ((is-a?/c 2d-view%) . -> . void?)]{
 
 Creates 2-D plot data (to be provided to @scheme[plot]) given a list
 of points specifying locations. The @scheme[sym] argument determines
-the appearance of the points.}
+the appearance of the points.  It can be a symbol, an ASCII character,
+or a small integer (between -1 and 127).  The following symbols are
+known: @scheme['pixel], @scheme['dot], @scheme['plus],
+@scheme['asterisk], @scheme['circle], @scheme['times],
+@scheme['square], @scheme['triangle], @scheme['oplus], @scheme['odot],
+@scheme['diamond], @scheme['5star], @scheme['6star],
+@scheme['fullsquare], @scheme['bullet], @scheme['full5star],
+@scheme['circle1], @scheme['circle2], @scheme['circle3],
+@scheme['circle4], @scheme['circle5], @scheme['circle6],
+@scheme['circle7], @scheme['circle8], @scheme['leftarrow],
+@scheme['rightarrow], @scheme['uparrow], @scheme['downarrow].  }
 
 
 
@@ -588,34 +598,35 @@ Sets the axis labels and title.}
 @defmethod[(plot-vector [head (vector/c real? real?)]
                       [tail (vector/c real? real?)])
          void?]{
-       
+
 Plots a single vector.}
 
-  
+
 @defmethod[(plot-vectors [vecs (listof (list/c (vector/c real? real?)
                                              (vector/c real? real?)))])
          void?]{
-       
+
 Plots a set of vectors.}
 
 
 @defmethod[(plot-points [points (listof (vector/c real? real?))]
-                      [sym (one-of/c 'square 'circle 'odot 'bullet)])
+                        [sym (or/c character? integer? symbol?)])
          void?]{
-               
-Plots points using a specified symbol.}
+
+Plots points using a specified symbol.  See @scheme[points] for
+possible values for @scheme[sym]}
 
 
 @defmethod[(plot-line [points (listof (vector/c real? real?))]) void?]{
 
 Plots a line given a set of points.}
 
-  
+
 @defmethod[(plot-contours [grid (listof (listof real?))] 
                         [xs (listof real?)]
                         [ys (listof real?)]
                         [levels (listof real?)]) void?]{
-               
+
 Plots a grid representing a 3-D function using contours to distinguish levels.}
 
 @defmethod[(plot-shades [grid (listof (listof real?))] 

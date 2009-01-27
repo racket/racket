@@ -86,7 +86,7 @@
           (plot-contours grid x-vals y-vals c-levels))))
            
   ; shade : (number number -> number) [number] [symbol] [number] [number / listof-number] ->  (2dplotview -> nothing)
-  ; renders a shade plot given function and shade levels    
+  ; renders a shade plot given function and shade levels
   (define-plot-type shade
                     fun3d 2dplotview (x-min x-max y-min y-max)
                     ((samples 50) (levels 10))
@@ -96,39 +96,73 @@
              (z-max (apply max (map (lambda (row) (apply max row)) grid)))
              (z-min (apply min (map (lambda (row) (apply min row)) grid)))
              (c-levels (x-values levels z-min z-max)))
-        (send* 2dplotview 
+        (send* 2dplotview
           (plot-shades grid x-vals y-vals c-levels))))
-           
+
   ; points : (listof vector) [symbol] -> (2dplotview -> nothing)
   ; plots a set of points using a specific character
   (define-plot-type points
-                    lop 2dplotview ((sym 'square) (color 'black))
-      (send* 2dplotview 
+                    lop 2dplotview ((sym 'fullsquare) (color 'black))
+      (send* 2dplotview
        (set-line-color color)
-       (plot-points lop 
-		    (cond [(assq sym point-syms) => cadr]
-			  [else (error "Symbol not found in table!")]))))
-  
+       (plot-points lop
+		    (cond [(and (integer? sym) (<= -1 sym 127)) sym]
+                          [(and (char? sym)
+                                (char<= (integer->char 32)
+                                        sym
+                                        (integer->char 127)))
+                           (char->integer sym)]
+                          [(assq sym point-syms) => cadr]
+                          [else (error "Symbol not found in table!")]))))
+
   ; the symbol-> char table
   (define point-syms
-    '((square 16) (odot 9) (bullet 17) (circle 4)))
+    '((pixel   -1)
+      (dot      1)
+      (plus     2)
+      (asterisk 3)
+      (circle   4)
+      (times    5)
+      (square   6)
+      (triangle 7)
+      (oplus    8)
+      (odot     9)
+      ;; (??? 10)
+      (diamond 11)
+      (5star   12)
+      ;; (square 13)
+      ;; (??? 14)
+      (6star   15)
+      (fullsquare 16)
+      (bullet  17)
+      (full5star 18)
+      ;; (square 19)
+      (circle1 20)
+      (circle2 21)
+      (circle3 22)
+      (circle4 23)
+      (circle5 24)
+      (circle6 25)
+      (circle7 26)
+      (circle8 27)
+      (leftarrow  28)
+      (rightarrow 29)
+      (uparrow    30)
+      (downarrow  31)))
 
 
-	
-       
-       
   ;; 3D PLOTTERS
   ; plot a surface
-  (define-plot-type surface 
+  (define-plot-type surface
      fun3d 3dplotview (x-min x-max y-min y-max)
      ((samples 50) (color 'black) (width '1))
       (let* ((x-vals (x-values samples x-min x-max))
              (y-vals (x-values samples y-min y-max))
              (grid (zgrid fun3d x-vals y-vals samples)))
-          (send* 3dplotview 
+          (send* 3dplotview
             (set-line-color color) (set-line-width width) 
             (plot-surface x-vals y-vals grid))))
-  
+
   (define-plot-type mesh3d
      fun3d 3dplotview (x-min x-max y-min y-max z-min z-max)
      ((samples 50) (width '1) (levels 10) (color #t) (lines #t)
