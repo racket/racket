@@ -5,6 +5,8 @@
       (let ([argv (current-command-line-arguments)])
         (if (= 1 (vector-length argv)) (vector-ref argv 0) "all.ss")))))
 
+(define timeout-thread #f)
+
 (namespace-variable-value 'real-error-port #f
   (lambda ()
     (let ([err  (current-error-port)]
@@ -23,13 +25,15 @@
                                       (set! last-error e))
                                     (errh e)))
       ;; -- set up a timeout
-      (thread (lambda ()
-                (sleep 900)
-                (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
-                (exit 3)
-                ;; in case the above didn't work for some reason
-                (sleep 60)
-                (custodian-shutdown-all cust))))))
+      (set! timeout-thread
+            (thread
+             (lambda ()
+               (sleep 1200)
+               (fprintf err "\n\n~aTIMEOUT -- ABORTING!\n" Section-prefix)
+               (exit 3)
+               ;; in case the above didn't work for some reason
+               (sleep 60)
+               (custodian-shutdown-all cust)))))))
 
 (let ([p (make-output-port
           'quiet always-evt (lambda (str s e nonblock? breakable?) (- e s))
@@ -37,7 +41,8 @@
   (call-with-continuation-prompt
    (lambda ()
      (parameterize ([current-output-port p] [current-error-port p])
-       (load-relative quiet-load)))
+       (load-relative quiet-load))
+     (kill-thread timeout-thread))
    (default-continuation-prompt-tag)
    (lambda (thunk)
      (when last-error

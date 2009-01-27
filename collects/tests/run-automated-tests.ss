@@ -64,8 +64,9 @@
         (set! exit-code (max exit-code n))
         (echo "BOOM!") ; used to find errors in nightly builds
         (break)))
-    (thread (let ([th (current-thread)])
-              (lambda () (sleep 900) (echo "Timeout!") (break-thread th))))
+    (define timeout-thread
+      (thread (let ([th (current-thread)])
+                (lambda () (sleep 1200) (echo "Timeout!") (break-thread th)))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [current-namespace (make-base-empty-namespace)])
@@ -78,6 +79,7 @@
           (with-handlers ([void (lambda (exn)
                                   (abort 1 "error: ~a" (exn-message exn)))])
             (thunk))))
+      (kill-thread timeout-thread)
       (echo "all tests passed."))))
 
 (exit exit-code)
