@@ -679,7 +679,8 @@
   (test-suite
    "tc-literal tests"
    (tc-l 5 -Integer)
-   (tc-l 5# -Integer)
+   (tc-l 5# N)
+   (tc-l 5.0 N)
    (tc-l 5.1 N)
    (tc-l #t (-val #t))
    (tc-l "foo" -String)
