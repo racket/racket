@@ -64,7 +64,7 @@
     (super-new)))
 
 (define (goto-plt-license)
-  (send-main-page "license/index.html"))
+  (send-main-page #:sub "license/index.html"))
 
 (define (help-desk [key #f] [context #f])
   (if key (perform-search key context) (send-main-page)))
