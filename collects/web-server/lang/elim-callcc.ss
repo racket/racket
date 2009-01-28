@@ -74,10 +74,8 @@
        (markit 
         (quasisyntax/loc stx
           (with-continuation-mark #,ke-prime #,me-prime
-            (with-continuation-mark 
-                the-save-cm-key 
-              (#%plain-app current-saved-continuation-marks-and #,ke-prime #,me-prime)
-              #,be-prime)))))]    
+            (#%plain-app with-current-saved-continuation-marks-and #,ke-prime #,me-prime
+                         (#%plain-lambda () #,be-prime))))))]
     [(#%plain-app call/cc w)
      (let-values ([(cm ref-to-cm) (generate-formal 'current-marks stx)]
                   [(x ref-to-x) (generate-formal 'x stx)])

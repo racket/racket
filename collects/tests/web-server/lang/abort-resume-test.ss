@@ -2,6 +2,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "util.ss" ("schematics" "schemeunit.plt" 2))
          web-server/lang/abort-resume)
+(require/expose web-server/lang/abort-resume (web-prompt))
 (provide abort-resume-tests)
 
 (define abort-resume-tests
@@ -9,52 +10,146 @@
    "Abort/Resume"
    
    (test-suite
-    "current-saved-continuation-marks-and"
-    
-    (test-case
-     "Not in prompt"
-     (check-exn exn? (lambda () (current-saved-continuation-marks-and 'k1 'v1))))
+    "with-current-saved-continuation-marks-and"
     
     (test-case
      "Easy"
-     (check-equal? (call-with-web-prompt
-                    (lambda () (current-saved-continuation-marks-and 'k1 'v1)))
-                   (make-immutable-hash (list (cons 'k1 'v1)))))
+     (check-equal? 
+      (call-with-web-prompt
+       (lambda () 
+         (with-current-saved-continuation-marks-and
+          'k1 'v1
+          (lambda ()
+            (continuation-mark-set->list
+             (current-continuation-marks web-prompt)
+             the-save-cm-key)))))
+      (list (make-immutable-hash (list (cons 'k1 'v1))))))
     
     (test-case
-     "Preserve"
-     (check-equal? (call-with-web-prompt
-                    (lambda () 
-                      (with-continuation-mark the-save-cm-key (make-immutable-hash (list (cons 'k2 'v2)))
-                        (current-saved-continuation-marks-and 'k1 'v1))))
-                   (make-immutable-hash 
-                    (list (cons 'k1 'v1)
-                         (cons 'k2 'v2)))))
+     "Preserve (beta)"
+     (check-equal? 
+      (call-with-web-prompt
+       (lambda () 
+         (with-continuation-mark the-save-cm-key
+           (make-immutable-hash (list (cons 'k2 'v2)))
+           
+           (call-with-immediate-continuation-mark
+            the-save-cm-key
+            (lambda (old-cms)
+              (with-continuation-mark the-save-cm-key
+                (hash-set old-cms 'k1 'v1)
+                (continuation-mark-set->list
+                 (current-continuation-marks web-prompt)
+                 the-save-cm-key)))
+            (make-immutable-hash empty)))))
+      (list (make-immutable-hash 
+             (list (cons 'k1 'v1)
+                   (cons 'k2 'v2))))))
+    
+    #;(test-case
+       "Preserve"
+       (check-equal? 
+        (call-with-web-prompt
+         (lambda () 
+           (with-continuation-mark the-save-cm-key
+             (make-immutable-hash (list (cons 'k2 'v2)))
+             (with-current-saved-continuation-marks-and
+              'k1 'v1
+              (lambda ()
+                (continuation-mark-set->list
+                 (current-continuation-marks web-prompt)
+                 the-save-cm-key))))))
+        (list (make-immutable-hash 
+               (list (cons 'k1 'v1)
+                     (cons 'k2 'v2))))))
     
     (test-case
-     "Update"
-     (check-equal? (call-with-web-prompt
-                    (lambda () 
-                      (with-continuation-mark the-save-cm-key 
-                        (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
-                        (current-saved-continuation-marks-and 'k1 'v1))))
-                   (make-immutable-hash 
-                    (list (cons 'k1 'v1)
-                         (cons 'k2 'v2)))))
+     "Update (beta)"
+     (check-equal? 
+      (call-with-web-prompt
+       (lambda () 
+         (with-continuation-mark the-save-cm-key
+           (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
+           
+           (call-with-immediate-continuation-mark
+            the-save-cm-key
+            (lambda (old-cms)
+              (with-continuation-mark the-save-cm-key
+                (hash-set old-cms 'k1 'v1)
+                (continuation-mark-set->list
+                 (current-continuation-marks web-prompt)
+                 the-save-cm-key)))
+            (make-immutable-hash empty)))))
+      (list (make-immutable-hash 
+             (list (cons 'k1 'v1)
+                   (cons 'k2 'v2))))))
+    
+    #;(test-case
+       "Update"
+       (check-equal? 
+        (call-with-web-prompt
+         (lambda () 
+           (with-continuation-mark the-save-cm-key
+             (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
+             (with-current-saved-continuation-marks-and
+              'k1 'v1
+              (lambda ()
+                (continuation-mark-set->list
+                 (current-continuation-marks web-prompt)
+                 the-save-cm-key))))))
+        (list (make-immutable-hash 
+               (list (cons 'k1 'v1)
+                     (cons 'k2 'v2))))))
     
     (test-case
-     "Double"
-     (check-equal? (call-with-web-prompt
-                    (lambda () 
-                      (with-continuation-mark the-save-cm-key 
-                        (make-immutable-hash (list (cons 'k3 'v1) (cons 'k4 'v0)))
-                        ((lambda (x) x)
-                         (with-continuation-mark the-save-cm-key 
-                           (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
-                           (current-saved-continuation-marks-and 'k1 'v1))))))
-                   (make-immutable-hash 
-                    (list (cons 'k1 'v1)
-                         (cons 'k2 'v2))))))
+     "Double (beta)"
+     (check-equal? 
+      (call-with-web-prompt
+       (lambda () 
+         (with-continuation-mark the-save-cm-key
+           (make-immutable-hash (list (cons 'k3 'v1) (cons 'k4 'v2)))
+           ((lambda (x) x)
+            (with-continuation-mark the-save-cm-key
+              (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
+              
+              (call-with-immediate-continuation-mark
+               the-save-cm-key
+               (lambda (old-cms)
+                 (with-continuation-mark the-save-cm-key
+                   (hash-set old-cms 'k1 'v1)
+                   (continuation-mark-set->list
+                    (current-continuation-marks web-prompt)
+                    the-save-cm-key)))
+               (make-immutable-hash empty)))))))
+      (list (make-immutable-hash 
+             (list (cons 'k1 'v1)
+                   (cons 'k2 'v2)))
+            (make-immutable-hash 
+             (list (cons 'k3 'v1)
+                   (cons 'k4 'v2))))))
+    
+    #;(test-case
+       "Double"
+       (check-equal? 
+        (call-with-web-prompt
+         (lambda () 
+           (with-continuation-mark the-save-cm-key
+             (make-immutable-hash (list (cons 'k3 'v1) (cons 'k4 'v2)))
+             ((lambda (x) x)
+              (with-continuation-mark the-save-cm-key
+                (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
+                (with-current-saved-continuation-marks-and
+                 'k1 'v1
+                 (lambda ()
+                   (continuation-mark-set->list
+                    (current-continuation-marks web-prompt)
+                    the-save-cm-key))))))))
+        (list (make-immutable-hash 
+               (list (cons 'k1 'v1)
+                     (cons 'k2 'v2)))
+              (make-immutable-hash 
+               (list (cons 'k3 'v1)
+                     (cons 'k4 'v2)))))))
    
    (test-suite 
     "activation-record-list"
@@ -169,7 +264,7 @@
                                                   (continuation-mark-set->list*
                                                    (current-continuation-marks)
                                                    (list 1 3 5 7)))
-                                                  #f))
+                                                #f))
                                   (list 42)))))
                      (list (vector #f #f #f 8)
                            (vector #f #f 6 #f)

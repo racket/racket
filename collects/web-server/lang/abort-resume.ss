@@ -12,13 +12,14 @@
 (define safe-call? (make-mark-key))
 (define web-prompt (make-continuation-prompt-tag 'web)) 
 
-(define (current-saved-continuation-marks-and key val)
-  (define c
-    (continuation-mark-set->list (current-continuation-marks web-prompt)
-                               the-save-cm-key))
-  (if (empty? c)
-      (make-immutable-hash (list (cons key val)))
-      (hash-set (first c) key val)))
+(define (with-current-saved-continuation-marks-and key val thnk)
+  (call-with-immediate-continuation-mark
+   the-save-cm-key
+   (lambda (old-cms)
+     (with-continuation-mark the-save-cm-key
+       (hash-set old-cms key val)
+       (thnk)))
+   (make-immutable-hash empty)))
 
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
@@ -173,7 +174,7 @@
  [safe-call? mark-key?]
  [the-undef undef?]
  [activation-record-list (-> saved-context?)]
- [current-saved-continuation-marks-and (any/c any/c . -> . cms?)]
+ [with-current-saved-continuation-marks-and (any/c any/c (-> any/c) . -> . any/c)]
  [kont-append-fun (kont? procedure? . -> . kont?)]
 
  ;; "CLIENT" INTERFACE
