@@ -56,7 +56,7 @@
         (cond
           ((string? x) (true))
           ((symbol? x) (true))
-          ((number? x) (true))
+          ((exact-nonnegative-integer? x) (true))
           ((comment? x) (true))
           ((pi? x) (true))
           ((cdata? x) (true))
