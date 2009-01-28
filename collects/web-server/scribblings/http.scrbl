@@ -12,7 +12,8 @@ The @web-server implements many HTTP RFCs that are provided by this module.
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{Requests}
-@(require (for-label web-server/http/request-structs))
+@(require (for-label web-server/http/request-structs
+                     scheme/match))
 
 @defmodule[web-server/http/request-structs]{
 
