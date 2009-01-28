@@ -154,8 +154,9 @@ title line of different calls to @scheme[fast-template]:
 
 @section{Gotchas}
 
-To obtain an @"@" symbol in template output, you must escape the @"@" symbol, because it is the escape character of the @at-reader-ref syntax.
-For example, to obtain:
+To obtain an @litchar["@"] character in template output, you must
+escape the it, because it is the escape character of the
+@at-reader-ref syntax.  For example, to obtain:
 @verbatim[#:indent 2]|{
   <head><title>Fastest @s in the West!</title></head>
 }|
@@ -163,19 +164,24 @@ You must write:
 @verbatim[#:indent 2]|{
   <head><title>Fastest @"@"s in the West!</title></head>
 }|
-as your template: literal @"@"s must be replaced with @"@\"@\"".
+as your template: literal @litchar["@"]s must be replaced with
+@litchar["@\"@\""].  (Note that the double-quotes are basically a Scheme
+expression, which can be used for longer strings too.)
 
-The @at-reader-ref is not smart enough to know that identifier should end at the start of XML tags. So,
+The @at-reader-ref will read Scheme identifiers, so it does not terminate identifiers on punctuations or XML angle brackets.  So,
 @verbatim[#:indent 2]|{
   <head><title>Fastest @thing in the @place!</title></head>
 }|
-will complain that the identifier @scheme[place!</title></head>] is undefined. You can subvert this by explicitly delimiting the identifer:
+will complain that the identifier @scheme[place!</title></head>] is
+undefined. You can subvert this by explicitly delimiting the
+identifer:
 @verbatim[#:indent 2]|{
   <head><title>Fastest @thing in the @|place|!</title></head>
 }|
 
-Another gotcha is that since the template is compiled into a Scheme program, only its results will be printed. For example, suppose 
-we have the template:
+Another gotcha is that since the template is compiled into a Scheme
+program, only its results will be printed. For example, suppose we
+have the template:
 @verbatim[#:indent 2]|{
  <table>
   @for[([c clients])]{
@@ -184,7 +190,9 @@ we have the template:
  </table>
 }|
 
-If this is included in a lexical context with @scheme[clients] bound to @schemeblock[(list (cons "Young" "Brigham") (cons "Smith" "Joseph"))]
+If this is included in a lexical context with @scheme[clients] bound
+to
+@schemeblock[(list (cons "Young" "Brigham") (cons "Smith" "Joseph"))]
 then the template will be printed as:
 @verbatim[#:indent 2]|{
  <table>
@@ -207,8 +215,9 @@ Now the result is:
   </tr>
  </table>
 }|
-because only the final expression of the body of the @scheme[for/list] is included in the result. We can capture all the sub-expressions
-by using @scheme[list] in the body:
+because only the final expression of the body of the @scheme[for/list]
+is included in the result. We can capture all the sub-expressions by
+using @scheme[list] in the body:
 @verbatim[#:indent 2]|{
  <table>
   @for/list[([c clients])]{
@@ -226,7 +235,8 @@ Now the result is:
  </table>
 }|
 
-The templating library provides a syntactic form to deal with this issue for you called @scheme[in]:
+The templating library provides a syntactic form to deal with this
+issue for you called @scheme[in]:
 @verbatim[#:indent 2]|{
  <table>
   @in[c clients]{
@@ -238,7 +248,8 @@ Notice how it also avoids the absurd amount of punctuation on line two.
 
 @section{HTTP Responses}
 
-The quickest way to generate an HTTP response from a template is using the @scheme[list] response type:
+The quickest way to generate an HTTP response from a template is using
+the @scheme[list] response type:
 @schemeblock[
  (list #"text/html" (include-template "static.html"))
 ]
@@ -266,11 +277,11 @@ the template to be unescaped, then create a @scheme[cdata] structure:
 
 @defform[(include-template path)]{
  Compiles the template at @scheme[path] using the @at-reader-ref syntax within the enclosing lexical context.
-          
+
  Example:
  @schemeblock[
   (include-template "static.html")
- ]                    
+ ]
 }
 
 @defform[(in x xs e ...)]{
