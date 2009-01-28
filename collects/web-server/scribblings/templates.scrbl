@@ -165,7 +165,16 @@ You must write:
 }|
 as your template: literal @"@"s must be replaced with @"@\"@\"".
 
-The other gotcha is that since the template is compiled into a Scheme program, only its results will be printed. For example, suppose 
+The @at-reader-ref is not smart enough to know that identifier should end at the start of XML tags. So,
+@verbatim[#:indent 2]|{
+  <head><title>Fastest @thing in the @place!</title></head>
+}|
+will complain that the identifier @scheme[place!</title></head>] is undefined. You can subvert this by explicitly delimiting the identifer:
+@verbatim[#:indent 2]|{
+  <head><title>Fastest @thing in the @|place|!</title></head>
+}|
+
+Another gotcha is that since the template is compiled into a Scheme program, only its results will be printed. For example, suppose 
 we have the template:
 @verbatim[#:indent 2]|{
  <table>
