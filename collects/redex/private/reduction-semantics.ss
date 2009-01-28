@@ -1838,6 +1838,7 @@
          make-bindings bindings-table bindings?
          match? match-bindings
          make-bind bind? bind-name bind-exp
+         make-match
          
          test-equal
          test-->
