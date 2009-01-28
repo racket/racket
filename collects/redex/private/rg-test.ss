@@ -49,6 +49,13 @@
           (x . (0)) (x-e . (2 2 2 2 1 3)) (x-v . (2 2)) (x-x . (0)))))
 
 (let ()
+  (define-language L
+    (x (variable-prefix x)
+       (variable-except y))
+    (y y))
+  (test (hash-ref (find-base-cases L) 'x) '(0 0)))
+
+(let ()
   (define-language lang
     (e number x y)
     (x variable)

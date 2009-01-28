@@ -429,6 +429,8 @@ To do a better job of not generating programs with free variables,
              (set! nts (cons (symbol->nt pat) nts)))]
           [`(cross ,(? symbol? x-nt))
            (set! nts (cons x-nt nts))]
+          [`(variable-except ,s ...) (void)]
+          [`(variable-prefix ,p) (void)]
           [`() (void)]
           [(struct ellipsis (_ p _ _))
            (loop p)]
