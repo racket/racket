@@ -108,9 +108,9 @@
        (plot-points lop
 		    (cond [(and (integer? sym) (<= -1 sym 127)) sym]
                           [(and (char? sym)
-                                (char<= (integer->char 32)
-                                        sym
-                                        (integer->char 127)))
+                                (char<=? (integer->char 32)
+                                         sym
+                                         (integer->char 127)))
                            (char->integer sym)]
                           [(assq sym point-syms) => cadr]
                           [else (error "Symbol not found in table!")]))))
