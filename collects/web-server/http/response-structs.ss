@@ -1,6 +1,7 @@
 #lang scheme/base
 (require mzlib/contract
          xml/xml
+         scheme/pretty
          web-server/http/request-structs)
 
 (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
@@ -9,19 +10,33 @@
 (define-struct (response/full response/basic) (body))
 (define-struct (response/incremental response/basic) (generator))
 
+; Response Contracts
+(define xexpr/c 
+  (make-proj-contract
+   'xexpr?
+   (lambda (pos neg src-info name)
+     (lambda (val)
+       (with-handlers ([exn:invalid-xexpr?
+                        (lambda (exn)
+                          (raise-contract-error
+                           val
+                           src-info
+                           pos
+                           name
+                           "Not an Xexpr. ~a~n~nContext:~n~a"
+                           (exn-message exn)
+                           (pretty-format val)))])
+         (validate-xexpr val)
+         val)))
+   (lambda (v) #t)))
+
 ; response = (cons string (listof string)), where the first string is a mime-type
 ;          | x-expression
 ;          | response/basic
-
-;; response?: any -> boolean
-;; Determine if an object is a response
-(define (response? x)
-  (or (response/basic? x)
-      (and (pair? x) (andmap (lambda (e)
-                               (or (string? e)
-                                   (bytes? e)))
-                             x))
-      (xexpr? x)))
+(define response?
+  (or/c response/basic?
+        (listof (or/c string? bytes?))
+        xexpr/c))
 
 (provide/contract
  [struct response/basic
@@ -45,5 +60,5 @@
           [mime bytes?]
           [headers (listof header?)]
           [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]
- [response? (any/c . -> . boolean?)]
+ [response? contract?]
  [TEXT/HTML-MIME-TYPE bytes?])
