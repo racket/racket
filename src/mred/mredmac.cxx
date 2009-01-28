@@ -309,8 +309,8 @@ static void EnsureWNEReturn()
     if (!ae_target_ready) {
       AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &ae_target);
       ae_target_ready = 1;
-      AECreateAppleEvent('MrEd', 'Smug', &ae_target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
     }
+    AECreateAppleEvent('MrEd', 'Smug', &ae_target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
     AESend(&ae, NULL, kAENoReply, kAENormalPriority, kNoTimeOut, NULL, NULL);
     AEDisposeDesc(&ae);
   }
