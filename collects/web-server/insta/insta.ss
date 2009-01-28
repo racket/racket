@@ -59,9 +59,9 @@
        (quasisyntax/loc stx
          (#,@expanded
           (provide/contract (#,start (request? . -> . response?)))
-          (if extra-files-path
-              (serve/servlet #,start
-                             #:extra-files-paths (list extra-files-path)
-                             #:launch-browser? launch-browser?)
-              (serve/servlet #,start
-                             #:launch-browser? launch-browser?)))))]))
+          (serve/servlet (contract (request? . -> . response?) #,start
+                                   'you 'web-server
+                                   (list (make-srcloc #f #f #f #f #f)
+                                         "start"))
+                         #:extra-files-paths (if extra-files-path (list extra-files-path) empty)
+                         #:launch-browser? launch-browser?))))]))
