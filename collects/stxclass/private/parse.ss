@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require (for-template scheme/base
                        syntax/stx
@@ -11,47 +10,11 @@
          syntax/stx
          syntax/boundmap
          "rep.ss"
+         "codegen-data.ss"
          "../util.ss")
 (provide/contract
  [parse:rhs (rhs? (listof sattr?) (listof identifier?) . -> . syntax?)]
  [parse:clauses (syntax? identifier? identifier? . -> . syntax?)])
-
-;; A PK is (make-pk (listof Pattern) stx)
-;; k is the rhs expression:
-;;   - open term with the attr names as free variables
-;;   - attr name must be bound to variable of (listof^depth value)
-;;   - 'fail' stxparameterized to (non-escaping!) failure procedure
-(define-struct pk (ps k) #:transparent)
-
-;; A FrontierContext (FC) is one of
-;;   - (list  FrontierIndex Syntax)
-;;   - (list* FrontierIndex Syntax FrontierContext)
-;; A FrontierIndex is one of
-;;   - nat
-;;   - `(+ ,nat Syntax ...)
-
-(define (empty-frontier x)
-  (list 0 x))
-(define (done-frontier x)
-  (list +inf.0 x))
-(define (frontier:add-car fc x)
-  (list* 0 x fc))
-(define (frontier:add-cdr fc)
-  (cons (match (car fc)
-          [(? number? n)
-           (add1 n)]
-          [`(+ ,n . ,rest)
-           `(+ ,(add1 n) . ,rest)])
-        (cdr fc)))
-(define (frontier:add-index fc expr)
-  (cons (match (car fc)
-          [(? number? n)
-           `(+ ,n ,expr)]
-          [`(+ ,n . ,rest)
-           `(+ ,n ,expr . ,rest)])
-        (cdr fc)))
-(define (frontier->expr fc)
-  #`(list #,@(reverse fc)))
 
 ;; parse:rhs : RHS (listof SAttr) (listof identifier) -> stx
 ;; Takes a list of the relevant attrs; order is significant!
@@ -68,14 +31,14 @@
                                   (list (empty-frontier #'x))
                                   pks
                                   #'fail-rhs)
-                       (fail #'fail-rhs #'x #:fc (empty-frontier #'x))))))]
+                       (fail #'fail-rhs #'x #:fce (empty-frontier #'x))))))]
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
-;; fail : id id #:pattern datum #:reason datum #:fc FC -> stx
-(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fc fc)
+;; fail : id id #:pattern datum #:reason datum #:fce FCE -> stx
+(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fce fce)
   (with-syntax ([k k] [x x] [p p] [reason reason]
-                [fc-expr (frontier->expr fc)])
+                [fc-expr (frontier->expr fce)])
     #`(let ([failcontext fc-expr])
         #;(printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
         (k x p 'reason failcontext))))
@@ -87,6 +50,7 @@
      (for*/list ([rhs patterns] [pk (rhs-pattern->pks rhs relsattrs main-var)]) 
        pk)]))
 
+;; rhs-pattern->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs-pattern->pks rhs relsattrs main-var)
   (match rhs
     [(struct rhs:pattern (orig-stx attrs pattern decls remap sides))
@@ -100,6 +64,7 @@
                                                    remap
                                                    main-var)))))]))
 
+
 (define (expr:convert-sides sides iattrs main-var k)
   (match sides
     ['() (k iattrs)]
@@ -111,7 +76,7 @@
                  #,k-rest
                  #,(fail #'enclosing-fail main-var
                          #:reason "side condition failed"
-                         #:fc (done-frontier main-var))))))]
+                         #:fce (done-frontier main-var))))))]
     [(cons (struct clause:with (p e)) rest)
      (let* ([new-iattrs (append (pattern-attrs p) iattrs)]
             [k-rest (expr:convert-sides rest new-iattrs main-var k)])
@@ -132,6 +97,7 @@
                   [(relid ...) relids])
       #'(list main relid ...))))
 
+;; check-literals-list : syntax -> (listof id)
 (define (check-literals-list stx)
   (unless (stx-list? stx)
     (wrong-syntax stx "expected list of identifiers"))
@@ -140,11 +106,11 @@
       (wrong-syntax id "expected identifier")))
   (syntax->list stx))
 
-(define clauses-kw-table
-  (list (list '#:literals check-literals-list)))
 
 ;; parse:clauses : stx identifier identifier -> stx
 (define (parse:clauses stx var failid)
+  (define clauses-kw-table
+    (list (list '#:literals check-literals-list)))
   (define-values (chunks clauses-stx) (chunk-kw-seq/no-dups stx clauses-kw-table))
   (define literals
     (cond [(assq '#:literals chunks) => caddr]
@@ -177,22 +143,9 @@
                    (list (empty-frontier var))
                    pks
                    failid)
-        (fail failid var #:fc (empty-frontier var)))))
+        (fail failid var #:fce (empty-frontier var)))))
 
-;; An ExtPK is one of
-;;   - PK
-;;   - (make-idpks stxclass (listof stx) (listof PK))
-;;   - (make-cpks (listof PK) (listof DatumPKS) (listof LiteralPKS))
-(define-struct idpks (stxclass args idpks))
-(define-struct cpks (pairpks datumpks literalpks))
-
-;; A DatumPKS is (make-datumpks datum (listof PK))
-(define-struct datumpks (datum pks))
-
-;; A LiteralPKS is (make-literalpks identifier (listof PK))
-(define-struct literalpks (literal pks))
-
-;; parse:pks : (listof identifier) (listof FC) (listof PK) identifier -> stx
+;; parse:pks : (listof identifier) (listof FCE) (listof PK) identifier -> stx
 ;; Each PK has a list of |vars| patterns.
 ;; The list of PKs must not be empty.
 (define (parse:pks vars fcs pks failid)
@@ -220,203 +173,205 @@
                    (try failvar (expr ...))))))]))
 
 
-;; parse:extpk : (listof identifier) (listof FC) ExtPK identifier -> stx
+;; parse:extpk : (listof identifier) (listof FCE) ExtPK identifier -> stx
 ;; Pre: vars is not empty
 (define (parse:extpk vars fcs extpk failid)
   (match extpk
     [(struct idpks (stxclass args pks))
-     (with-syntax ([var0 (car vars)]
-                   [(arg ...) args]
-                   [(arg-var ...) (generate-temporaries args)]
-                   [(r) (generate-temporaries #'(r))])
-       #`(let ([arg-var arg] ...)
-           (let ([r #,(if stxclass
-                          #`(#,(sc-parser-name stxclass) #,(car vars) arg-var ...)
-                          #`(list #,(car vars)))])
-             (if (ok? r)
-                 #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'r) failid)
-                 #,(fail failid (car vars)
-                         #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
-                         #:fc (car fcs))))))]
+     (parse:pk:id vars fcs failid stxclass args pks)]
     [(struct cpks (pairpks datumpkss literalpkss))
-     (with-syntax ([var0 (car vars)]
-                   [(dvar0) (generate-temporaries (list (car vars)))])
-       (with-syntax ([(head-var tail-var) (generate-temporaries #'(head tail))]
-                     [(pair-pattern ...)
-                      (for*/list ([pk pairpks])
-                        (pattern-orig-stx (car (pk-ps pk))))]
-                     [(datum-pattern ...)
-                      (for*/list ([datumpk datumpkss]
-                                  [pk (datumpks-pks datumpk)])
-                        (pattern-orig-stx (car (pk-ps pk))))]
-                     [(datum-test ...)
-                      (for/list ([datumpk datumpkss])
-                        (let ([datum (datumpks-datum datumpk)])
-                          #`(equal? dvar0 (quote #,datum))))]
-                     [(datum-rhs ...)
-                      (map (lambda (pks)
-                             (parse:pks (cdr vars)
-                                        (cdr fcs)
-                                        (shift-pks:datum pks)
-                                        failid))
-                           (map datumpks-pks datumpkss))]
-                     [(lit-test ...)
-                      (for/list ([literalpks literalpkss])
-                        (let ([literal (literalpks-literal literalpks)])
-                          #`(and (identifier? var0)
-                                 (free-identifier=? var0 (quote-syntax #,literal)))))]
-                     [(lit-rhs ...)
-                      (map (lambda (pks)
-                             (parse:pks (cdr vars)
-                                        (cdr fcs)
-                                        (shift-pks:literal pks)
-                                        failid))
-                           (map literalpks-pks literalpkss))])
-         #`(let ([dvar0 (if (syntax? var0) (syntax-e var0) var0)])
-             (cond #,@(if (pair? pairpks)
-                          #`([(pair? dvar0)
-                              (let ([head-var (car dvar0)]
-                                    [tail-var (cdr dvar0)])
-                                #,(parse:pks (list* #'head-var #'tail-var (cdr vars))
-                                             (list* (frontier:add-car (car fcs) #'head-var)
-                                                    (frontier:add-cdr (car fcs))
-                                                    (cdr fcs))
-                                             (shift-pks:pair pairpks)
-                                             failid))])
-                          #`())
-                   #,@(if (pair? literalpkss)
-                          #'([lit-test lit-rhs] ...)
-                          #'())
-                   [datum-test datum-rhs] ...
-                   [else
-                    #,(fail failid (car vars)
-                            #:pattern (expectation-of-constants
-                                       (pair? pairpks)
-                                       (for/list ([d datumpkss])
-                                         (datumpks-datum d))
-                                       (for/list ([l literalpkss])
-                                         (literalpks-literal l)))
-                            #:fc (car fcs))]))))]
-    #;
-    [(struct pk ((cons (struct pat:splice (orig-stx attrs depth head tail))
-                       rest-ps)
-                 k))
-     (let-match ([(struct pat:id-splice (_ head-attrs _ name ssc args)) head])
-       (let* ([head-flat-attrs (flatten-attrs* head-attrs)]
-              [head-ids (map attr-name head-flat-attrs)])
-         (with-syntax* ([var0 (car vars)]
-                        [(hid ...) head-ids]
-                        [(fail-k) (generate-temporaries #'(fail-k))]
-                        [ok-k
-                         #`(lambda (fail-k hid ...)
-                             #,(parse:pks (cons #'t (cdr vars))
-                                          fcs ;; FIXME: must update!
-                                          (cons tail
-                                                (shift-pks:id pks #'r))
-                                          #'fail-k))]
-                        [sub-parse-expr
-                         #`(#,(ssc-parser-name ssc) #,(car vars) #,@args)])
-           #'sub-parse-expr)))]
-    [(struct pk ((cons (and the-pattern (struct pat:gseq (orig-stx attrs depth heads tail)))
-                       rest-ps)
-                 k))
-     (let* ([xvar (car (generate-temporaries (list #'x)))]
-            [head-lengths
-             (for/list ([head heads]) (length (head-ps head)))]
-            [head-attrss
-             (for/list ([head heads])
-               (flatten-attrs* (head-attrs head)))]
-            [hid-initss
-             (for/list ([head heads] [head-attrs head-attrss])
-               (for/list ([head-attr head-attrs])
-                 (cond [(head-default head)
-                        => (lambda (x) #`(quote-syntax #,x))]
-                       [(head-as-list? head) #'null]
-                       [else #'#f])))]
-            [combinerss
-             (for/list ([head heads] [head-attrs head-attrss])
-               (for/list ([head-attr head-attrs])
-                 (if (head-as-list? head) #'cons #'or)))]
-            [finalizess
-             (for/list ([head heads] [head-attrs head-attrss])
-               (for/list ([head-attr head-attrs])
-                 (if (head-as-list? head) #'reverse #'values)))]
-            [head-idss
-             (for/list ([head-attrs head-attrss])
-               (map attr-name head-attrs))]
-            [completed-heads
-             (for/list ([head heads])
-               (complete-heads-pattern head xvar (add1 depth) orig-stx))]
-            [hid-argss (map generate-temporaries head-idss)]
-            [hid-args (apply append hid-argss)]
-            [mins (map head-min heads)]
-            [maxs (map head-max heads)]
-            [as-list?s (map head-as-list? heads)]
-            [reps (generate-temporaries (for/list ([head heads]) 'rep))])
-       (with-syntax ([x xvar]
-                     [var0 (car vars)]
-                     [((hid ...) ...) head-idss]
-                     [((hid-arg ...) ...) hid-argss]
-                     [((hid-init ...) ...) hid-initss]
-                     [((combine ...) ...) combinerss]
-                     [((finalize ...) ...) finalizess]
-                     [(head-length ...) head-lengths]
-                     [(rep ...) reps]
-                     [(maxrepconstraint ...)
-                      ;; FIXME: move to side condition to appropriate pattern
-                      (for/list ([repvar reps] [maxrep maxs])
-                        (if maxrep
-                            #`(< #,repvar #,maxrep)
-                            #`#t))]
-                     [(occurs-binding ...)
-                      (for/list ([head heads] [rep reps] #:when (head-occurs head))
-                        #`[#,(head-occurs head) (positive? #,rep)])]
-                     [(parse-loop failkv fail-tail)
-                      (generate-temporaries #'(parse-loop failkv fail-tail))])
-         (with-syntax ([(rhs ...)
-                        #`[(let ([hid-arg (combine hid hid-arg)] ...)
-                             (if maxrepconstraint
-                                 (let ([rep (add1 rep)])
-                                   (parse-loop x #,@hid-args #,@reps enclosing-fail))
-                                 #,(fail #'enclosing-fail #'var0
-                                         #:fc (frontier:add-index (car fcs) 
-                                                                  #'(calculate-index rep ...))
-                                         #:reason "maxiumum repetition constraint failed")))
-                           ...]]
-                       [tail-rhs
-                        #`(cond #,@(for/list ([repvar reps] [minrep mins] #:when minrep)
-                                     #`[(< #,repvar #,minrep)
-                                        #,(fail #'enclosing-fail (car vars)
-                                                #:fc (frontier:add-index 
-                                                      (car fcs)
-                                                      #'(calculate-index rep ...))
-                                                #:pattern (expectation-of-constants 
-                                                           #f '(mininum-rep-constraint-failed) '())
-                                                #:reason "minimum repetition constraint failed")])
-                                [else
-                                 (let ([hid (finalize hid-arg)] ... ...
-                                       occurs-binding ...
-                                       [fail-tail enclosing-fail])
-                                   #,(parse:pks (cdr vars)
-                                                (cdr fcs)
-                                                (list (make-pk rest-ps k))
-                                                #'fail-tail))])])
-           #`(let ()
-               (define (calculate-index rep ...)
-                 (+ (* rep head-length) ...))
-               (define (parse-loop x hid-arg ... ... rep ... failkv)
-                 #,(parse:pks (list #'x)
-                              (list (frontier:add-index (car fcs)
-                                                        #'(calculate-index rep ...)))
-                              (append
-                               (map make-pk
-                                    (map list completed-heads)
-                                    (syntax->list #'(rhs ...)))
-                               (list (make-pk (list tail) #`tail-rhs)))
-                              #'failkv))
-               (let ([hid hid-init] ... ...
-                     [rep 0] ...)
-                 (parse-loop var0 hid ... ... rep ... #,failid))))))]))
+     (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)]
+    [(struct pk ((cons (? pat:gseq? gseq-pattern) rest-patterns) k))
+     (parse:pk:gseq vars fcs failid gseq-pattern rest-patterns k)]))
+
+;; parse:pk:id : (listof id) (listof FCE) id SC stx (listof pk) -> stx
+(define (parse:pk:id vars fcs failid stxclass args pks)
+  (define var (car vars))
+  (define fc (car fcs))
+  (with-syntax ([var0 var]
+                [(arg ...) args]
+                [(arg-var ...) (generate-temporaries args)]
+                [(result) (generate-temporaries #'(result))])
+    #`(let ([arg-var arg] ...)
+        (let ([result #,(if stxclass
+                            #`(#,(sc-parser-name stxclass) var0 arg-var ...)
+                            #`(list var0))])
+          (if (ok? result)
+              #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)
+              #,(fail failid var
+                      #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
+                      #:fce fc))))))
+
+;; parse:pk:c : (listof id) (listof FCE) id ??? ... -> stx
+(define (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)
+  (define var (car vars))
+  (define datum-var (generate-temporary 'datum))
+  (define (datumpks-test datumpks)
+    (let ([datum (datumpks-datum datumpks)])
+      #`(equal? #,datum-var (quote #,datum))))
+  (define (datumpks-rhs datumpks)
+    (let ([pks (datumpks-pks datumpks)])
+      (parse:pks (cdr vars) (cdr fcs) (shift-pks:datum pks) failid)))
+  (define (literalpks-test literalpks)
+    (let ([literal (literalpks-literal literalpks)])
+      #`(and (identifier? #,var)
+             (free-identifier=? #,var (quote-syntax #,literal)))))
+  (define (literalpks-rhs literalpks)
+    (let ([pks (literalpks-pks literalpks)])
+      (parse:pks (cdr vars) (cdr fcs) (shift-pks:literal pks) failid)))
+  (define-pattern-variable var0 var)
+  (define-pattern-variable dvar0 datum-var)
+  (define-pattern-variable head-var (generate-temporary 'head))
+  (define-pattern-variable tail-var (generate-temporary 'tail))
+  (with-syntax ([(datum-clause ...)
+                 (for/list ([datumpks datumpkss])
+                   #`[#,(datumpks-test datumpks) #,(datumpks-rhs datumpks)])]
+                [(lit-clause ...)
+                 (for/list ([literalpks literalpkss])
+                   #`[#,(literalpks-test literalpks) #,(literalpks-rhs literalpks)])])
+    #`(let ([dvar0 (if (syntax? var0) (syntax-e var0) var0)])
+        (cond #,@(if (pair? pairpks)
+                     #`([(pair? dvar0)
+                         (let ([head-var (car dvar0)]
+                               [tail-var (cdr dvar0)])
+                           #,(parse:pks (list* #'head-var #'tail-var (cdr vars))
+                                        (list* (frontier:add-car (car fcs) #'head-var)
+                                               (frontier:add-cdr (car fcs))
+                                               (cdr fcs))
+                                        (shift-pks:pair pairpks)
+                                        failid))])
+                     #`())
+              lit-clause ...
+              datum-clause ...
+              [else
+               #,(fail failid (car vars)
+                       #:pattern (expectation-of-constants
+                                  (pair? pairpks)
+                                  (for/list ([d datumpkss])
+                                    (datumpks-datum d))
+                                  (for/list ([l literalpkss])
+                                    (literalpks-literal l)))
+                       #:fce (car fcs))]))))
+
+;; parse:pk:gseq : (listof id) (listof FCE) id
+;;                 pat:gseq (listof Pattern)
+;;                 ???
+;;              -> stx
+(define (parse:pk:gseq vars fcs failid gseq-pattern rest-patterns k)
+  (match-define (struct pat:gseq (orig-stx attrs depth heads tail)) gseq-pattern)
+  (define xvar (generate-temporary 'x))
+  (define head-lengths (for/list ([head heads]) (length (head-ps head))))
+  (define head-attrss (for/list ([head heads]) (flatten-attrs* (head-attrs head))))
+  (define hid-initss
+    (for/list ([head heads] [head-attrs head-attrss])
+      (for/list ([head-attr head-attrs])
+        (cond [(head-default head)
+               => (lambda (x) #`(quote-syntax #,x))]
+              [(head-as-list? head) #'null]
+              [else #'#f]))))
+  (define combinerss
+    (for/list ([head heads] [head-attrs head-attrss])
+      (for/list ([head-attr head-attrs])
+        (if (head-as-list? head) #'cons #'or))))
+  (define finalizess
+    (for/list ([head heads] [head-attrs head-attrss])
+      (for/list ([head-attr head-attrs])
+        (if (head-as-list? head) #'reverse #'values))))
+  (define head-idss
+    (for/list ([head-attrs head-attrss])
+      (map attr-name head-attrs)))
+  (define completed-heads
+    (for/list ([head heads])
+      (complete-heads-pattern head xvar (add1 depth) orig-stx)))
+  (define hid-argss (map generate-temporaries head-idss))
+  (define hid-args (apply append hid-argss))
+  (define mins (map head-min heads))
+  (define maxs (map head-max heads))
+  (define as-list?s (map head-as-list? heads))
+  (define reps (generate-temporaries (for/list ([head heads]) 'rep)))
+
+  (with-syntax ([x xvar]
+                [var0 (car vars)]
+                [((hid ...) ...) head-idss]
+                [((hid-arg ...) ...) hid-argss]
+                [((hid-init ...) ...) hid-initss]
+                [((combine ...) ...) combinerss]
+                [((finalize ...) ...) finalizess]
+                [(head-length ...) head-lengths]
+                [(rep ...) reps]
+                [(maxrepconstraint ...)
+                 ;; FIXME: move to side condition to appropriate pattern
+                 (for/list ([repvar reps] [maxrep maxs])
+                   (if maxrep
+                       #`(< #,repvar #,maxrep)
+                       #`#t))]
+                [(occurs-binding ...)
+                 (for/list ([head heads] [rep reps] #:when (head-occurs head))
+                   #`[#,(head-occurs head) (positive? #,rep)])]
+                [(parse-loop failkv fail-tail)
+                 (generate-temporaries #'(parse-loop failkv fail-tail))])
+
+    (define (gen-head-rhs my-hids my-hid-args combiners repvar maxrep)
+      (with-syntax ([(my-hid ...) my-hids]
+                    [(my-hid-arg ...) my-hid-args]
+                    [(combine ...) combiners]
+                    [rep repvar]
+                    [maxrep-constraint
+                     (if maxrep
+                         #`(< #,repvar #,maxrep)
+                         #`'#t)])
+        #`(let ([my-hid-arg (combine my-hid my-hid-arg)] ...)
+            (if maxrep-constraint
+                (let ([rep (add1 rep)])
+                  (parse-loop x #,@hid-args #,@reps enclosing-fail))
+                #,(fail #'enclosing-fail #'var0
+                        #:fce (frontier:add-index (car fcs)
+                                                  #`(calculate-index #,@reps)))))))
+
+    (define tail-rhs-expr
+      (with-syntax ([(minrep-clause ...)
+                     (for/list ([repvar reps] [minrep mins] #:when minrep)
+                       #`[(< #,repvar #,minrep)
+                          #,(fail #'enclosing-fail (car vars)
+                                  #:fce (frontier:add-index (car fcs)
+                                                            #`(calculate-index #,@reps))
+                                  #:pattern (expectation-of-constants
+                                             #f '(minimum-rep-constraint-failed) '()))])])
+        #`(cond minrep-clause ...
+                [else
+                 (let ([hid (finalize hid-arg)] ... ...
+                       occurs-binding ...
+                       [fail-tail enclosing-fail])
+                   #,(parse:pks (cdr vars)
+                                (cdr fcs)
+                                (list (make-pk rest-patterns k))
+                                #'fail-tail))])))
+
+    (with-syntax ([tail-rhs tail-rhs-expr]
+                  [(rhs ...)
+                   (for/list ([hids head-idss]
+                              [hid-args hid-argss]
+                              [combiners combinerss]
+                              [repvar reps]
+                              [maxrep maxs])
+                     (gen-head-rhs hids hid-args combiners repvar maxrep))])
+      #`(let ()
+          (define (calculate-index rep ...)
+            (+ (* rep head-length) ...))
+          (define (parse-loop x hid-arg ... ... rep ... failkv)
+            #,(parse:pks (list #'x)
+                         (list (frontier:add-index (car fcs)
+                                                   #'(calculate-index rep ...)))
+                         (append
+                          (map make-pk
+                               (map list completed-heads)
+                               (syntax->list #'(rhs ...)))
+                          (list (make-pk (list tail) #`tail-rhs)))
+                         #'failkv))
+          (let ([hid hid-init] ... ...
+                [rep 0] ...)
+            (parse-loop var0 hid ... ... rep ... #,failid))))))
+
 
 ;; complete-heads-patterns : Head identifier number stx -> Pattern
 (define (complete-heads-pattern head rest-var depth seq-orig-stx)

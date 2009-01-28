@@ -289,14 +289,14 @@ declaration?}
 
 @specsubform[(code:line #:description description)]{
 
-The @scheme[description] argument must be a string literal. It is used
-in error messages involving the syntax class. For example, if a term
-is rejected by the syntax class, an error of the form
-@scheme["expected <description>"] may be generated.
+The @scheme[description] argument is an expression (with the
+syntax-class's parameters in scope) that should evaluate to a
+string. It is used in error messages involving the syntax class. For
+example, if a term is rejected by the syntax class, an error of the
+form @scheme["expected <description>"] may be generated.
 
 If absent, the name of the syntax class is used instead.
 
-@TODO{Allow string expressions with parameters in scope?}
 }
 
 @specsubform[#:transparent]{
@@ -662,6 +662,14 @@ TODO
 @subsection{Miscellaneous utilities}
 
 @defmodule[stxclass/util/misc]
+
+@defform[(define-pattern-variable id expr)]{
+
+Evaluates @scheme[expr] and binds it to @scheme[id] as a pattern
+variable, so @scheme[id] can be used in subsequent @scheme[syntax]
+patterns.
+
+}
 
 @defform[(with-temporaries (temp-id ...) . body)]{
 

@@ -1,8 +1,12 @@
 #lang scheme/base
 (require syntax/kerncase
-         syntax/stx)
+         syntax/stx
+         (for-syntax scheme/base
+                     scheme/private/sc))
 
-(provide with-temporaries
+(provide define-pattern-variable
+
+         with-temporaries
          generate-temporary
          generate-n-temporaries
 
@@ -14,6 +18,11 @@
          check-string
          check-idlist)
 
+;; Defining pattern variables
+
+(define-syntax-rule (define-pattern-variable name expr)
+  (begin (define var expr)
+         (define-syntax name (make-syntax-mapping '0 (quote-syntax var)))))
 
 ;; Generating temporaries
 
