@@ -223,8 +223,10 @@ To do a better job of not generating programs with free variables,
   (define (generate/pred name gen pred)
     (let retry ([remaining generation-retries])
       (if (zero? remaining)
-          (error 'generate "unable to generate pattern ~s in ~s attempts" 
-                 name generation-retries)
+          (error 'generate "unable to generate pattern ~s in ~a attempt~a" 
+                 name 
+                 generation-retries
+                 (if (= generation-retries 1) "" "s"))
           (let-values ([(term state) (gen)])
             (if (pred term (state-env state))
                 (values term state)
@@ -747,8 +749,9 @@ To do a better job of not generating programs with free variables,
                 (loop (sub1 remaining))
                 (begin
                   (fprintf (current-output-port)
-                           "counterexample found after ~a attempts~a:\n"
+                           "counterexample found after ~a attempt~a~a:\n"
                            attempt
+                           (if (= attempt 1) "" "s")
                            (if source (format " with ~a" source) ""))
                   (pretty-print term (current-output-port))
                   #f)))))))
