@@ -14,20 +14,20 @@ This module is used internally to build and load servlets. It may be useful to t
 
 @defproc[(make-v1.servlet [directory path-string?]
                           [timeout integer?]
-                          [start (request? . -> . response?)])
+                          [start (request? . -> . response/c)])
          servlet?]{
  Creates a version 1 servlet that uses @scheme[directory] as its current directory, a timeout manager with a @scheme[timeout] timeout, and @scheme[start] as the request handler.
 }
 
 @defproc[(make-v2.servlet [directory path-string?]
                           [manager manager?]
-                          [start (request? . -> . response?)])
+                          [start (request? . -> . response/c)])
          servlet?]{
  Creates a version 2 servlet that uses @scheme[directory] as its current directory, a @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
 }
  
 @defproc[(make-stateless.servlet [directory path-string?]
-                                 [start (request? . -> . response?)])
+                                 [start (request? . -> . response/c)])
          servlet?]{
  Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
 }
@@ -63,7 +63,7 @@ Equivalent to @scheme[(path? . -> . servlet?)].
                      [namespace namespace?]
                      [manager manager?]
                      [directory path-string?]
-                     [handler (request? . -> . response?)])
+                     [handler (request? . -> . response/c)])
                     #:mutable]{
   Instances of this structure hold the necessary parts of a servlet:
   the @scheme[custodian] responsible for the servlet's resources,

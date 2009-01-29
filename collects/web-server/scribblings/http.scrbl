@@ -218,14 +218,10 @@ Here is an example typical of what you will find in many applications:
  ]
 }
 
-@defproc[(response? [v any/c])
-         boolean?]{
- Checks if @scheme[v] is a valid response. A response is either:
- @itemize[
-  @item{A @scheme[response/basic] structure.}
-  @item{A value matching the contract @scheme[(cons/c (or/c bytes? string?) (listof (or/c bytes? string?)))].}
-  @item{A value matching @scheme[xexpr?].}
- ]
+@defthing[response/c contract?]{
+ Equivalent to @scheme[(or/c response/basic?
+                             (listof (or/c string? bytes?))
+                             xexpr/c)].
 }
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}
@@ -244,7 +240,7 @@ transmission that the server @bold{will not catch}.}
 @defproc[(redirect-to [uri string?]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
-         response?]{
+         response/c]{
  Generates an HTTP response that redirects the browser to @scheme[uri],
  while including the @scheme[headers] in the response.
  

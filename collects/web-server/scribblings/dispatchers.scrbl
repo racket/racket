@@ -158,7 +158,7 @@ URLs to paths on the filesystem.
 @a-dispatcher[web-server/dispatchers/dispatch-lift
               @elem{defines a dispatcher constructor.}]{
 
-@defproc[(make (proc (request? . -> . response?)))
+@defproc[(make (proc (request? . -> . response/c)))
          dispatcher/c]{
  Constructs a dispatcher that calls @scheme[proc] on the request
  object, and outputs the response to the connection.
@@ -184,7 +184,7 @@ URLs to paths on the filesystem.
                    for invoking a particular procedure when a request is given to a particular
                    URL path.}]{
 
-@defproc[(make (path string?) (proc (request? . -> . response?)))
+@defproc[(make (path string?) (proc (request? . -> . response/c)))
          dispatcher/c]{
  Checks if the request URL path as a string is equal to @scheme[path]
  and if so, calls @scheme[proc] for a response.
@@ -274,7 +274,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [denied? denied?/c]
                [#:authentication-responder
                 authentication-responder
-                (url? header? . -> . response?)
+                (url? header? . -> . response/c)
                 (gen-authentication-responder "forbidden.html")])
          dispatcher/c]{
  A dispatcher that checks if the request is denied based on @scheme[denied?]. If so, then 
@@ -363,11 +363,11 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [url->servlet url->servlet/c]
                [#:responders-servlet-loading
                 responders-servlet-loading
-                (url? exn? . -> . response?)
+                (url? exn? . -> . response/c)
                 servlet-loading-responder]
                [#:responders-servlet
                 responders-servlet
-                (url? exn? . -> . response?)
+                (url? exn? . -> . response/c)
                 servlet-error-responder])
          dispatcher/c]{
  This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.

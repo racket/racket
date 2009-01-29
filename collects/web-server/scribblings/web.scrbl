@@ -10,7 +10,7 @@
 @schememodname[web-server/servlet/web] library provides the primary
 functions of interest for the servlet developer.
 
-@defproc[(send/back [response response?])
+@defproc[(send/back [response response/c])
          void?]{
  Sends @scheme[response] to the client. No continuation is captured, so the servlet is done.
        
@@ -30,7 +30,7 @@ functions of interest for the servlet developer.
          request?]{
  Captures the current continuation, stores it with @scheme[exp] as the expiration
  handler, and binds it to a URL. @scheme[make-response] is called with this URL and
- is expected to generate a @scheme[response?], which is sent to the client. If the
+ is expected to generate a @scheme[response/c], which is sent to the client. If the
  continuation URL is invoked, the captured continuation is invoked and the request is
  returned from this call to @scheme[send/suspend].
  
@@ -50,7 +50,7 @@ functions of interest for the servlet developer.
  Thus, the request will be ``returned'' from @scheme[send/suspend] to the continuation of this call.
 }
                   
-@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
+@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response/c)])
          any/c]{
  Calls @scheme[make-response] with a function (@scheme[embed/url]) that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
@@ -119,7 +119,7 @@ functions of interest for the servlet developer.
  Use this if the user can logically go `forward' in your application, but cannot go backward.
 }
 
-@defproc[(send/finish [response response?])
+@defproc[(send/finish [response response/c])
          void?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/back].
        
@@ -166,7 +166,7 @@ functions of interest for the servlet developer.
  captured continuations.
 }
                
-@defproc[(with-errors-to-browser [send/finish-or-back (response? . -> . request?)]
+@defproc[(with-errors-to-browser [send/finish-or-back (response/c . -> . request?)]
                                  [thunk (-> any)])
          any]{
  Calls @scheme[thunk] with an exception handler that generates an HTML error page

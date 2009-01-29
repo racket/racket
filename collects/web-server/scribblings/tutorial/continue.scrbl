@@ -1140,7 +1140,7 @@ to
 scheme
 
 (require web-server/servlet)
-(provide/contract (start (request? . -> . response?)))
+(provide/contract (start (request? . -> . response/c)))
 ]
 
 Second, add the following at the bottom of your application:

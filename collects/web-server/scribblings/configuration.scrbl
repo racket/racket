@@ -48,14 +48,14 @@ the configuration table S-expression file format described in
             [paths paths?])]
 
 @defstruct[responders
-           ([servlet (url? any/c . -> . response?)]
-            [servlet-loading (url? any/c . -> . response?)]
-            [authentication (url? (cons/c symbol? string?) . -> . response?)]
-            [servlets-refreshed (-> response?)]
-            [passwords-refreshed (-> response?)]
-            [file-not-found (request? . -> . response?)]
-            [protocol (url? . -> . response?)]
-            [collect-garbage (-> response?)])]
+           ([servlet (url? any/c . -> . response/c)]
+            [servlet-loading (url? any/c . -> . response/c)]
+            [authentication (url? (cons/c symbol? string?) . -> . response/c)]
+            [servlets-refreshed (-> response/c)]
+            [passwords-refreshed (-> response/c)]
+            [file-not-found (request? . -> . response/c)]
+            [protocol (url? . -> . response/c)]
+            [collect-garbage (-> response/c)])]
 
 @defstruct[messages
            ([servlet string?]
@@ -230,60 +230,60 @@ These functions are used by the default dispatcher constructor (see @secref["web
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 
 @defproc[(file-response (http-code natural-number/c) (short-version string?) (text-file string?) (header header?) ...)
-         response?]{
+         response/c]{
  Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with
 the @scheme[header]s as, you guessed it, headers.
 }
 
 @defproc[(servlet-loading-responder (url url?) (exn exn?))
-         response?]{
+         response/c]{
  Gives @scheme[exn] to the @scheme[current-error-handler] and response with a stack trace and a "Servlet didn't load" message.
 }
 
 @defproc[(gen-servlet-not-found (file path-string?))
-         ((url url?) . -> . response?)]{
+         ((url url?) . -> . response/c)]{
  Returns a function that generates a standard "Servlet not found." error with content from @scheme[file].
 }
 
 @defproc[(servlet-error-responder (url url?) (exn exn?))
-         response?]{
+         response/c]{
  Gives @scheme[exn] to the @scheme[current-error-handler] and response with a stack trace and a "Servlet error" message.
 }
                                        
 @defproc[(gen-servlet-responder (file path-string?))
-         ((url url?) (exn any/c) . -> . response?)]{
+         ((url url?) (exn any/c) . -> . response/c)]{
  Prints the @scheme[exn] to standard output and responds with a "Servlet error." message with content from @scheme[file].
 }
 
 @defproc[(gen-servlets-refreshed (file path-string?))
-         (-> response?)]{
+         (-> response/c)]{
  Returns a function that generates a standard "Servlet cache refreshed." message with content from @scheme[file].
 }
 
 @defproc[(gen-passwords-refreshed (file path-string?))
-         (-> response?)]{
+         (-> response/c)]{
  Returns a function that generates a standard "Passwords refreshed." message with content from @scheme[file].
 }
 
 @defproc[(gen-authentication-responder (file path-string?))
-         ((url url?) (header header?) . -> . response?)]{
+         ((url url?) (header header?) . -> . response/c)]{
  Returns a function that generates an authentication failure error with content from @scheme[file] and
 @scheme[header] as the HTTP header.
 }
 
 @defproc[(gen-protocol-responder (file path-string?))
-         ((url url?) . -> . response?)]{
+         ((url url?) . -> . response/c)]{
  Returns a function that generates a "Malformed request" error with content from @scheme[file].
 }
 
 @defproc[(gen-file-not-found-responder (file path-string?))
-         ((req request?) . -> . response?)]{
+         ((req request?) . -> . response/c)]{
  Returns a function that generates a standard "File not found" error with content from @scheme[file].
 }
 
 @defproc[(gen-collect-garbage-responder (file path-string?))
-         (-> response?)]{
+         (-> response/c)]{
  Returns a function that generates a standard "Garbage collection run" message with content from @scheme[file].
 }
 

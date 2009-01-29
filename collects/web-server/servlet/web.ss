@@ -40,11 +40,11 @@
  [redirect/get/forget (-> request?)]
  [adjust-timeout! (number? . -> . void?)]
  [clear-continuation-table! (-> void?)]
- [send/back (response? . -> . void?)]
- [send/finish (response? . -> . void?)]
+ [send/back (response/c . -> . void?)]
+ [send/finish (response/c . -> . void?)]
  [send/suspend ((response-generator/c) (expiration-handler/c) . ->* . request?)]
  [send/forward ((response-generator/c) (expiration-handler/c) . ->* . request?)]
- [send/suspend/dispatch ((embed/url/c . -> . response?) . -> . any/c)])
+ [send/suspend/dispatch ((embed/url/c . -> . response/c) . -> . any/c)])
 
 ;; ************************************************************
 ;; EXPORTS
@@ -146,7 +146,7 @@
 
 (provide/contract
  [with-errors-to-browser
-  ((response? . -> . request?)
+  ((response/c . -> . request?)
    (-> any)
    . -> .
    any)])

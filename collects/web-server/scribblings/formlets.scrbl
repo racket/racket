@@ -228,7 +228,7 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
 
 @defproc[(send/formlet [f (formlet/c any/c)]
                        [#:wrap wrapper
-                               (xexpr/c . -> . response?)
+                               (xexpr/c . -> . response/c)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])

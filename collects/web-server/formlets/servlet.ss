@@ -5,7 +5,7 @@
 
 (provide/contract
  [send/formlet (((formlet/c any/c))
-                (#:wrap (xexpr/c . -> . response?))                 
+                (#:wrap (xexpr/c . -> . response/c))                 
                 . ->* . any/c)])
 
 (define (send/formlet f

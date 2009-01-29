@@ -110,14 +110,14 @@
     (lambda (in) (read-string (file-size path) in))))
 
 (provide/contract
- [file-response ((natural-number/c string? path-string?) (listof header?) . ->* . (response?))]
- [servlet-loading-responder (url? exn? . -> . response?)]
- [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
- [servlet-error-responder (url? exn? . -> . response?)]
- [gen-servlet-responder (path-string? . -> . (url? exn? . -> . response?))]
- [gen-servlets-refreshed (path-string? . -> . (-> response?))]
- [gen-passwords-refreshed (path-string? . -> . (-> response?))]
- [gen-authentication-responder (path-string? . -> . (url? header? . -> . response?))]
- [gen-protocol-responder (path-string? . -> . (url? . -> . response?))]
- [gen-file-not-found-responder (path-string? . -> . (request? . -> . response?))]
- [gen-collect-garbage-responder (path-string? . -> . (-> response?))])
+ [file-response ((natural-number/c string? path-string?) (listof header?) . ->* . (response/c))]
+ [servlet-loading-responder (url? exn? . -> . response/c)]
+ [gen-servlet-not-found (path-string? . -> . (url? . -> . response/c))]
+ [servlet-error-responder (url? exn? . -> . response/c)]
+ [gen-servlet-responder (path-string? . -> . (url? exn? . -> . response/c))]
+ [gen-servlets-refreshed (path-string? . -> . (-> response/c))]
+ [gen-passwords-refreshed (path-string? . -> . (-> response/c))]
+ [gen-authentication-responder (path-string? . -> . (url? header? . -> . response/c))]
+ [gen-protocol-responder (path-string? . -> . (url? . -> . response/c))]
+ [gen-file-not-found-responder (path-string? . -> . (request? . -> . response/c))]
+ [gen-collect-garbage-responder (path-string? . -> . (-> response/c))])

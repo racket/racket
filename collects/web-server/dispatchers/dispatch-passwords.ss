@@ -16,7 +16,7 @@
  [denied?/c contract?]
  [make (->* (denied?/c)
             (#:authentication-responder
-             (url? header? . -> . response?))
+             (url? header? . -> . response/c))
             dispatcher/c)]
  [authorized?/c contract?]
  [make-basic-denied?/path

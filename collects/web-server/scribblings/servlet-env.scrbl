@@ -80,7 +80,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                #:command-line? #t)
 ]
 
-@defproc[(serve/servlet [start (request? . -> . response?)]
+@defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
                         [#:launch-browser? launch-browser? boolean? (not command-line?)]
                         [#:quit? quit? boolean? (not command-line?)]
@@ -103,7 +103,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                         [#:servlets-root servlets-root path-string? (build-path server-root-path "htdocs")]
                         [#:servlet-current-directory servlet-current-directory path-string? servlets-root]
                         [#:file-not-found-responder file-not-found-responder
-                                                    (request? . -> . response?)
+                                                    (request? . -> . response/c)
                                                     (gen-file-not-found-responder 
                                                      (build-path
                                                       server-root-path

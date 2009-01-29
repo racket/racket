@@ -26,7 +26,7 @@
 @(require (for-label web-server/lang/web))
 @defmodule[web-server/lang/web]{
 
-@defproc[(send/suspend/url [response-generator (url? . -> . response?)])
+@defproc[(send/suspend/url [response-generator (url? . -> . response/c)])
          request?]{
  Captures the current continuation. Serializes it and stuffs it into
  a URL. Calls @scheme[response-generator] with this URL and delivers
@@ -34,7 +34,7 @@
  the request is returned to this continuation.
 }
 
-@defproc[(send/suspend/hidden [response-generator (url? xexpr/c . -> . response?)])
+@defproc[(send/suspend/hidden [response-generator (url? xexpr/c . -> . response/c)])
          request?]{
  Captures the current continuation. Serializes it and generates an INPUT
  form that includes the serialization as a hidden form.
@@ -46,7 +46,7 @@
  Note: The continuation is NOT stuffed.
 }
 
-@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
+@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response/c)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call

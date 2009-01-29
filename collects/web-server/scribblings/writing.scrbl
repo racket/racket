@@ -56,7 +56,7 @@ Equivalent to @scheme[string?].
 Example: @scheme["http://localhost:8080/servlets;1*1*20131636/examples/add.ss"]}
 
 @defthing[response-generator/c contract?]{
-Equivalent to @scheme[(k-url? . -> . response?)].
+Equivalent to @scheme[(k-url? . -> . response/c)].
            
 Example: @schemeblock[(lambda (k-url)
                         `(html 
@@ -66,7 +66,7 @@ Example: @schemeblock[(lambda (k-url)
 }
 
 @defthing[expiration-handler/c contract?]{
-Equivalent to @scheme[(or/c false/c (request? . -> . response?))].
+Equivalent to @scheme[(or/c false/c (request? . -> . response/c))].
            
 Example: @schemeblock[(lambda (req)
                         `(html (head (title "Expired"))

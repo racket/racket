@@ -21,15 +21,15 @@
 ; These contracts interfere with the continuation safety marks
 #;(provide/contract
  ;; Server Interface
- [initialize-servlet ((request? . -> . response?) . -> . (request? . -> . response?))]
+ [initialize-servlet ((request? . -> . response/c) . -> . (request? . -> . response/c))]
  
  ;; Servlet Interface
- [send/suspend/hidden ((url? list? . -> . response?) . -> . request?)]
- [send/suspend/url ((url? . -> . response?) . -> . request?)]
- [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response?)
+ [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
+ [send/suspend/url ((url? . -> . response/c) . -> . request?)]
+ [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
                          . -> . any/c)])
 
-;; initial-servlet : (request -> response) -> (request -> response?)
+;; initial-servlet : (request -> response) -> (request -> response/c)
 (define (initialize-servlet start)
   (let ([params (current-parameterization)])
     (lambda (req0)

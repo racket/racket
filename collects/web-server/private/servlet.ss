@@ -22,7 +22,7 @@
           [namespace namespace?]
           [manager manager?]
           [directory path-string?]
-          [handler (request? . -> . response?)])]
+          [handler (request? . -> . response/c)])]
  [struct execution-context 
          ([request request?])]
  [current-servlet (parameter/c (or/c false/c servlet?))]

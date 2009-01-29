@@ -154,7 +154,7 @@
 ;; **********************************************************************
 ;; **********************************************************************
 
-; These should really be from web-server/private, but it interferes with testing
+; XXX These should really be from web-server/private, but it interferes with testing
 (define request? any/c)
 (define response? any/c)
 

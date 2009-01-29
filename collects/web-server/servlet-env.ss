@@ -42,7 +42,7 @@
                     (p "Return to DrScheme.")))))))
 
 (provide/contract
- [serve/servlet (((request? . -> . response?))
+ [serve/servlet (((request? . -> . response/c))
                  (#:command-line? boolean?
                   #:launch-browser? boolean?
                   #:quit? boolean?
@@ -57,7 +57,7 @@
                   #:extra-files-paths (listof path-string?)
                   #:servlets-root path-string?
                   #:servlet-current-directory path-string?
-                  #:file-not-found-responder (request? . -> . response?)
+                  #:file-not-found-responder (request? . -> . response/c)
                   #:mime-types-path path-string?
                   #:servlet-path string?
                   #:servlet-regexp regexp?

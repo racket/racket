@@ -12,7 +12,7 @@
 ; response = (cons string (listof string)), where the first string is a mime-type
 ;          | x-expression
 ;          | response/basic
-(define response?
+(define response/c
   (or/c response/basic?
         (listof (or/c string? bytes?))
         xexpr/c))
@@ -39,5 +39,5 @@
           [mime bytes?]
           [headers (listof header?)]
           [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]
- [response? contract?]
+ [response/c contract?]
  [TEXT/HTML-MIME-TYPE bytes?])

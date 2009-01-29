@@ -18,7 +18,7 @@
 }
 
 @defproc[(start [initial-request request?])
-         response?]{
+         response/c]{
  This function is called when an instance of this servlet is started.
  The argument is the HTTP request that initiated the instance.
 }

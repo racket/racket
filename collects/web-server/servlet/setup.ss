@@ -23,13 +23,8 @@
        path->servlet/c)])
 
 (define (v0.response->v1.lambda response response-path)
-  (define go
-    (box
-     (lambda ()
-       (set-box! go (lambda () (load/use-compiled response-path)))
-       response)))
   (lambda (initial-request)
-    ((unbox go))))
+    response))
 
 (define (make-v1.servlet directory timeout start)
   (make-v2.servlet 
@@ -97,9 +92,9 @@
           servlet-module-specs
           lang-module-specs))
 (provide/contract
- [make-v1.servlet (path-string? integer? (request? . -> . response?) . -> . servlet?)]
- [make-v2.servlet (path-string? manager? (request? . -> . response?) . -> . servlet?)]
- [make-stateless.servlet (path-string? (request? . -> . response?) . -> . servlet?)]
+ [make-v1.servlet (path-string? integer? (request? . -> . response/c) . -> . servlet?)]
+ [make-v2.servlet (path-string? manager? (request? . -> . response/c) . -> . servlet?)]
+ [make-stateless.servlet (path-string? (request? . -> . response/c) . -> . servlet?)]
  [default-module-specs (listof module-path?)])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
@@ -109,53 +104,54 @@
                                        #:additional-specs
                                        default-module-specs)]
                    [current-custodian (make-servlet-custodian)])
-      (define s (load/use-compiled a-path))
-      (cond
-        [(void? s)
-         (let* ([path-string (path->string a-path)]
-                [path-sym (string->symbol path-string)]
-                [neg-blame 'web-server]
-                [pos-blame path-sym]
-                [module-name `(file ,path-string)]
-                [mk-loc
-                 (lambda (name)
-                   (list (make-srcloc a-path #f #f #f #f)
-                         name))]
-                [version 
-                 (contract (symbols 'v1 'v2 'stateless) 
-                           (dynamic-require module-name 'interface-version)
-                           pos-blame neg-blame
-                           (mk-loc "interface-version"))])
-           (case version
-             [(v1)
-              (let ([timeout (contract number?
-                                       (dynamic-require module-name 'timeout)
+      (let* ([path-string (path->string a-path)]
+             [path-sym (string->symbol path-string)]
+             [neg-blame 'web-server]
+             [pos-blame path-sym]
+             [module-name `(file ,path-string)]
+             [mk-loc
+              (lambda (name)
+                (list (make-srcloc a-path #f #f #f #f)
+                      name))]
+             [s (load/use-compiled a-path)])
+        (cond
+          [(void? s)
+           (let ([version 
+                  (contract (symbols 'v1 'v2 'stateless) 
+                            (dynamic-require module-name 'interface-version)
+                            pos-blame neg-blame
+                            (mk-loc "interface-version"))])
+             (case version
+               [(v1)
+                (let ([timeout (contract number?
+                                         (dynamic-require module-name 'timeout)
+                                         pos-blame neg-blame
+                                         (mk-loc "timeout"))]
+                      [start (contract (request? . -> . response/c)
+                                       (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "timeout"))]
-                    [start (contract (request? . -> . response?)
-                                     (dynamic-require module-name 'start)
-                                     pos-blame neg-blame
-                                     (mk-loc "start"))])
-                (make-v1.servlet (directory-part a-path) timeout start))]
-             [(v2)
-              (let ([start (contract (request? . -> . response?)
-                                     (dynamic-require module-name 'start)
-                                     pos-blame neg-blame
-                                     (mk-loc "start"))]
-                    [manager (contract manager?
-                                       (dynamic-require module-name 'manager)
+                                       (mk-loc "start"))])
+                  (make-v1.servlet (directory-part a-path) timeout start))]
+               [(v2)
+                (let ([start (contract (request? . -> . response/c)
+                                       (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "manager"))])
-                (make-v2.servlet (directory-part a-path) manager start))]
-             [(stateless)
-              (let ([start (contract (request? . -> . response?)
-                                     (dynamic-require module-name 'start)
-                                     pos-blame neg-blame
-                                     (mk-loc "start"))])
-                (make-stateless.servlet (directory-part a-path) start))]))]
-        [(response? s)
-         (make-v1.servlet (directory-part a-path) timeouts-default-servlet
-                          (v0.response->v1.lambda s a-path))]
-        [else
-         (error 'path->servlet
-                "Loading ~e produced ~n~e~n instead of either (1) a response or (2) nothing and exports 'interface-version" a-path s)]))))
+                                       (mk-loc "start"))]
+                      [manager (contract manager?
+                                         (dynamic-require module-name 'manager)
+                                         pos-blame neg-blame
+                                         (mk-loc "manager"))])
+                  (make-v2.servlet (directory-part a-path) manager start))]
+               [(stateless)
+                (let ([start (contract (request? . -> . response/c)
+                                       (dynamic-require module-name 'start)
+                                       pos-blame neg-blame
+                                       (mk-loc "start"))])
+                  (make-stateless.servlet (directory-part a-path) start))]))]
+          [else
+           (make-v1.servlet (directory-part a-path) timeouts-default-servlet
+                            (v0.response->v1.lambda 
+                             (contract response/c s
+                                       pos-blame neg-blame
+                                       (mk-loc path-string))
+                             a-path))])))))
