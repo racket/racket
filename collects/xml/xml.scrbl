@@ -14,7 +14,7 @@
 
 @title{@bold{XML}: Parsing and Writing}
 
-@author["Paul Graunke"]
+@author["Paul Graunke and Jay McCarthy"]
 
 @defmodule[xml]
 
@@ -64,6 +64,10 @@ An @scheme[_exact-nonnegative-integer] represents a numeric entity. For example,
 A @scheme[_cdata] is an instance of the @scheme[cdata] structure type,
 and a @scheme[_misc] is an instance of the @scheme[comment] or
 @scheme[pcdata] structure types.}
+
+@defthing[xexpr/c contract?]{
+ A contract that is like @scheme[xexpr?] except produces a better error message when the value is not an @tech{X-expression}.
+}   
 
 @defstruct[document ([prolog prolog?]
                      [element element?]

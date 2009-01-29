@@ -40,6 +40,7 @@
       xexpr->xml
       xexpr->string
       xexpr-drop-empty-attributes
+      xexpr/c
       xexpr?
       permissive?
       correct-xexpr?
