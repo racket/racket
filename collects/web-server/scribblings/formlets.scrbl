@@ -128,7 +128,7 @@ These combinators may be used directly to construct low-level formlets, such as 
 types. Refer to @secref["input-formlets"] for example low-level formlets using these combinators.
 
 @defthing[xexpr-forest/c contract?]{
- Equivalent to @scheme[(listof xexpr?)]
+ Equivalent to @scheme[(listof xexpr/c)]
 }
 
 @defproc[(formlet/c [content any/c]) contract?]{
@@ -165,7 +165,7 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
  Constructs a @tech{formlet} with the rendering @scheme[r] and the identity procedure as the processing step.
 }
 
-@defproc[(xml [r xexpr?])
+@defproc[(xml [r xexpr/c])
          (formlet/c procedure?)]{
  Equivalent to @scheme[(xml-forest (list r))].
 }
@@ -228,7 +228,7 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
 
 @defproc[(send/formlet [f (formlet/c any/c)]
                        [#:wrap wrapper
-                               (xexpr? . -> . response?)
+                               (xexpr/c . -> . response?)
                                (lambda (form-xexpr)
                                  `(html (head (title "Form Entry"))
                                         (body ,form-xexpr)))])
@@ -241,7 +241,7 @@ A few utilities are provided for using @tech{formlet}s in Web applications.
                
 @defproc[(embed-formlet [embed/url embed/url/c]
                         [f (formlet/c any/c)])
-         xexpr?]{
+         xexpr/c]{
  Like @scheme[send/formlet], but for use with @scheme[send/suspend/dispatch].
 }
 

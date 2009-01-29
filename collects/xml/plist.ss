@@ -192,4 +192,4 @@
    ;; END OF TEST
 
   (provide read-plist)
-  (provide/contract [write-plist (xexpr? output-port? . -> . void?)]))
+  (provide/contract [write-plist (xexpr/c output-port? . -> . void?)]))

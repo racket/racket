@@ -68,7 +68,7 @@
 
 ; Contracts
 (define xexpr-forest/c
-  (listof xexpr?))
+  (listof xexpr/c))
 
 (define (formlet/c c)
   (integer? . -> . 

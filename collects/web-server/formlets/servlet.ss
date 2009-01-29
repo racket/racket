@@ -5,7 +5,7 @@
 
 (provide/contract
  [send/formlet (((formlet/c any/c))
-                (#:wrap (xexpr? . -> . response?))                 
+                (#:wrap (xexpr/c . -> . response?))                 
                 . ->* . any/c)])
 
 (define (send/formlet f
@@ -23,7 +23,7 @@
               ,@(formlet-display f)))))))
 
 (provide/contract
- [embed-formlet (embed/url/c (formlet/c any/c) . -> . xexpr?)])
+ [embed-formlet (embed/url/c (formlet/c any/c) . -> . xexpr/c)])
 
 (define (embed-formlet embed/url f)
   `(form ([action ,(embed/url

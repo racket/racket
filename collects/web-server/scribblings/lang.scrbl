@@ -34,7 +34,7 @@
  the request is returned to this continuation.
 }
 
-@defproc[(send/suspend/hidden [response-generator (url? xexpr? . -> . response?)])
+@defproc[(send/suspend/hidden [response-generator (url? xexpr/c . -> . response?)])
          request?]{
  Captures the current continuation. Serializes it and generates an INPUT
  form that includes the serialization as a hidden form.

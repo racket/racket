@@ -245,16 +245,16 @@ like @scheme[display-xml].}
  and leave them in place in the resulting ``@tech{X-expression}''.
 }
                              
-@defproc[(xml->xexpr [content content?]) xexpr?]{
+@defproc[(xml->xexpr [content content?]) xexpr/c]{
 
 Converts document content into an @tech{X-expression}, using
 @scheme[permissive?] to determine if foreign objects are allowed.}
 
-@defproc[(xexpr->xml [xexpr xexpr?]) content?]{
+@defproc[(xexpr->xml [xexpr xexpr/c]) content?]{
 
 Converts an @tech{X-expression} into XML content.}
 
-@defproc[(xexpr->string [xexpr xexpr?]) string?]{
+@defproc[(xexpr->string [xexpr xexpr/c]) string?]{
 
 Converts an @tech{X-expression} into a string containing XML.}
 
@@ -376,12 +376,12 @@ could be create by an expression matching the following
           (list 'array pl-value ...)]
 ]
 
-@defproc[(read-plist [in input-port?]) xexpr?]{
+@defproc[(read-plist [in input-port?]) xexpr/c]{
 
 Reads a plist from a port, and produces a @tech{dictionary
 X-expression}.}
 
-@defproc[(write-plist [dict xexpr?] [out output-port?]) void?]{
+@defproc[(write-plist [dict xexpr/c] [out output-port?]) void?]{
 
 Write a plist to the given port. If @scheme[dict] is not a
 @tech{dictionary X-expression}, the @scheme[exn:fail:contract]
