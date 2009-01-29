@@ -44,7 +44,7 @@ To do a better job of not generating programs with free variables,
 
 (define generation-retries 100)
 
-(define default-check-attempts 100)
+(define default-check-attempts 1000)
 
 (define ascii-chars-threshold 50)
 (define tex-chars-threshold 500)
@@ -735,9 +735,9 @@ To do a better job of not generating programs with free variables,
           (let-values ([(term bindings) (generator (attempt->size attempt) attempt)])
             (if (andmap (λ (bindings) 
                           (with-handlers ([exn:fail? (λ (exn) 
-                                                       (fprintf (current-error-port)
-                                                                "checking ~s raises ~s\n"
-                                                                term exn)
+                                                       (fprintf (current-error-port) 
+                                                                "checking ~s raises an exception\n"
+                                                                term)
                                                        (raise exn))])
                             (property term bindings)))
                         (cond [(and match (match term)) 
