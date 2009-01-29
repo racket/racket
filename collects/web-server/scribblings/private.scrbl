@@ -433,13 +433,6 @@ needs. They are provided by @filepath{private/util.ss}.
 
 @subsection{Exceptions}
 
-@defproc[(pretty-print-invalid-xexpr [exn exn:invalid-xexpr?]
-                                     [v any/c])
-         void]{
- Prints @scheme[v] as if it were almost an X-expression highlighting the error
- according to @scheme[exn].
-}
-
 @defproc[(network-error [s symbol?]
                         [fmt string?]
                         [v any/c] ...)

@@ -19,19 +19,6 @@
     (test-exn "0" exn:fail:contract? (lambda () (contract port-number? 0 'pos 'neg)))
     (test-exn "10000000" exn:fail:contract? (lambda () (contract port-number? 10000000 'pos 'neg))))
    
-   (test-equal? "pretty-print-invalid-xexpr"
-                (let ([os (open-output-string)]
-                      [txe `(html (head (title "Foo"))
-                                  (body (a ([href url]) "Text")))])
-                  (parameterize ([current-output-port os])
-                    (with-handlers ([exn:invalid-xexpr? 
-                                     (lambda (exn)
-                                       (pretty-print-invalid-xexpr exn txe))])
-                      (validate-xexpr txe)
-                      #f))
-                  (get-output-string os))
-                "(html (head (title \"Foo\")) (body (a ((href <font color=\"red\">url</font>)) \"Text\")))\n")
-   
    (test-suite
     "url-replace-path"
     (test-case

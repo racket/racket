@@ -23,3 +23,8 @@
   padding: 5px;
   border: 1px solid #ff99ff;
 }
+
+.error {
+ color: red;
+ font-size: large;
+}

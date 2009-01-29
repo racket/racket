@@ -3,6 +3,7 @@
          mzlib/list
          net/url)
 (require web-server/http/response-structs
+         web-server/private/xexpr
          web-server/http/request-structs)
 
 (define (format-stack-trace trace)
@@ -29,7 +30,7 @@
           (div ([class "title"]) "Exception")
           (p
            "The application raised an exception with the message:"
-           (pre ,(exn-message exn)))
+           (pre ,(reformat-xexpr-exn (exn-message exn))))
           (p
            "Stack trace:"
            ,(format-stack-trace

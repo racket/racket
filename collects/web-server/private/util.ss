@@ -3,8 +3,6 @@
          mzlib/plt-match
          mzlib/contract
          mzlib/serialize
-         mzlib/pretty
-         xml/xml
          net/url)
 (define path-element?
   (or/c path-string? (symbols 'up 'same)))
@@ -14,7 +12,6 @@
 (provide/contract
  [path-element? contract?]
  [port-number? contract?]
- [pretty-print-invalid-xexpr (exn:invalid-xexpr? any/c . -> . void)]
  [url-replace-path (((listof path/param?) . -> . (listof path/param?)) url? . -> . url?)]
  [explode-path* (path-string? . -> . (listof path-element?))]
  [path-without-base (path-string? path-string? . -> . (listof path-element?))]
@@ -30,20 +27,6 @@
  [write/string (serializable? . -> . string?)]
  [read/bytes (bytes? . -> . serializable?)]
  [write/bytes (serializable? . -> . bytes?)])
-
-(define (pretty-print-invalid-xexpr exn xexpr)
-  (define code (exn:invalid-xexpr-code exn))
-  (parameterize ([pretty-print-size-hook (lambda (v display? out)
-                                           (and (equal? v code)
-                                                (string-length (format (if display? "~a" "~v") v))))]
-                 [pretty-print-print-hook (lambda (v display? out)
-                                            (fprintf out
-                                                     (string-append
-                                                      "<font color=\"red\">"
-                                                      (if display? "~a" "~v")
-                                                      "</font>")
-                                                     v))])
-    (pretty-print xexpr)))
 
 (define (read/string str)
   (read (open-input-string str)))

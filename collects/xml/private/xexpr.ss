@@ -84,7 +84,7 @@
                                (cdr x)))
                    (false (make-exn:invalid-xexpr
                            (format
-                            "Expected a symbol as the element name, given ~a"
+                            "Expected a symbol as the element name, given ~s"
                             (car x))
                            (current-continuation-marks)
                            x)))))
@@ -92,7 +92,7 @@
                  (make-exn:invalid-xexpr
                   (format (string-append
                            "Expected a string, symbol, number, comment, "
-                           "processing instruction, or list, given ~a")
+                           "processing instruction, or list, given ~s")
                           x)
                   (current-continuation-marks)
                   x)))))
