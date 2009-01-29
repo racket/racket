@@ -195,3 +195,47 @@
     (f 3))
   (test-runtime-error exn:fail:contract? "top-level misuses f"
     (f #t)))
+
+;; eventually we can hopefully fix this so these are allowed, but for right
+;; now, test that they fail during unit/new-import-export
+
+(define-signature sig7 (x))
+(define-signature sig8 ((contracted [x number?])))
+
+(define-unit unit12
+  (import sig7)
+  (export)
+  x)
+(define-unit unit13
+  (import sig8)
+  (export)
+  x)
+(define-unit unit14
+  (import)
+  (export sig8)
+  (define x 3))
+(define-unit unit15
+  (import)
+  (export sig7)
+  (define x 3))
+
+(test-syntax-error "not contracted in old import -> contracted in new"
+  (unit/new-import-export
+   (import sig8)
+   (export)
+   (() unit12 sig7)))
+(test-syntax-error "contracted in old import -> not contracted in new"
+  (unit/new-import-export
+   (import sig7)
+   (export)
+   (() unit13 sig8)))
+(test-syntax-error "not contracted in old export -> contracted in new"
+  (unit/new-import-export
+   (import)
+   (export sig8)
+   ((sig7) unit14)))  
+(test-syntax-error "contracted in old export -> not contracted in new"
+  (unit/new-import-export
+   (import)
+   (export sig7)
+   ((sig8) unit15)))

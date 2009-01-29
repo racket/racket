@@ -762,29 +762,45 @@
          (define v
            #`(hash-table-get #,table-stx #,(car (tagged-info->keys tagged-info))))
          (for-each
-          (lambda (int/ext-name index)
+          (lambda (int/ext-name index ctc)
             (bound-identifier-mapping-put! def-table
                                            (car int/ext-name)
-                                           #`(vector-ref #,v #,index)))
+                                           (cons #`(vector-ref #,v #,index) ctc)))
           (car sig)
-          (iota (length (car sig)))))
+          (iota (length (car sig)))
+          (cadddr sig)))
        import-tagged-infos
        import-sigs)
       (with-syntax ((((eloc ...) ...) 
                      (map
                       (lambda (target-sig)
                         (map
-                         (lambda (target-int/ext-name)
-                           (bound-identifier-mapping-get
-                            def-table
-                            (car target-int/ext-name)
-                            (lambda ()
-                              (raise-stx-err
-                               (format (if import?
-                                           "identifier ~a is not present in new imports"
-                                           "identifier ~a is not present in old export")
-                                       (syntax-e (car target-int/ext-name)))))))
-                         (car target-sig)))
+                         (lambda (target-int/ext-name target-ctc)
+                           (when target-ctc
+                             (raise-stx-err
+                              (format (if import?
+                                          "identifier ~a is contracted in old imports"
+                                          "identifier ~a is contracted in new exports")
+                                      (syntax-e (car target-int/ext-name)))))
+                           (let ([vref/ctc
+                                  (bound-identifier-mapping-get
+                                   def-table
+                                   (car target-int/ext-name)
+                                   (lambda ()
+                                     (raise-stx-err
+                                      (format (if import?
+                                                  "identifier ~a is not present in new imports"
+                                                  "identifier ~a is not present in old exports")
+                                              (syntax-e (car target-int/ext-name))))))])
+                             (when (cdr vref/ctc)
+                               (raise-stx-err
+                                (format (if import?
+                                            "identifier ~a is contracted in new imports"
+                                            "identifier ~a is contracted in old exports")
+                                        (syntax-e (car target-int/ext-name)))))
+                             (car vref/ctc)))
+                         (car target-sig)
+                         (cadddr target-sig)))
                       target-import-sigs))
                     (((export-keys ...) ...) 
                      (map tagged-info->keys target-import-tagged-infos)))
