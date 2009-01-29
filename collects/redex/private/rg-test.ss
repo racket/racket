@@ -574,54 +574,57 @@
     (test m "error: pred-raised")
     (test (get-output-string p) #rx"checking 5 raises.*\n$")
     (close-output-port p))
-  (test (parameterize ([check-randomness (make-random 0 0)])
-          (output
-           (λ ()
-             (redex-check lang n (eq? 42 (term n)) 
-                          #:attempts 1
-                          #:source (reduction-relation lang (--> 42 x))))))
-        "")
+
   (test (output
          (λ ()
-           (parameterize ([check-randomness (make-random 0 0)])
-             (redex-check lang n (eq? 42 (term n)) 
-                          #:attempts 1
-                          #:source (reduction-relation lang (--> 0 x z))))))
-        "counterexample found (z) after 1 attempts:\n0\n")
-  (test (output
-         (λ ()
-           (parameterize ([check-randomness (make-random 1)])
-             (redex-check lang d (eq? 42 (term n)) 
-                          #:attempts 1
-                          #:source (reduction-relation lang (--> 0 x z))))))
-        "counterexample found after 1 attempts:\n5\n")
-  (test (let ([r (reduction-relation lang (--> 0 x z))])
-          (output 
+           (redex-check lang n (eq? 42 (term n)) 
+                        #:attempts 1
+                        #:source (reduction-relation 
+                                  lang 
+                                  (--> 42 dontcare)
+                                  (--> 0 dontcare z)))))
+        "counterexample found after 1 attempts with z:\n0\n")
+  
+  (let ([generated null])
+    (test (output
            (λ ()
-             (redex-check lang n (number? (term n)) 
-                          #:attempts 10
-                          #:source r))))
-        "")
+             (redex-check lang n (set! generated (cons (term n) generated)) 
+                          #:attempts 5
+                          #:source (reduction-relation 
+                                    lang 
+                                    (--> 1 dontcare)
+                                    (--> 2 dontcare)))))
+          "")
+    (test generated '(2 2 1 1)))
+  
   (let ()
     (define-metafunction lang
-      [(mf 0) 0]
-      [(mf 42) 0])
-    (test (parameterize ([check-randomness (make-random 0 1)])
-            (output 
-             (λ ()
-               (redex-check lang (n) (eq? 42 (term n)) 
-                            #:attempts 1
-                            #:source mf))))
-          ""))
+      [(mf 42) dontcare]
+      [(mf 0) dontcare])
+    (test (output
+           (λ ()
+             (redex-check lang (n) (eq? 42 (term n)) 
+                          #:attempts 1
+                          #:source mf)))
+          "counterexample found after 1 attempts with clause #2:\n(0)\n"))
+  
   (let ()
-    (define-language L)
-    (test (with-handlers ([exn:fail? exn-message])
-            (redex-check lang any #t #:source (reduction-relation L (--> 1 1))))
-          #rx"language for secondary source"))
+    (define-metafunction lang
+      [(mf d e) dontcare])
+    (test (output
+           (λ ()
+             (redex-check lang (number_1 number_2) 
+                          (and (= (term number_1) 5)
+                               (= (term number_2) 4)) 
+                          #:attempts 1
+                          #:source mf)))
+          ""))
+  
   (let ()
     (test (with-handlers ([exn:fail? exn-message])
             (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
           #rx"x does not match n"))
+
   
   (let ([stx-err (λ (stx)
                    (with-handlers ([exn:fail:syntax? exn-message])

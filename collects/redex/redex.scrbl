@@ -1058,6 +1058,16 @@ these free @pattech[term]-variables by generating random terms matching
 @scheme[pattern] and extracting the sub-terms bound by the
 @pattech[names] and non-terminals in @scheme[pattern].
 
+@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
+random terms in its search. The size and complexity of terms it generates
+gradually increases with each failed attempt.
+
+When passed a metafunction or reduction relation via the optional @scheme[#:source]
+argument, @scheme[redex-check] distributes its attempts across the left-hand sides
+of that metafunction/relation by using those patterns, rather than @scheme[pattern],
+as the basis of its generation. It is an error if any left-hand side generates a
+term that does not match @scheme[pattern].}
+
 @examples[
 #:eval redex-eval
        (define-language empty-lang)
@@ -1081,27 +1091,37 @@ these free @pattech[term]-variables by generating random terms matching
                                  (term (number_2 ...))))
                 (append (reverse (term (number_2 ...)))
                         (reverse (term (number_1 ...)))))
-        #:attempts 200)]
-
-@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
-random terms in its search. The size and complexity of terms it generates
-gradually increases with each failed attempt.
-
-When the optional @scheme[#:source] argument is present, @scheme[redex-check] 
-generates @math{10%} of its terms by randomly choosing a pattern from the
-left-hand sides the definition of the supplied metafunction or relation.
-@scheme[redex-check] raises an exception if a term generated from an alternate
-pattern does not match the @scheme[pattern].}
+        #:attempts 200)
+       
+       (let ([R (reduction-relation 
+                 empty-lang
+                 (--> (Σ) 0)
+                 (--> (Σ number) number)
+                 (--> (Σ number_1 number_2 number_3 ...)
+                      (Σ ,(+ (term number_1) (term number_2)) 
+                         number_3 ...)))])
+         (redex-check
+          empty-lang
+          (Σ number ...)
+          (printf "~s\n" (term (number ...)))
+          #:attempts 3
+          #:source R))]
 
 @defproc[(check-reduction-relation 
           [relation reduction-relation?]
           [property (-> any/c any/c)]
           [#:attempts attempts natural-number/c 100])
          void?]{
-Tests a @scheme[relation] as follows: for each case of @scheme[relation],
+Tests @scheme[relation] as follows: for each case of @scheme[relation],
 @scheme[check-reduction-relation] generates @scheme[attempts] random
 terms that match that case's left-hand side and applies @scheme[property] 
-to each random term.}
+to each random term.
+
+This function provides a more convenient notation for
+@schemeblock[(redex-check L any (property (term any)) 
+                          #:attempts (* n attempts)
+                          #:source relation)]
+when @scheme[relation] is a relation on @scheme[L] and has @scheme[n] rules.}
 
 @defform*[[(check-metafunction metafunction property)
            (check-metafunction metafunction property #:attempts attempts)]
