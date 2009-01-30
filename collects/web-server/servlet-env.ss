@@ -1,6 +1,6 @@
 ; Derived from plai/web/server, which was based on an older version of this
 ; Also derived from planet/untyped/instaservlet
-#lang scheme/base
+#lang scheme
 (require (prefix-in net: net/sendurl)
          scheme/contract
          scheme/list

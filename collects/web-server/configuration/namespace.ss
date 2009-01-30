@@ -1,6 +1,4 @@
-#lang scheme/base
-(require mzlib/list
-         scheme/contract)
+#lang scheme
 
 (define default-to-be-copied-module-specs '(mzscheme mred))
 

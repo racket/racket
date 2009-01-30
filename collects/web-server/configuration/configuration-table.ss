@@ -1,8 +1,7 @@
-#lang scheme/base
-(require mzlib/contract
-         mzlib/list
-         mzlib/pretty)
-(require "configuration-table-structs.ss"
+#lang scheme
+(require scheme/pretty
+         scheme/runtime-path
+         "configuration-table-structs.ss"
          web-server/http/bindings)
 (define configuration-table-sexpr? list?)
 
@@ -14,8 +13,9 @@
  [sexpr->configuration-table (configuration-table-sexpr? . -> . configuration-table?)]
  [default-configuration-table-path path?])
 
-(define default-configuration-table-path
-  (build-path (collection-path "web-server") "default-web-root" "configuration-table.ss"))
+(define-runtime-path default-configuration-table-path
+  (list 'lib
+        "web-server/default-web-root/configuration-table.ss"))
 
 (define (get-binding key bindings default)
   (first (get-binding* key bindings (list default))))

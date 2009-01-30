@@ -1,3 +1,4 @@
+#lang scheme
 ;; Written by Don Felgar, edited by Greg Pettyjohn
 ;;
 ;; Multiple-choice quiz PLT servlet sample.
@@ -11,11 +12,11 @@
 ;; choices = (listof string), possible answers to the question
 ;; correct-answer = integer, index into choices
 ;;
-#lang scheme/base
 ;; Configuration
-(define *data-file*
-  (build-path (collection-path "web-server")
-              "default-web-root" "htdocs" "servlets" "examples" "english-measure-questions.ss"))
+(require scheme/runtime-path)
+(define-runtime-path *data-file*
+  (list 'lib 
+        "web-server/default-web-root/htdocs/servlets/examples/english-measure-questions.ss"))
 (define *questions-per-quiz* 5)
 
 (require web-server/servlet
