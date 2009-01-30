@@ -426,7 +426,7 @@
 
   (define (pattern-commutes? p1 p2)
     (let ([result (not (pattern-intersects? p1 p2))])
-      (when result
+      (when #f ;; result
         (printf "commutes!\n    ~s\n  & ~s\n"
                 (syntax->datum (pattern-orig-stx p1))
                 (syntax->datum (pattern-orig-stx p2))))
