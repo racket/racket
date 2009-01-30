@@ -105,10 +105,18 @@
        (define blank (read-line))
        (define c:context (read-line))
        (define not-xexpr (read))
+       (when 
+           (or (ormap eof-object? 
+                    (list violator c:broke c:the c:contract contract-expr
+                          c:on contracted c:semi xml:msg blank c:context not-xexpr))
+               (not (andmap symbol=?
+                            (list 'broke 'the 'contract 'on '|;| 'Context:)
+                            (list c:broke c:the c:contract c:on c:semi c:context))))
+         (error 'parse-xexpr-error "Not Xexpr error"))
        (values violator contract-expr contracted xml:msg not-xexpr))))
 
 (define (reformat-xexpr-exn m)
-  (with-handlers (#;[exn? (lambda _ m)])
+  (with-handlers ([exn? (lambda _ m)])
     (define-values (violator contract-expr contracted xml:msg not-xexpr)
       (parse-xexpr-error m))
     `(span ,(format "~a broke the contract~n~a~non ~a;~a~n~nContext:~n"
