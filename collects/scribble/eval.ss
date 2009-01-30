@@ -93,11 +93,7 @@
                  ;; Error result case:
                  (map
                   (lambda (s)
-                    (list (make-flow (list (make-paragraph
-                                            (list
-                                             (hspace 2)
-                                             (span-class "schemeerror"
-                                                         (italic s))))))))
+                    (car (format-output s "schemeerror")))
                   (let sloop ([s (caar val-list+outputs)])
                      (if ((string-length s) . > . maxlen)
                          ;; break the error message into multiple lines:

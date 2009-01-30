@@ -222,7 +222,7 @@ returns a bitmap of the same size as this one, a grayscale version is
 included in the PNG file as the alpha channel.
 
 A monochrome bitmap saved as @scheme['png] without a mask bitmap
- produces a 1-bit grayscale PNG file (which , when read with
+ produces a 1-bit grayscale PNG file (which, when read with
  @method[bitmap% load-file], creates a monochrome @scheme[bitmap%]
  object.)
 

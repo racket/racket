@@ -607,7 +607,7 @@ on exit.}
 
 A @tech{custom function type} that is similar to @scheme[_ptr], except
 that it is used for converting lists to/from C vectors.  The optional
-@scheme[len] argument is needed for output values where it is used in
+@scheme[maybe-len] argument is needed for output values where it is used in
 the post code, and in the pre code of an output mode to allocate the
 block.  In either case, it can refer to a previous binding for the
 length of the list which the C function will most likely require.}
