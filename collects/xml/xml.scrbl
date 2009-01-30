@@ -359,9 +359,8 @@ used to store dictionaries of string--value associations.  This format
 is used by Mac OS X (both the operating system and its applications)
 to store all kinds of data.
 
-A @deftech{dictionary X-expression} is an @tech{X-expression} that
-could be create by an expression matching the following
-@scheme[_dict-expr] grammar:
+A @deftech{plist dictionary} is a value that could be created by an
+expression matching the following @scheme[_dict-expr] grammar:
 
 @schemegrammar*[
 #:literals (list)
@@ -376,16 +375,18 @@ could be create by an expression matching the following
           (list 'array pl-value ...)]
 ]
 
-@defproc[(read-plist [in input-port?]) xexpr/c]{
+@defproc[(plist-dict? [any/c v]) boolean?]{
 
-Reads a plist from a port, and produces a @tech{dictionary
-X-expression}.}
+Returns @scheme[#t] if @scheme[v] is a @tech{plist dictionary},
+@scheme[#f] otherwise.}
 
-@defproc[(write-plist [dict xexpr/c] [out output-port?]) void?]{
+@defproc[(read-plist [in input-port?]) plist-dict?]{
 
-Write a plist to the given port. If @scheme[dict] is not a
-@tech{dictionary X-expression}, the @scheme[exn:fail:contract]
-exception is raised.}
+Reads a plist from a port, and produces a @tech{plist dictionary}.}
+
+@defproc[(write-plist [dict plist-dict?] [out output-port?]) void?]{
+
+Write a @tech{plist dictionary} to the given port.}
 
 @examples[
 #:eval plist-eval

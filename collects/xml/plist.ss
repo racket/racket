@@ -15,6 +15,29 @@
    ;  an array : (list 'array value ...)
    ; (we're ignoring data & date)
 
+   (define (plist-dict? v)
+     (and (list? v)
+          (pair? v)
+          (eq? (car v) 'dict)
+          (andmap (lambda (v)
+                    (and (list? v)
+                         (= 3 (length v))
+                         (eq? (car v) 'assoc-pair)
+                         (string? (cadr v))
+                         (let pl-value? ([v (caddr v)])
+                           (or (string? v)
+                               (and (pair? v)
+                                    (case (car v)
+                                      [(true) (null? (cdr v))]
+                                      [(false) (null? (cdr v))]
+                                      [(integer) (and (= (length v) 2)
+                                                      (exact-integer? (cadr v)))]
+                                      [(real) (and (= (length v) 2)
+                                                   (real? (cadr v)))]
+                                      [(array) (andmap pl-value? (cdr v))]
+                                      [else (plist-dict? v)]))))))
+                  (cdr v))))
+
 
    ; raise-plist-exn : string mark-set xexpr symbol -> ???
    (define (raise-plist-exn tag mark-set xexpr type)
@@ -191,5 +214,5 @@
 
    ;; END OF TEST
 
-  (provide read-plist)
-  (provide/contract [write-plist (xexpr/c output-port? . -> . void?)]))
+  (provide plist-dict? read-plist)
+  (provide/contract [write-plist (plist-dict? output-port? . -> . void?)]))
