@@ -143,6 +143,10 @@
  (erase-log-directory-contents "Inhalt von Protokoll-Verzeichnisses ~a löschen?")
  (error-erasing-log-directory "Fehler beim Löschen des Protokoll-Verzeichnisses.\n\n~a\n")
 
+  ;; menu items connected to the logger
+  (show-log "&Log anzeigen")
+  (hide-log "&Log ausblenden")
+
  ;; modes
  (mode-submenu-label "Modi")
  (scheme-mode "Scheme-Modus")
@@ -619,10 +623,10 @@
  (prev-tab "Vorheriger Tab")
 
  (view-menu-label "&Anzeigen")
- (show-overview "Programm-Umriss einblenden") 
- (hide-overview "Programm-Umriss ausblenden")
- (show-module-browser "Modul-Browser einblenden")
- (hide-module-browser "Modul-Browser ausblenden")
+ (show-overview "&Programm-Umriss einblenden") 
+ (hide-overview "&Programm-Umriss ausblenden")
+ (show-module-browser "&Modul-Browser einblenden")
+ (hide-module-browser "&Modul-Browser ausblenden")
 
  (help-menu-label "&Hilfe")
  (about-info "Mehr über dieses Programm und seine Entstehung")
