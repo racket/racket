@@ -168,6 +168,11 @@ restriction is enforced).
                             (define later 5))))
 ]
 
+@scheme[make-module-evaluator] can be very convenient for testing
+module files: all you need to do is pass in a path value for the file
+name, and you get back an evaluator in the module's context which you
+can use with your favorite test facility.
+
 In all cases, the evaluator operates in an isolated and limited
 environment:
 @itemize[
@@ -189,6 +194,18 @@ environment too --- so, for example, if the memory that is required to
 create the sandbox is higher than the limit, then
 @scheme[make-evaluator] will fail with a memory limit exception.
 
+The sandboxed evironment is well isolated, and the evaluator function
+essentially sends it an expression and waits for a result.  This form
+of communication makes it impossible to have nested (or concurrent)
+calls to a single evaluator.  Usually this is not a problem, but in
+some cases you can get the evaluator function available inside the
+sandboxed code, for example:
+@schemeblock[
+(let ([e (make-evaluator 'scheme/base)])
+  (e (,e 1)))
+]
+An error will be signalled in such cases.
+
 Evaluation can also be instrumented to track coverage information when
 @scheme[sandbox-coverage-enabled] is set. Exceptions (both syntax and
 run-time) are propagated as usual to the caller of the evaluation
@@ -203,8 +220,7 @@ that you can easily start a sandboxed read-eval-print-loop.  For
 example, here is a quick implementation of a networked REPL:
 
 @schemeblock[
-(define e
-  (make-module-evaluator '(module m scheme/base)))
+(define e (make-evaluator 'scheme/base))
 (let-values ([(i o) (tcp-accept (tcp-listen 9999))])
   (parameterize ([current-input-port  i]
                  [current-output-port o]
