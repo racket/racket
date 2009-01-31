@@ -7,19 +7,15 @@
          scheme/unit
          net/tcp-unit
          net/tcp-sig
+         scheme/runtime-path
          net/ssl-tcp-unit)
 (require web-server/web-server
          web-server/managers/lru
          web-server/managers/manager
-         web-server/private/servlet
          web-server/configuration/namespace
-         web-server/private/cache-table
          web-server/http
-         web-server/private/util
          web-server/configuration/responders
-         web-server/dispatchers/dispatch
          web-server/private/mime-types
-         web-server/configuration/configuration-table
          web-server/servlet/setup
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)
@@ -40,6 +36,10 @@
             (body (div ([class "section"])
                     (div ([class "title"]) "Server Stopped")
                     (p "Return to DrScheme.")))))))
+
+(define-runtime-path default-web-root
+  (list 'lib
+        "web-server/default-web-root"))
 
 (provide/contract
  [serve/servlet (((request? . -> . response/c))
@@ -110,7 +110,7 @@
          #:servlet-namespace
          [servlet-namespace empty]
          #:server-root-path
-         [server-root-path (directory-part default-configuration-table-path)]
+         [server-root-path default-web-root]
          #:extra-files-paths
          [extra-files-paths (list (build-path server-root-path "htdocs"))]
          #:servlets-root
@@ -125,9 +125,7 @@
          [mime-types-path (let ([p (build-path server-root-path "mime.types")])
                             (if (file-exists? p)
                               p
-                              (build-path
-                               (directory-part default-configuration-table-path)
-                               "mime.types")))]
+                              (build-path default-web-root "mime.types")))]
 
          #:log-file
          [log-file #f]
