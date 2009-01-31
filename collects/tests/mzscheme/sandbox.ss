@@ -149,6 +149,10 @@
    --top-- (make-base-evaluator!) (kill-evaluator ev)
    --eval-- 123 =err> "terminated .evaluator-killed.$"
 
+   ;; nested calls are forbidden
+   --top-- (make-base-evaluator!)
+   --eval-- (,ev 1) =err> "nested evaluator call"
+
    ;; eval-limits apply to the sandbox creation too
    --top--
    (parameterize ([sandbox-eval-limits '(0.25 5)])
