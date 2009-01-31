@@ -472,12 +472,12 @@
   (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (let ([v/c (unbox #,loc)])
+          (quote-syntax (let ([v/c ((car #,loc))])
                           (contract #,ctc (car v/c) (cdr v/c)
                                     (current-contract-region)
                                     #,(id->contract-src-info var)))))
         (quasisyntax/loc (error-syntax)
-          (quote-syntax (unbox #,loc)))))
+          (quote-syntax ((car #,loc))))))
   
   ;; build-unit : syntax-object -> 
   ;;             (values syntax-object (listof identifier) (listof identifier))
@@ -557,7 +557,10 @@
                (list (cons 'dept depr) ...)
                (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                  (lambda ()
-                   (let ([eloc (box undefined)] ... ...)
+                   (let ([eloc (let ([loc (box undefined)])
+                                 (cons
+                                  (λ () (unbox loc))
+                                  (λ (v) (set-box! loc v))))] ... ...)
                      (values 
                       (lambda (import-table)
                         (let-values ([(iloc ...)
@@ -731,12 +734,12 @@
                                                                                         (current-contract-region)
                                                                                         'cant-happen
                                                                                         #,(id->contract-src-info id))
-                                                                              (set-box! #,export-loc 
-                                                                                        (let ([#,id #,tmp])
-                                                                                          (cons #,id (current-contract-region))))))
+                                                                              ((cdr #,export-loc) 
+                                                                               (let ([#,id #,tmp])
+                                                                                 (cons #,id (current-contract-region))))))
                                                                           (quasisyntax/loc defn-or-expr
-                                                                            (set-box! #,export-loc 
-                                                                                      (let ([#,id #,tmp]) #,id))))
+                                                                            ((cdr #,export-loc) 
+                                                                             (let ([#,id #,tmp]) #,id))))
                                                                       (quasisyntax/loc defn-or-expr
                                                                         (define-syntax #,id 
                                                                           (make-id-mapper (quote-syntax #,tmp)))))))]
@@ -776,12 +779,6 @@
                       (lambda (target-sig)
                         (map
                          (lambda (target-int/ext-name target-ctc)
-                           (when target-ctc
-                             (raise-stx-err
-                              (format (if import?
-                                          "identifier ~a is contracted in old imports"
-                                          "identifier ~a is contracted in new exports")
-                                      (syntax-e (car target-int/ext-name)))))
                            (let ([vref/ctc
                                   (bound-identifier-mapping-get
                                    def-table
@@ -792,13 +789,26 @@
                                                   "identifier ~a is not present in new imports"
                                                   "identifier ~a is not present in old exports")
                                               (syntax-e (car target-int/ext-name))))))])
-                             (when (cdr vref/ctc)
-                               (raise-stx-err
-                                (format (if import?
-                                            "identifier ~a is contracted in new imports"
-                                            "identifier ~a is contracted in old exports")
-                                        (syntax-e (car target-int/ext-name)))))
-                             (car vref/ctc)))
+                             (let ([old-cl (car vref/ctc)])
+                               #`(cons
+                                  (λ ()
+                                    (let ([old-v #,(if (cdr vref/ctc)
+                                                       #`(let ([old-v/c ((car #,old-cl))])
+                                                           (contract #,(cdr vref/ctc) (car old-v/c) 
+                                                                     (cdr old-v/c) (current-contract-region)
+                                                                     #,(id->contract-src-info (car target-int/ext-name))))
+                                                       #`((car #,old-cl)))])
+                                      #,(if target-ctc
+                                            #'(cons old-v (current-contract-region))
+                                            #'old-v)))
+                                  (λ (v) (let ([new-v #,(if (cdr vref/ctc)
+                                                            #`(contract #,(cdr vref/ctc) (car v)
+                                                                        (current-contract-region) (cdr v)
+                                                                        #,(id->contract-src-info (car target-int/ext-name)))
+                                                            #'v)])
+                                           #,(if target-ctc
+                                                 #`((cdr #,old-cl) (cons new-v (current-contract-region)))
+                                                 #`((cdr #,old-cl) new-v))))))))
                          (car target-sig)
                          (cadddr target-sig)))
                       target-import-sigs))
@@ -902,19 +912,20 @@
                    (vector-immutable (cons 'export-name 
                                            (vector-immutable export-key ...)) ...)
                    (list (cons 'dept depr) ...)
-                   (lambda ()
-                     (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
-                       (values (lambda (import-table)
-                                 (unit-fn #,(redirect-imports #'import-table
-                                                              import-tagged-infos
-                                                              import-sigs
-                                                              orig-import-tagged-infos
-                                                              orig-import-sigs)))
-                               #,(redirect-exports #'export-table
-                                                   orig-export-tagged-infos
-                                                   orig-export-sigs
-                                                   export-tagged-infos
-                                                   export-sigs)))))))
+                   (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
+                     (lambda ()
+                       (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
+                         (values (lambda (import-table)
+                                   (unit-fn #,(redirect-imports #'import-table
+                                                                import-tagged-infos
+                                                                import-sigs
+                                                                orig-import-tagged-infos
+                                                                orig-import-sigs)))
+                                 #,(redirect-exports #'export-table
+                                                     orig-export-tagged-infos
+                                                     orig-export-sigs
+                                                     export-tagged-infos
+                                                     export-sigs))))))))
               import-tagged-sigids
               export-tagged-sigids
               dep-tagged-sigids)))))))
@@ -1238,11 +1249,11 @@
                            (map 
                             (lambda (i v c)
                               (if c
-                                  #`(let ([v/c (unbox (vector-ref #,ov #,i))])
+                                  #`(let ([v/c ((car (vector-ref #,ov #,i)))])
                                       (contract #,c (car v/c) (cdr v/c)
                                                 (current-contract-region)
                                                 #,(id->contract-src-info v)))
-                                  #`(unbox (vector-ref #,ov #,i))))
+                                  #`((car (vector-ref #,ov #,i)))))
                             (iota (length (car os)))
                             (map car (car os))
                             (cadddr os)))
