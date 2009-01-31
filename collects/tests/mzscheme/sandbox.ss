@@ -153,7 +153,7 @@
                                    '(define a (for/list ([i (in-range 10)])
                                                 (collect-garbage)
                                                 (make-bytes 500000))))))
-        =err> "out of memory"))
+        =err> "out of memor(?:y)"))
 
    ;; i/o
    --top--
@@ -496,7 +496,7 @@
            (collect-garbage)
            ;; increases size of the current evaluation
            (cons (make-bytes 500000) v)))
-        =err> "out of memory"
+        =err> "out of memo(?:ry)"
         b => 1))
 
    ))
