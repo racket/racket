@@ -439,47 +439,33 @@
    ;; works fine first try it without limits (limits imply a nested
    ;; thread/custodian)
    --top--
-   (set! ev (make-evaluator 'scheme/base))
-   --eval--
-   (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
-   --top--
-   (set! ev (make-evaluator 'scheme/base))
-   --eval--
-   (custodian-shutdown-all (current-custodian))
-     =err> "terminated .custodian-shutdown.$"
-   --top--
-   (set! ev (make-evaluator 'scheme/base))
-   --eval--
-   (exit) =err> "terminated .exited.$"
-   --top--
-   ;; also happens when it's done directly
-   (set! ev (make-evaluator 'scheme/base))
-   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
-     =err> "terminated .thread-killed.$"
-   (set! ev (make-evaluator 'scheme/base))
-   (call-in-sandbox-context ev
-     (lambda () (custodian-shutdown-all (current-custodian))))
-     =err> "terminated .custodian-shutdown.$"
-   (set! ev (make-evaluator 'scheme/base))
-   (call-in-sandbox-context ev exit) =err> "terminated .exited.$"
-   --top--
-   ;; now make sure it works with per-expression limits too
-   (set! ev (make-evaluator 'scheme/base))
-   --eval--
-   (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
-   --top--
-   (set! ev (make-evaluator 'scheme/base))
-   --eval--
-   (custodian-shutdown-all (current-custodian))
-   =err> "terminated .custodian-shutdown.$"
-   --top--
-   (set! ev (make-evaluator 'scheme/base))
-   (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
-   =err> "terminated .thread-killed.$"
-   (set! ev (make-evaluator 'scheme/base))
-   (call-in-sandbox-context ev
-     (lambda () (custodian-shutdown-all (current-custodian))))
-   =err> "terminated .custodian-shutdown.$"
+   (let ()
+     (define (make!) (set! ev (make-evaluator 'scheme/base)))
+     (define (3x2-terminations)
+       (t --top-- (make!) --eval--
+          (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
+          --top-- (make!) --eval--
+          (custodian-shutdown-all (current-custodian))
+          =err> "terminated .custodian-shutdown.$"
+          --top-- (make!) --eval--
+          (exit) =err> "terminated .exited.$"
+          ;; now test that it's fine when called directly
+          --top--
+          (make!)
+          (call-in-sandbox-context ev
+            (lambda () (kill-thread (current-thread))))
+          =err> "terminated .thread-killed.$"
+          (make!)
+          (call-in-sandbox-context ev
+            (lambda () (custodian-shutdown-all (current-custodian))))
+          =err> "terminated .custodian-shutdown.$"
+          (make!)
+          (call-in-sandbox-context ev exit) =err> "terminated .exited.$"))
+     (define (test-terminations)
+       ;; try without, then with per-expression limits
+       (parameterize ([sandbox-eval-limits #f]) (3x2-terminations))
+       (3x2-terminations))
+     (test-terminations))
 
    ;; when an expression is out of memory, the sandbox should stay alive
    --top--
