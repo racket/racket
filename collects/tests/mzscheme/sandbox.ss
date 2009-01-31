@@ -435,30 +435,33 @@
      ;; can go arbitrarily high here
      (for ([i (in-range 20)]) (t)))
 
-   ;; test that killing the custodian works fine
-   ;; first try it without limits (limits imply a nested thread/custodian)
+   ;; test that killing the thread, shutting the custodian, or calling `exit'
+   ;; works fine first try it without limits (limits imply a nested
+   ;; thread/custodian)
    --top--
-   (set! ev (parameterize ([sandbox-eval-limits #f])
-              (make-evaluator 'scheme/base)))
+   (set! ev (make-evaluator 'scheme/base))
    --eval--
    (kill-thread (current-thread)) =err> "terminated .thread-killed.$"
    --top--
-   (set! ev (parameterize ([sandbox-eval-limits #f])
-              (make-evaluator 'scheme/base)))
+   (set! ev (make-evaluator 'scheme/base))
    --eval--
    (custodian-shutdown-all (current-custodian))
-   =err> "terminated .custodian-shutdown.$"
+     =err> "terminated .custodian-shutdown.$"
+   --top--
+   (set! ev (make-evaluator 'scheme/base))
+   --eval--
+   (exit) =err> "terminated .exited.$"
    --top--
    ;; also happens when it's done directly
-   (set! ev (parameterize ([sandbox-eval-limits #f])
-              (make-evaluator 'scheme/base)))
+   (set! ev (make-evaluator 'scheme/base))
    (call-in-sandbox-context ev (lambda () (kill-thread (current-thread))))
-   =err> "terminated .thread-killed.$"
-   (set! ev (parameterize ([sandbox-eval-limits #f])
-              (make-evaluator 'scheme/base)))
+     =err> "terminated .thread-killed.$"
+   (set! ev (make-evaluator 'scheme/base))
    (call-in-sandbox-context ev
      (lambda () (custodian-shutdown-all (current-custodian))))
-   =err> "terminated .custodian-shutdown.$"
+     =err> "terminated .custodian-shutdown.$"
+   (set! ev (make-evaluator 'scheme/base))
+   (call-in-sandbox-context ev exit) =err> "terminated .exited.$"
    --top--
    ;; now make sure it works with per-expression limits too
    (set! ev (make-evaluator 'scheme/base))
