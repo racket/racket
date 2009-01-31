@@ -702,15 +702,18 @@
     ;; limits (since then you get a different thread, which is already dead).
     (when (and user-thread (thread-dead? user-thread))
       (terminate+kill! #t #t))
-    (cond
-      [terminated? => raise]
-      [(not user-thread) (error 'sandbox "internal error (user-thread is #f)")]
-      [else
-       (channel-put input-ch expr)
-       (let ([r (get-user-result)])
-         (cond [(eof-object? r) (terminate+kill! #t #t)]
-               [(eq? (car r) 'exn) (raise (cdr r))]
-               [else (apply values (cdr r))]))]))
+    (cond [terminated? => raise]
+          [(not user-thread)
+           (error 'sandbox "internal error (user-thread is #f)")]
+          ;; try to put the expression in, but if can't then it means that the
+          ;; evaluator is calling itself -- there is no simple way to make this
+          ;; work, so throw an error
+          [(not (sync/timeout 0 (channel-put-evt input-ch expr)))
+           (error 'evaluator "nested evaluator call with: ~e" expr)]
+          [else (let ([r (get-user-result)])
+                  (cond [(eof-object? r) (terminate+kill! #t #t)]
+                        [(eq? (car r) 'exn) (raise (cdr r))]
+                        [else (apply values (cdr r))]))]))
   (define get-uncovered
     (case-lambda
      [() (get-uncovered #t)]
