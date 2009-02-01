@@ -1394,9 +1394,10 @@
                 (define all-tags (cons TYPE-tag super-tags))
                 (define _TYPE*
                   ;; c->scheme adjusts all tags
-                  (let* ([t (_cpointer TYPE-tag (make-cstruct-type types))]
+                  (let* ([cst (make-cstruct-type types)]
+                         [t (_cpointer TYPE-tag cst)]
                          [c->s (ctype-c->scheme t)])
-                    (make-ctype (ctype-basetype t) (ctype-scheme->c t)
+                    (make-ctype cst (ctype-scheme->c t)
                       ;; hack: modify & reuse the procedure made by _cpointer
                       (lambda (p)
                         (if p (set-cpointer-tag! p all-tags) (c->s p))
