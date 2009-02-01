@@ -117,7 +117,7 @@ appropriate.  For example, on a little-endian machine:
 > (define block (malloc _int 5))
 > (ptr-set! block _int 0 196353)
 > (map (lambda (i) (ptr-ref block _byte i)) '(0 1 2 3))
-@,(schemeresultfont "(1 255 2 0)")
+@ #,(schemeresultfont "(1 255 2 0)")
 ]
 
 In addition, @scheme[ptr-ref] and @scheme[ptr-set!] cannot detect when
