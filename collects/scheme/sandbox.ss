@@ -708,7 +708,11 @@
           ;; try to put the expression in, but if can't then it means that the
           ;; evaluator is calling itself -- there is no simple way to make this
           ;; work, so throw an error
-          [(not (sync/timeout 0 (channel-put-evt input-ch expr)))
+          ;; FIXME: the commented-out part creates a race, because the evaluator
+          ;;  thread might not be waiting on input-ch, yet; it might be
+          ;;  in between sending the previous result and waiting for the
+          ;;  next expression
+          [(not (sync #|/timeout 0|# (channel-put-evt input-ch expr)))
            (error 'evaluator "nested evaluator call with: ~e" expr)]
           [else (let ([r (get-user-result)])
                   (cond [(eof-object? r) (terminate+kill! #t #t)]
