@@ -84,9 +84,12 @@
   (list web-server/private/servlet:module-path
         web-server/http:module-path))
 
+(define-runtime-module-path web-server/servlet/web:module-path web-server/servlet/web)
+(define-runtime-module-path web-server/servlet/web-cells:module-path web-server/servlet/web-cells)
 (define servlet-module-specs
-  '(web-server/servlet/web
-    web-server/servlet/web-cells))
+  (list 'web-server/servlet/web
+        #;web-server/servlet/web:module-path ; XXX Enabling results in error
+        web-server/servlet/web-cells:module-path))
 (define lang-module-specs
   '(web-server/lang/web-cells
     web-server/lang/abort-resume))
