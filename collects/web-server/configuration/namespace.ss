@@ -36,12 +36,12 @@
 
 (define make-servlet-namespace/c
   (->* ()
-       (#:additional-specs (listof module-path?))
+       (#:additional-specs (listof (or/c resolved-module-path? module-path?)))
        namespace?))
 
 (provide/contract
  [make-servlet-namespace/c contract?]
  [make-make-servlet-namespace 
   (->* ()
-       (#:to-be-copied-module-specs (listof module-path?))
+       (#:to-be-copied-module-specs (listof (or/c resolved-module-path? module-path?)))
        make-servlet-namespace/c)])
