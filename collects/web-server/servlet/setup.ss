@@ -79,9 +79,10 @@
 
 (require scheme/runtime-path)
 (define-runtime-module-path web-server/private/servlet:module-path web-server/private/servlet)
+(define-runtime-module-path web-server/http:module-path web-server/http)
 (define common-module-specs
   (list web-server/private/servlet:module-path
-        'web-server/http))
+        web-server/http:module-path))
 
 (define servlet-module-specs
   '(web-server/servlet/web
