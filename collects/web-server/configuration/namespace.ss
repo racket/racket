@@ -19,7 +19,7 @@
     (define new-namespace (make-base-empty-namespace))
     (define additional-names (map get-name additional-specs))
     (parameterize ([current-namespace new-namespace])
-      (namespace-require 'scheme)
+      (namespace-require 'scheme/base)
       (for-each (lambda (name)
                   (with-handlers ([exn? void])
                     (when name
