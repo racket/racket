@@ -1,6 +1,10 @@
 #lang scheme
+(require scheme/runtime-path)
 
-(define default-to-be-copied-module-specs '(mzscheme mred))
+(define mzscheme-module-spec 'mzscheme)
+(define mred-module-spec 'mred)
+
+(define default-to-be-copied-module-specs (list mzscheme-module-spec mred-module-spec))
 
 (define (make-make-servlet-namespace
          #:to-be-copied-module-specs [to-be-copied-module-specs empty])    
@@ -19,7 +23,8 @@
     (define new-namespace (make-base-empty-namespace))
     (define additional-names (map get-name additional-specs))
     (parameterize ([current-namespace new-namespace])
-      (namespace-require 'scheme/base)
+      (define scheme/base-module-spec 'scheme/base)
+      (namespace-require scheme/base-module-spec)
       (for-each (lambda (name)
                   (with-handlers ([exn? void])
                     (when name
