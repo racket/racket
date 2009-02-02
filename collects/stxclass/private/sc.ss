@@ -3,8 +3,9 @@
 (require (for-syntax scheme/base
                      scheme/match
                      scheme/private/sc
+                     "rep-data.ss"
                      "rep.ss"
-                     "parse.ss"
+                     "codegen.ss"
                      "../util.ss")
          scheme/match
          syntax/stx

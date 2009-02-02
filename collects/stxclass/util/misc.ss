@@ -10,6 +10,8 @@
          generate-temporary
          generate-n-temporaries
 
+         format-symbol
+
          chunk-kw-seq/no-dups
          chunk-kw-seq
          reject-duplicate-chunks
@@ -41,6 +43,11 @@
    (for/list ([i (in-range n)])
      (string->symbol (format "g~sx" i)))))
 
+;; Symbol Formatting
+
+(define (format-symbol fmt . args)
+  (let ([args (for/list ([arg args]) (if (syntax? arg) (syntax->datum arg) arg))])
+    (string->symbol (apply format fmt args))))
 
 ;; Parsing keyword arguments
 

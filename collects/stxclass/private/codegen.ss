@@ -9,6 +9,7 @@
          scheme/private/sc
          syntax/stx
          syntax/boundmap
+         "rep-data.ss"
          "rep.ss"
          "codegen-data.ss"
          "../util.ss")

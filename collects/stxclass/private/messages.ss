@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (for-syntax scheme/base "rep.ss")
+(require (for-syntax scheme/base "rep-data.ss")
          scheme/match)
 (provide (for-syntax expectation-of-stxclass
                      expectation-of-constants)
