@@ -1,8 +1,7 @@
-#lang scheme/base
-(require mzlib/contract
-         mzlib/list
-         net/url)
-(require web-server/http/response-structs
+#lang scheme
+(require scheme/runtime-path
+         net/url
+         web-server/http/response-structs
          web-server/private/xexpr
          web-server/http/request-structs)
 
@@ -19,6 +18,10 @@
                             (srcloc-column (cdr item))
                             (srcloc-source (cdr item)))
                     "<unknown location>")))))
+
+(define-runtime-path default-error-style-sheet
+  (list 'lib
+        "web-server/default-web-root/htdocs/error.css"))
 
 (define (pretty-exception-response url exn)
   `(html
@@ -111,7 +114,7 @@
     (lambda (in) (read-string (file-size path) in))))
 
 (provide/contract
- [file-response ((natural-number/c string? path-string?) (listof header?) . ->* . (response/c))]
+ [file-response ((natural-number/c string? path-string?) () #:rest (listof header?) . ->* . response/c)]
  [servlet-loading-responder (url? exn? . -> . response/c)]
  [gen-servlet-not-found (path-string? . -> . (url? . -> . response/c))]
  [servlet-error-responder (url? exn? . -> . response/c)]
