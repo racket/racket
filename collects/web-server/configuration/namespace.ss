@@ -1,8 +1,8 @@
 #lang scheme
 (require scheme/runtime-path)
 
-(define mzscheme-module-spec 'mzscheme)
-(define mred-module-spec 'mred)
+(define-runtime-module-path mzscheme-module-spec mzscheme)
+(define-runtime-module-path mred-module-spec mred)
 
 (define default-to-be-copied-module-specs (list mzscheme-module-spec mred-module-spec))
 
