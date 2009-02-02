@@ -77,9 +77,11 @@
     (set-servlet-handler! ses (initialize-servlet start)))
   ses)
 
+(require scheme/runtime-path)
+(define-runtime-module-path web-server/private/servlet:module-path web-server/private/servlet)
 (define common-module-specs
-  '(web-server/private/servlet
-    web-server/http))
+  (list web-server/private/servlet:module-path
+        'web-server/http))
 
 (define servlet-module-specs
   '(web-server/servlet/web
@@ -95,7 +97,7 @@
  [make-v1.servlet (path-string? integer? (request? . -> . response/c) . -> . servlet?)]
  [make-v2.servlet (path-string? manager? (request? . -> . response/c) . -> . servlet?)]
  [make-stateless.servlet (path-string? (request? . -> . response/c) . -> . servlet?)]
- [default-module-specs (listof module-path?)])
+ [default-module-specs (listof (or/c resolved-module-path? module-path?))])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
                                     #:timeouts-default-servlet [timeouts-default-servlet 30])
