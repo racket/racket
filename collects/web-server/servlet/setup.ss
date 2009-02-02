@@ -92,8 +92,10 @@
         web-server/servlet/web-cells:module-path))
 
 (define-runtime-module-path web-server/lang/web-cells:module-path web-server/lang/web-cells)
+(define-runtime-module-path web-server/lang/abort-resume:module-path web-server/lang/abort-resume)
 (define lang-module-specs
   (list web-server/lang/web-cells:module-path 
+        #;web-server/lang/abort-resume:module-path ; XXX Enabling results in error
         'web-server/lang/abort-resume))
 (define default-module-specs
   (append common-module-specs
