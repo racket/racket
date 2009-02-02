@@ -6,6 +6,8 @@
 
 (define default-to-be-copied-module-specs (list mzscheme-module-spec mred-module-spec))
 
+(define-runtime-module-path scheme/base-module-spec scheme/base)
+
 (define (make-make-servlet-namespace
          #:to-be-copied-module-specs [to-be-copied-module-specs empty])    
   ;; get the names of those modules.
@@ -23,7 +25,6 @@
     (define new-namespace (make-base-empty-namespace))
     (define additional-names (map get-name additional-specs))
     (parameterize ([current-namespace new-namespace])
-      (define scheme/base-module-spec 'scheme/base)
       (namespace-require scheme/base-module-spec)
       (for-each (lambda (name)
                   (with-handlers ([exn? void])
