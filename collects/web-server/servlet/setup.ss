@@ -90,9 +90,11 @@
   (list 'web-server/servlet/web
         #;web-server/servlet/web:module-path ; XXX Enabling results in error
         web-server/servlet/web-cells:module-path))
+
+(define-runtime-module-path web-server/lang/web-cells:module-path web-server/lang/web-cells)
 (define lang-module-specs
-  '(web-server/lang/web-cells
-    web-server/lang/abort-resume))
+  (list web-server/lang/web-cells:module-path 
+        'web-server/lang/abort-resume))
 (define default-module-specs
   (append common-module-specs
           servlet-module-specs
