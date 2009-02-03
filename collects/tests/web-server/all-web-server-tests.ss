@@ -5,6 +5,7 @@
          "lang/all-lang-tests.ss"
          "lang-test.ss"
          "managers/all-managers-tests.ss"
+         "http/all-http-tests.ss"
          "private/all-private-tests.ss"
          "servlet/all-servlet-tests.ss"
          "servlet-env-test.ss")
@@ -13,6 +14,7 @@
 (define all-web-server-tests  
   (test-suite
    "Web Server"
+   all-http-tests
    all-configuration-tests
    all-dispatchers-tests
    all-lang-tests

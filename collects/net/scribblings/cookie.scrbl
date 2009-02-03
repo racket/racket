@@ -21,6 +21,10 @@ utilities for using cookies as specified in RFC 2109 @cite["RFC2109"].}
 Returns @scheme[#t] if @scheme[v] represents a cookie, @scheme[#f]
 otherwise.}
 
+@defproc[(valid-domain? [v any/c]) boolean?]{
+ Returns @scheme[#t] if @scheme[v] represents a valid domain, @scheme[#f] otherwise.
+}
+
 @defproc[(set-cookie [name string?] [value string?]) cookie?]{
 
 Creates a new cookie, with default values for required fields.}
@@ -31,7 +35,7 @@ Creates a new cookie, with default values for required fields.}
 Modifies @scheme[cookie] with a comment, and also returns
 @scheme[cookie].}
 
-@defproc[(cookie:add-domain [cookie cookie?] [domain string?])
+@defproc[(cookie:add-domain [cookie cookie?] [domain valid-domain?])
          cookie?]{
 
 Modifies @scheme[cookie] with a domain, and also returns
@@ -45,7 +49,7 @@ Modifies @scheme[cookie] with a maximum age, and also returns
 @scheme[cookie]. The @scheme[seconds] argument is number of seconds
 that a client should retain the cookie.}
 
-@defproc[(cookie:add-path [cookie cookie?] [path string?])
+@defproc[(cookie:add-path [cookie cookie?] [path valid-path?])
          cookie?]{
 
 Modifies @scheme[cookie] with a path, and also returns
@@ -121,7 +125,7 @@ and to use with the PLT Web Server, use:
 
 @schemeblock[
   (make-response/full code message (current-seconds) mime
-                      `((Set-Cookie . ,(print-cookie c)))
+                      (list (make-header #"Set-Cookie" (string->bytes/utf-8 (print-cookie c))))
                       body)
 ]
 

@@ -11,10 +11,10 @@
 (define see-other (make-redirection-status 303 #"See Other"))
 
 ; : str [redirection-status] -> response
-(define(redirect-to 
-        uri
-        [perm/temp temporarily]
-        #:headers [headers (list)])
+(define (redirect-to 
+         uri
+         [perm/temp temporarily]
+         #:headers [headers (list)])
   (make-response/full (redirection-status-code perm/temp)
                       (redirection-status-message perm/temp)
                       (current-seconds) #"text/html"

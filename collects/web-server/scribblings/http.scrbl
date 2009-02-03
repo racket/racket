@@ -237,6 +237,113 @@ transmission that the server @bold{will not catch}.}
 }
 
 @; ------------------------------------------------------------
+@section[#:tag "cookie"]{Placing Cookies}
+
+@(require (for-label net/cookie
+                     web-server/servlet
+                     web-server/http/redirect
+                     web-server/http/request-structs
+                     web-server/http/response-structs
+                     web-server/http/cookie))
+
+@defmodule[web-server/http/cookie]{
+ This module provides functions to create cookies and responses that set them.
+      
+ @defproc[(make-cookie [name string?] [value string?]
+                       [#:comment comment (or/c false/c string?) #f]
+                       [#:domain domain (or/c false/c valid-domain?) #f]
+                       [#:max-age max-age (or/c false/c exact-nonnegative-integer?) #f]
+                       [#:path path (or/c false/c string?) #f]
+                       [#:secure? secure? (or/c false/c boolean?) #f])
+          cookie?]{
+  Constructs a cookie with the appropriate fields.
+ }
+ 
+ @defproc[(cookie->header [c cookie?]) header?]{
+  Constructs a header that sets the cookie.
+ }             
+                  
+ @defproc[(xexpr-response/cookies [cookies (listof cookie?)]
+                                  [xexpr xexpr/c])
+          response/full?]{
+  Constructs a response using @scheme[xexpr] that sets all the cookies in @scheme[cookies].
+ }
+                         
+ Examples:
+ @schemeblock[
+  (define time-cookie 
+    (make-cookie "time" (number->string (current-seconds))))
+  (define id-cookie
+    (make-cookie "id" "joseph" #:secure? #t))
+  
+  (redirect-to 
+   "http://localhost/logged-in"
+   see-other
+   #:headers 
+   (map cookie->header
+        (list time-cookie id-cookie)))
+  
+  (send/suspend
+    (lambda (k-url)
+      (xexpr-response/cookies
+       (list time-cookie id-cookie)
+       `(html (head (title "Cookie Example"))
+              (body (h1 "You're cookie'd!"))))))
+ ]
+ 
+ @warning{When using cookies, make sure you follow the advice of the @link["http://cookies.lcs.mit.edu/"]{MIT Cookie Eaters},
+          or you will be susceptible to dangerous attacks.} 
+}                                  
+
+@; ------------------------------------------------------------
+@section[#:tag "cookie-parse"]{Extracting Cookies}
+
+@(require (for-label web-server/http/cookie-parse
+                     net/cookie
+                     net/url
+                     scheme/list))
+@defmodule[web-server/http/cookie-parse]{
+ @defstruct[client-cookie 
+            ([name string?]
+             [value string?]
+             [domain (or/c false/c valid-domain?)]
+             [path (or/c false/c string?)])]{
+                              
+  While server cookies are represented with @scheme[cookie?]s, cookies that come from the client are represented
+  with a @scheme[client-cookie] structure.                              
+ }
+ 
+ @defproc[(request-cookies [req request?])
+          (listof client-cookie?)]{
+  Extracts the cookies from @scheme[req]'s headers.
+ }
+
+ Examples:
+ @schemeblock[
+  (define (start req)
+    (define cookies (request-cookies req))
+    (define id-cookie 
+      (findf (lambda (c)
+               (string=? "id" (client-cookie-name c)))
+             cookies))
+    (if id-cookie
+        (hello (client-cookie-value id-cookie))
+        (redirect-to 
+         (url->string (request-uri req))
+         see-other
+         #:headers 
+         (list
+          (cookie->header (make-cookie "id" "joseph"))))))
+        
+   (define (hello who)
+     `(html (head (title "Hello!"))
+            (body 
+             (h1 "Hello " 
+                 ,who))))
+ ]
+}
+
+@; ------------------------------------------------------------
 @section[#:tag "redirect.ss"]{Redirect}
 @(require (for-label web-server/http/redirect))
 

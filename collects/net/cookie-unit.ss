@@ -177,12 +177,12 @@
 (define (get-all-results name cookies)
   (let loop ([c cookies])
     (if (null? c)
-      '()
-      (let ([pair (car c)])
-        (if (string=? name (car pair))
-          ;; found an instance of cookie named `name'
-          (cons (cadr pair) (loop (cdr c)))
-          (loop (cdr c)))))))
+        '()
+        (let ([pair (car c)])
+          (if (string=? name (car pair))
+              ;; found an instance of cookie named `name'
+              (cons (cadr pair) (loop (cdr c)))
+              (loop (cdr c)))))))
 
 ;; which typically looks like:
 ;;   (cookie . "test5=\"5\"; test1=\"1\"; test0=\"0\"; test1=\"20\"")
@@ -274,11 +274,11 @@
   (cond
     [(not (string? s))
      (error* "expected string, given: ~e" s)]
-
+    
     ;; for backwards compatibility, just use the given string if it will work
     [(rfc2068:token? s) s]
     [(rfc2068:quoted-string? s) s]
-
+    
     ;; ... but if it doesn't work (i.e., it's just a normal message) then try
     ;; to convert it into a representation that will work
     [(rfc2068:quoted-string? (convert-to-quoted s))
@@ -298,9 +298,9 @@
   (unless (string? s)
     (error* "string expected, received: ~a" s))
   (if value?
-    (rfc2109:value? s)
-    ;; name:  token
-    (rfc2068:token? s)))
+      (rfc2109:value? s)
+      ;; name:  token
+      (rfc2068:token? s)))
 
 ;; Host names as per RFC 1123 and RFC952, more or less, anyway. :-)
 (define char-set:hostname
@@ -311,11 +311,12 @@
      #\.)))
 
 (define (valid-domain? dom)
-  (and ;; Domain must start with a dot (.)
-   (string=? (string-take dom 1) ".")
-   ;; The rest are tokens-like strings separated by dots
-   (string-every char-set:hostname dom)
-   (<= (string-length dom) 76)))
+  (and (string? dom)
+       ;; Domain must start with a dot (.)
+       (string=? (string-take dom 1) ".")
+       ;; The rest are tokens-like strings separated by dots
+       (string-every char-set:hostname dom)
+       (<= (string-length dom) 76)))
 
 (define (valid-path? v)
   (and (string? v) (rfc2109:value? v)))
