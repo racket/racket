@@ -14,4 +14,4 @@ obj test(t, a, b){
 }
 
 var x = 3;
-test("x = 3", x, 4);
+test("x = 3", x, 3);
