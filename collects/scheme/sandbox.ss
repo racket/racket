@@ -615,6 +615,7 @@
   (define uncovered     #f)
   (define input-ch      (make-channel))
   (define result-ch     (make-channel))
+  (define busy-sema     (make-semaphore 1))
   (define input         #f)
   (define output        #f)
   (define error-output  #f)
@@ -705,16 +706,17 @@
     (cond [terminated? => raise]
           [(not user-thread)
            (error 'sandbox "internal error (user-thread is #f)")]
-          ;; try to put the expression in, but if can't then it means that the
-          ;; evaluator is calling itself -- there is no simple way to make this
-          ;; work, so throw an error
-          ;; FIXME: the commented-out part creates a race, because the evaluator
-          ;;  thread might not be waiting on input-ch, yet; it might be
-          ;;  in between sending the previous result and waiting for the
-          ;;  next expression
-          [(not (sync #|/timeout 0|# (channel-put-evt input-ch expr)))
+          ;; use a semaphore to know when we're currently in an evaluation, to
+          ;; prevent the evaluator from calling itself (it will deadlock, and
+          ;; there is no simple way to avoid it -- will require making a stream
+          ;; of inputs sent to the user context, queueing them as they come in,
+          ;; and for each one register a channel for a reply -- and this will
+          ;; consume resources outside the user context)
+          [(not (sync/timeout 0 busy-sema))
            (error 'evaluator "nested evaluator call with: ~e" expr)]
-          [else (let ([r (get-user-result)])
+          [else (channel-put input-ch expr)
+                (let ([r (get-user-result)])
+                  (semaphore-post busy-sema)
                   (cond [(eof-object? r) (terminate+kill! #t #t)]
                         [(eq? (car r) 'exn) (raise (cdr r))]
                         [else (apply values (cdr r))]))]))
