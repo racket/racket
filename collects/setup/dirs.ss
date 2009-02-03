@@ -10,7 +10,9 @@
 ;; path normalization is not really necessary by any existing code,
 ;; but there might be applications that rely on these paths, so it's
 ;; best to do some minor normalization.  This is similar to what
-;; "main-collects.ss" does.
+;; "main-collects.ss" does. Don't use this with 'exec-file, however,
+;; because the treatment of an executable path can very depending
+;; on whether it has a path prefix or not.
 (define (system-path* what)
   (simplify-path (cleanse-path (find-system-path what)) #f))
 
@@ -26,14 +28,14 @@
         ;; This happens only under Windows; add a drive
         ;;  specification to make the path complete
         (let ([exec (path->complete-path
-                     (find-executable-path (system-path* 'exec-file))
+                     (find-executable-path (find-system-path 'exec-file))
                      (system-path* 'orig-dir))])
           (let-values ([(base name dir?) (split-path exec)])
             (path->complete-path d base)))]
        [else
         ;; Relative to executable...
         (parameterize ([current-directory (system-path* 'orig-dir)])
-          (let ([p (or (find-executable-path (system-path* 'exec-file) d #t)
+          (let ([p (or (find-executable-path (find-system-path 'exec-file) d #t)
                        ;; If we get here, then we can't find the directory
                        #f)])
             (and p (simplify-path p))))]))))
@@ -175,7 +177,7 @@
       [(windows)
        ;; Extract "lib" location from binary:
        (let ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
-                    (find-executable-path (system-path* 'exec-file)))])
+                    (find-executable-path (find-system-path 'exec-file)))])
          (with-input-from-file exe
            (lambda ()
              (let ([m (regexp-match (byte-regexp
@@ -195,7 +197,7 @@
       [(macosx)
        (let* ([exe (parameterize ([current-directory (system-path* 'orig-dir)])
                      (let loop ([p (find-executable-path
-                                    (system-path* 'exec-file))])
+                                    (find-system-path 'exec-file))])
                        (if (link-exists? p)
                            (loop (let-values ([(r) (resolve-path p)]
                                               [(dir name dir?) (split-path p)])
