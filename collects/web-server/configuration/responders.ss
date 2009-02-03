@@ -111,7 +111,7 @@
 ; read-file : str -> str
 (define (read-file path)
   (call-with-input-file path
-    (lambda (in) (read-string (file-size path) in))))
+    (lambda (in) (read-bytes (file-size path) in))))
 
 (provide/contract
  [file-response ((natural-number/c bytes? path-string?) () #:rest (listof header?) . ->* . response/c)]
