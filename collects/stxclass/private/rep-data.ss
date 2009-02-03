@@ -100,7 +100,25 @@
 (define (sattr? a)
   (and (attr? a) (symbol? (attr-name a))))
 
+;; Contracts
+
+;; DeclEnv = [id -> (list* id id (listof stx)) or #t or #f
+;;   #t means literal, #f means undeclared, list means stxclass (w/ args)
+(define DeclEnv/c
+  (-> identifier? 
+      (or/c boolean? (cons/c identifier? (cons/c identifier? (listof syntax?))))))
+
+(define RemapEnv/c
+  (-> identifier? symbol?))
+
+(define SideClause/c (or/c clause:with? clause:when?))
+
+
 (provide/contract
+ [DeclEnv/c contract?]
+ [RemapEnv/c contract?]
+ [SideClause/c contract?]
+
  [make-empty-sc (-> identifier? sc?)]
  [allow-unbound-stxclasses (parameter/c boolean?)]
  [iattr? (any/c . -> . boolean?)]
@@ -324,5 +342,3 @@
   (cond [(null? iattrs) #f]
         [(bound-identifier=? name (attr-name (car iattrs))) (car iattrs)]
         [else (lookup-iattr name (cdr iattrs))]))
-
-

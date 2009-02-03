@@ -1,4 +1,3 @@
-
 #lang scheme
 (require (for-template "kws.ss")
          (for-template scheme/base)
@@ -7,9 +6,15 @@
          syntax/stx
          "../util.ss"
          "rep-data.ss")
-(provide parse-pattern
-         parse-pattern-directives)
 (provide/contract
+ [parse-pattern 
+  (->* [any/c #|syntax?|# DeclEnv/c exact-nonnegative-integer?]
+       [boolean?]
+       pattern?)]
+ [parse-pattern-directives
+  (->* [stx-list?]
+       [#:sc? boolean? #:literals (listof identifier?)]
+       (values stx-list? DeclEnv/c RemapEnv/c (listof SideClause/c)))]
  [parse-rhs (syntax? boolean? syntax? . -> . rhs?)]
  [parse-splice-rhs (syntax? boolean? syntax? . -> . rhs?)])
 
@@ -282,8 +287,7 @@
 
 ;; parse-pattern-directives : stxs(PatternDirective) #:literals (listof id)
 ;;                         -> stx DeclEnv env (listof SideClause)
-;; DeclEnv = bound-id-mapping[id => (list* id id (listof stx)) or #t]
-;;   if decls maps a name to #f, it indicates literal
+;;   if decls maps a name to #t, it indicates literal
 (define (parse-pattern-directives stx
                                   #:sc? [sc? #f]
                                   #:literals [literals null])

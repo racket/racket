@@ -36,13 +36,44 @@
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
-;; fail : id id #:pattern datum #:reason datum #:fce FCE -> stx
-(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fce fce)
-  (with-syntax ([k k] [x x] [p p] [reason reason]
-                [fc-expr (frontier->expr fce)])
-    #`(let ([failcontext fc-expr])
-        #;(printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
-        (k x p 'reason failcontext))))
+;; parse:clauses : stx identifier identifier -> stx
+(define (parse:clauses stx var failid)
+  (define clauses-kw-table
+    (list (list '#:literals check-literals-list)))
+  (define-values (chunks clauses-stx) (chunk-kw-seq/no-dups stx clauses-kw-table))
+  (define literals
+    (cond [(assq '#:literals chunks) => caddr]
+          [else null]))
+  (define (clause->pk clause)
+    (syntax-case clause ()
+      [(p . rest)
+       (let-values ([(rest decls _ sides)
+                     (parse-pattern-directives #'rest
+                                               #:sc? #f
+                                               #:literals literals)])
+         (syntax-case rest ()
+           [(b)
+            (let* ([pattern (parse-pattern #'p decls 0)])
+              (make-pk (list pattern)
+                       (expr:convert-sides sides
+                                           (pattern-attrs pattern)
+                                           var
+                                           (lambda (iattrs)
+                                             (wrap-pattern-body/attrs iattrs
+                                                                      0
+                                                                      #'b)))))]
+           [_
+            (wrong-syntax clause "expected single body expression")]))]))
+  (unless (stx-list? clauses-stx)
+    (wrong-syntax clauses-stx "expected sequence of clauses"))
+  (let ([pks (map clause->pk (stx->list clauses-stx))])
+    (if (pair? pks)
+        (parse:pks (list var)
+                   (list (empty-frontier var))
+                   pks
+                   failid)
+        (fail failid var #:fce (empty-frontier var)))))
+
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
@@ -65,7 +96,7 @@
                                                    remap
                                                    main-var)))))]))
 
-
+;; expr:convert-sides : (listof SideClause) (listof IAttr) id stx -> stx
 (define (expr:convert-sides sides iattrs main-var k)
   (match sides
     ['() (k iattrs)]
@@ -107,44 +138,16 @@
       (wrong-syntax id "expected identifier")))
   (syntax->list stx))
 
+;; fail : id id #:pattern datum #:reason datum #:fce FCE -> stx
+(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fce fce)
+  (with-syntax ([k k] [x x] [p p] [reason reason]
+                [fc-expr (frontier->expr fce)])
+    #`(let ([failcontext fc-expr])
+        #;(printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
+        (k x p 'reason failcontext))))
 
-;; parse:clauses : stx identifier identifier -> stx
-(define (parse:clauses stx var failid)
-  (define clauses-kw-table
-    (list (list '#:literals check-literals-list)))
-  (define-values (chunks clauses-stx) (chunk-kw-seq/no-dups stx clauses-kw-table))
-  (define literals
-    (cond [(assq '#:literals chunks) => caddr]
-          [else null]))
-  (define (clause->pk clause)
-    (syntax-case clause ()
-      [(p . rest)
-       (let-values ([(rest decls _ sides)
-                     (parse-pattern-directives #'rest
-                                               #:sc? #f
-                                               #:literals literals)])
-         (syntax-case rest ()
-           [(b)
-            (let* ([pattern (parse-pattern #'p decls 0)])
-              (make-pk (list pattern)
-                       (expr:convert-sides sides
-                                           (pattern-attrs pattern)
-                                           var
-                                           (lambda (iattrs)
-                                             (wrap-pattern-body/attrs iattrs
-                                                                      0
-                                                                      #'b)))))]
-           [_
-            (wrong-syntax clause "expected single body expression")]))]))
-  (unless (stx-list? clauses-stx)
-    (wrong-syntax clauses-stx "expected sequence of clauses"))
-  (let ([pks (map clause->pk (stx->list clauses-stx))])
-    (if (pair? pks)
-        (parse:pks (list var)
-                   (list (empty-frontier var))
-                   pks
-                   failid)
-        (fail failid var #:fce (empty-frontier var)))))
+
+;; Parsing
 
 ;; parse:pks : (listof identifier) (listof FCE) (listof PK) identifier -> stx
 ;; Each PK has a list of |vars| patterns.
