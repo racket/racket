@@ -9,6 +9,7 @@
   
   (begin-for-syntax
 
+   ;; these definitions are used as stop-lists in local-expand
    (define kernel-forms (kernel-form-identifier-list))
    (define prop-expand-stop-forms (list* #'honu-typed
                                          #'honu-unparsed-block
@@ -51,6 +52,8 @@
    (define (honu-type-pred-stx v) (honu-type-ref v 2))
    (define (honu-type-protect-stx v) (honu-type-ref v 3))
 
+   ;; convert a honu type into a list with nice formatting
+   ;; todo: need example
    (define (format-type t)
     (if (identifier? t)
         (syntax-e t)
@@ -66,6 +69,7 @@
    ;; --------------------------------------------------------
    ;; Parsing blocks
 
+   ;; #t if the syntax object contains an operator
    (define operator? 
      (let ([sym-chars (string->list "+-_=?:<>.!%^&*/~|")])
        (lambda (stx)
@@ -74,41 +78,47 @@
 		(and (positive? (string-length str))
 		     (memq (string-ref str 0) sym-chars)))))))
 
+   ;; #t if the identifier is not an operator nor a delimiter
    (define (honu-identifier? stx)
      (and (identifier? stx)
 	  (not (ormap (lambda (i) (delim-identifier=? stx i)) (list #'\; #'\,)))
 	  (not (operator? stx))))
    
    (define (get-transformer stx)
-     (or (and (stx-pair? stx)
-	      (identifier? (stx-car stx))
-	      (let ([v (syntax-local-value (stx-car stx) (lambda () #f))])
-		(and (honu-transformer? v) v)))
-	 (and (stx-pair? stx)
-	      (let ([first (stx-car stx)])
-		(cond
-                 [(and (stx-pair? first)
-                       (identifier? (stx-car first))
-                       (delim-identifier=? #'#%parens (stx-car first)))
-                  ;; If the stx-car is a list with just one operator symbol,
-                  ;;  try using the operator as a transformer
-                  (let ([l (cdr (stx->list first))])
-                    (let loop ([l l])
-                      (cond
+     ;; if its an identifier and bound to a transformer return it
+     (define (bound-transformer stx)
+       (and (stx-pair? stx)
+            (identifier? (stx-car stx))
+            (let ([v (syntax-local-value (stx-car stx) (lambda () #f))])
+              (and (honu-transformer? v) v))))
+     (define (special-transformer stx) 
+       (and (stx-pair? stx)
+            (let ([first (stx-car stx)])
+              (cond
+                [(and (stx-pair? first)
+                      (identifier? (stx-car first))
+                      (delim-identifier=? #'#%parens (stx-car first)))
+                 ;; If the stx-car is a list with just one operator symbol,
+                 ;;  try using the operator as a transformer
+                 (let ([l (cdr (stx->list first))])
+                   (let loop ([l l])
+                     (cond
                        [(null? l) #f]
                        [(operator? (car l))
                         (if (ormap operator? (cdr l))
-                            #f
-                            (let ([v (syntax-local-value (car l) (lambda () #f))])
-                              (and (honu-transformer? v)
-                                   v)))]
+                          #f
+                          (let ([v (syntax-local-value (car l) (lambda () #f))])
+                            (and (honu-transformer? v)
+                                 v)))]
                        [else (loop (cdr l))])))]
-                 [(and (stx-pair? first)
-                       (identifier? (stx-car first))
-                       (module-identifier=? #'#%angles (stx-car first)))
-                  (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
-                    (and (honu-transformer? v) v))]
-                 [else #f])))))
+                [(and (stx-pair? first)
+                      (identifier? (stx-car first))
+                      (module-identifier=? #'#%angles (stx-car first)))
+                 (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
+                   (and (honu-transformer? v) v))]
+                [else #f]))))
+     (or (bound-transformer stx)
+         (special-transformer stx)))
    
    ;; --------------------------------------------------------
    ;; Parsing blocks
