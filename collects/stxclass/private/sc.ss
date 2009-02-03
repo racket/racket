@@ -156,7 +156,7 @@
     [(with-patterns ([p x] . more) . b)
      (syntax-parse x [p (with-patterns more . b)])]))
 
-(define ((syntax-patterns-fail stx0) x expected reason frontier)
+(define ((syntax-patterns-fail stx0) x expected frontier)
   (define (err msg stx)
     (raise (make-exn:fail:syntax 
             (if msg
@@ -185,8 +185,6 @@
                                             n
                                             (if (= 1 n) "form" "forms"))]))
                 stx))]
-        [reason
-         (err (format "~a" reason) stx)]
         [else
          (err #f stx0)]))
 
