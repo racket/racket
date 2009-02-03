@@ -2,7 +2,8 @@
 (require scheme/runtime-path)
 
 (define-runtime-module-path mzscheme-module-spec mzscheme)
-(define-runtime-module-path mred-module-spec mred)
+#;(define-runtime-module-path mred-module-spec mred) ; XXX Sometimes I need these, but not always
+(define mred-module-spec 'mred)
 
 (define default-to-be-copied-module-specs (list mzscheme-module-spec mred-module-spec))
 
