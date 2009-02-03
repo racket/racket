@@ -60,7 +60,7 @@
 ; gen-servlet-not-found : str -> url -> response
 (define (gen-servlet-not-found file-not-found-file)
   (lambda (url)
-    (file-response 404 "Servlet not found" file-not-found-file)))
+    (file-response 404 #"Servlet not found" file-not-found-file)))
 
 ; servlet-error-response : url exn -> response
 (define (servlet-error-responder url exn)
@@ -75,38 +75,38 @@
     ((error-display-handler)
      (format "Servlet (@ ~a) exception:\n~e\n" (url->string url) (exn-message exn))
      exn)
-    (file-response 500 "Servlet error" servlet-error-file)))
+    (file-response 500 #"Servlet error" servlet-error-file)))
 
 ; gen-servlets-refreshed : str -> -> response
 (define (gen-servlets-refreshed servlet-refresh-file)
   (lambda ()
-    (file-response 200 "Servlet cache refreshed" servlet-refresh-file)))
+    (file-response 200 #"Servlet cache refreshed" servlet-refresh-file)))
 
 ; gen-passwords-refreshed : str -> -> response
 (define (gen-passwords-refreshed password-refresh-file)
   (lambda ()
-    (file-response 200 "Passwords refreshed" password-refresh-file)))
+    (file-response 200 #"Passwords refreshed" password-refresh-file)))
 
 ; gen-authentication-responder : str -> url (cons sym str) -> response
 (define (gen-authentication-responder access-denied-file)
   (lambda (uri recommended-header)
-    (file-response 401 "Authorization Required" access-denied-file
+    (file-response 401 #"Authorization Required" access-denied-file
                    recommended-header)))
 
 ; gen-protocol-responder : str -> str -> response
 (define (gen-protocol-responder protocol-file)
   (lambda (error-message)
-    (file-response 400 "Malformed Request" protocol-file)))
+    (file-response 400 #"Malformed Request" protocol-file)))
 
 ; gen-file-not-found-responder : str -> req -> response
 (define (gen-file-not-found-responder file-not-found-file)
   (lambda (req)
-    (file-response 404 "File not found" file-not-found-file)))
+    (file-response 404 #"File not found" file-not-found-file)))
 
 ; gen-collect-garbage-responder : str -> -> response
 (define (gen-collect-garbage-responder file)
   (lambda ()
-    (file-response 200 "Garbage collected" file)))
+    (file-response 200 #"Garbage collected" file)))
 
 ; read-file : str -> str
 (define (read-file path)
@@ -114,7 +114,7 @@
     (lambda (in) (read-string (file-size path) in))))
 
 (provide/contract
- [file-response ((natural-number/c string? path-string?) () #:rest (listof header?) . ->* . response/c)]
+ [file-response ((natural-number/c bytes? path-string?) () #:rest (listof header?) . ->* . response/c)]
  [servlet-loading-responder (url? exn? . -> . response/c)]
  [gen-servlet-not-found (path-string? . -> . (url? . -> . response/c))]
  [servlet-error-responder (url? exn? . -> . response/c)]
