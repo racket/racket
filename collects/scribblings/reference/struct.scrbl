@@ -299,7 +299,7 @@ Creates a new structure type property and returns three values:
        the property, @scheme[#f] otherwise;}
 
  @item{an @deftech{property accessor} procedure, which returns the
-       value associated with structure type given its descriptor or
+       value associated with the structure type given its descriptor or
        one of its instances; if the structure type does not have a
        value for the property, or if any other kind of value is
        provided, the @exnraise[exn:fail:contract].}
