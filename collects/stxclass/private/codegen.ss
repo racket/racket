@@ -53,18 +53,17 @@
                                                #:sc? #f
                                                #:literals literals)])
          (syntax-case rest ()
-           [(b)
+           [(b ...)
             (let* ([pattern (parse-pattern #'p decls 0)])
               (make-pk (list pattern)
                        (expr:convert-sides sides
                                            (pattern-attrs pattern)
                                            var
                                            (lambda (iattrs)
-                                             (wrap-pattern-body/attrs iattrs
-                                                                      0
-                                                                      #'b)))))]
+                                             (wrap-pattern-body/attrs
+                                              iattrs 0 rest)))))]
            [_
-            (wrong-syntax clause "expected single body expression")]))]))
+            (wrong-syntax clause "expected body")]))]))
   (unless (stx-list? clauses-stx)
     (wrong-syntax clauses-stx "expected sequence of clauses"))
   (let ([pks (map clause->pk (stx->list clauses-stx))])
@@ -103,7 +102,7 @@
     [(cons (struct clause:when (e)) rest)
      (let* ([k-rest (expr:convert-sides rest iattrs main-var k)])
        (with-syntax ([(x) (generate-temporaries #'(x))])
-         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 e)])
+         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 (list e))])
              (if x
                  #,k-rest
                  #,(fail #'enclosing-fail main-var
@@ -113,7 +112,7 @@
      (let* ([new-iattrs (append (pattern-attrs p) iattrs)]
             [k-rest (expr:convert-sides rest new-iattrs main-var k)])
        (with-syntax ([(x fail-k) (generate-temporaries #'(x fail-k))])
-         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 e)]
+         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 (list e))]
                  [fail-k enclosing-fail])
              #,(parse:pks (list #'x)
                           (list (done-frontier #'x))
@@ -582,13 +581,13 @@
        (make-pk (list* head tail rest-ps) k)]))
   (map shift-pk pks))
 
-;; wrap-pattern-body : (listof IAttr) nat stx -> stx
-(define (wrap-pattern-body/attrs iattrs depth b)
+;; wrap-pattern-body : (listof IAttr) nat stxlist -> stx
+(define (wrap-pattern-body/attrs iattrs depth bs)
   (let* ([flat-iattrs (flatten-attrs* iattrs depth #f #f)]
          [ids (map attr-name flat-iattrs)]
          [depths (map attr-depth flat-iattrs)])
     (with-syntax ([(id ...) ids]
                   [(depth ...) depths]
-                  [b b])
+                  [bs bs])
       #`(let-syntax ([id (make-syntax-mapping 'depth (quote-syntax id))] ...)
-          b))))
+          . bs))))
