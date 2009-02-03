@@ -17,10 +17,7 @@
          (struct-out pat:datum)
          (struct-out pat:literal)
          (struct-out pat:pair)
-         (struct-out pat:splice)
          (struct-out pat:gseq)
-         (struct-out splice-pattern)
-         (struct-out pat:splice-id)
          (struct-out head)
          (struct-out clause:when)
          (struct-out clause:with))
@@ -68,15 +65,7 @@
 (define-struct (pat:datum pattern) (datum) #:transparent)
 (define-struct (pat:literal pattern) (literal) #:transparent)
 (define-struct (pat:pair pattern) (head tail) #:transparent)
-(define-struct (pat:splice pattern) (head tail) #:transparent)
 (define-struct (pat:gseq pattern) (heads tail) #:transparent)
-
-;; A SplicePattern is one of
-;;   (make-pat:splice-id <Pattern> identifier SSC (listof stx))
-(define-struct (splice-pattern pattern) ()
-  #:transparent)
-(define-struct (pat:splice-id splice-pattern) (name stx-splice-class args)
-  #:transparent)
 
 ;; A Head is
 ;;   (make-head stx (listof IAttr) nat (listof Pattern) nat/f nat/f boolean id/#f stx/#f)
@@ -196,7 +185,7 @@
                                (syntax-e scname))]
                 [_ (void)])
               (let ([sc (get-stxclass scname)])
-                (values id sc null (ssc? sc))))]
+                (values id sc null)))]
         [(decls id0)
          => (lambda (p)
               (define scname (cadr p))
@@ -207,8 +196,8 @@
                               "too few arguments for syntax-class ~a (expected ~s)"
                               (sc-name stxclass)
                               (length (sc-inputs stxclass))))
-              (values id0 stxclass args (ssc? stxclass)))]
-        [else (values id0 #f null #f)]))
+              (values id0 stxclass args))]
+        [else (values id0 #f null)]))
 
 
 ;; intersect-attrss : (listof (listof SAttr)) stx -> (listof SAttr)

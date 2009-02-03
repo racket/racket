@@ -24,15 +24,16 @@
   (cond [(rhs:union? rhs)
          (with-syntax ([(arg ...) args])
            #`(lambda (x arg ...)
-               (define (fail-rhs x expected reason frontier)
-                 (make-failed x expected reason frontier))
+               (define (fail-rhs x expected frontier)
+                 (make-failed x expected frontier))
                #,(let ([pks (rhs->pks rhs relsattrs #'x)])
-                   (if (pair? pks)
-                       (parse:pks (list #'x)
-                                  (list (empty-frontier #'x))
-                                  pks
-                                  #'fail-rhs)
-                       (fail #'fail-rhs #'x #:fce (empty-frontier #'x))))))]
+                   (unless (pair? pks)
+                     (wrong-syntax (rhs-orig-stx rhs)
+                                   "syntax class has no variants"))
+                   (parse:pks (list #'x)
+                              (list (empty-frontier #'x))
+                              pks
+                              #'fail-rhs))))]
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
@@ -67,13 +68,12 @@
   (unless (stx-list? clauses-stx)
     (wrong-syntax clauses-stx "expected sequence of clauses"))
   (let ([pks (map clause->pk (stx->list clauses-stx))])
-    (if (pair? pks)
-        (parse:pks (list var)
-                   (list (empty-frontier var))
-                   pks
-                   failid)
-        (fail failid var #:fce (empty-frontier var)))))
-
+    (unless (pair? pks)
+      (wrong-syntax stx "no variants"))
+    (parse:pks (list var)
+               (list (empty-frontier var))
+               pks
+               failid)))
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
@@ -107,7 +107,7 @@
              (if x
                  #,k-rest
                  #,(fail #'enclosing-fail main-var
-                         #:reason "side condition failed"
+                         #:pattern (expectation-of/message "side condition failed")
                          #:fce (done-frontier main-var))))))]
     [(cons (struct clause:with (p e)) rest)
      (let* ([new-iattrs (append (pattern-attrs p) iattrs)]
@@ -139,12 +139,13 @@
   (syntax->list stx))
 
 ;; fail : id id #:pattern datum #:reason datum #:fce FCE -> stx
-(define (fail k x #:pattern [p #'#f] #:reason [reason #f] #:fce fce)
-  (with-syntax ([k k] [x x] [p p] [reason reason]
+(define (fail k x #:pattern p #:fce fce)
+  (with-syntax ([k k]
+                [x x]
+                [p p]
                 [fc-expr (frontier->expr fce)])
     #`(let ([failcontext fc-expr])
-        #;(printf "failed: reason=~s, p=~s\n  fc=~s\n" reason p failcontext)
-        (k x p 'reason failcontext))))
+        (k x p failcontext))))
 
 
 ;; Parsing
@@ -163,8 +164,7 @@
                    #`(with-enclosing-fail #,failvar #,(pk-k pk)))])
            (with-syntax ([failvar failvar]
                          [(expr ...) exprs])
-             #`(let-syntax ([failvar (make-rename-transformer (quote-syntax #,failid))])
-                 (try failvar (expr ...)))))]
+             #`(try failvar [expr ...] #,failid)))]
         [else
          (let-values ([(vars extpks) (split-pks vars pks)])
            (let* ([failvar (car (generate-temporaries #'(fail-k)))]
@@ -173,8 +173,7 @@
                      (parse:extpk vars fcs extpk failvar))])
              (with-syntax ([failvar failvar]
                            [(expr ...) exprs])
-               #`(let-syntax ([failvar (make-rename-transformer (quote-syntax #,failid))])
-                   (try failvar (expr ...))))))]))
+               #`(try failvar [expr ...] #,failid))))]))
 
 
 ;; parse:extpk : (listof identifier) (listof FCE) ExtPK identifier -> stx
@@ -182,29 +181,38 @@
 (define (parse:extpk vars fcs extpk failid)
   (match extpk
     [(struct idpks (stxclass args pks))
-     (parse:pk:id vars fcs failid stxclass args pks)]
+     (if stxclass
+         (parse:pk:id/stxclass vars fcs failid stxclass args pks)
+         (parse:pk:id/any  vars fcs failid args pks))]
     [(struct cpks (pairpks datumpkss literalpkss))
      (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)]
     [(struct pk ((cons (? pat:gseq? gseq-pattern) rest-patterns) k))
      (parse:pk:gseq vars fcs failid gseq-pattern rest-patterns k)]))
 
-;; parse:pk:id : (listof id) (listof FCE) id SC stx (listof pk) -> stx
-(define (parse:pk:id vars fcs failid stxclass args pks)
-  (define var (car vars))
-  (define fc (car fcs))
-  (with-syntax ([var0 var]
+;; parse:pk:id/stxclass : (listof id) (listof FCE) id SC stx (listof pk) -> stx
+(define (parse:pk:id/stxclass vars fcs failid stxclass args pks)
+  (with-syntax ([var0 (car vars)]
                 [(arg ...) args]
                 [(arg-var ...) (generate-temporaries args)]
-                [(result) (generate-temporaries #'(result))])
+                [parser (sc-parser-name stxclass)]
+                [result (generate-temporary 'result)])
     #`(let ([arg-var arg] ...)
-        (let ([result #,(if stxclass
-                            #`(#,(sc-parser-name stxclass) var0 arg-var ...)
-                            #`(list var0))])
+        (let ([result (parser var0 arg-var ...)])
           (if (ok? result)
               #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)
-              #,(fail failid var
+              #,(fail failid (car vars)
                       #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
-                      #:fce fc))))))
+                      #:fce (car fcs)))))))
+
+;; parse:pk:id/any : (listof id) (listof FCE) id stx (listof pk) -> stx
+(define (parse:pk:id/any vars fcs failid args pks)
+  (with-syntax ([var0 (car vars)]
+                [(arg ...) args]
+                [(arg-var ...) (generate-temporaries args)]
+                [result (generate-temporary 'result)])
+    #`(let ([arg-var arg] ...)
+        (let ([result (list var0)])
+          #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)))))
 
 ;; parse:pk:c : (listof id) (listof FCE) id ??? ... -> stx
 (define (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)
@@ -237,7 +245,7 @@
         (cond #,@(if (pair? pairpks)
                      #`([(pair? dvar0)
                          (let ([head-var (car dvar0)]
-                               [tail-var (cdr dvar0)])
+                               [tail-var (datum->syntax var0 (cdr dvar0) var0)])
                            #,(parse:pks (list* #'head-var #'tail-var (cdr vars))
                                         (list* (frontier:add-car (car fcs) #'head-var)
                                                (frontier:add-cdr (car fcs))
@@ -329,6 +337,7 @@
                 (let ([rep (add1 rep)])
                   (parse-loop x #,@hid-args #,@reps enclosing-fail))
                 #,(fail #'enclosing-fail #'var0
+                        #:pattern (expectation-of/message "maximum rep constraint failed")
                         #:fce (frontier:add-index (car fcs)
                                                   #`(calculate-index #,@reps)))))))
 
@@ -337,10 +346,9 @@
                      (for/list ([repvar reps] [minrep mins] #:when minrep)
                        #`[(< #,repvar #,minrep)
                           #,(fail #'enclosing-fail (car vars)
+                                  #:pattern (expectation-of/message "mininum rep constraint failed")
                                   #:fce (frontier:add-index (car fcs)
-                                                            #`(calculate-index #,@reps))
-                                  #:pattern (expectation-of-constants
-                                             #f '(minimum-rep-constraint-failed) '()))])])
+                                                            #`(calculate-index #,@reps)))])])
         #`(cond minrep-clause ...
                 [else
                  (let ([hid (finalize hid-arg)] ... ...
@@ -458,8 +466,6 @@
              (pattern-intersects? (pat:pair-tail p1) (pat:pair-tail p2)))
         ;; FIXME: conservative
         (and (pat:literal? p1) (pat:literal? p2))
-        (pat:splice? p1)
-        (pat:splice? p2)
         (pat:gseq? p1)
         (pat:gseq? p2)))
 

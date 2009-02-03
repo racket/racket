@@ -6,18 +6,16 @@
          syntax/stx
          "../util.ss"
          "rep-data.ss")
+
 (provide/contract
  [parse-pattern 
-  (->* [any/c #|syntax?|# DeclEnv/c exact-nonnegative-integer?]
-       [boolean?]
-       pattern?)]
+  (-> any/c #|syntax?|# DeclEnv/c exact-nonnegative-integer?
+      pattern?)]
  [parse-pattern-directives
   (->* [stx-list?]
        [#:sc? boolean? #:literals (listof identifier?)]
        (values stx-list? DeclEnv/c RemapEnv/c (listof SideClause/c)))]
- [parse-rhs (syntax? boolean? syntax? . -> . rhs?)]
- [parse-splice-rhs (syntax? boolean? syntax? . -> . rhs?)])
-
+ [parse-rhs (syntax? boolean? syntax? . -> . rhs?)])
 
 (define (atomic-datum? stx)
   (let ([datum (syntax-e stx)])
@@ -49,16 +47,6 @@
 ;; If allow-unbound? is true, then unbound stxclass acts as if it has no attrs.
 ;; Used for pass1 (attr collection); parser requires stxclasses to be bound.
 (define (parse-rhs stx allow-unbound? ctx)
-  (parse-rhs* stx allow-unbound? #f ctx))
-
-;; parse-splice-rhs : stx(SyntaxClassRHS) boolean stx -> RHS
-;; If allow-unbound? is true, then unbound stxclass acts as if it has no attrs.
-;; Used for pass1 (attr collection); parser requires stxclasses to be bound.
-(define (parse-splice-rhs stx allow-unbound? ctx)
-  (parse-rhs* stx allow-unbound? #t ctx))
-
-;; parse-rhs* : stx boolean boolean stx -> RHS
-(define (parse-rhs* stx allow-unbound? splice? ctx)
   (define-values (chunks rest)
     (chunk-kw-seq stx rhs-directive-table #:context ctx))
   (define lits0 (assq '#:literals chunks))
@@ -90,7 +78,7 @@
     (define (gather-patterns stx)
       (syntax-case stx (pattern)
         [((pattern . _) . rest)
-         (cons (parse-rhs-pattern (stx-car stx) allow-unbound? splice? literals)
+         (cons (parse-rhs-pattern (stx-car stx) allow-unbound? literals)
                (gather-patterns #'rest))]
         [()
          null]))
@@ -110,7 +98,7 @@
      (parse-rhs*-patterns rest)]))
 
 ;; parse-rhs-pattern : stx boolean boolean (listof identifier) -> RHS
-(define (parse-rhs-pattern stx allow-unbound? splice? literals)
+(define (parse-rhs-pattern stx allow-unbound? literals)
   (syntax-case stx (pattern)
     [(pattern p . rest)
      (parameterize ((allow-unbound-stxclasses allow-unbound?))
@@ -122,8 +110,6 @@
            (wrong-syntax (if (pair? rest) (car rest) rest)
                          "unexpected terms after pattern directives"))
          (let* ([pattern (parse-pattern #'p decls 0)]
-                [_ (when splice?
-                     (check-proper-list-pattern pattern))]
                 [with-patterns
                  (for/list ([c clauses] #:when (clause:with? c))
                    (clause:with-pattern c))]
@@ -141,7 +127,7 @@
         (list '#:transparent)))
 
 ;; parse-pattern : stx(Pattern) env number -> Pattern
-(define (parse-pattern stx decls depth [allow-splice? #f])
+(define (parse-pattern stx decls depth)
   (syntax-case stx ()
     [dots
      (or (dots? #'dots)
@@ -152,10 +138,7 @@
      (make pat:literal stx null depth stx)]
     [id
      (identifier? #'id)
-     (let-values ([(name sc args splice?) (split-id/get-stxclass #'id decls)])
-       (when splice?
-         (unless allow-splice?
-           (wrong-syntax stx "splice-pattern not allowed here")))
+     (let-values ([(name sc args) (split-id/get-stxclass #'id decls)])
        (let ([attrs
               (cond [(wildcard? name) null]
                     [(and (epsilon? name) sc)
@@ -167,9 +150,7 @@
                     [else
                      (list (make attr name depth (if sc (sc-attrs sc) null)))])]
              [name (if (epsilon? name) #f name)])
-         (if splice?
-             (make pat:splice-id stx attrs depth name sc args)
-             (make pat:id stx attrs depth name sc args))))]
+         (make pat:id stx attrs depth name sc args)))]
     [datum
      (atomic-datum? #'datum)
      (make pat:datum stx null depth (syntax->datum #'datum))]
@@ -188,12 +169,10 @@
             [attrs (append-attrs (list (head-attrs head) (pattern-attrs tail)) stx)])
        (make pat:gseq stx attrs depth (list head) tail))]
     [(a . b)
-     (let ([pa (parse-pattern #'a decls depth #t)]
+     (let ([pa (parse-pattern #'a decls depth)]
            [pb (parse-pattern #'b decls depth)])
        (let ([attrs (append-attrs (list (pattern-attrs pa) (pattern-attrs pb)) stx)])
-         (if (splice-pattern? pa)
-             (make pat:splice stx attrs depth pa pb)
-             (make pat:pair stx attrs depth pa pb))))]))
+         (make pat:pair stx attrs depth pa pb)))]))
 
 (define (pattern->head p)
   (match p
@@ -360,20 +339,3 @@
             decls
             remap
             (reverse rclauses))))
-
-;; check-proper-list-pattern : Pattern -> void
-(define (check-proper-list-pattern p)
-  (define (err stx)
-    (wrong-syntax stx "not a proper list pattern"))
-  (match p
-    [(struct pat:id (orig-stx _ _ _ _ _))
-     (err orig-stx)]
-    [(struct pat:datum (orig-stx _ _ datum))
-     (unless (null? datum)
-       (err orig-stx))]
-    [(struct pat:pair (_ _ _ head tail))
-     (check-proper-list-pattern tail)]
-    [(struct pat:splice (_ _ _ head tail))
-     (check-proper-list-pattern tail)]
-    [(struct pat:gseq (_ _ _ heads tail))
-     (check-proper-list-pattern tail)]))
