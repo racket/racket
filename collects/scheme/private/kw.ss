@@ -337,7 +337,11 @@
                                  [sorted-kws (sort (map list kws kw-args kw-arg?s kw-reqs)
                                                    (lambda (a b) (keyword<? (syntax-e (car a))
                                                                             (syntax-e (car b)))))]
-                                 [method? (syntax-property stx 'method-arity-error)])
+                                 [method? (syntax-property stx 'method-arity-error)]
+                                 [annotate-method (lambda (stx)
+                                                    (if method?
+                                                        (syntax-property stx 'method-arity-error #t)
+                                                        stx))])
                             (with-syntax ([(kw-arg ...) kw-args]
                                           [(kw-arg? ...) (let loop ([kw-arg?s kw-arg?s]
                                                                     [kw-reqs kw-reqs])
@@ -380,26 +384,27 @@
                                           (let #,(syntax-property
                                                   #`(#,(syntax-property
                                                         #`[core 
-                                                           #,(syntax-property
-                                                              #`(lambda #,(syntax-property
-                                                                           #`(given-kws given-args
-                                                                                        new-plain-id ... 
-                                                                                        opt-arg ...
-                                                                                        opt-arg? ...
-                                                                                        . new-rest)
-                                                                           'certify-mode
-                                                                           'transparent)
-                                                                  ;; sort out the arguments into the user-supplied bindings,
-                                                                  ;; evaluating default-values expressions as needed:
-                                                                  (let-kws given-kws given-args kws-sorted
-                                                                           (let-maybe ([id opt-expr kind] ... . rest)
-                                                                                      (kw-arg ...) (kw-arg? ...)
-                                                                                      (opt-arg ...) (opt-arg? ...)
-                                                                                      (new-plain-id ... . new-rest)
-                                                                                      ;; the original body, finally:
-                                                                                      body1 body ...)))
-                                                              'certify-mode
-                                                              'transparent)]
+                                                           #,(annotate-method
+                                                              (syntax-property
+                                                               #`(lambda #,(syntax-property
+                                                                            #`(given-kws given-args
+                                                                                         new-plain-id ... 
+                                                                                         opt-arg ...
+                                                                                         opt-arg? ...
+                                                                                         . new-rest)
+                                                                            'certify-mode
+                                                                            'transparent)
+                                                                   ;; sort out the arguments into the user-supplied bindings,
+                                                                   ;; evaluating default-values expressions as needed:
+                                                                   (let-kws given-kws given-args kws-sorted
+                                                                            (let-maybe ([id opt-expr kind] ... . rest)
+                                                                                       (kw-arg ...) (kw-arg? ...)
+                                                                                       (opt-arg ...) (opt-arg? ...)
+                                                                                       (new-plain-id ... . new-rest)
+                                                                                       ;; the original body, finally:
+                                                                                       body1 body ...)))
+                                                               'certify-mode
+                                                               'transparent))]
                                                         'certify-mode
                                                         'transparent))
                                                   'certify-mode
@@ -411,27 +416,30 @@
                                     [mk-no-kws
                                      (lambda ()
                                        ;; entry point without keywords:
-                                       (syntax/loc stx
-                                         (opt-cases (core null null) ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
-                                                    () (rest-empty rest-id . rest)
-                                                    ())))]
+                                       (annotate-method
+                                        (syntax/loc stx
+                                          (opt-cases (core null null) ([opt-id opt-arg opt-arg?] ...) (plain-id ...) 
+                                                     () (rest-empty rest-id . rest)
+                                                     ()))))]
                                     [mk-with-kws
                                      (lambda ()
                                        ;; entry point with keywords:
                                        (if (and (null? opts)
                                                 (null? #'new-rest))
                                            #'core
-                                           (syntax/loc stx
-                                             (opt-cases (core) ([opt-id opt-arg opt-arg?] ...) (given-kws given-args plain-id ...) 
+                                           (annotate-method
+                                            (syntax/loc stx
+                                              (opt-cases (core) ([opt-id opt-arg opt-arg?] ...) (given-kws given-args plain-id ...) 
                                                         () (rest-empty rest-id . rest)
-                                                        ()))))]
+                                                        ())))))]
                                     [mk-kw-arity-stub
                                      (lambda ()
                                        ;; struct-type entry point for no keywords when a keyword is required
-                                       (syntax/loc stx
-                                         (fail-opt-cases (missing-kw) (opt-id ...) (self plain-id ...) 
-                                                         () (rest-id . fail-rest)
-                                                         ())))])
+                                       (annotate-method
+                                        (syntax/loc stx
+                                          (fail-opt-cases (missing-kw) (opt-id ...) (self plain-id ...) 
+                                                          () (rest-id . fail-rest)
+                                                          ()))))])
                                 (cond
                                  [(null? kws)
                                   ;; just the no-kw part
