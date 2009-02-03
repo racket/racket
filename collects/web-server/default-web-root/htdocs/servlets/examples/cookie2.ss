@@ -22,7 +22,8 @@
     (request-bindings/raw new-req))
   (match (bindings-assq #"who" binds)
     [(? binding:form? b)
-     (define new-who (bytes->string/utf-8 (binding:form-value b)))
+     (define new-who 
+       (bytes->string/utf-8 (binding:form-value b)))
      (redirect-to (url->string (request-uri req))
       see-other
       #:headers
