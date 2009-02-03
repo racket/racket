@@ -1396,6 +1396,10 @@
     (syntax-case stx ()
       [(_ a b) #'(and a b)]))
 
+  (define-syntax (!= stx)
+    (syntax-case stx ()
+      [(_ a b) #'(not (equal? a b))]))
+
   (define-syntax (\|\| stx)
     (syntax-case stx ()
       [(_ a b) #'(or a b)]))
@@ -2064,7 +2068,7 @@
 	   (rename honu-class class)
 	   (rename honu+ +) (rename honu- -) (rename honu* *) 
            / (rename modulo %)
-           < > <= >= (rename equal? ==)
+           < > <= >= (rename equal? ==) !=
            && \|\|
 	   (rename string->number stringToNumber)
 	   (rename number->string numberToString)

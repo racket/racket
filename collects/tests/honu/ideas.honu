@@ -1,4 +1,4 @@
-#honu
+#lang honu
 
 /*
 <a>a f(a x, a b) { return (obj)x; }

@@ -1,0 +1,17 @@
+#lang honu
+
+obj test(t, a, b){
+  if (a != b){
+    display(t);
+    display(" failed!");
+    newline();
+    display("Got ");
+    display(a);
+    display(". Expected ");
+    display(b);
+    newline();
+  }
+}
+
+var x = 3;
+test("x = 3", x, 4);
