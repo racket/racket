@@ -24,12 +24,12 @@
 
 (define (get-bindings post-data)
   (define-values (conn headers) (make-mock-connection&headers post-data))
-  (call-with-values (lambda () (read-bindings&post-data/raw conn 'post #f headers))
+  (call-with-values (lambda () (read-bindings&post-data/raw conn #"POST" #f headers))
                     (lambda (f s) f)))
 
 (define (get-post-data/raw post-data)
   (define-values (conn headers) (make-mock-connection&headers post-data))
-  (call-with-values (lambda () (read-bindings&post-data/raw conn 'post #f headers))
+  (call-with-values (lambda () (read-bindings&post-data/raw conn #"POST" #f headers))
                     (lambda (f s) s)))
 
 
