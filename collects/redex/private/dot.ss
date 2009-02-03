@@ -123,7 +123,7 @@
             [w (list-ref line 2)]
             [h (list-ref line 3)]
             [children (list-ref line 4)])
-       (printf " ~a [width=~a height=~a shape=box label=\"\"]\n" 
+       (printf "  ~a [width=~a height=~a shape=box label=\"\"]\n" 
                (num->id id) 
                (format-number (pixels->inches w))
                (format-number (pixels->inches h)))
@@ -210,7 +210,10 @@
       void))
         
   (define (parse-edge line)
+    (define (give-up)
+      (error 'redex "could not parse edge line:\n  ~s\n" line))
     (let* ([m (regexp-match #rx"edge ([^ ]+) ([^ ]+) ([0-9]+) (.*)$" line)]
+           [_ (unless m (give-up))]
            [from (list-ref m 1)]
            [to (list-ref m 2)]
            [point-count (string->number (list-ref m 3))]
@@ -220,7 +223,8 @@
                        [rest rest])
               (if (zero? pts) 
                   '()
-                  (let* ([m (regexp-match #rx"^([0-9.]+) ([0-9.]+) (.*)$" rest)]
+                  (let* ([m (regexp-match #rx"^([-0-9.]+) ([-0-9.]+) (.*)$" rest)]
+                         [_ (unless m (give-up))]
                          [x (string->number (list-ref m 1))]
                          [y (string->number (list-ref m 2))])
                     (set! max-y (max y max-y))
