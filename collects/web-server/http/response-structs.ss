@@ -1,5 +1,6 @@
 #lang scheme/base
 (require mzlib/contract
+         scheme/list
          xml/xml
          web-server/http/request-structs)
 
@@ -9,35 +10,90 @@
 (define-struct (response/full response/basic) (body))
 (define-struct (response/incremental response/basic) (generator))
 
-; response = (cons string (listof string)), where the first string is a mime-type
-;          | x-expression
-;          | response/basic
 (define response/c
   (or/c response/basic?
-        (listof (or/c string? bytes?))
+        (cons/c bytes? (listof (or/c string? bytes?)))
         xexpr/c))
+
+;; response/full->size: response/full -> number
+(define (response/full->size resp)
+  (apply + (map bytes-length (response/full-body resp))))
+
+(define (normalize-response close? resp)
+  (cond
+    [(response/full? resp)
+     (make-response/full 
+      (response/basic-code resp)
+      (response/basic-message resp)
+      (response/basic-seconds resp)
+      (response/basic-mime resp)
+      (list* (make-header #"Content-Length" (string->bytes/utf-8 (number->string (response/full->size resp))))
+             (response/basic-headers resp))
+      (response/full-body resp))]
+    [(response/incremental? resp)
+     (if close?
+         resp
+         (make-response/incremental 
+          (response/basic-code resp)
+          (response/basic-message resp)
+          (response/basic-seconds resp)
+          (response/basic-mime resp)
+          (list* (make-header #"Transfer-Encoding" #"chunked")
+                 (response/basic-headers resp))
+          (response/incremental-generator resp)))]
+    [(response/basic? resp)
+     (normalize-response
+      close?
+      (make-response/full 
+       (response/basic-code resp)
+       (response/basic-message resp)
+       (response/basic-seconds resp)
+       (response/basic-mime resp)
+       (response/basic-headers resp)
+       empty))]
+    [(and (list? resp)
+          (not (empty? resp))
+          (bytes? (first resp))
+          (andmap (lambda (i) (or (string? i)
+                                  (bytes? i)))
+                  (rest resp)))
+     (normalize-response
+      close?
+      (make-response/full 
+       200 #"Okay" (current-seconds) (car resp) empty
+       (map (lambda (bs)
+              (if (string? bs)
+                  (string->bytes/utf-8 bs)
+                  bs))
+            (rest resp))))]
+    [else
+     (normalize-response
+      close?
+      (make-response/full 
+       200 #"Okay" (current-seconds) TEXT/HTML-MIME-TYPE empty
+       (list (string->bytes/utf-8 (xexpr->string resp)))))]))
 
 (provide/contract
  [struct response/basic
          ([code number?]
-          [message string?]
+          [message bytes?]
           [seconds number?]
           [mime bytes?]
           [headers (listof header?)])]            
  [struct (response/full response/basic)
          ([code number?]
-          [message string?]
+          [message bytes?]
           [seconds number?]
           [mime bytes?]
           [headers (listof header?)]
-          [body (listof (or/c string?
-                              bytes?))])]
+          [body (listof bytes?)])]
  [struct (response/incremental response/basic)
          ([code number?]
-          [message string?]
+          [message bytes?]
           [seconds number?]
           [mime bytes?]
           [headers (listof header?)]
-          [generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]
+          [generator ((() (listof bytes?) . ->* . any) . -> . any)])]
  [response/c contract?]
+ [normalize-response (boolean? response/c . -> . (or/c response/full? response/incremental?))]
  [TEXT/HTML-MIME-TYPE bytes?])

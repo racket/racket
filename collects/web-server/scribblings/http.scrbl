@@ -55,7 +55,7 @@ The @web-server implements many HTTP RFCs that are provided by this module.
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
 
-@defstruct[request ([method symbol?]
+@defstruct[request ([method bytes?]
                     [uri url?]
                     [headers/raw (listof header?)]
                     [bindings/raw (listof binding?)]
@@ -158,7 +158,7 @@ Here is an example typical of what you will find in many applications:
 
 @defstruct[response/basic
            ([code number?]
-            [message string?]
+            [message bytes?]
             [seconds number?]
             [mime bytes?]
             [headers (listof header?)])]{
@@ -170,7 +170,7 @@ Here is an example typical of what you will find in many applications:
  Example:
  @schemeblock[
   (make-response/basic
-   301 "Moved Permanently"
+   301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
                       #"http://www.plt-scheme.org/downloads")))
@@ -178,14 +178,14 @@ Here is an example typical of what you will find in many applications:
 }
 
 @defstruct[(response/full response/basic)
-           ([body (listof (or/c string? bytes?))])]{
+           ([body (listof bytes?)])]{
  As with @scheme[response/basic], except with @scheme[body] as the response
  body.
 
  Example:
  @schemeblock[
   (make-response/full
-   301 "Moved Permanently"
+   301 #"Moved Permanently"
    (current-seconds) TEXT/HTML-MIME-TYPE
    (list (make-header #"Location"
                       #"http://www.plt-scheme.org/downloads"))
@@ -198,7 +198,7 @@ Here is an example typical of what you will find in many applications:
 }
 
 @defstruct[(response/incremental response/basic)
-           ([generator ((() (listof (or/c bytes? string?)) . ->* . any) . -> . any)])]{
+           ([generator ((() (listof bytes?) . ->* . any) . -> . any)])]{
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
  that outputs the content it is called with.
@@ -206,7 +206,7 @@ Here is an example typical of what you will find in many applications:
  Here is a short example:
  @schemeblock[
   (make-response/incremental
-    200 "OK" (current-seconds)
+    200 #"OK" (current-seconds)
     #"application/octet-stream"
     (list (make-header #"Content-Disposition"
                        #"attachement; filename=\"file\""))
@@ -214,14 +214,19 @@ Here is an example typical of what you will find in many applications:
       (send/bytes #"Some content")
       (send/bytes)
       (send/bytes #"Even" #"more" #"content!")
-      (send/bytes "Now we're done")))
+      (send/bytes #"Now we're done")))
  ]
 }
 
 @defthing[response/c contract?]{
  Equivalent to @scheme[(or/c response/basic?
-                             (listof (or/c string? bytes?))
+                             (cons/c bytes? (listof (or/c string? bytes?)))
                              xexpr/c)].
+}
+
+@defproc[(normalize-response [close? boolean?] [response response/c])
+         (or/c response/full? response/incremental?)]{
+ Coerces @scheme[response] into a full response, filling in additional details where appropriate.
 }
 
 @defthing[TEXT/HTML-MIME-TYPE bytes?]{Equivalent to @scheme[#"text/html; charset=utf-8"].}

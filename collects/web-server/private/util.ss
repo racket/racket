@@ -26,7 +26,12 @@
  [read/string (string? . -> . serializable?)]
  [write/string (serializable? . -> . string?)]
  [read/bytes (bytes? . -> . serializable?)]
- [write/bytes (serializable? . -> . bytes?)])
+ [write/bytes (serializable? . -> . bytes?)]
+ [bytes-ci=? (bytes? bytes? . -> . boolean?)])
+
+(define (bytes-ci=? b0 b1)
+  (string-ci=? (bytes->string/utf-8 b0)
+               (bytes->string/utf-8 b1)))
 
 (define (read/string str)
   (read (open-input-string str)))

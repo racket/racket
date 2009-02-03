@@ -87,7 +87,7 @@
   (let ([rx (byte-regexp #"^([^ ]+) (.+) HTTP/([0-9]+)\\.([0-9]+)$")])
     (lambda (a) (regexp-match rx a))))
 
-; read-request-line : iport -> symbol url number number
+; read-request-line : iport -> bytes url number number
 ; to read in the first line of an http request, AKA the "request line"
 ; effect: in case of errors, complain [MF: where] and close the ports
 (define (read-request-line ip)
@@ -98,7 +98,7 @@
         [(match-method line)
          => (match-lambda
               [(list _ method url major minor)
-               (values (lowercase-symbol! (bytes->string/utf-8 method))
+               (values method
                        (string->url (bytes->string/utf-8 url))
                        (string->number (bytes->string/utf-8 major))
                        (string->number (bytes->string/utf-8 minor)))])]
@@ -110,7 +110,7 @@
   (let ([rx (byte-regexp (bytes-append #"^([^:]*):[ " (bytes 9) #"]*(.*)"))])
     (lambda (a) (regexp-match rx a))))
 
-; read-headers : iport -> (listof (cons symbol bytes))
+; read-headers : iport -> (listof header?)
 (define (read-headers in)
   (let read-header ()
     (define l (read-bytes-line in 'any))

@@ -17,21 +17,21 @@
     (test-case
      "Simple"
      (check-equal? (request-bindings
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   empty (list (make-binding:form #"key" #"val")) #f
                                   "host" 80 "client"))
                    '((key . "val"))))
     (test-case
      "Case"
      (check-equal? (request-bindings
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   empty (list (make-binding:form #"KEY" #"val")) #f
                                   "host" 80 "client"))
                    '((key . "val"))))
     (test-case
      "Multi"
      (check-equal? (request-bindings
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   empty (list (make-binding:form #"key" #"val")
                                               (make-binding:form #"key2" #"val")) #f
                                                                                   "host" 80 "client"))
@@ -40,7 +40,7 @@
     (test-case
      "File"
      (check-equal? (request-bindings
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   empty (list (make-binding:file #"key" #"file" empty #"val")) #f
                                   "host" 80 "client"))
                    '((key . #"val")))))
@@ -50,14 +50,14 @@
     (test-case
      "Simple"
      (check-equal? (request-headers
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   (list (make-header #"key" #"val")) empty #f
                                   "host" 80 "client"))
                    '((key . "val"))))
     (test-case
      "Case"
      (check-equal? (request-headers
-                    (make-request 'get (string->url "http://test.com/foo")
+                    (make-request #"GET" (string->url "http://test.com/foo")
                                   (list (make-header #"KEY" #"val")) empty #f
                                   "host" 80 "client"))
                    '((key . "val")))))

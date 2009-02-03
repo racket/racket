@@ -45,7 +45,7 @@
 (require net/url
          web-server/servlet)
 (formlet-process travel-formlet
-                 (make-request 'get (string->url "http://test.com")
+                 (make-request #"GET" (string->url "http://test.com")
                                empty
                                (list (make-binding:form #"input_0" #"Jay")
                                      (make-binding:form #"input_1" #"10")

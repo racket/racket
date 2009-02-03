@@ -42,7 +42,7 @@
 
 (define (request-line-raw req)
   (format "~a ~a HTTP/1.1"
-          (string-upcase (symbol->string (request-method req)))
+          (string-upcase (bytes->string/utf-8 (request-method req)))
           (url->string (request-uri req))))
 (define (apache-default-format req)
   (define request-time (srfi-date:current-date))

@@ -29,13 +29,13 @@
                  302)
     (test-equal? "Message (temp)" 
                  (response/basic-message (redirect-to "http://test.com/foo"))
-                 "Moved Temporarily")
+                 #"Moved Temporarily")
     (test-equal? "Code" 
                  (response/basic-code (redirect-to "http://test.com/foo" permanently))
                  301)
     (test-equal? "Message" 
                  (response/basic-message (redirect-to "http://test.com/foo" permanently))
-                 "Moved Permanently")
+                 #"Moved Permanently")
     (test-equal? "URL"
                  (dehead (response/basic-headers (redirect-to "http://test.com/foo")))
                  (list (list #"Location" #"http://test.com/foo")))

@@ -181,7 +181,7 @@
            [html? (regexp-match? #rx"[.]html?$" (string-foldcase tag))]
            [wxme? (regexp-match?
                    #rx#"^(?:#reader[(]lib\"read.ss\"\"wxme\"[)])?WXME" data)])
-      (make-response/full 200 "Okay" (current-seconds)
+      (make-response/full 200 #"Okay" (current-seconds)
         (cond [html? #"text/html"]
               [wxme? #"application/data"]
               [else  #"text/plain"])

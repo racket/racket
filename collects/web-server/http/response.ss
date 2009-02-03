@@ -14,8 +14,8 @@
 
 (provide/contract
  [rename ext:output-response output-response (connection? response/c . -> . void)]
- [rename ext:output-response/method output-response/method (connection? response/c symbol? . -> . void)]
- [rename ext:output-file output-file (connection? path-string? symbol? bytes? (or/c pair? false/c) . -> . void)])
+ [rename ext:output-response/method output-response/method (connection? response/c bytes? . -> . void)]
+ [rename ext:output-file output-file (connection? path-string? bytes? bytes? (or/c pair? false/c) . -> . void)])
 
 ;; Table 1. head responses:
 ; ------------------------------------------------------------------------------
@@ -56,56 +56,13 @@
 ;;    simply turned into a non-chunked one.
 
 (define (output-response conn resp)
-  (output-response/method conn resp 'get))
+  (output-response/method conn resp #"GET"))
 
 (define (output-response/method conn resp meth)
-  (define bresp (response->response/basic (connection-close? conn) resp))
+  (define bresp (normalize-response (connection-close? conn) resp))
   (output-headers+response/basic conn bresp)
-  (unless (eq? meth 'head)
+  (unless (bytes-ci=? meth #"HEAD")
     (output-response/basic conn bresp)))
-
-(define (response->response/basic close? resp)
-  (cond
-    [(response/full? resp)
-     (make-response/full 
-      (response/basic-code resp)
-      (response/basic-message resp)
-      (response/basic-seconds resp)
-      (response/basic-mime resp)
-      (list* (make-header #"Content-Length" (string->bytes/utf-8 (number->string (response/full->size resp))))
-             (response/basic-headers resp))
-      (response/full-body resp))]
-    [(response/incremental? resp)
-     (if close?
-         resp
-         (make-response/incremental 
-          (response/basic-code resp)
-          (response/basic-message resp)
-          (response/basic-seconds resp)
-          (response/basic-mime resp)
-          (list* (make-header #"Transfer-Encoding" #"chunked")
-                 (response/basic-headers resp))
-          (response/incremental-generator resp)))]
-    [(response/basic? resp)
-     (response->response/basic
-      close?
-      (make-response/full 
-       (response/basic-code resp)
-       (response/basic-message resp)
-       (response/basic-seconds resp)
-       (response/basic-mime resp)
-       (response/basic-headers resp)
-       empty))]
-    [(and (pair? resp) (bytes? (car resp)))
-     (response->response/basic
-      close?
-      (make-response/full 200 "Okay" (current-seconds) (car resp) empty
-                          (cdr resp)))]
-    [else
-     (response->response/basic
-      close?
-      (make-response/full 200 "Okay" (current-seconds) TEXT/HTML-MIME-TYPE empty
-                          (list (xexpr->string resp))))]))
 
 ;; Write the headers portion of a response to an output port.
 ;; NOTE: According to RFC 2145 the server should write HTTP/1.1
@@ -154,16 +111,11 @@
            ((response/incremental-generator bresp)
             (lambda chunks
               (fprintf o-port "~x\r\n"
-                       (apply + 0 (map data-length chunks)))                     
+                       (apply + 0 (map bytes-length chunks)))                     
               (for-each (lambda (chunk) (display chunk o-port)) chunks)
               (fprintf o-port "\r\n")))
            ; one \r\n ends the last (empty) chunk and the second \r\n ends the (non-existant) trailers
            (fprintf o-port "0\r\n\r\n")))]))
-
-(define (data-length x)
-  (if (string? x)
-      (data-length (string->bytes/utf-8 x))
-      (bytes-length x)))
 
 ; seconds->gmt-string : Nat -> String
 ; format is rfc1123 compliant according to rfc2068 (http/1.1)
@@ -202,10 +154,6 @@
 
 (define ext:output-response
   (ext:wrap output-response))
-
-;; response/full->size: response/full -> number
-(define (response/full->size resp)
-  (apply + (map data-length (response/full-body resp))))
 
 ;; output-file: connection
 ;;              path
@@ -305,7 +253,7 @@
            (make-206-response modified-seconds mime-type total-content-length total-file-length converted-ranges boundary)
            (make-200-response modified-seconds mime-type total-content-length)))
       ; Send the appropriate file content:
-      (when (eq? method 'get)
+      (when (bytes-ci=? method #"GET")
         (adjust-connection-timeout! ; Give it one second per byte.
          conn
          (apply + (map (lambda (range)
@@ -407,14 +355,14 @@
       (let ([start (caar converted-ranges)]
             [end   (cdar converted-ranges)])
         (make-response/basic
-         206 "Partial content"
+         206 #"Partial content"
          modified-seconds
          mime-type 
          (list (make-header #"Accept-Ranges" #"bytes")
                (make-content-length-header total-content-length)
                (make-content-range-header start end total-file-length))))
       (make-response/basic
-       206 "Partial content"
+       206 #"Partial content"
        modified-seconds
        (bytes-append #"multipart/byteranges; boundary=" boundary)
        (list (make-header #"Accept-Ranges" #"bytes")
@@ -423,7 +371,7 @@
 ;; make-200-response : integer bytes integer -> basic-response
 (define (make-200-response modified-seconds mime-type total-content-length)
   (make-response/basic
-   200 "OK"
+   200 #"OK"
    modified-seconds
    mime-type 
    (list (make-header #"Accept-Ranges" #"bytes")
@@ -432,7 +380,7 @@
 ;; make-416-response : integer bytes -> basic-response
 (define (make-416-response modified-seconds mime-type)
   (make-response/basic
-   416 "Invalid range request"
+   416 #"Invalid range request"
    modified-seconds
    mime-type 
    null))

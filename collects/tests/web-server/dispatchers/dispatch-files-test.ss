@@ -62,46 +62,46 @@
     (list (cons 1 10) (cons 20 #f) (cons #f 30)))
    
    (test-equal? "file, exists, whole, no Range, get"
-                (collect (dispatch #t tmp-file) (req #f 'get empty))
+                (collect (dispatch #t tmp-file) (req #f #"GET" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
    (test-equal? "file, exists, whole, no Range, head"
-                (collect (dispatch #t tmp-file) (req #f 'head empty))
+                (collect (dispatch #t tmp-file) (req #f #"HEAD" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n")
    (test-equal? "file, exists, whole, Range, get"
-                (collect (dispatch #t tmp-file) (req #f 'get (list (make-header #"Range" #"bytes=0-80"))))
+                (collect (dispatch #t tmp-file) (req #f #"GET" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
    (test-equal? "file, exists, whole, Range, head"
-                (collect (dispatch #t tmp-file) (req #f 'head (list (make-header #"Range" #"bytes=0-80"))))
+                (collect (dispatch #t tmp-file) (req #f #"HEAD" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
    (test-equal? "file, exists, part, get"
-                (collect (dispatch #t tmp-file) (req #f 'get (list (make-header #"Range" #"bytes=5-9"))))
+                (collect (dispatch #t tmp-file) (req #f #"GET" (list (make-header #"Range" #"bytes=5-9"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 5\r\nContent-Range: bytes 5-9/81\r\n\r\n><hea")
    (test-equal? "file, exists, part, head"
-                (collect (dispatch #t tmp-file) (req #f 'head (list (make-header #"Range" #"bytes=5-9"))))
+                (collect (dispatch #t tmp-file) (req #f #"HEAD" (list (make-header #"Range" #"bytes=5-9"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 5\r\nContent-Range: bytes 5-9/81\r\n\r\n")
    
    (test-exn "path, non"
              exn:dispatcher?
-             (lambda () (collect (dispatch #t not-there) (req #f 'get empty))))
+             (lambda () (collect (dispatch #t not-there) (req #f #"GET" empty))))
    
    (test-equal? "dir, exists, no Range, get"
-                (collect (dispatch #t a-dir) (req #t 'get empty))
+                (collect (dispatch #t a-dir) (req #t #"GET" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
    (test-equal? "dir, exists, no Range, head"
-                (collect (dispatch #t a-dir) (req #t 'head empty))
+                (collect (dispatch #t a-dir) (req #t #"HEAD" empty))
                 #"HTTP/1.1 200 OK\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\n\r\n")
    (test-equal? "dir, exists, Range, get"
-                (collect (dispatch #t a-dir) (req #t 'get (list (make-header #"Range" #"bytes=0-80"))))
+                (collect (dispatch #t a-dir) (req #t #"GET" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n<html><head><title>A title</title></head><body>Here's some content!</body></html>")
    (test-equal? "dir, exists, Range, head"
-                (collect (dispatch #t a-dir) (req #t 'head (list (make-header #"Range" #"bytes=0-80"))))
+                (collect (dispatch #t a-dir) (req #t #"HEAD" (list (make-header #"Range" #"bytes=0-80"))))
                 #"HTTP/1.1 206 Partial content\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html; charset=utf-8\r\nAccept-Ranges: bytes\r\nContent-Length: 81\r\nContent-Range: bytes 0-80/81\r\n\r\n")
    (test-equal? "dir, not dir-url, get"
-                (collect (dispatch #t a-dir) (req #f 'get empty))
+                (collect (dispatch #t a-dir) (req #f #"GET" empty))
                 #"HTTP/1.1 302 Moved Temporarily\r\nDate: REDACTED GMT\r\nLast-Modified: REDACTED GMT\r\nServer: PLT Scheme\r\nContent-Type: text/html\r\nContent-Length: 0\r\nLocation: /foo/\r\n\r\n")
    (test-exn "dir, not exists, get"
              exn:dispatcher?
-             (lambda () (collect (dispatch #f a-dir) (req #t 'get empty))))
+             (lambda () (collect (dispatch #f a-dir) (req #t #"GET" empty))))
    (test-exn "dir, not exists, head"
              exn:dispatcher?
-             (lambda () (collect (dispatch #f a-dir) (req #t 'head empty))))))
+             (lambda () (collect (dispatch #f a-dir) (req #t #"HEAD" empty))))))

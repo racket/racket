@@ -2,11 +2,8 @@
 (require mzlib/contract
          mzlib/serialize
          mzlib/plt-match
-         net/url)
-
-(define (bytes-ci=? b0 b1)
-  (string-ci=? (bytes->string/utf-8 b0)
-               (bytes->string/utf-8 b1)))
+         net/url
+         web-server/private/util)
 
 (define-serializable-struct header (field value))
 (define (headers-assq* f hs)
@@ -52,10 +49,9 @@
                                  [headers (listof header?)]
                                  [content bytes?])])
 
-(define-serializable-struct request (method uri headers/raw bindings/raw post-data/raw
-                                            host-ip host-port client-ip))
+(define-serializable-struct request (method uri headers/raw bindings/raw post-data/raw host-ip host-port client-ip))
 (provide/contract
- [struct request ([method symbol?]
+ [struct request ([method bytes?]
                   [uri url?] 
                   [headers/raw (listof header?)]
                   [bindings/raw (listof binding?)]

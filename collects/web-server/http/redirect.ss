@@ -3,12 +3,12 @@
 (require web-server/http/response-structs
          web-server/http/request-structs)
 
-; redirection-status = (make-redirection-status nat str)
+; redirection-status = (make-redirection-status nat bytes)
 (define-struct redirection-status (code message))
 
-(define permanently (make-redirection-status 301 "Moved Permanently"))
-(define temporarily (make-redirection-status 302 "Moved Temporarily"))
-(define see-other (make-redirection-status 303 "See Other"))
+(define permanently (make-redirection-status 301 #"Moved Permanently"))
+(define temporarily (make-redirection-status 302 #"Moved Temporarily"))
+(define see-other (make-redirection-status 303 #"See Other"))
 
 ; : str [redirection-status] -> response
 (define(redirect-to 

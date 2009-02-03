@@ -464,6 +464,10 @@ needs. They are provided by @filepath{private/util.ss}.
 
 @subsection{Bytes}
 
+@defproc[(bytes-ci=? [b1 bytes?] [b2 bytes?]) boolean?]{
+ Compares two bytes case insensitively.
+}
+                                                        
 @defproc[(read/bytes [b bytes?])
          serializable?]{
  @scheme[read]s a value from @scheme[b] and returns it.

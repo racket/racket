@@ -42,7 +42,7 @@
                                  #:authentication-responder 
                                  (lambda (u h) (esc h))))
     (define-values (c i o) (make-mock-connection #""))
-    (d c (make-request 'get 
+    (d c (make-request #"GET"
                        (if applies? 
                            (string->url "http://host/secret/something")
                            (string->url "http://host/not-secret"))
