@@ -13,11 +13,62 @@
 @defproc[(zo-parse [in input-port?]) compilation-top?]{
 
 Parses a port (typically the result of opening a @filepath{.zo} file)
-containing byte. The parsed bytecode is returned in a
-@scheme[compilation-top] structure.
+containing byte. Beware that the structure types used to represent the
+bytecode are subject to frequent changes across PLT Scheme versons.
 
-Beware that the structure types used to represent the bytecode are
-subject to frequent changes across PLT Scheme versons.}
+The parsed bytecode is returned in a @scheme[compilation-top]
+structure. For a compiled module, the @scheme[compilation-top]
+structure will contain a @scheme[mod] structure. For a top-level
+sequence, it will normally contain a @scheme[seq] or @scheme[splice]
+structure with a list of top-level declarations and expressions.
+
+The bytecode representation f an expression is closer to an
+S-expression than a traditional, flat control string. For example, an
+@scheme[if] form is represented by a @scheme[branch] structure that
+has three fields: a test expression, a ``then'' expression, and an
+``else'' expression.  Similarly, a function call is represented by an
+@scheme[application] structure that has a list of argument
+expressions.
+
+Storage for local variables or intermediate values (such as the
+arguments for a function call) is explicitly specified in terms of a
+stack. For example, execution of an @scheme[application] structure
+reserves space on the stack for each argument result. Similarly, when
+a @scheme[let-one] structure (for a simple @scheme[let]) is executed,
+the value obtained by evaluating the right-hand side expression is
+pushed onto the stack, and then the body is evaluated. Local variables
+are always accessed as offsets from the current stack position. When a
+function is called, its arguments are passed on the stack. A closure
+is created by transferring values from the stack to a flat closure
+record, and when a closure is applied, the saved values are restored
+on the stack (though possibly in a different order and likely in a
+more compact layout than when they were captured).
+
+When a sub-expression produces a value, then the stack pointer is
+restored to its location from before evaluating the
+sub-expression. For example, evaluating the right-hand size for a
+@scheme[let-one] structure may temporarily push values onto the stack,
+but the stack is restored to its pre-@scheme[let-one] position before
+pushing the resulting value and continuing with the body. In addition,
+a tail call resets the stack pointer to the position that follows the
+enclosing function's arguments, and then the tail call continues by
+pushing onto the stack the arguments for the tail-called function.
+
+Values for global and module-level variables are not put directly on
+the stack, but instead stored in ``buckets,'' and an array of
+accessible buckets is kept on the stack. When a closure body needs to
+access a global variable, the closure captures and later restores the
+bucket array in the same way that it captured and restores a local
+variable. Mutable local variables are boxed similarly to global
+variables, but individual boxes are referenced from the stack and
+closures.
+
+Quoted syntax (in the sense of @scheme[quote-syntax]) is treated like
+a global variable, because it must be instantiated for an appropriate
+phase. A @scheme[prefix] structure within a @scheme[compilation-top]
+or @scheme[mod] structure indicates the list of global variables and
+quoted syntax that need to be instantiated (and put into an array on
+the stack) before evaluating expressions that might use them.}
 
 @; --------------------------------------------------
 @section{Prefix}
