@@ -42,15 +42,11 @@ To do a better job of not generating programs with free variables,
               (hash-set! uniq char #t)))
     (hash-map uniq (λ (k v) k))))
 
-(define generation-retries 100)
-
 (define default-check-attempts 1000)
 
 (define ascii-chars-threshold 50)
 (define tex-chars-threshold 500)
 (define chinese-chars-threshold 2000)
-
-(define preferred-production-threshold 3000)
 
 (define (pick-var lang-chars lang-lits bound-vars attempt [random random])
   (if (or (null? bound-vars) (allow-free-var? random))
@@ -137,6 +133,15 @@ To do a better job of not generating programs with free variables,
 (define real-threshold 1000)
 (define complex-threshold 2000)
 
+(define generation-retries 100)
+(define retry-threshold (max chinese-chars-threshold complex-threshold))
+(define proportion-before-threshold 9/10)
+(define proportion-at-size 1/10)
+(define post-threshold-incr 50)
+
+(define preferred-production-threshold
+  (+ retry-threshold 2000))
+
 ;; Determines the parameter p for which random-natural's expected value is E
 (define (expected-value->p E)
   ;; E = 0 => p = 1, which breaks random-natural
@@ -185,7 +190,7 @@ To do a better job of not generating programs with free variables,
          [(term _)
           (generate/pred 
            name
-           (λ () 
+           (λ (size attempt) 
              (let ([rhs (pick-from-list
                          (if (zero? size)
                              (min-prods (nt-by-name lang name) base-table)
@@ -193,7 +198,8 @@ To do a better job of not generating programs with free variables,
                (generate bound-vars (max 0 (sub1 size)) attempt 
                          (make-state (map fvt-entry (rhs-var-info rhs)) #hash())
                          in-hole (rhs-pattern rhs))))
-           (λ (_ env) (mismatches-satisfied? env)))])
+           (λ (_ env) (mismatches-satisfied? env))
+           size attempt)])
       (values term (extend-found-vars fvt-id term state))))
   
   (define (generate-sequence ellipsis generate state length)
@@ -220,17 +226,34 @@ To do a better job of not generating programs with free variables,
                   (values (cons term terms) (cons (state-env state) envs) fvt))))])
       (values seq (make-state fvt (merge-environments envs)))))
   
-  (define (generate/pred name gen pred)
-    (let retry ([remaining generation-retries])
-      (if (zero? remaining)
-          (error 'generate "unable to generate pattern ~s in ~a attempt~a" 
-                 name 
-                 generation-retries
-                 (if (= generation-retries 1) "" "s"))
-          (let-values ([(term state) (gen)])
-            (if (pred term (state-env state))
-                (values term state)
-                (retry (sub1 remaining)))))))
+  (define (generate/pred name gen pred init-sz init-att)
+    (let ([pre-threshold-incr 
+           (ceiling
+            (/ (- retry-threshold init-att)
+               (* proportion-before-threshold generation-retries)))]
+          [incr-size? 
+           (λ (remain)
+             (zero? 
+              (modulo (sub1 remain) 
+                      (ceiling (* proportion-at-size 
+                                  generation-retries)))))])
+      (let retry ([remaining generation-retries]
+                  [size init-sz]
+                  [attempt init-att])
+        (if (zero? remaining)
+            (error 'generate "unable to generate pattern ~s in ~a attempt~a" 
+                   name 
+                   generation-retries
+                   (if (= generation-retries 1) "" "s"))
+            (let-values ([(term state) (gen size attempt)])
+              (if (pred term (state-env state))
+                  (values term state)
+                  (retry (sub1 remaining)
+                         (if (incr-size? remaining) (add1 size) size)
+                         (+ attempt
+                            (if (>= attempt retry-threshold)
+                                post-threshold-incr
+                                pre-threshold-incr)))))))))
   
   (define (generate/prior name state generate)
     (let* ([none (gensym)]
@@ -273,6 +296,8 @@ To do a better job of not generating programs with free variables,
   (define (generate-pat lang sexp pref-prods bound-vars size attempt state in-hole pat)
     (define recur (curry generate-pat lang sexp pref-prods bound-vars size attempt))
     (define recur/pat (recur state in-hole))
+    (define ((recur/pat/size-attempt pat) size attempt)
+      (generate-pat lang sexp pref-prods bound-vars size attempt state in-hole pat))
     
     (define clang (rg-lang-clang lang))
     (define gen-nt (generate-nt 
@@ -285,16 +310,18 @@ To do a better job of not generating programs with free variables,
       [`number (values ((next-number-decision) attempt) state)]
       [`(variable-except ,vars ...)
        (generate/pred 'variable
-                      (λ () (recur/pat 'variable))
-                      (λ (var _) (not (memq var vars))))]
+                      (recur/pat/size-attempt 'variable)
+                      (λ (var _) (not (memq var vars)))
+                      size attempt)]
       [`variable 
        (values ((next-variable-decision)
                 (rg-lang-chars lang) (rg-lang-lits lang) bound-vars attempt)
                state)]
       [`variable-not-otherwise-mentioned
        (generate/pred 'variable
-                      (λ () (recur/pat 'variable)) 
-                      (λ (var _) (not (memq var (compiled-lang-literals clang)))))]
+                      (recur/pat/size-attempt 'variable)
+                      (λ (var _) (not (memq var (compiled-lang-literals clang))))
+                      size attempt)]
       [`(variable-prefix ,prefix) 
        (define (symbol-append prefix suffix)
          (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
@@ -305,8 +332,9 @@ To do a better job of not generating programs with free variables,
                state)]
       [`(side-condition ,pat ,(? procedure? condition))
        (generate/pred (unparse-pattern pat) 
-                      (λ () (recur/pat pat))
-                      (λ (_ env) (condition (bindings env))))]
+                      (recur/pat/size-attempt pat)
+                      (λ (_ env) (condition (bindings env)))
+                      size attempt)]
       [`(name ,(? symbol? id) ,p)
        (let-values ([(term state) (recur/pat p)])
          (values term (set-env state (make-binder id) term)))]
@@ -393,11 +421,12 @@ To do a better job of not generating programs with free variables,
           (let-values ([(term state)
                         (generate/pred 
                          pat
-                         (λ ()
+                         (λ (size attempt)
                            (generate-pat 
                             rg-lang rg-sexp ((next-pref-prods-decision) (rg-lang-clang rg-lang))
                             null size attempt new-state the-hole parsed))
-                         (λ (_ env) (mismatches-satisfied? env)))])
+                         (λ (_ env) (mismatches-satisfied? env))
+                         size attempt)])
             (values term (bindings (state-env state)))))))))
 
 ;; find-base-cases : compiled-language -> hash-table
@@ -856,7 +885,9 @@ To do a better job of not generating programs with free variables,
          (struct-out binder) check-metafunction-contract prepare-lang
          pick-number parse-language check-reduction-relation 
          preferred-production-threshold check-metafunction
-         generation-decisions pick-preferred-productions)
+         generation-decisions pick-preferred-productions
+         generation-retries proportion-at-size retry-threshold 
+         proportion-before-threshold post-threshold-incr)
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])

@@ -500,6 +500,46 @@
                     #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
 
+;; generation failures increase size and attempt
+(let ()
+  (define-language L
+    (a d b)
+    (b d c)
+    (c e)
+    
+    (x variable))
+  (test
+   (generate-term/decisions
+    L (side-condition a (eq? (term a) 'e)) 0 0
+    ; It isn't possible for `a' to generate 'y until size is 2.
+    ; When size is 0, the generator has no choice but the 'x production.
+    ; When size is 1, the generator has a choice for `a' but not for `b'.
+    ; Supply enough first-production choices to cover the size 1 attempts
+    ; followed by the choices that produce 'y on the first size 2 attempt.
+    (decisions 
+     #:nt (apply patterns 
+                 (append (build-list (* generation-retries proportion-at-size)
+                                     (λ (_) first))
+                         (list second second first)))))
+   'e)
+  
+  (test
+   (generate-term/decisions
+    L (side-condition x (number? (term x))) 0 0
+    (decisions #:var (λ (lang-chars lang-lits bound-vars attempt)
+                       (if (>= attempt retry-threshold) 0 'x))))
+   0)
+  
+  (let ([attempts null]
+        [start (sub1 retry-threshold)]
+        [finish (+ retry-threshold post-threshold-incr)])
+    (generate-term/decisions
+     L (side-condition x (number? (term x))) 0 start
+     (decisions #:var (λ (lang-chars lang-lits bound-vars attempt)
+                        (set! attempts (cons attempt attempts))
+                        (if (= attempt finish) 0 'x))))
+    (test attempts (list finish retry-threshold start))))
+
 ;; preferred productions
 (let ([make-pick-nt (λ opt (λ req (apply pick-nt (append req opt))))])
   (define-language L
@@ -558,14 +598,14 @@
     (e e 4)
     (n number))
   (test (output (λ () (redex-check lang d #f))) 
-        "counterexample found after 1 attempts:\n5\n")
+        "counterexample found after 1 attempt:\n5\n")
   (test (output (λ () (redex-check lang d #t))) "")
   (test (output (λ () (redex-check lang (d e) (and (eq? (term d) 5) (eq? (term e) 4)) #:attempts 2)))
         "")
   (test (output (λ () (redex-check lang (d ...) (zero? (modulo (foldl + 0 (term (d ...))) 5)) #:attempts 2)))
         "")
   (test (output (λ () (redex-check lang (d e) #f)))
-        "counterexample found after 1 attempts:\n(5 4)\n")
+        "counterexample found after 1 attempt:\n(5 4)\n")
   (let* ([p (open-output-string)]
          [m (parameterize ([current-error-port p])
               (with-handlers ([exn:fail? exn-message])
@@ -583,7 +623,7 @@
                                   lang 
                                   (--> 42 dontcare)
                                   (--> 0 dontcare z)))))
-        "counterexample found after 1 attempts with z:\n0\n")
+        "counterexample found after 1 attempt with z:\n0\n")
   
   (let ([generated null])
     (test (output
@@ -606,7 +646,7 @@
              (redex-check lang (n) (eq? 42 (term n)) 
                           #:attempts 1
                           #:source mf)))
-          "counterexample found after 1 attempts with clause #2:\n(0)\n"))
+          "counterexample found after 1 attempt with clause #2:\n(0)\n"))
   
   (let ()
     (define-metafunction lang
@@ -670,14 +710,14 @@
            (parameterize ([generation-decisions 
                            (decisions #:num (list (λ _ 2) (λ _ 5)))])
              (check-metafunction-contract f))))
-        "counterexample found after 1 attempts:\n(5)\n")
+        "counterexample found after 1 attempt:\n(5)\n")
   ;; Rng(f) > Codom(f)
   (test (output
          (λ () 
            (parameterize ([generation-decisions
                            (decisions #:num (list (λ _ 3)))])
              (check-metafunction-contract f))))
-        "counterexample found after 1 attempts:\n(3)\n")
+        "counterexample found after 1 attempt:\n(3)\n")
   ;; LHS matches multiple ways
   (test (output
          (λ () 
@@ -685,7 +725,7 @@
                            (decisions #:num (list (λ _ 1) (λ _ 1))
                                       #:seq (list (λ _ 2)))])
              (check-metafunction-contract g))))
-        "counterexample found after 1 attempts:\n(1 1)\n")
+        "counterexample found after 1 attempt:\n(1 1)\n")
   ;; OK -- generated from Dom(h)
   (test (output (λ () (check-metafunction-contract h))) "")
   ;; OK -- generated from pattern (any ...)
@@ -720,10 +760,10 @@
     (test (output (λ () (check-reduction-relation S (λ (x) #t) #:attempts 1))) "")
     (test (output 
            (λ () (check-reduction-relation S (λ (x) #f))))
-          "counterexample found after 1 attempts with name:\n1\n")
+          "counterexample found after 1 attempt with name:\n1\n")
     (test (output 
            (λ () (check-reduction-relation S (curry eq? 1))))
-          "counterexample found after 1 attempts with unnamed:\n3\n"))
+          "counterexample found after 1 attempt with unnamed:\n3\n"))
   
   (let ([T (reduction-relation
             L
@@ -756,7 +796,7 @@
           (reverse '((1) (2)))))
   (test (output (λ () (check-metafunction m (λ (_) #t)))) "")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
-        #rx"counterexample found after 1 attempts with clause #1")
+        #rx"counterexample found after 1 attempt with clause #1")
   (test (with-handlers ([exn:fail:contract? exn-message])
           (check-metafunction m #t #:attempts 'NaN))
         #rx"check-metafunction: expected"))
