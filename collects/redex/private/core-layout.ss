@@ -584,19 +584,51 @@
       [(pict-token? tok)
        (list new-token)]))
   
-  ;; lines->pict : (listof line) -> pict
+  ;; lines->pict : (non-empty-listof line) -> pict
   ;; expects the lines to be in order from bottom to top
   (define (lines->pict lines)
-    (let loop ([lines lines])
-      (cond
-        [(null? lines) (blank)]
-        [(null? (cdr lines))
-         (handle-single-line (car lines) (blank))]
-        [else
-         (let ([rst (loop (cdr lines))])
-           (vl-append rst (handle-single-line (car lines) rst)))])))
+    (let ([lines-ht (make-hash)])
+      
+      ;; this loop builds a pict with all of the lines 
+      ;; in order from top to bottom, ignoring the line numbers
+      ;; it also saves the lines in the lines ht above.
+      ;; the lines are first built like that so that 'handle-single-line'
+      ;; can have its 'rst' arguments
+      (let loop ([lines lines])
+        (cond
+          [(null? lines) (blank)]
+          [(null? (cdr lines))
+           (let* ([line (car lines)]
+                  [this-pict (handle-single-line line (blank))]) 
+             (hash-set! lines-ht
+                        (line-n line)
+                        (cons this-pict (hash-ref lines-ht (line-n line) '())))
+             this-pict)]
+          [else
+           (let ([line (car lines)])
+             (let* ([rst (loop (cdr lines))]
+                    [this-pict (handle-single-line (car lines) rst)])
+               (hash-set! lines-ht
+                          (line-n line)
+                          (cons this-pict (hash-ref lines-ht (line-n line) '())))
+               (vl-append rst this-pict)))]))
+      
+      ;; build the actual pict, based on the line numbers
+      ;; the reverse ensures that when two lines have the same number,
+      ;; the "lower" one is underneat the "upper" one.
+      (let ([max (apply max (map line-n lines))]
+            [min (apply min (map line-n lines))])
+        (let loop ([i min])
+          (let ([lines (apply lbl-superimpose (reverse (hash-ref lines-ht i)))])
+            (cond
+              [(= i max) lines]
+              [else
+               (vl-append lines (loop (+ i 1)))]))))))
 
   ;; handle-single-line : line pict -> pict
+  ;; builds a line, on the assumption that if the first
+  ;; token in the line is an align-token, then the pict
+  ;; that gives it its width is somewhere in 'rst'.
   (define (handle-single-line line rst)
     (let ([tokens (line-tokens line)])
       (cond
