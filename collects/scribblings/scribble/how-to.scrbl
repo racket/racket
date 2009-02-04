@@ -303,7 +303,7 @@ and they declare hyperlink targets for @scheme[scheme]-based
 hyperlinks.
 
 To document a @scheme[my-helper] procedure that is exported by
-@filepath{helper.ss} in the @schemeidfont{my-lib} collection that contains
+@filepath{helper.ss} in the @filepath{my-lib} collection that contains
 @filepath{manual.scrbl}:
 
 @itemize[

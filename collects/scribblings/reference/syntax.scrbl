@@ -452,7 +452,7 @@ corresponds to the default @tech{module name resolver}.
  @nonterm{int} is a non-empty sequence of ASCII digits. As this
  shorthand is expended, a @filepath{.plt} extension is added to
  @nonterm{pkg}, and a @filepath{.ss} extension is added to
- @scheme{path}; if no @nonterm{path} is included, @filepath{main.ss}
+ @nonterm{path}; if no @nonterm{path} is included, @filepath{main.ss}
  is used in the expansion.
 
  A @scheme[(planet string)] form is like a @scheme[(planet id)] form
