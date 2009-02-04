@@ -149,7 +149,7 @@ typedef struct {
   GC_CAN_IGNORE jit_state js;
   char *limit;
   int extra_pushed, max_extra_pushed;
-  int depth; /* the position of the closure's first arg on the stack */
+  int depth; /* the position of the closure's first value on the stack */
   int max_depth;
   int *mappings; /* For each element,
 		    case 0x1 bit:
@@ -167,9 +167,10 @@ typedef struct {
   int local1_busy;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
+  int self_to_closure_delta;
   void *self_restart_code;
   void *self_nontail_code;
-  Scheme_Native_Closure *nc; /* for extract_globals, only */
+  Scheme_Native_Closure *nc; /* for extract_globals and extract_closure_local, only */
   Scheme_Closure_Data *self_data;
   void *status_at_ptr;
   int reg_status;
@@ -1424,18 +1425,47 @@ Scheme_Object *extract_global(Scheme_Object *o, Scheme_Native_Closure *nc)
   return globs[SCHEME_TOPLEVEL_POS(o)];
 }
 
-static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter)
+Scheme_Object *extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
 {
-  if (jitter->nc
-      && SAME_TYPE(SCHEME_TYPE(o), scheme_toplevel_type)) {
-    Scheme_Object *p;
-    p = extract_global(o, jitter->nc);
-    p = ((Scheme_Bucket *)p)->val;
-    if (p && SCHEME_PRIMP(p)) {
-      if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_PRED)
-	return 1;
-      else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
-	return 2;
+  int pos;
+
+  pos = SCHEME_LOCAL_POS(obj);
+  pos -= extra_push;
+  if (pos >= jitter->self_pos - jitter->self_to_closure_delta) {
+    pos -= (jitter->self_pos - jitter->self_to_closure_delta);
+    if (pos < jitter->nc->code->u2.orig_code->closure_size) {
+      return jitter->nc->vals[pos];
+    }
+  }
+
+  return NULL;
+}
+
+static int check_val_struct_prim(Scheme_Object *p)
+{
+  if (p && SCHEME_PRIMP(p)) {
+    if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_PRED)
+      return 1;
+    else if (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER)
+      return 2;
+    else
+      return 0;
+  } else
+    return 0;
+}
+
+static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int extra_push)
+{
+  if (jitter->nc) {
+    if (SAME_TYPE(SCHEME_TYPE(o), scheme_toplevel_type)) {
+      Scheme_Object *p;
+      p = extract_global(o, jitter->nc);
+      p = ((Scheme_Bucket *)p)->val;
+      return check_val_struct_prim(p);
+    } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_local_type)) {
+      Scheme_Object *p;
+      p = extract_closure_local(o, jitter, extra_push);
+      return check_val_struct_prim(p);
     }
   }
   return 0;
@@ -1447,7 +1477,7 @@ static int inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
       && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_UNARY_INLINED))
     return 1;
 
-  if (inlineable_struct_prim(o, jitter))
+  if (inlineable_struct_prim(o, jitter, 1))
     return 1;
 
   return 0;
@@ -3758,6 +3788,8 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
 {
   mz_runstack_skipped(jitter, 1);
 
+  LOG_IT(("inlined struct op\n"));
+
   generate(rator, jitter, 0, 0, JIT_R0);
   CHECK_LIMIT();
 
@@ -3807,7 +3839,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
   {
     int k;
-    k = inlineable_struct_prim(rator, jitter);
+    k = inlineable_struct_prim(rator, jitter, 1);
     if (k == 1) {
       generate_inlined_struct_op(1, jitter, rator, app->rand, for_branch, branch_short);
       scheme_direct_call_count++;
@@ -7612,6 +7644,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   jitter->self_restart_code = jit_get_ip().ptr;
   if (!has_rest)
     jitter->self_nontail_code = tail_code;
+
+  jitter->self_to_closure_delta = jitter->self_pos;
   
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
