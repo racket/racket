@@ -344,7 +344,7 @@
   (maximum-sexp-depth        interval  max-sexp-depth)
   (average-sexp-depth        interval  avg-sexp-depth)
   (number-of-setbangs/mod    interval  count-setbangs/ilist)
-  (number-of-exprs           #{interval @ List}  #{length @ Any})
+  (number-of-exprs           #{interval @ (Listof Any)}  #{length @ Any})
   (uses-setbang?/mod         count     module-has-setbangs?)
   (uses-contracts?           count     uses-contracts)
   (number-of-contracts       interval  contracted-provides)
@@ -540,8 +540,8 @@
 ; just in case i want to do some more analysis on the results afterwards,
 ; so i don't have to waste a minute if i forget to bind the return value to something
 (define: (run-all-tests) : top
-  (let*: ([rs1 :  (Listof (Result (Listof NumF) (Listof Atom-display) List))
-               (#{compare* @ (Listof Atom-display) List} 
+  (let*: ([rs1 :  (Listof (Result (Listof NumF) (Listof Atom-display) (Listof Any)))
+               (#{compare* @ (Listof Atom-display) (Listof Any)} 
                 (list module-metrics))]
           [rs2 :  (Listof (Result (Listof NumF) (Listof Atom-display) Any))
                (#{compare* @ (Listof Atom-display) Any} 
@@ -549,7 +549,7 @@
          (let
              ([rs (append rs1 rs2)])
            (set! results rs) 
-           (for-each #{pretty-print-result @ List} rs1)
+           (for-each #{pretty-print-result @ (Listof Any)} rs1)
            (for-each #{pretty-print-result @ Any} rs2)
            rs)))
 

@@ -6,7 +6,8 @@
 
 (define: (element-of? [elt : top] [s : set]) : top (s elt))
 
-(define: (evens [elt : top]) : top (and (integer? elt) (even? elt)))
+;; CHANGE - use exact-integer?
+(define: (evens [elt : top]) : top (and (exact-integer? elt) (even? elt)))
 
 (define-typed-struct pr ([fst : top] [snd : top]))
 
