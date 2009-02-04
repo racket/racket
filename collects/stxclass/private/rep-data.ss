@@ -1,8 +1,9 @@
 
-#lang scheme
+#lang scheme/base
 (require (for-template "kws.ss")
          (for-template scheme/base)
          scheme/contract
+         scheme/match
          syntax/boundmap
          syntax/stx
          "../util.ss")
