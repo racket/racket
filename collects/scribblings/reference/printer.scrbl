@@ -37,7 +37,7 @@ symbols containing uppercase characters also use escaping escaping
 @litchar{\} and quoting @litchar{|}s. In addition, symbols are
 quoted with @litchar{|}s or leading @litchar{\} when they would
 otherwise print the same as a numerical constant or as a delimited
-@scheme{.} (when @scheme[read-accept-dot] is @scheme[#t]).
+@litchar{.} (when @scheme[read-accept-dot] is @scheme[#t]).
 
 When @scheme[read-accept-bar-quote] is @scheme[#t], @litchar{|}s are
 used in printing when one @litchar{|} at the beginning and one
@@ -73,10 +73,10 @@ as @nonterm{m}@litchar{+}@nonterm{n}@litchar{i}, where @nonterm{m} and
 @nonterm{n} are the printed forms of its real and imaginary parts,
 respectively.
 
-An inexact real number prints with either a @litchar{.}  decimal
+An inexact real number prints with either a @litchar{.} decimal
 point, an @litchar{e} exponent marker, or both.  The form is selected
 so that the output is as short as possible, with the constraint that
-reading the printed form back in produces an @scheme{equal?} number.
+reading the printed form back in produces an @scheme[equal?] number.
 
 An exact @scheme[0] prints as @litchar{0}.
 

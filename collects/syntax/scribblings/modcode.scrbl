@@ -24,7 +24,7 @@
 Returns a compiled expression for the declaration of the module
 specified by @scheme[module-path-v].
 
-The @scheme[compiled-subdir] argument defaults to @scheme{compiled};
+The @scheme[compiled-subdir] argument defaults to @scheme["compiled"];
 it specifies the sub-directory to search for a compiled version of the
 module.
 

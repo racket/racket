@@ -722,7 +722,7 @@ interface.
 @subsubsection[#:tag "gui-unpacking"]{GUI Installer}
 
 @defmodule[setup/plt-installer]{ The
-  @schememodname{setup/plt-installer} library in the setup collection
+  @schememodname[setup/plt-installer] library in the setup collection
   defines procedures for installing a @filepath{.plt} archive with a
   GUI (using the facilities of @schememodname[scheme/gui/base]).}
 

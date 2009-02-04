@@ -82,11 +82,11 @@ written using a new shorter syntax:
 @schemeblock[(require (planet schematics/spgsql:2:3/spgsql))]
 
 The two forms behave identically. In the abbreviated syntax, however,
-it is illegal to write the trailing @scheme{.ss} suffix on the file
-name to be required or the trailing @scheme{.plt} on the package file
+it is illegal to write the trailing @filepath{.ss} suffix on the file
+name to be required or the trailing @filepath{.plt} on the package file
 name. (They are mandatory for the long-form syntax.) It is also legal
 in the abbreviated syntax to omit a filename to be required entirely;
-in that case, PLaneT requires the file @scheme{main.ss} in the given
+in that case, PLaneT requires the file @filepath{main.ss} in the given
 package.
 
 @subsection{Fine-Grained Control Over Package Imports}

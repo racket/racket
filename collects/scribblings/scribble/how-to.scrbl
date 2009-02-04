@@ -303,7 +303,7 @@ and they declare hyperlink targets for @scheme[scheme]-based
 hyperlinks.
 
 To document a @scheme[my-helper] procedure that is exported by
-@filepath{helper.ss} in the @scheme{my-lib} collection that contains
+@filepath{helper.ss} in the @schemeidfont{my-lib} collection that contains
 @filepath{manual.scrbl}:
 
 @itemize[
@@ -433,7 +433,7 @@ via @scheme[require-for-label] and @scheme[require]:
 
 In general, a @filepath{.scrbl} file produces a @techlink{part}. A part
 produced by a document's main source (as specified in the
-@scheme{info.ss} file) represents the whole document. The
+@filepath[info.ss] file) represents the whole document. The
 @scheme[include-section] procedure can be used to incorporate a part
 as a sub-part of the enclosing part.
 

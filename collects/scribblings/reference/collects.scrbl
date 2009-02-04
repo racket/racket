@@ -39,7 +39,7 @@ a final path element that names a library file; the path elements are
 separated by @litchar{/}. If the final element has no file suffix,
 then @litchar{/main.ss} is implicitly appended to the path.
 
-The translation of a @scheme{planet} or @scheme{lib} path to a
+The translation of a @scheme[planet] or @scheme[lib] path to a
 @scheme[module] declaration is determined by the @tech{module name
 resolver}, as specified by the @scheme[current-module-name-resolver]
 parameter.

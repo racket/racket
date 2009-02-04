@@ -232,15 +232,15 @@ This is
   optional. If present, it must be a list of strings. Each
   string is displayed at the bottom of the language dialog
   when the corresponding language is selected.
-}  
+}
 @item/cap['drscheme-language-urls]{
 @index{drscheme-language-urls}
 This is
   optional. If present, it must be a list whose elements are
-  either strings or @scheme{#f}.
+  either strings or @scheme[#f].
   Clicking the corresponding language's name in
   the interactions window opens a web browser to the url.
-}  
+}
 @item/cap['drscheme-language-readers]{
 @index{drscheme-language-readers}
 This is optional. If

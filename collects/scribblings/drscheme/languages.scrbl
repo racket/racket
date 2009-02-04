@@ -283,9 +283,9 @@ language through the detail section of language-selection dialog.
 
 }
 
-A program in the teaching languages should be tested using the check forms --
- @scheme{(check-expect value value)}, @scheme{(check-within value value value)}, or
- @scheme{(check-error value string)}. Tests are evaluated when running the program:
+A program in the teaching languages should be tested using the check forms ---
+ @scheme[(check-expect value value)], @scheme[(check-within value value value)], or
+ @scheme[(check-error value string)]. Tests are evaluated when running the program:
  when there are no tests, a warning appears in the interactions window;
  when all tests succeed, an acknowledgement appears in the interactions window;
  otherwise, a testing window appears to report the results. See @secref["menu:view"] 

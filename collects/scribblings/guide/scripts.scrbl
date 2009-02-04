@@ -89,7 +89,7 @@ command-line arguments are allowed by the script.
 An even more general trampoline uses @exec{/bin/sh} plus some lines
 that are comments in one language and expressions in the other. This
 trampoline is more complicated, but it provides more control over
-command-line arguments to @scheme{mzscheme}:
+command-line arguments to @exec{mzscheme}:
 
 @verbatim[#:indent 2]|{
   #! /bin/sh

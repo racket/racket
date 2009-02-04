@@ -1666,7 +1666,7 @@ Returns @scheme[#t] if @scheme[v] is a @tech{generic}, @scheme[#f] otherwise.}
 @defproc[(object=? [a object?][b object?]) eq?]{
 
 Determines if two objects are the same object, or not; this procedure uses
-@scheme{eq?}, but also works properly with contracts.}
+@scheme[eq?], but also works properly with contracts.}
 
 
 @defproc[(object->vector [object object?][opaque-v any/c #f]) vector?]{

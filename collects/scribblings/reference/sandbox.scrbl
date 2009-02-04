@@ -215,7 +215,7 @@ exceptions happen in the same way, so you don't need special code to
 catch syntax errors.
 
 Finally, the fact that a sandboxed evaluator accept syntax objects
-makes it usable as the value for @scheme{current-eval}, which means
+makes it usable as the value for @scheme[current-eval], which means
 that you can easily start a sandboxed read-eval-print-loop.  For
 example, here is a quick implementation of a networked REPL:
 

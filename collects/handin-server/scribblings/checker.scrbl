@@ -184,7 +184,7 @@ Keywords for configuring @scheme[check:]:
   if it does not raise an exception, then the checker will proceed as
   usual.  For example:
 
-  @schemeblock{
+  @schemeblock[
     (lambda (msg)
       (add-header-line! "Erroneous submission!")
       (add-header-line! (format "  --> ~a" msg))
@@ -196,7 +196,7 @@ Keywords for configuring @scheme[check:]:
                 "(The submission has been saved but marked as"
                 " erroneous.)")
                '(ok))
-      (message "Handin saved as erroneous." 'final))}
+      (message "Handin saved as erroneous." 'final))]
 
   (Note that if you do this, then additional tests should be adjusted
   to not raise an exception too.)}

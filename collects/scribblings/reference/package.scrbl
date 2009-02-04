@@ -45,7 +45,7 @@ refer to each other). However, @scheme[define-package] handles
 forms within a @scheme[define-package] body are visible only to
 @scheme[form]s that appear later in the body, and they can shadow any
 binding from preceding @scheme[form]s (even if the preceding binding
-did not use one of the special @schemeidfont[*] definition forms).  If
+did not use one of the special @schemeidfont{*} definition forms).  If
 an exported identifier is defined multiple times, the last definition
 is the exported one.
 
