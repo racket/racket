@@ -7,7 +7,13 @@
           scheme/unit-exptime
           scheme/match))
 
-(provide define-values/link-units/infer)
+(provide define-values/link-units/infer cnt)
+
+(define-signature-form (cnt stx)
+  (syntax-case stx ()
+    [(_ nm cnt)
+     (list #'nm)
+     #;(list #'[contracted (nm cnt)])]))
 
 (define-syntax (define-values/link-units/infer stx)
   ;; construct something we can put in the imports/exports clause from the datum

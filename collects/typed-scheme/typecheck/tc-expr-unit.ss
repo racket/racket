@@ -5,12 +5,14 @@
 (require syntax/kerncase
          scheme/match
          "signatures.ss"
-         (r:private type-utils type-effect-convenience union subtype parse-type type-annotation)
+         (r:private type-utils type-effect-convenience union subtype 
+		    parse-type type-annotation stxclass-util)
          (rep type-rep effect-rep)
          (utils tc-utils)
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
          scheme/private/class-internal
+         (except-in stxclass id)
          (only-in srfi/1 split-at))
 
 (require (for-template scheme/base scheme/private/class-internal))
@@ -22,28 +24,23 @@
 ;; return the type of a literal value
 ;; scheme-value -> type
 (define (tc-literal v-stx)
-  ;; find the meet of the types of a list of expressions
-  ;; list[syntax] -> type
-  (define (types-of-literals es)
-    (apply Un (map tc-literal es)))
-  (define v (syntax-e v-stx))
-  (cond
-    [(exact-integer? v) -Integer]
-    [(number? v) N]
-    [(char? v) -Char]
-    [(boolean? v) (-val v)]
-    [(null? v) (-val null)]
-    [(symbol? v) (-val v)]
-    [(string? v) -String]
-    [(keyword? v) (-val v)]
-    [(bytes? v) -Bytes]
-    [(list? v) (-Tuple (map tc-literal v))]
-    [(vector? v) (make-Vector (types-of-literals (vector->list v)))]
-    [(pregexp? v) -PRegexp]
-    [(byte-pregexp? v) -Byte-PRegexp]
-    [(byte-regexp? v) -Byte-Regexp]
-    [(regexp? v) -Regexp]
-    [else Univ]))
+  (syntax-parse v-stx 
+    [i:boolean (-val #'i.datum)]
+    [i:identifier (-val #'i.datum)]
+    [i:exact-integer -Integer]
+    [i:number N]
+    [i:str -String]
+    [i:char -Char]
+    [i:keyword (-val #'i.datum)]
+    [i:bytes -Bytes]
+    [i:byte-pregexp -Byte-PRegexp]
+    [i:byte-regexp -Byte-Regexp]
+    [i:regexp -Regexp]
+    [(i ...) 
+     (-Tuple (map tc-literal (syntax->list #'(i ...))))]
+    [i #:declare i (3d vector?)
+     (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
+    [_ Univ]))
 
 
 ;; do-inst : syntax type -> type
@@ -190,7 +187,6 @@
          (begin (tc-exprs/check (syntax->list #'es) Univ)
                 (tc-expr/check #'e expected))]          
         ;; if
-        [(if tst body) (tc/if-onearm/check #'tst #'body expected)]
         [(if tst thn els) (tc/if-twoarm/check #'tst #'thn #'els expected)]
         ;; lambda
         [(#%plain-lambda formals . body)

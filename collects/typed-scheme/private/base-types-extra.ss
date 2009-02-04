@@ -11,9 +11,12 @@
 ;; special types names that are not bound to particular types
 
 (define-other-types
-  -> U mu Un All Opaque Vectorof
-  Parameter Tuple Class Values)
+  -> U mu All Opaque
+  Parameter Tuple Class Values Instance
+  pred)
 
 (provide (rename-out [All ∀]
+                     [U Un]
+                     [Tuple List]
                      [mu Rec]))
 

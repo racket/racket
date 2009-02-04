@@ -100,9 +100,9 @@
 (define (cgen/eff V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
-    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: s))
+    [((Latent-Restrict-Effect: t k) (Latent-Restrict-Effect: s k))
      (cset-meet (cgen V X t s) (cgen V X s t))]
-    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: s))
+    [((Latent-Remove-Effect: t k) (Latent-Remove-Effect: s k))
      (cset-meet (cgen V X t s) (cgen V X s t))]
     [(_ _) (fail! t s)]))
 

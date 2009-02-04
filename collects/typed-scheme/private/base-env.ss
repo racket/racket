@@ -46,7 +46,8 @@
 [null (-val null)]
 [number? (make-pred-ty N)]
 [char? (make-pred-ty -Char)]
-[integer? (make-pred-ty -Integer)]
+[integer? (Univ . -> . B : (list (make-Latent-Restrict-Effect N)) (list (make-Latent-Remove-Effect -Integer)))]
+[exact-integer? (make-pred-ty -Integer)]
 [boolean? (make-pred-ty B)]
 [add1 (cl->* (-> -Integer -Integer)
              (-> N N))]
@@ -107,8 +108,8 @@
 [filter (-poly (a b) (cl->*
                       ((a . -> . B
                           :
-                          (list (make-Latent-Restrict-Effect b))
-                          (list (make-Latent-Remove-Effect b)))
+                          (list (make-Latent-Restrict-Effect b 0))
+                          (list (make-Latent-Remove-Effect b 0)))
                        (-lst a)
                        . -> .
                        (-lst b))

@@ -3,7 +3,8 @@
 (require (for-syntax scheme/base)
          mzlib/plt-match
 	 scheme/require-syntax
-         mzlib/struct)
+         mzlib/struct
+         (except-in stxclass id))
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
@@ -222,3 +223,4 @@
 ;; pads out t to be as long as s
 (define (extend s t extra)
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
+
