@@ -83,10 +83,10 @@
 (define (sub-eff e1 e2)
   (match* (e1 e2)
     [(e e) #t]
-    [((Latent-Restrict-Effect: t k) (Latent-Restrict-Effect: t* k))
+    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: t*))
      (and (subtype t t*)
           (subtype t* t))]
-    [((Latent-Remove-Effect: t k) (Latent-Remove-Effect: t* k))
+    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: t*))
      (and (subtype t t*)
           (subtype t* t))]
     [(_ _) #f]))

@@ -11,7 +11,7 @@
           scheme/base
           syntax/struct
           syntax/stx
-          (except-in (utils utils))))
+	  (utils utils)))
 
 (provide == dt de print-type* print-effect* Type Type? Effect Effect? defintern hash-id Type-seq Effect-seq)
 

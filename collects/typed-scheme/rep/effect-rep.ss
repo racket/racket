@@ -27,19 +27,15 @@
     [#:fold-rhs (*Remove-Effect (type-rec-id t) v)])
 
 ;; t is a Type
-;; k is a nat
-(de Latent-Restrict-Effect (t k) [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Latent-Restrict-Effect (type-rec-id t) k)])
+(de Latent-Restrict-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+    [#:fold-rhs (*Latent-Restrict-Effect (type-rec-id t))])
 
 ;; t is a Type
-;; k is a nat
-(de Latent-Remove-Effect (t k) [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Latent-Remove-Effect (type-rec-id t) k)])
+(de Latent-Remove-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+    [#:fold-rhs (*Latent-Remove-Effect (type-rec-id t))])
 
-;; k is a nat
-(de Latent-Var-True-Effect (k) [#:frees #f] [#:fold-rhs #:base])
+(de Latent-Var-True-Effect () [#:frees #f] [#:fold-rhs #:base])
 
-;; k is a nat
-(de Latent-Var-False-Effect (k) [#:frees #f] [#:fold-rhs #:base])
+(de Latent-Var-False-Effect () [#:frees #f] [#:fold-rhs #:base])
 
 ;; could also have latent true/false effects, but seems pointless

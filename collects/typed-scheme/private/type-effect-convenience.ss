@@ -38,10 +38,10 @@
 
 (define ((add-var v) eff)
   (match eff
-    [(Latent-Var-True-Effect: k) (-vet v)]
-    [(Latent-Var-False-Effect: k) (-vef v)]
-    [(Latent-Restrict-Effect: t k) (make-Restrict-Effect t v)]
-    [(Latent-Remove-Effect: t k) (make-Remove-Effect t v)]
+    [(Latent-Var-True-Effect:) (-vet v)]
+    [(Latent-Var-False-Effect:) (-vef v)]
+    [(Latent-Restrict-Effect: t) (make-Restrict-Effect t v)]
+    [(Latent-Remove-Effect: t) (make-Remove-Effect t v)]
     [(True-Effect:) eff]
     [(False-Effect:) eff]
     [_ (int-err "can't add var ~a to effect ~a" v eff)]))
@@ -208,7 +208,7 @@
 (define make-pred-ty
   (case-lambda 
     [(in out t)
-     (->* in out : (list (make-Latent-Restrict-Effect t 0)) (list (make-Latent-Remove-Effect t 0)))]
+     (->* in out : (list (make-Latent-Restrict-Effect t)) (list (make-Latent-Remove-Effect t)))]
     [(t) (make-pred-ty (list Univ) B t)]))
 
 (define -Pathlike (*Un -Path -String))
