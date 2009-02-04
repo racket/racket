@@ -1038,7 +1038,7 @@ We used @scheme[blog-insert-post!] and @scheme[post-insert-comment!] to initiali
 
 @centerline{------------}
 
-A user could submit a post with a title like, @scheme{null', 'null') and INSERT INTO accounts (username, password) VALUES ('ur','hacked} and get our simple @scheme[sqlite:insert] to make two INSERTs instead of one. 
+A user could submit a post with a title like, @scheme["null', 'null') and INSERT INTO accounts (username, password) VALUES ('ur','hacked"] and get our simple @scheme[sqlite:insert] to make two INSERTs instead of one. 
 
  This is called an SQL injection attack. It can be resolved by using
  prepared statements that let SQLite do the proper quoting for us. Refer
