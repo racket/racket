@@ -13,9 +13,6 @@
          mzlib/trace
          mzlib/plt-match)
 
-;; necessary for creating (#%app void) in tc-if/onearm
-(require (for-template scheme/base))
-
 ;; if typechecking   
 (import tc-expr^)
 (export tc-if^)
@@ -87,12 +84,6 @@
             [(Var-False-Effect: v) (check-rest (lambda (_ old) (-val #f)) v)]
             ;; v cannot have type (-val #f)
             [(Var-True-Effect: v) (check-rest *remove (-val #f) v)])))))
-
-;; create a dummy else branch for typechecking
-(define (tc/if-onearm tst body) (tc/if-twoarm tst body (syntax/loc body (#%app void))))
-
-(define (tc/if-onearm/check tst body expected)
-  (tc/if-twoarm/check tst body (syntax/loc body (#%app void)) expected))
 
 ;; the main function
 (define (tc/if-twoarm tst thn els)

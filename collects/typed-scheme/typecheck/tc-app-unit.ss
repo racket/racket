@@ -2,6 +2,8 @@
 
 (require (only-in "../utils/utils.ss" debug in-syntax printf/log in-pairs rep utils private env [infer r:infer]))
 (require "signatures.ss"
+         stxclass
+         (for-syntax stxclass)
          (rep type-rep effect-rep)
 	 (utils tc-utils)
 	 (private subtype type-utils union type-effect-convenience type-effect-printer resolve-type
@@ -359,7 +361,7 @@
                             "")))))
 
 (define-syntax (handle-clauses stx)
-  (syntax-case stx ()
+  (syntax-parse stx
     [(_  (lsts ... rngs) f-stx pred infer t argtypes expected)
      (with-syntax ([(vars ... rng) (generate-temporaries #'(lsts ... rngs))])
        (syntax/loc stx
@@ -368,8 +370,8 @@
                      (let ([substitution (infer vars ... rng)])
                        (and substitution
                             (log-result substitution)
-                            (or expected
-                                (ret (subst-all substitution rng))))))             
+                            (ret (or expected
+                                     (subst-all substitution rng))))))
              (poly-fail t argtypes #:name (and (identifier? f-stx) f-stx)))))]))
 
 (define (poly-fail t argtypes #:name [name #f])
@@ -501,6 +503,40 @@
     (check-below t expected)
     (ret expected))
 
+(define-syntax-class lv-clause
+  #:transparent
+  (pattern [(v:id ...) e:expr]))
+
+(define-syntax-class lv-clauses
+  #:transparent
+  (pattern (cl:lv-clause ...)
+           #:with (e ...) #'(cl.e ...)
+           #:with (vs ...) #'((cl.v ...) ...)))
+
+(define-syntax-class core-expr
+  #:literals (reverse letrec-syntaxes+values let-values #%plain-app
+                      if letrec-values begin #%plain-lambda set! case-lambda
+                      begin0 with-continuation-mark)
+  #:transparent
+  (pattern (let-values cls:lv-clauses body)
+           #:with (expr ...) #'(cls.e ... body))
+  (pattern (letrec-values cls:lv-clauses body)
+           #:with (expr ...) #'(cls.e ... body))
+  (pattern (letrec-syntaxes+values _ cls:lv-clauses body)
+           #:with (expr ...) #'(cls.e ... body))
+  (pattern (#%plain-app expr ...))
+  (pattern (if expr ...))
+  (pattern (with-continuation-mark expr ...))
+  (pattern (begin expr ...))
+  (pattern (begin0 expr ...))
+  (pattern (#%plain-lambda _ e)
+           #:with (expr ...) #'(e))
+  (pattern (case-lambda [_ expr] ...))
+  (pattern (set! _ e)
+           #:with (expr ...) #'(e))
+  (pattern _ 
+           #:with (expr ...) #'()))
+
 ;; expr id -> type or #f
 ;; if there is a binding in stx of the form:
 ;; (let ([x (reverse name)]) e)
@@ -508,28 +544,20 @@
 (define (find-annotation stx name)
   (define (find s) (find-annotation s name))
   (define (match? b)
-    (kernel-syntax-case* b #f (reverse)
-      [[(v) (#%plain-app reverse n)]
-       (free-identifier=? name #'n)
-       (begin ;(printf "found annotation: ~a ~a~n~a~n" (syntax-e name) (syntax-e #'v) (type-annotation #'v))
-              (type-annotation #'v))]
+    (syntax-parse b
+      #:literals (#%plain-app reverse)
+      [c:lv-clause
+       #:with (#%plain-app reverse n:id) #'c.e
+       #:when (free-identifier=? name #'n)
+       (type-annotation #'v)]
       [_ #f]))
-  (kernel-syntax-case* 
-      stx #f (reverse letrec-syntaxes+values)
-    [(let-values (binding ...) body)
-     (cond [(ormap match? (syntax->list #'(binding ...)))]
-           [else (find #'body)])]
-    [(#%plain-app e ...) (ormap find (syntax->list #'(e ...)))]
-    [(if e1 e2 e3) (ormap find (syntax->list #'(e1 e2 e3)))]
-    [(letrec-values ([(v ...) e] ...) b)
-     (ormap find (syntax->list #'(e ... b)))]
-    [(letrec-syntaxes+values _ ([(v ...) e] ...) b)
-     (ormap find (syntax->list #'(e ... b)))]
-    [(begin . es)
-     (ormap find (syntax->list #'es))]
-    [(#%plain-lambda (v ...) e)
-     (find #'e)]
-    [_ #f]))
+  (syntax-parse stx
+    #:literals (let-values)
+    [(let-values cls:lv-clauses body)
+     (or (ormap match? (syntax->list #'cls))
+	 (find #'body))]
+    [e:core-expr
+     (ormap find (syntax->list #'(e.expr ...)))]))
 
 
 (define (check-do-make-object cl pos-args names named-args)

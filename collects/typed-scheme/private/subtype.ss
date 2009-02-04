@@ -81,15 +81,15 @@
   (ormap (lambda (e) (arr-subtype*/no-fail A e s)) ts))
 
 (define (sub-eff e1 e2)
-  (match (list e1 e2)
-    [(list e e) #t]
-    [(list (Latent-Restrict-Effect: t) (Latent-Restrict-Effect: t*))
+  (match* (e1 e2)
+    [(e e) #t]
+    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: t*))
      (and (subtype t t*)
           (subtype t* t))]
-    [(list (Latent-Remove-Effect: t) (Latent-Remove-Effect: t*))
+    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: t*))
      (and (subtype t t*)
           (subtype t* t))]
-    [else #f]))
+    [(_ _) #f]))
 
 ;(trace sub-eff)
 

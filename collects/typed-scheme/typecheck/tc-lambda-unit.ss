@@ -199,16 +199,18 @@
                  (cons (car bodies) bodies*)
                  (cons (syntax-len (car formals)) nums-seen))]))))
 
+;; tc/lambda : syntax syntax-list syntax-list -> tc-result
 (define (tc/lambda form formals bodies)
   (tc/lambda/internal form formals bodies #f))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
-;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> Type
+;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
 (define (tc/lambda/internal form formals bodies expected)
   (if (or (syntax-property form 'typechecker:plambda) (Poly? expected) (PolyDots? expected))
       (tc/plambda form formals bodies expected)
       (ret (tc/mono-lambda formals bodies expected))))
 
+;; tc/lambda : syntax syntax-list syntax-list Type -> tc-result
 (define (tc/lambda/check form formals bodies expected)
   (tc/lambda/internal form formals bodies expected))
 

@@ -119,7 +119,7 @@
       (make-Struct s #f (list t) #f #f #'promise? values))))
 
 (define N (make-Base 'Number #'number?))
-(define -Integer (make-Base 'Integer #'integer?))
+(define -Integer (make-Base 'Integer #'exact-integer?))
 (define B (make-Base 'Boolean #'boolean?))
 (define Sym (make-Base 'Symbol #'symbol?))
 (define -Void (make-Base 'Void #'void?))

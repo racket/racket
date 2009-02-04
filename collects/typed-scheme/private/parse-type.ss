@@ -1,17 +1,21 @@
 #lang scheme/base
 
-(provide parse-type parse-type/id)
+(provide parse-type parse-type/id parse-type*)
 
-(require (except-in "../utils/utils.ss" extend))
+(require (except-in "../utils/utils.ss" extend id))
 (require (except-in (rep type-rep) make-arr)
          "type-effect-convenience.ss"
          (only-in "type-effect-convenience.ss" [make-arr* make-arr])
          (utils tc-utils)
          "union.ss"
          syntax/stx
+         stxclass stxclass/util
          (env type-environments type-name-env type-alias-env)
 	 "type-utils.ss"
-         scheme/match)
+         (prefix-in t: "base-types-extra.ss")
+         scheme/match 
+         "stxclass-util.ss"
+         (for-template scheme/base "base-types-extra.ss"))
 
 (define enable-mu-parsing (make-parameter #t))
 
@@ -23,8 +27,238 @@
 
 (define (stx-cadr stx) (stx-car (stx-cdr stx)))
 
-(define (parse-type stx)    
+(define-syntax-class star
+  (pattern star:id
+           #:when (eq? '* #'star.datum)))
+
+(define-syntax-class ddd
+  (pattern ddd:id
+           #:when (eq? '... #'ddd.datum)))
+
+(define-syntax-class tvar
+  #:description "type variable"
+  (pattern v:id
+           #:with val (lookup (current-tvars) #'v.datum (lambda (_) #f))
+           #:with name #'v.datum
+           #:with datum #'v.datum
+           #:when #'val))
+
+(define-syntax-class dotted-tvar
+  #:description "type variable bound with ..."
+  (pattern v:tvar
+           #:when (Dotted? #'v.val)
+           #:with t (Dotted-t #'v.val)
+           #:with val #'v.val
+           #:with name #'v.datum
+           #:with datum #'v.datum))
+
+(define-syntax-class dotted-both-tvar
+  #:transparent
+  (pattern v:dotted-tvar
+           #:when (DottedBoth? #'v.val)
+           #:with t (Dotted-t #'v.val)
+           #:with val #'v.val
+           #:with name #'v.datum
+           #:with datum #'v.datum))
+
+
+(define-syntax-class (type/tvars syms var-tys)
+  (pattern ty
+           #:with t (parameterize ([current-tvars (extend-env syms 
+                                                              var-tys
+                                                              (current-tvars))])
+                      (parse-type* #'ty))))
+
+(define-syntax-class (type/tvar sym var-ty)
+  (pattern ty
+           #:declare ty (type/tvars (list sym) (list var-ty))
+           #:with t #'ty.t))
+
+
+(define-syntax-class fun-ty
+  #:literals (t:-> :)
+  #:description "function type"
+  ;; FIXME - shouldn't have to use syntax->datum  
+  (pattern (dom*:type t:-> rng:type : pred:type)
+           #:when (add-type-name-reference #'t:->)
+           #:with t (make-pred-ty (list #'dom*.t) #'rng.t #'pred.t)
+           #:with (dom ...) (list #'dom*))
+  (pattern (dom:type ... rest:type _:star t:-> rng:type)
+           #:when (add-type-name-reference #'t:->)     
+           #:with t (->* (syntax->datum #'(dom.t ...)) #'rest.t #'rng.t))
+  (pattern (dom:type ... rest _:ddd bound:dotted-tvar t:-> rng:type)
+           #:with rest.t (parse/get #'rest t (type/tvar #'bound.name (make-DottedBoth (make-F #'bound.name))))
+           #:when (add-type-name-reference #'t:->)
+           #:with t
+           (let ([var #'bound.val])
+             (make-Function
+              (list
+               (make-arr-dots (syntax->datum #'(dom.t ...))
+                              #'rng.t
+                              #'rest.t
+                              #'bound.name)))))
+  (pattern (dom:type ...  t:-> rng:type)  
+           #:when (add-type-name-reference #'t:->)
+           #:with t (->* (syntax->datum #'(dom.t ...)) #'rng.t)))
+
+(define-syntax-class fun-ty/one
+  (pattern f:fun-ty
+           #:with arr (match #'f.t [(Function: (list a)) a])))
+
+
+(define-syntax-class values-ty
+  #:literals (values)
+  (pattern (values ts:type ... rest _:ddd bound:dotted-tvar)
+           #:with rest.t (parse/get #'rest t (type/tvar #'bound.name (make-DottedBoth (make-F #'bound.name))))
+           #:with t
+           (make-ValuesDots (syntax->datum #'(ts.t ...))
+                            #'rest.t
+                            #'bound.name))
+  (pattern (values ts:type ...) 
+           #:with t (-values (syntax->datum #'(ts.t ...)))))
+
+(define-syntax-class type-name
+ (pattern i:id
+          #:when (lookup-type-name #'i (lambda () #f))
+          #:with t #'(make-Name #'i)
+          #:when (add-type-name-reference #'i)))
+
+(define-syntax-class type-alias
+  (pattern i:id
+           #:with t (lookup-type-alias #'i parse-type* (lambda () #f))
+           #:when #'t
+           #:when (add-type-name-reference #'i)))
+
+(define-syntax-class all-type  
+  #:literals (t:All)
+  (pattern (t:All (v:id ... v-last:id _:ddd) b)  
+           #:with b.t (parse/get #'b t (type/tvars (cons #'v-last.datum (syntax->datum #'(v ...)))
+                                                   (cons (make-Dotted (make-F #'v-last.datum))
+                                                         (map make-F (syntax->datum #'(v ...))))))
+           #:when (add-type-name-reference #'All)
+           #:with t (make-PolyDots (syntax->datum #'(v ... v-last)) #'b.t))
+  (pattern (t:All (v:id ...) b)
+           #:with b.t (parse/get #'b t (type/tvars (syntax->datum #'(v ...)) (map make-F (syntax->datum #'(v ...)))))
+           #:when (add-type-name-reference #'All)
+           #:with t (make-Poly (syntax->datum #'(v ...)) #'b.t)))
+
+(define-syntax-class type-app
+  (pattern (i arg:type args:type ...)
+           #:when (identifier? #'i)
+           #:declare i type
+           #:with t
+           (let loop 
+             ([rator #'i.t] [args (syntax->datum #'(arg.t args.t ...))])
+             (match rator
+               [(Name: _)
+                ;; FIXME - need orig stx
+                (make-App rator args #'here)]
+               [(Poly: ns _)
+                (if (not (= (length args) (length ns)))
+                    (begin
+                      (tc-error/delayed "Wrong number of arguments to type ~a, expected ~a but got ~a" rator (length ns) (length args))
+                      (instantiate-poly rator (map (lambda _ Err) ns)))
+                    (instantiate-poly rator args))]
+               [(Mu: _ _) (loop (unfold rator) args)]
+               [(Error:) Err]
+               [_ (tc-error/delayed "Type ~a cannot be applied, arguments were: ~a" rator args)
+                  Err]))))
+
+(define-syntax-class not-kw-id
+  (pattern i:id
+           #:when (not (for/or ([e (syntax->list 
+                                    #'(quote t:pred t:Tuple case-lambda t:U t:Rec t:Opaque t:Parameter t:Class t:Instance
+                                             t:-> t:All))])
+                               (free-identifier=? e #'i)))
+           #:when (not (memq #'i.datum '(* ...)))
+           #:with datum #'i.datum))
+
+(define-syntax-class type
+  #:literals (quote t:pred t:Tuple case-lambda t:U t:Rec t:Opaque t:Parameter t:Class t:Instance)  
+  (pattern ty
+           #:declare ty (3d Type?)
+           #:with t #'ty.datum)
+  (pattern i:dotted-both-tvar
+           #:with t #'i.t)
+  #;
+  (pattern i:dotted-tvar
+           #:when (tc-error/stx #'i "Type variable ~a must be used with ..." #'i.datum)
+           #:with t Err)
+  (pattern i:tvar
+           #:when (not (Dotted? #'i.val))
+           #:with t #'i.val)
+  (pattern i:type-alias
+           #:with t #'i.t)
+  (pattern i:type-name
+           #:with t #'i.t)  
+  #;
+  (pattern i:not-kw-id
+           #:with t Err
+           #:when (tc-error/stx #'i "Unbound type name ~a" #'i.datum)
+           )
+  (pattern ty:all-type
+           #:with t #'ty.t)
+  (pattern (t:Rec x:id b)
+           #:when (enable-mu-parsing)
+           #:with b.t (parse/get #'b t (type/tvar #'x.datum (make-F #'x.datum)))
+           #:when (add-type-name-reference #'t:Rec)
+           #:with t (if (memq #'x.datum (fv #'b.t))
+                        (make-Mu #'x.datum #'b.t)
+                        #'b.t))
+  (pattern (t:pred ty:type)
+           #:when (add-type-name-reference #'t:pred)
+           #:with t (make-pred-ty #'ty.t))
+  (pattern (t:Parameter ty:type)
+           #:when (add-type-name-reference #'t:Paramter)
+           #:with t (-Param #'ty.t #'ty.t))
+  (pattern (t:Parameter t1:type t2:type)
+           #:when (add-type-name-reference #'t:Paramter)
+           #:with t (-Param #'t1.t #'t2.t))
+  (pattern (t:Opaque p?:id)
+           #:when (add-type-name-reference #'t:Opaque)
+           #:with t (make-Opaque #'p? (syntax-local-certifier)))
+  (pattern (t:U ty:type ...)
+           #:with t (apply Un (syntax->datum #'(ty.t ...))))
+  (pattern (t:Tuple ty:type ...)
+           #:with t (-Tuple (syntax->datum #'(ty.t ...))))
+  (pattern fty:fun-ty
+           #:with t #'fty.t)
+  (pattern vt:values-ty
+           #:with t #'vt.t)
+  (pattern (fst:type . rst:type)
+           #:with t (-pair #'fst.t #'rst.t))
+  (pattern (quote v:atom)
+           #:with t (-val #'v.datum))
+  (pattern (case-lambda f:fun-ty/one ...)
+           #:with t (make-Function (syntax->datum #'(f.arr ...))))
+  
+  (pattern (t:Class (pos-args:type ...) ([fname:id fty:type ((rest:boolean) #:opt) ...*] ...) ([mname:id mty:type] ...))
+           #:with t
+           (make-Class
+            (syntax->datum #'(pos-args.t ...))
+            (syntax->datum #'([fname.datum fty.t rest.datum] ...))
+            (syntax->datum #'([mname.datum mty.t] ...))))
+  
+  (pattern (t:Instance ty:type)
+           #:with t
+           (if (not (or (Mu? #'ty.t) (Class? #'ty.t) (Union? #'ty.t) (Error? #'ty.t)))
+               (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" #'ty.t)
+                      (make-Instance Err))
+               (make-Instance #'ty.t)))
+  
+  (pattern tapp:type-app
+           #:with t #'tapp.t)
+  
+  (pattern v:atom
+           #:when (not (symbol? #'v.datum))
+           #:with t (-val #'v.datum)))
+
+(define (parse-type* stx)
   (parameterize ([current-orig-stx stx])
+    (parse/get stx t type)))
+
+(define (parse-type stx)    
+  (parameterize ([current-orig-stx stx])    
     (syntax-case* stx ()
       symbolic-identifier=?  
       [t

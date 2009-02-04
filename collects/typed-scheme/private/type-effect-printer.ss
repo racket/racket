@@ -64,8 +64,9 @@
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
        (fp "-> ~a" rng)
-       (match* (thn-eff els-eff)
+       (match* (thn-eff els-eff)         
          [((list) (list)) (void)]
+         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
          [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
          [(_ _) (fp " : ~a ~a" thn-eff els-eff)])
        (fp ")")]))

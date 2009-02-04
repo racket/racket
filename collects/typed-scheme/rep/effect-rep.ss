@@ -27,10 +27,12 @@
     [#:fold-rhs (*Remove-Effect (type-rec-id t) v)])
 
 ;; t is a Type
-(de Latent-Restrict-Effect (t))
+(de Latent-Restrict-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+    [#:fold-rhs (*Latent-Restrict-Effect (type-rec-id t))])
 
 ;; t is a Type
-(de Latent-Remove-Effect (t))
+(de Latent-Remove-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+    [#:fold-rhs (*Latent-Remove-Effect (type-rec-id t))])
 
 (de Latent-Var-True-Effect () [#:frees #f] [#:fold-rhs #:base])
 

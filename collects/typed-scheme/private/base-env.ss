@@ -46,7 +46,8 @@
 [null (-val null)]
 [number? (make-pred-ty N)]
 [char? (make-pred-ty -Char)]
-[integer? (make-pred-ty -Integer)]
+[integer? (Univ . -> . B : (list (make-Latent-Restrict-Effect N)) (list (make-Latent-Remove-Effect -Integer)))]
+[exact-integer? (make-pred-ty -Integer)]
 [boolean? (make-pred-ty B)]
 [add1 (cl->* (-> -Integer -Integer)
              (-> N N))]
