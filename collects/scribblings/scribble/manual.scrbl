@@ -802,7 +802,7 @@ and @litchar{^} for subscripts and superscripts.}
          element?]{
 
 Inserts the hyperlinked title of the section tagged @scheme[tag], but
-@scheme{aux-element} items in the title content are omitted in the
+@schemeidfont{aux-element} items in the title content are omitted in the
 hyperlink label.
 
 If @scheme[module-path] is provided, the @scheme[tag] refers to a tag

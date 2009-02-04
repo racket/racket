@@ -691,7 +691,7 @@ values).}
 
 @defstruct[generated-tag ()]{
 
-A placeholder for a tag to be generated during the @scheme{collect
+A placeholder for a tag to be generated during the @techlink{collect
  pass}. Use @scheme[tag-key] to convert a tag containing a
  @scheme[generated-tag] instance to one containing a string.
 
