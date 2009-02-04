@@ -12,39 +12,39 @@
 
 (require (for-syntax scheme/base))
   
-  (provide find-enclosing-loc-wrapper
-           render-lw
-           lw->pict
-           basic-text
-           metafunction-text
-           default-style
-           label-style
-           non-terminal-style
-           non-terminal-subscript-style
-           label-font-size
-           default-font-size
-           metafunction-font-size
-           non-terminal
-           literal-style
-           metafunction-style
-           open-white-square-bracket
-           close-white-square-bracket
-           just-before
-           just-after
-           with-unquote-rewriter
-           with-compound-rewriter
-           with-atomic-rewriter
-           STIX?
-           white-bracket-sizing
-           
-           ;; for test suite
-           build-lines
-           (struct-out token)
-           (struct-out string-token)
-           (struct-out pict-token)
-           (struct-out spacer-token)
-           
-           current-text)
+(provide find-enclosing-loc-wrapper
+         render-lw
+         lw->pict
+         basic-text
+         metafunction-text
+         default-style
+         label-style
+         non-terminal-style
+         non-terminal-subscript-style
+         label-font-size
+         default-font-size
+         metafunction-font-size
+         non-terminal
+         literal-style
+         metafunction-style
+         open-white-square-bracket
+         close-white-square-bracket
+         just-before
+         just-after
+         with-unquote-rewriter
+         with-compound-rewriter
+         with-atomic-rewriter
+         STIX?
+         white-bracket-sizing
+         
+         ;; for test suite
+         build-lines
+         (struct-out token)
+         (struct-out string-token)
+         (struct-out pict-token)
+         (struct-out spacer-token)
+         (struct-out line)
+         current-text)
   
   
   (define STIX? #f)
@@ -139,6 +139,10 @@
   ;; an earlier line)
   (define-struct align-token (pict) #:inspector (make-inspector))
 
+  ;; n : number (the line number)
+  ;; tokens : (listof token)
+  (define-struct line (n tokens) #:inspector (make-inspector))
+  
   (define (render-lw nts lw)
     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
       (lw->pict nts lw)))
@@ -415,19 +419,24 @@
     (define tokens '())
     (define lines '())
     (define (eject line col span atom unquoted?)
-      (unless (= current-line line)
-        ;; make new lines
-        (for-each 
-         (λ (x) 
-           (set! lines (cons (reverse tokens) lines))
-           (set! tokens '()))
-         (build-list (max 0 (- line current-line)) (λ (x) 'whatever)))
-        
-        (set! tokens (cons (make-spacer-token 0 (- col initial-column))
-                           tokens))
-        
-        (set! current-line line)
-        (set! current-column col))
+      (cond
+        [(= current-line line)
+         (void)]
+        [(< current-line line)
+         ;; make new lines
+         (for-each 
+          (λ (i) 
+            (set! lines (cons (make-line (+ i current-line) (reverse tokens)) lines))
+            (set! tokens '()))
+          (build-list (max 0 (- line current-line)) values))
+         
+         (set! tokens (cons (make-spacer-token 0 (- col initial-column))
+                            tokens))
+         
+         (set! current-line line)
+         (set! current-column col)]
+        [else
+         (error 'eject "lines going backwards")])
       (when (< current-column col)
         (let ([space-span (- col current-column)])
           (set! tokens (cons (make-blank-space-token unquoted?
@@ -471,10 +480,11 @@
                    obj)]))
     
     (handle-loc-wrapped lw 0 0 0)
-    (set! lines (cons (reverse tokens) lines)) ;; handle last line ejection
+    (set! lines (cons (make-line current-line (reverse tokens)) 
+                      lines)) ;; handle last line ejection
     lines)
   
-  ;; setup-lines : (listof (listof token)) -> (listof (listof token))
+  ;; setup-lines : (listof line) -> (listof line)
   ;; removes the spacer tokens from the beginning of lines, replacing them with align tokens
   ;; expects the lines to be in reverse order
   (define (setup-lines lines)
@@ -482,21 +492,25 @@
       (cond
         [(null? lines) null]
         [else 
-         (let ([line (car lines)]
-               [rst (cdr lines)])
-           (if (null? line)
-               (cons line (loop (cdr lines)))
-               (if (spacer-token? (car line))
+         (let* ([line (car lines)]
+                [line-content (line-tokens line)]
+                [line-num (line-n line)]
+                [rst (cdr lines)])
+           (if (null? line-content)
+               (cons (cons line) (loop (cdr lines)))
+               (if (spacer-token? (car line-content))
                    (let ([pict (blank)])
-                     (if (andmap null? rst)
-                         (cons (cdr line) (loop rst))
-                         (let ([rst (split-out (token-span (car line))
+                     (if (andmap (lambda (x) (null? (line-tokens x))) rst)
+                         (cons (make-line line-num (cdr line-content))
+                               (loop rst))
+                         (let ([rst (split-out (token-span (car line-content))
                                                pict
                                                rst)])
-                           (cons (cons (make-align-token pict) (cdr line))
+                           (cons (make-line line-num (cons (make-align-token pict) (cdr line-content)))
                                  (loop rst)))))
                    (cons line (loop (cdr lines))))))])))
-  
+
+  ;; split-out : number pict (listof line) -> (listof line)
   (define (split-out col pict lines)
     (let ([new-token (make-pict-token col 0 pict)])
       (let loop ([lines lines])
@@ -504,49 +518,52 @@
           [(null? lines)
            ;; this case can happen when the line in question is to the left of all other lines
            (error 'exchange-spacer "could not find matching line")]
-          [else (let ([line (car lines)])
-                  (if (null? line)
+          [else (let* ([line (car lines)]
+                       [tokens (line-tokens line)])
+                  (if (null? tokens)
                       (cons line (loop (cdr lines)))
-                      (let ([spacer (car line)])
+                      (let ([spacer (car tokens)])
                         (cond
                           [(not (spacer-token? spacer))
-                           (cons (insert-new-token col new-token (token-column spacer) (car lines))
+                           (cons (make-line (line-n line)
+                                            (insert-new-token col new-token (token-column spacer) tokens))
                                  (cdr lines))]
                           [(= (token-span spacer)
                               col)
-                           (cons (list* spacer new-token (cdr line))
+                           (cons (make-line (line-n line) (list* spacer new-token (cdr tokens)))
                                  (cdr lines))]
                           [(> (token-span spacer)
                               col)
                            (cons line (loop (cdr lines)))]
                           [(< (token-span spacer)
                               col)
-                           (cons (insert-new-token col new-token (token-column spacer) (car lines))
+                           (cons (make-line (line-n line) (insert-new-token col new-token (token-column spacer) tokens))
                                  (cdr lines))]))))]))))
                   
-  (define (insert-new-token column-to-insert new-token init-width line)
-    (let loop ([line line]
+  ;; insert-new-token : number token number (listof token) -> (listof token)
+  (define (insert-new-token column-to-insert new-token init-width tokens)
+    (let loop ([tokens tokens]
                [column 0])
       (cond
-        [(null? line)
+        [(null? tokens)
          (list new-token)]
         [else
-         (let ([tok (car line)])
+         (let ([tok (car tokens)])
            (unless (token? tok)
              (error 'insert-new-token "ack ~s" tok))
            (cond
              [(<= column-to-insert (token-column tok))
-              (cons new-token line)]
+              (cons new-token tokens)]
              [(< (token-column tok)
                  column-to-insert
                  (+ (token-column tok) (token-span tok)))
               (append (split-token (- column-to-insert (token-column tok)) tok new-token)
-                      (cdr line))]
+                      (cdr tokens))]
              [(= column-to-insert (+ (token-column tok) (token-span tok)))
-              (list* (car line) new-token (cdr line))]
+              (list* (car tokens) new-token (cdr tokens))]
              [else 
-              (cons (car line)
-                    (loop (cdr line)
+              (cons (car tokens)
+                    (loop (cdr tokens)
                           (+ (token-column tok) (token-span tok))))]))])))
                
   (define (split-token offset tok new-token)
@@ -567,7 +584,7 @@
       [(pict-token? tok)
        (list new-token)]))
   
-  ;; lines->pict : (listof (listof token)) -> pict
+  ;; lines->pict : (listof line) -> pict
   ;; expects the lines to be in order from bottom to top
   (define (lines->pict lines)
     (let loop ([lines lines])
@@ -578,19 +595,21 @@
         [else
          (let ([rst (loop (cdr lines))])
            (vl-append rst (handle-single-line (car lines) rst)))])))
-  
+
+  ;; handle-single-line : line pict -> pict
   (define (handle-single-line line rst)
-    (cond
-      [(null? line) 
-       (let ([h (pict-height (token->pict (make-string-token 0 0 "x" (default-style))))])
-         (blank 0 h))]
-      [else
-       (if (align-token? (car line))
-           (let-values ([(x y) (lt-find rst (align-token-pict (car line)))])
-             (apply htl-append 
-                    (blank x 0)
-                    (map token->pict (cdr line))))
-           (apply htl-append (map token->pict line)))]))
+    (let ([tokens (line-tokens line)])
+      (cond
+        [(null? tokens) 
+         (let ([h (pict-height (token->pict (make-string-token 0 0 "x" (default-style))))])
+           (blank 0 h))]
+        [else
+         (if (align-token? (car tokens))
+             (let-values ([(x y) (lt-find rst (align-token-pict (car tokens)))])
+               (apply htl-append 
+                      (blank x 0)
+                      (map token->pict (cdr tokens))))
+             (apply htl-append (map token->pict tokens)))])))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
@@ -698,11 +717,11 @@
             (values inset-amt
                     0
                     0
-                    (/ inset-amt 2))]
+                    (/ inset-amt 2))]
            [else
             (values 0
                     inset-amt
-                    (/ inset-amt 2)
+                    (/ inset-amt 2)
                     0)])))))
 
   (define (floor/even x)
