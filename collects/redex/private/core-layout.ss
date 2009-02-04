@@ -497,7 +497,7 @@
                 [line-num (line-n line)]
                 [rst (cdr lines)])
            (if (null? line-content)
-               (cons (cons line) (loop (cdr lines)))
+               (cons line (loop (cdr lines)))
                (if (spacer-token? (car line-content))
                    (let ([pict (blank)])
                      (if (andmap (lambda (x) (null? (line-tokens x))) rst)
