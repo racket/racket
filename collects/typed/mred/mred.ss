@@ -22,7 +22,7 @@
                               [alignment (List Symbol Symbol) #t])
                              ()))
 (dt Choice% (Class ()
-                   ([parent Any] [label String] [choices List] [callback Any])
+                   ([parent Any] [label String] [choices (Listof Any)] [callback Any])
                    ([get-string-selection (-> (Option String))]
                     [set-string-selection (String -> Void)])))
 (dt Message% (Class ()
