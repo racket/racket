@@ -487,7 +487,7 @@ static information (see @scheme[syntax-local-value]). Attribute
 
 }
 
-@defform[(static-of predicate description)]{
+@defform[(static-of description predicate)]{
 
 Refines @scheme[static]: matches identifiers that are bound in the
 syntactic environment to static information satisfying the given

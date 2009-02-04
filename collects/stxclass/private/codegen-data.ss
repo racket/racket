@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/match
-         (for-template scheme/base))
+         (for-template scheme/base "kws.ss"))
 (provide (all-defined-out))
 
 ;; A PK is (make-pk (listof Pattern) stx)
@@ -28,8 +28,10 @@
 ;; A FrontierContextExpr (FCE) is one of
 ;;   - (list  FrontierIndexExpr Syntax)
 ;;   - (list* FrontierIndexExpr Syntax FrontierContextExpr)
+;;   - (make-joined-frontier FCE id)
 ;; A FrontierIndexExpr is
 ;;   - `(+ ,Number Syntax ...)
+(define-struct joined-frontier (base ext) #:transparent)
 
 (define (empty-frontier x)
   (list '(+ 0) x))
@@ -52,9 +54,21 @@
 (define (fi:add-index fi expr)
   `(+ ,(cadr fi) ,expr ,@(cddr fi)))
 
+(define (join-frontiers base ext-expr)
+  (make-joined-frontier base ext-expr))
+
 ;; A DynamicFrontierContext (DFC) is one of
 ;;   - (list  Syntax Number)
 ;;   - (list* Syntax Number DynamicFrontierContext)
 
 (define (frontier->expr fc)
-  #`(list #,@(reverse fc)))
+  (define (loop fc)
+    (match fc
+      [(list  fe stx)
+       #`(list #,fe #,stx)]
+      [(list* fe stx rest)
+       #`(list* #,fe #,stx #,(loop rest))]
+      [(struct joined-frontier (base ext))
+       #`(let ([base #,(loop base)])
+           (if #,ext (append (reverse (failed-frontier #,ext)) base) base))]))
+  #`(reverse #,(loop fc)))

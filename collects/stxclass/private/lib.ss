@@ -54,7 +54,7 @@
   (pattern :define-syntaxes-form))
 
 (define-basic-syntax-class static
-  ([datum 0] [value 0])
+  ([value 0])
   (lambda (x)
     (if (identifier? x)
         (let/ec escape

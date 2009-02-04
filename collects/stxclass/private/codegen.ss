@@ -25,7 +25,9 @@
          (with-syntax ([(arg ...) args])
            #`(lambda (x arg ...)
                (define (fail-rhs x expected frontier)
-                 (make-failed x expected frontier))
+                 #,(if (rhs-transparent? rhs)
+                       #`(make-failed x expected frontier)
+                       #'#f))
                #,(let ([pks (rhs->pks rhs relsattrs #'x)])
                    (unless (pair? pks)
                      (wrong-syntax (rhs-orig-stx rhs)
@@ -199,9 +201,15 @@
         (let ([result (parser var0 arg-var ...)])
           (if (ok? result)
               #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)
-              #,(fail failid (car vars)
-                      #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
-                      #:fce (car fcs)))))))
+              (if (failed? result)
+                  #,(fail failid (car vars)
+                          ;; FIXME: join expectation with this stxclass
+                          ;; for better error message
+                          #:pattern #'(failed-expectation result) ;; join with this-stxclass
+                          #:fce (join-frontiers (car fcs) #'result))
+                  #,(fail failid (car vars)
+                          #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
+                          #:fce (car fcs))))))))
 
 ;; parse:pk:id/any : (listof id) (listof FCE) id stx (listof pk) -> stx
 (define (parse:pk:id/any vars fcs failid args pks)

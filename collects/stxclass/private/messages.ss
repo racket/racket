@@ -43,7 +43,6 @@
       (certify
        #'(make-expc '() #f '((msg)) '())))))
 
-
 (define-syntax (try stx)
   (syntax-case stx ()
     [(try failvar (expr ...) previous-fail)
