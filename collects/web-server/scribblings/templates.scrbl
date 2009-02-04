@@ -257,7 +257,7 @@ the @scheme[list] response type:
 If you want more control then you can generate a @scheme[response/full] struct:
 @schemeblock[
  (make-response/full
-  200 "Okay"
+  200 #"Okay"
   (current-seconds) TEXT/HTML-MIME-TYPE
   empty
   (list (include-template "static.html")))

@@ -439,21 +439,22 @@ Consider this example:
             (output-response/method
              conn
              (make-response/full
-              200 "Okay"
+              200 #"Okay"
               (current-seconds) TEXT/HTML-MIME-TYPE
               empty
-              (list (format "hello world ~a"
+              (list (string->bytes/utf-8
+                     (format "hello world ~a"
                             (sort (build-list 100000 (λ x (random 1000)))
-                                  <))))
+                                  <)))))
              (request-method req)))
           #:over-limit 'block))
         (lambda (conn req)          
           (output-response/method
            conn
-           (make-response/full 200 "Okay"
+           (make-response/full 200 #"Okay"
                                (current-seconds) TEXT/HTML-MIME-TYPE
                                empty
-                               (list "<html><body>Unlimited</body></html>"))
+                               (list #"<html><body>Unlimited</body></html>"))
            (request-method req))))
        #:port 8080)
 
