@@ -530,12 +530,12 @@
   (pattern (begin expr ...))
   (pattern (begin0 expr ...))
   (pattern (#%plain-lambda _ e)
-           #:with (exprs ...) #'(e))
-  (pattern (case-lambda [_ exprs] ...))
+           #:with (expr ...) #'(e))
+  (pattern (case-lambda [_ expr] ...))
   (pattern (set! _ e)
-           #:with (exprs ...) #'(e))
+           #:with (expr ...) #'(e))
   (pattern _ 
-           #:with (exprs ...) #'()))
+           #:with (expr ...) #'()))
 
 ;; expr id -> type or #f
 ;; if there is a binding in stx of the form:
@@ -554,10 +554,10 @@
   (syntax-parse stx
     #:literals (let-values)
     [(let-values cls:lv-clauses body)
-     (cond [(ormap match? (syntax->list #'cls))]
-           [else (find #'body)])]
+     (or (ormap match? (syntax->list #'cls))
+	 (find #'body))]
     [e:core-expr
-     (ormap find (syntax->list #'e.exprs))]))
+     (ormap find (syntax->list #'(e.expr ...)))]))
 
 
 (define (check-do-make-object cl pos-args names named-args)
