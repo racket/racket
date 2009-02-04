@@ -110,7 +110,7 @@ function InitializeSearch() {
       +'</div>'
       +'<div id="help_panel" '+panelstyle+'>'
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-        +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and'
+        +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> or'
            +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
            +' results.</li>'
         +'<li>Search terms are all required, use'
