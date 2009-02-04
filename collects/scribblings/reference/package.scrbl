@@ -124,11 +124,12 @@ cookies
 @deftogether[(
 @defproc[(package? [v any/c]) boolean?]
 @defproc[(package-exported-identifiers [id identifier?]) (listof identifier?)]
+@defproc[(package-original-identifiers [id identifier?]) (listof identifier?)]
 )]{
 
-The @scheme[package?] and @scheme[package-exported-identifiers]
-functions are exported @scheme[for-syntax] by
-@schememodname[scheme/package].
+The @scheme[package?], @scheme[package-exported-identifiers], and
+@scheme[package-original-identifiers] functions are exported
+@scheme[for-syntax] by @schememodname[scheme/package].
 
 The @scheme[package?] predicate returns @scheme[#t] if @scheme[v] is a
 package value as obtained by @scheme[syntax-local-value] on an
@@ -136,8 +137,10 @@ identifier that is bound to a package.
 
 Given such an identifier, the @scheme[package-exported-identifiers]
 function returns a list of identifiers that corresponding to the
-bindings that would be introduced by opening the package in the the
-lexical context being expanded.}
+bindings that would be introduced by opening the package in the
+lexical context being expanded. The
+@scheme[package-original-identifiers] function returns a parallel list
+of identifiers for existing bindings of package's exports.}
 
 @; ----------------------------------------------------------------------
 

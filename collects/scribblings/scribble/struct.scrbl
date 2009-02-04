@@ -669,7 +669,11 @@ Used as a style for an @scheme[element] to inline an image. The
 @scheme[path->main-collects-relative].
 
 For Latex output, a @filepath{.gif} suffix on @scheme[path] is
-replaced with a @filepath{.png} suffix.}
+replaced with a @filepath{.png} suffix (because animated GIFs can be
+useful in HTML output, but Latex does not support GIFs). For HTML
+output, a @filepath{.pdf} suffix on @scheme[path] is replaced with a
+@filepath{.png} suffix (because PDF line drawings can be more
+appropriate for Latex output, but HTML output needs bitmaps).}
 
 
 @defproc[(block? [v any/c]) boolean?]{

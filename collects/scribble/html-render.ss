@@ -110,6 +110,11 @@
            (with-attributes-assoc raw-style))
       null))
 
+(define (pdf-to-png p)
+  (if (equal? (filename-extension p) #"pdf")
+      (path-replace-suffix p #".png")
+      p))
+
 #; ; no need for these index-local searches
 #reader scribble/reader (begin ; easier to format
 
@@ -1002,7 +1007,7 @@
                              `([width ,(to-num (read-bytes 4 in))]
                                [height ,(to-num (read-bytes 4 in))])
                              null))))])
-             `((img ([src ,(let ([p (install-file src)])
+             `((img ([src ,(let ([p (install-file (pdf-to-png src))])
                              (if (path? p)
                                (url->string (path->url (path->complete-path p)))
                                p))]

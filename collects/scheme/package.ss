@@ -16,7 +16,8 @@
          define*-syntaxes
 
          (for-syntax package?
-                     package-exported-identifiers))
+                     package-exported-identifiers
+                     package-original-identifiers))
 
 (define-for-syntax (do-define-* stx define-values-id)
   (syntax-case stx ()
@@ -404,5 +405,15 @@
       (raise-type-error 'package-exported-identifiers "identifier bound to a package" id))
     (let ([introduce (syntax-local-make-delta-introducer 
                       (syntax-local-introduce id))])
-      (map (lambda (v) (syntax-local-introduce (cdr v)))
+      (map (lambda (i)
+             (syntax-local-introduce
+              (syntax-local-get-shadower
+               (introduce (car i)))))
            ((package-exports v))))))
+
+(define-for-syntax (package-original-identifiers id)
+  (let ([v (and (identifier? id)
+                (syntax-local-value id (lambda () #f)))])
+    (unless (package? v)
+      (raise-type-error 'package-exported-identifiers "identifier bound to a package" id))
+    (map cdr ((package-exports v)))))

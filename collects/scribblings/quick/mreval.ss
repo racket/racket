@@ -7,7 +7,8 @@
            mzlib/file
            mzlib/runtime-path
            mzlib/serialize
-           scribblings/quick/exn)
+           scribblings/quick/exn
+           scheme/system)
 
   (define-syntax define-mr
     (syntax-rules ()
@@ -107,6 +108,17 @@
       (let ([fn (build-string-path img-dir
                                    (format "img~a.png" image-counter))])
         (set! image-counter (add1 image-counter))
+        (let ([dc (let ([pss (make-object (mr-eval 'ps-setup%))])
+                    (send pss set-mode 'file)
+                    (send pss set-file (path-replace-suffix fn #".ps"))
+                    (parameterize ([(mr-eval 'current-ps-setup) pss])
+                      (make-object (mr-eval 'post-script-dc%) #f)))])
+          (send dc start-doc "Image")
+          (send dc start-page)
+          (((mr-eval 'make-pict-drawer) v) dc 0 0)
+          (send dc end-page)
+          (send dc end-doc)
+          (system (format "epstopdf ~a" (path-replace-suffix fn #".ps"))))
         (let* ([bm (make-object (mr-eval 'bitmap%)
                                 (inexact->exact (ceiling ((mr-eval 'pict-width) v)))
                                 (inexact->exact (ceiling ((mr-eval 'pict-height) v))))]
@@ -115,7 +127,11 @@
           (send dc clear)
           (((mr-eval 'make-pict-drawer) v) dc 0 0)
           (send bm save-file fn 'png)
-          (make-element #f (list (make-element (make-image-file fn 1.0) (list "[image]"))))))]
+          (make-element #f (list (make-element (make-image-file 
+                                                ;; For HTML output, .pdf is automatically changed to .png:
+                                                (path-replace-suffix fn #".pdf")
+                                                1.0) 
+                                               (list "[image]"))))))]
      [(pair? v) (cons (fixup-picts (car v))
                       (fixup-picts (cdr v)))]
      [(serializable? v) v]
