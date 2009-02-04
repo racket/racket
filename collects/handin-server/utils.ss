@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/class mred lang/posn scheme/pretty
+(require scheme/class mred scheme/pretty
          (prefix-in pc: mzlib/pconvert)
          (only-in "main.ss" timeout-control)
          "private/run-status.ss"
@@ -12,6 +12,7 @@
 
          get-conf
          log-line
+         server-dir
 
          unpack-submission
 

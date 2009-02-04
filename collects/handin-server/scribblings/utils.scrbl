@@ -193,3 +193,8 @@ Every exception or result mismatch during the call to
   that before the checker is used (after the pre-checker, if
   specified), the timer will be reset to the @scheme['session-timeout]
   value.)}
+
+@defthing[server-dir path-string?]{
+
+  The main directory the server is running from.  Useful for getting
+  to files that are not local to a specific submission.}

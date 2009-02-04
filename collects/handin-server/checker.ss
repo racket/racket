@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base) "utils.ss"
-         scheme/file scheme/list scheme/class mred)
+         scheme/file scheme/class mred)
 
 (provide (except-out (all-from-out scheme/base) #%module-begin)
          (all-from-out "utils.ss"))
@@ -20,8 +20,6 @@
                 (cdr e))
          stx))
       (raise-syntax-error #f "bad syntax" stx))))
-
-(define server-dir (current-directory))
 
 (define (error* fmt . args)
   (error (apply format fmt args)))
