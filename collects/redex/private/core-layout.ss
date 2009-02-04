@@ -118,7 +118,7 @@
                                     
   
   
-  ;; token = string-token | spacer-token | pict-token | align-token
+  ;; token = string-token | spacer-token | pict-token | align-token | up-token
   
   (define-struct token (column span) #:inspector (make-inspector))
   
@@ -139,6 +139,11 @@
   ;; an earlier line)
   (define-struct align-token (pict) #:inspector (make-inspector))
 
+  ;; lines : number
+  ;; this token corresponds to a deletion of a bunch of vertical space
+  ;; things following it start 'lines' lines higher up.
+  (define-struct (up-token token) (lines) #:inspector (make-inspector))
+  
   ;; n : number (the line number)
   ;; tokens : (listof token)
   (define-struct line (n tokens) #:inspector (make-inspector))
@@ -183,9 +188,21 @@
                      (pair? (cdr content))
                      (lw? (cadr content))
                      (equal? 'term-let (lw-e (cadr content))))
+                
+                #;
                 (struct-copy lw
                              an-lw
-                             [e (lw-e (second-to-last content))])
+                             [e (adjust-spacing (lw-e (second-to-last content))
+                                                (lw-line an-lw)
+                                                (lw-line-span an-lw)
+                                                (lw-column an-lw)
+                                                (lw-column-span an-lw)
+                                                'term-let-rewriter)])
+                (struct-copy lw
+                             an-lw
+                             [e (append (list (just-before "" an-lw) 'spring)
+                                        (lw-e (second-to-last content))
+                                        (list 'spring (just-after "" an-lw)))])
                 an-lw))
           an-lw))
     
@@ -224,7 +241,7 @@
                     (adjust-spacing rewritten 
                                     line line-span col col-span
                                     (lw-e (cadr e)))])
-                            (map ar/lw adjusted))))]
+               (map ar/lw adjusted))))]
         [(and (pair? e)
               (pair? (cdr e))
               (lw? (cadr e))
@@ -329,7 +346,7 @@
                                    0))])
           (cond
             [(and after-next-lw (null? to-wrap))
-             (cons next-lw (loop after-next-lw next-line next-column))]
+             (list* next-lw (loop after-next-lw next-line next-column))]
             [(and (not after-next-lw) (null? to-wrap))
              '()]
             [else
@@ -343,11 +360,13 @@
                           (- next-lw-column column)
                           (- next-lw-column init-column))])
                  (list* (build-lw to-wrap1 line 0 new-lw-col 0)
+                        'spring
                         (build-lw (blank)
                                   line
                                   (- next-lw-line line)
                                   new-lw-col 
                                   new-lw-col-span)
+                        'spring
                         (build-lw to-wrap2 next-lw-line 0 (+ new-lw-col new-lw-col-span) 0)
                         (if after-next-lw
                             (cons next-lw (loop after-next-lw next-line next-column))
@@ -415,26 +434,44 @@
     (define initial-line (lw-line lw))
     (define current-line (lw-line lw))
     (define current-column (lw-column lw))
+    
+    ;; if there are lines that are in the source, 
+    ;; but should not be rendered as blank lines, this counts them
+    ;; specifically it is the number of such lines that have
+    ;; already passed.
+    (define gobbled-lines 0)
+    
     (define last-token-spring? #f)
     (define tokens '())
     (define lines '())
-    (define (eject line col span atom unquoted?)
+    (define (eject line line-span col col-span atom unquoted?)
       (cond
         [(= current-line line)
          (void)]
         [(< current-line line)
-         ;; make new lines
-         (for-each 
-          (λ (i) 
-            (set! lines (cons (make-line (+ i current-line) (reverse tokens)) lines))
-            (set! tokens '()))
-          (build-list (max 0 (- line current-line)) values))
-         
-         (set! tokens (cons (make-spacer-token 0 (- col initial-column))
-                            tokens))
-         
-         (set! current-line line)
-         (set! current-column col)]
+         (let ([lines-to-end (- line current-line)])
+           
+           (set! lines (cons (make-line (- current-line gobbled-lines) (reverse tokens)) lines))
+           (set! tokens '())
+           
+           (cond [last-token-spring? 
+                  ;; gobble up empty lines
+                  ;; we gobble up lines so that we continue on the line we were
+                  ;; on before (which is actually now split into two different elements of the line list)
+                  (set! gobbled-lines (+ gobbled-lines lines-to-end))]
+                 [else 
+                  ;; insert a bunch of blank lines
+                  (for-each 
+                   (λ (i) 
+                     (set! lines (cons (make-line (+ (- current-line gobbled-lines) i) '()) lines)))
+                   (build-list (- lines-to-end 1) add1))])
+           
+           
+           (set! tokens (cons (make-spacer-token 0 (- col initial-column))
+                              tokens))
+           
+           (set! current-line line)
+           (set! current-column col))]
         [else
          (error 'eject "lines going backwards")])
       (when (< current-column col)
@@ -446,41 +483,42 @@
       (set! last-token-spring? #f)
       (set! tokens (append 
                     (reverse
-                     (atom->tokens (- col initial-column) span atom all-nts unquoted?))
+                     (atom->tokens (- col initial-column) col-span atom all-nts unquoted?))
                     tokens))
-      (set! current-column (+ col span)))
+      (set! current-column (+ col col-span)))
     
-    (define (make-blank-space-token unquoted? col span)
+    (define (make-blank-space-token unquoted? col col-span)
       (if last-token-spring?
-          (make-pict-token col span (blank))
-          (let ([str (apply string (build-list span (λ (x) #\space)))])
+          (make-pict-token col col-span (blank))
+          (let ([str (apply string (build-list col-span (λ (x) #\space)))])
             (if unquoted?
-                (make-pict-token col span (pink-background ((current-text) str 'modern (default-font-size))))
-                (make-string-token col span str (default-style))))))
+                (make-pict-token col col-span (pink-background ((current-text) str 'modern (default-font-size))))
+                (make-string-token col col-span str (default-style))))))
     
-    (define (handle-loc-wrapped lw last-line last-column last-span)
+    (define (handle-loc-wrapped lw)
       (cond
-        [(eq? lw 'spring)
-         (set! last-token-spring? #t)]
+        [(memq lw '(spring spring-next))
+         (set! last-token-spring? lw)]
         [else
          (handle-object (lw-e lw)
                         (lw-line lw)
+                        (lw-line-span lw)
                         (lw-column lw)
                         (lw-column-span lw)
                         (lw-unq? lw))]))
     
-    (define (handle-object obj line col span unquoted?)
+    (define (handle-object obj line line-span col col-span unquoted?)
       (cond
-        [(symbol? obj) (eject line col span obj unquoted?)]
-        [(string? obj) (eject line col span obj unquoted?)]
-        [(pict? obj) (eject line col span obj unquoted?)]
-        [(not obj) (eject line col span (blank) unquoted?)]
+        [(symbol? obj) (eject line line-span col col-span obj unquoted?)]
+        [(string? obj) (eject line line-span col col-span obj unquoted?)]
+        [(pict? obj) (eject line line-span col col-span obj unquoted?)]
+        [(not obj) (eject line line-span col col-span (blank) unquoted?)]
         [else
-         (for-each (λ (x) (handle-loc-wrapped x line col span))
+         (for-each (λ (x) (handle-loc-wrapped x))
                    obj)]))
     
-    (handle-loc-wrapped lw 0 0 0)
-    (set! lines (cons (make-line current-line (reverse tokens)) 
+    (handle-loc-wrapped lw)
+    (set! lines (cons (make-line (- current-line gobbled-lines) (reverse tokens)) 
                       lines)) ;; handle last line ejection
     lines)
   
@@ -619,7 +657,7 @@
       (let ([max (apply max (map line-n lines))]
             [min (apply min (map line-n lines))])
         (let loop ([i min])
-          (let ([lines (apply lbl-superimpose (reverse (hash-ref lines-ht i)))])
+          (let ([lines (apply lbl-superimpose (reverse (hash-ref lines-ht i (list (blank)))))])
             (cond
               [(= i max) lines]
               [else

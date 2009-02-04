@@ -62,5 +62,19 @@
                (λ (z) (z z)))))
       "lw.png")
 
+(define-metafunction lang
+  [(TL 1) (a
+           ,(term-let ((x 1))
+                      (term x))
+           below-only)]
+  [(TL 2) (a
+           ,(term-let ((x 1))
+                      (term x)) beside
+           below)])
+
+;; this tests that term-let is sucked away properly
+;; when the metafunction is rendered
+(test (render-metafunction TL) "metafunction-TL.png")
+
 (printf "bitmap-test.ss: ")
 (done)

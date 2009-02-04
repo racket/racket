@@ -42,7 +42,7 @@
          (to-lw
           ,(term
             (a b c))))))
-      (list (make-line 1
+      (list (make-line 0
                        (list (make-spacer-token 0 2)
                              (make-string-token 2 1 "(" 'roman)
                              (make-string-token 3 1 "a" 'swiss)
@@ -64,11 +64,11 @@
           ,(term
             (a b
                c))))))
-      (list (make-line 2
+      (list (make-line 1
                        (list (make-spacer-token 0 5)
                              (make-string-token 5 1 "c" 'swiss)
                              (make-string-token 6 1 ")" 'roman)))
-            (make-line 1
+            (make-line 0
                        (list (make-spacer-token 0 2)
                              (make-string-token 2 1 "(" 'roman)
                              (make-string-token 3 1 "a" 'swiss)
