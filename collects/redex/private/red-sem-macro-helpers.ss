@@ -6,7 +6,7 @@
 
 (define (extract-names stx)
   (let ([dup-names
-         (let loop ([sexp (syntax-object->datum stx)]
+         (let loop ([sexp (syntax->datum stx)]
                     [names null])
            (match sexp
              [`(name ,(and sym (? symbol?)) ,pat)
@@ -26,6 +26,6 @@
                   [(null? sexp) names]
                   [else (i-loop (cdr sexp) (loop (car sexp) names))]))]
              [else names]))]
-        [ht (make-hash-table)])
-    (for-each (lambda (name) (hash-table-put! ht name #f)) dup-names)
-    (hash-table-map ht (lambda (x y) x))))
+        [ht (make-hasheq)])
+    (for-each (lambda (name) (hash-set! ht name #f)) dup-names)
+    (hash-map ht (lambda (x y) x))))
