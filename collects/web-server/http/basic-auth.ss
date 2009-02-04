@@ -1,10 +1,9 @@
-#lang scheme/base
-(require mzlib/contract
-         mzlib/plt-match
-         net/base64
+#lang scheme
+(require net/base64
          web-server/http/request-structs)
 
-(define (extract-user-pass headers)
+(define (request->basic-credentials req)
+  (define headers (request-headers/raw req))
   (match (headers-assq* #"Authorization" headers)
     [#f #f]
     [(struct header (_ basic-credentials))
@@ -22,5 +21,9 @@
   (let ([rx (byte-regexp #"^Basic .*")])
     (lambda (a) (regexp-match rx a))))
 
+(define (make-basic-auth-header realm)
+  (make-header #"WWW-Authenticate" (string->bytes/utf-8 (format "Basic realm=\"~a\"" realm))))
+
 (provide/contract
- [extract-user-pass ((listof header?) . -> . (or/c false/c (cons/c bytes? bytes?)))])
+ [make-basic-auth-header (string? . -> . header?)]
+ [request->basic-credentials (request? . -> . (or/c false/c (cons/c bytes? bytes?)))])

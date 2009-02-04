@@ -1,26 +1,44 @@
-#lang scheme/base
+#lang scheme
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         web-server/http)
+         web-server/http
+         net/url)
 (provide basic-auth-tests)
+
+(define (make-req hs)
+  (make-request 
+   #"GET" (string->url "http://test.com/foo")
+   hs
+   empty #f
+   "host" 80 "client"))
+
+(define (header->cons h)
+  (cons (header-field h) (header-value h)))
 
 (define basic-auth-tests
   (test-suite
-   "BASIC Authentication"
+   "Basic Authentication"
+   
+   (test-case
+    "make-basic-auth-header"
+    (check-equal? (header->cons (make-basic-auth-header "realm"))
+                  (cons #"WWW-Authenticate"
+                        #"Basic realm=\"realm\"")))
    
    (test-case
     "Simple"
-    (check-equal? (extract-user-pass (list (make-header #"Authorization" #"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")))
+    (check-equal? (request->basic-credentials
+                   (make-req (list (make-header #"Authorization" #"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))))
                   (cons #"Aladdin" #"open sesame")))
    
    (test-case
     "Value error"
-    (check-false (extract-user-pass (list (make-header #"Authorization" #"Basic adfadQWxhZGRpb124134jpvcGVu=")))))
+    (check-false (request->basic-credentials (make-req (list (make-header #"Authorization" #"Basic adfadQWxhZGRpb124134jpvcGVu="))))))
    
    (test-case
     "No header"
-    (check-false (extract-user-pass (list))))
+    (check-false (request->basic-credentials (make-req (list)))))
    
    (test-case
     "Case"
-    (check-equal? (extract-user-pass (list (make-header #"AuthoRIZation" #"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")))
+    (check-equal? (request->basic-credentials (make-req (list (make-header #"AuthoRIZation" #"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))))
                   (cons #"Aladdin" #"open sesame")))))

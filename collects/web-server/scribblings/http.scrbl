@@ -380,14 +380,109 @@ transmission that the server @bold{will not catch}.}
 @defmodule[web-server/http/basic-auth]{
 
 An implementation of HTTP Basic Authentication.
-
-@defproc[(extract-user-pass [heads (listof header?)])
+   
+@defproc[(make-basic-auth-header [realm string?])
+         header?]{
+ Returns a header that instructs the Web browser to request a username and password from the client using
+ Basic authentication with @scheme[realm] as the realm.
+}
+                 
+@defproc[(request->basic-credentials [req request?])
          (or/c false/c (cons/c bytes? bytes?))]{
  Returns a pair of the username and password from the authentication
- header in @scheme[heads] if they are present, or @scheme[#f].
+ header in @scheme[req] if they are present, or @scheme[#f]. 
+}
+                                               
+Example:
+@schememod[
+web-server/insta
  
- Example:
- @scheme[(extract-user-pass (request-headers/raw req))] might return @scheme[(cons #"aladin" #"open sesame")].
+(define (start req)
+  (match (request->basic-credentials req)
+    [(cons user pass)
+     `(html (head (title "Basic Auth Test"))
+            (body (h1 "User: " ,(bytes->string/utf-8 user))
+                  (h1 "Pass: " ,(bytes->string/utf-8 pass))))]
+    [else
+     (make-response/basic
+      401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
+      (list 
+       (make-basic-auth-header 
+        (format "Basic Auth Test: ~a" (gensym)))))])) 
+]
 }
 
+@; ------------------------------------------------------------
+@section[#:tag "digest-auth.ss"]{Digest Authentication}
+@(require (for-label web-server/http/digest-auth
+                     scheme/pretty))
+
+@defmodule[web-server/http/digest-auth]{
+
+An implementation of HTTP Digest Authentication.
+   
+@defproc[(make-digest-auth-header [realm string?] [private-key string?] [opaque string?])
+         header?]{
+ Returns a header that instructs the Web browser to request a username and password from the client
+ using Digest authentication with @scheme[realm] as the realm, @scheme[private-key] as the server's
+ contribution to the nonce, and @scheme[opaque] as the opaque data passed through the client.
+}
+                 
+@defproc[(request->digest-credentials [req request?])
+         (or/c false/c (listof (cons/c symbol? string?)))]{
+ Returns the Digest credentials from @scheme[req] (if they appear) as an association list.
+}         
+                                                          
+@defthing[username*realm->password/c contract?]{
+ Used to look up the password for a user is a realm.                                                
+                                                
+ Equivalent to @scheme[(string? string? . -> . string?)].                                                
+}
+
+@defthing[username*realm->digest-HA1/c contract?]{
+ Used to compute the user's secret hash.
+      
+ Equivalent to @scheme[(string? string? . -> . bytes?)].
+} 
+       
+@defproc[(password->digest-HA1 [lookup-password username*realm->password/c])
+         username*realm->digest-HA1/c]{
+ Uses @scheme[lookup-password] to find the password, then computes the secret hash of it.
+}      
+                                       
+@defproc[(make-check-digest-credentials [lookup-HA1 username*realm->digest-HA1/c])
+         (string? (listof (cons/c symbol? string?)) . -> . boolean?)]{
+ Constructs a function that checks whether particular Digest credentials (the second argument of the returned function)
+ are correct given the HTTP method provided as the first argument and the secret hash computed by @scheme[lookup-HA1].
+ 
+ This is will result in an exception if the Digest credentials are missing portions.
+} 
+                                                                     
+Example:
+@schememod[
+web-server/insta
+(require scheme/pretty)
+
+(define private-key "private-key")
+(define opaque "opaque")
+
+(define (start req)
+  (match (request->digest-credentials req)
+    [#f
+     (make-response/basic
+      401 #"Unauthorized" (current-seconds) TEXT/HTML-MIME-TYPE
+      (list (make-digest-auth-header
+             (format "Digest Auth Test: ~a" (gensym))
+             private-key opaque)))]
+    [alist
+     (define check
+       (make-check-digest-credentials
+        (password->digest-HA1 (lambda (username realm) "pass"))))
+     (define pass?
+       (check "GET" alist))
+     `(html (head (title "Digest Auth Test"))
+            (body 
+             (h1 ,(if pass? "Pass!" "No Pass!"))
+             (pre ,(pretty-format alist))))])) 
+]
 }

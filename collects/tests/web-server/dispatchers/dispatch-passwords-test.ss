@@ -74,7 +74,7 @@
     (test-equal? "not authorized"
                  (let ([v (runt #t #f)])
                    (list (header-field v) (header-value v)))
-                 (list #"WWW-Authenticate" #" Basic realm=\"secret stuff\""))
+                 (list #"WWW-Authenticate" #"Basic realm=\"secret stuff\""))
     (test-exn "does not apply"
               exn:dispatcher?
               (lambda ()
