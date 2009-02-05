@@ -188,16 +188,6 @@
                      (pair? (cdr content))
                      (lw? (cadr content))
                      (equal? 'term-let (lw-e (cadr content))))
-                
-                #;
-                (struct-copy lw
-                             an-lw
-                             [e (adjust-spacing (lw-e (second-to-last content))
-                                                (lw-line an-lw)
-                                                (lw-line-span an-lw)
-                                                (lw-column an-lw)
-                                                (lw-column-span an-lw)
-                                                'term-let-rewriter)])
                 (struct-copy lw
                              an-lw
                              [e (append (list (just-before "" an-lw) 'spring)
@@ -246,9 +236,9 @@
               (pair? (cdr e))
               (lw? (cadr e))
               (lw-metafunction? (cadr e)))
-         (map ar/lw (adjust-spacing (rewrite-metafunction-app e)
-                                    line line-span col col-span 
-                                    (lw-e (cadr e))))]
+         (map ar/lw (rewrite-metafunction-app e
+                                              line line-span col col-span 
+                                              (lw-e (cadr e))))]
         [else
          (map ar/lw e)]))
     (ar/lw orig-lw))
@@ -266,21 +256,24 @@
                             snd
                             (car l))]))]))
     
-  (define (rewrite-metafunction-app lst)
-    (cons (hbl-append 
-           (metafunction-text (symbol->string (lw-e (cadr lst))))
-           (open-white-square-bracket))
-          (let loop ([lst (cddr lst)])
-            (cond
-              [(null? lst) null]
-              [(null? (cdr lst))
-               (let ([last (car lst)])
-                 (list (just-before (close-white-square-bracket) last) ""))]
-              [(null? (cddr lst))
-               (cons (car lst) (loop (cdr lst)))]
-              [else (list* (car lst) 
-                           (basic-text ", " (default-style))
-                           (loop (cdr lst)))]))))
+  (define (rewrite-metafunction-app lst line line-span col col-span something-or-other)
+    (list* 'spring
+           (just-after (hbl-append 
+                        (metafunction-text (symbol->string (lw-e (cadr lst))))
+                        (open-white-square-bracket))
+                       (cadr lst))
+           'spring
+           (let loop ([lst (cddr lst)])
+             (cond
+               [(null? lst) null]
+               [(null? (cdr lst))
+                (let ([last (car lst)])
+                  (list (just-before (close-white-square-bracket) last)))]
+               [(null? (cddr lst))
+                (cons (car lst) (loop (cdr lst)))]
+               [else (list* (car lst) 
+                            (just-after (basic-text "," (default-style)) (car lst))
+                            (loop (cdr lst)))]))))
   
   (define (just-before what lw)
     (build-lw (if (symbol? what)

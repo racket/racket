@@ -92,5 +92,15 @@
         (render-metafunction Name))
       "metafunction-Name-vertical.png")
 
+(define-metafunction lang
+  [(multi-arg a
+              b
+              c)
+   (multi-arg a 
+              b 
+              c)])
+
+(test (render-metafunction multi-arg) "metafunction-multi-arg.png")
+
 (printf "bitmap-test.ss: ")
 (done)
