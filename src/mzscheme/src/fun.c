@@ -1249,10 +1249,8 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     data->iso.so.type = scheme_unclosed_procedure_type;
 
   if (convert || can_lift) {
-    if (!scheme_resolving_in_procedure(info)) {
-      convert = 0;
-      can_lift = 0;
-    }
+    if (!convert && !scheme_resolving_in_procedure(info))
+      can_lift = 0; /* no point in lifting when outside of a lambda or letrec */
     if (!info->lifts)
       can_lift = 0;
   }
