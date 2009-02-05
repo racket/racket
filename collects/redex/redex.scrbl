@@ -1636,7 +1636,7 @@ label on each rule, but only in horizontal mode. Defaults to
 0.
 }
 
-@defparam[metafunction-pict-style style (parameter/c (symbols 'left-right 'up-down))]{
+@defparam[metafunction-pict-style style (parameter/c (symbols 'left-right 'up-down 'left-right/vertical-side-conditions 'up-down/vertical-side-conditions))]{
 
 This parameter controls the style used for typesetting
 metafunctions. The 'left-right style means that the

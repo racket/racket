@@ -651,90 +651,94 @@
 
 (define metafunction->pict/proc
   (lambda (mf)
-    (let ([current-linebreaks (linebreaks)]
-          [all-nts (language-nts (metafunc-proc-lang (metafunction-proc mf)))]
-          [sep 2])
-      (let* ([wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
-             [eqns (metafunc-proc-pict-info (metafunction-proc mf))]
-             [lhss (map (lambda (eqn) 
-                          (wrapper->pict
-                           (metafunction-call (metafunc-proc-name (metafunction-proc mf))
-                                              (list-ref eqn 0)
-                                              (metafunc-proc-multi-arg? (metafunction-proc mf)))))
-                        eqns)]
-             [scs (map (lambda (eqn)
-                         (if (and (null? (list-ref eqn 1))
-                                  (null? (list-ref eqn 2)))
-                             #f
-                             (side-condition-pict null 
-                                                  (map wrapper->pict (list-ref eqn 1)) 
-                                                  (map (lambda (p)
-                                                         (cons (wrapper->pict (car p))
-                                                               (wrapper->pict (cdr p))))
-                                                       (list-ref eqn 2))
-                                                  +inf.0)))
-                       eqns)]
-             [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 3))) eqns)]
-             [linebreak-list (or current-linebreaks
-                                 (map (lambda (x) #f) eqns))]
-             [=-pict (make-=)]
-             [max-lhs-w (apply max (map pict-width lhss))]
-             [max-line-w (apply
-                          max
-                          (map (lambda (lhs sc rhs linebreak?)
-                                 (max
-                                  (if sc (pict-width sc) 0)
-                                  (if linebreak?
-                                      (max (pict-width lhs)
-                                           (+ (pict-width rhs) (pict-width =-pict)))
-                                      (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
-                                         (* 2 sep)))))
-                               lhss scs rhss linebreak-list))])
-        (case (metafunction-pict-style)
-          [(left-right)
-           (table 3
-                  (apply append
-                         (map (lambda (lhs sc rhs linebreak?)
-                                (append
-                                 (if linebreak?
-                                     (list lhs (blank) (blank))
-                                     (list lhs =-pict rhs))
-                                 (if linebreak?
-                                     (let ([p rhs])
-                                       (list (hbl-append sep
-                                                         =-pict
-                                                         (inset p 0 0 (- 5 (pict-width p)) 0))
-                                             (blank)
-                                             ;; n case this line sets the max width, add suitable space in the right:
-                                             (blank (max 0 (- (pict-width p) max-lhs-w sep))
-                                                    0)))
-                                     null)
-                                 (if (not sc)
-                                     null
-                                     (list (inset sc 0 0 (- 5 (pict-width sc)) 0)
+    (let* ([current-linebreaks (linebreaks)]
+           [all-nts (language-nts (metafunc-proc-lang (metafunction-proc mf)))]
+           [sep 2]
+           [style (metafunction-pict-style)]
+           [wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
+           [eqns (metafunc-proc-pict-info (metafunction-proc mf))]
+           [lhss (map (lambda (eqn) 
+                        (wrapper->pict
+                         (metafunction-call (metafunc-proc-name (metafunction-proc mf))
+                                            (list-ref eqn 0)
+                                            (metafunc-proc-multi-arg? (metafunction-proc mf)))))
+                      eqns)]
+           [scs (map (lambda (eqn)
+                       (if (and (null? (list-ref eqn 1))
+                                (null? (list-ref eqn 2)))
+                           #f
+                           (side-condition-pict null 
+                                                (map wrapper->pict (list-ref eqn 1)) 
+                                                (map (lambda (p)
+                                                       (cons (wrapper->pict (car p))
+                                                             (wrapper->pict (cdr p))))
+                                                     (list-ref eqn 2))
+                                                (if (memq style '(up-down/vertical-side-conditions
+                                                                  left-right/vertical-side-conditions))
+                                                    0
+                                                    +inf.0))))
+                     eqns)]
+           [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 3))) eqns)]
+           [linebreak-list (or current-linebreaks
+                               (map (lambda (x) #f) eqns))]
+           [=-pict (make-=)]
+           [max-lhs-w (apply max (map pict-width lhss))]
+           [max-line-w (apply
+                        max
+                        (map (lambda (lhs sc rhs linebreak?)
+                               (max
+                                (if sc (pict-width sc) 0)
+                                (if linebreak?
+                                    (max (pict-width lhs)
+                                         (+ (pict-width rhs) (pict-width =-pict)))
+                                    (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
+                                       (* 2 sep)))))
+                             lhss scs rhss linebreak-list))])
+      (case style
+        [(left-right left-right/vertical-side-conditions)
+         (table 3
+                (apply append
+                       (map (lambda (lhs sc rhs linebreak?)
+                              (append
+                               (if linebreak?
+                                   (list lhs (blank) (blank))
+                                   (list lhs =-pict rhs))
+                               (if linebreak?
+                                   (let ([p rhs])
+                                     (list (hbl-append sep
+                                                       =-pict
+                                                       (inset p 0 0 (- 5 (pict-width p)) 0))
                                            (blank)
-                                           ;; In case sc set the max width...
-                                           (blank (max 0 (- (pict-width sc) max-lhs-w (pict-width =-pict) (* 2 sep)))
-                                                  0)))))
-                              lhss
-                              scs
-                              rhss
-                              linebreak-list))
-                  ltl-superimpose ltl-superimpose
-                  sep sep)]
-          [(up-down)
-           (apply vl-append
-                  sep
-                  (apply append
-                         (map (lambda (lhs sc rhs)
-                                (cons
-                                 (vl-append (hbl-append lhs =-pict) rhs)
-                                 (if (not sc)
-                                     null
-                                     (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
-                              lhss
-                              scs
-                              rhss)))])))))
+                                           ;; n case this line sets the max width, add suitable space in the right:
+                                           (blank (max 0 (- (pict-width p) max-lhs-w sep))
+                                                  0)))
+                                   null)
+                               (if (not sc)
+                                   null
+                                   (list (inset sc 0 0 (- 5 (pict-width sc)) 0)
+                                         (blank)
+                                         ;; In case sc set the max width...
+                                         (blank (max 0 (- (pict-width sc) max-lhs-w (pict-width =-pict) (* 2 sep)))
+                                                0)))))
+                            lhss
+                            scs
+                            rhss
+                            linebreak-list))
+                ltl-superimpose ltl-superimpose
+                sep sep)]
+        [(up-down up-down/vertical-side-conditions)
+         (apply vl-append
+                sep
+                (apply append
+                       (map (lambda (lhs sc rhs)
+                              (cons
+                               (vl-append (hbl-append lhs =-pict) rhs)
+                               (if (not sc)
+                                   null
+                                   (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
+                            lhss
+                            scs
+                            rhss)))]))))
 
 (define (metafunction-call name an-lw flattened?)
   (if flattened?

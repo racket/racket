@@ -87,5 +87,10 @@
 ;; all show up in the output.
 (test (render-metafunction Name) "metafunction-Name.png")
 
+;; same as previous, but with vertical organization of the bindings
+(test (parameterize ([metafunction-pict-style 'up-down/vertical-side-conditions])
+        (render-metafunction Name))
+      "metafunction-Name-vertical.png")
+
 (printf "bitmap-test.ss: ")
 (done)

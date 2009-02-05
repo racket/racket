@@ -68,7 +68,9 @@
  [label-space (parameter/c natural-number/c)]
  [metafunction-pict-style 
   (parameter/c (symbols 'left-right
-                        'up-down))])
+                        'left-right/vertical-side-conditions
+                        'up-down
+                        'up-down/vertical-side-conditions))])
 
 (provide/contract
  [label-font-size (parameter/c (and/c (between/c 1 255) integer?))]
