@@ -5,7 +5,7 @@
 
 By default, the system is set up for submissions of single a single
 file, straight fom DrScheme using the handin-client.  There is some
-support for multi-file submissions in
+limited support for multi-file submissions in
 @schememodname[handin-server/checker] and in the handin-client. It is
 possible to submit multiple files, and have the system generate a
 single file that is the concatenation of all submission files (used
@@ -23,6 +23,10 @@ following:
   Alternatively, it can be a 1-argument procedure that will receive
   the (sorted) list of submitted files and can throw an error if some
   files are missing or some files are forbidden.}
+
+@item{Make sure that @scheme[:create-text?] is on if you want the
+  contents of a multi-file submission to be unpacked and filenames
+  checked.}
 
 @item{In the @filepath{info.ss} file of the handin-client you need to
   set @scheme[enable-multifile-handin] to @scheme[#t], and adjust
