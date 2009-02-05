@@ -612,10 +612,10 @@
                              (add1 x)
                              12))]
         
-        [tc-e (filter integer? (list 1 2 3 'foo))
+        [tc-e (filter exact-integer? (list 1 2 3 'foo))
               (-lst -Integer)]
         
-        [tc-e (filter even? (filter integer? (list 1 2 3 'foo)))
+        [tc-e (filter even? (filter exact-integer? (list 1 2 3 'foo)))
               (-lst -Integer)]
         
         [tc-err (plambda: (a ...) [as : a ... a]
