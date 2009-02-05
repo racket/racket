@@ -995,7 +995,13 @@
                                        (syntax->list #'((tl-side-conds ...) ...)))]
                                  [(((bind-id . bind-pat) ...) ...)
                                   ;; Also for pict, extract pattern bindings
-                                  (map extract-pattern-binds (syntax->list #'(lhs ...)))])
+                                  (map extract-pattern-binds (syntax->list #'(lhs ...)))]
+                                 [(((rhs-bind-id . rhs-bind-pat) ...) ...)
+                                  ;; Also for pict, extract pattern bindings
+                                  (map extract-term-let-binds (syntax->list #'(rhs ...)))]
+                                 [(((where-id where-pat) ...) ...)
+                                  ;; Also for pict, extract where bindings
+                                  #'(tl-bindings ...)])
                      #`(begin
                          (define-values (name2 name-predicate)
                            (let ([sc `(side-conditions-rewritten ...)]
@@ -1019,6 +1025,12 @@
                                              (list (to-lw/uq side-cond) ...)
                                              (list (cons (to-lw bind-id)
                                                          (to-lw bind-pat))
+                                                   ...
+                                                   (cons (to-lw rhs-bind-id)
+                                                         (to-lw rhs-bind-pat))
+                                                   ...
+                                                   (cons (to-lw where-id)
+                                                         (to-lw where-pat))
                                                    ...)
                                              (to-lw rhs))
                                        ...)

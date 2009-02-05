@@ -76,5 +76,16 @@
 ;; when the metafunction is rendered
 (test (render-metafunction TL) "metafunction-TL.png")
 
+(define-metafunction lang
+  [(Name (name x-arg arg)) 
+   ,(term-let ((x-term-let 1))
+              (term (x-where x-term-let)))
+   (where x-where 2)])
+
+;; this tests that the three variable bindings
+;; (x-arg, x-term-let, and x-where) 
+;; all show up in the output.
+(test (render-metafunction Name) "metafunction-Name.png")
+
 (printf "bitmap-test.ss: ")
 (done)
