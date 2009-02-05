@@ -67,8 +67,7 @@
            #`(init-loc-wrapper 
               (list (init-loc-wrapper "" #,(syntax-line stx) #,(syntax-column stx) #,quoted?)
                     'spring
-                    #,(process-arg (cadr (syntax->list stx)) (+ quote-depth 1))
-                    'spring)
+                    #,(process-arg (cadr (syntax->list stx)) (+ quote-depth 1)))
               #,(syntax-line stx) 
               #,(syntax-column stx)
               #,quoted?)

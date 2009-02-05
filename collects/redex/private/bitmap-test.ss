@@ -92,13 +92,22 @@
         (render-metafunction Name))
       "metafunction-Name-vertical.png")
 
+;; makes sure that there is no overlap inside or across metafunction calls  
+;; or when there are unquotes involved
 (define-metafunction lang
   [(multi-arg a
               b
               c)
-   (multi-arg a 
-              b 
-              c)])
+   ((multi-arg a 
+               b 
+               c)
+    (multi-arg a 
+               b 
+               c))]
+  [(multi-arg unquote-test)
+   (,@(term (multi-arg with-unquote))
+    ,@(term (multi-arg with-unquote))
+    ,@(term (multi-arg with-unquote)))])
 
 (test (render-metafunction multi-arg) "metafunction-multi-arg.png")
 

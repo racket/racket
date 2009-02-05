@@ -257,7 +257,8 @@
                             (car l))]))]))
     
   (define (rewrite-metafunction-app lst line line-span col col-span something-or-other)
-    (list* 'spring
+    (list* (build-lw "" line 0 col 0)
+           'spring
            (just-after (hbl-append 
                         (metafunction-text (symbol->string (lw-e (cadr lst))))
                         (open-white-square-bracket))
