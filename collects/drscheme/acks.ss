@@ -55,7 +55,7 @@
    "Jens Axel Søgaard, "
    "Francisco Solsona, "
    "Sam Tobin-Hochstadt, "
-   "Neil W. Van Dyke, "
+   "Neil Van Dyke, "
    "David Van Horn, "
    "Anton van Straaten, "
    "Dale Vaillancourt, "
