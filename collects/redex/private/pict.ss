@@ -748,7 +748,7 @@
                      ;; the first loc wrapper is just there to make the
                      ;; shape of this line be one that the apply-rewrites
                      ;; function (in core-layout.ss) recognizes as a metafunction
-                     (make-lw ""
+                     (make-lw "("
                               (lw-line an-lw)
                               0
                               (lw-column an-lw)

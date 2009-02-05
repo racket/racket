@@ -111,5 +111,33 @@
 
 (test (render-metafunction multi-arg) "metafunction-multi-arg.png")
 
+;; makes sure that the LHS and RHS of metafunctions are appropriately
+;; rewritten
+
+(define-metafunction lang
+  subst : e x e -> e
+  [(subst x x e) e]
+  [(subst number x e) number]
+  [(subst x_1 x_2 e) x_1]
+  [(subst (e_1 e_2) x e)
+   ((subst e_1 x e) (subst e_2 x e))]
+  [(subst (λ (x) e_b) x e)
+   (λ (x) e)]
+  [(subst (λ (x_f) e_f) x_a e_a)
+   (λ (x_f) (subst e_f x_a e_a))])
+
+(define (subst-rw lws)
+  (list ""
+        (list-ref lws 2)
+        "{"
+        (list-ref lws 3)
+        ":="
+        (list-ref lws 4)
+        "}"))
+
+(test (with-compound-rewriter 'subst subst-rw
+        (render-metafunction subst))
+      "metafunction-subst.png")
+
 (printf "bitmap-test.ss: ")
 (done)
