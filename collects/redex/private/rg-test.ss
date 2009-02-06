@@ -4,7 +4,8 @@
          "reduction-semantics.ss"
          "matcher.ss"
          "term.ss"
-         "rg.ss")
+         "rg.ss"
+         "error.ss")
 
 (reset-count)
 
@@ -113,10 +114,11 @@
   (test (pick-nt 'b L null preferred-production-threshold #f)
         (nt-rhs (cadr (compiled-lang-lang L)))))
 
-(define-syntax exn:fail-message
+(define-syntax raised-exn-msg
   (syntax-rules ()
-    [(_ expr)
-     (with-handlers ([exn:fail? exn-message])
+    [(_ expr) (raised-exn-msg exn:fail? expr)]
+    [(_ exn? expr)
+     (with-handlers ([exn? exn-message])
        (begin
          expr
          (let ()
@@ -139,7 +141,7 @@
 (let ([iter (iterator 'test-iterator '(a b))])
   (test (iter) 'a)
   (test (iter) 'b)
-  (test (exn:fail-message (iter)) #rx"empty"))
+  (test (raised-exn-msg (iter)) #rx"empty"))
 
 (define (decisions #:var [var pick-var] 
                    #:nt [nt pick-nt]
@@ -216,7 +218,7 @@
     (e (e e) x (e (x) λ) #:binds x e)
     (x (variable-except λ)))
   (test 
-   (exn:fail-message 
+   (raised-exn-msg 
      (generate-term/decisions 
       postfix e 2 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y))
@@ -256,8 +258,8 @@
         null)
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
-  (test (exn:fail-message (generate-term lang e 5)) 
-        #rx"generate: unable to generate pattern e")
+  (test (raised-exn-msg exn:fail:redex? (generate-term lang e 5)) 
+        #rx"generate-term: unable to generate pattern e")
   (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate-term/decisions 
          lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
@@ -336,7 +338,7 @@
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
   (test
-   (exn:fail-message (generate-term lang b 5000))
+   (raised-exn-msg exn:fail:redex? (generate-term lang b 5000))
    #rx"unable"))
 
 (let ()
@@ -361,7 +363,7 @@
     (x variable))
   (test (generate-term lang b 5) 43)
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
-  (test (exn:fail-message (generate-term lang c 5))
+  (test (raised-exn-msg exn:fail:redex? (generate-term lang c 5))
         #rx"unable to generate")
   (test ; binding works for with side-conditions failure/retry
    (let/ec k
@@ -661,10 +663,14 @@
           ""))
   
   (let ()
-    (test (with-handlers ([exn:fail? exn-message])
-            (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
+    (test (raised-exn-msg 
+           exn:fail:redex?
+           (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
           #rx"x does not match n"))
-
+  (test (raised-exn-msg
+         exn:fail:redex?
+         (redex-check lang (side-condition any #f) #t #:attempts 1))
+        #rx"^redex-check: unable")
   
   (let ([stx-err (λ (stx)
                    (with-handlers ([exn:fail:syntax? exn-message])
@@ -704,6 +710,10 @@
   (define-metafunction empty
     [(i any ...) (any ...)])
   
+  (define-metafunction empty
+    j : (side-condition any #f) -> any
+    [(j any ...) (any ...)])
+  
   ;; Dom(f) < Ctc(f)
   (test (output 
          (λ () 
@@ -729,7 +739,13 @@
   ;; OK -- generated from Dom(h)
   (test (output (λ () (check-metafunction-contract h))) "")
   ;; OK -- generated from pattern (any ...)
-  (test (output (λ () (check-metafunction-contract i #:attempts 5))) ""))
+  (test (output (λ () (check-metafunction-contract i #:attempts 5))) "")
+  
+  ;; Unable to generate domain
+  (test (raised-exn-msg
+         exn:fail:redex?
+         (check-metafunction-contract j #:attempts 1))
+        #rx"^check-metafunction-contract: unable"))
 
 ;; check-reduction-relation
 (let ()
@@ -781,7 +797,13 @@
               T (curry equal? '(9 4)) 
               #:attempts 1
               #:decisions (decisions #:num (build-list 5 (λ (x) (λ _ x)))))))
-          "")))
+          ""))
+  
+  (let ([U (reduction-relation L (--> (side-condition any #f) any))])
+    (test (raised-exn-msg
+           exn:fail:redex?
+           (check-reduction-relation U (λ (_) #t)))
+          #rx"^check-reduction-relation: unable")))
 
 ; check-metafunction
 (let ()
@@ -789,6 +811,8 @@
   (define-metafunction empty
     [(m 1) whatever]
     [(m 2) whatever])
+  (define-metafunction empty
+    [(n (side-condition any #f)) any])
   (let ([generated null])
     (test (begin
             (check-metafunction m (λ (t) (set! generated (cons t generated))) #:attempts 1)
@@ -797,9 +821,14 @@
   (test (output (λ () (check-metafunction m (λ (_) #t)))) "")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
         #rx"counterexample found after 1 attempt with clause #1")
-  (test (with-handlers ([exn:fail:contract? exn-message])
-          (check-metafunction m #t #:attempts 'NaN))
-        #rx"check-metafunction: expected"))
+  (test (raised-exn-msg
+          exn:fail:contract?
+          (check-metafunction m (λ (_) #t) #:attempts 'NaN))
+        #rx"check-metafunction: expected")
+  (test (raised-exn-msg
+         exn:fail:redex?
+         (check-metafunction n (λ (_) #t)))
+        #rx"check-metafunction: unable"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])

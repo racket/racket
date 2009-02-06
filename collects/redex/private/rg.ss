@@ -179,7 +179,7 @@ To do a better job of not generating programs with free variables,
   (let ([lits (map symbol->string (compiled-lang-literals lang))])
     (make-rg-lang (parse-language lang) lits (unique-chars lits) (find-base-cases lang))))
 
-(define (generate lang decisions@)
+(define (generate lang decisions@ what)
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -241,10 +241,10 @@ To do a better job of not generating programs with free variables,
                   [size init-sz]
                   [attempt init-att])
         (if (zero? remaining)
-            (error 'generate "unable to generate pattern ~s in ~a attempt~a" 
-                   name 
-                   generation-retries
-                   (if (= generation-retries 1) "" "s"))
+            (redex-error what "unable to generate pattern ~s in ~a attempt~a" 
+                         name 
+                         generation-retries
+                         (if (= generation-retries 1) "" "s"))
             (let-values ([(term state) (gen size attempt)])
               (if (pred term (state-env state))
                   (values term state)
@@ -377,7 +377,7 @@ To do a better job of not generating programs with free variables,
             [(rest-term state) (recur state in-hole rest)])
          (values (cons pat-term rest-term) state))]
       [else
-       (error 'generate "unknown pattern ~s\n" pat)]))
+       (error what "unknown pattern ~s\n" pat)]))
   
   (define (extract-bound-vars pat state)
     (let loop ([found-vars-table (state-fvt state)])
@@ -400,7 +400,7 @@ To do a better job of not generating programs with free variables,
                                    (cons res (found-vars-bound-vars found-vars))
                                    #f)])
              (when (found-vars-found-nt? found-vars)
-               (error 'generate "kludge in #:binds was exposed! #:binds ~s ~s" 
+               (error what "kludge in #:binds was exposed! #:binds ~s ~s" 
                       (found-vars-nt found-vars)
                       (found-vars-source found-vars)))
              new-found-vars)]
@@ -687,8 +687,9 @@ To do a better job of not generating programs with free variables,
                   (language-id-nts lang what)
                   what #t pat)]
                 [lang lang]
-                [decisions@ decisions@])
-    (syntax ((generate lang decisions@) `pattern))))
+                [decisions@ decisions@]
+                [what what])
+    (syntax ((generate lang decisions@ 'what) `pattern))))
 
 (define-syntax (generate-term stx)
   (syntax-case stx ()
@@ -748,8 +749,9 @@ To do a better job of not generating programs with free variables,
                                           (reduction-relation-lang r)))])])
                         (check-property-many 
                          lang pats srcs property random-decisions@ (max 1 (floor (/ att (length pats))))
+                         'redex-check
                          (test-match lang pat)
-                         (λ (generated) (error 'redex-check "~s does not match ~s" generated 'pat))))
+                         (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
                     #`(check-property
                        #,(term-generator #'lang #'pat #'random-decisions@ 'redex-check)
                        property att)))
@@ -800,15 +802,16 @@ To do a better job of not generating programs with free variables,
               [att attempts])
           (assert-nat 'check-metafunction-contract att)
           (check-property 
-           ((generate lang decisions@) (if dom dom '(any (... ...))))
+           ((generate lang decisions@ 'check-metafunction-contract)
+            (if dom dom '(any (... ...))))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
                (begin (term (name ,@t)) #t)))
            att)
           (void))))]))
 
-(define (check-property-many lang pats srcs prop decisions@ attempts [match #f] [match-fail #f])
-  (let ([lang-gen (generate lang decisions@)])
+(define (check-property-many lang pats srcs prop decisions@ attempts what [match #f] [match-fail #f])
+  (let ([lang-gen (generate lang decisions@ what)])
     (for/and ([pat pats] [src srcs])
       (check-property
        (lang-gen pat)
@@ -838,7 +841,8 @@ To do a better job of not generating programs with free variables,
             (metafunc-srcs m)
             (λ (term _) (property term))
             (generation-decisions)
-            att))))]))
+            att
+            'check-metafunction))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc) 'unnamed))
@@ -854,7 +858,8 @@ To do a better job of not generating programs with free variables,
    (reduction-relation-srcs relation)
    (λ (term _) (property term))
    decisions@
-   attempts))
+   attempts
+   'check-reduction-relation))
 
 (define-signature decisions^
   (next-variable-decision
