@@ -131,7 +131,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  The server listens on @scheme[listen-ip] and port @scheme[port].
  
  If @scheme[ssl?] is true, then the server runs in HTTPS mode with @filepath{<server-root-path>/server-cert.pem}
- and @filepath{<server-root-path>/private-key.pem} as the certificates and private keys 
+ and @filepath{<server-root-path>/private-key.pem} as the certificates and private keys.
  
  The servlet is loaded with @scheme[manager]
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and
@@ -180,5 +180,29 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  
  The modules specified by @scheme[servlet-namespace] are shared with other servlets.
 }
-
+                      
+@defproc[(serve/launch/wait
+          [make-dispatcher (semaphore? . -> . dispatcher/c)]
+          [#:launch-path launch-path (or/c false/c string?) #f]
+          [#:banner? banner? boolean? #f]
+          [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
+          [#:port port number? 8000]
+          [#:ssl-keys ssl-keys (or/c false/c (cons/c path-string? path-string?)) #f])
+         void]{
+ The other interesting part of @scheme[serve/servlet] is its ability to start up a server and immediately
+ launch a browser at it. This is provided by @scheme[serve/launch/wait].
+ 
+ It starts a server using the result of @scheme[make-dispatcher] as the dispatcher. @scheme[make-dispatcher] is supplied
+ a semaphore that if posted, will cause the server to quit.
+ 
+ If @scheme[launch-path] is not false, then a browser is launch with that path appended to the URL to the server itself.
+ 
+ If @scheme[banner?] is true, then a banner is printed informing the user of the server's URL.
+ 
+ The server listens on @scheme[listen-ip] and port @scheme[port].
+ 
+ If @scheme[ssl-keys] is not false, then the server runs in HTTPS mode with @scheme[(car ssl-keys)]
+ and @scheme[(cdr ssl-keys)] as paths to the certificate and private key.    
+}
+              
 }

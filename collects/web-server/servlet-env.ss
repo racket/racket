@@ -50,7 +50,15 @@
                      #:stateless? boolean?
                      #:manager manager?)
                     . ->* .
-                    dispatcher/c)]                    
+                    dispatcher/c)]
+ [serve/launch/wait (((semaphore? . -> . dispatcher/c))
+                     (#:launch-path (or/c false/c string?)
+                      #:banner? boolean?
+                      #:listen-ip (or/c false/c string?)
+                      #:port number?
+                      #:ssl-keys (or/c false/c (cons/c path-string? path-string?)))
+                     . ->* .
+                     void)]
  [serve/servlet (((request? . -> . response/c))
                  (#:command-line? boolean?
                   #:launch-browser? boolean?
@@ -120,6 +128,56 @@
             (set-box! servlet-box servlet)
             servlet))))))
 
+(define (serve/launch/wait
+         dispatcher
+         
+         #:launch-path
+         [launch-path #f]          
+         #:banner?
+         [banner? #t]
+         
+         #:listen-ip
+         [listen-ip "127.0.0.1"]
+         #:port
+         [port 8000]
+         #:ssl-keys
+         [ssl-keys #f])
+  (define ssl? (pair? ssl-keys))
+  (define server-url
+    (string-append (if ssl? "https" "http")
+                   "://localhost"
+                   (if (and (not ssl?) (= port 80))
+                     "" (format ":~a" port))))
+  (define sema (make-semaphore 0))
+  (define shutdown-server
+    (serve #:dispatch (dispatcher sema)
+           #:listen-ip listen-ip
+           #:port port
+           #:tcp@ (if ssl?
+                    (let ()
+                      (define-unit-binding ssl-tcp@
+                        (make-ssl-tcp@
+                         (car ssl-keys) (cdr ssl-keys)
+                         #f #f #f #f #f)
+                        (import) (export tcp^))
+                      ssl-tcp@)
+                    tcp@)))
+  (when launch-path
+    ((send-url) (string-append server-url launch-path) #t))
+  (when banner?
+    (printf "Your Web application is running at ~a.\n" 
+            (if launch-path 
+                (string-append server-url launch-path)
+                server-url))
+    (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
+  (let ([bye (lambda ()
+               (when banner? (printf "\nWeb Server stopped.\n"))
+               (shutdown-server))])
+    (with-handlers ([exn:break? (lambda (exn) (bye))])
+      (semaphore-wait/enable-break sema)
+      ;; We can get here if a /quit url is visited
+      (bye))))
+
 (define (serve/servlet
          start
          #:command-line?
@@ -177,16 +235,7 @@
          [log-file #f]
          #:log-format
          [log-format 'apache-default])
-  (define standalone-url
-    (string-append (if ssl? "https" "http")
-                   "://localhost"
-                   (if (and (not ssl?) (= the-port 80))
-                     "" (format ":~a" the-port))
-                   servlet-path))
-  (define make-servlet-namespace
-    (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
-  (define sema (make-semaphore 0))
-  (define dispatcher
+  (define (dispatcher sema)
     (dispatcher-sequence
      (and log-file (log:make #:format (log:log-format->format log-format)
                              #:log-path log-file))
@@ -205,7 +254,8 @@
                      (fsmap:make-url->valid-path
                       (fsmap:make-url->path servlets-root)))
                     (make-default-path->servlet
-                     #:make-servlet-namespace make-servlet-namespace))])
+                     #:make-servlet-namespace 
+                     (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace)))])
        (servlets:make url->servlet))
      (map (lambda (extra-files-path)
             (files:make
@@ -218,29 +268,14 @@
       #:path->mime-type (make-path->mime-type mime-types-path)
       #:indices (list "index.html" "index.htm"))
      (lift:make file-not-found-responder)))
-  (define shutdown-server
-    (serve #:dispatch dispatcher
-           #:listen-ip listen-ip
-           #:port the-port
-           #:tcp@ (if ssl?
-                    (let ()
-                      (define-unit-binding ssl-tcp@
-                        (make-ssl-tcp@
-                         (build-path server-root-path "server-cert.pem")
-                         (build-path server-root-path "private-key.pem")
-                         #f #f #f #f #f)
-                        (import) (export tcp^))
-                      ssl-tcp@)
-                    tcp@)))
-  (when launch-browser?
-    ((send-url) standalone-url #t))
-  (when banner?
-    (printf "Your Web application is running at ~a.\n" standalone-url)
-    (printf "Click 'Stop' at any time to terminate the Web Server.\n"))
-  (let ([bye (lambda ()
-               (when banner? (printf "\nWeb Server stopped.\n"))
-               (shutdown-server))])
-    (with-handlers ([exn:break? (lambda (exn) (bye))])
-      (semaphore-wait/enable-break sema)
-      ;; We can get here if a /quit url is visited
-      (bye))))
+  (serve/launch/wait
+   dispatcher   
+   #:launch-path (if launch-browser? servlet-path #f) 
+   #:banner? banner?   
+   #:listen-ip listen-ip
+   #:port the-port
+   #:ssl-keys
+   (if ssl?
+       (cons (build-path server-root-path "server-cert.pem")
+             (build-path server-root-path "private-key.pem"))
+       #f)))
