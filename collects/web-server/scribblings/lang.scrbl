@@ -62,6 +62,7 @@ See @schememodname[web-server/servlet/web].}
 }
 
 @; ------------------------------------------------------------
+@;{
 @section[#:tag "lang/stuff-url.ss"]{Stuff URL}
 @(require (for-label web-server/lang/stuff-url))
 
@@ -104,3 +105,4 @@ In the future, we will offer the facilities to:
  @item{Only use the CAS if the URL would be too long. (URLs may only be 1024 characters.)}
 ]
 }
+;}

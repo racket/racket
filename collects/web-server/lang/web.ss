@@ -3,31 +3,39 @@
          scheme/contract
          scheme/serialize
          web-server/http
+         web-server/managers/manager
          web-server/private/define-closure
          web-server/private/servlet         
          "abort-resume.ss"
          "stuff-url.ss"
          "../private/url-param.ss")
 
+(define-struct (stateless-servlet servlet) (stuffer))
+
 (provide
  ;; Server Interface
- initialize-servlet
+ initialize-servlet 
  
  ;; Servlet Interface
  send/suspend/hidden
  send/suspend/url
  send/suspend/dispatch)
 
+(provide/contract
+ [make-stateless-servlet
+  (custodian? namespace? manager? path-string? (request? . -> . response/c)
+              stuffer? . -> . stateless-servlet?)])
+
 ; These contracts interfere with the continuation safety marks
 #;(provide/contract
- ;; Server Interface
- [initialize-servlet ((request? . -> . response/c) . -> . (request? . -> . response/c))]
- 
- ;; Servlet Interface
- [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
- [send/suspend/url ((url? . -> . response/c) . -> . request?)]
- [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
-                         . -> . any/c)])
+   ;; Server Interface
+   [initialize-servlet ((request? . -> . response/c) . -> . (request? . -> . response/c))]
+   
+   ;; Servlet Interface
+   [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
+   [send/suspend/url ((url? . -> . response/c) . -> . request?)]
+   [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
+                           . -> . any/c)])
 
 ;; initial-servlet : (request -> response) -> (request -> response/c)
 (define (initialize-servlet start)
@@ -59,13 +67,16 @@
 (define (send/suspend/url page-maker)
   (send/suspend
    (lambda (k)
+     (define stuffer (stateless-servlet-stuffer (current-servlet)))
      (page-maker
-      (stuff-url k
-                 (request-uri (execution-context-request (current-execution-context))))))))
+      (stuff-url stuffer 
+                 (request-uri (execution-context-request (current-execution-context)))
+                 k)))))
 
 (define-closure embed/url (proc) (k)
-  (stuff-url (kont-append-fun k proc)
-             (request-uri (execution-context-request (current-execution-context)))))
+  (stuff-url (stateless-servlet-stuffer (current-servlet))
+             (request-uri (execution-context-request (current-execution-context)))
+             (kont-append-fun k proc)))
 (define (send/suspend/dispatch response-generator)
   (send/suspend
    (lambda (k)
@@ -76,10 +87,10 @@
 (define (request->continuation req)
   (or
    ; Look in url for c=<k>
-   (let ([req-url (request-uri req)])
+   (let* ([req-url (request-uri req)]
+          [stuffer (stateless-servlet-stuffer (current-servlet))])
      (and (stuffed-url? req-url)
-          (unstuff-url
-           req-url)))
+          (unstuff-url stuffer req-url)))
    ; Look in query for kont=<k>
    (match (bindings-assq #"kont" (request-bindings/raw req))
      [(struct binding:form (id kont))

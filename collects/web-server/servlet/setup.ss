@@ -4,8 +4,10 @@
 (require web-server/managers/manager
          web-server/managers/timeouts
          web-server/managers/none
+         web-server/lang/stuff-url
          (only-in web-server/lang/web
-                  initialize-servlet)
+                  initialize-servlet
+                  make-stateless-servlet)
          web-server/http
          web-server/servlet/web
          web-server/configuration/namespace
@@ -67,11 +69,12 @@
 
 (define (make-stateless.servlet directory start)
   (define ses 
-    (make-servlet
+    (make-stateless-servlet
      (current-custodian) (current-namespace)
      (create-none-manager (lambda (req) (error "No continuations!")))
      directory
-     (lambda (req) (error "Session not initialized"))))
+     (lambda (req) (error "Session not initialized"))
+     default-stuffer))
   (parameterize ([current-directory directory]
                  [current-servlet ses])    
     (set-servlet-handler! ses (initialize-servlet start)))
@@ -92,11 +95,14 @@
         web-server/servlet/web-cells:module-path))
 
 (define-runtime-module-path web-server/lang/web-cells:module-path web-server/lang/web-cells)
+(define-runtime-module-path web-server/lang/web:module-path web-server/lang/web)
 (define-runtime-module-path web-server/lang/abort-resume:module-path web-server/lang/abort-resume)
 (define lang-module-specs
   (list web-server/lang/web-cells:module-path 
         #;web-server/lang/abort-resume:module-path ; XXX Enabling results in error
-        'web-server/lang/abort-resume))
+        'web-server/lang/abort-resume
+        #;web-server/lang/web:module-path ; XXX Enabling results in error
+        'web-server/lang/web))
 (define default-module-specs
   (append common-module-specs
           servlet-module-specs

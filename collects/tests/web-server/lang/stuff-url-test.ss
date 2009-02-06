@@ -8,9 +8,11 @@
 
 (define uri0 (string->url "www.google.com"))  
 
+(define test-stuffer serialize-stuffer)
+
 (define (stuff-unstuff svl uri)
-  (let ([result-uri (stuff-url svl uri)])
-    (unstuff-url result-uri)))
+  (let ([result-uri (stuff-url test-stuffer uri svl)])
+    (unstuff-url test-stuffer result-uri)))
 (define (cidentity v)
   (deserialize 
    (stuff-unstuff (serialize v) uri0)))
@@ -37,10 +39,10 @@
    (test-suite
     "stuffed-url? works"
     (test-case "Not stuffed URL" (check-false (stuffed-url? uri0)))
-    (test-case "Integers" (check-true (stuffed-url? (stuff-url (serialize 3) uri0))))
-    (test-case "Symbols" (check-true (stuffed-url? (stuff-url (serialize 'foo) uri0))))
-    (test-case "Strings" (check-true (stuffed-url? (stuff-url (serialize "Bar") uri0))))
-    (test-case "Vectors" (check-true (stuffed-url? (stuff-url (serialize (vector 3 1 4)) uri0)))))
+    (test-case "Integers" (check-true (stuffed-url? (stuff-url test-stuffer uri0 (serialize 3)))))
+    (test-case "Symbols" (check-true (stuffed-url? (stuff-url test-stuffer uri0 (serialize 'foo)))))
+    (test-case "Strings" (check-true (stuffed-url? (stuff-url test-stuffer uri0 (serialize "Bar")))))
+    (test-case "Vectors" (check-true (stuffed-url? (stuff-url test-stuffer uri0 (serialize (vector 3 1 4)))))))
    
    (test-case 
     "Using stuff-url with lang.ss"
