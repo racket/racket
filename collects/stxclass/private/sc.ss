@@ -9,8 +9,7 @@
                      "../util.ss")
          scheme/match
          syntax/stx
-         "kws.ss"
-         "messages.ss")
+         "runtime.ss")
 
 (provide define-syntax-class
          define-basic-syntax-class
@@ -32,6 +31,43 @@
 
          current-expression
          current-macro-name)
+
+;; (define-syntax-class name SyntaxClassDirective* SyntaxClassRHS*)
+;; (define-syntax-class (name id ...) SyntaxClassDirective* SyntaxClassRHS*)
+
+;; A SCDirective is one of
+;;   #:description String
+;;   #:transparent
+
+;; A SyntaxClassRHS is
+;;   (pattern Pattern PatternDirective ...)
+
+;; A Pattern is one of
+;;   name:syntaxclass
+;;   (Pattern . Pattern)
+;;   (Pattern ... . Pattern)
+;;   (((Pattern*) HeadDirective* *) ...* . Pattern)
+;;   datum, including ()
+
+;; A PatternDirective is one of
+;;   #:declare name SyntaxClassName
+;;   #:declare name (SyntaxClassName expr ...)
+;;   #:rename internal-id external-id
+;;   #:with pattern expr
+;;     #:with clauses are let*-scoped
+;;   #:when expr
+
+;; A HeadDirective is one of
+;;   #:min nat/#f
+;;   #:max nat/#f
+;;   #:opt
+;;   #:mand
+;;   -- For optional heads only:
+;;     #:occurs id
+;;       'id' is bound to #t is the pattern occurs, #f otherwise
+;;     #:default form
+;;       Preceding head must have a single pvar
+;;       If the head is not present, the pvar is bound to 'form' instead
 
 (define-syntax (define-syntax-class stx)
   (syntax-case stx ()

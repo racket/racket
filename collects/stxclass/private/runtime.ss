@@ -1,19 +1,93 @@
 #lang scheme/base
-(require (for-syntax scheme/base syntax/stx "rep-data.ss")
-         scheme/contract
-         scheme/match)
-(provide (for-syntax expectation-of-stxclass
+(require scheme/contract
+         scheme/match
+         scheme/stxparam
+         (for-syntax scheme/base)
+         (for-syntax syntax/stx)
+         (for-syntax "rep-data.ss")
+         (for-syntax "../util/error.ss"))
+(provide pattern
+         ...*
+
+         with-enclosing-fail
+         enclosing-fail
+
+         ok?
+         (struct-out failed)
+
+         current-expression
+         current-macro-name
+
+         (for-syntax expectation-of-stxclass
                      expectation-of-constants
                      expectation-of/message)
+
          try
          expectation/c
          expectation-of-null?
          expectation->string)
 
-(define-struct scdyn (name desc)
+;; Keywords
+
+(define-syntax-rule (define-keyword name)
+  (define-syntax name
+    (lambda (stx)
+      (raise-syntax-error #f "keyword used out of context" stx))))
+
+(define-keyword pattern)
+(define-keyword ...*)
+(define-keyword ...**)
+
+;; Parameters & Syntax Parameters
+
+(define-syntax-parameter enclosing-fail
+  (lambda (stx)
+    (wrong-syntax stx "used out of context: not parsing pattern")))
+
+(define-syntax-rule (with-enclosing-fail failvar expr)
+  (syntax-parameterize ((enclosing-fail
+                         (make-rename-transformer (quote-syntax failvar))))
+    expr))
+
+(define-syntax-parameter pattern-source
+  (lambda (stx)
+    (wrong-syntax stx "used out of context: not parsing pattern")))
+
+(define current-expression (make-parameter #f))
+
+(define (current-macro-name)
+  (let ([expr (current-expression)])
+    (and expr
+         (syntax-case expr (set!)
+           [(set! kw . _)
+            #'kw]
+           [(kw . _)
+            (identifier? #'kw)
+            #'kw]
+           [kw
+            (identifier? #'kw)
+            #'kw]
+           [_ #f]))))
+
+;; Runtime: syntax-class parser results
+
+;; A PatternParseResult is one of
+;;   - (listof value)
+;;   - (make-failed stx expectation/c frontier/#f)
+
+(define (ok? x) (or (pair? x) (null? x)))
+(define-struct failed (stx expectation frontier)
   #:transparent)
 
+
+;; Runtime: parsing failures/expectations
+
+;; An Expectation is
+;;   (make-expc (listof scdyn) bool (listof atom) (listof id))
 (define-struct expc (stxclasses pairs? data literals)
+  #:transparent)
+
+(define-struct scdyn (name desc)
   #:transparent)
 
 (define expectation/c (or/c expc?))
@@ -36,7 +110,8 @@
                   [(literal ...) literals]
                   [pairs? pairs?])
       (certify
-       #'(make-expc null 'pairs? (list 'datum ...) (list (quote-syntax literal) ...)))))
+       #'(make-expc null 'pairs? (list 'datum ...)
+                    (list (quote-syntax literal) ...)))))
 
   (define (expectation-of/message msg)
     (with-syntax ([msg msg])

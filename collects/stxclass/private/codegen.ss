@@ -2,8 +2,7 @@
 (require (for-template scheme/base
                        syntax/stx
                        scheme/stxparam
-                       "kws.ss"
-                       "messages.ss")
+                       "runtime.ss")
          scheme/match
          scheme/contract
          scheme/private/sc
