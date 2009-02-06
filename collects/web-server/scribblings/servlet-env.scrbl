@@ -195,7 +195,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  It starts a server using the result of @scheme[make-dispatcher] as the dispatcher. @scheme[make-dispatcher] is supplied
  a semaphore that if posted, will cause the server to quit.
  
- If @scheme[launch-path] is not false, then a browser is launch with that path appended to the URL to the server itself.
+ If @scheme[launch-path] is not false, then a browser is launched with that path appended to the URL to the server itself.
  
  If @scheme[banner?] is true, then a banner is printed informing the user of the server's URL.
  
