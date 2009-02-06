@@ -7,6 +7,7 @@
                      web-server/http
                      web-server/managers/lru
                      web-server/private/util
+                     web-server/dispatchers/dispatch
                      web-server/configuration/configuration-table
                      web-server/configuration/responders
                      web-server/dispatchers/dispatch-log
@@ -155,6 +156,29 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
 
  If @scheme[log-file] is given, then it used to log requests using @scheme[log-format] as the format. Allowable formats
  are those allowed by @scheme[log-format->format].
+}
+
+@defproc[(dispatch/servlet 
+          [start (request? . -> . response/c)]
+          [#:regexp regexp regexp? #rx""]
+          [#:stateless? stateless? boolean? #f]
+          [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
+          [#:namespace namespace (listof module-path?) empty]
+          [#:current-directory servlet-current-directory path-string? (current-directory)])
+         dispatcher/c]{
+ @scheme[serve/servlet] starts a server and uses a particular dispatching sequence. For some applications, this
+ nails down too much, but users are conflicted, because the interface is so convenient. For those users, @scheme[dispatch/servlet]
+ does the hardest part of @scheme[serve/servlet] and constructs a dispatcher just for the @scheme[start] servlet.
+ 
+ The dispatcher responds to requests that match @scheme[regexp]. The current directory
+ of servlet execution is @scheme[servlet-current-directory]. 
+ 
+ If @scheme[stateless?] is true, then the servlet is run as a stateless @schememodname[web-server] module.
+
+ The servlet is loaded with @scheme[manager] as its continuation manager. (The default manager limits the amount of memory to 64 MB and
+ deals with memory pressure as discussed in the @scheme[make-threshold-LRU-manager] documentation.)
+ 
+ The modules specified by @scheme[servlet-namespace] are shared with other servlets.
 }
 
 }

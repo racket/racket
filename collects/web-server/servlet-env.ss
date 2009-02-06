@@ -17,6 +17,7 @@
          web-server/configuration/responders
          web-server/private/mime-types
          web-server/servlet/setup
+         web-server/dispatchers/dispatch
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
@@ -42,6 +43,14 @@
         "web-server/default-web-root"))
 
 (provide/contract
+ [dispatch/servlet (((request? . -> . response/c))
+                    (#:regexp regexp?
+                     #:current-directory path-string?
+                     #:namespace (listof module-path?)
+                     #:stateless? boolean?
+                     #:manager manager?)
+                    . ->* .
+                    dispatcher/c)]                    
  [serve/servlet (((request? . -> . response/c))
                  (#:command-line? boolean?
                   #:launch-browser? boolean?
@@ -73,6 +82,43 @@
           [(not (car ds))   (loop (cdr ds) r)]
           [(list? (car ds)) (loop (append (car ds) (cdr ds)) r)]
           [else (loop (cdr ds) (cons (car ds) r))])))
+
+(define (dispatch/servlet 
+         start
+         #:regexp
+         [servlet-regexp #rx""]
+         #:current-directory 
+         [servlet-current-directory (current-directory)]
+         #:namespace 
+         [servlet-namespace empty]                  
+         #:stateless? 
+         [stateless? #f]
+         #:manager
+         [manager
+          (make-threshold-LRU-manager
+           (lambda (request)
+             `(html (head (title "Page Has Expired."))
+                    (body (p "Sorry, this page has expired. Please go back."))))
+           (* 64 1024 1024))])
+  (define servlet-box (box #f))
+  (define make-servlet-namespace
+    (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
+  (filter:make
+   servlet-regexp
+   (servlets:make
+    (lambda (url)
+      (or (unbox servlet-box)
+          (let ([servlet
+                 (parameterize ([current-custodian (make-custodian)]
+                                [current-namespace
+                                 (make-servlet-namespace
+                                  #:additional-specs
+                                  default-module-specs)])
+                   (if stateless?
+                       (make-stateless.servlet servlet-current-directory start)
+                       (make-v2.servlet servlet-current-directory manager start)))])
+            (set-box! servlet-box servlet)
+            servlet))))))
 
 (define (serve/servlet
          start
@@ -140,28 +186,18 @@
   (define make-servlet-namespace
     (make-make-servlet-namespace #:to-be-copied-module-specs servlet-namespace))
   (define sema (make-semaphore 0))
-  (define servlet-box (box #f))
   (define dispatcher
     (dispatcher-sequence
      (and log-file (log:make #:format (log:log-format->format log-format)
                              #:log-path log-file))
      (and quit? (filter:make #rx"^/quit$" (quit-server sema)))
-     (filter:make
-      servlet-regexp
-      (servlets:make
-       (lambda (url)
-         (or (unbox servlet-box)
-             (let ([servlet
-                    (parameterize ([current-custodian (make-custodian)]
-                                   [current-namespace
-                                    (make-servlet-namespace
-                                     #:additional-specs
-                                     default-module-specs)])
-                      (if stateless?
-                        (make-stateless.servlet servlet-current-directory start)
-                        (make-v2.servlet servlet-current-directory manager start)))])
-               (set-box! servlet-box servlet)
-               servlet)))))
+     (dispatch/servlet 
+      start
+      #:regexp servlet-regexp
+      #:namespace servlet-namespace
+      #:stateless? stateless?
+      #:current-directory servlet-current-directory
+      #:manager manager)
      (let-values ([(clear-cache! url->servlet)
                    (servlets:make-cached-url->servlet
                     (fsmap:filter-url->path
