@@ -1474,7 +1474,7 @@ direct use of creating postscript figures for use in papers
 and for use in DrScheme to easily adjust the typesetting:
 @scheme[render-language],
 @scheme[render-reduction-relation], 
-@scheme[render-metafunction], and
+@scheme[render-metafunctions], and
 @scheme[render-lw], 
 and one
 for use in combination with other libraries that operate on picts
@@ -1549,22 +1549,39 @@ other tools that combine picts together.
 @deftogether[[
 @defform[(render-metafunction metafunction-name)]{}
 @defform/none[#:literals (render-metafunction)
-              (render-metafunction metafunction-name filename)]{}]]{
+              (render-metafunction metafunction-name filename)]{}
+@defform[(render-metafunctions metafunction-name ...)]{}
+@defform/none[#:literals (render-metafunction)
+              (render-metafunctions metafunction-name ... #:file filename)]{}]]{
 
 If provided with one argument, @scheme[render-metafunction]
 produces a pict that renders properly in the definitions
-window in DrScheme. If given two argument, it writes
+window in DrScheme. If given two arguments, it writes
 postscript into the file named by @scheme[filename] (which
 may be either a string or bytes).
 
+Similarly, @scheme[render-metafunctions] accepts multiple 
+metafunctions and renders them together, lining up all of the
+clauses together.
+
 This function sets @scheme[dc-for-text-size]. See also
-@scheme[metafunction->pict].
+@scheme[metafunction->pict] and
+@scheme[metafunctions->pict].
 }
 
 @defform[(metafunction->pict metafunction-name)]{
   This produces a pict, but without setting @scheme[dc-for-text-size].
   It is suitable for use in Slideshow or other libraries that combine
   picts.
+}
+
+@defform[(metafunctions->pict metafunction-name ...)]{
+  Like @scheme[metafunction->pict], 
+  this produces a pict, but without setting @scheme[dc-for-text-size]
+  and is suitable for use in Slideshow or other libraries that combine
+  picts. Like
+  @scheme[render-metafunctions], it accepts multiple metafunctions
+  and renders them together.
 }
 
 @subsection{Customization}

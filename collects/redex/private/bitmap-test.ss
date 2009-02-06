@@ -139,5 +139,9 @@
         (render-metafunction subst))
       "metafunction-subst.png")
 
+
+;; make sure two metafunctions simultaneously rewritten line up properly
+(test (render-metafunctions S T TL) "metafunctions-multiple.png")
+
 (printf "bitmap-test.ss: ")
 (done)

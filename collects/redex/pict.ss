@@ -42,7 +42,9 @@
 
 ; syntax
 (provide metafunction->pict
-         render-metafunction)
+         metafunctions->pict
+         render-metafunction
+         render-metafunctions)
 
 (provide/contract
  [render-language-nts (parameter/c (or/c false/c (listof (or/c string? symbol?))))]
