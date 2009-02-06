@@ -654,7 +654,7 @@
     [(_ name1 name2 ... #:file filename)
      (and (identifier? #'name1)
           (andmap identifier? (syntax->list #'(name2 ...))))
-     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) file 'render-metafunctions)]))
+     #'(render-metafunction/proc (list (metafunction name1) (metafunction name2) ...) filename 'render-metafunctions)]))
 
 (define-syntax (render-metafunction stx)
   (syntax-case stx ()
