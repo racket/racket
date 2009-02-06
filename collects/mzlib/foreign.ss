@@ -135,6 +135,7 @@
 
 (define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
 (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
+(define suffix-before-version? (not (equal? lib-suffix "dylib")))
 
 (provide* (unsafe (rename-out [get-ffi-lib ffi-lib]))
           ffi-lib? ffi-lib-name)
@@ -166,7 +167,10 @@
               [name0 (path->string (cleanse-path name))]     ; orig name
               [names (map (if (regexp-match lib-suffix-re name0) ; name+suffix
                             (lambda (v) (string-append name0 v))
-                            (lambda (v) (string-append name0 "." lib-suffix v)))
+                            (lambda (v) 
+                              (if suffix-before-version?
+                                  (string-append name0 "." lib-suffix v)
+                                  (string-append name0 v "." lib-suffix))))
                           versions)]
               [ffi-lib*  (lambda (name) (ffi-lib name #t))])
          (or ;; try to look in our library paths first
