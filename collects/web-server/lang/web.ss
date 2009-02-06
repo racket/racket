@@ -5,10 +5,10 @@
          web-server/http
          web-server/managers/manager
          web-server/private/define-closure
-         web-server/private/servlet         
-         "abort-resume.ss"
-         "stuff-url.ss"
-         "../private/url-param.ss")
+         web-server/private/servlet       
+         web-server/stuffers/stuffer
+         web-server/lang/abort-resume
+         web-server/lang/stuff-url)
 
 (define-struct (stateless-servlet servlet) (stuffer))
 
@@ -24,7 +24,7 @@
 (provide/contract
  [make-stateless-servlet
   (custodian? namespace? manager? path-string? (request? . -> . response/c)
-              stuffer? . -> . stateless-servlet?)])
+              (stuffer/c serializable? bytes?) . -> . stateless-servlet?)])
 
 ; These contracts interfere with the continuation safety marks
 #;(provide/contract
@@ -57,10 +57,11 @@
 (define (send/suspend/hidden page-maker)
   (send/suspend
    (lambda (k)
-     (let ([p-cont (serialize k)])
-       (page-maker
-        (request-uri (execution-context-request (current-execution-context)))
-        `(input ([type "hidden"] [name "kont"] [value ,(format "~s" p-cont)])))))))
+     (define stuffer (stateless-servlet-stuffer (current-servlet)))
+     (define p-cont ((stuffer-in stuffer) k))
+     (page-maker
+      (request-uri (execution-context-request (current-execution-context)))
+      `(input ([type "hidden"] [name "kont"] [value ,(format "~s" p-cont)]))))))
 
 ;; send/suspend/url: (url -> response) -> request
 ;; like send/suspend except the continuation is encoded in the url
@@ -85,16 +86,17 @@
 ;; request->continuation: req -> continuation
 ;; decode the continuation from the hidden field of a request
 (define (request->continuation req)
+  (define stuffer (stateless-servlet-stuffer (current-servlet)))
   (or
    ; Look in url for c=<k>
-   (let* ([req-url (request-uri req)]
-          [stuffer (stateless-servlet-stuffer (current-servlet))])
+   (let ([req-url (request-uri req)])
      (and (stuffed-url? req-url)
           (unstuff-url stuffer req-url)))
    ; Look in query for kont=<k>
    (match (bindings-assq #"kont" (request-bindings/raw req))
      [(struct binding:form (id kont))
-      (deserialize (read (open-input-bytes kont)))]
+      ((stuffer-out stuffer)
+       (read (open-input-bytes kont)))]
      [_ #f])))
 
 (provide/contract

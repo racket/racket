@@ -8,6 +8,7 @@
          "http/all-http-tests.ss"
          "private/all-private-tests.ss"
          "servlet/all-servlet-tests.ss"
+         "stuffers-test.ss"
          "servlet-env-test.ss")
 (provide all-web-server-tests)
 
@@ -15,6 +16,7 @@
   (test-suite
    "Web Server"
    all-http-tests
+   all-stuffers-tests
    all-configuration-tests
    all-dispatchers-tests
    all-lang-tests

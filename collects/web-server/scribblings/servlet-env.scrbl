@@ -11,6 +11,8 @@
                      web-server/configuration/configuration-table
                      web-server/configuration/responders
                      web-server/dispatchers/dispatch-log
+                     scheme/serialize
+                     web-server/stuffers
                      scheme/list))
 
 @defmodule[web-server/servlet-env]{
@@ -97,6 +99,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
                                             "^~a$"
                                             (regexp-quote servlet-path)))]
                         [#:stateless? stateless? boolean? #f]
+                        [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
                         [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
                         [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                         [#:server-root-path server-root-path path-string? default-server-root-path]
@@ -124,7 +127,8 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  
  If @scheme[quit?] is true, then the URL @filepath["/quit"] ends the server.
   
- If @scheme[stateless?] is true, then the servlet is run as a stateless @schememodname[web-server] module.
+ If @scheme[stateless?] is true, then the servlet is run as a stateless @schememod[web-server] module and @scheme[stuffer] is used
+ as the @tech{stuffer}.
  
  Advanced users may need the following options:
  
@@ -162,6 +166,7 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
           [start (request? . -> . response/c)]
           [#:regexp regexp regexp? #rx""]
           [#:stateless? stateless? boolean? #f]
+          [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
           [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
           [#:namespace namespace (listof module-path?) empty]
           [#:current-directory servlet-current-directory path-string? (current-directory)])
@@ -173,7 +178,8 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
  The dispatcher responds to requests that match @scheme[regexp]. The current directory
  of servlet execution is @scheme[servlet-current-directory]. 
  
- If @scheme[stateless?] is true, then the servlet is run as a stateless @schememodname[web-server] module.
+ If @scheme[stateless?] is true, then the servlet is run as a stateless @schememod[web-server] module and @scheme[stuffer] is used
+ as the @tech{stuffer}.
 
  The servlet is loaded with @scheme[manager] as its continuation manager. (The default manager limits the amount of memory to 64 MB and
  deals with memory pressure as discussed in the @scheme[make-threshold-LRU-manager] documentation.)

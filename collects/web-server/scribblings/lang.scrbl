@@ -36,14 +36,12 @@
 
 @defproc[(send/suspend/hidden [response-generator (url? xexpr/c . -> . response/c)])
          request?]{
- Captures the current continuation. Serializes it and generates an INPUT
- form that includes the serialization as a hidden form.
+ Captures the current continuation. Serializes it and stuffs it into a hidden INPUT
+ form element.
  Calls @scheme[response-generator] with this URL and form field and delivers
  the response to the client. If the URL is invoked with form data containing
  the hidden form,
  the request is returned to this continuation.
-
- Note: The continuation is NOT stuffed.
 }
 
 @defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response/c)])
@@ -60,49 +58,3 @@
 
 See @schememodname[web-server/servlet/web].}
 }
-
-@; ------------------------------------------------------------
-@;{
-@section[#:tag "lang/stuff-url.ss"]{Stuff URL}
-@(require (for-label web-server/lang/stuff-url))
-
-@defmodule[web-server/lang/stuff-url]{
-
-@filepath{lang/stuff-url.ss} provides an interface for "stuffing"
-serializable values into URLs. Currently there is a particular
-hard-coded behavior, but we hope to make it more flexible in
-the future.
-
-@defproc[(stuff-url [v serializable?]
-                    [u url?])
-         url?]{
- Returns a URL based on @scheme[u] with @scheme[v] serialized and "stuffed" into it.
- The following steps are applied until the URL is short enough to be accepted by IE.
- @itemize[
-  @item{Put the plain-text serialization in the URL.}
-  @item{Compress the serialization with @schememodname[file/gzip] into the URL.}
-  @item{Compute the MD5 of the compressed seralization and write it to
-   @filepath{$HOME/.urls/M} where `M' is the MD5. `M' is then
-   placed in the URL}
- ]
-}
-
-@defproc[(stuffed-url? [u url?])
-         boolean?]{
- Checks if @scheme[u] appears to be produced by @scheme[stuff-url].
-}
-
-@defproc[(unstuff-url [u url?])
-         serializable?]{
- Extracts the value previously serialized into @scheme[u] by @scheme[stuff-url].
-}
-
-In the future, we will offer the facilities to:
-@itemize[
- @item{Optionally use the content-addressed storage.}
- @item{Use different hashing algorithms for the CAS.}
- @item{Encrypt the serialized value.}
- @item{Only use the CAS if the URL would be too long. (URLs may only be 1024 characters.)}
-]
-}
-;}

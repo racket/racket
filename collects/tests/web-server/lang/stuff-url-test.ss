@@ -1,12 +1,13 @@
 #lang scheme/base
 (require web-server/lang/stuff-url
+         web-server/stuffers
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
          mzlib/serialize
          "../util.ss")
 (provide stuff-url-tests)
 
-(define uri0 (string->url "www.google.com"))  
+(define uri0 (string->url "www.google.com")) 
 
 (define test-stuffer serialize-stuffer)
 

@@ -4,11 +4,19 @@
 @title[#:tag "stateless-servlets"]{Stateless Servlets}
 
 @(require (for-label web-server/http
-                     "dummy-stateless-servlet.ss")) @; to give a binding context
+                     scheme/serialize
+                     web-server/stuffers
+                     (except-in "dummy-stateless-servlet.ss" stuffer))) @; to give a binding context
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-stateless-servlet)]
 
 @defthing[interface-version (one-of/c 'stateless)]{
  This indicates that the servlet is a stateless servlet.
+}
+
+@defthing[stuffer (stuffer/c serializable? bytes?)]{
+ This is the @scheme[stuffer] that will be used for the servlet.
+      
+ If it is not provided, it defaults to @scheme[default-stuffer].
 }
 
 @defproc[(start [initial-request request?])
@@ -21,6 +29,10 @@ An example @scheme['stateless] servlet module:
 @schememod[
  web-server
  (define interface-version 'stateless)
+ (define stuffer
+  (stuffer-chain
+   serialize-stuffer
+   (md5-stuffer (build-path (find-system-path 'home-dir) ".urls"))))
  (define (start req)
    `(html (body (h2 "Look ma, no state!"))))
 ]

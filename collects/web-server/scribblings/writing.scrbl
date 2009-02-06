@@ -33,6 +33,7 @@ This API provides:
 @itemize{
          @item{@schememodname[net/url],}
          @item{@schememodname[web-server/http],}
+         @item{@schememodname[web-server/stuffers],}
          @item{@schememodname[web-server/lang/abort-resume],}
          @item{@schememodname[web-server/lang/web],}
          @item{@schememodname[web-server/lang/web-cells],}
@@ -167,3 +168,4 @@ things in the Web Language, they are sensitive to source code modification.
 @include-section["formlets.scrbl"]
 @include-section["templates.scrbl"]
 @include-section["managers.scrbl"]
+@include-section["stuffers.scrbl"]

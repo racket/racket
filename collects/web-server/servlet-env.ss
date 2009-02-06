@@ -5,6 +5,7 @@
          scheme/contract
          scheme/list
          scheme/unit
+         scheme/serialize
          net/tcp-unit
          net/tcp-sig
          scheme/runtime-path
@@ -14,6 +15,7 @@
          web-server/managers/manager
          web-server/configuration/namespace
          web-server/http
+         web-server/stuffers
          web-server/configuration/responders
          web-server/private/mime-types
          web-server/servlet/setup
@@ -48,6 +50,7 @@
                      #:current-directory path-string?
                      #:namespace (listof module-path?)
                      #:stateless? boolean?
+                     #:stuffer (stuffer/c serializable? bytes?)
                      #:manager manager?)
                     . ->* .
                     dispatcher/c)]
@@ -71,6 +74,7 @@
                   #:servlet-namespace (listof module-path?)
                   #:server-root-path path-string?
                   #:stateless? boolean?
+                  #:stuffer (stuffer/c serializable? bytes?)
                   #:extra-files-paths (listof path-string?)
                   #:servlets-root path-string?
                   #:servlet-current-directory path-string?
@@ -101,6 +105,8 @@
          [servlet-namespace empty]                  
          #:stateless? 
          [stateless? #f]
+         #:stuffer
+         [stuffer default-stuffer]
          #:manager
          [manager
           (make-threshold-LRU-manager
@@ -123,7 +129,7 @@
                                   #:additional-specs
                                   default-module-specs)])
                    (if stateless?
-                       (make-stateless.servlet servlet-current-directory start)
+                       (make-stateless.servlet servlet-current-directory stuffer start)
                        (make-v2.servlet servlet-current-directory manager start)))])
             (set-box! servlet-box servlet)
             servlet))))))
@@ -210,6 +216,8 @@
          [servlet-regexp (regexp (format "^~a$" (regexp-quote servlet-path)))]
          #:stateless?
          [stateless? #f]
+         #:stuffer
+         [stuffer default-stuffer]
 
          #:servlet-namespace
          [servlet-namespace empty]
@@ -245,6 +253,7 @@
       #:regexp servlet-regexp
       #:namespace servlet-namespace
       #:stateless? stateless?
+      #:stuffer stuffer
       #:current-directory servlet-current-directory
       #:manager manager)
      (let-values ([(clear-cache! url->servlet)

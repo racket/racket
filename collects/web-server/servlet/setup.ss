@@ -1,10 +1,10 @@
-#lang scheme/base
-(require mzlib/plt-match
-         scheme/contract)
-(require web-server/managers/manager
+#lang scheme
+(require scheme/serialize
+         web-server/managers/manager
          web-server/managers/timeouts
          web-server/managers/none
          web-server/lang/stuff-url
+         web-server/stuffers/stuffer
          (only-in web-server/lang/web
                   initialize-servlet
                   make-stateless-servlet)
@@ -67,14 +67,14 @@
        (parameterize ([current-servlet-instance-id instance-id])
          (handler req))))))
 
-(define (make-stateless.servlet directory start)
+(define (make-stateless.servlet directory stuffer start)
   (define ses 
     (make-stateless-servlet
      (current-custodian) (current-namespace)
      (create-none-manager (lambda (req) (error "No continuations!")))
      directory
      (lambda (req) (error "Session not initialized"))
-     default-stuffer))
+     stuffer))
   (parameterize ([current-directory directory]
                  [current-servlet ses])    
     (set-servlet-handler! ses (initialize-servlet start)))
@@ -110,7 +110,7 @@
 (provide/contract
  [make-v1.servlet (path-string? integer? (request? . -> . response/c) . -> . servlet?)]
  [make-v2.servlet (path-string? manager? (request? . -> . response/c) . -> . servlet?)]
- [make-stateless.servlet (path-string? (request? . -> . response/c) . -> . servlet?)]
+ [make-stateless.servlet (path-string? (stuffer/c serializable? bytes?) (request? . -> . response/c) . -> . servlet?)]
  [default-module-specs (listof (or/c resolved-module-path? module-path?))])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
@@ -162,8 +162,12 @@
                 (let ([start (contract (request? . -> . response/c)
                                        (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "start"))])
-                  (make-stateless.servlet (directory-part a-path) start))]))]
+                                       (mk-loc "start"))]
+                      [stuffer (contract (stuffer/c serializable? bytes?)
+                                         (dynamic-require module-name 'stuffer (lambda () default-stuffer))
+                                         pos-blame neg-blame
+                                         (mk-loc "stuffer"))])
+                  (make-stateless.servlet (directory-part a-path) stuffer start))]))]
           [else
            (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                             (v0.response->v1.lambda 
