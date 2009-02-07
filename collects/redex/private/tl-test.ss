@@ -191,6 +191,37 @@
     (test (pair? (redex-match iswim-cont W (term QQ)))
           #t))
   
+  (let ()
+    (define-language okay
+      [(X Y) z])
+    
+    (define-extended-language replace-both
+      okay
+      [(X Y) q])
+    
+    ;; this test ran into an infinite loop in an earlier version of redex.
+    (test (redex-match replace-both X (term explode)) #f))
+  
+  (test (with-handlers ([exn? exn-message])
+          (let () 
+            (define-language main
+              [(X Y) z])
+            (define-extended-language new
+              main
+              [(X Y Z) q])
+            (void)))
+        "extend-language: new language extends old non-terminal X and also adds new shortcut Z")
+  
+  (test (with-handlers ([exn? exn-message])
+          (let () 
+            (define-language main
+              [(X Y) z]
+              [(P Q) w])
+            (define-extended-language new
+              main
+              [(X P) q])
+            (void)))
+        "extend-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
   
   ;; test caching
   (let ()
@@ -229,6 +260,7 @@
     (parameterize ([caching-enabled? #f])
       (term (f 1)))
     (test rhs-eval-count 2))
+  
   
   
 ;                                                                                             

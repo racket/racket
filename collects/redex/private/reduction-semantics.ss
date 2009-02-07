@@ -1532,8 +1532,7 @@
                           (syntax->list #'(name ...))))])
        (syntax/loc stx
          (do-extend-language lang 
-                             (list (make-nt 'first-names (list (make-rhs `r-rhs '()) ...)) ...
-                                   (make-nt 'new-name (list (make-rhs 'orig-name '()))) ...)
+                             (list (make-nt '(uniform-names ...) (list (make-rhs `r-rhs '()) ...)) ...)
                              (list (list '(uniform-names ...) (to-lw rhs) ...) ...))))]
     [(_ lang (name rhs ...) ...)
      (begin
@@ -1565,41 +1564,81 @@
 (define extend-nt-ellipses '(....))
 
 ;; do-extend-language : compiled-lang (listof (listof nt)) ? -> compiled-lang
+;; note: the nts that come here are an abuse of the `nt' struct; they have
+;; lists of symbols in the nt-name field.
 (define (do-extend-language old-lang new-nts new-pict-infos)
   (unless (compiled-lang? old-lang)
     (error 'extend-language "expected a language as first argument, got ~e" old-lang))
+  
   (let ([old-nts (compiled-lang-lang old-lang)]
         [old-ht (make-hasheq)]
         [new-ht (make-hasheq)])
+    
+    
     (for-each (λ (nt) 
                 (hash-set! old-ht (nt-name nt) nt)
                 (hash-set! new-ht (nt-name nt) nt))
               old-nts)
     
-    (let ([extended-nts '()])
-      (for-each (λ (raw-nt)
-                  (let ([primary-name (find-primary-nt (nt-name raw-nt) old-lang)])
-                    (when (and primary-name (member primary-name extended-nts))
-                      (error 'extend-language "the non-terminal ~s was extended twice" primary-name))
-                    (let ([nt (make-nt (or primary-name (nt-name raw-nt))
-                                       (nt-rhs raw-nt))])
-                      (cond
-                        [(ormap (λ (rhs) (member (rhs-pattern rhs) extend-nt-ellipses))
-                                (nt-rhs nt))
-                         (unless (hash-ref old-ht (nt-name nt) #f)
-                           (error 'extend-language
-                                  "the language extends the ~s non-terminal, but that non-terminal is not in the old language"
-                                  (nt-name raw-nt)))
-                         (hash-set! new-ht 
-                                    (nt-name nt)
-                                    (make-nt
-                                     (nt-name nt)
-                                     (append (nt-rhs (hash-ref old-ht (nt-name nt)))
-                                             (filter (λ (rhs) (not (member (rhs-pattern rhs) extend-nt-ellipses)))
-                                                     (nt-rhs nt)))))]
-                        [else
-                         (hash-set! new-ht (nt-name nt) nt)]))))
-                new-nts))
+    (for-each (λ (raw-nt)
+                (let* ([names (nt-name raw-nt)]
+                       [rhs (nt-rhs raw-nt)]
+                       [primary-names (map (λ (name) (find-primary-nt name old-lang)) names)]
+                       [main-primary (car primary-names)])
+                  
+                  ;; error checking
+                  (when (and (ormap not primary-names)
+                             (ormap symbol? primary-names))
+                    (error 'extend-language "new language extends old non-terminal ~a and also adds new shortcut ~a"
+                           (ormap (λ (x y) (and (symbol? x) y)) primary-names names)
+                           (ormap (λ (x y) (and (not x) y)) primary-names names)))
+                  
+                  ;; error checking
+                  (when (andmap symbol? primary-names)
+                    (let ([main-orig (car names)])
+                      (let loop ([primary-names (cdr primary-names)]
+                                 [names (cdr names)])
+                        (cond
+                          [(null? primary-names) void]
+                          [else 
+                           (unless (eq? main-primary (car primary-names))
+                             (error 'extend-language
+                                    (string-append 
+                                     "new language does not have the same non-terminal aliases as the old,"
+                                     " non-terminal ~a was not in the same group as ~a in the old language")
+                                    (car names)
+                                    main-orig))
+                           (loop (cdr primary-names) (cdr names))]))))
+                                  
+                  
+                  ;; rebind original nt
+                  (let ([nt (make-nt (or main-primary (car names)) rhs)])
+                    (cond
+                      [(ormap (λ (rhs) (member (rhs-pattern rhs) extend-nt-ellipses))
+                              (nt-rhs nt))
+                       (unless (hash-ref old-ht (nt-name nt) #f)
+                         (error 'extend-language
+                                "the language extends the ~s non-terminal, but that non-terminal is not in the old language"
+                                (nt-name nt)))
+                       (hash-set! new-ht 
+                                  (nt-name nt)
+                                  (make-nt
+                                   (nt-name nt)
+                                   (append (nt-rhs (hash-ref old-ht (nt-name nt)))
+                                           (filter (λ (rhs) (not (member (rhs-pattern rhs) extend-nt-ellipses)))
+                                                   (nt-rhs nt)))))]
+                      [else
+                       (hash-set! new-ht (nt-name nt) nt)]))
+                  
+                  ;; add new shortcuts (if necessary)
+                  (unless main-primary
+                    (for-each (λ (shortcut-name)
+                                (hash-set! new-ht 
+                                           shortcut-name 
+                                           (make-nt shortcut-name (list (make-rhs (car names) '())))))
+                              (cdr names)))))
+                  
+              new-nts)
     
     (compile-language (vector (compiled-lang-pict-builder old-lang)
                               new-pict-infos)
@@ -1609,9 +1648,16 @@
 ;; find-primary-nt : symbol lang -> symbol or #f
 ;; returns the primary non-terminal for a given nt, or #f if `nt' isn't bound in the language.
 (define (find-primary-nt nt lang)
+  (let ([combined (find-combined-nts nt lang)])
+    (and combined
+         (car combined))))
+
+;; find-combined-nts : symbol lang -> (listof symbol) or #f
+;; returns the combined set of non-terminals for 'nt' from lang
+(define (find-combined-nts nt lang)
   (ormap (λ (nt-line)
            (and (member nt nt-line)
-                (car nt-line)))
+                nt-line))
          (compiled-lang-nt-map lang)))
 
 (define (apply-reduction-relation* reductions exp)
