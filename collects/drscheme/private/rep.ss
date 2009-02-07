@@ -31,7 +31,12 @@ TODO
          scheme/gui/base
          framework
          browser/external
-         "drsig.ss")
+         "drsig.ss"
+         
+         ;; the dynamic-require below loads this module, 
+         ;; so we make the dependency explicit here, even
+         ;; tho nothing is used from this module.
+         planet/terse-logger)
 
 (provide rep@ with-stacktrace-name)
 
@@ -1269,7 +1274,6 @@ TODO
                               (queue-callback (λ () (new-log-message vec))))
                             (loop))))))))
                  
-                 
                  (let ([drscheme-exit-handler
                         (λ (x)
                           (parameterize-break
@@ -1287,7 +1291,13 @@ TODO
                              (semaphore-wait s)
                              (custodian-shutdown-all user-custodian))))])
                    (exit-handler drscheme-exit-handler))
-                 (initialize-parameters snip-classes))))
+                 (initialize-parameters snip-classes)
+                 
+                 ;; register drscheme with the planet-terse-register for this namespace
+                 ((dynamic-require 'planet/terse-logger 'planet-terse-register)
+                  (lambda (tag package)
+                    (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                      (queue-callback (λ () (new-planet-info tag package)))))))))
             
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
@@ -1451,6 +1461,13 @@ TODO
         (let ([frame (get-frame)])
           (when frame
             (send frame update-logger-window))))
+                        
+      (define/private (new-planet-info tag package) 
+        (void)
+        #;
+        (let ([frame (get-frame)])
+          (send frame open-status-line 'planet)
+          (send frame update-status-line 'planet (format "~s ~s" tag package))))
       
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

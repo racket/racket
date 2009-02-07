@@ -81,7 +81,7 @@ framework)) @(require (for-label scheme/gui)) @(require
 
     Returns @scheme[#f].
   }
-  @defmethod*[(((get-filename (temp (union |#f| (box boolean?)) |#f|)) (union |#f| path)))]{
+  @defmethod*[(((get-filename (temp (or/c #f (box boolean?)) #f)) (or/c #f path)))]{
     This returns the filename that the frame is currently being saved as,
     or @scheme[#f] if there is no appropriate filename.
 
@@ -185,7 +185,7 @@ framework)) @(require (for-label scheme/gui)) @(require
 
 }
 @defmixin[frame:size-pref-mixin (frame:basic<%>) (frame:size-pref<%>)]{
-  @defconstructor[((size-preferences-key symbol?) (label label-string?) (parent (or/c (is-a?/c frame%) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (one-of/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (one-of/c (quote left) (quote center) (quote right)) (one-of/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
+  @defconstructor[((size-preferences-key symbol?) (label label-string?) (parent (or/c (is-a?/c frame%) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (or/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (or/c (quote left) (quote center) (quote right)) (or/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
 
     The size @scheme[size-preferences-key] symbol is used with 
     @scheme[preferences:get]
@@ -297,7 +297,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     Closes the status line @scheme[id].
 
   }
-  @defmethod*[(((update-status-line (id symbol?) (status (union |#f| string))) void))]{
+  @defmethod*[(((update-status-line (id symbol?) (status (or/c #f string))) void))]{
     Updates the status line named by @scheme[id] with
     @scheme[status]. If @scheme[status] is @scheme[#f], the status
     line is becomes blank (and may be used by other ids).
@@ -355,7 +355,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     @method[frame:info<%> set-info-canvas]
 
   }
-  @defmethod*[(((get-info-editor) (union |#f| (is-a?/c editor<%>))))]{
+  @defmethod*[(((get-info-editor) (or/c #f (is-a?/c editor<%>))))]{
     Override this method to specify the editor that the status line
     contains information about.
 
@@ -549,7 +549,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     is a
     @scheme[text%], the start and end positions are restored.
   }
-  @defmethod*[(((save (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
+  @defmethod*[(((save (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
     Saves the file being edited, possibly calling
     @method[frame:editor<%> save-as]
     if the editor has no filename yet.
@@ -560,7 +560,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     the user is prompted for a new filename) and returns
     @scheme[#t] if not.
   }
-  @defmethod*[(((save-as (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
+  @defmethod*[(((save-as (format (or/c (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
     Queries the use for a file name and saves the file with that name.
 
 
@@ -590,10 +590,10 @@ framework)) @(require (for-label scheme/gui)) @(require
   The size of this frame with be either 600 by 650 or 65 less than the
   width and height of the screen, whichever is smaller.
 
-  @defconstructor[((filename string?) (editor% (is-a?/c editor<%>)) (parent (or/c (is-a?/c frame%) false/c) #f) (width (or/c (integer-in 0 10000) false/c) #f) (height (or/c (integer-in 0 10000) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (one-of/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (one-of/c (quote left) (quote center) (quote right)) (one-of/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
+  @defconstructor[((filename string?) (editor% (is-a?/c editor<%>)) (parent (or/c (is-a?/c frame%) false/c) #f) (width (or/c (integer-in 0 10000) false/c) #f) (height (or/c (integer-in 0 10000) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (or/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (or/c (quote left) (quote center) (quote right)) (or/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
 
   }
-  @defmethod*[#:mode override (((get-filename) (union |#f| path)))]{
+  @defmethod*[#:mode override (((get-filename) (or/c #f path)))]{
 
     Returns the filename in the editor returned by
     @method[frame:editor<%> get-editor].

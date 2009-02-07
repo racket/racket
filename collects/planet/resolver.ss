@@ -208,7 +208,10 @@ subdirectory.
 ;; if #f, will not install packages and instead give an error
 (define install? (make-parameter #t))
 
-
+;; this calls the terse logger from the current-namespace,
+;; not the original one when the planet resolver was loaded.
+(define (planet-terse-log id str)
+  ((dynamic-require 'planet/terse-logger 'planet-terse-log) id str))
 
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
@@ -536,6 +539,7 @@ subdirectory.
               "Internal PLaneT error: trying to install already-installed package"
               (current-continuation-marks)))
       (begin
+        (planet-terse-log 'install (pkg-spec->string pkg))
         (with-logging
          (LOG-FILE)
          (lambda ()
@@ -560,9 +564,12 @@ subdirectory.
 ;; raises an exception if some protocol failure occurs in the download process
 (define (download-package/planet pkg)
 
-  (define stupid-internal-define-syntax (planet-log "downloading ~a from ~a via planet protocol" 
-                                                    (pkg-spec->string pkg)
-                                                    (PLANET-SERVER-NAME)))
+  (define stupid-internal-define-syntax 
+    (let ([msg (format "downloading ~a from ~a via planet protocol" 
+                       (pkg-spec->string pkg)
+                       (PLANET-SERVER-NAME))])
+      (planet-terse-log 'download (pkg-spec->string pkg))
+      (planet-log msg)))
   
   (define-values (ip op) (tcp-connect (PLANET-SERVER-NAME) (PLANET-SERVER-PORT)))
 
@@ -656,12 +663,14 @@ subdirectory.
       (when (> attempts 5)
         (return "Download failed too many times (possibly due to an unreliable network connection)"))
 
-      (planet-log "downloading ~a from ~a via HTTP~a" 
-                  (pkg-spec->string pkg)
-                  (PLANET-SERVER-NAME)
-                  (if (= attempts 1)
-                      ""
-                      (format ", attempt #~a" attempts)))
+      (let ([msg (format "downloading ~a from ~a via HTTP~a" 
+                         (pkg-spec->string pkg)
+                         (PLANET-SERVER-NAME)
+                         (if (= attempts 1)
+                             ""
+                             (format ", attempt #~a" attempts)))])
+        (planet-terse-log 'download (pkg-spec->string pkg))
+        (planet-log "~a" msg))
 
       (with-handlers ([exn:fail:network? (λ (e) (return (exn-message e)))])
         (let* ([target            (pkg->download-url pkg)]
