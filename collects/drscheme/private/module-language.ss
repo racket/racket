@@ -498,7 +498,7 @@
     (define (update-compilation-on-radio-box-visibility)
       (send compilation-on-radio-box enable (equal? 0 (send annotations-radio-box get-selection))))
     
-    (send collection-paths-lb set '())
+    (install-collection-paths '(default))
     (update-buttons)
     
     (case-lambda

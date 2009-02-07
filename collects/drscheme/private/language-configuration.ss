@@ -511,12 +511,14 @@
                                
                                (let-values ([(vis-lang vis-settings)
                                              (cond
-                                               [(or (not selected-language)
-                                                    (eq? selected-language language-to-show))
+                                               [(and (not selected-language)
+                                                     (eq? language-to-show language))
                                                 (values language-to-show settings-to-show)]
-                                               [(and language-to-show settings-to-show)
-                                                (values selected-language
-                                                        (send selected-language default-settings))]
+                                               [(eq? selected-language language)
+                                                (values language 
+                                                        (if (eq? language language-to-show)
+                                                            settings-to-show
+                                                            (send language default-settings)))]
                                                [else (values #f #f)])])
                                  (cond
                                    [(not vis-lang) (void)]
