@@ -24,6 +24,7 @@ To do a better job of not generating programs with free variables,
          (for-syntax "rewrite-side-conditions.ss")
          (for-syntax "term-fn.ss")
          (for-syntax "reduction-semantics.ss")
+         (for-syntax "keyword-macros.ss")
          mrlib/tex-table)
 
 (define (allow-free-var? [random random]) (= 0 (random 30)))
@@ -133,7 +134,7 @@ To do a better job of not generating programs with free variables,
 (define real-threshold 1000)
 (define complex-threshold 2000)
 
-(define generation-retries 100)
+(define default-retries 100)
 (define retry-threshold (max chinese-chars-threshold complex-threshold))
 (define proportion-before-threshold 9/10)
 (define proportion-at-size 1/10)
@@ -179,7 +180,7 @@ To do a better job of not generating programs with free variables,
   (let ([lits (map symbol->string (compiled-lang-literals lang))])
     (make-rg-lang (parse-language lang) lits (unique-chars lits) (find-base-cases lang))))
 
-(define (generate lang decisions@ what)
+(define (generate lang decisions@ retries what)
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -230,21 +231,21 @@ To do a better job of not generating programs with free variables,
     (let ([pre-threshold-incr 
            (ceiling
             (/ (- retry-threshold init-att)
-               (* proportion-before-threshold generation-retries)))]
+               (* proportion-before-threshold retries)))]
           [incr-size? 
            (λ (remain)
              (zero? 
               (modulo (sub1 remain) 
                       (ceiling (* proportion-at-size 
-                                  generation-retries)))))])
-      (let retry ([remaining generation-retries]
+                                  retries)))))])
+      (let retry ([remaining retries]
                   [size init-sz]
                   [attempt init-att])
         (if (zero? remaining)
             (redex-error what "unable to generate pattern ~s in ~a attempt~a" 
                          name 
-                         generation-retries
-                         (if (= generation-retries 1) "" "s"))
+                         retries
+                         (if (= retries 1) "" "s"))
             (let-values ([(term state) (gen size attempt)])
               (if (pred term (state-env state))
                   (values term state)
@@ -681,23 +682,25 @@ To do a better job of not generating programs with free variables,
   (unless (and (integer? x) (>= x 0))
     (raise-type-error name "natural number" x)))
 
-(define-for-syntax (term-generator lang pat decisions@ what)
+(define-for-syntax (term-generator lang pat decisions@ retries what)
   (with-syntax ([pattern 
                  (rewrite-side-conditions/check-errs 
                   (language-id-nts lang what)
-                  what #t pat)]
-                [lang lang]
-                [decisions@ decisions@]
-                [what what])
-    (syntax ((generate lang decisions@ 'what) `pattern))))
+                  what #t pat)])
+    #`((generate #,lang #,decisions@ #,retries '#,what) `pattern)))
 
 (define-syntax (generate-term stx)
   (syntax-case stx ()
-    [(_ lang pat size #:attempt attempt)
-     (with-syntax ([generate (term-generator #'lang #'pat #'(generation-decisions) 'generate-term)])
-       (syntax/loc stx
-         (let-values ([(term _) (generate size attempt)])
-           term)))]
+    [(_ lang pat size . kw-args)
+     (with-syntax ([(attempt retries)
+                    (parse-kw-args `((#:attempt . 1)
+                                     (#:retries . ,#'default-retries))
+                                   (syntax kw-args)
+                                   stx)])
+       (with-syntax ([generate (term-generator #'lang #'pat #'(generation-decisions) #'retries 'generate-term)])
+         (syntax/loc stx
+           (let-values ([(term _) (generate size attempt)])
+             term))))]
     [(_ lang pat size)
      (syntax/loc stx (generate-term lang pat size #:attempt 1))]))
 
@@ -707,29 +710,26 @@ To do a better job of not generating programs with free variables,
      (let-values ([(names names/ellipses) 
                    (extract-names (language-id-nts #'lang 'redex-check)
                                   'redex-check #t #'pat)]
-                  [(attempts-stx source-stx)
-                   (let loop ([args (syntax kw-args)]
-                              [attempts #f]
-                              [source #f])
-                     (syntax-case args ()
-                       [() (values attempts source)]
-                       [(#:attempts a . rest)
-                        (not (or attempts (keyword? (syntax-e #'a))))
-                        (loop #'rest #'a source)]
-                       [(#:source s . rest)
-                        (not (or source (keyword? (syntax-e #'s))))
-                        (loop #'rest attempts #'s)]
-                       [else (raise-syntax-error #f "bad keyword syntax" stx args)]))])
+                  [(attempts-stx source-stx retries-stx)
+                   (apply values
+                          (parse-kw-args `((#:attempts . ,#'default-check-attempts)
+                                           (#:source . #f)
+                                           (#:retries . ,#'default-retries))
+                                         (syntax kw-args)
+                                         stx))])
        (with-syntax ([(name ...) names]
                      [(name/ellipses ...) names/ellipses]
-                     [attempts (or attempts-stx #'default-check-attempts)])
+                     [attempts attempts-stx]
+                     [retries retries-stx])
          (with-syntax ([property (syntax
                                   (λ (_ bindings)
                                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
                                               property)))])
            (quasisyntax/loc stx
-             (let ([att attempts])
+             (let ([att attempts]
+                   [ret retries])
                (assert-nat 'redex-check att)
+               (assert-nat 'redex-check ret)
                (unsyntax
                 (if source-stx
                     #`(let-values
@@ -748,12 +748,12 @@ To do a better job of not generating programs with free variables,
                                           (reduction-relation-srcs r)
                                           (reduction-relation-lang r)))])])
                         (check-property-many 
-                         lang pats srcs property random-decisions@ (max 1 (floor (/ att (length pats))))
+                         lang pats srcs property random-decisions@ (max 1 (floor (/ att (length pats)))) ret
                          'redex-check
                          (test-match lang pat)
                          (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
                     #`(check-property
-                       #,(term-generator #'lang #'pat #'random-decisions@ 'redex-check)
+                       #,(term-generator #'lang #'pat #'random-decisions@ #'ret 'redex-check)
                        property att)))
                (void))))))]))
 
@@ -789,12 +789,14 @@ To do a better job of not generating programs with free variables,
 
 (define-syntax (check-metafunction-contract stx)
   (syntax-case stx ()
-    [(_ name)
-     (syntax/loc stx 
-       (check-metafunction-contract name #:attempts default-check-attempts))]
-    [(_ name #:attempts attempts)
+    [(_ name . kw-args)
      (identifier? #'name)
-     (with-syntax ([m (metafunc/err #'name stx)])
+     (with-syntax ([m (metafunc/err #'name stx)]
+                   [(attempts retries)
+                    (parse-kw-args `((#:attempts . ,#'default-check-attempts)
+                                     (#:retries . ,#'default-retries))
+                                   (syntax kw-args)
+                                   stx)])
        (syntax/loc stx 
         (let ([lang (metafunc-proc-lang m)]
               [dom (metafunc-proc-dom-pat m)]
@@ -802,7 +804,7 @@ To do a better job of not generating programs with free variables,
               [att attempts])
           (assert-nat 'check-metafunction-contract att)
           (check-property 
-           ((generate lang decisions@ 'check-metafunction-contract)
+           ((generate lang decisions@ retries 'check-metafunction-contract)
             (if dom dom '(any (... ...))))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
@@ -810,8 +812,8 @@ To do a better job of not generating programs with free variables,
            att)
           (void))))]))
 
-(define (check-property-many lang pats srcs prop decisions@ attempts what [match #f] [match-fail #f])
-  (let ([lang-gen (generate lang decisions@ what)])
+(define (check-property-many lang pats srcs prop decisions@ attempts retries what [match #f] [match-fail #f])
+  (let ([lang-gen (generate lang decisions@ retries what)])
     (for/and ([pat pats] [src srcs])
       (check-property
        (lang-gen pat)
@@ -830,10 +832,16 @@ To do a better job of not generating programs with free variables,
   (syntax-case stx ()
     [(_ name property)
      (syntax/loc stx (check-metafunction name property #:attempts default-check-attempts))]
-    [(_ name property #:attempts attempts)
-     (with-syntax ([m (metafunc/err #'name stx)])
+    [(_ name property . kw-args)
+     (with-syntax ([m (metafunc/err #'name stx)]
+                   [(attempts retries)
+                    (parse-kw-args `((#:attempts . , #'default-check-attempts)
+                                     (#:retries . ,#'default-retries))
+                                   (syntax kw-args)
+                                   stx)])
        (syntax/loc stx
-         (let ([att attempts])
+         (let ([att attempts]
+               [ret retries])
            (assert-nat 'check-metafunction att)
            (check-property-many 
             (metafunc-proc-lang m)
@@ -842,6 +850,7 @@ To do a better job of not generating programs with free variables,
             (λ (term _) (property term))
             (generation-decisions)
             att
+            ret
             'check-metafunction))))]))
 
 (define (reduction-relation-srcs r)
@@ -851,7 +860,8 @@ To do a better job of not generating programs with free variables,
 (define (check-reduction-relation 
          relation property 
          #:decisions [decisions@ random-decisions@]
-         #:attempts [attempts default-check-attempts])
+         #:attempts [attempts default-check-attempts]
+         #:retries [retries default-retries])
   (check-property-many
    (reduction-relation-lang relation)
    (map rewrite-proc-lhs (reduction-relation-make-procs relation))
@@ -859,6 +869,7 @@ To do a better job of not generating programs with free variables,
    (λ (term _) (property term))
    decisions@
    attempts
+   retries
    'check-reduction-relation))
 
 (define-signature decisions^
@@ -891,7 +902,7 @@ To do a better job of not generating programs with free variables,
          pick-number parse-language check-reduction-relation 
          preferred-production-threshold check-metafunction
          generation-decisions pick-preferred-productions
-         generation-retries proportion-at-size retry-threshold 
+         default-retries proportion-at-size retry-threshold 
          proportion-before-threshold post-threshold-incr)
 
 (provide/contract

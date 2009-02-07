@@ -9,6 +9,7 @@
     "tl-test.ss" 
     "term-test.ss" 
     "rg-test.ss" 
+    "keyword-macros-test.ss"
     "core-layout-test.ss" 
     "bitmap-test.ss" 
     "pict-test.ss"))

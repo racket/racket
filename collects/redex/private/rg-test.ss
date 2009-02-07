@@ -5,6 +5,7 @@
          "matcher.ss"
          "term.ss"
          "rg.ss"
+         "keyword-macros.ss"
          "error.ss")
 
 (reset-count)
@@ -258,8 +259,8 @@
         null)
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
-  (test (raised-exn-msg exn:fail:redex? (generate-term lang e 5)) 
-        #rx"generate-term: unable to generate pattern e")
+  (test (raised-exn-msg exn:fail:redex? (generate-term lang e 5 #:retries 42)) 
+        #rx"generate-term: unable to generate pattern e in 42")
   (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate-term/decisions 
          lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
@@ -520,7 +521,7 @@
     ; followed by the choices that produce 'y on the first size 2 attempt.
     (decisions 
      #:nt (apply patterns 
-                 (append (build-list (* generation-retries proportion-at-size)
+                 (append (build-list (* default-retries proportion-at-size)
                                      (λ (_) first))
                          (list second second first)))))
    'e)
@@ -669,27 +670,17 @@
           #rx"x does not match n"))
   (test (raised-exn-msg
          exn:fail:redex?
-         (redex-check lang (side-condition any #f) #t #:attempts 1))
-        #rx"^redex-check: unable")
-  
-  (let ([stx-err (λ (stx)
-                   (with-handlers ([exn:fail:syntax? exn-message])
-                     (expand stx)
-                     'no-syntax-error))])
-    (parameterize ([current-namespace (make-base-namespace)])
-      (eval '(require "../reduction-semantics.ss"
-                      "rg.ss"))
-      (eval '(define-language empty))
-      (test (stx-err '(redex-check empty any #t #:typo 3))
-            #rx"redex-check: bad keyword syntax")
-      (test (stx-err '(redex-check empty any #t #:attempts 3 #:attempts 4))
-            #rx"bad keyword syntax")
-      (test (stx-err '(redex-check empty any #t #:attempts))
-            #rx"bad keyword syntax")
-      (test (stx-err '(redex-check empty any #t #:attempts 3 4))
-            #rx"bad keyword syntax")
-      (test (stx-err '(redex-check empty any #t #:source #:attempts))
-            #rx"bad keyword syntax"))))
+         (redex-check lang (side-condition any #f) #t #:retries 42 #:attempts 1))
+        #rx"^redex-check: unable .* in 42")
+  (test (raised-exn-msg
+         exn:fail:redex?
+         (redex-check lang any #t 
+                      #:source (reduction-relation 
+                                lang
+                                (--> (side-condition any #f) any))
+                      #:retries 42
+                      #:attempts 1))
+        #rx"^redex-check: unable .* in 42"))
 
 ;; check-metafunction-contract
 (let ()
@@ -744,8 +735,8 @@
   ;; Unable to generate domain
   (test (raised-exn-msg
          exn:fail:redex?
-         (check-metafunction-contract j #:attempts 1))
-        #rx"^check-metafunction-contract: unable"))
+         (check-metafunction-contract j #:attempts 1 #:retries 42))
+        #rx"^check-metafunction-contract: unable .* in 42"))
 
 ;; check-reduction-relation
 (let ()
@@ -827,8 +818,8 @@
         #rx"check-metafunction: expected")
   (test (raised-exn-msg
          exn:fail:redex?
-         (check-metafunction n (λ (_) #t)))
-        #rx"check-metafunction: unable"))
+         (check-metafunction n (λ (_) #t) #:retries 42))
+        #rx"check-metafunction: unable .* in 42"))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])

@@ -1029,10 +1029,12 @@ an association list mapping names to application counts.}
            (apply-reduction-relation* equals (term (+ 1 2 3)))
            (covered-cases coverage)))]
 
-@defform*[[(generate-term language #, @|ttpattern| size-exp)
-           (generate-term language #, @|ttpattern| size-exp #:attempt attempt-num-expr)]
-          #:contracts ([size-expr natural-number/c]
-                       [attempt-num-expr natural-number/c])]{
+@defform/subs[(generate-term language #, @|ttpattern| size-exp kw-args ...)
+              ([kw-args (code:line #:attempts attempts-expr)
+                        (code:line #:retries retries-expr)])
+              #:contracts ([size-expr natural-number/c]
+                           [attempt-num-expr natural-number/c]
+                           [retries-expr natural-number/c])]{
 Generates a random term matching @scheme[pattern] (in the given language).
 
 The argument @scheme[size-expr] bounds the height of the generated term
@@ -1041,16 +1043,28 @@ the term).
          
 The optional keyword argument @scheme[attempt-num-expr] 
 (default @scheme[1]) provides coarse grained control over the random
-decisions made during generation (e.g., the expected length of 
-@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr]).}
+decisions made during generation. For example, the expected length of 
+@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
+
+The random generation process does not actively consider the constraints
+imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s when 
+constructing a term; instead, it tests the satisfaction of
+such constraints after it freely generates the relevant portion of the 
+sub-term---regenerating the sub-term if necessary. The optional keyword 
+argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times that 
+@scheme[generate-term] retries the generation of any sub-term. If 
+@scheme[generate-term] is unable to produce a satisfying term after 
+@scheme[retries-expr] attempts, it raises an error}
 
 @defform/subs[(redex-check language #, @|ttpattern| property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
-                       (code:line #:source relation-expr)])
+                       (code:line #:source relation-expr)
+                       (code:line #:retries retries-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
-                           [relation-expr reduction-relation?])]{
+                           [relation-expr reduction-relation?]
+                           [retries-expr natural-number/c])]{
 Searches for a counterexample to @scheme[property-expr], interpreted
 as a predicate universally quantified over its free
 @pattech[term]-variables. @scheme[redex-check] chooses substitutions for 
@@ -1058,7 +1072,7 @@ these free @pattech[term]-variables by generating random terms matching
 @scheme[pattern] and extracting the sub-terms bound by the
 @pattech[names] and non-terminals in @scheme[pattern].
 
-@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[100])
+@scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[1000])
 random terms in its search. The size and complexity of terms it generates
 gradually increases with each failed attempt.
 
@@ -1110,7 +1124,8 @@ term that does not match @scheme[pattern].}
 @defproc[(check-reduction-relation 
           [relation reduction-relation?]
           [property (-> any/c any/c)]
-          [#:attempts attempts natural-number/c 100])
+          [#:attempts attempts natural-number/c 1000]
+          [#:retries retries natural-number/c])
          void?]{
 Tests @scheme[relation] as follows: for each case of @scheme[relation],
 @scheme[check-reduction-relation] generates @scheme[attempts] random
@@ -1123,10 +1138,12 @@ This function provides a more convenient notation for
                           #:source relation)]
 when @scheme[relation] is a relation on @scheme[L] and has @scheme[n] rules.}
 
-@defform*[[(check-metafunction metafunction property)
-           (check-metafunction metafunction property #:attempts attempts)]
-          #:contracts ([property (-> any/c any/c)]
-                       [attempts natural-number/c])]{
+@defform/subs[(check-metafunction metafunction property kw-args ...)
+              ([kw-arg (code:line #:attempts attempts-expr)
+                       (code:line #:retries retries-expr)])
+              #:contracts ([property (-> any/c any/c)]
+                           [attempts-expr natural-number/c]
+                           [retries-expr natural-number/c])]{
 Like @scheme[check-reduction-relation] but for metafunctions.}
 
 @deftech{Debugging PLT Redex Programs}
