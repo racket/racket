@@ -1125,7 +1125,7 @@ term that does not match @scheme[pattern].}
           [relation reduction-relation?]
           [property (-> any/c any/c)]
           [#:attempts attempts natural-number/c 1000]
-          [#:retries retries natural-number/c])
+          [#:retries retries natural-number/c 100])
          void?]{
 Tests @scheme[relation] as follows: for each case of @scheme[relation],
 @scheme[check-reduction-relation] generates @scheme[attempts] random
