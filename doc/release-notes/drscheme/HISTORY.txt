@@ -2,10 +2,14 @@
         Version 4.1.5
 ------------------------------
 
+  . DrScheme now has a status line that shows what PLaneT is up to (in
+    broad strokes)
+
   . Added logging support to DrScheme; it now monitors the logs via
     the "View | Show Log" menu item.
 
   . PLaneT now logs what it is doing at the 'info' level.
+
 
 ------------------------------
         Version 4.1.4
