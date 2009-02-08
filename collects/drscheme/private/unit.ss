@@ -34,7 +34,7 @@ module browser threading seems wrong.
            mrlib/switchable-button
            mrlib/cache-image-snip
            mrlib/include-bitmap
-           
+           mrlib/close-icon
            net/sendurl
            net/url
            
@@ -1327,6 +1327,20 @@ module browser threading seems wrong.
         (define/public-final (update-log)
           (send frame show/hide-log log-visible?))
         
+        (define current-planet-status #f)
+        (define/public-final (new-planet-status a b)
+          (set! current-planet-status (cons a b))
+          (update-planet-status))
+        (define/public-final (clear-planet-status) 
+          (set! current-planet-status #f)
+          (update-planet-status))
+        (define/public-final (update-planet-status)
+          (send frame show-planet-status 
+                (and current-planet-status 
+                     (car current-planet-status))
+                (and current-planet-status 
+                     (cdr current-planet-status))))
+        
         (super-new)))
     
     ;; should only be called by the tab% object (and the class itself)
@@ -1334,7 +1348,8 @@ module browser threading seems wrong.
       disable-evaluation-in-tab
       enable-evaluation-in-tab
       update-toolbar-visibility
-      show/hide-log)
+      show/hide-log
+      show-planet-status)
     
     (define -frame<%>
       (interface (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1446,7 +1461,12 @@ module browser threading seems wrong.
                  (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
             (with-handlers ([exn:fail? void])
               (send logger-parent-panel set-percentages (list p (- 1 p))))
+            (update-logger-button-label)
             (end-container-sequence)))
+        
+        (define/private (log-shown?)
+          (and logger-gui-tab-panel
+               (member logger-panel (send logger-parent-panel get-children))))
         
         (define/private (new-logger-text)
           (set! logger-gui-text (new (text:hide-caret/selection-mixin text:basic%)))
@@ -1473,6 +1493,78 @@ module browser threading seems wrong.
                (send interactions-text get-logger-messages)))
             (send logger-gui-text lock #t)
             (send logger-gui-text end-edit-sequence)))
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;; planet status 
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+        (define planet-status-parent-panel #f)
+        (define planet-status-panel #f)
+        (define planet-message #f)
+        (define planet-logger-button #f)
+        ;; local-member-name
+        (define/public (show-planet-status tag package)
+          (cond
+            [(and (not tag)
+                  (not package)
+                  (or (not planet-status-parent-panel)
+                      (not (member planet-status-panel (send planet-status-parent-panel get-children)))))
+             ;; if there is no information and there is no GUI there, don't do anything
+             (void)]
+            [else
+             (when planet-status-panel
+               (unless planet-message
+                 (new message% 
+                      [parent planet-status-panel]
+                      [label drscheme:debug:small-planet-bitmap])
+                 (set! planet-message (new message% [parent planet-status-panel] [label ""] [stretchable-width #t]))
+                 (set! planet-logger-button
+                       (new button%
+                            [font small-control-font]
+                            [parent planet-status-panel]
+                            [label (string-constant show-log)]
+                            [callback (λ (a b) (send current-tab toggle-log))]))
+                 (update-logger-button-label)
+                 ;; needs to become that little x thingy that is in the search/replace bar
+                 (new close-icon%
+                      [parent planet-status-panel]
+                      [callback (λ () 
+                                  (send planet-status-parent-panel change-children
+                                        (λ (l)
+                                          (remq planet-status-panel l)))
+                                  (send current-tab clear-planet-status))]))
+               (send planet-message set-label 
+                     (case tag
+                       [(download)
+                        (format (string-constant planet-downloading) package)]
+                       [(install)
+                        (format (string-constant planet-installing) package)]
+                       [(finish)
+                        (format (string-constant planet-finished) package)]
+                       [else
+                        (string-constant planet-no-status)]))
+               (send planet-status-parent-panel change-children
+                     (λ (l)
+                       (if (memq planet-status-panel l)
+                           l
+                           (append (remq planet-status-panel l) (list planet-status-panel))))))]))
+            
+        (define/private (update-logger-button-label)
+          (when planet-logger-button
+            (send planet-logger-button set-label
+                  (if (and logger-gui-text
+                           (member logger-panel (send logger-parent-panel get-children)))
+                      (string-constant hide-log)
+                      (string-constant show-log)))))
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;
+        ;; transcript
+        ;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
         
         ;; transcript : (union #f string[directory-name])
         (field [transcript #f]
@@ -1572,30 +1664,37 @@ module browser threading seems wrong.
         (define/override (make-root-area-container cls parent)
           (let* ([saved-p (preferences:get 'drscheme:module-browser-size-percentage)]
                  [saved-p2 (preferences:get 'drscheme:logging-size-percentage)]
-                 [outer-panel (super make-root-area-container 
-                                     (make-two-way-prefs-dragable-panel% panel:horizontal-dragable%
-                                                                         'drscheme:module-browser-size-percentage)
-                                     parent)]
+                 [_module-browser-parent-panel
+                  (super make-root-area-container 
+                         (make-two-way-prefs-dragable-panel% panel:horizontal-dragable%
+                                                             'drscheme:module-browser-size-percentage)
+                         parent)]
                  [_module-browser-panel (new vertical-panel%
-                                             (parent outer-panel)
+                                             (parent _module-browser-parent-panel)
                                              (alignment '(left center))
                                              (stretchable-width #f))]
+                 [planet-status-outer-panel (new vertical-panel% [parent _module-browser-parent-panel])]
                  [logger-outer-panel (new (make-two-way-prefs-dragable-panel% panel:vertical-dragable%
                                                                               'drscheme:logging-size-percentage)
-                                          [parent outer-panel]
-                                          [stretchable-height #f])]
-                 [trans-outer-panel (new vertical-panel% [parent logger-outer-panel] [stretchable-height #f])]
+                                          [parent planet-status-outer-panel])]
+                 [trans-outer-panel (new vertical-panel% [parent logger-outer-panel])]
                  [root (make-object cls trans-outer-panel)])
+            (set! module-browser-parent-panel _module-browser-parent-panel)
             (set! module-browser-panel _module-browser-panel)
-            (set! module-browser-parent-panel outer-panel)
-            (send outer-panel change-children (λ (l) (remq module-browser-panel l)))
+            (send module-browser-parent-panel change-children (λ (l) (remq module-browser-panel l)))
             (set! logger-parent-panel logger-outer-panel)
             (set! logger-panel (new vertical-panel% [parent logger-parent-panel]))
             (send logger-parent-panel change-children (lambda (x) (remq logger-panel x)))
             (set! transcript-parent-panel (new horizontal-panel%
-                                            (parent trans-outer-panel)
-                                            (stretchable-height #f)))
+                                               (parent trans-outer-panel)
+                                               (stretchable-height #f)))
             (set! transcript-panel (make-object horizontal-panel% transcript-parent-panel))
+            (set! planet-status-parent-panel (new vertical-panel% 
+                                                  [parent planet-status-outer-panel]
+                                                  [stretchable-height #f]))
+            (set! planet-status-panel (new horizontal-panel% 
+                                           [parent planet-status-parent-panel]))
+            (send planet-status-parent-panel change-children (λ (l) (remq planet-status-panel l)))
             (unless (toolbar-shown?)
               (send transcript-parent-panel change-children (λ (l) '())))
             (preferences:set 'drscheme:module-browser-size-percentage saved-p)
@@ -2596,6 +2695,7 @@ module browser threading seems wrong.
             (update-running (send current-tab is-running?))
             (on-tab-change old-tab current-tab)
             (send tab update-log)
+            (send tab update-planet-status)
             
             (restore-visible-tab-regions)
             (for-each (λ (defs-canvas) (send defs-canvas refresh))

@@ -1,4 +1,4 @@
-(module terse-logger '#%kernel
+(module terse-info '#%kernel
 
   ;; This file is dynamically loaded by drscheme in a (possibly) 
   ;; empty namespace (ie possibly no scheme/base module yet)

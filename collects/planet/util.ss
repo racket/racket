@@ -6,8 +6,6 @@
          "private/planet-shared.ss"
          "private/linkage.ss"
          
-         "terse-logger.ss"
-         
          "resolver.ss"
          net/url
          xml/xml

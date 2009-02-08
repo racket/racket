@@ -242,7 +242,7 @@ please adhere to these guidelines:
  (erase-log-directory-contents "Erase contents of log directory: ~a?")
  (error-erasing-log-directory "Error erasing log directory contents.\n\n~a\n")
 
-  ;; menu items connected to the logger
+  ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
   (show-log "Show &Log")
   (hide-log "Hide &Log")
   (logging-all "All") ;; in the logging window in drscheme, shows all logs simultaneously
@@ -1177,7 +1177,7 @@ please adhere to these guidelines:
  (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "Module Browser: compiling definitions")
  (module-browser-show-lib-paths/short "Follow lib requires") ;; check box label in show module browser pane in drscheme window.
- (module-browser-show-planet-paths/short "Follow planet requires") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-show-planet-paths/short "Follow PLaneT requires") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Refresh") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "The module browser is only available for programs in the PLT languages and in the module language (and only for programs that have modules in them).")
@@ -1435,6 +1435,11 @@ please adhere to these guidelines:
   (bug-track-forget "Forget")
   (bug-track-forget-all "Forget All")
     
+  ;; planet status messages in the bottom of the drscheme window; the ~a is filled with the name of the package
+  (planet-downloading "PLaneT: Downloading ~a...")
+  (planet-installing "PLaneT: Installing ~a...")
+  (planet-finished "PLaneT: Finished with ~a.")
+  (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
   
   ;; string normalization. To see this, paste some text with a ligature into DrScheme
   ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog

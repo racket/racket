@@ -602,6 +602,28 @@ context of a package. The others are convenience macros that
 select out the relevant field, or return @scheme[#f] if the expression
 appears outside the context of a PLaneT package.}
 
+@subsection{Terse Status Updates}
+
+@defmodule[planet/terse-info]
+
+This module provides access to some PLaneT status information. This
+module is first loaded by PLaneT in the initial namespace (when
+PLaneT's resolver is loaded), but PLaneT uses @scheme[dynamic-require] to load
+this module each time it wants to announce information. Similarly, the
+state of which procedures are registered (via @scheme[planet-terse-register]) 
+is saved in the namespace, making the listening and information producing
+namespace-specific.
+
+@defproc[(planet-terse-register [proc (-> (or/c 'download 'install 'finish) string? any/c)]) void?]{
+Registers @scheme[proc] as a function to be called when
+@scheme[planet-terse-log] is called. Note that @scheme[proc] is called 
+asynchronously (ie, on some thread other than the one calling @scheme[planet-terse-register]).
+}
+
+@defproc[(planet-terse-log [id (or/c 'download 'install 'finish)] [msg string?]) void?]{
+  This function is called by PLaneT to announce when things are happening.
+}
+
 @section{Developing Packages for PLaneT}
 
 To put a package on PLaneT, or release an upgrade to an

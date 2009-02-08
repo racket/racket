@@ -188,7 +188,8 @@ profile todo:
   (define bug-note% (make-note% "stop-multi.png" (include-bitmap (lib "icons/stop-multi.png") 'png/mask)))
   (define mf-note% (make-note% "mf.gif" (include-bitmap (lib "icons/mf.gif") 'gif)))
   (define file-note% (make-note% "stop-22x22.png" (include-bitmap (lib "icons/stop-22x22.png") 'png/mask)))
-  (define planet-note% (make-note% "small-planet.png" (include-bitmap (lib "icons/small-planet.png") 'png/mask)))
+  (define small-planet-bitmap (include-bitmap (lib "icons/small-planet.png") 'png/mask))
+  (define planet-note% (make-note% "small-planet.png" small-planet-bitmap))
   
   ;; display-stats : (syntax -> syntax)
   ;; count the number of syntax expressions & number of with-continuation-marks in an 

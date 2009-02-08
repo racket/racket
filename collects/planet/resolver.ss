@@ -191,7 +191,9 @@ subdirectory.
          "config.ss"
          "private/planet-shared.ss"
          "private/linkage.ss"
-         "parsereq.ss")
+         "parsereq.ss"
+         
+         (prefix x: "terse-info.ss")) ;; just to make the link static; this is actually loaded with dynamic-require
 
 (provide (rename resolver planet-module-name-resolver)
          resolve-planet-path
@@ -211,7 +213,10 @@ subdirectory.
 ;; this calls the terse logger from the current-namespace,
 ;; not the original one when the planet resolver was loaded.
 (define (planet-terse-log id str)
-  ((dynamic-require 'planet/terse-logger 'planet-terse-log) id str))
+  (let ([planet-terse-log
+         (with-handlers ((exn:fail? void))     ;; if the dynamic-require fails, we just don't log anything
+           (dynamic-require 'planet/terse-info 'planet-terse-log))])
+    (planet-terse-log id str)))
 
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
@@ -552,6 +557,7 @@ subdirectory.
                                          'install-planet-package)])
                (ipp path the-dir (list owner (pkg-spec-name pkg)
                                        extra-path maj min))))))
+        (planet-terse-log 'finish (pkg-spec->string pkg))
         (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg)
                   maj min the-dir 'normal)))))
 
@@ -730,13 +736,19 @@ subdirectory.
 ;; formats the pkg-spec back into a string the way the user typed it in.
 ;; assumes that the pkg-spec comes from the command-line
 (define (pkg-spec->string pkg)
-  (format "'~a ~a ~a ~a'"
+  (format "~a/~a~a~a"
           (if (pair? (pkg-spec-path pkg))
               (car (pkg-spec-path pkg))
               "<<unknown>>") ;; this shouldn't happen
-          (pkg-spec-name pkg)
-          (pkg-spec-maj pkg)
-          (pkg-spec-minor-lo pkg)))
+          (regexp-replace #rx"\\.plt$" (pkg-spec-name pkg) "")
+          (if (pkg-spec-maj pkg) 
+              (format ":~a" (pkg-spec-maj pkg))
+              "")
+          (cond
+            [(and (pkg-spec-maj pkg)
+                  (pkg-spec-minor-lo pkg))
+             (format ".~a" (pkg-spec-minor-lo pkg))]
+            [else ""])))
   
 ;; =============================================================================
 ;; MODULE MANAGEMENT

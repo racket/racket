@@ -36,7 +36,7 @@ TODO
          ;; the dynamic-require below loads this module, 
          ;; so we make the dependency explicit here, even
          ;; tho nothing is used from this module.
-         planet/terse-logger)
+         planet/terse-info)
 
 (provide rep@ with-stacktrace-name)
 
@@ -1294,7 +1294,7 @@ TODO
                  (initialize-parameters snip-classes)
                  
                  ;; register drscheme with the planet-terse-register for this namespace
-                 ((dynamic-require 'planet/terse-logger 'planet-terse-register)
+                 ((dynamic-require 'planet/terse-info 'planet-terse-register)
                   (lambda (tag package)
                     (parameterize ([current-eventspace drscheme:init:system-eventspace])
                       (queue-callback (λ () (new-planet-info tag package)))))))))
@@ -1463,11 +1463,9 @@ TODO
             (send frame update-logger-window))))
                         
       (define/private (new-planet-info tag package) 
-        (void)
-        #;
         (let ([frame (get-frame)])
-          (send frame open-status-line 'planet)
-          (send frame update-status-line 'planet (format "~s ~s" tag package))))
+          (when frame
+            (send (send frame get-current-tab) new-planet-status tag package))))
       
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

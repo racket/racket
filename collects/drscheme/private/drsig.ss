@@ -66,6 +66,8 @@
      open-and-highlight-in-file
      get-cm-key
      
+     small-planet-bitmap
+     
      ;show-error-and-highlight
      ;print-bug-to-stderr
      ;display-srclocs-in-error
