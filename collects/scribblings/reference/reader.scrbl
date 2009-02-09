@@ -582,8 +582,9 @@ can be disabled through the @scheme[read-square-bracket-as-paren] and
 
 The elements of the structure are recursively read until a matching
 @litchar{)}, @litchar{]}, or @litchar["}"] is found, just as for lists
-(see @secref["parse-pair"]). A delimited @litchar{.} is not allowed
-among the elements.
+(see @secref["parse-pair"]). A single delimited @litchar{.} is not
+allowed among the elements, but two @litchar{.}s can be used as in a
+list for an infix conversion.
 
 The first element is used as the structure descriptor, and it must
 have the form (when quoted) of a possible argument to

@@ -2563,12 +2563,13 @@
 					      (send t change-style url-delta s e)))
 				    (when (eq? (system-type) 'macosx)
                                       (when fn
-                                        (let ([safer-fn (normalize-path (build-path (find-system-path 'desk-dir)
-                                                                                    (regexp-replace* #rx"[/\"|:<>\\]" fn "-")))])
-                                          (let ([and-open
-                                                 (lambda (dir)
+                                        (let ([and-open
+                                               (lambda (dir)
+                                                 (let ([safer-fn (normalize-path (build-path (find-system-path 'home-dir)
+                                                                                             dir
+                                                                                             (regexp-replace* #rx"[/\"|:<>\\]" fn "-")))])
                                                    (insert " " set-standard-style)
-                                                   (insert (format "[~a & open]" dir)
+                                                   (insert (format "[~~/~a & open]" dir)
                                                            (lambda (t s e)
                                                              (send t set-clickback s e
                                                                    (lambda (a b c)
@@ -2576,9 +2577,9 @@
                                                                      (parameterize ([current-input-port (open-input-string "")])
                                                                        (system* "/usr/bin/open" (path->string safer-fn))))
                                                                    #f #f)
-                                                             (send t change-style url-delta s e))))])
-                                            (and-open "~/Desktop")
-                                            (and-open "~/Temp"))))))
+                                                             (send t change-style url-delta s e)))))])
+                                          (and-open "Desktop")
+                                          (and-open "Temp")))))
                                   (insert "\n" set-standard-style)
 				  (lambda ()
 				    (unless content

@@ -1874,10 +1874,14 @@ quoted vector, or as an element of a quoted @tech{prefab} structure;
 in the case of a pair, if the @scheme[cdr] of the relevant quoted pair
 is empty, then @scheme[_expr] need not produce a list, and its result
 is used directly in place of the quoted pair (in the same way that
-@scheme[append] accepts a non-list final argument). If
-@scheme[unquote] or @scheme[unquote-splicing] appears within
-@scheme[quasiquote] in any other way than as @scheme[(unquote _expr)]
-or @scheme[(unquote-splicing _expr)], a syntax error is reported.
+@scheme[append] accepts a non-list final argument).  In a quoted
+@tech{hash table}, an @scheme[(unquote _expr)] or
+@scheme[(unquote-splicing _expr)] expression escapes only in the
+second element of an entry pair (i.e., the value), while entry keys
+are always implicitly quoted. If @scheme[unquote] or
+@scheme[unquote-splicing] appears within @scheme[quasiquote] in any
+other way than as @scheme[(unquote _expr)] or
+@scheme[(unquote-splicing _expr)], a syntax error is reported.
 
 @mz-examples[
 (eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
@@ -1895,6 +1899,8 @@ form is typically abbreviated with @litchar{`}, @litchar{,}, or
 `(0 1 2)
 `(1 ,(+ 1 2) 4)
 `#s(stuff 1 ,(+ 1 2) 4)
+(eval:alts #,(schemefont (schemevalfont "`#hash((\"a\" . ") "," (scheme (+ 1 2)) (schemevalfont "))")) #hash(("a" . 3)))
+`#hash((,(+ 1 2) . "a"))
 `(1 ,@(list 1 2) 4)
 `#(1 ,@(list 1 2) 4)
 ]

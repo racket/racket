@@ -132,7 +132,8 @@
 					  '("/sw/bin"
 					    "/usr/bin"
 					    "/bin"
-					    "/usr/local/bin")))
+					    "/usr/local/bin"
+					    "/opt/local/bin")))
 				 '("ispell" "aspell"))
 			  (find-executable-path (if (eq? (system-type) 'windows)
 						    "aspell.exe"

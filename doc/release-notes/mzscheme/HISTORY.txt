@@ -1,3 +1,8 @@
+Version 4.1.4.3
+Allow infix notation for prefab structure literals
+Change quasiquote so that unquote works in value positions of #hash
+Change read-syntax to represent #hash value forms as syntax
+
 Version 4.1.4.2
 Added bitwise-bit-field
 

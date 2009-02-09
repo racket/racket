@@ -98,6 +98,9 @@ leaving nested syntax structure (if any) in place.  The result of
 
        @item{an immutable box containing @tech{syntax object}s}
 
+       @item{an immutable @tech{hash table} containing @tech{syntax
+       object} values (but not necessarily @tech{syntax object} keys)}
+
        @item{an immutable @tech{prefab} structure containing @tech{syntax object}s}
 
        @item{some other kind of datum---usually a number, boolean, or string}
@@ -128,13 +131,13 @@ are flattened.}
 
 Returns a datum by stripping the lexical information, source-location
 information, properties, and certificates from @scheme[stx]. Inside of
-pairs, (immutable) vectors, (immutable) boxes, and immutable
-@tech{prefab} structures, @tech{syntax object}s are recursively
-stripped.
+pairs, (immutable) vectors, (immutable) boxes, immutable @tech{hash
+table} values (not keys), and immutable @tech{prefab} structures,
+@tech{syntax object}s are recursively stripped.
 
 The stripping operation does not mutate @scheme[stx]; it creates new
-pairs, vectors, boxes, and @tech{prefab} structures as needed to strip lexical and
-source-location information recursively.}
+pairs, vectors, boxes, hash tables, and @tech{prefab} structures as
+needed to strip lexical and source-location information recursively.}
 
 @defproc[(datum->syntax [ctxt (or/c syntax? #f)]
                         [v any/c]
@@ -154,23 +157,25 @@ source-location information recursively.}
           syntax?]{
 
 Converts the @tech{datum} @scheme[v] to a @tech{syntax object}. If
-@scheme[v] is a pair, vector, box, or immutable @tech{prefab}
-structure, then the contents are recursively converted; mutable
-vectors and boxes are essentially replaced by immutable vectors and
-boxes. @tech{Syntax object}s already in @scheme[v] are preserved as-is
-in the result. For any kind of value other than a pair, vector, box,
-immutable @tech{prefab} structure, or @tech{syntax object}, conversion
-means wrapping the value with lexical information, source-location
+@scheme[v] is a pair, vector, box, immutable hash table, or immutable
+@tech{prefab} structure, then the contents are recursively converted;
+mutable vectors and boxes are essentially replaced by immutable
+vectors and boxes. @tech{Syntax object}s already in @scheme[v] are
+preserved as-is in the result. For any kind of value other than a
+pair, vector, box, immutable @tech{hash table}, immutable
+@tech{prefab} structure, or @tech{syntax object}, conversion means
+wrapping the value with lexical information, source-location
 information, properties, and certificates.
 
 Converted objects in @scheme[v] are given the lexical context
 information of @scheme[ctxt] and the source-location information of
-@scheme[srcloc]. If @scheme[v] is not already a @tech{syntax object}, then
-the resulting immediate @tech{syntax object} is given the properties (see
-@secref["stxprops"]) of @scheme[prop] and the @tech{inactive
-certificates} (see @secref["stxcerts"]) of @scheme[cert]; if
-@scheme[v] is a pair, vector, box, or immutable @tech{prefab} structure, 
-recursively converted values are not given properties or certificates.
+@scheme[srcloc]. If @scheme[v] is not already a @tech{syntax object},
+then the resulting immediate @tech{syntax object} is given the
+properties (see @secref["stxprops"]) of @scheme[prop] and the
+@tech{inactive certificates} (see @secref["stxcerts"]) of
+@scheme[cert]; if @scheme[v] is a pair, vector, box, immutable
+@tech{hash table}, or immutable @tech{prefab} structure, recursively
+converted values are not given properties or certificates.
 
 Any of @scheme[ctxt], @scheme[srcloc], @scheme[prop], or @scheme[cert]
 can be @scheme[#f], in which case the resulting syntax has no lexical
@@ -194,9 +199,10 @@ numbers or both be @scheme[#f], otherwise the
 @exnraise[exn:fail:contract].
 
 Graph structure is not preserved by the conversion of @scheme[v] to a
-@tech{syntax object}. Instead, @scheme[v] is essentially unfolded into a
-tree. If @scheme[v] has a cycle through pairs, vectors, boxes, and immutable 
-@tech{prefab} structures, then the @exnraise[exn:fail:contract].}
+@tech{syntax object}. Instead, @scheme[v] is essentially unfolded into
+a tree. If @scheme[v] has a cycle through pairs, vectors, boxes,
+immutable @tech{hash tables}, and immutable @tech{prefab} structures,
+then the @exnraise[exn:fail:contract].}
 
 @defproc[(identifier? [v any/c]) boolean?]{
 

@@ -651,6 +651,28 @@
 (test '(quasiquote (quasiquote (quasiquote (unquote (unquote (unquote x)))))) 'qq ````,,,x)
 (test '(quasiquote (quasiquote (quasiquote (unquote (unquote (unquote 5)))))) 'qq ````,,,,x)
 
+(test '#hash() 'qq `#hash())
+(test '#hash(("apple" . 1) ("banana" . 2) ("coconut" . 3))
+      'qq
+      `#hash(("apple" . 1) ("banana" . 2) ("coconut" . 3)))
+(test '#hash(("apple" . 1) ("banana" . 2) ("coconut" . 3))
+      'qq
+      `#hash(("apple" . ,1) ("banana" . ,(add1 1)) ("coconut" . ,(+ 1 2))))
+(test '#hash(("foo" . (1 2 3 4 5)))
+      'qq
+      `#hash(("foo" . (1 2 ,(+ 1 2) 4 5))))
+(test '#hash(("foo" . (1 2 3 4 5)))
+      'qq
+      `#hash(("foo" . (1 2 ,@(list 3 4 5)))))
+(test '#hash((,(read) . 1) (,(+ 1 2) . 3))
+      'qq
+      `#hash((,(read) . 1) (,(+ 1 2) . ,(+ 1 2))))
+(test '#hash((,(read) . 2))
+      'qq
+      `#hash((,(read) . 1) (,(read) . 2)))
+(syntax-test #'`#hash(("foo" . ,@(list 1 2 3 4 5))))
+(error-test #'(read (open-input-string "`#hash((foo ,@(list 1 2 3 4 5)))")) exn:fail:read?)
+
 (test '(quasiquote (unquote result)) 'qq `(quasiquote ,result))
 (test (list 'quasiquote car) 'qq `(,'quasiquote ,car))
 

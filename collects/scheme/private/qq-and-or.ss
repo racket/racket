@@ -328,7 +328,35 @@
                                                     (list (quote-syntax quote)
                                                           (prefab-struct-key (syntax-e x)))
                                                     l2))))
-                                      x))))))))
+                                      ;; hash or hasheq
+                                      (if (if (syntax? x)
+                                              (hash? (syntax-e x))
+                                              #f)
+                                          (letrec-values
+                                              (((qq-hash-assocs)
+						(lambda (x level)
+						  (if (null? x)
+						      (quote-syntax ())
+						      (let-values
+						          (((pair) (car x)))
+							(apply-cons
+							 (list (quote-syntax list*)
+							       (list (quote-syntax quote)
+								     (datum->syntax here (car pair)))
+							       (qq (datum->syntax here (cdr pair)) level))
+							 (qq-hash-assocs (cdr x) level)))))))
+                                            (let-values (((l0) (hash-map (syntax-e x) cons)))
+                                              (let-values
+                                                  (((l) (qq-hash-assocs l0 level)))
+                                                (if (eq? l0 l)
+                                                    x
+                                                    (list (if (hash-eq? (syntax-e x))
+                                                              (quote-syntax make-immutable-hasheq)
+                                                              (if (hash-eqv? (syntax-e x))
+                                                                  (quote-syntax make-immutable-hasheqv)
+                                                                  (quote-syntax make-immutable-hash)))
+                                                          l)))))
+                                          x)))))))))
 	      (qq form 0))
 	    form)
 	   in-form)))))
