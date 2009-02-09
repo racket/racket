@@ -8,12 +8,14 @@
          "mime-types-test.ss"
          "url-param-test.ss"
          "mod-map-test.ss"
+         "gzip-test.ss"
          "util-test.ss")
 (provide all-private-tests)
 
 (define all-private-tests
   (test-suite
    "Internal"
+   gzip-tests
    cache-table-tests
    connection-manager-tests
    define-closure-tests

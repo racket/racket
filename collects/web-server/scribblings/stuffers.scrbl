@@ -104,11 +104,11 @@ You can supply your own (built with these functions) when you write a stateless 
 
 @section{GZip Compression}
 
-@(require (for-label file/gzip file/gunzip))
+@(require (for-label file/gzip file/gunzip web-server/private/gzip))
 @defmodule[web-server/stuffers/gzip]{
 
 @defthing[gzip-stuffer (stuffer/c bytes? bytes?)]{                                 
- A @tech{stuffer} that uses @schememodname[file/gzip] and @schememodname[file/gunzip].
+ A @tech{stuffer} that uses @scheme[gzip/bytes] and @scheme[gunzip/bytes].
    
  Note: You should probably compose this with @scheme[base64-stuffer] to get URL-safe bytes.
 }
