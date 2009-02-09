@@ -6148,7 +6148,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
     long span;
     span = SPAN(port, name_pos);
     modpath = scheme_make_stx_w_offset(modpath, name_line, name_col, name_pos, 
-                                       span - ((ch == EOF) ? 0 : 1), 
+                                       span, 
                                        stxsrc, STX_SRCTAG);
   }
 
