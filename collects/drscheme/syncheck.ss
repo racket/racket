@@ -141,7 +141,7 @@ If the namespace does not, they are colored the unbound color.
     (define-struct (var-arrow arrow)
       (start-text start-pos-left start-pos-right
                   end-text end-pos-left end-pos-right
-                  actual?))
+                  actual? level)) ;; level is one of 'lexical, 'top-level, 'import
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos))
     
     ;; color : string
@@ -422,11 +422,12 @@ If the namespace does not, they are colored the unbound color.
             ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
             ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
             (define/public (syncheck:add-arrow start-text start-pos-left start-pos-right
-                                               end-text end-pos-left end-pos-right actual?)
+                                               end-text end-pos-left end-pos-right
+                                               actual? level)
               (let* ([arrow (make-var-arrow #f #f #f #f
                                             start-text start-pos-left start-pos-right
                                             end-text end-pos-left end-pos-right
-                                            actual?)])
+                                            actual? level)])
                 (when (add-to-bindings-table
                        start-text start-pos-left start-pos-right
                        end-text end-pos-left end-pos-right)
@@ -719,15 +720,38 @@ If the namespace does not, they are colored the unbound color.
                                           menu
                                           (λ (item evt) (jump-to-binding-callback arrows))))
                                       (unless (= start-selection end-selection)
-                                        (make-object menu-item%
-                                                     "Tack arrows crossing selection"
-                                                     menu
-                                                     (lambda (item evt)
-                                                       (tack-crossing-arrows-callback
-                                                        arrow-vector
-                                                        start-selection
-                                                        end-selection
-                                                        text))))
+                                        (let ([arrows-menu
+                                               (make-object menu%
+                                                            "Arrows crossing selection"
+                                                            menu)]
+                                              [callback
+                                               (lambda (accept)
+                                                 (tack-crossing-arrows-callback
+                                                  arrow-vector
+                                                  start-selection
+                                                  end-selection
+                                                  text
+                                                  accept))])
+                                          (make-object menu-item%
+                                                       "Tack arrows"
+                                                       arrows-menu
+                                                       (lambda (item evt)
+                                                         (callback
+                                                          '(lexical top-level imported))))
+                                          (make-object menu-item%
+                                                       "Tack non-import arrows"
+                                                       arrows-menu
+                                                       (lambda (item evt)
+                                                         (callback
+                                                          '(lexical top-level))))
+                                          (make-object menu-item%
+                                                       "Untack arrows"
+                                                       arrows-menu
+                                                       (lambda (item evt)
+                                                         (untack-crossing-arrows
+                                                          arrow-vector
+                                                          start-selection
+                                                          end-selection)))))
                                       (for-each (λ (f) (f menu)) add-menus)
                                       (send (get-canvas) popup-menu menu
                                             (+ 1 (inexact->exact (floor (send event get-x))))
@@ -803,7 +827,7 @@ If the namespace does not, they are colored the unbound color.
                  arrows))
               (invalidate-bitmap-cache))
             
-            (define/private (tack-crossing-arrows-callback arrow-vector start end text)
+            (define/private (tack-crossing-arrows-callback arrow-vector start end text kinds)
               (define (xor a b)
                 (or (and a (not b)) (and (not a) b)))
               (define (within t p)
@@ -818,9 +842,15 @@ If the namespace does not, they are colored the unbound color.
                   (define va-end-text (var-arrow-end-text va))
                   (when (xor (within va-start-text va-start)
                              (within va-end-text va-end))
-                    (hash-set! tacked-hash-table va #t))))
+                    (when (memq (var-arrow-level va) kinds)
+                      (hash-set! tacked-hash-table va #t)))))
               (invalidate-bitmap-cache))
-            
+
+            (define/private (untack-crossing-arrows arrow-vector start end)
+              (for ([position (in-range start end)])
+                (for ([va (vector-ref arrow-vector position)] #:when (var-arrow? va))
+                  (hash-set! tacked-hash-table va #f))))
+
             ;; syncheck:jump-to-binding-occurrence : text -> void
             ;; jumps to the next occurrence, based on the insertion point
             (define/public (syncheck:jump-to-next-bound-occurrence text)
@@ -1936,6 +1966,19 @@ If the namespace does not, they are colored the unbound color.
       (when (and actual? (get-ids all-binders var))
         (record-renamable-var rename-ht var)))
     
+    ;; id-level : identifier-binding-function identifier -> symbol
+    (define (id-level get-binding id)
+      (define (self-module? mpi)
+        (let-values ([(a b) (module-path-index-split mpi)])
+          (and (not a) (not b))))
+      (let ([binding (get-binding id)])
+        (cond [(list? binding)
+               (if (self-module? (car binding))
+                   'top-level
+                   'imported)]
+              [(eq? binding 'lexical) 'lexical]
+              [else 'top-level])))
+    
     ;; connect-identifier/arrow : syntax
     ;;                            id-set 
     ;;                            (union #f hash-table)
@@ -1949,7 +1992,7 @@ If the namespace does not, they are colored the unbound color.
         (when binders
           (for-each (λ (x)
                       (when (syntax-original? x)
-                        (connect-syntaxes x var actual?)))
+                        (connect-syntaxes x var actual? (id-level get-binding x))))
                     binders))
         
         (when (and unused requires)
@@ -1974,7 +2017,8 @@ If the namespace does not, they are colored the unbound color.
                                                  (string-constant cs-mouse-over-import)
                                                  (syntax-e var)
                                                  req-path))
-                                (connect-syntaxes req-stx var actual?)))
+                                (connect-syntaxes req-stx var actual?
+                                                  (id-level get-binding var))))
                             req-stxes))))))))
     
     (define (id/require-match? var id req-stx)
@@ -2046,9 +2090,9 @@ If the namespace does not, they are colored the unbound color.
                [prev (hash-ref ht key (λ () null))])
           (hash-set! ht key (cons var prev)))))
     
-    ;; connect-syntaxes : syntax[original] syntax[original] boolean -> void
+    ;; connect-syntaxes : syntax[original] syntax[original] boolean symbol -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual?)
+    (define (connect-syntaxes from to actual? level)
       (let ([from-source (find-source-editor from)] 
             [to-source (find-source-editor to)]
             [defs-text (get-defs-text)])
@@ -2066,7 +2110,7 @@ If the namespace does not, they are colored the unbound color.
                   (send defs-text syncheck:add-arrow
                         from-source from-pos-left from-pos-right
                         to-source to-pos-left to-pos-right
-                        actual?))))))))
+                        actual? level))))))))
     
     ;; add-mouse-over : syntax[original] string -> void
     ;; registers the range in the editor so that a mouse over
