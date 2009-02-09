@@ -119,6 +119,68 @@
                  (check-equal? (third (run-formlet (cross* (text "One") (text "Two")) x))
                                x))))
    
+   (local [(define (->cons bf)
+             (cons (binding-id bf)
+                   (binding:form-value bf)))
+           (define (test-process f bs)
+             (formlet-process f
+                              (make-request #"GET" (string->url "http://test.com")
+                                            empty
+                                            bs
+                                            #f "127.0.0.1" 80 "127.0.0.1")))]
+     (test-suite
+      "Input"
+      
+      (test-equal? "make-input"
+                   (->cons (test-process (make-input (lambda (n) n)) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "make-input"
+                   (test-process (make-input (lambda (n) n)) empty)
+                   #f)
+      (test-equal? "text-input"
+                   (->cons (test-process (text-input) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "password-input"
+                   (->cons (test-process (password-input) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      (test-equal? "checkbox"
+                   (->cons (test-process (checkbox #"start" #t) (list (make-binding:form #"input_0" #"value"))))
+                   (cons #"input_0" #"value"))
+      
+      (test-equal? "required" 
+                   (test-process (required (text-input)) (list (make-binding:form #"input_0" #"value")))
+                   #"value")
+      (test-exn "required"
+                exn?
+                (lambda ()
+                  (test-process (required (text-input)) empty)))
+      
+      (test-equal? "default"
+                   (test-process (default #"def" (text-input)) (list (make-binding:form #"input_0" #"value")))
+                   #"value")
+      (test-equal? "default"
+                   (test-process (default #"def" (text-input)) empty)
+                   #"def")
+            
+      (test-equal? "to-string"
+                   (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))
+                   "value")
+      (test-equal? "to-symbol"
+                   (test-process (to-symbol (to-string (required (text-input)))) (list (make-binding:form #"input_0" #"value")))
+                   'value)
+      (test-equal? "to-number"
+                   (test-process (to-number (to-string (required (text-input)))) (list (make-binding:form #"input_0" #"100")))
+                   100)
+      (test-equal? "to-boolean"
+                   (test-process (to-boolean (required (text-input))) (list (make-binding:form #"input_0" #"on")))
+                   #t)
+      (test-equal? "to-boolean"
+                   (test-process (to-boolean (required (text-input))) (list (make-binding:form #"input_0" #"off")))
+                   #f)
+      
+      ))
+   
+   
    (local [(define-struct date (month day) #:transparent)
            (define (date->xml d)
              (format "~a/~a"
@@ -155,7 +217,7 @@
                    "Departing:" ,(date->xml depart)))]))]
      (test-suite
       "Date"
-            
+      
       (test-case "date->xml"
                  (check-equal? (date->xml (make-date 1 2))
                                "1/2"))

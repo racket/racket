@@ -201,20 +201,81 @@ types. Refer to @secref["input-formlets"] for example low-level formlets using t
 @(require (for-label web-server/formlets/input))
 @defmodule[web-server/formlets/input]{
 
-There are a few basic @tech{formlet}s provided by this library.
+These @tech{formlet}s are the main combinators for form input.
+      
+@defproc[(make-input [render (string? . -> . xexpr/c)])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} is rendered with @scheme[render], which is passed the input name, and results in the
+ extracted @scheme[binding].
+}
+                                             
+@defproc[(text-input [#:value value (or/c false/c bytes?) #f]
+                     [#:size size (or/c false/c exact-nonnegative-integer?) #f]
+                     [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
+                     [#:read-only? read-only? boolean? #f]
+                     [#:attributes attrs (listof (list/c symbol? string?)) empty])
+        (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the TEXT type and the attributes given in the arguments.
+}
+                                                                                        
+@defproc[(password-input [#:value value (or/c false/c bytes?) #f]
+                         [#:size size (or/c false/c exact-nonnegative-integer?) #f]
+                         [#:max-length max-length (or/c false/c exact-nonnegative-integer?) #f]
+                         [#:read-only? read-only? boolean? #f]
+                         [#:attributes attrs (listof (list/c symbol? string?)) empty])
+        (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using an INPUT element with the PASSWORD type and the attributes given in the arguments.
+}
+ 
+@defproc[(checkbox [value bytes?]
+                   [checked? boolean?]
+                   [#:attributes attrs (listof (list/c symbol? string?)) empty])
+         (formlet/c (or/c false/c binding?))]{
+ This @tech{formlet} renders using a INPUT elemen with the CHECKBOX type and the attributes given in the arguments.
+}      
+                                             
+@defproc[(required [f (formlet/c (or/c false/c binding?))])
+         (formlet/c bytes?)]{
+ Constructs a @tech{formlet} that extracts the @scheme[binding:form-value] from the binding produced by @scheme[f], or errors.
+}
 
+@defproc[(default 
+           [def bytes?]
+           [f (formlet/c (or/c false/c binding?))])
+         (formlet/c bytes?)]{
+ Constructs a @tech{formlet} that extracts the @scheme[binding:form-value] from the binding produced by @scheme[f], or returns @scheme[def].
+}
+ 
+@defproc[(to-string [f (formlet/c bytes?)])
+         (formlet/c string?)]{
+ Converts @scheme[f]'s output to a string. Equivalent to @scheme[(cross (pure bytes->string/utf-8) f)].
+}          
+ 
+@defproc[(to-number [f (formlet/c string?)])
+         (formlet/c number?)]{
+ Converts @scheme[f]'s output to a number. Equivalent to @scheme[(cross (pure string->number) f)].
+}                             
+
+@defproc[(to-symbol [f (formlet/c string?)])
+         (formlet/c symbol?)]{
+ Converts @scheme[f]'s output to a symbol. Equivalent to @scheme[(cross (pure string->symbol) f)].
+}                             
+
+@defproc[(to-boolean [f (formlet/c bytes?)])
+         (formlet/c boolean?)]{
+ Converts @scheme[f]'s output to a boolean, if it is equal to @scheme[#"on"].
+}
+                             
 @defthing[input-string (formlet/c string?)]{
- A @tech{formlet} that renders as @schemeblock[(list `(input ([name (format "input_~a" _next-id)])))] where
- @scheme[_next-id] is the next available input index and extracts @scheme[(format "input_~a" _next-id)] in
- the processing stage and converts it into a UTF-8 string.
+ Equivalent to @scheme[(to-string (required (text-input)))].
 }
 
 @defthing[input-int (formlet/c integer?)]{
- Equivalent to @scheme[(cross (pure string->number) input-string)].
+ Equivalent to @scheme[(to-number input-string)].
 }
 
 @defthing[input-symbol (formlet/c symbol?)]{
- Equivalent to @scheme[(cross (pure string->symbol) input-string)].
+ Equivalent to @scheme[(to-symbol input-string)].
 }
 
 }

@@ -9,6 +9,7 @@
          "private/all-private-tests.ss"
          "servlet/all-servlet-tests.ss"
          "stuffers-test.ss"
+         "formlets-test.ss"
          "servlet-env-test.ss")
 (provide all-web-server-tests)
 
@@ -17,6 +18,7 @@
    "Web Server"
    all-http-tests
    all-stuffers-tests
+   all-formlets-tests
    all-configuration-tests
    all-dispatchers-tests
    all-lang-tests
