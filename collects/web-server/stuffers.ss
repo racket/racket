@@ -5,6 +5,7 @@
          web-server/stuffers/hash
          web-server/stuffers/serialize
          web-server/stuffers/store
+         web-server/stuffers/hmac-sha1
          (only-in web-server/lang/stuff-url
                   default-stuffer
                   make-default-stuffer
@@ -16,4 +17,5 @@
                web-server/stuffers/hash
                web-server/stuffers/serialize
                web-server/stuffers/store
+               web-server/stuffers/hmac-sha1
                web-server/lang/stuff-url))

@@ -75,6 +75,30 @@
    (test-suite "hash"
                (test-case "md5-stuffer" (stuffer-test (md5-stuffer (find-system-path 'temp-dir)))))
    
+   (test-suite "hmac-sha1"
+               (test-case "hmac-sha1 len" 
+                          (check-equal? (bytes-length (HMAC-SHA1 (make-bytes 10 (random 255))
+                                                                 (make-bytes 10 (random 255))))
+                                        20))
+               
+               (test-case "hmac-sha1 len" 
+                          (check-equal? (bytes-length (HMAC-SHA1 (make-bytes 10 (random 255))
+                                                                 (make-bytes 100 (random 255))))
+                                        20))
+               
+               (test-case "hmac-sha1 len" 
+                          (check-equal? (bytes-length (HMAC-SHA1 (make-bytes 10 (random 255))
+                                                                 (make-bytes 1000 (random 255))))
+                                        20))
+               
+               (test-case "hmac-sha1 stuffer" (stuffer-test (HMAC-SHA1-stuffer (make-bytes 10 (random 255)))))
+               
+               (test-case "hmac-sha1 stuffer (err)"
+                          (check-exn exn?
+                                     (lambda ()
+                                       ((stuffer-out (HMAC-SHA1-stuffer (make-bytes 10 (random 255))))
+                                        #"123456789012345678901234567890")))))
+   
    (test-suite "stuff-url"
                (test-case "make-default-stuffer"
                           (context-wrap 
@@ -101,3 +125,8 @@
                           (context-wrap
                            (lambda ()
                              (check-not-false (is-url-too-big? (make-bytes 3000 65)))))))))
+
+#|
+(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2)))
+(test/graphical-ui all-stuffers-tests)
+|#
