@@ -18,7 +18,7 @@ Creates a clipboard client that supports no data formats.
 
 }
 
-@defmethod[(add-type [format string])
+@defmethod[(add-type [format string?])
            void?]{
 
 Adds a new data format name to the list supported by the clipboard
@@ -28,7 +28,7 @@ Adds a new data format name to the list supported by the clipboard
 
 }
 
-@defmethod[(get-data [format string])
+@defmethod[(get-data [format string?])
            (or/c bytes? string? false/c)]{
 
 Called when a process requests clipboard data while this client is the

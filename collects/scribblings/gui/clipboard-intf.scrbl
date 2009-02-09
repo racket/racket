@@ -45,7 +45,7 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 
 @defmethod[(get-clipboard-data [format string]
                                [time (and/c exact? integer?)])
-           (or/c byte string false/c)]{
+           (or/c bytes? string? false/c)]{
 
 Gets the current clipboard contents in a specific format, returning
  @scheme[#f] if the clipboard does not contain data in the requested
