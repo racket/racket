@@ -956,7 +956,7 @@ typedef struct Scheme_Local {
 #define SCHEME_LOCAL_CLEARING_MASK 0x3
 
 typedef struct Scheme_Toplevel {
-  Scheme_Inclhash_Object iso; /* keyex used for const & ready flags */
+  Scheme_Inclhash_Object iso; /* keyex used for flags (and can't be hashed) */
   mzshort depth;
   int position;
 } Scheme_Toplevel;
@@ -966,9 +966,8 @@ typedef struct Scheme_Toplevel {
 #define SCHEME_TOPLEVEL_FLAGS(obj)  MZ_OPT_HASH_KEY(&((Scheme_Toplevel *)(obj))->iso)
 
 #define SCHEME_TOPLEVEL_CONST   0x1
-#define SCHEME_TOPLEVEL_MUTATED 0x2
 #define SCHEME_TOPLEVEL_READY   0x2
-/* MUTATED and READY flags are used in different contexts */
+#define SCHEME_TOPLEVEL_MUTATED 0x4
 
 typedef struct Scheme_Quote_Syntax {
   Scheme_Object so; /* scheme_quote_syntax_type */
