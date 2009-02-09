@@ -685,9 +685,11 @@ If the namespace does not, they are colored the unbound color.
                        (if (and pos (is-a? text text%))
                            (let ([arrow-vector (hash-ref arrow-vectors text (λ () #f))])
                              (when arrow-vector
-                               (let ([vec-ents (vector-ref arrow-vector pos)])
+                               (let ([vec-ents (vector-ref arrow-vector pos)]
+                                     [start-selection (send text get-start-position)]
+                                     [end-selection (send text get-end-position)])
                                  (cond
-                                   [(null? vec-ents)
+                                   [(and (null? vec-ents) (= start-selection end-selection))
                                     (super on-event event)]
                                    [else
                                     (let* ([menu (make-object popup-menu% #f)]
@@ -716,6 +718,16 @@ If the namespace does not, they are colored the unbound color.
                                           jump-to-binding
                                           menu
                                           (λ (item evt) (jump-to-binding-callback arrows))))
+                                      (unless (= start-selection end-selection)
+                                        (make-object menu-item%
+                                                     "Tack arrows crossing selection"
+                                                     menu
+                                                     (lambda (item evt)
+                                                       (tack-crossing-arrows-callback
+                                                        arrow-vector
+                                                        start-selection
+                                                        end-selection
+                                                        text))))
                                       (for-each (λ (f) (f menu)) add-menus)
                                       (send (get-canvas) popup-menu menu
                                             (+ 1 (inexact->exact (floor (send event get-x))))
@@ -789,6 +801,24 @@ If the namespace does not, they are colored the unbound color.
                          (hash-set! tacked-hash-table arrow (not untack-arrows?)))
                        arrow)]))
                  arrows))
+              (invalidate-bitmap-cache))
+            
+            (define/private (tack-crossing-arrows-callback arrow-vector start end text)
+              (define (xor a b)
+                (or (and a (not b)) (and (not a) b)))
+              (define (within t p)
+                (and (eq? t text)
+                     (<= start p end)))
+              (for ([position (in-range start end)])
+                (define things (vector-ref arrow-vector position))
+                (for ([va things] #:when (var-arrow? va))
+                  (define va-start (var-arrow-start-pos-left va))
+                  (define va-start-text (var-arrow-start-text va))
+                  (define va-end (var-arrow-end-pos-left va))
+                  (define va-end-text (var-arrow-end-text va))
+                  (when (xor (within va-start-text va-start)
+                             (within va-end-text va-end))
+                    (hash-set! tacked-hash-table va #t))))
               (invalidate-bitmap-cache))
             
             ;; syncheck:jump-to-binding-occurrence : text -> void
