@@ -95,7 +95,7 @@ The syntax for Honu identifiers is the union of Java identifiers plus
 characters:
 
 @t{
-  @hspace[2] @litchar{+} @litchar{-} @litchar{_} @litchar{=} @litchar{?} 
+  @hspace[2] @litchar{+} @litchar{-} @litchar{=} @litchar{?} 
   @litchar{:} @litchar{<} @litchar{>} @litchar{.} @litchar{!} @litchar{%}
   @litchar{^} @litchar{&} @litchar{*} @litchar{/} @litchar{~} @litchar{|}
 }
