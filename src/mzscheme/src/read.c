@@ -429,7 +429,7 @@ void scheme_init_read(Scheme_Env *env)
     delim['`'] -= SCHEME_OK;
     delim['_'] |= HONU_OK;
     {
-      GC_CAN_IGNORE const char *syms = "+-_=?:<>.!%^&*/~|";
+      GC_CAN_IGNORE const char *syms = "+-=?:<>.!%^&*/~|";
       for (i = 0; syms[i]; i++) {
 	delim[(int)syms[i]] |= HONU_SYM_OK;
       }
