@@ -1,34 +1,53 @@
-(module terse-info '#%kernel
+#lang scheme/base
 
-  ;; This file is dynamically loaded by drscheme in a (possibly) 
-  ;; empty namespace (ie possibly no scheme/base module yet)
-  ;; and it is dynamically loaded by the planet resolver.
+#|
+
+This file is shared between the original
+namespace that drscheme first starts with
+and other namespaces that it loads,
+so it keeps the requirements low (it could
+be in the '#%kernel language, but 
+drscheme already shares mred/mred, so there
+seems little point to that.
+
+|#
   
-  (#%provide planet-terse-register planet-terse-log) 
-  (define-values (terse-log-message-chan) (make-channel))
-  (define-values (terse-log-proc-chan) (make-channel))
+(provide planet-terse-register planet-terse-log) 
+
+(define-values (terse-log-message-chan) (make-channel))
+(define-values (terse-log-proc-chan) (make-channel))
   
+(define thd
   (thread
    (lambda ()
-     (letrec-values ([(loop) 
-                      (lambda (procs)
-                        (sync
-                         (handle-evt
-                          terse-log-message-chan
-                          (lambda (msg)
-                            (for-each (lambda (proc) (proc (car msg) (cdr msg))) procs)
-                            (loop procs)))
-                         (handle-evt
-                          terse-log-proc-chan
-                          (lambda (proc) 
-                            (loop (cons proc procs))))))])
-       (loop '()))))
+     (let ([procs (make-weak-hash)])
+       (let loop ()
+         (sync
+          (handle-evt
+           terse-log-message-chan
+           (lambda (msg)
+             (let ([namespace (list-ref msg 0)]
+                   [id (list-ref msg 1)]
+                   [str (list-ref msg 2)])
+               (for-each (lambda (eph) 
+                           (let ([proc (ephemeron-value eph)])
+                             (when proc
+                               (proc id str))))
+                         (hash-ref procs namespace '())))
+             (loop)))
+          (handle-evt
+           terse-log-proc-chan
+           (lambda (pn)
+             (let ([proc (list-ref pn 0)]
+                   [namespace (list-ref pn 1)])
+               (hash-update! procs
+                             namespace 
+                             (lambda (x) (cons (make-ephemeron namespace proc) x)) 
+                             '())
+               (loop))))))))))
   
-  (define-values (planet-terse-log)
-    (lambda (id str)
-      (sync (channel-put-evt terse-log-message-chan (cons id str)))))
+(define (planet-terse-log id str [namespace (current-namespace)])
+  (sync (channel-put-evt terse-log-message-chan (list namespace id str))))
   
-  (define-values (planet-terse-register)
-    (lambda (proc)
-      (sync (channel-put-evt terse-log-proc-chan proc)))))
-
+(define (planet-terse-register proc [namespace (current-namespace)])
+  (sync (channel-put-evt terse-log-proc-chan (list proc namespace))))

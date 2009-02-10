@@ -185,7 +185,8 @@
             '(lib "mred/mred.ss")
             '(lib "mrlib/cache-image-snip.ss")
 	    '(lib "mrlib/matrix-snip.ss")
-            '(lib "mzlib/pconvert-prop.ss")))
+            '(lib "mzlib/pconvert-prop.ss")
+            '(lib "planet/terse-info.ss")))
     
     ;; ensure that they are all here.
     (for-each (λ (x) (dynamic-require x #f)) to-be-copied-module-specs)

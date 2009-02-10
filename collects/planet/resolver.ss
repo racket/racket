@@ -193,7 +193,7 @@ subdirectory.
          "private/linkage.ss"
          "parsereq.ss"
          
-         (prefix x: "terse-info.ss")) ;; just to make the link static; this is actually loaded with dynamic-require
+         "terse-info.ss") 
 
 (provide (rename resolver planet-module-name-resolver)
          resolve-planet-path
@@ -209,14 +209,6 @@ subdirectory.
 
 ;; if #f, will not install packages and instead give an error
 (define install? (make-parameter #t))
-
-;; this calls the terse logger from the current-namespace,
-;; not the original one when the planet resolver was loaded.
-(define (planet-terse-log id str)
-  (let ([planet-terse-log
-         (with-handlers ((exn:fail? void))     ;; if the dynamic-require fails, we just don't log anything
-           (dynamic-require 'planet/terse-info 'planet-terse-log))])
-    (planet-terse-log id str)))
 
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
@@ -431,15 +423,19 @@ subdirectory.
   (let ([p (lookup-package pkg-spec (UNINSTALLED-PACKAGE-CACHE))])
     (if (and p (file-exists? (build-path (pkg-path p)
                                          (pkg-spec-name pkg-spec))))
-      (success-k
-       ;; note: it's a little sloppy that lookup-pkg returns PKG structures,
-       ;; since it doesn't actually know whether or not the package is
-       ;; installed. hence I have to convert what appears to be an installed
-       ;; package into an uninstalled package
-       (make-uninstalled-pkg (build-path (pkg-path p) (pkg-spec-name pkg-spec))
-                             pkg-spec
-                             (pkg-maj p)
-                             (pkg-min p)))
+        (begin
+          (planet-log "found local, uninstalled copy of package at ~a"
+                      (build-path (pkg-path p)
+                                  (pkg-spec-name pkg-spec)))
+          (success-k
+           ;; note: it's a little sloppy that lookup-pkg returns PKG structures,
+           ;; since it doesn't actually know whether or not the package is
+           ;; installed. hence I have to convert what appears to be an installed
+           ;; package into an uninstalled package
+           (make-uninstalled-pkg (build-path (pkg-path p) (pkg-spec-name pkg-spec))
+                                 pkg-spec
+                                 (pkg-maj p)
+                                 (pkg-min p))))
       (failure-k void void (λ (x) x)))))
 
 ;; save-to-uninstalled-pkg-cache! : uninstalled-pkg -> path[file]
@@ -478,6 +474,7 @@ subdirectory.
       [(string? p)
        ;; replace any existing error message with the server download error
        ;; message
+       (planet-log p)
        (failure-k void void (λ (_) p))])))
 
 ;; get-package-from-server : FULL-PKG-SPEC -> PKG-PROMISE | #f | string[error message]

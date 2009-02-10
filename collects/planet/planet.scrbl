@@ -614,14 +614,20 @@ state of which procedures are registered (via @scheme[planet-terse-register])
 is saved in the namespace, making the listening and information producing
 namespace-specific.
 
-@defproc[(planet-terse-register [proc (-> (or/c 'download 'install 'finish) string? any/c)]) void?]{
+@defproc[(planet-terse-register
+          [proc (-> (or/c 'download 'install 'finish) string? any/c)]
+          [namespace namespace? (current-namespace)]) void?]{
 Registers @scheme[proc] as a function to be called when
-@scheme[planet-terse-log] is called. Note that @scheme[proc] is called 
+@scheme[planet-terse-log] is called with a matching namespace argument.
+ Note that @scheme[proc] is called 
 asynchronously (ie, on some thread other than the one calling @scheme[planet-terse-register]).
 }
 
-@defproc[(planet-terse-log [id (or/c 'download 'install 'finish)] [msg string?]) void?]{
+@defproc[(planet-terse-log [id (or/c 'download 'install 'finish)]
+                           [msg string?]
+                           [namespace namespace? (current-namespace)]) void?]{
   This function is called by PLaneT to announce when things are happening.
+The namespace passed along is used to identify the procs to notify.
 }
 
 @section{Developing Packages for PLaneT}

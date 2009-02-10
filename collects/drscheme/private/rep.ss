@@ -1291,13 +1291,17 @@ TODO
                              (semaphore-wait s)
                              (custodian-shutdown-all user-custodian))))])
                    (exit-handler drscheme-exit-handler))
-                 (initialize-parameters snip-classes)
-                 
-                 ;; register drscheme with the planet-terse-register for this namespace
-                 ((dynamic-require 'planet/terse-info 'planet-terse-register)
-                  (lambda (tag package)
-                    (parameterize ([current-eventspace drscheme:init:system-eventspace])
-                      (queue-callback (λ () (new-planet-info tag package)))))))))
+                 (initialize-parameters snip-classes))))
+            
+
+            ;; register drscheme with the planet-terse-register for the user's namespace
+            ;; must be called after 'initialize-parameters' is called (since it initializes
+            ;; the user's namespace)
+            (planet-terse-register
+             (lambda (tag package)
+               (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                 (queue-callback (λ () (new-planet-info tag package)))))
+             (get-user-namespace))
             
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
