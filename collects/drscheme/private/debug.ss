@@ -224,9 +224,7 @@ profile todo:
                                      orig-exp
                                      (namespace-syntax-introduce
                                       (datum->syntax #f orig-exp)))])
-                   (printf "> ~s\n" (syntax->datum exp))
                    (let ([top-e (expand-syntax-to-top-form exp)]) 
-                     (printf "~s\n" (syntax->datum top-e))
                      (syntax-case top-e (begin) 
                        [(begin expr ...)
                         ;; Found a `begin', so expand/eval each contained 
