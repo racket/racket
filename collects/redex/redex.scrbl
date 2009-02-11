@@ -819,11 +819,12 @@ names of the reductions that were used.
           [t any?])
          (listof (listof any?))]{
 
-apply-reduction-relation* accepts a list of reductions and a
-term. It returns the results of following every reduction
-path from the term. If there are infinite reduction
-sequences starting at the term, this function will not
-terminate.
+The function @scheme[apply-reduction-relation*] accepts a reduction relation and a
+term. Starting from @scheme[t], it follows every reduction
+path and returns all of the terms that do not reduce further.
+If there are infinite reduction
+sequences that do not repeat, this function will not
+terminate (it does terminate if the only infinite reduction paths are cyclic).
 }
 
 @defidform[-->]{ Recognized specially within
@@ -974,7 +975,8 @@ Tests to see if @scheme[e1] is equal to @scheme[e2].
 @defform[(test--> reduction-relation e1 e2 ...)]{
 
 Tests to see if the value of @scheme[e1] (which should be a term),
-reduces to the @scheme[e2]s under @scheme[reduction-relation].
+reduces to the @scheme[e2]s under @scheme[reduction-relation]
+(using @scheme[apply-reduction-relation*], so it may not terminate).
 }
 
 @defform[(test-predicate p? e)]{

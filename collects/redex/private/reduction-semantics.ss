@@ -1661,13 +1661,18 @@
          (compiled-lang-nt-map lang)))
 
 (define (apply-reduction-relation* reductions exp)
-  (let ([answers (make-hash)])
+  (let ([answers (make-hash)]
+        [cycles (make-hash)])
     (let loop ([exp exp])
-      (let ([nexts (apply-reduction-relation reductions exp)])
-        (cond
-          [(null? nexts) (hash-set! answers exp #t)]
-          [else (for-each loop nexts)])))
-    (hash-map answers (λ (x y) x))))
+      (unless (hash-ref cycles exp #f)
+        (hash-set! cycles exp #t)
+        (let ([nexts (apply-reduction-relation reductions exp)])
+          (cond
+            [(null? nexts) (hash-set! answers exp #t)]
+            [else (for-each loop nexts)]))))
+    (sort (hash-map answers (λ (x y) x))
+          string<=?
+          #:key (λ (x) (format "~s" x)))))
 
 
 ;; map/mt : (a -> b) (listof a) (listof b) -> (listof b)
