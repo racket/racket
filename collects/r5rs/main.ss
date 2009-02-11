@@ -199,7 +199,7 @@
                 [unquote
                  (zero? depth)
                  (raise-syntax-error
-                  #f
+                  'unquote
                   "invalid context within quasiquote"
                   stx
                   form)]
@@ -212,7 +212,7 @@
                 [unquote-splicing 
                  (zero? depth)
                  (raise-syntax-error
-                  #f
+                  'unquote-splicing 
                   "invalid context within quasiquote"
                   stx
                   form)]
@@ -220,6 +220,12 @@
                  #`(mcons 'quasiquote #,(loop #'e (add1 depth)))]
                 [(a . b)
                  #`(mcons #,(loop #'a depth) #,(loop #'b depth))]
+                [#(unquote a ...)
+                 (raise-syntax-error
+                  'unquote
+                  "invalid context within quasiquote"
+                  stx
+                  form)]
                 [#(a ...)
                  #`(mlist->vector #,(loop (syntax->list #'(a ...)) depth))]
                 [other #'(r5rs:quote other)]))

@@ -298,6 +298,19 @@
 				  #f)
 			      (let-values
 				  (((l) (vector->list (syntax-e x))))
+                                ;; special case: disallow #(unquote <e>)
+                                (if (stx-pair? l)
+                                    (let-values ([(first) (stx-car l)])
+                                      (if (identifier? first)
+                                          (if (free-identifier=? first unquote-stx)
+                                              (raise-syntax-error
+                                               'unquote
+                                               "invalid context within quasiquote"
+                                               in-form
+                                               first)
+                                              (void))
+                                          (void)))
+                                    (void))
 				(let-values
 				    (((l2) (qq l level)))
                                   (if (eq? l l2)

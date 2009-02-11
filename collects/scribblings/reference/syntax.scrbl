@@ -14,6 +14,8 @@
                      scheme/splicing))
 
 @(define cvt (schemefont "CVT"))
+@(define unquote-id (scheme unquote))
+@(define unquote-splicing-id (scheme unquote-splicing))
 
 @title[#:tag "syntax" #:style 'toc]{Syntactic Forms}
 
@@ -1862,33 +1864,33 @@ expression).
 @defform[(quasiquote datum)]{
 
 The same as @scheme[(quote datum)] if @scheme[datum] does not include
-@scheme[(unquote _expr)] or @scheme[(unquote-splicing _expr)]. An
-@scheme[(unquote _expr)] expression escapes from the quote, however,
+@scheme[(#,unquote-id _expr)] or @scheme[(#,unquote-splicing-id _expr)]. An
+@scheme[(#,unquote-id _expr)] form escapes from the quote, however,
 and the result of the @scheme[_expr] takes the place of the
-@scheme[(unquote _expr)] form in the @scheme[quasiquote] result. An
-@scheme[(unquote-splicing _expr)] similarly escapes, but the
+@scheme[(#,unquote-id _expr)] form in the @scheme[quasiquote] result. An
+@scheme[(#,unquote-splicing-id _expr)] similarly escapes, but the
 @scheme[_expr] must produce a list, and its elements are spliced as
-multiple values place of the @scheme[(unquote-splicing _expr)], which
+multiple values place of the @scheme[(#,unquote-splicing-id _expr)], which
 must appear as the @scheme[car] or a quoted pair, as an element of a
 quoted vector, or as an element of a quoted @tech{prefab} structure;
 in the case of a pair, if the @scheme[cdr] of the relevant quoted pair
 is empty, then @scheme[_expr] need not produce a list, and its result
 is used directly in place of the quoted pair (in the same way that
 @scheme[append] accepts a non-list final argument).  In a quoted
-@tech{hash table}, an @scheme[(unquote _expr)] or
-@scheme[(unquote-splicing _expr)] expression escapes only in the
+@tech{hash table}, an @scheme[(#,unquote-id _expr)] or
+@scheme[(#,unquote-splicing-id _expr)] expression escapes only in the
 second element of an entry pair (i.e., the value), while entry keys
 are always implicitly quoted. If @scheme[unquote] or
 @scheme[unquote-splicing] appears within @scheme[quasiquote] in any
-other way than as @scheme[(unquote _expr)] or
-@scheme[(unquote-splicing _expr)], a syntax error is reported.
+other way than as @scheme[(#,unquote-id _expr)] or
+@scheme[(#,unquote-splicing-id _expr)], a syntax error is reported.
 
 @mz-examples[
 (eval:alts (#,(scheme quasiquote) (0 1 2)) `(0 1 2))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote) (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) 1) 4)) `(0 ,@1 4))
-(eval:alts (#,(scheme quasiquote) (0 (#,(scheme unquote-splicing) 1))) `(0 ,@1))
+(eval:alts (#,(scheme quasiquote) (0 (#,unquote-id (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,unquote-splicing-id (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,unquote-splicing-id 1) 4)) `(0 ,@1 4))
+(eval:alts (#,(scheme quasiquote) (0 (#,unquote-splicing-id 1))) `(0 ,@1))
 ]
 
 A @scheme[quasiquote], @scheme[unquote], or @scheme[unquote-splicing]
