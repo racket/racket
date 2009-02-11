@@ -629,6 +629,40 @@ Expands to a @scheme[provide] of all identifiers implied by the
 
 @; ------------------------------------------------------------------------
 
+@section[#:tag "unitcontracts"]{Unit Contracts}
+
+@defform/subs[#:literals (import export)
+              (unit/c (import sig-block ...) (export sig-block ...))
+              ([sig-block (sig-id [id ctc] ...)])
+              #:contracts ([ctc contract?])]{
+
+A @deftech{unit contract} wraps a unit and checks both its imported and
+exported identifiers to ensure that they match the appropriate contracts.
+This allows the programmer to add contract checks to a single unit value
+without adding contracts to the imported and exported signatures.
+
+The unit value must import a subset of the import signatures and export a
+superset of the export signatures listed in the unit contract.  Any
+identifier which is not listed for a given signature is left alone.
+
+Here is an example use of @scheme[unit/c]:
+   
+@schememod[scheme/base
+(require scheme/unit)
+(define-signature odd^  (odd?))
+(define-signature even^ (even?))
+(define-unit E@
+  (import odd^)
+  (export even^)
+  (define (even? n)
+    (if (zero? n) #t (odd? (sub1 n)))))
+(provide/contract 
+ [E@ (unit/c (import odd^  [odd?  (-> number? boolean?)])
+             (export even^ [even? (-> number? boolean?)]))])
+]}
+
+@; ------------------------------------------------------------------------
+
 @section[#:tag "single-unit"]{Single-Unit Modules}
 
 When @schememodname[scheme/unit] is used as a language name with

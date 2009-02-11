@@ -12,13 +12,15 @@
   (require mzlib/etc
            mzlib/contract
            mzlib/stxparam
+           "private/unit-contract.ss"
            "private/unit-keywords.ss"
-           "private/unit-runtime.ss")
+           "private/unit-runtime.ss"
+           "private/unit-utils.ss")
   
   (provide define-signature-form struct open
            define-signature provide-signature-elements
            only except rename import export prefix link tag init-depend extends contracted
-           unit?
+           unit? (all-from "private/unit-contract.ss")
            (rename :unit unit) define-unit 
            compound-unit define-compound-unit compound-unit/infer define-compound-unit/infer
            invoke-unit define-values/invoke-unit
@@ -362,103 +364,11 @@
                          'expression
                          (list #'stop)
                          def-ctx))))
-    
-  (define-for-syntax (iota n)
-    (let loop ((n n)
-               (acc null))
-      (cond
-        ((= n 0) acc)
-        (else (loop (sub1 n) (cons (sub1 n) acc))))))
-  
-  (define-syntax-rule (equal-hash-table [k v] ...)
-    (make-immutable-hash-table (list (cons k v) ...) 'equal))
-
-  (define-syntax (unit-export stx)
-    (syntax-case stx ()
-      ((_ ((esig ...) elocs) ...)
-       (with-syntax ((((kv ...) ...)
-                      (map 
-                        (lambda (esigs eloc)
-                          (map
-                           (lambda (esig) #`(#,esig #,eloc))
-                           (syntax->list esigs)))
-                        (syntax->list #'((esig ...) ...))
-                        (syntax->list #'(elocs ...)))))
-         #'(equal-hash-table kv ... ...)))))
-  
-  ;; build-key : (or symbol #f) identifier -> syntax-object
-  (define-for-syntax (build-key tag i)
-    (if tag
-        #`(cons '#,tag #,i)
-        i))
- 
-  ;; tagged-info->keys : (cons (or symbol #f) siginfo) -> (listof syntax-object)
-  (define-for-syntax (tagged-info->keys tagged-info)
-    (define tag (car tagged-info))
-    (map (lambda (rid) 
-           (build-key tag (syntax-local-introduce rid)))
-         (siginfo-rtime-ids (cdr tagged-info))))
-
-  ;; check-duplicate-sigs : (listof (cons symbol siginfo)) (listof syntax-object)
-  ;;                        (listof (cons symbol siginfo)) (listof syntax-object) ->
-  (define-for-syntax (check-duplicate-sigs tagged-siginfos sources tagged-deps dsources)
-    (define import-idx (make-hash-table 'equal))
-    (for-each
-     (lambda (tinfo s)
-       (define key (cons (car tinfo)
-                         (car (siginfo-ctime-ids (cdr tinfo)))))
-       (when (hash-table-get import-idx key #f)
-         (raise-stx-err "duplicate import signature" s))
-       (hash-table-put! import-idx key #t))
-     tagged-siginfos
-     sources)
-    (for-each
-     (lambda (dep s)
-       (unless (hash-table-get import-idx
-                               (cons (car dep)
-                                     (car (siginfo-ctime-ids (cdr dep))))
-                               #f)
-         (raise-stx-err "initialization dependency on unknown import" s)))
-     tagged-deps
-     dsources))
          
   (define-for-syntax (tagged-sigid->tagged-siginfo x)
     (cons (car x)
           (signature-siginfo (lookup-signature (cdr x)))))
                  
-  (define-for-syntax (check-unit-ie-sigs import-sigs export-sigs)
-    (let ([dup (check-duplicate-identifier
-                (apply append (map sig-int-names import-sigs)))])
-      (when dup
-        (raise-stx-err 
-         (format "~a is imported by multiple signatures" (syntax-e dup)))))
-    
-    (let ([dup (check-duplicate-identifier
-                (apply append (map sig-int-names export-sigs)))])
-      (when dup
-        (raise-stx-err (format "~a is exported by multiple signatures"
-                               (syntax-e dup)))))
-    
-    (let ([dup (check-duplicate-identifier 
-                (append
-                 (apply append (map sig-int-names import-sigs))
-                 (apply append (map sig-int-names export-sigs))))])
-      (when dup
-        (raise-stx-err (format "import ~a is exported" (syntax-e dup))))))
-  
-
-  (define-for-syntax (process-unit-import/export process)
-    (lambda (s)
-      (define x1 (syntax->list s))
-      (define x2 (map process x1))
-      (values x1 x2 (map car x2) (map cadr x2) (map caddr x2))))
-  
-  (define-for-syntax process-unit-import
-    (process-unit-import/export process-tagged-import))
-
-  (define-for-syntax process-unit-export
-    (process-unit-import/export process-tagged-export))
-  
   ;; id->contract-src-info : identifier -> syntax
   ;; constructs the last argument to the contract, given an identifier
   (define-for-syntax (id->contract-src-info id)

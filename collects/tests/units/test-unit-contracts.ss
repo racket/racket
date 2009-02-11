@@ -531,3 +531,65 @@
           [() unit55-1 S]))
   (test-runtime-error exn:fail:contract? "unit55-1 misuses f"
     (invoke-unit unit55-2)))
+
+(module m1 scheme
+  (define-signature foo^ (x))
+  (define-signature bar^ (y))
+  (provide foo^ bar^)
+  
+  (define-unit U@
+    (import foo^)
+    (export bar^)
+    (define (y s)
+      (if (eq? s 'bork)
+          3
+          (string-append (symbol->string s) " " (if (x 3) "was true on 3" "was not true on 3")))))
+  (provide/contract [U@ (unit/c (import (foo^ [x (-> number? boolean?)]))
+                                (export (bar^ [y (-> symbol? string?)])))]))
+
+(module m2 scheme
+  (require 'm1)
+  
+  (define x zero?)
+  (define-values/invoke-unit U@
+    (import foo^)
+    (export bar^))
+  
+  (define (z)
+    (y 'a))
+  (define (w)
+    (y "foo"))
+  (define (v)
+    (y 'bork))
+  
+  (provide z w v))
+
+(require (prefix-in m2: 'm2))
+
+(m2:z)
+(test-runtime-error exn:fail:contract? "m2 broke the contract on U@ (string, not symbol)" (m2:w))
+(test-runtime-error exn:fail:contract? "m1 broke the contract on U@ (number, not string)" (m2:v))
+
+(test-syntax-error "no y in sig1"
+  (unit/c (import (sig1 [y number?]))
+          (export)))
+(test-syntax-error "two xs for sig1"
+  (unit/c (import)
+          (export (sig1 [x string?] [x number?]))))
+(test-syntax-error "no sig called faux^, so import description matching fails"
+  (unit/c (import faux^) (export)))
+
+(test-runtime-error exn:fail:contract? "unit bad-export@ does not export sig1"
+  (let ()
+    (define/contract bad-export@
+      (unit/c (import) (export sig1))
+      (unit (import) (export)))
+    bad-export@))
+
+(test-runtime-error exn:fail:contract? "contract on bad-import@ does not export sig1"
+  (let ()
+    (define/contract bad-import@
+      (unit/c (import) (export))
+      (unit (import sig1) (export) (+ x 1)))
+    bad-import@))
+            
