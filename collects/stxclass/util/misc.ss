@@ -10,6 +10,11 @@
          generate-temporary
          generate-n-temporaries
 
+         current-caught-disappeared-uses
+         with-catching-disappeared-uses
+         with-disappeared-uses
+         syntax-local-value/catch
+
          format-symbol
 
          chunk-kw-seq/no-dups
@@ -25,6 +30,31 @@
 (define-syntax-rule (define-pattern-variable name expr)
   (begin (define var expr)
          (define-syntax name (make-syntax-mapping '0 (quote-syntax var)))))
+
+;; Statics and disappeared uses
+
+(define current-caught-disappeared-uses (make-parameter #f))
+
+(define-syntax-rule (with-catching-disappeared-uses . body)
+  (parameterize ((current-caught-disappeared-uses null))
+    (let ([result (let () . body)])
+      (values result (current-caught-disappeared-uses)))))
+
+(define-syntax-rule (with-disappeared-uses stx-expr)
+  (let-values ([(stx disappeared-uses)
+                (with-catching-disappeared-uses stx-expr)])
+    (syntax-property stx
+                     'disappeared-use
+                     (append (or (syntax-property stx 'disappeared-use) null)
+                             disappeared-uses))))
+
+(define (syntax-local-value/catch id pred)
+  (let ([value (syntax-local-value id (lambda () #f))])
+    (and (pred value)
+         (begin (let ([uses (current-caught-disappeared-uses)])
+                  (when uses (current-caught-disappeared-uses (cons id uses))))
+                value))))
+
 
 ;; Generating temporaries
 

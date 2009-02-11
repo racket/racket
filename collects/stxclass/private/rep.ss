@@ -53,24 +53,17 @@
   (define lits0 (assq '#:literals chunks))
   (define desc0 (assq '#:description chunks))
   (define trans0 (assq '#:transparent chunks))
+  (define attrs0 (assq '#:attributes chunks))
   (define literals (if lits0 (caddr lits0) null))
   (define description (and desc0 (caddr desc0)))
   (define transparent? (and trans0 #t))
+  (define attributes (and attrs0 (caddr attrs0)))
 
   (define (parse-rhs*-basic rest)
     (syntax-case rest (basic-syntax-class)
-      [((basic-syntax-class (attr-decl ...) parser-expr))
-       (make rhs:basic ctx 
-             (for/list ([attr-stx (syntax->list #'(attr-decl ...))])
-               (syntax-case attr-stx ()
-                 [(attr depth)
-                  (begin
-                    (unless (and (identifier? #'attr)
-                                 (exact-nonnegative-integer? (syntax-e #'depth)))
-                      (wrong-syntax attr-stx "bad attribute declaration"))
-                    (make-attr (syntax-e #'attr) (syntax-e #'depth) null))]
-                 [_
-                  (wrong-syntax attr-stx "bad attribute declaration")]))
+      [((basic-syntax-class parser-expr))
+       (make rhs:basic ctx
+             (or attributes null)
              transparent?
              description
              #'parser-expr)]))
@@ -86,7 +79,9 @@
     (define patterns (gather-patterns rest))
     (when (null? patterns)
       (wrong-syntax ctx "syntax class has no variants"))
-    (let ([sattrs (intersect-attrss (map rhs:pattern-attrs patterns) ctx)])
+    (let ([sattrs
+           (or attributes
+               (intersect-attrss (map rhs:pattern-attrs patterns) ctx))])
       (make rhs:union stx sattrs 
             transparent?
             description
@@ -116,16 +111,9 @@
                    (clause:with-pattern c))]
                 [attrs (append-attrs
                         (cons (pattern-attrs pattern)
-                              (map pattern-attrs with-patterns))
-                        stx)]
+                              (map pattern-attrs with-patterns)))]
                 [sattrs (iattrs->sattrs attrs remap)])
            (make rhs:pattern stx sattrs pattern decls remap clauses))))]))
-
-;; rhs-directive-table
-(define rhs-directive-table
-  (list (list '#:literals check-idlist)
-        (list '#:description values)
-        (list '#:transparent)))
 
 ;; parse-pattern : stx(Pattern) env number -> Pattern
 (define (parse-pattern stx decls depth)
@@ -159,20 +147,20 @@
      (gdots? #'gdots)
      (let* ([heads (parse-heads #'heads decls depth)]
             [tail (parse-pattern #'tail decls depth)]
-            [hattrs (append-attrs (for/list ([head heads]) (head-attrs head)) stx)]
+            [hattrs (append-attrs (for/list ([head heads]) (head-attrs head)))]
             [tattrs (pattern-attrs tail)])
-       (make pat:gseq stx (append-attrs (list hattrs tattrs) stx) depth heads tail))]
+       (make pat:gseq stx (append-attrs (list hattrs tattrs)) depth heads tail))]
     [(head dots . tail)
      (dots? #'dots)
      (let* ([headp (parse-pattern #'head decls (add1 depth))]
             [tail (parse-pattern #'tail decls depth)]
             [head (pattern->head headp)]
-            [attrs (append-attrs (list (head-attrs head) (pattern-attrs tail)) stx)])
+            [attrs (append-attrs (list (head-attrs head) (pattern-attrs tail)))])
        (make pat:gseq stx attrs depth (list head) tail))]
     [(a . b)
      (let ([pa (parse-pattern #'a decls depth)]
            [pb (parse-pattern #'b decls depth)])
-       (let ([attrs (append-attrs (list (pattern-attrs pa) (pattern-attrs pb)) stx)])
+       (let ([attrs (append-attrs (list (pattern-attrs pa) (pattern-attrs pb)))])
          (make pat:pair stx attrs depth pa pb)))]))
 
 (define (pattern->head p)
@@ -246,7 +234,7 @@
           (for/list ([p (syntax->list pstx)])
             (parse-pattern p decls depth))]
          [heads-attrs
-          (append-attrs (map pattern-attrs heads) pstx)])
+          (append-attrs (map pattern-attrs heads))])
     (when default-row
       (unless (and (= (length heads-attrs) 1)
                    (= enclosing-depth (attr-depth (car heads-attrs)))
@@ -258,7 +246,7 @@
                (list (make-attr occurs-pvar depth null))
                null)])
       (make head pstx
-            (append-attrs (list occurs-attrs heads-attrs) pstx)
+            (append-attrs (list occurs-attrs heads-attrs))
             depth
             heads
             min max as-list?
@@ -340,3 +328,34 @@
             decls
             remap
             (reverse rclauses))))
+
+;; check-attr-arity-list : stx -> (listof SAttr)
+(define (check-attr-arity-list stx)
+  (unless (stx-list? stx)
+    (wrong-syntax stx "expected list of attribute declarations"))
+  (let ([iattrs (map check-attr-arity (stx->list stx))])
+    (iattrs->sattrs (append-attrs (map list iattrs)) syntax-e)))
+
+;; check-attr-arity : stx -> IAttr
+(define (check-attr-arity stx)
+  (syntax-case stx ()
+    [attr
+     (identifier? #'attr)
+     (make-attr #'attr 0 null)]
+    [(attr depth)
+     (check-attr-arity #'(attr depth ()))]
+    [(attr depth inners)
+     (begin (unless (identifier? #'attr)
+              (wrong-syntax #'attr "expected attribute name"))
+            (unless (exact-nonnegative-integer? (syntax-e #'depth))
+              (wrong-syntax #'depth "expected depth (nonnegative integer)"))
+            (make-attr #'attr (syntax-e #'depth) (check-attr-arity-list #'inners)))]
+    [_
+     (wrong-syntax stx "expected attribute arity declaration")]))
+
+;; rhs-directive-table
+(define rhs-directive-table
+  (list (list '#:literals check-idlist)
+        (list '#:description values)
+        (list '#:transparent)
+        (list '#:attributes check-attr-arity-list)))

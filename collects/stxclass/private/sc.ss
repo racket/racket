@@ -116,22 +116,23 @@
        ([attr-name attr-depth] ...)
        parser-expr)
      (define-syntax-class (name arg ...)
+       #:attributes ([attr-name attr-depth] ...)
        (basic-syntax-class
-        ([attr-name attr-depth] ...)
         (let ([name parser-expr]) name)))]))
 
 (define-syntax (rhs->parser+description stx)
   (syntax-case stx ()
     [(rhs->parser+description name rhss (arg ...) ctx)
-     (parameterize ((current-syntax-context #'ctx))
-       (let ([rhs (parse-rhs #'rhss #f #'ctx)]
-             [sc (syntax-local-value #'name)])
-         #`(values #,(parse:rhs rhs
-                                (sc-attrs sc)
-                                (syntax->list #'(arg ...)))
-                   (lambda (arg ...)
-                     #,(or (rhs-description rhs)
-                           #'(symbol->string 'name))))))]))
+     (with-disappeared-uses
+      (parameterize ((current-syntax-context #'ctx))
+        (let ([rhs (parse-rhs #'rhss #f #'ctx)]
+              [sc (syntax-local-value #'name)])
+          #`(values #,(parse:rhs rhs
+                                 (sc-attrs sc)
+                                 (syntax->list #'(arg ...)))
+                    (lambda (arg ...)
+                      #,(or (rhs-description rhs)
+                            #'(symbol->string 'name)))))))]))
 
 (define-syntax (parse-sc stx)
   (syntax-case stx ()
@@ -176,15 +177,16 @@
 (define-syntax (syntax-parse* stx)
   (syntax-case stx ()
     [(syntax-parse report-as expr . clauses)
-     (parameterize ((current-syntax-context
-                     (syntax-property stx
-                                      'report-errors-as
-                                      (syntax-e #'report-as))))
-       #`(let ([x expr])
-           (let ([fail (syntax-patterns-fail x)])
-             (parameterize ((current-expression (or (current-expression) x)))
-               #,(parse:clauses #'clauses #'x #'fail)))))]))
-
+     (with-disappeared-uses
+      (parameterize ((current-syntax-context
+                      (syntax-property stx
+                                       'report-errors-as
+                                       (syntax-e #'report-as))))
+        #`(let ([x expr])
+            (let ([fail (syntax-patterns-fail x)])
+              (parameterize ((current-expression (or (current-expression) x)))
+                #,(parse:clauses #'clauses #'x #'fail))))))]))
+  
 (define-syntax with-patterns
   (syntax-rules ()
     [(with-patterns () . b)

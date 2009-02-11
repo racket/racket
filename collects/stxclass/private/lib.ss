@@ -65,8 +65,8 @@
 
 (define-syntax-class (static-of name pred)
   #:description name
+  #:attributes ([value 0])
   (basic-syntax-class
-   ([value 0])
    (lambda (x name pred)
      (let/ec escape
        (define (bad) (escape #f))

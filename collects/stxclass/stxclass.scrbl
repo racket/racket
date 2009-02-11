@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/struct
           scribble/decode
-          (for-label scheme/base 
+          (for-label scheme/base
+                     scheme/contract
                      stxclass 
                      stxclass/util))
 
@@ -60,11 +61,8 @@ The grammar of patterns accepted by @scheme[syntax-parse] and
                  literal-id
                  atomic-datum
                  (syntax-pattern . syntax-pattern)
-                 #|  (syntax-splice-pattern . syntax-pattern)  |#
                  (syntax-pattern #,ellipses . syntax-pattern)
                  ((head ...+) ...* . syntax-pattern)]
-                #| [syntax-splice-pattern
-                    pvar-id:syntax-splice-class-id] |#
                 [pvar-id
                  _
                  id]]
@@ -268,8 +266,12 @@ depth is fixed for each syntax class.
                 (define-syntax-class (name-id arg-id ...) stxclass-option ... 
                   stxclass-variant ...+)]
                ([stxclass-options
+                 (code:line #:attributes (attr-arity-decl ...))
                  (code:line #:description description)
                  (code:line #:transparent)]
+                [attr-arity-decl
+                 attr-name-id
+                 (attr-name-id depth)]
                 [stxclass-variant 
                  (pattern syntax-pattern pattern-directive ...)])]{
 
@@ -284,8 +286,21 @@ present in every variant. Each such attribute must be defined with the
 same ellipsis nesting depth and the same sub-attributes in each
 component.
 
-@TODO{Eliminate attribute inference, require explicit attribute
-declaration?}
+@specsubform[(code:line #:attributes (attr-arity-decl ...))]{
+
+Declares the attributes of the syntax class. An attribute arity
+declaration consists of the attribute name and optionally its ellipsis
+depth (zero if not explicitly specified).
+
+If the attributes are not explicitly listed, they are
+inferred. Attribute inference does not take into account attributes
+from the current syntax class and from syntax classes that have not
+yet been defined. The full set of attributes is available, however, to
+@scheme[#:with] and @scheme[#:when] expressions. This treatment of
+recursive and forward references prevents infinitely nested
+attributes.
+
+}
 
 @specsubform[(code:line #:description description)]{
 
@@ -314,12 +329,14 @@ structure of the syntax class.
 Accepts syntax matching the given pattern with the accompanying
 pattern directives as in @scheme[syntax-parse].
 
-Provides an attribute for every pattern variable defined in the
-pattern and the @scheme[#:with] clauses. The name of the attribute is
-the symbolic name of the pattern variable, except when the name is
-explicitly given via a @scheme[#:rename] clause. Pattern variables
-declared with a syntax class yield derived pattern variables for that
-syntax class's attributes. These are propagated as nested attributes.
+The attributes of the pattern are the pattern variables within the
+@scheme[pattern] form together with all pattern variables bound by
+@scheme[#:with] clauses, including nested attributes produced by
+syntax classes associated with the pattern variables. 
+
+The name of an attribute is the symbolic name of the pattern variable,
+except when the name is explicitly given via a @scheme[#:rename]
+clause.
 
 @specsubform[(code:line #:rename internal-id external-id)]{
 
@@ -329,41 +346,6 @@ the attribute named @scheme[external-id].
 }
 }
 
-Within the syntax-class body, recursive references to the enclosing
-syntax class and forward references to syntax classes defined in the
-same scope are allowed. For the purpose of calculating provided
-attributes, recursive and forward syntax-class references generate no
-nested attributes. The full set of attributes is available, however,
-to @scheme[#:with] and @scheme[#:when] expressions.
-
-This treatment of recursive and forward references prevents infinitely
-nested attributes.
-
-@TODO{Eliminate attribute inference. Explicit attribute declaration
-eliminates infinitely nested attributes just as well.}
-
-}
-@;{
-@defform*[[(define-syntax-splice-class (name-id arg-id ...) stxclass-body)
-           (define-syntax-splice-class name-id stxclass-body)]]{
-
-Defines @scheme[name-id] as a syntax splice class. When the
-@scheme[arg-id]s are present, they are bound as variables (not pattern
-variables) in the body.
-
-The @scheme[stxclass-body] is like the body of
-@scheme[define-syntax-class], except that all patterns within it must
-match only proper lists:
-
-@schemegrammar[#:literals (... ...*)
-               proper-list-pattern
-               ()
-               (syntax-pattern . proper-list-pattern)
-               (syntax-splice-pattern . proper-list-pattern)
-               (syntax-pattern ... . proper-list-pattern)
-               ((head ...+) ...* . proper-list-pattern)]
-
-}
 }
 
 @defidform[pattern]{
@@ -698,6 +680,36 @@ Generates one fresh identifier. Singular form of
 Generates a list of @scheme[n] fresh identifiers.
 
 }
+
+@defform[(with-catching-disappeared-uses body-expr)]{
+
+Evaluates the @scheme[body-expr], catching identifiers looked up using
+@scheme[syntax-local-value/catch]. Returns two values: the result of
+@scheme[body-expr] and the list of caught identifiers.
+
+}
+
+@defform[(with-disappeared-uses stx-expr)]{
+
+Evaluates the @scheme[stx-expr], catching identifiers looked up using
+@scheme[syntax-local-value/catch]. Adds the caught identifiers to the
+@scheme['disappeared-uses] syntax property of the resulting syntax
+object.
+
+}
+
+@defproc[(syntax-local-value/catch [id identifier?] [predicate (-> any/c boolean?)])
+         any/c]{
+
+Looks up @scheme[id] in the syntactic environment (as
+@scheme[syntax-local-value]). If the lookup succeeds and returns a
+value satisfying the predicate, the value is returned and @scheme[id]
+is recorded (``caught'') as a disappeared use. If the lookup fails or
+if the value does not satisfy the predicate, @scheme[#f] is returned
+and the identifier is not recorded as a disappeared use.
+
+}
+
 
 @defproc[(chunk-kw-seq [stx syntax?] 
                        [table

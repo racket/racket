@@ -127,7 +127,7 @@
   ([(listof sattr?)] [exact-integer? (or/c symbol? false/c)] . ->* . (listof sattr?))]
  [intersect-sattrs ((listof sattr?) (listof sattr?) . -> . (listof sattr?))]
  [flatten-attrs* any/c]
- [append-attrs ((listof (listof iattr?)) syntax? . -> . (listof iattr?))]
+ [append-attrs ((listof (listof iattr?)) . -> . (listof iattr?))]
  [lookup-sattr (symbol? (listof sattr?) . -> . (or/c sattr? false/c))]
  [lookup-iattr (identifier? (listof iattr?) . -> . (or/c iattr? false/c))]
  )
@@ -163,10 +163,10 @@
     (if (allow-unbound-stxclasses)
         (make-empty-sc id)
         (wrong-syntax id "not defined as syntax class")))
-  (let ([sc (syntax-local-value id no-good)])
-    (unless (or (sc? sc) (ssc? sc))
-      (no-good))
-    sc))
+  (let ([sc (syntax-local-value/catch id sc?)])
+    (if (sc? sc)
+        sc
+        (no-good))))
 
 (define (split-id/get-stxclass id0 decls)
   (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
@@ -233,6 +233,7 @@
 
 ;; reorder-iattrs : (listof SAttr) (listof IAttr) env -> (listof IAttr)
 ;; Reorders iattrs (and restricts) based on relsattrs
+;; If a relsattr is not found, or if depth or contents mismatches, raises error.
 (define (reorder-iattrs relsattrs iattrs remap)
   (let ([ht (make-hasheq)])
     (for-each (lambda (iattr)
@@ -244,12 +245,16 @@
         ['() null]
         [(cons (struct attr (name depth inner)) rest)
          (let ([iattr (hash-ref ht name #f)])
-           (if iattr
-               (cons (make attr (attr-name iattr)
-                                (attr-depth iattr)
-                                (intersect-sattrs inner (attr-inner iattr)))
-                     (loop rest))
-               (loop rest)))]))))
+           (unless iattr
+             (wrong-syntax #f "required attribute is not defined: ~s" name))
+           (unless (= (attr-depth iattr) depth)
+             (wrong-syntax (attr-name iattr)
+                           "attribute has wrong depth (expected ~s, found ~s)"
+                           depth (attr-depth iattr)))
+           (cons (make attr (attr-name iattr)
+                       (attr-depth iattr)
+                       (intersect-sattrs inner (attr-inner iattr)))
+                 (loop rest)))]))))
 
 ;; restrict-iattrs : (listof SAttr) (listof IAttr) env -> (listof IAttr)
 ;; Preserves order of iattrs
@@ -309,14 +314,13 @@
                (flatten-attrs* nested (+ depth depth-delta) prefixed-name ctx)
                (flatten-attrs* rest depth-delta prefix ctx)))]))
 
-
-;; append-attrs : (listof (listof IAttr)) stx -> (listof IAttr)
-(define (append-attrs attrss stx)
+;; append-attrs : (listof (listof IAttr)) -> (listof IAttr)
+(define (append-attrs attrss)
   (let* ([all (apply append attrss)]
          [names (map attr-name all)]
          [dup (check-duplicate-identifier names)])
     (when dup
-      (raise-syntax-error 'syntax-class "duplicate pattern variable" stx dup))
+      (wrong-syntax dup "duplicate pattern variable"))
     all))
 
 (define (lookup-sattr name sattrs)

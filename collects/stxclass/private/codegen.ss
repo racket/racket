@@ -86,15 +86,16 @@
 (define (rhs-pattern->pks rhs relsattrs main-var)
   (match rhs
     [(struct rhs:pattern (orig-stx attrs pattern decls remap sides))
-     (list (make-pk (list pattern)
-                    (expr:convert-sides sides
-                                        (pattern-attrs pattern)
-                                        main-var
-                                        (lambda (iattrs)
-                                          (expr:sc iattrs
-                                                   relsattrs
-                                                   remap
-                                                   main-var)))))]))
+     (parameterize ((current-syntax-context orig-stx))
+       (list (make-pk (list pattern)
+                      (expr:convert-sides sides
+                                          (pattern-attrs pattern)
+                                          main-var
+                                          (lambda (iattrs)
+                                            (expr:sc iattrs
+                                                     relsattrs
+                                                     remap
+                                                     main-var))))))]))
 
 ;; expr:convert-sides : (listof SideClause) (listof IAttr) id stx -> stx
 (define (expr:convert-sides sides iattrs main-var k)
