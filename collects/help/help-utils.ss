@@ -33,17 +33,19 @@
 (define (find-help id)
   (let* ([lb (identifier-label-binding id)]
          [b (and (not lb) (identifier-binding id))]
+         [b (or lb b)]
+         [b (and (not (eq? 'lexical b)) b)]
          [xref (load-collections-xref
                 (lambda ()
                   (printf "Loading help index...\n")))])
-    (if (or lb b)
-      (let ([tag (xref-binding->definition-tag xref (or lb b) (if lb #f 0))])
+    (if b
+      (let ([tag (xref-binding->definition-tag xref b (if lb #f 0))])
         (if tag
           (go-to-tag xref tag)
           (error 'help
                  "no documentation found for: ~e provided by: ~a"
                  (syntax-e id)
-                 (module-path-index-resolve (caddr (or lb b))))))
+                 (module-path-index-resolve (caddr b)))))
       (search-for-exports xref (syntax-e id)))))
 
 (define (search-for-exports xref sym)
