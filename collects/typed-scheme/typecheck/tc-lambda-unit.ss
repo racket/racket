@@ -44,7 +44,7 @@
   (let* ([arg-len (length arg-list)]
          [tys-len (length arg-tys)]
          [arg-types (if (andmap type-annotation arg-list)
-                        (map get-type arg-list)
+                        (get-types arg-list #:default Univ)
                         (cond
                           [(= arg-len tys-len) arg-tys]
                           [(< arg-len tys-len) (take arg-tys arg-len)]
@@ -79,14 +79,14 @@
       [(dotted? rest)
        =>
        (lambda (b)
-         (let ([dty (get-type rest)])
+         (let ([dty (get-type rest #:default Univ)])
            (with-dotted-env/extend
             rest dty b
             (check-body))))]
       [else
        (let ([rest-type (cond
                           [rest-ty rest-ty]
-                          [(type-annotation rest) (get-type rest)]
+                          [(type-annotation rest) (get-type rest #:default Univ)]
                           [(< arg-len tys-len) (list-ref arg-tys arg-len)]
                           [else (Un)])])
          (with-lexical-env/extend
@@ -108,7 +108,7 @@
   (syntax-case args ()
     [(args ...)       
      (let* ([arg-list (syntax->list #'(args ...))]
-            [arg-types (map get-type arg-list)])
+            [arg-types (get-types arg-list #:default Univ)])
        #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
        (with-lexical-env/extend 
         arg-list arg-types
@@ -124,7 +124,7 @@
           [t (int-err "bad match - not a tc-result: ~a no ret-ty" t)])))]
     [(args ... . rest)
      (let* ([arg-list (syntax->list #'(args ...))]
-            [arg-types (map get-type arg-list)])
+            [arg-types (get-types arg-list #:default Univ)])
        #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) (cons #'rest arg-list))
        (cond 
          [(dotted? #'rest)
@@ -138,7 +138,7 @@
                                              (extend-env (list bound) 
                                                          (list (make-DottedBoth (make-F bound)))
                                                          (current-tvars))])
-                               (get-type #'rest))])
+                               (get-type #'rest #:default Univ))])
               (with-lexical-env/extend 
                arg-list
                arg-types
@@ -148,7 +148,7 @@
                  (match-let ([(tc-result: t thn els) (tc-exprs (syntax->list body))])
                    (make-arr-dots arg-types t rest-type bound))))))]
          [else
-          (let ([rest-type (get-type #'rest)])
+          (let ([rest-type (get-type #'rest #:default Univ)])
             (with-lexical-env/extend 
              (cons #'rest arg-list) 
              (cons (make-Listof rest-type) arg-types)

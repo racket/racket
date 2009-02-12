@@ -9,6 +9,7 @@
          scheme/match mzlib/trace)
 (provide type-annotation
          get-type
+         get-types
          get-type/infer
          type-label-symbol
          type-ascrip-symbol
@@ -71,16 +72,22 @@
   (printf/log "Unannotated Variable: ~a ~a~n" (syntax-e stx) ty))
 
 ;; get the type annotation of this identifier, otherwise error
-;; identifier -> Type
-(define (get-type stx)
+;; if #:default is provided, return that instead of error
+;; identifier #:default Type -> Type
+(define (get-type stx #:default [default #f])
   (parameterize
       ([current-orig-stx stx])
     (cond
       [(type-annotation stx #:infer #t)]
+      [default default]
       [(not (syntax-original? stx))
        (tc-error "untyped var: ~a" (syntax-e stx))]
       [else
        (tc-error "no type information on variable ~a" (syntax-e stx))])))
+
+;; Listof[identifer] #:default Type -> Listof[Type]
+(define (get-types stxs #:default [default #f])
+  (map (lambda (e) (get-type e #:default default)) stxs))
 
 ;; get the type annotations on this list of identifiers
 ;; if not all identifiers have annotations, return the supplied inferred type
