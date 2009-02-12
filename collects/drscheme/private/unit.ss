@@ -1433,11 +1433,11 @@ module browser threading seems wrong.
                                    (not (member logger-panel l))))
                           ;; if things are already up to date, only update the logger text
                           (when show?
-                            (update-logger-window))
+                            (update-logger-window #f))
                           l]
                          [show? 
                           (new-logger-text)
-                          (update-logger-window)
+                          (update-logger-window #f)
                           (send logger-menu-item set-label (string-constant hide-log))
                           (append (remq logger-panel l) (list logger-panel))]
                          [else
@@ -1453,11 +1453,11 @@ module browser threading seems wrong.
                             [parent logger-panel]
                             [callback
                              (λ (tp evt)
-                               (update-logger-window))]))
+                               (update-logger-window #f))]))
                  (new-logger-text)
                  (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text])
                  (send logger-menu-item set-label (string-constant hide-log))
-                 (update-logger-window)
+                 (update-logger-window #f)
                  (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])
             (with-handlers ([exn:fail? void])
               (send logger-parent-panel set-percentages (list p (- 1 p))))
@@ -1472,27 +1472,66 @@ module browser threading seems wrong.
           (set! logger-gui-text (new (text:hide-caret/selection-mixin text:basic%)))
           (send logger-gui-text lock #t))
         
-        (define/public (update-logger-window)
+        (define/public (update-logger-window command)
           (when logger-gui-text 
-            (send logger-gui-text begin-edit-sequence)
-            (send logger-gui-text lock #f)
-            (send logger-gui-text erase)
-            (let ([level (case (send logger-gui-tab-panel get-selection)
-                           [(0) #f]
-                           [(1) 'fatal]
-                           [(2) 'error]
-                           [(3) 'warning]
-                           [(4) 'info]
-                           [(5) 'debug])])
-              (for-each
-               (λ (x)
-                 (when (or (not level)
-                           (eq? level (vector-ref x 0)))
-                   (send logger-gui-text insert "\n" 0 0)
-                   (send logger-gui-text insert (vector-ref x 1) 0 0)))
-               (send interactions-text get-logger-messages)))
-            (send logger-gui-text lock #t)
-            (send logger-gui-text end-edit-sequence)))
+            (let ([admin (send logger-gui-text get-admin)]
+                  [canvas (send logger-gui-text get-canvas)])
+              (when (and canvas admin)
+                (let ([logger-messages (send interactions-text get-logger-messages)]
+                      [level (case (send logger-gui-tab-panel get-selection)
+                               [(0) #f]
+                               [(1) 'fatal]
+                               [(2) 'error]
+                               [(3) 'warning]
+                               [(4) 'info]
+                               [(5) 'debug])])
+                  (cond
+                    [(and (pair? command)
+                          (pair? logger-messages)
+                          ;; just flush and redraw everything if there is one (or zero) logger messages
+                          (pair? (cdr logger-messages)))
+                     (let ([msg (cdr command)])
+                       (when (or (not level) 
+                                 (eq? (vector-ref msg 0) level))
+                         (send logger-gui-text begin-edit-sequence)
+                         (send logger-gui-text lock #f)
+                         (case (car command)
+                           [(add-line) (void)]
+                           [(clear-last-and-add-line)
+                            (send logger-gui-text delete
+                                  0
+                                  (send logger-gui-text paragraph-start-position 1))]) 
+                         (send logger-gui-text insert
+                               "\n"
+                               (send logger-gui-text last-position)
+                               (send logger-gui-text last-position))
+                         (send logger-gui-text insert 
+                               (vector-ref msg 1) 
+                               (send logger-gui-text last-position)
+                               (send logger-gui-text last-position))
+                         (send logger-gui-text end-edit-sequence)
+                         (send logger-gui-text lock #t)))]
+                    [else
+                     (send logger-gui-text begin-edit-sequence)
+                     (send logger-gui-text lock #f)
+                     (send logger-gui-text erase)
+                     
+                     (let ([insert-one
+                            (λ (x newline?)
+                              (when (or (not level)
+                                        (eq? level (vector-ref x 0)))
+                                (when newline? (send logger-gui-text insert "\n" 0 0))
+                                (send logger-gui-text insert (vector-ref x 1) 0 0)))]) 
+                       
+                       (unless (null? logger-messages)
+                         ;; skip the last newline in the buffer
+                         (insert-one (car logger-messages) #f)
+                         (for-each
+                          (λ (x) (insert-one x #t))
+                          (cdr (send interactions-text get-logger-messages)))))
+                       
+                     (send logger-gui-text lock #t)
+                     (send logger-gui-text end-edit-sequence)]))))))
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;;
@@ -1527,7 +1566,6 @@ module browser threading seems wrong.
                             [label (string-constant show-log)]
                             [callback (λ (a b) (send current-tab toggle-log))]))
                  (update-logger-button-label)
-                 ;; needs to become that little x thingy that is in the search/replace bar
                  (new close-icon%
                       [parent planet-status-panel]
                       [callback (λ () 

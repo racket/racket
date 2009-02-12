@@ -1297,11 +1297,11 @@ TODO
             ;; register drscheme with the planet-terse-register for the user's namespace
             ;; must be called after 'initialize-parameters' is called (since it initializes
             ;; the user's namespace)
+            (planet-terse-set-key (gensym))
             (planet-terse-register
              (lambda (tag package)
                (parameterize ([current-eventspace drscheme:init:system-eventspace])
-                 (queue-callback (λ () (new-planet-info tag package)))))
-             (get-user-namespace))
+                 (queue-callback (λ () (new-planet-info tag package))))))
             
             ;; disable breaks until an evaluation actually occurs
             (send context set-breakables #f #f)
@@ -1438,33 +1438,35 @@ TODO
       (define logger-messages '())
       (define/public (get-logger-messages) logger-messages)
       (define/private (new-log-message vec)
-        (let ([level (vector-ref vec 0)]
-              [str (cond
-                     [(<= (string-length (vector-ref vec 1)) log-entry-max-size)
-                      (vector-ref vec 1)]
-                     [else
-                      (substring (vector-ref vec 1) 0 log-entry-max-size)])])
+        (let* ([level (vector-ref vec 0)]
+               [str (cond
+                      [(<= (string-length (vector-ref vec 1)) log-entry-max-size)
+                       (vector-ref vec 1)]
+                      [else
+                       (substring (vector-ref vec 1) 0 log-entry-max-size)])]
+               [msg (vector level str)])
           (cond
             [(< (length logger-messages) log-max-size)
-             (set! logger-messages (cons (vector level str) logger-messages))]
+             (set! logger-messages (cons msg logger-messages))
+             (update-logger-gui (cons 'add-line msg))]
             [else
              (set! logger-messages
                    (cons
-                    (vector level str)
+                    msg
                     (let loop ([msgs logger-messages])
                       (cond
                         [(null? (cdr msgs)) null]
-                        [else (cons (car msgs) (loop (cdr msgs)))]))))])
-          (update-logger-gui)))
+                        [else (cons (car msgs) (loop (cdr msgs)))]))))
+             (update-logger-gui (cons 'clear-last-line-and-add-line msg))])))
       
       (define/private (reset-logger-messages) 
         (set! logger-messages '())
-        (update-logger-gui))
+        (update-logger-gui #f))
 
-      (define/private (update-logger-gui)
+      (define/private (update-logger-gui command)
         (let ([frame (get-frame)])
           (when frame
-            (send frame update-logger-window))))
+            (send frame update-logger-window command))))
                         
       (define/private (new-planet-info tag package) 
         (let ([frame (get-frame)])

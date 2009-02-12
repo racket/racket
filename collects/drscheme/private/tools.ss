@@ -117,7 +117,7 @@
 (define candidate-tool?
   (cond
     [(getenv "PLTNOTOOLS")
-     (printf "PLTNOTOOLS: skipping tools\n")
+     (printf "PLTNOTOOLS: skipping tools\n") (flush-output)
      (lambda (it) #f)]
     [(getenv "PLTONLYTOOL") =>
                             (lambda (onlys)
@@ -130,7 +130,7 @@
                                                       (let-values ([(base name dir) (split-path x)])
                                                         (memq (string->symbol (path->string name))
                                                               allowed)))])
-                                (printf "PLTONLYTOOL: only loading ~s\n" allowed)
+                                (printf "PLTONLYTOOL: only loading ~s\n" allowed) (flush-output)
                                 (lambda (it)
                                   (directory-ok?
                                    (directory-record-path
