@@ -592,4 +592,10 @@
       (unit/c (import) (export))
       (unit (import sig1) (export) (+ x 1)))
     bad-import@))
-            
+
+(test-runtime-error exn:fail:contract? "value is not a unit"
+  (let ()
+    (define/contract not-a-unit
+      (unit/c (import) (export))
+      3)
+    not-a-unit))
