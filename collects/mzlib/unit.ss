@@ -602,7 +602,7 @@
                   (raise-stx-err "cannot export syntax from a unit" name))
                 (set-var-info-exported?! v loc)
                 (when (pair? (syntax-e ctc))
-                  (set-var-info-ctc! v (cdr (syntax-e ctc))))))
+                  (set-var-info-ctc! v (localify (cdr (syntax-e ctc)) def-ctx)))))
             (syntax->list (localify #'evars def-ctx))
             (syntax->list #'elocs)
             (syntax->list #'ectcs))

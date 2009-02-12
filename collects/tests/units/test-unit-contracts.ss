@@ -599,3 +599,29 @@
       (unit/c (import) (export))
       3)
     not-a-unit))
+
+;; Adding a test to make sure that contracts can refer
+;; to other parts of the signature.
+
+(module m3 scheme
+  (define-signature toy-factory^
+    ((contracted
+      [build-toys (-> integer? (listof toy?))]
+      [repaint    (-> toy? symbol? toy?)]
+      [toy?       (-> any/c boolean?)]
+      [toy-color  (-> toy? symbol?)])))
+
+  (define-unit simple-factory@
+    (import)
+    (export toy-factory^)
+
+    (printf "Factory started.\n")
+
+    (define-struct toy (color) #:transparent)
+
+    (define (build-toys n)
+      (for/list ([i (in-range n)])
+        (make-toy 'blue)))
+
+    (define (repaint t col)
+      (make-toy col))))
