@@ -16,16 +16,26 @@
                             line))]))
 
 (define check-expect-count 0)
+(define check-expects '())
+
 (define (check-expect/proc actual-thunk expected-thunk line)
-  (set! check-expect-count (+ check-expect-count 1))
-  (let ([actual (actual-thunk)]
-        [expected (expected-thunk)])
-    (unless (equal? actual expected)
-      (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
-             check-expect-count
-             line
-             actual
-             expected))))
+  (set! check-expects
+        (cons
+         (λ ()
+           (set! check-expect-count (+ check-expect-count 1))
+           (let ([actual (actual-thunk)]
+                 [expected (expected-thunk)])
+             (unless (equal? actual expected)
+               (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
+                      check-expect-count
+                      line
+                      actual
+                      expected))))
+         check-expects)))
+
+(define (run-check-expects)
+  (for-each (λ (t) (t)) 
+            (reverse check-expects)))
 
 (define (make-immutable-hash/list-init [init '()])
   (make-immutable-hash
@@ -45,7 +55,7 @@
 
 ;; a world is:
 ;;  (make-world board posn state number mouse posn-or-false boolean)
-(define-struct world (board cat state size mouse-posn h-down?))
+(define-struct world (board cat state size mouse-posn h-down?) #:transparent)
 
 ;; a state is either:
 ;;   - 'playing
@@ -59,7 +69,7 @@
 ;; (make-cell (make-posn int[0-board-size]
 ;;                       int[0-board-size])
 ;;            boolean)
-(define-struct cell (p blocked?))
+(define-struct cell (p blocked?) #:transparent)
 
 
 ;                                                     
@@ -87,14 +97,14 @@
 
 ;; a dist-cell is
 ;;  - (make-dist-cell posn (number or '∞))
-(define-struct dist-cell (p n))
+(define-struct dist-cell (p n) #:transparent)
 
 
 ;; build-bfs-table : world (or/c 'boundary posn) -> distance-table
 (define (build-bfs-table world init-point)
   (local [;; posn : posn
           ;; dist : number
-          (define-struct queue-ent (posn dist))
+          (define-struct queue-ent (posn dist) #:transparent)
           
           (define neighbors/w (neighbors world))
           
@@ -123,7 +133,8 @@
 ;; same-sets? : (listof X) (listof X) -> boolean
 (define (same-sets? l1 l2)
   (and (andmap (lambda (e1) (member e1 l2)) l1)
-       (andmap (lambda (e2) (member e2 l1)) l2)))
+       (andmap (lambda (e2) (member e2 l1)) l2)
+       #t))
 
 (check-expect (same-sets? (list) (list)) true)
 (check-expect (same-sets? (list) (list 1)) false)
@@ -1656,4 +1667,6 @@
      (on-redraw render-world)
      (on-key-event change)
      (on-mouse-event clack))))
+
+(run-check-expects)
 ]
