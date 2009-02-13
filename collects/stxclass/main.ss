@@ -7,6 +7,7 @@
          define-basic-syntax-class
          define-basic-syntax-class*
          pattern
+         basic-syntax-class
 
          syntax-parse
          syntax-parser
@@ -16,4 +17,7 @@
          current-expression
          current-macro-name
 
-         (all-from-out "private/lib.ss"))
+         (all-from-out "private/lib.ss")
+
+         (rename-out [parse-sc syntax-class-parse]
+                     [attrs-of syntax-class-attributes]))

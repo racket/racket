@@ -25,6 +25,7 @@
          with-patterns
 
          pattern
+         basic-syntax-class
          ...*
 
          (struct-out failed)
@@ -118,6 +119,7 @@
      (define-syntax-class (name arg ...)
        #:attributes ([attr-name attr-depth] ...)
        (basic-syntax-class
+        #:transforming
         (let ([name parser-expr]) name)))]))
 
 (define-syntax (rhs->parser+description stx)
@@ -137,23 +139,25 @@
 (define-syntax (parse-sc stx)
   (syntax-case stx ()
     [(parse s x arg ...)
-     (let* ([stxclass (get-stxclass #'s)]
-            [attrs (flatten-sattrs (sc-attrs stxclass))])
-       (with-syntax ([parser (sc-parser-name stxclass)]
-                     [(name ...) (map attr-name attrs)]
-                     [(depth ...) (map attr-depth attrs)])
-         #'(let ([raw (parser x arg ...)])
-             (if (ok? raw)
-                 (map vector '(name ...) '(depth ...) (cdr raw))
-                 raw))))]))
+     (parameterize ((current-syntax-context stx))
+       (let* ([stxclass (get-stxclass #'s)]
+              [attrs (flatten-sattrs (sc-attrs stxclass))])
+         (with-syntax ([parser (sc-parser-name stxclass)]
+                       [(name ...) (map attr-name attrs)]
+                       [(depth ...) (map attr-depth attrs)])
+           #'(let ([raw (parser x arg ...)])
+               (if (ok? raw)
+                   (map vector '(name ...) '(depth ...) (cdr raw))
+                   raw)))))]))
 
 (define-syntax (attrs-of stx)
   (syntax-case stx ()
     [(attrs-of s)
-     (let ([attrs (flatten-sattrs (sc-attrs (get-stxclass #'s)))])
-       (with-syntax ([(a ...) (map attr-name attrs)]
-                     [(depth ...) (map attr-depth attrs)])
-         #'(quote ((a depth) ...))))]))
+     (parameterize ((current-syntax-context stx))
+       (let ([attrs (flatten-sattrs (sc-attrs (get-stxclass #'s)))])
+         (with-syntax ([(a ...) (map attr-name attrs)]
+                       [(depth ...) (map attr-depth attrs)])
+           #'(quote ((a depth) ...)))))]))
 
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()
@@ -186,7 +190,7 @@
             (let ([fail (syntax-patterns-fail x)])
               (parameterize ((current-expression (or (current-expression) x)))
                 #,(parse:clauses #'clauses #'x #'fail))))))]))
-  
+
 (define-syntax with-patterns
   (syntax-rules ()
     [(with-patterns () . b)

@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (for-template "runtime.ss")
-         (for-template scheme/base)
+(require (for-template scheme/base)
+         (for-template "runtime.ss")
          scheme/contract
          scheme/match
          syntax/boundmap
@@ -59,14 +59,29 @@
   (define transparent? (and trans0 #t))
   (define attributes (and attrs0 (caddr attrs0)))
 
-  (define (parse-rhs*-basic rest)
-    (syntax-case rest (basic-syntax-class)
-      [((basic-syntax-class parser-expr))
-       (make rhs:basic ctx
-             (or attributes null)
-             transparent?
-             description
-             #'parser-expr)]))
+  (define (parse-rhs*-basic rhss)
+    (syntax-case rhss (basic-syntax-class)
+      [((basic-syntax-class . rest))
+       (let-values ([(basic-chunks rest)
+                     (chunk-kw-seq/no-dups #'rest basic-rhs-directive-table
+                                           #:context (stx-car rhss))])
+         (syntax-case rest ()
+           [(parser-expr)
+            (make rhs:basic ctx
+                  (or attributes null)
+                  transparent?
+                  description
+                  (if (assq '#:transforming basic-chunks)
+                      #'parser-expr
+                      #`(let ([parser parser-expr])
+                          (lambda (x . args)
+                            (let ([result (apply parser x args)])
+                              (if (ok? result)
+                                  (cons x result)
+                                  result))))))]
+           [_
+            (wrong-syntax (stx-car rhss)
+                          "expected parser expression")]))]))
 
   (define (parse-rhs*-patterns rest)
     (define (gather-patterns stx)
@@ -359,3 +374,7 @@
         (list '#:description values)
         (list '#:transparent)
         (list '#:attributes check-attr-arity-list)))
+
+;; basic-rhs-directive-table
+(define basic-rhs-directive-table
+  (list (list '#:transforming)))

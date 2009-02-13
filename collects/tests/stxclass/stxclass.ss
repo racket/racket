@@ -270,3 +270,29 @@
   (pattern f:frob))
 (define-syntax-class frob
   (pattern x:id))
+
+(syntax-parse #'1
+  [x:nat
+   (define (check d)
+     (unless (positive? d)
+       (error "not positive")))
+   (check #'x.datum)
+   'ok])
+
+
+(define-syntax-class Opaque
+  (pattern (a:id n:nat)))
+(define-syntax-class Transparent
+  #:transparent
+  (pattern (a:id n:nat)))
+
+(with-handlers ([exn? exn-message])
+  (syntax-parse #'(0 1) [_:Opaque 'ok]))
+(with-handlers ([exn? exn-message])
+  (syntax-parse #'(0 1) [_:Transparent 'ok]))
+
+#;
+(syntax-parse #'1 
+  [_:Transparent 'ok]
+  [(a b) 'ok])
+

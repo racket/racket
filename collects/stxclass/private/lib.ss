@@ -53,16 +53,6 @@
   (pattern :define-values-form)
   (pattern :define-syntaxes-form))
 
-(define-basic-syntax-class static
-  ([value 0])
-  (lambda (x)
-    (if (identifier? x)
-        (let/ec escape
-          (define (bad) (escape #f))
-          (let ([value (syntax-local-value x bad)])
-            (list (syntax-e x) value)))
-        #f)))
-
 (define-syntax-class (static-of name pred)
   #:description name
   #:attributes ([value 0])
@@ -73,8 +63,14 @@
        (if (identifier? x)
            (let ([value (syntax-local-value x bad)])
              (unless (pred value) (bad))
-             (list x value))
+             (list value))
            (bad))))))
+
+(define-syntax-class static
+  #:attributes (value)
+  (pattern x
+           #:declare x (static-of "static" (lambda _ #t))
+           #:with value #'x.value))
 
 (define-basic-syntax-class struct-name
   ([descriptor 0]

@@ -7,6 +7,7 @@
          (for-syntax "rep-data.ss")
          (for-syntax "../util/error.ss"))
 (provide pattern
+         basic-syntax-class
          ...*
 
          with-enclosing-fail
@@ -35,6 +36,7 @@
       (raise-syntax-error #f "keyword used out of context" stx))))
 
 (define-keyword pattern)
+(define-keyword basic-syntax-class)
 (define-keyword ...*)
 (define-keyword ...**)
 

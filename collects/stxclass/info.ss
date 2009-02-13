@@ -1,3 +1,4 @@
 #lang setup/infotab
 
-(define scribblings '(("stxclass.scrbl")))
+(define scribblings
+  '(("scribblings/stxclass.scrbl" (multi-page) (experimental))))
