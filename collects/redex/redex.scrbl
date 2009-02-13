@@ -324,7 +324,7 @@ This returns a bindings structure (see below) that
 binds the pattern variables in this match.
 }
 
-@defstruct[bind ([name symbol?] [exp any?])]{
+@defstruct[bind ([name symbol?] [exp any/c])]{
 
 Instances of this struct are returned by @scheme[redex-match].
 Each @scheme[bind] associates a name with an s-expression from the
@@ -509,7 +509,7 @@ are compiled in an effort to speed up matching. Using the procedural
 result multiple times to avoid compiling the patterns multiple times.
 }
 
-@defproc[(plug [context any?] [expression any?]) any]{
+@defproc[(plug [context any/c] [expression any/c]) any]{
 
 The first argument to this function is an sexpression to
 plug into. The second argument is the sexpression to replace
@@ -517,7 +517,7 @@ in the first argument. It returns the replaced term. This is
 also used when a @scheme[term] sub-expression contains @tt{in-hole}.
 }
 
-@defproc[(variable-not-in [t any?] [var symbol?]) symbol?]{
+@defproc[(variable-not-in [t any/c] [var symbol?]) symbol?]{
 
 This helper function accepts an sexpression and a
 variable. It returns a variable not in the sexpression with
@@ -525,7 +525,7 @@ a prefix the same as the second argument.
 
 }
 
-@defproc[(variables-not-in [t any?] [vars (listof symbol?)]) (listof symbol?)]{
+@defproc[(variables-not-in [t any/c] [vars (listof symbol?)]) (listof symbol?)]{
 
 This function, like variable-not-in, makes variables that do
 no occur in its first argument, but it returns a list of
@@ -799,7 +799,7 @@ returns the closure of the reduction in that context.
   @scheme[#f] otherwise.
 }
 
-@defproc[(apply-reduction-relation [r reduction-relation?] [t any?]) (listof any?)]{
+@defproc[(apply-reduction-relation [r reduction-relation?] [t any/c]) (listof any/c)]{
 
 This accepts reduction relation, a term, and returns a
 list of terms that the term reduces to.
@@ -816,8 +816,8 @@ names of the reductions that were used.
 
 @defproc[(apply-reduction-relation*
           [r reduction-relation?]
-          [t any?])
-         (listof (listof any?))]{
+          [t any/c])
+         (listof any/c)]{
 
 The function @scheme[apply-reduction-relation*] accepts a reduction relation and a
 term. Starting from @scheme[t], it follows every reduction
