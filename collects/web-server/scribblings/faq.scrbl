@@ -73,7 +73,7 @@ Second, if you want to make your own Scheme start-up script, you can write:
 @(require (for-label mzlib/os))
 @schemeblock[
 (require mzlib/os)
-(with-output-to-file _pid-file (lambda () (write (getpid))))
+(with-output-to-file _your-pid-file (lambda () (write (getpid))))
 (_start-server)
 ]
 

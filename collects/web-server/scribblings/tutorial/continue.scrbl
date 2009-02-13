@@ -1153,7 +1153,7 @@ Second, add the following at the bottom of your application:
                #:listen-ip #f
                #:port 8000 
                #:extra-files-paths
-               (list (build-path _path "htdocs"))
+               (list (build-path _your-path-here "htdocs"))
                #:servlet-path
                "/servlets/APPLICATION.ss")
 ]
@@ -1162,7 +1162,7 @@ You can change the value of the @scheme[#:port] parameter to use a different por
 
 @scheme[#:listen-ip] is set to @scheme[#f] so that the server will listen on @emph{all} available IPs.
 
-You should change @scheme[_path] to be the path to the parent of your @scheme[htdocs] directory.
+You should change @scheme[_your-path-here] to be the path to the parent of your @scheme[htdocs] directory.
 
 You should change @scheme["APPLICATION.ss"] to be the name of your application.
 
