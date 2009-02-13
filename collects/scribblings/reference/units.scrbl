@@ -648,23 +648,7 @@ superset of the export signatures listed in the unit contract.  Any
 identifier which is not listed for a given signature is left alone.
 Variables used in a given @scheme[ctc] expression first refer to other
 variables in the same signature, and then to the context of the 
-@scheme[unit/c] expression.
-
-Here is an example use of @scheme[unit/c]:
-   
-@schememod[scheme/base
-(require scheme/unit)
-(define-signature odd^  (odd?))
-(define-signature even^ (even?))
-(define-unit E@
-  (import odd^)
-  (export even^)
-  (define (even? n)
-    (if (zero? n) #t (odd? (sub1 n)))))
-(provide/contract 
- [E@ (unit/c (import odd^  [odd?  (-> number? boolean?)])
-             (export even^ [even? (-> number? boolean?)]))])
-]}
+@scheme[unit/c] expression.}
 
 @; ------------------------------------------------------------------------
 
