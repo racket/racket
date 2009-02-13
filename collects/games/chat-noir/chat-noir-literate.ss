@@ -1,12 +1,36 @@
 #reader "literate-reader.ss"
 @chunk[<main>
+       <everything-else>]
+
+@chunk[<everything-else>
 
 #;'()
 
 (require htdp/world lang/posn)
-(define-syntax (check-expect stx) #'(void))
+(define-syntax (check-expect stx) 
+  (syntax-case stx ()
+    [(_ actual expected)
+     (with-syntax ([line (syntax-line stx)])
+       #'(check-expect/proc (λ () actual)
+                            (λ () expected)
+                            line))]))
 
-(require "hash.ss")
+(define check-expect-count 0)
+(define (check-expect/proc actual-thunk expected-thunk line)
+  (set! check-expect-count (+ check-expect-count 1))
+  (let ([actual (actual-thunk)]
+        [expected (expected-thunk)])
+    (unless (equal? actual expected)
+      (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
+             check-expect-count
+             line
+             actual
+             expected))))
+
+(define (make-immutable-hash/list-init [init '()])
+  (make-immutable-hash
+   (map (λ (x) (cons (car x) (cadr x)))
+        init)))
 
 ;; constants
 (define circle-radius 20)
