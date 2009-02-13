@@ -377,7 +377,9 @@
            [(and (pair? (syntax-e c))
                  (memq (syntax-e (car (syntax-e c))) 
                        '(quote quasiquote unquote unquote-splicing
-                               quasisyntax syntax unsyntax unsyntax-splicing)))
+                               quasisyntax syntax unsyntax unsyntax-splicing))
+                 (let ([v (syntax->list c)])
+                   (and v (= 2 (length v)))))
             (advance c init-line!)
             (let-values ([(str quote-delta)
                           (case (syntax-e (car (syntax-e c)))
@@ -464,8 +466,10 @@
                 (cond
                  [(and (syntax? l)
                        (pair? (syntax-e l))
-                       (not (memq (syntax-e (car (syntax-e l)))
-                                  '(quote unquote syntax unsyntax quasiquote quasiunsyntax))))
+                       (not (and (memq (syntax-e (car (syntax-e l)))
+                                       '(quote unquote syntax unsyntax quasiquote quasiunsyntax))
+                                 (let ([v (syntax->list l)])
+                                   (and v (= 2 (length v)))))))
                   (lloop (syntax-e l))]
                  [(or (null? l)
                       (and (syntax? l)

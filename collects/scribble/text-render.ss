@@ -6,7 +6,8 @@
 
   (define (render-mixin %)
     (class %
-      (init [style-file #f])
+      (init [style-file #f]
+            [style-extra-files ()])
       
       (define/override (get-substitutions)
         '((#rx"---" "\U2014")
@@ -62,10 +63,10 @@
               null
               (apply
                append
-               (map (lambda (d) (render-flow d part ht #f)) (car flowss))
+               (map (lambda (d) (unless (eq? d 'cont) (render-flow d part ht #f))) (car flowss))
                (map (lambda (flows)
                       (newline)
-                      (map (lambda (d) (render-flow d part ht #f)) flows))
+                      (map (lambda (d) (unless (eq? d 'cont) (render-flow d part ht #f))) flows))
                     (cdr flowss))))))
 
       (define/override (render-itemization i part ht)
@@ -94,6 +95,9 @@
                      [(rang) "<"]
                      [(rarr) "->"]
                      [(nbsp) " "]
+                     [(prime) "'"]
+                     [(alpha) "\u03B1"]
+                     [(infin) "\u221E"]
                      [else (error 'text-render "unknown element symbol: ~e" i)]))]
          [(string? i) (display i)]
          [else (write i)])
