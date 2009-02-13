@@ -1,10 +1,36 @@
 #reader "literate-reader.ss"
 @chunk[<main>
+       <init-junk>
+       <data-definitions>
        <everything-else>]
 
-@chunk[<everything-else>
+The first main data definition for Chat Noir is the state of the world.
 
-#;'()
+@chunk[<data-definitions>
+(define-struct world (board cat state size mouse-posn h-down?) #:transparent)
+]
+
+;; a world is:
+;;  (make-world board posn state number mouse posn-or-false boolean)
+
+
+;; a state is either:
+;;   - 'playing
+;;   - 'cat-won
+;;   - 'cat-lost
+
+;; a board is
+;;  (listof cell)
+
+;; a cell is
+;; (make-cell (make-posn int[0-board-size]
+;;                       int[0-board-size])
+;;            boolean)
+@chunk[<data-definitions>
+       (define-struct cell (p blocked?) #:transparent)]
+
+
+@chunk[<init-junk>
 
 (require htdp/world lang/posn)
 (define-syntax (check-expect stx) 
@@ -40,7 +66,12 @@
 (define (make-immutable-hash/list-init [init '()])
   (make-immutable-hash
    (map (λ (x) (cons (car x) (cadr x)))
-        init)))
+        init)))]
+
+@chunk[<everything-else>
+
+#;'()
+
 
 ;; constants
 (define circle-radius 20)
@@ -51,25 +82,6 @@
 (define blocked-color 'black)
 (define under-mouse-color 'black)
 
-;; data definitions
-
-;; a world is:
-;;  (make-world board posn state number mouse posn-or-false boolean)
-(define-struct world (board cat state size mouse-posn h-down?) #:transparent)
-
-;; a state is either:
-;;   - 'playing
-;;   - 'cat-won
-;;   - 'cat-lost
-
-;; a board is
-;;  (listof cell)
-
-;; a cell is
-;; (make-cell (make-posn int[0-board-size]
-;;                       int[0-board-size])
-;;            boolean)
-(define-struct cell (p blocked?) #:transparent)
 
 
 ;                                                     
