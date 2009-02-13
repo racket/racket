@@ -635,8 +635,7 @@ Expands to a @scheme[provide] of all identifiers implied by the
 
 @defform/subs[#:literals (import export)
               (unit/c (import sig-block ...) (export sig-block ...))
-              ([sig-block (sig-id [id ctc] ...) sig-id])
-              #:contracts ([ctc contract?])]{
+              ([sig-block (sig-id [id contract] ...) sig-id])]{
 
 A @deftech{unit contract} wraps a unit and checks both its imported and
 exported identifiers to ensure that they match the appropriate contracts.
