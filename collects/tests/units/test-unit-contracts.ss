@@ -615,8 +615,6 @@
     (import)
     (export toy-factory^)
 
-    (printf "Factory started.\n")
-
     (define-struct toy (color) #:transparent)
 
     (define (build-toys n)
@@ -624,4 +622,99 @@
         (make-toy 'blue)))
 
     (define (repaint t col)
-      (make-toy col))))
+      (make-toy col)))
+
+  (provide toy-factory^ simple-factory@))
+
+(module m4 scheme
+  (define-signature foo^ (x? (contracted [f (-> x? boolean?)])))
+
+  (define-unit U@
+    (import)
+    (export foo^)
+    (define (x? x) #f)
+    (define (f x) (x? x)))
+
+  (define-values/invoke-unit/infer U@)
+  
+  (provide f x?))
+
+(require (prefix-in m4: 'm4))
+
+(test-runtime-error exn:fail:contract? "misuse of f by 'm4 (leaked uncontracted to top-level)"
+  (m4:f 3))
+
+(require (prefix-in m3: 'm3))
+
+(test-runtime-error exn:fail:contract? "misuse of build-toys by top-level"
+  (let ()
+    (define-values/invoke-unit/infer m3:simple-factory@)
+    (build-toys #f)))
+
+(module m5 scheme
+  (define-signature foo^ (f (contracted [x? (-> any/c boolean?)])))
+  
+  (define-unit U@
+    (import)
+    (export foo^)
+    (define (x? n) (zero? n))
+    (define (f x) (x? x)))
+  
+  (provide foo^)
+  (provide/contract
+   [U@
+    (unit/c (import)
+            (export (foo^ [f (-> x? boolean?)])))]))
+
+(require (prefix-in m5: 'm5))
+
+(define-values/invoke-unit m5:U@
+  (import)
+  (export (prefix m5: m5:foo^)))
+
+(m5:f 0)
+
+(test-runtime-error exn:fail:contract? "misuse of f exported by U@ by the top level"
+  (m5:f 3))
+
+(let ()
+  (define-signature foo^ (x? f))
+  (define-signature bar^ ((contracted [x? (-> number? boolean?)]
+                                      [f  (-> x? number?)])))
+  (define-unit U@
+    (import)
+    (export bar^)
+    (define x? zero?)
+    (define f values))
+  
+  (define-unit/new-import-export V@
+    (import)
+    (export bar^)
+    ((bar^) U@))
+  
+  (define-values/invoke-unit/infer V@)
+  
+  (f 0)
+  (test-runtime-error exn:fail:contract? "top-level broke contract on f"
+    (f 3)))
+
+(let ()
+  (define-signature foo^ ((contracted [x? (-> number? boolean?)]
+                                      [f (-> x? number?)])))
+  (define-signature bar^ (f (contracted [x? (-> any/c boolean?)])))
+  (define-unit U@
+    (import)
+    (export foo^)
+    (define x? zero?)
+    (define f values))
+  
+  (define-unit/new-import-export V@
+    (import)
+    (export bar^)
+    ((foo^) U@))
+  
+  (define-values/invoke-unit/infer V@)
+  
+  (f 0)
+  (test-runtime-error exn:fail:contract? "V@ broke contract on f"
+    (f 3)))

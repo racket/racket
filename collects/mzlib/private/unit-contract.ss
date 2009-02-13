@@ -5,6 +5,7 @@
                      syntax/boundmap
                      "unit-compiletime.ss")
          scheme/contract
+         scheme/pretty
          "unit-keywords.ss"
          "unit-utils.ss"
          "unit-runtime.ss")
@@ -12,57 +13,54 @@
 (provide unit/c)
 
 (define-for-syntax (contract-imports/exports import?)
-  (λ (table-stx import-tagged-infos import-sigs ctc-table-stx pos neg src-info name)
+  (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
     (define def-table (make-bound-identifier-mapping))
-    (define ctc-table (make-bound-identifier-mapping))
-    (define (convert-reference vref ctc sig-ctc)
+    
+    (define (convert-reference vref ctc sig-ctc rename-bindings)
       (let ([wrap-with-proj
-             (λ (stx)
-               #`((((proj-get ctc) ctc) #,(if import? neg pos)
-                                        #,(if import? pos neg)
-                                        #,src-info
-                                        #,name)
-                  #,stx))])
-        #`(let ([ctc #,ctc])
-            (if ctc
-                (cons (λ ()
-                        (let* ([old-v #,(if sig-ctc
-                                            #`(let ([old-v/c ((car #,vref))])
-                                                (cons #,(wrap-with-proj #'(car old-v/c))
-                                                      (cdr old-v/c)))
-                                            (wrap-with-proj #`((car #,vref))))])
-                          old-v))
-                      (λ (v) 
-                        (let* ([new-v #,(if sig-ctc
-                                            #`(cons #,(wrap-with-proj #'(car v))
-                                                    (cdr v))
-                                            (wrap-with-proj #'v))])
-                          ((cdr #,vref) new-v))))
-                #,vref))))
-    (for-each
-     (lambda (tagged-info sig)
-       (define v
-         #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info))))
-       (define c
-         #`(hash-ref #,ctc-table-stx #,(car (tagged-info->keys tagged-info))))
-       (for-each
-        (lambda (int/ext-name index ctc)
-          (bound-identifier-mapping-put! def-table
-                                         (car int/ext-name)
-                                         #`(vector-ref #,v #,index))
-          (bound-identifier-mapping-put! ctc-table
-                                         (car int/ext-name)
-                                         #`(vector-ref #,c #,index)))
-        (car sig)
-        (build-list (length (car sig)) values)
-        (cadddr sig)))
-     import-tagged-infos
-     import-sigs)
-    (with-syntax ((((eloc ...) ...) 
-                   (map
-                    (lambda (target-sig)
-                      (map
-                       (lambda (target-int/ext-name sig-ctc)
+             (λ (ctc stx)
+               ;; If contract coersion ends up being a large overhead, we can
+               ;; store the result in a local box, then just check the box to
+               ;; see if we need to coerce.
+               #`(let ([ctc (coerce-contract 'unit/c (letrec-syntax #,rename-bindings #,ctc))])
+                   ((((proj-get ctc) ctc)
+                     #,(if import? neg pos)
+                     #,(if import? pos neg)
+                     #,src-info
+                     #,name)
+                    #,stx)))])
+        (if ctc
+            #`(cons
+               (λ ()
+                 (let* ([old-v 
+                         #,(if sig-ctc
+                               #`(let ([old-v/c ((car #,vref))])
+                                   (cons #,(wrap-with-proj ctc #'(car old-v/c))
+                                         (cdr old-v/c)))
+                               (wrap-with-proj ctc #`((car #,vref))))])
+                   old-v))
+               (λ (v) 
+                 (let* ([new-v 
+                         #,(if sig-ctc
+                               #`(cons #,(wrap-with-proj ctc #'(car v))
+                                       (cdr v))
+                               (wrap-with-proj ctc #'v))])
+                   ((cdr #,vref) new-v))))
+            vref)))
+    (for ([tagged-info (in-list import-tagged-infos)]
+          [sig         (in-list import-sigs)])
+         (let ([v #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info)))])
+           (for ([int/ext-name (in-list (car sig))]
+                 [index        (in-list (build-list (length (car sig)) values))])
+                (bound-identifier-mapping-put! def-table
+                                               (car int/ext-name)
+                                               #`(vector-ref #,v #,index)))))
+    (with-syntax ((((eloc ...) ...)
+                   (for/list ([target-sig import-sigs])
+                     (let ([rename-bindings 
+                            (get-member-bindings def-table target-sig pos)])
+                       (for/list ([target-int/ext-name (in-list (car target-sig))]
+                                  [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([vref
                                  (bound-identifier-mapping-get
                                   def-table
@@ -70,11 +68,9 @@
                                 [ctc
                                  (bound-identifier-mapping-get
                                   ctc-table
-                                  (car target-int/ext-name))])
-                           (convert-reference vref ctc sig-ctc)))
-                       (car target-sig)
-                       (cadddr target-sig)))
-                    import-sigs))
+                                  (car target-int/ext-name)
+                                  (λ () #f))])
+                           (convert-reference vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...) 
                    (map tagged-info->keys import-tagged-infos)))
       #'(unit-export ((export-keys ...)
@@ -82,40 +78,6 @@
 
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
-
-(define-for-syntax (build-contract-table import? import-tagged-infos import-sigs id-stx ctc-stx)
-  (with-syntax ([((ectc ...) ...)
-                 (map (λ (sig ids ctcs)
-                        (let ([alist (map cons (syntax->list ids) (syntax->list ctcs))])
-                          (map (λ (int/ext-name)
-                                 (cond
-                                   [(assf (λ (i)
-                                            (bound-identifier=? i (car int/ext-name)))
-                                          alist)
-                                    =>
-                                    (λ (p) (cdr p))]
-                                   [else #'#f]))
-                               (car sig))))
-                      import-sigs 
-                      (syntax->list id-stx) 
-                      (syntax->list ctc-stx))]
-                [((export-keys ...) ...)
-                 (map tagged-info->keys import-tagged-infos)])
-    #'(unit-export ((export-keys ...) (vector-immutable ectc ...)) ...)))
-
-(define-for-syntax (check-ids name sig alist)
-  (let ([ctc-sig/ids (assf (λ (i)
-                             (bound-identifier=? name i))
-                           alist)])
-    (when ctc-sig/ids
-      (let ([ids (map car (car sig))])
-        (for-each (λ (id)
-                    (unless (memf (λ (i) (bound-identifier=? id i)) ids)
-                      (raise-syntax-error 'unit/c
-                                          (format "identifier not member of signature ~a" 
-                                                  (syntax-e name))
-                                          id)))
-                  (cdr ctc-sig/ids))))))
 
 (define-syntax/err-param (unit/c stx)
   (begin
@@ -152,32 +114,45 @@
                               export-tagged-sigids export-sigs)
            (process-unit-export #'(e.s ...)))
          
+         (define contract-table
+           (make-bound-identifier-mapping))
+         
+         (define (process-sig name sig xs cs)
+           (define xs-list (syntax->list xs))
+           (let ([dup (check-duplicate-identifier xs-list)])
+             (when dup
+               (raise-syntax-error 'unit/c
+                                   (format "duplicate identifier found for signature ~a"
+                                           (syntax->datum name))
+                                   dup)))
+           (let ([ids (map car (car sig))])
+             (for-each (λ (id)
+                         (unless (memf (λ (i) (bound-identifier=? id i)) ids)
+                           (raise-syntax-error 'unit/c
+                                               (format "identifier not member of signature ~a" 
+                                                       (syntax-e name))
+                                               id)))
+                       xs-list))
+           (for ([x (in-list xs-list)]
+                 [c (in-list (syntax->list cs))])
+                (bound-identifier-mapping-put! contract-table x c)))
+         
          (check-duplicate-sigs import-tagged-infos isig null null)
          
          (check-duplicate-subs export-tagged-infos esig)
          
          (check-unit-ie-sigs import-sigs export-sigs)
          
-         (for-each (λ (sig xs)
-                     (let ([dup (check-duplicate-identifier (syntax->list xs))])
-                       (when dup
-                         (raise-syntax-error 'unit/c
-                                             (format "duplicate identifier found for signature ~a" (syntax->datum sig))
-                                             dup))))
-                   (syntax->list #'(i.s ... e.s ...))
-                   (syntax->list #'((i.x ...) ... (e.x ...) ...)))
-         
-         (let ([alist (map syntax->list 
-                           (syntax->list #'((i.s i.x ...) ...)))])
-           (for-each (λ (name sig)
-                       (check-ids name sig alist))
-                     isig import-sigs))
-         
-         (let ([alist (map syntax->list 
-                           (syntax->list #'((e.s e.x ...) ...)))])
-           (for-each (λ (name sig)
-                       (check-ids name sig alist))
-                     esig export-sigs))
+         (for-each process-sig
+                   isig
+                   import-sigs
+                   (syntax->list #'((i.x ...) ...))
+                   (syntax->list #'((i.c ...) ...)))
+         (for-each process-sig
+                   esig
+                   export-sigs
+                   (syntax->list #'((e.x ...) ...))
+                   (syntax->list #'((e.c ...) ...)))
          
          (with-syntax ([((import-key ...) ...)
                         (map tagged-info->keys import-tagged-infos)]
@@ -188,23 +163,20 @@
                              import-tagged-infos)]
                        [(export-name ...)
                         (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             export-tagged-infos)]
-                       [((new-ci ...) ...) (map generate-temporaries (syntax->list #'((i.c ...) ...)))]
-                       [((new-ce ...) ...) (map generate-temporaries (syntax->list #'((e.c ...) ...)))])
+                             export-tagged-infos)])
            (quasisyntax/loc stx
-             (let-values ([(new-ci ...) (values (coerce-contract 'unit/c i.c) ...)] ...
-                          [(new-ce ...) (values (coerce-contract 'unit/c e.c) ...)] ...)
+             (begin
                (make-proj-contract
                 (list 'unit/c
                       (cons 'import 
                             (list (cons 'i.s
                                         (map list (list 'i.x ...) 
-                                             (build-compound-type-name new-ci ...)))
+                                             (build-compound-type-name 'i.c ...)))
                                   ...))
                       (cons 'export 
                             (list (cons 'e.s
                                         (map list (list 'e.x ...)
-                                             (build-compound-type-name new-ce ...)))
+                                             (build-compound-type-name 'e.c ...)))
                                   ...)))
                 (λ (pos neg src-info name)
                   (λ (unit-tmp)
@@ -227,39 +199,27 @@
                      (vector-immutable (cons 'export-name 
                                              (vector-immutable export-key ...)) ...)
                      (unit-deps unit-tmp)
-                     (lambda ()
+                     (λ ()
                        (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
                          (values (lambda (import-table)
-                                   (let ([import-ctc-table
-                                          #,(build-contract-table #t
-                                                                  import-tagged-infos
-                                                                  import-sigs
-                                                                  #'((i.x ...) ...)
-                                                                  #'((new-ci ...) ...))])
-                                     (unit-fn #,(contract-imports
-                                                 #'import-table
-                                                 import-tagged-infos
-                                                 import-sigs
-                                                 #'import-ctc-table
-                                                 #'pos
-                                                 #'neg
-                                                 #'src-info
-                                                 #'name))))
-                                 (let ([export-ctc-table
-                                        #,(build-contract-table #f
-                                                                export-tagged-infos
-                                                                export-sigs
-                                                                #'((e.x ...) ...)
-                                                                #'((new-ce ...) ...))])
-                                   #,(contract-exports 
-                                      #'export-table
-                                      export-tagged-infos
-                                      export-sigs
-                                      #'export-ctc-table
-                                      #'pos
-                                      #'neg
-                                      #'src-info
-                                      #'name))))))))
+                                   (unit-fn #,(contract-imports
+                                               #'import-table
+                                               import-tagged-infos
+                                               import-sigs
+                                               contract-table
+                                               #'pos
+                                               #'neg
+                                               #'src-info
+                                               #'name)))
+                                 #,(contract-exports 
+                                    #'export-table
+                                    export-tagged-infos
+                                    export-sigs
+                                    contract-table
+                                    #'pos
+                                    #'neg
+                                    #'src-info
+                                    #'name)))))))
                 (λ (v)
                   (and (unit? v)
                        (with-handlers ([exn:fail:contract? (λ () #f)])

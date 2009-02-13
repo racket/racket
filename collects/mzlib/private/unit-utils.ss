@@ -1,7 +1,10 @@
-#lang mzscheme
+#lang scheme/base
 
-(require (for-syntax "unit-compiletime.ss"
-                     "unit-syntax.ss"))
+(require (for-syntax scheme/base
+                     syntax/boundmap
+                     "unit-compiletime.ss"
+                     "unit-syntax.ss")
+         mzlib/contract)
 
 (provide (for-syntax build-key
                      check-duplicate-sigs
@@ -9,7 +12,9 @@
                      iota
                      process-unit-import
                      process-unit-export
-                     tagged-info->keys))
+                     tagged-info->keys
+                     id->contract-src-info
+                     get-member-bindings))
 
 (provide equal-hash-table
          unit-export)
@@ -21,8 +26,43 @@
       ((= n 0) acc)
       (else (loop (sub1 n) (cons (sub1 n) acc))))))
 
+  ;; id->contract-src-info : identifier -> syntax
+  ;; constructs the last argument to the contract, given an identifier
+  (define-for-syntax (id->contract-src-info id)
+    #`(list (make-srcloc (quote-syntax #,id)
+                         #,(syntax-line id)
+                         #,(syntax-column id)
+                         #,(syntax-position id)
+                         #,(syntax-span id))
+            #,(format "~s" (syntax->datum id))))
+
 (define-syntax-rule (equal-hash-table [k v] ...)
-  (make-immutable-hash-table (list (cons k v) ...) 'equal))
+  (make-immutable-hash (list (cons k v) ...)))
+
+(define-for-syntax (get-member-bindings member-table sig blame)
+  (for/list ([i (in-list (map car (car sig)))]
+             [c (in-list (cadddr sig))])
+    (let ([add-ctc
+           (λ (v stx)
+             (if c
+                 #`(let ([v/c ((car #,stx))])
+                     (contract (let ([#,v #,c]) #,v)
+                               (car v/c) (cdr v/c) #,blame
+                               #,(id->contract-src-info v)))
+                 #`((car #,stx))))])
+      #`[#,i
+         (make-set!-transformer
+          (λ (stx)
+            (syntax-case stx (set!)
+              [x
+               (identifier? #'x)
+               #'#,(add-ctc i (bound-identifier-mapping-get
+                               member-table
+                               i))]
+              [(x . y)
+               #'(#,(add-ctc i (bound-identifier-mapping-get
+                                member-table
+                                i)) . y)])))])))
 
 (define-syntax (unit-export stx)
   (syntax-case stx ()
@@ -40,22 +80,22 @@
 ;; check-duplicate-sigs : (listof (cons symbol siginfo)) (listof syntax-object)
 ;;                        (listof (cons symbol siginfo)) (listof syntax-object) ->
 (define-for-syntax (check-duplicate-sigs tagged-siginfos sources tagged-deps dsources)
-  (define import-idx (make-hash-table 'equal))
+  (define import-idx (make-hash))
   (for-each
    (lambda (tinfo s)
      (define key (cons (car tinfo)
                        (car (siginfo-ctime-ids (cdr tinfo)))))
-     (when (hash-table-get import-idx key #f)
+     (when (hash-ref import-idx key #f)
        (raise-stx-err "duplicate import signature" s))
-     (hash-table-put! import-idx key #t))
+     (hash-set! import-idx key #t))
    tagged-siginfos
    sources)
   (for-each
    (lambda (dep s)
-     (unless (hash-table-get import-idx
-                             (cons (car dep)
-                                   (car (siginfo-ctime-ids (cdr dep))))
-                             #f)
+     (unless (hash-ref import-idx
+                       (cons (car dep)
+                             (car (siginfo-ctime-ids (cdr dep))))
+                       #f)
        (raise-stx-err "initialization dependency on unknown import" s)))
    tagged-deps
    dsources))

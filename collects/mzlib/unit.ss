@@ -369,16 +369,6 @@
     (cons (car x)
           (signature-siginfo (lookup-signature (cdr x)))))
                  
-  ;; id->contract-src-info : identifier -> syntax
-  ;; constructs the last argument to the contract, given an identifier
-  (define-for-syntax (id->contract-src-info id)
-    #`(list (make-srcloc (quote-syntax #,id)
-                         #,(syntax-line id)
-                         #,(syntax-column id)
-                         #,(syntax-position id)
-                         #,(syntax-span id))
-            #,(format "~s" (syntax-object->datum id))))
-  
   (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
         (quasisyntax/loc (error-syntax)
@@ -670,6 +660,12 @@
         target-import-tagged-infos
         target-import-sigs)
       (define def-table (make-bound-identifier-mapping))
+      (define ctc-table (make-bound-identifier-mapping))
+      (define sig-of-all-import-sigs
+        (list (apply append (map car import-sigs))
+              (apply append (map cadr import-sigs))
+              (apply append (map caddr import-sigs))
+              (apply append (map cadddr import-sigs))))
       (for-each
        (lambda (tagged-info sig)
          (define v
@@ -678,7 +674,10 @@
           (lambda (int/ext-name index ctc)
             (bound-identifier-mapping-put! def-table
                                            (car int/ext-name)
-                                           (cons #`(vector-ref #,v #,index) ctc)))
+                                           #`(vector-ref #,v #,index))
+            (bound-identifier-mapping-put! ctc-table
+                                           (car int/ext-name)
+                                           ctc))
           (car sig)
           (iota (length (car sig)))
           (cadddr sig)))
@@ -687,38 +686,48 @@
       (with-syntax ((((eloc ...) ...) 
                      (map
                       (lambda (target-sig)
+                        (define rename-bindings
+                          (get-member-bindings def-table 
+                                               sig-of-all-import-sigs 
+                                               #'(current-contract-region)))
                         (map
                          (lambda (target-int/ext-name target-ctc)
-                           (let ([vref/ctc
+                           (let* ([var (car target-int/ext-name)]
+                                  [vref
                                   (bound-identifier-mapping-get
                                    def-table
-                                   (car target-int/ext-name)
+                                   var
                                    (lambda ()
                                      (raise-stx-err
                                       (format (if import?
                                                   "identifier ~a is not present in new imports"
                                                   "identifier ~a is not present in old exports")
-                                              (syntax-e (car target-int/ext-name))))))])
-                             (let ([old-cl (car vref/ctc)])
-                               #`(cons
-                                  (λ ()
-                                    (let ([old-v #,(if (cdr vref/ctc)
-                                                       #`(let ([old-v/c ((car #,old-cl))])
-                                                           (contract #,(cdr vref/ctc) (car old-v/c) 
-                                                                     (cdr old-v/c) (current-contract-region)
-                                                                     #,(id->contract-src-info (car target-int/ext-name))))
-                                                       #`((car #,old-cl)))])
-                                      #,(if target-ctc
-                                            #'(cons old-v (current-contract-region))
-                                            #'old-v)))
-                                  (λ (v) (let ([new-v #,(if (cdr vref/ctc)
-                                                            #`(contract #,(cdr vref/ctc) (car v)
-                                                                        (current-contract-region) (cdr v)
-                                                                        #,(id->contract-src-info (car target-int/ext-name)))
-                                                            #'v)])
-                                           #,(if target-ctc
-                                                 #`((cdr #,old-cl) (cons new-v (current-contract-region)))
-                                                 #`((cdr #,old-cl) new-v))))))))
+                                              (syntax-e (car target-int/ext-name))))))]
+                                  [ctc (bound-identifier-mapping-get ctc-table var)])
+                             (if (or target-ctc ctc)
+                                 #`(cons
+                                    (λ ()
+                                      (let ([old-v #,(if ctc
+                                                         #`(let ([old-v/c ((car #,vref))])
+                                                             (contract (let ([#,var (letrec-syntax #,rename-bindings #,ctc)]) #,var)
+                                                                       (car old-v/c) 
+                                                                       (cdr old-v/c) (current-contract-region)
+                                                                       #,(id->contract-src-info var)))
+                                                         #`((car #,vref)))])
+                                        #,(if target-ctc
+                                              #'(cons old-v (current-contract-region))
+                                              #'old-v)))
+                                    (λ (v) (let ([new-v #,(if ctc
+                                                              #`(contract (let ([#,var (letrec-syntax #,rename-bindings #,ctc)]) #,var)
+                                                                          (car v)
+                                                                          (current-contract-region)
+                                                                          (cdr v)
+                                                                          #,(id->contract-src-info var))
+                                                              #'v)])
+                                             #,(if target-ctc
+                                                   #`((cdr #,vref) (cons new-v (current-contract-region)))
+                                                   #`((cdr #,vref) new-v)))))
+                                 vref)))
                          (car target-sig)
                          (cadddr target-sig)))
                       target-import-sigs))
@@ -1139,7 +1148,10 @@
               (out-tags (map car tagged-out))
               (out-sigs (map caddr tagged-out))
               (dup (check-duplicate-identifier (apply append (map sig-int-names out-sigs))))
-              (out-vec (generate-temporaries out-sigs)))
+              (out-vec (generate-temporaries out-sigs))
+              (tmarker (make-syntax-introducer))
+              (vmarker (make-syntax-introducer))
+              (tmp-bindings (map (λ (s) (map tmarker (map car (car s)))) out-sigs)))
          (when dup
            (raise-stx-err (format "duplicate binding for ~e" (syntax-e dup))))
          (with-syntax ((((key1 key ...) ...) (map tagged-info->keys out-tags))
@@ -1153,25 +1165,45 @@
                        ((out-names ...)
                         (map (lambda (info) (car (siginfo-names (cdr info))))
                              out-tags))
+                       (((tmp-binding ...) ...) tmp-bindings)
+                       (((val-binding ...) ...) (map (λ (s) (map vmarker (map car (car s)))) out-sigs))
                        (((out-code ...) ...)
                         (map 
                          (lambda (os ov)
                            (map 
-                            (lambda (i v c)
-                              (if c
-                                  #`(let ([v/c ((car (vector-ref #,ov #,i)))])
-                                      (contract #,c (car v/c) (cdr v/c)
-                                                (current-contract-region)
-                                                #,(id->contract-src-info v)))
-                                  #`((car (vector-ref #,ov #,i)))))
-                            (iota (length (car os)))
-                            (map car (car os))
-                            (cadddr os)))
+                            (lambda (i)
+                              #`((car (vector-ref #,ov #,i))))
+                            (iota (length (car os)))))
                          out-sigs
-                         out-vec)))
+                         out-vec))
+                       (((val-code ...) ...)
+                        (map (λ (tbs os)
+                                  (map (λ (tb c)
+                                         (if c
+                                             #`(car #,tb)
+                                             tb))
+                                       tbs
+                                       (cadddr os)))
+                                tmp-bindings
+                                out-sigs))
+                       (((wrap-code ...) ...)
+                        (map (λ (os ov tbs)
+                               (map (λ (tb i v c)
+                                      (if c
+                                          #`(contract #,(vmarker c) (car #,tb) (cdr #,tb)
+                                                      (current-contract-region)
+                                                      #,(id->contract-src-info v))
+                                          tb))
+                                    tbs
+                                    (iota (length (car os)))
+                                    (map car (car os))
+                                    (cadddr os)))
+                             out-sigs
+                             out-vec
+                             tmp-bindings)))
            (quasisyntax/loc stx
              (begin
-               (define-values (int-binding ... ...)
+               (define-values (tmp-binding ... ...)
                  #,(syntax/loc #'unit-expr
                      (let ((unit-tmp unit-expr))
                        (check-unit unit-tmp 'define-values/invoke-unit)
@@ -1185,6 +1217,10 @@
                          (let ([out-vec (hash-table-get export-table key1)] ...)
                            (unit-fn #f)
                            (values out-code ... ...))))))
+               (define-values (val-binding ... ...)
+                 (values val-code ... ...))
+               (define-values (int-binding ... ...)
+                 (values wrap-code ... ...))
                (define-syntaxes . renames) ...
                (define-syntaxes (mac-name ...) mac-body) ... ...
                (define-values (val-name ...) val-body) ... ...)))))

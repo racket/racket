@@ -458,6 +458,159 @@ replacing the @filepath{-unit.ss} suffix with @schemeidfont["@"].
 
 @; ----------------------------------------
 
+@(interaction-eval #:eval toy-eval (require scheme/contract))
+
+@section{Contracts for Units}
+
+There are a couple of ways of protecting units with contracts.  One way
+is useful when writing new signatures, and the other handles the case
+when a unit must conform to an already existing signature.
+
+@subsection{Adding Contracts to Signatures}
+
+When contracts are added to a signature, then all units which implement
+that signature are protected by those contracts.  The following version
+of the @scheme[toy-factory^] signature adds the contracts previously
+written in comments:
+
+@schememod/eval[[#:file
+"contracted-toy-factory-sig.ss"
+scheme]
+
+(define-signature contracted-toy-factory^
+  ((contracted
+    [build-toys (-> integer? (listof toy?))]
+    [repaint    (-> toy? symbol? toy?)]
+    [toy?       (-> any/c boolean?)]
+    [toy-color  (-> toy? symbol?)])))
+
+(provide contracted-toy-factory^)]
+
+Now we take the previous implementation of @scheme[simple-factory@] and
+implement this version of @scheme[toy-factory^] instead:
+
+@schememod/eval[[#:file
+"contracted-simple-factory-unit.ss"
+scheme
+
+(require "contracted-toy-factory-sig.ss")]
+
+(define-unit contracted-simple-factory@
+  (import)
+  (export contracted-toy-factory^)
+
+  (printf "Factory started.\n")
+
+  (define-struct toy (color) #:transparent)
+
+  (define (build-toys n)
+    (for/list ([i (in-range n)])
+      (make-toy 'blue)))
+
+  (define (repaint t col)
+    (make-toy col)))
+
+(provide contracted-simple-factory@)
+]
+
+As before, we can invoke our new unit and bind the exports so
+that we can use them.  This time, however, misusing the exports
+causes the appropriate contract errors.
+
+@interaction[
+#:eval toy-eval
+(eval:alts (require "contracted-simple-factory-unit.ss") (void))
+(define-values/invoke-unit/infer contracted-simple-factory@)
+(build-toys 3)
+(build-toys #f)
+(repaint 3 'blue)
+]
+
+@subsection{Adding Contracts to Units}
+
+However, sometimes we may have a unit that must conform to an
+already existing signature that is not contracted.  In this case,
+we can use the @scheme[unit/c] contract combinator, which creates
+a new unit that protects parts of the wrapped unit as desired.
+
+For example, here's a version of @scheme[toy-store@] which has a
+slightly buggy implementation of the uncontracted @scheme[toy-store^]
+signature.  When we provide the new @scheme[wrapped-toy-store@] unit,
+we protect its exports.
+
+@schememod/eval[[#:file
+"wrapped-toy-store-unit.ss"
+scheme
+
+(require "toy-store-sig.ss"
+         "toy-factory-sig.ss")]
+
+(define-unit wrapped-toy-store@
+  (import toy-factory^)
+  (export toy-store^)
+
+  (define inventory null)
+
+  (define (store-color) 3) (code:comment #, @t{Not a valid color!})
+
+  (define (maybe-repaint t)
+    (if (eq? (toy-color t) (store-color))
+        t
+        (repaint t (store-color))))
+
+  (define (stock! n)
+    (set! inventory 
+          (append inventory
+                  (map maybe-repaint
+                       (build-toys n)))))
+
+  (define (get-inventory) inventory))
+
+(provide/contract
+ [wrapped-toy-store@ 
+  (unit/c (import toy-factory^)
+          (export (toy-store^
+                   [store-color (-> symbol?)]
+                   [stock! (-> integer? void?)]
+                   [get-inventory (-> (listof toy?))])))])
+]
+
+Since the result of the @scheme[unit/c] combinator is a new unit value
+which has not been defined with @scheme[define-unit] or another similar
+form, we run into problems with signature inference.  We see this below in the
+use of @scheme[define-compound-unit] instead of @scheme[define-compound-unit/infer]
+to link the two units.
+
+@interaction[
+#:eval toy-eval
+(eval:alts (require "wrapped-toy-store-unit.ss")
+           (define wrapped-toy-store@
+             (contract (unit/c (import toy-factory^)
+                               (export (toy-store^
+                                        [store-color (-> symbol?)]
+                                        [stock! (-> integer? void?)]
+                                        [get-inventory (-> (listof toy?))])))
+                       wrapped-toy-store@
+                       'wrapped-toy-store-unit
+                       'top-level
+                       (list (make-srcloc 'top-level #f #f #f #f) "wrapped-toy-store@"))))
+(define-compound-unit checked-toy-store+factory@
+  (import)
+  (export F S)
+  (link [((F : toy-factory^)) store-specific-factory@ S]
+        [((S : toy-store^)) wrapped-toy-store@ F]))
+(define-values/invoke-unit/infer checked-toy-store+factory@)
+(store-color)
+(stock! 'a)
+(code:comment #, @t{This fails because of the factory's (store-color) call})
+(stock! 4) 
+(code:comment #, @t{Since it failed, there's no inventory})
+(get-inventory)
+]
+
+
+@; ----------------------------------------
+
 @section{@scheme[unit] versus @scheme[module]}
 
 As a form for modularity, @scheme[unit] complements @scheme[module]:
