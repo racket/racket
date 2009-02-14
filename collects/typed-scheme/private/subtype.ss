@@ -6,9 +6,10 @@
 	 "type-utils.ss"
          "type-comparison.ss"
          "resolve-type.ss"
+         "type-abbrev.ss"
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         mzlib/plt-match
+         scheme/match
          mzlib/trace)
 
 
@@ -302,3 +303,6 @@
 
 ;(subtype (-> Univ B) (-> Univ Univ))
 ;(subtype (make-poly '(a) (make-tvar 'a)) (make-lst N))
+
+;;problem:
+;; (subtype (make-Mu 'x (make-Syntax (make-Union (list (make-Base 'Number #'number?) (make-F 'x))))) (make-Syntax (make-Univ)))

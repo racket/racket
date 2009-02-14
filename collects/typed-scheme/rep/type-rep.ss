@@ -158,7 +158,7 @@
 ;; elems : Listof[Type]
 (dt Union (elems) [#:frees (combine-frees (map free-vars* elems))
                            (combine-frees (map free-idxs* elems))]
-    [#:fold-rhs ((unbox union-maker) (map type-rec-id elems))])
+    [#:fold-rhs ((get-union-maker) (map type-rec-id elems))])
 
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
@@ -217,11 +217,12 @@
 
 ;; Ugly hack - should use units
 
-(define union-maker (box #f))
+(define union-maker (box (lambda args (int-err "Union not yet available"))))
 
 (define (set-union-maker! v) (set-box! union-maker v))
+(define (get-union-maker) (unbox union-maker))
 
-(provide set-union-maker!)
+(provide set-union-maker! get-union-maker)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

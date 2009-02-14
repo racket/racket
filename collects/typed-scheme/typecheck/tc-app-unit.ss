@@ -544,13 +544,17 @@
 (define (find-annotation stx name)
   (define (find s) (find-annotation s name))
   (define (match? b)
+    (printf "match? 1 : ~a~n" (syntax->datum b))
     (syntax-parse b
       #:literals (#%plain-app reverse)
       [c:lv-clause
+       #:when (printf "match? 2 : ~a~n" (syntax->datum #'c.e))
        #:with (#%plain-app reverse n:id) #'c.e
-       #:when (free-identifier=? name #'n)
+       #:with (v) #'(c.v ...) 
+       #:when (free-identifier=? name #'v)
        (type-annotation #'v)]
       [_ #f]))
+  (printf "in find-ann~n")
   (syntax-parse stx
     #:literals (let-values)
     [(let-values cls:lv-clauses body)
@@ -760,7 +764,8 @@
     [((val acc ...)
       ((if (#%plain-app null? val*) thn els))
       (actual actuals ...))
-     (and (free-identifier=? #'val #'val*)
+     (and (printf "in match special case~n")
+          (free-identifier=? #'val #'val*)
           (ormap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
                  (syntax->list #'(acc ...))))
      (let* ([ts1 (generalize (tc-expr/t #'actual))]

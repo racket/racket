@@ -77,6 +77,7 @@
 
 (define-syntax-class fun-ty
   #:literals (t:-> :)
+  #:transparent
   #:description "function type"
   ;; FIXME - shouldn't have to use syntax->datum  
   (pattern (dom*:type t:-> rng:type : pred:type)
@@ -118,31 +119,43 @@
            #:with t (-values (syntax->datum #'(ts.t ...)))))
 
 (define-syntax-class type-name
+  #:description "type name"
  (pattern i:id
           #:when (lookup-type-name #'i (lambda () #f))
           #:with t #'(make-Name #'i)
           #:when (add-type-name-reference #'i)))
 
 (define-syntax-class type-alias
+  #:description "type alias"
   (pattern i:id
            #:with t (lookup-type-alias #'i parse-type* (lambda () #f))
            #:when #'t
            #:when (add-type-name-reference #'i)))
 
+(define-syntax-class all-ddd-formals
+  #:description "\na sequence of identifiers with a ... after the last identifier\n"
+  (pattern (v:id ... v-last:id _:ddd)))
+
+(define-syntax-class all-formals
+  #:description "\na sequence of identifiers\n"
+  (pattern (v:id ...)))
+
 (define-syntax-class all-type  
+  #:transparent
   #:literals (t:All)
-  (pattern (t:All (v:id ... v-last:id _:ddd) b)  
+  (pattern (t:All :all-ddd-formals b)  
            #:with b.t (parse/get #'b t (type/tvars (cons #'v-last.datum (syntax->datum #'(v ...)))
                                                    (cons (make-Dotted (make-F #'v-last.datum))
                                                          (map make-F (syntax->datum #'(v ...))))))
            #:when (add-type-name-reference #'All)
            #:with t (make-PolyDots (syntax->datum #'(v ... v-last)) #'b.t))
-  (pattern (t:All (v:id ...) b)
+  (pattern (t:All :all-formals b)
            #:with b.t (parse/get #'b t (type/tvars (syntax->datum #'(v ...)) (map make-F (syntax->datum #'(v ...)))))
            #:when (add-type-name-reference #'All)
            #:with t (make-Poly (syntax->datum #'(v ...)) #'b.t)))
 
 (define-syntax-class type-app
+  #:attributes (t)
   (pattern (i arg:type args:type ...)
            #:declare i type
            #:when (identifier? #'i)
@@ -165,6 +178,7 @@
                   Err]))))
 
 (define-syntax-class not-kw-id
+  #:attributes (datum)
   (pattern i:id
            #:when (not (for/or ([e (syntax->list 
                                     #'(quote t:pred t:Tuple case-lambda t:U t:Rec t:Opaque t:Parameter t:Class t:Instance
@@ -174,6 +188,8 @@
            #:with datum #'i.datum))
 
 (define-syntax-class type
+  #:transparent
+  #:attributes (t)
   #:literals (quote t:pred t:Tuple case-lambda t:U t:Rec t:Opaque t:Parameter t:Class t:Instance)  
   (pattern ty
            #:declare ty (3d Type?)

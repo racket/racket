@@ -3,7 +3,7 @@
 
 (require (rep type-rep)  (env type-name-env) (utils tc-utils)
          "type-utils.ss"
-         mzlib/plt-match
+         scheme/match
          mzlib/trace)
 
 (provide resolve-name resolve-app needs-resolving? resolve-once)
