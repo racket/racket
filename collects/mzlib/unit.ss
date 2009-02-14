@@ -661,11 +661,7 @@
         target-import-sigs)
       (define def-table (make-bound-identifier-mapping))
       (define ctc-table (make-bound-identifier-mapping))
-      (define sig-of-all-import-sigs
-        (list (apply append (map car import-sigs))
-              (apply append (map cadr import-sigs))
-              (apply append (map caddr import-sigs))
-              (apply append (map cadddr import-sigs))))
+      (define sig-table (make-bound-identifier-mapping))
       (for-each
        (lambda (tagged-info sig)
          (define v
@@ -677,7 +673,10 @@
                                            #`(vector-ref #,v #,index))
             (bound-identifier-mapping-put! ctc-table
                                            (car int/ext-name)
-                                           ctc))
+                                           ctc)
+            (bound-identifier-mapping-put! sig-table
+                                           (car int/ext-name)
+                                           sig))
           (car sig)
           (iota (length (car sig)))
           (cadddr sig)))
@@ -686,10 +685,6 @@
       (with-syntax ((((eloc ...) ...) 
                      (map
                       (lambda (target-sig)
-                        (define rename-bindings
-                          (get-member-bindings def-table 
-                                               sig-of-all-import-sigs 
-                                               #'(current-contract-region)))
                         (map
                          (lambda (target-int/ext-name target-ctc)
                            (let* ([var (car target-int/ext-name)]
@@ -703,7 +698,10 @@
                                                   "identifier ~a is not present in new imports"
                                                   "identifier ~a is not present in old exports")
                                               (syntax-e (car target-int/ext-name))))))]
-                                  [ctc (bound-identifier-mapping-get ctc-table var)])
+                                  [ctc (bound-identifier-mapping-get ctc-table var)]
+                                  [rename-bindings (get-member-bindings def-table
+                                                                        (bound-identifier-mapping-get sig-table var)
+                                                                        #'(current-contract-region))])
                              (if (or target-ctc ctc)
                                  #`(cons
                                     (λ ()
