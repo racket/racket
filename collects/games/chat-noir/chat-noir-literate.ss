@@ -5,27 +5,37 @@
        <everything-else>]
 
 The first main data definition for Chat Noir is the state of the world.
+It consists of a structure with six fields: a @scheme[board], a
+@scheme[posn] for the cat, the state of the game (@scheme[state] below),
+a @scheme[posn] for the location of the mouse (or @scheme[#f] if the 
+mouse is not in the window), and a boolean indicating if the @tt{h}
+key has been pushed down.
 
 @chunk[<data-definitions>
 (define-struct world (board cat state size mouse-posn h-down?) #:transparent)
 ]
 
-;; a world is:
-;;  (make-world board posn state number mouse posn-or-false boolean)
-
-
+@verbatim[#<<---
 ;; a state is either:
 ;;   - 'playing
 ;;   - 'cat-won
 ;;   - 'cat-lost
+---
+]
 
+@verbatim[#<<---
 ;; a board is
 ;;  (listof cell)
+---
+]
 
+@verbatim[#<<---
 ;; a cell is
 ;; (make-cell (make-posn int[0-board-size]
 ;;                       int[0-board-size])
 ;;            boolean)
+---
+]
 @chunk[<data-definitions>
        (define-struct cell (p blocked?) #:transparent)]
 
