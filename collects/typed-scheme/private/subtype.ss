@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../utils/utils.ss")
 
-(require (except-in (rep type-rep effect-rep) sub-eff)
+(require (except-in (rep type-rep effect-rep rep-utils) sub-eff)
          (utils tc-utils)
 	 "type-utils.ss"
          "type-comparison.ss"
@@ -156,139 +156,139 @@
 (define (subtype* A s t)
   (parameterize ([match-equality-test type-equal?]
                  [current-seen A])
-    (if (seen? s t)
-        A
-        (let* ([A0 (remember s t A)])
-          (parameterize ([current-seen A0])
-            #;(match t
-              [(Name: n) (when (eq? 'heap (syntax-e n))
-                             (trace subtype*))]
-              [_ #f])
+    (let ([ks (Type-key s)] [kt (Type-key t)])
+      (cond 
+       [(or (seen? s t) (type-equal? s t)) A]
+       [(and (symbol? ks) (symbol? kt) (not (eq? ks kt))) (fail! s t)]
+       [(and (symbol? ks) (pair? kt) (not (memq ks kt))) (fail! s t)]
+       [(and (pair? ks) (pair? kt)
+	     (for/and ([i (in-list ks)]) (not (memq i kt))))
+	(fail! s t)]
+       [else
+	(let* ([A0 (remember s t A)])
+	  (parameterize ([current-seen A0])
             (match (list s t)
-              ;; subtyping is reflexive
-              [(list t t) A0]              
-              ;; univ is top
-              [(list _ (Univ:)) A0]
-              ;; error is top and bot
-              [(list _ (Error:)) A0]
-              [(list (Error:) _) A0]
-              ;; (Un) is bot
-              [(list _ (Union: (list))) (fail! s t)]
-              [(list (Union: (list)) _) A0]
-              ;; value types              
-              [(list (Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
-              ;; integers are numbers too
-              [(list (Base: 'Integer _) (Base: 'Number _)) A0]
-              ;; values are subtypes of their "type"
-              [(list (Value: (? integer? n)) (Base: 'Integer _)) A0]
-              [(list (Value: (? number? n)) (Base: 'Number _)) A0]
-              [(list (Value: (? boolean? n)) (Base: 'Boolean _)) A0]
-              [(list (Value: (? symbol? n)) (Base: 'Symbol _)) A0]
-              [(list (Value: (? string? n)) (Base: 'String _)) A0]
-              ;; tvars are equal if they are the same variable
-              [(list (F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
-              ;; case-lambda
-              [(list (Function: arr1) (Function: arr2))
-               (when (null? arr1) (fail! s t))
-               (let loop-arities ([A* A0]
-                                  [arr2 arr2])
-                 (cond 
-                   [(null? arr2) A*]
-                   [(supertype-of-one/arr A* (car arr2) arr1) => (lambda (A) (loop-arities A (cdr arr2)))]
-                   [else (fail! s t)]))]
-              ;; recur structurally on pairs
-              [(list (Pair: a d) (Pair: a* d*))
-               (let ([A1 (subtype* A0 a a*)])
-                 (and A1 (subtype* A1 d d*)))]
-              ;; quantification over two types preserves subtyping
-              [(list (Poly: ns b1) (Poly: ms b2)) 
-               (=> unmatch)
-               (unless (= (length ns) (length ms)) 
-                 (unmatch))
-               ;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
-               (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
-              ;; use unification to see if we can use the polytype here
-              [(list (Poly: vs b) s)
-               (=> unmatch)
-               (if (unify vs (list b) (list s)) A0 (unmatch))]              
-              [(list s (Poly: vs b))
-               (=> unmatch)
-               (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
-              ;; names are compared for equality:
-              [(list (Name: n) (Name: n*))
-               (=> unmatch)
-               (if (free-identifier=? n n*)
-                   A0
-                   (unmatch))]
-              ;; just unfold the recursive types
-              [(list _ (? Mu?)) (subtype* A0 s (unfold t))]
-              [(list (? Mu?) _) (subtype* A0 (unfold s) t)]
-              ;; for unions, we check the cross-product
-              [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
-              [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
-              ;; subtyping on immutable structs is covariant
-              [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
-               (subtypes* A0 flds flds*)]
-              [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
-               (subtypes* A0 (cons proc flds) (cons proc* flds*))]
-              ;; subtyping on structs follows the declared hierarchy
-              [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
-               ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
-               (subtype* A0 parent other)]
-              ;; applications and names are structs too
-              [(list (App: (Name: n) args stx) other)
-               (let ([t (lookup-type-name n)])
-                 (unless (Type? t)                     
-                   (fail! s t))
-                 #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-                         (instantiate-poly t args))
-                 (unless (Poly? t)
-                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-                 (match t [(Poly-unsafe: n _)
-                           (unless (= n (length args))
-                             (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-                                           n (length args)))])
-                 (let ([v (subtype* A0 (instantiate-poly t args) other)])
-                   #;(printf "val: ~a~n"  v)
-                   v))]
-              [(list other (App: (Name: n) args stx))
-               (let ([t (lookup-type-name n)])
-                 (unless (Type? t)                     
-                   (fail! s t))
-                 #;(printf "subtype: 2 app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-                         (instantiate-poly t args))
-                 (unless (Poly? t)
-                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-                 (match t [(Poly-unsafe: n _)
-                           (unless (= n (length args))
-                             (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-                                           n (length args)))])
-                 ;(printf "about to call subtype with: ~a ~a ~n" other (instantiate-poly t args))
-                 (let ([v (subtype* A0 other (instantiate-poly t args))])
-                   #;(printf "2 val: ~a~n"  v)
-                   v))]
-              [(list (Name: n) other)
-               (let ([t (lookup-type-name n)])
-                 ;(printf "subtype: name: ~a ~a ~a~n" (syntax-e n) t other)
-                 (if (Type? t)                     
-                     (subtype* A0 t other)
-                     (fail! s t)))]
-              ;; Promises are covariant
-              [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
-              ;; subtyping on values is pointwise
-              [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
-              ;; single values shouldn't actually happen, but they're just like the type
-              [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
-              [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]
-              ;; subtyping on other stuff
-              [(list (Syntax: t) (Syntax: t*))
-               (subtype* A0 t t*)]
-              [(list (Instance: t) (Instance: t*))
-               (subtype* A0 t t*)]
-              ;; otherwise, not a subtype
-              [_ (fail! s t) #;(printf "failed")]))))))
+	      [(list _ (Univ:)) A0]
+	      ;; error is top and bot
+	      [(list _ (Error:)) A0]
+	      [(list (Error:) _) A0]
+	      ;; (Un) is bot
+	      [(list _ (Union: (list))) (fail! s t)]
+	      [(list (Union: (list)) _) A0]
+	      ;; value types              
+	      [(list (Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
+	      ;; integers are numbers too
+	      [(list (Base: 'Integer _) (Base: 'Number _)) A0]
+	      ;; values are subtypes of their "type"
+	      [(list (Value: (? integer? n)) (Base: 'Integer _)) A0]
+	      [(list (Value: (? number? n)) (Base: 'Number _)) A0]
+	      [(list (Value: (? boolean? n)) (Base: 'Boolean _)) A0]
+	      [(list (Value: (? symbol? n)) (Base: 'Symbol _)) A0]
+	      [(list (Value: (? string? n)) (Base: 'String _)) A0]
+	      ;; tvars are equal if they are the same variable
+	      [(list (F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+	      ;; case-lambda
+	      [(list (Function: arr1) (Function: arr2))
+	       (when (null? arr1) (fail! s t))
+	       (let loop-arities ([A* A0]
+				  [arr2 arr2])
+		 (cond 
+		  [(null? arr2) A*]
+		  [(supertype-of-one/arr A* (car arr2) arr1) => (lambda (A) (loop-arities A (cdr arr2)))]
+		  [else (fail! s t)]))]
+	      ;; recur structurally on pairs
+	      [(list (Pair: a d) (Pair: a* d*))
+	       (let ([A1 (subtype* A0 a a*)])
+		 (and A1 (subtype* A1 d d*)))]
+	      ;; quantification over two types preserves subtyping
+	      [(list (Poly: ns b1) (Poly: ms b2)) 
+	       (=> unmatch)
+	       (unless (= (length ns) (length ms)) 
+		       (unmatch))
+					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
+	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
+	      ;; use unification to see if we can use the polytype here
+	      [(list (Poly: vs b) s)
+	       (=> unmatch)
+	       (if (unify vs (list b) (list s)) A0 (unmatch))]              
+	      [(list s (Poly: vs b))
+	       (=> unmatch)
+	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
+	      ;; names are compared for equality:
+	      [(list (Name: n) (Name: n*))
+	       (=> unmatch)
+	       (if (free-identifier=? n n*)
+		   A0
+		   (unmatch))]
+	      ;; just unfold the recursive types
+	      [(list _ (? Mu?)) (subtype* A0 s (unfold t))]
+	      [(list (? Mu?) _) (subtype* A0 (unfold s) t)]
+	      ;; for unions, we check the cross-product
+	      [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
+	      [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
+	      ;; subtyping on immutable structs is covariant
+	      [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
+	       (subtypes* A0 flds flds*)]
+	      [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
+	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
+	      ;; subtyping on structs follows the declared hierarchy
+	      [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
+					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
+	       (subtype* A0 parent other)]
+	      ;; applications and names are structs too
+	      [(list (App: (Name: n) args stx) other)
+	       (let ([t (lookup-type-name n)])
+		 (unless (Type? t)                     
+			 (fail! s t))
+		 #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
+		 (instantiate-poly t args))
+		 (unless (Poly? t)
+			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
+		 (match t [(Poly-unsafe: n _)
+			   (unless (= n (length args))
+				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
+						 n (length args)))])
+		 (let ([v (subtype* A0 (instantiate-poly t args) other)])
+		   #;(printf "val: ~a~n"  v)
+		   v))]
+	      [(list other (App: (Name: n) args stx))
+	       (let ([t (lookup-type-name n)])
+		 (unless (Type? t)                     
+			 (fail! s t))
+		 #;(printf "subtype: 2 app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
+		 (instantiate-poly t args))
+		 (unless (Poly? t)
+			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
+		 (match t [(Poly-unsafe: n _)
+			   (unless (= n (length args))
+				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
+						 n (length args)))])
+					;(printf "about to call subtype with: ~a ~a ~n" other (instantiate-poly t args))
+		 (let ([v (subtype* A0 other (instantiate-poly t args))])
+		   #;(printf "2 val: ~a~n"  v)
+		   v))]
+	      [(list (Name: n) other)
+	       (let ([t (lookup-type-name n)])
+					;(printf "subtype: name: ~a ~a ~a~n" (syntax-e n) t other)
+		 (if (Type? t)                     
+		     (subtype* A0 t other)
+		     (fail! s t)))]
+	      ;; Promises are covariant
+	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
+	      ;; subtyping on values is pointwise
+	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
+	      ;; single values shouldn't actually happen, but they're just like the type
+	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
+	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]
+	      ;; subtyping on other stuff
+	      [(list (Syntax: t) (Syntax: t*))
+	       (subtype* A0 t t*)]
+	      [(list (Instance: t) (Instance: t*))
+	       (subtype* A0 t t*)]
+	      ;; otherwise, not a subtype
+	      [_ (fail! s t) #;(printf "failed")])))]))))
 
-(define (type-compare? a b)
+  (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
 
 (provide subtype type-compare? subtypes/varargs subtypes)

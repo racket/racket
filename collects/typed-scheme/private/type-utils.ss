@@ -37,7 +37,7 @@
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-		 [#:Union tys (Un (map sb tys))]
+		 ;[#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
                  [#:arr dom rng rest drest kws thn-eff els-eff
                         (begin

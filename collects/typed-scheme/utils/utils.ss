@@ -166,16 +166,27 @@
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #t)
+(define-for-syntax printing? #f)
 
 (define print-type* (box (lambda _ (error "print-type* not yet defined"))))
 (define print-effect* (box (lambda _ (error "print-effect* not yet defined"))))
+
+(require scheme/pretty mzlib/pconvert)
 
 (define-syntax (define-struct/printer stx)
   (syntax-case stx ()
     [(form name (flds ...) printer)
      #`(define-struct/properties name (flds ...) 
-         #,(if printing? #'([prop:custom-write printer]) #'())
+         #,(if printing?
+               #'([prop:custom-write printer]) 
+               #'([prop:custom-write (lambda (s port mode)
+                                       (parameterize ([current-output-port port]
+                                                      [show-sharing #f]
+                                                      [booleans-as-true/false #f]
+                                                      [constructor-style-printing #t])
+                                         (newline)
+                                         (pretty-print (print-convert s))
+                                         (newline)))]))
          #f)]))
 
 (define (id kw . args)

@@ -13,7 +13,7 @@
           syntax/stx
 	  (utils utils)))
 
-(provide == dt de print-type* print-effect* Type Type? Effect Effect? defintern hash-id Type-seq Effect-seq)
+(provide == dt de print-type* print-effect* Type Type? Effect Effect? defintern hash-id Type-seq Effect-seq Type-key)
 
 
 
@@ -25,9 +25,9 @@
 
 
 ;; all types are Type?
-(define-struct/printer Type (seq) (lambda (a b c) ((unbox print-type*) a b c)))
+(define-struct/printer Type (seq key) (lambda (a b c) ((unbox print-type*) a b c)))
 
-(define-struct/printer Effect (seq) (lambda (a b c) ((unbox print-effect*) a b c)))
+(define-struct/printer Effect (seq key) (lambda (a b c) ((unbox print-effect*) a b c)))
 
 
 
@@ -44,31 +44,34 @@
 (define-syntaxes (dt de)
   (let ()
     (define (parse-opts opts stx)
-      (let loop ([provide? #t] [intern? #f] [frees #t] [fold-rhs #f] [opts opts])
+      (let loop ([provide? #t] [intern? #f] [frees #t] [fold-rhs #f] [key '(#f)] [opts opts])
         (cond 
-          [(null? opts) (values provide? intern? frees fold-rhs)]
+          [(null? opts) (values provide? intern? frees fold-rhs key)]
           [(eq? '#:no-provide (syntax-e (stx-car opts)))
-           (loop #f intern? frees fold-rhs (cdr opts))]
+           (loop #f intern? frees fold-rhs key (cdr opts))]
           [(eq? '#:no-frees (syntax-e (stx-car opts)))
-           (loop #f intern? #f fold-rhs (cdr opts))]
+           (loop #f intern? #f fold-rhs key (cdr opts))]
           [(not (and (stx-pair? opts) (stx-pair? (stx-car opts))))
            (raise-syntax-error #f "bad options" stx)]
           [(eq? '#:intern (syntax-e (stx-car (car opts))))
-           (loop provide? (stx-car (stx-cdr (car opts))) frees fold-rhs (cdr opts))]
+           (loop provide? (stx-car (stx-cdr (car opts))) frees fold-rhs key (cdr opts))]
           [(eq? '#:frees (syntax-e (stx-car (car opts))))
-           (loop provide? intern? (stx-cdr (car opts)) fold-rhs (cdr opts))]
+           (loop provide? intern? (stx-cdr (car opts)) fold-rhs key (cdr opts))]
           [(eq? '#:fold-rhs (syntax-e (stx-car (car opts))))
-           (loop provide? intern? frees (stx-cdr (car opts)) (cdr opts))]
+           (loop provide? intern? frees (stx-cdr (car opts)) key (cdr opts))]
+	  [(eq? '#:key (syntax-e (stx-car (car opts))))
+	   (loop provide? intern? frees fold-rhs (stx-cdr (car opts)) (cdr opts))]
           [else (raise-syntax-error #f "bad options" stx)])))
     (define (mk par ht-stx)        
       (lambda (stx)          
         (syntax-case stx ()
           [(dform nm flds . opts)
-           (let*-values ([(provide? intern? frees fold-rhs) (parse-opts (syntax->list #'opts) #'opts)]
+           (let*-values ([(provide? intern? frees fold-rhs key-expr) (parse-opts (syntax->list #'opts) #'opts)]
                          [(kw) (string->keyword (symbol->string (syntax-e #'nm)))])
              (with-syntax* 
                  ([ex (id #'nm #'nm ":")]
                   [kw-stx kw]
+		  [(key-expr) key-expr]
                   [parent par]
                   [(s:ty maker pred acc ...) (build-struct-names #'nm (syntax->list #'flds) #f #t #'nm)]
                   [(flds* ...) #'flds]
@@ -82,7 +85,12 @@
                                          #'(lambda (tr er) 
                                              #'fr))]
                                       [fold-rhs (raise-syntax-error fold-rhs "something went wrong")]
-                                      [else #'(lambda (type-rec-id effect-rec-id) #`(*maker (#,type-rec-id flds*) ...))])]
+                                      [else #'(lambda (type-rec-id effect-rec-id) 
+						#;
+                                                (printf "about to call ~a with ~a args~n"
+							'*maker
+							(length '(flds* ...)))
+						#`(*maker (#,type-rec-id flds*) ...))])]
                   [provides (if provide? 
                                 #`(begin 
                                     (provide ex pred acc ...)
@@ -90,19 +98,18 @@
                                 #'(begin))]
                   [intern (cond 
                             [(syntax? intern?)
-                             #`(defintern (**maker . flds) maker #,intern?)]                                        
+                             #`(defintern (**maker key . flds) maker #,intern?)]                            
                             [(null? (syntax-e #'flds))
-                             #'(defintern (**maker . flds) maker #f)]
-                            [(stx-null? (stx-cdr #'flds)) #'(defintern (**maker . flds) maker . flds)]
-                            [else #'(defintern (**maker . flds) maker (list . flds))])]
+                             #'(defintern (**maker key . flds) maker #f)]
+                            [(stx-null? (stx-cdr #'flds)) #'(defintern (**maker key . flds) maker . flds)]
+                            [else #'(defintern (**maker key . flds) maker (list . flds))])]
                   [frees (cond
                            [(not frees) #'(begin)]
                            ;; we know that this has no free vars
                            [(and (pair? frees) (syntax? (car frees)) (not (syntax-e (car frees))))
                             (syntax/loc stx
                               (define (*maker . flds)
-                                (define v (**maker . flds)) 
-                                #;(printf  "~a entered in #f case~n" '*maker)
+                                (define v (**maker key-expr . flds)) 
                                 (unless-in-table 
                                  var-table v
                                  (hash-set! var-table v empty-hash-table)
@@ -113,16 +120,14 @@
                            [(and (pair? frees) (pair? (cdr frees)))
                             (quasisyntax/loc
                                 stx
-                              (define (*maker . flds)
-                                (define v (**maker . flds))
-                                #;(printf  "~a entered in expr case ~n~a~n~a ~n" '*maker '#,(car frees) '#,(cadr frees))
+                              (define (*maker . flds)				
+                                (define v (**maker key-expr . flds))
                                 #,
                                 (quasisyntax/loc (car frees)
                                   (unless-in-table 
                                    var-table v
                                    (hash-set! var-table v #,(car frees))
                                    (hash-set! index-table v #,(cadr frees))))
-                                #;(printf  "~a exited in expr case~n" '*maker)
                                 v))]                                       
                            [else 
                             (let 
@@ -134,8 +139,7 @@
                                       [(e ...) #`(combine-frees (list (#,f e) ...))]))])
                               (quasisyntax/loc stx
                                 (define (*maker . flds)
-                                  (define v (**maker . flds))
-                                  #;(printf  "~a entered in default case~n" '*maker)
+                                  (define v (**maker key-expr . flds))
                                   (unless-in-table 
                                    var-table v
                                    (define fvs #,(combiner #'free-vars* #'flds))
@@ -150,7 +154,7 @@
                        (... 
                         (syntax-case s ()
                           [(__ . fs) 
-                           (with-syntax ([flds** (syntax/loc s (_ . fs))])
+                           (with-syntax ([flds** (syntax/loc s (_ _ . fs))])
                              (quasisyntax/loc s (struct nm flds**)))]))))
                    (begin-for-syntax
                      (hash-set! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs #'#,stx)))

@@ -9,7 +9,7 @@
 ;; FIXME - currently broken
 (define print-poly-types? #f)
 ;; do we use simple type aliases in printing
-(define print-aliases #t)
+(define print-aliases #f)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
