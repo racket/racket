@@ -3,10 +3,9 @@
 (require (for-syntax scheme/base
                      stxclass
                      syntax/boundmap
-                     "unit-compiletime.ss")
+                     "unit-compiletime.ss"
+                     "unit-contract-syntax.ss")
          scheme/contract
-         scheme/pretty
-         "unit-keywords.ss"
          "unit-utils.ss"
          "unit-runtime.ss")
 
@@ -80,175 +79,136 @@
 (define-for-syntax contract-exports (contract-imports/exports #f))
 
 (define-syntax/err-param (unit/c stx)
-  (begin
-    (define-syntax-class sig-id
-      (pattern x
-               #:declare x (static-of 'signature 
-                                      (λ (x)
-                                        (signature? (set!-trans-extract x))))))
-    (define-syntax-class unit/c-clause
-      #:transparent
-      (pattern (s:sig-id [x:identifier c:expr] ...))
-      (pattern s:sig-id ;; allow a non-wrapped sig-id, which is the same as (sig-id)
-               #:with (x ...) null
-               #:with (c ...) null))
-    (define-syntax-class import-clause #:literals (import)
-      #:transparent
-      (pattern (import i:unit/c-clause ...)))
-    (define-syntax-class export-clause #:literals (export)
-      #:transparent
-      (pattern (export e:unit/c-clause ...)))
-    (syntax-parse stx
-      [(_ (import i:unit/c-clause ...)
-          (export e:unit/c-clause ...) bad-expr . rest)
-       (raise-syntax-error 'unit/c
-                           "extra form"
-                           #'bad-expr)]
-      [(_ :import-clause :export-clause)
-       (begin
-         (define-values (isig tagged-import-sigs import-tagged-infos 
-                              import-tagged-sigids import-sigs)
-           (process-unit-import #'(i.s ...)))
-         
-         (define-values (esig tagged-export-sigs export-tagged-infos 
-                              export-tagged-sigids export-sigs)
-           (process-unit-export #'(e.s ...)))
-         
-         (define contract-table
-           (make-bound-identifier-mapping))
-         
-         (define (process-sig name sig xs cs)
-           (define xs-list (syntax->list xs))
-           (let ([dup (check-duplicate-identifier xs-list)])
-             (when dup
-               (raise-syntax-error 'unit/c
-                                   (format "duplicate identifier found for signature ~a"
-                                           (syntax->datum name))
-                                   dup)))
-           (let ([ids (map car (car sig))])
-             (for-each (λ (id)
-                         (unless (memf (λ (i) (bound-identifier=? id i)) ids)
-                           (raise-syntax-error 'unit/c
-                                               (format "identifier not member of signature ~a" 
-                                                       (syntax-e name))
-                                               id)))
-                       xs-list))
-           (for ([x (in-list xs-list)]
-                 [c (in-list (syntax->list cs))])
-                (bound-identifier-mapping-put! contract-table x c)))
-         
-         (check-duplicate-sigs import-tagged-infos isig null null)
-         
-         (check-duplicate-subs export-tagged-infos esig)
-         
-         (check-unit-ie-sigs import-sigs export-sigs)
-         
-         (for-each process-sig
-                   isig
-                   import-sigs
-                   (syntax->list #'((i.x ...) ...))
-                   (syntax->list #'((i.c ...) ...)))
-         (for-each process-sig
-                   esig
-                   export-sigs
-                   (syntax->list #'((e.x ...) ...))
-                   (syntax->list #'((e.c ...) ...)))
-         
-         (with-syntax ([((import-key ...) ...)
-                        (map tagged-info->keys import-tagged-infos)]
-                       [((export-key ...) ...)
-                        (map tagged-info->keys export-tagged-infos)]
-                       [(import-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             import-tagged-infos)]
-                       [(export-name ...)
-                        (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
-                             export-tagged-infos)])
-           (quasisyntax/loc stx
-             (begin
-               (make-proj-contract
-                (list 'unit/c
-                      (cons 'import 
-                            (list (cons 'i.s
-                                        (map list (list 'i.x ...) 
-                                             (build-compound-type-name 'i.c ...)))
-                                  ...))
-                      (cons 'export 
-                            (list (cons 'e.s
-                                        (map list (list 'e.x ...)
-                                             (build-compound-type-name 'e.c ...)))
-                                  ...)))
-                (λ (pos neg src-info name)
-                  (λ (unit-tmp)
-                    (unless (unit? unit-tmp)
-                      (raise-contract-error unit-tmp src-info pos name
-                                            "value is not a unit"))
-                    (contract-check-sigs 
-                     unit-tmp
-                     (vector-immutable
-                      (cons 'import-name
-                            (vector-immutable import-key ...)) ...)
-                     (vector-immutable 
-                      (cons 'export-name 
-                            (vector-immutable export-key ...)) ...)
-                     src-info pos name)
-                    (make-unit
-                     #f
-                     (vector-immutable (cons 'import-name
-                                             (vector-immutable import-key ...)) ...)
-                     (vector-immutable (cons 'export-name 
-                                             (vector-immutable export-key ...)) ...)
-                     (unit-deps unit-tmp)
-                     (λ ()
-                       (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
-                         (values (lambda (import-table)
-                                   (unit-fn #,(contract-imports
-                                               #'import-table
-                                               import-tagged-infos
-                                               import-sigs
-                                               contract-table
-                                               #'pos
-                                               #'neg
-                                               #'src-info
-                                               #'name)))
-                                 #,(contract-exports 
-                                    #'export-table
-                                    export-tagged-infos
-                                    export-sigs
-                                    contract-table
-                                    #'pos
-                                    #'neg
-                                    #'src-info
-                                    #'name)))))))
-                (λ (v)
-                  (and (unit? v)
-                       (with-handlers ([exn:fail:contract? (λ () #f)])
-                         (contract-check-sigs 
-                          v
-                          (vector-immutable
-                           (cons 'import-name
-                                 (vector-immutable import-key ...)) ...)
-                          (vector-immutable 
-                           (cons 'export-name 
-                                 (vector-immutable export-key ...)) ...)
-                          (list #f "not-used") 'not-used null))
-                       #t)))))))]
-      [(_ (import i:unit/c-clause ...) bad-e . body)
-       (raise-syntax-error 'unit/c
-                           "expected an export description"
-                           #'bad-e)]
-      [(_ (import i:unit/c-clause ...))
-       (raise-syntax-error 'unit/c
-                           "expected an export description"
-                           stx)]
-      [(_ bad-i . rest)
-       (raise-syntax-error 'unit/c
-                           "expected an import description"
-                           #'bad-i)]
-      [(_)
-       (raise-syntax-error 'unit/c
-                           "expected an import description"
-                           stx)])))
+  (syntax-parse stx
+    [(_ :import-clause :export-clause)
+     (begin
+       (define-values (isig tagged-import-sigs import-tagged-infos 
+                            import-tagged-sigids import-sigs)
+         (process-unit-import #'(i.s ...)))
+       
+       (define-values (esig tagged-export-sigs export-tagged-infos 
+                            export-tagged-sigids export-sigs)
+         (process-unit-export #'(e.s ...)))
+       
+       (define contract-table
+         (make-bound-identifier-mapping))
+       
+       (define (process-sig name sig xs cs)
+         (define xs-list (syntax->list xs))
+         (let ([dup (check-duplicate-identifier xs-list)])
+           (when dup
+             (raise-syntax-error 'unit/c
+                                 (format "duplicate identifier found for signature ~a"
+                                         (syntax->datum name))
+                                 dup)))
+         (let ([ids (map car (car sig))])
+           (for-each (λ (id)
+                       (unless (memf (λ (i) (bound-identifier=? id i)) ids)
+                         (raise-syntax-error 'unit/c
+                                             (format "identifier not member of signature ~a" 
+                                                     (syntax-e name))
+                                             id)))
+                     xs-list))
+         (for ([x (in-list xs-list)]
+               [c (in-list (syntax->list cs))])
+              (bound-identifier-mapping-put! contract-table x c)))
+       
+       (check-duplicate-sigs import-tagged-infos isig null null)
+       
+       (check-duplicate-subs export-tagged-infos esig)
+       
+       (check-unit-ie-sigs import-sigs export-sigs)
+       
+       (for-each process-sig
+                 isig
+                 import-sigs
+                 (syntax->list #'((i.x ...) ...))
+                 (syntax->list #'((i.c ...) ...)))
+       (for-each process-sig
+                 esig
+                 export-sigs
+                 (syntax->list #'((e.x ...) ...))
+                 (syntax->list #'((e.c ...) ...)))
+       
+       (with-syntax ([((import-key ...) ...)
+                      (map tagged-info->keys import-tagged-infos)]
+                     [((export-key ...) ...)
+                      (map tagged-info->keys export-tagged-infos)]
+                     [(import-name ...)
+                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
+                           import-tagged-infos)]
+                     [(export-name ...)
+                      (map (lambda (tag/info) (car (siginfo-names (cdr tag/info))))
+                           export-tagged-infos)])
+         (quasisyntax/loc stx
+           (begin
+             (make-proj-contract
+              (list 'unit/c
+                    (cons 'import 
+                          (list (cons 'isig
+                                      (map list (list 'i.x ...) 
+                                           (build-compound-type-name 'i.c ...)))
+                                ...))
+                    (cons 'export 
+                          (list (cons 'esig
+                                      (map list (list 'e.x ...)
+                                           (build-compound-type-name 'e.c ...)))
+                                ...)))
+              (λ (pos neg src-info name)
+                (λ (unit-tmp)
+                  (unless (unit? unit-tmp)
+                    (raise-contract-error unit-tmp src-info pos name
+                                          "value is not a unit"))
+                  (contract-check-sigs 
+                   unit-tmp
+                   (vector-immutable
+                    (cons 'import-name
+                          (vector-immutable import-key ...)) ...)
+                   (vector-immutable 
+                    (cons 'export-name 
+                          (vector-immutable export-key ...)) ...)
+                   src-info pos name)
+                  (make-unit
+                   #f
+                   (vector-immutable (cons 'import-name
+                                           (vector-immutable import-key ...)) ...)
+                   (vector-immutable (cons 'export-name 
+                                           (vector-immutable export-key ...)) ...)
+                   (unit-deps unit-tmp)
+                   (λ ()
+                     (let-values ([(unit-fn export-table) ((unit-go unit-tmp))])
+                       (values (lambda (import-table)
+                                 (unit-fn #,(contract-imports
+                                             #'import-table
+                                             import-tagged-infos
+                                             import-sigs
+                                             contract-table
+                                             #'pos
+                                             #'neg
+                                             #'src-info
+                                             #'name)))
+                               #,(contract-exports 
+                                  #'export-table
+                                  export-tagged-infos
+                                  export-sigs
+                                  contract-table
+                                  #'pos
+                                  #'neg
+                                  #'src-info
+                                  #'name)))))))
+              (λ (v)
+                (and (unit? v)
+                     (with-handlers ([exn:fail:contract? (λ () #f)])
+                       (contract-check-sigs 
+                        v
+                        (vector-immutable
+                         (cons 'import-name
+                               (vector-immutable import-key ...)) ...)
+                        (vector-immutable 
+                         (cons 'export-name 
+                               (vector-immutable export-key ...)) ...)
+                        (list #f "not-used") 'not-used null))
+                     #t)))))))]))
 
 (define (contract-check-helper sub-sig super-sig import? val src-info blame ctc)
   (define t (make-hash))
