@@ -718,3 +718,49 @@
   (f 0)
   (test-runtime-error exn:fail:contract? "V@ broke contract on f"
     (f 3)))
+
+(let ()
+  (define-signature foo^ (x y))
+  (define-unit/contract U@
+    (import)
+    (export (foo^ [x (-> number? number?)]))
+    (define (x n) (zero? n))
+    (define y 4))
+  (define-unit V@
+    (import foo^)
+    (export)
+    (x 4))
+  (define-compound-unit/infer W@
+    (import) (export) (link U@ V@))
+  (define-values/invoke-unit/infer U@)
+  y
+  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+    (x #t))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (x 3))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (invoke-unit W@)))
+
+(let ()
+  (define-signature foo^ (x? f))
+  (define-unit/contract U@
+    (import)
+    (export (foo^ [f (-> x? number?)]))
+    (define (x? n) (or (= n 3)
+                       (zero? n)))
+    (define (f n) (if (= n 3) #t n)))
+  (define-unit V@
+    (import foo^)
+    (export)
+    (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+      (f 2))
+    (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+      (f 3)))
+  (define-compound-unit/infer W@
+    (import) (export) (link U@ V@))
+  (define-values/invoke-unit/infer U@)
+  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+    (f 4))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (f 3))
+  (invoke-unit W@))

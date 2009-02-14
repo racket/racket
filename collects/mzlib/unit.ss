@@ -1,11 +1,13 @@
 (module unit mzscheme
   (require-for-syntax mzlib/list
+                      stxclass
                       syntax/boundmap
                       syntax/context
                       syntax/kerncase
                       syntax/name
                       syntax/struct
                       syntax/stx
+                      "private/unit-contract-syntax.ss"
                       "private/unit-compiletime.ss"
                       "private/unit-syntax.ss")
   
@@ -20,14 +22,15 @@
   (provide define-signature-form struct open
            define-signature provide-signature-elements
            only except rename import export prefix link tag init-depend extends contracted
-           unit? (all-from "private/unit-contract.ss")
+           unit?
            (rename :unit unit) define-unit 
            compound-unit define-compound-unit compound-unit/infer define-compound-unit/infer
            invoke-unit define-values/invoke-unit
            invoke-unit/infer define-values/invoke-unit/infer
            unit-from-context define-unit-from-context
            define-unit-binding
-           unit/new-import-export define-unit/new-import-export)
+           unit/new-import-export define-unit/new-import-export
+           unit/c define-unit/contract)
  
   (define-syntax/err-param (define-signature-form stx)
     (syntax-case stx ()
@@ -1264,32 +1267,38 @@
 
   
   
+  (define-for-syntax (build-define-unit-helper contracted?)
+    (lambda (stx build err-msg)
+      (syntax-case stx ()
+        ((_ name . rest)
+         (begin
+           (check-id #'name)
+           (let-values (((exp i e d) (parameterize ([error-syntax (syntax-property (error-syntax) 'inferred-name (syntax-e #'name))])
+                                       (build #'rest ))))
+             (with-syntax ((((itag . isig) ...) i)
+                           (((etag . esig) ...) e)
+                           (((deptag . depsig) ...) d)
+                           (contracted? contracted?))
+               (quasisyntax/loc (error-syntax)
+                 (begin
+                   (define u #,exp)
+                   (define-syntax name
+                     (make-set!-transformer
+                      (make-unit-info ((syntax-local-certifier) (quote-syntax u))
+                                      (list (cons 'itag (quote-syntax isig)) ...)
+                                      (list (cons 'etag (quote-syntax esig)) ...)
+                                      (list (cons 'deptag (quote-syntax deptag)) ...)
+                                      (quote-syntax name)
+                                      contracted?)))))))))
+        ((_)
+         (raise-stx-err err-msg)))))
+  
   ;; build-define-unit : syntax-object
   ;;                     (syntax-object -> (values syntax-object (listof identifier) (listof identifier))
   ;;                     string ->
   ;;                     syntax-object
-  (define-for-syntax (build-define-unit stx build err-msg)
-    (syntax-case stx ()
-      ((_ name . rest)
-       (begin
-         (check-id #'name)
-         (let-values (((exp i e d) (parameterize ([error-syntax (syntax-property (error-syntax) 'inferred-name (syntax-e #'name))])
-                                     (build #'rest ))))
-           (with-syntax ((((itag . isig) ...) i)
-                         (((etag . esig) ...) e)
-                         (((deptag . depsig) ...) d))
-             (quasisyntax/loc (error-syntax)
-               (begin
-                 (define u #,exp)
-                 (define-syntax name
-                   (make-set!-transformer
-                    (make-unit-info ((syntax-local-certifier) (quote-syntax u))
-                                    (list (cons 'itag (quote-syntax isig)) ...)
-                                    (list (cons 'etag (quote-syntax esig)) ...)
-                                    (list (cons 'deptag (quote-syntax deptag)) ...)
-                                    (quote-syntax name))))))))))
-      ((_)
-       (raise-stx-err err-msg))))
+  (define-for-syntax build-define-unit (build-define-unit-helper #f))
+  (define-for-syntax build-define-unit/contracted (build-define-unit-helper #t))
 
   (define-for-syntax (build-define-unit-binding stx)
     
@@ -1360,6 +1369,46 @@
                              (check-ufc-syntax sig)
                              (build-unit-from-context sig))
       "missing unit name and signature"))
+  
+  (define-for-syntax (build-unit/contract stx)
+    (syntax-parse stx
+      [(:import-clause/contract :export-clause/contract dep:dep-clause . body)
+       (let-values ([(exp isigs esigs deps) 
+                     (build-unit
+                      (check-unit-syntax
+                       (syntax/loc stx
+                         ((import i.s ...) (export e.s ...) dep . body))))])
+         (with-syntax ([(import-tagged-sig-id ...)
+                        (map (λ (i s)
+                               (if (identifier? i) #`(tag #,i #,s) s))
+                             (syntax->list #'(i.s.i ...))
+                             (syntax->list #'(i.s.s.name ...)))]
+                       [(export-tagged-sig-id ...)
+                        (map (λ (i s)
+                               (if (identifier? i) #`(tag #,i #,s) s))
+                             (syntax->list #'(e.s.i ...))
+                             (syntax->list #'(e.s.s.name ...)))])
+           (with-syntax ([name (syntax-local-infer-name (error-syntax))]
+                         [new-unit exp]
+                         [unit-contract
+                          (unit/c/core
+                           (syntax/loc stx
+                             ((import (import-tagged-sig-id [i.x i.c] ...) ...)
+                              (export (export-tagged-sig-id [e.x e.c] ...) ...))))]
+                         [src-info (id->contract-src-info #'name)])
+             (values 
+              (syntax/loc stx
+                (contract unit-contract new-unit '(unit name) (current-contract-region) src-info))
+              isigs esigs deps))))]
+      [(ic:import-clause/contract ec:export-clause/contract . body)
+       (build-unit/contract 
+        (syntax/loc stx
+          (ic ec (init-depend) . body)))]))
+  
+  (define-syntax/err-param (define-unit/contract stx)
+    (build-define-unit/contracted stx (λ (stx)
+                                        (build-unit/contract stx))
+     "missing unit name"))
 
   (define-for-syntax (unprocess-tagged-id ti)
     (if (car ti)

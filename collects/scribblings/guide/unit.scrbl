@@ -530,85 +530,49 @@ causes the appropriate contract errors.
 
 However, sometimes we may have a unit that must conform to an
 already existing signature that is not contracted.  In this case,
-we can use the @scheme[unit/c] contract combinator, which creates
-a new unit that protects parts of the wrapped unit as desired.
+we can create a unit contract with @scheme[unit/c] or use
+the @scheme[define-unit/contract] form, which defines a unit which
+has been wrapped with a unit contract.
 
-For example, here's a version of @scheme[toy-store@] which has a
-slightly buggy implementation of the uncontracted @scheme[toy-store^]
-signature.  When we provide the new @scheme[wrapped-toy-store@] unit,
-we protect its exports.
+For example, here's a version of @scheme[toy-factory@] which still
+implements the regular @scheme[toy-factory^], but whose exports
+have been protected with an appropriate unit contract.
 
 @schememod/eval[[#:file
-"wrapped-toy-store-unit.ss"
+"wrapped-simple-factory-unit.ss"
 scheme
 
-(require "toy-store-sig.ss"
-         "toy-factory-sig.ss")]
+(require "toy-factory-sig.ss")]
 
-(define-unit wrapped-toy-store@
-  (import toy-factory^)
-  (export toy-store^)
+(define-unit/contract wrapped-simple-factory@
+  (import)
+  (export (toy-factory^
+           [build-toys (-> integer? (listof toy?))]
+           [repaint    (-> toy? symbol? toy?)]
+           [toy?       (-> any/c boolean?)]
+           [toy-color  (-> toy? symbol?)]))
 
-  (define inventory null)
+  (printf "Factory started.\n")
 
-  (define (store-color) 3) (code:comment #, @t{Not a valid color!})
+  (define-struct toy (color) #:transparent)
 
-  (define (maybe-repaint t)
-    (if (eq? (toy-color t) (store-color))
-        t
-        (repaint t (store-color))))
+  (define (build-toys n)
+    (for/list ([i (in-range n)])
+      (make-toy 'blue)))
 
-  (define (stock! n)
-    (set! inventory 
-          (append inventory
-                  (map maybe-repaint
-                       (build-toys n)))))
+  (define (repaint t col)
+    (make-toy col)))
 
-  (define (get-inventory) inventory))
-
-(provide/contract
- [wrapped-toy-store@ 
-  (unit/c (import toy-factory^)
-          (export (toy-store^
-                   [store-color (-> symbol?)]
-                   [stock! (-> integer? void?)]
-                   [get-inventory (-> (listof toy?))])))])
+(provide contracted-simple-factory@)
 ]
-
-Since the result of the @scheme[unit/c] combinator is a new unit value
-which has not been defined with @scheme[define-unit] or another similar
-form, we run into problems with signature inference.  The section 
-@secref{firstclassunits} lists options that we can use to handle the
-resulting values.
 
 @interaction[
 #:eval toy-eval
-(eval:alts (require "wrapped-toy-store-unit.ss")
-           (define wrapped-toy-store@
-             (contract (unit/c (import toy-factory^)
-                               (export (toy-store^
-                                        [store-color (-> symbol?)]
-                                        [stock! (-> integer? void?)]
-                                        [get-inventory (-> (listof toy?))])))
-                       wrapped-toy-store@
-                       'wrapped-toy-store-unit
-                       'top-level
-                       (list (make-srcloc 'top-level #f #f #f #f) "wrapped-toy-store@"))))
-(define-unit-binding protected-toy-store@
-  wrapped-toy-store@
-  (import toy-factory^)
-  (export toy-store^))
-(define-compound-unit/infer checked-toy-store+factory@
-  (import)
-  (export toy-factory^ toy-store^)
-  (link store-specific-factory@ protected-toy-store@))
-(define-values/invoke-unit/infer checked-toy-store+factory@)
-(store-color)
-(stock! 'a)
-(code:comment #, @t{This fails because of the factory's (store-color) call})
-(stock! 4) 
-(code:comment #, @t{Since it failed, there's no inventory})
-(get-inventory)
+(eval:alts (require "wrapped-simple-factory-unit.ss") (void))
+(define-values/invoke-unit/infer wrapped-simple-factory@)
+(build-toys 3)
+(build-toys #f)
+(repaint 3 'blue)
 ]
 
 

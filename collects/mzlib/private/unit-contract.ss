@@ -4,12 +4,13 @@
                      stxclass
                      syntax/boundmap
                      "unit-compiletime.ss"
-                     "unit-contract-syntax.ss")
+                     "unit-contract-syntax.ss"
+                     "unit-syntax.ss")
          scheme/contract
          "unit-utils.ss"
          "unit-runtime.ss")
 
-(provide unit/c)
+(provide (for-syntax unit/c/core) unit/c)
 
 (define-for-syntax (contract-imports/exports import?)
   (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
@@ -78,9 +79,9 @@
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
 
-(define-syntax/err-param (unit/c stx)
+(define-for-syntax (unit/c/core stx)
   (syntax-parse stx
-    [(_ :import-clause :export-clause)
+    [(:import-clause/c :export-clause/c)
      (begin
        (define-values (isig tagged-import-sigs import-tagged-infos 
                             import-tagged-sigids import-sigs)
@@ -97,17 +98,15 @@
          (define xs-list (syntax->list xs))
          (let ([dup (check-duplicate-identifier xs-list)])
            (when dup
-             (raise-syntax-error 'unit/c
-                                 (format "duplicate identifier found for signature ~a"
-                                         (syntax->datum name))
-                                 dup)))
+             (raise-stx-err (format "duplicate identifier found for signature ~a"
+                                    (syntax->datum name))
+                            dup)))
          (let ([ids (map car (car sig))])
            (for-each (λ (id)
                        (unless (memf (λ (i) (bound-identifier=? id i)) ids)
-                         (raise-syntax-error 'unit/c
-                                             (format "identifier not member of signature ~a" 
-                                                     (syntax-e name))
-                                             id)))
+                         (raise-stx-err (format "identifier not member of signature ~a" 
+                                                (syntax-e name))
+                                        id)))
                      xs-list))
          (for ([x (in-list xs-list)]
                [c (in-list (syntax->list cs))])
@@ -130,7 +129,9 @@
                  (syntax->list #'((e.x ...) ...))
                  (syntax->list #'((e.c ...) ...)))
        
-       (with-syntax ([((import-key ...) ...)
+       (with-syntax ([(isig ...) isig]
+                     [(esig ...) esig]
+                     [((import-key ...) ...)
                       (map tagged-info->keys import-tagged-infos)]
                      [((export-key ...) ...)
                       (map tagged-info->keys export-tagged-infos)]
@@ -209,6 +210,11 @@
                                (vector-immutable export-key ...)) ...)
                         (list #f "not-used") 'not-used null))
                      #t)))))))]))
+
+(define-syntax/err-param (unit/c stx)
+  (syntax-case stx ()
+    [(_ . sstx)
+     (unit/c/core #'sstx)]))
 
 (define (contract-check-helper sub-sig super-sig import? val src-info blame ctc)
   (define t (make-hash))

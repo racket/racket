@@ -111,16 +111,21 @@
       (parameterize ((error-syntax stx))
         (raise-stx-err "illegal use of signature form"))))
     
-  ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier)
-  (define-struct/proc unit-info (unit-id import-sig-ids export-sig-ids deps orig-binder)
+  ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier boolean)
+  (define-struct/proc unit-info (unit-id import-sig-ids export-sig-ids deps orig-binder contracted?)
     (lambda (struct stx) 
       (with-syntax ((u (unit-info-unit-id struct)))
         (syntax-case stx (set!)
           ((set! x y)
-           #`(begin 
-               #,(syntax/loc #'y (check-unit y 'set!))
-               #,(syntax/loc #'y (check-sigs y (unit-import-sigs u) (unit-export-sigs u) 'set!))
-               (set! u y)))
+           (if (unit-info-contracted? struct)
+               (raise-syntax-error 'set!
+                                   "cannot set! a contracted unit"
+                                   stx
+                                   (syntax x))
+               #`(begin 
+                   #,(syntax/loc #'y (check-unit y 'set!))
+                   #,(syntax/loc #'y (check-sigs y (unit-import-sigs u) (unit-export-sigs u) 'set!))
+                   (set! u y))))
           ((_ . y)
            (syntax/loc stx (u . y)))
           (x
