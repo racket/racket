@@ -1,5 +1,5 @@
 #lang typed-scheme
-           
+
 (require (except-in scheme/list remove-duplicates)
          "id-sets.ss")
 
@@ -17,7 +17,7 @@
     [else (let: loop : (Listof Syntax)
                 ([fst : Syntax (car ids)]
                  [rst : (Listof Syntax) (cdr ids)])
-            (cond
+            (error 'foo) #;(cond
               [(null? rst) (list fst)]
               [else (if (and (eq? (syntax-source fst)
                                   (syntax-source (car rst)))                             
@@ -83,7 +83,7 @@
 (: annotate-tail-position/last (Syntax (Listof Syntax) TailHT -> Void))
 (define (annotate-tail-position/last orig-stx stxs tail-ht)
   (unless (null? stxs)
-    (annotate-tail-position orig-stx (car (last-pair stxs)) tail-ht)))
+    (annotate-tail-position orig-stx (car (#{last-pair @ Syntax} stxs)) tail-ht)))
 
 ;; annotate-tail-position : syntax -> void
 ;; colors the parens (if any) around the argument
@@ -192,8 +192,6 @@
     (let* ([key (syntax-e var)]
            [prev (hash-ref ht #{key :: Any} (λ () #{null :: (Listof Any)}))])
       (hash-set! ht #{key :: Any} #{(cons var prev) :: (Listof Any)}))))
-
-
 
 #|
 ;; annotate-basic : syntax 
