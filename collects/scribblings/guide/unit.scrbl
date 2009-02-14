@@ -269,7 +269,7 @@ This unit has no imports, so we can always invoke it:
 
 @; ----------------------------------------
 
-@section{First-Class Units}
+@section[#:tag "firstclassunits"]{First-Class Units}
 
 The @scheme[define-unit] form combines @scheme[define] with a
 @scheme[unit] form, similar to the way that @scheme[(define (f x)
@@ -577,9 +577,9 @@ scheme
 
 Since the result of the @scheme[unit/c] combinator is a new unit value
 which has not been defined with @scheme[define-unit] or another similar
-form, we run into problems with signature inference.  We see this below in the
-use of @scheme[define-compound-unit] instead of @scheme[define-compound-unit/infer]
-to link the two units.
+form, we run into problems with signature inference.  The section 
+@secref{firstclassunits} lists options that we can use to handle the
+resulting values.
 
 @interaction[
 #:eval toy-eval
@@ -594,11 +594,14 @@ to link the two units.
                        'wrapped-toy-store-unit
                        'top-level
                        (list (make-srcloc 'top-level #f #f #f #f) "wrapped-toy-store@"))))
-(define-compound-unit checked-toy-store+factory@
+(define-unit-binding protected-toy-store@
+  wrapped-toy-store@
+  (import toy-factory^)
+  (export toy-store^))
+(define-compound-unit/infer checked-toy-store+factory@
   (import)
-  (export F S)
-  (link [((F : toy-factory^)) store-specific-factory@ S]
-        [((S : toy-store^)) wrapped-toy-store@ F]))
+  (export toy-factory^ toy-store^)
+  (link store-specific-factory@ protected-toy-store@))
 (define-values/invoke-unit/infer checked-toy-store+factory@)
 (store-color)
 (stock! 'a)
