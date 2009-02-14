@@ -166,7 +166,7 @@
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #f)
+(define-for-syntax printing? #t)
 
 (define print-type* (box (lambda _ (error "print-type* not yet defined"))))
 (define print-effect* (box (lambda _ (error "print-effect* not yet defined"))))

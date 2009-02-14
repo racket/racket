@@ -53,7 +53,7 @@
           (if (andmap Values? types)
               (make-Values (apply map Un (map Values-types types)))
               (int-err "Un: should not take the union of multiple values with some other type: ~a" types))]
-         [else (make-union* #;(remove-subtypes types) (foldr union2 (list) (remove-subtypes types)))]))]))
+         [else (make-union* #;(remove-subtypes types) (foldr union2 '() (remove-subtypes types)))]))]))
 
 #;(defintern (Un-intern args) (lambda (_ args) (apply Un args)) args)
 

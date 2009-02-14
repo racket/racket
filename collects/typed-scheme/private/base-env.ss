@@ -539,7 +539,9 @@
 [maybe-print-message (-String . -> . -Void)]
 
 ;; scheme/list
-[last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x))) . -> . (Un (-pair a a) (-pair a (-val '())))))]
+[last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
+                       . -> . 
+                       (Un (-pair a a) (-pair a (-val '())))))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]
