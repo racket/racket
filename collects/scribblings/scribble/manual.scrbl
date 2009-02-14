@@ -106,6 +106,7 @@ A few other escapes are recognized symbolically:
 
 }
 
+See also @schememodname[scribble/comment-reader].
 }
 
 @defform[(SCHEMEBLOCK datum ...)]{Like @scheme[schemeblock], but with
@@ -202,6 +203,47 @@ procedure, but use @scheme[var] if that cannot work for some reason.}
 in a form definition.}
 
 @; ------------------------------------------------------------------------
+
+@subsection{Typesetting Comments}
+
+@defmodulereader[scribble/comment-reader]
+
+As a reader module, @schememodname[scribble/comment-reader] reads a
+single S-expression that contains @litchar{;}-based comment lines, and
+it wraps the comments with @scheme[code:comment] for use with forms
+like @scheme[schemeblock]. More precisely,
+@schememodname[scribble/comment-reader] extends the current reader to
+adjust the parsing of @litchar{;}.
+
+For example, within a Scribble document that imports
+@schememodname[scribble/manual],
+
+@verbatim[#:indent 2]|{
+  @#reader scribble/comment-reader
+   (schemeblock
+    ;; This is not a pipe
+    (make-pipe)
+   )
+}|
+
+generates
+
+@#reader scribble/comment-reader
+ (schemeblock
+  ;; This is not a pipe
+  (make-pipe)
+ )
+
+The initial @litchar["@"] is needed above to shift into S-expression
+mode, so that @schememetafont{#reader} is recognized as a reader
+declaration instead of literal text. Also, the example uses
+@scheme[(schemeblock ....)]  instead of
+@schememetafont["@"]@scheme[schemeblock]@schememetafont["["]@scheme[....]@schememetafont["]"]
+because the @"@"-reader would drop comments within the
+@scheme[schemeblock] before giving
+@schememodname[scribble/comment-reader] a chance to convert them.
+
+@; ------------------------------------------------------------------------
 @section[#:tag "doc-modules"]{Documenting Modules}
 
 @defform/subs[(defmodule id maybe-sources pre-flow ...)
@@ -230,32 +272,32 @@ Like @scheme[defmodule], but documents @scheme[id] as a module path
 suitable for use by either @scheme[require] or @schememodfont{#lang}.}
 
 
-@defform[(defmodule* (id ...+) maybe-sources pre-flow ...)]{
+@defform[(defmodulereader id maybe-sources pre-flow ...)]{
 
-Like @scheme[defmodule], but introduces multiple module paths instead
+Like @scheme[defmodule], but documents @scheme[id] as a module path
+suitable for use with @schememetafont{#reader}.}
+
+
+@deftogether[(
+@defform[(defmodule* (id ...+) maybe-sources pre-flow ...)]
+@defform[(defmodulelang* (id ...+) maybe-sources pre-flow ...)]
+@defform[(defmodulereader* (id ...+) maybe-sources pre-flow ...)]
+)]{
+
+Like @scheme[defmodule], etc., but introduces multiple module paths instead
 of just one.}
 
+@deftogether[(
+@defform[(defmodule*/no-declare (id ...) pre-flow ...)]
+@defform[(defmodulelang*/no-declare (id ...) pre-flow ...)]
+@defform[(defmodulereader*/no-declare (id ...) pre-flow ...)]
+)]{
 
-@defform[(defmodulelang* (id ...+) maybe-sources pre-flow ...)]{
-
-Like @scheme[defmodulelang], but introduces multiple module paths
-instead of just one.}
-
-
-@defform[(defmodule*/no-declare (id ...) pre-flow ...)]{
-
-Like @scheme[defmodule*], but without expanding to
+Like @scheme[defmodule*], etc., but without expanding to
 @scheme[declare-exporting]. Use this form when you want to provide a
 more specific list of modules (e.g., to name both a specific module
 and one that combines several modules) via your own
 @scheme[declare-exporting] declaration.}
-
-
-@defform[(defmodulelang*/no-declare (id ...) pre-flow ...)]{
-
-Like @scheme[defmodulelang*], but without expanding to
-@scheme[declare-exporting].}
-
 
 @defform/subs[(declare-exporting mod-path ... maybe-sources)
               ([maybe-sources code:blank

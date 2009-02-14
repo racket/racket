@@ -11,8 +11,8 @@
          (for-syntax scheme/base)
          (for-label scheme/base))
 
-(provide defmodule defmodule* defmodulelang defmodulelang*
-         defmodule*/no-declare defmodulelang*/no-declare
+(provide defmodule defmodule* defmodulelang defmodulelang* defmodulereader defmodulereader*
+         defmodule*/no-declare defmodulelang*/no-declare defmodulereader*/no-declare
          declare-exporting)
 
 (define spacer (hspace 1))
@@ -47,7 +47,21 @@
 (define-syntax-rule (defmodulelang lang . content)
   (defmodulelang* (lang) . content))
 
-(define (*defmodule names lang? content)
+(define-syntax-rule (defmodulereader*/no-declare (lang ...) . content)
+  (*defmodule (list (schememodname lang) ...) 'reader (list . content)))
+
+(define-syntax defmodulereader*
+  (syntax-rules ()
+    [(_ (name ...) #:use-sources (pname ...) . content)
+     (begin (declare-exporting name ... #:use-sources (pname ...))
+            (defmodulereader*/no-declare (name ...) . content))]
+    [(_ (name ...) . content)
+     (defmodulereader* (name ...) #:use-sources () . content)]))
+
+(define-syntax-rule (defmodulereader lang . content)
+  (defmodulereader* (lang) . content))
+
+(define (*defmodule names lang content)
   (make-splice
    (cons
     (make-table
@@ -60,9 +74,11 @@
            (make-omitable-paragraph
             (cons
              spacer
-             (if lang?
-               (list (hash-lang) spacer (make-defschememodname name))
-               (list (scheme (require #,(make-defschememodname name)))))))))))
+             (if lang
+                 (if (eq? lang 'reader)
+                     (list (schememetafont "#reader") spacer (make-defschememodname name))
+                     (list (hash-lang) spacer (make-defschememodname name)))
+                 (list (scheme (require #,(make-defschememodname name)))))))))))
       names))
     (append (map (lambda (name)
                    (make-part-tag-decl `(mod-path ,(element->string name))))

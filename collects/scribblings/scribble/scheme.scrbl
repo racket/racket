@@ -9,4 +9,3 @@ provides utilities for typesetting Scheme code. The
 @scheme[scribble/manual] forms provide a higher-level interface.}
 
 @italic{To do:} document this library!
-
