@@ -646,7 +646,7 @@ without adding contracts to the imported and exported signatures.
 The unit value must import a subset of the import signatures and export a
 superset of the export signatures listed in the unit contract.  Any
 identifier which is not listed for a given signature is left alone.
-Variables used in a given @scheme[ctc] expression first refer to other
+Variables used in a given @scheme[contract] expression first refer to other
 variables in the same signature, and then to the context of the 
 @scheme[unit/c] expression.}
 
