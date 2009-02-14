@@ -7,6 +7,7 @@
                      "rep.ss"
                      "codegen.ss"
                      "../util.ss")
+         scheme/list
          scheme/match
          syntax/stx
          "runtime.ss")
@@ -198,7 +199,7 @@
     [(with-patterns ([p x] . more) . b)
      (syntax-parse x [p (with-patterns more . b)])]))
 
-(define ((syntax-patterns-fail stx0) x expected frontier)
+(define ((syntax-patterns-fail stx0) x expected frontier frontier-stx)
   (define (err msg stx)
     (raise (make-exn:fail:syntax 
             (if msg
@@ -206,7 +207,7 @@
                 (string->immutable-string "bad syntax"))
             (current-continuation-marks)
             (list stx))))
-  (define-values (stx n) (frontier->syntax frontier))
+  (define n (last frontier))
   (cond [(expectation-of-null? expected)
          ;; FIXME: "extra term(s) after <pattern>"
          (syntax-case x ()
@@ -226,16 +227,9 @@
                               [else (format " after ~s ~a"
                                             n
                                             (if (= 1 n) "form" "forms"))]))
-                stx))]
+                frontier-stx))]
         [else
          (err #f stx0)]))
-
-(define (frontier->syntax f)
-  (match f
-    [(list x n)
-     (values x n)]
-    [(list-rest _ _ rest)
-     (frontier->syntax rest)]))
 
 
 

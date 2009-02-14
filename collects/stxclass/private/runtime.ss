@@ -75,21 +75,38 @@
 
 ;; A PatternParseResult is one of
 ;;   - (listof value)
-;;   - (make-failed stx expectation/c frontier/#f)
+;;   - (make-failed stx expectation/c frontier/#f stx)
 
 (define (ok? x) (or (pair? x) (null? x)))
-(define-struct failed (stx expectation frontier)
+(define-struct failed (stx expectation frontier frontier-stx)
   #:transparent)
 
+;; Runtime: Dynamic Frontier Contexts (DFCs)
+
+;; A DFC is a list of numbers.
+
+;; compare-dfcs : DFC DFC -> (one-of '< '= '>)
+;; Note A>B means A is "further along" than B.
+(define (compare-dfcs a b)
+  (cond [(and (null? a) (null? b))
+         '=]
+        [(and (pair? a) (null? b))
+         '>]
+        [(and (null? a) (pair? b))
+         '<]
+        [(and (pair? a) (pair? b))
+         (cond [(> (car a) (car b)) '>]
+               [(< (car a) (car b)) '<]
+               [else (compare-dfcs (cdr a) (cdr b))])]))
 
 ;; Runtime: parsing failures/expectations
 
 ;; An Expectation is
-;;   (make-expc (listof scdyn) bool (listof atom) (listof id))
+;;   (make-expc (listof scdyn) (listof expc) (listof atom) (listof id))
 (define-struct expc (stxclasses pairs? data literals)
   #:transparent)
 
-(define-struct scdyn (name desc)
+(define-struct scdyn (name desc failure)
   #:transparent)
 
 (define expectation/c (or/c expc?))
@@ -99,13 +116,17 @@
 
 (begin-for-syntax
   (define certify (syntax-local-certifier))
-  (define (expectation-of-stxclass stxclass args)
+  (define (expectation-of-stxclass stxclass args result-var)
     (unless (sc? stxclass)
       (raise-type-error 'expectation-of-stxclass "stxclass" stxclass))
     (with-syntax ([name (sc-name stxclass)]
                   [desc-var (sc-description stxclass)]
                   [(arg ...) args])
-      (certify #'(make-stxclass-expc (make-scdyn 'name (desc-var arg ...))))))
+      (certify #`(begin
+                   ;;(printf "inner failure was ~s\n" #,result-var)
+                   (make-stxclass-expc
+                    (make-scdyn 'name (desc-var arg ...)
+                                (if (failed? #,result-var) #,result-var #f)))))))
 
   (define (expectation-of-constants pairs? data literals)
     (with-syntax ([(datum ...) data]
@@ -135,28 +156,18 @@
     (if (null? rest-attempts)
         (first-attempt fail)
         (let ([next-fail
-               (lambda (x1 p1 f1)
+               (lambda (x1 p1 f1 fs1)
                  (let ([combining-fail
-                        (lambda (x2 p2 f2)
-                          (choose-error fail x1 x2 p1 p2 f1 f2))])
+                        (lambda (x2 p2 f2 fs2)
+                          (choose-error fail x1 x2 p1 p2 f1 f2 fs1 fs2))])
                    (try* rest-attempts combining-fail)))])
           (first-attempt next-fail)))))
 
-(define (choose-error k x1 x2 p1 p2 frontier1 frontier2)
-  (define (go1) (k x1 p1 frontier1))
-  (define (go2) (k x2 p2 frontier2))
-  (let loop ([f1 frontier1] [f2 frontier2])
-    (cond [(and (null? f1) (null? f2))
-           (let ([p (merge-expectations p1 p2)])
-             (k x1 p frontier1))]
-          [(and (pair? f1) (null? f2)) (go1)]
-          [(and (null? f1) (pair? f2)) (go2)]
-          [(and (pair? f1) (pair? f2))
-           (let ([c1 (cadr f1)]
-                 [c2 (cadr f2)])
-             (cond [(> c1 c2) (go1)]
-                   [(< c1 c2) (go2)]
-                   [else (loop (cddr f1) (cddr f2))]))])))
+(define (choose-error k x1 x2 p1 p2 frontier1 frontier2 fs1 fs2)
+  (case (compare-dfcs frontier1 frontier2)
+    [(>) (k x1 p1 frontier1 fs1)]
+    [(<) (k x2 p2 frontier2 fs2)]
+    [(=) (k x1 (merge-expectations p1 p2) frontier1 fs1)]))
 
 (define (merge-expectations e1 e2)
   (make-expc (union (expc-stxclasses e1) (expc-stxclasses e2))
@@ -190,14 +201,15 @@
                  ";"
                  "or"))]))
 
-(define (string-of-stxclasses stxclasses)
-  (comma-list (map string-of-stxclass stxclasses)))
+(define (string-of-stxclasses scdyns)
+  (comma-list (map string-of-stxclass scdyns)))
 
-(define (string-of-stxclass stxclass)
-  (and stxclass
-       (format "~a"
-               (or (scdyn-desc stxclass)
-                   (scdyn-name stxclass)))))
+(define (string-of-stxclass scdyn)
+  (define expected (or (scdyn-desc scdyn) (scdyn-name scdyn)))
+  (if (scdyn-failure scdyn)
+      (let ([inner (expectation->string (failed-expectation (scdyn-failure scdyn)))])
+        (or inner (format "~a" expected)))
+      (format "~a" expected)))
 
 (define (string-of-literals literals0)
   (define literals

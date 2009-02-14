@@ -24,51 +24,62 @@
 ;; A LiteralPKS is (make-literalpks identifier (listof PK))
 (define-struct literalpks (literal pks))
 
-
 ;; A FrontierContextExpr (FCE) is one of
-;;   - (list  FrontierIndexExpr Syntax)
-;;   - (list* FrontierIndexExpr Syntax FrontierContextExpr)
-;;   - (make-joined-frontier FCE id)
+;;  - (make-fce Id FrontierIndexExpr)
+;;  - (make-joined-frontier FCE id)
 ;; A FrontierIndexExpr is
-;;   - `(+ ,Number Syntax ...)
+;;  - `(+ ,Number ,Syntax ...)
+(define-struct fce (stx indexes))
 (define-struct joined-frontier (base ext) #:transparent)
 
 (define (empty-frontier x)
-  (list '(+ 0) x))
+  (make-fce x (list '(+ 0))))
 
 (define (done-frontier x)
-  (list '(+ +inf.0) x))
+  (make-fce x (list '(+ +inf.0))))
 
 (define (frontier:add-car fc x)
-  (list* '(+ 0) x fc))
+  (make-fce x (cons '(+ 0) (fce-indexes fc))))
 
 (define (frontier:add-cdr fc)
-  (cons (fi:add1 (car fc))
-        (cdr fc)))
-(define (fi:add1 fi)
-  `(+ ,(add1 (cadr fi)) ,@(cddr fi)))
+  (define (fi:add1 fi)
+    `(+ ,(add1 (cadr fi)) ,@(cddr fi)))
+  (make-fce (fce-stx fc)
+            (cons (fi:add1 (car (fce-indexes fc)))
+                  (cdr (fce-indexes fc)))))
 
 (define (frontier:add-index fc expr)
-  (cons (fi:add-index (car fc) expr)
-        (cdr fc)))
-(define (fi:add-index fi expr)
-  `(+ ,(cadr fi) ,expr ,@(cddr fi)))
+  (define (fi:add-index fi expr)
+    `(+ ,(cadr fi) ,expr ,@(cddr fi)))
+  (make-fce (fce-stx fc)
+            (cons (fi:add-index (car (fce-indexes fc)) expr)
+                  (cdr (fce-indexes fc)))))
 
-(define (join-frontiers base ext-expr)
-  (make-joined-frontier base ext-expr))
+(define (join-frontiers base ext)
+  (make-joined-frontier base ext))
 
-;; A DynamicFrontierContext (DFC) is one of
-;;   - (list  Syntax Number)
-;;   - (list* Syntax Number DynamicFrontierContext)
+;; A DynamicFrontierContext (DFC) is a list of numbers.
+;; More operations on DFCs in runtime.ss
 
-(define (frontier->expr fc)
+(define (frontier->dfc-expr fc)
   (define (loop fc)
     (match fc
-      [(list  fe stx)
-       #`(list #,fe #,stx)]
-      [(list* fe stx rest)
-       #`(list* #,fe #,stx #,(loop rest))]
+      [(struct fce (stx indexes))
+       #`(list #,@indexes)]
       [(struct joined-frontier (base ext))
        #`(let ([base #,(loop base)])
-           (if #,ext (append (reverse (failed-frontier #,ext)) base) base))]))
+           (if (failed? #,ext)
+               (append (reverse (failed-frontier #,ext)) base)
+               base))]))
   #`(reverse #,(loop fc)))
+
+(define (frontier->fstx-expr fc)
+  (define (loop fc)
+    (match fc
+      [(struct fce (stx indexes))
+       stx]
+      [(struct joined-frontier (base ext))
+       #`(let ([inner-failure #,ext])
+           (or (and (failed? inner-failure) (failed-frontier-stx inner-failure))
+               #,(loop base)))]))
+  (loop fc))

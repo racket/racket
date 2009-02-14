@@ -23,9 +23,9 @@
   (cond [(rhs:union? rhs)
          (with-syntax ([(arg ...) args])
            #`(lambda (x arg ...)
-               (define (fail-rhs x expected frontier)
+               (define (fail-rhs x expected frontier frontier-stx)
                  #,(if (rhs-transparent? rhs)
-                       #`(make-failed x expected frontier)
+                       #`(make-failed x expected frontier frontier-stx)
                        #'#f))
                #,(let ([pks (rhs->pks rhs relsattrs #'x)])
                    (unless (pair? pks)
@@ -139,15 +139,16 @@
       (wrong-syntax id "expected identifier")))
   (syntax->list stx))
 
-;; fail : id id #:pattern datum #:reason datum #:fce FCE -> stx
+;; fail : id id #:pattern datum #:reason datum #:fce FCE #:fstx id -> stx
 (define (fail k x #:pattern p #:fce fce)
   (with-syntax ([k k]
                 [x x]
                 [p p]
-                [fc-expr (frontier->expr fce)])
-    #`(let ([failcontext fc-expr])
-        (k x p failcontext))))
-
+                [fc-expr (frontier->dfc-expr fce)]
+                [fstx-expr (frontier->fstx-expr fce)])
+    #`(let ([failcontext fc-expr]
+            [failcontext-syntax fstx-expr])
+        (k x p failcontext failcontext-syntax))))
 
 ;; Parsing
 
@@ -201,15 +202,9 @@
         (let ([result (parser var0 arg-var ...)])
           (if (ok? result)
               #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)
-              (if (failed? result)
-                  #,(fail failid (car vars)
-                          ;; FIXME: join expectation with this stxclass
-                          ;; for better error message
-                          #:pattern #'(failed-expectation result) ;; join with this-stxclass
-                          #:fce (join-frontiers (car fcs) #'result))
-                  #,(fail failid (car vars)
-                          #:pattern (expectation-of-stxclass stxclass #'(arg-var ...))
-                          #:fce (car fcs))))))))
+              #,(fail failid (car vars)
+                      #:pattern (expectation-of-stxclass stxclass #'(arg-var ...) #'result)
+                      #:fce (join-frontiers (car fcs) #'result)))))))
 
 ;; parse:pk:id/any : (listof id) (listof FCE) id stx (listof pk) -> stx
 (define (parse:pk:id/any vars fcs failid args pks)
