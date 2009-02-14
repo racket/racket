@@ -4,6 +4,7 @@
          scheme/stxparam
          (for-syntax scheme/base)
          (for-syntax syntax/stx)
+         (for-syntax scheme/private/sc)
          (for-syntax "rep-data.ss")
          (for-syntax "../util/error.ss"))
 (provide pattern
@@ -26,7 +27,10 @@
          try
          expectation/c
          expectation-of-null?
-         expectation->string)
+         expectation->string
+
+         let-attributes
+         attribute)
 
 ;; Keywords
 
@@ -123,7 +127,6 @@
                   [desc-var (sc-description stxclass)]
                   [(arg ...) args])
       (certify #`(begin
-                   ;;(printf "inner failure was ~s\n" #,result-var)
                    (make-stxclass-expc
                     (make-scdyn 'name (desc-var arg ...)
                                 (if (failed? #,result-var) #,result-var #f)))))))
@@ -250,3 +253,43 @@
     [(2) (format "~a ~a~a" (car items) ult (cadr items))]
     [else (let ([strings (list* (car items) (loop (cdr items)))])
             (apply string-append strings))]))
+
+
+;; Attributes
+
+(begin-for-syntax
+ (define-struct attribute-mapping (var)
+   #:omit-define-syntaxes
+   #:property prop:procedure
+   (lambda (self stx)
+     #`(#%expression #,(attribute-mapping-var self)))))
+
+(define-syntax (let-attributes stx)
+  (syntax-case stx ()
+    [(let-attributes ([attr depth value] ...) . body)
+     (with-syntax ([(vtmp ...) (generate-temporaries #'(attr ...))]
+                   [(stmp ...) (generate-temporaries #'(attr ...))])
+       #'(letrec-syntaxes+values
+             ([(stmp) (make-attribute-mapping (quote-syntax vtmp))]
+              ...)
+             ([(vtmp) value] ...)
+           (letrec-syntaxes+values
+               ([(attr) (make-syntax-mapping 'depth (quote-syntax stmp))] ...)
+               ()
+             . body)))]))
+
+(define-syntax (attribute stx)
+  (parameterize ((current-syntax-context stx))
+    (syntax-case stx ()
+      [(attribute name)
+       (identifier? #'name)
+       (let ([mapping (syntax-local-value #'name (lambda () #f))])
+         (unless (syntax-mapping? mapping)
+           (wrong-syntax #'name "not bound as a pattern variable"))
+         (let ([var (syntax-mapping-valvar mapping)])
+           (let ([attr (syntax-local-value var (lambda () #f))])
+             (unless (attribute-mapping? attr)
+               (wrong-syntax #'name "not bound as an attribute"))
+             (syntax-property (attribute-mapping-var attr)
+                              'disappeared-use
+                              #'name))))])))

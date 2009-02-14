@@ -291,8 +291,16 @@
 (with-handlers ([exn? exn-message])
   (syntax-parse #'(0 1) [_:Transparent 'ok]))
 
-#;
-(syntax-parse #'1 
-  [_:Transparent 'ok]
-  [(a b) 'ok])
+(syntax-parse #'(+) #:literals ([plus +])
+  [(plus) (void)])
 
+(define-syntax-class (nat> n)
+    #:description (format "nat > ~s" n)
+    (pattern x:nat #:when (> (syntax-e #'x) n)))
+(syntax-parse #'(1 2 3)
+    [(a:nat b0:nat c0:nat)
+     #:with b #'b0
+     #:declare b (nat> (attribute a.datum))
+     #:with c #'c0
+     #:declare c (nat> (attribute b0.datum))
+     (void)])

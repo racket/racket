@@ -42,7 +42,8 @@
 (define (parse:clauses stx var failid)
   (define clauses-kw-table
     (list (list '#:literals check-literals-list)))
-  (define-values (chunks clauses-stx) (chunk-kw-seq/no-dups stx clauses-kw-table))
+  (define-values (chunks clauses-stx)
+    (chunk-kw-seq/no-dups stx clauses-kw-table))
   (define literals
     (cond [(assq '#:literals chunks) => caddr]
           [else null]))
@@ -53,18 +54,15 @@
                      (parse-pattern-directives #'rest
                                                #:sc? #f
                                                #:literals literals)])
-         (syntax-case rest ()
-           [(b ...)
-            (let* ([pattern (parse-pattern #'p decls 0)])
-              (make-pk (list pattern)
-                       (expr:convert-sides sides
-                                           (pattern-attrs pattern)
-                                           var
-                                           (lambda (iattrs)
-                                             (wrap-pattern-body/attrs
-                                              iattrs 0 rest)))))]
-           [_
-            (wrong-syntax clause "expected body")]))]))
+         (let* ([pattern (parse-whole-pattern #'p decls)])
+           (syntax-case rest ()
+             [(b0 b ...)
+              (let ([body #'(let () b0 b ...)])
+                (make-pk (list pattern)
+                         (wrap-pvars (pattern-attrs pattern)
+                                     (convert-sides sides var body))))]
+             [_
+              (wrong-syntax clause "expected body")])))]))
   (unless (stx-list? clauses-stx)
     (wrong-syntax clauses-stx "expected sequence of clauses"))
   (let ([pks (map clause->pk (stx->list clauses-stx))])
@@ -87,57 +85,48 @@
   (match rhs
     [(struct rhs:pattern (orig-stx attrs pattern decls remap sides))
      (parameterize ((current-syntax-context orig-stx))
-       (list (make-pk (list pattern)
-                      (expr:convert-sides sides
-                                          (pattern-attrs pattern)
-                                          main-var
-                                          (lambda (iattrs)
-                                            (expr:sc iattrs
-                                                     relsattrs
-                                                     remap
-                                                     main-var))))))]))
+       (define iattrs
+         (append-attrs
+          (cons (pattern-attrs pattern)
+                (for/list ([side sides] #:when (clause:with? side))
+                  (pattern-attrs (clause:with-pattern side))))))
+       (define base-expr
+         (success-expr iattrs relsattrs remap main-var))
+       (define expr
+         (wrap-pvars (pattern-attrs pattern)
+                     (convert-sides sides main-var base-expr)))
+       (list (make-pk (list pattern) expr)))]))
 
-;; expr:convert-sides : (listof SideClause) (listof IAttr) id stx -> stx
-(define (expr:convert-sides sides iattrs main-var k)
+;; convert-sides : (listof SideClause) id stx -> stx
+(define (convert-sides sides main-var body-expr)
   (match sides
-    ['() (k iattrs)]
+    ['() body-expr]
     [(cons (struct clause:when (e)) rest)
-     (let* ([k-rest (expr:convert-sides rest iattrs main-var k)])
-       (with-syntax ([(x) (generate-temporaries #'(x))])
-         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 (list e))])
-             (if x
-                 #,k-rest
-                 #,(fail #'enclosing-fail main-var
-                         #:pattern (expectation-of/message "side condition failed")
-                         #:fce (done-frontier main-var))))))]
+     #`(if #,e
+           #,(convert-sides rest main-var body-expr)
+           #,(fail #'enclosing-fail main-var
+                   #:pattern (expectation-of/message "side condition failed")
+                   #:fce (done-frontier main-var)))]
     [(cons (struct clause:with (p e)) rest)
-     (let* ([new-iattrs (append (pattern-attrs p) iattrs)]
-            [k-rest (expr:convert-sides rest new-iattrs main-var k)])
+     (let ([inner
+            (wrap-pvars (pattern-attrs p)
+                        (convert-sides rest main-var body-expr))])
        (with-syntax ([(x fail-k) (generate-temporaries #'(x fail-k))])
-         #`(let ([x #,(wrap-pattern-body/attrs iattrs 0 (list e))]
+         #`(let ([x #,e]
                  [fail-k enclosing-fail])
              #,(parse:pks (list #'x)
                           (list (done-frontier #'x))
-                          (list (make-pk (list p) k-rest))
+                          (list (make-pk (list p) inner))
                           #'fail-k))))]))
 
-;; expr:sc : (listof IAttr) (listof SAttr) env stx -> stx
-(define (expr:sc iattrs relsattrs remap main-var)
+;; success-expr : (listof IAttr) (listof SAttr) RemapEnv stx -> stx
+(define (success-expr iattrs relsattrs remap main-var)
   (let* ([reliattrs (reorder-iattrs relsattrs iattrs remap)]
          [flat-reliattrs (flatten-attrs* reliattrs)]
          [relids (map attr-name flat-reliattrs)])
     (with-syntax ([main main-var]
                   [(relid ...) relids])
-      #'(list main relid ...))))
-
-;; check-literals-list : syntax -> (listof id)
-(define (check-literals-list stx)
-  (unless (stx-list? stx)
-    (wrong-syntax stx "expected list of identifiers"))
-  (for ([id (syntax->list stx)])
-    (unless (identifier? id)
-      (wrong-syntax id "expected identifier")))
-  (syntax->list stx))
+      #'(list main (attribute relid) ...))))
 
 ;; fail : id id #:pattern datum #:reason datum #:fce FCE #:fstx id -> stx
 (define (fail k x #:pattern p #:fce fce)
@@ -584,13 +573,13 @@
        (make-pk (list* head tail rest-ps) k)]))
   (map shift-pk pks))
 
-;; wrap-pattern-body : (listof IAttr) nat stxlist -> stx
-(define (wrap-pattern-body/attrs iattrs depth bs)
-  (let* ([flat-iattrs (flatten-attrs* iattrs depth #f #f)]
+;; wrap-pvars : (listof IAttr) stx -> stx
+(define (wrap-pvars iattrs expr)
+  (let* ([flat-iattrs (flatten-attrs* iattrs 0 #f #f)]
          [ids (map attr-name flat-iattrs)]
          [depths (map attr-depth flat-iattrs)])
     (with-syntax ([(id ...) ids]
                   [(depth ...) depths]
-                  [bs bs])
-      #`(let-syntax ([id (make-syntax-mapping 'depth (quote-syntax id))] ...)
-          . bs))))
+                  [expr expr])
+      #'(let-attributes ([id depth id] ...)
+          expr))))

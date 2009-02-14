@@ -21,7 +21,9 @@ parsing syntax.
 
 @defform/subs[(syntax-parse stx-expr maybe-literals clause ...)
               ([maybe-literals code:blank
-                               (code:line #:literals (literal-id ...))]
+                               (code:line #:literals (literal ...))]
+               [literal id
+                        (internal-id external-id)]
                [clause (syntax-pattern pattern-directive ... expr)])]{
 
 Evaluates @scheme[stx-expr], which should produce a syntax object, and
@@ -35,8 +37,12 @@ matches fail the corresponding clauses' side conditions), a syntax
 error is raised. The syntax error indicates the first specific subterm
 for which no pattern matches.
 
-@TODO{Allow literal declarations of form @scheme[(_internal-name
-_external-name)].}
+A literal in the literals list has two components: the identifier used
+within the pattern to signify the positions to be matched, and the
+identifier expected to occur in those positions. If the
+single-identifier form is used, the same identifier is used for both
+purposes.
+
 }
 
 @defform[(syntax-parser maybe-literals clause ...)]{
@@ -91,6 +97,11 @@ If @scheme[_pvar-id] is @scheme[_], no pattern variables are bound.
 An identifier that appears in the literals list is not a pattern
 variable; instead, it is a literal that matches any identifier
 @scheme[free-identifier=?] to it.
+
+Specifically, if @scheme[literal-id] is the ``internal'' name of an
+entry in the literals list, then it represents a pattern that matches
+only identifiers @scheme[free-identifier=?] to the ``external''
+name. These identifiers are often the same.
 
 }
 @specsubform[atomic-datum]{
@@ -237,3 +248,18 @@ generalized sequences. It may not be used as an expression.
 
 }
 
+@defform[(attribute attr-id)]{
+
+Returns the value associated with the attribute named
+@scheme[attr-id]. If @scheme[attr-id] is not bound as an attribute, an
+error is raised. If @scheme[attr-id] is an attribute with a nonzero
+ellipsis depth, then the result has the corresponding level of list
+nesting.
+
+The values returned by @scheme[attribute] never undergo additional
+wrapping as syntax objects, unlike values produced by some uses of
+@scheme[syntax], @scheme[quasisyntax], etc. Consequently, the
+@scheme[attribute] form is preferred when the attribute value is used
+as data, not placed in a syntax object.
+
+}

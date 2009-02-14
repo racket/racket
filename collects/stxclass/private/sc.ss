@@ -18,9 +18,6 @@
          parse-sc
          attrs-of
 
-         debug-rhs
-         debug-pattern
-
          syntax-parse
          syntax-parser
          with-patterns
@@ -28,6 +25,8 @@
          pattern
          basic-syntax-class
          ...*
+
+         attribute
 
          (struct-out failed)
 
@@ -141,7 +140,8 @@
   (syntax-case stx ()
     [(parse s x arg ...)
      (parameterize ((current-syntax-context stx))
-       (let* ([stxclass (get-stxclass #'s)]
+       (let* ([arg-count (length (syntax->list #'(arg ...)))]
+              [stxclass (get-stxclass/check-arg-count #'s arg-count)]
               [attrs (flatten-sattrs (sc-attrs stxclass))])
          (with-syntax ([parser (sc-parser-name stxclass)]
                        [(name ...) (map attr-name attrs)]
@@ -165,12 +165,6 @@
     [(debug-rhs rhs)
      (let ([rhs (parse-rhs #'rhs #f stx)])
        #`(quote #,rhs))]))
-
-(define-syntax (debug-pattern stx)
-  (syntax-case stx ()
-    [(debug-pattern p)
-     (let ([pattern (parse-pattern #'p)])
-       #`(quote #,pattern))]))
 
 (define-syntax-rule (syntax-parse stx-expr . clauses)
   (let ([x stx-expr])

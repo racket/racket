@@ -9,14 +9,19 @@
          "rep-data.ss")
 
 (provide/contract
- [parse-pattern 
-  (-> any/c #|syntax?|# DeclEnv/c exact-nonnegative-integer?
+ [parse-whole-pattern 
+  (-> syntax? DeclEnv/c
       pattern?)]
  [parse-pattern-directives
   (->* [stx-list?]
-       [#:sc? boolean? #:literals (listof identifier?)]
+       [#:sc? boolean? #:literals (listof (list/c identifier? identifier?))]
        (values stx-list? DeclEnv/c RemapEnv/c (listof SideClause/c)))]
- [parse-rhs (syntax? boolean? syntax? . -> . rhs?)])
+ [parse-rhs
+  (-> syntax? boolean? syntax?
+      rhs?)]
+ [check-literals-list
+  (-> syntax?
+      (listof (list/c identifier? identifier?)))])
 
 (define (atomic-datum? stx)
   (let ([datum (syntax-e stx)])
@@ -93,7 +98,7 @@
          null]))
     (define patterns (gather-patterns rest))
     (when (null? patterns)
-      (wrong-syntax ctx "syntax class has no variants"))
+      (wrong-syntax ctx "expected at least one variant"))
     (let ([sattrs
            (or attributes
                (intersect-attrss (map rhs:pattern-attrs patterns) ctx))])
@@ -108,7 +113,7 @@
     [_
      (parse-rhs*-patterns rest)]))
 
-;; parse-rhs-pattern : stx boolean boolean (listof identifier) -> RHS
+;; parse-rhs-pattern : stx boolean boolean (listof id+id) -> RHS
 (define (parse-rhs-pattern stx allow-unbound? literals)
   (syntax-case stx (pattern)
     [(pattern p . rest)
@@ -120,7 +125,7 @@
          (unless (stx-null? rest)
            (wrong-syntax (if (pair? rest) (car rest) rest)
                          "unexpected terms after pattern directives"))
-         (let* ([pattern (parse-pattern #'p decls 0)]
+         (let* ([pattern (parse-whole-pattern #'p decls)]
                 [with-patterns
                  (for/list ([c clauses] #:when (clause:with? c))
                    (clause:with-pattern c))]
@@ -130,7 +135,17 @@
                 [sattrs (iattrs->sattrs attrs remap)])
            (make rhs:pattern stx sattrs pattern decls remap clauses))))]))
 
-;; parse-pattern : stx(Pattern) env number -> Pattern
+;; parse-whole-pattern : stx DeclEnv -> Pattern
+(define (parse-whole-pattern stx decls)
+  (define pattern (parse-pattern stx decls 0))
+  (define pvars (map attr-name (pattern-attrs pattern)))
+  (define excess-domain (declenv-domain-difference decls pvars))
+  (when (pair? excess-domain)
+    (wrong-syntax #f "declared pattern variables do not appear in pattern"
+                  #:extra excess-domain))
+  pattern)
+
+;; parse-pattern : stx(Pattern) DeclEnv number -> Pattern
 (define (parse-pattern stx decls depth)
   (syntax-case stx ()
     [dots
@@ -138,23 +153,19 @@
          (gdots? #'dots))
      (wrong-syntax stx "ellipses not allowed here")]
     [id
-     (and (identifier? #'id) (eq? (decls #'id) #t))
-     (make pat:literal stx null depth stx)]
-    [id
      (identifier? #'id)
-     (let-values ([(name sc args) (split-id/get-stxclass #'id decls)])
-       (let ([attrs
-              (cond [(wildcard? name) null]
-                    [(and (epsilon? name) sc)
-                     (map (lambda (a)
-                            (make attr (datum->syntax #'id (attr-name a))
-                                       (+ depth (attr-depth a))
-                                       (attr-inner a)))
-                          (sc-attrs sc))]
-                    [else
-                     (list (make attr name depth (if sc (sc-attrs sc) null)))])]
-             [name (if (epsilon? name) #f name)])
-         (make pat:id stx attrs depth name sc args)))]
+     (match (declenv-lookup decls #'id)
+       [(list 'literal internal-id literal-id)
+        (make pat:literal stx null depth literal-id)]
+       [(list 'stxclass declared-id scname args)
+        (let* ([sc (get-stxclass/check-arg-count scname (length args))]
+               [attrs (id-pattern-attrs #'id sc depth)])
+          (make pat:id stx attrs depth #'id sc args))]
+       [#f
+        (let-values ([(name sc args) (split-id/get-stxclass #'id decls)])
+          (let ([attrs (id-pattern-attrs name sc depth)]
+                [name (if (epsilon? name) #f name)])
+            (make pat:id stx attrs depth name sc args)))])]
     [datum
      (atomic-datum? #'datum)
      (make pat:datum stx null depth (syntax->datum #'datum))]
@@ -177,6 +188,18 @@
            [pb (parse-pattern #'b decls depth)])
        (let ([attrs (append-attrs (list (pattern-attrs pa) (pattern-attrs pb)))])
          (make pat:pair stx attrs depth pa pb)))]))
+
+(define (id-pattern-attrs name sc depth)
+  (cond [(wildcard? name) null]
+        [(and (epsilon? name) sc)
+         (for/list ([a (sc-attrs sc)])
+           (make attr (datum->syntax name (attr-name a))
+                 (+ depth (attr-depth a))
+                 (attr-inner a)))]
+        [sc
+         (list (make attr name depth (sc-attrs sc)))]
+        [else
+         (list (make attr name depth null))]))
 
 (define (pattern->head p)
   (match p
@@ -268,88 +291,79 @@
             occurs-pvar
             (and default-row (caddr default-row))))))
 
-;; parse-pattern-directives : stxs(PatternDirective) #:literals (listof id)
-;;                         -> stx DeclEnv env (listof SideClause)
-;;   if decls maps a name to #t, it indicates literal
+;; parse-pattern-directives : stxs(PatternDirective) #:literals (listof id+id)
+;;                         -> stx DeclEnv RemapEnv (listof SideClause)
 (define (parse-pattern-directives stx
                                   #:sc? [sc? #f]
                                   #:literals [literals null])
-  (let ([decl-table (make-bound-identifier-mapping)]
-        [remap-table (make-bound-identifier-mapping)]
-        [rclauses null])
+  (define remap (new-remapenv))
+  (define-values (chunks rest)
+    (chunk-kw-seq stx pattern-directive-table))
+  (define (process-renames chunks)
+    (match chunks
+      [(cons (list '#:rename rename-stx internal-id sym-id) rest)
+       (unless sc?
+         (wrong-syntax rename-stx
+                       "only allowed within syntax-class definition"))
+       (remapenv-put remap internal-id (syntax-e sym-id))
+       (process-renames rest)]
+      [(cons decl rest)
+       (cons decl (process-renames rest))]
+      ['()
+       '()]))
+  (define chunks2 (process-renames chunks))
+  (define-values (decls chunks3)
+    (grab-decls chunks2 literals))
+  (values rest decls remap
+          (parse-pattern-sides chunks3 literals)))
 
-    (define (decls id)
-      (bound-identifier-mapping-get decl-table id (lambda () #f)))
-    (define (remap id)
-      (bound-identifier-mapping-get remap-table id (lambda () (syntax-e id))))
-    (define (decls-add! id value)
-      (bound-identifier-mapping-put! decl-table id value))
+;; grab-decls : (listof chunk) (listof id+id)
+;;           -> (values DeclEnv/c (listof chunk))
+(define (grab-decls chunks literals)
+  (define decls (new-declenv literals))
+  (define (loop chunks)
+    (match chunks
+      [(cons (cons '#:declare decl-stx) rest)
+       (add-decl decl-stx)
+       (loop rest)]
+      [else chunks]))
+  (define (add-decl stx)
+    (syntax-case stx ()
+      [(#:declare name sc)
+       (identifier? #'sc)
+       (add-decl #'(#:declare name (sc)))]
+      [(#:declare name (sc expr ...))
+       (declenv-put-stxclass decls #'name #'sc (syntax->list #'(expr ...)))]
+      [(#:declare name bad-sc)
+       (wrong-syntax #'bad-sc
+                     "expected syntax class name (possibly with parameters)")]))
+  (let ([rest (loop chunks)])
+    (values decls rest)))
 
-    (define (check-in-sc stx)
-      (unless sc?
-        (wrong-syntax (if (pair? stx) (car stx) stx)
-                      "not within syntax-class definition")))
-    (define directive-table
-      (list (list '#:declare check-id values)
-            (list '#:rename check-id check-id)
-            (list '#:with values values)
-            (list '#:when values)))
-    (define-values (chunks rest) (chunk-kw-seq stx directive-table))
-    (define directives (map cdr chunks))
+;; parse-pattern-sides : (listof chunk) (listof id+id)
+;;                    -> (listof SideClause/c)
+(define (parse-pattern-sides chunks literals)
+  (match chunks
+    [(cons (list '#:declare declare-stx _ _) rest)
+     (wrong-syntax declare-stx
+                   "#:declare can only follow pattern or #:with clause")]
+    [(cons (list '#:when when-stx expr) rest)
+     (cons (make clause:when expr)
+           (parse-pattern-sides rest literals))]
+    [(cons (list '#:with with-stx pattern expr) rest)
+     (let-values ([(decls rest) (grab-decls rest literals)])
+       (cons (make clause:with (parse-whole-pattern pattern decls) expr)
+             (parse-pattern-sides rest literals)))]
+    ['()
+     '()]))
 
-    (define (for-decl stx)
-      (syntax-case stx ()
-        [[#:declare name sc]
-         (identifier? #'sc)
-         (for-decl #'[#:declare name (sc)])]
-        [[#:declare name (sc expr ...)]
-         (begin
-           (let ([prev (decls #'name)])
-             (when (pair? prev)
-               (wrong-syntax #'name
-                             "duplicate syntax-class declaration for name"))
-             (when prev
-               (wrong-syntax #'name
-                             "name already declared as literal")))
-           (decls-add! #'name
-                       (list* #'name #'sc (syntax->list #'(expr ...)))))]
-        [[#:declare . _]
-         (wrong-syntax stx "bad #:declare form")]
-        [[#:rename id s]
-         (begin (check-in-sc stx)
-                (bound-identifier-mapping-put! remap-table #'id
-                                               (if (wildcard? #'s)
-                                                   #f
-                                                   (syntax-e #'s))))]
-        [_ (void)]))
-    (define (for-side stx)
-      (syntax-case stx ()
-        [[#:with p expr]
-         (let* ([pattern (parse-pattern #'p decls 0)])
-           (set! rclauses
-                 (cons (make clause:with pattern #'expr) rclauses)))]
-        [[#:when expr]
-         (set! rclauses
-               (cons (make clause:when #'expr) rclauses))]
-        [_ (void)]))
-
-    (for ([literal literals])
-      (bound-identifier-mapping-put! decl-table literal #t))
-
-    (for-each for-decl directives)
-    (for-each for-side directives)
-
-    (values rest
-            decls
-            remap
-            (reverse rclauses))))
 
 ;; check-attr-arity-list : stx -> (listof SAttr)
 (define (check-attr-arity-list stx)
   (unless (stx-list? stx)
     (wrong-syntax stx "expected list of attribute declarations"))
   (let ([iattrs (map check-attr-arity (stx->list stx))])
-    (iattrs->sattrs (append-attrs (map list iattrs)) syntax-e)))
+    (iattrs->sattrs (append-attrs (map list iattrs)) trivial-remap)))
 
 ;; check-attr-arity : stx -> IAttr
 (define (check-attr-arity stx)
@@ -368,9 +382,31 @@
     [_
      (wrong-syntax stx "expected attribute arity declaration")]))
 
+
+;; check-literals-list : syntax -> (listof id)
+(define (check-literals-list stx)
+  (unless (stx-list? stx)
+    (wrong-syntax stx "expected literals list"))
+  (let ([lits (map check-literal-entry (stx->list stx))])
+    (let ([dup (check-duplicate-identifier (map car lits))])
+      (when dup (wrong-syntax dup "duplicate literal identifier")))
+    lits))
+
+(define (check-literal-entry stx)
+  (syntax-case stx ()
+    [(internal external)
+     (and (identifier? #'internal) (identifier? #'external))
+     (list #'internal #'external)]
+    [id
+     (identifier? #'id)
+     (list #'id #'id)]
+    [_
+     (wrong-syntax stx
+                   "expected literal (identifier or pair of identifiers)")]))
+
 ;; rhs-directive-table
 (define rhs-directive-table
-  (list (list '#:literals check-idlist)
+  (list (list '#:literals check-literals-list)
         (list '#:description values)
         (list '#:transparent)
         (list '#:attributes check-attr-arity-list)))
@@ -378,3 +414,10 @@
 ;; basic-rhs-directive-table
 (define basic-rhs-directive-table
   (list (list '#:transforming)))
+
+;; pattern-directive-table
+(define pattern-directive-table
+  (list (list '#:declare check-id values)
+        (list '#:rename check-id check-id)
+        (list '#:with values values)
+        (list '#:when values)))

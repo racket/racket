@@ -45,7 +45,8 @@ depth is fixed for each syntax class.
                ([stxclass-options
                  (code:line #:attributes (attr-arity-decl ...))
                  (code:line #:description description)
-                 (code:line #:transparent)]
+                 (code:line #:transparent)
+                 (code:line #:literals (literal-entry ...))]
                 [attr-arity-decl
                  attr-name-id
                  (attr-name-id depth)]
@@ -86,6 +87,20 @@ If absent, the name of the syntax class is used instead.
 
 Indicates that errors may be reported with respect to the internal
 structure of the syntax class.
+}
+
+@specsubform[(code:line #:literals (literal-entry))]{
+
+Declares the literal identifiers for the syntax class's main patterns
+(immediately within @scheme[pattern] variants) and @scheme[#:with]
+clauses. The literals list does not affect patterns that occur within
+subexpressions inside the syntax class (for example, the condition of
+a @scheme[#:when] clause or the right-hand side of a @scheme[#:with]
+binding).
+
+A literal can have separate internal and external names, as described
+for @scheme[syntax-parse].
+
 }
 
 @specsubform/subs[#:literals (pattern)

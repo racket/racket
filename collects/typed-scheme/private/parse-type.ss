@@ -144,8 +144,8 @@
 
 (define-syntax-class type-app
   (pattern (i arg:type args:type ...)
-           #:when (identifier? #'i)
            #:declare i type
+           #:when (identifier? #'i)
            #:with t
            (let loop 
              ([rator #'i.t] [args (syntax->datum #'(arg.t args.t ...))])

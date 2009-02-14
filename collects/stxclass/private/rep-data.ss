@@ -2,6 +2,7 @@
 (require scheme/contract
          scheme/match
          syntax/stx
+         syntax/boundmap
          "../util.ss")
 (provide (struct-out sc)
          (struct-out attr)
@@ -22,10 +23,6 @@
 ;; An SC is one of (make-sc symbol (listof symbol) (list-of SAttr) identifier)
 (define-struct sc (name inputs attrs parser-name description)
   #:property prop:procedure (lambda (self stx) (sc-parser-name self))
-  #:transparent)
-
-;; An SSC is one of (make-ssc symbol (listof symbol) (list-of SAttr) identifier)
-(define-struct ssc (name inputs attrs parser-name)
   #:transparent)
 
 ;; An IAttr is (make-attr identifier number (listof SAttr))
@@ -86,19 +83,93 @@
 (define (sattr? a)
   (and (attr? a) (symbol? (attr-name a))))
 
+
+
+;; Environments
+
+;; DeclEnv maps [id => DeclEntry]
+;; DeclEntry =
+;;   (list 'literal id id)
+;;   (list 'stxclass id id (listof stx))
+;;   #f
+
+(define-struct declenv (bm))
+
+(define (new-declenv literals)
+  (let ([decls (make-declenv (make-bound-identifier-mapping))])
+    (for ([literal literals])
+      (declenv-put-literal decls (car literal) (cadr literal)))
+    decls))
+
+(define (declenv-lookup env id)
+  (bound-identifier-mapping-get (declenv-bm env) id (lambda () #f)))
+
+(define (declenv-check-unbound env id [stxclass-name #f]
+                               #:blame-declare? [blame-declare? #f])
+  ;; Order goes: literals, pattern, declares
+  ;; So blame-declare? only applies to stxclass declares
+  (let ([val (declenv-lookup env id)])
+    (when val
+      (cond [(eq? 'literal (car val))
+             (wrong-syntax id "identifier previously declared as literal")]
+            [(and blame-declare? stxclass-name)
+             (wrong-syntax (cadr val)
+                           "identifier previously declared with syntax class ~a"
+                           stxclass-name)]
+            [else
+             (wrong-syntax (if blame-declare? (cadr val) id)
+                           "identifier previously declared")]))))
+
+(define (declenv-put-literal env internal-id lit-id)
+  (declenv-check-unbound env internal-id)
+  (bound-identifier-mapping-put! (declenv-bm env) internal-id
+                                 (list 'literal internal-id lit-id)))
+
+(define (declenv-put-stxclass env id stxclass-name args)
+  (declenv-check-unbound env id)
+  (bound-identifier-mapping-put! (declenv-bm env) id
+                                 (list 'stxclass id stxclass-name args)))
+
+;; returns ids in domain of env but not in given list
+(define (declenv-domain-difference env ids)
+  (define idbm (make-bound-identifier-mapping))
+  (define excess null)
+  (for ([id ids]) (bound-identifier-mapping-put! idbm id #t))
+  (bound-identifier-mapping-for-each
+   (declenv-bm env)
+   (lambda (k v)
+     (when (and (pair? v) (eq? (car v) 'stxclass))
+       (unless (bound-identifier-mapping-get idbm k (lambda () #f))
+         (set! excess (cons k excess))))))
+  excess)
+
+;; A RemapEnv is a bound-identifier-mapping
+
+(define (new-remapenv)
+  (make-bound-identifier-mapping))
+
+(define (remapenv-lookup env id)
+  (bound-identifier-mapping-get env id (lambda () (syntax-e id))))
+
+(define (remapenv-put env id sym)
+  (bound-identifier-mapping-put! env id sym))
+
+(define (remapenv-domain env)
+  (bound-identifier-mapping-map env (lambda (k v) k)))
+
+(define trivial-remap
+  (new-remapenv))
+
 ;; Contracts
 
-;; DeclEnv = [id -> (list* id id (listof stx)) or #t or #f
-;;   #t means literal, #f means undeclared, list means stxclass (w/ args)
 (define DeclEnv/c
-  (-> identifier? 
-      (or/c boolean? (cons/c identifier? (cons/c identifier? (listof syntax?))))))
+  (flat-named-contract "DeclEnv/c" declenv?))
 
 (define RemapEnv/c
-  (-> identifier? symbol?))
+  (flat-named-contract "RemapEnv/c" bound-identifier-mapping?))
 
-(define SideClause/c (or/c clause:with? clause:when?))
-
+(define SideClause/c
+  (or/c clause:with? clause:when?))
 
 (provide/contract
  [DeclEnv/c contract?]
@@ -109,24 +180,63 @@
  [allow-unbound-stxclasses (parameter/c boolean?)]
  [iattr? (any/c . -> . boolean?)]
  [sattr? (any/c . -> . boolean?)]
+
+ [new-declenv
+  (-> (listof (list/c identifier? identifier?)) DeclEnv/c)]
+ [declenv-lookup
+  (-> declenv? identifier? any)]
+ [declenv-put-literal
+  (-> declenv? identifier? identifier? any)]
+ [declenv-put-stxclass
+  (-> declenv? identifier? identifier? (listof syntax?)
+      any)]
+ [declenv-domain-difference
+  (-> declenv? (listof identifier?)
+      (listof identifier?))]
+
+ [new-remapenv
+  (-> RemapEnv/c)]
+ [remapenv-lookup
+  (-> RemapEnv/c identifier? symbol?)]
+ [remapenv-put
+  (-> RemapEnv/c identifier? symbol? any)]
+ [remapenv-domain
+  (-> RemapEnv/c list?)]
+ [trivial-remap
+  RemapEnv/c]
+
  [iattr->sattr (iattr? . -> . sattr?)]
- [rename-attr (attr? symbol? . -> . sattr?)]
- [iattrs->sattrs ((listof iattr?) (identifier? . -> . symbol?) . -> . (listof sattr?))]
+ [rename-attr
+  (attr? symbol? . -> . sattr?)]
+ [iattrs->sattrs
+  (-> (listof iattr?) RemapEnv/c
+      (listof sattr?))]
  [sattr->iattr/id (sattr? identifier? . -> . iattr?)]
 
- [get-stxclass (-> identifier? any)]
- [split-id/get-stxclass (-> identifier? any/c any)]
+ [get-stxclass
+  (-> identifier? any)]
+ [get-stxclass/check-arg-count
+  (-> identifier? exact-nonnegative-integer? any)]
+ [split-id/get-stxclass
+  (-> identifier? DeclEnv/c any)]
 
  [intersect-attrss ((listof (listof sattr?)) syntax? . -> . (listof sattr?))]
  [join-attrs (sattr? sattr? syntax? . -> . sattr?)]
  [reorder-iattrs
-  ((listof sattr?) (listof iattr?) (identifier? . -> . symbol?) . -> . (listof iattr?))]
+  (-> (listof sattr?) (listof iattr?) RemapEnv/c
+      (listof iattr?))]
  [restrict-iattrs
-  ((listof sattr?) (listof iattr?) (identifier? . -> . symbol?) . -> . (listof iattr?))]
+  (-> (listof sattr?) (listof iattr?) RemapEnv/c
+      (listof iattr?))]
  [flatten-sattrs
-  ([(listof sattr?)] [exact-integer? (or/c symbol? false/c)] . ->* . (listof sattr?))]
+  (->* [(listof sattr?)]
+       [exact-integer? (or/c symbol? false/c)]
+       (listof sattr?))]
  [intersect-sattrs ((listof sattr?) (listof sattr?) . -> . (listof sattr?))]
- [flatten-attrs* any/c]
+ [flatten-attrs*
+  (->* [(listof iattr?)]
+       [exact-nonnegative-integer? any/c any/c]
+       (listof iattr?))]
  [append-attrs ((listof (listof iattr?)) . -> . (listof iattr?))]
  [lookup-sattr (symbol? (listof sattr?) . -> . (or/c sattr? false/c))]
  [lookup-iattr (identifier? (listof iattr?) . -> . (or/c iattr? false/c))]
@@ -145,7 +255,7 @@
 
 (define (iattrs->sattrs as remap)
   (if (pair? as)
-      (let ([name* (remap (attr-name (car as)))])
+      (let ([name* (remapenv-lookup remap (attr-name (car as)))])
         (if name*
             (cons (rename-attr (car as) name*)
                   (iattrs->sattrs (cdr as) remap))
@@ -168,34 +278,30 @@
         sc
         (no-good))))
 
+(define (get-stxclass/check-arg-count id arg-count)
+  (let* ([sc (get-stxclass id)]
+         [expected-arg-count (length (sc-inputs sc))])
+    (unless (or (= expected-arg-count arg-count)
+                (allow-unbound-stxclasses))
+      ;; (above: don't check error if stxclass may not be defined yet)
+      (wrong-syntax id
+                    "too few arguments for syntax-class ~a (expected ~s)"
+                    (syntax-e id)
+                    expected-arg-count))
+    sc))
+
 (define (split-id/get-stxclass id0 decls)
   (cond [(regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0)))
          => (lambda (m)
-              (define id (datum->syntax id0 (string->symbol (cadr m)) id0 id0))
-              (define scname (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
-              (match (decls id)
-                [#t
-                 (wrong-syntax id "name already declared as literal")]
-                [(list* id2 scname2 args)
-                 (wrong-syntax id2
-                               "name already declared with syntax-class ~s"
-                               (syntax-e scname))]
-                [_ (void)])
-              (let ([sc (get-stxclass scname)])
+              (define id
+                (datum->syntax id0 (string->symbol (cadr m)) id0 id0))
+              (define scname
+                (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
+              (declenv-check-unbound decls id (syntax-e scname)
+                                     #:blame-declare? #t)
+              (let ([sc (get-stxclass/check-arg-count scname 0)])
                 (values id sc null)))]
-        [(decls id0)
-         => (lambda (p)
-              (define scname (cadr p))
-              (define args (cddr p))
-              (define stxclass (get-stxclass scname))
-              (unless (equal? (length (sc-inputs stxclass)) (length args))
-                (wrong-syntax id0
-                              "too few arguments for syntax-class ~a (expected ~s)"
-                              (sc-name stxclass)
-                              (length (sc-inputs stxclass))))
-              (values id0 stxclass args))]
         [else (values id0 #f null)]))
-
 
 ;; intersect-attrss : (listof (listof SAttr)) stx -> (listof SAttr)
 (define (intersect-attrss attrss blamestx)
@@ -226,20 +332,21 @@
       a
       (begin
         (unless (equal? (attr-depth a) (attr-depth b))
-          (complain "attribute '~a'occurs with different nesting depth" (attr-name a)))
+          (complain "attribute '~a'occurs with different nesting depth"
+                    (attr-name a)))
         (make attr (attr-name a)
                    (attr-depth a)
-                   (intersect-attrss (list (attr-inner a) (attr-inner b)) blamestx)))))
+                   (intersect-attrss (list (attr-inner a) (attr-inner b))
+                                     blamestx)))))
 
-;; reorder-iattrs : (listof SAttr) (listof IAttr) env -> (listof IAttr)
+;; reorder-iattrs : (listof SAttr) (listof IAttr) RemapEnv/c -> (listof IAttr)
 ;; Reorders iattrs (and restricts) based on relsattrs
 ;; If a relsattr is not found, or if depth or contents mismatches, raises error.
 (define (reorder-iattrs relsattrs iattrs remap)
   (let ([ht (make-hasheq)])
-    (for-each (lambda (iattr)
-                (let ([remap-name (remap (attr-name iattr))])
-                  (hash-set! ht remap-name iattr)))
-              iattrs)
+    (for ([iattr iattrs])
+      (let ([remap-name (remapenv-lookup remap (attr-name iattr))])
+        (hash-set! ht remap-name iattr)))
     (let loop ([relsattrs relsattrs])
       (match relsattrs
         ['() null]
@@ -256,16 +363,16 @@
                        (intersect-sattrs inner (attr-inner iattr)))
                  (loop rest)))]))))
 
-;; restrict-iattrs : (listof SAttr) (listof IAttr) env -> (listof IAttr)
+;; restrict-iattrs : (listof SAttr) (listof IAttr) RemapEnv/c -> (listof IAttr)
 ;; Preserves order of iattrs
 (define (restrict-iattrs relsattrs iattrs remap)
   (match iattrs
     ['() null]
     [(cons (struct attr (name depth inner)) rest)
-     (let ([sattr (lookup-sattr (remap name) relsattrs)])
+     (let ([sattr (lookup-sattr (remapenv-lookup remap name) relsattrs)])
        (if (and sattr (= depth (attr-depth sattr)))
            (cons (make attr name depth
-                            (intersect-sattrs inner (attr-inner sattr)))
+                       (intersect-sattrs inner (attr-inner sattr)))
                  (restrict-iattrs relsattrs (cdr iattrs) remap))
            (restrict-iattrs relsattrs (cdr iattrs) remap)))]))
 
