@@ -52,6 +52,12 @@
 #define PAGEMAP32_BITS(x) (NUM(x) >> LOG_APAGE_SIZE)
 #endif
 
+#if 0
+# define GC_ASSERT(x) assert(x)
+#else
+# define GC_ASSERT(x) /* empty */
+#endif
+
 /* the page type constants */
 enum {
   PAGE_TAGGED   = 0,
@@ -1827,7 +1833,7 @@ static void propagate_marks(NewGC *gc)
             if((unsigned long)mark_table[tag] < PAGE_TYPES) {
               /* atomic */
             } else {
-              assert(mark_table[tag]);
+              GC_ASSERT(mark_table[tag]);
               mark_table[tag](start); break;
             }
           }
@@ -1838,7 +1844,7 @@ static void propagate_marks(NewGC *gc)
                             unsigned short tag = *(unsigned short *)start;
                             end -= INSET_WORDS;
                             while(start < end) {
-                              assert(mark_table[tag]);
+                              GC_ASSERT(mark_table[tag]);
                               start += mark_table[tag](start);
                             }
                             break;
@@ -1853,7 +1859,7 @@ static void propagate_marks(NewGC *gc)
         case PAGE_TAGGED: 
           {
             unsigned short tag = *(unsigned short*)p;
-            assert(mark_table[tag]);
+            GC_ASSERT(mark_table[tag]);
             mark_table[tag](p);
             break;
           }
@@ -1869,7 +1875,7 @@ static void propagate_marks(NewGC *gc)
                             void **end = PPTR(info) + (info->size - INSET_WORDS);
                             unsigned short tag = *(unsigned short *)start;
                             while(start < end) {
-                              assert(mark_table[tag]);
+                              GC_ASSERT(mark_table[tag]);
                               start += mark_table[tag](start);
                             }
                             break;

@@ -2035,6 +2035,7 @@ static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[])
     while (SCHEME_PAIRP(extra_sources)) {
       if (!SCHEME_STXP(SCHEME_CAR(extra_sources)))
         break;
+      extra_sources = SCHEME_CDR(extra_sources);
     }
     if (!SCHEME_NULLP(extra_sources)) {
       scheme_wrong_type("raise-syntax-error", "list of syntax", 4, argc, argv);

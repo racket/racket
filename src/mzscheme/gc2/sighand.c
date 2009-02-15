@@ -18,6 +18,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifndef WAIT_FOR_GDB
+# define WAIT_FOR_GDB 0
+#endif
+
+#if WAIT_FOR_GDB
 static void launchgdb() {
   pid_t pid = getpid();
   char inbuffer[10];
@@ -31,13 +36,16 @@ static void launchgdb() {
     }
   }
 }
+#endif
 
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
   void *p = si->si_addr;
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
     printf("SIGSEGV fault on %p\n", p);
+#if WAIT_FOR_GDB
     launchgdb();
+#endif
     abort();
   }
 
