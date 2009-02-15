@@ -214,7 +214,8 @@ improve method arity mismatch contract violation error messages?
     [(_ marker blame-stx ((p c) ...) (u ...) body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
-                                         (kernel-form-identifier-list))])
+                                         (cons #'splicing-syntax-parameterize
+                                               (kernel-form-identifier-list)))])
        (syntax-case expanded-body0 (begin define-values)
          [(begin sub ...)
           (syntax/loc stx
@@ -267,6 +268,19 @@ improve method arity mismatch contract violation error messages?
                        u-def ... p/c-def ...
                        (with-contract-helper marker blame-stx #,unused-p/cs #,unused-us
                                              body ...)))))]
+         [(splicing-syntax-parameterize bindings . ssp-body)
+          (let* ([marker-f (let ([marker (syntax-e #'marker)])
+                             (lambda (stx)
+                               (syntax-local-introduce
+                                (marker (syntax-local-introduce stx)))))]
+                 [expanded-ssp (local-expand (quasisyntax/loc expanded-body0
+                                               (splicing-syntax-parameterize bindings .
+                                                 #,(marker-f #'ssp-body)))
+                                             (syntax-local-context)
+                                             (kernel-form-identifier-list))])
+            (quasisyntax/loc stx
+              (begin #,expanded-ssp
+                     (with-contract-helper marker blame-stx ((p c) ...) (u ...) body ...))))]
          [else
           (let*-values ([(marker-f) (let ([marker (syntax-e #'marker)])
                                       (lambda (stx)

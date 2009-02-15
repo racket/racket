@@ -2476,7 +2476,53 @@
         (define (evenp n)
           (if (zero? n) #t (oddp (zero? n)))))
       (oddp 5)))
-
+  
+  (test/spec-passed
+   'with-contract5
+   '(let ()
+      (with-contract region1
+        ([x (-> number? number?)])
+        (with-contract region2
+          ([y (-> number? boolean?)])
+          (define (y n) #t))
+        (define (x n) (if (y n) 0 3)))
+      (x 4)))
+  
+  (test/spec-failed
+   'with-contract6
+   '(let ()
+      (with-contract region1
+        ([x (-> number? number?)])
+        (with-contract region2
+          ([y (-> number? boolean?)])
+          (define (y n) #t))
+        (define (x n) (y n)))
+      (x 4))
+   "(region region1)")
+  
+  (test/spec-failed
+   'with-contract7
+   '(let ()
+      (with-contract region1
+        ([x (-> number? number?)])
+        (with-contract region2
+          ([y (-> number? boolean?)])
+          (define (y n) #t))
+        (define (x n) (if (y #t) 4 0)))
+      (x 4))
+   "(region region1)")
+  
+  (test/spec-failed
+   'with-contract8
+   '(let ()
+      (with-contract region1
+        ([x (-> number? number?)])
+        (with-contract region2
+          ([y (-> number? boolean?)])
+          (define (y n) 3))
+        (define (x n) (if (y n) 4 0)))
+      (x 4))
+   "(region region2)")
 
 ;                                                                                                                         
 ;                                                                                                                         

@@ -764,7 +764,7 @@ before the pattern compiler is invoked.
                          #f
                          filtered)))))
           has-hole?))]
-      [(? (lambda (x) (list? x))) ;; this eta expansion is to defeat a bug in match
+      [(? list?)
        (let-values ([(rewritten has-hole?) (rewrite-ellipses non-underscore-binder? pattern compile-pattern/default-cache)])
          (let ([count (and (not (ormap repeat? rewritten))
                            (length rewritten))])
