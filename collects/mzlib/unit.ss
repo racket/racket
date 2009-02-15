@@ -1377,7 +1377,8 @@
                       (check-unit-syntax
                        (syntax/loc stx
                          ((import i.s ...) (export e.s ...) dep . body))))])
-         (with-syntax ([(import-tagged-sig-id ...)
+         (with-syntax ([name (syntax-local-infer-name (error-syntax))]
+                       [(import-tagged-sig-id ...)
                         (map (λ (i s)
                                (if (identifier? i) #`(tag #,i #,s) s))
                              (syntax->list #'(i.s.i ...))
@@ -1387,8 +1388,7 @@
                                (if (identifier? i) #`(tag #,i #,s) s))
                              (syntax->list #'(e.s.i ...))
                              (syntax->list #'(e.s.s.name ...)))])
-           (with-syntax ([name (syntax-local-infer-name (error-syntax))]
-                         [new-unit exp]
+           (with-syntax ([new-unit exp]
                          [unit-contract
                           (unit/c/core
                            (syntax/loc stx
