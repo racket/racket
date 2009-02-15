@@ -40,13 +40,26 @@
 (define (remember s t A) (cons (seen-before s t) A))
 (define (seen? s t) (member (seen-before s t) (current-seen)))
 
+(define subtype-cache (make-hash))
+(define (cache-types s t)
+  (cache-keys (Type-seq s) (Type-seq t)))
+(define (cache-keys ks kt)
+  (hash-set! subtype-cache (cons ks kt) #t))
+(define (cached? s t)
+  (hash-ref subtype-cache (cons (Type-seq s) (Type-seq t)) #f))
 
 ;; is s a subtype of t?
 ;; type type -> boolean
 (define (subtype s t)
-  (with-handlers
-      ([exn:subtype? (lambda _ #f)])
-    (subtype* (current-seen) s t)))
+  (define k (cons (Type-seq s) (Type-seq t)))
+  (define lookup? (hash-ref subtype-cache k 'no))
+  (if (eq? 'no lookup?)
+      (let ([result (with-handlers
+                        ([exn:subtype? (lambda _ #f)])
+                      (subtype* (current-seen) s t))])
+        (hash-set! subtype-cache k result)
+        result)
+      lookup?))
 
 ;; are all the s's subtypes of all the t's?
 ;; [type] [type] -> boolean
