@@ -17,15 +17,15 @@
     [else (let: loop : (Listof Syntax)
                 ([fst : Syntax (car ids)]
                  [rst : (Listof Syntax) (cdr ids)])
-            (error 'foo) #;(cond
-              [(null? rst) (list fst)]
-              [else (if (and (eq? (syntax-source fst)
-                                  (syntax-source (car rst)))                             
-                             ;; CHANGE - used eqv? instead of =, since these might be #f
-                             (eqv? (syntax-position fst)
-                                   (syntax-position (car rst))))
-                        (loop fst (cdr rst))
-                        (cons fst (loop (car rst) (cdr rst))))]))]))
+                (cond
+                  [(null? rst) (list fst)]
+                  [else (if (and (eq? (syntax-source fst)
+                                      (syntax-source (car rst)))                             
+                                 ;; CHANGE - used eqv? instead of =, since these might be #f
+                                 (eqv? (syntax-position fst)
+                                       (syntax-position (car rst))))
+                            (loop fst (cdr rst))
+                            (cons fst (loop (car rst) (cdr rst))))]))]))
 
 
 ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
