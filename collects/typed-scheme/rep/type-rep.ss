@@ -13,7 +13,7 @@
 ;; Type is defined in rep-utils.ss
 
 ;; t must be a Type
-(dt Scope (t))
+(dt Scope (t) [#:key (Type-key t)])
 
 ;; this is ONLY used when a type error ocurrs
 (dt Error () [#:frees #f] [#:fold-rhs #:base])
@@ -41,39 +41,52 @@
                       stx)])
 
 ;; left and right are Types
-(dt Pair (left right))
+(dt Pair (left right) [#:key 'pair])
 
 ;; elem is a Type
-(dt Vector (elem) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))])
+(dt Vector (elem) 
+    [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+    [#:key 'vector])
 
 ;; elem is a Type
-(dt Box (elem) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))])  
+(dt Box (elem) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+    [#:key 'box])  
 
 ;; name is a Symbol (not a Name)
-(dt Base (name contract) [#:frees #f] [#:fold-rhs #:base] [#:intern name])
+(dt Base (name contract) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
+    [#:key (case name
+	     [(Number Integer) 'number]
+	     [(Boolean) 'boolean]
+	     [(String) 'string]
+	     [(Symbol) 'symbol]
+             [(Keyword) 'keyword]
+	     [else #f])])
 
 ;; body is a Scope
 (dt Mu (body) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
-    [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))])    
+    [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
+    [#:key (Type-key body)])    
 
 ;; n is how many variables are bound here
 ;; body is a Scope
 (dt Poly (n body) #:no-provide 
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
-                  (*Poly n (add-scopes n (type-rec-id body*))))])
+                  (*Poly n (add-scopes n (type-rec-id body*))))]
+    [#:key (Type-key body)])
 
 ;; n is how many variables are bound here
 ;; there are n-1 'normal' vars and 1 ... var
 ;; body is a Scope
 (dt PolyDots (n body) #:no-provide
+    [#:key (Type-key body)]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*PolyDots n (add-scopes n (type-rec-id body*))))])
 
 ;; pred : identifier
 ;; cert : syntax certifier
-(dt Opaque (pred cert) [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base])
+(dt Opaque (pred cert) [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
 ;; name : symbol
 ;; parent : Struct
@@ -92,7 +105,8 @@
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
-                         cert)])
+                         cert)]
+    [#:key (gensym)])
 
 ;; kw : keyword?
 ;; ty : Type
@@ -100,7 +114,8 @@
 (dt Keyword (kw ty required?)
     [#:frees (free-vars* ty)
              (free-idxs* ty)]
-    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
+    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)]
+    [#:key 'keyword])
 
 ;; dom : Listof[Type]
 ;; rng : Type
@@ -112,6 +127,7 @@
 ;; els-eff : Effect
 ;; arr is NOT a Type
 (dt arr (dom rng rest drest kws thn-eff els-eff)
+    [#:key 'procedure]
     [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null)
                                                                                 (map Keyword-ty kws)
                                                                                 dom)))
@@ -153,13 +169,22 @@
     [#:fold-rhs (*Function (map type-rec-id arities))])
 
 ;; v : Scheme Value
-(dt Value (v) [#:frees #f] [#:fold-rhs #:base])
+(dt Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
+							    [(boolean? v) 'boolean]
+							    [(null? v) 'null]
+							    [else #f])])
 
 ;; elems : Listof[Type]
 (dt Union (elems) [#:frees (combine-frees (map free-vars* elems))
                            (combine-frees (map free-idxs* elems))]
-    [#:fold-rhs ((unbox union-maker) (map type-rec-id elems))])
-
+    [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
+    [#:key (let loop ([res null] [ts elems])
+	     (if (null? ts) res
+		 (let ([k (Type-key (car ts))])
+		   (cond [(pair? k) (loop (append k res) (cdr ts))]
+			 [k (loop (cons k res) (cdr ts))]
+			 [else #f]))))])
+    
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
 ;; types : Listof[Type]
@@ -167,23 +192,25 @@
     #:no-provide
     [#:frees (combine-frees (map free-vars* types))
              (combine-frees (map free-idxs* types))]
-    [#:fold-rhs (*Values (map type-rec-id types))])
+    [#:fold-rhs (*Values (map type-rec-id types))]
+    [#:key 'values])
 
 (dt ValuesDots (types dty dbound) 
     [#:frees (combine-frees (map free-vars* (cons dty types)))
              (combine-frees (map free-idxs* (cons dty types)))]
-    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)])
+    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)]
+    [#:key 'values])
 
 ;; in : Type
 ;; out : Type
-(dt Param (in out))
+(dt Param (in out) [#:key 'parameter])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable (key value))
+(dt Hashtable (key value) [#:key 'hash])
 
 ;; t : Type
-(dt Syntax (t))
+(dt Syntax (t) [#:key 'syntax])
 
 ;; pos-flds  : (Listof Type)
 ;; name-flds : (Listof (Tuple Symbol Type Boolean))
@@ -197,7 +224,7 @@
               (map free-idxs* (append pos-flds 
                                       (map cadr name-flds)
                                       (map cadr methods))))]
-    
+    [#:key 'class]
     [#:fold-rhs (match (list pos-flds name-flds methods)
                   [(list
                     pos-tys 
@@ -211,17 +238,18 @@
                     (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
-(dt Instance (cls))
+(dt Instance (cls) [#:key 'instance])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Ugly hack - should use units
 
-(define union-maker (box #f))
+(define union-maker (box (lambda args (int-err "Union not yet available"))))
 
 (define (set-union-maker! v) (set-box! union-maker v))
+(define (get-union-maker) (unbox union-maker))
 
-(provide set-union-maker!)
+(provide set-union-maker! get-union-maker)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -4,7 +4,9 @@
 
 (require (rep type-rep rep-utils)
 	 (utils tc-utils)
+	 "type-utils.ss"
 	 "subtype.ss" 
+         "type-abbrev.ss"
          "type-effect-printer.ss" 
          "type-comparison.ss"
          scheme/match mzlib/trace)
@@ -32,6 +34,7 @@
 (define Un
   (case-lambda 
     [() empty-union]
+    [(t) t]
     [args
      ;; a is a Type (not a union type)
      ;; b is a List[Type]
@@ -50,7 +53,7 @@
           (if (andmap Values? types)
               (make-Values (apply map Un (map Values-types types)))
               (int-err "Un: should not take the union of multiple values with some other type: ~a" types))]
-         [else (make-union* #;(remove-subtypes types) (foldr union2 null (remove-subtypes types)))]))]))
+         [else (make-union* #;(remove-subtypes types) (foldr union2 '() (remove-subtypes types)))]))]))
 
 #;(defintern (Un-intern args) (lambda (_ args) (apply Un args)) args)
 

@@ -3,7 +3,7 @@
 (require (except-in "../utils/utils.ss" extend))
 (require (rep type-rep)
 	 (private union subtype resolve-type type-effect-convenience type-utils)
-         mzlib/plt-match mzlib/trace)
+         scheme/match mzlib/trace)
 
 (provide (rename-out [*remove remove]) overlap)
 

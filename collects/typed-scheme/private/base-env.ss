@@ -517,8 +517,8 @@
 [expand (-> (-Syntax Univ) (-Syntax Univ))]
 [expand-once (-> (-Syntax Univ) (-Syntax Univ))]
 
-[syntax-source (-poly (a) (-> (-Syntax a) Univ))]
-[syntax-position (-poly (a) (-> (-Syntax a) (-opt N)))]
+[syntax-source (-> (-Syntax Univ) Univ)]
+[syntax-position (-> (-Syntax Univ) (-opt N))]
 [datum->syntax (cl->*
                 (-> (-opt (-Syntax Univ)) Sym (-Syntax Sym))
                 (-> (-opt (-Syntax Univ)) Univ (-Syntax Univ)))]
@@ -537,6 +537,11 @@
 [read-accept-reader (-Param B B)]
 
 [maybe-print-message (-String . -> . -Void)]
+
+;; scheme/list
+[last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
+                       . -> . 
+                       (Un (-pair a a) (-pair a (-val '())))))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]

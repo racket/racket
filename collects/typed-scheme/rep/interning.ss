@@ -1,25 +1,25 @@
 #lang scheme/base
 
-(require syntax/boundmap)
+(require syntax/boundmap (for-syntax scheme/base stxclass))
 
 (provide defintern hash-id)
 
 
-(define-syntax defintern
-  (syntax-rules ()
-    [(_ name+args make-name key) 
-     (defintern name+args (lambda () (make-hash #;'weak)) make-name key)]
-    [(_ (*name arg ...) make-ht make-name key-expr)
-     (define *name
-       (let ([table (make-ht)])
-         (lambda (arg ...)
-           #;(all-count!)
-           (let ([key key-expr])
-             (hash-ref table key
-                       (lambda ()
-                         (let ([new (make-name (count!) arg ...)])
-                           (hash-set! table key new)
-                           new)))))))]))
+(define-syntax (defintern stx)
+  (syntax-parse stx
+    [(_ name+args make-name key ([#:extra-arg e:expr]) ...*) 
+     #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key #:extra-arg e ...)]
+    [(_ (*name:id arg:id ...) make-ht make-name key-expr ([#:extra-arg e:expr]) ...*)
+     #'(define *name
+	 (let ([table (make-ht)])
+	   (lambda (arg ...)
+	     #;(all-count!)
+	     (let ([key key-expr])
+	       (hash-ref table key
+			 (lambda ()
+			   (let ([new (make-name (count!) e ... arg ...)])
+			     (hash-set! table key new)
+			     new)))))))]))
 
 (define (make-count!)
   

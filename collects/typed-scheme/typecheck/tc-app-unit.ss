@@ -548,7 +548,8 @@
       #:literals (#%plain-app reverse)
       [c:lv-clause
        #:with (#%plain-app reverse n:id) #'c.e
-       #:when (free-identifier=? name #'n)
+       #:with (v) #'(c.v ...) 
+       #:when (free-identifier=? name #'v)
        (type-annotation #'v)]
       [_ #f]))
   (syntax-parse stx

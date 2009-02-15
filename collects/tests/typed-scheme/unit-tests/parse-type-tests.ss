@@ -3,13 +3,14 @@
 (require (utils tc-utils)
 	 (env type-alias-env type-environments type-name-env init-envs)
 	 (rep type-rep)
-	 (private type-comparison parse-type subtype
-		  union type-utils)
+	 (rename-in (private type-comparison parse-type subtype
+                             union type-utils)
+                    [Un t:Un])
          (schemeunit))
 
 (require (rename-in (private type-effect-convenience) [-> t:->])
-         (private base-types)
-         (for-template (private base-types)))
+         (private base-types base-types-extra)
+         (for-template (private base-types base-types-extra)))
 
 (provide parse-type-tests)
 
@@ -72,9 +73,9 @@
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
    [(Number Number Number * -> Boolean) ((list N N) N . ->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax
-   [(U Number Boolean) (Un N B)]
-   [(U Number Boolean Number) (Un N B)]
-   [(U Number Boolean 1) (Un N B)]
+   [(U Number Boolean) (t:Un N B)]
+   [(U Number Boolean Number) (t:Un N B)]
+   [(U Number Boolean 1) (t:Un N B)]
    [(All (a) (Listof a)) (-poly (a) (make-Listof  a))]
    [(All (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
    [(∀ (a) (Listof a)) (-poly (a) (make-Listof  a))]
