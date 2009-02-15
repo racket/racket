@@ -12,11 +12,49 @@
 
 (provide (for-syntax unit/c/core) unit/c)
 
+#|
+We want to think of the contract as sitting between the outside world
+and the unit in question.  In the case where the signature in question
+is contracted, we have:
+
+                     pos   unit/c   neg
+                             |         
+              ---            |         
+             |   |           |         
+       <---- | i |     <-----|------    (v, o)
+             |   |           |         
+              ---            |
+             |   |           |
+(v, u) ----> | e |     ------|----->
+             |   |           |
+              ---            |
+                             |
+
+So for an import, we start out with (v, o) coming in when the
+import is being set.  We need to first check the contract 
+(sig-ctc, o, neg), to make sure what's coming in appropriately
+satisfies that contract (since it already has given us the
+positive blame for the value incoming).  Then we need to check
+(ctc, neg, pos) (i.e. apply the projection with the blame
+"switched").  That leaves pos as the appropriate thing to pack
+with the value for the sig-ctc check inside the unit.  When
+the unit pulls it out (which isn't affected by the unit/c
+contract combinator), it'll have the correct party to blame as
+far as it knows.
+
+For an export, we start on the other side, so we don't need to do
+anything to the setting function as the unit will handle that.  So for
+the accessing function, we need to grab what's in the box,
+check (sig-ctc, u, pos), then check (ctc, pos, neg) via projection
+application, then last, but not least, return the resulting value
+packed with the neg blame.
+|#
+
 (define-for-syntax (contract-imports/exports import?)
   (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
     (define def-table (make-bound-identifier-mapping))
     
-    (define (convert-reference vref ctc sig-ctc rename-bindings)
+    (define (convert-reference var vref ctc sig-ctc rename-bindings)
       (let ([wrap-with-proj
              (λ (ctc stx)
                ;; If contract coersion ends up being a large overhead, we can
@@ -31,21 +69,33 @@
                     #,stx)))])
         (if ctc
             #`(cons
-               (λ ()
-                 (let* ([old-v 
-                         #,(if sig-ctc
-                               #`(let ([old-v/c ((car #,vref))])
-                                   (cons #,(wrap-with-proj ctc #'(car old-v/c))
-                                         (cdr old-v/c)))
-                               (wrap-with-proj ctc #`((car #,vref))))])
-                   old-v))
-               (λ (v) 
-                 (let* ([new-v 
-                         #,(if sig-ctc
-                               #`(cons #,(wrap-with-proj ctc #'(car v))
-                                       (cdr v))
-                               (wrap-with-proj ctc #'v))])
-                   ((cdr #,vref) new-v))))
+               #,(if import?
+                     #`(car #,vref)
+                     #`(λ ()
+                         (let* ([old-v 
+                                 #,(if sig-ctc
+                                       #`(let ([old-v/c ((car #,vref))])
+                                           (cons #,(wrap-with-proj 
+                                                    ctc 
+                                                    #`(contract #,sig-ctc (car old-v/c)
+                                                                (cdr old-v/c) #,pos
+                                                                #,(id->contract-src-info var)))
+                                                 #,neg))
+                                       (wrap-with-proj ctc #`((car #,vref))))])
+                           old-v)))
+               #,(if import?
+                     #`(λ (v) 
+                         (let* ([new-v 
+                                 #,(if sig-ctc
+                                       #`(cons #,(wrap-with-proj 
+                                                  ctc 
+                                                  #`(contract #,sig-ctc (car v)
+                                                              (cdr v) #,neg
+                                                              #,(id->contract-src-info var)))
+                                               #,pos)
+                                       (wrap-with-proj ctc #'v))])
+                           ((cdr #,vref) new-v)))
+                     #`(cdr #,vref)))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
@@ -61,16 +111,13 @@
                             (get-member-bindings def-table target-sig pos)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
-                         (let* ([vref
-                                 (bound-identifier-mapping-get
-                                  def-table
-                                  (car target-int/ext-name))]
+                         (let* ([var (car target-int/ext-name)]
+                                [vref
+                                 (bound-identifier-mapping-get def-table var)]
                                 [ctc
                                  (bound-identifier-mapping-get
-                                  ctc-table
-                                  (car target-int/ext-name)
-                                  (λ () #f))])
-                           (convert-reference vref ctc sig-ctc rename-bindings))))))
+                                  ctc-table var (λ () #f))])
+                           (convert-reference var vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...) 
                    (map tagged-info->keys import-tagged-infos)))
       #'(unit-export ((export-keys ...)
