@@ -765,3 +765,24 @@
   (test-runtime-error exn:fail:contract? "U@ broke contract on x"
     (f 3))
   (invoke-unit W@))
+
+(let ()
+  (define-signature foo^
+    ((contracted 
+      [x? (-> number? boolean?)]
+      [f (-> x? number?)])))
+  
+  (define-unit/contract foo@
+    (import)
+    (export (foo^ [x? (-> any/c boolean?)]))
+    
+    (define (x? n) (zero? n))
+    (define (f x) 3))
+  
+  (define-values/invoke-unit/infer foo@)
+  
+  (f 0)
+  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
+    (f 4))
+  (test-runtime-error exn:fail:contract? "foo@ broke the contract on x"
+    (f #t)))
