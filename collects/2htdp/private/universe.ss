@@ -57,21 +57,21 @@
           (define (pname a ...) 
             (define (handler e) (stop! e))
             (with-handlers ([exn? handler])
-              (define r (check-state-x-mail 'name (name worlds universe a ...)))
+              (define r (check-state-x-mail 'name (name iworlds universe a ...)))
               (define u (bundle-state r))
-              (set! worlds (bundle-low r))
+              (set! iworlds (bundle-low r))
               (set! universe u)
-              (unless (boolean? to-string) (send gui add (to-string worlds u)))
+              (unless (boolean? to-string) (send gui add (to-string iworlds u)))
               (broadcast (bundle-mails r))))))
       
-      (def/cback private (pmsg world received) on-msg)
+      (def/cback private (pmsg iworld received) on-msg)
       
-      (def/cback private (pdisconnect world) on-disconnect)
+      (def/cback private (pdisconnect iworld) on-disconnect)
       
-      (def/cback private (pnew world) ppnew)
+      (def/cback private (pnew iworld) ppnew)
       
       (define/private (ppnew low uni p)
-        (world-send p 'okay)
+        (iworld-send p 'okay)
         (on-new low uni p))
       
       (def/cback public (ptock) tick)
@@ -90,7 +90,7 @@
       ;; -----------------------------------------------------------------------
       ;; start and stop server, start and stop the universe
       
-      (field [worlds   '()] ;; [Listof World]
+      (field [iworlds   '()] ;; [Listof World]
              [gui      (new gui%
                             [stop-server (lambda () (stop! universe))] 
                             [stop-and-restart (lambda () (restart))])]
@@ -103,50 +103,50 @@
         (parameterize ([current-custodian the-custodian])
           (define (loop)
             (apply sync 
-                   (handle-evt (tcp-accept-evt tcp-listener) add-world)
-                   (map world-wait-for-msg worlds)))
-          (define (add-world in-out)
+                   (handle-evt (tcp-accept-evt tcp-listener) add-iworld)
+                   (map iworld-wait-for-msg iworlds)))
+          (define (add-iworld in-out)
             (with-handlers ((tcp-eof? (lambda _ (loop))))
               (define in (first in-out))        
               (define next (tcp-receive in))
               (match next
                 [(cons 'REGISTER info)
-                 (let* ([w (create-world in (second in-out) info)])
-                   ; (set! worlds (cons w worlds))
+                 (let* ([w (create-iworld in (second in-out) info)])
+                   ; (set! iworlds (cons w iworlds))
                    (pnew w)
                    (send gui add (format "~a signed up" info))
                    (loop))]
                 [else (loop)])))
-          (define (world-wait-for-msg p)
-            (handle-evt (world-in p) 
+          (define (iworld-wait-for-msg p)
+            (handle-evt (iworld-in p) 
                         (lambda (in)
                           (with-handlers 
                               ((tcp-eof? 
                                 (lambda (e) 
                                   (handler p e 
                                            (lambda () 
-                                             (if (null? worlds)
+                                             (if (null? iworlds)
                                                  (restart)
                                                  (loop)))))))
                             (define r (tcp-receive in))
-                            (send gui add (format "~a ->: ~a" (world-name p) r))
+                            (send gui add (format "~a ->: ~a" (iworld-name p) r))
                             (pmsg p r)
                             (loop)))))
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
               (tcp-listen SQPORT 4 #t)))
           ;; --- go universe go ---
-          (set! worlds '())
+          (set! iworlds '())
           (set! universe universe0)
           (send gui add "a new universe is up and running")
           (thread loop)))
       
       ;; World Exn (-> X) -> X
       (define/private (handler p e cont)
-        (close-output-port (world-out p))
-        (close-input-port (world-in p))
-        (send gui add (format "~a !! closed port" (world-name p)))
-        (set! worlds (remq p worlds))
+        (close-output-port (iworld-out p))
+        (close-input-port (iworld-in p))
+        (send gui add (format "~a !! closed port" (iworld-name p)))
+        (set! iworlds (remq p iworlds))
         (pdisconnect p)
         (cont))
       
@@ -163,12 +163,12 @@
                     ;; (handler 
                     (with-handlers ((exn? (lambda (e) (printf "\n\n*** to be done ***\n\n"))))
                       (define w (mail-to p+m))
-                      (define n (world-name w))
+                      (define n (iworld-name w))
                       (define p (mail-content p+m))
-                      (unless (memq w worlds)
+                      (unless (memq w iworlds)
                         (send gui add (format "~s not on list" n)))
-                      (when (memq w worlds)
-                        (world-send w p)
+                      (when (memq w iworlds)
+                        (iworld-send w p)
                         (send gui add (format "-> ~a: ~a" n p)))))
                   lm))
       
@@ -184,9 +184,9 @@
           (send gui add "stopping the universe")
           (send gui add "----------------------------------")
           (for-each (lambda (w)
-                      (close-input-port (world-in w))
-                      (close-output-port (world-out w)))
-                    worlds)
+                      (close-input-port (iworld-in w))
+                      (close-output-port (iworld-out w)))
+                    iworlds)
           (custodian-shutdown-all the-custodian)
           (semaphore-post go)))
       
@@ -217,35 +217,35 @@
 ;                                            
 
 (provide 
- world?  ;; Any -> Boolean 
- world=? ;; World World -> Boolean 
- world-name ;; World -> Symbol 
- world1  ;; sample worlds 
- world2
- world3)
+ iworld?  ;; Any -> Boolean 
+ iworld=? ;; World World -> Boolean 
+ iworld-name ;; World -> Symbol 
+ iworld1  ;; sample worlds 
+ iworld2
+ iworld3)
 
 ;; --- the server representation of a world --- 
-(define-struct world (in out name info) #:transparent)
-;; World = (make-world IPort OPort Symbol [Listof Sexp])
+(define-struct iworld (in out name info) #:transparent)
+;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
 
-(define world1 (make-world (current-input-port) (current-output-port) 'sk '()))
-(define world2 (make-world (current-input-port) (current-output-port) 'mf '()))
-(define world3 (make-world (current-input-port) (current-output-port) 'rf '()))
+(define iworld1 (make-iworld (current-input-port) (current-output-port) 'sk '()))
+(define iworld2 (make-iworld (current-input-port) (current-output-port) 'mf '()))
+(define iworld3 (make-iworld (current-input-port) (current-output-port) 'rf '()))
 
-(define (world=? u v)
-  (check-arg 'world=? (world? u) 'world "first" u)
-  (check-arg 'world=? (world? v) 'world "second" v)
+(define (iworld=? u v)
+  (check-arg 'iworld=? (iworld? u) 'iworld "first" u)
+  (check-arg 'iworld=? (iworld? v) 'iworld "second" v)
   (eq? u v))
 
 ;; IPort OPort Sexp -> Player 
-(define (create-world i o info)
+(define (create-iworld i o info)
   (if (and (pair? info) (symbol? (car info)))
-      (make-world i o (car info) (cdr info))
-      (make-world i o (gensym 'world) info)))
+      (make-iworld i o (car info) (cdr info))
+      (make-iworld i o (gensym 'iworld) info)))
 
 ;; Player S-exp -> Void
-(define (world-send p sexp)
-  (tcp-send (world-out p) sexp))
+(define (iworld-send p sexp)
+  (tcp-send (iworld-out p) sexp))
 
 ;                       
 ;                       
@@ -351,16 +351,16 @@
 (set! make-bundle
       (let ([make-bundle make-bundle])
         (lambda (low state mails)
-          (check-arg-list 'make-bundle low world? "world" "first")
+          (check-arg-list 'make-bundle low iworld? "iworld" "first")
           (check-arg-list 'make-bundle mails mail? "mail" "third")
           (make-bundle low state mails))))
 
 ;; Symbol Any (Any -> Boolean) String String -> Void 
 ;; raise a TP exception if low is not a list of world? elements 
-(define (check-arg-list tag low world? msg rank)
+(define (check-arg-list tag low iworld? msg rank)
   (check-arg tag (list? low) (format "list [of ~as]" msg) rank low)
   (for-each (lambda (c) 
-              (check-arg tag (world? c) msg (format "(elements of) ~a" rank) c))
+              (check-arg tag (iworld? c) msg (format "(elements of) ~a" rank) c))
             low))
 
 (define-struct mail (to content) #:transparent)
@@ -368,6 +368,6 @@
 (set! make-mail
       (let ([make-mail make-mail])
         (lambda (to content)
-          (check-arg 'make-mail (world? to) 'world "first" to)
+          (check-arg 'make-mail (iworld? to) 'iworld "first" to)
           (check-arg 'make-mail (sexp? content) 'S-expression "second" content)
           (make-mail to content))))

@@ -226,12 +226,12 @@
 
 (provide 
  ;; type World 
- world?    ;; Any -> Boolean 
- world=?   ;; World World -> Boolean 
- world-name ;; World -> Symbol 
- world1    ;; sample worlds 
- world2
- world3
+ iworld?    ;; Any -> Boolean 
+ iworld=?   ;; World World -> Boolean 
+ iworld-name ;; World -> Symbol 
+ iworld1    ;; sample worlds 
+ iworld2
+ iworld3
  ;; type Bundle = (make-bundle [Listof World] Universe [Listof Mail]) 
  ;; type Mail = (make-mail World S-expression)
  make-bundle ;; [Listof World] Universe [Listof Mail] -> Bundle 
