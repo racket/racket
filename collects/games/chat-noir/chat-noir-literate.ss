@@ -11,8 +11,6 @@ Chat Noir. What a game.
        <data-definitions>
        <everything-else>]
 
-@schememodname[htdp/world]
-
 @section{Data Definitions}
 
 The main data structure for Chat Noir is @tt{world}. 
@@ -23,7 +21,7 @@ The main data structure for Chat Noir is @tt{world}.
 ]
 
 It consists of a structure with six fields:
-@itemize{
+@itemize[
 @item{
 a @scheme[board], which is represented as a list of @tt{cell}s, one for each circle on the game. }
 @item{
@@ -40,7 +38,7 @@ a @scheme[posn] for the location of the mouse (or @scheme[#f] if the
 mouse is not in the window),}
 @item{and a boolean indicating if the @tt{h}
 key has been pushed down.}
-}
+]
 
 A @tt{cell} is a structure with two fields:
 
@@ -49,13 +47,12 @@ A @tt{cell} is a structure with two fields:
 
 The first field contains a @scheme[posn] struct.
 
-@verbatim[#<<---
+@verbatim{
 ;; a cell is
 ;; (make-cell (make-posn int[0-board-size]
 ;;                       int[0-board-size])
 ;;            boolean)
----
-]
+}
 
 
 
