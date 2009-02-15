@@ -784,5 +784,12 @@
   (f 0)
   (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
     (f 4))
-  (test-runtime-error exn:fail:contract? "foo@ broke the contract on x"
+  ;; This is a weird one.  The definition for foo@ has two conflicting
+  ;; contracts.  Who gets blamed?  Still the top-level, since foo@ can't
+  ;; get blamed for breaking its own contract.  In theory you could say
+  ;; that perhaps the top-level shouldn't be blamed, and that it should
+  ;; just be an "overriding" contract, but a) that won't really work and
+  ;; b) what about other units that might link with foo@, that expect
+  ;; the stronger contract?
+  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
     (f #t)))
