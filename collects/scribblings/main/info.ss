@@ -9,6 +9,7 @@
     ("master-index.scrbl" (depends-all-main no-depend-on) (omit))
     ("user/search.scrbl"       (user-doc depends-all no-depend-on) (omit))
     ("user/master-index.scrbl" (user-doc depends-all no-depend-on) (omit))
+    ("getting-started.scrbl" () (omit))
     ("license.scrbl" () (omit))
     ("acks.scrbl"    () (omit))
     ("release.scrbl" () (omit))))

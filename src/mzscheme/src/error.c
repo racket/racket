@@ -2045,8 +2045,8 @@ static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[])
   }
 
   scheme_wrong_syntax_with_more_sources(who,
-                                        (argc > 3) ? argv[3] : NULL,
-                                        (argc > 2) ? argv[2] : NULL,
+                                        ((argc > 3) && !SCHEME_FALSEP(argv[3])) ? argv[3] : NULL,
+                                        ((argc > 2) && !SCHEME_FALSEP(argv[2])) ? argv[2] : NULL,
                                         extra_sources,
                                         "%T", str);
 

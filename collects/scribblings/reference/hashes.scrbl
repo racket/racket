@@ -282,11 +282,10 @@ caveat above about concurrent modification.
 @defproc[(hash-count [hash hash?])
          exact-nonnegative-integer?]{
 
-Returns the number of keys mapped by @scheme[hash]. If
-@scheme[hash] is not created with @scheme['weak], then the
-result is computed in constant time and atomically. If
-@scheme[hash] is created with @scheme['weak], see the caveat
-above about concurrent modification.}
+Returns the number of keys mapped by @scheme[hash]. If @scheme[hash]
+is not created with @scheme['weak], then the result is computed in
+constant time and atomically. If @scheme[hash] is created with
+@scheme['weak], see the @concurrency-caveat[] above.}
 
 
 @defproc[(hash-iterate-first [hash hash?])
@@ -342,24 +341,24 @@ key-comparison mode, and same key-holding strength as @scheme[hash].}
 
 Returns an exact integer; for any two @scheme[eq?] values, the
 returned integer is the same. Furthermore, for the result integer
-@scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
-implies @scheme[(eq? k j)].}
+@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
+implies @scheme[(eq? _k _j)].}
 
 
 @defproc[(eqv-hash-code [v any/c]) exact-integer?]{
 
 Returns an exact integer; for any two @scheme[eqv?] values, the
 returned integer is the same. Furthermore, for the result integer
-@scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
-implies @scheme[(eq? k j)].}
+@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
+implies @scheme[(eq? _k _j)].}
 
 
 @defproc[(equal-hash-code [v any/c]) exact-integer?]{
 
 Returns an exact integer; for any two @scheme[equal?] values, the
 returned integer is the same.  Furthermore, for the result integer
-@scheme[k] and any other exact integer @scheme[j], @scheme[(= k j)]
-implies @scheme[(eq? k j)]. A has code is computed even when
+@scheme[_k] and any other exact integer @scheme[_j], @scheme[(= _k _j)]
+implies @scheme[(eq? _k _j)]. A has code is computed even when
 @scheme[v] contains a cycle through pairs, vectors, boxes, and/or
 inspectable structure fields. See also @scheme[prop:equal+hash].}
 

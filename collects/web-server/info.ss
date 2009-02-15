@@ -2,7 +2,7 @@
 
 (define scribblings
   '(("scribblings/web-server.scrbl" (multi-page) (tool))
-    ("scribblings/tutorial/continue.scrbl" () (getting-started))))
+    ("scribblings/tutorial/continue.scrbl" () (getting-started 5))))
 
 (define mzscheme-launcher-libraries '("main.ss"))
 (define mzscheme-launcher-names     '("PLT Web Server"))

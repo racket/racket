@@ -582,9 +582,16 @@ threads. That is, instead of a ``minimalist'' language---which is the
 way that Scheme is often described---PLT Scheme offers a rich language
 with an extensive set of libraries and tools.
 
-To continue touring PLT Scheme, but from a systems-oriented
-perspective instead of pictures, your next stop is @other-manual['(lib
-"scribblings/more/more.scrbl")].
+If you are new to programming or if you have the patience to work
+through a textbook, we recommend reading
+@italic{@link["http://www.htdp.org/"]{How to Design Programs}}. If you
+have already read it, or if you want to see where the book will take
+you, then see @other-manual['(lib
+"web-server/scribblings/tutorial/continue.scrbl")].
+
+For experienced programmers, to continue touring PLT Scheme from a
+systems-oriented perspective instead of pictures, your next stop is
+@other-manual['(lib "scribblings/more/more.scrbl")].
 
 To instead start learning about the full PLT Scheme language and tools
 in depth, move on to @other-manual['(lib "guide.scrbl"

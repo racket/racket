@@ -150,21 +150,24 @@ is provided; it is described in more detail below. The
 @scheme[message] is used as the main body of the error message.
 
 The optional @scheme[expr] argument is the erroneous source syntax
-object or S-expression. The optional @scheme[sub-expr] argument is a
-syntax object or S-expression within @scheme[expr] that more precisely
-locates the error.  Both may appear in the generated error-message
-text if @scheme[error-print-source-location] is @scheme[#t]. Source
-location information in the error-message text is similarly extracted
-from @scheme[sub-expr] or @scheme[expr] when at least one is a syntax
+object or S-expression (but the expression @scheme[#f] cannot be
+represented by itself; it must be wrapped as a @tech{syntax
+object}). The optional @scheme[sub-expr] argument is a syntax object
+or S-expression (again, @scheme[#f] cannot represent itself) within
+@scheme[expr] that more precisely locates the error.  Both may appear
+in the generated error-message text if
+@scheme[error-print-source-location] is @scheme[#t]. Source location
+information in the error-message text is similarly extracted from
+@scheme[sub-expr] or @scheme[expr] when at least one is a syntax
 object and @scheme[error-print-source-location] is @scheme[#t].
 
-If @scheme[sub-expr] is provided, it is used (in syntax form) for the
-@scheme[exprs] field of the generated exception record, else the
-@scheme[expr] is used if provided. In either case, the syntax object
-is @scheme[cons]ed onto @scheme[extra-sources] to produce the
-@scheme[exprs] field, or @scheme[extra-sources] is used directly for
-@scheme[exprs] if neither @scheme[expr] nor @scheme[sub-expr] is
-provided.
+If @scheme[sub-expr] is provided and not @scheme[#f], it is used (in
+syntax form) for the @scheme[exprs] field of the generated exception
+record, else the @scheme[expr] is used if provided and not
+@scheme[#f]. In either case, the syntax object is @scheme[cons]ed onto
+@scheme[extra-sources] to produce the @scheme[exprs] field, or
+@scheme[extra-sources] is used directly for @scheme[exprs] if neither
+@scheme[expr] nor @scheme[sub-expr] is provided and not @scheme[#f].
 
 The form name used in the generated error message is determined
 through a combination of the @scheme[name], @scheme[expr], and
