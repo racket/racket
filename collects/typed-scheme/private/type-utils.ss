@@ -37,7 +37,7 @@
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-		 ;[#:Union tys (Un (map sb tys))]
+		 [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
                  [#:arr dom rng rest drest kws thn-eff els-eff
                         (begin
@@ -142,7 +142,7 @@
 ;; must be applied to a Mu
 (define (unfold t)
   (match t
-    [(Mu: name b) (substitute t name b #:Un make-Union)]
+    [(Mu: name b) (substitute t name b #:Un (lambda (tys) (make-Union (sort tys < #:key Type-seq))))]
     [_ (int-err "unfold: requires Mu type, got ~a" t)]))
 
 (define (instantiate-poly t types)

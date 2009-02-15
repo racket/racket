@@ -28,10 +28,12 @@
 (define (stx-cadr stx) (stx-car (stx-cdr stx)))
 
 (define-syntax-class star
+  #:description "*"
   (pattern star:id
            #:when (eq? '* #'star.datum)))
 
 (define-syntax-class ddd
+  #:description "..."
   (pattern ddd:id
            #:when (eq? '... #'ddd.datum)))
 
@@ -140,7 +142,8 @@
   #:description "\na sequence of identifiers\n"
   (pattern (v:id ...)))
 
-(define-syntax-class all-type  
+(define-syntax-class all-type 
+  #:description "All type"
   #:transparent
   #:literals (t:All)
   (pattern (t:All :all-ddd-formals b)  
