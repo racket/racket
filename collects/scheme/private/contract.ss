@@ -139,8 +139,7 @@ improve method arity mismatch contract violation error messages?
    (lambda (stx)
      (with-syntax ([neg-blame-id #'(current-contract-region)]
                    [pos-blame-id pos-blame-id]
-                   [contract-stx contract-stx]
-                   [id id])
+                   [contract-stx contract-stx])
        (syntax-case stx (set!)
          [(set! id arg)
           (raise-syntax-error 'with-contract
@@ -148,21 +147,22 @@ improve method arity mismatch contract violation error messages?
                               stx
                               (syntax id))]
          [(f arg ...)
-          (syntax/loc stx
-            ((-contract contract-stx
-                        id
-                        pos-blame-id
-                        neg-blame-id
-                        #'f)
-             arg ...))]
+          (quasisyntax/loc stx
+            ((let ([f (-contract contract-stx
+                                 #,id
+                                 pos-blame-id
+                                 neg-blame-id
+                                 #,(id->contract-src-info id))])
+               f) arg ...))]
          [ident
           (identifier? (syntax ident))
-          (syntax/loc stx
-            (-contract contract-stx
-                       id
-                       pos-blame-id
-                       neg-blame-id
-                       #'ident))])))))
+          (quasisyntax/loc stx
+            (let ([ident (-contract contract-stx
+                                    #,id
+                                    pos-blame-id
+                                    neg-blame-id
+                                    #,(id->contract-src-info id))])
+              ident))])))))
 
 (define-for-syntax (partition-ids def-ids p/c-pairs unprotected-ids)
   (let loop ([ids         def-ids]
