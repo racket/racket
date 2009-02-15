@@ -469,7 +469,7 @@ improve method arity mismatch contract violation error messages?
                                           "duplicate identifiers"
                                           provide-stx
                                           (car dups)
-                                          #;(cdr dups)))]
+                                          (cdr dups)))]
                    [else
                     (loop (cdr ids))])])))))
        
