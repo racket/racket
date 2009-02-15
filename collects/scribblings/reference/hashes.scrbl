@@ -3,6 +3,18 @@
 
 @title[#:tag "hashtables"]{Hash Tables}
 
+@(define (concurrency-caveat)
+  @elemref['(caveat "concurrency")]{caveats concerning concurrent modification})
+@(define (mutable-key-caveat)
+  @elemref['(caveat "mutable-keys")]{caveat concerning mutable keys})
+
+@(define (see-also-caveats)
+   @t{See also the @concurrency-caveat[] and the @mutable-key-caveat[] above.})
+@(define (see-also-concurrency-caveat)
+   @t{See also the @concurrency-caveat[] above.})
+@(define (see-also-mutable-key-caveat)
+   @t{See also the @mutable-key-caveat[] above.})
+
 @guideintro["hash-tables"]{hash tables}
 
 A @deftech{hash table} (or simply @deftech{hash}) maps each of its
@@ -26,18 +38,18 @@ key-comparison procedure (@scheme[equal?], @scheme[eqv?], or
 @scheme[eq?]), both hold keys strongly or weakly, and have the same
 mutability.
 
-@bold{Caveats concerning concurrent modification:} A mutable hash
-table can be manipulated with @scheme[hash-ref], @scheme[hash-set!],
-and @scheme[hash-remove!] concurrently by multiple threads, and the
-operations are protected by a table-specific semaphore as needed. Three
-caveats apply, however:
+@elemtag['(caveat "concurrency")]{@bold{Caveats concerning concurrent
+modification:}} A mutable hash table can be manipulated with
+@scheme[hash-ref], @scheme[hash-set!], and @scheme[hash-remove!]
+concurrently by multiple threads, and the operations are protected by
+a table-specific semaphore as needed. Three caveats apply, however:
 
  @itemize{
 
   @item{If a thread is terminated while applying @scheme[hash-ref],
   @scheme[hash-set!], or @scheme[hash-remove!] to a hash table that
-  uses @scheme[equal?] key comparisons, all current and future
-  operations on the hash table block indefinitely.}
+  uses @scheme[equal?] or @scheme[eqv?] key comparisons, all current
+  and future operations on the hash table block indefinitely.}
 
   @item{The @scheme[hash-map] and @scheme[hash-for-each] procedures do
   not use the table's semaphore. Consequently, if a hash table is
@@ -58,10 +70,11 @@ caveats apply, however:
 
  }
 
-@bold{Caveat concerning mutable keys:} If a key into an
-@scheme[equal?]-based hash table is mutated (e.g., a key string is
-modified with @scheme[string-set!]), then the hash table's behavior
-for insertion and lookup operations becomes unpredictable.
+@elemtag['(caveat "mutable-keys")]{@bold{Caveat concerning mutable
+keys:}} If a key in an @scheme[equal?]-based hash table is mutated
+(e.g., a key string is modified with @scheme[string-set!]), then the
+hash table's behavior for insertion and lookup operations becomes
+unpredictable.
 
 
 @defproc[(hash? [v any/c]) boolean?]{
@@ -152,7 +165,9 @@ compares keys with @scheme[eq?].}
                     [v any/c]) void?]{
 
 Maps @scheme[key] to @scheme[v] in @scheme[hash], overwriting
-any existing mapping for @scheme[key].}
+any existing mapping for @scheme[key].
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-set [hash (and/c hash? immutable?)]
@@ -162,7 +177,9 @@ any existing mapping for @scheme[key].}
 
 Functionally extends @scheme[hash] by mapping @scheme[key] to
 @scheme[v], overwriting any existing mapping for @scheme[key], and
-returning the extended hash table.}
+returning the extended hash table.
+
+@see-also-mutable-key-caveat[]}
 
 
 @defproc[(hash-ref [hash hash?]
@@ -182,7 +199,9 @@ result:
 
  @item{Otherwise, @scheme[failure-result] is returned as the result.}
 
-}}
+}
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
@@ -196,7 +215,9 @@ Composes @scheme[hash-ref] and @scheme[hash-set!] to update an
 existing mapping in @scheme[hash], where the optional
 @scheme[failure-result] argument is used as in @scheme[hash-ref] when
 no mapping exists for @scheme[key] already. See the caveat above about
-concurrent updates.}
+concurrent updates.
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-update [hash (and/c hash? immutable?)]
@@ -209,14 +230,18 @@ concurrent updates.}
 Composes @scheme[hash-ref] and @scheme[hash-set] to functionally
 update an existing mapping in @scheme[hash], where the optional
 @scheme[failure-result] argument is used as in @scheme[hash-ref] when
-no mapping exists for @scheme[key] already.}
+no mapping exists for @scheme[key] already.
+
+@see-also-mutable-key-caveat[]}
 
 
 @defproc[(hash-remove! [hash (and/c hash? (not/c immutable?))]
                        [key any/c])
          void?]{
 
-Removes any existing mapping for @scheme[key] in @scheme[hash].}
+Removes any existing mapping for @scheme[key] in @scheme[hash].
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-remove [hash (and/c hash? immutable?)]
@@ -224,7 +249,9 @@ Removes any existing mapping for @scheme[key] in @scheme[hash].}
          (and/c hash? immutable?)]{
 
 Functionally removes any existing mapping for @scheme[key] in
-@scheme[hash], returning the fresh hash table.}
+@scheme[hash], returning the fresh hash table.
+
+@see-also-mutable-key-caveat[]}
 
 
 @defproc[(hash-map [hash hash?]
@@ -235,7 +262,9 @@ Applies the procedure @scheme[proc] to each element in
 @scheme[hash] in an unspecified order, accumulating the results
 into a list. The procedure @scheme[proc] is called each time with a
 key and its value. See the caveat above about concurrent
-modification.}
+modification.
+
+@see-also-concurrency-caveat[]}
 
 
 @defproc[(hash-for-each [hash hash?]
@@ -245,7 +274,9 @@ modification.}
 Applies @scheme[proc] to each element in @scheme[hash] (for the
 side-effects of @scheme[proc]) in an unspecified order. The procedure
 @scheme[proc] is called each time with a key and its value. See the
-caveat above about concurrent modification.}
+caveat above about concurrent modification.
+
+@see-also-concurrency-caveat[]}
 
 
 @defproc[(hash-count [hash hash?])
