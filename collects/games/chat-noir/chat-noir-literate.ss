@@ -25,7 +25,7 @@ The main data structure for Chat Noir is @tt{world}.
 It consists of a structure with six fields:
 @itemize{
 @item{
-a @scheme[board],}
+a @scheme[board], which is represented as a list of @tt{cell}s, one for each circle on the game. }
 @item{
 a @scheme[posn] for the cat,}
 @item{the state of the game (@scheme[state] below), which can be one of
@@ -42,6 +42,13 @@ mouse is not in the window),}
 key has been pushed down.}
 }
 
+A @tt{cell} is a structure with two fields:
+
+@chunk[<data-definitions>
+       (define-struct cell (p blocked?) #:transparent)]
+
+The first field contains a @scheme[posn] struct.
+
 @verbatim[#<<---
 ;; a cell is
 ;; (make-cell (make-posn int[0-board-size]
@@ -50,8 +57,7 @@ key has been pushed down.}
 ---
 ]
 
-@chunk[<data-definitions>
-       (define-struct cell (p blocked?) #:transparent)]
+
 
 @section{Init Junk}
 

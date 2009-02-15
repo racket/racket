@@ -32,22 +32,6 @@
 @;(require scheme/include)
 @;(include/reader "chat-noir-literate.ss" scr:read-syntax-inside)
 
-@(define-syntax (content-elsewhere stx)
-   (syntax-case stx ()
-     [(_ fn)
-      (string? (syntax-e #'fn))
-      (let ([fn (syntax-e #'fn)])
-        (register-external-file (path->complete-path fn))
-        (call-with-input-file fn
-          (λ (port)
-            (port-count-lines! port)
-            (let ([reader-line (read-line port)])
-              (unless (regexp-match #rx"^#reader" reader-line)
-                (raise-syntax-error #f (format "expected a #reader line, found ~s" reader-line) stx))
-              (let* ([content (scr:read-syntax-inside fn port)]
-                     [w/context (give-lexical-content stx content)])
-                #`(begin #,@w/context))))))]))
-
 @;{ stolen from include.ss. Should probably be refactored to just have one of these.}
 @(define-for-syntax (give-lexical-content ctx content)
    (let loop ([content content])
@@ -71,5 +55,22 @@
               v])
            content
            content))])))
+
+@(define-syntax (content-elsewhere stx)
+   (syntax-case stx ()
+     [(_ fn)
+      (string? (syntax-e #'fn))
+      (let ([fn (syntax-e #'fn)])
+        (register-external-file (path->complete-path fn))
+        (call-with-input-file fn
+          (λ (port)
+            (port-count-lines! port)
+            (let ([reader-line (read-line port)])
+              (unless (regexp-match #rx"^#reader" reader-line)
+                (raise-syntax-error #f (format "expected a #reader line, found ~s" reader-line) stx))
+              (let* ([content (scr:read-syntax-inside fn port)]
+                     [w/context (give-lexical-content stx content)])
+                #`(begin #,@w/context))))))]))
+
 
 @content-elsewhere["chat-noir-literate.ss"]
