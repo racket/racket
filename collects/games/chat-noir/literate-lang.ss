@@ -7,7 +7,10 @@
                        scribble/manual)
          chunk)
 
-(require (for-syntax scheme/base syntax/boundmap scheme/list)
+(require (for-syntax scheme/base
+                     syntax/boundmap
+                     scheme/list
+                     syntax/kerncase)
          scribble/manual
          scribble/struct
          scribble/basic
@@ -45,10 +48,7 @@
                              stx 
                              #'name))
        (add-to-block! #'name (syntax->list #'(expr ...)))
-       #`(:make-splice
-          (list
-           (italic #,(format "~a = " (syntax-e #'name)))
-           (schemeblock expr ...))))]))
+       #`(void))]))
 
 (define-syntax (tangle stx)
   (define block-mentions '())
@@ -80,17 +80,34 @@
 (define-syntax (module-begin stx)
   (syntax-case stx ()
     [(module-begin expr ...)
-     (with-syntax ([doc (datum->syntax stx 'doc stx)]
-                   ;; this forces expansion so `chunk' can appear anywhere, if
-                   ;; it's allowed only at the toplevel, then there's no need
-                   ;; for it
-                   [(expr ...)
-                    (map (lambda (expr) (local-expand expr 'module '()))
-                         (syntax->list #'(expr ...)))])
-       ;; define doc as the binding that has all the scribbled documentation
-       #'(#%module-begin 
-          (define doc '())
-          (provide doc)
-          (set! doc (cons expr doc)) ...
-          (tangle)
-          (set! doc (decode (reverse doc)))))]))
+     (let ([body-code
+            (let loop ([exprs (syntax->list #'(expr ...))])
+              (cond
+                [(null? exprs) null]
+                [else
+                 (let ([expanded 
+                        (local-expand (car exprs)
+                                      'module 
+                                      (append (kernel-form-identifier-list)
+                                              (syntax->list #'(provide
+                                                               require
+                                                               #%provide
+                                                               #%require))))])
+                   (syntax-case expanded (begin)
+                     [(begin rest ...)
+                      (append (loop (syntax->list #'(rest ...)))
+                              (loop (cdr exprs)))]
+                     [(id . rest)
+                      (ormap (lambda (kw) (free-identifier=? #'id kw))
+                             (syntax->list #'(require
+                                              provide
+                                              chunk
+                                              #%require
+                                              #%provide)))
+                      (cons expanded (loop (cdr exprs)))]
+                     [else (loop (cdr exprs))]))]))])
+       
+       (with-syntax ([(body-code ...) body-code])
+         #'(#%module-begin 
+            body-code ...
+            (tangle))))]))

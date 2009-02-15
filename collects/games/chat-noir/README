@@ -1,0 +1,31 @@
+These are the files for the literate version of Chat Noir. The files
+not mentioned are actually in use for Chat Noir that you get via PLT
+Games.
+
+ - chat-noir-literate.ss: the actual file containing the literate
+   description of the chat noir game, as well as the game itself, in
+   the chunks.
+
+ - chat-noir-doc.ss: the wrapper file that you run via scribble to get
+   the rendered output.
+
+ - literate-lang.ss: the language for running literate programs
+   (contains the tangler)
+
+ - literate-reader.ss: the reader used for chat-noir-literate.ss to
+   put it into the literate-lang.ss.
+
+Problems:
+
+ - the code is not hyperlinked in the scribble output-- this is due to
+   the confusion about how the requires should work in the two modes.
+
+ - The char-noir-doc.ss file contains code that should move into
+   scribble proper; ideally that file should just be (something like):
+
+   #lang scribble/doc
+   @include-literate["chat-noir-literate.ss"]
+
+   and it should be built when setup-plt runs on this collection to
+   build the documentation, ie, this file should eventually be merged
+   together with ../scribblings/chat-noir.scrbl.

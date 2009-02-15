@@ -98,7 +98,7 @@ Encode a string using the @tt{application/x-www-form-urlencoded}
 encoding rules. The result string contains no non-ASCII characters.}
 
 
-@defproc[(form-urlencoded-deecode [str string?]) string?]{
+@defproc[(form-urlencoded-decode [str string?]) string?]{
 
 Decode a string encoded using the
 @tt{application/x-www-form-urlencoded} encoding rules.}
