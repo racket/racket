@@ -906,41 +906,41 @@ Understanding the server's event handling functions demands several data
  data representation of the @tech{world}s that participate in the
  universe. 
 
-@defproc[(world? [x any/c]) boolean?]{
- determines whether @scheme[x] is a @emph{world}. Because the universe server
+@defproc[(iworld? [x any/c]) boolean?]{
+ determines whether @scheme[x] is a @emph{iworld}. Because the universe server
  represents worlds via structures that collect essential information about
  the connections, the teachpack does not export any constructor or selector
  functions on worlds.} 
 
-@defproc[(world=? [u world?][v world?]) boolean?]{
- compares two @emph{world}s for equality.}
+@defproc[(iworld=? [u iworld?][v iworld?]) boolean?]{
+ compares two @emph{iworld}s for equality.}
 
-@defproc[(world-name [w world?]) symbol?]{
- extracts the name from a @emph{world} structure.}
+@defproc[(iworld-name [w iworld?]) symbol?]{
+ extracts the name from a @emph{iworld} structure.}
 
-@defthing[world1 world?]{a world for testing your programs}
-@defthing[world2 world?]{another world for testing your programs}
-@defthing[world3 world?]{and a third one}
+@defthing[iworld1 iworld?]{an @emph{iworld} for testing your programs}
+@defthing[iworld2 iworld?]{another iworld for testing your programs}
+@defthing[iworld3 iworld?]{and a third one}
 
-The three sample worlds are provided so that you can test your functions
+The three sample iworlds are provided so that you can test your functions
 for universe programs. For example: 
 
 @schemeblock[
-(check-expect (world=? world1 world2) false)
-(check-expect (world=? world2 world2) true)
+(check-expect (iworld=? iworld1 iworld2) false)
+(check-expect (iworld=? iworld2 iworld2) true)
 ]
 }
 
 @item{Each event handler produces a @emph{bundle}, which is a structure
- that contains the list of @emph{world}s to keep track of; the
+ that contains the list of @emph{iworld}s to keep track of; the
  @tech{server}'s remaining state; and a list of mails to other
  worlds: 
 
 @defproc[(bundle? [x any/c]) boolean?]{
  determines whether @scheme[x] is a @emph{bundle}.}
 
-@defproc[(make-bundle [low (listof world?)] [state any/c] [mails (listof mail?)]) bundle?]{
- creates a @emph{bundle} from a list of worlds, a piece of data that represents a server
+@defproc[(make-bundle [low (listof iworld?)] [state any/c] [mails (listof mail?)]) bundle?]{
+ creates a @emph{bundle} from a list of iworlds, a piece of data that represents a server
  state, and a list of mails.}
 
 A @emph{mail} represents a message from an event handler to a world. The
@@ -949,8 +949,8 @@ teachpack provides only a predicate and a constructor for these structures:
 @defproc[(mail? [x any/c]) boolean?]{
  determines whether @scheme[x] is a @emph{mail}.}
 
-@defproc[(make-mail [to world?] [content sexp?]) mail?]{
- creates a @emph{mail} from a @emph{world} and an @tech{S-expression}.}
+@defproc[(make-mail [to iworld?] [content sexp?]) mail?]{
+ creates a @emph{mail} from a @emph{iworld} and an @tech{S-expression}.}
 }
 
 ]
@@ -977,8 +977,7 @@ The @tech{server} itself is created with a description that includes the
 
 @defform/subs[#:id universe
               #:literals 
-	      (start stop max-worlds on-new on-msg on-tick 
-	       on-disconnect to-string)
+	      (on-new on-msg on-tick on-disconnect to-string)
               (universe state-expr clause ...)
               ([clause
 		 (on-new new-expr)
@@ -1012,10 +1011,10 @@ The mandatory clauses of a @scheme[universe] server description are
 @item{
  @defform[(on-new new-expr)
           #:contracts
-          ([new-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? bundle?)])]{
+          ([new-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tell DrScheme to call the function @scheme[new-expr] every time another world joins the
- universe. The event handler is called on the current list of worlds and the
- joining world, which isn't on the list yet. In particular, the handler may
+ universe. The event handler is called on the current list of iworlds and the
+ joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
  simply by not including it in the resulting @scheme[bundle] structure. The
  handler may still send one message to the world that attempts to join. }
@@ -1024,7 +1023,7 @@ The mandatory clauses of a @scheme[universe] server description are
 @item{
  @defform[(on-msg msg-expr)
           #:contracts
-          ([msg-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? sexp? bundle?)])]{
+          ([msg-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
 
  tell DrScheme to apply @scheme[msg-expr] to the list of currently
  participating worlds @scheme[low], the current state of the universe, the world
@@ -1055,7 +1054,7 @@ optional handlers:
 @item{
 @defform/none[(on-tick tick-expr)
               #:contracts
-              ([tick-expr (-> [listof world?] (unsyntax @tech{UniverseState}) bundle?)])]{
+              ([tick-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) bundle?)])]{
  tell DrScheme to apply @scheme[tick-expr] to the current list of
  participating worlds and the current state of the
  universe. 
@@ -1063,7 +1062,7 @@ optional handlers:
 
 @defform/none[(on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> [listof world?] (unsyntax @tech{UniverseState}) bundle?)]
+              ([tick-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr natural-number/c])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
@@ -1074,7 +1073,7 @@ optional handlers:
 @item{
  @defform[(on-disconnect dis-expr)
           #:contracts
-          ([dis-expr (-> [listof world?] (unsyntax @tech{UniverseState}) world? bundle?)])]{
+          ([dis-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tell DrScheme to invoke @scheme[dis-expr] every time a participating
  @tech{world} drops its connection to the server. The first two arguments
  are the current list of participating worlds and the state of the
@@ -1085,7 +1084,7 @@ optional handlers:
 @item{
  @defform[(to-string render-expr)
           #:contracts
-          ([render-expr (-> [listof world?] (unsyntax @tech{UniverseState}) string?)])]{
+          ([render-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) string?)])]{
  tell DrScheme to render the state of the universe after each event and to
  display this string in the universe console. 
  }
@@ -1212,14 +1211,14 @@ translates into the design of two functions with the following headers,
 #reader scribble/comment-reader
 (schemeblock
 ;; Bundle is
-;;   (make-bundle [Listof world?] UniverseState [Listof mail?])
+;;   (make-bundle [Listof iworld?] UniverseState [Listof mail?])
 
-;; [Listof world?] UniverseState world? -> Bundle 
+;; [Listof iworld?] UniverseState iworld? -> Bundle 
 ;; compute next list of worlds and new @tech{UniverseState} 
 ;; when world w is joining the universe, which is in state s; 
 (define (add-world s w) ...)
 
-;; [Listof world?] UniverseState world? W2U -> Bundle 
+;; [Listof iworld?] UniverseState iworld? W2U -> Bundle 
 ;; compute next list of worlds and new @tech{UniverseState} 
 ;; when world w is sending message m to universe in state s
 (define (process s p m) ...)
@@ -1245,27 +1244,27 @@ As for the server's state, it must obviously keep track of all @tech{world}s tha
  no @tech{world}s and, at that point, the server has nothing to track. 
 
 While there are many different useful ways of representing such a
- @tech{universe}, we just use the list of @emph{worlds} that is handed to
+ @tech{universe}, we just use the list of @emph{iworlds} that is handed to
  each handler and that handlers return via their bundles. The
  @tech{UniverseState} itself is useless for this trivial example. We
- interpret non-empty lists as those where the first @tech{world} is active
- and the remainder are the passive @tech{world}s. As for the two possible
+ interpret non-empty lists as those where the first @emph{iworld} is active
+ and the remainder are the passive @emph{iworld}s. As for the two possible
  events, 
 
 @itemize[
 
-@item{it is natural to add new @tech{world}s to the end of the list; and}
+@item{it is natural to add new @emph{iworld}s to the end of the list; and}
 
-@item{it is natural to move an active @tech{world} that relinquishes its turn to
+@item{it is natural to move an active @emph{iworld} that relinquishes its turn to
 the end of the list, too.}
 ]
 
-The server should send messages to the first @tech{world} of its list as
- long as it wishes this @tech{world} to remain active. In turn, it should
- expect to receive messages only from this one active @tech{world} and no
- other @tech{world}. The content of these two messages is nearly irrelevant
- because a message from the server to a @tech{world} means that it is the
- @tech{world}'s turn and a message from the @tech{world} to the server
+The server should send messages to the first @emph{iworld} of its list as
+ long as it wishes this @emph{iworld} to remain active. In turn, it should
+ expect to receive messages only from this one active @emph{iworld} and no
+ other @emph{iworld}. The content of these two messages is nearly irrelevant
+ because a message from the server to a @emph{iworld} means that it is the
+ @emph{iworld}'s turn and a message from the @emph{iworld} to the server
  means that the turn is over. Just so that we don't confuse ourselves, we
  use two distinct symbols for these two messages:
 @itemize[
