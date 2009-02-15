@@ -307,14 +307,14 @@ Second, we must translate the "world" actions---the arrows in the above
 ;; deal with the passing of time 
 (define (tick w) ...)
 
-;; click : @tech{D} @scheme{Number} @scheme{Number} @tech{MouseEvent} -> @tech{D}
-;; deal with a mouse click at (x,y) of kind @scheme{me} 
-;; in the current world @scheme{w}
+;; click : @tech{D} @scheme[Number] @scheme[Number] @tech{MouseEvent} -> @tech{D}
+;; deal with a mouse click at (x,y) of kind @scheme[me]
+;; in the current world @scheme[w]
 (define (click w x y me) ...)
 
 ;; control : @tech{D} @tech{KeyEvent} -> @tech{D}
-;; deal with a key event (symbol, char) @scheme{ke} 
-;; in the current world @scheme{w}
+;; deal with a key event (symbol, char) @scheme[ke] 
+;; in the current world @scheme[w]
 (define (control w ke) ...)
 ))
 
@@ -357,9 +357,9 @@ Now that we have a data definition, we must also decide which computer
  function that simulates time. For the other three arrows, we could use
  either keyboard events or mouse clicks or both. Our solution uses three
  keystrokes: 
-@scheme{#\u} for unlocking the door, 
-@scheme{#\l} for locking it, and 
-@scheme{#\space} for pushing it open. 
+@scheme[#\u] for unlocking the door, 
+@scheme[#\l] for locking it, and 
+@scheme[#\space] for pushing it open. 
  We can express these choices graphically by translating the above "state
  machine" from the world of information into the world of data: 
 
@@ -372,17 +372,17 @@ Our analysis and data definition leaves us with three functions to design:
 
 @itemize[
 
-@item{@scheme{automatic-closer}, which closes the time during one tick;}
+@item{@scheme[automatic-closer], which closes the time during one tick;}
 
-@item{@scheme{door-actions}, which manipulates the time in response to
+@item{@scheme[door-actions], which manipulates the time in response to
 pressing a key; and}
 
-@item{@scheme{render}, which translates the current state of the door into
+@item{@scheme[render], which translates the current state of the door into
 a visible scene.}
 
 ]
 
-Let's start with @scheme{automatic-closer}. We know its contract and it is
+Let's start with @scheme[automatic-closer]. We know its contract and it is
 easy to refine the purpose statement, too: 
 
 @(begin
@@ -490,15 +490,15 @@ this purpose:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-;; render : @tech{SD} -> @scheme{Scene}
+;; render : @tech{SD} -> @scheme[Scene]
 ;; translate the current state of the door into a large text 
 (define (render s)
   (text (symbol->string s) 40 'red))
 
 (check-expecy (render 'closed) (text "closed" 40 'red))
 ))
- The function @scheme{symbol->string} translates a symbol into a string,
- which is needed because @scheme{text} can deal only with the latter, not
+ The function @scheme[symbol->string] translates a symbol into a string,
+ which is needed because @scheme[text] can deal only with the latter, not
  the former. A look into the language documentation revealed that this
  conversion function exists, and so we use it. 
 
