@@ -442,6 +442,37 @@ improve method arity mismatch contract violation error messages?
     [(_ p/c-ele ...)
      (let ()
        
+       ;; ids : table[id -o> (listof id)]
+       ;; code-for-each-clause adds identifiers to this map.
+       ;; when it binds things; they are then used to signal 
+       ;; a syntax error for duplicates
+       (define dups-table (make-hash))
+       (define (add-to-dups-table id)
+         (hash-update!
+          dups-table
+          (syntax-e id)
+          (λ (ids) (cons id ids))
+          '()))
+       (define (signal-dup-syntax-error)
+         (hash-for-each
+          dups-table
+          (λ (k ids)
+            (let loop ([ids ids])
+              (cond
+                [(null? ids) (void)]
+                [else
+                 (cond
+                   [(ormap (λ (x) (bound-identifier=? (car ids) x)) (cdr ids))
+                    (let ([dups (filter (λ (x) (bound-identifier=? (car ids) x))
+                                        ids)])
+                      (raise-syntax-error 'provide/contract
+                                          "duplicate identifiers"
+                                          provide-stx
+                                          (car dups)
+                                          #;(cdr dups)))]
+                   [else
+                    (loop (cdr ids))])])))))
+       
        ;; code-for-each-clause : (listof syntax) -> (listof syntax)
        ;; constructs code for each clause of a provide/contract
        (define (code-for-each-clause clauses)
@@ -454,8 +485,10 @@ improve method arity mismatch contract violation error messages?
                 [(rename this-name new-name contract)
                  (and (identifier? (syntax this-name))
                       (identifier? (syntax new-name)))
-                 (cons (code-for-one-id provide-stx (syntax this-name) (syntax contract) (syntax new-name))
-                       (code-for-each-clause (cdr clauses)))]
+                 (begin
+                   (add-to-dups-table #'new-name)
+                   (cons (code-for-one-id provide-stx (syntax this-name) (syntax contract) (syntax new-name))
+                         (code-for-each-clause (cdr clauses))))]
                 [(rename this-name new-name contract)
                  (identifier? (syntax this-name))
                  (raise-syntax-error 'provide/contract 
@@ -477,6 +510,7 @@ improve method arity mismatch contract violation error messages?
                                               (syntax struct-name)
                                               (syntax->list (syntax (field-name ...)))
                                               (syntax->list (syntax (contract ...))))])
+                   (add-to-dups-table #'struct-name)
                    (cons sc (code-for-each-clause (cdr clauses))))]
                 [(struct name)
                  (identifier? (syntax name))
@@ -516,8 +550,10 @@ improve method arity mismatch contract violation error messages?
                                      clause)]
                 [(name contract)
                  (identifier? (syntax name))
-                 (cons (code-for-one-id provide-stx (syntax name) (syntax contract) #f)
-                       (code-for-each-clause (cdr clauses)))]
+                 (begin
+                   (add-to-dups-table #'name)
+                   (cons (code-for-one-id provide-stx (syntax name) (syntax contract) #f)
+                         (code-for-each-clause (cdr clauses))))]
                 [(name contract)
                  (raise-syntax-error 'provide/contract
                                      "expected identifier"
@@ -935,6 +971,7 @@ improve method arity mismatch contract violation error messages?
                   (syntax (code id-rename)))))]))
        
        (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
+         (signal-dup-syntax-error)
          (syntax 
           (begin
             bodies ...))))]))
