@@ -1151,10 +1151,19 @@
               (dup (check-duplicate-identifier (apply append (map sig-int-names out-sigs))))
               (out-vec (generate-temporaries out-sigs))
               (tmarker (make-syntax-introducer))
-              (vmarker (make-syntax-introducer))
-              (tmp-bindings (map (λ (s) (map tmarker (map car (car s)))) out-sigs)))
+              (tmp-bindings (map (λ (s) (map tmarker (map car (car s)))) out-sigs))
+              (def-table (make-bound-identifier-mapping)))
          (when dup
            (raise-stx-err (format "duplicate binding for ~e" (syntax-e dup))))
+         (for-each
+          (λ (sig new-xs)
+            (for-each 
+             (λ (old new)
+               (bound-identifier-mapping-put! def-table old new))
+             (map car (car sig))
+             new-xs))
+          out-sigs
+          tmp-bindings)
          (with-syntax ((((key1 key ...) ...) (map tagged-info->keys out-tags))
                        ((((int-binding . ext-binding) ...) ...) (map car out-sigs))
                        ((out-vec ...) out-vec)
@@ -1167,34 +1176,26 @@
                         (map (lambda (info) (car (siginfo-names (cdr info))))
                              out-tags))
                        (((tmp-binding ...) ...) tmp-bindings)
-                       (((val-binding ...) ...) (map (λ (s) (map vmarker (map car (car s)))) out-sigs))
                        (((out-code ...) ...)
                         (map 
                          (lambda (os ov)
                            (map 
                             (lambda (i)
-                              #`((car (vector-ref #,ov #,i))))
+                              #`(vector-ref #,ov #,i))
                             (iota (length (car os)))))
                          out-sigs
                          out-vec))
-                       (((val-code ...) ...)
-                        (map (λ (tbs os)
-                                  (map (λ (tb c)
-                                         (if c
-                                             #`(car #,tb)
-                                             tb))
-                                       tbs
-                                       (cadddr os)))
-                                tmp-bindings
-                                out-sigs))
                        (((wrap-code ...) ...)
                         (map (λ (os ov tbs)
+                               (define rename-bindings 
+                                 (get-member-bindings def-table os #'(#%variable-reference)))
                                (map (λ (tb i v c)
-                                      (if c
-                                          #`(contract #,(vmarker c) (car #,tb) (cdr #,tb)
-                                                      (current-contract-region)
-                                                      #,(id->contract-src-info v))
-                                          tb))
+                                      #`(let ([v/c ((car #,tb))])
+                                          #,(if c
+                                                #`(contract (letrec-syntax #,rename-bindings #,c) (car v/c) (cdr v/c)
+                                                            (current-contract-region)
+                                                            #,(id->contract-src-info v))
+                                                #'v/c)))
                                     tbs
                                     (iota (length (car os)))
                                     (map car (car os))
@@ -1218,8 +1219,6 @@
                          (let ([out-vec (hash-table-get export-table key1)] ...)
                            (unit-fn #f)
                            (values out-code ... ...))))))
-               (define-values (val-binding ... ...)
-                 (values val-code ... ...))
                (define-values (int-binding ... ...)
                  (values wrap-code ... ...))
                (define-syntaxes . renames) ...

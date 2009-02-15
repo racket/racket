@@ -1,5 +1,6 @@
 (require "test-harness.ss"
-         scheme/unit)
+         scheme/unit
+         scheme/contract)
 
 (define-signature sig1
   ((contracted [x number?])))
