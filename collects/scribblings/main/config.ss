@@ -26,7 +26,7 @@
 
 ;; Section definitions for manuals that appear on the start page.
 (define manual-sections
-  '((getting-started "Getting Started")
+  '((getting-started (link "Getting Started" (lib "scribblings/main/getting-started.scrbl")))
     (language        "Languages")
     (tool            "Tools")
     (gui-library     "GUI and Graphics Libraries")

@@ -635,8 +635,8 @@ Expands to a @scheme[provide] of all identifiers implied by the
 
 @defform/subs[#:literals (import export)
               (unit/c (import sig-block ...) (export sig-block ...))
-              ([sig-block (tagged-sig-spec [id contract] ...)
-                          tagged-sig-spec])]{
+              ([sig-block (tagged-sig-id [id contract] ...)
+                          tagged-sig-id])]{
 
 A @deftech{unit contract} wraps a unit and checks both its imported and
 exported identifiers to ensure that they match the appropriate contracts.
@@ -649,6 +649,20 @@ identifier which is not listed for a given signature is left alone.
 Variables used in a given @scheme[contract] expression first refer to other
 variables in the same signature, and then to the context of the 
 @scheme[unit/c] expression.}
+                                          
+@defform/subs[#:literals (import export)
+              (define-unit/contract unit-id
+                (import sig-spec-block ...)
+                (export sig-spec-block ...)
+                init-depends-decl
+                unit-body-expr-or-defn
+                ...)
+              ([sig-spec-block (tagged-sig-spec [id contract] ...)
+                               tagged-sig-spec])]{
+The @scheme[define-unit/contract] form defines an unit compatible with
+link inference whose imports and exports are contracted with a unit
+contract.  The unit name is used for the positive blame of the contract.}
+
 
 @; ------------------------------------------------------------------------
 

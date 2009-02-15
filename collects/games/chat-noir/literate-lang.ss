@@ -15,16 +15,22 @@
 
 (begin-for-syntax
   (define main-id #f)
+  (define (mapping-get mapping id)
+    (free-identifier-mapping-get mapping id (lambda () '())))
+  ;; maps a block identifier to its collected expressions
   (define code-blocks (make-free-identifier-mapping))
-  (define (get-id-exprs id)
-    (free-identifier-mapping-get code-blocks id (lambda () '())))
+  ;; maps a block identifier to all identifiers that are used to define it
+  (define block-groups (make-free-identifier-mapping))
   (define (get-block id)
-    (map syntax-local-introduce (get-id-exprs id)))
+    (map syntax-local-introduce (mapping-get code-blocks id)))
   (define (add-to-block! id exprs)
     (unless main-id (set! main-id id))
     (free-identifier-mapping-put!
+     block-groups id
+     (cons (syntax-local-introduce id) (mapping-get block-groups id)))
+    (free-identifier-mapping-put!
      code-blocks id
-     `(,@(get-id-exprs id) ,@(map syntax-local-introduce exprs)))))
+     `(,@(mapping-get code-blocks id) ,@(map syntax-local-introduce exprs)))))
 
 (define :make-splice make-splice)
 
@@ -45,17 +51,31 @@
            (schemeblock expr ...))))]))
 
 (define-syntax (tangle stx)
-  #`(begin
-      #,@(let loop ([block (get-block main-id)])
-           (append-map (lambda (expr)
-                         (if (identifier? expr)
-                             (let ([subs (get-block expr)])
-                               (if (pair? subs) (loop subs) (list expr)))
-                             (let ([subs (syntax->list expr)])
-                               (if subs
-                                   (list (loop subs))
-                                   (list expr)))))
-                       block))))
+  (define block-mentions '())
+  (define body
+    (let loop ([block (get-block main-id)])
+      (append-map
+       (lambda (expr)
+         (if (identifier? expr)
+             (let ([subs (get-block expr)])
+               (if (pair? subs)
+                   (begin (set! block-mentions (cons expr block-mentions))
+                          (loop subs))
+                   (list expr)))
+             (let ([subs (syntax->list expr)])
+               (if subs
+                   (list (loop subs))
+                   (list expr)))))
+       block)))
+  (with-syntax ([(body ...) body]
+                ;; construct arrows manually
+                [((b-use b-id) ...)
+                 (append-map (lambda (m)
+                               (map (lambda (u)
+                                      (list m (syntax-local-introduce u)))
+                                    (mapping-get block-groups m)))
+                             block-mentions)])
+    #`(begin body ... (let ([b-id (void)]) b-use) ...)))
 
 (define-syntax (module-begin stx)
   (syntax-case stx ()

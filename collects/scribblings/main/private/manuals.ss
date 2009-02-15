@@ -80,12 +80,29 @@
                      s)))
                 infos
                 recs)]
+         [docs (cons
+                ;; Add HtDP
+                (list
+                 ;; Category
+                 'getting-started
+                 ;; Priority
+                 7
+                 ;; Priority label (not used):
+                 ""
+                 ;; Path
+                 '(url "http://www.htdp.org/")
+                 ;; Spec
+                 (italic (link #:underline? #f "http://www.htdp.org/" "How to Design Programs")))
+                docs)]
          [plain-line
           (lambda content
             (list (make-flow (list (make-paragraph content)))))]
          [line
           (lambda (spec)
-            (plain-line (hspace 2) (other-manual spec #:underline? #f)))])
+            (plain-line (hspace 2) 
+                        (if (element? spec)
+                            spec
+                            (other-manual spec #:underline? #f))))])
     (define (contents renderer part resolve-info)
       (make-table
        #f
@@ -96,7 +113,10 @@
                                docs)])
              (list*
               (plain-line (hspace 1))
-              (plain-line (sec-label sec))
+              (plain-line (let ([s (sec-label sec)])
+                            (if (and (list? s) (eq? 'link (car s)))
+                                (seclink "top" #:doc (caddr s) #:underline? #f (cadr s))
+                                s)))
               (add-sections
                (sec-cat sec)
                (lambda (str)

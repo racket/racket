@@ -1,5 +1,6 @@
 (require "test-harness.ss"
-         scheme/unit)
+         scheme/unit
+         scheme/contract)
 
 (define-signature sig1
   ((contracted [x number?])))
@@ -718,3 +719,77 @@
   (f 0)
   (test-runtime-error exn:fail:contract? "V@ broke contract on f"
     (f 3)))
+
+(let ()
+  (define-signature foo^ (x y))
+  (define-unit/contract U@
+    (import)
+    (export (foo^ [x (-> number? number?)]))
+    (define (x n) (zero? n))
+    (define y 4))
+  (define-unit V@
+    (import foo^)
+    (export)
+    (x 4))
+  (define-compound-unit/infer W@
+    (import) (export) (link U@ V@))
+  (define-values/invoke-unit/infer U@)
+  y
+  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+    (x #t))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (x 3))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (invoke-unit W@)))
+
+(let ()
+  (define-signature foo^ (x? f))
+  (define-unit/contract U@
+    (import)
+    (export (foo^ [f (-> x? number?)]))
+    (define (x? n) (or (= n 3)
+                       (zero? n)))
+    (define (f n) (if (= n 3) #t n)))
+  (define-unit V@
+    (import foo^)
+    (export)
+    (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+      (f 2))
+    (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+      (f 3)))
+  (define-compound-unit/infer W@
+    (import) (export) (link U@ V@))
+  (define-values/invoke-unit/infer U@)
+  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+    (f 4))
+  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (f 3))
+  (invoke-unit W@))
+
+(let ()
+  (define-signature foo^
+    ((contracted 
+      [x? (-> number? boolean?)]
+      [f (-> x? number?)])))
+  
+  (define-unit/contract foo@
+    (import)
+    (export (foo^ [x? (-> any/c boolean?)]))
+    
+    (define (x? n) (zero? n))
+    (define (f x) 3))
+  
+  (define-values/invoke-unit/infer foo@)
+  
+  (f 0)
+  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
+    (f 4))
+  ;; This is a weird one.  The definition for foo@ has two conflicting
+  ;; contracts.  Who gets blamed?  Still the top-level, since foo@ can't
+  ;; get blamed for breaking its own contract.  In theory you could say
+  ;; that perhaps the top-level shouldn't be blamed, and that it should
+  ;; just be an "overriding" contract, but a) that won't really work and
+  ;; b) what about other units that might link with foo@, that expect
+  ;; the stronger contract?
+  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
+    (f #t)))

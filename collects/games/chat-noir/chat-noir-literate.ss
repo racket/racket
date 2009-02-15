@@ -1,34 +1,58 @@
 #reader "literate-reader.ss"
+
+
+@title{Chat Noir}
+
+Chat Noir. What a game.
+
 @chunk[<main>
        <init-junk>
        <data-definitions>
        <everything-else>]
 
-The first main data definition for Chat Noir is the state of the world.
+@schememodname[htdp/world]
+
+@section{Data Definitions}
+
+The main data structure for Chat Noir is @tt{world}. 
 
 @chunk[<data-definitions>
-(define-struct world (board cat state size mouse-posn h-down?) #:transparent)
+(define-struct world (board cat state size mouse-posn h-down?)
+  #:transparent)
 ]
 
-;; a world is:
-;;  (make-world board posn state number mouse posn-or-false boolean)
+It consists of a structure with six fields:
+@itemize{
+@item{
+a @scheme[board],}
+@item{
+a @scheme[posn] for the cat,}
+@item{the state of the game (@scheme[state] below), which can be one of
+@itemize{
+@item{@scheme['playing], indicating that the game is still going; this is the initial state.
+             }
+@item{@scheme['cat-won], indicating that the game is over and the cat won, or}
+@item{@scheme['cat-lost], indicating that the game is over and the cat lost.}}
+          }
+@item{
+a @scheme[posn] for the location of the mouse (or @scheme[#f] if the 
+mouse is not in the window),}
+@item{and a boolean indicating if the @tt{h}
+key has been pushed down.}
+}
 
-
-;; a state is either:
-;;   - 'playing
-;;   - 'cat-won
-;;   - 'cat-lost
-
-;; a board is
-;;  (listof cell)
-
+@verbatim[#<<---
 ;; a cell is
 ;; (make-cell (make-posn int[0-board-size]
 ;;                       int[0-board-size])
 ;;            boolean)
+---
+]
+
 @chunk[<data-definitions>
        (define-struct cell (p blocked?) #:transparent)]
 
+@section{Init Junk}
 
 @chunk[<init-junk>
 
@@ -67,6 +91,9 @@ The first main data definition for Chat Noir is the state of the world.
   (make-immutable-hash
    (map (λ (x) (cons (car x) (cadr x)))
         init)))]
+
+@section{Everything Else}
+
 
 @chunk[<everything-else>
 

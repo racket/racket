@@ -16,8 +16,10 @@ up a web server, how to generate dynamic web content, and how to
 interact with the user.
 
 The target audience for this tutorial are students who've gone through
-the design and use of structures in @link["http://htdp.org/"]{How to Design Programs}, with some 
-higher-order functions, @scheme[local], and a minor bit of mutation.
+the design and use of structures in
+@italic{@link["http://www.htdp.org/"]{How to Design Programs}}, with
+some higher-order functions, @scheme[local], and a minor bit of
+mutation.
 
 @section{Getting Started}
 

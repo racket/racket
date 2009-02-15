@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Version 4.1.******			  [Sat Feb 14 20:12:23 EST 2009]
+
+* the universe teachpack exports iworld, not world now
+
+------------------------------------------------------------------------
 Version 4.1.4				  [Sun Jan 18 21:18:34 EST 2009]
 
 * introduces 2htdp/universe 

@@ -4,18 +4,57 @@
                      stxclass
                      syntax/boundmap
                      "unit-compiletime.ss"
-                     "unit-contract-syntax.ss")
+                     "unit-contract-syntax.ss"
+                     "unit-syntax.ss")
          scheme/contract
          "unit-utils.ss"
          "unit-runtime.ss")
 
-(provide unit/c)
+(provide (for-syntax unit/c/core) unit/c)
+
+#|
+We want to think of the contract as sitting between the outside world
+and the unit in question.  In the case where the signature in question
+is contracted, we have:
+
+                     pos   unit/c   neg
+                             |         
+              ---            |         
+             |   |           |         
+       <---- | i |     <-----|------    (v, o)
+             |   |           |         
+              ---            |
+             |   |           |
+(v, u) ----> | e |     ------|----->
+             |   |           |
+              ---            |
+                             |
+
+So for an import, we start out with (v, o) coming in when the
+import is being set.  We need to first check the contract 
+(sig-ctc, o, neg), to make sure what's coming in appropriately
+satisfies that contract (since it already has given us the
+positive blame for the value incoming).  Then we need to check
+(ctc, neg, pos) (i.e. apply the projection with the blame
+"switched").  That leaves pos as the appropriate thing to pack
+with the value for the sig-ctc check inside the unit.  When
+the unit pulls it out (which isn't affected by the unit/c
+contract combinator), it'll have the correct party to blame as
+far as it knows.
+
+For an export, we start on the other side, so we don't need to do
+anything to the setting function as the unit will handle that.  So for
+the accessing function, we need to grab what's in the box,
+check (sig-ctc, u, pos), then check (ctc, pos, neg) via projection
+application, then last, but not least, return the resulting value
+packed with the neg blame.
+|#
 
 (define-for-syntax (contract-imports/exports import?)
   (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
     (define def-table (make-bound-identifier-mapping))
     
-    (define (convert-reference vref ctc sig-ctc rename-bindings)
+    (define (convert-reference var vref ctc sig-ctc rename-bindings)
       (let ([wrap-with-proj
              (λ (ctc stx)
                ;; If contract coersion ends up being a large overhead, we can
@@ -30,21 +69,33 @@
                     #,stx)))])
         (if ctc
             #`(cons
-               (λ ()
-                 (let* ([old-v 
-                         #,(if sig-ctc
-                               #`(let ([old-v/c ((car #,vref))])
-                                   (cons #,(wrap-with-proj ctc #'(car old-v/c))
-                                         (cdr old-v/c)))
-                               (wrap-with-proj ctc #`((car #,vref))))])
-                   old-v))
-               (λ (v) 
-                 (let* ([new-v 
-                         #,(if sig-ctc
-                               #`(cons #,(wrap-with-proj ctc #'(car v))
-                                       (cdr v))
-                               (wrap-with-proj ctc #'v))])
-                   ((cdr #,vref) new-v))))
+               #,(if import?
+                     #`(car #,vref)
+                     #`(λ ()
+                         (let* ([old-v 
+                                 #,(if sig-ctc
+                                       #`(let ([old-v/c ((car #,vref))])
+                                           (cons #,(wrap-with-proj 
+                                                    ctc 
+                                                    #`(contract #,sig-ctc (car old-v/c)
+                                                                (cdr old-v/c) #,pos
+                                                                #,(id->contract-src-info var)))
+                                                 #,neg))
+                                       (wrap-with-proj ctc #`((car #,vref))))])
+                           old-v)))
+               #,(if import?
+                     #`(λ (v) 
+                         (let* ([new-v 
+                                 #,(if sig-ctc
+                                       #`(cons #,(wrap-with-proj 
+                                                  ctc 
+                                                  #`(contract #,sig-ctc (car v)
+                                                              (cdr v) #,neg
+                                                              #,(id->contract-src-info var)))
+                                               #,pos)
+                                       (wrap-with-proj ctc #'v))])
+                           ((cdr #,vref) new-v)))
+                     #`(cdr #,vref)))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
@@ -60,16 +111,13 @@
                             (get-member-bindings def-table target-sig pos)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
-                         (let* ([vref
-                                 (bound-identifier-mapping-get
-                                  def-table
-                                  (car target-int/ext-name))]
+                         (let* ([var (car target-int/ext-name)]
+                                [vref
+                                 (bound-identifier-mapping-get def-table var)]
                                 [ctc
                                  (bound-identifier-mapping-get
-                                  ctc-table
-                                  (car target-int/ext-name)
-                                  (λ () #f))])
-                           (convert-reference vref ctc sig-ctc rename-bindings))))))
+                                  ctc-table var (λ () #f))])
+                           (convert-reference var vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...) 
                    (map tagged-info->keys import-tagged-infos)))
       #'(unit-export ((export-keys ...)
@@ -78,9 +126,9 @@
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
 
-(define-syntax/err-param (unit/c stx)
+(define-for-syntax (unit/c/core stx)
   (syntax-parse stx
-    [(_ :import-clause :export-clause)
+    [(:import-clause/c :export-clause/c)
      (begin
        (define-values (isig tagged-import-sigs import-tagged-infos 
                             import-tagged-sigids import-sigs)
@@ -97,17 +145,15 @@
          (define xs-list (syntax->list xs))
          (let ([dup (check-duplicate-identifier xs-list)])
            (when dup
-             (raise-syntax-error 'unit/c
-                                 (format "duplicate identifier found for signature ~a"
-                                         (syntax->datum name))
-                                 dup)))
+             (raise-stx-err (format "duplicate identifier found for signature ~a"
+                                    (syntax->datum name))
+                            dup)))
          (let ([ids (map car (car sig))])
            (for-each (λ (id)
                        (unless (memf (λ (i) (bound-identifier=? id i)) ids)
-                         (raise-syntax-error 'unit/c
-                                             (format "identifier not member of signature ~a" 
-                                                     (syntax-e name))
-                                             id)))
+                         (raise-stx-err (format "identifier not member of signature ~a" 
+                                                (syntax-e name))
+                                        id)))
                      xs-list))
          (for ([x (in-list xs-list)]
                [c (in-list (syntax->list cs))])
@@ -130,7 +176,9 @@
                  (syntax->list #'((e.x ...) ...))
                  (syntax->list #'((e.c ...) ...)))
        
-       (with-syntax ([((import-key ...) ...)
+       (with-syntax ([(isig ...) isig]
+                     [(esig ...) esig]
+                     [((import-key ...) ...)
                       (map tagged-info->keys import-tagged-infos)]
                      [((export-key ...) ...)
                       (map tagged-info->keys export-tagged-infos)]
@@ -209,6 +257,11 @@
                                (vector-immutable export-key ...)) ...)
                         (list #f "not-used") 'not-used null))
                      #t)))))))]))
+
+(define-syntax/err-param (unit/c stx)
+  (syntax-case stx ()
+    [(_ . sstx)
+     (unit/c/core #'sstx)]))
 
 (define (contract-check-helper sub-sig super-sig import? val src-info blame ctc)
   (define t (make-hash))

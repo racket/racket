@@ -14,7 +14,7 @@
     ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
       (number? (any -> boolean)
 	"to determine whether some value is a number")
-      (= (num num num ... -> boolean)
+      (= (number number number ... -> boolean)
 	 "to compare numbers for equality")
       (< (real real real ... -> boolean)
 	 "to compare real numbers for less-than")
@@ -25,30 +25,32 @@
       (>= (real real ... -> boolean)
 	  "to compare real numbers for greater-than or equality")
     
-      ((beginner-+ +) (num num num ... -> num)
+      ((beginner-+ +) (number number number ... -> number)
        "to compute the sum of the input numbers")
-      (- (num num ... -> num)
+      (- (number number ... -> number)
 	 "to subtract the second (and following) number(s) from the first; negate the number if there is only one argument")
-      ((beginner-* *) (num num num ... -> num)
+      ((beginner-* *) (number number number ... -> number)
        "to compute the product of all of the input numbers")
-      ((beginner-/ /) (num num num ... -> num)
+      ((beginner-/ /) (number number number ... -> number)
        "to divide the first by the second (and all following) number(s); try (/ 3 4) and (/ 3 2 2)"
        " only the first number can be zero.")
       (max (real real ... -> real)
 	"to determine the largest number")
       (min (real real ... -> real)
 	"to determine the smallest number")       
-      (quotient (int int -> int)
-	"to divide the first integer into the second; try (quotient 3 4) and (quotient 4 3)")
-      (remainder (int int -> int)
-	"to determine the remainder of dividing the first by the second integer")
-      (modulo (int int -> int)
+      (quotient (integer integer -> integer)
+	"to divide the first integer (exact or inexact) into the second; try (quotient 3 4) and (quotient 4 3)")
+      (remainder (integer integer -> integer)
+	"to determine the remainder of dividing the first by the second integer (exact or inexact)")
+      (modulo (integer integer -> integer)
 	"to find the remainder of the division of the first number by the second; try (modulo 4 3) (modulo 4 -3)") 
-      (sqr (num -> num)
+      (sqr (number -> number)
 	"to compute the square of a number")
-      (sqrt (num -> num)
-	"to compute the square root of a number")    
-      (expt (num num -> num)
+      (sqrt (number -> number)
+	"to compute the square root of a number")
+      (integer-sqrt (number -> integer)
+	"to compute the integer (exact or inexact) square root of a number")      
+      (expt (number number -> number)
 	"to compute the power of the first to the second number")
       (abs (real -> real)
 	"to compute the absolute value of a real number")
@@ -56,31 +58,31 @@
 	"to compute the sign of a real number")
     
       ;; fancy numeric 
-      (exp (num -> num)
+      (exp (number -> number)
 	"to compute e raised to a number")
-      (log (num -> num)
+      (log (number -> number)
 	"to compute the base-e logarithm of a number")
     
       ;; trigonometry
-      (sin (num -> num)
+      (sin (number -> number)
 	"to compute the sine of a number (radians)")
-      (cos (num -> num)
+      (cos (number -> number)
 	"to compute the cosine of a number (radians)")
-      (tan (num -> num)
+      (tan (number -> number)
 	"to compute the tangent of a number (radians)")
-      (asin (num -> num)
+      (asin (number -> number)
 	"to compute the arcsine (inverse of sin) of a number")
-      (acos (num -> num)
+      (acos (number -> number)
 	"to compute the arccosine (inverse of cos) of a number")
-      (atan (num -> num)
+      (atan (number -> number)
 	"to compute the arctan (inverse of tan) of a number")    
     
-      (sinh (num -> num)
+      (sinh (number -> number)
 	"to compute the hyperbolic sine of a number")
-      (cosh (num -> num)
+      (cosh (number -> number)
 	"to compute the hyperbolic cosine of a number")
     
-      (exact? (num -> boolean)
+      (exact? (number -> boolean)
 	"to determine whether some number is exact")
     
       (integer? (any -> boolean)
@@ -93,84 +95,88 @@
       (negative? (number -> boolean)
 	"to determine if some value is strictly smaller than zero")      
       (odd? (integer -> boolean)
-	"to determine if some value is odd or not")
+	"to determine if some integer (exact or inexact) is odd or not")
       (even? (integer -> boolean)
-	"to determine if some value is even or not")
+	"to determine if some integer (exact or inexact) is even or not")
 
       (add1 (number -> number)
 	"to compute a number one larger than a given number")
       (sub1 (number -> number)
 	"to compute a number one smaller than a given number")
 
-      (lcm (int int ... -> int)
-	"to compute the least common multiple of two integers")
+      (lcm (integer integer ... -> integer)
+	"to compute the least common multiple of two integers (exact or inexact)")
     
-      (gcd (int int ... -> int)
-	"to compute the greatest common divisior")
+      (gcd (integer integer ... -> integer)
+	"to compute the greatest common divisior of two integers (exact or inexact)")
     
       (rational? (any -> boolean)
 	"to determine whether some value is a rational number")
     
-      (numerator (rat -> int)
+      (numerator (rat -> integer)
 	"to compute the numerator of a rational")
     
-      (denominator (rat -> int)
+      (denominator (rat -> integer)
 	"to compute the denominator of a rational")
     
-      (inexact? (num -> boolean)
+      (inexact? (number -> boolean)
 	"to determine whether some number is inexact")
     
       (real? (any -> boolean)
 	"to determine whether some value is a real number")
     
-      (floor (real -> int)
-	"to determine the closest integer below a real number")
+      (floor (real -> integer)
+	"to determine the closest integer (exact or inexact) below a real number")
     
-      (ceiling (real -> int)
-	"to determine the closest integer above a real number")
+      (ceiling (real -> integer)
+	"to determine the closest integer (exact or inexact) above a real number")
     
-      (round (real -> int)
+      (round (real -> integer)
 	"to round a real number to an integer (rounds to even to break ties)")
     
       (complex? (any -> boolean)
 	"to determine whether some value is complex")
     
-      (make-polar (real real -> num)
+      (make-polar (real real -> number)
 	"to create a complex from a magnitude and angle")
+
+      (make-rectangular (real real -> number)
+	"to create a complex from a real and an imaginary part")
     
-      (real-part (num -> real)
+      (real-part (number -> real)
 	"to extract the real part from a complex number")
     
-      (imag-part (num -> real)
+      (imag-part (number -> real)
 	"to extract the imaginary part from a complex number")
     
-      (magnitude (num -> real)
+      (magnitude (number -> real)
 	"to determine the magnitude of a complex number")
     
-      (angle (num -> real)
+      (angle (number -> real)
 	"to extract the angle from a complex number")
     
-      (conjugate (num -> num)
+      (conjugate (number -> number)
 	"to compute the conjugate of a complex number")
     
-      (exact->inexact (num -> num)
+      (exact->inexact (number -> number)
 	"to convert an exact number to an inexact one")
     
-      (inexact->exact (num -> num)
+      (inexact->exact (number -> number)
 	"to approximate an inexact number by an exact one")
     
 					;    "Odds and ends"
     
-      (number->string (num -> string)
+      (number->string (number -> string)
 	"to convert a number to a string")
     
-      (integer->char (int -> char)
-	"to lookup the character that corresponds to the given integer in the ASCII table (if any)")
+      (integer->char (integer -> char)
+	"to lookup the character that corresponds to the given integer (exact only!) in the ASCII table (if any)")
     
-      (random (int -> int)
-	"to generate a random natural number less than some given integer")
+      (random (integer -> integer)
+	"to generate a random natural number less than some given integer
+	(exact only!)")
     
-      (current-seconds (-> int)
+      (current-seconds (-> integer)
 	"to compute the current time in seconds elapsed"
 	" (since a platform-specific starting date)")
     

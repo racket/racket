@@ -2035,6 +2035,7 @@ static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[])
     while (SCHEME_PAIRP(extra_sources)) {
       if (!SCHEME_STXP(SCHEME_CAR(extra_sources)))
         break;
+      extra_sources = SCHEME_CDR(extra_sources);
     }
     if (!SCHEME_NULLP(extra_sources)) {
       scheme_wrong_type("raise-syntax-error", "list of syntax", 4, argc, argv);
@@ -2044,8 +2045,8 @@ static Scheme_Object *raise_syntax_error(int argc, Scheme_Object *argv[])
   }
 
   scheme_wrong_syntax_with_more_sources(who,
-                                        (argc > 3) ? argv[3] : NULL,
-                                        (argc > 2) ? argv[2] : NULL,
+                                        ((argc > 3) && !SCHEME_FALSEP(argv[3])) ? argv[3] : NULL,
+                                        ((argc > 2) && !SCHEME_FALSEP(argv[2])) ? argv[2] : NULL,
                                         extra_sources,
                                         "%T", str);
 
