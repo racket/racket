@@ -29,3 +29,9 @@ Problems:
    and it should be built when setup-plt runs on this collection to
    build the documentation, ie, this file should eventually be merged
    together with ../scribblings/chat-noir.scrbl.
+
+
+ - @chunks in the TOC
+
+ - hyperlink bound top-level identifiers to their bindings?
+

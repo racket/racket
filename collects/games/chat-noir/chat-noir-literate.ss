@@ -7,13 +7,16 @@
 
 Chat Noir. What a game.
 
+@schememodname[htdp/world]
+ 
 @chunk[<main>
        <init-junk>
        <data-definitions>
+       <graph>
        <everything-else>]
 
-@section{Data Definitions}
-
+@section{The World}
+         
 The main data structure for Chat Noir is @tt{world}. 
 
 @chunk[<data-definitions>
@@ -23,22 +26,23 @@ The main data structure for Chat Noir is @tt{world}.
 
 It consists of a structure with six fields:
 @itemize[
-@item{
-a @scheme[board], which is represented as a list of @tt{cell}s, one for each circle on the game. }
-@item{
-a @scheme[posn] for the cat,}
-@item{the state of the game (@scheme[state] below), which can be one of
+@item{@tt{board}: representing the state of the board as a list of @tt{cell}s, one for each circle on the game. }
+@item{@tt{cat}:
+a @scheme[posn] indicating the position of the cat (interpreting the @scheme[posn] in the way
+that they are interpreted for the @tt{board} field),}
+@item{@tt{state}: the state of the game, which can be one of
 @itemize{
 @item{@scheme['playing], indicating that the game is still going; this is the initial state.
              }
 @item{@scheme['cat-won], indicating that the game is over and the cat won, or}
 @item{@scheme['cat-lost], indicating that the game is over and the cat lost.}}
           }
-@item{
+@item{@tt{size}: an odd natural number indicating the size of the board}
+@item{@tt{mouse-posn}:
 a @scheme[posn] for the location of the mouse (or @scheme[#f] if the 
-mouse is not in the window),}
-@item{and a boolean indicating if the @tt{h}
-key has been pushed down.}
+mouse is not in the window), and}
+@item{@tt{h-down?}: a boolean indicating if the @tt{h}
+key is being pushed down.}
 ]
 
 A @tt{cell} is a structure with two fields:
@@ -46,95 +50,64 @@ A @tt{cell} is a structure with two fields:
 @chunk[<data-definitions>
        (define-struct cell (p blocked?) #:transparent)]
 
-The first field contains a @scheme[posn] struct.
+The first field contains a @scheme[posn] struct. 
+The coordinates of the posn indicate a position on the
+hexagonal grid. 
+The @tt{y} field of the @scheme[posn]
+refers to the row of the cell, and the
+@tt{x} coordinate the position in the row.
+This means that, for example,
+@scheme[(make-posn 0 1)]
+is centered above
+@scheme[(make-posn 1 0)] and 
+@scheme[(make-posn 1 1)]. See @scheme[cell-center-x]
+and @scheme[cell-center-y] below for the conversion
+of those positions to screen coordinates.
 
-@verbatim{
-;; a cell is
-;; (make-cell (make-posn int[0-board-size]
-;;                       int[0-board-size])
-;;            boolean)
-}
-
-
-
-@section{Init Junk}
-
-@chunk[<init-junk>
-
-(require htdp/world lang/posn)
-(define-syntax (check-expect stx) 
-  (syntax-case stx ()
-    [(_ actual expected)
-     (with-syntax ([line (syntax-line stx)])
-       #'(check-expect/proc (λ () actual)
-                            (λ () expected)
-                            line))]))
-
-(define check-expect-count 0)
-(define check-expects '())
-
-(define (check-expect/proc actual-thunk expected-thunk line)
-  (set! check-expects
-        (cons
-         (λ ()
-           (set! check-expect-count (+ check-expect-count 1))
-           (let ([actual (actual-thunk)]
-                 [expected (expected-thunk)])
-             (unless (equal? actual expected)
-               (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
-                      check-expect-count
-                      line
-                      actual
-                      expected))))
-         check-expects)))
-
-(define (run-check-expects)
-  (for-each (λ (t) (t)) 
-            (reverse check-expects)))
-
-(define (make-immutable-hash/list-init [init '()])
-  (make-immutable-hash
-   (map (λ (x) (cons (car x) (cadr x)))
-        init)))]
-
-@section{Everything Else}
+The @tt{blocked?} field is a boolean indicating if
+the cell has been clicked on, thus blocking the cat
+from stepping there.
 
 
-@chunk[<everything-else>
+@section{Graph}
 
-#;'()
+The cat's move decision is based on a breadth-first
+search of a graph. The graph's nodes are the cells 
+on the board, and there are edges between each pair
+of adjacent cells, unless one of the cells is blocked,
+in which case there are no edges.
 
+The breadth-first function constructs a @scheme[distance-map],
+which is a list of @scheme[dist-cell] structs:
 
-;; constants
-(define circle-radius 20)
-(define circle-spacing 22)
+@chunk[<graph>
+(define-struct dist-cell (p n) #:transparent)]
 
-(define normal-color 'lightskyblue)
-(define on-shortest-path-color 'white)
-(define blocked-color 'black)
-(define under-mouse-color 'black)
+Each @tt{p} field in the @scheme[dist-cell] is 
 
+The core of the breadth-first search is this function,
+@scheme[bst]. It accepts a @scheme[queue] and a
 
+@chunk[<bfs>
+       
+(define (bfs queue dist-table)
+  (cond
+    [(empty? queue) dist-table]
+    [else
+     (local [(define hd (first queue))]
+       (cond
+         [(boolean? (hash-ref dist-table (queue-ent-posn hd) #f))
+          (local [(define dist (queue-ent-dist hd))
+                  (define p (queue-ent-posn hd))]
+            (bfs 
+             (append (rest queue) 
+                     (map (lambda (p) (make-queue-ent p (+ dist 1)))
+                          (neighbors/w p)))
+             (hash-set dist-table p dist)))]
+         [else
+          (bfs (rest queue) dist-table)]))]))]
 
-;                                                     
-;                                                     
-;                                                     
-;                                                     
-;                                                     
-;                                           ;;;;;     
-;                                            ;;;;     
-;                                            ;;;      
-;   ;;;; ;;;    ; ;;;;   ;;;;   ;;  ; ;;;;   ;;;   ;  
-;   ;;;;;;; ;;;;;; ;;;; ;;;;;;;;; ;;;;;;;;;  ;;;  ;;; 
-;   ;   ;;;;  ;;; ;;;;;;;;;;;;;;;  ;;    ;;  ;;; ;;;; 
-;   ;;   ;;;  ;;; ;;;; ;;;    ;;;  ;     ;;  ;;;; ;;; 
-;    ;;;;;;;  ;;;      ;;    ;;;;  ;    ;;;  ;;;  ;;; 
-;        ;;;  ;;;      ;;;;;;;;;;  ;;;;;;;    ;;  ;;; 
-;   ;;;; ;;;;;;;;;;;   ;;;;;;;;;;; ;; ;;;     ;;  ;;; 
-;  ;;;;; ;;;            ;;;;;      ;;        ;;;; ;;; 
-;  ;;;; ;;;                        ;;               ;;
-;   ;;;;;;                        ;                   
-;                                                     
+@chunk[<graph>
 
 ;; a distance-map is 
 ;;  (listof dist-cells)
@@ -152,22 +125,7 @@ The first field contains a @scheme[posn] struct.
           
           (define neighbors/w (neighbors world))
           
-          (define (bfs queue dist-table)
-            (cond
-              [(empty? queue) dist-table]
-              [else
-               (local [(define hd (first queue))]
-                 (cond
-                   [(boolean? (hash-ref dist-table (queue-ent-posn hd) #f))
-                    (local [(define dist (queue-ent-dist hd))
-                            (define p (queue-ent-posn hd))]
-                      (bfs 
-                       (append (rest queue) 
-                               (map (lambda (p) (make-queue-ent p (+ dist 1)))
-                                    (neighbors/w p)))
-                       (hash-set dist-table p dist)))]
-                   [else
-                    (bfs (rest queue) dist-table)]))]))]
+          <bfs>]
                     
     (hash-map 
      (bfs (list (make-queue-ent init-point 0))
@@ -619,10 +577,67 @@ The first field contains a @scheme[posn] struct.
 (check-expect (+/f '∞ '∞) '∞)
 (check-expect (+/f '∞ 1) '∞)
 (check-expect (+/f 1 '∞) '∞)
-(check-expect (+/f 1 2) 3)
+(check-expect (+/f 1 2) 3)]
+
+@section{Init Junk}
+
+@chunk[<init-junk>
+
+(require htdp/world lang/posn)
+(define-syntax (check-expect stx) 
+  (syntax-case stx ()
+    [(_ actual expected)
+     (with-syntax ([line (syntax-line stx)])
+       #'(check-expect/proc (λ () actual)
+                            (λ () expected)
+                            line))]))
+
+(define check-expect-count 0)
+(define check-expects '())
+
+(define (check-expect/proc actual-thunk expected-thunk line)
+  (set! check-expects
+        (cons
+         (λ ()
+           (set! check-expect-count (+ check-expect-count 1))
+           (let ([actual (actual-thunk)]
+                 [expected (expected-thunk)])
+             (unless (equal? actual expected)
+               (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
+                      check-expect-count
+                      line
+                      actual
+                      expected))))
+         check-expects)))
+
+(define (run-check-expects)
+  (for-each (λ (t) (t)) 
+            (reverse check-expects)))
+
+(define (make-immutable-hash/list-init [init '()])
+  (make-immutable-hash
+   (map (λ (x) (cons (car x) (cadr x)))
+        init)))]
 
 
-;                                                                          
+@section{Everything Else}
+
+
+@chunk[<everything-else>
+
+#;'()
+
+
+;; constants
+(define circle-radius 20)
+(define circle-spacing 22)
+
+(define normal-color 'lightskyblue)
+(define on-shortest-path-color 'white)
+(define blocked-color 'black)
+(define under-mouse-color 'black)
+
+
 ;                                                                          
 ;                                                                          
 ;                                                                          
