@@ -23,7 +23,7 @@
 @(define-syntax def-style-proc
    (syntax-rules ()
      [(_ id)
-      @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id]}]))
+      @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id].}]))
 
 @title[#:tag "basic"]{Basic Document Forms}
 
@@ -162,6 +162,8 @@ an element with style @scheme[#f].}
 @def-style-proc[tt]
 @def-style-proc[subscript]
 @def-style-proc[superscript]
+
+@def-elem-proc[smaller]{Like @scheme[elem], but with style @scheme["smaller"].}
 
 @defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 

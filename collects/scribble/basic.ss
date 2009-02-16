@@ -199,7 +199,7 @@
 
 (provide hspace
          elem aux-elem
-         italic bold
+         italic bold smaller
          tt span-class
          subscript superscript)
 
@@ -224,6 +224,9 @@
 
 (define (bold . str)
   (make-element 'bold (decode-content str)))
+
+(define (smaller . str)
+  (make-element "smaller" (decode-content str)))
 
 (define (tt . str)
   (let* ([l (decode-content str)]
