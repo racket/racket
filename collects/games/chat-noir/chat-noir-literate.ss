@@ -28,26 +28,50 @@ the Chat Noir game.
 
 @section{Overview}
 
-Chat Noir is implemented using @link["http://www.htdp.org/"]{HtDP}'s world
-library:  @schememodname[htdp/world]. The program is divided up into
+Chat Noir is implemented using @link["http://www.htdp.org/"]{HtDP}'s universe
+library:  @schememodname[teachpack/2htdp/universe] 
+(although it only uses the ``world'' portions of that library). 
+The program is divided up into
 six parts: the world data definition, an implementation of breadth-first search,
 code that handles drawing of the world, code that handles user input,
 and some code that builds an initial world and starts the game.
  
 @chunk[<main>
-       <init-junk>
-       <data-definitions>
+       (require htdp/world lang/posn)
+       <world>
        <graph>
+       <tests>
        <everything-else>]
 
 Each section also comes with a series of test cases that are collected into the 
-@chunkref[<tests>] chunk at the end of the program in order to be run in a
-sensible order, namely testing helper functions before testing the functions
-that use them.
+@chunkref[<tests>] chunk at the end of the program.
+
+@chunk[<tests>
+       <test-infrastructure>
+       <graph-tests>
+       <world-tests>]
+
+Each test case uses either @scheme[test], a simple form that accepts two
+arguments and compares them with @scheme[equal?], or @scheme[test/set]
+which accepts two lists and compares them as if they were sets.
+
+In general, most of the test cases are left to the end of the document, organized
+in a series of chunks that match the functions being tested. Some of the test cases,
+however, provide nice illustrations of the behavior of the function and so are
+included in the function's description.
 
 @section{The World}
 
-The main data structure for Chat Noir is @tt{world}.
+The main data structure for Chat Noir is @tt{world}. It comes with a few functions that 
+construct empty worlds and test cases for them.
+
+@chunk[<world> 
+       <data-definitions> <empty-world> <empty-board>]
+
+@chunk[<world-tests>
+       <empty-world-test> <empty-board-test>]
+
+The main structure definition is the @scheme[world] struct.
 
 @chunk[<data-definitions>
 (define-struct world (board cat state size mouse-posn h-down?)
@@ -58,7 +82,8 @@ It consists of a structure with six fields:
 @itemize[
 
 @item{@tt{board}: representing the state of the board as a list of
-  @tt{cell}s, one for each circle on the game. }
+  @tt{cell}s, one for each circle on the game. 
+  }
 
 @item{@tt{cat}: a @scheme[posn] indicating the position of the cat
   (interpreting the @scheme[posn] in the way that they are interpreted
@@ -82,30 +107,104 @@ It consists of a structure with six fields:
   pushed down.}
 ]
 
-A @tt{cell} is a structure with two fields:
+A @scheme[cell] is a structure with two fields:
 
 @chunk[<data-definitions>
        (define-struct cell (p blocked?) #:transparent)]
-
+       
 The first field contains a @scheme[posn] struct.  The coordinates of
 the posn indicate a position on the hexagonal grid.  The @tt{y} field
 of the @scheme[posn] refers to the row of the cell, and the @tt{x}
 coordinate the position in the row.  This means that, for example,
 @scheme[(make-posn 0 1)] is centered above @scheme[(make-posn 1 0)]
-and @scheme[(make-posn 1 1)].  See @scheme[cell-center-x] and
+and @scheme[(make-posn 1 1)].  (See @scheme[cell-center-x] and
 @scheme[cell-center-y] below for the conversion of those positions to
-screen coordinates.
+screen coordinates.)
 
 The @tt{blocked?} field is a boolean indicating if the cell has been
 clicked on, thus blocking the cat from stepping there.
+
+The @scheme[empty-board] function builds a list of @scheme[cell]s
+that correspond to an empty board. For example, here's what an empty
+3x3 board looks like, as a list of cells.
+
+@chunk[<empty-board-test>
+       
+       (test (empty-world 3)
+             (make-world (list
+                          (make-cell (make-posn 0 1) false)
+                          (make-cell (make-posn 1 0) false)
+                          (make-cell (make-posn 1 1) false)
+                          (make-cell (make-posn 1 2) false)
+                          (make-cell (make-posn 2 0) false)
+                          (make-cell (make-posn 2 1) false)
+                          (make-cell (make-posn 2 2) false))
+                         (make-posn 1 1)
+                         'playing
+                         3
+                         (make-posn 0 0)
+                         false))]
+
+and here is what that board look like, when rendered.
+
+@image["3x3-empty-board.png"]
+@image["5x5-empty-board.png"]
+@image["7x7-empty-board.png"]
+
+@chunk[<empty-board>
+       ;; empty-board : number -> (listof cell)
+       (define (empty-board board-size)
+         (filter
+          (lambda (c)
+            (not (and (= 0 (posn-x (cell-p c)))
+                      (or (= 0 (posn-y (cell-p c)))
+                          (= (- board-size 1)
+                             (posn-y (cell-p c)))))))
+          (append-all
+           (build-list
+            board-size
+            (lambda (i)
+              (build-list
+               board-size
+               (lambda (j)
+                 (make-cell (make-posn i j)
+                            false))))))))]
+
+@chunk[<empty-world>
+       
+       ;; empty-world : number -> world
+       (define (empty-world board-size)
+         (make-world (empty-board board-size)
+                     (make-posn (quotient board-size 2)
+                                (quotient board-size 2))
+                     'playing
+                     board-size
+                     (make-posn 0 0)
+                     false))]
+
+@chunk[<empty-world-test>
+       
+       (test (empty-board 3)
+             (list
+              (make-cell (make-posn 0 1) false)
+              (make-cell (make-posn 1 0) false)
+              (make-cell (make-posn 1 1) false)
+              (make-cell (make-posn 1 2) false)
+              (make-cell (make-posn 2 0) false)
+              (make-cell (make-posn 2 1) false)
+              (make-cell (make-posn 2 2) false)))]
+
 
 
 @section{Graph}
 
 The cat's move decision is based on a breadth-first search of a graph.
-The graph's nodes are the cells on the board, and there are edges
+The graph's nodes are the cells on the board plus a special
+node called @scheme['boundary] that is adjacent to every cell 
+on the boundary of the graph. In addition to the boundary edges,
+there are edges
 between each pair of adjacent cells, unless one of the cells is
-blocked, in which case there are no edges.
+blocked, in which case it has no edges at all (even to the boundary).
 
 The code for the breadth-first search is organized into
 X parts ....
@@ -113,7 +212,6 @@ X parts ....
 @chunk[<graph>
        <dist-cell-data-definition>
        <build-bfs-table>
-       <same-sets>
        <lookup-in-table>
        <on-cats-path?>
        <neighbors>
@@ -123,15 +221,16 @@ X parts ....
        <extended-arithmetic-ops>]
 
 @chunk[<graph-tests>
-       <build-bfs-table-tests>
-       <same-sets-test>
-       <lookup-in-table-tests>
-       <on-cats-path?-tests>
-       <neighbors-tests>
-       <adjacent-tests>
-       <in-bounds?-tests>
+       <extended-arithmetic-ops-tests>
        <on-boundary?-tests>
-       <extended-arithmetic-ops-tests>]
+       <in-bounds?-tests>
+       <adjacent-tests>
+       <neighbors-tests>
+       <on-cats-path?-tests>
+       <lookup-in-table-tests>
+       <build-bfs-table-tests>
+       
+       ]
 
 The breadth-first function constructs a @scheme[distance-map],
 which is a list of @scheme[dist-cell] structs:
@@ -145,247 +244,264 @@ the distance of the shortest path from the node to some fixed point on
 the board. The fixed point is not represented in the
 @scheme[distance-map], but is required when constructing one.
 
+The @scheme[build-bfs-table] accepts a world and 
+
 The core of the breadth-first search is this function,
 @scheme[bst]. It accepts a queue of the pending nodes to visit
 and a @scheme[dist-table] that records the same information as a
 @scheme[distance-map], but in an immutable hash-table. The
 @scheme[dist-map] is an accumulator, recording the distances
 to all of the nodes that have already been visited in the graph,
-and is used here to speed up the compuation. 
+and is used here to speed up the compuation. The queue is
+represented as a list of vectors of length two. Each element
+in the queue contains a @scheme[posn], or the symbol @scheme['boundary]
+and that @scheme[posn]'s  distance.
 
 @chunk[<bfs>
-(define (bfs queue dist-table)
-  (cond
-    [(empty? queue) dist-table]
-    [else
-     (local [(define hd (first queue))]
-       (cond
-         [(boolean? (hash-ref dist-table (vector-ref hd 0) #f))
-          (local [(define dist (vector-ref hd 1))
-                  (define p (vector-ref hd 0))]
-            (bfs
-             (append (rest queue)
-                     (map (λ (p) (vector p (+ dist 1)))
-                          (neighbors/w p)))
-             (hash-set dist-table p dist)))]
-         [else
-          (bfs (rest queue) dist-table)]))]))]
+       
+       (define (bfs queue dist-table)
+         (cond
+           [(empty? queue) dist-table]
+           [else
+            (let* ([p (vector-ref (first queue) 0)]
+                   [dist (vector-ref (first queue) 1)])
+              (cond
+                [(hash-ref dist-table p #f)
+                 (bfs (rest queue) dist-table)]
+                [else
+                 (bfs
+                  (append (rest queue)
+                          (map (λ (p) (vector p (+ dist 1)))
+                               (neighbors/w p)))
+                  (hash-set dist-table p dist))]))]))]
 
-@chunk[<build-bfs-table>
+If the @scheme[queue] is empty, then the accumulator contains
+bindings for all of the (reachable) nodes in the graph, so
+we just return it. If it isn't empty, then we extract
+the first element from the queue and name its consituents
+@scheme[p] and @scheme[dist].
+Next we check to see if the node at the head of the queue
+is in @scheme[dist-table]. If it is, we just move on to the
+next element in the queue. If that node is not in the @scheme[dist-table],
+then we add all of the neighbors to the queue, in the @scheme[append]
+expression, and update the @scheme[dist-table] with the distance to 
+this node.
 
-;; build-bfs-table : world (or/c 'boundary posn) -> distance-table
-(define (build-bfs-table world init-point)
-  (local [(define neighbors/w (neighbors world))
-          <bfs>]
+The @scheme[build-bfs-table] function packages up @scheme[bfs]
+function. It accepts a @tt{world} and an initial position
+and returns a @scheme[distance-table].
 
-    (hash-map
-     (bfs (list (vector init-point 0))
-          (make-immutable-hash/list-init))
-     make-dist-cell)))
-]
-
-@chunk[<same-sets>
-;; same-sets? : (listof X) (listof X) -> boolean
-(define (same-sets? l1 l2)
-  (and (andmap (lambda (e1) (member e1 l2)) l1)
-       (andmap (lambda (e2) (member e2 l1)) l2)
-       #t))]
-
-@chunk[<same-sets-tests>
-
-(check-expect (same-sets? (list) (list)) true)
-(check-expect (same-sets? (list) (list 1)) false)
-(check-expect (same-sets? (list 1) (list)) false)
-(check-expect (same-sets? (list 1 2) (list 2 1)) true)
-]
+As an example, here is one of the test cases. It supplies
+an empty world of size @scheme[3] to @scheme[build-bfs-table]
+and @scheme['boundary], thus asking for the distance from 
+the boundary to each cell.
 
 @chunk[<build-bfs-table-tests>
-(check-expect (same-sets? 
-               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1) 'playing 3 (make-posn 0 0) false)
-                                'boundary)
-               (list
-                (make-dist-cell 'boundary 0)
+       (test/set (build-bfs-table (empty-world 3)
+                                  'boundary)
+                 (list
+                  (make-dist-cell 'boundary 0)
+                  
+                  (make-dist-cell (make-posn 1 0) 1)
+                  (make-dist-cell (make-posn 2 0) 1)
+                  
+                  (make-dist-cell (make-posn 0 1) 1)
+                  (make-dist-cell (make-posn 1 1) 2)
+                  (make-dist-cell (make-posn 2 1) 1)
+                  
+                  (make-dist-cell (make-posn 1 2) 1)
+                  (make-dist-cell (make-posn 2 2) 1)))]
 
-                (make-dist-cell (make-posn 1 0) 1)
-                (make-dist-cell (make-posn 2 0) 1)
+The result is a list 
 
-                (make-dist-cell (make-posn 0 1) 1)
-                (make-dist-cell (make-posn 1 1) 2)
-                (make-dist-cell (make-posn 2 1) 1)
+@chunk[<build-bfs-table>
+       
+       (define (build-bfs-table world init-point)
+         (define neighbors/w (neighbors world))
+         <bfs>
+         
+         (hash-map
+          (bfs (list (vector init-point 0))
+               (make-immutable-hash '()))
+          make-dist-cell))]
 
-                (make-dist-cell (make-posn 1 2) 1)
-                (make-dist-cell (make-posn 2 2) 1)))
-              true)
+As you can see, the first thing it does is bind the free variable in @scheme[bfs]
+to the result of calling the @scheme[neighbors] function (defined in the chunk
+@chunkref[<neighbors>]) and then it has the @scheme[bfs] function. In the body
+                        
+and finally it calls the bfs function
+and then transforms the result, using
+@scheme[hash-map].
 
-(check-expect (same-sets?
-               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1)
-                                            'playing 3 (make-posn 0 0) false)
-                                (make-posn 1 1))
-               (list
-                (make-dist-cell 'boundary 2)
+The test suite for the @scheme[build-bfs-table] function
+uses @scheme[test/set] to avoid having to deal with the
+ordering issues in @scheme[build-bfs-table]'s result. 
+       
+@chunk[<build-bfs-table-tests>
+       (test/set (build-bfs-table
+                  (make-world (empty-board 3) (make-posn 1 1)
+                              'playing 3 (make-posn 0 0) false)
+                  (make-posn 1 1))
+                 (list
+                  (make-dist-cell 'boundary 2)
+                  
+                  (make-dist-cell (make-posn 1 0) 1)
+                  (make-dist-cell (make-posn 2 0) 1)
+                  
+                  (make-dist-cell (make-posn 0 1) 1)
+                  (make-dist-cell (make-posn 1 1) 0)
+                  (make-dist-cell (make-posn 2 1) 1)
+                  
+                  (make-dist-cell (make-posn 1 2) 1)
+                  (make-dist-cell (make-posn 2 2) 1)))
+       
+       (test/set (build-bfs-table
+                  (make-world
+                   (list
+                    (make-cell (make-posn 0 1) true)
+                    (make-cell (make-posn 1 0) true)
+                    (make-cell (make-posn 1 1) false)
+                    (make-cell (make-posn 1 2) true)
+                    (make-cell (make-posn 2 0) true)
+                    (make-cell (make-posn 2 1) true)
+                    (make-cell (make-posn 2 2) true))
+                   (make-posn 1 1)
+                   'playing
+                   3
+                   (make-posn 0 0)
+                   false)
+                  'boundary)
+                 (list
+                  (make-dist-cell 'boundary 0)))
 
-                (make-dist-cell (make-posn 1 0) 1)
-                (make-dist-cell (make-posn 2 0) 1)
+       (test/set (build-bfs-table 
+                  (make-world (empty-board 5)
+                              (make-posn 2 2)
+                              'playing
+                              5
+                              (make-posn 0 0)
+                              false)
+                  'boundary)
+                 (list
+                  (make-dist-cell 'boundary 0)
+                  
+                  (make-dist-cell (make-posn 1 0) 1)
+                  (make-dist-cell (make-posn 2 0) 1)
+                  (make-dist-cell (make-posn 3 0) 1)
+                  (make-dist-cell (make-posn 4 0) 1)
+                  
+                  (make-dist-cell (make-posn 0 1) 1)
+                  (make-dist-cell (make-posn 1 1) 2)
+                  (make-dist-cell (make-posn 2 1) 2)
+                  (make-dist-cell (make-posn 3 1) 2)
+                  (make-dist-cell (make-posn 4 1) 1)
+                  
+                  (make-dist-cell (make-posn 0 2) 1)
+                  (make-dist-cell (make-posn 1 2) 2)
+                  (make-dist-cell (make-posn 2 2) 3)
+                  (make-dist-cell (make-posn 3 2) 2)
+                  (make-dist-cell (make-posn 4 2) 1)
+                  
+                  (make-dist-cell (make-posn 0 3) 1)
+                  (make-dist-cell (make-posn 1 3) 2)
+                  (make-dist-cell (make-posn 2 3) 2)
+                  (make-dist-cell (make-posn 3 3) 2)
+                  (make-dist-cell (make-posn 4 3) 1)
+                  
+                  (make-dist-cell (make-posn 1 4) 1)
+                  (make-dist-cell (make-posn 2 4) 1)
+                  (make-dist-cell (make-posn 3 4) 1)
+                  (make-dist-cell (make-posn 4 4) 1)))
 
-                (make-dist-cell (make-posn 0 1) 1)
-                (make-dist-cell (make-posn 1 1) 0)
-                (make-dist-cell (make-posn 2 1) 1)
+       (test/set (build-bfs-table 
+                  (make-world (block-cell
+                               (make-posn 4 2)
+                               (empty-board 5))
+                              (make-posn 2 2)
+                              'playing
+                              5
+                              (make-posn 0 0)
+                              false)
+                  'boundary)
+                 (list
+                  (make-dist-cell 'boundary 0)
+                  
+                  (make-dist-cell (make-posn 1 0) 1)
+                  (make-dist-cell (make-posn 2 0) 1)
+                  (make-dist-cell (make-posn 3 0) 1)
+                  (make-dist-cell (make-posn 4 0) 1)
+                  
+                  (make-dist-cell (make-posn 0 1) 1)
+                  (make-dist-cell (make-posn 1 1) 2)
+                  (make-dist-cell (make-posn 2 1) 2)
+                  (make-dist-cell (make-posn 3 1) 2)
+                  (make-dist-cell (make-posn 4 1) 1)
+                  
+                  (make-dist-cell (make-posn 0 2) 1)
+                  (make-dist-cell (make-posn 1 2) 2)
+                  (make-dist-cell (make-posn 2 2) 3)
+                  (make-dist-cell (make-posn 3 2) 3)
+                  
+                  (make-dist-cell (make-posn 0 3) 1)
+                  (make-dist-cell (make-posn 1 3) 2)
+                  (make-dist-cell (make-posn 2 3) 2)
+                  (make-dist-cell (make-posn 3 3) 2)
+                  (make-dist-cell (make-posn 4 3) 1)
+                  
+                  (make-dist-cell (make-posn 1 4) 1)
+                  (make-dist-cell (make-posn 2 4) 1)
+                  (make-dist-cell (make-posn 3 4) 1)
+                  (make-dist-cell (make-posn 4 4) 1)))
+       
+       (test/set (build-bfs-table
+                  (make-world (empty-board 5)
+                              (make-posn 2 2)
+                              'playing
+                              5
+                              (make-posn 0 0)
+                              false)
+                  (make-posn 2 2))
+                 (list
+                  (make-dist-cell 'boundary 3)
+                  
+                  (make-dist-cell (make-posn 1 0) 2)
+                  (make-dist-cell (make-posn 2 0) 2)
+                  (make-dist-cell (make-posn 3 0) 2)
+                  (make-dist-cell (make-posn 4 0) 3)
+                  
+                  (make-dist-cell (make-posn 0 1) 2)
+                  (make-dist-cell (make-posn 1 1) 1)
+                  (make-dist-cell (make-posn 2 1) 1)
+                  (make-dist-cell (make-posn 3 1) 2)
+                  (make-dist-cell (make-posn 4 1) 3)
+                  
+                  (make-dist-cell (make-posn 0 2) 2)
+                  (make-dist-cell (make-posn 1 2) 1)
+                  (make-dist-cell (make-posn 2 2) 0)
+                  (make-dist-cell (make-posn 3 2) 1)
+                  (make-dist-cell (make-posn 4 2) 2)
+                  
+                  (make-dist-cell (make-posn 0 3) 2)
+                  (make-dist-cell (make-posn 1 3) 1)
+                  (make-dist-cell (make-posn 2 3) 1)
+                  (make-dist-cell (make-posn 3 3) 2)
+                  (make-dist-cell (make-posn 4 3) 3)
+                  
+                  (make-dist-cell (make-posn 1 4) 2)
+                  (make-dist-cell (make-posn 2 4) 2)
+                  (make-dist-cell (make-posn 3 4) 2)
+                  (make-dist-cell (make-posn 4 4) 3)))
 
-                (make-dist-cell (make-posn 1 2) 1)
-                (make-dist-cell (make-posn 2 2) 1)))
-              true)
-
-(check-expect (same-sets?
-               (build-bfs-table (make-world (list
-                                             (make-cell (make-posn 0 1) true)
-                                             (make-cell (make-posn 1 0) true)
-                                             (make-cell (make-posn 1 1) false)
-                                             (make-cell (make-posn 1 2) true)
-                                             (make-cell (make-posn 2 0) true)
-                                             (make-cell (make-posn 2 1) true)
-                                             (make-cell (make-posn 2 2) true))
-                                            (make-posn 1 1)
-                                            'playing
-                                            3
-                                            (make-posn 0 0)
-                                            false)
-                                'boundary)
-               (list
-                (make-dist-cell 'boundary 0)))
-              true)
-
-(check-expect (same-sets?
-               (build-bfs-table (make-world (empty-board 5)
-                                            (make-posn 2 2)
-                                            'playing
-                                            5
-                                            (make-posn 0 0)
-                                            false)
-                                'boundary)
-               (list
-                (make-dist-cell 'boundary 0)
-
-                (make-dist-cell (make-posn 1 0) 1)
-                (make-dist-cell (make-posn 2 0) 1)
-                (make-dist-cell (make-posn 3 0) 1)
-                (make-dist-cell (make-posn 4 0) 1)
-
-                (make-dist-cell (make-posn 0 1) 1)
-                (make-dist-cell (make-posn 1 1) 2)
-                (make-dist-cell (make-posn 2 1) 2)
-                (make-dist-cell (make-posn 3 1) 2)
-                (make-dist-cell (make-posn 4 1) 1)
-
-                (make-dist-cell (make-posn 0 2) 1)
-                (make-dist-cell (make-posn 1 2) 2)
-                (make-dist-cell (make-posn 2 2) 3)
-                (make-dist-cell (make-posn 3 2) 2)
-                (make-dist-cell (make-posn 4 2) 1)
-
-                (make-dist-cell (make-posn 0 3) 1)
-                (make-dist-cell (make-posn 1 3) 2)
-                (make-dist-cell (make-posn 2 3) 2)
-                (make-dist-cell (make-posn 3 3) 2)
-                (make-dist-cell (make-posn 4 3) 1)
-
-                (make-dist-cell (make-posn 1 4) 1)
-                (make-dist-cell (make-posn 2 4) 1)
-                (make-dist-cell (make-posn 3 4) 1)
-                (make-dist-cell (make-posn 4 4) 1)))
-              true)
-
-(check-expect (same-sets?
-               (build-bfs-table (make-world (block-cell
-                                             (make-posn 4 2)
-                                             (empty-board 5))
-                                            (make-posn 2 2)
-                                            'playing
-                                            5
-                                            (make-posn 0 0)
-                                            false)
-                                'boundary)
-               (list
-                (make-dist-cell 'boundary 0)
-
-                (make-dist-cell (make-posn 1 0) 1)
-                (make-dist-cell (make-posn 2 0) 1)
-                (make-dist-cell (make-posn 3 0) 1)
-                (make-dist-cell (make-posn 4 0) 1)
-
-                (make-dist-cell (make-posn 0 1) 1)
-                (make-dist-cell (make-posn 1 1) 2)
-                (make-dist-cell (make-posn 2 1) 2)
-                (make-dist-cell (make-posn 3 1) 2)
-                (make-dist-cell (make-posn 4 1) 1)
-
-                (make-dist-cell (make-posn 0 2) 1)
-                (make-dist-cell (make-posn 1 2) 2)
-                (make-dist-cell (make-posn 2 2) 3)
-                (make-dist-cell (make-posn 3 2) 3)
-
-                (make-dist-cell (make-posn 0 3) 1)
-                (make-dist-cell (make-posn 1 3) 2)
-                (make-dist-cell (make-posn 2 3) 2)
-                (make-dist-cell (make-posn 3 3) 2)
-                (make-dist-cell (make-posn 4 3) 1)
-
-                (make-dist-cell (make-posn 1 4) 1)
-                (make-dist-cell (make-posn 2 4) 1)
-                (make-dist-cell (make-posn 3 4) 1)
-                (make-dist-cell (make-posn 4 4) 1)))
-              true)
-
-(check-expect (same-sets?
-               (build-bfs-table (make-world (empty-board 5)
-                                            (make-posn 2 2)
-                                            'playing
-                                            5
-                                            (make-posn 0 0)
-                                            false)
-                                (make-posn 2 2))
-               (list
-                (make-dist-cell 'boundary 3)
-
-                (make-dist-cell (make-posn 1 0) 2)
-                (make-dist-cell (make-posn 2 0) 2)
-                (make-dist-cell (make-posn 3 0) 2)
-                (make-dist-cell (make-posn 4 0) 3)
-
-                (make-dist-cell (make-posn 0 1) 2)
-                (make-dist-cell (make-posn 1 1) 1)
-                (make-dist-cell (make-posn 2 1) 1)
-                (make-dist-cell (make-posn 3 1) 2)
-                (make-dist-cell (make-posn 4 1) 3)
-
-                (make-dist-cell (make-posn 0 2) 2)
-                (make-dist-cell (make-posn 1 2) 1)
-                (make-dist-cell (make-posn 2 2) 0)
-                (make-dist-cell (make-posn 3 2) 1)
-                (make-dist-cell (make-posn 4 2) 2)
-
-                (make-dist-cell (make-posn 0 3) 2)
-                (make-dist-cell (make-posn 1 3) 1)
-                (make-dist-cell (make-posn 2 3) 1)
-                (make-dist-cell (make-posn 3 3) 2)
-                (make-dist-cell (make-posn 4 3) 3)
-
-                (make-dist-cell (make-posn 1 4) 2)
-                (make-dist-cell (make-posn 2 4) 2)
-                (make-dist-cell (make-posn 3 4) 2)
-                (make-dist-cell (make-posn 4 4) 3)))
-              true)
-
-(check-expect (lookup-in-table
-               (build-bfs-table (make-world (empty-board 5)
-                                            (make-posn 2 2)
-                                            'playing
-                                            5
-                                            (make-posn 0 0)
-                                            false)
-                                (make-posn 2 2))
-               (make-posn 1 4))
-              2)
-]
+       (test (lookup-in-table
+              (build-bfs-table (make-world (empty-board 5)
+                                           (make-posn 2 2)
+                                           'playing
+                                           5
+                                           (make-posn 0 0)
+                                           false)
+                               (make-posn 2 2))
+              (make-posn 1 4))
+             2)]
 
 @chunk[<lookup-in-table>
 ;; lookup-in-table : distance-map posn -> number or '∞
@@ -402,11 +518,11 @@ and is used here to speed up the compuation.
 
 @chunk[<lookup-in-table-tests>
 
-(check-expect (lookup-in-table empty (make-posn 1 2)) '∞)
-(check-expect (lookup-in-table (list (make-dist-cell (make-posn 1 2) 3))
+(test (lookup-in-table empty (make-posn 1 2)) '∞)
+(test (lookup-in-table (list (make-dist-cell (make-posn 1 2) 3))
                                (make-posn 1 2))
               3)
-(check-expect (lookup-in-table (list (make-dist-cell (make-posn 2 1) 3))
+(test (lookup-in-table (list (make-dist-cell (make-posn 2 1) 3))
                                (make-posn 1 2))
               '∞)]
 
@@ -434,19 +550,19 @@ and is used here to speed up the compuation.
      (lambda (p) false)]))]
 
 @chunk[<on-cats-path?-tests>
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
                                           'playing 5 (make-posn 0 0) true))
                (make-posn 1 0))
               true)
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
                                           'playing 5 (make-posn 0 0) false))
                (make-posn 1 0))
               false)
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
                                           'playing 5 (make-posn 0 0) true))
                (make-posn 2 1))
               false)
-(check-expect ((on-cats-path?
+(test ((on-cats-path?
                 (make-world (list
                              (make-cell (make-posn 0 1) true)
                              (make-cell (make-posn 1 0) true)
@@ -500,23 +616,23 @@ and is used here to speed up the compuation.
                (cons 'boundary in-bounds)])))]))))]
 
 @chunk[<neighbors-tests>
-(check-expect ((neighbors (empty-world 11))  (make-posn 1 1))
+(test ((neighbors (empty-world 11))  (make-posn 1 1))
               (adjacent (make-posn 1 1) 11))
-(check-expect ((neighbors (empty-world 11)) (make-posn 2 2))
+(test ((neighbors (empty-world 11)) (make-posn 2 2))
               (adjacent (make-posn 2 2) 11))
-(check-expect ((neighbors (empty-world 3)) 'boundary)
+(test ((neighbors (empty-world 3)) 'boundary)
               (list (make-posn 0 1)
                     (make-posn 1 0)
                     (make-posn 1 2)
                     (make-posn 2 0)
                     (make-posn 2 1)
                     (make-posn 2 2)))
-(check-expect ((neighbors (empty-world 11)) (make-posn 1 0))
+(test ((neighbors (empty-world 11)) (make-posn 1 0))
               (list 'boundary
                     (make-posn 2 0)
                     (make-posn 0 1)
                     (make-posn 1 1)))
-(check-expect ((neighbors (make-world (list
+(test ((neighbors (make-world (list
                                        (make-cell (make-posn 0 1) false)
                                        (make-cell (make-posn 1 0) false)
                                        (make-cell (make-posn 1 1) true)
@@ -531,7 +647,7 @@ and is used here to speed up the compuation.
                                       false))
                (make-posn 1 1))
               '())
-(check-expect ((neighbors (make-world (list
+(test ((neighbors (make-world (list
                                        (make-cell (make-posn 0 1) false)
                                        (make-cell (make-posn 1 0) false)
                                        (make-cell (make-posn 1 1) true)
@@ -572,14 +688,14 @@ and is used here to speed up the compuation.
              (make-posn (+ x 1) (+ y 1)))])))]
 
 @chunk[<adjacent-tests>
-(check-expect (adjacent (make-posn 1 1) 11)
+(test (adjacent (make-posn 1 1) 11)
               (list (make-posn 1 0)
                     (make-posn 2 0)
                     (make-posn 0 1)
                     (make-posn 2 1)
                     (make-posn 1 2)
                     (make-posn 2 2)))
-(check-expect (adjacent (make-posn 2 2) 11)
+(test (adjacent (make-posn 2 2) 11)
               (list (make-posn 1 1)
                     (make-posn 2 1)
                     (make-posn 1 2)
@@ -596,12 +712,12 @@ and is used here to speed up the compuation.
       (= (posn-y p) (- board-size 1))))]
 
 @chunk[<on-boundary?-tests>
-(check-expect (on-boundary? (make-posn 0 1) 13) true)
-(check-expect (on-boundary? (make-posn 1 0) 13) true)
-(check-expect (on-boundary? (make-posn 12 1) 13) true)
-(check-expect (on-boundary? (make-posn 1 12) 13) true)
-(check-expect (on-boundary? (make-posn 1 1) 13) false)
-(check-expect (on-boundary? (make-posn 10 10) 13) false)]
+(test (on-boundary? (make-posn 0 1) 13) true)
+(test (on-boundary? (make-posn 1 0) 13) true)
+(test (on-boundary? (make-posn 12 1) 13) true)
+(test (on-boundary? (make-posn 1 12) 13) true)
+(test (on-boundary? (make-posn 1 1) 13) false)
+(test (on-boundary? (make-posn 10 10) 13) false)]
 
 @chunk[<in-bounds?>
 
@@ -613,16 +729,16 @@ and is used here to speed up the compuation.
        (not (equal? p (make-posn 0 (- board-size 1))))))]
 
 @chunk[<in-bounds?-tests>
-(check-expect (in-bounds? (make-posn 0 0) 11) false)
-(check-expect (in-bounds? (make-posn 0 1) 11) true)
-(check-expect (in-bounds? (make-posn 1 0) 11) true)
-(check-expect (in-bounds? (make-posn 10 10) 11) true)
-(check-expect (in-bounds? (make-posn 0 -1) 11) false)
-(check-expect (in-bounds? (make-posn -1 0) 11) false)
-(check-expect (in-bounds? (make-posn 0 11) 11) false)
-(check-expect (in-bounds? (make-posn 11 0) 11) false)
-(check-expect (in-bounds? (make-posn 10 0) 11) true)
-(check-expect (in-bounds? (make-posn 0 10) 11) false)]
+(test (in-bounds? (make-posn 0 0) 11) false)
+(test (in-bounds? (make-posn 0 1) 11) true)
+(test (in-bounds? (make-posn 1 0) 11) true)
+(test (in-bounds? (make-posn 10 10) 11) true)
+(test (in-bounds? (make-posn 0 -1) 11) false)
+(test (in-bounds? (make-posn -1 0) 11) false)
+(test (in-bounds? (make-posn 0 11) 11) false)
+(test (in-bounds? (make-posn 11 0) 11) false)
+(test (in-bounds? (make-posn 10 0) 11) true)
+(test (in-bounds? (make-posn 0 10) 11) false)]
 
 @chunk[<extended-arithmetic-ops>
 ;; <=/f : (number or '∞) (number or '∞) -> boolean
@@ -640,58 +756,75 @@ and is used here to speed up the compuation.
      (+ x y)]))]
 
 @chunk[<extended-arithmetic-ops-tests>
-(check-expect (<=/f 1 2) true)
-(check-expect (<=/f 2 1) false)
-(check-expect (<=/f '∞ 1) false)
-(check-expect (<=/f 1 '∞) true)
-(check-expect (<=/f '∞ '∞) true)
+(test (<=/f 1 2) true)
+(test (<=/f 2 1) false)
+(test (<=/f '∞ 1) false)
+(test (<=/f 1 '∞) true)
+(test (<=/f '∞ '∞) true)
 
-(check-expect (+/f '∞ '∞) '∞)
-(check-expect (+/f '∞ 1) '∞)
-(check-expect (+/f 1 '∞) '∞)
-(check-expect (+/f 1 2) 3)]
+(test (+/f '∞ '∞) '∞)
+(test (+/f '∞ 1) '∞)
+(test (+/f 1 '∞) '∞)
+(test (+/f 1 2) 3)]
 
 @section{Init Junk}
 
 @chunk[<init-junk>
+]
 
-(require htdp/world lang/posn)
-(define-syntax (check-expect stx)
+@chunk[<test-infrastructure>
+
+(define-syntax (test stx)
   (syntax-case stx ()
     [(_ actual expected)
      (with-syntax ([line (syntax-line stx)])
-       #'(check-expect/proc (λ () actual)
-                            (λ () expected)
-                            line))]))
+       #'(test/proc (λ () actual)
+                    (λ () expected)
+                    equal?
+                    line))]))
 
-(define check-expect-count 0)
-(define check-expects '())
+(define-syntax (test/set stx)
+  (syntax-case stx ()
+    [(_ actual expected)
+     (with-syntax ([line (syntax-line stx)])
+       #'(test/proc (λ () actual)
+                    (λ () expected)
+                    (λ (x y) (same-sets? x y))
+                    line))]))
 
-(define (check-expect/proc actual-thunk expected-thunk line)
-  (set! check-expects
+(define test-count 0)
+(define test-procs '())
+
+(define (test/proc actual-thunk expected-thunk cmp line)
+  (set! test-procs
         (cons
          (λ ()
-           (set! check-expect-count (+ check-expect-count 1))
+           (set! test-count (+ test-count 1))
            (let ([actual (actual-thunk)]
                  [expected (expected-thunk)])
-             (unless (equal? actual expected)
+             (unless (cmp actual expected)
                (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
-                      check-expect-count
+                      test-count
                       line
                       actual
                       expected))))
-         check-expects)))
+         test-procs)))
 
-(define (run-check-expects)
-  (for-each (λ (t) (t))
-            (reverse check-expects))
-  (printf "passed ~s tests\n" check-expect-count)
-  (flush-output))
 
-(define (make-immutable-hash/list-init [init '()])
-  (make-immutable-hash
-   (map (λ (x) (cons (car x) (cadr x)))
-        init)))]
+(define (same-sets? l1 l2)
+  (and (andmap (lambda (e1) (member e1 l2)) l1)
+       (andmap (lambda (e2) (member e2 l1)) l2)
+       #t))
+
+(test (same-sets? (list) (list)) true)
+(test (same-sets? (list) (list 1)) false)
+(test (same-sets? (list 1) (list)) false)
+(test (same-sets? (list 1 2) (list 2 1)) true)
+
+(define (run-tests)
+  (for-each (λ (t) (t)) (reverse test-procs))
+  (printf "passed ~s tests\n" test-count)
+  (flush-output))]
 
 
 @section{Everything Else}
@@ -747,7 +880,7 @@ and is used here to speed up the compuation.
              (- (cell-center-x (world-cat w)))
              (- (cell-center-y (world-cat w)))))))
 
-(check-expect
+(test
  (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
@@ -764,7 +897,7 @@ and is used here to speed up the compuation.
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
-(check-expect
+(test
  (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
@@ -781,7 +914,7 @@ and is used here to speed up the compuation.
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
-(check-expect
+(test
  (render-world
   (make-world (list (make-cell (make-posn 0 1) false))
               (make-posn 0 1)
@@ -798,7 +931,7 @@ and is used here to speed up the compuation.
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
-(check-expect
+(test
  (render-world
   (make-world (list
                (make-cell (make-posn 0 1) true)
@@ -829,7 +962,7 @@ and is used here to speed up the compuation.
                 (- (cell-center-x (make-posn 1 1)))
                 (- (cell-center-y (make-posn 1 1))))))
 
-(check-expect
+(test
  (render-world
   (make-world (list
                (make-cell (make-posn 0 1) false)
@@ -872,12 +1005,12 @@ and is used here to speed up the compuation.
           (- (image-width img) (pinhole-x img) 1)
           (- (image-height img) (pinhole-y img) 1)))
 
-(check-expect (chop-whiskers (rectangle 5 5 'solid 'black))
+(test (chop-whiskers (rectangle 5 5 'solid 'black))
               (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
-(check-expect (chop-whiskers (rectangle 6 6 'solid 'black))
+(test (chop-whiskers (rectangle 6 6 'solid 'black))
               (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
 
-(check-expect
+(test
  (pinhole-x
   (render-world
    (make-world
@@ -888,7 +1021,7 @@ and is used here to speed up the compuation.
     (make-posn 0 0)
     false)))
  0)
-(check-expect
+(test
  (pinhole-x
   (render-world
    (make-world
@@ -920,7 +1053,7 @@ and is used here to speed up the compuation.
                                                          (posn-y mouse)))))
               cs)))
 
-(check-expect (board->image (list (make-cell (make-posn 0 0) false))
+(test (board->image (list (make-cell (make-posn 0 0) false))
                             3
                             (lambda (x) false)
                             false)
@@ -933,7 +1066,7 @@ and is used here to speed up the compuation.
                             false
                             false)))
 
-(check-expect (board->image (list (make-cell (make-posn 0 0) false))
+(test (board->image (list (make-cell (make-posn 0 0) false))
                             3
                             (lambda (x) true)
                             false)
@@ -947,7 +1080,7 @@ and is used here to speed up the compuation.
                             false)))
 
 
-(check-expect (board->image (list (make-cell (make-posn 0 0) false))
+(test (board->image (list (make-cell (make-posn 0 0) false))
                             3
                             (lambda (x) false)
                             false)
@@ -960,7 +1093,7 @@ and is used here to speed up the compuation.
                             false
                             false)))
 
-(check-expect (board->image (list (make-cell (make-posn 0 0) false)
+(test (board->image (list (make-cell (make-posn 0 0) false)
                                   (make-cell (make-posn 0 1) false))
                             3
                             (lambda (x) (equal? x (make-posn 0 1)))
@@ -977,7 +1110,7 @@ and is used here to speed up the compuation.
                             true
                             false)))
 
-(check-expect (board->image (list (make-cell (make-posn 0 0) false)
+(test (board->image (list (make-cell (make-posn 0 0) false)
                                   (make-cell (make-posn 0 1) false))
                             3
                             (lambda (x) (equal? x (make-posn 0 1)))
@@ -1018,21 +1151,21 @@ and is used here to speed up the compuation.
      (- x)
      (- y))))
 
-(check-expect (cell->image (make-cell (make-posn 0 0) false) false false)
+(test (cell->image (make-cell (make-posn 0 0) false) false false)
               (move-pinhole (circle circle-radius 'solid normal-color)
                             (- circle-radius)
                             (- circle-radius)))
-(check-expect (cell->image (make-cell (make-posn 0 0) true) false false)
+(test (cell->image (make-cell (make-posn 0 0) true) false false)
               (move-pinhole (circle circle-radius 'solid 'black)
                             (- circle-radius)
                             (- circle-radius)))
-(check-expect (cell->image (make-cell (make-posn 0 0) false) true false)
+(test (cell->image (make-cell (make-posn 0 0) false) true false)
               (move-pinhole (overlay (circle circle-radius 'solid normal-color)
                                      (circle (quotient circle-radius 2) 'solid
                                              on-shortest-path-color))
                             (- circle-radius)
                             (- circle-radius)))
-(check-expect (cell->image (make-cell (make-posn 0 0) false) true true)
+(test (cell->image (make-cell (make-posn 0 0) false) true true)
               (move-pinhole (overlay (circle circle-radius 'solid normal-color)
                                      (circle (quotient circle-radius 2) 'solid
                                              under-mouse-color))
@@ -1046,7 +1179,7 @@ and is used here to speed up the compuation.
             (make-posn (- board-size 1) (- board-size 2)))]
     (+ (cell-center-x rightmost-posn) circle-radius)))
 
-(check-expect (world-width 3) 150)
+(test (world-width 3) 150)
 
 ;; world-height : number -> number
 ;; computes the height of the drawn world in terms of its size
@@ -1054,7 +1187,7 @@ and is used here to speed up the compuation.
   (local [(define bottommost-posn
             (make-posn (- board-size 1) (- board-size 1)))]
     (+ (cell-center-y bottommost-posn) circle-radius)))
-(check-expect (world-height 3) 116.208)
+(test (world-height 3) 116.208)
 
 
 ;; cell-center-x : posn -> number
@@ -1067,13 +1200,13 @@ and is used here to speed up the compuation.
            circle-spacing
            0))))
 
-(check-expect (cell-center-x (make-posn 0 0))
+(test (cell-center-x (make-posn 0 0))
               circle-radius)
-(check-expect (cell-center-x (make-posn 0 1))
+(test (cell-center-x (make-posn 0 1))
               (+ circle-spacing circle-radius))
-(check-expect (cell-center-x (make-posn 1 0))
+(test (cell-center-x (make-posn 1 0))
               (+ (* 2 circle-spacing) circle-radius))
-(check-expect (cell-center-x (make-posn 1 1))
+(test (cell-center-x (make-posn 1 1))
               (+ (* 3 circle-spacing) circle-radius))
 
 ;; cell-center-y : posn -> number
@@ -1084,9 +1217,9 @@ and is used here to speed up the compuation.
           .866 ;; .866 is an exact approximate to sin(pi/3)
           ))))
 
-(check-expect (cell-center-y (make-posn 1 1))
+(test (cell-center-y (make-posn 1 1))
               (+ circle-radius (* 2 circle-spacing .866)))
-(check-expect (cell-center-y (make-posn 1 0))
+(test (cell-center-y (make-posn 1 0))
               circle-radius)
 
 
@@ -1137,13 +1270,13 @@ and is used here to speed up the compuation.
     [(equal? evt 'leave)
      (update-world-posn world false)]))
 
-(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
+(test (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
                      1 1 'button-down)
               (make-world '() (make-posn 0 0) 'playing 1 false false))
-(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
+(test (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
                      1 1 'drag)
               (make-world '() (make-posn 0 0) 'playing 1 false false))
-(check-expect (clack (make-world (list (make-cell (make-posn 0 0) false))
+(test (clack (make-world (list (make-cell (make-posn 0 0) false))
                                  (make-posn 0 1)
                                  'playing
                                  1
@@ -1158,7 +1291,7 @@ and is used here to speed up the compuation.
                           1
                           (make-posn 0 0)
                           false))
-(check-expect (clack (make-world (list (make-cell (make-posn 0 0) false))
+(test (clack (make-world (list (make-cell (make-posn 0 0) false))
                                  (make-posn 0 1)
                                  'playing
                                  1
@@ -1173,19 +1306,19 @@ and is used here to speed up the compuation.
                           1
                           (make-posn 0 0)
                           false))
-(check-expect (clack (make-world '() (make-posn 0 0)
+(test (clack (make-world '() (make-posn 0 0)
                                  'playing 1 (make-posn 0 0) false)
                      1 1 'leave)
               (make-world '() (make-posn 0 0) 'playing 1 false false))
 
-(check-expect (clack (make-world '() (make-posn 0 0)
+(test (clack (make-world '() (make-posn 0 0)
                                  'playing 1 (make-posn 0 0) false)
                      10
                      10
                      'button-down)
               (make-world '() (make-posn 0 0) 'playing 1 (make-posn 0 0) false))
 
-(check-expect (clack (make-world (list (make-cell (make-posn 0 0) false)
+(test (clack (make-world (list (make-cell (make-posn 0 0) false)
                                        (make-cell (make-posn 1 1) false))
                                  (make-posn 1 1)
                                  'playing
@@ -1204,14 +1337,14 @@ and is used here to speed up the compuation.
                           false))
 
 
-(check-expect (clack (make-world '() (make-posn 0 0)
+(test (clack (make-world '() (make-posn 0 0)
                                  'cat-lost 1 (make-posn 0 0) false)
                      10
                      10
                      'button-up)
               (make-world '() (make-posn 0 0)
                           'cat-lost 1 (make-posn 0 0) false))
-(check-expect (clack
+(test (clack
                (make-world
                 (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) true)
@@ -1242,7 +1375,7 @@ and is used here to speed up the compuation.
                (make-posn 1 0)
                false))
 
-(check-expect (clack
+(test (clack
                (make-world
                 (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) false)
@@ -1302,7 +1435,7 @@ and is used here to speed up the compuation.
                     (world-h-down? w))])]
     [else w]))
 
-(check-expect (update-world-posn
+(test (update-world-posn
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'playing 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
@@ -1310,7 +1443,7 @@ and is used here to speed up the compuation.
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'playing 1 (make-posn 0 0) false))
 
-(check-expect (update-world-posn
+(test (update-world-posn
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 0) 'playing 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
@@ -1318,20 +1451,20 @@ and is used here to speed up the compuation.
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 0) 'playing 1 false false))
 
-(check-expect (update-world-posn
+(test (update-world-posn
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'playing 1 (make-posn 0 0) false)
                (make-posn 0 0))
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'playing 1 false false))
-(check-expect (update-world-posn
+(test (update-world-posn
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'cat-won 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
                           (cell-center-y (make-posn 0 0))))
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'cat-won 1 false false))
-(check-expect (update-world-posn
+(test (update-world-posn
                (make-world (list (make-cell (make-posn 0 0) false))
                            (make-posn 0 1) 'cat-lost 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
@@ -1370,7 +1503,7 @@ and is used here to speed up the compuation.
                 (world-h-down? world))))
 
 
-(check-expect
+(test
  (move-cat
   (make-world (list (make-cell (make-posn 1 0) false)
                     (make-cell (make-posn 2 0) false)
@@ -1453,24 +1586,24 @@ and is used here to speed up the compuation.
         second
         (filter (lambda (x) (equal? (first x) best-score))
                 (map list scores posns)))])))
-(check-expect (find-best-positions (list (make-posn 0 0)) (list 1))
+(test (find-best-positions (list (make-posn 0 0)) (list 1))
               (list (make-posn 0 0)))
-(check-expect (find-best-positions (list (make-posn 0 0)) (list '∞))
+(test (find-best-positions (list (make-posn 0 0)) (list '∞))
               false)
-(check-expect (find-best-positions (list (make-posn 0 0)
+(test (find-best-positions (list (make-posn 0 0)
                                          (make-posn 1 1))
                                    (list 1 2))
               (list (make-posn 0 0)))
-(check-expect (find-best-positions (list (make-posn 0 0)
+(test (find-best-positions (list (make-posn 0 0)
                                          (make-posn 1 1))
                                    (list 1 1))
               (list (make-posn 0 0)
                     (make-posn 1 1)))
-(check-expect (find-best-positions (list (make-posn 0 0)
+(test (find-best-positions (list (make-posn 0 0)
                                          (make-posn 1 1))
                                    (list '∞ 2))
               (list (make-posn 1 1)))
-(check-expect (find-best-positions (list (make-posn 0 0)
+(test (find-best-positions (list (make-posn 0 0)
                                          (make-posn 1 1))
                                    (list '∞ '∞))
               false)
@@ -1491,12 +1624,12 @@ and is used here to speed up the compuation.
          [else
           (cons cell (add-obstacle (rest board) x y))]))]))
 
-(check-expect (add-obstacle (list (make-cell (make-posn 0 0) false))
+(test (add-obstacle (list (make-cell (make-posn 0 0) false))
                             circle-spacing circle-spacing)
               (list (make-cell (make-posn 0 0) true)))
-(check-expect (add-obstacle (list (make-cell (make-posn 0 0) false)) 100 100)
+(test (add-obstacle (list (make-cell (make-posn 0 0) false)) 100 100)
               (list (make-cell (make-posn 0 0) false)))
-(check-expect (add-obstacle (list (make-cell (make-posn 0 0) false)
+(test (add-obstacle (list (make-cell (make-posn 0 0) false)
                                   (make-cell (make-posn 0 1) false))
                             circle-spacing circle-spacing)
               (list (make-cell (make-posn 0 0) true)
@@ -1513,12 +1646,12 @@ and is used here to speed up the compuation.
         (cell-p (first board))]
        [else
         (circle-at-point (rest board) x y)])]))
-(check-expect (circle-at-point empty 0 0) false)
-(check-expect (circle-at-point (list (make-cell (make-posn 0 0) false))
+(test (circle-at-point empty 0 0) false)
+(test (circle-at-point (list (make-cell (make-posn 0 0) false))
                                (cell-center-x (make-posn 0 0))
                                (cell-center-y (make-posn 0 0)))
               (make-posn 0 0))
-(check-expect (circle-at-point (list (make-cell (make-posn 0 0) false))
+(test (circle-at-point (list (make-cell (make-posn 0 0) false))
                                0 0)
               false)
 
@@ -1526,12 +1659,12 @@ and is used here to speed up the compuation.
 ;; point-in-a-circle? : board number number -> boolean
 (define (point-in-a-circle? board x y)
   (posn? (circle-at-point board x y)))
-(check-expect (point-in-a-circle? empty 0 0) false)
-(check-expect (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
+(test (point-in-a-circle? empty 0 0) false)
+(test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
                                   (cell-center-x (make-posn 0 0))
                                   (cell-center-y (make-posn 0 0)))
               true)
-(check-expect (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
+(test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
                                   0 0)
               false)
 
@@ -1542,11 +1675,11 @@ and is used here to speed up the compuation.
           (define p2 (+ x (* (sqrt -1) y)))]
     (<= (magnitude (- center p2)) circle-radius)))
 
-(check-expect (point-in-this-circle? (make-posn 0 0)
+(test (point-in-this-circle? (make-posn 0 0)
                                      (cell-center-x (make-posn 0 0))
                                      (cell-center-y (make-posn 0 0)))
               true)
-(check-expect (point-in-this-circle? (make-posn 0 0) 0 0)
+(test (point-in-this-circle? (make-posn 0 0) 0 0)
               false)
 
 ;; change : world key-event -> world
@@ -1558,12 +1691,12 @@ and is used here to speed up the compuation.
               (world-mouse-posn w)
               (key=? ke #\h)))
 
-(check-expect (change (make-world '() (make-posn 1 1)
+(test (change (make-world '() (make-posn 1 1)
                                   'playing 1 (make-posn 0 0) false)
                       #\h)
               (make-world '() (make-posn 1 1)
                           'playing 1 (make-posn 0 0) true))
-(check-expect (change (make-world '() (make-posn 1 1)
+(test (change (make-world '() (make-posn 1 1)
                                   'playing 1 (make-posn 0 0) true)
                       'release)
               (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) false))
@@ -1700,9 +1833,9 @@ and is used here to speed up the compuation.
 (define (append-all ls)
   (foldr append empty ls))
 
-(check-expect (append-all empty) empty)
-(check-expect (append-all (list (list 1 2 3))) (list 1 2 3))
-(check-expect (append-all (list (list 1) (list 2) (list 3)))
+(test (append-all empty) empty)
+(test (append-all (list (list 1 2 3))) (list 1 2 3))
+(test (append-all (list (list 1) (list 2) (list 3)))
               (list 1 2 3))
 
 ;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
@@ -1733,7 +1866,7 @@ and is used here to speed up the compuation.
                        (make-cell to-block true)
                        c))
        board))
-(check-expect (block-cell (make-posn 1 1)
+(test (block-cell (make-posn 1 1)
                           (list (make-cell (make-posn 0 0) false)
                                 (make-cell (make-posn 1 1) false)
                                 (make-cell (make-posn 2 2) false)))
@@ -1741,67 +1874,14 @@ and is used here to speed up the compuation.
                     (make-cell (make-posn 1 1) true)
                     (make-cell (make-posn 2 2) false)))
 
-(check-expect (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
+(test (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
                                                              true))
                                           10)
               (list (make-cell (make-posn 0 0) true)))
-(check-expect (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
+(test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
                                                              false))
                                           10)
               (list (make-cell (make-posn 0 0) true)))
-
-;; empty-board : number -> (listof cell)
-(define (empty-board board-size)
-  (filter
-   (lambda (c)
-     (not (and (= 0 (posn-x (cell-p c)))
-               (or (= 0 (posn-y (cell-p c)))
-                   (= (- board-size 1)
-                      (posn-y (cell-p c)))))))
-   (append-all
-    (build-list
-     board-size
-     (lambda (i)
-       (build-list
-        board-size
-        (lambda (j)
-          (make-cell (make-posn i j)
-                     false))))))))
-
-(check-expect (empty-board 3)
-              (list
-               (make-cell (make-posn 0 1) false)
-               (make-cell (make-posn 1 0) false)
-               (make-cell (make-posn 1 1) false)
-               (make-cell (make-posn 1 2) false)
-               (make-cell (make-posn 2 0) false)
-               (make-cell (make-posn 2 1) false)
-               (make-cell (make-posn 2 2) false)))
-
-;; empty-world : number -> world
-(define (empty-world board-size)
-  (make-world (empty-board board-size)
-              (make-posn (quotient board-size 2)
-                         (quotient board-size 2))
-              'playing
-              board-size
-              (make-posn 0 0)
-              false))
-
-(check-expect (empty-world 3)
-              (make-world (list
-                           (make-cell (make-posn 0 1) false)
-                           (make-cell (make-posn 1 0) false)
-                           (make-cell (make-posn 1 1) false)
-                           (make-cell (make-posn 1 2) false)
-                           (make-cell (make-posn 2 0) false)
-                           (make-cell (make-posn 2 1) false)
-                           (make-cell (make-posn 2 2) false))
-                          (make-posn 1 1)
-                          'playing
-                          3
-                          (make-posn 0 0)
-                          false))
 
 (define dummy
   (local
@@ -1829,5 +1909,5 @@ and is used here to speed up the compuation.
      (on-key-event change)
      (on-mouse-event clack))))
 
-(run-check-expects)
+(run-tests)
 ]
