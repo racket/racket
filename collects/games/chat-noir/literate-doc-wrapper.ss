@@ -40,7 +40,8 @@
                    (list (elemtag '(chunk tag) (italic (scheme name) " ::=")))
                    (list (make-element
                           "smaller"
-                          (list (elemref '(chunk tag) str more ...)))))
+                          (list (elemref '(chunk tag) #:underline? #f
+                                         str more ...)))))
                   (schemeblock expr ...)))))]))
 
 (define-syntax (chunkref stx)
@@ -48,7 +49,7 @@
     [(_ id)
      (identifier? #'id)
      (with-syntax ([str (format "~a" (syntax-e #'id))])
-       #'(elemref '(chunk str) str))]))
+       #'(elemref '(chunk str) #:underline? #f str))]))
 
 ;; HACK: provide a fake `module', which makes it possible to include a module
 ;; and get only its code in.
