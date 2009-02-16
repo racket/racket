@@ -6313,7 +6313,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
    It is espcailly ugly because we have to expand macros
    before deciding what we have. */
 {
-  Scheme_Object *first, *rib, *ctx, *ectx;
+  Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms;
   Scheme_Comp_Env *xenv = NULL;
   Scheme_Compile_Info recs[2];
   DupCheckRecord r;
@@ -6595,7 +6595,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	more = 0;
       } else {
 	/* Empty body: illegal. */
-	scheme_wrong_syntax(scheme_begin_stx_string, NULL, forms, 
+	scheme_wrong_syntax(scheme_begin_stx_string, NULL, orig, 
 			    "no expression after a sequence of internal definitions");
       }
     }
