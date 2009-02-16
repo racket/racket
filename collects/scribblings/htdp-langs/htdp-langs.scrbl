@@ -14,7 +14,7 @@ colors are intended to give the programmer feedback about the parts of
 the program that have not been tested. To avoid seeing these colors,
 use @scheme[check-expect] to test your program. Of course, just
 because you see no colors, does not mean that your program has been
-fully tested; it simply means that each part of the program been run
+fully tested; it simply means that each part of the program has been run
 (at least once).
 
 @table-of-contents[]
