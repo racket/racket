@@ -1,20 +1,10 @@
-#lang scheme
+#lang scheme/base
 
-(provide (except-out (all-from-out scheme)
-                     #%module-begin)
+(provide (except-out (all-from-out scheme/base) #%module-begin)
          (rename-out [module-begin #%module-begin])
-         (all-from-out scribble/basic
-                       scribble/manual)
          chunk)
 
-(require (for-syntax scheme/base
-                     syntax/boundmap
-                     scheme/list
-                     syntax/kerncase)
-         scribble/manual
-         scribble/struct
-         scribble/basic
-         scribble/decode)
+(require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase))
 
 (begin-for-syntax
   (define main-id #f)

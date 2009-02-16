@@ -1,6 +1,7 @@
 #reader "literate-reader.ss"
 
-@(require scheme/local scheme/list scheme/bool scheme/math)
+@(require scheme/local scheme/list scheme/bool scheme/math
+          (for-syntax scheme/base))
 
 @title{Chat Noir}
 
