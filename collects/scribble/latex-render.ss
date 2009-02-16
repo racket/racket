@@ -374,7 +374,9 @@
                  [(#\\) (if (rendering-tt)
                             "{\\char`\\\\}"
                             "$\\backslash$")]
-                 [(#\_) "$\\_$"]
+                 [(#\_) (if (rendering-tt)
+                            "{\\char`\\_}"
+                            "$\\_$")]
                  [(#\^) "{\\char'136}"]
                  [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
                  [(#\<) (if (rendering-tt) "{\\texttt <}" "$<$")]
