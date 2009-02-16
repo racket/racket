@@ -899,7 +899,8 @@ The tag @scheme[t] refers to the content form of
 @scheme[pre-content].}
 
 
-@defproc[(elemref [t tag?] [pre-content any/c] ...) element?]{
+@defproc[(elemref [t tag?] [pre-content any/c] ... 
+                  [#:underline? underline? any/c #t]) element?]{
 
 The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[t],
 which is normally defined using @scheme[elemtag].}
