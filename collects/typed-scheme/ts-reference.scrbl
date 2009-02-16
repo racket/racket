@@ -180,6 +180,9 @@ cycles among type aliases are prohibited.}
 The definition of @scheme[v] must appear after this declaration.  This
 can be used anywhere a definition form may be used.}
 
+@defform[(provide: [v t] ...)]{This declares that the @scheme[v]s have
+the types @scheme[t], and also provides all of the @scheme[v]s.}
+
 @litchar{#{v : t}} This declares that the variable @scheme[v] has type
 @scheme[t].  This is legal only for binding occurences of @scheme[_v].
 
