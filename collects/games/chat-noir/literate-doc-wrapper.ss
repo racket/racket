@@ -31,17 +31,16 @@
            [str (symbol->string (syntax-e #'name))])
        (with-syntax ([tag (if (n . > . 1) (format "~a:~a" str n) str)]
                      [(more ...) (if (n . > . 1)
-                                     #`((subscript #,(format "~a" n)))
+                                     #`((subscript (smaller #,(format "~a" n))))
                                      #`())]
                      [str str])
          #`(make-splice
             (list (make-toc-element
                    #f
-                   (list (elemtag '(chunk tag) (italic (scheme name) " ::=")))
-                   (list (make-element
-                          "smaller"
-                          (list (elemref '(chunk tag) #:underline? #f
-                                         str more ...)))))
+                   (list (elemtag '(chunk tag)
+                                  (bold (italic (scheme name)) " ::=")))
+                   (list (smaller (elemref '(chunk tag) #:underline? #f
+                                           str more ...))))
                   (schemeblock expr ...)))))]))
 
 (define-syntax (chunkref stx)
