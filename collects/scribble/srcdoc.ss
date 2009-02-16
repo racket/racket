@@ -104,7 +104,7 @@
     (syntax-case stx ()
       [(_ id contract names desc)
        (with-syntax ([header                      
-                      (syntax-case #'(contract names) (->d -> values case->)
+                      (syntax-case #'(contract names) (->d -> ->* values case->)
                         [((-> ctcs ... result) (arg-names ...))
                          (begin
                            (unless (= (length (syntax->list #'(ctcs ...)))
