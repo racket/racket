@@ -177,7 +177,7 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
               [else s])))
          l))
 
-  (define (smaller l)
+  (define (as-smaller l)
     (list (make-element "smaller" l)))
 
   (define spacer (hspace 1))
@@ -218,7 +218,7 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
                         ::=
                         (make-element #f (lit-ize (fixup-ids val)))
                         spacer
-                        (make-element #f (smaller (as-meaning (fixup-ids meaning)))))))]
+                        (make-element #f (as-smaller (as-meaning (fixup-ids meaning)))))))]
           [(regexp-match re:eng-prod line)
            => (lambda (m)
                 (let ([prod (list-ref m 1)]
@@ -236,7 +236,7 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
                         -or-
                         (make-element #f (lit-ize (fixup-ids val)))
                         spacer
-                        (make-element #f (smaller (as-meaning (fixup-ids meaning)))))))]))
+                        (make-element #f (as-smaller (as-meaning (fixup-ids meaning)))))))]))
        lines))
 
     (make-table
