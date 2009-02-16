@@ -10,17 +10,17 @@
   (define main-id #f)
   (define (mapping-get mapping id)
     (free-identifier-mapping-get mapping id (lambda () '())))
-  ;; maps a block identifier to its collected expressions
+  ;; maps a chunk identifier to its collected expressions
   (define chunks (make-free-identifier-mapping))
-  ;; maps a block identifier to all identifiers that are used to define it
-  (define block-groups (make-free-identifier-mapping))
-  (define (get-block id)
+  ;; maps a chunk identifier to all identifiers that are used to define it
+  (define chunk-groups (make-free-identifier-mapping))
+  (define (get-chunk id)
     (map syntax-local-introduce (mapping-get chunks id)))
-  (define (add-to-block! id exprs)
+  (define (add-to-chunk! id exprs)
     (unless main-id (set! main-id id))
     (free-identifier-mapping-put!
-     block-groups id
-     (cons (syntax-local-introduce id) (mapping-get block-groups id)))
+     chunk-groups id
+     (cons (syntax-local-introduce id) (mapping-get chunk-groups id)))
     (free-identifier-mapping-put!
      chunks id
      `(,@(mapping-get chunks id) ,@(map syntax-local-introduce exprs)))))
@@ -34,19 +34,19 @@
             (raise-syntax-error
              #f "chunk names must begin and end with angle brackets, <...>"
              stx #'name)]
-           [else (add-to-block! #'name (syntax->list #'(expr ...)))
+           [else (add-to-chunk! #'name (syntax->list #'(expr ...)))
                  #'(void)])]))
 
 (define-syntax (tangle stx)
-  (define block-mentions '())
+  (define chunk-mentions '())
   (define body
-    (let loop ([block (get-block main-id)])
+    (let loop ([block (get-chunk main-id)])
       (append-map
        (lambda (expr)
          (if (identifier? expr)
-           (let ([subs (get-block expr)])
+           (let ([subs (get-chunk expr)])
              (if (pair? subs)
-               (begin (set! block-mentions (cons expr block-mentions))
+               (begin (set! chunk-mentions (cons expr chunk-mentions))
                       (loop subs))
                (list expr)))
            (let ([subs (syntax->list expr)])
@@ -60,8 +60,8 @@
                  (append-map (lambda (m)
                                (map (lambda (u)
                                       (list m (syntax-local-introduce u)))
-                                    (mapping-get block-groups m)))
-                             block-mentions)])
+                                    (mapping-get chunk-groups m)))
+                             chunk-mentions)])
     #`(begin body ... (let ([b-id (void)]) b-use) ...)))
 
 (define-syntax (module-begin stx)
