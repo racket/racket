@@ -30,8 +30,6 @@ Problems:
    build the documentation, ie, this file should eventually be merged
    together with ../scribblings/chat-noir.scrbl.
 
-
  - @chunks in the TOC
 
  - hyperlink bound top-level identifiers to their bindings?
-

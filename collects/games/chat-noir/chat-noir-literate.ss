@@ -7,8 +7,6 @@
 
 Chat Noir. What a game.
 
-@schememodname[htdp/world]
- 
 @chunk[<main>
        <init-junk>
        <data-definitions>
@@ -16,8 +14,8 @@ Chat Noir. What a game.
        <everything-else>]
 
 @section{The World}
-         
-The main data structure for Chat Noir is @tt{world}. 
+
+The main data structure for Chat Noir is @tt{world}.
 
 @chunk[<data-definitions>
 (define-struct world (board cat state size mouse-posn h-down?)
@@ -26,23 +24,30 @@ The main data structure for Chat Noir is @tt{world}.
 
 It consists of a structure with six fields:
 @itemize[
-@item{@tt{board}: representing the state of the board as a list of @tt{cell}s, one for each circle on the game. }
-@item{@tt{cat}:
-a @scheme[posn] indicating the position of the cat (interpreting the @scheme[posn] in the way
-that they are interpreted for the @tt{board} field),}
+
+@item{@tt{board}: representing the state of the board as a list of
+  @tt{cell}s, one for each circle on the game. }
+
+@item{@tt{cat}: a @scheme[posn] indicating the position of the cat
+  (interpreting the @scheme[posn] in the way that they are interpreted
+  for the @tt{board} field),}
+
 @item{@tt{state}: the state of the game, which can be one of
-@itemize{
-@item{@scheme['playing], indicating that the game is still going; this is the initial state.
-             }
-@item{@scheme['cat-won], indicating that the game is over and the cat won, or}
-@item{@scheme['cat-lost], indicating that the game is over and the cat lost.}}
-          }
+  @itemize[
+  @item{@scheme['playing], indicating that the game is still going; this is the
+    initial state.}
+  @item{@scheme['cat-won], indicating that the game is over and the
+    cat won, or}
+  @item{@scheme['cat-lost], indicating that the game is over and the
+    cat lost.}]}
+
 @item{@tt{size}: an odd natural number indicating the size of the board}
-@item{@tt{mouse-posn}:
-a @scheme[posn] for the location of the mouse (or @scheme[#f] if the 
-mouse is not in the window), and}
-@item{@tt{h-down?}: a boolean indicating if the @tt{h}
-key is being pushed down.}
+
+@item{@tt{mouse-posn}: a @scheme[posn] for the location of the
+  mouse (or @scheme[#f] if the mouse is not in the window), and}
+
+@item{@tt{h-down?}: a boolean indicating if the @tt{h} key is being
+  pushed down.}
 ]
 
 A @tt{cell} is a structure with two fields:
@@ -50,50 +55,42 @@ A @tt{cell} is a structure with two fields:
 @chunk[<data-definitions>
        (define-struct cell (p blocked?) #:transparent)]
 
-The first field contains a @scheme[posn] struct. 
-The coordinates of the posn indicate a position on the
-hexagonal grid. 
-The @tt{y} field of the @scheme[posn]
-refers to the row of the cell, and the
-@tt{x} coordinate the position in the row.
-This means that, for example,
-@scheme[(make-posn 0 1)]
-is centered above
-@scheme[(make-posn 1 0)] and 
-@scheme[(make-posn 1 1)]. See @scheme[cell-center-x]
-and @scheme[cell-center-y] below for the conversion
-of those positions to screen coordinates.
+The first field contains a @scheme[posn] struct.  The coordinates of
+the posn indicate a position on the hexagonal grid.  The @tt{y} field
+of the @scheme[posn] refers to the row of the cell, and the @tt{x}
+coordinate the position in the row.  This means that, for example,
+@scheme[(make-posn 0 1)] is centered above @scheme[(make-posn 1 0)]
+and @scheme[(make-posn 1 1)].  See @scheme[cell-center-x] and
+@scheme[cell-center-y] below for the conversion of those positions to
+screen coordinates.
 
-The @tt{blocked?} field is a boolean indicating if
-the cell has been clicked on, thus blocking the cat
-from stepping there.
+The @tt{blocked?} field is a boolean indicating if the cell has been
+clicked on, thus blocking the cat from stepping there.
 
 
 @section{Graph}
 
-The cat's move decision is based on a breadth-first
-search of a graph. The graph's nodes are the cells 
-on the board, and there are edges between each pair
-of adjacent cells, unless one of the cells is blocked,
-in which case there are no edges.
+The cat's move decision is based on a breadth-first search of a graph.
+The graph's nodes are the cells on the board, and there are edges
+between each pair of adjacent cells, unless one of the cells is
+blocked, in which case there are no edges.
 
-The breadth-first function constructs a @scheme[distance-map],
-which is a list of @scheme[dist-cell] structs:
+The breadth-first function constructs a @scheme[distance-map], which
+is a list of @scheme[dist-cell] structs:
 
 @chunk[<graph>
 (define-struct dist-cell (p n) #:transparent)]
 
 Each @tt{p} field in the @scheme[dist-cell] is a position on the board
 and the @tt{n} field is a natural number or @scheme['∞], indicating
-the distance of the shortest path from the node to some fixed point
-on the board. The fixed point is not represented in the @scheme[distance-map], but
-is required when constructing one.
+the distance of the shortest path from the node to some fixed point on
+the board. The fixed point is not represented in the
+@scheme[distance-map], but is required when constructing one.
 
 The core of the breadth-first search is this function,
 @scheme[bst]. It accepts a @scheme[queue] and a
 
 @chunk[<bfs>
-       
 (define (bfs queue dist-table)
   (cond
     [(empty? queue) dist-table]
@@ -103,8 +100,8 @@ The core of the breadth-first search is this function,
          [(boolean? (hash-ref dist-table (queue-ent-posn hd) #f))
           (local [(define dist (queue-ent-dist hd))
                   (define p (queue-ent-posn hd))]
-            (bfs 
-             (append (rest queue) 
+            (bfs
+             (append (rest queue)
                      (map (lambda (p) (make-queue-ent p (+ dist 1)))
                           (neighbors/w p)))
              (hash-set dist-table p dist)))]
@@ -113,7 +110,7 @@ The core of the breadth-first search is this function,
 
 @chunk[<graph>
 
-;; a distance-map is 
+;; a distance-map is
 ;;  (listof dist-cells)
 
 ;; a dist-cell is
@@ -126,12 +123,12 @@ The core of the breadth-first search is this function,
   (local [;; posn : posn
           ;; dist : number
           (define-struct queue-ent (posn dist) #:transparent)
-          
+
           (define neighbors/w (neighbors world))
-          
+
           <bfs>]
-                    
-    (hash-map 
+
+    (hash-map
      (bfs (list (make-queue-ent init-point 0))
           (make-immutable-hash/list-init))
      make-dist-cell)))
@@ -149,41 +146,43 @@ The core of the breadth-first search is this function,
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(check-expect (same-sets? 
-               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1) 'playing 3 (make-posn 0 0) false)
+(check-expect (same-sets?
+               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1)
+                                            'playing 3 (make-posn 0 0) false)
                                 'boundary)
                (list
                 (make-dist-cell 'boundary 0)
-                
+
                 (make-dist-cell (make-posn 1 0) 1)
                 (make-dist-cell (make-posn 2 0) 1)
-                
+
                 (make-dist-cell (make-posn 0 1) 1)
                 (make-dist-cell (make-posn 1 1) 2)
                 (make-dist-cell (make-posn 2 1) 1)
-                
+
                 (make-dist-cell (make-posn 1 2) 1)
                 (make-dist-cell (make-posn 2 2) 1)))
               true)
 
-(check-expect (same-sets? 
-               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1) 'playing 3 (make-posn 0 0) false)
+(check-expect (same-sets?
+               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1)
+                                            'playing 3 (make-posn 0 0) false)
                                 (make-posn 1 1))
                (list
                 (make-dist-cell 'boundary 2)
 
                 (make-dist-cell (make-posn 1 0) 1)
                 (make-dist-cell (make-posn 2 0) 1)
-                
+
                 (make-dist-cell (make-posn 0 1) 1)
                 (make-dist-cell (make-posn 1 1) 0)
                 (make-dist-cell (make-posn 2 1) 1)
-                
+
                 (make-dist-cell (make-posn 1 2) 1)
                 (make-dist-cell (make-posn 2 2) 1)))
               true)
 
-(check-expect (same-sets? 
+(check-expect (same-sets?
                (build-bfs-table (make-world (list
                                              (make-cell (make-posn 0 1) true)
                                              (make-cell (make-posn 1 0) true)
@@ -202,7 +201,7 @@ The core of the breadth-first search is this function,
                 (make-dist-cell 'boundary 0)))
               true)
 
-(check-expect (same-sets? 
+(check-expect (same-sets?
                (build-bfs-table (make-world (empty-board 5)
                                             (make-posn 2 2)
                                             'playing
@@ -217,13 +216,13 @@ The core of the breadth-first search is this function,
                 (make-dist-cell (make-posn 2 0) 1)
                 (make-dist-cell (make-posn 3 0) 1)
                 (make-dist-cell (make-posn 4 0) 1)
-                
+
                 (make-dist-cell (make-posn 0 1) 1)
                 (make-dist-cell (make-posn 1 1) 2)
                 (make-dist-cell (make-posn 2 1) 2)
                 (make-dist-cell (make-posn 3 1) 2)
                 (make-dist-cell (make-posn 4 1) 1)
-                
+
                 (make-dist-cell (make-posn 0 2) 1)
                 (make-dist-cell (make-posn 1 2) 2)
                 (make-dist-cell (make-posn 2 2) 3)
@@ -236,14 +235,13 @@ The core of the breadth-first search is this function,
                 (make-dist-cell (make-posn 3 3) 2)
                 (make-dist-cell (make-posn 4 3) 1)
 
-                
                 (make-dist-cell (make-posn 1 4) 1)
                 (make-dist-cell (make-posn 2 4) 1)
                 (make-dist-cell (make-posn 3 4) 1)
                 (make-dist-cell (make-posn 4 4) 1)))
               true)
 
-(check-expect (same-sets? 
+(check-expect (same-sets?
                (build-bfs-table (make-world (block-cell
                                              (make-posn 4 2)
                                              (empty-board 5))
@@ -260,13 +258,13 @@ The core of the breadth-first search is this function,
                 (make-dist-cell (make-posn 2 0) 1)
                 (make-dist-cell (make-posn 3 0) 1)
                 (make-dist-cell (make-posn 4 0) 1)
-                
+
                 (make-dist-cell (make-posn 0 1) 1)
                 (make-dist-cell (make-posn 1 1) 2)
                 (make-dist-cell (make-posn 2 1) 2)
                 (make-dist-cell (make-posn 3 1) 2)
                 (make-dist-cell (make-posn 4 1) 1)
-                
+
                 (make-dist-cell (make-posn 0 2) 1)
                 (make-dist-cell (make-posn 1 2) 2)
                 (make-dist-cell (make-posn 2 2) 3)
@@ -278,14 +276,13 @@ The core of the breadth-first search is this function,
                 (make-dist-cell (make-posn 3 3) 2)
                 (make-dist-cell (make-posn 4 3) 1)
 
-                
                 (make-dist-cell (make-posn 1 4) 1)
                 (make-dist-cell (make-posn 2 4) 1)
                 (make-dist-cell (make-posn 3 4) 1)
                 (make-dist-cell (make-posn 4 4) 1)))
               true)
 
-(check-expect (same-sets? 
+(check-expect (same-sets?
                (build-bfs-table (make-world (empty-board 5)
                                             (make-posn 2 2)
                                             'playing
@@ -295,18 +292,18 @@ The core of the breadth-first search is this function,
                                 (make-posn 2 2))
                (list
                 (make-dist-cell 'boundary 3)
-                
+
                 (make-dist-cell (make-posn 1 0) 2)
                 (make-dist-cell (make-posn 2 0) 2)
                 (make-dist-cell (make-posn 3 0) 2)
                 (make-dist-cell (make-posn 4 0) 3)
-                
+
                 (make-dist-cell (make-posn 0 1) 2)
                 (make-dist-cell (make-posn 1 1) 1)
                 (make-dist-cell (make-posn 2 1) 1)
                 (make-dist-cell (make-posn 3 1) 2)
                 (make-dist-cell (make-posn 4 1) 3)
-                
+
                 (make-dist-cell (make-posn 0 2) 2)
                 (make-dist-cell (make-posn 1 2) 1)
                 (make-dist-cell (make-posn 2 2) 0)
@@ -319,7 +316,6 @@ The core of the breadth-first search is this function,
                 (make-dist-cell (make-posn 3 3) 2)
                 (make-dist-cell (make-posn 4 3) 3)
 
-                
                 (make-dist-cell (make-posn 1 4) 2)
                 (make-dist-cell (make-posn 2 4) 2)
                 (make-dist-cell (make-posn 3 4) 2)
@@ -339,7 +335,7 @@ The core of the breadth-first search is this function,
 
 
 ;; lookup-in-table : distance-map posn -> number or '∞
-;; looks for the distance as recorded in the table t, 
+;; looks for the distance as recorded in the table t,
 ;; if not found returns a distance of '∞
 (define (lookup-in-table t p)
   (cond
@@ -360,14 +356,14 @@ The core of the breadth-first search is this function,
 
 
 ;; p : world -> posn -> boolean
-;; returns true when the posn is on the shortest path 
+;; returns true when the posn is on the shortest path
 ;; from the cat to the edge of the board, in the given world
 (define (on-cats-path? w)
   (cond
     [(world-h-down? w)
      (local [(define edge-distance-map (build-bfs-table w 'boundary))
              (define cat-distance-map (build-bfs-table w (world-cat w)))
-             (define cat-distance (lookup-in-table edge-distance-map 
+             (define cat-distance (lookup-in-table edge-distance-map
                                                    (world-cat w)))]
        (cond
          [(equal? cat-distance '∞)
@@ -380,13 +376,16 @@ The core of the breadth-first search is this function,
     [else
      (lambda (p) false)]))
 
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1) 'playing 5 (make-posn 0 0) true))
+(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                          'playing 5 (make-posn 0 0) true))
                (make-posn 1 0))
               true)
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1) 'playing 5 (make-posn 0 0) false))
+(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                          'playing 5 (make-posn 0 0) false))
                (make-posn 1 0))
               false)
-(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1) 'playing 5 (make-posn 0 0) true))
+(check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                          'playing 5 (make-posn 0 0) true))
                (make-posn 2 1))
               false)
 (check-expect ((on-cats-path?
@@ -409,18 +408,19 @@ The core of the breadth-first search is this function,
 ;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
 ;; computes the neighbors of a posn, for a given board size
 (define (neighbors w)
-  (local [(define blocked 
+  (local [(define blocked
             (map cell-p
-                 (filter (lambda (c) 
+                 (filter (lambda (c)
                            (or (cell-blocked? c)
                                (equal? (cell-p c) (world-mouse-posn w))))
                          (world-board w))))
-          (define boundary-cells (filter (lambda (p) 
-                                           (and (not (member p blocked))
-                                                (on-boundary? p (world-size w))))
-                                         (map cell-p (world-board w))))]
+          (define boundary-cells
+            (filter (lambda (p)
+                      (and (not (member p blocked))
+                           (on-boundary? p (world-size w))))
+                    (map cell-p (world-board w))))]
     (lambda (p)
-      (cond 
+      (cond
         [(member p blocked)
          '()]
         [(equal? p 'boundary)
@@ -445,14 +445,14 @@ The core of the breadth-first search is this function,
 (check-expect ((neighbors (empty-world 11)) (make-posn 2 2))
               (adjacent (make-posn 2 2) 11))
 (check-expect ((neighbors (empty-world 3)) 'boundary)
-              (list (make-posn 0 1) 
-                    (make-posn 1 0) 
-                    (make-posn 1 2) 
-                    (make-posn 2 0) 
-                    (make-posn 2 1) 
+              (list (make-posn 0 1)
+                    (make-posn 1 0)
+                    (make-posn 1 2)
+                    (make-posn 2 0)
+                    (make-posn 2 1)
                     (make-posn 2 2)))
 (check-expect ((neighbors (empty-world 11)) (make-posn 1 0))
-              (list 'boundary 
+              (list 'boundary
                     (make-posn 2 0)
                     (make-posn 0 1)
                     (make-posn 1 1)))
@@ -489,7 +489,7 @@ The core of the breadth-first search is this function,
 
 
 ;; adjacent : posn number -> (listof posn)
-;; returns a list of the posns that are adjacent to 
+;; returns a list of the posns that are adjacent to
 ;; `p' on an infinite hex grid
 (define (adjacent p board-size)
   (local [(define x (posn-x p))
@@ -575,7 +575,7 @@ The core of the breadth-first search is this function,
   (cond
     [(or (equal? x '∞) (equal? y '∞))
      '∞]
-    [else 
+    [else
      (+ x y)]))
 
 (check-expect (+/f '∞ '∞) '∞)
@@ -588,7 +588,7 @@ The core of the breadth-first search is this function,
 @chunk[<init-junk>
 
 (require htdp/world lang/posn)
-(define-syntax (check-expect stx) 
+(define-syntax (check-expect stx)
   (syntax-case stx ()
     [(_ actual expected)
      (with-syntax ([line (syntax-line stx)])
@@ -615,7 +615,7 @@ The core of the breadth-first search is this function,
          check-expects)))
 
 (define (run-check-expects)
-  (for-each (λ (t) (t)) 
+  (for-each (λ (t) (t))
             (reverse check-expects)))
 
 (define (make-immutable-hash/list-init [init '()])
@@ -665,7 +665,7 @@ The core of the breadth-first search is this function,
 ;; render-world : world -> image
 (define (render-world w)
   (chop-whiskers
-   (overlay (board->image (world-board w) 
+   (overlay (board->image (world-board w)
                           (world-size w)
                           (on-cats-path? w)
                           (world-mouse-posn w))
@@ -690,7 +690,7 @@ The core of the breadth-first search is this function,
                 2
                 (lambda (x) true)
                 false)
-  (move-pinhole thinking-cat 
+  (move-pinhole thinking-cat
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
@@ -707,7 +707,7 @@ The core of the breadth-first search is this function,
                 2
                 (lambda (x) true)
                 false)
-  (move-pinhole happy-cat 
+  (move-pinhole happy-cat
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
@@ -724,7 +724,7 @@ The core of the breadth-first search is this function,
                 2
                 (lambda (x) true)
                 false)
-  (move-pinhole sad-cat 
+  (move-pinhole sad-cat
                 (- (cell-center-x (make-posn 0 1)))
                 (- (cell-center-y (make-posn 0 1))))))
 
@@ -755,7 +755,7 @@ The core of the breadth-first search is this function,
                 3
                 (lambda (x) false)
                 false)
-  (move-pinhole sad-cat 
+  (move-pinhole sad-cat
                 (- (cell-center-x (make-posn 1 1)))
                 (- (cell-center-y (make-posn 1 1))))))
 
@@ -775,7 +775,7 @@ The core of the breadth-first search is this function,
               (make-posn (cell-center-x (make-posn 0 1))
                          (cell-center-y (make-posn 0 1)))
               true))
- 
+
  (overlay
   (board->image (list
                  (make-cell (make-posn 0 1) false)
@@ -789,17 +789,17 @@ The core of the breadth-first search is this function,
                 (lambda (x) true)
                 (make-posn (cell-center-x (make-posn 0 1))
                            (cell-center-y (make-posn 0 1))))
-  (move-pinhole sad-cat 
+  (move-pinhole sad-cat
                 (- (cell-center-x (make-posn 1 1)))
                 (- (cell-center-y (make-posn 1 1))))))
 
 ;; chop-whiskers : image -> image
 ;; crops the image so that anything above or to the left of the pinhole is gone
 (define (chop-whiskers img)
-  (shrink img 
-          0 
+  (shrink img
           0
-          (- (image-width img) (pinhole-x img) 1) 
+          0
+          (- (image-width img) (pinhole-x img) 1)
           (- (image-height img) (pinhole-y img) 1)))
 
 (check-expect (chop-whiskers (rectangle 5 5 'solid 'black))
@@ -809,7 +809,7 @@ The core of the breadth-first search is this function,
 
 (check-expect
  (pinhole-x
-  (render-world 
+  (render-world
    (make-world
     (empty-board 3)
     (make-posn 0 0)
@@ -838,15 +838,16 @@ The core of the breadth-first search is this function,
                        (world-height world-size)
                        'solid
                        'white)
-         (map (lambda (c) (cell->image c 
-                                       (on-cat-path? (cell-p c)) 
-                                       (and (posn? mouse)
-                                            (equal? mouse (cell-p c)))
-                                       #;
-                                       (and (posn? mouse)
-                                            (point-in-this-circle? (cell-p c) 
-                                                                   (posn-x mouse)
-                                                                   (posn-y mouse)))))
+         (map (lambda (c)
+                (cell->image c
+                             (on-cat-path? (cell-p c))
+                             (and (posn? mouse)
+                                  (equal? mouse (cell-p c)))
+                             #;
+                             (and (posn? mouse)
+                                  (point-in-this-circle? (cell-p c)
+                                                         (posn-x mouse)
+                                                         (posn-y mouse)))))
               cs)))
 
 (check-expect (board->image (list (make-cell (make-posn 0 0) false))
@@ -927,20 +928,21 @@ The core of the breadth-first search is this function,
 (define (cell->image c on-short-path? under-mouse?)
   (local [(define x (cell-center-x (cell-p c)))
           (define y (cell-center-y (cell-p c)))
-          (define main-circle 
+          (define main-circle
             (cond
               [(cell-blocked? c)
                (circle circle-radius 'solid blocked-color)]
               [else
                (circle circle-radius 'solid normal-color)]))]
-    (move-pinhole 
+    (move-pinhole
      (cond
        [under-mouse?
         (overlay main-circle
                  (circle (quotient circle-radius 2) 'solid under-mouse-color))]
        [on-short-path?
         (overlay main-circle
-                 (circle (quotient circle-radius 2) 'solid on-shortest-path-color))]
+                 (circle (quotient circle-radius 2) 'solid
+                         on-shortest-path-color))]
        [else
         main-circle])
      (- x)
@@ -956,19 +958,21 @@ The core of the breadth-first search is this function,
                             (- circle-radius)))
 (check-expect (cell->image (make-cell (make-posn 0 0) false) true false)
               (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                     (circle (quotient circle-radius 2) 'solid on-shortest-path-color))
+                                     (circle (quotient circle-radius 2) 'solid
+                                             on-shortest-path-color))
                             (- circle-radius)
                             (- circle-radius)))
 (check-expect (cell->image (make-cell (make-posn 0 0) false) true true)
               (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                     (circle (quotient circle-radius 2) 'solid under-mouse-color))
+                                     (circle (quotient circle-radius 2) 'solid
+                                             under-mouse-color))
                             (- circle-radius)
                             (- circle-radius)))
 
 ;; world-width : number -> number
 ;; computes the width of the drawn world in terms of its size
 (define (world-width board-size)
-  (local [(define rightmost-posn 
+  (local [(define rightmost-posn
             (make-posn (- board-size 1) (- board-size 2)))]
     (+ (cell-center-x rightmost-posn) circle-radius)))
 
@@ -1006,7 +1010,7 @@ The core of the breadth-first search is this function,
 (define (cell-center-y p)
   (local [(define y (posn-y p))]
     (+ circle-radius
-       (* y circle-spacing 2 
+       (* y circle-spacing 2
           .866 ;; .866 is an exact approximate to sin(pi/3)
           ))))
 
@@ -1043,8 +1047,8 @@ The core of the breadth-first search is this function,
      (cond
        [(and (equal? 'playing (world-state world))
              (point-in-a-circle? (world-board world) x y))
-        (move-cat 
-         (update-world-posn 
+        (move-cat
+         (update-world-posn
           (make-world (add-obstacle (world-board world) x y)
                       (world-cat world)
                       (world-state world)
@@ -1099,11 +1103,13 @@ The core of the breadth-first search is this function,
                           1
                           (make-posn 0 0)
                           false))
-(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1 (make-posn 0 0) false)
+(check-expect (clack (make-world '() (make-posn 0 0)
+                                 'playing 1 (make-posn 0 0) false)
                      1 1 'leave)
               (make-world '() (make-posn 0 0) 'playing 1 false false))
 
-(check-expect (clack (make-world '() (make-posn 0 0) 'playing 1 (make-posn 0 0) false)
+(check-expect (clack (make-world '() (make-posn 0 0)
+                                 'playing 1 (make-posn 0 0) false)
                      10
                      10
                      'button-down)
@@ -1116,7 +1122,7 @@ The core of the breadth-first search is this function,
                                  3
                                  (make-posn 0 0)
                                  false)
-                     (cell-center-x (make-posn 0 0)) 
+                     (cell-center-x (make-posn 0 0))
                      (cell-center-y (make-posn 0 0))
                      'button-up)
               (make-world (list (make-cell (make-posn 0 0) true)
@@ -1128,12 +1134,14 @@ The core of the breadth-first search is this function,
                           false))
 
 
-(check-expect (clack (make-world '() (make-posn 0 0) 'cat-lost 1 (make-posn 0 0) false)
+(check-expect (clack (make-world '() (make-posn 0 0)
+                                 'cat-lost 1 (make-posn 0 0) false)
                      10
                      10
                      'button-up)
-              (make-world '() (make-posn 0 0) 'cat-lost 1 (make-posn 0 0) false))
-(check-expect (clack 
+              (make-world '() (make-posn 0 0)
+                          'cat-lost 1 (make-posn 0 0) false))
+(check-expect (clack
                (make-world
                 (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) true)
@@ -1150,7 +1158,7 @@ The core of the breadth-first search is this function,
                (cell-center-x (make-posn 1 0))
                (cell-center-y (make-posn 1 0))
                'button-up)
-              (make-world 
+              (make-world
                (list (make-cell (make-posn 1 0) true)
                      (make-cell (make-posn 2 0) true)
                      (make-cell (make-posn 0 1) true)
@@ -1164,7 +1172,7 @@ The core of the breadth-first search is this function,
                (make-posn 1 0)
                false))
 
-(check-expect (clack 
+(check-expect (clack
                (make-world
                 (list (make-cell (make-posn 1 0) false)
                       (make-cell (make-posn 2 0) false)
@@ -1181,7 +1189,7 @@ The core of the breadth-first search is this function,
                (cell-center-x (make-posn 1 0))
                (cell-center-y (make-posn 1 0))
                'button-up)
-              (make-world 
+              (make-world
                (list (make-cell (make-posn 1 0) true)
                      (make-cell (make-posn 2 0) false)
                      (make-cell (make-posn 0 1) true)
@@ -1201,8 +1209,8 @@ The core of the breadth-first search is this function,
     [(equal? (world-state w) 'playing)
      (cond
        [(posn? p)
-        (local [(define mouse-spot 
-                  (circle-at-point (world-board w) 
+        (local [(define mouse-spot
+                  (circle-at-point (world-board w)
                                    (posn-x p)
                                    (posn-y p)))]
           (make-world (world-board w)
@@ -1224,32 +1232,42 @@ The core of the breadth-first search is this function,
                     (world-h-down? w))])]
     [else w]))
 
-(check-expect (update-world-posn 
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'playing 1 false false)
+(check-expect (update-world-posn
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'playing 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
                           (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'playing 1 (make-posn 0 0) false))
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'playing 1 (make-posn 0 0) false))
 
-(check-expect (update-world-posn 
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 0) 'playing 1 false false)
+(check-expect (update-world-posn
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 0) 'playing 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
                           (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 0) 'playing 1 false false))
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 0) 'playing 1 false false))
 
-(check-expect (update-world-posn 
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'playing 1 (make-posn 0 0) false)
+(check-expect (update-world-posn
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'playing 1 (make-posn 0 0) false)
                (make-posn 0 0))
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'playing 1 false false))
-(check-expect (update-world-posn 
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'cat-won 1 false false)
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'playing 1 false false))
+(check-expect (update-world-posn
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'cat-won 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
                           (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'cat-won 1 false false))
-(check-expect (update-world-posn 
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'cat-lost 1 false false)
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'cat-won 1 false false))
+(check-expect (update-world-posn
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'cat-lost 1 false false)
                (make-posn (cell-center-x (make-posn 0 0))
                           (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false)) (make-posn 0 1) 'cat-lost 1 false false))
+               (make-world (list (make-cell (make-posn 0 0) false))
+                           (make-posn 0 1) 'cat-lost 1 false false))
 
 ;; move-cat : world -> world
 (define (move-cat world)
@@ -1267,7 +1285,7 @@ The core of the breadth-first search is this function,
                (list-ref next-cat-positions
                          (random (length next-cat-positions)))]))]
     (make-world (world-board world)
-                (cond 
+                (cond
                   [(boolean? next-cat-position)
                    cat-position]
                   [else next-cat-position])
@@ -1288,25 +1306,25 @@ The core of the breadth-first search is this function,
                     (make-cell (make-posn 2 0) false)
                     (make-cell (make-posn 3 0) false)
                     (make-cell (make-posn 4 0) false)
-                    
+
                     (make-cell (make-posn 0 1) false)
                     (make-cell (make-posn 1 1) true)
                     (make-cell (make-posn 2 1) true)
                     (make-cell (make-posn 3 1) false)
                     (make-cell (make-posn 4 1) false)
-                    
+
                     (make-cell (make-posn 0 2) false)
                     (make-cell (make-posn 1 2) true)
                     (make-cell (make-posn 2 2) false)
                     (make-cell (make-posn 3 2) true)
                     (make-cell (make-posn 4 2) false)
-                    
+
                     (make-cell (make-posn 0 3) false)
                     (make-cell (make-posn 1 3) true)
                     (make-cell (make-posn 2 3) false)
                     (make-cell (make-posn 3 3) false)
                     (make-cell (make-posn 4 3) false)
-                    
+
                     (make-cell (make-posn 1 4) false)
                     (make-cell (make-posn 2 4) false)
                     (make-cell (make-posn 3 4) false)
@@ -1320,25 +1338,25 @@ The core of the breadth-first search is this function,
                    (make-cell (make-posn 2 0) false)
                    (make-cell (make-posn 3 0) false)
                    (make-cell (make-posn 4 0) false)
-                   
+
                    (make-cell (make-posn 0 1) false)
                    (make-cell (make-posn 1 1) true)
                    (make-cell (make-posn 2 1) true)
                    (make-cell (make-posn 3 1) false)
                    (make-cell (make-posn 4 1) false)
-                   
+
                    (make-cell (make-posn 0 2) false)
                    (make-cell (make-posn 1 2) true)
                    (make-cell (make-posn 2 2) false)
                    (make-cell (make-posn 3 2) true)
                    (make-cell (make-posn 4 2) false)
-                   
+
                    (make-cell (make-posn 0 3) false)
                    (make-cell (make-posn 1 3) true)
                    (make-cell (make-posn 2 3) false)
                    (make-cell (make-posn 3 3) false)
                    (make-cell (make-posn 4 3) false)
-                   
+
                    (make-cell (make-posn 1 4) false)
                    (make-cell (make-posn 2 4) false)
                    (make-cell (make-posn 3 4) false)
@@ -1349,7 +1367,8 @@ The core of the breadth-first search is this function,
              (make-posn 0 0)
              false))
 
-;; find-best-positions : (nelistof posn) (nelistof number or '∞) -> (nelistof posn) or false
+;; find-best-positions : (nelistof posn) (nelistof number or '∞)
+;;                       -> (nelistof posn) or false
 (define (find-best-positions posns scores)
   (local [(define best-score (foldl (lambda (x sofar)
                                       (if (<=/f x sofar)
@@ -1390,7 +1409,7 @@ The core of the breadth-first search is this function,
 (define (add-obstacle board x y)
   (cond
     [(empty? board) board]
-    [else 
+    [else
      (local [(define cell (first board))
              (define cx (cell-center-x (cell-p cell)))
              (define cy (cell-center-y (cell-p cell)))]
@@ -1418,7 +1437,7 @@ The core of the breadth-first search is this function,
 (define (circle-at-point board x y)
   (cond
     [(empty? board) false]
-    [else 
+    [else
      (cond
        [(point-in-this-circle? (cell-p (first board)) x y)
         (cell-p (first board))]
@@ -1433,7 +1452,7 @@ The core of the breadth-first search is this function,
                                0 0)
               false)
 
-     
+
 ;; point-in-a-circle? : board number number -> boolean
 (define (point-in-a-circle? board x y)
   (posn? (circle-at-point board x y)))
@@ -1459,7 +1478,7 @@ The core of the breadth-first search is this function,
               true)
 (check-expect (point-in-this-circle? (make-posn 0 0) 0 0)
               false)
-              
+
 ;; change : world key-event -> world
 (define (change w ke)
   (make-world (world-board w)
@@ -1469,10 +1488,13 @@ The core of the breadth-first search is this function,
               (world-mouse-posn w)
               (key=? ke #\h)))
 
-(check-expect (change (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) false)
+(check-expect (change (make-world '() (make-posn 1 1)
+                                  'playing 1 (make-posn 0 0) false)
                       #\h)
-              (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) true))
-(check-expect (change (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) true)
+              (make-world '() (make-posn 1 1)
+                          'playing 1 (make-posn 0 0) true))
+(check-expect (change (make-world '() (make-posn 1 1)
+                                  'playing 1 (make-posn 0 0) true)
                       'release)
               (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) false))
 
@@ -1502,24 +1524,24 @@ The core of the breadth-first search is this function,
 
 ;; cat : symbol -> image
 (define (cat mode)
-  (local [(define face-color 
+  (local [(define face-color
             (cond
               [(symbol=? mode 'sad) 'pink]
               [else 'lightgray]))
-          
+
           (define left-ear (regular-polygon 3 8 'solid 'black (/ pi -3)))
           (define right-ear (regular-polygon 3 8 'solid 'black 0))
           (define ear-x-offset 14)
           (define ear-y-offset 9)
-          
+
           (define eye (overlay (ellipse 12 8 'solid 'black)
                                (ellipse 6 4 'solid 'limegreen)))
           (define eye-x-offset 8)
           (define eye-y-offset 3)
-          
+
           (define nose (regular-polygon 3 5 'solid 'black (/ pi 2)))
-          
-          (define mouth-happy 
+
+          (define mouth-happy
             (overlay (ellipse 8 8 'solid face-color)
                      (ellipse 8 8 'outline 'black)
                      (move-pinhole
@@ -1530,14 +1552,14 @@ The core of the breadth-first search is this function,
             (overlay (ellipse 8 8 'solid face-color)
                      (ellipse 8 8 'outline face-color)
                      (rectangle 10 5 'solid face-color)))
-          
-          (define mouth 
+
+          (define mouth
             (cond
               [(symbol=? mode 'happy) mouth-happy]
               [else mouth-no-expression]))
           (define mouth-x-offset 4)
           (define mouth-y-offset -5)]
-    
+
     (add-line
      (add-line
       (add-line
@@ -1618,15 +1640,17 @@ The core of the breadth-first search is this function,
   (cond
     [(zero? n) all-cells]
     [else
-     (local [(define unblocked-cells 
-               (filter (lambda (x) 
-                         (let ([cat-cell? (and (= (posn-x (cell-p x)) (quotient board-size 2))
-                                               (= (posn-y (cell-p x)) (quotient board-size 2)))])
-                           
+     (local [(define unblocked-cells
+               (filter (lambda (x)
+                         (let ([cat-cell? (and (= (posn-x (cell-p x))
+                                                  (quotient board-size 2))
+                                               (= (posn-y (cell-p x))
+                                                  (quotient board-size 2)))])
+
                            (and (not (cell-blocked? x))
                                 (not cat-cell?))))
                        all-cells))
-             (define to-block (list-ref unblocked-cells 
+             (define to-block (list-ref unblocked-cells
                                         (random (length unblocked-cells))))]
        (add-n-random-blocked-cells
         (sub1 n)
@@ -1647,9 +1671,13 @@ The core of the breadth-first search is this function,
                     (make-cell (make-posn 1 1) true)
                     (make-cell (make-posn 2 2) false)))
 
-(check-expect (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0) true)) 10)
+(check-expect (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
+                                                             true))
+                                          10)
               (list (make-cell (make-posn 0 0) true)))
-(check-expect (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0) false)) 10)
+(check-expect (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
+                                                             false))
+                                          10)
               (list (make-cell (make-posn 0 0) true)))
 
 ;; empty-board : number -> (listof cell)
@@ -1666,8 +1694,8 @@ The core of the breadth-first search is this function,
      (lambda (i)
        (build-list
         board-size
-        (lambda (j) 
-          (make-cell (make-posn i j) 
+        (lambda (j)
+          (make-cell (make-posn i j)
                      false))))))))
 
 (check-expect (empty-board 3)
@@ -1721,11 +1749,11 @@ The core of the breadth-first search is this function,
                    board-size
                    false
                    false))]
-    
-    (and 
+
+    (and
      (big-bang (world-width board-size)
                (world-height board-size)
-               1 
+               1
                initial-world)
      (on-redraw render-world)
      (on-key-event change)
