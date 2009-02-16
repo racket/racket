@@ -30,3 +30,16 @@ Problems:
  - hyperlink bound top-level identifiers to their bindings?
 
  - do unbound chunk ids signal syntax errors? How about unused ones?
+
+ - toc entries should not be underlined.
+
+ - identifiers in @chunks[] that refer to other chunks
+   should link to the (first) chunk definition. 
+
+   Or maybe just have a @chunkref[]?
+
+To document:
+
+  @chunk
+  @chunkref
+  scribble/lp (when it is added).

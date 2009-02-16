@@ -41,7 +41,7 @@ and some code that builds an initial world and starts the game.
        <everything-else>]
 
 Each section also comes with a series of test cases that are collected into the 
-@scheme[<tests>] chunk at the end of the program in order to be run in a
+@chunkref[<tests>] chunk at the end of the program in order to be run in a
 sensible order, namely testing helper functions before testing the functions
 that use them.
 
@@ -111,9 +111,8 @@ The code for the breadth-first search is organized into
 X parts ....
 
 @chunk[<graph>
-       <dist-cell>
+       <dist-cell-data-definition>
        <build-bfs-table>
-       <bfs-tests>
        <same-sets>
        <lookup-in-table>
        <on-cats-path?>
@@ -121,12 +120,23 @@ X parts ....
        <adjacent>
        <in-bounds?>
        <on-boundary?>
-       <graph-the-rest>]
+       <extended-arithmetic-ops>]
+
+@chunk[<graph-tests>
+       <build-bfs-table-tests>
+       <same-sets-test>
+       <lookup-in-table-tests>
+       <on-cats-path?-tests>
+       <neighbors-tests>
+       <adjacent-tests>
+       <in-bounds?-tests>
+       <on-boundary?-tests>
+       <extended-arithmetic-ops-tests>]
 
 The breadth-first function constructs a @scheme[distance-map],
 which is a list of @scheme[dist-cell] structs:
 
-@chunk[<dist-cell>
+@chunk[<dist-cell-data-definition>
 (define-struct dist-cell (p n) #:transparent)]
 
 Each @tt{p} field in the @scheme[dist-cell] is a position on the board
@@ -150,12 +160,12 @@ and is used here to speed up the compuation.
     [else
      (local [(define hd (first queue))]
        (cond
-         [(boolean? (hash-ref dist-table (queue-ent-posn hd) #f))
-          (local [(define dist (queue-ent-dist hd))
-                  (define p (queue-ent-posn hd))]
+         [(boolean? (hash-ref dist-table (vector-ref hd 0) #f))
+          (local [(define dist (vector-ref hd 1))
+                  (define p (vector-ref hd 0))]
             (bfs
              (append (rest queue)
-                     (map (λ (p) (make-queue-ent p (+ dist 1)))
+                     (map (λ (p) (vector p (+ dist 1)))
                           (neighbors/w p)))
              (hash-set dist-table p dist)))]
          [else
@@ -165,16 +175,11 @@ and is used here to speed up the compuation.
 
 ;; build-bfs-table : world (or/c 'boundary posn) -> distance-table
 (define (build-bfs-table world init-point)
-  (local [;; posn : posn
-          ;; dist : number
-          (define-struct queue-ent (posn dist) #:transparent)
-
-          (define neighbors/w (neighbors world))
-
+  (local [(define neighbors/w (neighbors world))
           <bfs>]
 
     (hash-map
-     (bfs (list (make-queue-ent init-point 0))
+     (bfs (list (vector init-point 0))
           (make-immutable-hash/list-init))
      make-dist-cell)))
 ]
@@ -184,7 +189,9 @@ and is used here to speed up the compuation.
 (define (same-sets? l1 l2)
   (and (andmap (lambda (e1) (member e1 l2)) l1)
        (andmap (lambda (e2) (member e2 l1)) l2)
-       #t))
+       #t))]
+
+@chunk[<same-sets-tests>
 
 (check-expect (same-sets? (list) (list)) true)
 (check-expect (same-sets? (list) (list 1)) false)
@@ -192,7 +199,7 @@ and is used here to speed up the compuation.
 (check-expect (same-sets? (list 1 2) (list 2 1)) true)
 ]
 
-@chunk[<bfs-tests>
+@chunk[<build-bfs-table-tests>
 (check-expect (same-sets? 
                (build-bfs-table (make-world (empty-board 3) (make-posn 1 1) 'playing 3 (make-posn 0 0) false)
                                 'boundary)
@@ -391,7 +398,9 @@ and is used here to speed up the compuation.
             [(equal? p (dist-cell-p (first t)))
              (dist-cell-n (first t))]
             [else
-             (lookup-in-table (rest t) p)])]))
+             (lookup-in-table (rest t) p)])]))]
+
+@chunk[<lookup-in-table-tests>
 
 (check-expect (lookup-in-table empty (make-posn 1 2)) '∞)
 (check-expect (lookup-in-table (list (make-dist-cell (make-posn 1 2) 3))
@@ -422,8 +431,9 @@ and is used here to speed up the compuation.
                          (lookup-in-table edge-distance-map p))
                     cat-distance))]))]
     [else
-     (lambda (p) false)]))
+     (lambda (p) false)]))]
 
+@chunk[<on-cats-path?-tests>
 (check-expect ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
                                           'playing 5 (make-posn 0 0) true))
                (make-posn 1 0))
@@ -487,8 +497,9 @@ and is used here to speed up the compuation.
               [(equal? in-bounds adjacent-posns)
                in-bounds]
               [else
-               (cons 'boundary in-bounds)])))]))))
+               (cons 'boundary in-bounds)])))]))))]
 
+@chunk[<neighbors-tests>
 (check-expect ((neighbors (empty-world 11))  (make-posn 1 1))
               (adjacent (make-posn 1 1) 11))
 (check-expect ((neighbors (empty-world 11)) (make-posn 2 2))
@@ -558,8 +569,9 @@ and is used here to speed up the compuation.
              (make-posn (- x 1) y)
              (make-posn (+ x 1) y)
              (make-posn x (+ y 1))
-             (make-posn (+ x 1) (+ y 1)))])))
+             (make-posn (+ x 1) (+ y 1)))])))]
 
+@chunk[<adjacent-tests>
 (check-expect (adjacent (make-posn 1 1) 11)
               (list (make-posn 1 0)
                     (make-posn 2 0)
@@ -575,15 +587,15 @@ and is used here to speed up the compuation.
                     (make-posn 1 3)
                     (make-posn 2 3)))]
 
-
 @chunk[<on-boundary?>
 ;; on-boundary? : posn number -> boolean
 (define (on-boundary? p board-size)
   (or (= (posn-x p) 0)
       (= (posn-y p) 0)
       (= (posn-x p) (- board-size 1))
-      (= (posn-y p) (- board-size 1))))
+      (= (posn-y p) (- board-size 1))))]
 
+@chunk[<on-boundary?-tests>
 (check-expect (on-boundary? (make-posn 0 1) 13) true)
 (check-expect (on-boundary? (make-posn 1 0) 13) true)
 (check-expect (on-boundary? (make-posn 12 1) 13) true)
@@ -598,7 +610,9 @@ and is used here to speed up the compuation.
   (and (<= 0 (posn-x p) (- board-size 1))
        (<= 0 (posn-y p) (- board-size 1))
        (not (equal? p (make-posn 0 0)))
-       (not (equal? p (make-posn 0 (- board-size 1))))))
+       (not (equal? p (make-posn 0 (- board-size 1))))))]
+
+@chunk[<in-bounds?-tests>
 (check-expect (in-bounds? (make-posn 0 0) 11) false)
 (check-expect (in-bounds? (make-posn 0 1) 11) true)
 (check-expect (in-bounds? (make-posn 1 0) 11) true)
@@ -610,25 +624,27 @@ and is used here to speed up the compuation.
 (check-expect (in-bounds? (make-posn 10 0) 11) true)
 (check-expect (in-bounds? (make-posn 0 10) 11) false)]
 
-@chunk[<graph-the-rest>
+@chunk[<extended-arithmetic-ops>
 ;; <=/f : (number or '∞) (number or '∞) -> boolean
 (define (<=/f a b)
   (cond
     [(equal? b '∞) true]
     [(equal? a '∞) false]
     [else (<= a b)]))
-(check-expect (<=/f 1 2) true)
-(check-expect (<=/f 2 1) false)
-(check-expect (<=/f '∞ 1) false)
-(check-expect (<=/f 1 '∞) true)
-(check-expect (<=/f '∞ '∞) true)
 
 (define (+/f x y)
   (cond
     [(or (equal? x '∞) (equal? y '∞))
      '∞]
     [else
-     (+ x y)]))
+     (+ x y)]))]
+
+@chunk[<extended-arithmetic-ops-tests>
+(check-expect (<=/f 1 2) true)
+(check-expect (<=/f 2 1) false)
+(check-expect (<=/f '∞ 1) false)
+(check-expect (<=/f 1 '∞) true)
+(check-expect (<=/f '∞ '∞) true)
 
 (check-expect (+/f '∞ '∞) '∞)
 (check-expect (+/f '∞ 1) '∞)
