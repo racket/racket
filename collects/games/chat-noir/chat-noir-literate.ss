@@ -5,13 +5,45 @@
 
 @title{Chat Noir}
 
-Chat Noir. What a game.
+The goal of Chat Noir is to stop the cat from escaping the board. Each
+turn you click on a circle, which prevents the cat from stepping on
+that space, and the cat responds by taking a step. If the cat is
+completely boxed in and thus unable reach the border, you win. If the
+cat does reach the border, you lose.
 
-@chunk[#:part section <main>
+To get some insight into the cat's behavior, hold down the ``h''
+key. It will show you the cells that are on the cat's shortest path to
+the edge, assuming that the cell underneath the mouse has been
+blocked, so you can experiment to see how the shortest paths change
+by moving your mouse around.
+
+The game was inspired by this one the one at
+@link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game
+Design} and has essentially the same rules. It also inspired the final
+project for the introductory programming course at the University of
+Chicago in the fall of 2008.
+
+The remainder of this document explains the implementation of 
+the Chat Noir game.
+
+@section{Overview}
+
+Chat Noir is implemented using @link["http://www.htdp.org/"]{HtDP}'s world
+library:  @schememodname[htdp/world]. The program is divided up into
+six parts: the world data definition, an implementation of breadth-first search,
+code that handles drawing of the world, code that handles user input,
+and some code that builds an initial world and starts the game.
+ 
+@chunk[<main>
        <init-junk>
        <data-definitions>
        <graph>
        <everything-else>]
+
+Each section also comes with a series of test cases that are collected into the 
+@scheme[<tests>] chunk at the end of the program in order to be run in a
+sensible order, namely testing helper functions before testing the functions
+that use them.
 
 @section{The World}
 
@@ -75,10 +107,26 @@ The graph's nodes are the cells on the board, and there are edges
 between each pair of adjacent cells, unless one of the cells is
 blocked, in which case there are no edges.
 
-The breadth-first function constructs a @scheme[distance-map], which
-is a list of @scheme[dist-cell] structs:
+The code for the breadth-first search is organized into
+X parts ....
 
 @chunk[<graph>
+       <dist-cell>
+       <build-bfs-table>
+       <bfs-tests>
+       <same-sets>
+       <lookup-in-table>
+       <on-cats-path?>
+       <neighbors>
+       <adjacent>
+       <in-bounds?>
+       <on-boundary?>
+       <graph-the-rest>]
+
+The breadth-first function constructs a @scheme[distance-map],
+which is a list of @scheme[dist-cell] structs:
+
+@chunk[<dist-cell>
 (define-struct dist-cell (p n) #:transparent)]
 
 Each @tt{p} field in the @scheme[dist-cell] is a position on the board
@@ -88,7 +136,12 @@ the board. The fixed point is not represented in the
 @scheme[distance-map], but is required when constructing one.
 
 The core of the breadth-first search is this function,
-@scheme[bst]. It accepts a @scheme[queue] and a
+@scheme[bst]. It accepts a queue of the pending nodes to visit
+and a @scheme[dist-table] that records the same information as a
+@scheme[distance-map], but in an immutable hash-table. The
+@scheme[dist-map] is an accumulator, recording the distances
+to all of the nodes that have already been visited in the graph,
+and is used here to speed up the compuation. 
 
 @chunk[<bfs>
 (define (bfs queue dist-table)
@@ -102,21 +155,13 @@ The core of the breadth-first search is this function,
                   (define p (queue-ent-posn hd))]
             (bfs
              (append (rest queue)
-                     (map (lambda (p) (make-queue-ent p (+ dist 1)))
+                     (map (λ (p) (make-queue-ent p (+ dist 1)))
                           (neighbors/w p)))
              (hash-set dist-table p dist)))]
          [else
           (bfs (rest queue) dist-table)]))]))]
 
-@chunk[<graph>
-
-;; a distance-map is
-;;  (listof dist-cells)
-
-;; a dist-cell is
-;;  - (make-dist-cell posn (number or '∞))
-;(define-struct dist-cell (p n) #:transparent)
-
+@chunk[<build-bfs-table>
 
 ;; build-bfs-table : world (or/c 'boundary posn) -> distance-table
 (define (build-bfs-table world init-point)
@@ -132,7 +177,9 @@ The core of the breadth-first search is this function,
      (bfs (list (make-queue-ent init-point 0))
           (make-immutable-hash/list-init))
      make-dist-cell)))
+]
 
+@chunk[<same-sets>
 ;; same-sets? : (listof X) (listof X) -> boolean
 (define (same-sets? l1 l2)
   (and (andmap (lambda (e1) (member e1 l2)) l1)
@@ -143,12 +190,11 @@ The core of the breadth-first search is this function,
 (check-expect (same-sets? (list) (list 1)) false)
 (check-expect (same-sets? (list 1) (list)) false)
 (check-expect (same-sets? (list 1 2) (list 2 1)) true)
+]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(check-expect (same-sets?
-               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1)
-                                            'playing 3 (make-posn 0 0) false)
+@chunk[<bfs-tests>
+(check-expect (same-sets? 
+               (build-bfs-table (make-world (empty-board 3) (make-posn 1 1) 'playing 3 (make-posn 0 0) false)
                                 'boundary)
                (list
                 (make-dist-cell 'boundary 0)
@@ -332,8 +378,9 @@ The core of the breadth-first search is this function,
                                 (make-posn 2 2))
                (make-posn 1 4))
               2)
+]
 
-
+@chunk[<lookup-in-table>
 ;; lookup-in-table : distance-map posn -> number or '∞
 ;; looks for the distance as recorded in the table t,
 ;; if not found returns a distance of '∞
@@ -352,10 +399,11 @@ The core of the breadth-first search is this function,
               3)
 (check-expect (lookup-in-table (list (make-dist-cell (make-posn 2 1) 3))
                                (make-posn 1 2))
-              '∞)
+              '∞)]
 
 
-;; p : world -> posn -> boolean
+@chunk[<on-cats-path?>
+;; on-cats-path? : world -> posn -> boolean
 ;; returns true when the posn is on the shortest path
 ;; from the cat to the edge of the board, in the given world
 (define (on-cats-path? w)
@@ -403,8 +451,9 @@ The core of the breadth-first search is this function,
                             (make-posn 0 0)
                             true))
                (make-posn 0 1))
-              false)
+              false)]
 
+@chunk[<neighbors>
 ;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
 ;; computes the neighbors of a posn, for a given board size
 (define (neighbors w)
@@ -486,8 +535,9 @@ The core of the breadth-first search is this function,
                                       false))
                (make-posn 1 0))
               (list 'boundary (make-posn 2 0) (make-posn 0 1)))
+]
 
-
+@chunk[<adjacent>
 ;; adjacent : posn number -> (listof posn)
 ;; returns a list of the posns that are adjacent to
 ;; `p' on an infinite hex grid
@@ -523,10 +573,10 @@ The core of the breadth-first search is this function,
                     (make-posn 1 2)
                     (make-posn 3 2)
                     (make-posn 1 3)
-                    (make-posn 2 3)))
+                    (make-posn 2 3)))]
 
 
-
+@chunk[<on-boundary?>
 ;; on-boundary? : posn number -> boolean
 (define (on-boundary? p board-size)
   (or (= (posn-x p) 0)
@@ -539,8 +589,9 @@ The core of the breadth-first search is this function,
 (check-expect (on-boundary? (make-posn 12 1) 13) true)
 (check-expect (on-boundary? (make-posn 1 12) 13) true)
 (check-expect (on-boundary? (make-posn 1 1) 13) false)
-(check-expect (on-boundary? (make-posn 10 10) 13) false)
+(check-expect (on-boundary? (make-posn 10 10) 13) false)]
 
+@chunk[<in-bounds?>
 
 ;; in-bounds? : posn number -> boolean
 (define (in-bounds? p board-size)
@@ -557,8 +608,9 @@ The core of the breadth-first search is this function,
 (check-expect (in-bounds? (make-posn 0 11) 11) false)
 (check-expect (in-bounds? (make-posn 11 0) 11) false)
 (check-expect (in-bounds? (make-posn 10 0) 11) true)
-(check-expect (in-bounds? (make-posn 0 10) 11) false)
+(check-expect (in-bounds? (make-posn 0 10) 11) false)]
 
+@chunk[<graph-the-rest>
 ;; <=/f : (number or '∞) (number or '∞) -> boolean
 (define (<=/f a b)
   (cond
@@ -616,7 +668,9 @@ The core of the breadth-first search is this function,
 
 (define (run-check-expects)
   (for-each (λ (t) (t))
-            (reverse check-expects)))
+            (reverse check-expects))
+  (printf "passed ~s tests\n" check-expect-count)
+  (flush-output))
 
 (define (make-immutable-hash/list-init [init '()])
   (make-immutable-hash

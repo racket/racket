@@ -28,3 +28,5 @@ Problems:
    eventually be merged together with ../scribblings/chat-noir.scrbl.
 
  - hyperlink bound top-level identifiers to their bindings?
+
+ - do unbound chunk ids signal syntax errors? How about unused ones?
