@@ -143,7 +143,7 @@
  (erase-log-directory-contents "Inhalt von Protokoll-Verzeichnisses ~a löschen?")
  (error-erasing-log-directory "Fehler beim Löschen des Protokoll-Verzeichnisses.\n\n~a\n")
 
-  ;; menu items connected to the logger
+  ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
   (show-log "&Log anzeigen")
   (hide-log "&Log ausblenden")
 
@@ -1078,7 +1078,7 @@
  (module-browser-progress "Modul-Browser: ~a") ;; prefix in the status line
  (module-browser-compiling-defns "Modul-Browser: Definition compilieren")
  (module-browser-show-lib-paths/short "\"lib\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
- (module-browser-show-planet-paths/short "\"planet\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
+ (module-browser-show-planet-paths/short "\"PLaneT\"-requires folgen") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "Aktualisieren") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "Der Modul-Browser ist nur für Programme in den PLT-Sprachen und in der Modul-Sprache verfügbar (und nur für Programme mit Modulen).")
@@ -1337,7 +1337,12 @@
   (bug-track-forget "Vergessen")
   (bug-track-forget-all "Alles vergessen")
 
- 
+  ;; planet status messages in the bottom of the drscheme window; the ~a is filled with the name of the package
+  (planet-downloading "PLaneT: ~a herunterladen ...")
+  (planet-installing "PLaneT: ~a installieren ...")
+  (planet-finished "PLaneT: fertig mit ~a.")
+  (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
+
  ;; string normalization. To see this, paste some text with a ligature into DrScheme
  ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
  (normalize "Normalisieren")
