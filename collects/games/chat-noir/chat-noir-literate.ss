@@ -114,7 +114,7 @@ The core of the breadth-first search is this function,
 
 ;; a dist-cell is
 ;;  - (make-dist-cell posn (number or '∞))
-(define-struct dist-cell (p n) #:transparent)
+;(define-struct dist-cell (p n) #:transparent)
 
 
 ;; build-bfs-table : world (or/c 'boundary posn) -> distance-table
