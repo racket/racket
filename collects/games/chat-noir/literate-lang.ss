@@ -32,7 +32,7 @@
 (define-syntax (chunk stx)
   (syntax-case stx ()
     ;; no use for the part function here
-    [(_ #:part part-function name expr ...) (chunk name expr ...)]
+    [(_ #:part part-function name expr ...) #'(chunk name expr ...)]
     [(_ name expr ...)
      (cond [(not (identifier? #'name))
             (raise-syntax-error #f "expected a chunk name" stx #'name)]
