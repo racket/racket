@@ -1,4 +1,4 @@
-These are the files for the literate version of Chat Noir. The files
+These are the files for the literate version of Chat Noir.  The files
 not mentioned are actually in use for Chat Noir that you get via PLT
 Games.
 
@@ -10,7 +10,7 @@ Games.
    the rendered output.
 
  - literate-lang.ss: the language for running literate programs
-   (contains the tangler)
+   (contains the tangler).
 
  - literate-reader.ss: the reader used for chat-noir-literate.ss to
    put it into the literate-lang.ss.

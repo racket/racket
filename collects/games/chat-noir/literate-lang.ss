@@ -35,20 +35,17 @@
      code-blocks id
      `(,@(mapping-get code-blocks id) ,@(map syntax-local-introduce exprs)))))
 
-(define :make-splice make-splice)
-
 (define-syntax (chunk stx)
   (syntax-case stx ()
     [(_ name expr ...)
-     (begin
-       (unless (identifier? #'name)
-         (raise-syntax-error #f "expected a chunk name" stx #'name))
-       (unless (regexp-match #rx"^<.*>$" (symbol->string (syntax-e #'name)))
-         (raise-syntax-error #f "chunk names must begin and end with angle brackets, <...>"
-                             stx 
-                             #'name))
-       (add-to-block! #'name (syntax->list #'(expr ...)))
-       #`(void))]))
+     (cond [(not (identifier? #'name))
+            (raise-syntax-error #f "expected a chunk name" stx #'name)]
+           [(not (regexp-match? #rx"^<.*>$" (symbol->string (syntax-e #'name))))
+            (raise-syntax-error
+             #f "chunk names must begin and end with angle brackets, <...>"
+             stx #'name)]
+           [else (add-to-block! #'name (syntax->list #'(expr ...)))
+                 #`(void)])]))
 
 (define-syntax (tangle stx)
   (define block-mentions '())
