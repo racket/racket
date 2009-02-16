@@ -3,9 +3,7 @@
 ;; Use this module to create literate doc wrappers -- files that require the
 ;; literate code in a way that makes it a scribble file.
 
-(provide include 
-         chunk 
-         chunkref
+(provide include chunk chunkref
          (all-from-out scribble/manual))
 
 (require scribble/manual scribble/decode scribble/struct scheme/include
@@ -14,7 +12,12 @@
 (begin-for-syntax
   ;; maps chunk identifiers to a counter, so we can distinguish multiple uses
   ;; of the same name
-  (define chunk-number (make-free-identifier-mapping)))
+  (define chunk-numbers (make-free-identifier-mapping))
+  (define (get-chunk-number id)
+    (let ([n (add1 (free-identifier-mapping-get chunk-numbers id
+                                                (lambda () 0)))])
+      (free-identifier-mapping-put! chunk-numbers id n)
+      n)))
 
 ;; This is the doc-view implementation of `chunk', see "literate-lang.ss" for
 ;; the cide-view implementation.  Defines `chunk' as a macro that typesets the
@@ -22,21 +25,23 @@
 (define-syntax (chunk stx)
   (syntax-case stx ()
     [(_ name expr ...)
-     (let ([n (add1 (free-identifier-mapping-get
-                     chunk-number #'name (lambda () 0)))])
-       (free-identifier-mapping-put! chunk-number #'name n)
-       (with-syntax ([tag (format "~a~a" 
-                                  (syntax-e #'name)
-                                  (if (n . > . 1) (format ":~a" n) ""))]
-                     [str (format "~a" (syntax-e #'name))]
+     ;; no need for more error checking, using chunk for the code will do that
+     (identifier? #'name)
+     (let ([n (get-chunk-number #'name)]
+           [str (symbol->string (syntax-e #'name))])
+       (with-syntax ([tag (if (n . > . 1) (format "~a:~a" str n) str)]
                      [(more ...) (if (n . > . 1)
                                      #`((subscript #,(format "~a" n)))
-                                     #`())])
-         #`(make-splice (list 
-                         (make-toc-element #f
-                                           (list (elemtag '(chunk tag) (italic (scheme name) " ::=")))
-                                           (list (make-element "smaller" (list (elemref '(chunk tag) str more ...)))))
-                         (schemeblock expr ...)))))]))
+                                     #`())]
+                     [str str])
+         #`(make-splice
+            (list (make-toc-element
+                   #f
+                   (list (elemtag '(chunk tag) (italic (scheme name) " ::=")))
+                   (list (make-element
+                          "smaller"
+                          (list (elemref '(chunk tag) str more ...)))))
+                  (schemeblock expr ...)))))]))
 
 (define-syntax (chunkref stx)
   (syntax-case stx ()
