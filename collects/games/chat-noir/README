@@ -15,21 +15,16 @@ Games.
  - literate-reader.ss: the reader used for chat-noir-literate.ss to
    put it into the literate-lang.ss.
 
+Files that begin with "literate" are the files that need to move to a
+scribble library, if this experiment is successful.
+
 Problems:
 
  - the code is not hyperlinked in the scribble output-- this is due to
    the confusion about how the requires should work in the two modes.
 
- - The char-noir-doc.ss file contains code that should move into
-   scribble proper; ideally that file should just be (something like):
-
-   #lang scribble/doc
-   @include-literate["chat-noir-literate.ss"]
-
-   and it should be built when setup-plt runs on this collection to
-   build the documentation, ie, this file should eventually be merged
-   together with ../scribblings/chat-noir.scrbl.
-
- - @chunks in the TOC
+ - The char-noir-doc.ss file should be built when setup-plt runs on
+   this collection to build the documentation, ie, this file should
+   eventually be merged together with ../scribblings/chat-noir.scrbl.
 
  - hyperlink bound top-level identifiers to their bindings?

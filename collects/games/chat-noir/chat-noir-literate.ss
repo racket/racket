@@ -7,7 +7,7 @@
 
 Chat Noir. What a game.
 
-@chunk[<main>
+@chunk[#:part section <main>
        <init-junk>
        <data-definitions>
        <graph>

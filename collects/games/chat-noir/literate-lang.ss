@@ -25,8 +25,14 @@
      chunks id
      `(,@(mapping-get chunks id) ,@(map syntax-local-introduce exprs)))))
 
+;; This is the code-view implementation of `chunk', see
+;; "literate-doc-wrapper.ss" for the doc-view implementation.  Defines
+;; `chunk' as a macro that collects the code to be later reassembled
+;; by `tangle'.
 (define-syntax (chunk stx)
   (syntax-case stx ()
+    ;; no use for the part function here
+    [(_ #:part part-function name expr ...) (chunk name expr ...)]
     [(_ name expr ...)
      (cond [(not (identifier? #'name))
             (raise-syntax-error #f "expected a chunk name" stx #'name)]
