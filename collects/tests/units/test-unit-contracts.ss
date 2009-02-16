@@ -796,7 +796,7 @@
 
 (let ()
   (define-signature student^
-    ((cstruct student ([name string?] [id number?]))))
+    ((struct/ctc student ([name string?] [id number?]))))
   (define-unit student@
     (import)
     (export student^)

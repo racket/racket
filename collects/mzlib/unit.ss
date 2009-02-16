@@ -20,7 +20,7 @@
            "private/unit-runtime.ss"
            "private/unit-utils.ss")
   
-  (provide define-signature-form struct cstruct open
+  (provide define-signature-form struct struct/ctc open
            define-signature provide-signature-elements
            only except rename import export prefix link tag init-depend extends contracted
            unit?
@@ -126,7 +126,7 @@
         ((_)
          (raise-stx-err "missing name and fields")))))
   
-  (define-signature-form (cstruct stx)
+  (define-signature-form (struct/ctc stx)
     (parameterize ((error-syntax stx))
       (syntax-case stx ()
         ((_ name ([field ctc] ...) . omissions)

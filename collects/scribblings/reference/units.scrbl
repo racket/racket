@@ -615,7 +615,7 @@ where the extra option @scheme[#:omit-constructor] omits the
 @schemeidfont{make-}@scheme[id] identifier.}
 
 @defform/subs[
-(cstruct id ([field contract-expr] ...) option ...) 
+(struct/ctc id ([field contract-expr] ...) option ...) 
 
 ([field id
         [id #:mutable]]
@@ -624,7 +624,7 @@ where the extra option @scheme[#:omit-constructor] omits the
          #:omit-define-syntaxes
          #:omit-define-values])]{
 
-For use with @scheme[define-signature]. The @scheme[cstruct] form works
+For use with @scheme[define-signature]. The @scheme[struct/ctc] form works
 similarly to @scheme[struct], but the constructor, predicate, field
 accessors, and field mutators are contracted appropriately.}
 

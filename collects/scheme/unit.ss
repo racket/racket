@@ -5,9 +5,9 @@
            (for-syntax scheme/base
                        syntax/struct))
   (provide (except-out (all-from-out mzlib/unit)
-                       struct cstruct)
+                       struct struct/ctc)
            (rename-out [struct* struct]
-                       [cstruct* cstruct]))
+                       [struct/ctc* struct/ctc]))
 
   ;; Replacement `struct' signature form:
   (define-signature-form (struct* stx)
@@ -102,8 +102,8 @@
                            "missing name and fields"
                            stx))))
   
-  ;; Replacement cstruct form
-  (define-signature-form (cstruct* stx)
+  ;; Replacement struct/ctc form
+  (define-signature-form (struct/ctc* stx)
     (syntax-case stx ()
       ((_ name ([field ctc] ...) opt ...)
        (begin
