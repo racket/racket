@@ -83,7 +83,11 @@ which is a list of @scheme[dist-cell] structs:
 @chunk[<graph>
 (define-struct dist-cell (p n) #:transparent)]
 
-Each @tt{p} field in the @scheme[dist-cell] is 
+Each @tt{p} field in the @scheme[dist-cell] is a position on the board
+and the @tt{n} field is a natural number or @scheme['∞], indicating
+the distance of the shortest path from the node to some fixed point
+on the board. The fixed point is not represented in the @scheme[distance-map], but
+is required when constructing one.
 
 The core of the breadth-first search is this function,
 @scheme[bst]. It accepts a @scheme[queue] and a
