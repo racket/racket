@@ -371,7 +371,9 @@
             (let ([c (string-ref s i)])
               (display
                (case c
-                 [(#\\) "$\\backslash$"]
+                 [(#\\) (if (rendering-tt)
+                            "{\\char`\\\\}"
+                            "$\\backslash$")]
                  [(#\_) "$\\_$"]
                  [(#\^) "{\\char'136}"]
                  [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
@@ -380,7 +382,10 @@
                  [(#\? #\! #\. #\:)
                   (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
                  [(#\~) "$\\sim$"]
-                 [(#\{ #\} #\# #\% #\& #\$) (format "\\~a" c)]
+                 [(#\{ #\}) (if (rendering-tt)
+                                (format "{\\char`\\~a}" c)
+                                (format "\\~a" c))]
+                 [(#\# #\% #\& #\$) (format "\\~a" c)]
                  [(#\uA0) "~"]
                  [(#\uDF) "{\\ss}"]
                  [(#\u039A) "K"] ; kappa
