@@ -26,6 +26,7 @@
          with-exporting-libraries
          id-to-target-maker
          id-to-form-target-maker
+         defidentifier
          *sig-elem
          (struct-out sig)
          ;; public:
@@ -169,6 +170,37 @@
              content)))
        (lambda () (car content))
        (lambda () (car content))))))
+
+(define (defidentifier id 
+                       #:form? [form? #f]
+                       #:index? [index? #t]
+                       #:show-libs? [show-libs? #t])
+  ;; This function could have more optional argument to select
+  ;; whether to index the id, include a toc link, etc.
+  (let ([dep? #t])
+    (let ([maker (if form?
+                     (id-to-form-target-maker id dep?)
+                     (id-to-target-maker id dep?))]
+          [elem (if show-libs?
+                    (definition-site (syntax-e id) id form?)
+                    (to-element id))])
+      (if maker
+          (maker (list elem)
+                 (lambda (tag)
+                   (let ([elem
+                          (if index?
+                              (make-index-element
+                               #f (list elem) tag
+                               (list (symbol->string (syntax-e id)))
+                               (list elem)
+                               (and show-libs?
+                                    (with-exporting-libraries
+                                     (lambda (libs)
+                                       (make-exported-index-desc (syntax-e id)
+                                                                 libs)))))
+                              elem)])
+                     (make-target-element #f (list elem) tag))))
+          elem))))
 
 (define (make-binding-redirect-elements mod-path redirects)
   (let ([taglet (module-path-index->taglet 

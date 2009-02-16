@@ -163,7 +163,9 @@ an element with style @scheme[#f].}
 @def-style-proc[subscript]
 @def-style-proc[superscript]
 
-@def-elem-proc[smaller]{Like @scheme[elem], but with style @scheme["smaller"].}
+@def-elem-proc[smaller]{Like @scheme[elem], but with style
+@scheme["smaller"].  When uses of @scheme[smaller] are nested, text
+gets progressively smaller.}
 
 @defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 

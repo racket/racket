@@ -228,14 +228,6 @@
     (define/override (render-table t part ri inline-table?)
       (let* ([boxed? (eq? 'boxed (table-style t))]
              [index? (eq? 'index (table-style t))]
-             [inline?
-              (and (not boxed?) (not index?)
-                   (or (null? (table-flowss t))
-                       (= 1 (length (car (table-flowss t)))))
-                   (let ([m (current-table-mode)])
-                     (and m
-                          (equal? "bigtabular" (car m))
-                          (= 1 (length (car (table-flowss (cadr m))))))))]
              [tableform
               (cond [index? "list"]
                     [(and (not (current-table-mode)) (not inline-table?))
@@ -244,7 +236,21 @@
              [opt (cond [(equal? tableform "bigtabular") "[l]"]
                         [(equal? tableform "tabular") "[t]"]
                         [else ""])]
-             [flowss (if index? (cddr (table-flowss t)) (table-flowss t))])
+             [flowss (if index? (cddr (table-flowss t)) (table-flowss t))]
+             [row-styles (cdr (or (and (list? (table-style t))
+                                       (assoc 'row-styles (table-style t)))
+                                  (cons #f (map (lambda (x) #f) flowss))))]
+             [inline?
+              (and (not boxed?) 
+                   (not index?)
+                   (ormap (lambda (rs) (equal? rs "inferencetop")) row-styles)
+                   (or (null? (table-flowss t))
+                       (= 1 (length (car (table-flowss t)))))
+                   (let ([m (current-table-mode)])
+                     (and m
+                          (equal? "bigtabular" (car m))
+                          (= 1 (length (car (table-flowss (cadr m))))))))]
+             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"])
         (unless (or (null? flowss) (null? (car flowss)))
           (parameterize ([current-table-mode
                           (if inline? (current-table-mode) (list tableform t))]
@@ -254,14 +260,7 @@
               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
               [inline? (void)]
               [else
-               (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
-                       (if boxed?
-                         (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n"
-                                 "\\setlength{\\unitlength}{\\linewidth}"
-                                 (if (equal? tableform "bigtabular")
-                                   "\\bigtabline"
-                                   "\n\n"))
-                         "")
+               (printf "\n\n\\begin{~a}~a{@{}~a}\n~a"
                        tableform
                        opt
                        (string-append*
@@ -276,12 +275,16 @@
                                            (assoc 'alignment
                                                   (or (table-style t) null)))
                                       (cons #f (map (lambda (x) #f)
-                                                    (car flowss))))))))])
+                                                    (car flowss)))))))
+                       (if boxed? 
+                           (if (equal? tableform "bigtabular")
+                               (format "~a \\endfirsthead\n" boxline)
+                               (format "\\multicolumn{~a}{@{}l@{}}{~a} \\\\\n" 
+                                       (length (car flowss))
+                                       boxline))
+                           ""))])
             (let loop ([flowss flowss]
-                       [row-styles
-                        (cdr (or (and (list? (table-style t))
-                                      (assoc 'row-styles (table-style t)))
-                                 (cons #f (map (lambda (x) #f) flowss))))])
+                       [row-styles row-styles])
               (let ([flows (car flowss)]
                     [row-style (car row-styles)])
                 (let loop ([flows flows])

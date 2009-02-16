@@ -318,6 +318,13 @@ lowercase), @litchar{0} through @litchar{9}, @litchar{-}, @litchar{_},
 and @litchar{.}, and the string cannot be empty or contain a leading
 or trailing @litchar{/}.}
 
+@defform/none[#:literals (require)
+              (require module-id)]{
+
+Accesses a file in an installed library. The library name is an
+identifier with the same constraints as for a relative-path string,
+with the additional constraint that it must not contain a
+@litchar{.}.}
 
 @defform/none[#:literals (require lib)
               (require (lib string string ...))]{

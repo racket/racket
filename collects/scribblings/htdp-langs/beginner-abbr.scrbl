@@ -184,6 +184,6 @@ The same as Beginning's @|beg-check-expect|, etc.}
 
 Constants for the empty list, true, and false.}
 
-@defform[(require string)]{
+@defform[(require module-path)]{
 
 The same as Beginning's @|beg-require|.}

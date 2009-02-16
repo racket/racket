@@ -15,6 +15,7 @@
 \usepackage{hyperref}
 \renewcommand{\rmdefault}{ptm}
 \usepackage{longtable}
+\usepackage{relsize}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
@@ -67,8 +68,8 @@
 \newcommand{\indexlink}[1]{#1}
 \newcommand{\noborder}[1]{#1}
 \newcommand{\imageleft}[1]{} % drop it
-\newcommand{\smaller}[1]{{\footnotesize #1}}
-\newcommand{\refpara}[1]{\marginpar{\footnotesize #1}}
+\renewcommand{\smaller}[1]{\textsmaller{#1}}
+\newcommand{\refpara}[1]{\marginpar{\raggedright \footnotesize #1}}
 
 \newcommand{\titleAndEmptyVersion}[2]{\title{#1}\maketitle}
 \newcommand{\titleAndVersion}[2]{\title{#1\\{\normalsize Version #2}}\maketitle}

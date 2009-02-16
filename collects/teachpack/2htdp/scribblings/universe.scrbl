@@ -25,6 +25,8 @@
 
 @author{Matthias Felleisen}
 
+@defmodule[2htdp/universe #:use-sources (teachpack/htdp/image)]
+
 @;{FIXME: the following paragraph uses `defterm' instead of `deftech',
    because the words "world" and "universe" are used as datatypes, and
    datatypes are currently linked as technical terms --- which is a hack.
@@ -51,8 +53,6 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  to Design Programs, Second Edition: Prologue}. As of August 2008, we also
  have a series of projects available as a small booklet on
  @link["http://world.cs.brown.edu/"]{How to Design Worlds}.
-
-@declare-exporting[teachpack/2htdp/universe #:use-sources (teachpack/htdp/image)]
 
 @; -----------------------------------------------------------------------------
 

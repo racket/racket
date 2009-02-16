@@ -173,11 +173,20 @@
     (make-decl-collect decl)
     (append
      ((decl-mk-head decl) #f)
-     (list
-      (make-blockquote
-       "leftindent"
-       (flow-paragraphs
-        (decode-flow (build-body decl (decl-body decl))))))))))
+     (let-values ([(pre post)
+                   (let loop ([l (decl-body decl)][accum null])
+                     (cond
+                      [(null? l) (values (reverse accum) null)]
+                      [(or (constructor? (car l)) (meth? (car l)))
+                       (values (reverse accum) l)]
+                      [else (loop (cdr l) (cons (car l) accum))]))])
+       (append
+        (flow-paragraphs (decode-flow pre))
+        (list
+         (make-blockquote
+          "leftindent"
+          (flow-paragraphs
+           (decode-flow (build-body decl post)))))))))))
 
 (define (*class-doc kind stx-id super intfs ranges whole-page? make-index-desc)
   (make-table

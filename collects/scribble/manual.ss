@@ -14,6 +14,7 @@
 
 (provide unsyntax
          make-binding-redirect-elements
+         defidentifier
          (all-from-out "basic.ss"
                        "private/manual-style.ss"
                        "private/manual-scheme.ss"
