@@ -24,6 +24,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (require (except-in "../utils/utils.ss" extend))
 (require (for-syntax 
+          stxclass
           scheme/base
           (rep type-rep)
           mzlib/match
@@ -31,7 +32,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           syntax/stx
           scheme/struct-info
-	  (utils utils tc-utils)
+	  (except-in (utils utils tc-utils) id)
           (env type-name-env)
           "type-contract.ss"))
 
@@ -422,3 +423,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       (begin e1 e2 ...)
                       (begin c ... (doloop step ...)))))]))]))
 
+(define-syntax (provide: stx)
+  (syntax-parse stx
+    [(_ [i:id t] ...)
+     (syntax/loc stx
+       (begin (: i t) ...
+              (provide i ...)))]))
