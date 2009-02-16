@@ -793,3 +793,17 @@
   ;; the stronger contract?
   (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
     (f #t)))
+
+(let ()
+  (define-signature student^
+    ((cstruct student ([name string?] [id number?]))))
+  (define-unit student@
+    (import)
+    (export student^)
+    (define-struct student (name id)))
+  (define-values/invoke-unit/infer student@)
+  (make-student "foo" 3)
+  (test-runtime-error exn:fail:contract? "top-level broke contract on make-student"
+    (make-student 4 3))
+  (test-runtime-error exn:fail:contract? "top-level broke contract on student-id"
+    (student-id 'a)))

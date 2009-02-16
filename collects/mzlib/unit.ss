@@ -1,5 +1,6 @@
 (module unit mzscheme
   (require-for-syntax mzlib/list
+                      scheme/pretty
                       stxclass
                       syntax/boundmap
                       syntax/context
@@ -19,7 +20,7 @@
            "private/unit-runtime.ss"
            "private/unit-utils.ss")
   
-  (provide define-signature-form struct open
+  (provide define-signature-form struct cstruct open
            define-signature provide-signature-elements
            only except rename import export prefix link tag init-depend extends contracted
            unit?
@@ -115,6 +116,90 @@
             (remove-ctor&type-name
              (build-struct-names #'name (syntax->list #'(field ...))
                                  omit-selectors omit-setters #f)))))
+        ((_ name (x . y) . omissions)
+         ;; Will fail
+         (checked-syntax->list (stx-car (stx-cdr (stx-cdr stx)))))
+        ((_ name fields . omissions)
+         (raise-stx-err "expected syntax matching (identifier ...)" #'fields))
+        ((_ name)
+         (raise-stx-err "missing fields"))
+        ((_)
+         (raise-stx-err "missing name and fields")))))
+  
+  (define-signature-form (cstruct stx)
+    (parameterize ((error-syntax stx))
+      (syntax-case stx ()
+        ((_ name ([field ctc] ...) . omissions)
+         (let ([omit-selectors #f]
+               [omit-setters #f]
+               [omit-constructor #f]
+               [omit-type #f])
+           (define (remove-ctor&type-info l)
+             (define new-type
+               (if omit-type
+                   #f
+                   (cadr l)))
+             (define new-ctor
+               (if omit-constructor
+                   #f
+                   (caddr l)))
+             (cons (car l)
+                   (cons new-type
+                         (cons new-ctor
+                               (cdddr l)))))
+           (define (add-contracts l)
+             (let* ([pred (caddr l)]
+                    [ctor-ctc #`(-> ctc ... #,pred)]
+                    [pred-ctc #`(-> any/c boolean?)]
+                    [field-ctcs (apply append
+                                       (map (λ (c)
+                                              (append (if omit-selectors
+                                                          null
+                                                          (list #`(-> #,pred #,c)))
+                                                      (if omit-setters
+                                                          null
+                                                          (list #`(-> #,pred #,c void?)))))
+                                            (syntax->list #'(ctc ...))))])
+               (list* (car l)
+                      (list (cadr l) ctor-ctc)
+                      (list pred pred-ctc)
+                      (map list (cdddr l) field-ctcs))))
+           (check-id #'name)
+           (for-each check-id (syntax->list #'(field ...)))
+           (for-each
+            (lambda (omission)
+              (cond
+                ((and (identifier? omission)
+                      (module-identifier=? omission #'-selectors))
+                 (set! omit-selectors #t))
+                ((and (identifier? omission)
+                      (module-identifier=? omission #'-setters))
+                 (set! omit-setters #t))
+                ((and (identifier? omission)
+                      (module-identifier=? omission #'-constructor))
+                 (set! omit-constructor #t))
+                ((and (identifier? omission)
+                      (module-identifier=? omission #'-type))
+                 (set! omit-type #t))
+                (else
+                 (raise-stx-err
+                  "expected \"-selectors\" or \"-setters\" or \"-constructor\" or \"-type\""
+                  omission))))
+            (checked-syntax->list #'omissions))
+           (cons
+            #`(define-syntaxes (name)
+                #,(remove-ctor&type-info
+                   (build-struct-expand-info
+                    #'name (syntax->list #'(field ...))
+                    omit-selectors omit-setters
+                    #f '(#f) '(#f))))
+            (let* ([res (add-contracts
+                         (build-struct-names #'name (syntax->list #'(field ...))
+                                             omit-selectors omit-setters #f))]
+                   [cpairs (cons 'contracted (if omit-constructor (cddr res) (cdr res)))])
+              (if omit-type
+                  (list cpairs)
+                  (list (car res) cpairs))))))
         ((_ name (x . y) . omissions)
          ;; Will fail
          (checked-syntax->list (stx-car (stx-cdr (stx-cdr stx)))))

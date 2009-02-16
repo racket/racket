@@ -614,6 +614,20 @@ would be bound by @scheme[(define-struct id (field ...) option ...)],
 where the extra option @scheme[#:omit-constructor] omits the
 @schemeidfont{make-}@scheme[id] identifier.}
 
+@defform/subs[
+(cstruct id ([field contract-expr] ...) option ...) 
+
+([field id
+        [id #:mutable]]
+ [option #:mutable
+         #:omit-constructor
+         #:omit-define-syntaxes
+         #:omit-define-values])]{
+
+For use with @scheme[define-signature]. The @scheme[cstruct] form works
+similarly to @scheme[struct], but the constructor, predicate, field
+accessors, and field mutators are contracted appropriately.}
+
 @; ------------------------------------------------------------------------
 
 @section{Unit Utilities}
