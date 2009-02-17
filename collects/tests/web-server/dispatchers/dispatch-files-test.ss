@@ -1,5 +1,5 @@
-#lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+#lang scheme
+(require (planet schematics/schemeunit:3)
          (only-in mzlib/file
                   file-name-from-path
                   make-temporary-file)
@@ -45,10 +45,14 @@
    (test-case
     "read-range-header: missing and badly formed headers"
     (check-false (files:read-range-header (list (make-header #"Ranges" #"bytes=1-10"))) "check 1")
-    (check-false (files:read-range-header (list (make-header #"Range" #"completely wrong"))) "check 2")
-    (check-false (files:read-range-header (list (make-header #"Range" #"byte=1-10"))) "check 3")
-    (check-false (files:read-range-header (list (make-header #"Range" #"bytes=a-10"))) "check 4")
-    (check-false (files:read-range-header (list (make-header #"Range" #"bytes=1-1.0"))) "check 5"))
+    (check-false (parameterize ([current-error-port (open-output-nowhere)])
+                   (files:read-range-header (list (make-header #"Range" #"completely wrong")))) "check 2")
+    (check-false (parameterize ([current-error-port (open-output-nowhere)])
+                   (files:read-range-header (list (make-header #"Range" #"byte=1-10")))) "check 3")
+    (check-false (parameterize ([current-error-port (open-output-nowhere)])
+                   (files:read-range-header (list (make-header #"Range" #"bytes=a-10")))) "check 4")
+    (check-false (parameterize ([current-error-port (open-output-nowhere)])
+                   (files:read-range-header (list (make-header #"Range" #"bytes=1-1.0")))) "check 5"))
    
    (test-case
     "read-range-header: single range"

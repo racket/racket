@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          "dispatch-passwords-test.ss"
          "dispatch-files-test.ss"        
          "dispatch-servlets-test.ss"

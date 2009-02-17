@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          net/url
          web-server/http/request-structs
          web-server/http/response-structs
@@ -57,11 +57,11 @@
      "xexpr-response/cookies"
      (test-equal? "Simple"
                   (response/full-body (xexpr-response/cookies empty `(html)))
-                  (list #"<html></html>"))
+                  (list #"<html />"))
      
      (test-equal? "One (body)"
                   (response/full-body (xexpr-response/cookies (list (make-cookie "name" "value")) `(html)))
-                  (list #"<html></html>"))
+                  (list #"<html />"))
      
      (test-equal? "One (headers)"
                   (map (lambda (h) (cons (header-field h) (header-value h)))

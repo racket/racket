@@ -1,7 +1,7 @@
 #lang scheme/base
 (require web-server/lang/stuff-url
          web-server/stuffers
-         (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+         (planet schematics/schemeunit:3)
          net/url
          mzlib/serialize
          "../util.ss")

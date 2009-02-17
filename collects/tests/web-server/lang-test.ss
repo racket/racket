@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          "util.ss")
 (provide lang-tests)
 
@@ -240,7 +240,7 @@
        (let* ([first-key (table-01-eval '(dispatch-start start 'foo))]
               [second-key (table-01-eval `(dispatch lookup-k '(,first-key 1)))]
               [third-key (table-01-eval `(dispatch lookup-k '(,first-key -7)))])
-         (printf "~S~n" (list first-key second-key third-key))
+         #;(printf "~S~n" (list first-key second-key third-key))
          (check = 3 (table-01-eval `(dispatch lookup-k '(,second-key 2))))
          (check = 4 (table-01-eval `(dispatch lookup-k '(,second-key 3))))
          (check-true (zero? (table-01-eval `(dispatch lookup-k '(,second-key -1)))))

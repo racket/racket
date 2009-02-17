@@ -23,7 +23,7 @@
   (match (regexp-match #"^.+\r\n\r\n(.+)$" bs)
     [(list _ s)
      (define sx (ssax:xml->sxml (open-input-bytes s) empty))
-     (pretty-print sx)
+     #;(pretty-print sx)
      sx]
     [_
      (error 'html "Given ~S~n" bs)]))
@@ -107,7 +107,8 @@
            (eval '(require 'm-id)))
          
          (lambda (s-expr)
-           (parameterize ([current-namespace ns])
+           (parameterize ([current-namespace ns]
+                          [current-output-port (open-output-nowhere)])
              (eval s-expr))))]
     [else
      (raise-syntax-error #f "make-module-evel: dropped through" m-expr)]))
@@ -121,5 +122,6 @@
       (namespace-require 'mzlib/serialize)
       (namespace-require pth))
     (lambda (expr)
-      (parameterize ([current-namespace ns])
+      (parameterize ([current-namespace ns]
+                     [current-output-port (open-output-nowhere)])
         (eval expr)))))
