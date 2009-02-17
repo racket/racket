@@ -4,6 +4,7 @@
 (require (utils tc-utils) 
 	 "rep-utils.ss" "effect-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
+         scheme/contract
          (for-syntax scheme/base))
 
 (define name-table (make-weak-hasheq))
@@ -13,26 +14,36 @@
 ;; Type is defined in rep-utils.ss
 
 ;; t must be a Type
-(dt Scope (t) [#:key (Type-key t)])
+(dt Scope ([t Type?]) [#:key (Type-key t)])
+
+(define (scope-depth k)
+  (flat-named-contract 
+   (format "Scope of depth ~a" k)
+   (lambda (sc)
+     (define (f k sc)
+       (cond [(= 0 k) (not (Scope? sc))]
+             [(not (Scope? sc)) #f]
+             [else (f (sub1 k) (Scope-t sc))]))
+     (f k sc))))
 
 ;; this is ONLY used when a type error ocurrs
 (dt Error () [#:frees #f] [#:fold-rhs #:base])
 
 ;; i is an nat
-(dt B (i)
+(dt B ([i natural-number/c])
     [#:frees empty-hash-table (make-immutable-hasheq (list (cons i Covariant)))]
     [#:fold-rhs #:base])
 
 ;; n is a Name
-(dt F (n) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
+(dt F ([n symbol?]) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
 
 ;; id is an Identifier
-(dt Name (id) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
+(dt Name ([id identifier?]) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; rator is a type
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
-(dt App (rator rands stx)
+(dt App ([rator Type?] [rands (listof Type?)] [stx syntax?])
     [#:intern (list rator rands)]
     [#:frees (combine-frees (map free-vars* (cons rator rands)))
              (combine-frees (map free-idxs* (cons rator rands)))]
@@ -41,19 +52,19 @@
                       stx)])
 
 ;; left and right are Types
-(dt Pair (left right) [#:key 'pair])
+(dt Pair ([left Type?] [right Type?]) [#:key 'pair])
 
 ;; elem is a Type
-(dt Vector (elem) 
+(dt Vector ([elem Type?]) 
     [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'vector])
 
 ;; elem is a Type
-(dt Box (elem) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+(dt Box ([elem Type?]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'box])  
 
 ;; name is a Symbol (not a Name)
-(dt Base (name contract) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
+(dt Base ([name symbol?] [contract syntax?]) [#:frees #f] [#:fold-rhs #:base] [#:intern name]
     [#:key (case name
 	     [(Number Integer) 'number]
 	     [(Boolean) 'boolean]
@@ -63,13 +74,17 @@
 	     [else #f])])
 
 ;; body is a Scope
-(dt Mu (body) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
+(dt Mu ([body (scope-depth 1)]) #:no-provide [#:frees (free-vars* body) (without-below 1 (free-idxs* body))]
     [#:fold-rhs (*Mu (*Scope (type-rec-id (Scope-t body))))]
     [#:key (Type-key body)])    
 
 ;; n is how many variables are bound here
 ;; body is a Scope
 (dt Poly (n body) #:no-provide 
+    [#:contract (->d ([n natural-number/c]
+                      [body (scope-depth n)])
+                     ()
+                     [result Poly?])]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
                   (*Poly n (add-scopes n (type-rec-id body*))))]
@@ -79,6 +94,10 @@
 ;; there are n-1 'normal' vars and 1 ... var
 ;; body is a Scope
 (dt PolyDots (n body) #:no-provide
+    [#:contract (->d ([n natural-number/c]
+                      [body (scope-depth n)])
+                     ()
+                     [result PolyDots?])]
     [#:key (Type-key body)]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
@@ -86,32 +105,13 @@
 
 ;; pred : identifier
 ;; cert : syntax certifier
-(dt Opaque (pred cert) [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
-
-;; name : symbol
-;; parent : Struct
-;; flds : Listof[Type]
-;; proc : Function Type
-;; poly? : is this a polymorphic type?
-;; pred-id : identifier for the predicate of the struct
-;; cert : syntax certifier for pred-id
-(dt Struct (name parent flds proc poly? pred-id cert)
-    [#:intern (list name parent flds proc)]
-    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
-             (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
-    [#:fold-rhs (*Struct name 
-                         (and parent (type-rec-id parent))
-                         (map type-rec-id flds)
-                         (and proc (type-rec-id proc))
-                         poly?
-                         pred-id
-                         cert)]
-    [#:key (gensym)])
+(dt Opaque ([pred identifier?] [cert procedure?]) 
+    [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
 ;; kw : keyword?
 ;; ty : Type
 ;; required? : Boolean
-(dt Keyword (kw ty required?)
+(dt Keyword ([kw keyword?] [ty Type?] [required? boolean?])
     [#:frees (free-vars* ty)
              (free-idxs* ty)]
     [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)]
@@ -126,7 +126,13 @@
 ;; thn-eff : Effect
 ;; els-eff : Effect
 ;; arr is NOT a Type
-(dt arr (dom rng rest drest kws thn-eff els-eff)
+(dt arr ([dom (listof Type?)] 
+         [rng Type?]
+         [rest (or/c #f Type?)] 
+         [drest (or/c #f (cons/c Type? (or/c natural-number/c symbol?)))]
+         [kws (listof Keyword?)]
+         [thn-eff (listof Effect?)]
+         [els-eff (listof Effect?)])
     [#:key 'procedure]
     [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null)
                                                                                 (map Keyword-ty kws)
@@ -163,10 +169,41 @@
 (dt top-arr ()
     [#:frees #f] [#:fold-rhs #:base])
 
+(define arr/c (or/c top-arr? arr?))
+
 ;; arities : Listof[arr]
-(dt Function (arities) [#:frees (combine-frees (map free-vars* arities))
-                                (combine-frees (map free-idxs* arities))]
+(dt Function ([arities (listof arr/c)])
+    [#:frees (combine-frees (map free-vars* arities))
+             (combine-frees (map free-idxs* arities))]
     [#:fold-rhs (*Function (map type-rec-id arities))])
+
+
+;; name : symbol
+;; parent : Struct
+;; flds : Listof[Type]
+;; proc : Function Type
+;; poly? : is this a polymorphic type?
+;; pred-id : identifier for the predicate of the struct
+;; cert : syntax certifier for pred-id
+(dt Struct ([name symbol?] 
+            [parent (or/c #f Struct? Name?)] 
+            [flds (listof Type?)]
+            [proc (or/c #f Function?)]
+            [poly? boolean?] 
+            [pred-id identifier?]
+            [cert procedure?])
+    [#:intern (list name parent flds proc)]
+    [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
+             (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
+    [#:fold-rhs (*Struct name 
+                         (and parent (type-rec-id parent))
+                         (map type-rec-id flds)
+                         (and proc (type-rec-id proc))
+                         poly?
+                         pred-id
+                         cert)]
+    [#:key (gensym)])
+
 
 ;; v : Scheme Value
 (dt Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]
@@ -175,8 +212,20 @@
 							    [else #f])])
 
 ;; elems : Listof[Type]
-(dt Union (elems) [#:frees (combine-frees (map free-vars* elems))
-                           (combine-frees (map free-idxs* elems))]
+(dt Union ([elems (and/c (listof Type?)
+                         (lambda (es)
+                           (let-values ([(sorted? k)
+                                         (for/fold ([sorted? #t]
+                                                    [last -1])
+                                           ([e es])
+                                           (let ([seq (Type-seq e)])
+                                             (values
+                                              (and sorted?
+                                                   (< last seq))
+                                              seq)))])
+                             sorted?)))]) 
+    [#:frees (combine-frees (map free-vars* elems))
+             (combine-frees (map free-idxs* elems))]
     [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
     [#:key (let loop ([res null] [ts elems])
 	     (if (null? ts) res
@@ -188,14 +237,14 @@
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
 ;; types : Listof[Type]
-(dt Values (types) 
+(dt Values ([types (listof Type?)]) 
     #:no-provide
     [#:frees (combine-frees (map free-vars* types))
              (combine-frees (map free-idxs* types))]
     [#:fold-rhs (*Values (map type-rec-id types))]
     [#:key 'values])
 
-(dt ValuesDots (types dty dbound) 
+(dt ValuesDots ([types (listof Type?)] [dty Type?] [dbound (or/c symbol? natural-number/c)]) 
     [#:frees (combine-frees (map free-vars* (cons dty types)))
              (combine-frees (map free-idxs* (cons dty types)))]
     [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)]
@@ -203,19 +252,21 @@
 
 ;; in : Type
 ;; out : Type
-(dt Param (in out) [#:key 'parameter])
+(dt Param ([in Type?] [out Type?]) [#:key 'parameter])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable (key value) [#:key 'hash])
+(dt Hashtable ([key Type?] [value Type?]) [#:key 'hash])
 
 ;; t : Type
-(dt Syntax (t) [#:key 'syntax])
+(dt Syntax ([t Type?]) [#:key 'syntax])
 
 ;; pos-flds  : (Listof Type)
 ;; name-flds : (Listof (Tuple Symbol Type Boolean))
 ;; methods   : (Listof (Tuple Symbol Function))
-(dt Class (pos-flds name-flds methods)
+(dt Class ([pos-flds (listof Type?)] 
+           [name-flds (listof (list/c symbol? Type? boolean?))]
+           [methods (listof (list/c symbol? Function?))])
     [#:frees (combine-frees
               (map free-vars* (append pos-flds 
                                       (map cadr name-flds)
@@ -238,7 +289,7 @@
                     (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
-(dt Instance (cls) [#:key 'instance])
+(dt Instance ([cls Class?]) [#:key 'instance])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

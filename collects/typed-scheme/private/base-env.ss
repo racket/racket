@@ -57,7 +57,7 @@
 [eqv? (-> Univ Univ B)]
 [equal? (-> Univ Univ B)]
 [even? (-> N B)]
-[assert (-poly (a) (-> (*Un a (-val #f)) a))]
+[assert (-poly (a) (-> (Un a (-val #f)) a))]
 [gensym (cl-> [(Sym) Sym]
               [() Sym])]
 [string-append (->* null -String -String)]
@@ -251,8 +251,8 @@
                               . -> . 
                               (-values (list (-pair b (-val '())) N N N))))]
 
-[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
-[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
+[call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
+[call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 
 [quotient (-Integer -Integer . -> . -Integer)]
 [remainder (-Integer -Integer . -> . -Integer)]
@@ -276,9 +276,9 @@
  (let ([?outp   (-opt -Output-Port)]
        [?N      (-opt N)]
        [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (*Un -String -Regexp -PRegexp)]
-       [-BtsRx  (*Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (*Un -Input-Port -Bytes)])
+       [-StrRx  (Un -String -Regexp -PRegexp)]
+       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+       [-InpBts (Un -Input-Port -Bytes)])
    (cl-> [(-StrRx   -String           ) (optlist -String)]
          [(-StrRx   -String N         ) (optlist -String)]
          [(-StrRx   -String N ?N      ) (optlist -String)]
@@ -294,9 +294,9 @@
 
 [regexp-match*
  (let ([?N      (-opt N)]
-       [-StrRx  (*Un -String -Regexp -PRegexp)]
-       [-BtsRx  (*Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (*Un -Input-Port -Bytes)])
+       [-StrRx  (Un -String -Regexp -PRegexp)]
+       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+       [-InpBts (Un -Input-Port -Bytes)])
    (cl->*
     (-StrRx   -String [N ?N] . ->opt . (-lst -String))
     (-BtsRx   -String [N ?N] . ->opt . (-lst -Bytes))
@@ -315,17 +315,17 @@
  (let ([?outp   (-opt -Output-Port)]
        [?N      (-opt N)]
        [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (*Un -String -Regexp -PRegexp)]
-       [-BtsRx  (*Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (*Un -Input-Port -Bytes)])
+       [-StrRx  (Un -String -Regexp -PRegexp)]
+       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+       [-InpBts (Un -Input-Port -Bytes)])
    (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (optlist (-pair -Nat -Nat))))]
 [regexp-match-positions*
  (let ([?outp   (-opt -Output-Port)]
        [?N      (-opt N)]
        [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (*Un -String -Regexp -PRegexp)]
-       [-BtsRx  (*Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (*Un -Input-Port -Bytes)])
+       [-StrRx  (Un -String -Regexp -PRegexp)]
+       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+       [-InpBts (Un -Input-Port -Bytes)])
    (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (-lst (-pair -Nat -Nat))))]
 #;
 [regexp-match-peek-positions*]
@@ -443,8 +443,8 @@
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-ref (-poly (a b c)
                  (cl-> [((-HT a b) a) b]
-                       [((-HT a b) a (-> c)) (*Un b c)]
-                       [((-HT a b) a c) (*Un b c)]))]
+                       [((-HT a b) a (-> c)) (Un b c)]
+                       [((-HT a b) a c) (Un b c)]))]
 #;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
 
 [bytes (->* (list) N -Bytes)]
@@ -464,7 +464,7 @@
 [force (-poly (a) (-> (-Promise a) a))]
 [bytes<? (->* (list -Bytes) -Bytes B)]
 [regexp-replace*
- (cl->* (-Pattern (*Un -Bytes -String) (*Un -Bytes -String) . -> . -Bytes)
+ (cl->* (-Pattern (Un -Bytes -String) (Un -Bytes -String) . -> . -Bytes)
         (-Pattern -String -String . -> . -String))]
 [peek-char
  (cl->* [-> -Char]
@@ -503,7 +503,7 @@
 
 [delete-file (-> -Pathlike -Void)]
 [make-namespace (cl->* (-> -Namespace)
-                       (-> (*Un (-val 'empty) (-val 'initial)) -Namespace))]
+                       (-> (Un (-val 'empty) (-val 'initial)) -Namespace))]
 [make-base-namespace (-> -Namespace)]
 [eval (-> -Sexp Univ)]
 

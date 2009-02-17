@@ -78,3 +78,7 @@
 
 (define-syntax-rule (->opt args ... [opt ...] res)
   (opt-fn (list args ...) (list opt ...) res))
+
+
+;; DO NOT USE if t contains #f
+(define (-opt t) (Un (-val #f) t))

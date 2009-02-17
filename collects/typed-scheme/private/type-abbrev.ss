@@ -179,8 +179,8 @@
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
 (define -lst make-Listof)
-(define -Sexp (-mu x (*Un Sym N B -String (-val null) (-pair x x))))
-(define -Port (*Un -Input-Port -Output-Port))
+(define -Sexp (-mu x (*Un N B Sym -String (-val null) (-pair x x))))
+(define -Port (*Un -Output-Port -Input-Port))
 
 (define (-lst* #:tail [tail (-val null)] . args)
   (if (null? args)
@@ -199,9 +199,9 @@
      (->* in out : (list (make-Latent-Restrict-Effect t)) (list (make-Latent-Remove-Effect t)))]
     [(t) (make-pred-ty (list Univ) B t)]))
 
-(define -Pathlike (*Un -Path -String))
-(define -Pathlike* (*Un (-val 'up) (-val 'same) -Path -String))
-(define -Pattern (*Un -String -Bytes -Regexp -Byte-Regexp -PRegexp -Byte-PRegexp))
+(define -Pathlike (*Un -String -Path))
+(define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
+(define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
 (define -Byte N)
 
 (define (-Tuple l)
@@ -220,16 +220,13 @@
 (define Any-Syntax ;(-Syntax Univ)
   (-mu x
        (-Syntax (*Un 
-                 (-mu y (*Un (-pair x (*Un x y)) (-val '())))
-                 (make-Vector x)
-                 (make-Box x)
                  N
                  B
-		 -Keyword
+                 Sym
                  -String
-                 Sym))))
+		 -Keyword                 
+                 (-mu y (*Un (-val '()) (-pair x (*Un x y))))
+                 (make-Vector x)
+                 (make-Box x)))))
 
 (define Ident (-Syntax Sym))
-
-;; DO NOT USE if t contains #f
-(define (-opt t) (*Un (-val #f) t))

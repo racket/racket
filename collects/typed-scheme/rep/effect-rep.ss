@@ -9,29 +9,29 @@
 (de False-Effect () [#:frees #f] [#:fold-rhs #:base])
 
 ;; v is an identifier
-(de Var-True-Effect (v) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
+(de Var-True-Effect ([v identifier?]) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; v is an identifier
-(de Var-False-Effect (v) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
+(de Var-False-Effect ([v identifier?]) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
 
 ;; t is a Type
 ;; v is an identifier
-(de Restrict-Effect (t v) [#:intern (list t (hash-id v))] [#:frees (free-vars* t) (free-idxs* t)]
+(de Restrict-Effect ([t Type?] [v identifier?]) [#:intern (list t (hash-id v))] [#:frees (free-vars* t) (free-idxs* t)]
     [#:fold-rhs (*Restrict-Effect (type-rec-id t) v)])
 
 ;; t is a Type
 ;; v is an identifier
-(de Remove-Effect (t v) 
+(de Remove-Effect ([t Type?] [v identifier?]) 
     [#:intern (list t (hash-id v))]
     [#:frees (free-vars* t) (free-idxs* t)]
     [#:fold-rhs (*Remove-Effect (type-rec-id t) v)])
 
 ;; t is a Type
-(de Latent-Restrict-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+(de Latent-Restrict-Effect ([t Type?]) [#:frees (free-vars* t) (free-idxs* t)]
     [#:fold-rhs (*Latent-Restrict-Effect (type-rec-id t))])
 
 ;; t is a Type
-(de Latent-Remove-Effect (t) [#:frees (free-vars* t) (free-idxs* t)]
+(de Latent-Remove-Effect ([t Type?]) [#:frees (free-vars* t) (free-idxs* t)]
     [#:fold-rhs (*Latent-Remove-Effect (type-rec-id t))])
 
 (de Latent-Var-True-Effect () [#:frees #f] [#:fold-rhs #:base])
