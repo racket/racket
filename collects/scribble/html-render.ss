@@ -1011,8 +1011,8 @@
                              (if (path? p)
                                (url->string (path->url (path->complete-path p)))
                                p))]
-                     . ,(attribs))
-                    ,@sz)))]
+                     ,@(attribs)
+                     ,@sz))))]
           [else (render*)])))
 
     (define/override (render-table t part ri need-inline?)
