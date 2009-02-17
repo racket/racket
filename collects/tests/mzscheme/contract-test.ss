@@ -2401,6 +2401,70 @@
       (eval '(require 'foo-dc18)))
    "(unit U@)")
   
+  (test/spec-failed
+   'define/contract19
+   '(let ()
+      (define y 3)
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1)
+   "top-level")
+  
+  (test/spec-passed
+   'define/contract20
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1))
+  
+  (test/spec-passed
+   'define/contract21
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        (if (y n) 3 1))
+      1))
+  
+  (test/spec-failed
+   'define/contract22
+   '(let ()
+      (define y 4)
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1)
+   "top-level")
+
+  (test/spec-failed
+   'define/contract23
+   '(let ()
+      (define y (lambda (n) #t))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? number?)
+        (y n))
+      (f 5))
+   "top-level")
+  
+  (test/spec-failed
+   'define/contract24
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        (if (y #t) 3 1))
+      (f 5))
+   "(function f)")
+  
 
 ;                                                                                  
 ;                                                                                  
