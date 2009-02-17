@@ -693,7 +693,12 @@ exported without a contract.
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken
 within the @scheme[with-contract] @scheme[body] will use the
-@scheme[blame-id] for their negative position.}
+@scheme[blame-id] for their negative position.
+
+If a free-var-list is given, then any uses of the free variables
+inside the @scheme[body] will be protected with contracts that
+blame the context of the @scheme[with-contract] form for the positive
+positions and the @scheme[with-contract] form for the negative ones.}
 
 @defform*[[(define/contract id contract-expr free-var-list init-value-expr)
  (define/contract (head args) contract-expr free-var-list body ...+)]]{
@@ -708,7 +713,12 @@ a contract region. The definition itself is responsible for positive
 @scheme[id] outside of the definition must meet the negative
 positions of the contract. Since the contract boundary is
 between the definition and the surrounding context, references to
-@scheme[id] inside the @scheme[define/contract] form are not checked.}
+@scheme[id] inside the @scheme[define/contract] form are not checked.
+
+If a free-var-list is given, then any uses of the free variables
+inside the @scheme[body] will be protected with contracts that
+blame the context of the @scheme[with-contract] form for the positive
+positions and the @scheme[with-contract] form for the negative ones.}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
