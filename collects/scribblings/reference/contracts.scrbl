@@ -694,15 +694,16 @@ within the @scheme[with-contract] @scheme[body] will use the
 @defform*[[(define/contract id contract-expr init-value-expr)
  (define/contract (head args) contract-expr body ...+)]]{
 Works like @scheme[define], except that the contract
-@scheme[contract-expr] is attached to the bound value.
+@scheme[contract-expr] is attached to the bound value.  For the
+definition of @scheme[head] and @scheme[args], see @scheme[define].
 
-The @scheme[define/contract] form treats individual definitions as
-units of blame. The definition itself is responsible for positive
-(co-variant) positions of the contract and each reference to
-@scheme[id] (including those in the initial value expression) must
-meet the negative positions of the contract.  It is equivalent to
-wrapping a single @scheme[define] with a @scheme[with-contract] form
-that pairs the @scheme[contract-expr] with the bound identifier.}
+The @scheme[define/contract] form treats the individual definition as
+a contract region. The definition itself is responsible for positive
+(co-variant) positions of the contract and references to
+@scheme[id] outside of the definition must meet the negative
+positions of the contract. Since the contract boundary is
+between the definition and the surrounding context, references to
+@scheme[id] inside the @scheme[define/contract] form are not checked.}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
