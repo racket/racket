@@ -19,6 +19,8 @@
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
+@guideintro["units"]{units}
+
 @deftech{Units} organize a program into separately compilable and
 reusable components. The imports and exports of a unit are grouped
 into a @deftech{signature}, which can include ``static'' information
