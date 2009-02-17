@@ -99,7 +99,7 @@ of the @web-server in other applications, or loading a custom
 dispatcher. 
 
 @defproc[(serve [#:dispatch dispatch dispatcher/c]
-                [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
+                [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                 [#:port port integer? 80]
                 [#:listen-ip listen-ip (or/c string? false/c) #f]
                 [#:max-waiting max-waiting integer? 40]
@@ -127,7 +127,7 @@ from a given path:
 ]
 
 @defproc[(serve/ports [#:dispatch dispatch dispatcher/c]
-                      [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
+                      [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                       [#:ports ports (listof integer?) (list 80)]
                       [#:listen-ip listen-ip (or/c string? false/c) #f]
                       [#:max-waiting max-waiting integer? 40]
@@ -138,7 +138,7 @@ from a given path:
 }
 
 @defproc[(serve/ips+ports [#:dispatch dispatch dispatcher/c]
-                          [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
+                          [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@]
                           [#:ips+ports ips+ports (listof (cons/c (or/c string? false/c) (listof integer?))) (list (cons #f (list 80)))]
                           [#:max-waiting max-waiting integer? 40]
                           [#:initial-connection-timeout initial-connection-timeout integer? 60])
@@ -147,8 +147,8 @@ from a given path:
  a function that shuts down all of the server instances.
 }
                   
-@defproc[(serve/web-config@ [config@ web-config^]
-                            [#:tcp@ tcp@ tcp-unit^ raw:tcp@])
+@defproc[(serve/web-config@ [config@ (unit/c (import) (export web-config^))]
+                            [#:tcp@ tcp@ (unit/c (import) (export tcp^)) raw:tcp@])
          (-> void)]{
  Starts the @web-server with the settings defined by the given @scheme[web-config^] unit.
         

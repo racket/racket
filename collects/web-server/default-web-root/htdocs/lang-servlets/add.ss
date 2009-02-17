@@ -2,6 +2,8 @@
 (define interface-version 'stateless)
 (provide start interface-version)
 
+(define printf void)
+
 ;; get-number-from-user: string -> number
 ;; ask the user for a number
 (define (get-number msg)

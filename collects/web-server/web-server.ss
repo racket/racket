@@ -14,7 +14,7 @@
 (provide/contract
  [serve
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ unit?
+       (#:tcp@ (unit/c (import) (export tcp^))
         #:port number?
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
@@ -22,7 +22,7 @@
        (-> void))]
  [serve/ports
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ unit?
+       (#:tcp@ (unit/c (import) (export tcp^))
         #:ports (listof number?)
         #:listen-ip (or/c false/c string?)
         #:max-waiting number?
@@ -30,13 +30,13 @@
        (-> void))]
  [serve/ips+ports
   (->* (#:dispatch dispatcher/c)
-       (#:tcp@ unit?
+       (#:tcp@ (unit/c (import) (export tcp^))
         #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
         #:max-waiting number?
         #:initial-connection-timeout number?)
        (-> void))]
  [do-not-return (-> void)]
- [serve/web-config@ ((unit?) (#:tcp@ unit?) . ->* . (-> void?))])
+ [serve/web-config@ (((unit/c (import) (export web-config^))) (#:tcp@ (unit/c (import) (export tcp^))) . ->* . (-> void?))])
 
 (define (do-not-return)
   (semaphore-wait (make-semaphore 0)))

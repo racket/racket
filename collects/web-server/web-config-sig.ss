@@ -1,8 +1,17 @@
-#lang scheme/signature
+#lang scheme
+(require web-server/private/util
+         web-server/configuration/namespace
+         web-server/configuration/configuration-table-structs)
 
-max-waiting 
-virtual-hosts
-initial-connection-timeout
-port
-listen-ip
-make-servlet-namespace
+(provide
+ web-config^)
+
+(define-signature
+  web-config^
+  ((contracted
+    [max-waiting integer?]
+    [virtual-hosts (string? . -> . host?)]
+    [initial-connection-timeout integer?]
+    [port port-number?]
+    [listen-ip (or/c false/c string?)]
+    [make-servlet-namespace make-servlet-namespace/c])))

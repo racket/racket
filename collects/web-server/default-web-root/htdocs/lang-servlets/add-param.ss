@@ -3,6 +3,7 @@
 (provide start interface-version)
 
 (define msg (make-parameter "unknown"))
+(define printf void)
 
 (define (gn)
   (printf "gn ~a~n" (msg))

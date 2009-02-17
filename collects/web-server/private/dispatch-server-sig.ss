@@ -1,13 +1,26 @@
-#lang scheme/base
-(require mzlib/unit)
+#lang scheme
+(require web-server/private/util
+         web-server/private/connection-manager)
 
 (define-signature dispatch-server^
-  (serve
-   serve-ports))
+  ((contracted
+    [serve (-> (-> void))]
+    [serve-ports (input-port? output-port? . -> . (-> void))])))
 
 (define-signature dispatch-server-config^
-  (port listen-ip max-waiting initial-connection-timeout
-        read-request dispatch))
+  ((contracted
+    [port port-number?]
+    [listen-ip (or/c string? false/c)]
+    [max-waiting integer?]
+    [initial-connection-timeout integer?]
+    [read-request
+     (connection? 
+      port-number?
+      (input-port? . -> . (values string? string?))
+      . -> .
+      (values any/c boolean?))]
+    [dispatch 
+     (-> connection? any/c void)])))
 
 (provide
  dispatch-server^ dispatch-server-config^)

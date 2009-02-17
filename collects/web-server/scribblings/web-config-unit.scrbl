@@ -31,7 +31,7 @@ Provides contains the following identifiers.
  Passed to @scheme[tcp-accept].
 }
 
-@defthing[virtual-hosts (listof (cons/c string? host-table?))]{
+@defthing[virtual-hosts (string? . -> . host?)]{
  Contains the configuration of individual virtual hosts.
 }
 
@@ -43,8 +43,8 @@ Provides contains the following identifiers.
  Specifies the port to serve HTTP on.
 }
 
-@defthing[listen-ip string?]{
- Passed to @scheme[tcp-accept].
+@defthing[listen-ip (or/c false/c string?)]{
+ Passed to @scheme[tcp-listen].
 }
 
 @defthing[make-servlet-namespace make-servlet-namespace/c]{
@@ -62,7 +62,7 @@ Provides contains the following identifiers.
                                            [#:port port (or/c false/c port-number?) #f]
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
                                            [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c (make-make-servlet-namespace)])
-         (unit? web-config^)]{
+         (unit/c (import) (export web-config^))]{
  Reads the S-expression at @scheme[path] and calls
  @scheme[configuration-table-sexpr->web-config@] appropriately.
 }
@@ -74,7 +74,7 @@ Provides contains the following identifiers.
                                                  [#:listen-ip listen-ip (or/c false/c string?) #f]
                                                  [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace/c
                                                                            (make-make-servlet-namespace)])
-         (unit? web-config^)]{
+         (unit/c (import) (export web-config^))]{
  Parses @scheme[sexpr] as a configuration-table and constructs a @scheme[web-config^] unit.
 }
 

@@ -1,6 +1,5 @@
 #lang scheme
-(require mzlib/contract
-         mzlib/plt-match
+(require mzlib/plt-match
          net/url
          mzlib/list
          net/uri-codec
@@ -10,7 +9,11 @@
 
 (provide/contract
  [rename ext:read-request read-request
-         ((connection? number? ((input-port?) . ->* . (string? string?))) . ->* . (request? boolean?))])
+         (connection? 
+          port-number?
+          (input-port? . -> . (values string? string?))
+          . -> .
+          (values request? boolean?))])
 
 (define (ext:read-request conn host-port port-addresses)
   (with-handlers ([exn? (lambda (exn)

@@ -14,14 +14,14 @@
        (#:port (or/c false/c number?)
                #:listen-ip (or/c false/c string?)
                #:make-servlet-namespace make-servlet-namespace/c)
-       unit?)]
+       (unit/c (import) (export web-config^)))]
  [configuration-table-sexpr->web-config@
   (->* (configuration-table-sexpr?)
        (#:web-server-root path-string?
                           #:port (or/c false/c number?)
                           #:listen-ip (or/c false/c string?)
                           #:make-servlet-namespace make-servlet-namespace/c)
-       unit?)])
+       (unit/c (import) (export web-config^)))])
 
 ; configuration-table->web-config@ : path -> configuration
 (define (configuration-table->web-config@ 
