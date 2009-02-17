@@ -20,9 +20,11 @@
            current-variable-list
            current-meta-list
 
+           (struct-out var-id)
            (struct-out shaped-parens)
            (struct-out just-context)
-           (struct-out literal-syntax))
+           (struct-out literal-syntax)
+           (for-syntax make-variable-id))
 
   (define no-color "schemeplain")
   (define reader-color "schemereader")
@@ -118,57 +120,63 @@
         (make-element style content)))
 
   (define (typeset-atom c out color? quote-depth)
-    (let*-values ([(is-var?) (and (identifier? c)
-                                  (memq (syntax-e c) (current-variable-list)))]
-                  [(s it? sub?)
-                   (let ([sc (syntax-e c)])
-                     (let ([s (format "~s" (if (literal-syntax? sc)
-                                               (literal-syntax-stx sc)
-                                               sc))])
-                       (if (and (symbol? sc)
-                                ((string-length s) . > . 1)
-                                (char=? (string-ref s 0) #\_)
-                                (not (or (identifier-label-binding c)
-                                         is-var?)))
-                           (values (substring s 1) #t #f)
-                           (values s #f #f))))])
-      (if (or (element? (syntax-e c))
-              (delayed-element? (syntax-e c))
-              (part-relative-element? (syntax-e c)))
-          (out (syntax-e c) #f)
-          (out (if (and (identifier? c)
-                        color?
-                        (quote-depth . <= . 0)
-                        (not (or it? is-var?)))
-                   (if (pair? (identifier-label-binding c))
-                       (make-id-element c s)
-                       s)
-                   (literalize-spaces s))
-               (cond
-                [(positive? quote-depth) value-color]
-                [(let ([v (syntax-e c)])
-                   (or (number? v)
-                       (string? v)
-                       (bytes? v)
-                       (char? v)
-                       (regexp? v)
-                       (byte-regexp? v)
-                       (boolean? v)))
-                 value-color]
-                [(identifier? c) 
-                 (cond
-                  [is-var?
-                   variable-color]
-                  [(and (identifier? c)
-                        (memq (syntax-e c) (current-keyword-list)))
-                   keyword-color]
-                  [(and (identifier? c)
-                        (memq (syntax-e c) (current-meta-list)))
-                   meta-color]
-                  [it? variable-color]
-                  [else symbol-color])]
-                [else paren-color])
-               (string-length s)))))
+    (if (var-id? (syntax-e c))
+        (out (format "~s" (let ([v (var-id-sym (syntax-e c))])
+                            (if (syntax? v)
+                                (syntax-e v)
+                                v)))
+             variable-color)
+        (let*-values ([(is-var?) (and (identifier? c)
+                                      (memq (syntax-e c) (current-variable-list)))]
+                      [(s it? sub?)
+                       (let ([sc (syntax-e c)])
+                         (let ([s (format "~s" (if (literal-syntax? sc)
+                                                   (literal-syntax-stx sc)
+                                                   sc))])
+                           (if (and (symbol? sc)
+                                    ((string-length s) . > . 1)
+                                    (char=? (string-ref s 0) #\_)
+                                    (not (or (identifier-label-binding c)
+                                             is-var?)))
+                               (values (substring s 1) #t #f)
+                               (values s #f #f))))])
+          (if (or (element? (syntax-e c))
+                  (delayed-element? (syntax-e c))
+                  (part-relative-element? (syntax-e c)))
+              (out (syntax-e c) #f)
+              (out (if (and (identifier? c)
+                            color?
+                            (quote-depth . <= . 0)
+                            (not (or it? is-var?)))
+                       (if (pair? (identifier-label-binding c))
+                           (make-id-element c s)
+                           s)
+                       (literalize-spaces s))
+                   (cond
+                    [(positive? quote-depth) value-color]
+                    [(let ([v (syntax-e c)])
+                       (or (number? v)
+                           (string? v)
+                           (bytes? v)
+                           (char? v)
+                           (regexp? v)
+                           (byte-regexp? v)
+                           (boolean? v)))
+                     value-color]
+                    [(identifier? c) 
+                     (cond
+                      [is-var?
+                       variable-color]
+                      [(and (identifier? c)
+                            (memq (syntax-e c) (current-keyword-list)))
+                       keyword-color]
+                      [(and (identifier? c)
+                            (memq (syntax-e c) (current-meta-list)))
+                       meta-color]
+                      [it? variable-color]
+                      [else symbol-color])]
+                    [else paren-color])
+                   (string-length s))))))
 
   (define (gen-typeset c multi-line? prefix1 prefix suffix color?)
     (let* ([c (syntax-ize c 0)]
@@ -590,6 +598,8 @@
   (define ((to-paragraph/prefix pfx1 pfx sfx) c)
     (typeset c #t pfx1 pfx sfx #t))
 
+  (begin-for-syntax (define-struct variable-id (sym) #:omit-define-syntaxes))
+
   (define-syntax (define-code stx)
     (syntax-case stx ()
       [(_ code typeset-code uncode d->s stx-prop)
@@ -597,6 +607,15 @@
 	 (define-syntax (code stx)
 	   (define (stx->loc-s-expr v)
 	     (cond
+              [(and (identifier? v)
+                    (variable-id? (syntax-local-value v (lambda () #f))))
+               `(,#'d->s #f 
+                         (,#'make-var-id ',(variable-id-sym (syntax-local-value v)))
+                         #(code
+                           ,(syntax-line v)
+                           ,(syntax-column v)
+                           ,(syntax-position v)
+                           ,(syntax-span v)))]
 	      [(syntax? v)
 	       (let ([mk `(,#'d->s
 			   (quote-syntax ,(datum->syntax v 'defcode))
@@ -666,6 +685,7 @@
                           (loop (cons (car r) r) (sub1 i)))))
            l))))
 
+  (define-struct var-id (sym))
   (define-struct shaped-parens (val shape))
   (define-struct just-context (val ctx))
   (define-struct literal-syntax (stx))

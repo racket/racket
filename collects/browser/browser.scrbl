@@ -7,6 +7,8 @@
                    browser/htmltext
                    browser/external
                    browser/tool
+                   scheme/base
+                   scheme/class
                    scheme/gui/base
                    net/url
                    framework/framework))

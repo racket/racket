@@ -153,7 +153,7 @@
                  (syntax->list #'(lit ...)))
        #'(with-togetherable-scheme-variables
           (lit ...)
-          ([form spec])
+          ([form/none spec])
           (*defforms #f
                      '(spec) (list (lambda (ignored) (schemeblock0/form spec)))
                      null null

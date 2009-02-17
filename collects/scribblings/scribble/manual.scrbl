@@ -4,8 +4,8 @@
           (for-syntax scheme/base)
           (for-label scribble/manual-struct))
 
-@(define ellipses (scheme ...))
-@(define ellipses+ (scheme ...+))
+@(define lit-ellipses (scheme ...))
+@(define lit-ellipses+ (scheme ...+))
 
 @title[#:tag "manual" #:style 'toc]{Manual Forms}
 
@@ -357,8 +357,8 @@ sub-sections.}
                          (keyword arg-id contract-expr-datum default-expr)
                          ellipses
                          ellipses+]
-               [ellipses #, @ellipses]
-               [ellipses+ #, @ellipses+])]{
+               [ellipses #, @lit-ellipses]
+               [ellipses+ #, @lit-ellipses+])]{
 
 Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a procedure named @scheme[id]. Nesting
@@ -393,14 +393,14 @@ Each @scheme[arg-spec] must have one of the following forms:
        Like the previous case, but with a default
        value.}
 
-@specsubform[#, @ellipses]{Any number of the preceding argument.  This
+@specsubform[#, @lit-ellipses]{Any number of the preceding argument.  This
        form is normally used at the end, but keyword-based arguments
        can sensibly appear afterward. See also the documentation for
-       @scheme[append] for a use of @ellipses before the last
+       @scheme[append] for a use of @lit-ellipses before the last
        argument.}
 
-@specsubform[#, @ellipses+]{One or more of the preceding argument
-       (normally at the end, like @ellipses).}
+@specsubform[#, @lit-ellipses+]{One or more of the preceding argument
+       (normally at the end, like @lit-ellipses).}
 
 The @scheme[result-contract-expr-datum] is typeset via
 @scheme[schemeblock0], and it represents a contract on the procedure's

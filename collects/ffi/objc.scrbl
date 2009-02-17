@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/eval
           (for-label scheme/base
-                     scheme/foreign
+                     scheme/contract
+                     (except-in scheme/foreign ->)
                      "private/objc-doc-unsafe.ss"))
 
 @(define objc-eval (make-base-eval))

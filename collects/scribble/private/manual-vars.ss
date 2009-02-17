@@ -15,15 +15,23 @@
 
 (define-struct (box-splice splice) ())
 
+(begin-for-syntax (define-struct deftogether-tag () #:omit-define-syntaxes))
+
 (define-syntax (with-togetherable-scheme-variables stx)
   (syntax-case stx ()
     [(_ . rest)
-     ;; Make it transparent, so deftogether is allowed to pull it apart
-     (syntax-property
-      (syntax/loc stx
-        (with-togetherable-scheme-variables* . rest))
-      'certify-mode
-      'transparent)]))
+     (let ([result (syntax/loc stx
+                     (with-togetherable-scheme-variables* . rest))]
+           [ctx (syntax-local-context)])
+       (if (and (pair? ctx) (deftogether-tag? (car ctx)))
+           ;; Make it transparent, so deftogether is allowed to pull it apart
+           (syntax-property result
+                            'certify-mode
+                            'transparent)
+           ;; Otherwise, don't make it transparent, because that
+           ;; removes certificates that will be needed on the `letrec-syntaxes'
+           ;; that we introduce later.
+           result))]))
 
 (define-syntax-rule (with-togetherable-scheme-variables* . rest)
   (with-scheme-variables . rest))
@@ -41,6 +49,7 @@
                          (if (identifier? arg)
                              (unless (or (eq? (syntax-e arg) '...)
                                          (eq? (syntax-e arg) '...+)
+                                         (eq? (syntax-e arg) '_...superclass-args...)
                                          (memq (syntax-e arg) lits))
                                (bound-identifier-mapping-put! ht arg #t))
                              (syntax-case arg ()
@@ -51,11 +60,12 @@
                                 (identifier? #'arg)
                                 (bound-identifier-mapping-put! ht #'arg #t)])))
                        (cdr (syntax->list s-exp)))]
-                     [(form form/maybe non-term)
+                     [(form form/none form/maybe non-term)
                       (let loop ([form (case (syntax-e kind)
                                          [(form) (if (identifier? s-exp)
                                                      null
                                                      (cdr (syntax-e s-exp)))]
+                                         [(form/none) s-exp]
                                          [(form/maybe)
                                           (syntax-case s-exp ()
                                             [(#f form) #'form]
@@ -64,6 +74,9 @@
                         (if (identifier? form)
                             (unless (or (eq? (syntax-e form) '...)
                                         (eq? (syntax-e form) '...+)
+                                        (eq? (syntax-e form) 'code:line)
+                                        (eq? (syntax-e form) 'code:blank)
+                                        (eq? (syntax-e form) 'code:comment)
                                         (eq? (syntax-e form) '?)
                                         (memq (syntax-e form) lits))
                               (bound-identifier-mapping-put! ht form #t))
@@ -81,7 +94,7 @@
                  (syntax->list #'(kind ...))
                  (syntax->list #'(s-exp ...)))
        (with-syntax ([(id ...) (bound-identifier-mapping-map ht (lambda (k v) k))])
-         #'(parameterize ([current-variable-list '(id ...)])
+         #'(letrec-syntaxes ([(id) (make-variable-id 'id)] ...)
              body)))]))
 
 
@@ -112,7 +125,7 @@
                     (map (lambda (def)
                            (let ([exp-def (local-expand 
                                            def
-                                           'expression
+                                           (list (make-deftogether-tag))
                                            (cons
                                             #'with-togetherable-scheme-variables*
                                             (kernel-form-identifier-list)))])
