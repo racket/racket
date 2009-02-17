@@ -16,7 +16,7 @@
      [(_ arg)
       (identifier? #'arg)
       (let ([as (symbol->string (syntax-e #'arg))])
-        #`(index '("Redex Pattern" #,as) (deftech #,as)))]))
+        #`(index '("Redex Pattern" #,as) (deftech #:style? #f @scheme[arg])))]))
 
 @(define-syntax (pattech stx)
    (syntax-case stx ()
@@ -27,8 +27,8 @@
 @(define-syntax (ttpattern stx)
    (syntax-case stx ()
     [(_ args ...)
-     #'((tech (tt "pattern")) args ...)]
-    [x (identifier? #'x) #'(tech (tt "pattern"))]))
+     #'((tech (schemevarfont "pattern")) args ...)]
+    [x (identifier? #'x) #'(tech (schemevarfont "pattern"))]))
 
 @(define-syntax (pattern stx)
    (syntax-case stx ()
@@ -39,8 +39,8 @@
 @(define-syntax (tttterm stx)
    (syntax-case stx ()
     [(_ args ...)
-     #'((tech (tt "term")) args ...)]
-    [x (identifier? #'x) #'(tech (tt "term"))]))
+     #'((tech (schemevarfont "term")) args ...)]
+    [x (identifier? #'x) #'(tech (schemevarfont "term"))]))
 
 @(define-syntax (tterm stx)
    (syntax-case stx ()
@@ -372,7 +372,7 @@ the visible representation of terms.
 The grammar of @deftech{term}s is (note that an ellipsis
 stands for repetition unless otherwise indicated):
 
-@(schemegrammar* #:literals (in-hole hole) 
+@(schemegrammar* #:literals (in-hole hole unquote unquote-splicing) 
    [term identifier
          (term-sequence ...)
          ,scheme-expression
@@ -387,28 +387,28 @@ stands for repetition unless otherwise indicated):
 
 @itemize{
 
-@item{A term written @tt{identifier} is equivalent to the
+@item{A term written @scheme[_identifier] is equivalent to the
 corresponding symbol, unless the identifier is bound by
 @scheme[term-let] (or in a @|pattern| elsewhere) or is
 @tt{hole} (as below).  }
 
-@item{A term written @tt{(term-sequence ...)} constructs a list of
+@item{A term written @scheme[(_term-sequence ...)] constructs a list of
 the terms constructed by the sequence elements.}
 
-@item{A term written @scheme[,scheme-expression] evaluates the
+@item{A term written @scheme[,_scheme-expression] evaluates the
 @scheme[scheme-expression] and substitutes its value into the term at
 that point.}
 
-@item{A term written @scheme[,@scheme-expression] evaluates the
+@item{A term written @scheme[,@_scheme-expression] evaluates the
 @scheme[scheme-expression], which must produce a list. It then splices
 the contents of the list into the expression at that point in the sequence.}
 
-@item{A term written @tt{(in-hole @|tttterm| @|tttterm|)}
- is the dual to the @pattern `in-hole' -- it accepts
+@item{A term written @scheme[(in-hole @|tttterm| @|tttterm|)]
+ is the dual to the @pattern @scheme[in-hole] -- it accepts
  a context and an expression and uses @scheme[plug] to combine
 them.}
 
-@item{A term written @tt{hole} produces a hole.}
+@item{A term written @scheme[hole] produces a hole.}
 
 @item{A term written as a literal boolean or a string
 produces the boolean or the string.}
@@ -418,13 +418,11 @@ produces the boolean or the string.}
 
 This form is used for construction of a term.
 
- in
-the right-hand sides of reductions. It behaves similarly to
-quasiquote except for a few special forms that are
-recognized (listed below) and that names bound by @scheme[term-let] are
-implicitly substituted with the values that those names were
-bound to, expanding ellipses as in-place sublists (in the
-same manner as syntax-case patterns).
+It behaves similarly to @scheme[quasiquote], except for a few special
+forms that are recognized (listed below) and that names bound by
+@scheme[term-let] are implicitly substituted with the values that
+those names were bound to, expanding ellipses as in-place sublists (in
+the same manner as syntax-case patterns).
 
 For example,
 
@@ -461,16 +459,15 @@ the id pattern to the appropriate value (described
 below). These bindings are then accessible to the `term'
 syntactic form.
 
-Note that each @scheme[ellipsis] should be the literal
-symbol consisting of three dots (and the ... elsewhere
-indicates repetition as usual). If @scheme[tl-pat] is an identifier,
-it matches any value and binds it to the identifier, for use
-inside @scheme[term]. If it is a list, it matches only if the value
-being matched is a list value and only if every subpattern
-recursively matches the corresponding list element. There
-may be a single ellipsis in any list pattern; if one is
-present, the pattern before the ellipses may match multiple
-adjacent elements in the list value (possibly none).  
+Note that each ellipsis should be the literal symbol consisting of
+three dots (and the ... elsewhere indicates repetition as usual). If
+@scheme[tl-pat] is an identifier, it matches any value and binds it to
+the identifier, for use inside @scheme[term]. If it is a list, it
+matches only if the value being matched is a list value and only if
+every subpattern recursively matches the corresponding list
+element. There may be a single ellipsis in any list pattern; if one is
+present, the pattern before the ellipses may match multiple adjacent
+elements in the list value (possibly none).
 
 This form is a lower-level form in Redex, and not really designed to
 be used directly. If you want a @scheme[let]-like form that uses

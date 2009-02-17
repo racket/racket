@@ -929,7 +929,8 @@ The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[t],
 which is normally defined using @scheme[elemtag].}
 
 
-@defproc[(deftech [pre-content any/c] ...) element?]{
+@defproc[(deftech [pre-content any/c] ...
+                  [#:style? style? any/c #t]) element?]{
 
 Produces an element for the @tech{decode}d @scheme[pre-content], and
 also defines a term that can be referenced elsewhere using
@@ -952,7 +953,10 @@ as follows:
 
 These normalization steps help support natural-language references
 that differ slightly from a defined form. For example, a definition of
-``bananas'' can be referenced with a use of ``banana''.}
+``bananas'' can be referenced with a use of ``banana''.
+
+If @scheme[style?] is true, then @scheme[defterm] is used on
+@scheme[pre-content].}
 
 @defproc[(tech [pre-content any/c] ...
                [#:doc module-path (or/c module-path? false/c) #f])
