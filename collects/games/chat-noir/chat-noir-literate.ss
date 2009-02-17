@@ -3,7 +3,7 @@
 @;{
 The command to build this:
 
-scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
+mzc chat-noir-doc.ss && scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
 
 }
 
@@ -53,6 +53,8 @@ and some code that builds an initial world and starts the game.
        <breadth-first-search>
        <board->graph>
        <cats-path>
+       <drawing-the-cat>
+       <drawing>
        <tests>
        <everything-else>]
 
@@ -64,7 +66,8 @@ Each section also comes with a series of test cases that are collected into the
        <world-tests>
        <board->graph-tests>
        <breadth-first-search-tests>
-       <cats-path-tests>]
+       <cats-path-tests>
+       <drawing-tests>]
 
 Each test case uses either @scheme[test], a simple form that accepts two
 arguments and compares them with @scheme[equal?], or @scheme[test/set]
@@ -341,6 +344,8 @@ and that @scheme[posn]'s  distance.
          (-> (listof (vector/c (or/c 'boundary posn?) natural-number/c))
              hash?
              hash?)
+         #:freevar neighbors/w (-> (or/c 'boundary posn?)
+                                   (listof (or/c 'boundary posn?)))
          (cond
            [(empty? queue) dist-table]
            [else
@@ -623,34 +628,23 @@ For example, in a world of size @scheme[7] with the cat at
 @scheme[(make-posn 2 2)], the circles with white centers
 are on the shortest path to the boundary:
 
-@schemeblock[(render-world
-              (make-world (empty-board 7)
-                          (make-posn 2 2)
-                          'playing
-                          7
-                          false
-                          true))]
+@image["cat-distance-example.png"]
 
 So we can formulate two test cases using this world, one
 in the white circles and one not:
 
 @chunk[<on-cats-path?-tests>
-       (test ((on-cats-path? (make-world (empty-board 7)
+       (let ([on-the-path?
+              (on-cats-path? (make-world (empty-board 7)
                                          (make-posn 2 2)
                                          'playing
                                          7
                                          false
-                                         true))
-              (make-posn 1 0))
-             true)
-       (test ((on-cats-path? (make-world (empty-board 7)
-                                         (make-posn 2 2)
-                                         'playing
-                                         5 
-                                         false
-                                         true))
-              (make-posn 4 4))
-             false)]
+                                         true))])
+         (test (on-the-path? (make-posn 1 0))
+               true)
+         (test (on-the-path? (make-posn 4 4))
+               false))]
 
 The computation of the shortest path to the boundary proceeds by computing
 two distance maps; the distance map to the boundary and the distance map
@@ -695,6 +689,475 @@ it returns @scheme['∞] if either argument is @scheme['∞].
             '∞]
            [else
             (+ x y)]))]
+
+@section{Drawing the Cat}
+
+@chunk[<drawing-the-cat>
+       ;; cat : symbol -> image
+       (define (cat mode)
+         (local [(define face-color
+                   (cond
+                     [(symbol=? mode 'sad) 'pink]
+                     [else 'lightgray]))
+                 
+                 (define left-ear (regular-polygon 3 8 'solid 'black (/ pi -3)))
+                 (define right-ear (regular-polygon 3 8 'solid 'black 0))
+                 (define ear-x-offset 14)
+                 (define ear-y-offset 9)
+                 
+                 (define eye (overlay (ellipse 12 8 'solid 'black)
+                                      (ellipse 6 4 'solid 'limegreen)))
+                 (define eye-x-offset 8)
+                 (define eye-y-offset 3)
+                 
+                 (define nose (regular-polygon 3 5 'solid 'black (/ pi 2)))
+                 
+                 (define mouth-happy
+                   (overlay (ellipse 8 8 'solid face-color)
+                            (ellipse 8 8 'outline 'black)
+                            (move-pinhole
+                             (rectangle 10 5 'solid face-color)
+                             0
+                             4)))
+                 (define mouth-no-expression
+                   (overlay (ellipse 8 8 'solid face-color)
+                            (ellipse 8 8 'outline face-color)
+                            (rectangle 10 5 'solid face-color)))
+                 
+                 (define mouth
+                   (cond
+                     [(symbol=? mode 'happy) mouth-happy]
+                     [else mouth-no-expression]))
+                 (define mouth-x-offset 4)
+                 (define mouth-y-offset -5)]
+           
+           (add-line
+            (add-line
+             (add-line
+              (add-line
+               (add-line
+                (add-line
+                 (overlay (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
+                          (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
+                          (ellipse 40 26 'solid 'black)
+                          (ellipse 36 22 'solid face-color)
+                          (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
+                          (move-pinhole mouth mouth-x-offset mouth-y-offset)
+                          (move-pinhole eye (- eye-x-offset) eye-y-offset)
+                          (move-pinhole eye eye-x-offset eye-y-offset)
+                          (move-pinhole nose -1 -4))
+                 6 4 30 12 'black)
+                6 4 30 4 'black)
+               6 4 30 -4 'black)
+              -6 4 -30 12 'black)
+             -6 4 -30 4 'black)
+            -6 4 -30 -4 'black)))
+       
+       (define happy-cat (cat 'happy))
+       (define sad-cat (cat 'sad))
+       (define thinking-cat (cat 'thinking))]
+
+
+@section{Drawing a World}
+
+@chunk[<drawing>
+       (define circle-radius 20)
+       (define circle-spacing 22)
+       
+       (define normal-color 'lightskyblue)
+       (define on-shortest-path-color 'white)
+       (define blocked-color 'black)
+       (define under-mouse-color 'black)
+       <render-world>
+       <chop-whiskers>
+       <board->image>
+       <cell->image>
+       <world-width>
+       <world-height>
+       <cell-center-x>
+       <cell-center-y>]
+
+@chunk[<drawing-tests>
+       <cell-center-x-tests>
+       <cell-center-y-tests>
+       <world-size-tests>
+       <cell->image-tests>
+       <board->image-tests>
+       <chop-whiskers-tests>
+       <render-world-tests>]
+
+@chunk[<render-world>
+;; render-world : world -> image
+(define (render-world w)
+  (chop-whiskers
+   (overlay (board->image (world-board w)
+                          (world-size w)
+                          (on-cats-path? w)
+                          (world-mouse-posn w))
+            (move-pinhole
+             (cond
+               [(equal? (world-state w) 'cat-won) happy-cat]
+               [(equal? (world-state w) 'cat-lost) sad-cat]
+               [else thinking-cat])
+             (- (cell-center-x (world-cat w)))
+             (- (cell-center-y (world-cat w)))))))]
+
+@chunk[<render-world-tests>
+
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'playing
+                     2
+                     (make-posn 0 0)
+                     false))
+        (overlay
+         (board->image (list (make-cell (make-posn 0 1) false))
+                       2
+                       (lambda (x) true)
+                       false)
+         (move-pinhole thinking-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'cat-won
+                     2
+                     false
+                     false))
+        (overlay
+         (board->image (list (make-cell (make-posn 0 1) false))
+                       2
+                       (lambda (x) true)
+                       false)
+         (move-pinhole happy-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'cat-lost
+                     2
+                     false
+                     false))
+        (overlay
+         (board->image (list (make-cell (make-posn 0 1) false))
+                       2
+                       (lambda (x) true)
+                       false)
+         (move-pinhole sad-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list
+                      (make-cell (make-posn 0 1) true)
+                      (make-cell (make-posn 1 0) true)
+                      (make-cell (make-posn 1 1) false)
+                      (make-cell (make-posn 1 2) true)
+                      (make-cell (make-posn 2 0) true)
+                      (make-cell (make-posn 2 1) true)
+                      (make-cell (make-posn 2 2) true))
+                     (make-posn 1 1)
+                     'cat-lost
+                     3
+                     false
+                     false))
+        (overlay
+         (board->image (list
+                        (make-cell (make-posn 0 1) true)
+                        (make-cell (make-posn 1 0) true)
+                        (make-cell (make-posn 1 1) false)
+                        (make-cell (make-posn 1 2) true)
+                        (make-cell (make-posn 2 0) true)
+                        (make-cell (make-posn 2 1) true)
+                        (make-cell (make-posn 2 2) true))
+                       3
+                       (lambda (x) false)
+                       false)
+         (move-pinhole sad-cat
+                       (- (cell-center-x (make-posn 1 1)))
+                       (- (cell-center-y (make-posn 1 1))))))
+       
+       (test
+        (render-world
+         (make-world (list
+                      (make-cell (make-posn 0 1) false)
+                      (make-cell (make-posn 1 0) false)
+                      (make-cell (make-posn 1 1) false)
+                      (make-cell (make-posn 1 2) false)
+                      (make-cell (make-posn 2 0) false)
+                      (make-cell (make-posn 2 1) false)
+                      (make-cell (make-posn 2 2) false))
+                     (make-posn 1 1)
+                     'cat-lost
+                     3
+                     (make-posn (cell-center-x (make-posn 0 1))
+                                (cell-center-y (make-posn 0 1)))
+                     true))
+        
+        (overlay
+         (board->image (list
+                        (make-cell (make-posn 0 1) false)
+                        (make-cell (make-posn 1 0) false)
+                        (make-cell (make-posn 1 1) false)
+                        (make-cell (make-posn 1 2) false)
+                        (make-cell (make-posn 2 0) false)
+                        (make-cell (make-posn 2 1) false)
+                        (make-cell (make-posn 2 2) false))
+                       3
+                       (lambda (x) true)
+                       (make-posn (cell-center-x (make-posn 0 1))
+                                  (cell-center-y (make-posn 0 1))))
+         (move-pinhole sad-cat
+                       (- (cell-center-x (make-posn 1 1)))
+                       (- (cell-center-y (make-posn 1 1))))))]
+
+@chunk[<chop-whiskers>
+;; chop-whiskers : image -> image
+;; crops the image so that anything above or to the left of the pinhole is gone
+(define (chop-whiskers img)
+  (shrink img
+          0
+          0
+          (- (image-width img) (pinhole-x img) 1)
+          (- (image-height img) (pinhole-y img) 1)))]
+
+@chunk[<chop-whiskers-tests>
+       (test (chop-whiskers (rectangle 5 5 'solid 'black))
+             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
+       (test (chop-whiskers (rectangle 6 6 'solid 'black))
+             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
+
+       (test
+        (pinhole-x
+         (render-world
+          (make-world
+           (empty-board 3)
+           (make-posn 0 0)
+           'playing
+           3
+           (make-posn 0 0)
+           false)))
+        0)
+       (test
+        (pinhole-x
+         (render-world
+          (make-world
+           (empty-board 3)
+           (make-posn 0 1)
+           'playing
+           3
+           (make-posn 0 0)
+           false)))
+        0)]
+
+@chunk[<board->image>
+;; board->image : board number (posn -> boolean) posn-or-false -> image
+       (define (board->image cs world-size on-cat-path? mouse)
+         (foldl (lambda (x y) (overlay y x))
+                (nw:rectangle (world-width world-size)
+                              (world-height world-size)
+                              'solid
+                              'white)
+                (map (lambda (c)
+                       (cell->image c
+                                    (on-cat-path? (cell-p c))
+                                    (and (posn? mouse)
+                                         (equal? mouse (cell-p c)))
+                                    #;
+                                    (and (posn? mouse)
+                                         (point-in-this-circle? (cell-p c)
+                                                                (posn-x mouse)
+                                                                (posn-y mouse)))))
+                     cs)))]
+
+@chunk[<board->image-tests>
+       (test (board->image (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) false)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (cell->image (make-cell (make-posn 0 0) false)
+                           false
+                           false)))
+       
+       (test (board->image (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) true)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (cell->image (make-cell (make-posn 0 0) false)
+                           true
+                           false)))
+       
+       
+       (test (board->image (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) false)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (cell->image (make-cell (make-posn 0 0) false)
+                           false
+                           false)))
+       
+       (test (board->image (list (make-cell (make-posn 0 0) false)
+                                 (make-cell (make-posn 0 1) false))
+                           3
+                           (lambda (x) (equal? x (make-posn 0 1)))
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (cell->image (make-cell (make-posn 0 0) false)
+                           false
+                           false)
+              (cell->image (make-cell (make-posn 0 1) false)
+                           true
+                           false)))
+       
+       (test (board->image (list (make-cell (make-posn 0 0) false)
+                                 (make-cell (make-posn 0 1) false))
+                           3
+                           (lambda (x) (equal? x (make-posn 0 1)))
+                           (make-posn 0 0))
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (cell->image (make-cell (make-posn 0 0) false)
+                           false
+                           true)
+              (cell->image (make-cell (make-posn 0 1) false)
+                           true
+                           false)))]
+
+@chunk[<cell->image>
+       ;; cell->image : cell boolean boolean -> image
+       (define (cell->image c on-short-path? under-mouse?)
+         (local [(define x (cell-center-x (cell-p c)))
+                 (define y (cell-center-y (cell-p c)))
+                 (define main-circle
+                   (cond
+                     [(cell-blocked? c)
+                      (circle circle-radius 'solid blocked-color)]
+                     [else
+                      (circle circle-radius 'solid normal-color)]))]
+           (move-pinhole
+            (cond
+              [under-mouse?
+               (overlay main-circle
+                        (circle (quotient circle-radius 2) 'solid under-mouse-color))]
+              [on-short-path?
+               (overlay main-circle
+                        (circle (quotient circle-radius 2) 'solid
+                                on-shortest-path-color))]
+              [else
+               main-circle])
+            (- x)
+            (- y))))]
+
+@chunk[<cell->image-tests>
+       (test (cell->image (make-cell (make-posn 0 0) false) false false)
+             (move-pinhole (circle circle-radius 'solid normal-color)
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (cell->image (make-cell (make-posn 0 0) true) false false)
+             (move-pinhole (circle circle-radius 'solid 'black)
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (cell->image (make-cell (make-posn 0 0) false) true false)
+             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
+                                    (circle (quotient circle-radius 2) 'solid
+                                            on-shortest-path-color))
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (cell->image (make-cell (make-posn 0 0) false) true true)
+             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
+                                    (circle (quotient circle-radius 2) 'solid
+                                            under-mouse-color))
+                           (- circle-radius)
+                           (- circle-radius)))]
+
+@chunk[<world-width>
+       
+       ;; world-width : number -> number
+       ;; computes the width of the drawn world in terms of its size
+       (define (world-width board-size)
+         (local [(define rightmost-posn
+                   (make-posn (- board-size 1) (- board-size 2)))]
+           (+ (cell-center-x rightmost-posn) circle-radius)))]
+
+@chunk[<world-height>
+       ;; world-height : number -> number
+       ;; computes the height of the drawn world in terms of its size
+       (define (world-height board-size)
+         (local [(define bottommost-posn
+                   (make-posn (- board-size 1) (- board-size 1)))]
+           (+ (cell-center-y bottommost-posn) circle-radius)))]
+
+@chunk[<world-size-tests>
+       (test (world-width 3) 150)
+       (test (world-height 3) 116.208)]
+
+@chunk[<cell-center-x>
+       ;; cell-center-x : posn -> number
+       (define (cell-center-x p)
+         (local [(define x (posn-x p))
+                 (define y (posn-y p))]
+           (+ circle-radius
+              (* x circle-spacing 2)
+              (if (odd? y)
+                  circle-spacing
+                  0))))]
+
+@chunk[<cell-center-x-tests>
+       (test (cell-center-x (make-posn 0 0))
+             circle-radius)
+       (test (cell-center-x (make-posn 0 1))
+             (+ circle-spacing circle-radius))
+       (test (cell-center-x (make-posn 1 0))
+             (+ (* 2 circle-spacing) circle-radius))
+       (test (cell-center-x (make-posn 1 1))
+             (+ (* 3 circle-spacing) circle-radius))]
+
+@chunk[<cell-center-y>
+       ;; cell-center-y : posn -> number
+       (define (cell-center-y p)
+         (local [(define y (posn-y p))]
+           (+ circle-radius
+              (* y circle-spacing 2
+                 .866 ;; .866 is an exact approximate to sin(pi/3)
+                 ))))]
+       
+@chunk[<cell-center-y-tests>
+       (test (cell-center-y (make-posn 1 1))
+             (+ circle-radius (* 2 circle-spacing .866)))
+       (test (cell-center-y (make-posn 1 0))
+             circle-radius)]
+
 
 @section{Tests}
 
@@ -1061,393 +1524,6 @@ it returns @scheme['∞] if either argument is @scheme['∞].
 
 #;'()
 
-
-;; constants
-(define circle-radius 20)
-(define circle-spacing 22)
-
-(define normal-color 'lightskyblue)
-(define on-shortest-path-color 'white)
-(define blocked-color 'black)
-(define under-mouse-color 'black)
-
-
-;                                                                          
-;                                                                          
-;                                                                          
-;                                                                          
-;          ;;                                     ;;;;                     
-;       ;;;;                                      ;;;;;                    
-;        ;;;                              ;                                
-;    ;;; ;;;    ; ;;;;   ;;;;   ;;;;;;  ;;  ;;;;     ;;;;;;  ;;   ;;;; ;;; 
-;   ;;;;;;;;;;;;;; ;;;; ;;;;;;;;;  ;;   ;;   ;   ;;;;;  ;;; ;;;;  ;;;;;;;  
-;  ;;;;;;;;;  ;;; ;;;;;;;;;;;;;;; ;;;   ;;   ;;    ;;;  ;;; ;;;;  ;   ;;;; 
-;  ;;;   ;;;  ;;; ;;;; ;;;    ;;; ;;;   ;;;  ;;;   ;;;  ;;;; ;;;  ;;   ;;; 
-;  ;;   ;;;;  ;;;      ;;    ;;;; ;;;   ;;;; ;;;   ;;;  ;;;  ;;;   ;;;;;;; 
-;  ;;;;;;;;   ;;;      ;;;;;;;;;; ;;;   ;; ;;;;;  ;;;;  ;;;  ;;;       ;;; 
-;   ;;;;;;;;;;;;;;;;   ;;;;;;;;;;; ;;; ;;;  ;;;  ;;;;;;;;;;  ;;;  ;;;; ;;; 
-;                       ;;;;;        ;;;;                   ;;;; ;;;;; ;;; 
-;                                                             ;;;;;;; ;;;  
-;                                                                 ;;;;;;   
-;                                                                          
-
-
-;; render-world : world -> image
-(define (render-world w)
-  (chop-whiskers
-   (overlay (board->image (world-board w)
-                          (world-size w)
-                          (on-cats-path? w)
-                          (world-mouse-posn w))
-            (move-pinhole
-             (cond
-               [(equal? (world-state w) 'cat-won) happy-cat]
-               [(equal? (world-state w) 'cat-lost) sad-cat]
-               [else thinking-cat])
-             (- (cell-center-x (world-cat w)))
-             (- (cell-center-y (world-cat w)))))))
-
-(test
- (render-world
-  (make-world (list (make-cell (make-posn 0 1) false))
-              (make-posn 0 1)
-              'playing
-              2
-              (make-posn 0 0)
-              false))
- (overlay
-  (board->image (list (make-cell (make-posn 0 1) false))
-                2
-                (lambda (x) true)
-                false)
-  (move-pinhole thinking-cat
-                (- (cell-center-x (make-posn 0 1)))
-                (- (cell-center-y (make-posn 0 1))))))
-
-(test
- (render-world
-  (make-world (list (make-cell (make-posn 0 1) false))
-              (make-posn 0 1)
-              'cat-won
-              2
-              false
-              false))
- (overlay
-  (board->image (list (make-cell (make-posn 0 1) false))
-                2
-                (lambda (x) true)
-                false)
-  (move-pinhole happy-cat
-                (- (cell-center-x (make-posn 0 1)))
-                (- (cell-center-y (make-posn 0 1))))))
-
-(test
- (render-world
-  (make-world (list (make-cell (make-posn 0 1) false))
-              (make-posn 0 1)
-              'cat-lost
-              2
-              false
-              false))
- (overlay
-  (board->image (list (make-cell (make-posn 0 1) false))
-                2
-                (lambda (x) true)
-                false)
-  (move-pinhole sad-cat
-                (- (cell-center-x (make-posn 0 1)))
-                (- (cell-center-y (make-posn 0 1))))))
-
-(test
- (render-world
-  (make-world (list
-               (make-cell (make-posn 0 1) true)
-               (make-cell (make-posn 1 0) true)
-               (make-cell (make-posn 1 1) false)
-               (make-cell (make-posn 1 2) true)
-               (make-cell (make-posn 2 0) true)
-               (make-cell (make-posn 2 1) true)
-               (make-cell (make-posn 2 2) true))
-              (make-posn 1 1)
-              'cat-lost
-              3
-              false
-              false))
- (overlay
-  (board->image (list
-                 (make-cell (make-posn 0 1) true)
-                 (make-cell (make-posn 1 0) true)
-                 (make-cell (make-posn 1 1) false)
-                 (make-cell (make-posn 1 2) true)
-                 (make-cell (make-posn 2 0) true)
-                 (make-cell (make-posn 2 1) true)
-                 (make-cell (make-posn 2 2) true))
-                3
-                (lambda (x) false)
-                false)
-  (move-pinhole sad-cat
-                (- (cell-center-x (make-posn 1 1)))
-                (- (cell-center-y (make-posn 1 1))))))
-
-(test
- (render-world
-  (make-world (list
-               (make-cell (make-posn 0 1) false)
-               (make-cell (make-posn 1 0) false)
-               (make-cell (make-posn 1 1) false)
-               (make-cell (make-posn 1 2) false)
-               (make-cell (make-posn 2 0) false)
-               (make-cell (make-posn 2 1) false)
-               (make-cell (make-posn 2 2) false))
-              (make-posn 1 1)
-              'cat-lost
-              3
-              (make-posn (cell-center-x (make-posn 0 1))
-                         (cell-center-y (make-posn 0 1)))
-              true))
-
- (overlay
-  (board->image (list
-                 (make-cell (make-posn 0 1) false)
-                 (make-cell (make-posn 1 0) false)
-                 (make-cell (make-posn 1 1) false)
-                 (make-cell (make-posn 1 2) false)
-                 (make-cell (make-posn 2 0) false)
-                 (make-cell (make-posn 2 1) false)
-                 (make-cell (make-posn 2 2) false))
-                3
-                (lambda (x) true)
-                (make-posn (cell-center-x (make-posn 0 1))
-                           (cell-center-y (make-posn 0 1))))
-  (move-pinhole sad-cat
-                (- (cell-center-x (make-posn 1 1)))
-                (- (cell-center-y (make-posn 1 1))))))
-
-;; chop-whiskers : image -> image
-;; crops the image so that anything above or to the left of the pinhole is gone
-(define (chop-whiskers img)
-  (shrink img
-          0
-          0
-          (- (image-width img) (pinhole-x img) 1)
-          (- (image-height img) (pinhole-y img) 1)))
-
-(test (chop-whiskers (rectangle 5 5 'solid 'black))
-              (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
-(test (chop-whiskers (rectangle 6 6 'solid 'black))
-              (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
-
-(test
- (pinhole-x
-  (render-world
-   (make-world
-    (empty-board 3)
-    (make-posn 0 0)
-    'playing
-    3
-    (make-posn 0 0)
-    false)))
- 0)
-(test
- (pinhole-x
-  (render-world
-   (make-world
-    (empty-board 3)
-    (make-posn 0 1)
-    'playing
-    3
-    (make-posn 0 0)
-    false)))
- 0)
-
-
-;; board->image : board number (posn -> boolean) posn-or-false -> image
-(define (board->image cs world-size on-cat-path? mouse)
-  (foldl (lambda (x y) (overlay y x))
-         (nw:rectangle (world-width world-size)
-                       (world-height world-size)
-                       'solid
-                       'white)
-         (map (lambda (c)
-                (cell->image c
-                             (on-cat-path? (cell-p c))
-                             (and (posn? mouse)
-                                  (equal? mouse (cell-p c)))
-                             #;
-                             (and (posn? mouse)
-                                  (point-in-this-circle? (cell-p c)
-                                                         (posn-x mouse)
-                                                         (posn-y mouse)))))
-              cs)))
-
-(test (board->image (list (make-cell (make-posn 0 0) false))
-                            3
-                            (lambda (x) false)
-                            false)
-              (overlay
-               (nw:rectangle (world-width 3)
-                             (world-height 3)
-                             'solid
-                             'white)
-               (cell->image (make-cell (make-posn 0 0) false)
-                            false
-                            false)))
-
-(test (board->image (list (make-cell (make-posn 0 0) false))
-                            3
-                            (lambda (x) true)
-                            false)
-              (overlay
-               (nw:rectangle (world-width 3)
-                             (world-height 3)
-                             'solid
-                             'white)
-               (cell->image (make-cell (make-posn 0 0) false)
-                            true
-                            false)))
-
-
-(test (board->image (list (make-cell (make-posn 0 0) false))
-                            3
-                            (lambda (x) false)
-                            false)
-              (overlay
-               (nw:rectangle (world-width 3)
-                             (world-height 3)
-                             'solid
-                             'white)
-               (cell->image (make-cell (make-posn 0 0) false)
-                            false
-                            false)))
-
-(test (board->image (list (make-cell (make-posn 0 0) false)
-                                  (make-cell (make-posn 0 1) false))
-                            3
-                            (lambda (x) (equal? x (make-posn 0 1)))
-                            false)
-              (overlay
-               (nw:rectangle (world-width 3)
-                             (world-height 3)
-                             'solid
-                             'white)
-               (cell->image (make-cell (make-posn 0 0) false)
-                            false
-                            false)
-               (cell->image (make-cell (make-posn 0 1) false)
-                            true
-                            false)))
-
-(test (board->image (list (make-cell (make-posn 0 0) false)
-                                  (make-cell (make-posn 0 1) false))
-                            3
-                            (lambda (x) (equal? x (make-posn 0 1)))
-                            (make-posn 0 0))
-              (overlay
-               (nw:rectangle (world-width 3)
-                             (world-height 3)
-                             'solid
-                             'white)
-               (cell->image (make-cell (make-posn 0 0) false)
-                            false
-                            true)
-               (cell->image (make-cell (make-posn 0 1) false)
-                            true
-                            false)))
-
-;; cell->image : cell boolean boolean -> image
-(define (cell->image c on-short-path? under-mouse?)
-  (local [(define x (cell-center-x (cell-p c)))
-          (define y (cell-center-y (cell-p c)))
-          (define main-circle
-            (cond
-              [(cell-blocked? c)
-               (circle circle-radius 'solid blocked-color)]
-              [else
-               (circle circle-radius 'solid normal-color)]))]
-    (move-pinhole
-     (cond
-       [under-mouse?
-        (overlay main-circle
-                 (circle (quotient circle-radius 2) 'solid under-mouse-color))]
-       [on-short-path?
-        (overlay main-circle
-                 (circle (quotient circle-radius 2) 'solid
-                         on-shortest-path-color))]
-       [else
-        main-circle])
-     (- x)
-     (- y))))
-
-(test (cell->image (make-cell (make-posn 0 0) false) false false)
-              (move-pinhole (circle circle-radius 'solid normal-color)
-                            (- circle-radius)
-                            (- circle-radius)))
-(test (cell->image (make-cell (make-posn 0 0) true) false false)
-              (move-pinhole (circle circle-radius 'solid 'black)
-                            (- circle-radius)
-                            (- circle-radius)))
-(test (cell->image (make-cell (make-posn 0 0) false) true false)
-              (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                     (circle (quotient circle-radius 2) 'solid
-                                             on-shortest-path-color))
-                            (- circle-radius)
-                            (- circle-radius)))
-(test (cell->image (make-cell (make-posn 0 0) false) true true)
-              (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                     (circle (quotient circle-radius 2) 'solid
-                                             under-mouse-color))
-                            (- circle-radius)
-                            (- circle-radius)))
-
-;; world-width : number -> number
-;; computes the width of the drawn world in terms of its size
-(define (world-width board-size)
-  (local [(define rightmost-posn
-            (make-posn (- board-size 1) (- board-size 2)))]
-    (+ (cell-center-x rightmost-posn) circle-radius)))
-
-(test (world-width 3) 150)
-
-;; world-height : number -> number
-;; computes the height of the drawn world in terms of its size
-(define (world-height board-size)
-  (local [(define bottommost-posn
-            (make-posn (- board-size 1) (- board-size 1)))]
-    (+ (cell-center-y bottommost-posn) circle-radius)))
-(test (world-height 3) 116.208)
-
-
-;; cell-center-x : posn -> number
-(define (cell-center-x p)
-  (local [(define x (posn-x p))
-          (define y (posn-y p))]
-    (+ circle-radius
-       (* x circle-spacing 2)
-       (if (odd? y)
-           circle-spacing
-           0))))
-
-(test (cell-center-x (make-posn 0 0))
-              circle-radius)
-(test (cell-center-x (make-posn 0 1))
-              (+ circle-spacing circle-radius))
-(test (cell-center-x (make-posn 1 0))
-              (+ (* 2 circle-spacing) circle-radius))
-(test (cell-center-x (make-posn 1 1))
-              (+ (* 3 circle-spacing) circle-radius))
-
-;; cell-center-y : posn -> number
-(define (cell-center-y p)
-  (local [(define y (posn-y p))]
-    (+ circle-radius
-       (* y circle-spacing 2
-          .866 ;; .866 is an exact approximate to sin(pi/3)
-          ))))
-
-(test (cell-center-y (make-posn 1 1))
-              (+ circle-radius (* 2 circle-spacing .866)))
-(test (cell-center-y (make-posn 1 0))
-              circle-radius)
 
 
 ;                                          
@@ -1942,92 +2018,6 @@ it returns @scheme['∞] if either argument is @scheme['∞].
               (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) false))
 
 
-
-
-;                                
-;                                
-;                                
-;                                
-;                                
-;                        ;;;;    
-;                        ;;;     
-;                        ;;;   ; 
-;    ;;;;;;   ;;;;   ;;;;;;;;;;; 
-;   ;;; ;;;; ;;;;;;;;;   ;;;   ;;
-;  ;;; ;;;;;;;;;;;;;;;  ;;;      
-;  ;;;  ;;;;;;;    ;;;  ;;; ;;;; 
-;  ;;;      ;;    ;;;;  ;;; ;;;;;
-;  ;;;    ; ;;;;;;;;;;  ;;;  ;;;;
-;   ;;;  ;  ;;;;;;;;;;; ;;;   ;; 
-;    ;;;;    ;;;;;       ;;;;;   
-;                                
-;                                
-;                                
-
-
-;; cat : symbol -> image
-(define (cat mode)
-  (local [(define face-color
-            (cond
-              [(symbol=? mode 'sad) 'pink]
-              [else 'lightgray]))
-
-          (define left-ear (regular-polygon 3 8 'solid 'black (/ pi -3)))
-          (define right-ear (regular-polygon 3 8 'solid 'black 0))
-          (define ear-x-offset 14)
-          (define ear-y-offset 9)
-
-          (define eye (overlay (ellipse 12 8 'solid 'black)
-                               (ellipse 6 4 'solid 'limegreen)))
-          (define eye-x-offset 8)
-          (define eye-y-offset 3)
-
-          (define nose (regular-polygon 3 5 'solid 'black (/ pi 2)))
-
-          (define mouth-happy
-            (overlay (ellipse 8 8 'solid face-color)
-                     (ellipse 8 8 'outline 'black)
-                     (move-pinhole
-                      (rectangle 10 5 'solid face-color)
-                      0
-                      4)))
-          (define mouth-no-expression
-            (overlay (ellipse 8 8 'solid face-color)
-                     (ellipse 8 8 'outline face-color)
-                     (rectangle 10 5 'solid face-color)))
-
-          (define mouth
-            (cond
-              [(symbol=? mode 'happy) mouth-happy]
-              [else mouth-no-expression]))
-          (define mouth-x-offset 4)
-          (define mouth-y-offset -5)]
-
-    (add-line
-     (add-line
-      (add-line
-       (add-line
-        (add-line
-         (add-line
-          (overlay (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
-                   (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
-                   (ellipse 40 26 'solid 'black)
-                   (ellipse 36 22 'solid face-color)
-                   (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
-                   (move-pinhole mouth mouth-x-offset mouth-y-offset)
-                   (move-pinhole eye (- eye-x-offset) eye-y-offset)
-                   (move-pinhole eye eye-x-offset eye-y-offset)
-                   (move-pinhole nose -1 -4))
-          6 4 30 12 'black)
-         6 4 30 4 'black)
-        6 4 30 -4 'black)
-       -6 4 -30 12 'black)
-      -6 4 -30 4 'black)
-     -6 4 -30 -4 'black)))
-
-(define happy-cat (cat 'happy))
-(define sad-cat (cat 'sad))
-(define thinking-cat (cat 'thinking))
 
 
 ;                                                        
