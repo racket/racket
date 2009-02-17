@@ -9,6 +9,10 @@ scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
 
 @title{Chat Noir}
 
+@author[(link "http://www.eecs.northwestern.edu/~robby" "Robby Findler")
+        (link "http://www.barzilay.org/" "Eli Barzilay")
+        (link "http://www.cs.utah.edu/~mflatt/" "Matthew Flatt")]
+
 The goal of Chat Noir is to stop the cat from escaping the board. Each
 turn you click on a circle, which prevents the cat from stepping on
 that space, and the cat responds by taking a step. If the cat is
@@ -28,7 +32,8 @@ project for the introductory programming course at the University of
 Chicago in the fall of 2008.
 
 The remainder of this document explains the implementation of 
-the Chat Noir game.
+the Chat Noir game in a 
+@link["http://www.literateprogramming.com/"]{Literate Programming} style.
 
 @section{Overview}
 
@@ -56,10 +61,10 @@ Each section also comes with a series of test cases that are collected into the
 
 @chunk[<tests>
        <test-infrastructure>
-       <breadth-first-search-tests>
+       <world-tests>
        <board->graph-tests>
-       <cats-path-tests>
-       <world-tests>]
+       <breadth-first-search-tests>
+       <cats-path-tests>]
 
 Each test case uses either @scheme[test], a simple form that accepts two
 arguments and compares them with @scheme[equal?], or @scheme[test/set]
@@ -259,18 +264,12 @@ blocked, in which case it has no edges at all (even to the boundary).
 This section describes the implementation of the breadth-first search, leaving
 details of how the graph connectivity is computed from the board to the next section.
 
-The code for the breadth-first search is organized into
-X parts ....
-
 @chunk[<breadth-first-search>
        <dist-cell-data-definition>
-       <build-bfs-table>
-       <neighbors>
-       <neighbors-blocked/boundary>
-       <lookup-in-table>]
+       <lookup-in-table>
+       <build-bfs-table>]
        
 @chunk[<breadth-first-search-tests>
-       <on-boundary?-tests>
        <lookup-in-table-tests>
        <build-bfs-table-tests>]
 
@@ -284,6 +283,22 @@ Each @tt{p} field in the @scheme[dist-cell] is a position on the board
 and the @tt{n} field is a natural number or @scheme['∞], indicating
 the distance of the shortest path from the node to some fixed point on
 the board. 
+
+The function @scheme[lookup-in-table] returns the distance from the fixed
+point to the given posn, returning @scheme['∞] if the posn is not in the
+table or if it is mapped to @scheme['∞] in the table.
+
+@chunk[<lookup-in-table>
+       (define/contract (lookup-in-table t p)
+         (-> (listof dist-cell?) posn?
+             (or/c '∞ natural-number/c))
+         (cond
+           [(empty? t) '∞]
+           [else (cond
+                   [(equal? p (dist-cell-p (first t)))
+                    (dist-cell-n (first t))]
+                   [else
+                    (lookup-in-table (rest t) p)])]))]
 
 The @scheme[build-bfs-table] accepts a world and a cell 
 (indicating the fixed point) 
@@ -351,7 +366,9 @@ is in @scheme[dist-table]. If it is, we just move on to the
 next element in the queue. If that node is not in the @scheme[dist-table],
 then we add all of the neighbors to the queue, in the @scheme[append]
 expression, and update the @scheme[dist-table] with the distance to 
-this node.
+this node. Because we always add the new children to the end of the queue
+and always look at the front of the queue, we are guaranteed that
+the first time we see a node, it will be with the shortest distance.
 
 The @scheme[build-bfs-table] function packages up @scheme[bfs]
 function. It accepts a @scheme[world] and an initial position
@@ -377,12 +394,28 @@ it calls the @scheme[bfs] function
 and then transforms the result, using
 @scheme[hash-map], into a list of @scheme[cell]s.
 
+@section{Board to Graph Functions}
+
 As far as the @scheme[build-bfs-table] function goes,
 all of the information specific to Chat Noir is
 encoded in the neighbors function. 
 It accepts a world and returns a function
 that computes the neighbors of the boundary
-and of nodes.
+and of nodes. This section describes how
+it is implemented.
+
+@chunk[<board->graph>
+       <neighbors>
+       <neighbors-blocked/boundary>
+       <adjacent>
+       <in-bounds?>
+       <on-boundary?>]
+
+@chunk[<board->graph-tests>
+       <on-boundary?-tests>
+       <in-bounds?-tests>
+       <adjacent-tests>
+       <neighbors-tests>]
 
 The neighbors functions accepts a @scheme[world] and then
 returns a function that computes the neighbors of a @scheme[posn]
@@ -408,7 +441,7 @@ and @scheme[(make-posn 0 1)] has four neighbors:
                    (make-posn 0 2)
                    (make-posn 1 2)))]
 
-as you can see from the pictures of the 7x7 empty board above.
+as you can see in the earlier pictures of the 7x7 empty board.
 Also, there are 6 neighbors of the boundary in the 3x3 board:
 
 @chunk[<neighbors-tests>
@@ -419,7 +452,6 @@ Also, there are 6 neighbors of the boundary in the 3x3 board:
                    (make-posn 2 0)
                    (make-posn 2 1)
                    (make-posn 2 2)))]
-
 
 This is the neighbors function. After it accepts the @scheme[world],
 it builds a list of the blocked cells in the world and a
@@ -461,8 +493,14 @@ we know that @scheme[p] must have been on the boundary, so we add
 @scheme['boundary] to the result list.
 
 @chunk[<neighbors-blocked/boundary>
-(define/contract (neighbors-blocked/boundary blocked boundary-cells size p)
-  (-> (listof posn?) (listof posn?) natural-number/c (or/c 'boundary posn?)
+(define/contract (neighbors-blocked/boundary blocked 
+                                             boundary-cells
+                                             size
+                                             p)
+  (-> (listof posn?)
+      (listof posn?)
+      natural-number/c
+      (or/c 'boundary posn?)
       (listof (or/c 'boundary posn?)))
 
   (cond
@@ -485,20 +523,8 @@ we know that @scheme[p] must have been on the boundary, so we add
           (cons 'boundary in-bounds)]))]))]
 
 
-@section{Board to Graph Functions}
-
-There are three functions that build the basic graph structure
-from a board.
-
-@chunk[<board->graph>
-       <adjacent>
-       <in-bounds?>
-       <on-boundary?>]
-
-@chunk[<board->graph-tests>
-       <in-bounds?-tests>
-       <adjacent-tests>
-       <neighbors-tests>]
+There are the three functions that build the basic graph structure
+from a board as used by @scheme[neighbors].
 
 The first function is @scheme[adjacent]. It consumes a
 @scheme[posn] and returns six @scheme[posn]s that
@@ -506,7 +532,9 @@ indicate what the neighbors are, without consideration
 of the size of the board (or the missing corner pieces).
 
 For example, these are the @scheme[posn]s that are adjacent
-to @scheme[(make-posn 0 1)].
+to @scheme[(make-posn 0 1)]; note that the first and the third
+are not on the board and do not show up in 
+@scheme[neighbors] function example above.
 
 @chunk[<adjacent-tests>
        (test (adjacent (make-posn 0 1))
@@ -574,32 +602,10 @@ of the two corners that have been removed.
               (not (equal? p (make-posn 0 0)))
               (not (equal? p (make-posn 0 (- board-size 1))))))]
 
-
-
-@chunk[<lookup-in-table>
-;; lookup-in-table : distance-map posn -> number or '∞
-;; looks for the distance as recorded in the table t,
-;; if not found returns a distance of '∞
-(define (lookup-in-table t p)
-  (cond
-    [(empty? t) '∞]
-    [else (cond
-            [(equal? p (dist-cell-p (first t)))
-             (dist-cell-n (first t))]
-            [else
-             (lookup-in-table (rest t) p)])]))]
-
-@chunk[<lookup-in-table-tests>
-
-(test (lookup-in-table empty (make-posn 1 2)) '∞)
-(test (lookup-in-table (list (make-dist-cell (make-posn 1 2) 3))
-                               (make-posn 1 2))
-              3)
-(test (lookup-in-table (list (make-dist-cell (make-posn 2 1) 3))
-                               (make-posn 1 2))
-              '∞)]
-
 @section{The Cat's Path}
+
+Once we have a breadth-first search all sorted out, we can use it to build a function that 
+determines where the shortest paths from the cat's current position to the boundary are.
 
 @chunk[<cats-path>
        <on-cats-path?>
@@ -609,11 +615,58 @@ of the two corners that have been removed.
        <on-cats-path?-tests>
        <+/f-tests>]
 
+The function @scheme[on-cats-path?] accepts a world and returns a predicate
+on the @scheme[posn]s in the world. The predicate indicates if the given
+@scheme[posn] is on the shortest path. 
+
+For example, in a world of size @scheme[7] with the cat at
+@scheme[(make-posn 2 2)], the circles with white centers
+are on the shortest path to the boundary:
+
+@schemeblock[(render-world
+              (make-world (empty-board 7)
+                          (make-posn 2 2)
+                          'playing
+                          7
+                          false
+                          true))]
+
+So we can formulate two test cases using this world, one
+in the white circles and one not:
+
+@chunk[<on-cats-path?-tests>
+       (test ((on-cats-path? (make-world (empty-board 7)
+                                         (make-posn 2 2)
+                                         'playing
+                                         7
+                                         false
+                                         true))
+              (make-posn 1 0))
+             true)
+       (test ((on-cats-path? (make-world (empty-board 7)
+                                         (make-posn 2 2)
+                                         'playing
+                                         5 
+                                         false
+                                         true))
+              (make-posn 4 4))
+             false)]
+
+The computation of the shortest path to the boundary proceeds by computing
+two distance maps; the distance map to the boundary and the distance map
+to the cat. Then, a node is on one of the shortest paths if the distance
+to the cat plus the distance to the boundary is equal to the distance from
+the cat to the boundary. 
+
+The code is essentially that, plus two other special cases. Specifically if the
+``h'' key is not pressed down, then we just consider no cells to be on that shortest
+path. And if the distance to the cat is @scheme['∞], then again no nodes are on the
+path. The second situation happens when the cat is completely boxed in and has
+lost the game.
+
 @chunk[<on-cats-path?>
-;; on-cats-path? : world -> posn -> boolean
-;; returns true when the posn is on the shortest path
-;; from the cat to the edge of the board, in the given world
-       (define (on-cats-path? w)
+       (define/contract (on-cats-path? w)
+         (-> world? (-> posn? boolean?))
          (cond
            [(world-h-down? w)
             (let ()
@@ -632,35 +685,8 @@ of the two corners that have been removed.
            [else
             (lambda (p) false)]))]
 
-@chunk[<on-cats-path?-tests>
-       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                         'playing 5 (make-posn 0 0) true))
-              (make-posn 1 0))
-             true)
-       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                         'playing 5 (make-posn 0 0) false))
-              (make-posn 1 0))
-             false)
-       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                         'playing 5 (make-posn 0 0) true))
-              (make-posn 2 1))
-             false)
-       (test ((on-cats-path?
-               (make-world (list
-                            (make-cell (make-posn 0 1) true)
-                            (make-cell (make-posn 1 0) true)
-                            (make-cell (make-posn 1 1) false)
-                            (make-cell (make-posn 1 2) true)
-                            (make-cell (make-posn 2 0) true)
-                            (make-cell (make-posn 2 1) true)
-                            (make-cell (make-posn 2 2) true))
-                           (make-posn 1 1)
-                           'cat-lost
-                           3
-                           (make-posn 0 0)
-                           true))
-              (make-posn 0 1))
-             false)]
+Finally, the helper function @scheme[+/f] is just like @scheme[+], except that
+it returns @scheme['∞] if either argument is @scheme['∞].
 
 @chunk[<+/f>
        (define (+/f x y)
@@ -669,14 +695,6 @@ of the two corners that have been removed.
             '∞]
            [else
             (+ x y)]))]
-
-@chunk[<+/f-tests>       
-       (test (+/f '∞ '∞) '∞)
-       (test (+/f '∞ 1) '∞)
-       (test (+/f 1 '∞) '∞)
-       (test (+/f 1 2) 3)]
-
-
 
 @section{Tests}
 
@@ -733,6 +751,15 @@ of the two corners that have been removed.
   (for-each (λ (t) (t)) (reverse test-procs))
   (printf "passed ~s tests\n" test-count)
   (flush-output))]
+
+@chunk[<lookup-in-table-tests>
+       (test (lookup-in-table empty (make-posn 1 2)) '∞)
+       (test (lookup-in-table (list (make-dist-cell (make-posn 1 2) 3))
+                              (make-posn 1 2))
+             3)
+       (test (lookup-in-table (list (make-dist-cell (make-posn 2 1) 3))
+                              (make-posn 1 2))
+             '∞)]
 
 @chunk[<build-bfs-table-tests>
        (test/set (build-bfs-table
@@ -980,6 +1007,52 @@ of the two corners that have been removed.
        (test (in-bounds? (make-posn 11 0) 11) false)
        (test (in-bounds? (make-posn 10 0) 11) true)
        (test (in-bounds? (make-posn 0 10) 11) false)]
+
+@chunk[<on-cats-path?-tests>
+       (test ((on-cats-path? (make-world (empty-board 5)
+                                         (make-posn 1 1)
+                                         'playing
+                                         5
+                                         (make-posn 0 0)
+                                         true))
+              (make-posn 1 0))
+             true)
+       (test ((on-cats-path? (make-world (empty-board 5)
+                                         (make-posn 1 1)
+                                         'playing
+                                         5 
+                                         (make-posn 0 0)
+                                         false))
+              (make-posn 1 0))
+             false)
+
+       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                         'playing 5 (make-posn 0 0) true))
+              (make-posn 2 1))
+             false)
+       (test ((on-cats-path?
+               (make-world (list
+                            (make-cell (make-posn 0 1) true)
+                            (make-cell (make-posn 1 0) true)
+                            (make-cell (make-posn 1 1) false)
+                            (make-cell (make-posn 1 2) true)
+                            (make-cell (make-posn 2 0) true)
+                            (make-cell (make-posn 2 1) true)
+                            (make-cell (make-posn 2 2) true))
+                           (make-posn 1 1)
+                           'cat-lost
+                           3
+                           (make-posn 0 0)
+                           true))
+              (make-posn 0 1))
+             false)]
+
+
+@chunk[<+/f-tests>       
+       (test (+/f '∞ '∞) '∞)
+       (test (+/f '∞ 1) '∞)
+       (test (+/f 1 '∞) '∞)
+       (test (+/f 1 2) 3)]
 
 @section{Everything Else}
 
