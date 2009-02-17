@@ -2523,6 +2523,14 @@
         (define (x n) (if (y n) 4 0)))
       (x 4))
    "(region region2)")
+  
+  ;; make sure uncontracted exports make it out
+  (test/spec-passed
+   'with-contract9
+   '(let ()
+      (with-contract region1 (f)
+        (define f 3))
+      f))
 
 ;                                                                                                                         
 ;                                                                                                                         

@@ -324,7 +324,8 @@ improve method arity mismatch contract violation error messages?
                        [(p ...) protected]
                        [(marked-p ...) (map marker protected)]
                        [(src-info ...) (map id->contract-src-info protected)]
-                       [(u ...) (map marker unprotected)])
+                       [(u ...) unprotected]
+                       [(marked-u ...) (map marker unprotected)])
            (quasisyntax/loc stx
              (begin
                (define-values (free-ctc-id ...)
@@ -338,7 +339,7 @@ improve method arity mismatch contract violation error messages?
                           (quote-syntax blame-id)
                           (quote-syntax blame-stx)) ...))
                (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
-                 (with-contract-helper blame-stx (marked-p ... u ...) . #,(marker #'body)))
+                 (with-contract-helper blame-stx (marked-p ... marked-u ...) . #,(marker #'body)))
                (define-values (ctc-id ...)
                  (values (verify-contract 'with-contract ctc) ...))
                (define-values ()
@@ -348,8 +349,9 @@ improve method arity mismatch contract violation error messages?
                                    'cant-happen
                                    src-info) ...
                         (values)))
-               (define-syntaxes (p ...)
-                 (values (make-with-contract-transformer
+               (define-syntaxes (u ... p ...)
+                 (values (make-rename-transformer #'marked-u) ...
+                         (make-with-contract-transformer
                           (quote-syntax ctc)
                           (quote-syntax marked-p)
                           (quote-syntax blame-stx)) ...)))))))]
