@@ -7,7 +7,7 @@
 (provide/contract
  [make-arrow-pict
   (-> string?
-      (symbols 'curvy 'straight 'straight-double)
+      (symbols 'curvy 'straight 'straight-double 'map)
       symbol?
       number?
       (-> pict?))])
@@ -71,6 +71,17 @@
             (case style
               [(curvy)
                (send dc draw-path path dx dy)]
+              [(map)
+               (send dc draw-line
+                     dx
+                     (- (+ dy line-pos) (/ head-height 2))
+                     dx
+                     (+ (+ dy line-pos) (/ head-height 2)))
+               (send dc draw-line 
+                     dx
+                     (+ dy line-pos)
+                     (+ dx w)
+                     (+ dy line-pos))]
               [(straight)
                (send dc draw-line 
                      dx

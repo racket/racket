@@ -344,6 +344,8 @@
 (define short-curvy-arrow-pict (mk-arrow-pict "m" 'curvy))
 (define double-arrow-pict (mk-arrow-pict "xxx" 'straight-double))
 (define short-double-arrow-pict (mk-arrow-pict "m" 'straight-double))
+(define map-arrow-pict (mk-arrow-pict "m" 'map))
+(define long-map-arrow-pict (mk-arrow-pict "xxx" 'map))
 
 (define user-arrow-table (make-hasheq))
 (define (set-arrow-pict! arr thunk)
@@ -362,8 +364,14 @@
           [(>->) (basic-text "\u21a3" (default-style))]
           [(~~>) (curvy-arrow-pict)]
           [(~>) (short-curvy-arrow-pict)]
-          [(:->) (basic-text "\u21a6" (default-style))]
-          [(:-->) (basic-text "\u27fc" (default-style))]
+          [(:->) 
+           (if STIX?
+               (basic-text "\u21a6" (default-style))
+               (map-arrow-pict))]
+          [(:-->) 
+           (if STIX?
+               (basic-text "\u27fc" (default-style))
+               (long-map-arrow-pict))]
           [(c->) (basic-text "\u21aa" (default-style))]
           [(-->>) (basic-text "\u21a0" (default-style))]
           [(>--) (basic-text "\u291a" (default-style))]
