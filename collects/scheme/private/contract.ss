@@ -329,10 +329,19 @@ improve method arity mismatch contract violation error messages?
                        [(marked-u ...) (map marker unprotected)])
            (quasisyntax/loc stx
              (begin
-               (define-values (free-ctc-id ...)
-                 (values (verify-contract 'with-contract free-ctc) ...))
+               (define-values (free-ctc-id ... ctc-id ...)
+                 (values (verify-contract 'with-contract free-ctc) ...
+                         (verify-contract 'with-contract ctc) ...))
                (define blame-id
                  (current-contract-region))
+               (define-values ()
+                 (begin (-contract free-ctc-id
+                                   free-var
+                                   blame-id
+                                   'cant-happen
+                                   free-src-info)
+                        ...
+                        (values)))
                (define-syntaxes (free-var-id ...)
                  (values (make-free-var-transformer
                           (quote-syntax free-var)
@@ -341,19 +350,13 @@ improve method arity mismatch contract violation error messages?
                           (quote-syntax blame-stx)) ...))
                (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
                  (with-contract-helper blame-stx (marked-p ... marked-u ...) . #,(marker #'body)))
-               (define-values (ctc-id ...)
-                 (values (verify-contract 'with-contract ctc) ...))
                (define-values ()
                  (begin (-contract ctc-id
                                    marked-p
                                    blame-stx
                                    'cant-happen
-                                   src-info) ...
-                        (-contract free-ctc-id
-                                   free-var
-                                   blame-id
-                                   'cant-happen
-                                   free-src-info) ...
+                                   src-info)
+                        ...
                         (values)))
                (define-syntaxes (u ... p ...)
                  (values (make-rename-transformer #'marked-u) ...
