@@ -172,7 +172,8 @@ flattens the nested lists and the
 
 @chunk[<empty-board>
        (define/contract (empty-board board-size)
-         (-> natural-number/c (listof cell?))
+         (-> (and/c natural-number/c odd? (>=/c 3))
+             (listof cell?))
          (filter
           (not-corner? board-size)
           (apply
@@ -187,7 +188,9 @@ flattens the nested lists and the
                             false))))))))
        
        (define/contract ((not-corner? board-size) c)
-         (-> natural-number/c (-> cell? boolean?))
+         (-> (and/c natural-number/c odd? (>=/c 3))
+             (-> cell?
+                 boolean?))
          (not (and (= 0 (posn-x (cell-p c)))
                    (or (= 0 (posn-y (cell-p c)))
                        (= (- board-size 1)
@@ -221,7 +224,9 @@ cats initial position as the center spot on the board.
 
 @chunk[<empty-world>
        
-       (define (empty-world board-size)
+       (define/contract (empty-world board-size)
+         (-> (and/c natural-number/c odd? (>=/c 3))
+             world?)
          (make-world (empty-board board-size)
                      (make-posn (quotient board-size 2)
                                 (quotient board-size 2))
@@ -318,7 +323,11 @@ and that @scheme[posn]'s  distance.
 
 @chunk[<bfs>
        
-       (define (bfs queue dist-table)
+       (define/contract (bfs queue dist-table)
+         (-> (listof (vector/c (or/c 'boundary posn?) natural-number/c))
+             hash?
+             hash?)
+         'neighbors/w-is-a-free-variable-here-and-I-would-like-it-to-have-a-contract-that-appears-here
          (cond
            [(empty? queue) dist-table]
            [else
