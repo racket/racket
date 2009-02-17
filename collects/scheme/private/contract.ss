@@ -95,7 +95,7 @@ improve method arity mismatch contract violation error messages?
                          #'args)]
     [(_ name+arg-list contract #:freevars (arg ...) #:freevar x c . body)
      (syntax/loc define-stx
-       (define/contract name+arg-list contract #:freevars (arg ... [x c]) #:freevar x c . body))]
+       (define/contract name+arg-list contract #:freevars (arg ... [x c]) . body))]
     [(_ name+arg-list contract #:freevar x c . body)
      (syntax/loc define-stx
        (define/contract name+arg-list contract #:freevars () #:freevar x c . body))]
