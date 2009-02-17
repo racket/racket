@@ -114,10 +114,11 @@ improve method arity mismatch contract violation error messages?
                                                              #'body0 #'(body ...)))
                           #'lambda #t #t))])
          (with-syntax ([name name]
-                       [body-expr body-expr])
+                       [body-expr body-expr]
+                       [type (if (identifier? #'name+arg-list) 'definition 'function)])
            (syntax/loc define-stx
-             (with-contract #:type function name
-               ([name (verify-contract 'define/contract contract)])
+             (with-contract #:type type name
+               ([name contract])
                #:freevars args
                (define name body-expr))))))]
     [(_ name+arg-list contract body0 body ...)
@@ -176,122 +177,38 @@ improve method arity mismatch contract violation error messages?
                                     #,(id->contract-src-info id))])
               ident))])))))
 
-(define-for-syntax (partition-ids def-ids p/c-pairs unprotected-ids)
-  (let loop ([ids         def-ids]
-             [used-p/cs   null]
-             [used-us     null]
-             [unused-p/cs p/c-pairs]
-             [unused-us   unprotected-ids])
-    (if (null? ids)
-        (values used-p/cs used-us unused-p/cs unused-us)
-        (let*-values ([(first-id) (car ids)]
-                      [(matched no-match)
-                       (partition (λ (i)
-                                    (bound-identifier=? i first-id))
-                                  unused-us)])
-          (if (null? matched)
-              (let-values ([(matched no-match)
-                            (partition (λ (p/c)
-                                         (bound-identifier=? (car p/c) first-id))
-                                       unused-p/cs)])
-                (if (null? matched)
-                    (loop (cdr ids)
-                          used-p/cs
-                          used-us
-                          unused-p/cs
-                          unused-us)
-                    (loop (cdr ids)
-                          (append matched used-p/cs)
-                          used-us
-                          no-match
-                          unused-us)))
-              (loop (cdr ids)
-                    used-p/cs
-                    (append matched used-us)
-                    unused-p/cs
-                    no-match))))))
 
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
-    [(_ marker blame-stx () ())
+    [(_ blame-stx ())
      (begin #'(define-values () (values)))]
-    [(_ marker blame-stx ((p0 c0) (p c) ...) (u ...))
+    [(_ blame-stx (i0 i ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
-                         #'p0)]
-    [(_ marker blame-stx () (u0 u ...))
-     (raise-syntax-error 'with-contract
-                         "no definition found for identifier"
-                         #'u0)]
-    [(_ marker blame-stx ((p c) ...) (u ...) body0 body ...)
+                         #'i0)]
+    [(_ blame-stx (i ...) body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
-                                         (cons #'splicing-syntax-parameterize
-                                               (kernel-form-identifier-list)))])
+                                         (kernel-form-identifier-list))])
        (syntax-case expanded-body0 (begin define-values)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper marker blame-stx ((p c) ...) (u ...) sub ... body ...))]
+            (with-contract-helper blame-stx (i ...) sub ... body ...))]
          [(define-values (id ...) expr)
-          (let*-values ([(marker-f) (syntax-e #'marker)]
-                        [(used-p/cs used-us unused-p/cs unused-us)
-                         (partition-ids (syntax->list #'(id ...)) 
-                                        (map syntax->list (syntax->list #'((p c) ...)))
-                                        (syntax->list #'(u ...)))])
-            (with-syntax ([(u-def ...)
-                           (map (λ (u)
-                                  #`(define-syntaxes (#,u)
-                                      (make-rename-transformer (quote-syntax #,(marker-f u)))))
-                                used-us)]
-                          [(p/c-def ...)
-                           (apply append
-                                  (map (λ (p/c)
-                                         (let* ([p (car p/c)]
-                                                [c (cadr p/c)]
-                                                [contract-id
-                                                 (if (a:known-good-contract? c)
-                                                     #f
-                                                     (marker-f (a:mangle-id stx "with-contract-contract-id" p)))]
-                                                [always-defined
-                                                 (list #`(define-syntaxes (#,p)
-                                                           (make-with-contract-transformer
-                                                            (quote-syntax #,(if contract-id contract-id c))
-                                                            (quote-syntax #,(marker-f p))
-                                                            (quote-syntax blame-stx)))
-                                                       #`(define-values ()
-                                                           (begin
-                                                             (-contract #,(if contract-id contract-id c)
-                                                                        #,(marker-f p)
-                                                                        blame-stx
-                                                                        'cant-happen
-                                                                        #,(id->contract-src-info p))
-                                                             (values))))])
-                                           (if contract-id
-                                               (cons #`(define-values (#,contract-id)
-                                                         (verify-contract 'with-contract #,(marker-f c)))
-                                                     always-defined)
-                                               always-defined)))
-                                       used-p/cs))])
-              (quasisyntax/loc stx
-                (begin #,(marker-f expanded-body0)
-                       u-def ... p/c-def ...
-                       (with-contract-helper marker blame-stx #,unused-p/cs #,unused-us
-                                             body ...)))))]
-         [(splicing-syntax-parameterize bindings . ssp-body)
-          (let* ([marker-f (syntax-e #'marker)]
-                 [expanded-ssp (local-expand (quasisyntax/loc expanded-body0
-                                               (splicing-syntax-parameterize bindings .
-                                                 #,(marker-f #'ssp-body)))
-                                             (syntax-local-context)
-                                             (kernel-form-identifier-list))])
-            (quasisyntax/loc stx
-              (begin #,expanded-ssp
-                     (with-contract-helper marker blame-stx ((p c) ...) (u ...) body ...))))]
+          (with-syntax ([def expanded-body0]
+                        [unused-is (let ([ids (syntax->list #'(id ...))])
+                                     (filter (λ (i1)
+                                               (not (ormap (λ (i2)
+                                                             (bound-identifier=? i1 i2))
+                                                           ids)))
+                                             (syntax->list #'(i ...))))])
+            (with-syntax ()
+              (syntax/loc stx
+                (begin def (with-contract-helper blame-stx unused-is body ...)))))]
          [else
-          (let*-values ([(marker-f) (syntax-e #'marker)])
-            (quasisyntax/loc stx
-              (begin #,(marker-f expanded-body0)
-                     (with-contract-helper marker blame-stx ((p c) ...) (u ...) body ...))))]))]))
+          (quasisyntax/loc stx
+            (begin #,expanded-body0
+                   (with-contract-helper blame-stx (i ...) body ...)))]))]))
 
 (define-for-syntax (check-and-split-with-contracts single-allowed? args)
   (let loop ([args args]
@@ -378,13 +295,10 @@ improve method arity mismatch contract violation error messages?
      (raise-syntax-error 'with-contract
                          "use of #:freevar with non-identifier"
                          #'x)]
-    [(_ #:type type blame (arg ...) #:freevars (fv ...) body0 . body)
+    [(_ #:type type blame (arg ...) #:freevars (fv ...) . body)
      (and (identifier? #'blame)
           (identifier? #'type))
-     (let*-values ([(marker) (let ([marker (make-syntax-introducer)])
-                               (λ (x)
-                                 (syntax-local-introduce
-                                  (marker (syntax-local-introduce x)))))]
+     (let*-values ([(marker) (make-syntax-introducer)]
                    [(no-need free-vars free-ctcs)
                     (check-and-split-with-contracts #f (syntax->list #'(fv ...)))]
                    [(unprotected protected protections)
@@ -402,17 +316,19 @@ improve method arity mismatch contract violation error messages?
                        [(free-ctc-id ...) (map (λ (i)
                                                  (marker (a:mangle-id stx "with-contract-contract-id" i)))
                                                free-vars)]
-                       [(free-ctc ...) (map (lambda (c)
-					      (if (a:known-good-contract? c)
-						  c
-						  #`(coerce-contract 'with-contract #,c)))
-					    free-ctcs)]
-                       [((p c) ...) (map list protected protections)]
-                       [(u ...) unprotected])
+                       [(free-ctc ...) free-ctcs]
+                       [(ctc-id ...) (map (λ (i)
+                                            (marker (a:mangle-id stx "with-contract-contract-id" i)))
+                                          protected)]
+                       [(ctc ...) protections]
+                       [(p ...) protected]
+                       [(marked-p ...) (map marker protected)]
+                       [(src-info ...) (map id->contract-src-info protected)]
+                       [(u ...) (map marker unprotected)])
            (quasisyntax/loc stx
              (begin
                (define-values (free-ctc-id ...)
-                 (values free-ctc ...))
+                 (values (verify-contract 'with-contract free-ctc) ...))
                (define blame-id
                  (current-contract-region))
                (define-syntaxes (free-var-id ...)
@@ -422,17 +338,27 @@ improve method arity mismatch contract violation error messages?
                           (quote-syntax blame-id)
                           (quote-syntax blame-stx)) ...))
                (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
-                 (with-contract-helper #,marker blame-stx ((p c) ...) (u ...) body0 . body)))))))]
+                 (with-contract-helper blame-stx (marked-p ... u ...) . #,(marker #'body)))
+               (define-values (ctc-id ...)
+                 (values (verify-contract 'with-contract ctc) ...))
+               (define-values ()
+                 (begin (-contract ctc-id
+                                   marked-p
+                                   blame-stx
+                                   'cant-happen
+                                   src-info) ...
+                        (values)))
+               (define-syntaxes (p ...)
+                 (values (make-with-contract-transformer
+                          (quote-syntax ctc)
+                          (quote-syntax marked-p)
+                          (quote-syntax blame-stx)) ...)))))))]
     [(_ #:type type blame (arg ...) #:freevar x c . body)
      (syntax/loc stx
        (with-contract #:type type blame (arg ...) #:freevars ([x c]) . body))]
-    [(_ #:type type blame (arg ...) body0 . body)
+    [(_ #:type type blame (arg ...) . body)
      (syntax/loc stx
-       (with-contract #:type type blame (arg ...) #:freevars () body0 . body))]
-    [(_ #:type type blame (arg ...))
-     (raise-syntax-error 'with-contract
-                         "empty body"
-                         stx)]
+       (with-contract #:type type blame (arg ...) #:freevars () . body))]
     [(_ #:type type blame bad-args etc ...)
      (raise-syntax-error 'with-contract
                          "expected list of identifier and/or (identifier contract)"
