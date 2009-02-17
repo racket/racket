@@ -285,11 +285,11 @@
 (define (tc/rec-lambda/check form formals body name args ret)
   (with-lexical-env/extend
    (syntax->list formals) args
-   (let ([t (->* args ret)])
+   (let* ([t (make-arr args ret)]
+          [ft (make-Function (list t))])
      (with-lexical-env/extend
-      (list name) (list t)
-      (begin (tc-exprs/check (syntax->list body) ret)
-             (make-Function (list t)))))))
+      (list name) (list ft)
+      (begin (tc-exprs/check (syntax->list body) ret) ft)))))
 
 ;(trace tc/mono-lambda)
 

@@ -43,7 +43,7 @@
 ;; rator is a type
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
-(dt App ([rator Type?] [rands (listof Type?)] [stx syntax?])
+(dt App ([rator Type?] [rands (listof Type?)] [stx (or/c #f syntax?)])
     [#:intern (list rator rands)]
     [#:frees (combine-frees (map free-vars* (cons rator rands)))
              (combine-frees (map free-idxs* (cons rator rands)))]
