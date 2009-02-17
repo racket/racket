@@ -717,8 +717,8 @@ between the definition and the surrounding context, references to
 
 If a free-var-list is given, then any uses of the free variables
 inside the @scheme[body] will be protected with contracts that
-blame the context of the @scheme[with-contract] form for the positive
-positions and the @scheme[with-contract] form for the negative ones.}
+blame the context of the @scheme[define/contract] form for the positive
+positions and the @scheme[define/contract] form for the negative ones.}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
