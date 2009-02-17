@@ -24,7 +24,10 @@
            (struct-out shaped-parens)
            (struct-out just-context)
            (struct-out literal-syntax)
-           (for-syntax make-variable-id))
+           (for-syntax make-variable-id
+                       variable-id?
+                       make-element-id-transformer
+                       element-id-transformer?))
 
   (define no-color "schemeplain")
   (define reader-color "schemereader")
@@ -598,53 +601,56 @@
   (define ((to-paragraph/prefix pfx1 pfx sfx) c)
     (typeset c #t pfx1 pfx sfx #t))
 
-  (begin-for-syntax (define-struct variable-id (sym) #:omit-define-syntaxes))
+  (begin-for-syntax 
+   (define-struct variable-id (sym) #:omit-define-syntaxes)
+   (define-struct element-id-transformer (proc) #:omit-define-syntaxes))
 
   (define-syntax (define-code stx)
     (syntax-case stx ()
       [(_ code typeset-code uncode d->s stx-prop)
        (syntax/loc stx
 	 (define-syntax (code stx)
+           (define (wrap-loc v ctx e)
+             `(,#'d->s ,ctx
+                       ,e
+                       #(code
+                         ,(syntax-line v)
+                         ,(syntax-column v)
+                         ,(syntax-position v)
+                         ,(syntax-span v))))
 	   (define (stx->loc-s-expr v)
-	     (cond
-              [(and (identifier? v)
-                    (variable-id? (syntax-local-value v (lambda () #f))))
-               `(,#'d->s #f 
-                         (,#'make-var-id ',(variable-id-sym (syntax-local-value v)))
-                         #(code
-                           ,(syntax-line v)
-                           ,(syntax-column v)
-                           ,(syntax-position v)
-                           ,(syntax-span v)))]
-	      [(syntax? v)
-	       (let ([mk `(,#'d->s
-			   (quote-syntax ,(datum->syntax v 'defcode))
-			   ,(syntax-case v (uncode)
-			      [(uncode e) #'e]
-			      [else (stx->loc-s-expr (syntax-e v))])
-                           #(code
-                             ,(syntax-line v)
-                             ,(syntax-column v)
-                             ,(syntax-position v)
-                             ,(syntax-span v)))])
-		 (let ([prop (syntax-property v 'paren-shape)])
-		   (if prop
-		       `(,#'stx-prop ,mk 'paren-shape ,prop)
-		       mk)))]
-	      [(null? v) 'null]
-              [(list? v) `(list . ,(map stx->loc-s-expr v))]
-	      [(pair? v) `(cons ,(stx->loc-s-expr (car v))
-				,(stx->loc-s-expr (cdr v)))]
-	      [(vector? v) `(vector ,@(map
-				       stx->loc-s-expr
-				       (vector->list v)))]
-	      [(and (struct? v) (prefab-struct-key v))
-               `(make-prefab-struct (quote ,(prefab-struct-key v))
-                                    ,@(map
-				       stx->loc-s-expr
-				       (cdr (vector->list (struct->vector v)))))]
-	      [(box? v) `(box ,(stx->loc-s-expr (unbox v)))]
-	      [else `(quote ,v)]))
+             (let ([slv (and (identifier? v)
+                             (syntax-local-value v (lambda () #f)))])
+               (cond
+                [(variable-id? slv)
+                 (wrap-loc v #f `(,#'make-var-id ',(variable-id-sym slv)))]
+                [(element-id-transformer? slv)
+                 (wrap-loc v #f ((element-id-transformer-proc slv) v))]
+                [(syntax? v)
+                 (let ([mk (wrap-loc
+                            v
+                            `(quote-syntax ,(datum->syntax v 'defcode))
+                            (syntax-case v (uncode)
+                              [(uncode e) #'e]
+                              [else (stx->loc-s-expr (syntax-e v))]))])
+                   (let ([prop (syntax-property v 'paren-shape)])
+                     (if prop
+                         `(,#'stx-prop ,mk 'paren-shape ,prop)
+                         mk)))]
+                [(null? v) 'null]
+                [(list? v) `(list . ,(map stx->loc-s-expr v))]
+                [(pair? v) `(cons ,(stx->loc-s-expr (car v))
+                                  ,(stx->loc-s-expr (cdr v)))]
+                [(vector? v) `(vector ,@(map
+                                         stx->loc-s-expr
+                                         (vector->list v)))]
+                [(and (struct? v) (prefab-struct-key v))
+                 `(make-prefab-struct (quote ,(prefab-struct-key v))
+                                      ,@(map
+                                         stx->loc-s-expr
+                                         (cdr (vector->list (struct->vector v)))))]
+                [(box? v) `(box ,(stx->loc-s-expr (unbox v)))]
+                [else `(quote ,v)])))
 	   (define (cvt s)
 	     (datum->syntax #'here (stx->loc-s-expr s) #f))
 	   (syntax-case stx ()
