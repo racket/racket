@@ -363,6 +363,7 @@
           [(~~>) (curvy-arrow-pict)]
           [(~>) (short-curvy-arrow-pict)]
           [(:->) (basic-text "\u21a6" (default-style))]
+          [(:-->) (basic-text "\u27fc" (default-style))]
           [(c->) (basic-text "\u21aa" (default-style))]
           [(-->>) (basic-text "\u21a0" (default-style))]
           [(>--) (basic-text "\u291a" (default-style))]
