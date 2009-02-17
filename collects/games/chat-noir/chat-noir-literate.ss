@@ -1,8 +1,5 @@
 #reader "literate-reader.ss"
 
-@(require scheme/local scheme/list scheme/bool scheme/math
-          (for-syntax scheme/base))
-
 @title{Chat Noir}
 
 The goal of Chat Noir is to stop the cat from escaping the board. Each
@@ -37,7 +34,9 @@ code that handles drawing of the world, code that handles user input,
 and some code that builds an initial world and starts the game.
  
 @chunk[<main>
-       (require htdp/world lang/posn)
+       (require scheme/local scheme/list scheme/bool scheme/math
+                 (for-syntax scheme/base))
+       (require htdp/world lang/posn scheme/contract)
        <world>
        <graph>
        <tests>
@@ -172,8 +171,8 @@ flattens the nested lists and the
 @scheme[filter] expression removes the corners.
 
 @chunk[<empty-board>
-       ;; empty-board : number -> (listof cell)
-       (define (empty-board board-size)
+       (define/contract (empty-board board-size)
+         (-> natural-number/c (listof cell?))
          (filter
           (not-corner? board-size)
           (apply
@@ -187,7 +186,8 @@ flattens the nested lists and the
                  (make-cell (make-posn i j)
                             false))))))))
        
-       (define ((not-corner? board-size) c)
+       (define/contract ((not-corner? board-size) c)
+         (-> natural-number/c (-> cell? boolean?))
          (not (and (= 0 (posn-x (cell-p c)))
                    (or (= 0 (posn-y (cell-p c)))
                        (= (- board-size 1)
@@ -249,6 +249,7 @@ X parts ....
        <dist-cell-data-definition>
        <build-bfs-table>
        <neighbors>
+       <neighbors-blocked/boundary>
        
        <lookup-in-table>
        <on-cats-path?>
@@ -374,6 +375,10 @@ It accepts a world and returns a function
 that computes the neighbors of the boundary
 and of nodes.
 
+The neighbors functions accepts a @scheme[world] and then
+returns a function that computes the neighbors of a @scheme[posn]
+and of the @scheme['boundary].
+
 For example, @scheme[(make-posn 1 0)] has four
 neighbors:
 
@@ -394,16 +399,23 @@ and @scheme[(make-posn 0 1)] has four neighbors:
                    (make-posn 0 2)
                    (make-posn 1 2)))]
 
-as you can see from the pictures of the empty boards above.
+as you can see from the pictures of the 7x7 empty board above.
+Also, there are 6 neighbors of the boundary in the 3x3 board:
 
-This is the neighbors function. It first accepts a @scheme[world]
-and then builds a list of the blocked cells in the world and a
-list of the cells that are on the boundary (and not blocked).
+@chunk[<neighbors-tests>
+       (test ((neighbors (empty-world 3)) 'boundary)
+             (list (make-posn 0 1)
+                   (make-posn 1 0)
+                   (make-posn 1 2)
+                   (make-posn 2 0)
+                   (make-posn 2 1)
+                   (make-posn 2 2)))]
 
-The result is a function that accepts a @scheme[posn] or @scheme['boundary].
-If @scheme[p] is blocked, the function returns the empty list. If it is
-on the boundary, the function simply returns @scheme[boundary-cells].
-Finally, 
+
+This is the neighbors function. After it accepts the @scheme[world],
+it builds a list of the blocked cells in the world and a
+list of the cells that are on the boundary (and not blocked). Then it
+returns a function that is specialized to those values.
 
 @chunk[<neighbors>
 ;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
@@ -420,68 +432,45 @@ Finally,
                    (on-boundary? p (world-size w))))
             (map cell-p (world-board w))))
   (λ (p)
-    (cond
-      [(member p blocked)
-       '()]
-      [(equal? p 'boundary)
-       boundary-cells]
-      [else
-       (let* ([x (posn-x p)]
-              [adjacent-posns 
-               (filter (λ (x) (not (member x blocked)))
-                       (adjacent p (world-size w)))]
-              [in-bounds
-               (filter (λ (x) (in-bounds? x (world-size w)))
-                       adjacent-posns)])
-         (cond
-           [(equal? in-bounds adjacent-posns)
-            in-bounds]
-           [else
-            (cons 'boundary in-bounds)]))])))]
+    (neighbors-blocked/boundary blocked
+                                boundary-cells
+                                (world-size w)
+                                p)))]
 
-@chunk[<neighbors-tests>
-       (test ((neighbors (empty-world 11))  (make-posn 1 1))
-             (adjacent (make-posn 1 1) 11))
-       (test ((neighbors (empty-world 11)) (make-posn 2 2))
-             (adjacent (make-posn 2 2) 11))
-       (test ((neighbors (empty-world 3)) 'boundary)
-             (list (make-posn 0 1)
-                   (make-posn 1 0)
-                   (make-posn 1 2)
-                   (make-posn 2 0)
-                   (make-posn 2 1)
-                   (make-posn 2 2)))
-       (test ((neighbors (make-world (list
-                                      (make-cell (make-posn 0 1) false)
-                                      (make-cell (make-posn 1 0) false)
-                                      (make-cell (make-posn 1 1) true)
-                                      (make-cell (make-posn 1 2) false)
-                                      (make-cell (make-posn 2 0) false)
-                                      (make-cell (make-posn 2 1) false)
-                                      (make-cell (make-posn 2 2) false))
-                                     (make-posn 1 1)
-                                     'playing
-                                     3
-                                     (make-posn 0 0)
-                                     false))
-              (make-posn 1 1))
-             '())
-       (test ((neighbors (make-world (list
-                                      (make-cell (make-posn 0 1) false)
-                                      (make-cell (make-posn 1 0) false)
-                                      (make-cell (make-posn 1 1) true)
-                                      (make-cell (make-posn 1 2) false)
-                                      (make-cell (make-posn 2 0) false)
-                                      (make-cell (make-posn 2 1) false)
-                                      (make-cell (make-posn 2 2) false))
-                                     (make-posn 1 1)
-                                     'playing
-                                     3
-                                     (make-posn 0 0)
-                                     false))
-              (make-posn 1 0))
-             (list 'boundary (make-posn 2 0) (make-posn 0 1)))
-       ]
+The @scheme[neighbors-blocked/boundary] function is given next.
+If @scheme[p] is blocked, it returns the empty list. If it is
+on the boundary, the function simply returns @scheme[boundary-cells].
+Otherwise, @scheme[neighbors-blocked/boundary] calls
+@scheme[adjacent] to compute the posns that are adjacent to @scheme[p],
+filtering out the blocked @scheme[posn]s and binds that to @scheme[adjacent-posns].
+It then filters out the @scheme[posn]s that would be outside of the board.
+If those two lists are the same, then @scheme[p] is not on the boundary,
+so we just return @scheme[in-bounds]. If the lists are different, then
+we know that @scheme[p] must have been on the boundary, so we add
+@scheme['boundary] to the result list.
+
+@chunk[<neighbors-blocked/boundary>
+;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
+(define (neighbors-blocked/boundary blocked boundary-cells size p)
+  (cond
+    [(member p blocked)
+     '()]
+    [(equal? p 'boundary)
+     boundary-cells]
+    [else
+     (let* ([x (posn-x p)]
+            [adjacent-posns 
+             (filter (λ (x) (not (member x blocked)))
+                     (adjacent p))]
+            [in-bounds
+             (filter (λ (x) (in-bounds? x size))
+                     adjacent-posns)])
+       (cond
+         [(equal? in-bounds adjacent-posns)
+          in-bounds]
+         [else
+          (cons 'boundary in-bounds)]))]))]
+
 
 @chunk[<lookup-in-table>
 ;; lookup-in-table : distance-map posn -> number or '∞
@@ -517,8 +506,8 @@ Finally,
      (let ()
        (define edge-distance-map (build-bfs-table w 'boundary))
        (define cat-distance-map (build-bfs-table w (world-cat w)))
-       (define cat-distance (lookup-in-table edge-distance-map
-                                             (world-cat w)))
+       (define cat-distance
+         (lookup-in-table edge-distance-map (world-cat w)))
        (cond
          [(equal? cat-distance '∞)
           (lambda (p) false)]
@@ -563,10 +552,10 @@ Finally,
 
 
 @chunk[<adjacent>
-;; adjacent : posn number -> (listof posn)
+;; adjacent : posn -> (listof posn)
 ;; returns a list of the posns that are adjacent to
 ;; `p' on an infinite hex grid
-(define (adjacent p board-size)
+(define (adjacent p)
   (local [(define x (posn-x p))
           (define y (posn-y p))]
     (cond
@@ -586,14 +575,14 @@ Finally,
              (make-posn (+ x 1) (+ y 1)))])))]
 
 @chunk[<adjacent-tests>
-(test (adjacent (make-posn 1 1) 11)
+(test (adjacent (make-posn 1 1))
               (list (make-posn 1 0)
                     (make-posn 2 0)
                     (make-posn 0 1)
                     (make-posn 2 1)
                     (make-posn 1 2)
                     (make-posn 2 2)))
-(test (adjacent (make-posn 2 2) 11)
+(test (adjacent (make-posn 2 2))
               (list (make-posn 1 1)
                     (make-posn 2 1)
                     (make-posn 1 2)
@@ -887,6 +876,48 @@ Finally,
               (make-posn 1 4))
              2)]
 
+@chunk[<neighbors-tests>
+       (test ((neighbors (empty-world 11))  (make-posn 1 1))
+             (adjacent (make-posn 1 1)))
+       (test ((neighbors (empty-world 11)) (make-posn 2 2))
+             (adjacent (make-posn 2 2)))
+       (test ((neighbors (empty-world 3)) 'boundary)
+             (list (make-posn 0 1)
+                   (make-posn 1 0)
+                   (make-posn 1 2)
+                   (make-posn 2 0)
+                   (make-posn 2 1)
+                   (make-posn 2 2)))
+       (test ((neighbors (make-world (list
+                                      (make-cell (make-posn 0 1) false)
+                                      (make-cell (make-posn 1 0) false)
+                                      (make-cell (make-posn 1 1) true)
+                                      (make-cell (make-posn 1 2) false)
+                                      (make-cell (make-posn 2 0) false)
+                                      (make-cell (make-posn 2 1) false)
+                                      (make-cell (make-posn 2 2) false))
+                                     (make-posn 1 1)
+                                     'playing
+                                     3
+                                     (make-posn 0 0)
+                                     false))
+              (make-posn 1 1))
+             '())
+       (test ((neighbors (make-world (list
+                                      (make-cell (make-posn 0 1) false)
+                                      (make-cell (make-posn 1 0) false)
+                                      (make-cell (make-posn 1 1) true)
+                                      (make-cell (make-posn 1 2) false)
+                                      (make-cell (make-posn 2 0) false)
+                                      (make-cell (make-posn 2 1) false)
+                                      (make-cell (make-posn 2 2) false))
+                                     (make-posn 1 1)
+                                     'playing
+                                     3
+                                     (make-posn 0 0)
+                                     false))
+              (make-posn 1 0))
+             (list 'boundary (make-posn 2 0) (make-posn 0 1)))]
 
 @section{Everything Else}
 
@@ -1537,7 +1568,7 @@ Finally,
 (define (move-cat world)
   (local [(define cat-position (world-cat world))
           (define table (build-bfs-table world 'boundary))
-          (define neighbors (adjacent cat-position (world-size world)))
+          (define neighbors (adjacent cat-position))
           (define next-cat-positions
             (find-best-positions neighbors
                                  (map (lambda (p) (lookup-in-table table p))
