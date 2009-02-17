@@ -2465,6 +2465,18 @@
       (f 5))
    "(function f)")
   
+  (test/spec-failed
+   'define/contract25
+   '(let ()
+      (define y #t)
+      (define z 3)
+      (define/contract f
+        number?
+        #:freevars ([y number?] [z number?])
+        (+ y z))
+      1)
+   "top-level")
+  
 
 ;                                                                                  
 ;                                                                                  

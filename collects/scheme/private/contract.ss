@@ -317,6 +317,7 @@ improve method arity mismatch contract violation error messages?
                                                  (marker (a:mangle-id stx "with-contract-contract-id" i)))
                                                free-vars)]
                        [(free-ctc ...) free-ctcs]
+                       [(free-src-info ...) (map id->contract-src-info free-vars)]
                        [(ctc-id ...) (map (λ (i)
                                             (marker (a:mangle-id stx "with-contract-contract-id" i)))
                                           protected)]
@@ -348,6 +349,11 @@ improve method arity mismatch contract violation error messages?
                                    blame-stx
                                    'cant-happen
                                    src-info) ...
+                        (-contract free-ctc-id
+                                   free-var
+                                   blame-id
+                                   'cant-happen
+                                   free-src-info) ...
                         (values)))
                (define-syntaxes (u ... p ...)
                  (values (make-rename-transformer #'marked-u) ...
