@@ -8,7 +8,8 @@
          scheme/match
          scheme/list
          mzlib/trace
-         (for-syntax scheme/base))
+         scheme/contract
+         (for-syntax scheme/base stxclass))
 
 (provide fv fv/list
          substitute
@@ -16,7 +17,7 @@
          substitute-dotted
          subst-all
          subst 
-         ret
+         ;ret
          instantiate-poly
          instantiate-poly-dotted
          tc-result:
@@ -172,18 +173,21 @@
 
 
 ;; this structure represents the result of typechecking an expression
-(define-struct tc-result (t thn els) #:inspector #f)
+(define-struct tc-result (t thn els) #:transparent)
 
 (define-match-expander tc-result:
-  (lambda (stx)
-    (syntax-case stx ()
-      [(form pt) #'(struct tc-result (pt _ _))]
-      [(form pt pe1 pe2) #'(struct tc-result (pt pe1 pe2))])))
+  (syntax-parser 
+   [(_ pt) #'(struct tc-result (pt _ _))]
+   [(_ pt pe1 pe2) #'(struct tc-result (pt pe1 pe2))]))
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t) (make-tc-result t (list) (list))]
                [(t thn els) (make-tc-result t thn els)]))
+
+(p/c
+ [ret (case-> (-> Type? tc-result?)
+              (-> Type? (listof Effect?) (listof Effect?) tc-result?))])
 
 (define (subst v t e) (substitute t v e))
 

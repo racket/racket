@@ -1,9 +1,11 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base)
+(require (for-syntax scheme/base stxclass)
+         scheme/contract
          mzlib/plt-match
 	 scheme/require-syntax
          mzlib/struct
+         scheme/unit
          (except-in stxclass id))
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
@@ -235,3 +237,34 @@
 (define (extend s t extra)
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
+(define-for-syntax enable-contracts? #t)
+(provide (for-syntax enable-contracts?) p/c w/c cnt)
+
+(define-syntax p/c
+  (if enable-contracts?
+      (make-rename-transformer #'provide/contract)
+      (lambda (stx)
+        (define-syntax-class clause
+          #:literals (rename)
+          #:attributes (i)
+          (pattern [rename out:id in:id]
+                   #:with i #'(rename-out out in))
+          (pattern [i:id c]))
+        (syntax-parse stx
+          [(_ c:clause ...)
+           #'(provide c.i ...)]))))
+
+(define-syntax w/c
+  (if enable-contracts?
+      (make-rename-transformer #'with-contract)
+      (lambda (stx)        
+        (syntax-parse stx
+          [(_ name specs . body)
+           #'(begin . body)]))))
+
+(define-signature-form (cnt stx)
+  (syntax-case stx ()
+    [(_ nm cnt)
+     (if enable-contracts?
+         (list #'[contracted (nm cnt)])     
+         (list #'nm))]))

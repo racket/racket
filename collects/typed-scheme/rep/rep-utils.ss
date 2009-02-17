@@ -41,8 +41,6 @@
 (define-for-syntax effect-rec-id #'effect-rec-id)
 (define-for-syntax fold-target #'fold-target)
 
-(define-for-syntax enable-contracts? #t)
-
 (provide (for-syntax type-rec-id effect-rec-id fold-target))
 
 (define-syntaxes (dt de)
@@ -106,7 +104,7 @@
 			    #'(begin)                                 
 			    #`(begin 
 				(provide ex pred acc ...)
-				(provide/contract (rename *maker maker *maker-cnt))))]
+				(p/c (rename *maker maker *maker-cnt))))]
 	      [intern 
 	       (let ([mk (lambda (int) #`(defintern (**maker . flds.fs) maker #,int #:extra-arg key-expr))])
 		 (syntax-parse #'flds.fs
@@ -121,7 +119,7 @@
                                           (list (combiner #'free-vars* #'flds.fs)
                                                 (combiner #'free-idxs* #'flds.fs)))])
                  (quasisyntax/loc stx
-                   (with-contract nm ([*maker *maker-cnt])
+                   (w/c nm ([*maker *maker-cnt])
                      (define (*maker . flds.fs)
                        (define v (**maker . flds.fs))
                        (unless-in-table 
