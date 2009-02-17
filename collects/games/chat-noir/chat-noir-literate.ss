@@ -1,5 +1,12 @@
 #reader "literate-reader.ss"
 
+@;{
+The command to build this:
+
+scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
+
+}
+
 @title{Chat Noir}
 
 The goal of Chat Noir is to stop the cat from escaping the board. Each
@@ -38,7 +45,9 @@ and some code that builds an initial world and starts the game.
                  (for-syntax scheme/base))
        (require htdp/world lang/posn scheme/contract)
        <world>
-       <graph>
+       <breadth-first-search>
+       <board->graph>
+       <cats-path>
        <tests>
        <everything-else>]
 
@@ -47,7 +56,9 @@ Each section also comes with a series of test cases that are collected into the
 
 @chunk[<tests>
        <test-infrastructure>
-       <graph-tests>
+       <breadth-first-search-tests>
+       <board->graph-tests>
+       <cats-path-tests>
        <world-tests>]
 
 Each test case uses either @scheme[test], a simple form that accepts two
@@ -235,9 +246,7 @@ cats initial position as the center spot on the board.
                      false
                      false))]
 
-
-
-@section{Graph}
+@section{Breadth-first Search}
 
 The cat's move decision is based on a breadth-first search of a graph.
 The graph's nodes are the cells on the board plus a special
@@ -247,33 +256,23 @@ there are edges
 between each pair of adjacent cells, unless one of the cells is
 blocked, in which case it has no edges at all (even to the boundary).
 
+This section describes the implementation of the breadth-first search, leaving
+details of how the graph connectivity is computed from the board to the next section.
+
 The code for the breadth-first search is organized into
 X parts ....
 
-@chunk[<graph>
+@chunk[<breadth-first-search>
        <dist-cell-data-definition>
        <build-bfs-table>
        <neighbors>
        <neighbors-blocked/boundary>
+       <lookup-in-table>]
        
-       <lookup-in-table>
-       <on-cats-path?>
-       <adjacent>
-       <in-bounds?>
-       <on-boundary?>
-       <extended-arithmetic-ops>]
-
-@chunk[<graph-tests>
-       <extended-arithmetic-ops-tests>
+@chunk[<breadth-first-search-tests>
        <on-boundary?-tests>
-       <in-bounds?-tests>
-       <adjacent-tests>
-       <neighbors-tests>
-       <on-cats-path?-tests>
        <lookup-in-table-tests>
-       <build-bfs-table-tests>
-       
-       ]
+       <build-bfs-table-tests>]
 
 The breadth-first function constructs a @scheme[distance-map],
 which is a list of @scheme[dist-cell] structs:
@@ -327,7 +326,6 @@ and that @scheme[posn]'s  distance.
          (-> (listof (vector/c (or/c 'boundary posn?) natural-number/c))
              hash?
              hash?)
-         'neighbors/w-is-a-free-variable-here-and-I-would-like-it-to-have-a-contract-that-appears-here
          (cond
            [(empty? queue) dist-table]
            [else
@@ -356,12 +354,14 @@ expression, and update the @scheme[dist-table] with the distance to
 this node.
 
 The @scheme[build-bfs-table] function packages up @scheme[bfs]
-function. It accepts a @tt{world} and an initial position
+function. It accepts a @scheme[world] and an initial position
 and returns a @scheme[distance-table].
 
 @chunk[<build-bfs-table>
        
-       (define (build-bfs-table world init-point)
+       (define/contract (build-bfs-table world init-point)
+         (-> world? (or/c 'boundary posn?)
+             (listof dist-cell?))
          (define neighbors/w (neighbors world))
          <bfs>
          
@@ -427,8 +427,10 @@ list of the cells that are on the boundary (and not blocked). Then it
 returns a function that is specialized to those values.
 
 @chunk[<neighbors>
-;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
-(define (neighbors w)
+(define/contract (neighbors w)
+  (-> world?
+      (-> (or/c 'boundary posn?)
+          (listof (or/c 'boundary posn?))))
   (define blocked
     (map cell-p
          (filter (lambda (c)
@@ -459,8 +461,10 @@ we know that @scheme[p] must have been on the boundary, so we add
 @scheme['boundary] to the result list.
 
 @chunk[<neighbors-blocked/boundary>
-;; neighbors : world -> (or/c 'boundary posn) -> (listof (or/c 'boundary posn))
-(define (neighbors-blocked/boundary blocked boundary-cells size p)
+(define/contract (neighbors-blocked/boundary blocked boundary-cells size p)
+  (-> (listof posn?) (listof posn?) natural-number/c (or/c 'boundary posn?)
+      (listof (or/c 'boundary posn?)))
+
   (cond
     [(member p blocked)
      '()]
@@ -479,6 +483,97 @@ we know that @scheme[p] must have been on the boundary, so we add
           in-bounds]
          [else
           (cons 'boundary in-bounds)]))]))]
+
+
+@section{Board to Graph Functions}
+
+There are three functions that build the basic graph structure
+from a board.
+
+@chunk[<board->graph>
+       <adjacent>
+       <in-bounds?>
+       <on-boundary?>]
+
+@chunk[<board->graph-tests>
+       <in-bounds?-tests>
+       <adjacent-tests>
+       <neighbors-tests>]
+
+The first function is @scheme[adjacent]. It consumes a
+@scheme[posn] and returns six @scheme[posn]s that
+indicate what the neighbors are, without consideration
+of the size of the board (or the missing corner pieces).
+
+For example, these are the @scheme[posn]s that are adjacent
+to @scheme[(make-posn 0 1)].
+
+@chunk[<adjacent-tests>
+       (test (adjacent (make-posn 0 1))
+             (list (make-posn 0 0)
+                   (make-posn 1 0)
+                   (make-posn -1 1)
+                   (make-posn 1 1)
+                   (make-posn 0 2)
+                   (make-posn 1 2)))]
+
+The adjacent function has two main cases; first when the
+@scheme[y] coordinate of the @scheme[posn] is even and 
+second when it is odd. In each case, it is just a matter
+of looking at the board and calculating coordinate offsets.
+
+@chunk[<adjacent>
+       (define/contract (adjacent p)
+         (-> posn? 
+             (and/c (listof posn?)
+                    (lambda (l) (= 6 (length l)))))
+         (local [(define x (posn-x p))
+                 (define y (posn-y p))]
+           (cond
+             [(even? y)
+              (list (make-posn (- x 1) (- y 1))
+                    (make-posn x (- y 1))
+                    (make-posn (- x 1) y)
+                    (make-posn (+ x 1) y)
+                    (make-posn (- x 1) (+ y 1))
+                    (make-posn x (+ y 1)))]
+             [else
+              (list (make-posn x (- y 1))
+                    (make-posn (+ x 1) (- y 1))
+                    (make-posn (- x 1) y)
+                    (make-posn (+ x 1) y)
+                    (make-posn x (+ y 1))
+                    (make-posn (+ x 1) (+ y 1)))])))]
+
+The @scheme[on-boundary?] function returns @scheme[true] when 
+the posn would be on the boundary of a board of size
+@scheme[board-size]. Note that this function does not
+have to special case the missing @scheme[posn]s from the corners.
+
+@chunk[<on-boundary?>
+       (define/contract (on-boundary? p board-size)
+         (-> posn? natural-number/c 
+             boolean?)
+         (or (= (posn-x p) 0)
+             (= (posn-y p) 0)
+             (= (posn-x p) (- board-size 1))
+             (= (posn-y p) (- board-size 1))))]
+
+The @scheme[in-bounds?] function returns @scheme[true]
+when the @scheme[posn] is actually on the board, meaning
+that the coordinates of the @scheme[posn] are within the
+board's size, and that the @scheme[posn] is not one
+of the two corners that have been removed.
+
+@chunk[<in-bounds?>
+       (define/contract (in-bounds? p board-size)
+         (-> posn? natural-number/c
+             boolean?)
+         (and (<= 0 (posn-x p) (- board-size 1))
+              (<= 0 (posn-y p) (- board-size 1))
+              (not (equal? p (make-posn 0 0)))
+              (not (equal? p (make-posn 0 (- board-size 1))))))]
+
 
 
 @chunk[<lookup-in-table>
@@ -504,164 +599,84 @@ we know that @scheme[p] must have been on the boundary, so we add
                                (make-posn 1 2))
               '∞)]
 
+@section{The Cat's Path}
+
+@chunk[<cats-path>
+       <on-cats-path?>
+       <+/f>]
+
+@chunk[<cats-path-tests>
+       <on-cats-path?-tests>
+       <+/f-tests>]
 
 @chunk[<on-cats-path?>
 ;; on-cats-path? : world -> posn -> boolean
 ;; returns true when the posn is on the shortest path
 ;; from the cat to the edge of the board, in the given world
-(define (on-cats-path? w)
-  (cond
-    [(world-h-down? w)
-     (let ()
-       (define edge-distance-map (build-bfs-table w 'boundary))
-       (define cat-distance-map (build-bfs-table w (world-cat w)))
-       (define cat-distance
-         (lookup-in-table edge-distance-map (world-cat w)))
-       (cond
-         [(equal? cat-distance '∞)
-          (lambda (p) false)]
-         [else
-          (lambda (p)
-            (equal? (+/f (lookup-in-table cat-distance-map p)
-                         (lookup-in-table edge-distance-map p))
-                    cat-distance))]))]
-    [else
-     (lambda (p) false)]))]
+       (define (on-cats-path? w)
+         (cond
+           [(world-h-down? w)
+            (let ()
+              (define edge-distance-map (build-bfs-table w 'boundary))
+              (define cat-distance-map (build-bfs-table w (world-cat w)))
+              (define cat-distance
+                (lookup-in-table edge-distance-map (world-cat w)))
+              (cond
+                [(equal? cat-distance '∞)
+                 (lambda (p) false)]
+                [else
+                 (lambda (p)
+                   (equal? (+/f (lookup-in-table cat-distance-map p)
+                                (lookup-in-table edge-distance-map p))
+                           cat-distance))]))]
+           [else
+            (lambda (p) false)]))]
 
 @chunk[<on-cats-path?-tests>
-(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                          'playing 5 (make-posn 0 0) true))
-               (make-posn 1 0))
-              true)
-(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                          'playing 5 (make-posn 0 0) false))
-               (make-posn 1 0))
-              false)
-(test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
-                                          'playing 5 (make-posn 0 0) true))
-               (make-posn 2 1))
-              false)
-(test ((on-cats-path?
-                (make-world (list
-                             (make-cell (make-posn 0 1) true)
-                             (make-cell (make-posn 1 0) true)
-                             (make-cell (make-posn 1 1) false)
-                             (make-cell (make-posn 1 2) true)
-                             (make-cell (make-posn 2 0) true)
-                             (make-cell (make-posn 2 1) true)
-                             (make-cell (make-posn 2 2) true))
-                            (make-posn 1 1)
-                            'cat-lost
-                            3
-                            (make-posn 0 0)
-                            true))
-               (make-posn 0 1))
-              false)]
+       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                         'playing 5 (make-posn 0 0) true))
+              (make-posn 1 0))
+             true)
+       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                         'playing 5 (make-posn 0 0) false))
+              (make-posn 1 0))
+             false)
+       (test ((on-cats-path? (make-world (empty-board 5) (make-posn 1 1)
+                                         'playing 5 (make-posn 0 0) true))
+              (make-posn 2 1))
+             false)
+       (test ((on-cats-path?
+               (make-world (list
+                            (make-cell (make-posn 0 1) true)
+                            (make-cell (make-posn 1 0) true)
+                            (make-cell (make-posn 1 1) false)
+                            (make-cell (make-posn 1 2) true)
+                            (make-cell (make-posn 2 0) true)
+                            (make-cell (make-posn 2 1) true)
+                            (make-cell (make-posn 2 2) true))
+                           (make-posn 1 1)
+                           'cat-lost
+                           3
+                           (make-posn 0 0)
+                           true))
+              (make-posn 0 1))
+             false)]
+
+@chunk[<+/f>
+       (define (+/f x y)
+         (cond
+           [(or (equal? x '∞) (equal? y '∞))
+            '∞]
+           [else
+            (+ x y)]))]
+
+@chunk[<+/f-tests>       
+       (test (+/f '∞ '∞) '∞)
+       (test (+/f '∞ 1) '∞)
+       (test (+/f 1 '∞) '∞)
+       (test (+/f 1 2) 3)]
 
 
-
-@chunk[<adjacent>
-;; adjacent : posn -> (listof posn)
-;; returns a list of the posns that are adjacent to
-;; `p' on an infinite hex grid
-(define (adjacent p)
-  (local [(define x (posn-x p))
-          (define y (posn-y p))]
-    (cond
-      [(even? y)
-       (list (make-posn (- x 1) (- y 1))
-             (make-posn x (- y 1))
-             (make-posn (- x 1) y)
-             (make-posn (+ x 1) y)
-             (make-posn (- x 1) (+ y 1))
-             (make-posn x (+ y 1)))]
-      [else
-       (list (make-posn x (- y 1))
-             (make-posn (+ x 1) (- y 1))
-             (make-posn (- x 1) y)
-             (make-posn (+ x 1) y)
-             (make-posn x (+ y 1))
-             (make-posn (+ x 1) (+ y 1)))])))]
-
-@chunk[<adjacent-tests>
-(test (adjacent (make-posn 1 1))
-              (list (make-posn 1 0)
-                    (make-posn 2 0)
-                    (make-posn 0 1)
-                    (make-posn 2 1)
-                    (make-posn 1 2)
-                    (make-posn 2 2)))
-(test (adjacent (make-posn 2 2))
-              (list (make-posn 1 1)
-                    (make-posn 2 1)
-                    (make-posn 1 2)
-                    (make-posn 3 2)
-                    (make-posn 1 3)
-                    (make-posn 2 3)))]
-
-@chunk[<on-boundary?>
-;; on-boundary? : posn number -> boolean
-(define (on-boundary? p board-size)
-  (or (= (posn-x p) 0)
-      (= (posn-y p) 0)
-      (= (posn-x p) (- board-size 1))
-      (= (posn-y p) (- board-size 1))))]
-
-@chunk[<on-boundary?-tests>
-(test (on-boundary? (make-posn 0 1) 13) true)
-(test (on-boundary? (make-posn 1 0) 13) true)
-(test (on-boundary? (make-posn 12 1) 13) true)
-(test (on-boundary? (make-posn 1 12) 13) true)
-(test (on-boundary? (make-posn 1 1) 13) false)
-(test (on-boundary? (make-posn 10 10) 13) false)]
-
-@chunk[<in-bounds?>
-
-;; in-bounds? : posn number -> boolean
-(define (in-bounds? p board-size)
-  (and (<= 0 (posn-x p) (- board-size 1))
-       (<= 0 (posn-y p) (- board-size 1))
-       (not (equal? p (make-posn 0 0)))
-       (not (equal? p (make-posn 0 (- board-size 1))))))]
-
-@chunk[<in-bounds?-tests>
-(test (in-bounds? (make-posn 0 0) 11) false)
-(test (in-bounds? (make-posn 0 1) 11) true)
-(test (in-bounds? (make-posn 1 0) 11) true)
-(test (in-bounds? (make-posn 10 10) 11) true)
-(test (in-bounds? (make-posn 0 -1) 11) false)
-(test (in-bounds? (make-posn -1 0) 11) false)
-(test (in-bounds? (make-posn 0 11) 11) false)
-(test (in-bounds? (make-posn 11 0) 11) false)
-(test (in-bounds? (make-posn 10 0) 11) true)
-(test (in-bounds? (make-posn 0 10) 11) false)]
-
-@chunk[<extended-arithmetic-ops>
-;; <=/f : (number or '∞) (number or '∞) -> boolean
-(define (<=/f a b)
-  (cond
-    [(equal? b '∞) true]
-    [(equal? a '∞) false]
-    [else (<= a b)]))
-
-(define (+/f x y)
-  (cond
-    [(or (equal? x '∞) (equal? y '∞))
-     '∞]
-    [else
-     (+ x y)]))]
-
-@chunk[<extended-arithmetic-ops-tests>
-(test (<=/f 1 2) true)
-(test (<=/f 2 1) false)
-(test (<=/f '∞ 1) false)
-(test (<=/f 1 '∞) true)
-(test (<=/f '∞ '∞) true)
-
-(test (+/f '∞ '∞) '∞)
-(test (+/f '∞ 1) '∞)
-(test (+/f 1 '∞) '∞)
-(test (+/f 1 2) 3)]
 
 @section{Tests}
 
@@ -927,6 +942,44 @@ we know that @scheme[p] must have been on the boundary, so we add
                                      false))
               (make-posn 1 0))
              (list 'boundary (make-posn 2 0) (make-posn 0 1)))]
+
+@chunk[<adjacent-tests>
+       (test (adjacent (make-posn 1 1))
+             (list (make-posn 1 0)
+                   (make-posn 2 0)
+                   (make-posn 0 1)
+                   (make-posn 2 1)
+                   (make-posn 1 2)
+                   (make-posn 2 2)))
+       (test (adjacent (make-posn 2 2))
+             (list (make-posn 1 1)
+                   (make-posn 2 1)
+                   (make-posn 1 2)
+                   (make-posn 3 2)
+                   (make-posn 1 3)
+                   (make-posn 2 3)))]
+
+
+@chunk[<on-boundary?-tests>
+       (test (on-boundary? (make-posn 0 1) 13) true)
+       (test (on-boundary? (make-posn 1 0) 13) true)
+       (test (on-boundary? (make-posn 12 1) 13) true)
+       (test (on-boundary? (make-posn 1 12) 13) true)
+       (test (on-boundary? (make-posn 1 1) 13) false)
+       (test (on-boundary? (make-posn 10 10) 13) false)]
+
+
+@chunk[<in-bounds?-tests>
+       (test (in-bounds? (make-posn 0 0) 11) false)
+       (test (in-bounds? (make-posn 0 1) 11) true)
+       (test (in-bounds? (make-posn 1 0) 11) true)
+       (test (in-bounds? (make-posn 10 10) 11) true)
+       (test (in-bounds? (make-posn 0 -1) 11) false)
+       (test (in-bounds? (make-posn -1 0) 11) false)
+       (test (in-bounds? (make-posn 0 11) 11) false)
+       (test (in-bounds? (make-posn 11 0) 11) false)
+       (test (in-bounds? (make-posn 10 0) 11) true)
+       (test (in-bounds? (make-posn 0 10) 11) false)]
 
 @section{Everything Else}
 
@@ -1708,6 +1761,19 @@ we know that @scheme[p] must have been on the boundary, so we add
                                          (make-posn 1 1))
                                    (list '∞ '∞))
               false)
+
+;; <=/f : (number or '∞) (number or '∞) -> boolean
+(define (<=/f a b)
+  (cond
+    [(equal? b '∞) true]
+    [(equal? a '∞) false]
+    [else (<= a b)]))
+
+(test (<=/f 1 2) true)
+(test (<=/f 2 1) false)
+(test (<=/f '∞ 1) false)
+(test (<=/f 1 '∞) true)
+(test (<=/f '∞ '∞) true)
 
 ;; add-obstacle : board number number -> board
 (define (add-obstacle board x y)
