@@ -70,11 +70,11 @@
     (define (mk par ht-stx)        
       (lambda (stx)          
         (syntax-parse stx 
-          [(dform nm:id flds:idlist ([[#:key key-expr:expr]] #:opt 
-				     [[#:intern intern?:expr]] #:opt
-				     [[#:frees . frees:frees-pat]] #:opt
-				     [[#:fold-rhs fold-rhs:fold-pat]] #:opt
-				     [no-provide?:no-provide-kw] #:opt) ...*)
+          [(dform nm:id flds:idlist (~or [[#:key key-expr:expr]] #:opt 
+                                         [[#:intern intern?:expr]] #:opt
+                                         [[#:frees . frees:frees-pat]] #:opt
+                                         [[#:fold-rhs fold-rhs:fold-pat]] #:opt
+                                         [no-provide?:no-provide-kw] #:opt) ...)
 	   (with-syntax* 
 	     ([ex (mk-id #'nm #'nm ":")]
 	      [kw-stx (string->keyword (symbol->string #'nm.datum))]

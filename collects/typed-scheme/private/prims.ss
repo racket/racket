@@ -66,7 +66,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ lib [nm:opt-rename ty] ...)
      #'(begin (require/typed nm ty lib) ...)]
-    [(_ nm:opt-rename ty lib ([#:struct-maker parent] #:opt) ...*)
+    [(_ nm:opt-rename ty lib (~or [#:struct-maker parent] #:opt) ...)
      (with-syntax ([cnt* (generate-temporary #'nm.nm)]
 		   [sm (if #'parent
                            #'(#:struct-maker parent)
@@ -87,7 +87,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class name-exists-kw
     (pattern #:name-exists))
   (syntax-parse stx
-    [(_ ty:id pred:id lib ([ne:name-exists-kw] #:opt) ...*)
+    [(_ ty:id pred:id lib (~or [ne:name-exists-kw] #:opt) ...)
      (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
      (quasisyntax/loc stx
        (begin 

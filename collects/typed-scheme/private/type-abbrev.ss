@@ -82,7 +82,7 @@
 
 (define-syntax (->key stx)
   (syntax-parse stx
-                [(_ ty:expr ... ((k:keyword kty:expr opt:boolean)) ...* rng)
+                [(_ ty:expr ... (~or (k:keyword kty:expr opt:boolean)) ... rng)
                  #'(make-Function
                     (list
                      (make-arr* (list ty ...)

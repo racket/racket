@@ -9,6 +9,8 @@
          (for-syntax "../util/error.ss"))
 (provide pattern
          basic-syntax-class
+         ~and
+         ~or
          ...*
 
          with-enclosing-fail
@@ -41,8 +43,9 @@
 
 (define-keyword pattern)
 (define-keyword basic-syntax-class)
+(define-keyword ~and)
+(define-keyword ~or)
 (define-keyword ...*)
-(define-keyword ...**)
 
 ;; Parameters & Syntax Parameters
 
@@ -106,8 +109,8 @@
 ;; Runtime: parsing failures/expectations
 
 ;; An Expectation is
-;;   (make-expc (listof scdyn) (listof expc) (listof atom) (listof id))
-(define-struct expc (stxclasses pairs? data literals)
+;;   (make-expc (listof scdyn) (listof string/#t) (listof atom) (listof id))
+(define-struct expc (stxclasses compound data literals)
   #:transparent)
 
 (define-struct scdyn (name desc failure)
@@ -116,7 +119,7 @@
 (define expectation/c (or/c expc?))
 
 (define (make-stxclass-expc scdyn)
-  (make-expc (list scdyn) #f null null))
+  (make-expc (list scdyn) null null null))
 
 (begin-for-syntax
   (define certify (syntax-local-certifier))
@@ -131,18 +134,22 @@
                     (make-scdyn 'name (desc-var arg ...)
                                 (if (failed? #,result-var) #,result-var #f)))))))
 
-  (define (expectation-of-constants pairs? data literals)
+  (define (expectation-of-constants pairs? data literals description)
     (with-syntax ([(datum ...) data]
                   [(literal ...) literals]
-                  [pairs? pairs?])
+                  [pairs? pairs?]
+                  [description
+                   (if pairs?
+                       (list (or description #t))
+                       null)])
       (certify
-       #'(make-expc null 'pairs? (list 'datum ...)
+       #'(make-expc null 'description (list 'datum ...)
                     (list (quote-syntax literal) ...)))))
 
   (define (expectation-of/message msg)
     (with-syntax ([msg msg])
       (certify
-       #'(make-expc '() #f '((msg)) '())))))
+       #'(make-expc '() '() '((msg)) '())))))
 
 (define-syntax (try stx)
   (syntax-case stx ()
@@ -174,7 +181,7 @@
 
 (define (merge-expectations e1 e2)
   (make-expc (union (expc-stxclasses e1) (expc-stxclasses e2))
-             (or (expc-pairs? e1) (expc-pairs? e2))
+             (union (expc-compound e1) (expc-compound e2))
              (union (expc-data e1) (expc-data e2))
              (union (expc-literals e1) (expc-literals e2))))
 
@@ -183,9 +190,9 @@
 
 (define (expectation-of-null? e)
   (match e
-    [(struct expc (scs pairs? data literals))
+    [(struct expc (scs compound data literals))
      (and (null? scs)
-          (not pairs?)
+          (null? compound)
           (null? literals)
           (and (pair? data) (null? (cdr data)))
           (equal? (car data) '()))]
@@ -193,16 +200,18 @@
 
 (define (expectation->string e)
   (match e
-    [(struct expc (_ #t _ _))
-     #f]
-    [(struct expc (stxclasses pairs? data literals))
-     (let ([s1 (and (pair? stxclasses) (string-of-stxclasses stxclasses))]
-           [s2 (and (pair? data) (string-of-data data))]
-           [s3 (and (pair? literals) (string-of-literals literals))]
-           [s4 (and pairs? string-of-pairs?)])
-       (join-sep (filter string? (list s1 s2 s3 s4))
-                 ";"
-                 "or"))]))
+    [(struct expc (stxclasses compound data literals))
+     (cond [(null? compound)
+            (let ([s1 (and (pair? stxclasses) (string-of-stxclasses stxclasses))]
+                  [s2 (and (pair? data) (string-of-data data))]
+                  [s3 (and (pair? literals) (string-of-literals literals))])
+              (join-sep (filter string? (list s1 s2 s3))
+                        ";"
+                        "or"))]
+           [(andmap string? compound)
+            (join-sep compound ";" "or")]
+           [else
+            #f])]))
 
 (define (string-of-stxclasses scdyns)
   (comma-list (map string-of-stxclass scdyns)))

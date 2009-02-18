@@ -24,6 +24,8 @@
 
          pattern
          basic-syntax-class
+         ~and
+         ~or
          ...*
 
          attribute

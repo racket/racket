@@ -55,15 +55,21 @@ procedure accepts a single argument, which should be a syntax object.
 The grammar of patterns accepted by @scheme[syntax-parse] and
 @scheme[syntax-parser] follows:
 
-@schemegrammar*[#:literals (_ ...*)
+@schemegrammar*[#:literals (_ ~or ~and)
                 [syntax-pattern
                  pvar-id
                  pvar-id:syntax-class-id
                  literal-id
                  atomic-datum
                  (syntax-pattern . syntax-pattern)
-                 (syntax-pattern #,ellipses . syntax-pattern)
-                 ((head ...+) ...* . syntax-pattern)]
+                 (ellipsis-head-pattern #,ellipses . syntax-pattern)
+                 (~and maybe-description syntax-pattern ...)]
+                [ellipsis-head-pattern
+                 (~or head ...+)
+                 syntax-pattern]
+                [maybe-description
+                 (code:line)
+                 (code:line #:description string)]
                 [pvar-id
                  _
                  id]]
@@ -116,17 +122,8 @@ Matches a syntax pair whose head matches the first pattern and whose
 tail matches the second.
 
 }
-@;{
-@specsubform[(syntax-splice-pattern . syntax-pattern)]{
 
-Matches a syntax object which consists of any sequence of syntax
-objects matching the splice pattern followed by a tail matching the
-given tail pattern.
-
-}
-}
-
-@specsubform[(syntax-pattern #,ellipses . syntax-pattern)]{
+@specsubform[(ellipsis-head-pattern #,ellipses . syntax-pattern)]{
 
 Matches a sequence of the first pattern ending in a tail matching the
 second pattern.
@@ -135,23 +132,21 @@ That is, the sequence pattern matches either the second pattern (which
 need not be a list) or a pair whose head matches the first pattern and
 whose tail recursively matches the whole sequence pattern.
 
-}
-@specsubform/subs[#:literals (...*)
-                  ((head ...+) ...* . syntax-pattern)
+The head pattern can be either an ordinary pattern or an
+or/sequence-pattern:
+
+@specsubform/subs[#:literals (~or)
+                  (~or head ...+)
                   ([head
                     (code:line (syntax-pattern ...+) head-directive ...)]
                    [head-directive
                     (code:line #:min min-reps)
                     (code:line #:max max-reps)
-                    (code:line #:mand)
-                    #| (code:line #:opt)
-                       (code:line #:occurs occurs-pvar-id)
-                       (code:line #:default default-form)
-                    |#])]{
+                    (code:line #:mand)])]{
 
-Matches a sequence of any combination of the heads ending in a tail
-matching the final pattern. The match is subject to constraints
-specified on the heads.
+If the head is an or/sequence-pattern (introduced by @scheme[~or]),
+then the whole sequence pattern matches any combination of the head
+sequences followed by a tail matching the final pattern.
 
 @specsubform[(code:line #:min min-reps)]{
 
@@ -175,27 +170,16 @@ in the preceding head are not bound at a higher ellipsis nesting
 depth.
 
 }
-@;{
-@specsubform[#:opt]{
-
-(Probably a bad idea.)
-
 }
 }
-}
-@;{
-The variants of @scheme[_syntax-splice-pattern] follow:
+@specsubform/subs[#:literals (~and)
+                  (~and maybe-description syntax-pattern ...)
+                  ([maybe-description
+                    (code:line)
+                    (code:line #:description string)])]{
 
-@specsubform[pvar-id:syntax-splice-class-id]{
+Matches any syntax that matches all of the included patterns.
 
-Matches a sequence of syntax objects described by
-@scheme[_syntax-splice-class-id].
-
-The name @scheme[_pvar-id] is bound, but not allowed within
-expressions or @scheme[syntax] templates (since it does not refer to a
-particular syntax object). Only the prefixed attributes of the splice
-class are usable.
-}
 }
 
 Both @scheme[syntax-parse] and @scheme[syntax-parser] support
@@ -241,10 +225,19 @@ backtracks as described above; otherwise, it continues.
 
 }
 
-@defidform[...*]{
+
+@defidform[~and]{
 
 Keyword recognized by @scheme[syntax-parse] etc as notation for
-generalized sequences. It may not be used as an expression.
+and-patterns.
+
+}
+
+@defidform[~or]{
+
+Keyword recognized by @scheme[syntax-parse] etc as notation for
+or/sequence-patterns (within sequences). It may not be used as an
+expression.
 
 }
 

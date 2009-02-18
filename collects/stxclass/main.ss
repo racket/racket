@@ -8,11 +8,14 @@
          define-basic-syntax-class*
          pattern
          basic-syntax-class
+         ~and
+         ~or
+         ...*
 
          syntax-parse
          syntax-parser
          with-patterns
-         ...*
+         attribute
 
          current-expression
          current-macro-name

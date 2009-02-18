@@ -6,7 +6,8 @@
          syntax/boundmap
          syntax/stx
          "../util.ss"
-         "rep-data.ss")
+         "rep-data.ss"
+         "codegen-data.ss")
 
 (provide/contract
  [parse-whole-pattern 
@@ -21,7 +22,10 @@
       rhs?)]
  [check-literals-list
   (-> syntax?
-      (listof (list/c identifier? identifier?)))])
+      (listof (list/c identifier? identifier?)))]
+ [pairK kind?]
+ [vectorK kind?]
+ [boxK kind?])
 
 (define (atomic-datum? stx)
   (let ([datum (syntax-e stx)])
@@ -46,6 +50,40 @@
 (define (gdots? stx)
   (and (identifier? stx)
        (free-identifier=? stx (quote-syntax ...*))))
+
+(define (and-kw? stx)
+  (and (identifier? stx)
+       (free-identifier=? stx (quote-syntax ~and))))
+
+(define (orseq-kw? stx)
+  (and (identifier? stx)
+       (free-identifier=? stx (quote-syntax ~or))))
+
+(define (reserved? stx)
+  (or (dots? stx)
+      (gdots? stx)
+      (and-kw? stx)
+      (orseq-kw? stx)))
+
+;; ---- Kinds ----
+
+(define pairK
+  (make-kind #'pair?
+             (list (lambda (s d) #`(car #,d))
+                   (lambda (s d) #`(datum->syntax #,s (cdr #,d) #,s)))
+             (list (lambda (fc x) (frontier:add-car fc x))
+                   (lambda (fc x) (frontier:add-cdr fc)))))
+
+(define vectorK
+  (make-kind #'vector?
+             (list (lambda (s d)
+                     #`(datum->syntax #,s (vector->list #,d) #,s)))
+             (list (lambda (fc x) (frontier:add-unvector fc)))))
+
+(define boxK
+  (make-kind #'box?
+             (list (lambda (s d) #`(unbox #,d)))
+             (list (lambda (fc x) (frontier:add-unbox fc)))))
 
 ;; ---
 
@@ -146,12 +184,15 @@
   pattern)
 
 ;; parse-pattern : stx(Pattern) DeclEnv number -> Pattern
-(define (parse-pattern stx decls depth)
-  (syntax-case stx ()
-    [dots
-     (or (dots? #'dots)
-         (gdots? #'dots))
-     (wrong-syntax stx "ellipses not allowed here")]
+(define (parse-pattern stx decls depth
+                       #:allow-orseq-pattern? [allow-orseq-pattern? #f])
+  (syntax-case stx (~and ~or)
+    [gdots
+     (gdots? #'gdots)
+     (wrong-syntax stx "obsolete (...*) sequence syntax")]
+    [reserved
+     (reserved? #'reserved)
+     (wrong-syntax #'reserved "not allowed here")]
     [id
      (identifier? #'id)
      (match (declenv-lookup decls #'id)
@@ -169,25 +210,46 @@
     [datum
      (atomic-datum? #'datum)
      (make pat:datum stx null depth (syntax->datum #'datum))]
-    [(heads gdots . tail)
-     (gdots? #'gdots)
-     (let* ([heads (parse-heads #'heads decls depth)]
-            [tail (parse-pattern #'tail decls depth)]
-            [hattrs (append-attrs (for/list ([head heads]) (head-attrs head)))]
-            [tattrs (pattern-attrs tail)])
-       (make pat:gseq stx (append-attrs (list hattrs tattrs)) depth heads tail))]
+    [(~and . rest)
+     (begin (unless (stx-list? #'rest)
+              (wrong-syntax stx "expected list of patterns"))
+            (parse-and-pattern stx decls depth))]
+    [(~or . heads)
+     (begin (unless (stx-list? #'heads)
+              (wrong-syntax stx "expected list of pattern sequences"))
+            (unless allow-orseq-pattern?
+              (wrong-syntax stx "or/sequence pattern not allowed here"))
+            (let* ([heads (parse-heads #'heads decls depth)]
+                   [attrs
+                    (append-attrs
+                     (for/list ([head heads]) (head-attrs head)))])
+              (make pat:orseq stx attrs depth heads)))]
     [(head dots . tail)
      (dots? #'dots)
-     (let* ([headp (parse-pattern #'head decls (add1 depth))]
+     (let* ([headp (parse-pattern #'head decls (add1 depth)
+                                  #:allow-orseq-pattern? #t)]
+            [heads
+             (if (pat:orseq? headp)
+                 (pat:orseq-heads headp)
+                 (list (pattern->head headp)))]
             [tail (parse-pattern #'tail decls depth)]
-            [head (pattern->head headp)]
-            [attrs (append-attrs (list (head-attrs head) (pattern-attrs tail)))])
-       (make pat:gseq stx attrs depth (list head) tail))]
+            [hattrs (pattern-attrs headp)]
+            [tattrs (pattern-attrs tail)])
+       (make pat:gseq stx (append-attrs (list hattrs tattrs))
+             depth heads tail))]
     [(a . b)
      (let ([pa (parse-pattern #'a decls depth)]
            [pb (parse-pattern #'b decls depth)])
-       (let ([attrs (append-attrs (list (pattern-attrs pa) (pattern-attrs pb)))])
-         (make pat:pair stx attrs depth pa pb)))]))
+       (define attrs
+         (append-attrs (list (pattern-attrs pa) (pattern-attrs pb))))
+       (make pat:compound stx attrs depth pairK (list pa pb))
+       #| (make pat:pair stx attrs depth pa pb) |#)]
+    [#(a ...)
+     (let ([lp (parse-pattern (syntax/loc stx (a ...)) decls depth)])
+       (make pat:compound stx (pattern-attrs lp) depth vectorK (list lp)))]
+    [#&x
+     (let ([bp (parse-pattern #'x decls depth)])
+       (make pat:compound stx (pattern-attrs bp) depth boxK (list bp)))]))
 
 (define (id-pattern-attrs name sc depth)
   (cond [(wildcard? name) null]
@@ -201,16 +263,27 @@
         [else
          (list (make attr name depth null))]))
 
+;; parse-and-patttern : stxlist DeclEnv nat -> Pattern
+(define (parse-and-pattern stx decls depth)
+  (define-values (chunks rest)
+    (chunk-kw-seq/no-dups (stx-cdr stx) and-pattern-directive-table))
+  (define description
+    (cond [(assq '#:description chunks) => caddr]
+          [else #f]))
+  (define patterns
+    (for/list ([x (stx->list rest)])
+      (parse-pattern x decls depth)))
+  (define attrs (append-attrs (map pattern-attrs patterns)))
+  (make pat:and stx attrs depth description patterns))
+
 (define (pattern->head p)
   (match p
     [(struct pattern (orig-stx iattrs depth))
-     (make head orig-stx iattrs depth (list p) #f #f #t #f #f)]))
+     (make head orig-stx iattrs depth (list p) #f #f #t)]))
 
 (define head-directive-table
   (list (list '#:min check-nat/f)
         (list '#:max check-nat/f)
-        (list '#:occurs check-id)
-        (list '#:default values)
         (list '#:opt)
         (list '#:mand)))
 
@@ -221,7 +294,6 @@
                    "empty head sequence not allowed")]
     [({p ...} . more)
      (let-values ([(chunks rest) (chunk-kw-seq/no-dups #'more head-directive-table)])
-       (reject-duplicate-chunks chunks) ;; FIXME: needed?
        (cons (parse-head/chunks (stx-car stx) decls enclosing-depth chunks)
              (parse-heads rest decls enclosing-depth)))]
     [()
@@ -232,11 +304,9 @@
                          [else #f])
                    "expected sequence of patterns or sequence directive")]))
 
-(define (parse-head/chunks pstx decls enclosing-depth chunks)
+(define (parse-head/chunks pstx decls depth chunks)
   (let* ([min-row (assq '#:min chunks)]
          [max-row (assq '#:max chunks)]
-         [occurs-row (assq '#:occurs chunks)]
-         [default-row (assq '#:default chunks)]
          [opt-row (assq '#:opt chunks)]
          [mand-row (assq '#:mand chunks)]
          [min-stx (and min-row (caddr min-row))]
@@ -252,44 +322,25 @@
     (when (and (or min-row max-row) (or opt-row mand-row))
       (wrong-syntax (or min-stx max-stx)
                     "min/max-constraints are incompatible with opt/mand directives"))
-    (when default-row
-      (unless opt-row
-        (wrong-syntax (cadr default-row)
-                      "default only allowed for optional patterns")))
     (parse-head/options pstx
                         decls
-                        enclosing-depth
+                        depth
                         (cond [opt-row 0] [mand-row 1] [else min])
                         (cond [opt-row 1] [mand-row 1] [else max])
-                        (not (or opt-row mand-row))
-                        (and occurs-row (caddr occurs-row))
-                        default-row)))
+                        (not (or opt-row mand-row)))))
 
-(define (parse-head/options pstx decls enclosing-depth 
-                            min max as-list? occurs-pvar default-row)
-  (let* ([depth (if as-list? (add1 enclosing-depth) enclosing-depth)]
+(define (parse-head/options pstx decls depth min max as-list?)
+  (let* ([effective-depth (if as-list? depth (sub1 depth))]
          [heads
-          (for/list ([p (syntax->list pstx)])
-            (parse-pattern p decls depth))]
+          (for/list ([p (stx->list pstx)])
+            (parse-pattern p decls effective-depth))]
          [heads-attrs
           (append-attrs (map pattern-attrs heads))])
-    (when default-row
-      (unless (and (= (length heads-attrs) 1)
-                   (= enclosing-depth (attr-depth (car heads-attrs)))
-                   (null? (attr-inner (car heads-attrs))))
-        (wrong-syntax (cadr default-row)
-                      "default only allowed for patterns with single simple pattern variable")))
-    (let ([occurs-attrs
-           (if occurs-pvar
-               (list (make-attr occurs-pvar depth null))
-               null)])
-      (make head pstx
-            (append-attrs (list occurs-attrs heads-attrs))
-            depth
-            heads
-            min max as-list?
-            occurs-pvar
-            (and default-row (caddr default-row))))))
+    (make head pstx
+          heads-attrs
+          depth
+          heads
+          min max as-list?)))
 
 ;; parse-pattern-directives : stxs(PatternDirective) #:literals (listof id+id)
 ;;                         -> stx DeclEnv RemapEnv (listof SideClause)
@@ -358,6 +409,13 @@
      '()]))
 
 
+;; check-lit-string : stx -> string
+(define (check-lit-string stx)
+  (let ([x (syntax-e stx)])
+    (unless (string? x)
+      (wrong-syntax stx "expected string literal"))
+    x))
+
 ;; check-attr-arity-list : stx -> (listof SAttr)
 (define (check-attr-arity-list stx)
   (unless (stx-list? stx)
@@ -421,3 +479,7 @@
         (list '#:rename check-id check-id)
         (list '#:with values values)
         (list '#:when values)))
+
+;; and-pattern-directive-table
+(define and-pattern-directive-table
+  (list (list '#:description check-lit-string)))
