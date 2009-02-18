@@ -5,6 +5,7 @@
 	 "rep-utils.ss" "effect-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
          scheme/contract
+         stxclass/util
          (for-syntax scheme/base))
 
 (define name-table (make-weak-hasheq))
@@ -161,7 +162,7 @@
                       (and rest (type-rec-id rest))
                       (and drest (cons (type-rec-id (car drest)) (cdr drest)))
                       (for/list ([kw kws])
-                        (cons (Keyword-kw kw) (type-rec-id (Keyword-ty kw)) (Keyword-require? kw)))
+                        (make Keyword (Keyword-kw kw) (type-rec-id (Keyword-ty kw)) (Keyword-require? kw)))
                       (map effect-rec-id thn-eff)
                       (map effect-rec-id els-eff))])
 

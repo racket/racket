@@ -4,6 +4,10 @@
 (require mzlib/etc)
 (require "rep-utils.ss" "free-variance.ss")
 
+
+
+#|
+
 (de True-Effect () [#:frees #f] [#:fold-rhs #:base])
 
 (de False-Effect () [#:frees #f] [#:fold-rhs #:base])
@@ -39,3 +43,4 @@
 (de Latent-Var-False-Effect () [#:frees #f] [#:fold-rhs #:base])
 
 ;; could also have latent true/false effects, but seems pointless
+|#
