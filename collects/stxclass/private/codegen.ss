@@ -111,8 +111,9 @@
      (let ([inner
             (wrap-pvars (pattern-attrs p)
                         (convert-sides rest main-var body-expr))])
-       (with-syntax ([(x fail-k) (generate-temporaries #'(x fail-k))])
-         #`(let ([x #,e]
+       (with-syntax ([(x fail-k) (generate-temporaries #'(x fail-k))]
+                     [with-rhs (syntax/loc e with-rhs)])
+         #`(let ([x (datum->syntax #f #,e (quote-syntax with-rhs))]
                  [fail-k enclosing-fail])
              #,(parse:pks (list #'x)
                           (list (done-frontier #'x))
