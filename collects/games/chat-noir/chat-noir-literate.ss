@@ -47,7 +47,8 @@ and some code that builds an initial world and starts the game.
  
 @chunk[<main>
        (require scheme/local scheme/list scheme/bool scheme/math
-                 (for-syntax scheme/base))
+                lang/private/imageeq ;; don't like this require, but need it for image?
+                (for-syntax scheme/base))
        (require htdp/world lang/posn scheme/contract)
        <world>
        <breadth-first-search>
@@ -692,16 +693,33 @@ it returns @scheme['∞] if either argument is @scheme['∞].
 
 @section{Drawing the Cat}
 
+This code is three large, similar constants,
+bundled up into the @scheme[cat] function. 
+The @scheme[thinking-cat] is the one that 
+is visible when the game is being played. It
+differs from the others in that it does not
+have a mouth. The @scheme[mad-cat] is the one
+that you see when the cat loses. It differs
+from the others in that its pinks turn pink.
+Finally, the @scheme[happy-cat] shows up when
+the cat wins and it is just like the @scheme[thinking-cat]
+except it has a smile.
+
 @chunk[<drawing-the-cat>
-       ;; cat : symbol -> image
-       (define (cat mode)
-         (local [(define face-color
+       (define/contract (cat mode)
+         (-> (or/c 'mad 'happy 'thinking) image?)
+         (local [(define face-width 36)
+                 (define face-height 22)
+                 
+                 (define face-color
                    (cond
-                     [(symbol=? mode 'sad) 'pink]
+                     [(symbol=? mode 'mad) 'pink]
                      [else 'lightgray]))
                  
-                 (define left-ear (regular-polygon 3 8 'solid 'black (/ pi -3)))
-                 (define right-ear (regular-polygon 3 8 'solid 'black 0))
+                 (define left-ear 
+                   (regular-polygon 3 8 'solid 'black (/ pi -3)))
+                 (define right-ear
+                   (regular-polygon 3 8 'solid 'black 0))
                  (define ear-x-offset 14)
                  (define ear-y-offset 9)
                  
@@ -710,7 +728,8 @@ it returns @scheme['∞] if either argument is @scheme['∞].
                  (define eye-x-offset 8)
                  (define eye-y-offset 3)
                  
-                 (define nose (regular-polygon 3 5 'solid 'black (/ pi 2)))
+                 (define nose
+                   (regular-polygon 3 5 'solid 'black (/ pi 2)))
                  
                  (define mouth-happy
                    (overlay (ellipse 8 8 'solid face-color)
@@ -729,36 +748,40 @@ it returns @scheme['∞] if either argument is @scheme['∞].
                      [(symbol=? mode 'happy) mouth-happy]
                      [else mouth-no-expression]))
                  (define mouth-x-offset 4)
-                 (define mouth-y-offset -5)]
-           
-           (add-line
-            (add-line
-             (add-line
-              (add-line
-               (add-line
-                (add-line
-                 (overlay (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
-                          (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
-                          (ellipse 40 26 'solid 'black)
-                          (ellipse 36 22 'solid face-color)
-                          (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
-                          (move-pinhole mouth mouth-x-offset mouth-y-offset)
-                          (move-pinhole eye (- eye-x-offset) eye-y-offset)
-                          (move-pinhole eye eye-x-offset eye-y-offset)
-                          (move-pinhole nose -1 -4))
-                 6 4 30 12 'black)
-                6 4 30 4 'black)
-               6 4 30 -4 'black)
-              -6 4 -30 12 'black)
-             -6 4 -30 4 'black)
-            -6 4 -30 -4 'black)))
+                 (define mouth-y-offset -5)
+                 
+                 (define (whiskers img)
+                   (add-line
+                    (add-line
+                     (add-line
+                      (add-line
+                       (add-line
+                        (add-line
+                         img
+                         6 4 30 12 'black)
+                        6 4 30 4 'black)
+                       6 4 30 -4 'black)
+                      -6 4 -30 12 'black)
+                     -6 4 -30 4 'black)
+                    -6 4 -30 -4 'black))]
+           (whiskers
+            (overlay
+             (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
+             (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
+             (ellipse (+ face-width 4) (+ face-height 4) 'solid 'black)
+             (ellipse face-width face-height 'solid face-color)
+             (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
+             (move-pinhole mouth mouth-x-offset mouth-y-offset)
+             (move-pinhole eye (- eye-x-offset) eye-y-offset)
+             (move-pinhole eye eye-x-offset eye-y-offset)
+             (move-pinhole nose -1 -4)))))
        
+       (define thinking-cat (cat 'thinking))
        (define happy-cat (cat 'happy))
-       (define sad-cat (cat 'sad))
-       (define thinking-cat (cat 'thinking))]
+       (define mad-cat (cat 'mad))]
 
 
-@section{Drawing a World}
+@section{Drawing the World}
 
 @chunk[<drawing>
        (define circle-radius 20)
@@ -797,7 +820,7 @@ it returns @scheme['∞] if either argument is @scheme['∞].
             (move-pinhole
              (cond
                [(equal? (world-state w) 'cat-won) happy-cat]
-               [(equal? (world-state w) 'cat-lost) sad-cat]
+               [(equal? (world-state w) 'cat-lost) mad-cat]
                [else thinking-cat])
              (- (cell-center-x (world-cat w)))
              (- (cell-center-y (world-cat w)))))))]
@@ -851,7 +874,7 @@ it returns @scheme['∞] if either argument is @scheme['∞].
                        2
                        (lambda (x) true)
                        false)
-         (move-pinhole sad-cat
+         (move-pinhole mad-cat
                        (- (cell-center-x (make-posn 0 1)))
                        (- (cell-center-y (make-posn 0 1))))))
        
@@ -882,7 +905,7 @@ it returns @scheme['∞] if either argument is @scheme['∞].
                        3
                        (lambda (x) false)
                        false)
-         (move-pinhole sad-cat
+         (move-pinhole mad-cat
                        (- (cell-center-x (make-posn 1 1)))
                        (- (cell-center-y (make-posn 1 1))))))
        
@@ -916,7 +939,7 @@ it returns @scheme['∞] if either argument is @scheme['∞].
                        (lambda (x) true)
                        (make-posn (cell-center-x (make-posn 0 1))
                                   (cell-center-y (make-posn 0 1))))
-         (move-pinhole sad-cat
+         (move-pinhole mad-cat
                        (- (cell-center-x (make-posn 1 1)))
                        (- (cell-center-y (make-posn 1 1))))))]
 
@@ -2058,15 +2081,6 @@ it returns @scheme['∞] if either argument is @scheme['∞].
 ;                                                    
 ;                                                    
 ;                                                    
-
-;; append-all : (listof (list X)) -> (listof X)
-(define (append-all ls)
-  (foldr append empty ls))
-
-(test (append-all empty) empty)
-(test (append-all (list (list 1 2 3))) (list 1 2 3))
-(test (append-all (list (list 1) (list 2) (list 3)))
-              (list 1 2 3))
 
 ;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
 (define (add-n-random-blocked-cells n all-cells board-size)
