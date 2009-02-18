@@ -148,7 +148,7 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax (define-struct/contract stx)
   (syntax-case stx ()
-    [(_ name ([field ctc] ...))
+    [(_ name ([field ctc] ...) kwds ...)
      (let ([fields (syntax->list #'(field ...))])
        (unless (identifier? #'name)
          (raise-syntax-error 'define-struct/contract
@@ -176,6 +176,7 @@ improve method arity mismatch contract violation error messages?
              (with-contract #:type struct name
                (name struct:name id/ctc ...)
                (define-struct name (field ...)
+                 kwds ...
                  #:guard (λ (field ... struct-name)
                            (unless (eq? 'name struct-name)
                              (error (format "Cannot create subtype ~a of contracted struct ~a" 
