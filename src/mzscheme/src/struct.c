@@ -3694,9 +3694,8 @@ static Scheme_Object *check_date_fields(int argc, Scheme_Object **argv)
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 1) || (SCHEME_INT_VAL(a) > 12))
     scheme_wrong_field_type(argv[10], "integer in [1, 12]", a);
   a = argv[5];
-  if ((!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0))
-      && (!SCHEME_BIGNUMP(a) || !SCHEME_BIGPOS(a)))
-    scheme_wrong_field_type(argv[10], "nonnegative exact integer", a);
+  if (!SCHEME_INTP(a) && !SCHEME_BIGNUMP(a))
+    scheme_wrong_field_type(argv[10], "exact integer", a);
   a = argv[6];
   if (!SCHEME_INTP(a) || (SCHEME_INT_VAL(a) < 0) || (SCHEME_INT_VAL(a) > 6))
     scheme_wrong_field_type(argv[10], "integer in [0, 6]", a);

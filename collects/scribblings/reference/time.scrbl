@@ -33,7 +33,7 @@ portability is needed.}
                  [hour (integer-in 0 23)]
                  [day (integer-in 1 31)]
                  [month (integer-in 1 12)]
-                 [year exact-nonnegative-integer?]
+                 [year exact-integer?]
                  [week-day (integer-in 0 6)]
                  [year-day (integer-in 0 365)]
                  [dst? boolean?]
