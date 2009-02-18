@@ -720,6 +720,10 @@ inside the @scheme[body] will be protected with contracts that
 blame the context of the @scheme[define/contract] form for the positive
 positions and the @scheme[define/contract] form for the negative ones.}
 
+@defform*[[(define-struct/contract struct-id ([field-id contract-expr] ...))]]{
+Works like @scheme[define-struct], except that the arguments to the constructor
+and accessors are protected by contracts.}
+
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr 

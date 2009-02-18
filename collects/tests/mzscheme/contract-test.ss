@@ -2478,6 +2478,57 @@
    "top-level")
   
 
+
+;                                                                                                                                  
+;                                                                                                                                  
+;                                                                                                                                  
+;        ;          ;;;;                                                         ;                                                 
+;       ;;         ;   ;                                                         ;                                                 
+;        ;         ;                                ;                      ;    ;                        ;                      ;  
+;        ;         ;                                ;                      ;    ;                        ;                      ;  
+;     ;; ;   ;;;  ;;;; ;  ; ;;    ;;;          ;;; ;;;; ; ;;;;  ;;   ;;;  ;;;;  ;   ;;;     ;;    ; ;;  ;;;; ; ;;  ;;;    ;;;  ;;;;
+;    ;  ;;  ;   ;  ;  ;; ;;;  ;  ;   ;        ;  ;  ;  ;;;   ;   ;  ;   ;  ;   ;   ;   ;   ;  ;  ;;;  ;  ;  ;;;   ;   ;  ;   ;  ;  
+;   ;    ;  ;;;;;  ;   ;  ;   ;  ;;;;;        ;     ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;       ;;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;      ;;;;   ;;   ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;     ;; ;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;               ;  ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;    ;   ;  ;      ;  
+;    ;  ;;; ;   ;  ;   ;  ;   ;  ;   ;        ;  ;  ; ; ;    ;  ;;; ;   ;  ; ;;    ;   ;   ;  ;   ;   ;  ; ; ;    ;  ;;  ;   ;  ; ;
+;     ;; ;   ;;;  ;;;;;;;;;; ;;;  ;;;         ;;;   ;; ;;;    ;; ;   ;;;   ;; ;     ;;;     ;;   ;;; ;;; ;; ;;;    ;; ;;  ;;;   ;; 
+;                                                                                                                                  
+;                                                                                                                                  
+;                                                                                                                                  
+
+  (test/spec-passed
+   'define-struct/contract1
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      1))
+
+  (test/spec-passed
+   'define-struct/contract2
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (make-foo 1 2)))
+  
+  (test/spec-failed
+   'define-struct/contract3
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (make-foo 1 #t))
+   "top-level")
+  
+  (test/spec-passed
+   'define-struct/contract4
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (foo-y (make-foo 2 3))))
+  
+  (test/spec-failed
+   'define-struct/contract5
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (foo-y 1))
+   "top-level")
+  
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  

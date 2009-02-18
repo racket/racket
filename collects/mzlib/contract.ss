@@ -31,7 +31,8 @@
 
 (require (except-in scheme/private/contract
                     define/contract
-                    with-contract)
+                    with-contract
+                    define-struct/contract)
          scheme/private/contract-guts
          scheme/private/contract-ds
          scheme/private/contract-opt
