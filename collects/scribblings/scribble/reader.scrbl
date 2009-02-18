@@ -23,13 +23,16 @@ You can use the reader via MzScheme's @schemefont{#reader} form:
       #reader scribble/reader @foo{This is free-form text!}
 }|]
 
+or use the @scheme[at-exp] meta-language as described in
+@secref["at-exp-lang"].
+
 Note that the Scribble reader reads @"@"-forms as S-expressions.  This
 means that it is up to you to give meanings for these expressions in
 the usual way: use Scheme functions, define your functions, or require
 functions.  For example, typing the above into MzScheme is likely
-going to produce a ``reference to undefined identifier'' error --- you
-can use @scheme[string-append] instead, or you can define @scheme[foo]
-as a function (with variable arity).
+going to produce a ``reference to undefined identifier'' error, unless
+@scheme[foo] is defined. You can use @scheme[string-append] instead,
+or you can define @scheme[foo] as a function (with variable arity).
 
 A common use of the Scribble @"@"-reader is when using Scribble as a
 documentation system for producing manuals.  In this case, the manual
@@ -37,7 +40,7 @@ text is likely to start with
 
 @schememod[scribble/doc]
 
-which installs the @"@" reader starting in ``text mode'', wraps the
+which installs the @"@" reader starting in ``text mode,'' wraps the
 file content afterward into a MzScheme module where many useful Scheme
 and documentation related functions are available, and parses the body
 into a document using @schememodname[scribble/decode].  See
@@ -832,6 +835,25 @@ is an example of this.
        bar
    })
 ]
+
+@;--------------------------------------------------------------------
+@section[#:tag "at-exp-lang"]{Adding @"@"-expressions to a Language}
+
+@defmodulelang[at-exp]{The @schememodname[at-exp] language installs
+@"@"-reader support in the readtable, and then chains to the reader of
+another language that is specified immediate after
+@schememodname[at-exp].}
+
+For example, @scheme[#, @hash-lang[] at-exp scheme/base] adds @"@"-reader
+support to @scheme[scheme/base], so that
+
+@schememod[
+at-exp scheme/base
+
+(define (greet who) #, @elem{@tt["@"]@scheme[string-append]@schemeparenfont["{"]@schemevalfont{Hello, }@tt["@|"]@scheme[who]@tt["|"]@schemevalfont{.}@schemeparenfont["}"]})
+(greet "friend")]
+
+reports @scheme["Hello, friend."].
 
 @;--------------------------------------------------------------------
 @section{Interface}

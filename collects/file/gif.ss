@@ -14,8 +14,8 @@
  *****************************************************************************/
 |#
 
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp scheme/base
+
 (require scheme/contract
          scribble/srcdoc
          (prefix-in octree: file/private/octree-quantize))
