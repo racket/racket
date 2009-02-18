@@ -258,7 +258,8 @@ Returns two association lists mapping @tech{phase level} values (where
 the corresponding phase. The first association list is for exported
 variables, and the second is for exported syntax.
 
-Each associated list more precisely matches the contract
+Each associated list, which is represented by @scheme[list?] in the
+result contracts above, more precisely matches the contract
 
 @schemeblock[
 (listof (list/c symbol?
