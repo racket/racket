@@ -3990,6 +3990,10 @@ namespace_undefine_variable(int argc, Scheme_Object *argv[])
 
   if (scheme_lookup_global(argv[0], env)) {
     bucket = scheme_global_bucket(argv[0], env);
+    scheme_set_global_bucket("namespace-undefine-variable!", 
+                             bucket,
+                             NULL,
+                             0);
     bucket->val = NULL;
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE, argv[0],
