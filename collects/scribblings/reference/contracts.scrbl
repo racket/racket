@@ -720,9 +720,16 @@ inside the @scheme[body] will be protected with contracts that
 blame the context of the @scheme[define/contract] form for the positive
 positions and the @scheme[define/contract] form for the negative ones.}
 
-@defform*[[(define-struct/contract struct-id ([field-id contract-expr] ...))]]{
-Works like @scheme[define-struct], except that the arguments to the constructor
-and accessors are protected by contracts.}
+@defform*[[(define-struct/contract struct-id ([field contract-expr] ...)
+                                   struct-option ...)]]{
+Works like @scheme[define-struct], except that the arguments to the constructor,
+accessors, and mutators are protected by contracts.  For the definitions of
+@scheme[field] and @scheme[struct-option], see @scheme[define-struct].
+
+The @scheme[define-struct/contract] form only allows a subset of the
+@scheme[struct-option] keywords: @scheme[#:mutable], @scheme[#:transparent],
+@scheme[#:auto-value], @scheme[#:omit-define-syntaxes], and
+@scheme[#:omit-define-values].}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)

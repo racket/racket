@@ -126,27 +126,154 @@ improve method arity mismatch contract violation error messages?
      (syntax/loc define-stx
        (define/contract name+arg-list contract #:freevars () body0 body ...))]))
 
-(define-for-syntax (ds/c-build-struct-names name fields)
-  (let ([name-str (symbol->string (syntax-e name))])
-    (list* (datum->syntax 
-            name
-            (string->symbol
-             (string-append "struct:" name-str)))
-           (datum->syntax 
-            name
-            (string->symbol
-             (string-append "make-" name-str)))
-           (datum->syntax 
-            name
-            (string->symbol
-             (string-append name-str "?")))           
-           (for/list ([field-str (map (compose symbol->string syntax-e) fields)])
+(define-syntax (define-struct/contract stx)
+  (define-struct field-info (stx ctc [mutable? #:mutable] auto?))
+  (define-struct s-info (auto-value-stx transparent? def-stxs? def-vals?))
+  
+  (define (build-struct-names name field-infos)
+    (let ([name-str (symbol->string (syntax-e name))])
+      (list* (datum->syntax 
+              name
+              (string->symbol
+               (string-append "struct:" name-str)))
              (datum->syntax 
               name
               (string->symbol
-               (string-append name-str "-" field-str)))))))
+               (string-append "make-" name-str)))
+             (datum->syntax 
+              name
+              (string->symbol
+               (string-append name-str "?")))           
+             (apply append
+                    (for/list ([finfo field-infos])
+                      (let ([field-str (symbol->string (syntax-e (field-info-stx finfo)))])
+                        (cons (datum->syntax 
+                               name
+                               (string->symbol
+                                (string-append name-str "-" field-str)))
+                              (if (field-info-mutable? finfo)
+                                  (list (datum->syntax 
+                                         name
+                                         (string->symbol
+                                          (string-append "set-" name-str "-" field-str "!"))))
+                                  null))))))))
+  
+  (define (build-contracts stx pred field-infos)
+    (list* (quasisyntax/loc stx
+             (-> #,@(map field-info-ctc
+                        (filter (λ (f)
+                                  (not (field-info-auto? f)))
+                                field-infos)) any/c))
+           (syntax/loc stx any/c)
+           (apply append
+                  (for/list ([finfo field-infos])
+                    (let ([field-ctc (field-info-ctc finfo)])
+                      (cons (quasisyntax/loc stx
+                              (-> #,pred #,field-ctc))
+                            (if (field-info-mutable? finfo)
+                                (list 
+                                 (quasisyntax/loc stx
+                                   (-> #,pred #,field-ctc void?)))
+                                null)))))))
 
-(define-syntax (define-struct/contract stx)
+  (define (check-field f ctc)
+    (let ([p-list (syntax->list f)])
+      (if p-list
+          (begin 
+            (when (null? p-list)
+              (raise-syntax-error 'define-struct/contract
+                                  "expected struct field"
+                                  f))
+            (unless (identifier? (car p-list))
+              (raise-syntax-error 'define-struct/contract
+                                  "expected identifier"
+                                  f))
+            (let loop ([rest (cdr p-list)]
+                       [mutable? #f]
+                       [auto? #f])
+              (if (null? rest) 
+                  (make-field-info (car p-list) ctc mutable? auto?)
+                  (let ([elem (syntax-e (car rest))])
+                    (if (keyword? elem)
+                        (cond
+                          [(eq? elem '#:mutable)
+                           (begin (when mutable?
+                                    (raise-syntax-error 'define-struct/contract
+                                            "redundant #:mutable"
+                                            (car rest)))
+                                  (loop (cdr rest) #t auto?))]
+                          [(eq? elem '#:auto)
+                           (begin (when auto?
+                                    (raise-syntax-error 'define-struct/contract
+                                            "redundant #:mutable"
+                                            (car rest)))
+                                  (loop (cdr rest) mutable? #t))]
+                          [else (raise-syntax-error 'define-struct/contract
+                                                    "expected #:mutable or #:auto"
+                                                    (car rest))])
+                        (raise-syntax-error 'define-struct/contract
+                                            "expected #:mutable or #:auto"
+                                            (car rest)))))))
+          (if (identifier? f)
+              (make-field-info f ctc #f #f)
+              (raise-syntax-error 'define-struct/contract
+                                  "expected struct field"
+                                  f)))))
+  (define (check-kwds kwd-list field-infos)
+    (let loop ([kwds kwd-list]
+               [auto-value-stx #f]
+               [mutable? #f]
+               [transparent? #f]
+               [def-stxs? #t]
+               [def-vals? #t])
+      (if (null? kwds)
+          (make-s-info auto-value-stx transparent? def-stxs? def-vals?)
+          (let ([kwd (syntax-e (car kwds))])
+            (when (not (keyword? kwd))
+              (raise-syntax-error 'define-struct/contract
+                                  "expected a keyword"
+                                  (car kwds)))
+            (cond
+              [(eq? kwd '#:auto-value)
+               (when (null? (cdr kwd-list))
+                 (raise-syntax-error 'define-struct/contract
+                                     "expected a following expression"
+                                     (car kwds)))
+               (loop (cddr kwd-list) (cadr kwd-list)
+                     transparent? mutable? def-stxs? def-vals?)]
+              [(eq? kwd '#:mutable)
+               (when mutable?
+                 (raise-syntax-error 'define-struct/contract
+                                     "redundant #:mutable"
+                                     (car kwds)))
+               (for ([finfo field-infos])
+                    (set-field-info-mutable?! finfo #t))
+               (loop (cdr kwd-list) auto-value-stx
+                     transparent? #t def-stxs? def-vals?)]
+              [(eq? kwd '#:transparent)
+               (when transparent?
+                 (raise-syntax-error 'define-struct/contract
+                                     "redundant #:transparent"
+                                     (car kwds)))
+               (loop (cdr kwd-list) auto-value-stx
+                     #t mutable? def-stxs? def-vals?)]
+              [(eq? kwd '#:omit-define-syntaxes)
+               (when (not def-stxs?)
+                 (raise-syntax-error 'define-struct/contract
+                                     "redundant #:omit-define-syntaxes"
+                                     (car kwds)))
+               (loop (cdr kwd-list) auto-value-stx
+                     transparent? mutable? #f def-vals?)]
+              [(eq? kwd '#:omit-define-values)
+               (when (not def-vals?)
+                 (raise-syntax-error 'define-struct/contract
+                                     "redundant #:omit-define-values"
+                                     (car kwds)))
+               (loop (cdr kwd-list) auto-value-stx
+                     transparent? mutable? def-stxs? #f)]
+              [else (raise-syntax-error 'define-struct/contract
+                                        "unexpected keyword"
+                                        (car kwds))])))))
   (syntax-case stx ()
     [(_ name ([field ctc] ...) kwds ...)
      (let ([fields (syntax->list #'(field ...))])
@@ -154,34 +281,67 @@ improve method arity mismatch contract violation error messages?
          (raise-syntax-error 'define-struct/contract
                              "expected identifier for struct name"
                              #'name))
-       (for-each (λ (f)
-                   (unless (identifier? f)
-                     (raise-syntax-error 'define-struct/contract
-                                         "expected identifier for field name"
-                                         f)))
-                 fields)
-       (let* ([names (ds/c-build-struct-names #'name fields)]
+       (let* ([field-infos (map check-field fields (syntax->list #'(ctc ...)))]
+              [sinfo (check-kwds (syntax->list #'(kwds ...)) field-infos)]
+              [names (build-struct-names #'name field-infos)]
               [pred (caddr names)]
-              [ctcs (list* (syntax/loc stx
-                            (-> ctc ... any/c))
-                          (syntax/loc stx any/c)
-                          (let ([field-ctc (quasisyntax/loc stx
-                                             (-> #,pred any/c))])
-                            (build-list
-                             (length fields)
-                             (λ (_) field-ctc))))])
-         (with-syntax ([struct:name (car names)]
-                       [(id/ctc ...) (map list (cdr names) ctcs)])
-           (syntax/loc stx
-             (with-contract #:type struct name
-               (name struct:name id/ctc ...)
-               (define-struct name (field ...)
-                 kwds ...
-                 #:guard (λ (field ... struct-name)
-                           (unless (eq? 'name struct-name)
-                             (error (format "Cannot create subtype ~a of contracted struct ~a" 
-                                            struct-name 'name)))
-                           (values field ...))))))))]
+              [ctcs (build-contracts stx pred field-infos)])
+         (let-values ([(non-auto-fields auto-fields)
+                       (let loop ([fields field-infos]
+                                  [nautos null]
+                                  [autos null])
+                         (if (null? fields)
+                             (values (reverse nautos)
+                                     (reverse autos))
+                             (if (field-info-auto? (car fields))
+                                 (loop (cdr fields)
+                                       nautos
+                                       (cons (car fields) autos))
+                                 (if (null? autos)
+                                     (loop (cdr fields)
+                                           (cons (car fields) nautos)
+                                           autos)
+                                     (raise-syntax-error 'define-struct/contract
+                                                         "non-auto field after auto fields"
+                                                         (field-info-stx (car fields)))))))])
+           (with-syntax ([ctc-bindings
+                          (let ([val-bindings (if (s-info-def-vals? sinfo)
+                                                  (map list (cdr names) ctcs)
+                                                  null)])
+                            (if (s-info-def-stxs? sinfo)
+                                (cons (car names) val-bindings)
+                                val-bindings))]
+                         [orig stx]
+                         [(auto-check ...)
+                          (let* ([av-stx (if (s-info-auto-value-stx sinfo)
+                                             (s-info-auto-value-stx sinfo)
+                                             #'#f)]
+                                 [av-id (datum->syntax av-stx
+                                                       (string->symbol
+                                                        (string-append (symbol->string (syntax-e #'name))
+                                                                       ":auto-value"))
+                                                       av-stx)])
+                            (for/list ([finfo auto-fields])
+                              #`(let ([#,av-id #,av-stx])
+                                  (-contract #,(field-info-ctc finfo)
+                                             #,av-id
+                                             '(struct name)
+                                             'cant-happen
+                                             #,(id->contract-src-info av-id)))))]
+                         [(non-auto-name ...)
+                          (map field-info-stx non-auto-fields)])
+             (syntax/loc stx
+               (begin
+                 (define-values () (begin auto-check ... (values)))
+                 (with-contract #:type struct name
+                   ctc-bindings
+                   (define-struct/derived orig name (field ...)
+                     kwds ...
+                     #:guard (λ (non-auto-name ... struct-name)
+                               (unless (eq? 'name struct-name)
+                                 (error (format "Cannot create subtype ~a of contracted struct ~a" 
+                                                struct-name 'name)))
+                               (values non-auto-name ...))))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
      (raise-syntax-error 'define-struct/contract
