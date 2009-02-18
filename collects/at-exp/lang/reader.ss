@@ -10,7 +10,7 @@
          get-info)
 
 (define (at-get in export-sym src line col pos mk-fail-thunk)
-  (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(\\s|$)" in)]
+  (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)]
         [bad (lambda (str eof?)
                ((if eof?
                     raise-read-eof-error 

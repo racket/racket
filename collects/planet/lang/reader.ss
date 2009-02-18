@@ -9,7 +9,7 @@
          get-info)
 
 (define (planet-get in lang-mod export-sym src line col pos mk-fail-thunk)
-  (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(\\s|$)" in)]
+  (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)]
         [bad (lambda (str eof?)
                ((if eof?
                     raise-read-eof-error 
@@ -35,7 +35,7 @@
               (bad (cadr spec) #f))))))
 
 (define (get-info in mod line col pos)
-  (planet-get in "/lang/langinfo" 'get-info (object-name in) line col pos
+  (planet-get in "/lang/reader" 'get-info (object-name in) line col pos
               (lambda (spec) (lambda () (lambda (tag) #f)))))
 
 (define (planet-read-fn in read-sym args src mod line col pos)
