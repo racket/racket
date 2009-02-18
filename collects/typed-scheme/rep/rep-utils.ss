@@ -19,7 +19,7 @@
 
 (define-for-syntax fold-target #'fold-target)
 
-(define-for-syntax (mk par ht-stx)      
+(define-for-syntax (mk par ht-stx key?)
   (define-syntax-class opt-cnt-id
     #:attributes (i cnt)
     (pattern i:id
@@ -80,7 +80,10 @@
                            (provide ex pred acc ...)
                            (p/c (rename *maker maker *maker-cnt))))]
          [intern 
-          (let ([mk (lambda (int) #`(defintern (**maker . flds.fs) maker #,int #:extra-arg key-expr))])
+          (let ([mk (lambda (int) #`(defintern (**maker . flds.fs) maker #,int 
+				      #,@(if key?
+					     #'(#:extra-arg key-expr)
+					     #'())))])
             (syntax-parse #'flds.fs
               [_ #:when #'intern?
                  (mk #'intern?)]
@@ -121,20 +124,25 @@
 (define-syntax (make-prim-type stx)
   (define default-flds #'(seq))
   (define-syntax-class type-name-base
-    #:attributes (i lower-s first-letter (fld-names 1))
+    #:attributes (i lower-s first-letter key? (fld-names 1))
     #:transparent
     (pattern i:id
              #:with lower-s (string-downcase (symbol->string #'i.datum))
+	     #:when (printf "loc1: ~a~n" #'lower-s)
              #:with (fld-names ...) default-flds
+	     #:with key? #'#f
              #:with first-letter (string-ref #'lower-s 0))
     (pattern [i:id #:d d-name:id]
              #:with (fld-names ...) default-flds
              #:with lower-s (string-downcase (symbol->string #'i.datum))
+	     #:with key? #'#f
              #:with first-letter (symbol->string #'d-name.datum))
-    (pattern [i:id #:fields extra-fld-names:id ...]
+    (pattern [i:id #:key]
              #:with (fld-names ...) (datum->syntax #f (append (syntax->list default-flds) 
-                                                              (syntax->list #'(extra-fld-names ...))))
+                                                              (syntax->list #'(key))))
              #:with lower-s (string-downcase (symbol->string #'i.datum))
+	     #:when (printf "loc2: ~v~n" (syntax->datum #'lower-s))
+	     #:with key? #'#t
              #:with first-letter (string-ref #'lower-s 0)))
   (define-syntax-class type-name
     #:transparent
@@ -151,10 +159,10 @@
      #'(begin
          (provide i.d-id ... i.printer ... i.name ... i.pred? ... i.accs ... ...
                   (for-syntax i.ht ... i.rec-id ...))
-         (define-syntax i.d-id (mk #'i.name #'i.ht)) ...
+         (define-syntax i.d-id (mk #'i.name #'i.ht i.key?)) ...
          (define-for-syntax i.ht (make-hasheq)) ...
          (define-struct/printer i.name (i.fld-names ...) (lambda (a b c) ((unbox i.printer) a b c))) ...
          (define-for-syntax i.rec-id #'i.rec-id) ...)]))
 
-(make-prim-type [Type #:fields key] Filter [LatentFilter #:d lf] Object [LatentObject #:d lo]
+(make-prim-type [Type #:key] Filter [LatentFilter #:d lf] Object [LatentObject #:d lo]
                 [PathElem #:d pe])

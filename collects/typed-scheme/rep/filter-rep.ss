@@ -4,43 +4,29 @@
 (require mzlib/etc)
 (require "rep-utils.ss" "free-variance.ss")
 
+(df Bot () [#:fold-rhs #:base])
+
+(df TypeFilter ([t Type?] [p (listof PathElem?)] [v identifier?])
+  [#:intern (list t p (hash-id v))]
+  [#:frees (combine-frees (map free-vars* (cons t p)))
+	   (combine-frees (map free-idxs* (cons t p)))]
+  [#:fold-rhs (*TypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
+
+(df NotTypeFilter ([t Type?] [p (listof PathElem?)] [v identifier?])
+  [#:intern (list t p (hash-id v))]
+  [#:frees (combine-frees (map free-vars* (cons t p)))
+	   (combine-frees (map free-idxs* (cons t p)))]
+  [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 
-#|
+(dlf LBot () [#:fold-rhs #:base])
 
-(de True-Effect () [#:frees #f] [#:fold-rhs #:base])
+(dlf LTypeFilter ([t Type?] [p (listof PathElem?)])
+  [#:frees (combine-frees (map free-vars* (cons t p)))
+	   (combine-frees (map free-idxs* (cons t p)))]
+  [#:fold-rhs (*LTypeFilter (type-rec-id t) (map pathelem-rec-id p))])
 
-(de False-Effect () [#:frees #f] [#:fold-rhs #:base])
-
-;; v is an identifier
-(de Var-True-Effect ([v identifier?]) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
-
-;; v is an identifier
-(de Var-False-Effect ([v identifier?]) [#:intern (hash-id v)] [#:frees #f] [#:fold-rhs #:base])
-
-;; t is a Type
-;; v is an identifier
-(de Restrict-Effect ([t Type?] [v identifier?]) [#:intern (list t (hash-id v))] [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Restrict-Effect (type-rec-id t) v)])
-
-;; t is a Type
-;; v is an identifier
-(de Remove-Effect ([t Type?] [v identifier?]) 
-    [#:intern (list t (hash-id v))]
-    [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Remove-Effect (type-rec-id t) v)])
-
-;; t is a Type
-(de Latent-Restrict-Effect ([t Type?]) [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Latent-Restrict-Effect (type-rec-id t))])
-
-;; t is a Type
-(de Latent-Remove-Effect ([t Type?]) [#:frees (free-vars* t) (free-idxs* t)]
-    [#:fold-rhs (*Latent-Remove-Effect (type-rec-id t))])
-
-(de Latent-Var-True-Effect () [#:frees #f] [#:fold-rhs #:base])
-
-(de Latent-Var-False-Effect () [#:frees #f] [#:fold-rhs #:base])
-
-;; could also have latent true/false effects, but seems pointless
-|#
+(dlf LNotTypeFilter ([t Type?] [p (listof PathElem?)])
+  [#:frees (combine-frees (map free-vars* (cons t p)))
+	   (combine-frees (map free-idxs* (cons t p)))]
+  [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p))])
