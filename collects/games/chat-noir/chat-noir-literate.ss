@@ -3,7 +3,7 @@
 @;{
 The command to build this:
 
-mzc chat-noir-doc.ss && scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
+mzc chat-noir-doc.ss && rm -rf chat-noir-doc && scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
 
 }
 
@@ -56,8 +56,9 @@ and some code that builds an initial world and starts the game.
        <cats-path>
        <drawing-the-cat>
        <drawing>
+       <input>
        <tests>
-       <everything-else>]
+       <go>]
 
 Each section also comes with a series of test cases that are collected into the 
 @chunkref[<tests>] chunk at the end of the program.
@@ -68,7 +69,8 @@ Each section also comes with a series of test cases that are collected into the
        <board->graph-tests>
        <breadth-first-search-tests>
        <cats-path-tests>
-       <drawing-tests>]
+       <drawing-tests>
+       <input-tests>]
 
 Each test case uses either @scheme[test], a simple form that accepts two
 arguments and compares them with @scheme[equal?], or @scheme[test/set]
@@ -85,15 +87,24 @@ The main data structure for Chat Noir is @tt{world}. It comes with a few functio
 construct empty worlds and test cases for them.
 
 @chunk[<world> 
-       <data-definitions> <empty-world> <empty-board>]
+       <cell-struct> <world-struct> <empty-world> <empty-board> <blocked-cells>]
 
 @chunk[<world-tests>
-       <empty-world-test> <empty-board-test>]
+       <empty-world-test> <empty-board-test> <blocked-cells-tests>]
 
 The main structure definition is the @scheme[world] struct.
 
-@chunk[<data-definitions>
-(define-struct world (board cat state size mouse-posn h-down?)
+@chunk[<world-struct>
+(define-struct/contract world ([board (listof cell?)]
+                               [cat posn?]
+                               [state (or/c 'playing 
+                                            'cat-won
+                                            'cat-lost)]
+                               [size (and/c natural-number/c
+                                            odd?
+                                            (>=/c 3))]
+                               [mouse-posn (or/c #f posn?)]
+                               [h-down? boolean?])
   #:transparent)
 ]
 
@@ -128,22 +139,23 @@ It consists of a structure with six fields:
 
 A @scheme[cell] is a structure with two fields:
 
-@chunk[<data-definitions>
-       (define-struct cell (p blocked?) #:transparent)]
+@chunk[<cell-struct>
+       (define-struct/contract cell ([p posn?]
+                                     [blocked? boolean?])
+         #:transparent)]
        
-The first field contains a @scheme[posn] struct.  The coordinates of
-the posn indicate a position on the hexagonal grid. 
+The coordinates of
+the @scheme[posn] in the first field
+indicate a position on the hexagonal grid. 
 This program reprsents the hexagon grid as a series of rows that
 are offset from each other by 1/2 the size of the each cell.
 The @tt{y} field
 of the @scheme[posn] refers to the row of the cell, and the @tt{x}
 coordinate the position in the row.  This means that, for example,
 @scheme[(make-posn 1 0)] is centered above @scheme[(make-posn 1 0)]
-and @scheme[(make-posn 1 1)].  (See @scheme[cell-center-x] and
-@scheme[cell-center-y] below for the conversion of those positions to
-screen coordinates.)
+and @scheme[(make-posn 1 1)]. 
 
-The @tt{blocked?} field is a boolean indicating if the cell has been
+The boolean in the @tt{blocked?} field indicates if the cell has been
 clicked on, thus blocking the cat from stepping there.
 
 The @scheme[empty-board] function builds a list of @scheme[cell]s
@@ -255,6 +267,55 @@ cats initial position as the center spot on the board.
                      false
                      false))]
 
+@chunk[<blocked-cells>
+       
+       ;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
+       (define (add-n-random-blocked-cells n all-cells board-size)
+         (cond
+           [(zero? n) all-cells]
+           [else
+            (local [(define unblocked-cells
+                      (filter (lambda (x)
+                                (let ([cat-cell? (and (= (posn-x (cell-p x))
+                                                         (quotient board-size 2))
+                                                      (= (posn-y (cell-p x))
+                                                         (quotient board-size 2)))])
+                                  
+                                  (and (not (cell-blocked? x))
+                                       (not cat-cell?))))
+                              all-cells))
+                    (define to-block (list-ref unblocked-cells
+                                               (random (length unblocked-cells))))]
+              (add-n-random-blocked-cells
+               (sub1 n)
+               (block-cell (cell-p to-block) all-cells)
+               board-size))]))
+       
+       ;; block-cell : posn board -> board
+       (define (block-cell to-block board)
+         (map (lambda (c) (if (equal? to-block (cell-p c))
+                              (make-cell to-block true)
+                              c))
+              board))]
+
+@chunk[<blocked-cells-tests>
+       (test (block-cell (make-posn 1 1)
+                         (list (make-cell (make-posn 0 0) false)
+                               (make-cell (make-posn 1 1) false)
+                               (make-cell (make-posn 2 2) false)))
+             (list (make-cell (make-posn 0 0) false)
+                   (make-cell (make-posn 1 1) true)
+                   (make-cell (make-posn 2 2) false)))
+       
+       (test (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
+                                                            true))
+                                         10)
+             (list (make-cell (make-posn 0 0) true)))
+       (test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
+                                                            false))
+                                         10)
+             (list (make-cell (make-posn 0 0) true)))]
+
 @section{Breadth-first Search}
 
 The cat's move decision is based on a breadth-first search of a graph.
@@ -281,16 +342,18 @@ The breadth-first function constructs a @scheme[distance-map],
 which is a list of @scheme[dist-cell] structs:
 
 @chunk[<dist-cell-data-definition>
-(define-struct dist-cell (p n) #:transparent)]
+       (define-struct/contract dist-cell ([p (or/c 'boundary posn?)]
+                                          [n natural-number/c])
+         #:transparent)]
 
 Each @tt{p} field in the @scheme[dist-cell] is a position on the board
-and the @tt{n} field is a natural number or @scheme['∞], indicating
+and the @tt{n} field is a natural number, indicating
 the distance of the shortest path from the node to some fixed point on
 the board. 
 
 The function @scheme[lookup-in-table] returns the distance from the fixed
 point to the given posn, returning @scheme['∞] if the posn is not in the
-table or if it is mapped to @scheme['∞] in the table.
+table.
 
 @chunk[<lookup-in-table>
        (define/contract (lookup-in-table t p)
@@ -400,7 +463,7 @@ it calls the @scheme[bfs] function
 and then transforms the result, using
 @scheme[hash-map], into a list of @scheme[cell]s.
 
-@section{Board to Graph Functions}
+@section{Board to Graph}
 
 As far as the @scheme[build-bfs-table] function goes,
 all of the information specific to Chat Noir is
@@ -832,12 +895,12 @@ except it has a smile.
          (make-world (list (make-cell (make-posn 0 1) false))
                      (make-posn 0 1)
                      'playing
-                     2
+                     3
                      (make-posn 0 0)
                      false))
         (overlay
          (board->image (list (make-cell (make-posn 0 1) false))
-                       2
+                       3
                        (lambda (x) true)
                        false)
          (move-pinhole thinking-cat
@@ -849,12 +912,12 @@ except it has a smile.
          (make-world (list (make-cell (make-posn 0 1) false))
                      (make-posn 0 1)
                      'cat-won
-                     2
+                     3
                      false
                      false))
         (overlay
          (board->image (list (make-cell (make-posn 0 1) false))
-                       2
+                       3
                        (lambda (x) true)
                        false)
          (move-pinhole happy-cat
@@ -866,12 +929,12 @@ except it has a smile.
          (make-world (list (make-cell (make-posn 0 1) false))
                      (make-posn 0 1)
                      'cat-lost
-                     2
+                     3
                      false
                      false))
         (overlay
          (board->image (list (make-cell (make-posn 0 1) false))
-                       2
+                       3
                        (lambda (x) true)
                        false)
          (move-pinhole mad-cat
@@ -1182,6 +1245,524 @@ except it has a smile.
              circle-radius)]
 
 
+
+@section{Handling Input}
+
+@chunk[<input>
+       <clack>
+       <update-world-posn>
+       <move-cat>
+       <find-best-positions>
+       <lt/f>
+       <add-obstacle>
+       <circle-at-point>
+       <point-in-this-circle?>
+       <change>]
+
+@chunk[<input-tests>
+       <change-tests>
+       <point-in-this-circle?-tests>
+       <circle-at-point-tests>
+       <add-obstacle-tests>
+       <lt/f-tests>
+       <find-best-positions-tests>
+       <move-cat-tests>
+       <update-world-posn-tests>
+       <clack-tests>]
+
+@chunk[<clack>
+       (define (clack world x y evt)
+         (cond
+           [(equal? evt 'button-up)
+            (cond
+              [(and (equal? 'playing (world-state world))
+                    (point-in-a-circle? (world-board world) x y))
+               (move-cat
+                (update-world-posn
+                 (make-world (add-obstacle (world-board world) x y)
+                             (world-cat world)
+                             (world-state world)
+                             (world-size world)
+                             (world-mouse-posn world)
+                             (world-h-down? world))
+                 (make-posn x y)))]
+              [else (update-world-posn world (make-posn x y))])]
+           [(equal? evt 'button-down)
+            world]
+           [(equal? evt 'drag) world]
+           [(equal? evt 'move)
+            (update-world-posn world (make-posn x y))]
+           [(equal? evt 'enter)
+            (update-world-posn world (make-posn x y))]
+           [(equal? evt 'leave)
+            (update-world-posn world false)]))]
+
+@chunk[<clack-tests>
+       (test (clack (make-world '() (make-posn 0 0) 'playing 3 false false)
+                    1 1 'button-down)
+             (make-world '() (make-posn 0 0) 'playing 3 false false))
+       (test (clack (make-world '() (make-posn 0 0) 'playing 3 false false)
+                    1 1 'drag)
+             (make-world '() (make-posn 0 0) 'playing 3 false false))
+       (test (clack (make-world (list (make-cell (make-posn 0 0) false))
+                                (make-posn 0 1)
+                                'playing
+                                3
+                                false
+                                false)
+                    (cell-center-x (make-posn 0 0))
+                    (cell-center-y (make-posn 0 0))
+                    'move)
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1)
+                         'playing
+                         3
+                         (make-posn 0 0)
+                         false))
+       (test (clack (make-world (list (make-cell (make-posn 0 0) false))
+                                (make-posn 0 1)
+                                'playing
+                                3
+                                false
+                                false)
+                    (cell-center-x (make-posn 0 0))
+                    (cell-center-y (make-posn 0 0))
+                    'enter)
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1)
+                         'playing
+                         3
+                         (make-posn 0 0)
+                         false))
+       (test (clack (make-world '() (make-posn 0 0)
+                                'playing 3 (make-posn 0 0) false)
+                    1 1 'leave)
+             (make-world '() (make-posn 0 0) 'playing 3 false false))
+       
+       (test (clack (make-world '() (make-posn 0 0)
+                                'playing 3 (make-posn 0 0) false)
+                    10
+                    10
+                    'button-down)
+             (make-world '() (make-posn 0 0) 'playing 3 (make-posn 0 0) false))
+       
+       (test (clack (make-world (list (make-cell (make-posn 0 0) false)
+                                      (make-cell (make-posn 1 1) false))
+                                (make-posn 1 1)
+                                'playing
+                                3
+                                (make-posn 0 0)
+                                false)
+                    (cell-center-x (make-posn 0 0))
+                    (cell-center-y (make-posn 0 0))
+                    'button-up)
+             (make-world (list (make-cell (make-posn 0 0) true)
+                               (make-cell (make-posn 1 1) false))
+                         (make-posn 1 1)
+                         'cat-lost
+                         3
+                         (make-posn 0 0)
+                         false))
+       
+       
+       (test (clack (make-world '() (make-posn 0 0)
+                                'cat-lost 3 (make-posn 0 0) false)
+                    10
+                    10
+                    'button-up)
+             (make-world '() (make-posn 0 0)
+                         'cat-lost 3 (make-posn 0 0) false))
+       (test (clack
+              (make-world
+               (list (make-cell (make-posn 1 0) false)
+                     (make-cell (make-posn 2 0) true)
+                     (make-cell (make-posn 0 1) true)
+                     (make-cell (make-posn 1 1) false)
+                     (make-cell (make-posn 2 1) true)
+                     (make-cell (make-posn 1 2) true)
+                     (make-cell (make-posn 2 2) true))
+               (make-posn 1 1)
+               'playing
+               3
+               false
+               false)
+              (cell-center-x (make-posn 1 0))
+              (cell-center-y (make-posn 1 0))
+              'button-up)
+             (make-world
+              (list (make-cell (make-posn 1 0) true)
+                    (make-cell (make-posn 2 0) true)
+                    (make-cell (make-posn 0 1) true)
+                    (make-cell (make-posn 1 1) false)
+                    (make-cell (make-posn 2 1) true)
+                    (make-cell (make-posn 1 2) true)
+                    (make-cell (make-posn 2 2) true))
+              (make-posn 1 1)
+              'cat-lost
+              3
+              (make-posn 1 0)
+              false))
+       
+       (test (clack
+              (make-world
+               (list (make-cell (make-posn 1 0) false)
+                     (make-cell (make-posn 2 0) false)
+                     (make-cell (make-posn 0 1) true)
+                     (make-cell (make-posn 1 1) false)
+                     (make-cell (make-posn 2 1) true)
+                     (make-cell (make-posn 1 2) true)
+                     (make-cell (make-posn 2 2) true))
+               (make-posn 1 1)
+               'playing
+               3
+               false
+               false)
+              (cell-center-x (make-posn 1 0))
+              (cell-center-y (make-posn 1 0))
+              'button-up)
+             (make-world
+              (list (make-cell (make-posn 1 0) true)
+                    (make-cell (make-posn 2 0) false)
+                    (make-cell (make-posn 0 1) true)
+                    (make-cell (make-posn 1 1) false)
+                    (make-cell (make-posn 2 1) true)
+                    (make-cell (make-posn 1 2) true)
+                    (make-cell (make-posn 2 2) true))
+              (make-posn 2 0)
+              'cat-won
+              3
+              (make-posn 1 0)
+              false))]
+
+@chunk[<update-world-posn>
+       ;; update-world-posn/playing : world posn-or-false -> world
+       (define (update-world-posn w p)
+         (cond
+           [(equal? (world-state w) 'playing)
+            (cond
+              [(posn? p)
+               (local [(define mouse-spot
+                         (circle-at-point (world-board w)
+                                          (posn-x p)
+                                          (posn-y p)))]
+                 (make-world (world-board w)
+                             (world-cat w)
+                             (world-state w)
+                             (world-size w)
+                             (cond
+                               [(equal? mouse-spot (world-cat w))
+                                false]
+                               [else
+                                mouse-spot])
+                             (world-h-down? w)))]
+              [else
+               (make-world (world-board w)
+                           (world-cat w)
+                           (world-state w)
+                           (world-size w)
+                           false
+                           (world-h-down? w))])]
+           [else w]))]
+
+@chunk[<update-world-posn-tests>
+
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) false))
+                          (make-posn 0 1) 'playing 3 false false)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1) 'playing 3 (make-posn 0 0) false))
+       
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) false))
+                          (make-posn 0 0) 'playing 3 false false)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 0) 'playing 3 false false))
+       
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) false))
+                          (make-posn 0 1) 'playing 3 (make-posn 0 0) false)
+              (make-posn 0 0))
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1) 'playing 3 false false))
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) false))
+                          (make-posn 0 1) 'cat-won 3 false false)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1) 'cat-won 3 false false))
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) false))
+                          (make-posn 0 1) 'cat-lost 3 false false)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) false))
+                         (make-posn 0 1) 'cat-lost 3 false false))]
+
+@chunk[<move-cat>
+       ;; move-cat : world -> world
+       (define (move-cat world)
+         (local [(define cat-position (world-cat world))
+                 (define table (build-bfs-table world 'boundary))
+                 (define neighbors (adjacent cat-position))
+                 (define next-cat-positions
+                   (find-best-positions neighbors
+                                        (map (lambda (p) (lookup-in-table table p))
+                                             neighbors)))
+                 (define next-cat-position
+                   (cond
+                     [(boolean? next-cat-positions) false]
+                     [else
+                      (list-ref next-cat-positions
+                                (random (length next-cat-positions)))]))]
+           (make-world (world-board world)
+                       (cond
+                         [(boolean? next-cat-position)
+                          cat-position]
+                         [else next-cat-position])
+                       (cond
+                         [(boolean? next-cat-position)
+                          'cat-lost]
+                         [(on-boundary? next-cat-position (world-size world))
+                          'cat-won]
+                         [else 'playing])
+                       (world-size world)
+                       (world-mouse-posn world)
+                       (world-h-down? world))))]
+
+@chunk[<move-cat-tests>
+       (test
+        (move-cat
+         (make-world (list (make-cell (make-posn 1 0) false)
+                           (make-cell (make-posn 2 0) false)
+                           (make-cell (make-posn 3 0) false)
+                           (make-cell (make-posn 4 0) false)
+                           
+                           (make-cell (make-posn 0 1) false)
+                           (make-cell (make-posn 1 1) true)
+                           (make-cell (make-posn 2 1) true)
+                           (make-cell (make-posn 3 1) false)
+                           (make-cell (make-posn 4 1) false)
+                           
+                           (make-cell (make-posn 0 2) false)
+                           (make-cell (make-posn 1 2) true)
+                           (make-cell (make-posn 2 2) false)
+                           (make-cell (make-posn 3 2) true)
+                           (make-cell (make-posn 4 2) false)
+                           
+                           (make-cell (make-posn 0 3) false)
+                           (make-cell (make-posn 1 3) true)
+                           (make-cell (make-posn 2 3) false)
+                           (make-cell (make-posn 3 3) false)
+                           (make-cell (make-posn 4 3) false)
+                           
+                           (make-cell (make-posn 1 4) false)
+                           (make-cell (make-posn 2 4) false)
+                           (make-cell (make-posn 3 4) false)
+                           (make-cell (make-posn 4 4) false))
+                     (make-posn 2 2)
+                     'playing
+                     5
+                     (make-posn 0 0)
+                     false))
+        (make-world (list (make-cell (make-posn 1 0) false)
+                          (make-cell (make-posn 2 0) false)
+                          (make-cell (make-posn 3 0) false)
+                          (make-cell (make-posn 4 0) false)
+                          
+                          (make-cell (make-posn 0 1) false)
+                          (make-cell (make-posn 1 1) true)
+                          (make-cell (make-posn 2 1) true)
+                          (make-cell (make-posn 3 1) false)
+                          (make-cell (make-posn 4 1) false)
+                          
+                          (make-cell (make-posn 0 2) false)
+                          (make-cell (make-posn 1 2) true)
+                          (make-cell (make-posn 2 2) false)
+                          (make-cell (make-posn 3 2) true)
+                          (make-cell (make-posn 4 2) false)
+                          
+                          (make-cell (make-posn 0 3) false)
+                          (make-cell (make-posn 1 3) true)
+                          (make-cell (make-posn 2 3) false)
+                          (make-cell (make-posn 3 3) false)
+                          (make-cell (make-posn 4 3) false)
+                          
+                          (make-cell (make-posn 1 4) false)
+                          (make-cell (make-posn 2 4) false)
+                          (make-cell (make-posn 3 4) false)
+                          (make-cell (make-posn 4 4) false))
+                    (make-posn 2 3)
+                    'playing
+                    5
+                    (make-posn 0 0)
+                    false))]
+
+@chunk[<find-best-positions>
+       ;; find-best-positions : (nelistof posn) (nelistof number or '∞)
+       ;;                       -> (nelistof posn) or false
+       (define (find-best-positions posns scores)
+         (local [(define best-score (foldl (lambda (x sofar)
+                                             (if (<=/f x sofar)
+                                                 x
+                                                 sofar))
+                                           (first scores)
+                                           (rest scores)))]
+           (cond
+             [(symbol? best-score) false]
+             [else
+              (map
+               second
+               (filter (lambda (x) (equal? (first x) best-score))
+                       (map list scores posns)))])))]
+
+@chunk[<find-best-positions-tests>
+       (test (find-best-positions (list (make-posn 0 0)) (list 1))
+             (list (make-posn 0 0)))
+       (test (find-best-positions (list (make-posn 0 0)) (list '∞))
+             false)
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list 1 2))
+             (list (make-posn 0 0)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list 1 1))
+             (list (make-posn 0 0)
+                   (make-posn 1 1)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list '∞ 2))
+             (list (make-posn 1 1)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list '∞ '∞))
+             false)]
+
+@chunk[<lt/f>
+       ;; <=/f : (number or '∞) (number or '∞) -> boolean
+       (define (<=/f a b)
+         (cond
+           [(equal? b '∞) true]
+           [(equal? a '∞) false]
+           [else (<= a b)]))]
+
+@chunk[<lt/f-tests>
+       (test (<=/f 1 2) true)
+       (test (<=/f 2 1) false)
+       (test (<=/f '∞ 1) false)
+       (test (<=/f 1 '∞) true)
+       (test (<=/f '∞ '∞) true)]
+
+@chunk[<add-obstacle>
+       ;; add-obstacle : board number number -> board
+       (define (add-obstacle board x y)
+         (cond
+           [(empty? board) board]
+           [else
+            (local [(define cell (first board))
+                    (define cx (cell-center-x (cell-p cell)))
+                    (define cy (cell-center-y (cell-p cell)))]
+              (cond
+                [(and (<= (- cx circle-radius) x (+ cx circle-radius))
+                      (<= (- cy circle-radius) y (+ cy circle-radius)))
+                 (cons (make-cell (cell-p cell) true)
+                       (rest board))]
+                [else
+                 (cons cell (add-obstacle (rest board) x y))]))]))]
+
+@chunk[<add-obstacle-tests>
+       (test (add-obstacle (list (make-cell (make-posn 0 0) false))
+                           circle-spacing circle-spacing)
+             (list (make-cell (make-posn 0 0) true)))
+       (test (add-obstacle (list (make-cell (make-posn 0 0) false)) 100 100)
+             (list (make-cell (make-posn 0 0) false)))
+       (test (add-obstacle (list (make-cell (make-posn 0 0) false)
+                                 (make-cell (make-posn 0 1) false))
+                           circle-spacing circle-spacing)
+             (list (make-cell (make-posn 0 0) true)
+                   (make-cell (make-posn 0 1) false)))]
+
+@chunk[<circle-at-point>
+       ;; circle-at-point : board number number -> posn-or-false
+       ;; returns the posn corresponding to cell where the x,y coordinates are
+       (define (circle-at-point board x y)
+         (cond
+           [(empty? board) false]
+           [else
+            (cond
+              [(point-in-this-circle? (cell-p (first board)) x y)
+               (cell-p (first board))]
+              [else
+               (circle-at-point (rest board) x y)])]))
+       
+       (define (point-in-a-circle? board x y)
+         (posn? (circle-at-point board x y)))]
+
+@chunk[<circle-at-point-tests>
+       (test (circle-at-point empty 0 0) false)
+       (test (circle-at-point (list (make-cell (make-posn 0 0) false))
+                              (cell-center-x (make-posn 0 0))
+                              (cell-center-y (make-posn 0 0)))
+             (make-posn 0 0))
+       (test (circle-at-point (list (make-cell (make-posn 0 0) false))
+                              0 0)
+             false)
+
+
+       (test (point-in-a-circle? empty 0 0) false)
+       (test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
+                                 (cell-center-x (make-posn 0 0))
+                                 (cell-center-y (make-posn 0 0)))
+             true)
+       (test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
+                                 0 0)
+             false)]
+
+@chunk[<point-in-this-circle?>
+       ;; point-in-this-circle? : posn number number -> boolean
+       (define (point-in-this-circle? p x y)
+         (local [(define center (+ (cell-center-x p)
+                                   (* (sqrt -1) (cell-center-y p))))
+                 (define p2 (+ x (* (sqrt -1) y)))]
+           (<= (magnitude (- center p2)) circle-radius)))]
+
+@chunk[<point-in-this-circle?-tests>
+       (test (point-in-this-circle? (make-posn 0 0)
+                                    (cell-center-x (make-posn 0 0))
+                                    (cell-center-y (make-posn 0 0)))
+             true)
+       (test (point-in-this-circle? (make-posn 0 0) 0 0)
+             false)]
+
+@chunk[<change>
+       ;; change : world key-event -> world
+       (define (change w ke)
+         (make-world (world-board w)
+                     (world-cat w)
+                     (world-state w)
+                     (world-size w)
+                     (world-mouse-posn w)
+                     (key=? ke #\h)))]
+
+@chunk[<change-tests>
+       (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) false)
+                     #\h)
+             (make-world '() (make-posn 1 1)
+                         'playing 3 (make-posn 0 0) true))
+       (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) true)
+                     'release)
+             (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) false))]
+
+
+]
+
 @section{Tests}
 
 @chunk[<test-infrastructure>
@@ -1189,25 +1770,29 @@ except it has a smile.
 (define-syntax (test stx)
   (syntax-case stx ()
     [(_ actual expected)
-     (with-syntax ([line (syntax-line stx)])
+     (with-syntax ([line (syntax-line stx)]
+                   [pos (syntax-position stx)])
        #'(test/proc (λ () actual)
                     (λ () expected)
                     equal?
-                    line))]))
+                    line
+                    'actual))]))
 
 (define-syntax (test/set stx)
   (syntax-case stx ()
     [(_ actual expected)
-     (with-syntax ([line (syntax-line stx)])
+     (with-syntax ([line (syntax-line stx)]
+                   [pos (syntax-position stx)])
        #'(test/proc (λ () actual)
                     (λ () expected)
                     (λ (x y) (same-sets? x y))
-                    line))]))
+                    line
+                    'actual))]))
 
 (define test-count 0)
 (define test-procs '())
 
-(define (test/proc actual-thunk expected-thunk cmp line)
+(define (test/proc actual-thunk expected-thunk cmp line sexp)
   (set! test-procs
         (cons
          (λ ()
@@ -1215,9 +1800,11 @@ except it has a smile.
            (let ([actual (actual-thunk)]
                  [expected (expected-thunk)])
              (unless (cmp actual expected)
-               (error 'check-expect "test ~a on line ~a failed:\n  ~s\n  ~s\n"
+               (error 'check-expect "test #~a~a\n  ~s\n  ~s\n"
                       test-count
-                      line
+                      (if line
+                          (format " on line ~a failed:" line)
+                          (format " failed: ~s" sexp))
                       actual
                       expected))))
          test-procs)))
@@ -1540,618 +2127,31 @@ except it has a smile.
        (test (+/f 1 '∞) '∞)
        (test (+/f 1 2) 3)]
 
-@section{Everything Else}
+@section{Run, program, run}
 
-
-@chunk[<everything-else>
-
-#;'()
-
-
-
-;                                          
-;                                          
-;                                          
-;                                          
-;                                          
-;          ;;;;;  ;;;;         ;;;;;;      
-;            ;;;  ;;;;;          ;;;;      
-;            ;;;                 ;;;       
-;    ;;;;;;  ;;;     ;   ;;;;;;  ;;;  ;;;; 
-;   ;;; ;;;; ;;; ;;;;;  ;;; ;;;; ;;; ;;;;;;
-;  ;;; ;;;;; ;;;   ;;; ;;; ;;;;; ;;; ;;;;; 
-;  ;;;  ;;;; ;;;   ;;; ;;;  ;;;; ;;;;      
-;  ;;;       ;;    ;;; ;;;        ;;;;;;   
-;  ;;;    ; ;;;   ;;;; ;;;    ;   ;;    ;; 
-;   ;;;  ;  ;;;; ;;;;;;;;;;  ;  ;;;;;  ;;;;
-;    ;;;;                ;;;;              
-;                                          
-;                                          
-;                                          
-
-
-(define (clack world x y evt)
-  (cond
-    [(equal? evt 'button-up)
-     (cond
-       [(and (equal? 'playing (world-state world))
-             (point-in-a-circle? (world-board world) x y))
-        (move-cat
-         (update-world-posn
-          (make-world (add-obstacle (world-board world) x y)
-                      (world-cat world)
-                      (world-state world)
-                      (world-size world)
-                      (world-mouse-posn world)
-                      (world-h-down? world))
-          (make-posn x y)))]
-       [else (update-world-posn world (make-posn x y))])]
-    [(equal? evt 'button-down)
-     world]
-    [(equal? evt 'drag) world]
-    [(equal? evt 'move)
-     (update-world-posn world (make-posn x y))]
-    [(equal? evt 'enter)
-     (update-world-posn world (make-posn x y))]
-    [(equal? evt 'leave)
-     (update-world-posn world false)]))
-
-(test (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
-                     1 1 'button-down)
-              (make-world '() (make-posn 0 0) 'playing 1 false false))
-(test (clack (make-world '() (make-posn 0 0) 'playing 1 false false)
-                     1 1 'drag)
-              (make-world '() (make-posn 0 0) 'playing 1 false false))
-(test (clack (make-world (list (make-cell (make-posn 0 0) false))
-                                 (make-posn 0 1)
-                                 'playing
-                                 1
-                                 false
-                                 false)
-                     (cell-center-x (make-posn 0 0))
-                     (cell-center-y (make-posn 0 0))
-                     'move)
-              (make-world (list (make-cell (make-posn 0 0) false))
-                          (make-posn 0 1)
-                          'playing
-                          1
-                          (make-posn 0 0)
-                          false))
-(test (clack (make-world (list (make-cell (make-posn 0 0) false))
-                                 (make-posn 0 1)
-                                 'playing
-                                 1
-                                 false
-                                 false)
-                     (cell-center-x (make-posn 0 0))
-                     (cell-center-y (make-posn 0 0))
-                     'enter)
-              (make-world (list (make-cell (make-posn 0 0) false))
-                          (make-posn 0 1)
-                          'playing
-                          1
-                          (make-posn 0 0)
-                          false))
-(test (clack (make-world '() (make-posn 0 0)
-                                 'playing 1 (make-posn 0 0) false)
-                     1 1 'leave)
-              (make-world '() (make-posn 0 0) 'playing 1 false false))
-
-(test (clack (make-world '() (make-posn 0 0)
-                                 'playing 1 (make-posn 0 0) false)
-                     10
-                     10
-                     'button-down)
-              (make-world '() (make-posn 0 0) 'playing 1 (make-posn 0 0) false))
-
-(test (clack (make-world (list (make-cell (make-posn 0 0) false)
-                                       (make-cell (make-posn 1 1) false))
-                                 (make-posn 1 1)
-                                 'playing
-                                 3
-                                 (make-posn 0 0)
-                                 false)
-                     (cell-center-x (make-posn 0 0))
-                     (cell-center-y (make-posn 0 0))
-                     'button-up)
-              (make-world (list (make-cell (make-posn 0 0) true)
-                                (make-cell (make-posn 1 1) false))
-                          (make-posn 1 1)
-                          'cat-lost
-                          3
-                          (make-posn 0 0)
-                          false))
-
-
-(test (clack (make-world '() (make-posn 0 0)
-                                 'cat-lost 1 (make-posn 0 0) false)
-                     10
-                     10
-                     'button-up)
-              (make-world '() (make-posn 0 0)
-                          'cat-lost 1 (make-posn 0 0) false))
-(test (clack
-               (make-world
-                (list (make-cell (make-posn 1 0) false)
-                      (make-cell (make-posn 2 0) true)
-                      (make-cell (make-posn 0 1) true)
-                      (make-cell (make-posn 1 1) false)
-                      (make-cell (make-posn 2 1) true)
-                      (make-cell (make-posn 1 2) true)
-                      (make-cell (make-posn 2 2) true))
-                (make-posn 1 1)
-                'playing
-                3
-                false
-                false)
-               (cell-center-x (make-posn 1 0))
-               (cell-center-y (make-posn 1 0))
-               'button-up)
-              (make-world
-               (list (make-cell (make-posn 1 0) true)
-                     (make-cell (make-posn 2 0) true)
-                     (make-cell (make-posn 0 1) true)
-                     (make-cell (make-posn 1 1) false)
-                     (make-cell (make-posn 2 1) true)
-                     (make-cell (make-posn 1 2) true)
-                     (make-cell (make-posn 2 2) true))
-               (make-posn 1 1)
-               'cat-lost
-               3
-               (make-posn 1 0)
-               false))
-
-(test (clack
-               (make-world
-                (list (make-cell (make-posn 1 0) false)
-                      (make-cell (make-posn 2 0) false)
-                      (make-cell (make-posn 0 1) true)
-                      (make-cell (make-posn 1 1) false)
-                      (make-cell (make-posn 2 1) true)
-                      (make-cell (make-posn 1 2) true)
-                      (make-cell (make-posn 2 2) true))
-                (make-posn 1 1)
-                'playing
-                3
-                false
-                false)
-               (cell-center-x (make-posn 1 0))
-               (cell-center-y (make-posn 1 0))
-               'button-up)
-              (make-world
-               (list (make-cell (make-posn 1 0) true)
-                     (make-cell (make-posn 2 0) false)
-                     (make-cell (make-posn 0 1) true)
-                     (make-cell (make-posn 1 1) false)
-                     (make-cell (make-posn 2 1) true)
-                     (make-cell (make-posn 1 2) true)
-                     (make-cell (make-posn 2 2) true))
-               (make-posn 2 0)
-               'cat-won
-               3
-               (make-posn 1 0)
-               false))
-
-;; update-world-posn/playing : world posn-or-false -> world
-(define (update-world-posn w p)
-  (cond
-    [(equal? (world-state w) 'playing)
-     (cond
-       [(posn? p)
-        (local [(define mouse-spot
-                  (circle-at-point (world-board w)
-                                   (posn-x p)
-                                   (posn-y p)))]
-          (make-world (world-board w)
-                      (world-cat w)
-                      (world-state w)
-                      (world-size w)
-                      (cond
-                        [(equal? mouse-spot (world-cat w))
-                         false]
-                        [else
-                         mouse-spot])
-                      (world-h-down? w)))]
-       [else
-        (make-world (world-board w)
-                    (world-cat w)
-                    (world-state w)
-                    (world-size w)
-                    false
-                    (world-h-down? w))])]
-    [else w]))
-
-(test (update-world-posn
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'playing 1 false false)
-               (make-posn (cell-center-x (make-posn 0 0))
-                          (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'playing 1 (make-posn 0 0) false))
-
-(test (update-world-posn
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 0) 'playing 1 false false)
-               (make-posn (cell-center-x (make-posn 0 0))
-                          (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 0) 'playing 1 false false))
-
-(test (update-world-posn
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'playing 1 (make-posn 0 0) false)
-               (make-posn 0 0))
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'playing 1 false false))
-(test (update-world-posn
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'cat-won 1 false false)
-               (make-posn (cell-center-x (make-posn 0 0))
-                          (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'cat-won 1 false false))
-(test (update-world-posn
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'cat-lost 1 false false)
-               (make-posn (cell-center-x (make-posn 0 0))
-                          (cell-center-y (make-posn 0 0))))
-               (make-world (list (make-cell (make-posn 0 0) false))
-                           (make-posn 0 1) 'cat-lost 1 false false))
-
-;; move-cat : world -> world
-(define (move-cat world)
-  (local [(define cat-position (world-cat world))
-          (define table (build-bfs-table world 'boundary))
-          (define neighbors (adjacent cat-position))
-          (define next-cat-positions
-            (find-best-positions neighbors
-                                 (map (lambda (p) (lookup-in-table table p))
-                                      neighbors)))
-          (define next-cat-position
-            (cond
-              [(boolean? next-cat-positions) false]
-              [else
-               (list-ref next-cat-positions
-                         (random (length next-cat-positions)))]))]
-    (make-world (world-board world)
-                (cond
-                  [(boolean? next-cat-position)
-                   cat-position]
-                  [else next-cat-position])
-                (cond
-                  [(boolean? next-cat-position)
-                   'cat-lost]
-                  [(on-boundary? next-cat-position (world-size world))
-                   'cat-won]
-                  [else 'playing])
-                (world-size world)
-                (world-mouse-posn world)
-                (world-h-down? world))))
-
-
-(test
- (move-cat
-  (make-world (list (make-cell (make-posn 1 0) false)
-                    (make-cell (make-posn 2 0) false)
-                    (make-cell (make-posn 3 0) false)
-                    (make-cell (make-posn 4 0) false)
-
-                    (make-cell (make-posn 0 1) false)
-                    (make-cell (make-posn 1 1) true)
-                    (make-cell (make-posn 2 1) true)
-                    (make-cell (make-posn 3 1) false)
-                    (make-cell (make-posn 4 1) false)
-
-                    (make-cell (make-posn 0 2) false)
-                    (make-cell (make-posn 1 2) true)
-                    (make-cell (make-posn 2 2) false)
-                    (make-cell (make-posn 3 2) true)
-                    (make-cell (make-posn 4 2) false)
-
-                    (make-cell (make-posn 0 3) false)
-                    (make-cell (make-posn 1 3) true)
-                    (make-cell (make-posn 2 3) false)
-                    (make-cell (make-posn 3 3) false)
-                    (make-cell (make-posn 4 3) false)
-
-                    (make-cell (make-posn 1 4) false)
-                    (make-cell (make-posn 2 4) false)
-                    (make-cell (make-posn 3 4) false)
-                    (make-cell (make-posn 4 4) false))
-              (make-posn 2 2)
-              'playing
-              5
-              (make-posn 0 0)
-              false))
- (make-world (list (make-cell (make-posn 1 0) false)
-                   (make-cell (make-posn 2 0) false)
-                   (make-cell (make-posn 3 0) false)
-                   (make-cell (make-posn 4 0) false)
-
-                   (make-cell (make-posn 0 1) false)
-                   (make-cell (make-posn 1 1) true)
-                   (make-cell (make-posn 2 1) true)
-                   (make-cell (make-posn 3 1) false)
-                   (make-cell (make-posn 4 1) false)
-
-                   (make-cell (make-posn 0 2) false)
-                   (make-cell (make-posn 1 2) true)
-                   (make-cell (make-posn 2 2) false)
-                   (make-cell (make-posn 3 2) true)
-                   (make-cell (make-posn 4 2) false)
-
-                   (make-cell (make-posn 0 3) false)
-                   (make-cell (make-posn 1 3) true)
-                   (make-cell (make-posn 2 3) false)
-                   (make-cell (make-posn 3 3) false)
-                   (make-cell (make-posn 4 3) false)
-
-                   (make-cell (make-posn 1 4) false)
-                   (make-cell (make-posn 2 4) false)
-                   (make-cell (make-posn 3 4) false)
-                   (make-cell (make-posn 4 4) false))
-             (make-posn 2 3)
-             'playing
-             5
-             (make-posn 0 0)
-             false))
-
-;; find-best-positions : (nelistof posn) (nelistof number or '∞)
-;;                       -> (nelistof posn) or false
-(define (find-best-positions posns scores)
-  (local [(define best-score (foldl (lambda (x sofar)
-                                      (if (<=/f x sofar)
-                                          x
-                                          sofar))
-                                    (first scores)
-                                    (rest scores)))]
-    (cond
-      [(symbol? best-score) false]
-      [else
-       (map
-        second
-        (filter (lambda (x) (equal? (first x) best-score))
-                (map list scores posns)))])))
-(test (find-best-positions (list (make-posn 0 0)) (list 1))
-              (list (make-posn 0 0)))
-(test (find-best-positions (list (make-posn 0 0)) (list '∞))
-              false)
-(test (find-best-positions (list (make-posn 0 0)
-                                         (make-posn 1 1))
-                                   (list 1 2))
-              (list (make-posn 0 0)))
-(test (find-best-positions (list (make-posn 0 0)
-                                         (make-posn 1 1))
-                                   (list 1 1))
-              (list (make-posn 0 0)
-                    (make-posn 1 1)))
-(test (find-best-positions (list (make-posn 0 0)
-                                         (make-posn 1 1))
-                                   (list '∞ 2))
-              (list (make-posn 1 1)))
-(test (find-best-positions (list (make-posn 0 0)
-                                         (make-posn 1 1))
-                                   (list '∞ '∞))
-              false)
-
-;; <=/f : (number or '∞) (number or '∞) -> boolean
-(define (<=/f a b)
-  (cond
-    [(equal? b '∞) true]
-    [(equal? a '∞) false]
-    [else (<= a b)]))
-
-(test (<=/f 1 2) true)
-(test (<=/f 2 1) false)
-(test (<=/f '∞ 1) false)
-(test (<=/f 1 '∞) true)
-(test (<=/f '∞ '∞) true)
-
-;; add-obstacle : board number number -> board
-(define (add-obstacle board x y)
-  (cond
-    [(empty? board) board]
-    [else
-     (local [(define cell (first board))
-             (define cx (cell-center-x (cell-p cell)))
-             (define cy (cell-center-y (cell-p cell)))]
-       (cond
-         [(and (<= (- cx circle-radius) x (+ cx circle-radius))
-               (<= (- cy circle-radius) y (+ cy circle-radius)))
-          (cons (make-cell (cell-p cell) true)
-                (rest board))]
-         [else
-          (cons cell (add-obstacle (rest board) x y))]))]))
-
-(test (add-obstacle (list (make-cell (make-posn 0 0) false))
-                            circle-spacing circle-spacing)
-              (list (make-cell (make-posn 0 0) true)))
-(test (add-obstacle (list (make-cell (make-posn 0 0) false)) 100 100)
-              (list (make-cell (make-posn 0 0) false)))
-(test (add-obstacle (list (make-cell (make-posn 0 0) false)
-                                  (make-cell (make-posn 0 1) false))
-                            circle-spacing circle-spacing)
-              (list (make-cell (make-posn 0 0) true)
-                    (make-cell (make-posn 0 1) false)))
-
-;; circle-at-point : board number number -> posn-or-false
-;; returns the posn corresponding to cell where the x,y coordinates are
-(define (circle-at-point board x y)
-  (cond
-    [(empty? board) false]
-    [else
-     (cond
-       [(point-in-this-circle? (cell-p (first board)) x y)
-        (cell-p (first board))]
-       [else
-        (circle-at-point (rest board) x y)])]))
-(test (circle-at-point empty 0 0) false)
-(test (circle-at-point (list (make-cell (make-posn 0 0) false))
-                               (cell-center-x (make-posn 0 0))
-                               (cell-center-y (make-posn 0 0)))
-              (make-posn 0 0))
-(test (circle-at-point (list (make-cell (make-posn 0 0) false))
-                               0 0)
-              false)
-
-
-;; point-in-a-circle? : board number number -> boolean
-(define (point-in-a-circle? board x y)
-  (posn? (circle-at-point board x y)))
-(test (point-in-a-circle? empty 0 0) false)
-(test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
-                                  (cell-center-x (make-posn 0 0))
-                                  (cell-center-y (make-posn 0 0)))
-              true)
-(test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
-                                  0 0)
-              false)
-
-;; point-in-this-circle? : posn number number -> boolean
-(define (point-in-this-circle? p x y)
-  (local [(define center (+ (cell-center-x p)
-                            (* (sqrt -1) (cell-center-y p))))
-          (define p2 (+ x (* (sqrt -1) y)))]
-    (<= (magnitude (- center p2)) circle-radius)))
-
-(test (point-in-this-circle? (make-posn 0 0)
-                                     (cell-center-x (make-posn 0 0))
-                                     (cell-center-y (make-posn 0 0)))
-              true)
-(test (point-in-this-circle? (make-posn 0 0) 0 0)
-              false)
-
-;; change : world key-event -> world
-(define (change w ke)
-  (make-world (world-board w)
-              (world-cat w)
-              (world-state w)
-              (world-size w)
-              (world-mouse-posn w)
-              (key=? ke #\h)))
-
-(test (change (make-world '() (make-posn 1 1)
-                                  'playing 1 (make-posn 0 0) false)
-                      #\h)
-              (make-world '() (make-posn 1 1)
-                          'playing 1 (make-posn 0 0) true))
-(test (change (make-world '() (make-posn 1 1)
-                                  'playing 1 (make-posn 0 0) true)
-                      'release)
-              (make-world '() (make-posn 1 1) 'playing 1 (make-posn 0 0) false))
-
-
-
-
-;                                                        
-;                                                        
-;                                                        
-;                                                        
-;                                                        
-;   ;;;;            ;;;;   ;;;;     ;;;;           ;;;;; 
-;   ;;;;;           ;;;;;  ;;;      ;;;;;            ;;; 
-;                          ;;;   ;                   ;;; 
-;      ;;;;;;  ;;      ; ;;;;;;;;;     ;   ;;;;   ;; ;;; 
-;  ;;;;;  ;;; ;;;; ;;;;;   ;;;   ;;;;;;;  ;;;;;;;;;  ;;; 
-;    ;;;  ;;; ;;;;   ;;;  ;;;        ;;; ;;;;;;;;;;  ;;; 
-;    ;;;  ;;;; ;;;   ;;;  ;;; ;;;;   ;;; ;;;    ;;;  ;;; 
-;    ;;;  ;;;  ;;;   ;;;  ;;; ;;;;;  ;;; ;;    ;;;;  ;;  
-;   ;;;;  ;;;  ;;;  ;;;;  ;;;  ;;;; ;;;; ;;;;;;;;;; ;;;  
-;  ;;;;;;;;;;  ;;; ;;;;;;;;;;   ;; ;;;;;;;;;;;;;;;;;;;;; 
-;             ;;;;         ;;;;;          ;;;;;          
-;               ;;;                                      
-;                                                        
-;                                                        
-;                                                    
-;                                                    
-;                                                    
-;                                                    
-;                                                    
-;  ;;;;;                                           ;;
-;   ;;;;                                        ;;;; 
-;   ;;;                                          ;;; 
-;   ;;; ;;;    ;;;;;    ;;;;   ;;   ; ;;;;   ;;; ;;; 
-;   ;;;;;;;;  ;;;;;;;  ;;;;;;;;;;;;;;; ;;;; ;;;;;;;; 
-;   ;;;;;;;; ;;;;;;;; ;;;;;;;;;;  ;;; ;;;;;;;;;;;;;; 
-;   ;;;   ;; ;;     ; ;;;    ;;;  ;;; ;;;; ;;;   ;;; 
-;   ;;;   ;; ;     ;; ;;    ;;;;  ;;;      ;;   ;;;; 
-;   ;;;;;;;  ;;;;;;;; ;;;;;;;;;;  ;;;      ;;;;;;;;  
-;  ;;;;;;;    ;;;;;;  ;;;;;;;;;;;;;;;;;;    ;;;;;;;;;
-;              ;;;;    ;;;;;                         
-;                                                    
-;                                                    
-;                                                    
-
-;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
-(define (add-n-random-blocked-cells n all-cells board-size)
-  (cond
-    [(zero? n) all-cells]
-    [else
-     (local [(define unblocked-cells
-               (filter (lambda (x)
-                         (let ([cat-cell? (and (= (posn-x (cell-p x))
-                                                  (quotient board-size 2))
-                                               (= (posn-y (cell-p x))
-                                                  (quotient board-size 2)))])
-
-                           (and (not (cell-blocked? x))
-                                (not cat-cell?))))
-                       all-cells))
-             (define to-block (list-ref unblocked-cells
-                                        (random (length unblocked-cells))))]
-       (add-n-random-blocked-cells
-        (sub1 n)
-        (block-cell (cell-p to-block) all-cells)
-        board-size))]))
-
-;; block-cell : posn board -> board
-(define (block-cell to-block board)
-  (map (lambda (c) (if (equal? to-block (cell-p c))
-                       (make-cell to-block true)
-                       c))
-       board))
-(test (block-cell (make-posn 1 1)
-                          (list (make-cell (make-posn 0 0) false)
-                                (make-cell (make-posn 1 1) false)
-                                (make-cell (make-posn 2 2) false)))
-              (list (make-cell (make-posn 0 0) false)
-                    (make-cell (make-posn 1 1) true)
-                    (make-cell (make-posn 2 2) false)))
-
-(test (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
-                                                             true))
-                                          10)
-              (list (make-cell (make-posn 0 0) true)))
-(test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
-                                                             false))
-                                          10)
-              (list (make-cell (make-posn 0 0) true)))
-
-(define dummy
-  (local
-    [(define board-size 11)
-     (define initial-board
-       (add-n-random-blocked-cells
-        6
-        (empty-board board-size)
-        board-size))
-     (define initial-world
-       (make-world initial-board
-                   (make-posn (quotient board-size 2)
-                              (quotient board-size 2))
-                   'playing
-                   board-size
-                   false
-                   false))]
-
-    (and
-     (big-bang (world-width board-size)
-               (world-height board-size)
-               1
-               initial-world)
-     (on-redraw render-world)
-     (on-key-event change)
-     (on-mouse-event clack))))
-
-(run-tests)
-]
+@chunk[<go>
+       (run-tests)
+       
+       (let* ([board-size 11]
+              [initial-board
+               (add-n-random-blocked-cells
+                6
+                (empty-board board-size)
+                board-size)]
+              [initial-world
+               (make-world initial-board
+                           (make-posn (quotient board-size 2)
+                                      (quotient board-size 2))
+                           'playing
+                           board-size
+                           false
+                           false)])
+         
+         (big-bang (world-width board-size)
+                   (world-height board-size)
+                   1
+                   initial-world)
+         (on-redraw render-world)
+         (on-key-event change)
+         (on-mouse-event clack)
+         (void))]
