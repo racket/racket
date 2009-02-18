@@ -7,8 +7,9 @@
 
 (define-syntax (defintern stx)
   (syntax-parse stx
-    [(_ name+args make-name key ([#:extra-arg e:expr]) ...*) 
-     #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key #:extra-arg e ...)]
+    [(_ name+args make-name:id key:expr . rest)
+     #:with (_:id _:id ...) #'name+args
+     #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key . rest)]
     [(_ (*name:id arg:id ...) make-ht make-name key-expr ([#:extra-arg e:expr]) ...*)
      #'(define *name
 	 (let ([table (make-ht)])

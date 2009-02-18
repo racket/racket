@@ -80,12 +80,12 @@
                            (provide ex pred acc ...)
                            (p/c (rename *maker maker *maker-cnt))))]
          [intern 
-          (let ([mk (lambda (int) #`(defintern (**maker . flds.fs) maker #,int 
-				      #,@(if key?
-					     #'(#:extra-arg key-expr)
-					     #'())))])
-            (syntax-parse #'flds.fs
-              [_ #:when #'intern?
+          (let ([mk (lambda (int) 
+		      (if key? 
+			  #`(defintern (**maker . flds.fs) maker #,int #:extra-arg key-expr)
+			  #`(defintern (**maker . flds.fs) maker #,int)))])
+         (syntax-parse #'flds.fs
+              [_  #:when #'intern?
                  (mk #'intern?)]
               [() (mk #'#f)]
               [(f) (mk #'f)]
@@ -96,7 +96,7 @@
                                      (list (combiner #'free-vars* #'flds.fs)
                                            (combiner #'free-idxs* #'flds.fs)))])
             (quasisyntax/loc stx
-              (w/c nm ([*maker *maker-cnt])
+		(w/c nm ([*maker *maker-cnt])
                    (define (*maker . flds.fs)
                      (define v (**maker . flds.fs))
                      (unless-in-table 
@@ -128,7 +128,6 @@
     #:transparent
     (pattern i:id
              #:with lower-s (string-downcase (symbol->string #'i.datum))
-	     #:when (printf "loc1: ~a~n" #'lower-s)
              #:with (fld-names ...) default-flds
 	     #:with key? #'#f
              #:with first-letter (string-ref #'lower-s 0))
@@ -141,7 +140,6 @@
              #:with (fld-names ...) (datum->syntax #f (append (syntax->list default-flds) 
                                                               (syntax->list #'(key))))
              #:with lower-s (string-downcase (symbol->string #'i.datum))
-	     #:when (printf "loc2: ~v~n" (syntax->datum #'lower-s))
 	     #:with key? #'#t
              #:with first-letter (string-ref #'lower-s 0)))
   (define-syntax-class type-name
