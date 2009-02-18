@@ -849,15 +849,15 @@ except it has a smile.
 @chunk[<drawing>
        (define circle-radius 20)
        (define circle-spacing 22)
-       
        (define normal-color 'lightskyblue)
        (define on-shortest-path-color 'white)
        (define blocked-color 'black)
        (define under-mouse-color 'black)
+       
        <render-world>
        <chop-whiskers>
-       <board->image>
-       <cell->image>
+       <render-board>
+       <render-cell>
        <world-width>
        <world-height>
        <cell-center-x>
@@ -867,282 +867,90 @@ except it has a smile.
        <cell-center-x-tests>
        <cell-center-y-tests>
        <world-size-tests>
-       <cell->image-tests>
-       <board->image-tests>
+       <render-cell-tests>
+       <render-board-tests>
        <chop-whiskers-tests>
        <render-world-tests>]
 
+The main function for drawing a world is @scheme[render-world].
+It is a fairly straightforward composition of helper functions.
+First, it builds the image of a board, and then puts the cat on it.
+Lastly, since the whiskers of the cat might now hang off of the edge
+of the board (if the cat is on a leftmost or rightmost cell),
+it trims them.
+
 @chunk[<render-world>
-;; render-world : world -> image
-(define (render-world w)
-  (chop-whiskers
-   (overlay (board->image (world-board w)
-                          (world-size w)
-                          (on-cats-path? w)
-                          (world-mouse-posn w))
-            (move-pinhole
-             (cond
-               [(equal? (world-state w) 'cat-won) happy-cat]
-               [(equal? (world-state w) 'cat-lost) mad-cat]
-               [else thinking-cat])
-             (- (cell-center-x (world-cat w)))
-             (- (cell-center-y (world-cat w)))))))]
+       (define/contract (render-world w)
+         (-> world? image?)
+         (chop-whiskers
+          (overlay/xy (render-board (world-board w)
+                                    (world-size w)
+                                    (on-cats-path? w)
+                                    (world-mouse-posn w))
+                      (cell-center-x (world-cat w))
+                      (cell-center-y (world-cat w))
+                      (cond
+                        [(equal? (world-state w) 'cat-won) happy-cat]
+                        [(equal? (world-state w) 'cat-lost) mad-cat]
+                        [else thinking-cat]))))]
 
-@chunk[<render-world-tests>
+Trimming the cat's whiskers amounts to removing any extra
+space in the image that appears to the left or above the pinhole.
+For example, the @scheme[rectangle] function returns
+an image with a pinhole in the middle. So trimming 5x5
+rectangle results in a 3x3 rectangle with the pinhole
+at (0,0).
 
-       (test
-        (render-world
-         (make-world (list (make-cell (make-posn 0 1) false))
-                     (make-posn 0 1)
-                     'playing
-                     3
-                     (make-posn 0 0)
-                     false))
-        (overlay
-         (board->image (list (make-cell (make-posn 0 1) false))
-                       3
-                       (lambda (x) true)
-                       false)
-         (move-pinhole thinking-cat
-                       (- (cell-center-x (make-posn 0 1)))
-                       (- (cell-center-y (make-posn 0 1))))))
-       
-       (test
-        (render-world
-         (make-world (list (make-cell (make-posn 0 1) false))
-                     (make-posn 0 1)
-                     'cat-won
-                     3
-                     false
-                     false))
-        (overlay
-         (board->image (list (make-cell (make-posn 0 1) false))
-                       3
-                       (lambda (x) true)
-                       false)
-         (move-pinhole happy-cat
-                       (- (cell-center-x (make-posn 0 1)))
-                       (- (cell-center-y (make-posn 0 1))))))
-       
-       (test
-        (render-world
-         (make-world (list (make-cell (make-posn 0 1) false))
-                     (make-posn 0 1)
-                     'cat-lost
-                     3
-                     false
-                     false))
-        (overlay
-         (board->image (list (make-cell (make-posn 0 1) false))
-                       3
-                       (lambda (x) true)
-                       false)
-         (move-pinhole mad-cat
-                       (- (cell-center-x (make-posn 0 1)))
-                       (- (cell-center-y (make-posn 0 1))))))
-       
-       (test
-        (render-world
-         (make-world (list
-                      (make-cell (make-posn 0 1) true)
-                      (make-cell (make-posn 1 0) true)
-                      (make-cell (make-posn 1 1) false)
-                      (make-cell (make-posn 1 2) true)
-                      (make-cell (make-posn 2 0) true)
-                      (make-cell (make-posn 2 1) true)
-                      (make-cell (make-posn 2 2) true))
-                     (make-posn 1 1)
-                     'cat-lost
-                     3
-                     false
-                     false))
-        (overlay
-         (board->image (list
-                        (make-cell (make-posn 0 1) true)
-                        (make-cell (make-posn 1 0) true)
-                        (make-cell (make-posn 1 1) false)
-                        (make-cell (make-posn 1 2) true)
-                        (make-cell (make-posn 2 0) true)
-                        (make-cell (make-posn 2 1) true)
-                        (make-cell (make-posn 2 2) true))
-                       3
-                       (lambda (x) false)
-                       false)
-         (move-pinhole mad-cat
-                       (- (cell-center-x (make-posn 1 1)))
-                       (- (cell-center-y (make-posn 1 1))))))
-       
-       (test
-        (render-world
-         (make-world (list
-                      (make-cell (make-posn 0 1) false)
-                      (make-cell (make-posn 1 0) false)
-                      (make-cell (make-posn 1 1) false)
-                      (make-cell (make-posn 1 2) false)
-                      (make-cell (make-posn 2 0) false)
-                      (make-cell (make-posn 2 1) false)
-                      (make-cell (make-posn 2 2) false))
-                     (make-posn 1 1)
-                     'cat-lost
-                     3
-                     (make-posn (cell-center-x (make-posn 0 1))
-                                (cell-center-y (make-posn 0 1)))
-                     true))
-        
-        (overlay
-         (board->image (list
-                        (make-cell (make-posn 0 1) false)
-                        (make-cell (make-posn 1 0) false)
-                        (make-cell (make-posn 1 1) false)
-                        (make-cell (make-posn 1 2) false)
-                        (make-cell (make-posn 2 0) false)
-                        (make-cell (make-posn 2 1) false)
-                        (make-cell (make-posn 2 2) false))
-                       3
-                       (lambda (x) true)
-                       (make-posn (cell-center-x (make-posn 0 1))
-                                  (cell-center-y (make-posn 0 1))))
-         (move-pinhole mad-cat
-                       (- (cell-center-x (make-posn 1 1)))
-                       (- (cell-center-y (make-posn 1 1))))))]
+@chunk[<chop-whiskers-tests>
+       (test (chop-whiskers (rectangle 5 5 'solid 'black))
+             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))]
+
+The function uses @scheme[shrink] to remove all of the material above
+and to the left of the pinhole.
 
 @chunk[<chop-whiskers>
-;; chop-whiskers : image -> image
-;; crops the image so that anything above or to the left of the pinhole is gone
-(define (chop-whiskers img)
+(define/contract (chop-whiskers img)
+  (-> image? image?)
   (shrink img
           0
           0
           (- (image-width img) (pinhole-x img) 1)
           (- (image-height img) (pinhole-y img) 1)))]
 
-@chunk[<chop-whiskers-tests>
-       (test (chop-whiskers (rectangle 5 5 'solid 'black))
-             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
-       (test (chop-whiskers (rectangle 6 6 'solid 'black))
-             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
+The @scheme[render-board] function uses @scheme[for/fold] to iterate
+over all of the @scheme[cell]s in @scheme[cs]. It starts with
+an empty rectangle and, one by one, puts the cells on @scheme[image].
 
-       (test
-        (pinhole-x
-         (render-world
-          (make-world
-           (empty-board 3)
-           (make-posn 0 0)
-           'playing
-           3
-           (make-posn 0 0)
-           false)))
-        0)
-       (test
-        (pinhole-x
-         (render-world
-          (make-world
-           (empty-board 3)
-           (make-posn 0 1)
-           'playing
-           3
-           (make-posn 0 0)
-           false)))
-        0)]
+@chunk[<render-board>
+       ;; render-board : board number (posn -> boolean) posn-or-false -> image
+       (define/contract (render-board cs world-size on-cat-path? mouse)
+         (-> (listof cell?) 
+             natural-number/c
+             (-> posn? boolean?)
+             (or/c #f posn?)
+             image?)
+         (for/fold ([image (nw:rectangle (world-width world-size)
+                                         (world-height world-size)
+                                         'solid
+                                         'white)])
+                   ([c cs])
+           (overlay image
+                    (render-cell c
+                                 (on-cat-path? (cell-p c))
+                                 (and (posn? mouse)
+                                      (equal? mouse (cell-p c)))))))]
 
-@chunk[<board->image>
-;; board->image : board number (posn -> boolean) posn-or-false -> image
-       (define (board->image cs world-size on-cat-path? mouse)
-         (foldl (lambda (x y) (overlay y x))
-                (nw:rectangle (world-width world-size)
-                              (world-height world-size)
-                              'solid
-                              'white)
-                (map (lambda (c)
-                       (cell->image c
-                                    (on-cat-path? (cell-p c))
-                                    (and (posn? mouse)
-                                         (equal? mouse (cell-p c)))
-                                    #;
-                                    (and (posn? mouse)
-                                         (point-in-this-circle? (cell-p c)
-                                                                (posn-x mouse)
-                                                                (posn-y mouse)))))
-                     cs)))]
+The @scheme[render-cell] function accepts a @scheme[cell], 
+a boolean indicating if the cell is on the shortest path between
+the cat and the boundary, and a second boolean indicating
+if the cell is underneath the mouse. It returns an image 
+of the cell, with the pinhole placed in such a way that overlaying
+the image on an empty image with pinhole in the upper-left corner
+results in the cell being placed in the right place.
 
-@chunk[<board->image-tests>
-       (test (board->image (list (make-cell (make-posn 0 0) false))
-                           3
-                           (lambda (x) false)
-                           false)
-             (overlay
-              (nw:rectangle (world-width 3)
-                            (world-height 3)
-                            'solid
-                            'white)
-              (cell->image (make-cell (make-posn 0 0) false)
-                           false
-                           false)))
-       
-       (test (board->image (list (make-cell (make-posn 0 0) false))
-                           3
-                           (lambda (x) true)
-                           false)
-             (overlay
-              (nw:rectangle (world-width 3)
-                            (world-height 3)
-                            'solid
-                            'white)
-              (cell->image (make-cell (make-posn 0 0) false)
-                           true
-                           false)))
-       
-       
-       (test (board->image (list (make-cell (make-posn 0 0) false))
-                           3
-                           (lambda (x) false)
-                           false)
-             (overlay
-              (nw:rectangle (world-width 3)
-                            (world-height 3)
-                            'solid
-                            'white)
-              (cell->image (make-cell (make-posn 0 0) false)
-                           false
-                           false)))
-       
-       (test (board->image (list (make-cell (make-posn 0 0) false)
-                                 (make-cell (make-posn 0 1) false))
-                           3
-                           (lambda (x) (equal? x (make-posn 0 1)))
-                           false)
-             (overlay
-              (nw:rectangle (world-width 3)
-                            (world-height 3)
-                            'solid
-                            'white)
-              (cell->image (make-cell (make-posn 0 0) false)
-                           false
-                           false)
-              (cell->image (make-cell (make-posn 0 1) false)
-                           true
-                           false)))
-       
-       (test (board->image (list (make-cell (make-posn 0 0) false)
-                                 (make-cell (make-posn 0 1) false))
-                           3
-                           (lambda (x) (equal? x (make-posn 0 1)))
-                           (make-posn 0 0))
-             (overlay
-              (nw:rectangle (world-width 3)
-                            (world-height 3)
-                            'solid
-                            'white)
-              (cell->image (make-cell (make-posn 0 0) false)
-                           false
-                           true)
-              (cell->image (make-cell (make-posn 0 1) false)
-                           true
-                           false)))]
-
-@chunk[<cell->image>
-       ;; cell->image : cell boolean boolean -> image
-       (define (cell->image c on-short-path? under-mouse?)
+@chunk[<render-cell>
+       (define/contract (render-cell c on-short-path? under-mouse?)
+         (-> cell? boolean? boolean? image?)
          (local [(define x (cell-center-x (cell-p c)))
                  (define y (cell-center-y (cell-p c)))
                  (define main-circle
@@ -1165,52 +973,33 @@ except it has a smile.
             (- x)
             (- y))))]
 
-@chunk[<cell->image-tests>
-       (test (cell->image (make-cell (make-posn 0 0) false) false false)
-             (move-pinhole (circle circle-radius 'solid normal-color)
-                           (- circle-radius)
-                           (- circle-radius)))
-       (test (cell->image (make-cell (make-posn 0 0) true) false false)
-             (move-pinhole (circle circle-radius 'solid 'black)
-                           (- circle-radius)
-                           (- circle-radius)))
-       (test (cell->image (make-cell (make-posn 0 0) false) true false)
-             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                    (circle (quotient circle-radius 2) 'solid
-                                            on-shortest-path-color))
-                           (- circle-radius)
-                           (- circle-radius)))
-       (test (cell->image (make-cell (make-posn 0 0) false) true true)
-             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
-                                    (circle (quotient circle-radius 2) 'solid
-                                            under-mouse-color))
-                           (- circle-radius)
-                           (- circle-radius)))]
+The @scheme[world-width] function computes the width of the rendered world,
+given the world's size by finding the center of the rightmost posn,
+and then adding an additional radius.
 
 @chunk[<world-width>
-       
-       ;; world-width : number -> number
-       ;; computes the width of the drawn world in terms of its size
-       (define (world-width board-size)
+       (define/contract (world-width board-size)
+         (-> natural-number/c number?)
          (local [(define rightmost-posn
                    (make-posn (- board-size 1) (- board-size 2)))]
            (+ (cell-center-x rightmost-posn) circle-radius)))]
 
+Similarly, the @scheme[world-height] function computest the 
+height of the rendered world, given the world's size.
+
 @chunk[<world-height>
-       ;; world-height : number -> number
-       ;; computes the height of the drawn world in terms of its size
-       (define (world-height board-size)
+       (define/contract (world-height board-size)
+         (-> natural-number/c number?)
          (local [(define bottommost-posn
                    (make-posn (- board-size 1) (- board-size 1)))]
            (+ (cell-center-y bottommost-posn) circle-radius)))]
 
-@chunk[<world-size-tests>
-       (test (world-width 3) 150)
-       (test (world-height 3) 116.208)]
+The @scheme[cell-center-x] function returns the
+@tt{x} coordinate of the 
 
 @chunk[<cell-center-x>
-       ;; cell-center-x : posn -> number
-       (define (cell-center-x p)
+       (define/contract (cell-center-x p)
+         (-> posn? number?)
          (local [(define x (posn-x p))
                  (define y (posn-y p))]
            (+ circle-radius
@@ -1220,18 +1009,12 @@ except it has a smile.
                   0))))]
 
 @chunk[<cell-center-x-tests>
-       (test (cell-center-x (make-posn 0 0))
-             circle-radius)
        (test (cell-center-x (make-posn 0 1))
-             (+ circle-spacing circle-radius))
-       (test (cell-center-x (make-posn 1 0))
-             (+ (* 2 circle-spacing) circle-radius))
-       (test (cell-center-x (make-posn 1 1))
-             (+ (* 3 circle-spacing) circle-radius))]
+             (+ circle-spacing circle-radius))]
 
 @chunk[<cell-center-y>
-       ;; cell-center-y : posn -> number
-       (define (cell-center-y p)
+       (define/contract (cell-center-y p)
+         (-> posn? number?)
          (local [(define y (posn-y p))]
            (+ circle-radius
               (* y circle-spacing 2
@@ -1239,12 +1022,8 @@ except it has a smile.
                  ))))]
        
 @chunk[<cell-center-y-tests>
-       (test (cell-center-y (make-posn 1 1))
-             (+ circle-radius (* 2 circle-spacing .866)))
        (test (cell-center-y (make-posn 1 0))
              circle-radius)]
-
-
 
 @section{Handling Input}
 
@@ -2126,6 +1905,267 @@ except it has a smile.
        (test (+/f '∞ 1) '∞)
        (test (+/f 1 '∞) '∞)
        (test (+/f 1 2) 3)]
+
+@chunk[<render-world-tests>
+
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'playing
+                     3
+                     (make-posn 0 0)
+                     false))
+        (overlay
+         (render-board (list (make-cell (make-posn 0 1) false))
+                       3
+                       (lambda (x) true)
+                       false)
+         (move-pinhole thinking-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'cat-won
+                     3
+                     false
+                     false))
+        (overlay
+         (render-board (list (make-cell (make-posn 0 1) false))
+                       3
+                       (lambda (x) true)
+                       false)
+         (move-pinhole happy-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list (make-cell (make-posn 0 1) false))
+                     (make-posn 0 1)
+                     'cat-lost
+                     3
+                     false
+                     false))
+        (overlay
+         (render-board (list (make-cell (make-posn 0 1) false))
+                       3
+                       (lambda (x) true)
+                       false)
+         (move-pinhole mad-cat
+                       (- (cell-center-x (make-posn 0 1)))
+                       (- (cell-center-y (make-posn 0 1))))))
+       
+       (test
+        (render-world
+         (make-world (list
+                      (make-cell (make-posn 0 1) true)
+                      (make-cell (make-posn 1 0) true)
+                      (make-cell (make-posn 1 1) false)
+                      (make-cell (make-posn 1 2) true)
+                      (make-cell (make-posn 2 0) true)
+                      (make-cell (make-posn 2 1) true)
+                      (make-cell (make-posn 2 2) true))
+                     (make-posn 1 1)
+                     'cat-lost
+                     3
+                     false
+                     false))
+        (overlay
+         (render-board (list
+                        (make-cell (make-posn 0 1) true)
+                        (make-cell (make-posn 1 0) true)
+                        (make-cell (make-posn 1 1) false)
+                        (make-cell (make-posn 1 2) true)
+                        (make-cell (make-posn 2 0) true)
+                        (make-cell (make-posn 2 1) true)
+                        (make-cell (make-posn 2 2) true))
+                       3
+                       (lambda (x) false)
+                       false)
+         (move-pinhole mad-cat
+                       (- (cell-center-x (make-posn 1 1)))
+                       (- (cell-center-y (make-posn 1 1))))))
+       
+       (test
+        (render-world
+         (make-world (list
+                      (make-cell (make-posn 0 1) false)
+                      (make-cell (make-posn 1 0) false)
+                      (make-cell (make-posn 1 1) false)
+                      (make-cell (make-posn 1 2) false)
+                      (make-cell (make-posn 2 0) false)
+                      (make-cell (make-posn 2 1) false)
+                      (make-cell (make-posn 2 2) false))
+                     (make-posn 1 1)
+                     'cat-lost
+                     3
+                     (make-posn (cell-center-x (make-posn 0 1))
+                                (cell-center-y (make-posn 0 1)))
+                     true))
+        
+        (overlay
+         (render-board (list
+                        (make-cell (make-posn 0 1) false)
+                        (make-cell (make-posn 1 0) false)
+                        (make-cell (make-posn 1 1) false)
+                        (make-cell (make-posn 1 2) false)
+                        (make-cell (make-posn 2 0) false)
+                        (make-cell (make-posn 2 1) false)
+                        (make-cell (make-posn 2 2) false))
+                       3
+                       (lambda (x) true)
+                       (make-posn (cell-center-x (make-posn 0 1))
+                                  (cell-center-y (make-posn 0 1))))
+         (move-pinhole mad-cat
+                       (- (cell-center-x (make-posn 1 1)))
+                       (- (cell-center-y (make-posn 1 1))))))]
+
+@chunk[<chop-whiskers-tests>
+       (test (chop-whiskers (rectangle 6 6 'solid 'black))
+             (put-pinhole (rectangle 3 3 'solid 'black) 0 0))
+
+       (test
+        (pinhole-x
+         (render-world
+          (make-world
+           (empty-board 3)
+           (make-posn 0 0)
+           'playing
+           3
+           (make-posn 0 0)
+           false)))
+        0)
+       (test
+        (pinhole-x
+         (render-world
+          (make-world
+           (empty-board 3)
+           (make-posn 0 1)
+           'playing
+           3
+           (make-posn 0 0)
+           false)))
+        0)]
+
+@chunk[<render-board-tests>
+       (test (render-board (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) false)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (render-cell (make-cell (make-posn 0 0) false)
+                           false
+                           false)))
+       
+       (test (render-board (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) true)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (render-cell (make-cell (make-posn 0 0) false)
+                           true
+                           false)))
+       
+       
+       (test (render-board (list (make-cell (make-posn 0 0) false))
+                           3
+                           (lambda (x) false)
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (render-cell (make-cell (make-posn 0 0) false)
+                           false
+                           false)))
+       
+       (test (render-board (list (make-cell (make-posn 0 0) false)
+                                 (make-cell (make-posn 0 1) false))
+                           3
+                           (lambda (x) (equal? x (make-posn 0 1)))
+                           false)
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (render-cell (make-cell (make-posn 0 0) false)
+                           false
+                           false)
+              (render-cell (make-cell (make-posn 0 1) false)
+                           true
+                           false)))
+       
+       (test (render-board (list (make-cell (make-posn 0 0) false)
+                                 (make-cell (make-posn 0 1) false))
+                           3
+                           (lambda (x) (equal? x (make-posn 0 1)))
+                           (make-posn 0 0))
+             (overlay
+              (nw:rectangle (world-width 3)
+                            (world-height 3)
+                            'solid
+                            'white)
+              (render-cell (make-cell (make-posn 0 0) false)
+                           false
+                           true)
+              (render-cell (make-cell (make-posn 0 1) false)
+                           true
+                           false)))]
+
+
+@chunk[<render-cell-tests>
+       (test (render-cell (make-cell (make-posn 0 0) false) false false)
+             (move-pinhole (circle circle-radius 'solid normal-color)
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (render-cell (make-cell (make-posn 0 0) true) false false)
+             (move-pinhole (circle circle-radius 'solid 'black)
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (render-cell (make-cell (make-posn 0 0) false) true false)
+             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
+                                    (circle (quotient circle-radius 2) 'solid
+                                            on-shortest-path-color))
+                           (- circle-radius)
+                           (- circle-radius)))
+       (test (render-cell (make-cell (make-posn 0 0) false) true true)
+             (move-pinhole (overlay (circle circle-radius 'solid normal-color)
+                                    (circle (quotient circle-radius 2) 'solid
+                                            under-mouse-color))
+                           (- circle-radius)
+                           (- circle-radius)))]
+
+
+@chunk[<world-size-tests>
+       (test (world-width 3) 150)
+       (test (world-height 3) 116.208)]
+
+@chunk[<cell-center-x-tests>
+       (test (cell-center-x (make-posn 0 0))
+             circle-radius)
+       (test (cell-center-x (make-posn 1 0))
+             (+ (* 2 circle-spacing) circle-radius))
+       (test (cell-center-x (make-posn 1 1))
+             (+ (* 3 circle-spacing) circle-radius))]
+
+@chunk[<cell-center-y-tests>
+       (test (cell-center-y (make-posn 1 1))
+             (+ circle-radius (* 2 circle-spacing .866)))]
+
 
 @section{Run, program, run}
 
