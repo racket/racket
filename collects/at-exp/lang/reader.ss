@@ -1,5 +1,7 @@
 #lang scheme/base
 
+;; FIXME: This code was largely cut-and-pasted from the planet reader. 
+
 (require syntax/readerr
          (only-in scribble/reader make-at-readtable))
 
