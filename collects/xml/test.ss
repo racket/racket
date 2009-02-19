@@ -2,7 +2,8 @@
 ;;  % mzscheme --require test.ss
 
 (module test mzscheme
-  (require xml/xml
+  (require xml/main
+           scheme/list
            scheme/port)
   
   
@@ -100,6 +101,35 @@ END
       (report-err "DOCTYPE dropping"
                   result-string
                   expected-string)))
+  
+  
+  ;; pis
+  (define a-pi (make-p-i #f #f "foo" "bar"))
+  (define a-p (make-prolog empty #f))
+  (define a-p/pi (make-prolog (list a-pi) #f))
+  (define a-d0
+    (make-document a-p (make-element #f #f 'html empty empty)
+                   empty))
+  (define a-d1
+    (make-document a-p (make-element #f #f 'html empty empty)
+                   (list a-pi)))
+  (define a-d2
+    (make-document a-p/pi (make-element #f #f 'html empty empty)
+                   (list a-pi)))
+  
+  (define (test-string=? test result expected)
+    (unless (string=? result expected)
+      (report-err test result expected)))
+  
+  (test-string=? "Display XML w/o pis"
+                 (with-output-to-string (lambda () (display-xml a-d0)))
+                 "\n<html />")
+  (test-string=? "Display XML w/ pi in doc-misc"
+                 (with-output-to-string (lambda () (display-xml a-d1)))
+                 "\n<html /><?foo bar?>\n")
+  (test-string=? "Display XML w/ pi in doc-misc and prolog"
+                 (with-output-to-string (lambda () (display-xml a-d2)))
+                 "<?foo bar?>\n\n<html /><?foo bar?>\n")
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
