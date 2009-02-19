@@ -4,12 +4,14 @@
           scribble/eval
           (for-label scheme/base
                      scheme/contract
+                     scheme/list
                      xml
                      xml/plist))
 
 @(define xml-eval (make-base-eval))
 @(define plist-eval (make-base-eval))
 @interaction-eval[#:eval xml-eval (require xml)]
+@interaction-eval[#:eval xml-eval (require scheme/list)]
 @interaction-eval[#:eval plist-eval (require xml/plist)]
 
 @title{@bold{XML}: Parsing and Writing}
@@ -81,7 +83,19 @@ Represents a document.}
 
 Represents a document prolog. The @scheme[make-prolog] binding is
 unusual: it accepts two or more arguments, and all arguments after the
-first two are collected into the @scheme[misc2] field.}
+first two are collected into the @scheme[misc2] field.
+
+@examples[
+#:eval xml-eval
+(make-prolog empty #f)
+(make-prolog empty #f (make-p-i #f #f "k1" "v1"))
+(make-prolog empty #f (make-p-i #f #f "k1" "v1")
+             (make-p-i #f #f "k2" "v2"))
+@(code:comment "This example breaks the contract by providing")
+@(code:comment "a list rather than a comment or p-i")
+(prolog-misc2 (make-prolog empty #f empty))
+]
+}
 
 @defstruct[document-type ([name symbol?]
                           [external external-dtd?]
