@@ -14,6 +14,7 @@
           scheme/base
           syntax/struct
           syntax/stx
+          scheme/contract
 	  (rename-in (utils utils) [id mk-id])))
 
 (provide == defintern hash-id (for-syntax fold-target))
@@ -70,6 +71,7 @@
                                      [no-provide?:no-provide-kw] #:opt) ...)
        (with-syntax* 
         ([ex (mk-id #'nm #'nm ":")]
+         [fold-name (mk-id #f #'nm "-fold")]
          [kw-stx (string->keyword (symbol->string #'nm.datum))]
          [parent par]
          [(s:ty maker pred acc ...) (build-struct-names #'nm (syntax->list #'flds.fs) #f #t #'nm)]
@@ -79,9 +81,15 @@
                          (or #'cnt #'(flds.cnt ... . -> . pred))
                          #'any/c)]
          [ht-stx ht-stx]
-         [bfs-fold-rhs (cond [#'fold-rhs #`(lambda (tr er) #,#'fold-rhs.e)]
-                             [else #'(lambda (type-rec-id effect-rec-id) 
-                                       #`(*maker (#,type-rec-id flds.i) ...))])]
+         [bfs-fold-rhs (cond [#'fold-rhs #`(procedure-rename
+                                            (lambda () #,#'fold-rhs.e)
+                                            'fold-name)]
+                             ;; otherwise we assume that everything is a type, 
+                             ;; and recur on all the arguments
+                             [else #'(procedure-rename
+                                      (lambda () 
+                                        #`(*maker (#,type-rec-id flds.i) ...))
+                                      'fold-name)])]
          [provides (if #'no-provide?
                        #'(begin)                                 
                        #`(begin 
@@ -130,6 +138,64 @@
             provides
             frees))])))
 
+(define-for-syntax (mk-fold ht type-rec-id rec-ids)
+  (lambda (stx)
+    (define anys (for/list ([i rec-ids]) any/c))
+    (with-syntax* ([(fresh-ids ...) (generate-temporaries rec-ids)])
+      (let ([ht (hash-copy ht)])
+        (define (mk-matcher kw) 
+          (datum->syntax stx (string->symbol (string-append (keyword->string kw) ":"))))
+        (define/contract (put k lst)
+          (keyword?  (list/c syntax?
+                             syntax?
+                             (lambda (p) (procedure-arity-includes? p (length rec-ids)))
+                             syntax?) 
+                     . -> . void?)
+          (hash-set! ht k lst))
+        (define (add-clause cl)
+          (syntax-parse cl
+            [(kw:keyword #:matcher mtch pats ... expr)
+             (put (syntax-e #'kw) (list #'mtch 
+                                        (syntax/loc cl (pats ...))
+                                        (lambda () #'expr)
+                                        cl))]
+            [(kw:keyword pats ... expr) 
+             (put (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
+                                        (syntax/loc cl (pats ...))
+                                        (lambda () #'expr)
+                                        cl))]))
+        ;(define i.tmp-rec-id i.rec-id) ...
+        (define (gen-clause k v)
+          (define match-ex (car v))
+          (define pats (cadr v))
+          (define body-f (caddr v))
+          (define tmpx (printf "got to here 1~n"))
+          (define src (cadddr v))                       
+          (define pat (quasisyntax/loc src (#,match-ex  . #,pats)))
+          (define tmpx2 (printf "got to here 2: ~a ~a~n" body-f (object-name body-f)))
+          (define cl (quasisyntax/loc src (#,pat #,(body-f))))
+          (define tmpx3 (printf "got to here 3~n"))
+          cl)
+        (define-syntax-class (sized-id-list k)
+          (pattern (i:id ...)
+                   #:when (= k (length (syntax->list #'(i ...))))))
+        (syntax-parse stx
+          [(tc fresh-ids ty . clauses)
+           #:declare fresh-ids (sized-id-list (length rec-ids))
+           (begin 
+             (map add-clause (syntax->list #'clauses))
+             (with-syntax ([old-rec-id type-rec-id]
+                           [(let-clauses ...)
+                            (for/list ([rec-id rec-ids]
+                                       [i (syntax->list #'fresh-ids)])
+                              #`[#,rec-id #,i])])
+               #`(let (let-clauses ...
+                       [#,fold-target ty])
+                   ;; then generate the fold
+                   #,(quasisyntax/loc stx
+                       (match #,fold-target
+                         #,@(hash-map ht gen-clause))))))])))))
+
 
 (define-syntax (make-prim-type stx)
   (define default-flds #'(seq))
@@ -167,7 +233,8 @@
   (syntax-parse stx
     [(_ i:type-name ...)
      (with-syntax* ([(fresh-ids ...) (generate-temporaries #'(i.name ...))]
-                    [fresh-ids-list #'(fresh-ids ...)])
+                    [fresh-ids-list #'(fresh-ids ...)]
+                    [(anys ...) (for/list ([i (syntax->list #'fresh-ids-list)]) #'any/c)])
        #'(begin
            (provide i.d-id ... i.printer ... i.name ... i.pred? ... i.accs ... ...
                     (for-syntax i.ht ... i.rec-id ...))
@@ -177,47 +244,9 @@
            (define-for-syntax i.rec-id #'i.rec-id) ...   
            (provide i.case ...)
            (define-syntaxes (i.case ...)
-             (let ()
-               (define (mk ht)
-                 (lambda (stx)
-                   (let ([ht (hash-copy ht)])
-                     (define (mk-matcher kw) 
-                       (datum->syntax stx (string->symbol (string-append (keyword->string kw) ":"))))
-                     (define (add-clause cl)
-                       (...
-                        (syntax-case cl ()
-                          [(kw #:matcher mtch pats ... expr)
-                           (hash-set! ht (syntax-e #'kw) (list #'mtch 
-                                                               (syntax/loc cl (pats ...))
-                                                               (lambda fresh-ids-list #'expr)
-                                                               cl))]
-                          [(kw pats ... expr) 
-                           (hash-set! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
-                                                               (syntax/loc cl (pats ...))
-                                                               (lambda fresh-ids-list #'expr)
-                                                               cl))])))
-                     (define i.tmp-rec-id i.rec-id) ...
-                     (define (gen-clause k v)
-                       (define match-ex (car v))
-                       (define pats (cadr v))
-                       (define body-f (caddr v))
-                       (define src (cadddr v))
-                       (define pat (quasisyntax/loc src (#,match-ex  . #,pats)))
-                       (define cl (quasisyntax/loc src (#,pat #,(body-f i.tmp-rec-id ...))))
-                       cl)
-                     (syntax-case stx ()
-                       [(tc fresh-ids ... ty . clauses)
-                        (begin 
-                          (map add-clause (syntax->list #'clauses))
-                          (with-syntax ([old-rec-id type-rec-id])
-                            #`(let ([#,i.tmp-rec-id fresh-ids] ...
-                                    [#,fold-target ty])
-                                ;; then generate the fold
-                                #,(quasisyntax/loc stx
-                                    (match #,fold-target
-                                      #,@(hash-map ht gen-clause))))))]))))
+             (let ()               
                (apply values
-                      (map mk (list i.ht ...)))))))]))
+                      (map (lambda (ht) (mk-fold ht (car (list #'i.rec-id ...)) (list #'i.rec-id ...))) (list i.ht ...)))))))]))
 
 (make-prim-type [Type #:key] Filter [LatentFilter #:d lf] Object [LatentObject #:d lo]
                 [PathElem #:d pe])

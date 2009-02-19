@@ -124,11 +124,11 @@
 (dt Values ([rs (listof Result?)]) 
     #:no-provide
     [#:frees (λ (f) (combine-frees (map f rs)))]
-    [#:fold-rhs (*Values (map type-rec-id types))])
+    [#:fold-rhs (*Values (map type-rec-id rs))])
 
-(dt ValuesDots ([types (listof Result?)] [dty Type?] [dbound (or/c symbol? natural-number/c)])
-    [#:frees (λ (f) (combine-frees (map f (cons dty types))))]
-    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)])
+(dt ValuesDots ([rs (listof Result?)] [dty Type?] [dbound (or/c symbol? natural-number/c)])
+    [#:frees (λ (f) (combine-frees (map f (cons dty rs))))]
+    [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
 
 ;; dom : Listof[Type]
@@ -354,7 +354,7 @@
 |#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-#|
+
 
 (define (add-scopes n t)
   (if (zero? n) t
@@ -366,7 +366,7 @@
       (match sc
         [(Scope: sc*) (remove-scopes (sub1 n) sc*)]
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
-
+#|
 ;; abstract-many : Names Type -> Scope^n 
 ;; where n is the length of names  
 (define (abstract-many names ty)
