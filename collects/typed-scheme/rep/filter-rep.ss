@@ -23,17 +23,17 @@
 	      (combine-frees (map free-idxs* (append thn els)))]
      [#:fold-rhs (*FilterSet (map filter-rec-id thn) (map filter-rec-id els))])
 
+(define index/c (or/c natural-number/c keyword?))
+
 (dlf LBot () [#:fold-rhs #:base])
 
-(dlf LTypeFilter ([t Type?] [p (listof PathElem?)])
-  [#:frees (combine-frees (map free-vars* (cons t p)))
-	   (combine-frees (map free-idxs* (cons t p)))]
-  [#:fold-rhs (*LTypeFilter (type-rec-id t) (map pathelem-rec-id p))])
+(dlf LTypeFilter ([t Type?] [p (listof PathElem?)] [idx index/c])
+  [#:frees (lambda (frees*) (combine-frees (map (compose make-invariant frees*) (cons t p))))]
+  [#:fold-rhs (*LTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
-(dlf LNotTypeFilter ([t Type?] [p (listof PathElem?)])
-  [#:frees (combine-frees (map free-vars* (cons t p)))
-	   (combine-frees (map free-idxs* (cons t p)))]
-  [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p))])
+(dlf LNotTypeFilter ([t Type?] [p (listof PathElem?)] [idx index/c])
+  [#:frees (lambda (frees*) (combine-frees (map (compose make-invariant frees*) (cons t p))))]
+  [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
 (dlf LFilterSet ([thn (listof (and/c LatentFilter? (not/c LFilterSet?)))]
 		 [els (listof (and/c LatentFilter? (not/c LFilterSet?)))])

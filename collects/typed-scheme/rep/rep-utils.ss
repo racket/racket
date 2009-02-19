@@ -156,6 +156,8 @@
     #:transparent
     (pattern :type-name-base
              #:with name #'i
+             #:with tmp-rec-id (generate-temporary)
+             #:with case (mk-id #'i #'lower-s "-case")
              #:with printer (mk-id #'i "print-" #'lower-s "*")
              #:with ht (mk-id #'i #'lower-s "-name-ht")
              #:with rec-id (mk-id #'i #'lower-s "-rec-id")
@@ -164,13 +166,58 @@
                     (datum->syntax #f (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name))))
   (syntax-parse stx
     [(_ i:type-name ...)
-     #'(begin
-         (provide i.d-id ... i.printer ... i.name ... i.pred? ... i.accs ... ...
-                  (for-syntax i.ht ... i.rec-id ...))
-         (define-syntax i.d-id (mk #'i.name #'i.ht i.key?)) ...
-         (define-for-syntax i.ht (make-hasheq)) ...
-         (define-struct/printer i.name (i.fld-names ...) (lambda (a b c) ((unbox i.printer) a b c))) ...
-         (define-for-syntax i.rec-id #'i.rec-id) ...)]))
+     (with-syntax* ([(fresh-ids ...) (generate-temporaries #'(i.name ...))]
+                    [fresh-ids-list #'(fresh-ids ...)])
+       #'(begin
+           (provide i.d-id ... i.printer ... i.name ... i.pred? ... i.accs ... ...
+                    (for-syntax i.ht ... i.rec-id ...))
+           (define-syntax i.d-id (mk #'i.name #'i.ht i.key?)) ...
+           (define-for-syntax i.ht (make-hasheq)) ...
+           (define-struct/printer i.name (i.fld-names ...) (lambda (a b c) ((unbox i.printer) a b c))) ...
+           (define-for-syntax i.rec-id #'i.rec-id) ...   
+           (provide i.case ...)
+           (define-syntaxes (i.case ...)
+             (let ()
+               (define (mk ht)
+                 (lambda (stx)
+                   (let ([ht (hash-copy ht)])
+                     (define (mk-matcher kw) 
+                       (datum->syntax stx (string->symbol (string-append (keyword->string kw) ":"))))
+                     (define (add-clause cl)
+                       (...
+                        (syntax-case cl ()
+                          [(kw #:matcher mtch pats ... expr)
+                           (hash-set! ht (syntax-e #'kw) (list #'mtch 
+                                                               (syntax/loc cl (pats ...))
+                                                               (lambda fresh-ids-list #'expr)
+                                                               cl))]
+                          [(kw pats ... expr) 
+                           (hash-set! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
+                                                               (syntax/loc cl (pats ...))
+                                                               (lambda fresh-ids-list #'expr)
+                                                               cl))])))
+                     (define i.tmp-rec-id i.rec-id) ...
+                     (define (gen-clause k v)
+                       (define match-ex (car v))
+                       (define pats (cadr v))
+                       (define body-f (caddr v))
+                       (define src (cadddr v))
+                       (define pat (quasisyntax/loc src (#,match-ex  . #,pats)))
+                       (define cl (quasisyntax/loc src (#,pat #,(body-f i.tmp-rec-id ...))))
+                       cl)
+                     (syntax-case stx ()
+                       [(tc fresh-ids ... ty . clauses)
+                        (begin 
+                          (map add-clause (syntax->list #'clauses))
+                          (with-syntax ([old-rec-id type-rec-id])
+                            #`(let ([#,i.tmp-rec-id fresh-ids] ...
+                                    [#,fold-target ty])
+                                ;; then generate the fold
+                                #,(quasisyntax/loc stx
+                                    (match #,fold-target
+                                      #,@(hash-map ht gen-clause))))))]))))
+               (apply values
+                      (map mk (list i.ht ...)))))))]))
 
 (make-prim-type [Type #:key] Filter [LatentFilter #:d lf] Object [LatentObject #:d lo]
                 [PathElem #:d pe])

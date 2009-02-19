@@ -109,18 +109,27 @@
 (dt Opaque ([pred identifier?] [cert procedure?]) 
     [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
-;; represents an argument and its associated filters
-(dt DomType ([t Type?] [filters LFilterSet?])
-    [#:fold-rhs (*DomTy (type-rec-id t)
-			(latentfilter-rec-id filters))])
-
 ;; kw : keyword?
 ;; ty : Type
 ;; required? : Boolean
-(dt Keyword ([kw keyword?] [ty DomType?] [required? boolean?])
-    [#:frees (free-vars* ty)
-             (free-idxs* ty)]
+(dt Keyword ([kw keyword?] [ty Type?] [required? boolean?])
+    [#:frees (λ (f) (f ty))]
     [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
+
+(dt Result ([t Type?] [f LFilterSet?] [o LatentObject?])
+    [#:frees (λ (f) (combine-frees (map f (list t f o))))]
+    [#:fold-rhs (*Result (type-rec-id t) (latentfilter-rec-id f) (latentobject-rec-id f))])
+
+;; types : Listof[Type]
+(dt Values ([rs (listof Result?)]) 
+    #:no-provide
+    [#:frees (λ (f) (combine-frees (map f rs)))]
+    [#:fold-rhs (*Values (map type-rec-id types))])
+
+(dt ValuesDots ([types (listof Result?)] [dty Type?] [dbound (or/c symbol? natural-number/c)])
+    [#:frees (λ (f) (combine-frees (map f (cons dty types))))]
+    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)])
+
 
 ;; dom : Listof[Type]
 ;; rng : Type
@@ -131,12 +140,11 @@
 ;; thn-eff : Effect
 ;; els-eff : Effect
 ;; arr is NOT a Type
-(dt arr ([dom (listof DomType?)] 
-         [rng Type?]
+(dt arr ([dom (listof Type?)] 
+         [rng (or/c Values? ValuesDots?)]
          [rest (or/c #f Type?)] 
          [drest (or/c #f (cons/c Type? (or/c natural-number/c symbol?)))]
-         [kws (listof Keyword?)]
-         [filters (listof LatentFilter?)])
+         [kws (listof Keyword?)])
     [#:frees (lambda (free*)
                (combine-frees 
                 (append (map (compose flip-variances free*) 
@@ -146,18 +154,14 @@
                         (match drest
                           [(cons t (? symbol? bnd))
                            (list (fix-bound (flip-variances (free* t)) bnd))]
-                          [(cons t bnd) (list (flip-variances (free* t)))]
-                          [_ null])
-                        (list (free* rng))
-                        (map (compose make-invariant free*) filters))))]
+                          [(cons t (? number? bnd)) (list (flip-variances (free* t)))]
+                          [#f null])
+                        (list (free* rng)))))]
     [#:fold-rhs (*arr (map type-rec-id dom)
                       (type-rec-id rng)
                       (and rest (type-rec-id rest))
                       (and drest (cons (type-rec-id (car drest)) (cdr drest)))
-                      (for/list ([kw kws])
-                        (make Keyword (Keyword-kw kw) (type-rec-id (Keyword-ty kw)) (Keyword-require? kw)))
-                      (map effect-rec-id thn-eff)
-                      (map effect-rec-id els-eff))])
+                      (map type-rec-id kws))])
 
 ;; top-arr is the supertype of all function types
 (dt top-arr () [#:fold-rhs #:base])
@@ -230,20 +234,6 @@
     
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
-;; types : Listof[Type]
-(dt Values ([types (listof Type?)]) 
-    #:no-provide
-    [#:frees (combine-frees (map free-vars* types))
-             (combine-frees (map free-idxs* types))]
-    [#:fold-rhs (*Values (map type-rec-id types))]
-    [#:key 'values])
-
-(dt ValuesDots ([types (listof Type?)] [dty Type?] [dbound (or/c symbol? natural-number/c)]) 
-    [#:frees (combine-frees (map free-vars* (cons dty types)))
-             (combine-frees (map free-idxs* (cons dty types)))]
-    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)]
-    [#:key 'values])
-
 ;; in : Type
 ;; out : Type
 (dt Param ([in Type?] [out Type?]) [#:key 'parameter])
@@ -297,7 +287,7 @@
 (provide set-union-maker! get-union-maker)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+#|
 ;; remove-dups: List[Type] -> List[Type]
 ;; removes duplicate types from a SORTED list
 (define (remove-dups types)
@@ -305,11 +295,11 @@
         [(null? (cdr types)) types]
         [(type-equal? (car types) (cadr types)) (remove-dups (cdr types))]
         [else (cons (car types) (remove-dups (cdr types)))]))
-
+|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; type/effect fold
-
+#|
 (define-syntaxes (type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
   (let ()
     (define (mk ht)
@@ -361,9 +351,10 @@
                 (list type-name-ht filter-name-ht latentfilter-name-ht object-name-ht latentobject-name-ht pathelem-name-ht)))))
 
 (provide type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
-
+|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+#|
 
 (define (add-scopes n t)
   (if (zero? n) t
@@ -649,3 +640,4 @@
 
 ;(trace unfold)
 
+|#
