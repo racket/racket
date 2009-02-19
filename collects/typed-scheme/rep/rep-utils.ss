@@ -8,6 +8,7 @@
          "interning.ss"
          mzlib/etc
          scheme/contract
+         (for-meta 1 stxclass/util)
          (for-syntax 
           stxclass
           scheme/base
@@ -40,11 +41,18 @@
       [(e ...) #`(combine-frees (list (#,f e) ...))]))
   (define-syntax-class frees-pat
     #:transparent
-    #:attributes (f1 f2)
-    (pattern (f1:expr f2:expr))
+    #:attributes (f1 f2 def)
+    (pattern (f1:expr f2:expr)
+             #:with def #'(begin))
     (pattern (#f)
              #:with f1 #'empty-hash-table
-             #:with f2 #'empty-hash-table))
+             #:with f2 #'empty-hash-table
+             #:with def #'(begin))
+    (pattern (e:expr)
+             #:with id (generate-temporary)
+             #:with def #'(define id e)
+             #:with f1 #'(id free-vars*)
+             #:with f2 #'(id free-idxs*)))
   (define-syntax-class fold-pat
     #:transparent
     #:attributes (e)
@@ -54,12 +62,12 @@
              #:with e #'#'ex))
   (lambda (stx)          
     (syntax-parse stx 
-      [(dform nm:id flds:idlist ([[#:key key-expr:expr]] #:opt 
-                                 [[#:intern intern?:expr]] #:opt
-                                 [[#:frees . frees:frees-pat]] #:opt
-                                 [[#:fold-rhs fold-rhs:fold-pat]] #:opt
-                                 [[#:contract cnt:expr]] #:opt
-                                 [no-provide?:no-provide-kw] #:opt) ...*)
+      [(dform nm:id flds:idlist (~or [[#:key key-expr:expr]] #:opt 
+                                     [[#:intern intern?:expr]] #:opt
+                                     [[#:frees . frees:frees-pat]] #:opt
+                                     [[#:fold-rhs fold-rhs:fold-pat]] #:opt
+                                     [[#:contract cnt:expr]] #:opt
+                                     [no-provide?:no-provide-kw] #:opt) ...)
        (with-syntax* 
         ([ex (mk-id #'nm #'nm ":")]
          [kw-stx (string->keyword (symbol->string #'nm.datum))]
@@ -90,6 +98,7 @@
               [() (mk #'#f)]
               [(f) (mk #'f)]
               [_ (mk #'(list . flds.fs))]))]
+         [frees-def (if #'frees #'frees.def #'(begin))]
          [frees 
           (with-syntax ([(f1 f2) (if #'frees
                                      #'(frees.f1 frees.f2)
@@ -99,6 +108,7 @@
 		(w/c nm ([*maker *maker-cnt])
                    (define (*maker . flds.fs)
                      (define v (**maker . flds.fs))
+                     frees-def
                      (unless-in-table 
                       var-table v
                       (define fvs f1)

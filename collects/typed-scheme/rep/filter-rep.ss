@@ -1,7 +1,6 @@
 #lang scheme/base
 
-(require mzlib/plt-match)
-(require mzlib/etc)
+(require scheme/match scheme/contract)
 (require "rep-utils.ss" "free-variance.ss")
 
 (df Bot () [#:fold-rhs #:base])
@@ -18,6 +17,11 @@
 	   (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
+(df FilterSet ([thn (listof (and/c Filter? (not/c FilterSet?)))]
+	       [els (listof (and/c Filter? (not/c FilterSet?)))])
+     [#:frees (combine-frees (map free-vars* (append thn els)))
+	      (combine-frees (map free-idxs* (append thn els)))]
+     [#:fold-rhs (*FilterSet (map filter-rec-id thn) (map filter-rec-id els))])
 
 (dlf LBot () [#:fold-rhs #:base])
 
@@ -30,3 +34,9 @@
   [#:frees (combine-frees (map free-vars* (cons t p)))
 	   (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p))])
+
+(dlf LFilterSet ([thn (listof (and/c LatentFilter? (not/c LFilterSet?)))]
+		 [els (listof (and/c LatentFilter? (not/c LFilterSet?)))])
+     [#:frees (combine-frees (map free-vars* (append thn els)))
+	      (combine-frees (map free-idxs* (append thn els)))]
+     [#:fold-rhs (*LFilterSet (map latentfilter-rec-id thn) (map latentfilter-rec-id els))])

@@ -4,13 +4,11 @@
 
 (provide defintern hash-id)
 
-
 (define-syntax (defintern stx)
   (syntax-parse stx
-    [(_ name+args make-name:id key:expr . rest)
-     #:with (_:id _:id ...) #'name+args
-     #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key . rest)]
-    [(_ (*name:id arg:id ...) make-ht make-name key-expr ([#:extra-arg e:expr]) ...*)
+    [(_ name+args make-name key (~or [#:extra-arg e:expr] #:opt) ...) 
+     #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key #:extra-arg e)]
+    [(_ (*name:id arg:id ...) make-ht make-name key-expr (~or [#:extra-arg e:expr] #:opt) ...)
      #'(define *name
 	 (let ([table (make-ht)])
 	   (lambda (arg ...)
@@ -18,7 +16,7 @@
 	     (let ([key key-expr])
 	       (hash-ref table key
 			 (lambda ()
-			   (let ([new (make-name (count!) e ... arg ...)])
+			   (let ([new (make-name (count!) e arg ...)])
 			     (hash-set! table key new)
 			     new)))))))]))
 

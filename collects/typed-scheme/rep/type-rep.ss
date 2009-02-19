@@ -2,7 +2,7 @@
 (require "../utils/utils.ss")
 
 (require (utils tc-utils) 
-	 "rep-utils.ss" "effect-rep.ss" "free-variance.ss"
+	 "rep-utils.ss" "object-rep.ss" "filter-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
          scheme/contract
          stxclass/util
@@ -109,14 +109,18 @@
 (dt Opaque ([pred identifier?] [cert procedure?]) 
     [#:intern (hash-id pred)] [#:frees #f] [#:fold-rhs #:base] [#:key pred])
 
+;; represents an argument and its associated filters
+(dt DomType ([t Type?] [filters LFilterSet?])
+    [#:fold-rhs (*DomTy (type-rec-id t)
+			(latentfilter-rec-id filters))])
+
 ;; kw : keyword?
 ;; ty : Type
 ;; required? : Boolean
-(dt Keyword ([kw keyword?] [ty Type?] [required? boolean?])
+(dt Keyword ([kw keyword?] [ty DomType?] [required? boolean?])
     [#:frees (free-vars* ty)
              (free-idxs* ty)]
-    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)]
-    [#:key 'keyword])
+    [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
 
 ;; dom : Listof[Type]
 ;; rng : Type
@@ -127,36 +131,25 @@
 ;; thn-eff : Effect
 ;; els-eff : Effect
 ;; arr is NOT a Type
-(dt arr ([dom (listof Type?)] 
+(dt arr ([dom (listof DomType?)] 
          [rng Type?]
          [rest (or/c #f Type?)] 
          [drest (or/c #f (cons/c Type? (or/c natural-number/c symbol?)))]
          [kws (listof Keyword?)]
-         [thn-eff (listof Effect?)]
-         [els-eff (listof Effect?)])
-    [#:key 'procedure]
-    [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null)
-                                                                                (map Keyword-ty kws)
-                                                                                dom)))
-                                    (match drest
-                                      [(cons t (? symbol? bnd))
-                                       (list (fix-bound (flip-variances (free-vars* t)) bnd))]
-                                      [(cons t bnd) (list (flip-variances (free-vars* t)))]
-                                      [_ null])
-                                    (list (free-vars* rng))
-                                    (map make-invariant
-                                         (map free-vars* (append thn-eff els-eff)))))
-             (combine-frees (append (map flip-variances (map free-idxs* (append (if rest (list rest) null)
-                                                                                (map Keyword-ty kws)
-                                                                                dom)))
-                                    (match drest
-                                      [(cons t (? number? bnd))
-                                       (list (fix-bound (flip-variances (free-idxs* t)) bnd))]
-                                      [(cons t bnd) (list (flip-variances (free-idxs* t)))]
-                                      [_ null])
-                                    (list (free-idxs* rng))                                      
-                                    (map make-invariant
-                                         (map free-idxs* (append thn-eff els-eff)))))]
+         [filters (listof LatentFilter?)])
+    [#:frees (lambda (free*)
+               (combine-frees 
+                (append (map (compose flip-variances free*) 
+                             (append (if rest (list rest) null)
+                                     (map Keyword-ty kws)
+                                     dom))
+                        (match drest
+                          [(cons t (? symbol? bnd))
+                           (list (fix-bound (flip-variances (free* t)) bnd))]
+                          [(cons t bnd) (list (flip-variances (free* t)))]
+                          [_ null])
+                        (list (free* rng))
+                        (map (compose make-invariant free*) filters))))]
     [#:fold-rhs (*arr (map type-rec-id dom)
                       (type-rec-id rng)
                       (and rest (type-rec-id rest))
@@ -167,13 +160,13 @@
                       (map effect-rec-id els-eff))])
 
 ;; top-arr is the supertype of all function types
-(dt top-arr ()
-    [#:frees #f] [#:fold-rhs #:base])
+(dt top-arr () [#:fold-rhs #:base])
 
 (define arr/c (or/c top-arr? arr?))
 
 ;; arities : Listof[arr]
 (dt Function ([arities (listof arr/c)])
+    [#:key 'procedure]
     [#:frees (combine-frees (map free-vars* arities))
              (combine-frees (map free-idxs* arities))]
     [#:fold-rhs (*Function (map type-rec-id arities))])
@@ -317,7 +310,7 @@
 
 ;; type/effect fold
 
-(define-syntaxes (type-case effect-case)
+(define-syntaxes (type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
   (let ()
     (define (mk ht)
       (lambda (stx)
@@ -363,16 +356,14 @@
                      #,(quasisyntax/loc stx
                          (match #,fold-target
                            #,@(hash-map ht gen-clause))))))]))))
-    (values (mk type-name-ht) (mk effect-name-ht))))
+    (apply values
+           (map mk 
+                (list type-name-ht filter-name-ht latentfilter-name-ht object-name-ht latentobject-name-ht pathelem-name-ht)))))
 
-(provide type-case effect-case)
+(provide type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; sub-eff : (Type -> Type) Eff -> Eff
-(define (sub-eff sb eff)
-  (effect-case sb eff))  
 
 (define (add-scopes n t)
   (if (zero? n) t
