@@ -71,13 +71,13 @@ and a @scheme[_misc] is an instance of the @scheme[comment] or
 
 @defstruct[document ([prolog prolog?]
                      [element element?]
-                     [misc (or/c comment? pcdata?)])]{
+                     [misc (listof (or/c comment? p-i?))])]{
 
 Represents a document.}
 
-@defstruct[prolog ([misc (listof (or/c comment? pcdata?))]
+@defstruct[prolog ([misc (listof (or/c comment? p-i?))]
                    [dtd (or/c document-type false/c)]
-                   [misc2 (listof (or/c comment? pcdata?))])]{
+                   [misc2 (listof (or/c comment? p-i?))])]{
 
 Represents a document prolog. The @scheme[make-prolog] binding is
 unusual: it accepts two or more arguments, and all arguments after the
