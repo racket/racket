@@ -1,11 +1,6 @@
 #lang scheme/base
 #|
 
-logger: multiple tabs need to save logger visibilty state
-
-logger: thread for collecting user messages should be created under user auspicies.
-logger: what about thread for forwarding log messages?
-
 closing:
   warning messages don't have frame as parent.....
 
@@ -1326,6 +1321,9 @@ module browser threading seems wrong.
           (send frame show/hide-log log-visible?))
         (define/public-final (update-log)
           (send frame show/hide-log log-visible?))
+        (define/public-final (update-logger-window command)
+          (when (is-current-tab?)
+            (send frame update-logger-window command)))
         
         (define current-planet-status #f)
         (define/public-final (new-planet-status a b)
@@ -1412,6 +1410,7 @@ module browser threading seems wrong.
         ;; this is #f when the GUI has not been built yet. After
         ;; it becomes a tab-panel, it is always a tab-panel (altho the tab panel might not always be shown)
         (define logger-gui-tab-panel #f)
+        (define logger-gui-canvas #f)
         
         ;; logger-gui-text: (or/c #f (is-a?/c tab-panel%))
         ;; this is #f when the GUI has not been built or when the logging panel is hidden
@@ -1437,12 +1436,14 @@ module browser threading seems wrong.
                           l]
                          [show? 
                           (new-logger-text)
+                          (send logger-gui-canvas set-editor logger-gui-text)
                           (update-logger-window #f)
                           (send logger-menu-item set-label (string-constant hide-log))
                           (append (remq logger-panel l) (list logger-panel))]
                          [else
                           (send logger-menu-item set-label (string-constant show-log))
                           (set! logger-gui-text #f)
+                          (send logger-gui-canvas set-editor #f)
                           (remq logger-panel l)])))]
               [else
                (when show? ;; if we want to hide and it isn't built yet, do nothing
@@ -1455,7 +1456,8 @@ module browser threading seems wrong.
                              (λ (tp evt)
                                (update-logger-window #f))]))
                  (new-logger-text)
-                 (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text])
+                 (set! logger-gui-canvas 
+                       (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text]))
                  (send logger-menu-item set-label (string-constant hide-log))
                  (update-logger-window #f)
                  (send logger-parent-panel change-children (lambda (l) (append l (list logger-panel)))))])

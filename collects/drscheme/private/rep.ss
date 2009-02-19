@@ -1462,11 +1462,10 @@ TODO
       (define/private (reset-logger-messages) 
         (set! logger-messages '())
         (update-logger-gui #f))
-
+      
       (define/private (update-logger-gui command)
-        (let ([frame (get-frame)])
-          (when frame
-            (send frame update-logger-window command))))
+        (let ([tab (send definitions-text get-tab)])
+          (send tab update-logger-window command)))
                         
       (define/private (new-planet-info tag package) 
         (let ([frame (get-frame)])
