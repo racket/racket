@@ -10,8 +10,6 @@
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
-         print-type*
-         print-effect*
          define-struct/printer
          id
          filter-multiple
@@ -25,27 +23,25 @@
 	 rep utils typecheck infer env private)
 
 (define-syntax (define-requirer stx)
-  (syntax-case stx ()
-    [(_ nm)
+  (syntax-parse stx
+    [(_ nm:id)
      #`(...
-	(define-require-syntax nm
-	  (lambda (stx)
-	    (syntax-case stx ()
-	      [(_ id ...)
-	       (andmap identifier? (syntax->list #'(id ...)))
-	       (with-syntax ([(id* ...) 
-                              (map (lambda (id) 
-                                     (datum->syntax 
-                                      id 
-                                      (string->symbol
-                                       (string-append 
-                                        "typed-scheme/"
-                                        #,(symbol->string (syntax-e #'nm))
-                                        "/" 
-                                        (symbol->string (syntax-e id))))
-                                      id id))
-                                   (syntax->list #'(id ...)))])
-			    (syntax/loc stx (combine-in id* ...)))]))))]))
+	(define-require-syntax (nm stx)
+          (syntax-parse stx
+            [(_ id:identifier ...)
+             (with-syntax ([(id* ...)
+                            (map (lambda (id) 
+                                   (datum->syntax 
+                                    id
+                                    `(file
+                                      ,(path->string
+                                        (build-path (collection-path "typed-scheme"
+                                                                     #,(symbol->string (syntax-e #'nm)))
+                                                    (string-append (symbol->string (syntax-e id))
+                                                                   ".ss"))))
+                                    id id))
+                                 (syntax->list #'(id ...)))])
+               (syntax/loc stx (combine-in id* ...)))])))]))
 
 
 (define-requirer rep)
@@ -168,11 +164,17 @@
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #t)
+(define-for-syntax printing? #f)
 
-(define print-type* (box (lambda _ (error "print-type* not yet defined"))))
-(define print-effect* (box (lambda _ (error "print-effect* not yet defined"))))
+(define-syntax-rule (defprinter t ...)
+  (begin
+    (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
+    (provide t ...)))
 
+(defprinter
+  print-type* print-filter* print-latentfilter* print-object* print-latentobject*
+  print-pathelem*)
+  
 (require scheme/pretty mzlib/pconvert)
 
 (define-syntax (define-struct/printer stx)
@@ -195,6 +197,7 @@
   (define (f v)
     (cond [(string? v) v]
           [(symbol? v) (symbol->string v)]
+          [(char? v) (string v)]
           [(identifier? v) (symbol->string (syntax-e v))]))
   (datum->syntax kw (string->symbol (apply string-append (map f args)))))
 

@@ -130,15 +130,6 @@
     [#:frees (λ (f) (combine-frees (map f (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
-
-;; dom : Listof[Type]
-;; rng : Type
-;; rest : Option[Type]
-;; drest : Option[Cons[Type,Name or nat]]
-;; kws : Listof[Keyword]
-;; rest and drest NOT both true
-;; thn-eff : Effect
-;; els-eff : Effect
 ;; arr is NOT a Type
 (dt arr ([dom (listof Type?)] 
          [rng (or/c Values? ValuesDots?)]
@@ -287,7 +278,7 @@
 (provide set-union-maker! get-union-maker)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#|
+
 ;; remove-dups: List[Type] -> List[Type]
 ;; removes duplicate types from a SORTED list
 (define (remove-dups types)
@@ -295,67 +286,11 @@
         [(null? (cdr types)) types]
         [(type-equal? (car types) (cadr types)) (remove-dups (cdr types))]
         [else (cons (car types) (remove-dups (cdr types)))]))
-|#
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; type/effect fold
-#|
-(define-syntaxes (type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
-  (let ()
-    (define (mk ht)
-      (lambda (stx)
-        (let ([ht (hash-copy ht)])
-          (define (mk-matcher kw) 
-            (datum->syntax stx (string->symbol (string-append (keyword->string kw) ":"))))
-          (define (add-clause cl)
-            (syntax-case cl ()
-              [(kw #:matcher mtch pats ... expr)
-               (hash-set! ht (syntax-e #'kw) (list #'mtch 
-                                                   (syntax/loc cl (pats ...))
-                                                   (lambda (tr er) #'expr)
-                                                   cl))]
-              [(kw pats ... expr) 
-               (hash-set! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
-                                                   (syntax/loc cl (pats ...))
-                                                   (lambda (tr er) #'expr)
-                                                   cl))]))
-          (define rid #'type-rec-id)
-          (define erid #'effect-rec-id)
-          (define (gen-clause k v)
-            (define match-ex (car v))
-            (define pats (cadr v))
-            (define body-f (caddr v))
-            (define src (cadddr v))
-            (define pat (quasisyntax/loc src (#,match-ex  . #,pats)))
-            (define cl (quasisyntax/loc src (#,pat #,(body-f rid erid))))
-            cl)
-          (syntax-case stx ()
-            [(tc rec-id ty clauses ...)
-             (syntax-case #'(clauses ...) ()
-               [([kw pats ... es] ...) #t]
-               [_ #f])
-             (syntax/loc stx (tc rec-id (lambda (e) (sub-eff rec-id e)) ty clauses ...))]
-            [(tc rec-id e-rec-id ty clauses  ...)
-             (begin 
-               (map add-clause (syntax->list #'(clauses ...)))
-               (with-syntax ([old-rec-id type-rec-id])
-                 #`(let ([#,rid rec-id]
-                         [#,erid e-rec-id]
-                         [#,fold-target ty])
-                     ;; then generate the fold
-                     #,(quasisyntax/loc stx
-                         (match #,fold-target
-                           #,@(hash-map ht gen-clause))))))]))))
-    (apply values
-           (map mk 
-                (list type-name-ht filter-name-ht latentfilter-name-ht object-name-ht latentobject-name-ht pathelem-name-ht)))))
-
-(provide type-case filter-case latentfilter-case object-case latentobject-case pathelem-case)
-|#
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (add-scopes n t)
   (if (zero? n) t
       (add-scopes (sub1 n) (*Scope t))))
@@ -366,6 +301,26 @@
       (match sc
         [(Scope: sc*) (remove-scopes (sub1 n) sc*)]
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
+
+;; type equality
+(define type-equal? eq?)
+
+;; inequality - good
+
+(define (type<? s t)
+  (< (Type-seq s) (Type-seq t)))
+
+(define (type-compare s t)
+  (cond [(eq? s t) 0]
+        [(type<? s t) 1]
+        [else -1]))
+
+(define (Values* l)
+  (if (and (pair? l) (null? (cdr l)))
+      (car l)
+      (*Values l)))
+
+
 #|
 ;; abstract-many : Names Type -> Scope^n 
 ;; where n is the length of names  
@@ -591,23 +546,6 @@
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
-;; type equality
-(define type-equal? eq?)
-
-;; inequality - good
-
-(define (type<? s t)
-  (< (Type-seq s) (Type-seq t)))
-
-(define (type-compare s t)
-  (cond [(eq? s t) 0]
-        [(type<? s t) 1]
-        [else -1]))
-
-(define (Values* l)
-  (if (and (pair? l) (null? (cdr l)))
-      (car l)
-      (*Values l)))
 
 ;(trace subst subst-all)
 
