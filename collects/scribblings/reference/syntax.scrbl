@@ -13,6 +13,11 @@
                      scheme/package
                      scheme/splicing))
 
+@(define syntax-eval
+   (let ([the-eval (make-base-eval)])
+     (the-eval '(require (for-syntax scheme/base)))
+     the-eval))
+
 @(define cvt (schemefont "CVT"))
 @(define unquote-id (scheme unquote))
 @(define unquote-splicing-id (scheme unquote-splicing))
@@ -1602,6 +1607,21 @@ The second form is a shorthand the same as for @scheme[define]; it
 expands to a definition of the first form where the @scheme[expr] is a
 @scheme[lambda] form.}
 
+@defexamples[#:eval syntax-eval
+(define-syntax foo
+  (syntax-rules ()
+    ((_ a ...)
+     (printf "~a\n" (list a ...)))))
+
+(foo 1 2 3 4)
+
+(define-syntax (bar syntax-object)
+  (syntax-case syntax-object ()
+    ((_ a ...)
+     #'(printf "~a\n" (list a ...)))))
+
+(bar 1 2 3 4)
+]
 
 @defform[(define-syntaxes (id ...) expr)]{
 
@@ -1610,6 +1630,24 @@ for each @scheme[id].  The @scheme[expr] should produce as many values
 as @scheme[id]s, and each value is bound to the corresponding
 @scheme[id]. }
 
+@defexamples[#:eval syntax-eval
+(define-syntaxes (foo1 foo2 foo3)
+  (let ([transformer1 (lambda (syntax-object)
+			(syntax-case syntax-object ()
+			  [(_) #'1]))]
+	[transformer2 (lambda (syntax-object)
+			(syntax-case syntax-object ()
+			  [(_) #'2]))]
+	[transformer3 (lambda (syntax-object)
+			(syntax-case syntax-object ()
+			  [(_) #'3]))])
+    (values transformer1
+	    transformer2
+	    transformer3)))
+(foo1)
+(foo2)
+(foo3)
+]
 
 @defform*[[(define-for-syntax id expr)
            (define-for-syntax (head args) body ...+)]]{
@@ -1621,11 +1659,32 @@ expression for the binding is also at @tech{phase level} 1. (See
 Evaluation of @scheme[expr] side is @scheme[parameterize]d to set
 @scheme[current-namespace] as in @scheme[let-syntax].}
 
+@defexamples[#:eval syntax-eval
+(define-for-syntax foo 2)
+(define-syntax bar
+  (lambda (syntax-object)
+    (printf "foo is ~a\n" foo)
+    #'2))
+(bar)    
+(define-syntax (bar2 syntax-object)
+  (printf "foo is ~a\n" foo)
+  #'3)
+(bar2)  
+]
+
 @defform[(define-values-for-syntax (id ...) expr)]{
 
 Like @scheme[define-for-syntax], but @scheme[expr] must produce as
-many value as supplied @scheme[id]s, and all of the @scheme[id]s are
+many values as supplied @scheme[id]s, and all of the @scheme[id]s are
 bound (at @tech{phase level} 1).}
+
+@defexamples[#:eval syntax-eval
+(define-values-for-syntax (foo1 foo2) (values 1 2))
+(define-syntax (bar syntax-object)
+  (printf "foo1 is ~a foo2 is ~a\n" foo1 foo2)
+  #'2)
+(bar) 
+]
 
 @; ----------------------------------------------------------------------
 
