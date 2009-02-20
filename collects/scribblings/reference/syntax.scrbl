@@ -14,9 +14,10 @@
                      scheme/splicing))
 
 @(define syntax-eval
-   (let ([the-eval (make-base-eval)])
-     (the-eval '(require (for-syntax scheme/base)))
-     the-eval))
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require (for-syntax scheme/base)))
+       the-eval)))
 
 @(define cvt (schemefont "CVT"))
 @(define unquote-id (scheme unquote))
@@ -200,6 +201,14 @@ be preserved in marshaled bytecode. See also
 
 See also @secref["module-eval-model"] and @secref["mod-parse"].
 
+@defexamples[#:eval (syntax-eval)
+(module example-module scheme
+  (provide foo bar)
+  (define foo 2)
+  (define (bar x)
+    (+ x 1)))
+]
+
 @defform[(#%module-begin form ...)]{
 
 Legal only in a @tech{module begin context}, and handled by the
@@ -290,33 +299,122 @@ pre-defined forms are as follows.
   @scheme[_id] or as @scheme[_orig-id] in @scheme[[_orig-id _bind-id]]. If
   the @scheme[_id] or @scheme[_orig-id] of any @scheme[id-maybe-renamed]
   is not in the set that @scheme[require-spec] describes, a syntax
-  error is reported.}
+  error is reported.
+
+  @defexamples[#:eval (syntax-eval)
+    (require (only-in scheme/tcp
+	              tcp-listen
+                      (tcp-accept my-accept)))
+    tcp-listen
+    my-accept
+    tcp-accept
+  ]}
 
  @defsubform[(except-in require-spec id ...)]{ Like
   @scheme[require-spec], but omitting those imports for which
   @scheme[id]s are the identifiers to bind; if any @scheme[id] is not
   in the set that @scheme[require-spec] describes, a syntax error is
-  reported.}
+  reported.
+
+  @defexamples[#:eval (syntax-eval)
+    (require (except-in scheme/tcp
+	                tcp-listen))
+    tcp-accept
+    tcp-listen
+  ]}
 
  @defsubform[(prefix-in prefix-id require-spec)]{ Like
   @scheme[require-spec], but adjusting each identifier to be bound by
   prefixing it with @scheme[prefix-id]. The lexical context of the
   @scheme[prefix-id] is ignored, and instead preserved from the
-  identifiers before prefixing.}
+  identifiers before prefixing.
+
+  @defexamples[#:eval (syntax-eval)
+    (require (prefix-in tcp: scheme/tcp))
+    tcp:tcp-accept
+    tcp:tcp-listen
+  ]}
 
  @defsubform[(rename-in require-spec [orig-id bind-id] ...)]{
   Like @scheme[require-spec], but replacing the identifier to
   bind @scheme[orig-id] with @scheme[bind-id]; if any
   @scheme[orig-id] is not in the set that @scheme[require-spec]
-  describes, a syntax error is reported.}
+  describes, a syntax error is reported.
+  
+  @defexamples[#:eval (syntax-eval)
+    (require (rename-in scheme/tcp
+                        (tcp-accept accept)
+			(tcp-listen listen)))
+    accept
+    listen
+  ]}
 
  @defsubform[(combine-in require-spec ...)]{
-  The union of the @scheme[require-spec]s.}
+  The union of the @scheme[require-spec]s.
+  
+  @defexamples[#:eval (syntax-eval)
+    (require (combine-in (only-in scheme/tcp tcp-accept)
+                         (only-in scheme/tcp tcp-listen)))
+    tcp-accept
+    tcp-listen
+  ]}
 
  @defsubform[(only-meta-in phase-level require-spec ...)]{
   Like the combination of @scheme[require-spec]s, but removing any
   binding that is not for @scheme[phase-level], where @scheme[#f] for
-  @scheme[phase-level] corresponds to the @tech{label phase level}.}
+  @scheme[phase-level] corresponds to the @tech{label phase level}.
+  
+  This example only imports bindings at @tech{phase level} 1, the
+  transform phase.
+
+  @defexamples[#:eval (syntax-eval)
+  (module test scheme
+
+   (provide (for-syntax meta-1a)
+            (for-meta 1 meta-1b)
+            meta-0)
+
+   (define-for-syntax meta-1a 'a)
+   (define-for-syntax meta-1b 'b)
+   (define meta-0 2))
+
+  (require (only-meta-in 1 'test))
+
+  (define-syntax bar
+   (lambda (stx)
+    (printf "~a\n" meta-1a)
+    (printf "~a\n" meta-1b)
+    #'1))
+
+   (bar)
+   meta-0
+  ]
+
+  This example only imports bindings at @tech{phase level} 0, the
+  normal phase.
+
+  @defexamples[#:eval (syntax-eval)
+  (module test scheme
+
+   (provide (for-syntax meta-1a)
+            (for-meta 1 meta-1b)
+            meta-0)
+
+   (define-for-syntax meta-1a 'a)
+   (define-for-syntax meta-1b 'b)
+   (define meta-0 2))
+
+  (require (only-meta-in 0 'test))
+
+  (define-syntax bar
+   (lambda (stx)
+    (printf "~a\n" meta-1a)
+    (printf "~a\n" meta-1b)
+    #'1))
+
+   meta-0
+   (bar)
+  ]}
 
  @specsubform[#:literals (for-meta)
               (for-meta phase-level require-spec ...)]{Like the combination of
@@ -1607,7 +1705,7 @@ The second form is a shorthand the same as for @scheme[define]; it
 expands to a definition of the first form where the @scheme[expr] is a
 @scheme[lambda] form.}
 
-@defexamples[#:eval syntax-eval
+@defexamples[#:eval (syntax-eval)
 (define-syntax foo
   (syntax-rules ()
     ((_ a ...)
@@ -1630,7 +1728,7 @@ for each @scheme[id].  The @scheme[expr] should produce as many values
 as @scheme[id]s, and each value is bound to the corresponding
 @scheme[id]. }
 
-@defexamples[#:eval syntax-eval
+@defexamples[#:eval (syntax-eval)
 (define-syntaxes (foo1 foo2 foo3)
   (let ([transformer1 (lambda (syntax-object)
 			(syntax-case syntax-object ()
@@ -1659,7 +1757,7 @@ expression for the binding is also at @tech{phase level} 1. (See
 Evaluation of @scheme[expr] side is @scheme[parameterize]d to set
 @scheme[current-namespace] as in @scheme[let-syntax].}
 
-@defexamples[#:eval syntax-eval
+@defexamples[#:eval (syntax-eval)
 (define-for-syntax foo 2)
 (define-syntax bar
   (lambda (syntax-object)
@@ -1678,7 +1776,7 @@ Like @scheme[define-for-syntax], but @scheme[expr] must produce as
 many values as supplied @scheme[id]s, and all of the @scheme[id]s are
 bound (at @tech{phase level} 1).}
 
-@defexamples[#:eval syntax-eval
+@defexamples[#:eval (syntax-eval)
 (define-values-for-syntax (foo1 foo2) (values 1 2))
 (define-syntax (bar syntax-object)
   (printf "foo1 is ~a foo2 is ~a\n" foo1 foo2)
