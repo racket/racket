@@ -2183,8 +2183,8 @@ for the other functions in this document
 @section{Run, program, run}
 
 @chunk[<go>
-       (printf "passed ~s tests\n" test-count)
-       (flush-output)
+       ;(printf "passed ~s tests\n" test-count)
+       ;(flush-output)
        
        (let* ([board-size 11]
               [initial-board
