@@ -3,10 +3,10 @@
 ;; Use this module to create literate doc wrappers -- files that require the
 ;; literate code in a way that makes it a scribble file.
 
-(provide include chunk chunkref
-         (all-from-out scribble/manual))
+(provide chunk (all-from-out scribble/manual))
 
-(require scribble/manual scribble/decode scribble/struct scheme/include
+(require scribble/manual scribble/decode scribble/struct
+         scribble/scheme
          (for-syntax scheme/base syntax/boundmap))
 
 (begin-for-syntax
@@ -29,19 +29,23 @@
      (identifier? #'name)
      (let ([n (get-chunk-number #'name)]
            [str (symbol->string (syntax-e #'name))])
-       (with-syntax ([tag (if (n . > . 1) (format "~a:~a" str n) str)]
-                     [(more ...) (if (n . > . 1)
-                                     #`((subscript (smaller #,(format "~a" n))))
-                                     #`())]
-                     [str str])
-         #`(make-splice
-            (list (make-toc-element
-                   #f
-                   (list (elemtag '(chunk tag)
-                                  (bold (italic (scheme name)) " ::=")))
-                   (list (smaller (elemref '(chunk tag) #:underline? #f
-                                           str more ...))))
-                  (schemeblock expr ...)))))]))
+       (if (n . > . 1)
+           #'(void)
+           (with-syntax ([tag str]
+                         [str str])
+             #`(begin
+                 ;; ---- This is the new part --------
+                 (define-syntax name (make-element-id-transformer
+                                      (lambda (stx) #'(chunkref name))))
+                 ;; ----------------------------------
+                 (make-splice
+                  (list (make-toc-element
+                         #f
+                         (list (elemtag '(chunk tag)
+                                        (bold (italic (scheme name)) " ::=")))
+                         (list (smaller (elemref '(chunk tag) #:underline? #f
+                                                 str))))
+                        (schemeblock expr ...)))))))]))
 
 (define-syntax (chunkref stx)
   (syntax-case stx ()
@@ -49,9 +53,3 @@
      (identifier? #'id)
      (with-syntax ([str (format "~a" (syntax-e #'id))])
        #'(elemref '(chunk str) #:underline? #f str))]))
-
-;; HACK: provide a fake `module', which makes it possible to include a module
-;; and get only its code in.
-(provide module)
-(define-syntax-rule (module name base body ...)
-  (begin body ...))

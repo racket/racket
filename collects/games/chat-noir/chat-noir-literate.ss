@@ -10,6 +10,7 @@ mzc chat-noir-doc.ss && rm -rf chat-noir-doc && scribble ++xref-in setup/xref lo
 
 }
 
+@;{would like to have [#:style 'toc] in the next line ... }
 @title{Chat Noir}
 
 @author[(link "http://www.eecs.northwestern.edu/~robby" "Robby Findler")
@@ -41,7 +42,7 @@ the Chat Noir game in a
 @section{Overview}
 
 Chat Noir is implemented using @link["http://www.htdp.org/"]{HtDP}'s universe
-library:  @schememodname[teachpack/2htdp/universe] 
+library:  @schememodname[2htdp/universe] 
 (although it only uses the ``world'' portions of that library). 
 The program is divided up into
 six parts: the world data definition, an implementation of breadth-first search,
@@ -64,7 +65,8 @@ and some code that builds an initial world and starts the game.
        <go>]
 
 Each section also comes with a series of test cases that are collected into the 
-@chunkref[<tests>] chunk at the end of the program.
+@scheme[<tests>]
+chunk at the end of the program.
 
 @chunk[<tests>
        <test-infrastructure>
@@ -461,7 +463,7 @@ and returns a @scheme[distance-table].
 
 As you can see, the first thing it does is bind the free variable in @scheme[bfs]
 to the result of calling the @scheme[neighbors] function (defined in the chunk
-@chunkref[<neighbors>]) and then it has the @chunkref[<bfs>] chunk. In the body
+@scheme[<neighbors>]) and then it has the @scheme[<bfs>] chunk. In the body
 it calls the @scheme[bfs] function 
 and then transforms the result, using
 @scheme[hash-map], into a list of @scheme[cell]s.
