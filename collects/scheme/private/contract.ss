@@ -569,7 +569,7 @@ improve method arity mismatch contract violation error messages?
                        [(ctc ...) (map marker protections)]
                        [(p ...) protected]
                        [(marked-p ...) (map marker protected)]
-                       [(src-info ...) (map id->contract-src-info protected)]
+                       [(src-info ...) (map (compose id->contract-src-info marker) protected)]
                        [(u ...) unprotected]
                        [(marked-u ...) (map marker unprotected)])
            (quasisyntax/loc stx
