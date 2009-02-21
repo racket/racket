@@ -6442,7 +6442,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  if (!SCHEME_STX_SYMBOLP(var))
 	    scheme_wrong_syntax(NULL, var, first, 
 				"name must be an identifier");
-	  // scheme_dup_symbol_check(&r, "internal definition", var, "binding", first);
+	  /* scheme_dup_symbol_check(&r, "internal definition", var, "binding", first); */
 	  vars = SCHEME_STX_CDR(vars);
 	  cnt++;
 	}
