@@ -4,13 +4,6 @@
           scheme/math
           games/scribblings/common)
 
-@;{
-The command to build this:
-
-mzc chat-noir-doc.ss && rm -rf chat-noir-doc && scribble ++xref-in setup/xref load-collections-xref --htmls chat-noir-doc.ss
-
-}
-
 @gametitle*["Chat Noir" "chat-noir" "Puzzle Game" #:style '(toc)]
 
 @author[(link "http://www.eecs.northwestern.edu/~robby" "Robby Findler")
@@ -2213,5 +2206,6 @@ for the other functions in this document
                             (world-width board-size)
                             (world-height board-size))
                    (on-key change)
-                   (on-mouse clack))
+                   (on-mouse clack)
+                   (name '|Chat Noir|))
          (void))]

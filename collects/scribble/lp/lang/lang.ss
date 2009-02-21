@@ -1,8 +1,7 @@
 #lang scheme/base
 
 (provide (except-out (all-from-out scheme/base) #%module-begin)
-         (rename-out [module-begin #%module-begin])
-         chunk)
+         (rename-out [module-begin #%module-begin]))
 
 (require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase))
 
@@ -24,22 +23,6 @@
     (free-identifier-mapping-put!
      chunks id
      `(,@(mapping-get chunks id) ,@(map syntax-local-introduce exprs)))))
-
-;; This is the code-view implementation of `chunk', see
-;; "literate-doc-wrapper.ss" for the doc-view implementation.  Defines
-;; `chunk' as a macro that collects the code to be later reassembled
-;; by `tangle'.
-(define-syntax (chunk stx)
-  (syntax-case stx ()
-    [(_ name expr ...)
-     (cond [(not (identifier? #'name))
-            (raise-syntax-error #f "expected a chunk name" stx #'name)]
-           [(not (regexp-match? #rx"^<.*>$" (symbol->string (syntax-e #'name))))
-            (raise-syntax-error
-             #f "chunk names must begin and end with angle brackets, <...>"
-             stx #'name)]
-           [else (add-to-chunk! #'name (syntax->list #'(expr ...)))
-                 #'(void)])]))
 
 (define-syntax (tangle stx)
   (define chunk-mentions '())
@@ -68,41 +51,27 @@
                              chunk-mentions)])
     #`(begin body ... (let ([b-id (void)]) b-use) ...)))
 
-(define-syntax (literate-begin stx)
-  (syntax-case stx ()
-    [(_ . exprs)
-     (let loop ([exprs #'exprs])
-       (syntax-case exprs ()
-         [() #'(tangle)]
-         [(expr . exprs)
-          (let ([expanded
-                 (local-expand #'expr
-                               'module
-                               (append (kernel-form-identifier-list)
-                                       (syntax->list #'(provide
-                                                        require
-                                                        chunk
-                                                        #%provide
-                                                        #%require))))])
-            (syntax-case expanded (begin chunk require/chunk)
-              [(begin rest ...)
-               (loop (datum->syntax
-                      expanded
-                      (append
-                       (syntax->list #'(rest ...))
-                       #'exprs)))]
-              [(id . _)
-               (ormap (lambda (kw) (free-identifier=? #'id kw))
-                      (syntax->list #'(require
-                                       provide
-                                       chunk
-                                       #%require
-                                       #%provide)))
-               #`(begin #,expanded (literate-begin . exprs))]
-              [else (loop #'exprs)]))]))]))
+(define-for-syntax (extract-chunks exprs)
+  (let loop ([exprs exprs])
+    (syntax-case exprs ()
+      [() (void)]
+      [(expr . exprs)
+       (syntax-case #'expr (define-syntax quote-syntax)
+         [(define-values (lifted) (quote-syntax (a-chunk id body ...)))
+          (eq? (syntax-e #'a-chunk) 'a-chunk)
+          (begin
+            (add-to-chunk! #'id (syntax->list #'(body ...)))
+            (loop #'exprs))]
+         [_ 
+          (loop #'exprs)])])))
 
 (define-syntax (module-begin stx)
   (syntax-case stx ()
     [(_ id exprs . body)
-     #'(#%module-begin
-        (literate-begin id exprs . body))]))
+     (let ([expanded 
+            (expand `(,#'module scribble-lp-tmp-name scribble/private/lp
+                                ,@(syntax->datum #'(id exprs . body))))])
+       (syntax-case expanded ()
+         [(module name lang (mb . stuff))
+          (begin (extract-chunks #'stuff)
+                 #'(#%module-begin (tangle)))]))]))
