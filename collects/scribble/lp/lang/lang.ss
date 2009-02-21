@@ -70,37 +70,36 @@
 
 (define-syntax (literate-begin stx)
   (syntax-case stx ()
-    [(module-begin expr ...)
-     (with-syntax
-         ([(body-code ...)
-           (let loop ([exprs (syntax->list #'(expr ...))])
-             (cond
-               [(null? exprs) null]
-               [else
-                (let ([expanded
-                       (local-expand (car exprs)
-                                     'module
-                                     (append (kernel-form-identifier-list)
-                                             (syntax->list #'(provide
-                                                              require
-                                                              #%provide
-                                                              #%require))))])
-                  (syntax-case expanded (begin)
-                    [(begin rest ...)
-                     (append (loop (syntax->list #'(rest ...)))
-                             (loop (cdr exprs)))]
-                    [(id . rest)
-                     (ormap (lambda (kw) (free-identifier=? #'id kw))
-                            (syntax->list #'(require
-                                             provide
-                                             chunk
-                                             #%require
-                                             #%provide)))
-                     (cons expanded (loop (cdr exprs)))]
-                    [else (loop (cdr exprs))]))]))])
-       #'(begin
-           body-code ...
-           (tangle)))]))
+    [(_ . exprs)
+     (let loop ([exprs #'exprs])
+       (syntax-case exprs ()
+         [() #'(tangle)]
+         [(expr . exprs)
+          (let ([expanded
+                 (local-expand #'expr
+                               'module
+                               (append (kernel-form-identifier-list)
+                                       (syntax->list #'(provide
+                                                        require
+                                                        chunk
+                                                        #%provide
+                                                        #%require))))])
+            (syntax-case expanded (begin chunk require/chunk)
+              [(begin rest ...)
+               (loop (datum->syntax
+                      expanded
+                      (append
+                       (syntax->list #'(rest ...))
+                       #'exprs)))]
+              [(id . _)
+               (ormap (lambda (kw) (free-identifier=? #'id kw))
+                      (syntax->list #'(require
+                                       provide
+                                       chunk
+                                       #%require
+                                       #%provide)))
+               #`(begin #,expanded (literate-begin . exprs))]
+              [else (loop #'exprs)]))]))]))
 
 (define-syntax (module-begin stx)
   (syntax-case stx ()
