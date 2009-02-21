@@ -170,16 +170,16 @@
        (k:keyword #:matcher mtch pats ... e:expr)
        #:with kw #'k.datum
        #:with val (list #'mtch 
-                        (syntax #;#;/loc (current-syntax-context) (pats ...))
+                        (syntax/loc this-syntax (pats ...))
                         (lambda () #'e)
-                        #'here #;(current-syntax-context)))
+                        this-syntax))
       (pattern
        (k:keyword pats ... e:expr) 
        #:with kw (syntax-e #'k)
        #:with val (list (mk-matcher #'kw) 
-                        (syntax #;#;/loc (current-syntax-context) (pats ...))
+                        (syntax/loc this-syntax (pats ...))
                         (lambda () #'e)
-                        #'here #;(current-syntax-context))))
+                        this-syntax)))
     (define (gen-clause k v)
       (match v
         [(list match-ex pats body-f src)
@@ -210,12 +210,7 @@
                         (for/list ([rec-id rec-ids]
                                    [k kws])
                           #`[#,rec-id #,(hash-ref (attribute recs.mapping) k
-                                                  #'values
-                                                  #;
-                                                  (lambda ()                                                    
-                                                    (error (format
-                                                            "failed to find key ~a in table ~a"
-                                                            k (attribute recs.mapping)))))])])
+                                                  #'values)])])
            #`(let (let-clauses ...
                    [#,fold-target ty])
                ;; then generate the fold

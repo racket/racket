@@ -164,7 +164,7 @@
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #t)
+(define-for-syntax printing? #f)
 
 (define-syntax-rule (defprinter t ...)
   (begin
@@ -241,7 +241,7 @@
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
 (define-for-syntax enable-contracts? #t)
-(provide (for-syntax enable-contracts?) p/c w/c cnt)
+(provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 (define-syntax p/c
   (if enable-contracts?
@@ -264,6 +264,21 @@
         (syntax-parse stx
           [(_ name specs . body)
            #'(begin . body)]))))
+
+(define-syntax d/c
+  (if enable-contracts?
+      (make-rename-transformer #'define/contract)
+      (lambda (stx)        
+        (syntax-parse stx
+          [(_ head cnt . body)
+           #'(define head . body)]))))
+
+(define-syntax d-s/c
+  (if enable-contracts?
+      (make-rename-transformer #'define-struct/contract)
+      (syntax-rules ()
+        [(_ hd ([i c] ...) . opts)
+         (define-struct hd (i ...) . opts)])))
 
 (define-signature-form (cnt stx)
   (syntax-case stx ()

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/boundmap (for-syntax scheme/base stxclass)
-         macro-debugger/stepper)
+         #;macro-debugger/stepper)
 
 (provide defintern hash-id)
 
