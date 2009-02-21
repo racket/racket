@@ -607,7 +607,7 @@ improve method arity mismatch contract violation error messages?
                (define-syntaxes (u ... p ...)
                  (values (make-rename-transformer #'marked-u) ...
                          (make-with-contract-transformer
-                          (quote-syntax ctc)
+                          (quote-syntax ctc-id)
                           (quote-syntax marked-p)
                           (quote-syntax blame-stx)) ...)))))))]
     [(_ #:type type blame (arg ...) #:freevar x c . body)
