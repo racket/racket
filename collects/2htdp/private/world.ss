@@ -49,8 +49,10 @@
     (class* object% (start-stop<%>)
       (inspect #f)
       (init-field
-       world0 ;; World
-       (tick K))      ;; (U (World -> World) (list (World -> World) Nat))
+       world0            ;; World
+       (name #f)         ;; (U #f Symbol)
+       (register #f)     ;; (U #f IP)
+       (tick K))         ;; (U (World -> World) (list (World -> World) Nat))
       
       (init
        (on-key K)        ;; World KeyEvent -> World 
@@ -59,8 +61,7 @@
        (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
        (stop-when False) ;; World -> Boolean 
        (record? #f)      ;; Boolean 
-       (register #f))    ;; (U #f String (list String Symbol))
-      
+       )
       ;; -----------------------------------------------------------------------
       (field (world  world0))
       
@@ -79,39 +80,31 @@
       
       ;; -----------------------------------------------------------------------
       (field [*out* #f] ;; (U #f OutputPort), where to send messages to 
-             [*rec* (make-custodian)] ;; Custodian, monitor traffic
-             [host  (cond
-                      [(string? register) register]
-                      [(pair? register) (car register)]
-                      [else register])]
-             [name  (cond
-                      [(string? register) (gensym 'world)]
-                      [(pair? register) (second register)]
-                      [else register])])
+             [*rec* (make-custodian)]) ;; Custodian, monitor traffic)
       
       (define/private (register-with-host)
         (define FMTtry "unable to register with ~a after ~s tries")
         (define FMTcom "unable to register with ~a due to protocol problems")
         ;; try to register with the server n times 
-        (define (register n)
-          (printf "trying to register with ~a ...\n" host)
+        (define (do-register n)
+          (printf "trying to register with ~a ...\n" register)
           (with-handlers ((tcp-eof? 
                            (lambda (x) 
-                             (error 'register FMTcom host)))
+                             (error 'register FMTcom register)))
                           (exn:fail:network? 
                            (lambda (x)
                              (if (= n 1) 
-                                 (error 'register FMTtry host TRIES)
+                                 (error 'register FMTtry register TRIES)
                                  (begin (sleep PAUSE)
-                                        (register (- n 1)))))))
-            (define-values (in out) (tcp-connect host SQPORT))
+                                        (do-register (- n 1)))))))
+            (define-values (in out) (tcp-connect register SQPORT))
             (tcp-send out `(REGISTER ,(if name name (gensym 'world))))
             (if (eq? (tcp-receive in) 'okay) 
                 (values in out)
                 (raise tcp-eof))))
         ;; --- now register, obtain connection, and spawn a thread for receiving
         (parameterize ([current-custodian *rec*])
-          (define-values (in out) (register TRIES))
+          (define-values (in out) (do-register TRIES))
           (define dis (text "the universe disappeared" 11 'red))
           (define (RECEIVE)
             (sync 
@@ -271,7 +264,7 @@
       
       (define/public (start!)
         (when draw (show-canvas))
-        (when host (register-with-host)))
+        (when register (register-with-host)))
       
       (define/public (stop! w)
         (set! live #f)
