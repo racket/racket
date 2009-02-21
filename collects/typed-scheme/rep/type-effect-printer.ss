@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rep type-rep filter-rep rep-utils)
+(require (rep type-rep filter-rep object-rep rep-utils)
 	 (utils tc-utils)
 	 scheme/match)
 
@@ -30,7 +30,10 @@
 (define (print-latentfilter c port write?)
   (define (fp . args) (apply fprintf port args))
   (match c
-    [(LFilterSet: thn els) (fp "(~a | ~a)") thn els]
+    [(LFilterSet: thn els) (fp "(")
+                           (for ([i thn]) (fp "~a " i)) (fp "|")
+                           (for ([i els]) (fp " ~a" i))
+                           (fp")")]
     [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
     [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
     [(LBot:) (fp "LBot")]))
@@ -38,11 +41,26 @@
 (define (print-filter c port write?)
   (define (fp . args) (apply fprintf port args))
   (match c
-    [(FilterSet: thn els) (fp "(~a | ~a)") thn els]
+    [(FilterSet: thn els) (fp "(")
+                          (for ([i thn]) (fp "~a " i)) (fp "|")
+                          (for ([i els]) (fp " ~a" i))
+                          (fp")")]
     [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
     [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
     [(Bot:) (fp "Bot")]))
 
+(define (print-pathelem c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(CarPE:) (fp "car")]
+    [(CdrPE:) (fp "cdr")]
+    [(StructPE: t i) (fp "(~a ~a)" t i)]))
+
+(define (print-latentobject c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(LEmpty:) (fp "")]
+    [(LPath: pes i) (fp "~a" (append pes (list i)))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
@@ -145,7 +163,7 @@
                               (Vector: (F: x))
                               (Box: (F: x))))))
      (fp "SyntaxObject")]
-    [(Mu-name: name body) (fp "(mu ~a ~a ~a)" (Type-seq c) name body)]
+    [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
     ;; FIXME - this should not be used
     #;
     [(Scope: sc) (fp "(Scope ~a)" sc)]
@@ -160,3 +178,5 @@
 (set-box! print-type* print-type)
 (set-box! print-filter* print-filter)
 (set-box! print-latentfilter* print-latentfilter)
+(set-box! print-latentobject* print-latentobject)
+(set-box! print-pathelem* print-pathelem)

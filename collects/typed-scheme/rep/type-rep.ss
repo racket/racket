@@ -122,7 +122,6 @@
 
 ;; types : Listof[Type]
 (dt Values ([rs (listof Result?)]) 
-    #:no-provide
     [#:frees (λ (f) (combine-frees (map f rs)))]
     [#:fold-rhs (*Values (map type-rec-id rs))])
 
@@ -314,11 +313,6 @@
   (cond [(eq? s t) 0]
         [(type<? s t) 1]
         [else -1]))
-
-(define (Values* l)
-  (if (and (pair? l) (null? (cdr l)))
-      (car l)
-      (*Values l)))
 
 (define ((sub-lf st) e)
   (latentfilter-case (#:Type st
@@ -566,7 +560,6 @@
  remove-dups
  sub-lf
  Values: Values? Values-rs
- (rename-out [Values* make-Values])
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]
              [PolyDots:* PolyDots:]
@@ -578,4 +571,3 @@
              [PolyDots-body* PolyDots-body]))
 
 ;(trace unfold)
-

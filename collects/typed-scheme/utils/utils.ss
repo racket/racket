@@ -164,7 +164,7 @@
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #f)
+(define-for-syntax printing? #t)
 
 (define-syntax-rule (defprinter t ...)
   (begin
