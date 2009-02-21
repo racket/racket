@@ -158,7 +158,7 @@ The design of a world program demands that you come up with a data
 @defform/subs[#:id big-bang
               #:literals 
 	      (on-tick on-draw on-key on-mouse on-receive 
-	        stop-when register record?)
+	        stop-when register record? name)
               (big-bang state-expr clause ...)
               ([clause
 		 (on-tick tick-expr)
@@ -171,7 +171,7 @@ The design of a world program demands that you come up with a data
 		 (record? boolean-expr)
 		 (on-receive rec-expr)
 		 (register IP-expr)
-		 (register IP-expr name-expr)
+		 (name name-expr)
 		 ])]{
 
  starts a @tech{world} program in the initial state specified with
@@ -798,11 +798,11 @@ following shapes:
 }
 
 @item{
-@defform/none[(register ip-expr name-expr)
-              #:contracts
-              ([ip-expr string?]
-               [name-expr (or/c symbol? string?)])]{
- connect this world to a universe server @emph{under a specific} @scheme[name-expr].}
+@defform[(name name-expr)
+         #:contracts
+         ([name-expr (or/c symbol? string?)])]{
+ provide a name (@scheme[namer-expr]) to this world, which is used as the
+ title of the canvas and the name sent to the server.}
 }
 
 ]
@@ -1636,12 +1636,13 @@ Finally, here is the third function, which renders the state as a scene:
 
 ; String -> WorldState 
 ; create and hook up a world with the @scheme[LOCALHOST] server
-(define (create-world name)
+(define (create-world n)
   (big-bang WORLD0
            (on-receive receive)
-	   (on-draw (draw name))
+	   (on-draw (draw n))
 	   (on-tick move)
-	   (register LOCALHOST name)))
+           (name n)
+	   (register LOCALHOST)))
 ))
 
  Now you can use @scheme[(create-world 'carl)] and @scheme[(create-world 'same)],
