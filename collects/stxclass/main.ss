@@ -17,6 +17,8 @@
          with-patterns
          attribute
 
+         this-syntax
+
          current-expression
          current-macro-name
 

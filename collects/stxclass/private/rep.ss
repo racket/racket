@@ -281,21 +281,20 @@
     [(struct pattern (orig-stx iattrs depth))
      (make head orig-stx iattrs depth (list p) #f #f #t)]))
 
-(define head-directive-table
-  (list (list '#:min check-nat/f)
-        (list '#:max check-nat/f)
-        (list '#:opt)
-        (list '#:mand)))
-
 (define (parse-heads stx decls enclosing-depth)
   (syntax-case stx ()
     [({} . more)
      (wrong-syntax (stx-car stx)
                    "empty head sequence not allowed")]
     [({p ...} . more)
-     (let-values ([(chunks rest) (chunk-kw-seq/no-dups #'more head-directive-table)])
+     (let()
+       (define-values (chunks rest)
+         (chunk-kw-seq/no-dups #'more head-directive-table))
+       (define-values (chunks2 rest2)
+         (chunk-kw-seq rest head-directive-table2))
+       ;; FIXME FIXME: handle chunks2 !!!!
        (cons (parse-head/chunks (stx-car stx) decls enclosing-depth chunks)
-             (parse-heads rest decls enclosing-depth)))]
+             (parse-heads rest2 decls enclosing-depth)))]
     [()
      null]
     [_
@@ -483,3 +482,13 @@
 ;; and-pattern-directive-table
 (define and-pattern-directive-table
   (list (list '#:description check-lit-string)))
+
+(define head-directive-table
+  (list (list '#:min check-nat/f)
+        (list '#:max check-nat/f)
+        (list '#:opt)
+        (list '#:mand)))
+
+(define head-directive-table2
+  (list (list '#:with values values)
+        (list '#:declare check-id values)))

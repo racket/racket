@@ -13,13 +13,10 @@
 (provide (all-defined-out))
 
 (define-syntax-rule (define-pred-stxclass name pred)
-  (define-basic-syntax-class name
-    ([datum 0])
-    (lambda (x)
-      (let ([d (if (syntax? x) (syntax-e x) x)])
-        (if (pred d)
-            (list d)
-            #f)))))
+  (define-syntax-class name #:attributes ([datum 0])
+    (pattern x
+             #:with datum (if (syntax? #'x) (syntax-e #'x) #'x)
+             #:when (pred (attribute datum)))))
 
 (define-pred-stxclass identifier symbol?)
 (define-pred-stxclass boolean boolean?)
@@ -33,160 +30,105 @@
 (define-pred-stxclass exact-nonnegative-integer exact-nonnegative-integer?)
 (define-pred-stxclass exact-positive-integer exact-positive-integer?)
 
-(define-syntax-rule (define-kw-stxclass name kw)
-  (define-basic-syntax-class name
-    ()
-    (lambda (x)
-      (if (and (identifier? x) (free-identifier=? x (quote-syntax kw)))
-          null
-          #f))))
-
-(define-kw-stxclass lambda-kw #%lambda)
-(define-kw-stxclass define-values-kw define-values)
-(define-kw-stxclass define-syntaxes-kw define-syntaxes)
-
-(define-syntax-class define-values-form
-  (pattern (kw:define-values-kw (var:identifier ...) rhs)))
-(define-syntax-class define-syntaxes-form
-  (pattern (kw:define-syntaxes-kw (var:identifier ...) rhs)))
-(define-syntax-class definition-form
-  (pattern :define-values-form)
-  (pattern :define-syntaxes-form))
-
 (define-syntax-class (static-of name pred)
-  #:description name
-  #:attributes ([value 0])
-  (basic-syntax-class
-   (lambda (x name pred)
-     (let/ec escape
-       (define (bad) (escape #f))
-       (if (identifier? x)
-           (let ([value (syntax-local-value x bad)])
-             (unless (pred value) (bad))
-             (list value))
-           (bad))))))
-
-(define-syntax-class static
   #:attributes (value)
+  (pattern x:id
+           #:with value-list (syntax-local-value* #'x)
+           #:when (pair? (attribute value-list))
+           #:with value (car (attribute value-list))
+           #:when (pred (attribute value))))
+
+(define (syntax-local-value* id)
+  (let/ec escape
+    (list (syntax-local-value id (lambda () (escape null))))))
+
+(define-syntax-class static #:attributes (value)
   (pattern x
            #:declare x (static-of "static" (lambda _ #t))
            #:with value #'x.value))
 
-(define-basic-syntax-class struct-name
-  ([descriptor 0]
-   [constructor 0]
-   [predicate 0]
-   [accessor 1]
-   [super 0]
-   [complete? 0])
-  (lambda (x)
-    (if (identifier? x)
-        (let/ec escape
-          (define (bad) (escape #f))
-          (let ([value (syntax-local-value x bad)])
-            (unless (struct-info? value) (bad))
-            (let ([lst (extract-struct-info value)])
-              (let ([descriptor (list-ref lst 0)]
-                    [constructor (list-ref lst 1)]
-                    [predicate (list-ref lst 2)]
-                    [accessors (list-ref lst 3)]
-                    [super (list-ref lst 5)])
-                (let ([r-accessors (reverse accessors)])
-                  (list descriptor
-                        constructor
-                        predicate
-                        (if (and (pair? r-accessors)
-                                 (eq? #f (car r-accessors)))
-                            (cdr r-accessors)
-                            r-accessors)
-                        super
-                        (or (null? r-accessors)
-                            (not (eq? #f (car r-accessors))))))))))
-        #f)))
+(define-syntax-class struct-name
+  #:description "struct name"
+  #:attributes (descriptor
+                constructor
+                predicate
+                [accessor 1]
+                super
+                complete?)
+  (pattern s
+           #:declare s (static-of "struct name" struct-info?)
+           #:with info (extract-struct-info (attribute s.value))
+           #:with descriptor (list-ref (attribute info) 0)
+           #:with constructor (list-ref (attribute info) 1)
+           #:with predicate (list-ref (attribute info) 2)
+           #:with r-accessors (reverse (list-ref (attribute info) 3))
+           #:with (accessor ...)
+                  (datum->syntax #f (let ([r-accessors (attribute r-accessors)])
+                                      (if (and (pair? r-accessors) (eq? #f (car r-accessors)))
+                                          (cdr r-accessors)
+                                          r-accessors)))
+           #:with super (list-ref (attribute info) 5)
+           #:with complete? (or (null? (attribute r-accessors))
+                                (and (pair? (attribute r-accessors))
+                                     (not (eq? #f (car (attribute r-accessors))))))))
 
-(define-basic-syntax-class expr/local-expand
-  ([expanded 0])
-  (lambda (x)
-    (list (local-expand x 'expression null))))
+(define-syntax-class expr/local-expand
+  #:attributes (expanded)
+  (pattern x
+           #:with expanded (local-expand #'x 'expression null)))
 
-(define-basic-syntax-class expr/head-local-expand
-  ([expanded 0])
-  (lambda (x)
-    (list (local-expand x 'expression (kernel-form-identifier-list)))))
+(define-syntax-class expr/head-local-expand
+  #:attributes (expanded)
+  (pattern x
+           #:with expanded (local-expand #'x 'expression (kernel-form-identifier-list))))
 
-(define-basic-syntax-class block/head-local-expand
-  ([expanded-block 0]
-   [expanded 1]
-   [def 1]
-   [vdef 1]
-   [sdef 1]
-   [expr 1])
-  (lambda (x)
-    (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
-                  (head-local-expand-and-categorize-syntaxes x #f #; #t)])
-      (list ex1 ex2 defs vdefs sdefs exprs))))
+(define-syntax-class block/head-local-expand
+  #:attributes (expanded-block
+                [expanded 1]
+                [def 1]
+                [vdef 1]
+                [sdef 1]
+                [expr 1])
+  (pattern x
+           #:with (expanded-block (expanded ...) (def ...) (vdef ...) (sdef ...) (expr ...))
+                  (datum->syntax #f
+                                 (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
+                                               (head-local-expand-and-categorize-syntaxes
+                                                #'x #f #| #t |#)])
+                                   (list ex1 ex2 defs vdefs sdefs exprs)))))
 
-(define-basic-syntax-class internal-definitions
-  ([expanded-block 0]
-   [expanded 1]
-   [def 1]
-   [vdef 1]
-   [sdef 1]
-   [expr 1])
-  (lambda (x)
-    (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
-                  (head-local-expand-and-categorize-syntaxes x #t #; #f)])
-      (list ex1 ex2 defs vdefs sdefs exprs))))
+(define-syntax-class internal-definitions
+  #:attributes (expanded-block
+                [expanded 1]
+                [def 1]
+                [vdef 1]
+                [sdef 1]
+                [expr 1])
+  (pattern x
+           #:with (expanded-block (expanded ...) (def ...) (vdef ...) (sdef ...) (expr ...))
+                  (datum->syntax #f
+                                 (let-values ([(ex1 ex2 defs vdefs sdefs exprs)
+                                               (head-local-expand-and-categorize-syntaxes
+                                                #'x #t #| #f |#)])
+                                   (list ex1 ex2 defs vdefs sdefs exprs)))))
 
-(define-syntax-rule (define-contract-stxclass name c)
-  (define-basic-syntax-class* (name)
-    ([orig-stx 0])
-    (lambda (x)
-      (list #`(contract c
-                        #,x
-                        (quote #,(string->symbol (or (build-src-loc-string x) "")))
-                        (quote #,(or (current-macro-name) '<this-macro>))
-                        (quote-syntax #,(syntax/loc x (<there>))))
-            x))))
+(define-syntax-class expr
+  #:attributes ()
+  (pattern x
+           #:when (and (syntax? #'x) (not (keyword? (syntax-e #'x))))))
 
-(define-contract-stxclass expr/num number?)
-(define-contract-stxclass expr/num->num (-> number? number?))
-
-(define-basic-syntax-class* (expr)
-  ()
-  (lambda (x)
-    (if (not (keyword? (syntax-e x)))
-        (list x)
-        #f)))
 
 ;; FIXME: hack
 (define expr/c-use-contracts? (make-parameter #t))
 
-(define-basic-syntax-class* (expr/c contract)
-  ([orig-stx 0])
-  (lambda (x c)
-    (if (not (keyword? (syntax-e x)))
-        (if (expr/c-use-contracts?)
-            (list #`(contract #,c
-                              #,x
-                              (quote #,(string->symbol
-                                        (or (build-src-loc-string x) "")))
-                              (quote #,(or (current-macro-name) '<this-macro>))
-                              (quote-syntax #,(syntax/loc x (<there>))))
-                  x)
-            (list x x))
-        #f)))
-
-(define-basic-syntax-class (term parser)
-  ()
-  (lambda (x p) (p x)))
-
-(define-basic-syntax-class (term/pred pred)
-  ()
-  (lambda (x p)
-    (if (p x)
-        null
-        #f)))
+(define-syntax-class (expr/c ctc)
+  #:attributes (c)
+  (pattern x:expr
+           #:with c #`(contract #,ctc
+                                x
+                                (quote #,(string->symbol (or (build-src-loc-string #'x) "")))
+                                (quote #,(or (current-macro-name) '<this-macro>))
+                                (quote-syntax #,(syntax/loc #'x (<there>))))))
 
 ;; Aliases
 

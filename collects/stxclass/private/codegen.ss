@@ -14,7 +14,10 @@
          "../util.ss")
 (provide/contract
  [parse:rhs (rhs? (listof sattr?) (listof identifier?) . -> . syntax?)]
- [parse:clauses (syntax? identifier? identifier? . -> . syntax?)])
+ [parse:clauses (syntax? identifier? identifier? . -> . syntax?)]
+ [announce-failures? parameter?])
+
+(define announce-failures? (make-parameter #f))
 
 ;; parse:rhs : RHS (listof SAttr) (listof identifier) -> stx
 ;; Takes a list of the relevant attrs; order is significant!
@@ -27,15 +30,16 @@
                  #,(if (rhs-transparent? rhs)
                        #`(make-failed x expected frontier frontier-stx)
                        #'#f))
-               #,(let ([pks (rhs->pks rhs relsattrs #'x)])
-                   (unless (pair? pks)
-                     (wrong-syntax (rhs-orig-stx rhs)
-                                   "syntax class has no variants"))
-                   (parse:pks (list #'x)
-                              (list (empty-frontier #'x))
-                              #'fail-rhs
-                              (list #f)
-                              pks))))]
+               (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
+                 #,(let ([pks (rhs->pks rhs relsattrs #'x)])
+                     (unless (pair? pks)
+                       (wrong-syntax (rhs-orig-stx rhs)
+                                     "syntax class has no variants"))
+                     (parse:pks (list #'x)
+                                (list (empty-frontier #'x))
+                                #'fail-rhs
+                                (list #f)
+                                pks)))))]
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
@@ -140,6 +144,8 @@
                 [fstx-expr (frontier->fstx-expr fce)])
     #`(let ([failcontext fc-expr]
             [failcontext-syntax fstx-expr])
+        #,(when (announce-failures?)
+            #`(printf "failing on ~s\n  reason: ~s\n" x p))
         (k x p failcontext failcontext-syntax))))
 
 ;; Parsing

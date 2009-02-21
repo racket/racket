@@ -22,6 +22,8 @@
          current-expression
          current-macro-name
 
+         this-syntax
+
          (for-syntax expectation-of-stxclass
                      expectation-of-constants
                      expectation-of/message)
@@ -61,6 +63,12 @@
 (define-syntax-parameter pattern-source
   (lambda (stx)
     (wrong-syntax stx "used out of context: not parsing pattern")))
+
+;; this-syntax
+;; Bound to syntax being matched inside of syntax class
+(define-syntax-parameter this-syntax
+  (lambda (stx)
+    (wrong-syntax stx "used out of context: not within a syntax class")))
 
 (define current-expression (make-parameter #f))
 

@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require (for-syntax scheme/base
                      scheme/match
@@ -31,6 +30,8 @@
          attribute
 
          (struct-out failed)
+
+         this-syntax
 
          current-expression
          current-macro-name)

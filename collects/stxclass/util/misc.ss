@@ -14,6 +14,7 @@
          with-catching-disappeared-uses
          with-disappeared-uses
          syntax-local-value/catch
+         record-disappeared-uses
 
          format-symbol
 
@@ -51,10 +52,13 @@
 (define (syntax-local-value/catch id pred)
   (let ([value (syntax-local-value id (lambda () #f))])
     (and (pred value)
-         (begin (let ([uses (current-caught-disappeared-uses)])
-                  (when uses (current-caught-disappeared-uses (cons id uses))))
+         (begin (record-disappeared-uses (list id))
                 value))))
 
+(define (record-disappeared-uses ids)
+  (let ([uses (current-caught-disappeared-uses)])
+    (when uses
+      (current-caught-disappeared-uses (append ids uses)))))
 
 ;; Generating temporaries
 
