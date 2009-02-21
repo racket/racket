@@ -251,7 +251,7 @@
   (pattern (case-lambda f:fun-ty/one ...)
            #:with t (make-Function (syntax->datum #'(f.arr ...))))
   
-  (pattern (t:Class (pos-args:type ...) ([fname:id fty:type ((rest:boolean) #:opt) ...*] ...) ([mname:id mty:type] ...))
+  (pattern (t:Class (pos-args:type ...) ([fname:id fty:type (~or (rest:boolean) #:opt) ...] ...) ([mname:id mty:type] ...))
            #:with t
            (make-Class
             (syntax->datum #'(pos-args.t ...))
