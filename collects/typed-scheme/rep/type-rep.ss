@@ -320,21 +320,26 @@
       (car l)
       (*Values l)))
 
+(define ((sub-lf st) e)
+  (latentfilter-case (#:Type st
+                      #:LatentFilter (sub-lf st))
+                     e))
 
-#|
 ;; abstract-many : Names Type -> Scope^n 
 ;; where n is the length of names  
 (define (abstract-many names ty)
   (define (nameTo name count type)
     (let loop ([outer 0] [ty type])
       (define (sb t) (loop outer t))
+      (define slf (sub-lf sb))
       (type-case 
-       sb ty
+       (#:Type sb #:LatentFilter (sub-lf sb))
+       ty
        [#:F name* (if (eq? name name*) (*B (+ count outer)) ty)]
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions 
-       [#:arr dom rng rest drest kws thn-eff els-eff
+       [#:arr dom rng rest drest kws
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -342,12 +347,9 @@
                         (cons (sb (car drest))
                               (if (eq? (cdr drest) name) (+ count outer) (cdr drest)))
                         #f)
-                    (for/list ([kw kws])
-                      (cons (car kw) (sb (cdr kw))))
-                    (map (lambda (e) (sub-eff sb e)) thn-eff)
-                    (map (lambda (e) (sub-eff sb e)) els-eff))]
-       [#:ValuesDots tys dty dbound
-              (*ValuesDots (map sb tys)
+                    (map sb kws))]
+       [#:ValuesDots rs dty dbound
+              (*ValuesDots (map sb rs)
                            (sb dty)
                            (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
@@ -371,16 +373,18 @@
 (define (instantiate-many images sc)
   (define (replace image count type)
     (let loop ([outer 0] [ty type])
-      (define (sb t) (loop outer t))
+      (define (sb t) (loop outer t))    
+      (define slf (sub-lf sb))  
       (type-case 
-       sb ty
+       (#:Type sb #:LatentFilter slf)
+       ty
        [#:B idx (if (= (+ count outer) idx)
                     image
                     ty)]      
        ;; necessary to avoid infinite loops
        [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
        ;; functions
-       [#:arr dom rng rest drest kws thn-eff els-eff
+       [#:arr dom rng rest drest kws
               (*arr (map sb dom)
                     (sb rng)
                     (if rest (sb rest) #f)
@@ -388,12 +392,9 @@
                         (cons (sb (car drest))
                               (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
                         #f)
-                    (for/list ([kw kws])
-                      (cons (car kw) (sb (cdr kw))))
-                    (map (lambda (e) (sub-eff sb e)) thn-eff)
-                    (map (lambda (e) (sub-eff sb e)) els-eff))]
-       [#:ValuesDots tys dty dbound
-                     (*ValuesDots (map sb tys)
+                    (map sb kws))]
+       [#:ValuesDots rs dty dbound
+                     (*ValuesDots (map sb rs)
                                   (sb dty)                                  
                                   (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
@@ -552,19 +553,19 @@
 (provide
  Mu-name: Poly-names:
  PolyDots-names:
- Type-seq Effect-seq  
+ Type-seq  
  Mu-unsafe: Poly-unsafe:
  PolyDots-unsafe:
  Mu? Poly? PolyDots?
  arr
- Type? Effect?
+ Type? Filter? LatentFilter? Object? LatentObject?
  Poly-n
  PolyDots-n
  free-vars*
  type-equal? type-compare type<?
  remove-dups
- sub-eff
- Values: Values? Values-types
+ sub-lf
+ Values: Values? Values-rs
  (rename-out [Values* make-Values])
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]
@@ -578,4 +579,3 @@
 
 ;(trace unfold)
 
-|#

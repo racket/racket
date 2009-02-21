@@ -108,6 +108,7 @@
               [() (mk #'#f)]
               [(f) (mk #'f)]
               [_ (mk #'(list . flds.fs))]))]
+         [(ign-pats ...) (if key? #'(_ _) #'(_))]
          [frees-def (if #'frees #'frees.def #'(begin))]
          [frees 
           (with-syntax ([(f1 f2) (if #'frees
@@ -132,7 +133,7 @@
               (lambda (s)
                 (syntax-parse s 
                   [(_ . fs) 
-                   #:with pat (syntax/loc s (_ _ . fs))
+                   #:with pat (syntax/loc s (ign-pats ... . fs))
                    (syntax/loc s (struct nm pat))])))
             (begin-for-syntax
               (hash-set! ht-stx 'kw-stx (list #'ex #'flds.fs bfs-fold-rhs #'#,stx)))
