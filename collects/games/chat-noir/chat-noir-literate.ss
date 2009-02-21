@@ -1,5 +1,8 @@
 #reader "literate-reader.ss"
 
+@(require (for-label scheme/math) ;; for 'pi' below
+          scheme/math)
+
 @;{
 The command to build this:
 
@@ -847,13 +850,7 @@ except it has a smile.
 @section{Drawing the World}
 
 @chunk[<drawing>
-       (define circle-radius 20)
-       (define circle-spacing 22)
-       (define normal-color 'lightskyblue)
-       (define on-shortest-path-color 'white)
-       (define blocked-color 'black)
-       (define under-mouse-color 'black)
-       
+       <constants>
        <render-world>
        <chop-whiskers>
        <render-board>
@@ -872,12 +869,38 @@ except it has a smile.
        <chop-whiskers-tests>
        <render-world-tests>]
 
+There are a number of constants
+that are given names to make the code
+more readable. 
+
+These first two constants give the radius
+of the circles that are drawn on the board,
+plus the radius of an invisible circle
+that, if they were drawn on top of
+the circles, would touch
+each other. Accordingly, @scheme[circle-spacing]
+is used when computing the positions of the circles,
+but the circles are drawn using @scheme[circle-radius].
+
+@chunk[<constants>
+       (define circle-radius 20)
+       (define circle-spacing 22)]
+
+The other four constants specify the colors of the circles.
+
+@chunk[<constants>
+       (define normal-color 'lightskyblue)
+       (define on-shortest-path-color 'white)
+       (define blocked-color 'black)
+       (define under-mouse-color 'black)]
+
 The main function for drawing a world is @scheme[render-world].
 It is a fairly straightforward composition of helper functions.
 First, it builds the image of a board, and then puts the cat on it.
 Lastly, since the whiskers of the cat might now hang off of the edge
 of the board (if the cat is on a leftmost or rightmost cell),
-it trims them.
+it trims them. This ensures that the image is always the same size
+and that the pinhole is always in the upper-left corner of the window.
 
 @chunk[<render-world>
        (define/contract (render-world w)
@@ -995,36 +1018,79 @@ height of the rendered world, given the world's size.
            (+ (cell-center-y bottommost-posn) circle-radius)))]
 
 The @scheme[cell-center-x] function returns the
-@tt{x} coordinate of the 
+@tt{x} coordinate of the center of the cell specified
+by @scheme[p].
+
+For example, the first cell in
+the third row (counting from @scheme[0]) is
+flush with the edge of the screen, so its
+center is just the radius of the circle that
+is drawn.
+
+@chunk[<cell-center-x-tests>
+       (test (cell-center-x (make-posn 0 2))
+             circle-radius)]
+
+
+The first cell in the second row, in contrast
+is offset from the third row by
+@scheme[circle-spacing].
+
+@chunk[<cell-center-x-tests>
+       (test (cell-center-x (make-posn 0 1))
+             (+ circle-spacing circle-radius))]
+
+
+The definition of @scheme[cell-center-x] 
+multiplies the @scheme[x] coordinate of 
+@scheme[p] by twice @scheme[circle-spacing]
+and then adds @scheme[circle-radius] to move
+over for the first circle. In addition
+if the @scheme[y] coordinate is odd, then
+it adds @scheme[circle-spacing], shifting 
+the entire line over.
 
 @chunk[<cell-center-x>
        (define/contract (cell-center-x p)
          (-> posn? number?)
-         (local [(define x (posn-x p))
-                 (define y (posn-y p))]
+         (let ([x (posn-x p)]
+               [y (posn-y p)])
            (+ circle-radius
               (* x circle-spacing 2)
               (if (odd? y)
                   circle-spacing
                   0))))]
 
-@chunk[<cell-center-x-tests>
-       (test (cell-center-x (make-posn 0 1))
-             (+ circle-spacing circle-radius))]
+The @scheme[cell-center-y] function computes the
+@scheme[y] coordinate of a cell's location on
+the screen. For example, the @scheme[y] 
+coordinate of the first row is 
+the radius of a circle, ensuring that
+the first row is flush against the top of
+the screen.
 
-@chunk[<cell-center-y>
-       (define/contract (cell-center-y p)
-         (-> posn? number?)
-         (local [(define y (posn-y p))]
-           (+ circle-radius
-              (* y circle-spacing 2
-                 .866 ;; .866 is an exact approximate to sin(pi/3)
-                 ))))]
-       
 @chunk[<cell-center-y-tests>
        (test (cell-center-y (make-posn 1 0))
              circle-radius)]
 
+Because the grid is hexagonal, the @scheme[y] coordinates
+of the rows do not have the same spacing as the @scheme[x]
+coordinates. In particular, they are off by
+@tt{sin(pi/3)}. We approximate that by @scheme[866/1000]
+in order to keep the computations and test cases simple
+and using exact numbers.
+A more precise approximation would be
+@(scheme #,(sin (/ pi 3))), but it is not necessary at
+the screen resolution.
+
+@chunk[<cell-center-y>
+       (define/contract (cell-center-y p)
+         (-> posn? number?)
+         (+ circle-radius
+            (* (posn-y p) 
+               circle-spacing 2
+               866/1000)))]
+       
 @section{Handling Input}
 
 @chunk[<input>
@@ -1033,7 +1099,6 @@ The @scheme[cell-center-x] function returns the
        <move-cat>
        <find-best-positions>
        <lt/f>
-       <add-obstacle>
        <circle-at-point>
        <point-in-this-circle?>
        <change>]
@@ -1042,7 +1107,6 @@ The @scheme[cell-center-x] function returns the
        <change-tests>
        <point-in-this-circle?-tests>
        <circle-at-point-tests>
-       <add-obstacle-tests>
        <lt/f-tests>
        <find-best-positions-tests>
        <move-cat-tests>
@@ -1051,35 +1115,30 @@ The @scheme[cell-center-x] function returns the
 
 @chunk[<clack>
        (define (clack world x y evt)
-         (cond
-           [(equal? evt 'button-up)
+         (let ([new-mouse-posn
+                (and (not (eq? evt 'leave))
+                     (make-posn x y))])
+           (update-world-posn
             (cond
-              [(and (equal? 'playing (world-state world))
-                    (point-in-a-circle? (world-board world) x y))
-               (move-cat
-                (update-world-posn
-                 (make-world (add-obstacle (world-board world) x y)
-                             (world-cat world)
-                             (world-state world)
-                             (world-size world)
-                             (world-mouse-posn world)
-                             (world-h-down? world))
-                 (make-posn x y)))]
-              [else (update-world-posn world (make-posn x y))])]
-           [(equal? evt 'button-down)
-            world]
-           [(equal? evt 'drag) world]
-           [(equal? evt 'move)
-            (update-world-posn world (make-posn x y))]
-           [(equal? evt 'enter)
-            (update-world-posn world (make-posn x y))]
-           [(equal? evt 'leave)
-            (update-world-posn world false)]))]
+              [(and (equal? evt 'button-up)
+                    (equal? 'playing (world-state world))
+                    (circle-at-point (world-board world) x y))
+               =>
+               (λ (circle)
+                 (move-cat
+                  (make-world (block-cell circle (world-board world))
+                              (world-cat world)
+                              (world-state world)
+                              (world-size world)
+                              (world-mouse-posn world)
+                              (world-h-down? world))))]
+              [else world])
+            new-mouse-posn)))]
 
 @chunk[<clack-tests>
        (test (clack (make-world '() (make-posn 0 0) 'playing 3 false false)
                     1 1 'button-down)
-             (make-world '() (make-posn 0 0) 'playing 3 false false))
+             (make-world '() (make-posn 0 0) 'playing 3 #f false))
        (test (clack (make-world '() (make-posn 0 0) 'playing 3 false false)
                     1 1 'drag)
              (make-world '() (make-posn 0 0) 'playing 3 false false))
@@ -1123,7 +1182,7 @@ The @scheme[cell-center-x] function returns the
                     10
                     10
                     'button-down)
-             (make-world '() (make-posn 0 0) 'playing 3 (make-posn 0 0) false))
+             (make-world '() (make-posn 0 0) 'playing 3 false false))
        
        (test (clack (make-world (list (make-cell (make-posn 0 0) false)
                                       (make-cell (make-posn 1 1) false))
@@ -1179,7 +1238,7 @@ The @scheme[cell-center-x] function returns the
               (make-posn 1 1)
               'cat-lost
               3
-              (make-posn 1 0)
+              false
               false))
        
        (test (clack
@@ -1210,7 +1269,7 @@ The @scheme[cell-center-x] function returns the
               (make-posn 2 0)
               'cat-won
               3
-              (make-posn 1 0)
+              false
               false))]
 
 @chunk[<update-world-posn>
@@ -1220,10 +1279,10 @@ The @scheme[cell-center-x] function returns the
            [(equal? (world-state w) 'playing)
             (cond
               [(posn? p)
-               (local [(define mouse-spot
-                         (circle-at-point (world-board w)
-                                          (posn-x p)
-                                          (posn-y p)))]
+               (let ([mouse-spot
+                      (circle-at-point (world-board w)
+                                       (posn-x p)
+                                       (posn-y p))])
                  (make-world (world-board w)
                              (world-cat w)
                              (world-state w)
@@ -1437,35 +1496,6 @@ The @scheme[cell-center-x] function returns the
        (test (<=/f 1 '∞) true)
        (test (<=/f '∞ '∞) true)]
 
-@chunk[<add-obstacle>
-       ;; add-obstacle : board number number -> board
-       (define (add-obstacle board x y)
-         (cond
-           [(empty? board) board]
-           [else
-            (local [(define cell (first board))
-                    (define cx (cell-center-x (cell-p cell)))
-                    (define cy (cell-center-y (cell-p cell)))]
-              (cond
-                [(and (<= (- cx circle-radius) x (+ cx circle-radius))
-                      (<= (- cy circle-radius) y (+ cy circle-radius)))
-                 (cons (make-cell (cell-p cell) true)
-                       (rest board))]
-                [else
-                 (cons cell (add-obstacle (rest board) x y))]))]))]
-
-@chunk[<add-obstacle-tests>
-       (test (add-obstacle (list (make-cell (make-posn 0 0) false))
-                           circle-spacing circle-spacing)
-             (list (make-cell (make-posn 0 0) true)))
-       (test (add-obstacle (list (make-cell (make-posn 0 0) false)) 100 100)
-             (list (make-cell (make-posn 0 0) false)))
-       (test (add-obstacle (list (make-cell (make-posn 0 0) false)
-                                 (make-cell (make-posn 0 1) false))
-                           circle-spacing circle-spacing)
-             (list (make-cell (make-posn 0 0) true)
-                   (make-cell (make-posn 0 1) false)))]
-
 @chunk[<circle-at-point>
        ;; circle-at-point : board number number -> posn-or-false
        ;; returns the posn corresponding to cell where the x,y coordinates are
@@ -1477,10 +1507,7 @@ The @scheme[cell-center-x] function returns the
               [(point-in-this-circle? (cell-p (first board)) x y)
                (cell-p (first board))]
               [else
-               (circle-at-point (rest board) x y)])]))
-       
-       (define (point-in-a-circle? board x y)
-         (posn? (circle-at-point board x y)))]
+               (circle-at-point (rest board) x y)])]))]
 
 @chunk[<circle-at-point-tests>
        (test (circle-at-point empty 0 0) false)
@@ -1490,25 +1517,17 @@ The @scheme[cell-center-x] function returns the
              (make-posn 0 0))
        (test (circle-at-point (list (make-cell (make-posn 0 0) false))
                               0 0)
-             false)
-
-
-       (test (point-in-a-circle? empty 0 0) false)
-       (test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
-                                 (cell-center-x (make-posn 0 0))
-                                 (cell-center-y (make-posn 0 0)))
-             true)
-       (test (point-in-a-circle? (list (make-cell (make-posn 0 0) false))
-                                 0 0)
              false)]
 
 @chunk[<point-in-this-circle?>
        ;; point-in-this-circle? : posn number number -> boolean
        (define (point-in-this-circle? p x y)
-         (local [(define center (+ (cell-center-x p)
-                                   (* (sqrt -1) (cell-center-y p))))
-                 (define p2 (+ x (* (sqrt -1) y)))]
-           (<= (magnitude (- center p2)) circle-radius)))]
+         (let ([center (+ (cell-center-x p)
+                          (* (sqrt -1)
+                             (cell-center-y p)))]
+               [p2 (+ x (* (sqrt -1) y))])
+           (<= (magnitude (- center p2)) 
+               circle-radius)))]
 
 @chunk[<point-in-this-circle?-tests>
        (test (point-in-this-circle? (make-posn 0 0)
@@ -1544,6 +1563,10 @@ The @scheme[cell-center-x] function returns the
 
 @section{Tests}
 
+This section consists of some infrastructure for
+maintaining tests, plus a pile of additional tests
+for the other functions in this document
+
 @chunk[<test-infrastructure>
 
 (define-syntax (test stx)
@@ -1569,24 +1592,19 @@ The @scheme[cell-center-x] function returns the
                     'actual))]))
 
 (define test-count 0)
-(define test-procs '())
 
 (define (test/proc actual-thunk expected-thunk cmp line sexp)
-  (set! test-procs
-        (cons
-         (λ ()
-           (set! test-count (+ test-count 1))
-           (let ([actual (actual-thunk)]
-                 [expected (expected-thunk)])
-             (unless (cmp actual expected)
-               (error 'check-expect "test #~a~a\n  ~s\n  ~s\n"
-                      test-count
-                      (if line
-                          (format " on line ~a failed:" line)
-                          (format " failed: ~s" sexp))
-                      actual
-                      expected))))
-         test-procs)))
+  (set! test-count (+ test-count 1))
+  (let ([actual (actual-thunk)]
+        [expected (expected-thunk)])
+    (unless (cmp actual expected)
+      (error 'check-expect "test #~a~a\n  ~s\n  ~s\n"
+             test-count
+             (if line
+                 (format " on line ~a failed:" line)
+                 (format " failed: ~s" sexp))
+             actual
+             expected))))
 
 
 (define (same-sets? l1 l2)
@@ -1597,12 +1615,7 @@ The @scheme[cell-center-x] function returns the
 (test (same-sets? (list) (list)) true)
 (test (same-sets? (list) (list 1)) false)
 (test (same-sets? (list 1) (list)) false)
-(test (same-sets? (list 1 2) (list 2 1)) true)
-
-(define (run-tests)
-  (for-each (λ (t) (t)) (reverse test-procs))
-  (printf "passed ~s tests\n" test-count)
-  (flush-output))]
+(test (same-sets? (list 1 2) (list 2 1)) true)]
 
 @chunk[<lookup-in-table-tests>
        (test (lookup-in-table empty (make-posn 1 2)) '∞)
@@ -2152,7 +2165,7 @@ The @scheme[cell-center-x] function returns the
 
 @chunk[<world-size-tests>
        (test (world-width 3) 150)
-       (test (world-height 3) 116.208)]
+       (test (world-height 3) #e116.208)]
 
 @chunk[<cell-center-x-tests>
        (test (cell-center-x (make-posn 0 0))
@@ -2164,14 +2177,12 @@ The @scheme[cell-center-x] function returns the
 
 @chunk[<cell-center-y-tests>
        (test (cell-center-y (make-posn 1 1))
-             (+ circle-radius (* 2 circle-spacing .866)))]
+             (+ circle-radius (* 2 circle-spacing 866/1000)))]
 
 
 @section{Run, program, run}
 
 @chunk[<go>
-       (run-tests)
-       
        (let* ([board-size 11]
               [initial-board
                (add-n-random-blocked-cells
@@ -2194,4 +2205,7 @@ The @scheme[cell-center-x] function returns the
          (on-redraw render-world)
          (on-key-event change)
          (on-mouse-event clack)
-         (void))]
+         (void))
+       
+       (printf "passed ~s tests\n" test-count)
+       (flush-output)]
