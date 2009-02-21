@@ -1,7 +1,8 @@
 #lang scribble/lp
 
 @(require (for-label scheme/math) ;; for 'pi' below
-          scheme/math)
+          scheme/math
+          games/scribblings/common)
 
 @;{
 The command to build this:
@@ -10,8 +11,7 @@ mzc chat-noir-doc.ss && rm -rf chat-noir-doc && scribble ++xref-in setup/xref lo
 
 }
 
-@;{would like to have [#:style 'toc] in the next line ... }
-@title{Chat Noir}
+@gametitle*["Chat Noir" "chat-noir" "Puzzle Game" #:style '(toc)]
 
 @author[(link "http://www.eecs.northwestern.edu/~robby" "Robby Findler")
         (link "http://www.barzilay.org/" "Eli Barzilay")
@@ -23,13 +23,15 @@ that space, and the cat responds by taking a step. If the cat is
 completely boxed in and thus unable reach the border, you win. If the
 cat does reach the border, you lose.
 
+@play-margin-note["Chat Noir"]
+
 To get some insight into the cat's behavior, hold down the ``h''
 key. It will show you the cells that are on the cat's shortest path to
 the edge, assuming that the cell underneath the mouse has been
 blocked, so you can experiment to see how the shortest paths change
 by moving your mouse around.
 
-The game was inspired by this one the one at
+The game was inspired by the one at
 @link["http://www.gamedesign.jp/flash/chatnoir/chatnoir.html"]{Game
 Design} and has essentially the same rules. It also inspired the final
 project for the introductory programming course at the University of
@@ -38,6 +40,8 @@ Chicago in the fall of 2008.
 The remainder of this document explains the implementation of 
 the Chat Noir game in a 
 @link["http://www.literateprogramming.com/"]{Literate Programming} style.
+
+@local-table-of-contents[]
 
 @section{Overview}
 
@@ -167,7 +171,7 @@ The @scheme[empty-board] function builds a list of @scheme[cell]s
 that correspond to an empty board. For example, here's what an empty
 7x7 board looks like, as a list of cells.
 
-@image["7x7-empty-board.png"]
+@image["chat-noir/7x7-empty-board.png"]
 
 It contains 7 rows and, with the exception of the first and last rows,
 each row contains 7 cells. Notice how the even and odd rows are offset
@@ -183,7 +187,7 @@ The 3x3 board also has the same property that it consists of three
 rows, each with three cells, but where the first and last row are missing
 their left-most cells.
 
-@image["3x3-empty-board.png"]
+@image["chat-noir/3x3-empty-board.png"]
 
 And here is how that board looks as a list of cells.
 
@@ -697,7 +701,7 @@ For example, in a world of size @scheme[7] with the cat at
 @scheme[(make-posn 2 2)], the circles with white centers
 are on the shortest path to the boundary:
 
-@image["cat-distance-example.png"]
+@image["chat-noir/cat-distance-example.png"]
 
 So we can formulate two test cases using this world, one
 in the white circles and one not:

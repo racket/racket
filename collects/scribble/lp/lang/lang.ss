@@ -68,7 +68,7 @@
                              chunk-mentions)])
     #`(begin body ... (let ([b-id (void)]) b-use) ...)))
 
-(define-syntax (module-begin stx)
+(define-syntax (literate-begin stx)
   (syntax-case stx ()
     [(module-begin expr ...)
      (with-syntax
@@ -98,6 +98,12 @@
                                              #%provide)))
                      (cons expanded (loop (cdr exprs)))]
                     [else (loop (cdr exprs))]))]))])
-       #'(#%module-begin
-          body-code ...
-          (tangle)))]))
+       #'(begin
+           body-code ...
+           (tangle)))]))
+
+(define-syntax (module-begin stx)
+  (syntax-case stx ()
+    [(_ id exprs . body)
+     #'(#%module-begin
+        (literate-begin id exprs . body))]))

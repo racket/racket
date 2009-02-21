@@ -543,9 +543,7 @@ transformer to generate information about imported structure types, so
 that @scheme[match] and subtyping @scheme[define-struct] forms work
 within the unit.
 
-The expansion-time information for a structure type is represented
-either as a structure that encapsulates a procedure that takes no
-arguments and returns a list of six element, or it can be represented
+The expansion-time information for a structure type can be represented
 directly as a list of six elements (of the same sort that the
 encapsulated procedure must return):
 
@@ -585,10 +583,18 @@ encapsulated procedure must return):
 
 }
 
-Use @scheme[struct-info?] to recognize both forms of information, and
-use @scheme[extract-struct-info] to obtain a list from either
-representation. Use @scheme[make-struct-info] to encapsulate a
-procedure that represents structure type information.
+Instead of this direct representation, the representation can
+be a structure created by @scheme[make-struct-info] (or an instance of
+a subtype of @scheme[struct:struct-info]), which encapsulates a
+procedure that takes no arguments and returns a list of six
+elements. Finally, the representation can be an instance of a
+structure type derived from @scheme[struct:struct-info] that also
+implements @scheme[prop:procedure], and where the instance is further
+is wrapped by @scheme[make-set!-transformer].
+
+Use @scheme[struct-info?] to recognize all allowed forms of the
+information, and use @scheme[extract-struct-info] to obtain a list
+from any representation.
 
 The implementor of a syntactic form can expect users of the form to
 know what kind of information is available about a structure type. For
@@ -606,15 +612,17 @@ type.
 @defproc[(struct-info? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is either a six-element list with
-the correct shape for representing structure-type information, or a
-procedure encapsulated by @scheme[make-struct-info].}
+the correct shape for representing structure-type information, a
+procedure encapsulated by @scheme[make-struct-info], or a structure
+type derived from @scheme[struct:struct-info] and wrapped with
+@scheme[make-set!-transformer].}
 
 @defproc[(checked-struct-info? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a procedure encapsulated by
 @scheme[make-struct-info] and produced by @scheme[define-struct], but
 only when no parent type is specified or the parent type is also
-specified through a transformer binding to such a value).}
+specified through a transformer binding to such a value.}
 
 @defproc[(make-struct-info [thunk (-> (and/c struct-info? list?))])
          struct-info?]{

@@ -32,12 +32,18 @@
        (if (n . > . 1)
            #'(void)
            (with-syntax ([tag str]
-                         [str str])
+                         [str str]
+                         [((for-label-mod ...) ...)
+                          (map (lambda (expr)
+                                 (syntax-case expr (require)
+                                   [(require mod ...)
+                                    #'(mod ...)]
+                                   [else null]))
+                               (syntax->list #'(expr ...)))])
              #`(begin
-                 ;; ---- This is the new part --------
                  (define-syntax name (make-element-id-transformer
                                       (lambda (stx) #'(chunkref name))))
-                 ;; ----------------------------------
+                 (require (for-label for-label-mod ... ...))
                  (make-splice
                   (list (make-toc-element
                          #f
