@@ -1,4 +1,4 @@
-#reader "literate-reader.ss"
+#lang scribble/lp
 
 @(require (for-label scheme/math) ;; for 'pi' below
           scheme/math)
