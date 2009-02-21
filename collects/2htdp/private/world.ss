@@ -180,10 +180,12 @@
                    (when live (pkey (send e get-key-code))))
                  ;; deal with mouse events if live and within range 
                  (define/override (on-event e)
-                   (define l (mouse-event->parts e))
+                   (define-values (x y me) (mouse-event->parts e))
                    (when live
-                     (when (and (<= 0 (first l) width) (<= 0 (second l) height))
-                       (pmouse . l)))))
+                     (cond
+                       [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
+                       [(memq me '(leave enter)) (pmouse x y me)]
+                       [else (void)]))))
                (parent frame)
                (editor visible)
                (style '(no-hscroll no-vscroll))
