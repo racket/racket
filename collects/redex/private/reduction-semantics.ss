@@ -318,8 +318,9 @@
                        [(fvars ...) fvars]
                        [((where-id where-expr) ...) withs]
                        [((bind-id . bind-pat) ...) 
-                        (append (extract-pattern-binds #'lhs)
-                                (extract-term-let-binds #'rhs))])
+                        (extract-pattern-binds #'lhs)]
+                       [((tl-id . tl-pat) ...)
+                       (extract-term-let-binds #'rhs)])
            #`(make-rule-pict 'arrow
                              (to-lw lhs)
                              (to-lw rhs)
@@ -328,6 +329,9 @@
                              (list (to-lw fvars) ...)
                              (list (cons (to-lw bind-id)
                                          (to-lw bind-pat))
+                                   ...
+                                   (cons (to-lw tl-id)
+                                         (to-lw/uq tl-pat))
                                    ...
                                    (cons (to-lw where-id)
                                          (to-lw where-expr))
@@ -1027,7 +1031,7 @@
                                                          (to-lw bind-pat))
                                                    ...
                                                    (cons (to-lw rhs-bind-id)
-                                                         (to-lw rhs-bind-pat))
+                                                         (to-lw/uq rhs-bind-pat))
                                                    ...
                                                    (cons (to-lw where-id)
                                                          (to-lw where-pat))
