@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rep type-rep effect-rep rep-utils)
+(require (rep type-rep filter-rep rep-utils)
 	 (utils tc-utils)
 	 scheme/match)
 
@@ -9,7 +9,7 @@
 ;; FIXME - currently broken
 (define print-poly-types? #f)
 ;; do we use simple type aliases in printing
-(define print-aliases #t)
+(define print-aliases #f)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
@@ -27,19 +27,21 @@
 
 ;; print out an effect
 ;; print-effect : Effect Port Boolean -> Void
-(define (print-effect c port write?)
-  (define (fp . args) (apply fprintf port args))    
+(define (print-latentfilter c port write?)
+  (define (fp . args) (apply fprintf port args))
   (match c
-    [(Restrict-Effect: t v) (fp "(restrict ~a ~a)" t (syntax-e v))]
-    [(Remove-Effect: t v) (fp "(remove ~a ~a)" t (syntax-e v))]
-    [(Latent-Restrict-Effect: t) (fp "(restrict ~a)" t)]
-    [(Latent-Remove-Effect: t) (fp "(remove ~a)" t)]
-    [(Latent-Var-True-Effect:) (fp "(var #t)")]
-    [(Latent-Var-False-Effect:) (fp "(var #f)")]
-    [(True-Effect:) (fp "T")]
-    [(False-Effect:) (fp "F")]
-    [(Var-True-Effect: v) (fp "(var #t ~a)" (syntax-e v))]
-    [(Var-False-Effect: v) (fp "(var #f ~a)" (syntax-e v))]))
+    [(LFilterSet: thn els) (fp "(~a | ~a)") thn els]
+    [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
+    [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
+    [(LBot:) (fp "LBot")]))
+
+(define (print-filter c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(FilterSet: thn els) (fp "(~a | ~a)") thn els]
+    [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
+    [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
+    [(Bot:) (fp "Bot")]))
 
 
 ;; print out a type
@@ -50,7 +52,7 @@
     (match a
       [(top-arr:)
        (fp "Procedure")]
-      [(arr: dom rng rest drest kws thn-eff els-eff)
+      [(arr: dom rng rest drest kws)
        (fp "(")
        (for-each (lambda (t) (fp "~a " t)) dom)
        (for ([kw kws])
@@ -64,11 +66,6 @@
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
        (fp "-> ~a" rng)
-       (match* (thn-eff els-eff)         
-         [((list) (list)) (void)]
-         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
-         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
-         [(_ _) (fp " : ~a ~a" thn-eff els-eff)])
        (fp ")")]))
   (define (tuple? t)
     (match t
@@ -115,7 +112,7 @@
                           (lambda (e) (fp " ") (print-arr e))
                           b)
                          (fp ")")]))]
-    [(arr: _ _ _ _ _ _ _) (print-arr c)]
+    [(arr: _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(Box: e) (fp "(Box ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
@@ -161,4 +158,5 @@
     ))
 
 (set-box! print-type* print-type)
-(set-box! print-effect* print-effect)
+(set-box! print-filter* print-filter)
+(set-box! print-latentfilter* print-latentfilter)
