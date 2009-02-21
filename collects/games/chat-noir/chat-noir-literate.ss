@@ -52,7 +52,7 @@ and some code that builds an initial world and starts the game.
        (require scheme/local scheme/list scheme/bool scheme/math
                 lang/private/imageeq ;; don't like this require, but need it for image?
                 (for-syntax scheme/base))
-       (require htdp/world lang/posn scheme/contract)
+       (require 2htdp/universe lang/posn scheme/contract)
        <world>
        <breadth-first-search>
        <board->graph>
@@ -1015,7 +1015,8 @@ height of the rendered world, given the world's size.
          (-> natural-number/c number?)
          (local [(define bottommost-posn
                    (make-posn (- board-size 1) (- board-size 1)))]
-           (+ (cell-center-y bottommost-posn) circle-radius)))]
+           (ceiling (+ (cell-center-y bottommost-posn) 
+                       circle-radius))))]
 
 The @scheme[cell-center-x] function returns the
 @tt{x} coordinate of the center of the cell specified
@@ -2165,7 +2166,7 @@ for the other functions in this document
 
 @chunk[<world-size-tests>
        (test (world-width 3) 150)
-       (test (world-height 3) #e116.208)]
+       (test (world-height 3) 117)]
 
 @chunk[<cell-center-x-tests>
        (test (cell-center-x (make-posn 0 0))
@@ -2183,6 +2184,9 @@ for the other functions in this document
 @section{Run, program, run}
 
 @chunk[<go>
+       (printf "passed ~s tests\n" test-count)
+       (flush-output)
+       
        (let* ([board-size 11]
               [initial-board
                (add-n-random-blocked-cells
@@ -2198,14 +2202,10 @@ for the other functions in this document
                            false
                            false)])
          
-         (big-bang (world-width board-size)
-                   (world-height board-size)
-                   1
-                   initial-world)
-         (on-redraw render-world)
-         (on-key-event change)
-         (on-mouse-event clack)
-         (void))
-       
-       (printf "passed ~s tests\n" test-count)
-       (flush-output)]
+         (big-bang initial-world
+                   (on-draw render-world
+                            (world-width board-size)
+                            (world-height board-size))
+                   (on-key change)
+                   (on-mouse clack))
+         (void))]
