@@ -10,6 +10,17 @@
 
 (define name-table (make-weak-hasheq))
 
+(define Type/c
+  (flat-named-contract
+   "Type"
+   (λ (e)
+     (and (Type? e)
+          (not (Scope? e))
+          (not (arr? e))
+          (not (Values? e))
+          (not (ValuesDots? e))
+          (not (Result? e))))))
+
 ;; Name = Symbol
 
 ;; Type is defined in rep-utils.ss
@@ -44,7 +55,7 @@
 ;; rator is a type
 ;; rands is a list of types
 ;; stx is the syntax of the pair of parens
-(dt App ([rator Type?] [rands (listof Type?)] [stx (or/c #f syntax?)])
+(dt App ([rator Type/c] [rands (listof Type/c)] [stx (or/c #f syntax?)])
     [#:intern (list rator rands)]
     [#:frees (combine-frees (map free-vars* (cons rator rands)))
              (combine-frees (map free-idxs* (cons rator rands)))]
@@ -53,15 +64,15 @@
                       stx)])
 
 ;; left and right are Types
-(dt Pair ([left Type?] [right Type?]) [#:key 'pair])
+(dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
 
 ;; elem is a Type
-(dt Vector ([elem Type?]) 
+(dt Vector ([elem Type/c]) 
     [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'vector])
 
 ;; elem is a Type
-(dt Box ([elem Type?]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
+(dt Box ([elem Type/c]) [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]
     [#:key 'box])  
 
 ;; name is a Symbol (not a Name)
@@ -112,12 +123,12 @@
 ;; kw : keyword?
 ;; ty : Type
 ;; required? : Boolean
-(dt Keyword ([kw keyword?] [ty Type?] [required? boolean?])
+(dt Keyword ([kw keyword?] [ty Type/c] [required? boolean?])
     [#:frees (λ (f) (f ty))]
     [#:fold-rhs (*Keyword kw (type-rec-id ty) required?)])
 
-(dt Result ([t Type?] [f LFilterSet?] [o LatentObject?])
-    [#:frees (λ (f) (combine-frees (map f (list t f o))))]
+(dt Result ([t Type/c] [f LFilterSet?] [o LatentObject?])
+    [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
     [#:fold-rhs (*Result (type-rec-id t) (latentfilter-rec-id f) (latentobject-rec-id f))])
 
 ;; types : Listof[Type]
@@ -125,15 +136,15 @@
     [#:frees (λ (f) (combine-frees (map f rs)))]
     [#:fold-rhs (*Values (map type-rec-id rs))])
 
-(dt ValuesDots ([rs (listof Result?)] [dty Type?] [dbound (or/c symbol? natural-number/c)])
+(dt ValuesDots ([rs (listof Result?)] [dty Type/c] [dbound (or/c symbol? natural-number/c)])
     [#:frees (λ (f) (combine-frees (map f (cons dty rs))))]
     [#:fold-rhs (*ValuesDots (map type-rec-id rs) (type-rec-id dty) dbound)])
 
 ;; arr is NOT a Type
-(dt arr ([dom (listof Type?)] 
+(dt arr ([dom (listof Type/c)] 
          [rng (or/c Values? ValuesDots?)]
-         [rest (or/c #f Type?)] 
-         [drest (or/c #f (cons/c Type? (or/c natural-number/c symbol?)))]
+         [rest (or/c #f Type/c)] 
+         [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
          [kws (listof Keyword?)])
     [#:frees (lambda (free*)
                (combine-frees 
@@ -175,7 +186,7 @@
 ;; cert : syntax certifier for pred-id
 (dt Struct ([name symbol?] 
             [parent (or/c #f Struct? Name?)] 
-            [flds (listof Type?)]
+            [flds (listof Type/c)]
             [proc (or/c #f Function?)]
             [poly? boolean?] 
             [pred-id identifier?]
@@ -200,7 +211,7 @@
 							    [else #f])])
 
 ;; elems : Listof[Type]
-(dt Union ([elems (and/c (listof Type?)
+(dt Union ([elems (and/c (listof Type/c)
                          (lambda (es)
                            (let-values ([(sorted? k)
                                          (for/fold ([sorted? #t]
@@ -226,20 +237,20 @@
 
 ;; in : Type
 ;; out : Type
-(dt Param ([in Type?] [out Type?]) [#:key 'parameter])
+(dt Param ([in Type/c] [out Type/c]) [#:key 'parameter])
 
 ;; key : Type
 ;; value : Type
-(dt Hashtable ([key Type?] [value Type?]) [#:key 'hash])
+(dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash])
 
 ;; t : Type
-(dt Syntax ([t Type?]) [#:key 'syntax])
+(dt Syntax ([t Type/c]) [#:key 'syntax])
 
 ;; pos-flds  : (Listof Type)
 ;; name-flds : (Listof (Tuple Symbol Type Boolean))
 ;; methods   : (Listof (Tuple Symbol Function))
-(dt Class ([pos-flds (listof Type?)] 
-           [name-flds (listof (list/c symbol? Type? boolean?))]
+(dt Class ([pos-flds (listof Type/c)] 
+           [name-flds (listof (list/c symbol? Type/c boolean?))]
            [methods (listof (list/c symbol? Function?))])
     [#:frees (combine-frees
               (map free-vars* (append pos-flds 
@@ -541,7 +552,6 @@
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
-
 ;(trace subst subst-all)
 
 (provide
@@ -553,6 +563,7 @@
  Mu? Poly? PolyDots?
  arr
  Type? Filter? LatentFilter? Object? LatentObject?
+ Type/c
  Poly-n
  PolyDots-n
  free-vars*

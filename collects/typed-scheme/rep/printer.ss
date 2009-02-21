@@ -62,6 +62,12 @@
     [(LEmpty:) (fp "")]
     [(LPath: pes i) (fp "~a" (append pes (list i)))]))
 
+(define (print-object c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(Empty:) (fp "")]
+    [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]))
+
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
 (define (print-type c port write?)
@@ -172,11 +178,15 @@
     [(Syntax: t) (fp "(Syntax ~a)" t)]
     [(Instance: t) (fp "(Instance ~a)" t)]
     [(Class: pf nf ms) (fp "(Class)")]
+    [(Result: t (LFilterSet: (list) (list)) (LEmpty:)) (fp "~a" t)]
+    [(Result: t fs (LEmpty:)) (fp "(~a : ~a)" t fs)]
+    [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
     [else (fp "Unknown Type: ~a" (struct->vector c))]
     ))
 
 (set-box! print-type* print-type)
 (set-box! print-filter* print-filter)
 (set-box! print-latentfilter* print-latentfilter)
+(set-box! print-object* print-object)
 (set-box! print-latentobject* print-latentobject)
 (set-box! print-pathelem* print-pathelem)
