@@ -39,5 +39,6 @@ starting with the @filepath{scribble.scrbl} file.
 @include-section["bnf.scrbl"]
 @include-section["xref.scrbl"]
 @include-section["preprocessor.scrbl"]
+@include-section["config.scrbl"]
 
 @index-section[]

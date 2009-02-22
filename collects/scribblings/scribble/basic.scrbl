@@ -151,8 +151,12 @@ using @scheme[path->main-collects-relative].}
 
 @section{Text Styles}
 
-@def-elem-proc[elem]{ Wraps the @tech{decode}d @scheme[pre-content] as
-an element with style @scheme[#f].}
+@defproc[(elem [pre-content any/c] ...
+               [#:style style any/c #f])
+        element?]{
+
+Wraps the @tech{decode}d @scheme[pre-content] as an element with style
+@scheme[style].}
 
 @def-elem-proc[aux-elem]{Like @scheme[elem], but creates an
 @scheme[aux-element].}

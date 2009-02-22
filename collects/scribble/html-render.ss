@@ -4,6 +4,7 @@
          scheme/class
          scheme/path
          scheme/file
+         scheme/port
          scheme/list
          scheme/string
          mzlib/runtime-path
@@ -43,6 +44,7 @@
                "\n"))))
 
 (define-runtime-path scribble-css "scribble.css")
+(define-runtime-path scribble-prefix-html "scribble-prefix.html")
 (define-runtime-path scribble-js  "scribble-common.js")
 ;; utilities for render-one-part
 (define-values (scribble-css-contents scribble-js-contents)
@@ -232,13 +234,15 @@
              install-file
              get-dest-directory
              format-number
-             quiet-table-of-contents)
+             quiet-table-of-contents
+             extract-part-style-files)
 
     (init-field [css-path #f]
                 ;; up-path is either a link "up", or #t which uses
                 ;; goes to start page (using cookies to get to the
                 ;; user start page)
                 [up-path #f]
+                [prefix-file #f]
                 [style-file #f]
                 [style-extra-files null]
                 [script-path #f]
@@ -570,19 +574,19 @@
 
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
-        (let* ([style-file  (or style-file scribble-css)]
+        (let* ([prefix-file (or prefix-file scribble-prefix-html)]
+               [style-file (or style-file scribble-css)]
                [script-file (or script-file scribble-js)]
                [title (cond [(part-title-content d)
                              => (lambda (c)
                                   `(title ,@(format-number number '(nbsp))
                                           ,(content->string c this d ri)))]
                             [else `(title)])])
-          (unless css-path    (install-file style-file))
-          (for-each (lambda (f) (install-file f)) style-extra-files)
+          (unless css-path   (install-file style-file))
           (unless script-path (install-file script-file))
-          (printf "<!DOCTYPE html PUBLIC ~s ~s>\n"
-                  "-//W3C//DTD HTML 4.0 Transitional//EN"
-                  "http://www.w3.org/TR/html4/loose.dtd")
+          (call-with-input-file* prefix-file
+            (lambda (in)
+              (copy-port in (current-output-port))))
           (xml:write-xml/content
            (xml:xexpr->xml
             `(html ()
@@ -592,8 +596,13 @@
                  ,title
                  ,(scribble-css-contents style-file  css-path)
                  ,@(map (lambda (style-file)
-                          (scribble-css-contents style-file  css-path))
-                        style-extra-files)
+                          (install-file style-file)
+                          (scribble-css-contents style-file #f))
+                        (append style-extra-files
+                                (extract-part-style-files
+                                 d
+                                 'css
+                                 (lambda (p) (part-whole-page? p ri)))))
                  ,(scribble-js-contents  script-file script-path))
                (body ()
                  ,@(render-toc-view d ri)

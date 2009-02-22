@@ -17,6 +17,7 @@
 
 (define-struct (toc-paragraph paragraph) ())
 
+(define-runtime-path scribble-prefix-tex "scribble-prefix.tex")
 (define-runtime-path scribble-tex "scribble.tex")
 
 (define (gif-to-png p)
@@ -26,7 +27,8 @@
 
 (define (render-mixin %)
   (class %
-    (init-field [style-file #f]
+    (init-field [prefix-file #f]
+                [style-file #f]
                 [style-extra-files null])
 
     (define/override (get-suffix) #".tex")
@@ -35,16 +37,23 @@
              render-block
              render-content
              install-file
-             format-number)
+             format-number
+             extract-part-style-files)
 
     (define/override (render-one d ri fn)
-      (let ([style-file (or style-file scribble-tex)])
+      (let ([style-file (or style-file scribble-tex)]
+            [prefix-file (or prefix-file scribble-prefix-tex)])
         (for-each
          (lambda (style-file)
            (with-input-from-file style-file
              (lambda ()
                (copy-port (current-input-port) (current-output-port)))))
-         (cons style-file style-extra-files))
+         (list* prefix-file style-file 
+                (append style-extra-files
+                        (extract-part-style-files
+                         d
+                         'tex
+                         (lambda (p) #f)))))
         (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
           (let ([m (ormap (lambda (v)
