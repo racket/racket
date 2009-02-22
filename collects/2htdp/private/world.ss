@@ -161,7 +161,7 @@
                              (define/augment (on-close)  
                                (callback-stop! 'frame-stop)
                                (custodian-shutdown-all play-back:cust)))
-                           (label (if name (format "~a's World" name) "World"))
+                           (label (if name (format "~a" name) "World"))
                            (stretchable-width #f)
                            (stretchable-height #f)
                            (style '(no-resize-border metal))))
