@@ -421,7 +421,27 @@ pre-defined forms are as follows.
   @scheme[require-spec]s, but constrained each binding specified by
   each @scheme[require-spec] is shifted by @scheme[phase-level]. The
   @tech{label phase level} corresponds to @scheme[#f], and a shifting
-  combination that involves @scheme[#f] produces @scheme[#f].}
+  combination that involves @scheme[#f] produces @scheme[#f].
+  
+  @defexamples[#:eval (syntax-eval)
+  (module test scheme
+    (provide foo)
+    (define foo 2))
+  (require (for-meta 0 'test))
+  foo
+  ]}
+
+  @defexamples[#:eval (syntax-eval)
+  (module test scheme
+    (provide foo)
+    (define foo 2))
+  (require (for-meta 1 'test))
+  (define-syntax bar
+    (lambda (stx)
+      (printf "~a\n" foo)
+      #'1))
+  (bar)
+  ]}
 
  @specsubform[#:literals (for-syntax)
               (for-syntax require-spec ...)]{Same as 
@@ -451,7 +471,10 @@ corresponds to the default @tech{module name resolver}.
  @specsubform[#:literals (quote)
               (#,(scheme quote) id)]{
  Refers to a module previously declared interactively with the name
- @scheme[id].}
+ @scheme[id].
+
+ Example: Require'ing a module named test.
+ @scheme[(require 'test)]}
 
  @specsubform[rel-string]{A path relative to the containing source (as
  determined by @scheme[current-load-relative-directory] or
@@ -473,7 +496,15 @@ corresponds to the default @tech{module name resolver}.
  @margin-note{The @litchar{%} provision is intended to support a
  one-to-one encoding of arbitrary strings as path elements (after
  UTF-8 encoding). Such encodings are not decoded to arrive at a
- filename, but instead preserved in the file access.}}
+ filename, but instead preserved in the file access.}
+
+ Example: Require a module named x.ss in the same directory as this file.
+
+ @scheme[(require "x.ss")]
+ 
+ Require a module named x.ss in the parent directory.
+
+ @scheme[(require "../x.ss")]}
 
  @defsubform[(lib rel-string ...+)]{A path to a module installed into
  a @tech{collection} (see @secref["collects"]). The @scheme[rel-string]s in
@@ -489,19 +520,31 @@ corresponds to the default @tech{module name resolver}.
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element (i.e., no @litchar{/}) with no file
     suffix (i.e., no @litchar{.}), then @scheme[rel-string] names a
-    @tech{collection}, and @filepath{main.ss} is the library file name.}
+    @tech{collection}, and @filepath{main.ss} is the library file name.
+
+    Example: require swindle
+    @defexamples[#:eval (syntax-eval)
+      (require (lib "swindle"))]}
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of multiple @litchar{/}-separated elements, then each
     element up to the last names a @tech{collection}, subcollection,
     etc., and the last element names a file. If the last element has
-    no file suffix, @filepath{.ss} is added.}
+    no file suffix, @filepath{.ss} is added.
+
+    Example: require a file within the swindle collection
+    @defexamples[#:eval (syntax-eval)
+      (require (lib "swindle/turbo"))]}
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element @italic{with} a file suffix (i.e,
     with a @litchar{.}), then @scheme[rel-string] names a file within
     the @filepath{mzlib} @tech{collection}. (This convention is for
-    compatibility with older version of PLT Scheme.)}
+    compatibility with older version of PLT Scheme.)
+
+    Example: require the tar module from mzlib
+    @defexamples[#:eval (syntax-eval)
+      (require (lib "tar.ss"))]}
 
     @item{Otherwise, when multiple @scheme[rel-string]s are provided,
     the first @scheme[rel-string] is effectively moved after the
@@ -509,18 +552,26 @@ corresponds to the default @tech{module name resolver}.
     separators. The resulting path names a @tech{collection}, then
     subcollection, etc., ending with a file name. No suffix is added
     automatically. (This convention is for compatibility
-    with older version of PLT Scheme.)}
+    with older version of PLT Scheme.)
 
+    Example: require the tar module from mzlib
+    @defexamples[#:eval (syntax-eval)
+      (require (lib "tar.ss" "mzlib"))]}
   }}
 
  @specsubform[id]{A shorthand for a @scheme[lib] form with a single
  @scheme[_rel-string] whose characters are the same as in the symbolic
  form of @scheme[id]. In addition to the constraints of a @scheme[lib]
- @scheme[_rel-string], @scheme[id] must not contain @litchar{.}.}
+ @scheme[_rel-string], @scheme[id] must not contain @litchar{.}.
+
+ @defexamples[#:eval (syntax-eval)
+   (require scheme/tcp)]}
 
  @defsubform[(file string)]{Similar to the plain @scheme[rel-string]
  case, but @scheme[string] is a path---possibly absolute---using the
- current platform's path conventions and @scheme[expand-user-path].}
+ current platform's path conventions and @scheme[expand-user-path].
+
+ @scheme[(require (file "~/tmp/x.ss"))]}
 
  @defsubform*[((planet id)
                (planet string)
@@ -578,7 +629,23 @@ corresponds to the default @tech{module name resolver}.
  @scheme[((unsyntax (schemeidfont "-")) _nat)] specifies a maximum
  version. The @schemeidfont{=}, @schemeidfont{+}, and @schemeidfont{-}
  identifiers in a minor-version constraint are recognized
- symbolically.}
+ symbolically.
+
+ Example: Load main.ss file package foo owned by bar.
+
+ @scheme[(require (planet bar/foo))]
+ 
+ Example: Load major version 2 of main.ss file package foo owned by bar.
+ 
+ @scheme[(require (planet bar/foo:2))]
+ 
+ Example: Load major version 2 and minor version 5 of main.ss file package foo owned by bar.
+ 
+ @scheme[(require (planet bar/foo:2:5))]
+ 
+ Example: Load major version 2 and minor version 5 of buz.ss file package foo owned by bar.
+ 
+ @scheme[(require (planet bar/foo:2:5/buz))]}
 
 No identifier can be bound multiple times in a given @tech{phase
 level} by an import, unless all of the bindings refer to the same
@@ -627,7 +694,15 @@ follows.
  @tech{phase level}. The symbolic form of @scheme[id] is used as the
  external name, and the symbolic form of the defined or imported
  identifier must match (otherwise, the external name could be
- ambiguous). }
+ ambiguous).
+
+ @defexamples[#:eval (syntax-eval)
+   (module test scheme
+      (provide foo)
+      (define foo 2))
+   (require 'test)
+   foo
+ ]}
 
  @defsubform[(all-defined-out)]{ Exports all identifiers that are
  defined at @tech{phase level} 0 or @tech{phase level} 1 within the
@@ -637,7 +712,15 @@ follows.
  accessible from the lexical context of the @scheme[(all-defined-out)]
  form are included; that is, macro-introduced imports are not
  re-exported, unless the @scheme[(all-defined-out)] form was
- introduced at the same time.}
+ introduced at the same time.
+
+ @defexamples[#:eval (syntax-eval)
+   (module test scheme
+     (provide (all-defined-out))
+     (define foo 2))
+   (require 'test)
+   foo
+ ]}
 
  @defsubform[(all-from-out module-path ...)]{ Exports all identifiers
  that are imported into the exporting module using a
@@ -648,23 +731,62 @@ follows.
  @scheme[module-path]. Only identifiers accessible from the lexical
  context of the @scheme[module-path] are included; that is,
  macro-introduced imports are not re-exported, unless the
- @scheme[module-path] was introduced at the same time.}
+ @scheme[module-path] was introduced at the same time.
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide foo)
+     (define foo 2))
+   (module b scheme
+     (require 'a)
+     (provide (all-from-out 'a)))
+   (require 'b)
+   foo
+ ]}
 
  @defsubform[(rename-out [orig-id export-id] ...)]{ Exports each
  @scheme[orig-id], which must be @tech{bound} within the module at
  @tech{phase level} 0.  The symbolic name for each export is
- @scheme[export-id] instead @scheme[orig-d].}
+ @scheme[export-id] instead @scheme[orig-d].
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (rename-out (foo myfoo)))
+     (define foo 2))
+   (require 'a)
+   foo
+   myfoo
+ ]}
 
  @defsubform[(except-out provide-spec provide-spec ...)]{ Like the
  first @scheme[provide-spec], but omitting the bindings listed in each
  subsequent @scheme[provide-spec]. If one of the latter bindings is
  not included in the initial @scheme[provide-spec], a syntax error is
  reported. The symbolic export name information in the latter
- @scheme[provide-spec]s is ignored; only the bindings are used.}
+ @scheme[provide-spec]s is ignored; only the bindings are used.
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (except-out (all-defined-out)
+			  bar))
+     (define foo 2)
+     (define bar 3))
+   (require 'a)
+   foo
+   bar
+ ]}
 
  @defsubform[(prefix-out prefix-id provide-spec)]{
  Like @scheme[provide-spec], but with each symbolic export name from
- @scheme[provide-spec] prefixed with @scheme[prefix-id].}
+ @scheme[provide-spec] prefixed with @scheme[prefix-id].
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (prefix-out f foo))
+     (define foo 2))
+   (require 'a)
+   f:foo
+ ]}
 
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @scheme[id]. Typically, @scheme[id] is bound with
@@ -678,10 +800,32 @@ follows.
  includes a super-type identifier, and if the identifier has a
  @tech{transformer binding} of structure-type information, the
  accessor and mutator bindings of the super-type are @italic{not}
- included by @scheme[struct-out] for export.}
+ included by @scheme[struct-out] for export.
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (struct-out foo))
+     (define-struct foo (a b c)))
+   (require 'a)
+   make-foo
+   foo-a
+   foo-b
+   foo-c
+   foo?
+ ]}
 
  @defsubform[(combine-out provide-spec ...)]{ The union of the
- @scheme[provide-spec]s.}
+ @scheme[provide-spec]s.
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (combine-out foo bar))
+     (define foo 2)
+     (define bar 1))
+   (require 'a)
+   foo
+   bar
+ ]}
 
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, except that the exports are protected; see
@@ -719,8 +863,7 @@ multiple symbolic names.}
 
 
 @defform[(for-meta phase-level require-spec ...)]{See @scheme[require] and @scheme[provide].}
-@defform[(for-syntax require-spec ...)]{See @scheme[require] and @scheme[provide].}
-@defform[(for-template require-spec ...)]{See @scheme[require] and @scheme[provide].}
+@defform[(for-syntax require-spec ...)]{See @scheme[require] and @scheme[provide].} @defform[(for-template require-spec ...)]{See @scheme[require] and @scheme[provide].}
 @defform[(for-label require-spec ...)]{See @scheme[require] and @scheme[provide].}
 
 @defform/subs[(#%require raw-require-spec ...)
