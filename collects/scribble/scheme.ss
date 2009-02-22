@@ -653,10 +653,13 @@
                 [else `(quote ,v)])))
 	   (define (cvt s)
 	     (datum->syntax #'here (stx->loc-s-expr s) #f))
-	   (syntax-case stx ()
-	     [(_ expr) #`(typeset-code #,(cvt #'expr))]
-	     [(_ expr (... ...))
-	      #`(typeset-code #,(cvt #'(code:line expr (... ...))))])))]
+           (if (eq? (syntax-local-context) 'expression)
+               (syntax-case stx ()
+                 [(_ expr) #`(typeset-code #,(cvt #'expr))]
+                 [(_ expr (... ...))
+                  #`(typeset-code #,(cvt #'(code:line expr (... ...))))])
+               (quasisyntax/loc stx
+                 (#%expression #,stx)))))]
       [(_ code typeset-code uncode d->s)
        #'(define-code code typeset-code uncode d->s syntax-property)]
       [(_ code typeset-code uncode)
