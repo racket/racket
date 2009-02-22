@@ -136,7 +136,7 @@
             (printf "\\label{t:~a}"
                     (t-encode (tag-key (target-element-tag e) ri))))
           (when part-label?
-            (printf "\\S")
+            (printf "\\SecRef{")
             (render-content
              (let ([dest (resolve-get part ri (link-element-tag e))])
                (if dest
@@ -149,7 +149,7 @@
                           '("!!!")))
                  (list "???")))
              part ri)
-            (printf " ``"))
+            (printf "}{"))
           (let ([style (and (element? e)
                             (let ([s (flatten-style (element-style e))])
                               (if (with-attributes? s)
@@ -206,7 +206,7 @@
                            (image-file-scale style) fn)))]
               [else (super render-element e part ri)])))
         (when part-label?
-          (printf "''"))
+          (printf "}"))
         (when (and (link-element? e)
                    (show-link-page-numbers)
                    (not (done-link-page-numbers)))
@@ -308,7 +308,7 @@
                   (loop (cdr flowss) (cdr row-styles)))))
             (unless inline?
               (printf "~a\n\n\\end{~a}\n"
-                      (if (equal? tableform "bigtabular") "\n\\\\" "")
+                      "" ; (if (equal? tableform "bigtabular") "\n\\\\" "")
                       tableform)))))
       null)
 
