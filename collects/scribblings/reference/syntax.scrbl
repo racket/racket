@@ -782,7 +782,7 @@ follows.
 
  @defexamples[#:eval (syntax-eval)
    (module a scheme
-     (provide (prefix-out f foo))
+     (provide (prefix-out f: foo))
      (define foo 2))
    (require 'a)
    f:foo
