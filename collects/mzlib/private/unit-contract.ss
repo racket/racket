@@ -60,13 +60,15 @@ packed with the neg blame.
                ;; If contract coersion ends up being a large overhead, we can
                ;; store the result in a local box, then just check the box to
                ;; see if we need to coerce.
-               #`(let ([ctc (coerce-contract 'unit/c (letrec-syntax #,rename-bindings #,ctc))])
-                   ((((proj-get ctc) ctc)
-                     #,(if import? neg pos)
-                     #,(if import? pos neg)
-                     #,src-info
-                     #,name)
-                    #,stx)))])
+               (with-syntax ([ctc-stx (syntax-property #`(letrec-syntax #,rename-bindings #,ctc)
+                                                       'inferred-name var)])
+                 #`(let ([ctc (coerce-contract 'unit/c ctc-stx)])
+                     ((((proj-get ctc) ctc)
+                       #,(if import? neg pos)
+                       #,(if import? pos neg)
+                       #,src-info
+                       #,name)
+                      #,stx))))])
         (if ctc
             #`(cons
                #,(if import?

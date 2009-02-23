@@ -790,30 +790,31 @@
                                   [rename-bindings (get-member-bindings def-table
                                                                         (bound-identifier-mapping-get sig-table var)
                                                                         #'(current-contract-region))])
-                             (if (or target-ctc ctc)
-                                 #`(cons
-                                    (λ ()
-                                      (let ([old-v #,(if ctc
-                                                         #`(let ([old-v/c ((car #,vref))])
-                                                             (contract (let ([#,var (letrec-syntax #,rename-bindings #,ctc)]) #,var)
-                                                                       (car old-v/c) 
-                                                                       (cdr old-v/c) (current-contract-region)
-                                                                       #,(id->contract-src-info var)))
-                                                         #`((car #,vref)))])
-                                        #,(if target-ctc
-                                              #'(cons old-v (current-contract-region))
-                                              #'old-v)))
-                                    (λ (v) (let ([new-v #,(if ctc
-                                                              #`(contract (let ([#,var (letrec-syntax #,rename-bindings #,ctc)]) #,var)
-                                                                          (car v)
-                                                                          (current-contract-region)
-                                                                          (cdr v)
-                                                                          #,(id->contract-src-info var))
-                                                              #'v)])
-                                             #,(if target-ctc
-                                                   #`((cdr #,vref) (cons new-v (current-contract-region)))
-                                                   #`((cdr #,vref) new-v)))))
-                                 vref)))
+                             (with-syntax ([ctc-stx (if ctc (syntax-property
+                                                             #`(letrec-syntax #,rename-bindings #,ctc)
+                                                             'inferred-name var)
+                                                        ctc)])
+                               (if (or target-ctc ctc)
+                                   #`(cons
+                                      (λ ()
+                                        (let ([old-v #,(if ctc
+                                                           #`(let ([old-v/c ((car #,vref))])
+                                                               (contract ctc-stx (car old-v/c) 
+                                                                         (cdr old-v/c) (current-contract-region)
+                                                                         #,(id->contract-src-info var)))
+                                                           #`((car #,vref)))])
+                                          #,(if target-ctc
+                                                #'(cons old-v (current-contract-region))
+                                                #'old-v)))
+                                      (λ (v) (let ([new-v #,(if ctc
+                                                                #`(contract ctc-stx (car v)
+                                                                            (current-contract-region) (cdr v)
+                                                                            #,(id->contract-src-info var))
+                                                                #'v)])
+                                               #,(if target-ctc
+                                                     #`((cdr #,vref) (cons new-v (current-contract-region)))
+                                                     #`((cdr #,vref) new-v)))))
+                                   vref))))
                          (car target-sig)
                          (cadddr target-sig)))
                       target-import-sigs))
