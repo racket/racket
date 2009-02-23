@@ -294,6 +294,14 @@ values (must be in a list) are as follows:
   @item{@scheme[`(tex ,_path)] --- generated Latex includes
         (a copy of) @scheme[_path] in the document header.}
 
+  @item{@scheme[`(body-id ,_string)] --- generated HTML uses
+        @scheme[_string] as the @tt{id} attribute of the @tt{body}
+        tag; this style can be set separately for parts that start
+        different HTML pages, otherwise it is effectively inherited by
+        sub-parts; the default is @scheme["scribble-plt-scheme.org"],
+        but @exec{setup-plt} installs @scheme["doc-plt-scheme.org"]
+        as the @tt{id} for any document that it builds.}
+
 }
 
 The @scheme[to-collect] field contains @techlink{content} that is

@@ -310,12 +310,19 @@
     (let ([tag-prefix p]
           [tags (if (member '(part "top") (part-tags v))
                   (part-tags v)
-                  (cons '(part "top") (part-tags v)))])
+                  (cons '(part "top") (part-tags v)))]
+          [style (if (list? (part-style v))
+                     (part-style v)
+                     (list (part-style v)))])
       (make-versioned-part
        tag-prefix
        tags
        (part-title-content v)
-       (part-style v)
+       (if (ormap (lambda (s)
+                    (and (pair? s) (eq? (car s) 'body-id)))
+                  style)
+           style
+           (cons '(body-id "doc-plt-scheme-org") style))
        (part-to-collect v)
        (part-flow v)
        (part-parts v)

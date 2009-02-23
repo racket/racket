@@ -572,6 +572,19 @@
           (versioned-part-version d)
           (current-version)))
 
+    (define/public (extract-part-body-id d ri)
+      (or
+       (and (list? (part-style d))
+            (ormap (lambda (s)
+                     (and (list? s)
+                          (= 2 (length s))
+                          (eq? (car s) 'body-id)
+                          (string? (cadr s))
+                          (cadr s)))
+                   (part-style d)))
+       (let ([p (part-parent d ri)])
+         (and p (extract-part-body-id p ri)))))
+
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
         (let* ([prefix-file (or prefix-file scribble-prefix-html)]
@@ -604,7 +617,8 @@
                                  'css
                                  (lambda (p) (part-whole-page? p ri)))))
                  ,(scribble-js-contents  script-file script-path))
-               (body ()
+               (body ((id ,(or (extract-part-body-id d ri)
+                               "scribble-plt-scheme-org")))
                  ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
