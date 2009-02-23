@@ -50,6 +50,7 @@
 (define-requirer utils)
 (define-requirer env)
 (define-requirer private)
+(define-requirer types)
 
 (define-sequence-syntax in-syntax 
   (lambda () #'syntax->list)
