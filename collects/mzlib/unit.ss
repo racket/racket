@@ -1482,6 +1482,7 @@
            (with-syntax ([new-unit exp]
                          [unit-contract
                           (unit/c/core
+                           #'name
                            (syntax/loc stx
                              ((import (import-tagged-sig-id [i.x i.c] ...) ...)
                               (export (export-tagged-sig-id [e.x e.c] ...) ...))))]
