@@ -459,11 +459,12 @@
                  
   (define-for-syntax (make-import-unboxing var loc ctc)
     (if ctc
-        (quasisyntax/loc (error-syntax)
-          (quote-syntax (let ([v/c ((car #,loc))])
-                          (contract #,ctc (car v/c) (cdr v/c)
-                                    (current-contract-region)
-                                    #,(id->contract-src-info var)))))
+        (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
+          (quasisyntax/loc (error-syntax)
+            (quote-syntax (let ([v/c ((car #,loc))])
+                            (contract ctc-stx (car v/c) (cdr v/c)
+                                      (current-contract-region)
+                                      #,(id->contract-src-info var))))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax ((car #,loc))))))
   
@@ -1278,9 +1279,13 @@
                                (map (λ (tb i v c)
                                       #`(let ([v/c ((car #,tb))])
                                           #,(if c
-                                                #`(contract (letrec-syntax #,rename-bindings #,c) (car v/c) (cdr v/c)
-                                                            (current-contract-region)
-                                                            #,(id->contract-src-info v))
+                                                (with-syntax ([ctc-stx
+                                                               (syntax-property
+                                                                #`(letrec-syntax #,rename-bindings #,c)
+                                                                'inferred-name v)])
+                                                  #`(contract ctc-stx (car v/c) (cdr v/c)
+                                                              (current-contract-region)
+                                                              #,(id->contract-src-info v)))
                                                 #'v/c)))
                                     tbs
                                     (iota (length (car os)))

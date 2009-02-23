@@ -60,15 +60,13 @@ packed with the neg blame.
                ;; If contract coersion ends up being a large overhead, we can
                ;; store the result in a local box, then just check the box to
                ;; see if we need to coerce.
-               (with-syntax ([ctc-stx (syntax-property #`(letrec-syntax #,rename-bindings #,ctc)
-                                                       'inferred-name var)])
-                 #`(let ([ctc (coerce-contract 'unit/c ctc-stx)])
-                     ((((proj-get ctc) ctc)
-                       #,(if import? neg pos)
-                       #,(if import? pos neg)
-                       #,src-info
-                       #,name)
-                      #,stx))))])
+               #`(let ([ctc (coerce-contract 'unit/c (letrec-syntax #,rename-bindings #,ctc))])
+                   ((((proj-get ctc) ctc)
+                     #,(if import? neg pos)
+                     #,(if import? pos neg)
+                     #,src-info
+                     #,name)
+                    #,stx)))])
         (if ctc
             #`(cons
                #,(if import?
@@ -79,9 +77,13 @@ packed with the neg blame.
                                        #`(let ([old-v/c ((car #,vref))])
                                            (cons #,(wrap-with-proj 
                                                     ctc 
-                                                    #`(contract #,sig-ctc (car old-v/c)
-                                                                (cdr old-v/c) #,pos
-                                                                #,(id->contract-src-info var)))
+                                                    (with-syntax ([sig-ctc-stx
+                                                                   (syntax-property sig-ctc
+                                                                                    'inferred-name
+                                                                                    var)])
+                                                      #`(contract sig-ctc-stx (car old-v/c)
+                                                                  (cdr old-v/c) #,pos
+                                                                  #,(id->contract-src-info var))))
                                                  #,neg))
                                        (wrap-with-proj ctc #`((car #,vref))))])
                            old-v)))
@@ -91,9 +93,13 @@ packed with the neg blame.
                                  #,(if sig-ctc
                                        #`(cons #,(wrap-with-proj 
                                                   ctc 
-                                                  #`(contract #,sig-ctc (car v)
-                                                              (cdr v) #,neg
-                                                              #,(id->contract-src-info var)))
+                                                  (with-syntax ([sig-ctc-stx
+                                                                 (syntax-property sig-ctc
+                                                                                  'inferred-name
+                                                                                  var)])
+                                                    #`(contract sig-ctc-stx (car v)
+                                                                (cdr v) #,neg
+                                                                #,(id->contract-src-info var))))
                                                #,pos)
                                        (wrap-with-proj ctc #'v))])
                            ((cdr #,vref) new-v)))
