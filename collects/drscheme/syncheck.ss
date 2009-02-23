@@ -1846,7 +1846,7 @@ If the namespace does not, they are colored the unbound color.
                                                    low-binders
                                                    unused-requires
                                                    requires
-                                                   identifier-binding
+                                                   0
                                                    user-namespace 
                                                    user-directory
                                                    #t))
@@ -1862,7 +1862,7 @@ If the namespace does not, they are colored the unbound color.
                                                    high-binders
                                                    unused-require-for-syntaxes
                                                    require-for-syntaxes
-                                                   identifier-transformer-binding
+                                                   1
                                                    user-namespace 
                                                    user-directory
                                                    #t))
@@ -1877,7 +1877,7 @@ If the namespace does not, they are colored the unbound color.
                                                         low-binders
                                                         unused-requires
                                                         requires
-                                                        identifier-binding
+                                                        0
                                                         user-namespace
                                                         user-directory
                                                         #f)
@@ -1886,7 +1886,7 @@ If the namespace does not, they are colored the unbound color.
                                                         high-binders
                                                         unused-require-for-syntaxes
                                                         require-for-syntaxes
-                                                        identifier-transformer-binding
+                                                        1
                                                         user-namespace
                                                         user-directory
                                                         #f)
@@ -1895,7 +1895,7 @@ If the namespace does not, they are colored the unbound color.
                                                         template-binders ;; dummy; always empty
                                                         unused-require-for-templates
                                                         require-for-templates
-                                                        identifier-template-binding
+                                                        -1
                                                         user-namespace
                                                         user-directory
                                                         #f)
@@ -1904,7 +1904,7 @@ If the namespace does not, they are colored the unbound color.
                                                         label-binders ;; dummy; always empty
                                                         unused-require-for-labels
                                                         require-for-labels
-                                                        identifier-label-binding
+                                                        #f
                                                         user-namespace
                                                         user-directory
                                                         #f))
@@ -1952,7 +1952,7 @@ If the namespace does not, they are colored the unbound color.
     ;;                      id-set 
     ;;                      (union #f hash-table)
     ;;                      (union #f hash-table)
-    ;;                      (union identifier-binding identifier-transformer-binding)
+    ;;                      integer or 'lexical or #f
     ;;                      (listof id-set)
     ;;                      namespace
     ;;                      directory
@@ -1960,18 +1960,18 @@ If the namespace does not, they are colored the unbound color.
     ;;                   -> void
     ;; adds arrows and rename menus for binders/bindings
     (define (connect-identifier var rename-ht all-binders
-                                unused requires get-binding user-namespace user-directory actual?)
+                                unused requires phase-level user-namespace user-directory actual?)
       (connect-identifier/arrow var all-binders 
-                                unused requires get-binding user-namespace user-directory actual?)
+                                unused requires phase-level user-namespace user-directory actual?)
       (when (and actual? (get-ids all-binders var))
         (record-renamable-var rename-ht var)))
     
-    ;; id-level : identifier-binding-function identifier -> symbol
-    (define (id-level get-binding id)
+    ;; id-level : integer-or-#f-or-'lexical identifier -> symbol
+    (define (id-level phase-level id)
       (define (self-module? mpi)
         (let-values ([(a b) (module-path-index-split mpi)])
           (and (not a) (not b))))
-      (let ([binding (get-binding id)])
+      (let ([binding (identifier-binding id phase-level)])
         (cond [(list? binding)
                (if (self-module? (car binding))
                    'top-level
@@ -1987,16 +1987,16 @@ If the namespace does not, they are colored the unbound color.
     ;;                            boolean
     ;;                         -> void
     ;; adds the arrows that correspond to binders/bindings
-    (define (connect-identifier/arrow var all-binders unused requires get-binding user-namespace user-directory actual?)
+    (define (connect-identifier/arrow var all-binders unused requires phase-level user-namespace user-directory actual?)
       (let ([binders (get-ids all-binders var)])
         (when binders
           (for-each (λ (x)
                       (when (syntax-original? x)
-                        (connect-syntaxes x var actual? (id-level get-binding x))))
+                        (connect-syntaxes x var actual? (id-level phase-level x))))
                     binders))
         
         (when (and unused requires)
-          (let ([req-path/pr (get-module-req-path (get-binding var))])
+          (let ([req-path/pr (get-module-req-path (identifier-binding var phase-level))])
             (when req-path/pr
               (let* ([req-path (car req-path/pr)]
                      [id (cdr req-path/pr)]
@@ -2018,7 +2018,7 @@ If the namespace does not, they are colored the unbound color.
                                                  (syntax-e var)
                                                  req-path))
                                 (connect-syntaxes req-stx var actual?
-                                                  (id-level get-binding var))))
+                                                  (id-level phase-level var))))
                             req-stxes))))))))
     
     (define (id/require-match? var id req-stx)
@@ -2064,7 +2064,7 @@ If the namespace does not, they are colored the unbound color.
         (if top-bound?
             (color var lexically-bound-variable-style-name)
             (color var error-style-name))
-        (connect-identifier var rename-ht binders #f #f identifier-binding user-namespace user-directory #t)))
+        (connect-identifier var rename-ht binders #f #f 0 user-namespace user-directory #t)))
     
     ;; color-variable : syntax (union identifier-binding identifier-transformer-binding) -> void
     (define (color-variable var get-binding)
