@@ -2,7 +2,8 @@
 
 (require "../utils/utils.ss")
 
-(require (rep type-rep object-rep filter-rep printer)
+(require (rep type-rep object-rep filter-rep)
+	 "printer.ss"
          (utils tc-utils)
          scheme/list
          scheme/match         
