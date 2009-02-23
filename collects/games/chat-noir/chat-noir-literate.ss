@@ -1,5 +1,11 @@
 #lang scribble/lp
 
+@;{
+
+TODO: update-world-posn does not need to check the world-state anymore.
+
+}
+
 @(require (for-label scheme/math) ;; for 'pi' below
           scheme/math
           games/scribblings/common)
@@ -293,8 +299,19 @@ cats initial position as the center spot on the board.
                (block-cell (cell-p to-block) all-cells)
                board-size))]))
        
+       (define/contract (block-cell/world to-block w)
+         (-> posn? world? world?)
+         (make-world (block-cell to-block (world-board w))
+                     (world-cat w)
+                     (world-state w)
+                     (world-size w)
+                     (world-mouse-posn w)
+                     (world-h-down? w)))
+                      
+       
        ;; block-cell : posn board -> board
-       (define (block-cell to-block board)
+       (define/contract (block-cell to-block board)
+         (-> posn? (listof cell?) (listof cell?))
          (map (lambda (c) (if (equal? to-block (cell-p c))
                               (make-cell to-block true)
                               c))
@@ -1096,6 +1113,7 @@ the screen resolution.
 @chunk[<input>
        <clack>
        <update-world-posn>
+       <player-moved?>
        <move-cat>
        <find-best-positions>
        <lt/f>
@@ -1113,27 +1131,37 @@ the screen resolution.
        <update-world-posn-tests>
        <clack-tests>]
 
+The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
+to a specific helper function:
+@itemize{
+@item{block the clicked cell,}
+@item{move the cat, and}
+@item{update the black dot as the mouse moves around}}
+Each of those tasks corresponds to a helper function
+
 @chunk[<clack>
-       (define (clack world x y evt)
-         (let ([new-mouse-posn
-                (and (not (eq? evt 'leave))
-                     (make-posn x y))])
-           (update-world-posn
-            (cond
-              [(and (equal? evt 'button-up)
-                    (equal? 'playing (world-state world))
-                    (circle-at-point (world-board world) x y))
-               =>
-               (λ (circle)
-                 (move-cat
-                  (make-world (block-cell circle (world-board world))
-                              (world-cat world)
-                              (world-state world)
-                              (world-size world)
-                              (world-mouse-posn world)
-                              (world-h-down? world))))]
-              [else world])
-            new-mouse-posn)))]
+       (define/contract (clack world x y evt)
+         (-> world? integer? integer? any/c 
+             world?)
+         (update-world-posn
+          (cond
+            [(player-moved? world x y evt)
+             => 
+             (λ (circle)
+               (move-cat
+                (block-cell/world circle world)))]
+            [else world])
+          (and (eq? (world-state world) 'playing)
+               (not (eq? evt 'leave))
+               (make-posn x y))))]
+
+@chunk[<player-moved?>
+       (define/contract (player-moved? world x y evt)
+         (-> world? integer? integer? any/c 
+             (or/c posn? #f))
+         (and (equal? evt 'button-up)
+              (equal? 'playing (world-state world))
+              (circle-at-point (world-board world) x y)))]
 
 @chunk[<clack-tests>
        (test (clack (make-world '() (make-posn 0 0) 'playing 3 false false)
