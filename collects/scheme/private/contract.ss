@@ -386,21 +386,20 @@ improve method arity mismatch contract violation error messages?
                               (syntax id))]
          [(f arg ...)
           (quasisyntax/loc stx
-            ((let ([f (-contract contract-stx
-                                 #,id
-                                 pos-blame-id
-                                 neg-blame-id
-                                 #,(id->contract-src-info id))])
-               f) arg ...))]
+            ((-contract contract-stx
+                        #,id
+                        pos-blame-id
+                        neg-blame-id
+                        #,(id->contract-src-info id))
+             arg ...))]
          [ident
           (identifier? (syntax ident))
           (quasisyntax/loc stx
-            (let ([ident (-contract contract-stx
-                                    #,id
-                                    pos-blame-id
-                                    neg-blame-id
-                                    #,(id->contract-src-info id))])
-              ident))])))))
+            (-contract contract-stx
+                       #,id
+                       pos-blame-id
+                       neg-blame-id
+                       #,(id->contract-src-info id)))])))))
 
 
 (define-syntax (with-contract-helper stx)
@@ -500,21 +499,20 @@ improve method arity mismatch contract violation error messages?
                             (syntax id))]
        [(f arg ...)
         (quasisyntax/loc stx
-          ((let ([f (-contract #,ctc
-                               #,fv
-                               #,pos-blame
-                               #,neg-blame
-                               #,(id->contract-src-info fv))])
-             f) arg ...))]
+          ((-contract #,ctc
+                      #,fv
+                      #,pos-blame
+                      #,neg-blame
+                      #,(id->contract-src-info fv))
+           arg ...))]
        [ident
         (identifier? (syntax ident))
         (quasisyntax/loc stx
-          (let ([ident (-contract #,ctc
-                                  #,fv
-                                  #,pos-blame
-                                  #,neg-blame
-                                  #,(id->contract-src-info fv))])
-            ident))]))))
+          (-contract #,ctc
+                     #,fv
+                     #,pos-blame
+                     #,neg-blame
+                     #,(id->contract-src-info fv)))]))))
 
 (define-syntax (with-contract stx)
   (when (eq? (syntax-local-context) 'expression)
@@ -544,6 +542,7 @@ improve method arity mismatch contract violation error messages?
      (and (identifier? #'blame)
           (identifier? #'type))
      (let*-values ([(marker) (make-syntax-introducer)]
+                   [(cid-marker) (make-syntax-introducer)]
                    [(no-need free-vars free-ctcs)
                     (check-and-split-with-contracts #f (syntax->list #'(fv ...)))]
                    [(unprotected protected protections)
@@ -558,15 +557,17 @@ improve method arity mismatch contract violation error messages?
                        [blame-id (car (generate-temporaries (list #t)))]
                        [(free-var ...) free-vars]
                        [(free-var-id ...) (map marker free-vars)]
-                       [(free-ctc-id ...) (map (λ (i)
-                                                 (marker (a:mangle-id stx "with-contract-contract-id" i)))
-                                               free-vars)]
-                       [(free-ctc ...) free-ctcs]
+                       [(free-ctc-id ...) (map cid-marker free-vars)]
+                       [(free-ctc ...) (map (λ (c v)
+                                              (syntax-property c 'inferred-name v))
+                                            free-ctcs
+                                            free-vars)]
                        [(free-src-info ...) (map id->contract-src-info free-vars)]
-                       [(ctc-id ...) (map (λ (i)
-                                            (marker (a:mangle-id stx "with-contract-contract-id" i)))
-                                          protected)]
-                       [(ctc ...) (map marker protections)]
+                       [(ctc-id ...) (map cid-marker protected)]
+                       [(ctc ...) (map (λ (c v)
+                                         (marker (syntax-property c 'inferred-name v)))
+                                       protections
+                                       protected)]
                        [(p ...) protected]
                        [(marked-p ...) (map marker protected)]
                        [(src-info ...) (map (compose id->contract-src-info marker) protected)]
