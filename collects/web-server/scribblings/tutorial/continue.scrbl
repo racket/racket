@@ -949,10 +949,10 @@ So, in the next section, we'll talk about how to use an SQL database to store ou
                                   web-server/scribblings/tutorial/dummy-sqlite)]
 @(require (for-label web-server/scribblings/tutorial/dummy-sqlite))
 
-Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @schememodname[(planet jaymccarthy/sqlite:3/sqlite)] PLaneT package. We add the following to the top of our model:
+Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @schememodname[(planet jaymccarthy/sqlite:4)] PLaneT package. We add the following to the top of our model:
 
 @schemeblock[
-(require (prefix-in sqlite: (planet jaymccarthy/sqlite:3/sqlite)))
+(require (prefix-in sqlite: (planet jaymccarthy/sqlite:4)))
 ]
 
 We now have the following bindings:
