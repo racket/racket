@@ -73,12 +73,11 @@
                                             #f #f #f solid?))
                 p lw col under?))
 
-  (define (pin-curve p 
+  (define (pin-curve sz p 
                      src src-find
                      dest dest-find
                      #:start-angle [sa #f] #:end-angle [ea #f]
                      #:start-pull [sp #f] #:end-pull [ep #f]
-                     #:arrow-size [sz 12]
                      #:color [col #f]
                      #:line-width [lw #f]
                      #:under? [under? #f]
@@ -86,12 +85,11 @@
     (pin-curve* #f #f p src src-find dest dest-find
                 sa ea sp ep sz col lw under? #t))
 
-  (define (pin-arrow-curve p 
+  (define (pin-arrow-curve sz p 
                            src src-find
                            dest dest-find
                            #:start-angle [sa #f] #:end-angle [ea #f]
                            #:start-pull [sp #f] #:end-pull [ep #f]
-                           #:arrow-size [sz 12]
                            #:color [col #f]
                            #:line-width [lw #f]
                            #:under? [under? #f]
@@ -99,12 +97,11 @@
     (pin-curve* #f #t p src src-find dest dest-find
                 sa ea sp ep sz col lw under? solid?))
 
-  (define (pin-arrows-curve p 
+  (define (pin-arrows-curve sz p 
                             src src-find
                             dest dest-find
                             #:start-angle [sa #f] #:end-angle [ea #f]
                             #:start-pull [sp #f] #:end-pull [ep #f]
-                            #:arrow-size [sz 12]
                             #:color [col #f]
                             #:line-width [lw #f]
                             #:under? [under? #f]

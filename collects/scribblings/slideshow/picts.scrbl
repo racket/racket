@@ -319,7 +319,8 @@ the existing @scheme[pict] drawing, instead of on top. If
 @scheme[solid?] is false, then the arrowheads are hollow instead of
 filled.}
 
-@defproc*[([(pin-curve [pict pict?]
+@defproc*[([(pin-curve [arrow-size real? 12]
+                       [pict pict?]
                        [src pict-path?]
                        [find-src (pict? pict-path? . -> . (values real? real?))]
                        [dest pict-path?]
@@ -328,12 +329,12 @@ filled.}
                        [#:end-angle end-angle (or/c real? #f) #f]
                        [#:start-pull start-pull (or/c real? #f) #f]
                        [#:end-pull end-pull (or/c real? #f) #f]
-                       [#:arrow-size arrow-size real? 12]
                        [#:line-width line-width (or/c #f real?) #f]
                        [#:color color (or/c #f string? (is-a/c? color%)) #f]
                        [#:under? under? any/c #f])
             pict?]
-           [(pin-arrow-curve [pict pict?]
+           [(pin-arrow-curve [arrow-size real? 12]
+                             [pict pict?]
                              [src pict-path?]
                              [find-src (pict? pict-path? . -> . (values real? real?))]
                              [dest pict-path?]
@@ -342,13 +343,13 @@ filled.}
                              [#:end-angle end-angle (or/c real? #f) #f]
                              [#:start-pull start-pull (or/c real? #f) #f]
                              [#:end-pull end-pull (or/c real? #f) #f]
-                             [#:arrow-size arrow-size real? 12]
                              [#:line-width line-width (or/c #f real?) #f]
                              [#:color color (or/c #f string? (is-a/c? color%)) #f]
                              [#:under? under? any/c #f]
                              [#:solid? solid? any/c #t])
             pict?]
-           [(pin-arrows-curve [pict pict?]
+           [(pin-arrows-curve [arrow-size real? 12]
+                              [pict pict?]
                               [src pict-path?]
                               [find-src (pict? pict-path? . -> . (values real? real?))]
                               [dest pict-path?]
@@ -357,7 +358,6 @@ filled.}
                               [#:end-angle end-angle (or/c real? #f) #f]
                               [#:start-pull start-pull (or/c real? #f) #f]
                               [#:end-pull end-pull (or/c real? #f) #f]
-                              [#:arrow-size arrow-size real? 12]
                               [#:line-width line-width (or/c #f real?) #f]
                               [#:color color (or/c #f string? (is-a/c? color%)) #f]
                               [#:under? under? any/c #f]
