@@ -228,9 +228,9 @@
 (define-struct iworld (in out name info) #:transparent)
 ;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
 
-(define iworld1 (make-iworld (current-input-port) (current-output-port) 'sk '()))
-(define iworld2 (make-iworld (current-input-port) (current-output-port) 'mf '()))
-(define iworld3 (make-iworld (current-input-port) (current-output-port) 'rf '()))
+(define iworld1 (make-iworld (current-input-port) (current-output-port) 'iworld1 '()))
+(define iworld2 (make-iworld (current-input-port) (current-output-port) 'iworld2 '()))
+(define iworld3 (make-iworld (current-input-port) (current-output-port) 'iworld3 '()))
 
 (define (iworld=? u v)
   (check-arg 'iworld=? (iworld? u) 'iworld "first" u)
