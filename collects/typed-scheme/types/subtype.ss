@@ -1,16 +1,17 @@
 #lang scheme/base
 (require "../utils/utils.ss")
 
-(require (except-in (rep type-rep effect-rep rep-utils) sub-eff)
+(require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
 	 "type-utils.ss"
-         "type-comparison.ss"
-         "resolve-type.ss"
+         "comparison.ss"
+         "resolve.ss"
          "type-abbrev.ss"
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match
-         mzlib/trace)
+         mzlib/trace
+	 (for-syntax scheme/base stxclass))
 
 
 
@@ -18,21 +19,14 @@
 ;; s,t both types
 
 (define-struct (exn:subtype exn:fail) (s t))
-#;
-(define-values (fail-sym exn:subtype?)
-  (let ([sym (gensym)])
-    (values sym (lambda (s) (eq? s sym)))))
 
 ;; inference failure - masked before it gets to the user program
 (define-syntax fail!
   (syntax-rules ()
-    [(_ s t) #;(raise fail-sym)
-             (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))
-             #;(error "inference failed" s t)]))
-
+    [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
 
 ;; data structures for remembering things on recursive calls
-(define (empty-set) '())  
+(define (empty-set) '())
 
 (define current-seen (make-parameter (empty-set)))
 
@@ -94,19 +88,20 @@
 (define (supertype-of-one/arr A s ts)
   (ormap (lambda (e) (arr-subtype*/no-fail A e s)) ts))
 
-(define (sub-eff e1 e2)
-  (match* (e1 e2)
-    [(e e) #t]
-    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: t*))
-     (and (subtype t t*)
-          (subtype t* t))]
-    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: t*))
-     (and (subtype t t*)
-          (subtype t* t))]
-    [(_ _) #f]))
-
-;(trace sub-eff)
-
+(define-syntax (subtype-seq stx)
+  (define-syntax-class sub*
+    (pattern e:expr))
+  (syntax-parse stx
+    [(_ init (s1:sub* . args1) (s:sub* . args) ...)
+     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s1 s ...))])
+       (with-syntax ([(clauses ...)
+		      (for/list ([s (syntax->list #'(s1 s ...))]
+				 [args (syntax->list #'(args1 args ...))]
+				 [A (syntax->list #'(init A* ...))]
+				 [A-next (syntax->list #'(A* ... A-last))])
+			 #`[A-next (#,s #,A . #,args)])])
+	#'(let* (clauses ...)
+	    A-last)))]))
 
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
@@ -115,11 +110,16 @@
     (match (list s t)
       ;; top for functions is above everything
       [(list _ (top-arr:)) A0]
-      [(list (arr: s1 s2 #f #f (list (cons kw s-kw-ty) ...) thn-eff els-eff) 
-             (arr: t1 t2 #f #f (list (cons kw t-kw-ty) ...) thn-eff  els-eff))       
-       (let* ([A1 (subtypes* A0 t1 s1)]
-              [A2 (subtypes* A1 t-kw-ty s-kw-ty)])
-         (subtype* A1 s2 t2))]
+      [(list (arr: s1 s2 #f #f s-kws) 
+             (arr: t1 t2 #f #f t-kws))
+       ;; optional keywords are subtypes of required keywords
+       (unless (for/and ([s-r s-req] [t-r t-req])
+			(or (eq? s-r t-r) (not s-r)))
+	       (fail! s t))
+       (subtype-seq A0
+		    (subtypes* t1 s1)
+		    (kw-subtypes* t-kws s-kws)
+		    (subtype* s2 t2))]
       [(list (arr: s1 s2 s3 #f (list (cons kw s-kw-ty) ...) thn-eff els-eff)
              (arr: t1 t2 t3 #f (list (cons kw t-kw-ty) ...) thn-eff* els-eff*))
        (unless 
