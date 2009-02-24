@@ -34,6 +34,7 @@ trigger runtime errors in check syntax.
   ;; tests : (listof test)
   (define tests
     (list 
+     
      (build-test "12345"
                 '(("12345" constant)))
      (build-test "'abcdef"
@@ -829,7 +830,25 @@ trigger runtime errors in check syntax.
                       (" "             default-color)
                       ("foldl"         imported-variable)
                       (")"             default-color))
-                    #f)))
+                    #f)
+     
+     (build-test "#lang scheme/base\n(require scheme)\n(define-syntax m (lambda (x) #'1))"
+                 '(("#lang "        default-color)
+                   ("scheme/base"   error)
+                   ("\n("           default-color)
+                   ("require"       imported)
+                   (" scheme)\n("   default-color)
+                   ("define-syntax" imported)
+                   (" "             default-color)
+                   ("m"             lexically-bound)
+                   (" ("            default-color)
+                   ("lambda"        imported)
+                   (" ("            default-color)
+                   ("x"             lexically-bound)
+                   (") "            default-color)
+                   ("#'"            imported)
+                   ("1))"           default-color))
+                 (list '((27 33) (19 26) (36 49) (53 59) (64 66))))))
   
   (define (run-test)
     (check-language-level #rx"Pretty")
