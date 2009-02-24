@@ -1145,7 +1145,7 @@
                                   (cons (reverse side-conditions) side-conditionss)
                                   (cons (reverse bindings) bindingss))]
              [else 
-              (syntax-case (car stuff) (side-condition)
+              (syntax-case (car stuff) (where side-condition)
                 [(side-condition tl-side-conds ...) 
                  (s-loop (cdr stuff)
                          (append (syntax->list #'(tl-side-conds ...)) side-conditions)
