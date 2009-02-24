@@ -1045,7 +1045,8 @@ please adhere to these guidelines:
   (no-language-chosen "No language chosen")
  
  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
-  
+  (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
+   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrScheme cannot process programs until you choose a programming language.")
   

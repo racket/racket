@@ -368,7 +368,7 @@
                                [callback void]))
     (define auto-text-panel (new group-box-panel%
                                  [parent new-parent]
-                                 [label "Auto-text"])) ;!! need string-constant
+                                 [label (string-constant module-language-auto-text)]))
     (define auto-text-text-box (new text-field%
                                     [parent auto-text-panel]
                                     [label #f]
@@ -490,7 +490,10 @@
               (format "~s" vec))))
     
     (define (get-auto-text)
-      (string-append (send auto-text-text-box get-value) "\n"))
+      (let ([str (send auto-text-text-box get-value)])
+        (cond
+          [(equal? str "") ""]
+          [else (string-append str "\n")])))
     
     (define (install-auto-text str)
       (send auto-text-text-box set-value (regexp-replace #rx"\n$" str "")))
@@ -500,6 +503,7 @@
     
     (install-collection-paths '(default))
     (update-buttons)
+    (install-auto-text default-auto-text)
     
     (case-lambda
       [()
