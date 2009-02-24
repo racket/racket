@@ -42,62 +42,24 @@
              (list? p)
              (andmap pict? p))))
 
-  (define (pin-line p src find-src dest find-dest
-                    #:line-width [lw #f]
+  (define (pin-line sz p 
+                    src src-find
+                    dest dest-find
+                    #:start-angle [sa #f] #:end-angle [ea #f]
+                    #:start-pull [sp #f] #:end-pull [ep #f]
                     #:color [col #f]
-                    #:under? [under? #f])
-    (finish-pin (launder (t:pin-line (ghost p)
-                                     src find-src 
-                                     dest find-dest))
-                p lw col under?))
+                    #:line-width [lw #f]
+                    #:under? [under? #f]
+                    #:solid? [solid? #t])
+    (if (not (or sa ea))
+        (finish-pin (launder (t:pin-line (ghost p)
+                                         src src-find 
+                                         dest dest-find))
+                    p lw col under?)
+        (pin-curve* #f #f p src src-find dest dest-find
+                    sa ea sp ep sz col lw under? #t)))
 
-  (define (pin-arrow-line sz p src find-src dest find-dest
-                          #:line-width [lw #f]
-                          #:color [col #f]
-                          #:under? [under? #f]
-                          #:solid? [solid? #t])
-    (finish-pin (launder (t:pin-arrow-line sz (ghost p)
-                                           src find-src 
-                                           dest find-dest
-                                           #f #f #f solid?))
-                p lw col under?))
-
-  (define (pin-arrows-line sz p src find-src dest find-dest
-                           #:line-width [lw #f]
-                           #:color [col #f]
-                           #:under? [under? #f]
-                           #:solid? [solid? #t])
-    (finish-pin (launder (t:pin-arrows-line sz (ghost p)
-                                            src find-src 
-                                            dest find-dest
-                                            #f #f #f solid?))
-                p lw col under?))
-
-  (define (pin-curve sz p 
-                     src src-find
-                     dest dest-find
-                     #:start-angle [sa #f] #:end-angle [ea #f]
-                     #:start-pull [sp #f] #:end-pull [ep #f]
-                     #:color [col #f]
-                     #:line-width [lw #f]
-                     #:under? [under? #f]
-                     #:solid? [solid? #t])
-    (pin-curve* #f #f p src src-find dest dest-find
-                sa ea sp ep sz col lw under? #t))
-
-  (define (pin-arrow-curve sz p 
-                           src src-find
-                           dest dest-find
-                           #:start-angle [sa #f] #:end-angle [ea #f]
-                           #:start-pull [sp #f] #:end-pull [ep #f]
-                           #:color [col #f]
-                           #:line-width [lw #f]
-                           #:under? [under? #f]
-                           #:solid? [solid? #t])
-    (pin-curve* #f #t p src src-find dest dest-find
-                sa ea sp ep sz col lw under? solid?))
-
-  (define (pin-arrows-curve sz p 
+    (define (pin-arrow-line sz p 
                             src src-find
                             dest dest-find
                             #:start-angle [sa #f] #:end-angle [ea #f]
@@ -106,9 +68,33 @@
                             #:line-width [lw #f]
                             #:under? [under? #f]
                             #:solid? [solid? #t])
-    (pin-curve* #t #t p src src-find dest dest-find
-                sa ea sp ep sz col lw under? solid?))
+      (if (not (or sa ea))
+          (finish-pin (launder (t:pin-arrow-line sz (ghost p)
+                                                 src src-find 
+                                                 dest dest-find
+                                                 #f #f #f solid?))
+                      p lw col under?)
+          (pin-curve* #f #t p src src-find dest dest-find
+                      sa ea sp ep sz col lw under? solid?)))
 
+    (define (pin-arrows-line sz p 
+                             src src-find
+                             dest dest-find
+                             #:start-angle [sa #f] #:end-angle [ea #f]
+                             #:start-pull [sp #f] #:end-pull [ep #f]
+                             #:color [col #f]
+                             #:line-width [lw #f]
+                             #:under? [under? #f]
+                             #:solid? [solid? #t])
+      (if (not sa ea)
+          (finish-pin (launder (t:pin-arrows-line sz (ghost p)
+                                                  src src-find 
+                                                  dest dest-find
+                                                  #f #f #f solid?))
+                      p lw col under?)
+          (pin-curve* #t #t p src src-find dest dest-find
+                      sa ea sp ep sz col lw under? solid?)))
+    
   (define (pin-curve* start-arrow? end-arrow? p 
                       src src-find
                       dest dest-find
@@ -199,7 +185,6 @@
            frame
            pict-path?
            pin-line pin-arrow-line pin-arrows-line
-           pin-curve pin-arrow-curve pin-arrows-curve
            (except-out (all-from-out texpict/mrpict)
                        
                        dash-hline dash-vline
