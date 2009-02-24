@@ -12,8 +12,6 @@
 
 @guideintro["regexp"]{regular expressions}
 
-@local-table-of-contents[]
-
 @deftech{Regular expressions} are specified as strings or byte
 strings, using the same pattern language as the Unix utility
 @exec{egrep} or Perl. A string-specified pattern produces a character

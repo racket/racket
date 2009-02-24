@@ -319,6 +319,66 @@ the existing @scheme[pict] drawing, instead of on top. If
 @scheme[solid?] is false, then the arrowheads are hollow instead of
 filled.}
 
+@defproc*[([(pin-curve [pict pict?]
+                       [src pict-path?]
+                       [find-src (pict? pict-path? . -> . (values real? real?))]
+                       [dest pict-path?]
+                       [find-dest (pict? pict-path? . -> . (values real? real?))]
+                       [#:start-angle start-angle (or/c real? #f) #f]
+                       [#:end-angle end-angle (or/c real? #f) #f]
+                       [#:start-pull start-pull (or/c real? #f) #f]
+                       [#:end-pull end-pull (or/c real? #f) #f]
+                       [#:arrow-size arrow-size real? 12]
+                       [#:line-width line-width (or/c #f real?) #f]
+                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                       [#:under? under? any/c #f])
+            pict?]
+           [(pin-arrow-curve [pict pict?]
+                             [src pict-path?]
+                             [find-src (pict? pict-path? . -> . (values real? real?))]
+                             [dest pict-path?]
+                             [find-dest (pict? pict-path? . -> . (values real? real?))]
+                             [#:start-angle start-angle (or/c real? #f) #f]
+                             [#:end-angle end-angle (or/c real? #f) #f]
+                             [#:start-pull start-pull (or/c real? #f) #f]
+                             [#:end-pull end-pull (or/c real? #f) #f]
+                             [#:arrow-size arrow-size real? 12]
+                             [#:line-width line-width (or/c #f real?) #f]
+                             [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                             [#:under? under? any/c #f]
+                             [#:solid? solid? any/c #t])
+            pict?]
+           [(pin-arrows-curve [pict pict?]
+                              [src pict-path?]
+                              [find-src (pict? pict-path? . -> . (values real? real?))]
+                              [dest pict-path?]
+                              [find-dest (pict? pict-path? . -> . (values real? real?))]
+                              [#:start-angle start-angle (or/c real? #f) #f]
+                              [#:end-angle end-angle (or/c real? #f) #f]
+                              [#:start-pull start-pull (or/c real? #f) #f]
+                              [#:end-pull end-pull (or/c real? #f) #f]
+                              [#:arrow-size arrow-size real? 12]
+                              [#:line-width line-width (or/c #f real?) #f]
+                              [#:color color (or/c #f string? (is-a/c? color%)) #f]
+                              [#:under? under? any/c #f]
+                              [#:solid? solid? any/c #t]) 
+            pict?])]{
+
+Like @scheme[pin-arrow-line], etc., but draws a Bezier curve based on
+@scheme[start-angle], @scheme[end-angle], @scheme[start-pull], and
+@scheme[end-pull].
+
+The @scheme[start-angle] and @scheme[end-angle] arguments specify the
+direction of curve at its start and end positions; if either is
+@scheme[#f], it defaults to the angle of a straight line from the
+start position to end position.
+
+The @scheme[start-pull] and @scheme[end-pull] arguments specify a kind
+of momentum for the starting and ending angles; larger values preserve
+the angle longer. If @scheme[start-pull] or @scheme[end-pull] is
+@scheme[#f], then it is replaced with one-fourth of the distance
+between the start and end points.}
+
 @defthing[text-style/c contract?]{
 
 A contract that matches the second argument of @scheme[text].}
