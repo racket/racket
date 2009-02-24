@@ -287,8 +287,8 @@ argument for consistency with the other functions.}
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:start-angle start-angle (or/c real? #f) #f]
                       [#:end-angle end-angle (or/c real? #f) #f]
-                      [#:start-pull start-pull (or/c real? #f) #f]
-                      [#:end-pull end-pull (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f])
@@ -300,8 +300,8 @@ argument for consistency with the other functions.}
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:start-angle start-angle (or/c real? #f) #f]
                       [#:end-angle end-angle (or/c real? #f) #f]
-                      [#:start-pull start-pull (or/c real? #f) #f]
-                      [#:end-pull end-pull (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -314,8 +314,8 @@ argument for consistency with the other functions.}
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:start-angle start-angle (or/c real? #f) #f]
                       [#:end-angle end-angle (or/c real? #f) #f]
-                      [#:start-pull start-pull (or/c real? #f) #f]
-                      [#:end-pull end-pull (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -343,9 +343,7 @@ The @scheme[start-angle], @scheme[end-angle], @scheme[start-pull], and
 
  @item{The @scheme[start-pull] and @scheme[end-pull] arguments specify
        a kind of momentum for the starting and ending angles; larger
-       values preserve the angle longer. If @scheme[start-pull] or
-       @scheme[end-pull] is @scheme[#f], then it is replaced with
-       one-fourth of the distance between the start and end points.}
+       values preserve the angle longer.}
 
 ]
 

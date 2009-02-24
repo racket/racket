@@ -108,8 +108,8 @@
              [ea (or ea
                      (atan (- sy0 dy0) (- dx0 sx0)))]
              [d (sqrt (+ (* (- dy0 sy0) (- dy0 sy0)) (* (- dx0 sx0) (- dx0 sx0))))]
-             [sp (or sp (* 1/4 d))]
-             [ep (or ep (* 1/4 d))])
+             [sp (* (or sp 1/4) d)]
+             [ep (* (or ep 1/4) d)])
         (let ([dx (if end-arrow? (- dx0 (* sz (cos ea))) dx0)]
               [dy (if end-arrow? (+ dy0 (* sz (sin ea))) dy0)]
               [sx (if start-arrow? (+ sx0 (* sz (cos sa))) sx0)]
