@@ -977,9 +977,9 @@
                                                          [((tl-var tl-exp) ...) bindings])
                                              (syntax 
                                               (λ (name bindings)
-                                                (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                                          (term-let ([tl-var (term tl-exp)] ...)
-                                                                    (term-let-fn ((name name))
+                                                (term-let-fn ((name name))
+                                                             (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
+                                                                       (term-let ([tl-var (term tl-exp)] ...)
                                                                                  (term rhs)))))))))
                                        (syntax->list (syntax (lhs ...)))
                                        (syntax->list (syntax (rhs ...)))

@@ -536,6 +536,16 @@
             'no-exn)
           'no-exn))
     
+  (let ()
+    ;; test that 'where' clauses can contain recursive calls.
+    (define-metafunction empty-language
+      [(f (any)) 
+       x
+       (where x (f any))]
+      [(f any) any])
+    (test (term (f ((((x))))))
+          (term x)))
+  
   ;; test that tracing works properly
   ;; note that caching comes into play here (which is why we don't see the recursive calls)
   (let ()
