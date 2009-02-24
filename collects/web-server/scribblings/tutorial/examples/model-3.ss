@@ -1,5 +1,5 @@
 #lang scheme
-(require (prefix-in sqlite: (planet jaymccarthy/sqlite:3/sqlite)))
+(require (prefix-in sqlite: (planet jaymccarthy/sqlite:4)))
 
 ;; A blog is a (make-blog db)
 ;; where db is an sqlite database handle
@@ -37,8 +37,7 @@
   (local [(define (row->post a-row)
             (make-post 
              a-blog
-             (string->number
-              (vector-ref a-row 0))))
+             (vector-ref a-row 0)))
           (define rows (sqlite:select
                         (blog-db a-blog)
                         "SELECT id FROM posts"))]

@@ -948,7 +948,6 @@ So, in the next section, we'll talk about how to use an SQL database to store ou
                                   web-server/scribblings/tutorial/examples/dummy-3
                                   web-server/scribblings/tutorial/dummy-sqlite)]
 @(require (for-label web-server/scribblings/tutorial/dummy-sqlite))
-@;@(require (prefix-in sqlite: (for-label (planet jaymccarthy/sqlite:3/sqlite))))
 
 Our next task is to employ an SQL database for the blog model. We'll be using SQLite with the @schememodname[(planet jaymccarthy/sqlite:3/sqlite)] PLaneT package. We add the following to the top of our model:
 
@@ -961,7 +960,7 @@ We now have the following bindings:
 @defthing[sqlite:db? (any/c . -> . boolean?)]
 @defthing[sqlite:open (path? . -> . sqlite:db?)]
 @defthing[sqlite:exec/ignore (sqlite:db? string? . -> . void)]
-@defthing[sqlite:select (sqlite:db? string? . -> . (listof vector?))]
+@defthing[sqlite:select (sqlite:db? string? . -> . (listof (vectorof (or/c integer? number? string? bytes? false/c))))]
 @defthing[sqlite:insert (sqlite:db? string? . -> . integer?)]
 
 
@@ -1068,8 +1067,7 @@ The only function that creates posts is @scheme[blog-posts]:
   (local [(define (row->post a-row)
             (make-post 
              a-blog
-             (string->number
-              (vector-ref a-row 0))))
+             (vector-ref a-row 0)))
           (define rows (sqlite:select
                         (blog-db a-blog)
                         "SELECT id FROM posts"))]
