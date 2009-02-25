@@ -4,18 +4,12 @@ Games.
 
 Problems:
 
- - handling multiple chunks is broken right now, so the
-   chunkref-introducting macro (in scribble/private/lp.ss)
-   is disabled.
-
  - Need to make 'a-chunk' be a real macro, I expect. (used in
    scribble/private/lp.ss)
 
  - hyperlink bound top-level identifiers to their bindings?
 
  - do unbound chunk ids signal syntax errors? How about unused ones?
-
- - toc entries should not be underlined.
 
 To document:
 
