@@ -7,18 +7,21 @@
   ;; maps chunk identifiers to a counter, so we can distinguish multiple uses
   ;; of the same name
   (define chunk-numbers (make-free-identifier-mapping))
-  (define (get-chunk-number id)
+  (define (get-chunk-number id install?)
     (let ([n (add1 (free-identifier-mapping-get chunk-numbers id
                                                 (lambda () 0)))])
-      (free-identifier-mapping-put! chunk-numbers id n)
-      n)))
+      (when install?
+        (free-identifier-mapping-put! chunk-numbers id n))
+      n))
+  (define (register-chunk-name name)
+    (get-chunk-number name #t)))
 
 (define-syntax (chunk stx)
   (syntax-case stx ()
     [(_ name expr ...) 
      ;; no need for more error checking, using chunk for the code will do that
      (identifier? #'name)
-     (let ([n (get-chunk-number #'name)]
+     (let ([n (get-chunk-number (syntax-local-introduce #'name) #f)]
            [str (symbol->string (syntax-e #'name))])
 
        (syntax-local-lift-expression #'(quote-syntax (a-chunk name expr ...)))
@@ -43,9 +46,9 @@
              #`(begin
                  (require (for-label for-label-mod ... ...))
                  ;; why does this happen twice?
-                 #;
                  (define-syntax name (make-element-id-transformer
                                       (lambda (stx) #'(chunkref name))))
+                 (begin-for-syntax (register-chunk-name #'name))
                  (make-splice
                   (list (make-toc-element
                          #f
