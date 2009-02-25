@@ -146,7 +146,6 @@
         (close-output-port (iworld-out p))
         (close-input-port (iworld-in p))
         (send gui add (format "~a !! closed port" (iworld-name p)))
-        (set! iworlds (remq p iworlds))
         (pdisconnect p)
         (cont))
       
