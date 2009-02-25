@@ -1,104 +1,45 @@
 #lang scheme
 (require (planet schematics/schemeunit:3)
          (planet schematics/schemeunit:3/text-ui)
-         xml)
+         xml
+         "to-list.ss")
 
 ;; test-bad-read-input : format-str str -> void
 ;; First argument is the input, second is the error message
-(define (test-read-xml/exn format-str err-string)
+(define ((mk-test-read-xml/exn read-xml) format-str err-string)
   (define str (format format-str))
   (test-exn
    str
    (lambda (x)
-     (and (exn:xml? x)
-          (equal? (exn-message x) err-string)))
+     (regexp-match (regexp-quote err-string) (exn-message x)))
    (lambda ()
      (read-xml (open-input-string str)))))
 
-(define (document->list xml)
-  (list 'make-document
-        (prolog->list (document-prolog xml))
-        (element->list (document-element xml))
-        (list* 'list (map misc->list (document-misc xml)))))
-(define (prolog->list p)
-  (list* 'make-prolog
-         (list* 'list (map misc->list (prolog-misc p)))
-         (dtd->list (prolog-dtd p))
-         (map misc->list (prolog-misc2 p))))
-(define (dtd->list d)
-  (if d
-      (list 'make-document-type
-            (document-type-name d)
-            (external-dtd->list (document-type-external d))
-            (document-type-inlined d))
-      #f))
-(define (external-dtd->list d)
-  (cond
-    [(external-dtd/system? d)
-     (list 'make-external-dtd/system (external-dtd-system d))]
-    [(external-dtd/public? d)
-     (list 'make-external-dtd/public (external-dtd-system d) (external-dtd/public-public d))]
-    [(external-dtd? d)
-     (list 'make-external-dtd (external-dtd-system d))]))
-(define (element->list e)
-  (list 'make-element
-        (source->list e)
-        (list 'quote (element-name e))
-        (list* 'list (map attribute->list (element-attributes e)))
-        (list* 'list (map content->list (element-content e)))))
-(define (misc->list e)
-  (cond
-    [(comment? e)
-     (comment->list e)]
-    [(p-i? e)
-     (p-i->list e)]))
-(define (content->list e)
-  (cond
-    [(pcdata? e) (pcdata->list e)]
-    [(element? e) (element->list e)]
-    [(entity? e) (entity->list e)]
-    [(comment? e) (comment->list e)]
-    [(cdata? e) (cdata->list e)]))
-(define (attribute->list e)
-  (list 'make-attribute
-        (source->list e)
-        (attribute-name e)
-        (attribute-value e)))
-(define (entity->list e)
-  (list 'make-entity
-        (source->list e)
-        (list 'quote (entity-text e))))
-(define (pcdata->list e)
-  (list 'make-pcdata
-        (source->list e)
-        (pcdata-string e)))
-(define (cdata->list e)
-  (list 'make-cdata
-        (source->list e)
-        (cdata-string e)))
-(define (p-i->list e)
-  (list 'make-p-i
-        (source->list e)
-        (p-i-target-name e)
-        (p-i-instruction e)))
-(define (comment->list e)
-  (list 'make-comment
-        (comment-text e)))
-(define (source->list e)
-  (list 'make-source
-        (location->list (source-start e))
-        (location->list (source-stop e))))
-(define (location->list e)
-  (if (symbol? e)
-      e
-      (list 'make-location
-            (location-line e)
-            (location-char e)
-            (location-offset e))))
-
-
+(define test-read-xml/exn (mk-test-read-xml/exn read-xml))
 (define (test-read-xml str xml)
   (test-equal? str (document->list (read-xml (open-input-string str))) xml))
+
+(define test-syntax:read-xml/exn (mk-test-read-xml/exn syntax:read-xml))
+(define (test-syntax:read-xml str xml)
+  (test-equal? str (syntax->datum (syntax:read-xml (open-input-string str))) xml))
+
+(define test-read-xml/element/exn (mk-test-read-xml/exn read-xml/element))
+(define (test-read-xml/element str xml)
+  (test-equal? str (element->list (read-xml/element (open-input-string str))) xml))
+
+(define test-syntax:read-xml/element/exn (mk-test-read-xml/exn syntax:read-xml/element))
+(define (test-syntax:read-xml/element str xml)
+  (test-equal? str (syntax->datum (read-xml/element (open-input-string str))) xml))
+
+(define (test-write-xml str)
+  (test-equal? str (with-output-to-string (lambda () (write-xml (read-xml (open-input-string str))))) str))
+(define (test-write-xml/content str)
+  (test-equal? str (with-output-to-string (lambda () (write-xml/content (document-element (read-xml (open-input-string str)))))) str))
+
+(define (test-display-xml str res)
+  (test-equal? str (with-output-to-string (lambda () (display-xml (read-xml (open-input-string str))))) res))
+(define (test-display-xml/content str res)
+  (test-equal? str (with-output-to-string (lambda () (display-xml/content (document-element (read-xml (open-input-string str)))))) res))
 
 (define (test-xexpr? xe)
   (test-not-false (format "~S" xe) (xexpr? xe)))
@@ -190,6 +131,9 @@
      (test-read-xml/exn
       "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
      
+     (test-read-xml/exn "" "read-xml: parse-error: expected root element - received #<eof>")
+     (test-read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document #<element>")
+     
      (test-read-xml 
       "<doc><bold>hi</bold> there!</doc>"
       '(make-document
@@ -245,74 +189,322 @@
       '(make-document
         (make-prolog (list) #f)
         (make-element (make-source (make-location 1 16 17) (make-location 1 22 23)) 'br (list) (list))
-        (list))))
+        (list)))
+     
+     ; XXX need more read-xml tests
+     
+     )
     
-    ; XXX need more
-
+    (test-suite
+     "read-xml/element"
+     (test-read-xml/element/exn "<" "read-xml: lex-error: at position 1.1/2: unexpected eof")
+     (test-read-xml/element/exn "<a>" "read-xml: parse-error: unclosed `a' tag at [1.0/1 1.3/4]")
+     (test-read-xml/element/exn
+      "<a></b>"
+      "read-xml: parse-error: start tag `a' at [1.0/1 1.3/4] doesn't match end tag `b' at [1.3/4 1.7/8]")
+     (test-read-xml/element/exn
+      "<a <a>" "read-xml: lex-error: at position 1.4/5: expected / or > to close tag `a'")
+     
+     (test-read-xml/element/exn "~n<" "read-xml: lex-error: at position 2.1/3: unexpected eof")
+     (test-read-xml/element/exn "~n<a>" "read-xml: parse-error: unclosed `a' tag at [2.0/2 2.3/5]")
+     (test-read-xml/element/exn
+      "~n<a></b>"
+      "read-xml: parse-error: start tag `a' at [2.0/2 2.3/5] doesn't match end tag `b' at [2.3/5 2.7/9]")
+     (test-read-xml/element/exn
+      "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
+     
+     (test-read-xml/element/exn "" "read-xml: parse-error: expected root element - received #<eof>")
+     
+     (test-read-xml/element
+      "<br /><br />"
+      '(make-element (make-source (make-location 1 0 1) (make-location 1 6 7)) 'br (list) (list)))
+     
+     (test-read-xml/element 
+      "<doc><bold>hi</bold> there!</doc>"
+      '(make-element
+         (make-source (make-location 1 0 1) (make-location 1 33 34))
+         'doc
+         (list)
+         (list
+          (make-element
+           (make-source (make-location 1 5 6) (make-location 1 20 21))
+           'bold
+           (list)
+           (list (make-pcdata (make-source (make-location 1 11 12) (make-location 1 13 14)) "hi")))
+          (make-pcdata (make-source (make-location 1 20 21) (make-location 1 27 28)) " there!"))))
+     
+     (test-read-xml/element
+      "<a href=\"#\">inner</a>"
+      '(make-element
+         (make-source (make-location 1 0 1) (make-location 1 21 22))
+         'a
+         (list (make-attribute (make-source (make-location 1 3 4) (make-location 1 11 12)) href "#"))
+         (list (make-pcdata (make-source (make-location 1 12 13) (make-location 1 17 18)) "inner"))))
+     
+     (test-read-xml/element
+      "<root>&nbsp;</root>"
+      '(make-element
+         (make-source (make-location 1 0 1) (make-location 1 19 20))
+         'root
+         (list)
+         (list (make-entity (make-source (make-location 1 6 7) (make-location 1 12 13)) 'nbsp))))
+     
+     (test-read-xml/element
+      "<root>&#40;</root>"
+      '(make-element
+         (make-source (make-location 1 0 1) (make-location 1 18 19))
+         'root
+         (list)
+         (list (make-entity (make-source (make-location 1 6 7) (make-location 1 11 12)) '40))))
+     
+     (test-read-xml/element/exn
+      "<!-- comment --><br />"
+      "read-xml: parse-error: expected root element - received #<comment>")
+     
+     ; XXX need more read-xml/element tests
+     
+     )
+    
+    (test-suite
+     "syntax:read-xml"
+     (test-syntax:read-xml/exn "<" "read-xml: lex-error: at position 1.1/2: unexpected eof")
+     (test-syntax:read-xml/exn "<a>" "read-xml: parse-error: unclosed `a' tag at [1.0/1 1.3/4]")
+     (test-syntax:read-xml/exn
+      "<a></b>"
+      "read-xml: parse-error: start tag `a' at [1.0/1 1.3/4] doesn't match end tag `b' at [1.3/4 1.7/8]")
+     (test-syntax:read-xml/exn
+      "<a <a>" "read-xml: lex-error: at position 1.4/5: expected / or > to close tag `a'")
+     
+     (test-syntax:read-xml/exn "~n<" "read-xml: lex-error: at position 2.1/3: unexpected eof")
+     (test-syntax:read-xml/exn "~n<a>" "read-xml: parse-error: unclosed `a' tag at [2.0/2 2.3/5]")
+     (test-syntax:read-xml/exn
+      "~n<a></b>"
+      "read-xml: parse-error: start tag `a' at [2.0/2 2.3/5] doesn't match end tag `b' at [2.3/5 2.7/9]")
+     (test-syntax:read-xml/exn
+      "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
+     
+     (test-syntax:read-xml/exn "" "read-xml: parse-error: expected root element - received #<eof>")
+     (test-syntax:read-xml/exn "<br /><br />" "read-xml: parse-error: extra stuff at end of document #<element>")
+     
+     (test-syntax:read-xml 
+      "<doc><bold>hi</bold> there!</doc>"
+      '(doc () (bold () "hi") " there!"))
+     
+     (test-syntax:read-xml
+      "<a href=\"#\">inner</a>"
+      '(a ([href "#"]) "inner"))
+     
+     (test-syntax:read-xml
+      "<root>&nbsp;</root>"
+      '(root () nbsp))
+     
+     (test-syntax:read-xml
+      "<root>&#40;</root>"
+      '(root () 40))
+     
+     (test-syntax:read-xml/exn
+      "<!-- comment --><br />"
+      "read-xml: parse-error: expected root element - received #f")
+     
+     ; XXX need more syntax:read-xml tests
+     
+     )
+    
+    (test-suite
+     "syntax:read-xml/element"
+     (test-syntax:read-xml/element/exn "<" "read-xml: lex-error: at position 1.1/2: unexpected eof")
+     (test-syntax:read-xml/element/exn "<a>" "read-xml: parse-error: unclosed `a' tag at [1.0/1 1.3/4]")
+     (test-syntax:read-xml/element/exn
+      "<a></b>"
+      "read-xml: parse-error: start tag `a' at [1.0/1 1.3/4] doesn't match end tag `b' at [1.3/4 1.7/8]")
+     (test-syntax:read-xml/element/exn
+      "<a <a>" "read-xml: lex-error: at position 1.4/5: expected / or > to close tag `a'")
+     
+     (test-syntax:read-xml/element/exn "~n<" "read-xml: lex-error: at position 2.1/3: unexpected eof")
+     (test-syntax:read-xml/element/exn "~n<a>" "read-xml: parse-error: unclosed `a' tag at [2.0/2 2.3/5]")
+     (test-syntax:read-xml/element/exn
+      "~n<a></b>"
+      "read-xml: parse-error: start tag `a' at [2.0/2 2.3/5] doesn't match end tag `b' at [2.3/5 2.7/9]")
+     (test-syntax:read-xml/element/exn
+      "~n<a <a>" "read-xml: lex-error: at position 2.4/6: expected / or > to close tag `a'")
+     
+     (test-syntax:read-xml/element/exn "" "read-xml: parse-error: expected root element - received #<eof>")
+     (test-syntax:read-xml/element 
+      "<br /><br />"
+      '(br ()))
+     
+     (test-syntax:read-xml/element 
+      "<doc><bold>hi</bold> there!</doc>"
+      '(doc () (bold () "hi") " there!"))
+     
+     (test-syntax:read-xml/element
+      "<a href=\"#\">inner</a>"
+      '(a ([href "#"]) "inner"))
+     
+     (test-syntax:read-xml/element
+      "<root>&nbsp;</root>"
+      '(root () nbsp))
+     
+     (test-syntax:read-xml/element
+      "<root>&#40;</root>"
+      '(root () 40))
+     
+     (test-syntax:read-xml/element/exn
+      "<!-- comment --><br />"
+      "read-xml: parse-error: expected root element - received #f")
+     
+     ; XXX need more syntax:read-xml/element tests
+     
+     )
+    
+    (test-suite
+     "write-xml"
+     (test-write-xml "<doc><bold>hi</bold> there!</doc>")
+     (test-write-xml "<a href=\"#\">inner</a>")
+     (test-write-xml "<root>&nbsp;</root>")
+     (test-write-xml "<root>&#40;</root>")
+     (test-write-xml "<br />")
+     ; XXX need more write-xml tests
+     )
+    
+    (test-suite
+     "write-xml/content"
+     (test-write-xml/content "<doc><bold>hi</bold> there!</doc>")
+     (test-write-xml/content "<a href=\"#\">inner</a>")
+     (test-write-xml/content "<root>&nbsp;</root>")
+     (test-write-xml/content "<root>&#40;</root>")
+     (test-write-xml/content "<br />")
+     ; XXX need more write-xml/content tests
+     )
+    
+    (test-suite
+     "display-xml"
+     (test-display-xml "<doc><bold>hi</bold> there!</doc>" "\n<doc>\n  <bold>\n    hi\n  </bold>\n   there!\n</doc>")
+     (test-display-xml "<a href=\"#\">inner</a>" "\n<a href=\"#\">\n  inner\n</a>")
+     (test-display-xml "<root>&nbsp;</root>" "\n<root>&nbsp;\n</root>")
+     (test-display-xml "<root>&#40;</root>" "\n<root>&#40;\n</root>")
+     (test-display-xml "<br />" "\n<br />")
+     ; XXX need more display-xml tests
+     )
+    
+    (test-suite
+     "display-xml/content"
+     (test-display-xml/content "<doc><bold>hi</bold> there!</doc>" "\n<doc>\n  <bold>\n    hi\n  </bold>\n   there!\n</doc>")
+     (test-display-xml/content "<a href=\"#\">inner</a>" "\n<a href=\"#\">\n  inner\n</a>")
+     (test-display-xml/content "<root>&nbsp;</root>" "\n<root>&nbsp;\n</root>")
+     (test-display-xml/content "<root>&#40;</root>" "\n<root>&#40;\n</root>")
+     (test-display-xml/content "<br />" "\n<br />")
+     ; XXX need more display-xml/content tests
+     )
     )
-  
-  
-  (test-suite
-   "xml->xexpr"
-   (test-exn
-    "Non-permissive"
-    (lambda (exn)
-      (and (exn? exn)
-           (regexp-match #rx"Expected content," (exn-message exn))))
-    (lambda ()
-      (xml->xexpr #f)))
    
-   (test-false
-    "Permissive"
-    (parameterize ([permissive? #t])
-      (xml->xexpr #f))))
-  
-  (test-suite 
-   "DOCTYPE"
+   (test-suite 
+    "XML and X-expression Conversions"
+    
+    ; XXX permissive?
+    
+    ; XXX xml->xexpr
+    
+    ; XXX xexpr->string
+    
+    ; XXX eliminate-whitespace
+    
+    ; XXX validate-xexpr
+    
+    ; XXX correct-xexpr?
+    
+    )
    
-   (let ()
-     (define source-string #<<END
+   (test-suite
+    "Parameters"
+    
+    ; XXX empty-tag-shorthand
+    
+    ; XXX html-empty-tags
+    
+    ; XXX collapse-whitespace
+    
+    ; XXX read-comments
+    
+    ; XXX xexpr-drop-empty-attributes
+    
+    )
+   
+   (test-suite
+    "PList Library"
+    
+    ; XXX plist-dict?
+    
+    ; XXX read-plist
+    
+    ; XXX write-plist
+    
+    )
+   
+   (test-suite
+    "Legacy tests"   
+    
+    (test-suite
+     "xml->xexpr"
+     (test-exn
+      "Non-permissive"
+      (lambda (exn)
+        (and (exn? exn)
+             (regexp-match #rx"Expected content," (exn-message exn))))
+      (lambda ()
+        (xml->xexpr #f)))
+     
+     (test-false
+      "Permissive"
+      (parameterize ([permissive? #t])
+        (xml->xexpr #f))))
+    
+    (test-suite 
+     "DOCTYPE"
+     
+     (let ()
+       (define source-string #<<END
 <!DOCTYPE html PUBLIC
  "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"> </html>
 END
-       )
-     
-     (define source-document
-       (read-xml (open-input-string source-string)))
-     (define result-string
-       (with-output-to-string (lambda () (write-xml source-document))))
-     (define expected-string #<<END
+         )
+       
+       (define source-document
+         (read-xml (open-input-string source-string)))
+       (define result-string
+         (with-output-to-string (lambda () (write-xml source-document))))
+       (define expected-string #<<END
 <html xmlns="http://www.w3.org/1999/xhtml"> </html>
 END
-       )
-     (test-equal?
-      "DOCTYPE dropping" result-string expected-string)))
-  
-  (let ()
-    (define a-pi (make-p-i #f #f "foo" "bar"))
-    (define a-p (make-prolog empty #f))
-    (define a-p/pi (make-prolog (list a-pi) #f))
-    (define a-d0
-      (make-document a-p (make-element #f #f 'html empty empty)
-                     empty))
-    (define a-d1
-      (make-document a-p (make-element #f #f 'html empty empty)
-                     (list a-pi)))
-    (define a-d2
-      (make-document a-p/pi (make-element #f #f 'html empty empty)
-                     (list a-pi)))
-    (test-suite 
-     "PIs"
-     (test-equal? "Display XML w/o pis"
-                  (with-output-to-string (lambda () (display-xml a-d0)))
-                  "\n<html />")
-     (test-equal? "Display XML w/ pi in doc-misc"
-                  (with-output-to-string (lambda () (display-xml a-d1)))
-                  "\n<html /><?foo bar?>\n")
-     (test-equal? "Display XML w/ pi in doc-misc and prolog"
-                  (with-output-to-string (lambda () (display-xml a-d2)))
-                  "<?foo bar?>\n\n<html /><?foo bar?>\n")))))
+         )
+       (test-equal?
+        "DOCTYPE dropping" result-string expected-string)))
+    
+    (let ()
+      (define a-pi (make-p-i #f #f "foo" "bar"))
+      (define a-p (make-prolog empty #f))
+      (define a-p/pi (make-prolog (list a-pi) #f))
+      (define a-d0
+        (make-document a-p (make-element #f #f 'html empty empty)
+                       empty))
+      (define a-d1
+        (make-document a-p (make-element #f #f 'html empty empty)
+                       (list a-pi)))
+      (define a-d2
+        (make-document a-p/pi (make-element #f #f 'html empty empty)
+                       (list a-pi)))
+      (test-suite 
+       "PIs"
+       (test-equal? "Display XML w/o pis"
+                    (with-output-to-string (lambda () (display-xml a-d0)))
+                    "\n<html />")
+       (test-equal? "Display XML w/ pi in doc-misc"
+                    (with-output-to-string (lambda () (display-xml a-d1)))
+                    "\n<html /><?foo bar?>\n")
+       (test-equal? "Display XML w/ pi in doc-misc and prolog"
+                    (with-output-to-string (lambda () (display-xml a-d2)))
+                    "<?foo bar?>\n\n<html /><?foo bar?>\n"))))))
 
 (run-tests xml-tests)
