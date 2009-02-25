@@ -40,7 +40,18 @@
                           (map (lambda (expr)
                                  (syntax-case expr (require)
                                    [(require mod ...)
-                                    #'(mod ...)]
+                                    (let loop ([mods (syntax->list #'(mod ...))])
+                                      (cond
+                                        [(null? mods) null]
+                                        [else 
+                                         (syntax-case (car mods) (for-syntax)
+                                           [(for-syntax x ...)
+                                            (loop (cdr mods))
+                                            #;
+                                            (append (loop (syntax->list #'(x ...)))
+                                                    (loop (cdr mods)))]
+                                           [x
+                                            (cons #'x (loop (cdr mods)))])]))]
                                    [else null]))
                                (syntax->list #'(expr ...)))])
              (syntax-local-lift-require

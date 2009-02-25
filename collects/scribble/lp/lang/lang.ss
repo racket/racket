@@ -29,7 +29,7 @@
 (define-syntax (tangle stx)
   (define chunk-mentions '())
   (define stupid-internal-definition-sytnax
-    (unless main-id
+    (unless first-id
       (raise-syntax-error 'scribble/lp "no chunks")))
   (define body
     (let loop ([block (if main-id
