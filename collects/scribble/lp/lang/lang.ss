@@ -6,6 +6,7 @@
 (require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase))
 
 (begin-for-syntax
+  (define first-id #f)
   (define main-id #f)
   (define (mapping-get mapping id)
     (free-identifier-mapping-get mapping id (lambda () '())))
@@ -16,7 +17,8 @@
   (define (get-chunk id)
     (map syntax-local-introduce (mapping-get chunks id)))
   (define (add-to-chunk! id exprs)
-    (unless main-id (set! main-id id))
+    (unless first-id (set! first-id id))
+    (when (eq? (syntax-e id) '<*>) (set! main-id id))
     (free-identifier-mapping-put!
      chunk-groups id
      (cons (syntax-local-introduce id) (mapping-get chunk-groups id)))
@@ -26,8 +28,13 @@
 
 (define-syntax (tangle stx)
   (define chunk-mentions '())
+  (define stupid-internal-definition-sytnax
+    (unless main-id
+      (raise-syntax-error 'scribble/lp "no chunks")))
   (define body
-    (let loop ([block (get-chunk main-id)])
+    (let loop ([block (if main-id
+                          (get-chunk main-id)
+                          (get-chunk first-id))])
       (append-map
        (lambda (expr)
          (if (identifier? expr)
