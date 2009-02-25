@@ -23,7 +23,7 @@
      (identifier? #'name)
      (let ([n (get-chunk-number (syntax-local-introduce #'name) #f)]
            [str (symbol->string (syntax-e #'name))])
-
+       
        (syntax-local-lift-expression #'(quote-syntax (a-chunk name expr ...)))
        
        (if (n . > . 1)
@@ -43,9 +43,9 @@
                                     #'(mod ...)]
                                    [else null]))
                                (syntax->list #'(expr ...)))])
+             (syntax-local-lift-require
+              #'(for-label for-label-mod ... ...)
              #`(begin
-                 (require (for-label for-label-mod ... ...))
-                 ;; why does this happen twice?
                  (define-syntax name (make-element-id-transformer
                                       (lambda (stx) #'(chunkref name))))
                  (begin-for-syntax (register-chunk-name #'name))
@@ -56,7 +56,7 @@
                                         (bold (italic (scheme name)) " ::=")))
                          (list (smaller (elemref '(chunk tag) #:underline? #f
                                                  str))))
-                        (schemeblock expr ...)))))))]))
+                        (schemeblock expr ...))))))))]))
 
 (define-syntax (chunkref stx)
   (syntax-case stx ()
