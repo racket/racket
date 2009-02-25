@@ -2,6 +2,7 @@
 (require (planet schematics/schemeunit:3)
          (planet schematics/schemeunit:3/text-ui)
          xml
+         xml/plist
          "to-list.ss")
 
 ;; test-bad-read-input : format-str str -> void
@@ -222,40 +223,40 @@
      (test-read-xml/element 
       "<doc><bold>hi</bold> there!</doc>"
       '(make-element
-         (make-source (make-location 1 0 1) (make-location 1 33 34))
-         'doc
-         (list)
-         (list
-          (make-element
-           (make-source (make-location 1 5 6) (make-location 1 20 21))
-           'bold
-           (list)
-           (list (make-pcdata (make-source (make-location 1 11 12) (make-location 1 13 14)) "hi")))
-          (make-pcdata (make-source (make-location 1 20 21) (make-location 1 27 28)) " there!"))))
+        (make-source (make-location 1 0 1) (make-location 1 33 34))
+        'doc
+        (list)
+        (list
+         (make-element
+          (make-source (make-location 1 5 6) (make-location 1 20 21))
+          'bold
+          (list)
+          (list (make-pcdata (make-source (make-location 1 11 12) (make-location 1 13 14)) "hi")))
+         (make-pcdata (make-source (make-location 1 20 21) (make-location 1 27 28)) " there!"))))
      
      (test-read-xml/element
       "<a href=\"#\">inner</a>"
       '(make-element
-         (make-source (make-location 1 0 1) (make-location 1 21 22))
-         'a
-         (list (make-attribute (make-source (make-location 1 3 4) (make-location 1 11 12)) href "#"))
-         (list (make-pcdata (make-source (make-location 1 12 13) (make-location 1 17 18)) "inner"))))
+        (make-source (make-location 1 0 1) (make-location 1 21 22))
+        'a
+        (list (make-attribute (make-source (make-location 1 3 4) (make-location 1 11 12)) href "#"))
+        (list (make-pcdata (make-source (make-location 1 12 13) (make-location 1 17 18)) "inner"))))
      
      (test-read-xml/element
       "<root>&nbsp;</root>"
       '(make-element
-         (make-source (make-location 1 0 1) (make-location 1 19 20))
-         'root
-         (list)
-         (list (make-entity (make-source (make-location 1 6 7) (make-location 1 12 13)) 'nbsp))))
+        (make-source (make-location 1 0 1) (make-location 1 19 20))
+        'root
+        (list)
+        (list (make-entity (make-source (make-location 1 6 7) (make-location 1 12 13)) 'nbsp))))
      
      (test-read-xml/element
       "<root>&#40;</root>"
       '(make-element
-         (make-source (make-location 1 0 1) (make-location 1 18 19))
-         'root
-         (list)
-         (list (make-entity (make-source (make-location 1 6 7) (make-location 1 11 12)) '40))))
+        (make-source (make-location 1 0 1) (make-location 1 18 19))
+        'root
+        (list)
+        (list (make-entity (make-source (make-location 1 6 7) (make-location 1 11 12)) '40))))
      
      (test-read-xml/element/exn
       "<!-- comment --><br />"
@@ -430,16 +431,74 @@
     
     )
    
-   (test-suite
-    "PList Library"
-    
-    ; XXX plist-dict?
-    
-    ; XXX read-plist
-    
-    ; XXX write-plist
-    
-    )
+   (local [(define example
+             `(dict (assoc-pair "first-key"
+                                "just a string with some  whitespace in it")
+                    (assoc-pair "second-key"
+                                (false))
+                    (assoc-pair "third-key"
+                                (dict ))
+                    (assoc-pair "fourth-key"
+                                (dict (assoc-pair "inner-key"
+                                                  (real 3.432))))
+                    (assoc-pair "fifth-key"
+                                (array (integer 14)
+                                       "another string"
+                                       (true)))
+                    (assoc-pair "sixth-key"
+                                (array))))
+           (define example-str #<<END
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist SYSTEM "file://localhost/System/Library/DTDs/PropertyList.dtd">
+<plist version="0.9"><dict><key>first-key</key><string>just a string with some  whitespace in it</string><key>second-key</key><false /><key>third-key</key><dict /><key>fourth-key</key><dict><key>inner-key</key><real>3.432</real></dict><key>fifth-key</key><array><integer>14</integer><string>another string</string><true /></array><key>sixth-key</key><array /></dict></plist>
+END
+             )]
+     (test-suite
+      "PList Library"
+      
+      (test-not-false 
+       "plist-dict?"
+       (plist-dict? 
+        example))
+      (test-false
+       "plist-dict?"
+       (plist-dict?
+        `(p "Hey")))
+      (test-false
+       "plist-dict?"
+       (plist-dict?
+        `(dict (p "Hey"))))
+      (test-false
+       "plist-dict?"
+       (plist-dict?
+        `(dict (assoc-pair "key" 2 3))))
+      (test-false
+       "plist-dict?"
+       (plist-dict?
+        `(dict (assoc-pair 1 2))))
+      (test-false
+       "plist-dict?"
+       (plist-dict?
+        `(dict (assoc-pair "key" #f))))
+      
+      (test-equal? "read-plist"
+                   (read-plist (open-input-string example-str))
+                   example)
+      
+      (test-equal? "write-plist"
+                   (with-output-to-string
+                    (lambda ()
+                      (write-plist example (current-output-port))))
+                   example-str)
+      
+      (local [(define (test-plist-round-trip plist)
+                (define-values (in out) (make-pipe))
+                (write-plist plist out)
+                (close-output-port out)
+                (test-equal? (format "~S" plist) (read-plist in) plist))]
+        (test-plist-round-trip example))
+      
+      ))
    
    (test-suite
     "Legacy tests"   
