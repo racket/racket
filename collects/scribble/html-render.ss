@@ -1044,22 +1044,24 @@
                           (with-attributes-style raw-style)
                           raw-style))
       (define t-style-get (if (and (pair? t-style) (list? t-style))
-                            (lambda (k) (assoc k t-style))
-                            (lambda (k) #f)))
+                              (lambda (k) (assoc k t-style))
+                              (lambda (k) #f)))
       (define (make-row flows style)
-        `(tr (,@(if style `([class ,style]) null))
+        `(tr (,@(if (string? style) `([class ,style]) null))
            ,@(let loop ([ds flows]
-                        [as (cdr (or (t-style-get 'alignment)
+                        [as (cdr (or (and (list? style) (assq 'alignment style))
                                      (cons #f (map (lambda (x) #f) flows))))]
-                        [vas (cdr (or (t-style-get 'valignment)
+                        [vas (cdr (or (and (list? style) (assq 'valignment style))
+                                      (cons #f (map (lambda (x) #f) flows))))]
+                        [sts (cdr (or (and (list? style) (assq 'style style))
                                       (cons #f (map (lambda (x) #f) flows))))]
                         [first? #t])
                (cond
                  [(null? ds) null]
                  [(eq? (car ds) 'cont)
-                  (loop (cdr ds) (cdr as) (cdr vas) first?)]
+                  (loop (cdr ds) (cdr as) (cdr vas) (cdr sts) first?)]
                  [else
-                  (let ([d (car ds)] [a (car as)] [va (car vas)])
+                  (let ([d (car ds)] [a (car as)] [va (car vas)] [st (car sts)])
                     (cons
                      `(td (,@(case a
                                [(#f) null]
@@ -1071,6 +1073,9 @@
                                [(top) '((valign "top"))]
                                [(baseline) '((valign "baseline"))]
                                [(bottom) '((valign "bottom"))])
+                           ,@(if (string? st)
+                                 `([class ,st])
+                                 null)
                            ,@(if (and (pair? (cdr ds))
                                       (eq? 'cont (cadr ds)))
                                `([colspan
@@ -1085,7 +1090,7 @@
                                      (omitable-paragraph? (car (flow-paragraphs d))))
                                 (render-content (paragraph-content (car (flow-paragraphs d))) part ri)
                                 (render-flow d part ri #f)))
-                     (loop (cdr ds) (cdr as) (cdr vas) #f)))]))))
+                     (loop (cdr ds) (cdr as) (cdr vas) (cdr sts) #f)))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline-table; vertical-align: text-top;"])

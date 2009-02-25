@@ -299,7 +299,10 @@
                        [row-styles row-styles])
               (let ([flows (car flowss)]
                     [row-style (car row-styles)])
-                (let loop ([flows flows])
+                (let loop ([flows flows]
+                           [col-v-styles (and (list? row-style)
+                                              (let ([p (assoc 'valignment row-style)])
+                                                (and p (cdr p))))])
                   (unless (null? flows)
                     (when index? (printf "\\item "))
                     (unless (eq? 'cont (car flows))
@@ -309,10 +312,12 @@
                                           (loop (cdr flows) (add1 n))]
                                          [else n]))])
                         (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                        (render-table-flow (car flows) part ri twidth)
+                        (render-table-flow (car flows) part ri twidth (and col-v-styles
+                                                                           (car col-v-styles)))
                         (unless (= cnt 1) (printf "}"))
                         (unless (null? (list-tail flows cnt)) (printf " &\n"))))
-                    (unless (null? (cdr flows)) (loop (cdr flows)))))
+                    (unless (null? (cdr flows)) (loop (cdr flows)
+                                                      (and col-v-styles (cdr col-v-styles))))))
                 (unless (or index? (null? (cdr flowss)))
                   (printf " \\\\\n")
                   (when (equal? row-style "inferencetop") (printf "\\hline\n")))
@@ -324,23 +329,40 @@
                       tableform)))))
       null)
 
-    (define/private (render-table-flow p part ri twidth)
-      ;; Emit a \\ between blocks:
-      (let loop ([ps (flow-paragraphs p)])
-        (cond
-         [(null? ps) (void)]
-         [else
-          (let ([minipage? (not (or (paragraph? (car ps))
-                                    (table? (car ps))))])
-            (when minipage?
-              (printf "\\begin{minipage}{~a\\linewidth}\n" (/ 1.0 twidth)))
-            (render-block (car ps) part ri #f)
-            (when minipage?
-              (printf " \\end{minipage}\n"))
-            (unless (null? (cdr ps))
-              (printf " \\\\\n")
-              (loop (cdr ps))))]))
-      null)
+    (define/private (render-table-flow p part ri twidth vstyle)
+      ;; Emit a \\ between blocks in single-column mode,
+      ;; used a nested table otherwise for multiple elements.
+      (let ([in-table? (or (and (not (= twidth 1))
+                                ((length (flow-paragraphs p)) . > . 1))
+                           (eq? vstyle 'top))])
+        (when in-table?
+          (printf "\\begin{tabular}~a{@{}l@{}}\n"
+                  (cond
+                   [(eq? vstyle 'top) "[t]"]
+                   [else ""])))
+        (let loop ([ps (flow-paragraphs p)])
+          (cond
+           [(null? ps) (void)]
+           [else
+            (let ([minipage? (not (or (paragraph? (car ps))
+                                      (table? (car ps))))])
+              (when minipage?
+                (printf "\\begin{minipage}~a{~a\\linewidth}\n"
+                        (cond
+                         [(eq? vstyle 'top) "[t]"]
+                         [else ""])
+                        (/ 1.0 twidth)))
+              (render-block (car ps) part ri #f)
+              (when minipage?
+                (printf " \\end{minipage}\n"))
+              (unless (null? (cdr ps))
+                (printf " \\\\\n")
+                (when in-table?
+                  (printf " ~ \\\\\n"))
+                (loop (cdr ps))))]))
+        (when in-table?
+          (printf "\n\\end{tabular}\n"))
+        null))
 
     (define/override (render-itemization t part ri)
       (printf "\n\n\\begin{itemize}\n")
