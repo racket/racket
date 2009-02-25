@@ -259,7 +259,10 @@
                      (and m
                           (equal? "bigtabular" (car m))
                           (= 1 (length (car (table-flowss (cadr m))))))))]
-             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"])
+             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"]
+             [twidth (if (null? (table-flowss t))
+                         1
+                         (length (car (table-flowss t))))])
         (unless (or (null? flowss) (null? (car flowss)))
           (parameterize ([current-table-mode
                           (if inline? (current-table-mode) (list tableform t))]
@@ -306,7 +309,7 @@
                                           (loop (cdr flows) (add1 n))]
                                          [else n]))])
                         (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                        (render-table-flow (car flows) part ri)
+                        (render-table-flow (car flows) part ri twidth)
                         (unless (= cnt 1) (printf "}"))
                         (unless (null? (list-tail flows cnt)) (printf " &\n"))))
                     (unless (null? (cdr flows)) (loop (cdr flows)))))
@@ -321,7 +324,7 @@
                       tableform)))))
       null)
 
-    (define/private (render-table-flow p part ri)
+    (define/private (render-table-flow p part ri twidth)
       ;; Emit a \\ between blocks:
       (let loop ([ps (flow-paragraphs p)])
         (cond
@@ -330,7 +333,7 @@
           (let ([minipage? (not (or (paragraph? (car ps))
                                     (table? (car ps))))])
             (when minipage?
-              (printf "\\begin{minipage}{\\linewidth}\n"))
+              (printf "\\begin{minipage}{~a\\linewidth}\n" (/ 1.0 twidth)))
             (render-block (car ps) part ri #f)
             (when minipage?
               (printf " \\end{minipage}\n"))
