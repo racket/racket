@@ -408,10 +408,9 @@
          [orig-ns (namespace-anchor->empty-namespace anchor)]
          [mods    (cdr specs)])
     (parameterize ([current-namespace orig-ns])
-      (for-each (lambda (mod) (dynamic-require mod #f)) mods))
+      (for ([mod (in-list mods)]) (dynamic-require mod #f)))
     (parameterize ([current-namespace new-ns])
-      (for-each (lambda (ms) (namespace-attach-module orig-ns ms))
-                mods))
+      (for ([mod (in-list mods)]) (namespace-attach-module orig-ns mod)))
     new-ns))
 
 (define (extract-required language requires)
@@ -457,7 +456,7 @@
                                    (list source n (and n 0) n (and n 1)))
                                   r))))]))))
 
-(define ((init-for-language language))
+(define ((init-hook-for-language language))
   (cond [(or (not (pair? language))
              (not (eq? 'special (car language))))
          (void)]
@@ -468,7 +467,12 @@
          (read-accept-infix-dot #f)]
         [(memq (cadr language) teaching-langs)
          (read-case-sensitive #t)
-         (read-decimal-as-inexact #f)]))
+         (read-decimal-as-inexact #f)
+         ;; needed to make the test-engine work
+         (let ([orig-ns (namespace-anchor->empty-namespace anchor)])
+           (parameterize ([current-namespace orig-ns])
+             (dynamic-require 'scheme/class #f))
+           (namespace-attach-module orig-ns 'scheme/class))]))
 
 ;; Returns a single (module ...) or (begin ...) expression (a `begin' list
 ;; will be evaluated one by one -- the language might not have a `begin').
@@ -509,17 +513,16 @@
   (call-with-continuation-prompt
    (lambda ()
      (if (null? exprs)
-         (void)
-         (let ([deftag (default-continuation-prompt-tag)])
-           (let loop ([expr (car exprs)] [exprs (cdr exprs)])
-             (if (null? exprs)
-                 (eval expr)
-                 (begin
-                   (call-with-continuation-prompt
-                    (lambda () (eval expr))
-                    deftag
-                    (lambda (x) (abort-current-continuation deftag x)))
-                   (loop (car exprs) (cdr exprs))))))))))
+       (void)
+       (let ([deftag (default-continuation-prompt-tag)])
+         (let loop ([expr (car exprs)] [exprs (cdr exprs)])
+           (if (null? exprs)
+             (eval expr)
+             (begin (call-with-continuation-prompt
+                     (lambda () (eval expr))
+                     deftag
+                     (lambda (x) (abort-current-continuation deftag x)))
+                    (loop (car exprs) (cdr exprs))))))))))
 
 ;; We need a powerful enough code inspector to invoke the errortrace library
 ;; (indirectly through private/sandbox-coverage).  But there is a small problem
@@ -532,8 +535,8 @@
 (define orig-code-inspector (current-code-inspector))
 
 (define (evaluate-program program limit-thunk uncovered!)
-  (parameterize ([current-code-inspector orig-code-inspector])
-    (when uncovered!
+  (when uncovered!
+    (parameterize ([current-code-inspector orig-code-inspector])
       (eval `(,#'#%require scheme/private/sandbox-coverage))))
   (let ([ns (syntax-case* program (module) literal-identifier=?
               [(module mod . body)
@@ -687,9 +690,11 @@
                   [(thunk) (limit-thunk (car (evaluator-message-args expr)))]
                   [(thunk*) (car (evaluator-message-args expr))]
                   [else (error 'sandbox "internal error (bad message)")])
-                (limit-thunk (lambda ()
-                               (set! n (add1 n))
-                               (eval* (input->code (list expr) 'eval n))))))
+                (limit-thunk
+                 (lambda ()
+                   (set! n (add1 n))
+                   (eval* (map (lambda (expr) (cons '#%top-interaction expr))
+                               (input->code (list expr) 'eval n)))))))
             (channel-put result-ch (cons 'vals (call-with-values run list))))
           (loop)))))
   (define (get-user-result)
@@ -877,7 +882,7 @@
                          r
                          `(file ,(path->string (simplify-path* r)))))
                      requires))])
-    (make-evaluator* (init-for-language lang)
+    (make-evaluator* (init-hook-for-language lang)
                      (append (extract-required (or (decode-language lang) lang)
                                                reqs)
                              allow)
