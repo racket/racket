@@ -54,9 +54,8 @@
                                             (cons #'x (loop (cdr mods)))])]))]
                                    [else null]))
                                (syntax->list #'(expr ...)))])
-             (syntax-local-lift-require
-              #'(for-label for-label-mod ... ...)
              #`(begin
+                 (require (for-label for-label-mod ... ...))
                  (define-syntax name (make-element-id-transformer
                                       (lambda (stx) #'(chunkref name))))
                  (begin-for-syntax (register-chunk-name #'name))
@@ -67,7 +66,7 @@
                                         (bold (italic (scheme name)) " ::=")))
                          (list (smaller (elemref '(chunk tag) #:underline? #f
                                                  str))))
-                        (schemeblock expr ...))))))))]))
+                        (schemeblock expr ...)))))))]))
 
 (define-syntax (chunkref stx)
   (syntax-case stx ()
