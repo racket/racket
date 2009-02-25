@@ -180,39 +180,5 @@
 	       (error 'read-plist "xml expression is not a plist: ~a" content))
        (collapse-dict (caddr content))))
 
-   ;; TEST
-
-   '(define my-dict
-     `(dict (assoc-pair "first-key"
-			"just a string
-                         with some whitespace in it")
-	    (assoc-pair "second-key"
-			(false))
-	    (assoc-pair "third-key"
-			(dict ))
-	    (assoc-pair "fourth-key"
-			(dict (assoc-pair "inner-key"
-					  (real 3.432))))
-	    (assoc-pair "fifth-key"
-			(array (integer 14)
-			       "another string"
-			       (true)))
-	    (assoc-pair "sixth-key"
-			(array))))
-
-   '(call-with-output-file "/Users/clements/tmp.plist"
-     (lambda (port)
-       (write-plist my-dict port))
-     'truncate)
-
-   '(define new-dict
-     (call-with-input-file "/Users/clements/tmp.plist"
-       (lambda (port)
-	 (read-plist port))))
-
-   '(equal? new-dict my-dict)
-
-   ;; END OF TEST
-
   (provide plist-dict? read-plist)
   (provide/contract [write-plist (plist-dict? output-port? . -> . void?)]))
