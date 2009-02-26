@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(provide strip-context)
+
 (define (strip-context e)
   (cond
    [(syntax? e)
