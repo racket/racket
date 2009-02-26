@@ -395,10 +395,10 @@
 [lcm  (null -Integer . ->* . -Integer)]
 
 [arithmetic-shift (-Integer -Integer . -> . -Integer)]
-[bitwise-and (null N . ->* . N)]
-[bitwise-ior (null N . ->* . N)]
-[bitwise-not (null N . ->* . N)]
-[bitwise-xor (null N . ->* . N)]
+[bitwise-and (null -Integer . ->* . -Integer)]
+[bitwise-ior (null -Integer . ->* . -Integer)]
+[bitwise-not (null -Integer . ->* . -Integer)]
+[bitwise-xor (null -Integer . ->* . -Integer)]
 
 [vector (-poly (a) (->* (list) a (-vec a)))]
 [make-string (cl-> [(-Integer) -String] [(-Integer -Char) -String])]
