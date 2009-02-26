@@ -3,6 +3,7 @@
          (planet schematics/schemeunit:3/text-ui)
          xml
          xml/plist
+         mzlib/etc
          "to-list.ss")
 
 ;; test-bad-read-input : format-str str -> void
@@ -30,7 +31,7 @@
 
 (define test-syntax:read-xml/element/exn (mk-test-read-xml/exn syntax:read-xml/element))
 (define (test-syntax:read-xml/element str xml)
-  (test-equal? str (syntax->datum (read-xml/element (open-input-string str))) xml))
+  (test-equal? str (syntax->datum (syntax:read-xml/element (open-input-string str))) xml))
 
 (define (test-write-xml str)
   (test-equal? str (with-output-to-string (lambda () (write-xml (read-xml (open-input-string str))))) str))
@@ -52,6 +53,57 @@
    "XML"
    
    (test-suite
+    "Legacy tests"   
+    
+    (test-suite 
+     "DOCTYPE"
+     
+     (let ()
+       (define source-string #<<END
+<!DOCTYPE html PUBLIC
+ "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"> </html>
+END
+         )
+       
+       (define source-document
+         (read-xml (open-input-string source-string)))
+       (define result-string
+         (with-output-to-string (lambda () (write-xml source-document))))
+       (define expected-string #<<END
+<html xmlns="http://www.w3.org/1999/xhtml"> </html>
+END
+         )
+       (test-equal?
+        "DOCTYPE dropping" result-string expected-string)))
+    
+    (local 
+      [(define a-pi (make-p-i #f #f "foo" "bar"))
+       (define a-p (make-prolog empty #f empty))
+       (define a-p/pi (make-prolog (list a-pi) #f (list)))
+       (define a-d0
+         (make-document a-p (make-element #f #f 'html empty empty)
+                        empty))
+       (define a-d1
+         (make-document a-p (make-element #f #f 'html empty empty)
+                        (list a-pi)))
+       (define a-d2
+         (make-document a-p/pi (make-element #f #f 'html empty empty)
+                        (list a-pi)))]
+      (test-suite 
+       "PIs"
+       (test-equal? "Display XML w/o pis"
+                    (with-output-to-string (lambda () (display-xml a-d0)))
+                    "\n<html />")
+       (test-equal? "Display XML w/ pi in doc-misc"
+                    (with-output-to-string (lambda () (display-xml a-d1)))
+                    "\n<html /><?foo bar?>\n")
+       (test-equal? "Display XML w/ pi in doc-misc and prolog"
+                    (with-output-to-string (lambda () (display-xml a-d2)))
+                    "<?foo bar?>\n\n<html /><?foo bar?>\n"))))
+   
+   (test-suite
     "Datatypes"
     (test-suite 
      "xexpr"
@@ -69,12 +121,12 @@
     
     (test-not-false "xexpr/c" (contract? xexpr/c))
     
-    (test-not-false "document" (document? (make-document (make-prolog empty #f) (make-element #f #f 'br empty empty) empty)))
+    (test-not-false "document" (document? (make-document (make-prolog empty #f empty) (make-element #f #f 'br empty empty) empty)))
     
-    (test-not-false "prolog" (prolog? (make-prolog empty #f)))
+    (test-not-false "prolog" (prolog? (make-prolog empty #f empty)))
     (let ([c1 (make-comment "c1")]
           [c2 (make-comment "c2")])
-      (test-equal? "prolog" (prolog-misc2 (make-prolog empty #f c1 c2))
+      (test-equal? "prolog" (prolog-misc2 (make-prolog empty #f (list c1 c2)))
                    (list c1 c2)))
     
     (test-not-false "document-type" (document-type? (make-document-type 'name (make-external-dtd "string") #f)))
@@ -138,7 +190,7 @@
      (test-read-xml 
       "<doc><bold>hi</bold> there!</doc>"
       '(make-document
-        (make-prolog (list) #f)
+        (make-prolog (list) #f (list))
         (make-element
          (make-source (make-location 1 0 1) (make-location 1 33 34))
          'doc
@@ -155,7 +207,7 @@
      (test-read-xml
       "<a href=\"#\">inner</a>"
       '(make-document
-        (make-prolog (list) #f)
+        (make-prolog (list) #f (list))
         (make-element
          (make-source (make-location 1 0 1) (make-location 1 21 22))
          'a
@@ -166,7 +218,7 @@
      (test-read-xml
       "<root>&nbsp;</root>"
       '(make-document
-        (make-prolog (list) #f)
+        (make-prolog (list) #f (list))
         (make-element
          (make-source (make-location 1 0 1) (make-location 1 19 20))
          'root
@@ -177,7 +229,7 @@
      (test-read-xml
       "<root>&#40;</root>"
       '(make-document
-        (make-prolog (list) #f)
+        (make-prolog (list) #f (list))
         (make-element
          (make-source (make-location 1 0 1) (make-location 1 18 19))
          'root
@@ -188,7 +240,7 @@
      (test-read-xml
       "<!-- comment --><br />"
       '(make-document
-        (make-prolog (list) #f)
+        (make-prolog (list) #f (list))
         (make-element (make-source (make-location 1 16 17) (make-location 1 22 23)) 'br (list) (list))
         (list)))
      
@@ -303,9 +355,9 @@
       "<root>&#40;</root>"
       '(root () 40))
      
-     (test-syntax:read-xml/exn
+     (test-syntax:read-xml
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received #f")
+      '(br ()))
      
      ; XXX need more syntax:read-xml tests
      
@@ -352,7 +404,7 @@
      
      (test-syntax:read-xml/element/exn
       "<!-- comment --><br />"
-      "read-xml: parse-error: expected root element - received #f")
+      "read-xml: parse-error: expected root element - received #<comment>")
      
      ; XXX need more syntax:read-xml/element tests
      
@@ -399,60 +451,210 @@
      )
     )
    
-   (test-suite 
-    "XML and X-expression Conversions"
-    
-    ; XXX permissive?
-    
-    ; XXX xml->xexpr
-    
-    ; XXX xexpr->string
-    
-    ; XXX eliminate-whitespace
-    
-    ; XXX validate-xexpr
-    
-    ; XXX correct-xexpr?
-    
-    )
+   (local
+     [(define (test-xml->xexpr str xe)
+        (test-equal? str (xml->xexpr (document-element (read-xml (open-input-string str)))) xe))
+      (define (test-xexpr->string xe str)
+        (test-equal? (format "~S" xe) (xexpr->string xe) str))]
+     (test-suite 
+      "XML and X-expression Conversions"
+      
+      (test-suite
+       "xml->xexpr"
+       (test-xml->xexpr    
+        "<doc><bold>hi</bold> there!</doc>"
+        '(doc () (bold () "hi") " there!"))
+       
+       (test-xml->xexpr
+        "<a href=\"#\">inner</a>"
+        '(a ([href "#"]) "inner"))
+       
+       (test-xml->xexpr
+        "<root>&nbsp;</root>"
+        '(root () nbsp))
+       
+       (test-xml->xexpr
+        "<root>&#40;</root>"
+        '(root () 40))
+       
+       ; XXX more xml->xexpr tests
+       )
+      
+      (test-suite
+       "xexpr->string"
+       (test-xexpr->string '(doc () (bold () "hi") " there!")
+                           "<doc><bold>hi</bold> there!</doc>")
+       (test-xexpr->string '(a ([href "#"]) "inner")
+                           "<a href=\"#\">inner</a>")
+       (test-xexpr->string '(root () nbsp)
+                           "<root>&nbsp;</root>")      
+       (test-xexpr->string '(root () 40)
+                           "<root>&#40;</root>")
+       ; XXX more xexpr->string tests
+       )
+      
+      (local
+        [(define (test-eliminate-whitespace tags choose str res)
+           (test-equal? (format "~S" (list tags choose str))
+                        (with-output-to-string 
+                         (lambda () 
+                           (write-xml/content ((eliminate-whitespace tags choose) (read-xml/element (open-input-string str))))))
+                        res))
+         (define (test-eliminate-whitespace/exn tags choose str msg)
+           (test-exn (format "~S" (list tags choose str))
+                     (lambda (x)
+                       (and (exn? x)
+                            (regexp-match (regexp-quote msg) (exn-message x))))
+                     (lambda ()
+                       (with-output-to-string 
+                        (lambda () 
+                          (write-xml/content ((eliminate-whitespace tags choose) (read-xml/element (open-input-string str)))))))))
+         (define (truer x) #t)]
+        (test-suite             
+         "eliminate-whitespace"
+         
+         (test-eliminate-whitespace empty identity "<html>\n<p>Hey</p></html>" "<html>\n<p>Hey</p></html>")
+         (test-eliminate-whitespace/exn empty not "<html>\n<p>Hey</p></html>" "not allowed to contain text")
+         (test-eliminate-whitespace/exn empty truer "<html>\n<p>Hey</p></html>" "not allowed to contain text")
+         
+         (test-eliminate-whitespace '(html) identity "<html>\n<p>Hey</p></html>" "<html><p>Hey</p></html>")
+         (test-eliminate-whitespace/exn '(html) not "<html>\n<p>Hey</p></html>" "not allowed to contain text")
+         (test-eliminate-whitespace/exn '(html) truer "<html>\n<p>Hey</p></html>" "not allowed to contain text")
+         
+         (test-eliminate-whitespace '(html) identity "<html>\n<p>\n</p></html>" "<html><p>\n</p></html>")
+         (test-eliminate-whitespace '(html) not "<html>\n<p>\n</p></html>" "<html>\n<p /></html>")
+         (test-eliminate-whitespace '(html) truer "<html>\n<p>\n</p></html>" "<html><p /></html>")))
+      
+      (local
+        [(define (test-validate-xexpr xe)
+           (test-not-false (format "~S" xe) (validate-xexpr xe)))
+         (define (test-validate-xexpr/exn xe v)
+           (test-exn (format "~S" xe)
+                     (lambda (x)
+                       (and (exn:invalid-xexpr? x)
+                            (equal? (exn:invalid-xexpr-code x) v)))
+                     (lambda ()
+                       (validate-xexpr xe))))]
+        (test-suite
+         "validate-xexpr"
+         (test-validate-xexpr 4)
+         (test-validate-xexpr 'nbsp)
+         (test-validate-xexpr "string")
+         (test-validate-xexpr (make-pcdata #f #f "pcdata"))
+         (test-validate-xexpr (make-cdata #f #f "cdata"))
+         (test-validate-xexpr (make-comment "comment"))
+         (test-validate-xexpr (make-p-i #f #f "s1" "s2"))
+         (test-validate-xexpr '(br))
+         (test-validate-xexpr '(br ()))
+         (test-validate-xexpr '(a ([href "#"]) "string"))
+         
+         (test-validate-xexpr/exn #f #f)
+         (test-validate-xexpr/exn + +)
+         (test-validate-xexpr/exn '(a ([href foo]) bar) 'foo)
+         (test-validate-xexpr/exn '("foo" bar) '("foo" bar))))
+      
+      ; XXX correct-xexpr?
+      
+      (test-suite
+       "permissive?"
+       (test-exn
+        "Non-permissive"
+        (lambda (exn)
+          (and (exn? exn)
+               (regexp-match #rx"Expected content," (exn-message exn))))
+        (lambda ()
+          (xml->xexpr #f)))
+       
+       (test-false
+        "Permissive"
+        (parameterize ([permissive? #t])
+          (xml->xexpr #f))))))
    
-   (test-suite
-    "Parameters"
-    
-    ; XXX empty-tag-shorthand
-    
-    ; XXX html-empty-tags
-    
-    ; XXX collapse-whitespace
-    
-    ; XXX read-comments
-    
-    ; XXX xexpr-drop-empty-attributes
-    
-    )
+   (local
+     [(define ((mk-test-param param) v istr ostr)
+        (test-equal? (format "~S" (list v istr))
+                     (parameterize ([param v])
+                       (with-output-to-string
+                        (lambda ()
+                          (write-xml (read-xml (open-input-string istr))))))
+                     ostr))
+      (define test-empty-tag-shorthand (mk-test-param empty-tag-shorthand))
+      (define test-collapse-whitespace (mk-test-param collapse-whitespace))
+      (define test-read-comments (mk-test-param read-comments))]
+     (test-suite
+      "Parameters"
+      
+      (test-suite
+       "empty-tag-shorthand"
+       (test-empty-tag-shorthand 'always "<html></html>" "<html />")
+       (test-empty-tag-shorthand 'always "<html>Hey</html>" "<html>Hey</html>")
+       (test-empty-tag-shorthand 'never "<html></html>" "<html></html>")
+       (test-empty-tag-shorthand 'never "<html>Hey</html>" "<html>Hey</html>")
+       (test-empty-tag-shorthand empty "<html></html>" "<html></html>")
+       (test-empty-tag-shorthand empty "<html>Hey</html>" "<html>Hey</html>")
+       (test-empty-tag-shorthand '(html) "<html></html>" "<html />")
+       (test-empty-tag-shorthand '(html) "<html>Hey</html>" "<html>Hey</html>")
+       (test-empty-tag-shorthand '(p) "<html></html>" "<html></html>")
+       (test-empty-tag-shorthand '(p) "<html>Hey</html>" "<html>Hey</html>"))
+
+      (test-equal? "html-empty-tags"
+                   html-empty-tags
+                   '(param meta link isindex input img hr frame col br basefont base area))
+      
+      (test-suite
+       "collapse-whitespace"
+       (test-collapse-whitespace #t "<html>\n</html>" "<html> </html>")
+       (test-collapse-whitespace #t "<html>\t</html>" "<html> </html>")
+       (test-collapse-whitespace #t "<html>    </html>" "<html> </html>")
+       (test-collapse-whitespace #t "<html><![CDATA[   ]]></html>" "<html><![CDATA[   ]]></html>")
+       (test-collapse-whitespace #t "<html><![CDATA[\n]]></html>" "<html><![CDATA[\n]]></html>")
+       (test-collapse-whitespace #t "<html><![CDATA[\t]]></html>" "<html><![CDATA[\t]]></html>")
+       (test-collapse-whitespace #f "<html>\n</html>" "<html>\n</html>"))
+      
+      (test-suite
+       "read-comments"
+       (test-read-comments #f "<html><!-- Foo --></html>" "<html />")
+       (test-read-comments #t "<html><!-- Foo --></html>" "<html><!-- Foo --></html>"))
+
+      (local
+        [(define (test-xexpr-drop-empty-attributes v istr xe)
+           (test-equal? (format "~S" (list v istr))
+                        (parameterize ([xexpr-drop-empty-attributes v])
+                          (xml->xexpr (document-element (read-xml (open-input-string istr)))))
+                        xe))]
+        (test-suite
+         "xexpr-drop-empty-attributes"
+         
+         (test-xexpr-drop-empty-attributes #f "<html />" '(html ()))
+         (test-xexpr-drop-empty-attributes #t "<html />" '(html))
+         (test-xexpr-drop-empty-attributes #f "<html>Hey</html>" '(html () "Hey"))
+         (test-xexpr-drop-empty-attributes #t "<html>Hey</html>" '(html "Hey"))
+         (test-xexpr-drop-empty-attributes #f "<a href=\"#\">Hey</a>" '(a ([href "#"]) "Hey"))
+         (test-xexpr-drop-empty-attributes #t "<a href=\"#\">Hey</a>" '(a ([href "#"]) "Hey"))))))
    
-   (local [(define example
-             `(dict (assoc-pair "first-key"
-                                "just a string with some  whitespace in it")
-                    (assoc-pair "second-key"
-                                (false))
-                    (assoc-pair "third-key"
-                                (dict ))
-                    (assoc-pair "fourth-key"
-                                (dict (assoc-pair "inner-key"
-                                                  (real 3.432))))
-                    (assoc-pair "fifth-key"
-                                (array (integer 14)
-                                       "another string"
-                                       (true)))
-                    (assoc-pair "sixth-key"
-                                (array))))
-           (define example-str #<<END
+   (local 
+     [(define example
+        `(dict (assoc-pair "first-key"
+                           "just a string with some  whitespace in it")
+               (assoc-pair "second-key"
+                           (false))
+               (assoc-pair "third-key"
+                           (dict ))
+               (assoc-pair "fourth-key"
+                           (dict (assoc-pair "inner-key"
+                                             (real 3.432))))
+               (assoc-pair "fifth-key"
+                           (array (integer 14)
+                                  "another string"
+                                  (true)))
+               (assoc-pair "sixth-key"
+                           (array))))
+      (define example-str #<<END
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist SYSTEM "file://localhost/System/Library/DTDs/PropertyList.dtd">
 <plist version="0.9"><dict><key>first-key</key><string>just a string with some  whitespace in it</string><key>second-key</key><false /><key>third-key</key><dict /><key>fourth-key</key><dict><key>inner-key</key><real>3.432</real></dict><key>fifth-key</key><array><integer>14</integer><string>another string</string><true /></array><key>sixth-key</key><array /></dict></plist>
 END
-             )]
+        )]
      (test-suite
       "PList Library"
       
@@ -496,74 +698,6 @@ END
                 (write-plist plist out)
                 (close-output-port out)
                 (test-equal? (format "~S" plist) (read-plist in) plist))]
-        (test-plist-round-trip example))
-      
-      ))
-   
-   (test-suite
-    "Legacy tests"   
-    
-    (test-suite
-     "xml->xexpr"
-     (test-exn
-      "Non-permissive"
-      (lambda (exn)
-        (and (exn? exn)
-             (regexp-match #rx"Expected content," (exn-message exn))))
-      (lambda ()
-        (xml->xexpr #f)))
-     
-     (test-false
-      "Permissive"
-      (parameterize ([permissive? #t])
-        (xml->xexpr #f))))
-    
-    (test-suite 
-     "DOCTYPE"
-     
-     (let ()
-       (define source-string #<<END
-<!DOCTYPE html PUBLIC
- "-//W3C//DTD XHTML 1.0 Transitional//EN"
- "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"> </html>
-END
-         )
-       
-       (define source-document
-         (read-xml (open-input-string source-string)))
-       (define result-string
-         (with-output-to-string (lambda () (write-xml source-document))))
-       (define expected-string #<<END
-<html xmlns="http://www.w3.org/1999/xhtml"> </html>
-END
-         )
-       (test-equal?
-        "DOCTYPE dropping" result-string expected-string)))
-    
-    (let ()
-      (define a-pi (make-p-i #f #f "foo" "bar"))
-      (define a-p (make-prolog empty #f))
-      (define a-p/pi (make-prolog (list a-pi) #f))
-      (define a-d0
-        (make-document a-p (make-element #f #f 'html empty empty)
-                       empty))
-      (define a-d1
-        (make-document a-p (make-element #f #f 'html empty empty)
-                       (list a-pi)))
-      (define a-d2
-        (make-document a-p/pi (make-element #f #f 'html empty empty)
-                       (list a-pi)))
-      (test-suite 
-       "PIs"
-       (test-equal? "Display XML w/o pis"
-                    (with-output-to-string (lambda () (display-xml a-d0)))
-                    "\n<html />")
-       (test-equal? "Display XML w/ pi in doc-misc"
-                    (with-output-to-string (lambda () (display-xml a-d1)))
-                    "\n<html /><?foo bar?>\n")
-       (test-equal? "Display XML w/ pi in doc-misc and prolog"
-                    (with-output-to-string (lambda () (display-xml a-d2)))
-                    "<?foo bar?>\n\n<html /><?foo bar?>\n"))))))
+        (test-plist-round-trip example))))))
 
 (run-tests xml-tests)

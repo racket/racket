@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ENTITY e "&#38;#9">
+]>
+<doc>&e;7;</doc>

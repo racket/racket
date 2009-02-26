@@ -1,0 +1,44 @@
+<HTML>
+<TITLE>Canonical XML</TITLE>
+<BODY>
+<H1>Canonical XML</H1>
+<P>
+This document defines a subset of XML called canonical XML.
+The intended use of canonical XML is in testing XML processors,
+as a representation of the result of parsing an XML document.
+<P>
+Every well-formed XML document has a unique structurally equivalent
+canonical XML document.  Two structurally equivalent XML
+documents have a byte-for-byte identical canonical XML document.
+Canonicalizing an XML document requires only information that an XML
+processor is required to make available to an application.
+<P>
+A canonical XML document conforms to the following grammar:
+<PRE>
+CanonXML    ::= Pi* element Pi*
+element     ::= Stag (Datachar | Pi | element)* Etag
+Stag        ::= '&lt;'  Name Atts '&gt;'
+Etag        ::= '&lt;/' Name '&gt;'
+Pi          ::= '&lt;?' Name ' ' (((Char - S) Char*)? - (Char* '?&gt;' Char*)) '?&gt;'
+Atts        ::= (' ' Name '=' '"' Datachar* '"')*
+Datachar    ::= '&amp;amp;' | '&amp;lt;' | '&amp;gt;' | '&amp;quot;'
+                 | '&amp;#9;'| '&amp;#10;'| '&amp;#13;'
+                 | (Char - ('&amp;' | '&lt;' | '&gt;' | '"' | #x9 | #xA | #xD))
+Name        ::= (see XML spec)
+Char        ::= (see XML spec)
+S           ::= (see XML spec)
+</PRE>
+<P>
+Attributes are in lexicographical order (in Unicode bit order).
+<P>
+A canonical XML document is encoded in UTF-8.
+<P>
+Ignorable white space is considered significant and is treated equivalently
+to data.
+<P>
+<ADDRESS>
+<A HREF="mailto:jjc@jclark.com">James Clark</A>
+</ADDRESS>
+
+</BODY>
+</HTML>

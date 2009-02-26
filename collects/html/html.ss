@@ -1,30 +1,22 @@
+#lang scheme
 ;; copyright by Paul Graunke June 2000 AD
 
-(module html mzscheme
-  (require mzlib/unitsig
-	   "html-sig.ss" 
-	   "html-unit.ss"
-	   "sgml-reader-sig.ss"
-	   "sgml-reader-unit.ss"
-	   xml/xml
-	   xml/xml-sig
-	   xml/private/sig
-	   xml/xml-unit)
+(require "html-mod.ss" "html-sig.ss" "sgml-reader.ss")
 
-  ;; To get read-comments from sgml-reader, we have to
-  ;;  avoid the read-comments from XML, so we rename it
-  ;;  to read-html-comments.
+#;(require "html-sig.ss" 
+         "html-unit.ss"
+         "sgml-reader-sig.ss"
+         "sgml-reader-unit.ss"
+         xml/private/structures
+         xml/private/reader
+         xml/private/sig)
 
-  (define-values/invoke-unit/sig
-    ((open html^) read-html-comments)
-    (compound-unit/sig
-     (import [x : xml^])
-     (link
-      [s : sgml-reader^ (sgml-reader@ (x : xml-structs^))]
-      [h : html^ (html@ x s)])
-     (export (open h) (var (s read-comments) read-html-comments)))
-    #f
-    xml^)
+#;(define-compound-unit/infer the-html@
+  (import)
+  (export html^ sgml-reader^)
+  (link html@ sgml-reader@ xml-structs@ reader@))
 
-  (provide-signature-elements html^)
-  (provide read-html-comments))
+#;(define-values/invoke-unit/infer the-html@)
+
+(provide-signature-elements html^)
+(provide read-html-comments)

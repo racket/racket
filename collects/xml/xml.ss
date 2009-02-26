@@ -1,10 +1,7 @@
+#lang scheme
+(require "xml-sig.ss"
+         "xml-unit.ss")
 
-(module xml mzscheme
-  (require mzlib/unitsig)
+(define-values/invoke-unit/infer xml@)
 
-  (require "xml-sig.ss"
-	   "xml-unit.ss")
-  
-  (define-values/invoke-unit/sig xml^ xml@)
-
-  (provide-signature-elements xml^))
+(provide-signature-elements xml^)

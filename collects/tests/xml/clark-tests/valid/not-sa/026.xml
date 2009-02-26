@@ -1,0 +1,7 @@
+<!DOCTYPE doc [
+<!ELEMENT doc ANY>
+<!ENTITY % e SYSTEM "026.ent">
+%e;
+<!ATTLIST doc a1 CDATA "x1" a2 CDATA "x2">
+]>
+<doc></doc>

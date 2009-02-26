@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ELEMENT doc (a, (b) | c)?>
+]>
+<doc></doc>

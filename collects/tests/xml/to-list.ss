@@ -8,10 +8,10 @@
         (element->list (document-element xml))
         (list* 'list (map misc->list (document-misc xml)))))
 (define (prolog->list p)
-  (list* 'make-prolog
+  (list 'make-prolog
          (list* 'list (map misc->list (prolog-misc p)))
          (dtd->list (prolog-dtd p))
-         (map misc->list (prolog-misc2 p))))
+         (list* 'list (map misc->list (prolog-misc2 p)))))
 (define (dtd->list d)
   (if d
       (list 'make-document-type

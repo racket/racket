@@ -1,0 +1,5 @@
+<?pi data?>
+<!DOCTYPE doc [
+<!ELEMENT doc (#PCDATA)>
+]>
+<doc></doc>

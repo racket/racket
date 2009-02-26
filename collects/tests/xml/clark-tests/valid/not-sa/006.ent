@@ -1,0 +1,2 @@
+<!ELEMENT doc EMPTY>
+<!ATTLIST doc a1 CDATA "w1" a2 CDATA "w2">

@@ -1,0 +1,6 @@
+<!DOCTYPE doc [
+<!ATTLIST doc a1 CDATA #IMPLIED>
+<!ELEMENT doc (#PCDATA)>
+]>
+<doc a1="foo
+bar"></doc>

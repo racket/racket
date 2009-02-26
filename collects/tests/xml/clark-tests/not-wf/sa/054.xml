@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ENTITY foo PUBLIC "some public id">
+]>
+<doc></doc>

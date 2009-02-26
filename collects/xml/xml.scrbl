@@ -81,20 +81,7 @@ Represents a document.}
                    [dtd (or/c document-type false/c)]
                    [misc2 (listof (or/c comment? p-i?))])]{
 
-Represents a document prolog. The @scheme[make-prolog] binding is
-unusual: it accepts two or more arguments, and all arguments after the
-first two are collected into the @scheme[misc2] field.
-
-@examples[
-#:eval xml-eval
-(make-prolog empty #f)
-(make-prolog empty #f (make-p-i #f #f "k1" "v1"))
-(make-prolog empty #f (make-p-i #f #f "k1" "v1")
-             (make-p-i #f #f "k2" "v2"))
-@(code:comment "This example breaks the contract by providing")
-@(code:comment "a list rather than a comment or p-i")
-(prolog-misc2 (make-prolog empty #f empty))
-]
+Represents a document prolog. 
 }
 
 @defstruct[document-type ([name symbol?]
@@ -273,7 +260,7 @@ Converts an @tech{X-expression} into XML content.}
 Converts an @tech{X-expression} into a string containing XML.}
 
 @defproc[((eliminate-whitespace [tags (listof symbol?)]
-                                [choose (boolean? . -> . any/c)])
+                                [choose (boolean? . -> . boolean?)])
           [elem element?])
          element?]{
 
@@ -284,7 +271,7 @@ tag names as @scheme[tag]s and the identity function as
 that filters out PCDATA consisting solely of whitespace from those
 elements, and it raises an error if any non-whitespace text appears.
 Passing in @scheme[not] as @scheme[choose] filters all elements which
-are not named in the @scheme[tags] list.  Using @scheme[void] as
+are not named in the @scheme[tags] list.  Using @scheme[(lambda (x) #t)] as
 @scheme[choose] filters all elements regardless of the @scheme[tags]
 list.}
 

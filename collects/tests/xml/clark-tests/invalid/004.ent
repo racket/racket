@@ -1,0 +1,3 @@
+<!ENTITY % e1 "<!ELEMENT ">
+<!ENTITY % e2 ">">
+%e1; doc (#PCDATA) %e2;

@@ -1,8 +1,6 @@
 ;; copyright by Paul Graunke June 2000 AD
+#lang scheme
 
-(module sgml-reader-sig mzscheme
-  (require mzlib/unitsig)
+(define-signature sgml-reader^ (read-html-comments trim-whitespace gen-may-contain gen-read-sgml))
 
-  (define-signature sgml-reader^ (read-comments trim-whitespace gen-may-contain gen-read-sgml))
-  
-  (provide sgml-reader^))
+(provide sgml-reader^)
