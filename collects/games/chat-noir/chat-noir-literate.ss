@@ -45,9 +45,9 @@ The program is divided up into
 six parts: the world data definition, an implementation of breadth-first search,
 code that handles drawing of the world, code that handles user input,
 and some code that builds an initial world and starts the game.
- 
+
 @chunk[<main>
-       (require scheme/local scheme/list scheme/bool scheme/math
+       (require scheme/list scheme/math
                 lang/private/imageeq ;; don't like this require, but need it for image?
                 (for-syntax scheme/base))
        (require 2htdp/universe lang/posn scheme/contract)
@@ -89,7 +89,8 @@ The main data structure for Chat Noir is @tt{world}. It comes with a few functio
 construct empty worlds and test cases for them.
 
 @chunk[<world> 
-       <cell-struct> <world-struct> <empty-world> <empty-board> <blocked-cells>]
+       <cell-struct> <world-struct> <empty-world> <empty-board> 
+       <blocked-cells> <block-cell>]
 
 @chunk[<world-tests>
        <empty-world-test> <empty-board-test> <blocked-cells-tests>]
@@ -269,47 +270,53 @@ cats initial position as the center spot on the board.
                      #f
                      #f))]
 
+The @scheme[add-n-random-blocked-cells] function accepts a list of cells
+and returns a new list of cells where @scheme[n] of the unblocked cells
+in @scheme[all-cells] are now blocked.
+
+If @scheme[n] is zero, of course, no more cells should be blocked,
+so the result is just @scheme[all-cells]. Otherwise, 
+the function computes @scheme[unblocked-cells], a list of all
+of the unblocked cells (except the cat's initial location),
+and then randomly picks a cell from it,
+calling @scheme[block-cell] to actually block that cell.
+
 @chunk[<blocked-cells>
-       
-       ;; add-n-random-blocked-cells : number (listof cell) number -> (listof cell)
-       (define (add-n-random-blocked-cells n all-cells board-size)
+       (define/contract (add-n-random-blocked-cells n all-cells board-size)
+         (-> natural-number/c (listof cell?) (and/c natural-number/c odd? (>=/c 3))
+             (listof cell?))
          (cond
            [(zero? n) all-cells]
            [else
-            (local [(define unblocked-cells
-                      (filter (lambda (x)
-                                (let ([cat-cell? (and (= (posn-x (cell-p x))
-                                                         (quotient board-size 2))
-                                                      (= (posn-y (cell-p x))
-                                                         (quotient board-size 2)))])
-                                  
-                                  (and (not (cell-blocked? x))
-                                       (not cat-cell?))))
-                              all-cells))
-                    (define to-block (list-ref unblocked-cells
-                                               (random (length unblocked-cells))))]
+            (let* ([unblocked-cells
+                    (filter (lambda (x)
+                              (let ([cat-cell? (and (= (posn-x (cell-p x))
+                                                       (quotient board-size 2))
+                                                    (= (posn-y (cell-p x))
+                                                       (quotient board-size 2)))])
+                                
+                                (and (not (cell-blocked? x))
+                                     (not cat-cell?))))
+                            all-cells)]
+                   [to-block (list-ref unblocked-cells
+                                       (random (length unblocked-cells)))])
               (add-n-random-blocked-cells
                (sub1 n)
                (block-cell (cell-p to-block) all-cells)
                board-size))]))]
 
-@chunk[<blocked-cells-tests>
-       (test (block-cell (make-posn 1 1)
-                         (list (make-cell (make-posn 0 0) #f)
-                               (make-cell (make-posn 1 1) #f)
-                               (make-cell (make-posn 2 2) #f)))
-             (list (make-cell (make-posn 0 0) #f)
-                   (make-cell (make-posn 1 1) #t)
-                   (make-cell (make-posn 2 2) #f)))
-       
-       (test (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
-                                                            #t))
-                                         10)
-             (list (make-cell (make-posn 0 0) #t)))
-       (test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
-                                                            #f))
-                                         10)
-             (list (make-cell (make-posn 0 0) #t)))]
+
+The @scheme[block-cell] function accepts a @scheme[posn]
+and a list of @scheme[cell] structs and updates the
+relevant cell, setting its @tt{blocked?} field to @scheme[#t].
+
+@chunk[<block-cell>
+       (define/contract (block-cell to-block board)
+         (-> posn? (listof cell?) (listof cell?))
+         (map (lambda (c) (if (equal? to-block (cell-p c))
+                              (make-cell to-block #t)
+                              c))
+              board))]
 
 @section{Breadth-first Search}
 
@@ -619,8 +626,8 @@ of looking at the board and calculating coordinate offsets.
          (-> posn? 
              (and/c (listof posn?)
                     (lambda (l) (= 6 (length l)))))
-         (local [(define x (posn-x p))
-                 (define y (posn-y p))]
+         (let ([x (posn-x p)]
+               [y (posn-y p)])
            (cond
              [(even? y)
               (list (make-posn (- x 1) (- y 1))
@@ -766,73 +773,73 @@ except it has a smile.
 @chunk[<drawing-the-cat>
        (define/contract (cat mode)
          (-> (or/c 'mad 'happy 'thinking) image?)
-         (local [(define face-width 36)
-                 (define face-height 22)
-                 
-                 (define face-color
-                   (cond
-                     [(symbol=? mode 'mad) 'pink]
-                     [else 'lightgray]))
-                 
-                 (define left-ear 
-                   (regular-polygon 3 8 'solid 'black (/ pi -3)))
-                 (define right-ear
-                   (regular-polygon 3 8 'solid 'black 0))
-                 (define ear-x-offset 14)
-                 (define ear-y-offset 9)
-                 
-                 (define eye (overlay (ellipse 12 8 'solid 'black)
-                                      (ellipse 6 4 'solid 'limegreen)))
-                 (define eye-x-offset 8)
-                 (define eye-y-offset 3)
-                 
-                 (define nose
-                   (regular-polygon 3 5 'solid 'black (/ pi 2)))
-                 
-                 (define mouth-happy
-                   (overlay (ellipse 8 8 'solid face-color)
-                            (ellipse 8 8 'outline 'black)
-                            (move-pinhole
-                             (rectangle 10 5 'solid face-color)
-                             0
-                             4)))
-                 (define mouth-no-expression
-                   (overlay (ellipse 8 8 'solid face-color)
-                            (ellipse 8 8 'outline face-color)
-                            (rectangle 10 5 'solid face-color)))
-                 
-                 (define mouth
-                   (cond
-                     [(symbol=? mode 'happy) mouth-happy]
-                     [else mouth-no-expression]))
-                 (define mouth-x-offset 4)
-                 (define mouth-y-offset -5)
-                 
-                 (define (whiskers img)
-                   (add-line
-                    (add-line
-                     (add-line
-                      (add-line
-                       (add-line
-                        (add-line
-                         img
-                         6 4 30 12 'black)
-                        6 4 30 4 'black)
-                       6 4 30 -4 'black)
-                      -6 4 -30 12 'black)
-                     -6 4 -30 4 'black)
-                    -6 4 -30 -4 'black))]
-           (whiskers
-            (overlay
-             (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
-             (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
-             (ellipse (+ face-width 4) (+ face-height 4) 'solid 'black)
-             (ellipse face-width face-height 'solid face-color)
-             (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
-             (move-pinhole mouth mouth-x-offset mouth-y-offset)
-             (move-pinhole eye (- eye-x-offset) eye-y-offset)
-             (move-pinhole eye eye-x-offset eye-y-offset)
-             (move-pinhole nose -1 -4)))))
+         (define face-width 36)
+         (define face-height 22)
+         
+         (define face-color
+           (cond
+             [(eq? mode 'mad) 'pink]
+             [else 'lightgray]))
+         
+         (define left-ear 
+           (regular-polygon 3 8 'solid 'black (/ pi -3)))
+         (define right-ear
+           (regular-polygon 3 8 'solid 'black 0))
+         (define ear-x-offset 14)
+         (define ear-y-offset 9)
+         
+         (define eye (overlay (ellipse 12 8 'solid 'black)
+                              (ellipse 6 4 'solid 'limegreen)))
+         (define eye-x-offset 8)
+         (define eye-y-offset 3)
+         
+         (define nose
+           (regular-polygon 3 5 'solid 'black (/ pi 2)))
+         
+         (define mouth-happy
+           (overlay (ellipse 8 8 'solid face-color)
+                    (ellipse 8 8 'outline 'black)
+                    (move-pinhole
+                     (rectangle 10 5 'solid face-color)
+                     0
+                     4)))
+         (define mouth-no-expression
+           (overlay (ellipse 8 8 'solid face-color)
+                    (ellipse 8 8 'outline face-color)
+                    (rectangle 10 5 'solid face-color)))
+         
+         (define mouth
+           (cond
+             [(eq? mode 'happy) mouth-happy]
+             [else mouth-no-expression]))
+         (define mouth-x-offset 4)
+         (define mouth-y-offset -5)
+         
+         (define (whiskers img)
+           (add-line
+            (add-line
+             (add-line
+              (add-line
+               (add-line
+                (add-line
+                 img
+                 6 4 30 12 'black)
+                6 4 30 4 'black)
+               6 4 30 -4 'black)
+              -6 4 -30 12 'black)
+             -6 4 -30 4 'black)
+            -6 4 -30 -4 'black))
+         (whiskers
+          (overlay
+           (move-pinhole left-ear (- ear-x-offset) ear-y-offset)
+           (move-pinhole right-ear (- ear-x-offset 1) ear-y-offset)
+           (ellipse (+ face-width 4) (+ face-height 4) 'solid 'black)
+           (ellipse face-width face-height 'solid face-color)
+           (move-pinhole mouth (- mouth-x-offset) mouth-y-offset)
+           (move-pinhole mouth mouth-x-offset mouth-y-offset)
+           (move-pinhole eye (- eye-x-offset) eye-y-offset)
+           (move-pinhole eye eye-x-offset eye-y-offset)
+           (move-pinhole nose -1 -4))))
        
        (define thinking-cat (cat 'thinking))
        (define happy-cat (cat 'happy))
@@ -966,14 +973,14 @@ results in the cell being placed in the right place.
 @chunk[<render-cell>
        (define/contract (render-cell c on-short-path? under-mouse?)
          (-> cell? boolean? boolean? image?)
-         (local [(define x (cell-center-x (cell-p c)))
-                 (define y (cell-center-y (cell-p c)))
-                 (define main-circle
-                   (cond
-                     [(cell-blocked? c)
-                      (circle circle-radius 'solid blocked-color)]
-                     [else
-                      (circle circle-radius 'solid normal-color)]))]
+         (let ([x (cell-center-x (cell-p c))]
+               [y (cell-center-y (cell-p c))]
+               [main-circle
+                (cond
+                  [(cell-blocked? c)
+                   (circle circle-radius 'solid blocked-color)]
+                  [else
+                   (circle circle-radius 'solid normal-color)])])
            (move-pinhole
             (cond
               [under-mouse?
@@ -995,8 +1002,8 @@ and then adding an additional radius.
 @chunk[<world-width>
        (define/contract (world-width board-size)
          (-> natural-number/c number?)
-         (local [(define rightmost-posn
-                   (make-posn (- board-size 1) (- board-size 2)))]
+         (let ([rightmost-posn
+                (make-posn (- board-size 1) (- board-size 2))])
            (+ (cell-center-x rightmost-posn) circle-radius)))]
 
 Similarly, the @scheme[world-height] function computest the 
@@ -1005,8 +1012,8 @@ height of the rendered world, given the world's size.
 @chunk[<world-height>
        (define/contract (world-height board-size)
          (-> natural-number/c number?)
-         (local [(define bottommost-posn
-                   (make-posn (- board-size 1) (- board-size 1)))]
+         (let ([bottommost-posn
+                (make-posn (- board-size 1) (- board-size 1))])
            (ceiling (+ (cell-center-y bottommost-posn) 
                        circle-radius))))]
 
@@ -1095,7 +1102,6 @@ plus various helper functions.
        <update-world-posn>
        <player-moved?>
        <block-cell/world>
-       <block-cell>
        <move-cat>
        <find-best-positions>
        <lt/f>
@@ -1247,18 +1253,6 @@ the @scheme[clack] function blocks the clicked on cell using
                      (world-mouse-posn w)
                      (world-h-down? w)))]
 
-The @scheme[block-cell] function accepts a @scheme[posn]
-and a list of @scheme[cell] structs and updates the
-relevant cell, setting its @tt{blocked?} field to @scheme[#t].
-
-@chunk[<block-cell>
-       (define/contract (block-cell to-block board)
-         (-> posn? (listof cell?) (listof cell?))
-         (map (lambda (c) (if (equal? to-block (cell-p c))
-                              (make-cell to-block #t)
-                              c))
-              board))]
-
 The @scheme[move-cat] function uses calls @scheme[build-bfs-table]
 to find the shortest distance from all of the cells to the boundary,
 and then uses @scheme[find-best-positions] to compute the
@@ -1306,16 +1300,26 @@ position and whether or not the cat won.
                    (world-h-down? world))]
 
 
+The @scheme[find-best-positions] function accepts
+two parallel lists, one of @scheme[posn]s, and one
+of scores for those @scheme[posn]s, and it 
+returns either a non-empty list of @scheme[posn]s
+that have tied for the best score, or it
+returns @scheme[#f], if the best score is 
+@scheme['∞].
+
 @chunk[<find-best-positions>
-       ;; find-best-positions : (nelistof posn) (nelistof number or '∞)
-       ;;                       -> (nelistof posn) or #f
-       (define (find-best-positions posns scores)
-         (local [(define best-score (foldl (lambda (x sofar)
-                                             (if (<=/f x sofar)
-                                                 x
-                                                 sofar))
-                                           (first scores)
-                                           (rest scores)))]
+       (define/contract (find-best-positions posns scores)
+         (-> (cons/c posn? (listof posn?))
+             (cons/c (or/c number? '∞) (listof (or/c number? '∞)))
+             (or/c (cons/c posn? (listof posn?)) #f))
+         (let ([best-score
+                (foldl (lambda (x sofar)
+                         (if (<=/f x sofar)
+                             x
+                             sofar))
+                       (first scores)
+                       (rest scores))])
            (cond
              [(symbol? best-score) #f]
              [else
@@ -1324,11 +1328,15 @@ position and whether or not the cat won.
                (filter (lambda (x) (equal? (first x) best-score))
                        (map list scores posns)))])))]
 
-
+This is a helper function that behaves like
+@scheme[<=], but is extended to deal properly with
+@scheme['∞].
 
 @chunk[<lt/f>
-       ;; <=/f : (number or '∞) (number or '∞) -> boolean
-       (define (<=/f a b)
+       (define/contract (<=/f a b)
+         (-> (or/c number? '∞) 
+             (or/c number? '∞)
+             boolean?)
          (cond
            [(equal? b '∞) #t]
            [(equal? a '∞) #f]
@@ -1376,7 +1384,14 @@ is just updated to @scheme[#f].
 
 This section consists of some infrastructure for
 maintaining tests, plus a pile of additional tests
-for the other functions in this document
+for the other functions in this document.
+
+The @scheme[test] and @scheme[test/set] macros
+package up their arguments into thunks and then
+simply call @scheme[test/proc], supplying 
+information about the source location of the test
+case. The @scheme[test/proc] function runs the tests
+and reports the results.
 
 @chunk[<test-infrastructure>
 
@@ -2295,12 +2310,30 @@ for the other functions in this document
                               0 0)
              #f)]
 
+@chunk[<blocked-cells-tests>
+       (test (block-cell (make-posn 1 1)
+                         (list (make-cell (make-posn 0 0) #f)
+                               (make-cell (make-posn 1 1) #f)
+                               (make-cell (make-posn 2 2) #f)))
+             (list (make-cell (make-posn 0 0) #f)
+                   (make-cell (make-posn 1 1) #t)
+                   (make-cell (make-posn 2 2) #f)))
+       
+       (test (add-n-random-blocked-cells 0 (list (make-cell (make-posn 0 0)
+                                                            #t))
+                                         3)
+             (list (make-cell (make-posn 0 0) #t)))
+       (test (add-n-random-blocked-cells 1 (list (make-cell (make-posn 0 0)
+                                                            #f))
+                                         3)
+             (list (make-cell (make-posn 0 0) #t)))]
 
 @section{Run, program, run}
 
+This section contains the main expression that starts
+the Chat Noir game going. 
+
 @chunk[<go>
-       (printf "passed ~s tests\n" test-count) (flush-output)
-       
        (let* ([board-size 11]
               [initial-board
                (add-n-random-blocked-cells
