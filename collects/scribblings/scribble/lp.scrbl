@@ -1,26 +1,34 @@
 #lang scribble/doc
-@(require scribble/manual scheme/runtime-path scribble/lp-include)
+@(require scribble/manual 
+          scribble/struct 
+          scheme/runtime-path
+          (prefix-in lp-ex: "lp-ex-doc.scrbl")
+          "utils.ss"
+          (for-label scribble/lp-include
+                     (only-in scribble/private/lp chunk)))
 
-@title[#:tag "lp"]{Literate Programming}
+@title[#:tag "lp" #:style `((css "lp.css") (tex "lp.tex")) ]{Literate Programming}
 
 Programs written using @schememodname[scribble/lp] are simultaneously
-two things: a program, and a document describing the program. 
+two things: a program and a document describing the program.
 
 Programs in @schememodname[scribble/lp] are viewed in two different
-ways, either by running the program directly, or by including it with
-@scheme[include-lp].  When running the program, all of the
+ways, either by running the program directly or by including it with
+@scheme[lp-include].  When running the program, all of the
 @scheme[chunk] expressions are collected and stitched together into a
-program and the rest of the module is discarded. When using
-@scheme[include-lp], the entire contents of the module are preserved
+program, and the rest of the module is discarded. When using
+@scheme[lp-include], the entire contents of the module are preserved
 and are treated like an ordinary Scribble document, where
 @scheme[chunk]s are typeset in a manner similar to @scheme[codeblock].
 
 @(define-runtime-path lp-ex "lp-ex.ss")
 
 For example, consider this program:
+
 @(call-with-input-file lp-ex
    (lambda (port)
      (verbatim
+      #:indent 2
       (apply 
        string-append
        (let loop ()
@@ -36,21 +44,30 @@ function @scheme[f] that squares its argument, and the documentation
 is ignored. When it is included with @scheme[lp-include], it looks
 like this:
 
-@lp-include["lp-ex.ss"]
+@(make-blockquote
+  "LPBoxed"
+  (flow-paragraphs (part-flow lp-ex:doc)))
 
-@section{@schememodname[scribble/lp] language}
+@section{@schememodname[scribble/lp] Language}
 
-@defmodulelang[scribble/lp]{This is a Scribble's core support for Literate Programming.}
+@declare-exporting[scribble/private/lp]
 
-@defform[(chunk <id> expressions ...)]{
-  Introduces a chunk, binding @scheme[<id>] for use in other chunks.
+@defmodulelang*/no-declare[(scribble/lp)]{The
+@schememodname[scribble/lp] language provides core support for
+literate programming.}
 
-  If @scheme[<id>] is @tt{<*>}, then this chunk is used as the main
-  chunk in the file. If @tt{<*>} is never used, then the first chunk
+@defform[(chunk id form ...)]{
+
+  Introduces a chunk, binding @scheme[id] for use in other
+  chunks. Normally, @scheme[id] starts with @litchar{<} and ends with
+  @litchar{>}.
+
+  If @scheme[id] is @schemeidfont{<*>}, then this chunk is used as the main
+  chunk in the file. If @schemeidfont{<*>} is never used, then the first chunk
   in the file is treated as the main chunk.
 }
 
-@section{@schememodname[scribble/lp-include] module}
+@section{@schememodname[scribble/lp-include] Module}
 
 @defmodule[scribble/lp-include]{}
 

@@ -58,7 +58,7 @@ To avoid collisions with future additions to Scribble, start your
 style name with an uppercase letter that is not @litchar{S}. An
 uppercase letter helps to avoid collisions with macros defined by
 Latex packages, and future styles needed by @scheme[scribble/manual]
-will start with @litchar{s}.
+will start with @litchar{S}.
 
 For example, a Scribble document
 
