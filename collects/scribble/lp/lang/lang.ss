@@ -3,7 +3,8 @@
 (provide (except-out (all-from-out scheme/base) #%module-begin)
          (rename-out [module-begin #%module-begin]))
 
-(require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase))
+(require (for-syntax scheme/base syntax/boundmap scheme/list syntax/kerncase
+                     syntax/strip-context))
 
 (begin-for-syntax
   (define first-id #f)
@@ -14,17 +15,16 @@
   (define chunks (make-free-identifier-mapping))
   ;; maps a chunk identifier to all identifiers that are used to define it
   (define chunk-groups (make-free-identifier-mapping))
-  (define (get-chunk id)
-    (map syntax-local-introduce (mapping-get chunks id)))
+  (define (get-chunk id) (mapping-get chunks id))
   (define (add-to-chunk! id exprs)
     (unless first-id (set! first-id id))
     (when (eq? (syntax-e id) '<*>) (set! main-id id))
     (free-identifier-mapping-put!
      chunk-groups id
-     (cons (syntax-local-introduce id) (mapping-get chunk-groups id)))
+     (cons id (mapping-get chunk-groups id)))
     (free-identifier-mapping-put!
      chunks id
-     `(,@(mapping-get chunks id) ,@(map syntax-local-introduce exprs)))))
+     `(,@(mapping-get chunks id) ,@exprs))))
 
 (define-syntax (tangle stx)
   (define chunk-mentions '())
@@ -53,7 +53,8 @@
                 [((b-use b-id) ...)
                  (append-map (lambda (m)
                                (map (lambda (u)
-                                      (list m (syntax-local-introduce u)))
+                                      (list (syntax-local-introduce m) 
+                                            (syntax-local-introduce u)))
                                     (mapping-get chunk-groups m)))
                              chunk-mentions)])
     #`(begin body ... (let ([b-id (void)]) b-use) ...)))
@@ -77,7 +78,7 @@
     [(_ id exprs . body)
      (let ([expanded 
             (expand `(,#'module scribble-lp-tmp-name scribble/private/lp
-                                ,@(syntax->datum #'(id exprs . body))))])
+                                ,@(strip-context #'(id exprs . body))))])
        (syntax-case expanded ()
          [(module name lang (mb . stuff))
           (begin (extract-chunks #'stuff)
