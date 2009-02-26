@@ -31,23 +31,27 @@
   (define stupid-internal-definition-sytnax
     (unless first-id
       (raise-syntax-error 'scribble/lp "no chunks")))
+  (define orig-stx (syntax-case stx () [(_ orig) #'orig]))
+  (define (restore nstx d) (datum->syntax orig-stx d nstx nstx))
+  (define (shift nstx) (datum->syntax orig-stx (syntax-e nstx) nstx nstx))
   (define body
-    (let loop ([block (if main-id
-                          (get-chunk main-id)
-                          (get-chunk first-id))])
-      (append-map
-       (lambda (expr)
-         (if (identifier? expr)
-           (let ([subs (get-chunk expr)])
-             (if (pair? subs)
-               (begin (set! chunk-mentions (cons expr chunk-mentions))
-                      (loop subs))
-               (list expr)))
-           (let ([subs (syntax->list expr)])
-             (if subs
-               (list (loop subs))
-               (list expr)))))
-       block)))
+    (let ([main-id (or main-id first-id)])
+      (restore
+       main-id
+       (let loop ([block (get-chunk main-id)])
+         (append-map
+          (lambda (expr)
+            (if (identifier? expr)
+                (let ([subs (get-chunk expr)])
+                  (if (pair? subs)
+                      (begin (set! chunk-mentions (cons expr chunk-mentions))
+                             (loop subs))
+                      (list (shift expr))))
+                (let ([subs (syntax->list expr)])
+                  (if subs
+                      (list (restore expr (loop subs)))
+                      (list (shift expr))))))
+          block)))))
   (with-syntax ([(body ...) body]
                 ;; construct arrows manually
                 [((b-use b-id) ...)
@@ -82,4 +86,4 @@
        (syntax-case expanded ()
          [(module name lang (mb . stuff))
           (begin (extract-chunks #'stuff)
-                 #'(#%module-begin (tangle)))]))]))
+                 #'(#%module-begin (tangle id)))]))]))
