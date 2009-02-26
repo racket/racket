@@ -4,8 +4,7 @@
           scheme/runtime-path
           (prefix-in lp-ex: "lp-ex-doc.scrbl")
           "utils.ss"
-          (for-label scribble/lp-include
-                     (only-in scribble/private/lp chunk)))
+          (for-label scribble/lp-include scribble/lp))
 
 @title[#:tag "lp" #:style `((css "lp.css") (tex "lp.tex")) ]{Literate Programming}
 
@@ -50,11 +49,8 @@ like this:
 
 @section{@schememodname[scribble/lp] Language}
 
-@declare-exporting[scribble/private/lp]
-
-@defmodulelang*/no-declare[(scribble/lp)]{The
-@schememodname[scribble/lp] language provides core support for
-literate programming.}
+@defmodulelang[scribble/lp]{The @schememodname[scribble/lp] language
+provides core support for literate programming.}
 
 @defform[(chunk id form ...)]{
 
