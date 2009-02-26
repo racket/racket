@@ -4,6 +4,9 @@ Games.
 
 Problems:
 
+ - Run in the module language doesn't seem to work anymore, in that
+   definitions in the literate program don't show up in the REPL.
+
  - Need to make 'a-chunk' be a real macro, I expect. (used in
    scribble/private/lp.ss)
 

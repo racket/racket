@@ -1086,7 +1086,11 @@ the screen resolution.
        
 @section{Handling Input}
 
+Input handling consists of handling two different kinds of events: key events, and mouse events, 
+plus various helper functions.
+
 @chunk[<input>
+       <change>
        <clack>
        <update-world-posn>
        <player-moved?>
@@ -1096,8 +1100,7 @@ the screen resolution.
        <find-best-positions>
        <lt/f>
        <circle-at-point>
-       <point-in-this-circle?>
-       <change>]
+       <point-in-this-circle?>]
 
 @chunk[<input-tests>
        <change-tests>
@@ -1109,8 +1112,21 @@ the screen resolution.
        <update-world-posn-tests>
        <clack-tests>]
 
+The @scheme[change] function handles keyboard input and merely updates the @tt{h-down?} field
+based on the state of the key event.
+
+@chunk[<change>
+       ;; change : world key-event -> world
+       (define (change w ke)
+         (make-world (world-board w)
+                     (world-cat w)
+                     (world-state w)
+                     (world-size w)
+                     (world-mouse-posn w)
+                     (key=? ke #\h)))]
+
 The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
-to a specific helper function:
+to a helper function:
 @itemize{
 @item{block the clicked cell (@scheme[block-cell/world]),}
 @item{move the cat (@scheme[move-cat]), and}
@@ -1140,7 +1156,9 @@ player's move (via the @scheme[player-moved?] function.
 The @scheme[player-moved?] predicate returns
 a @scheme[posn] indicating where the player chose
 to move when the mouse event corresponds to a player move,
-and returns @scheme[#f].
+and returns @scheme[#f]. It first checks to see if the
+mouse event is a button up event and that the game
+is not over, and then it just calls @scheme[circle-at-point].
 
 @chunk[<player-moved?>
        (define/contract (player-moved? world x y evt)
@@ -1149,6 +1167,71 @@ and returns @scheme[#f].
          (and (equal? evt 'button-up)
               (equal? 'playing (world-state world))
               (circle-at-point (world-board world) x y)))]
+
+The @scheme[circle-at-point] function returns a @scheme[posn] when
+the coordinate (@scheme[x],@scheme[y]) is inside a circle
+on the given board. Instead of computing the nearest
+circle to the coordinates, it simply iterates over the cells on the
+board and returns the @scheme[posn] of the matching cell.
+
+@chunk[<circle-at-point>
+       (define/contract (circle-at-point board x y)
+         (-> (listof cell?) real? real? 
+             (or/c posn? #f))
+         (ormap (λ (cell)
+                  (and (point-in-this-circle? (cell-p cell) x y)
+                       (cell-p cell)))
+                board))]
+
+
+The @scheme[point-in-this-circle?] function returns @scheme[#t]
+when the point (@scheme[x],@scheme[y]) on the screen
+falls within the circle located at the @scheme[posn] @scheme[p].
+
+This is precise about checking the circles. For example, 
+a point that is (14,14) away from the center of a circle
+is still in the circle:
+
+@chunk[<point-in-this-circle?-tests>
+       (test (point-in-this-circle? 
+              (make-posn 1 0)
+              (+ (cell-center-x (make-posn 1 0)) 14)
+              (+ (cell-center-y (make-posn 1 0)) 14))
+             #t)]
+
+but one that is (15,15) away is no longer in the circle,
+since it crosses the boundary away from a circle of radius
+20 at that point.
+
+@chunk[<point-in-this-circle?-tests>
+       (test (point-in-this-circle? 
+              (make-posn 1 0)
+              (+ (cell-center-x (make-posn 1 0)) 15)
+              (+ (cell-center-y (make-posn 1 0)) 15))
+             #f)]
+
+The implementation of @scheme[point-in-this-circle?] uses
+complex numbers to represent both points on the screen
+and directional vectors. In particular, the 
+variable @scheme[center] is a complex number whose
+real part is the @tt{x} coordinate of the center of
+the cell at @scheme[p], and its imaginary part is 
+@tt{y} coordinate. Similarly, @scheme[mp] is bound
+to a complex number corresponding to the position of
+the mouse, at (@scheme[x], @scheme[y]). Then, the
+function computes the vector between the two points
+by subtracting the complex numbers from each
+other and extracting the magnitude from that vector.
+
+@chunk[<point-in-this-circle?>
+       (define/contract (point-in-this-circle? p x y)
+         (-> posn? real? real? boolean?)
+         (let ([center (+ (cell-center-x p)
+                          (* (sqrt -1)
+                             (cell-center-y p)))]
+               [mp (+ x (* (sqrt -1) y))])
+           (<= (magnitude (- center mp)) 
+               circle-radius)))]
 
 In the event that @scheme[player-moved?] returns a @scheme[posn],
 the @scheme[clack] function blocks the clicked on cell using
@@ -1222,8 +1305,43 @@ position and whether or not the cat won.
                    (world-mouse-posn world)
                    (world-h-down? world))]
 
+
+@chunk[<find-best-positions>
+       ;; find-best-positions : (nelistof posn) (nelistof number or '∞)
+       ;;                       -> (nelistof posn) or #f
+       (define (find-best-positions posns scores)
+         (local [(define best-score (foldl (lambda (x sofar)
+                                             (if (<=/f x sofar)
+                                                 x
+                                                 sofar))
+                                           (first scores)
+                                           (rest scores)))]
+           (cond
+             [(symbol? best-score) #f]
+             [else
+              (map
+               second
+               (filter (lambda (x) (equal? (first x) best-score))
+                       (map list scores posns)))])))]
+
+
+
+@chunk[<lt/f>
+       ;; <=/f : (number or '∞) (number or '∞) -> boolean
+       (define (<=/f a b)
+         (cond
+           [(equal? b '∞) #t]
+           [(equal? a '∞) #f]
+           [else (<= a b)]))]
+
+
 Finally, to complete the mouse event handling, the @scheme[update-world-posn]
-function is called from @scheme[clack]. It updates 
+function is called from @scheme[clack]. It updates the @tt{mouse-down}
+field of the @scheme[world]. If the @scheme[p] argument is a @scheme[posn],
+it corresponds to the location of the mouse, in graphical coordinates.
+So, the function converts it to a cell position on the board and uses that.
+Otherwise, when @scheme[p] is @scheme[#f], the @tt{mouse-down} field
+is just updated to @scheme[#f].
 
 @chunk[<update-world-posn>
        (define/contract (update-world-posn w p)
@@ -1253,219 +1371,6 @@ function is called from @scheme[clack]. It updates
                         #f
                         (world-h-down? w))]))]
 
-@chunk[<update-world-posn-tests>
-
-       (test (update-world-posn
-              (make-world (list (make-cell (make-posn 0 0) #f))
-                          (make-posn 0 1) 'playing 3 #f #f)
-              (make-posn (cell-center-x (make-posn 0 0))
-                         (cell-center-y (make-posn 0 0))))
-             (make-world (list (make-cell (make-posn 0 0) #f))
-                         (make-posn 0 1) 'playing 3 (make-posn 0 0) #f))
-       
-       (test (update-world-posn
-              (make-world (list (make-cell (make-posn 0 0) #f))
-                          (make-posn 0 0) 'playing 3 #f #f)
-              (make-posn (cell-center-x (make-posn 0 0))
-                         (cell-center-y (make-posn 0 0))))
-             (make-world (list (make-cell (make-posn 0 0) #f))
-                         (make-posn 0 0) 'playing 3 #f #f))
-       
-       (test (update-world-posn
-              (make-world (list (make-cell (make-posn 0 0) #f))
-                          (make-posn 0 1) 'playing 3 (make-posn 0 0) #f)
-              (make-posn 0 0))
-             (make-world (list (make-cell (make-posn 0 0) #f))
-                         (make-posn 0 1) 'playing 3 #f #f))]
-
-@chunk[<move-cat-tests>
-       (test
-        (move-cat
-         (make-world (list (make-cell (make-posn 1 0) #f)
-                           (make-cell (make-posn 2 0) #f)
-                           (make-cell (make-posn 3 0) #f)
-                           (make-cell (make-posn 4 0) #f)
-                           
-                           (make-cell (make-posn 0 1) #f)
-                           (make-cell (make-posn 1 1) #t)
-                           (make-cell (make-posn 2 1) #t)
-                           (make-cell (make-posn 3 1) #f)
-                           (make-cell (make-posn 4 1) #f)
-                           
-                           (make-cell (make-posn 0 2) #f)
-                           (make-cell (make-posn 1 2) #t)
-                           (make-cell (make-posn 2 2) #f)
-                           (make-cell (make-posn 3 2) #t)
-                           (make-cell (make-posn 4 2) #f)
-                           
-                           (make-cell (make-posn 0 3) #f)
-                           (make-cell (make-posn 1 3) #t)
-                           (make-cell (make-posn 2 3) #f)
-                           (make-cell (make-posn 3 3) #f)
-                           (make-cell (make-posn 4 3) #f)
-                           
-                           (make-cell (make-posn 1 4) #f)
-                           (make-cell (make-posn 2 4) #f)
-                           (make-cell (make-posn 3 4) #f)
-                           (make-cell (make-posn 4 4) #f))
-                     (make-posn 2 2)
-                     'playing
-                     5
-                     (make-posn 0 0)
-                     #f))
-        (make-world (list (make-cell (make-posn 1 0) #f)
-                          (make-cell (make-posn 2 0) #f)
-                          (make-cell (make-posn 3 0) #f)
-                          (make-cell (make-posn 4 0) #f)
-                          
-                          (make-cell (make-posn 0 1) #f)
-                          (make-cell (make-posn 1 1) #t)
-                          (make-cell (make-posn 2 1) #t)
-                          (make-cell (make-posn 3 1) #f)
-                          (make-cell (make-posn 4 1) #f)
-                          
-                          (make-cell (make-posn 0 2) #f)
-                          (make-cell (make-posn 1 2) #t)
-                          (make-cell (make-posn 2 2) #f)
-                          (make-cell (make-posn 3 2) #t)
-                          (make-cell (make-posn 4 2) #f)
-                          
-                          (make-cell (make-posn 0 3) #f)
-                          (make-cell (make-posn 1 3) #t)
-                          (make-cell (make-posn 2 3) #f)
-                          (make-cell (make-posn 3 3) #f)
-                          (make-cell (make-posn 4 3) #f)
-                          
-                          (make-cell (make-posn 1 4) #f)
-                          (make-cell (make-posn 2 4) #f)
-                          (make-cell (make-posn 3 4) #f)
-                          (make-cell (make-posn 4 4) #f))
-                    (make-posn 2 3)
-                    'playing
-                    5
-                    (make-posn 0 0)
-                    #f))]
-
-@chunk[<find-best-positions>
-       ;; find-best-positions : (nelistof posn) (nelistof number or '∞)
-       ;;                       -> (nelistof posn) or #f
-       (define (find-best-positions posns scores)
-         (local [(define best-score (foldl (lambda (x sofar)
-                                             (if (<=/f x sofar)
-                                                 x
-                                                 sofar))
-                                           (first scores)
-                                           (rest scores)))]
-           (cond
-             [(symbol? best-score) #f]
-             [else
-              (map
-               second
-               (filter (lambda (x) (equal? (first x) best-score))
-                       (map list scores posns)))])))]
-
-@chunk[<find-best-positions-tests>
-       (test (find-best-positions (list (make-posn 0 0)) (list 1))
-             (list (make-posn 0 0)))
-       (test (find-best-positions (list (make-posn 0 0)) (list '∞))
-             #f)
-       (test (find-best-positions (list (make-posn 0 0)
-                                        (make-posn 1 1))
-                                  (list 1 2))
-             (list (make-posn 0 0)))
-       (test (find-best-positions (list (make-posn 0 0)
-                                        (make-posn 1 1))
-                                  (list 1 1))
-             (list (make-posn 0 0)
-                   (make-posn 1 1)))
-       (test (find-best-positions (list (make-posn 0 0)
-                                        (make-posn 1 1))
-                                  (list '∞ 2))
-             (list (make-posn 1 1)))
-       (test (find-best-positions (list (make-posn 0 0)
-                                        (make-posn 1 1))
-                                  (list '∞ '∞))
-             #f)]
-
-@chunk[<lt/f>
-       ;; <=/f : (number or '∞) (number or '∞) -> boolean
-       (define (<=/f a b)
-         (cond
-           [(equal? b '∞) #t]
-           [(equal? a '∞) #f]
-           [else (<= a b)]))]
-
-@chunk[<lt/f-tests>
-       (test (<=/f 1 2) #t)
-       (test (<=/f 2 1) #f)
-       (test (<=/f '∞ 1) #f)
-       (test (<=/f 1 '∞) #t)
-       (test (<=/f '∞ '∞) #t)]
-
-@chunk[<circle-at-point>
-       ;; circle-at-point : board number number -> posn-or-#f
-       ;; returns the posn corresponding to cell where the x,y coordinates are
-       (define (circle-at-point board x y)
-         (cond
-           [(empty? board) #f]
-           [else
-            (cond
-              [(point-in-this-circle? (cell-p (first board)) x y)
-               (cell-p (first board))]
-              [else
-               (circle-at-point (rest board) x y)])]))]
-
-@chunk[<circle-at-point-tests>
-       (test (circle-at-point empty 0 0) #f)
-       (test (circle-at-point (list (make-cell (make-posn 0 0) #f))
-                              (cell-center-x (make-posn 0 0))
-                              (cell-center-y (make-posn 0 0)))
-             (make-posn 0 0))
-       (test (circle-at-point (list (make-cell (make-posn 0 0) #f))
-                              0 0)
-             #f)]
-
-@chunk[<point-in-this-circle?>
-       ;; point-in-this-circle? : posn number number -> boolean
-       (define (point-in-this-circle? p x y)
-         (let ([center (+ (cell-center-x p)
-                          (* (sqrt -1)
-                             (cell-center-y p)))]
-               [p2 (+ x (* (sqrt -1) y))])
-           (<= (magnitude (- center p2)) 
-               circle-radius)))]
-
-@chunk[<point-in-this-circle?-tests>
-       (test (point-in-this-circle? (make-posn 0 0)
-                                    (cell-center-x (make-posn 0 0))
-                                    (cell-center-y (make-posn 0 0)))
-             #t)
-       (test (point-in-this-circle? (make-posn 0 0) 0 0)
-             #f)]
-
-@chunk[<change>
-       ;; change : world key-event -> world
-       (define (change w ke)
-         (make-world (world-board w)
-                     (world-cat w)
-                     (world-state w)
-                     (world-size w)
-                     (world-mouse-posn w)
-                     (key=? ke #\h)))]
-
-@chunk[<change-tests>
-       (test (change (make-world '() (make-posn 1 1)
-                                 'playing 3 (make-posn 0 0) #f)
-                     #\h)
-             (make-world '() (make-posn 1 1)
-                         'playing 3 (make-posn 0 0) #t))
-       (test (change (make-world '() (make-posn 1 1)
-                                 'playing 3 (make-posn 0 0) #t)
-                     'release)
-             (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) #f))]
-
-
-]
 
 @section{Tests}
 
@@ -2230,11 +2135,171 @@ for the other functions in this document
               #f
               #f))]
 
+@chunk[<update-world-posn-tests>
+
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) #f))
+                          (make-posn 0 1) 'playing 3 #f #f)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) #f))
+                         (make-posn 0 1) 'playing 3 (make-posn 0 0) #f))
+       
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) #f))
+                          (make-posn 0 0) 'playing 3 #f #f)
+              (make-posn (cell-center-x (make-posn 0 0))
+                         (cell-center-y (make-posn 0 0))))
+             (make-world (list (make-cell (make-posn 0 0) #f))
+                         (make-posn 0 0) 'playing 3 #f #f))
+       
+       (test (update-world-posn
+              (make-world (list (make-cell (make-posn 0 0) #f))
+                          (make-posn 0 1) 'playing 3 (make-posn 0 0) #f)
+              (make-posn 0 0))
+             (make-world (list (make-cell (make-posn 0 0) #f))
+                         (make-posn 0 1) 'playing 3 #f #f))]
+
+@chunk[<move-cat-tests>
+       (test
+        (move-cat
+         (make-world (list (make-cell (make-posn 1 0) #f)
+                           (make-cell (make-posn 2 0) #f)
+                           (make-cell (make-posn 3 0) #f)
+                           (make-cell (make-posn 4 0) #f)
+                           
+                           (make-cell (make-posn 0 1) #f)
+                           (make-cell (make-posn 1 1) #t)
+                           (make-cell (make-posn 2 1) #t)
+                           (make-cell (make-posn 3 1) #f)
+                           (make-cell (make-posn 4 1) #f)
+                           
+                           (make-cell (make-posn 0 2) #f)
+                           (make-cell (make-posn 1 2) #t)
+                           (make-cell (make-posn 2 2) #f)
+                           (make-cell (make-posn 3 2) #t)
+                           (make-cell (make-posn 4 2) #f)
+                           
+                           (make-cell (make-posn 0 3) #f)
+                           (make-cell (make-posn 1 3) #t)
+                           (make-cell (make-posn 2 3) #f)
+                           (make-cell (make-posn 3 3) #f)
+                           (make-cell (make-posn 4 3) #f)
+                           
+                           (make-cell (make-posn 1 4) #f)
+                           (make-cell (make-posn 2 4) #f)
+                           (make-cell (make-posn 3 4) #f)
+                           (make-cell (make-posn 4 4) #f))
+                     (make-posn 2 2)
+                     'playing
+                     5
+                     (make-posn 0 0)
+                     #f))
+        (make-world (list (make-cell (make-posn 1 0) #f)
+                          (make-cell (make-posn 2 0) #f)
+                          (make-cell (make-posn 3 0) #f)
+                          (make-cell (make-posn 4 0) #f)
+                          
+                          (make-cell (make-posn 0 1) #f)
+                          (make-cell (make-posn 1 1) #t)
+                          (make-cell (make-posn 2 1) #t)
+                          (make-cell (make-posn 3 1) #f)
+                          (make-cell (make-posn 4 1) #f)
+                          
+                          (make-cell (make-posn 0 2) #f)
+                          (make-cell (make-posn 1 2) #t)
+                          (make-cell (make-posn 2 2) #f)
+                          (make-cell (make-posn 3 2) #t)
+                          (make-cell (make-posn 4 2) #f)
+                          
+                          (make-cell (make-posn 0 3) #f)
+                          (make-cell (make-posn 1 3) #t)
+                          (make-cell (make-posn 2 3) #f)
+                          (make-cell (make-posn 3 3) #f)
+                          (make-cell (make-posn 4 3) #f)
+                          
+                          (make-cell (make-posn 1 4) #f)
+                          (make-cell (make-posn 2 4) #f)
+                          (make-cell (make-posn 3 4) #f)
+                          (make-cell (make-posn 4 4) #f))
+                    (make-posn 2 3)
+                    'playing
+                    5
+                    (make-posn 0 0)
+                    #f))]
+
+@chunk[<change-tests>
+       (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) #f)
+                     #\h)
+             (make-world '() (make-posn 1 1)
+                         'playing 3 (make-posn 0 0) #t))
+       (test (change (make-world '() (make-posn 1 1)
+                                 'playing 3 (make-posn 0 0) #t)
+                     'release)
+             (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) #f))]
+
+
+
+
+@chunk[<point-in-this-circle?-tests>
+       (test (point-in-this-circle? (make-posn 0 0)
+                                    (cell-center-x (make-posn 0 0))
+                                    (cell-center-y (make-posn 0 0)))
+             #t)
+       (test (point-in-this-circle? (make-posn 0 0) 0 0)
+             #f)]
+
+@chunk[<find-best-positions-tests>
+       (test (find-best-positions (list (make-posn 0 0)) (list 1))
+             (list (make-posn 0 0)))
+       (test (find-best-positions (list (make-posn 0 0)) (list '∞))
+             #f)
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list 1 2))
+             (list (make-posn 0 0)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list 1 1))
+             (list (make-posn 0 0)
+                   (make-posn 1 1)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list '∞ 2))
+             (list (make-posn 1 1)))
+       (test (find-best-positions (list (make-posn 0 0)
+                                        (make-posn 1 1))
+                                  (list '∞ '∞))
+             #f)]
+
+@chunk[<lt/f-tests>
+       (test (<=/f 1 2) #t)
+       (test (<=/f 2 1) #f)
+       (test (<=/f '∞ 1) #f)
+       (test (<=/f 1 '∞) #t)
+       (test (<=/f '∞ '∞) #t)]
+
+@chunk[<circle-at-point-tests>
+       (test (circle-at-point empty 0 0) #f)
+       (test (circle-at-point (list (make-cell (make-posn 0 0) #f))
+                              (cell-center-x (make-posn 0 0))
+                              (cell-center-y (make-posn 0 0)))
+             (make-posn 0 0))
+       (test (circle-at-point (list (make-cell (make-posn 0 0) #f)
+                                    (make-cell (make-posn 0 1) #f))
+                              (cell-center-x (make-posn 0 1))
+                              (cell-center-y (make-posn 0 1)))
+             (make-posn 0 1))
+       (test (circle-at-point (list (make-cell (make-posn 0 0) #f))
+                              0 0)
+             #f)]
+
+
 @section{Run, program, run}
 
 @chunk[<go>
-       ;(printf "passed ~s tests\n" test-count)
-       ;(flush-output)
+       (printf "passed ~s tests\n" test-count) (flush-output)
        
        (let* ([board-size 11]
               [initial-board
