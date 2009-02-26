@@ -578,6 +578,28 @@ each of the bindings implied by an @scheme[export]
 Like @scheme[unit/new-import-export], but binds static information to
 @scheme[unit-id] like @scheme[define-unit].}
 
+@defform[
+#:literals (import export)
+(unit/s
+  (import tagged-sig-spec ...)
+  (export tagged-sig-spec ...)
+  init-depends-decl
+  unit-id)]{
+
+Like @scheme[unit/new-import-export], but the linking clause is
+inferred, so @scheme[unit-id] must have the appropriate static
+information.}
+@defform[
+#:literals (import export)
+(define-unit/s name-id
+  (import tagged-sig-spec ...)
+  (export tagged-sig-spec ...)
+  init-depends-decl
+  unit-id)]{
+
+Like @scheme[unit/s], but binds static information to @scheme[name-id]
+like @scheme[define-unit].}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "define-sig-form"]{Extending the Syntax of Signatures}

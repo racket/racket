@@ -1,6 +1,5 @@
 (module unit mzscheme
   (require-for-syntax mzlib/list
-                      scheme/pretty
                       stxclass
                       syntax/boundmap
                       syntax/context
@@ -31,6 +30,7 @@
            unit-from-context define-unit-from-context
            define-unit-binding
            unit/new-import-export define-unit/new-import-export
+           unit/s define-unit/s
            unit/c define-unit/contract)
  
   (define-syntax/err-param (define-signature-form stx)
@@ -1792,6 +1792,29 @@
        (raise-stx-err
         (format "expected syntax matching (~a <define-unit-identifier>)"
                 (syntax-e (stx-car stx)))))))
+  
+  (define-for-syntax (build-unit/s stx)
+    (syntax-case stx (import export init-depend)
+      [((import i ...) (export e ...) (init-depend d ...) u)
+       (let* ([ui (lookup-def-unit #'u)]
+              [unprocess (let ([i (make-syntax-delta-introducer #'u (unit-info-orig-binder ui))])
+                           (lambda (p)
+                             (unprocess-tagged-id (cons (car p) (i (cdr p))))))])
+         (with-syntax ([(isig ...) (map unprocess (unit-info-import-sig-ids ui))]
+                       [(esig ...) (map unprocess (unit-info-export-sig-ids ui))])
+           (build-unit/new-import-export
+            (syntax/loc stx
+              ((import i ...) (export e ...) (init-depend d ...) ((esig ...) u isig ...))))))]))
+
+  (define-syntax/err-param (define-unit/s stx)
+    (build-define-unit stx (λ (stx) (build-unit/s (check-unit-syntax stx)))
+      "missing unit name"))
+  
+  (define-syntax/err-param (unit/s stx)
+    (syntax-case stx ()
+      [(_ . stx)
+       (let-values ([(u x y z) (build-unit/s (check-unit-syntax #'stx))])
+         u)]))
   
   )
 ;(load "test-unit.ss")
