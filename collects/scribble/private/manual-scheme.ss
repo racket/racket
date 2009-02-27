@@ -96,8 +96,13 @@
 (define-code schemeid to-element/id unsyntax keep-s-expr add-sq-prop)
 (define-code *schememodname to-element unsyntax keep-s-expr add-sq-prop)
 
-(define-syntax-rule (schememodname n)
-  (as-modname-link 'n (*schememodname n)))
+(define-syntax schememodname
+  (syntax-rules (unsyntax)
+    [(schememodname #,n)
+     (let ([sym n])
+       (as-modname-link sym (to-element sym)))]
+    [(schememodname n)
+     (as-modname-link 'n (*schememodname n))]))
 
 (define (as-modname-link s e)
   (if (symbol? s)

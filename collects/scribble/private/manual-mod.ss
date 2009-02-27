@@ -17,24 +17,37 @@
 
 (define spacer (hspace 1))
 
-(define-syntax-rule (defmodule*/no-declare (name ...) . content)
-  (*defmodule (list (schememodname name) ...)
-              #f
-              (list . content)))
+(define-syntax defmodule*/no-declare
+  (syntax-rules ()
+    [(_ #:require-form req (name ...) . content)
+     (*defmodule (list (schememodname name) ...)
+                 #f
+                 (list . content)
+                 req)]
+    [(_ (name ...) . content)
+     (defmodule*/no-declare #:require-form (scheme require) (name ...) . content)]))
 
 (define-syntax defmodule*
   (syntax-rules ()
-    [(_ (name ...) #:use-sources (pname ...) . content)
+    [(_ #:require-form req (name ...) #:use-sources (pname ...) . content)
      (begin (declare-exporting name ... #:use-sources (pname ...))
-            (defmodule*/no-declare (name ...) . content))]
+            (defmodule*/no-declare #:require-form req (name ...) . content))]
+    [(_ #:require-form req (name ...) . content)
+     (defmodule* #:require-form req (name ...) #:use-sources () . content)]
+    [(_ (name ...) #:use-sources (pname ...) . content)
+     (defmodule* #:require-form (scheme require) (name ...) #:use-sources (pname ...) . content)]
     [(_ (name ...) . content)
      (defmodule* (name ...) #:use-sources () . content)]))
 
-(define-syntax-rule (defmodule name . content)
-  (defmodule* (name) . content))
+(define-syntax defmodule
+  (syntax-rules ()
+    [(_ #:require-form req name . content)
+     (defmodule* #:require-form req (name) . content)]
+    [(_ name . content)
+     (defmodule* (name) . content)]))
 
 (define-syntax-rule (defmodulelang*/no-declare (lang ...) . content)
-  (*defmodule (list (schememodname lang) ...) #t (list . content)))
+  (*defmodule (list (schememodname lang) ...) #t (list . content) #f))
 
 (define-syntax defmodulelang*
   (syntax-rules ()
@@ -48,7 +61,7 @@
   (defmodulelang* (lang) . content))
 
 (define-syntax-rule (defmodulereader*/no-declare (lang ...) . content)
-  (*defmodule (list (schememodname lang) ...) 'reader (list . content)))
+  (*defmodule (list (schememodname lang) ...) 'reader (list . content) #f))
 
 (define-syntax defmodulereader*
   (syntax-rules ()
@@ -61,7 +74,7 @@
 (define-syntax-rule (defmodulereader lang . content)
   (defmodulereader* (lang) . content))
 
-(define (*defmodule names lang content)
+(define (*defmodule names lang content req)
   (make-splice
    (cons
     (make-table
@@ -78,7 +91,7 @@
                  (if (eq? lang 'reader)
                      (list (schememetafont "#reader") spacer (make-defschememodname name))
                      (list (hash-lang) spacer (make-defschememodname name)))
-                 (list (scheme (require #,(make-defschememodname name)))))))))))
+                 (list (scheme (#,req #,(make-defschememodname name)))))))))))
       names))
     (append (map (lambda (name)
                    (make-part-tag-decl `(mod-path ,(element->string name))))

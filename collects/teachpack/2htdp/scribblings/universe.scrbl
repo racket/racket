@@ -25,7 +25,7 @@
 
 @author{Matthias Felleisen}
 
-@defmodule[2htdp/universe #:use-sources (teachpack/htdp/image)]
+@defmodule[#:require-form beginner-require 2htdp/universe #:use-sources (teachpack/htdp/image)]
 
 @;{FIXME: the following paragraph uses `defterm' instead of `deftech',
    because the words "world" and "universe" are used as datatypes, and
