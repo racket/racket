@@ -16,7 +16,7 @@ The Scribble @"@"-reader is designed to be a convenient facility for
 using free-form text in Scheme code, where ``@"@"'' is chosen as one of
 the least-used characters in Scheme code.
 
-You can use the reader via MzScheme's @schemefont{#reader} form:
+You can use the reader via Scheme's @schemefont{#reader} form:
 
 @schemeblock[
  #, @schemefont|{
@@ -29,7 +29,7 @@ or use the @scheme[at-exp] meta-language as described in
 Note that the Scribble reader reads @"@"-forms as S-expressions.  This
 means that it is up to you to give meanings for these expressions in
 the usual way: use Scheme functions, define your functions, or require
-functions.  For example, typing the above into MzScheme is likely
+functions.  For example, typing the above into @exec{mzscheme} is likely
 going to produce a ``reference to undefined identifier'' error, unless
 @scheme[foo] is defined. You can use @scheme[string-append] instead,
 or you can define @scheme[foo] as a function (with variable arity).
@@ -41,7 +41,7 @@ text is likely to start with
 @schememod[scribble/doc]
 
 which installs the @"@" reader starting in ``text mode,'' wraps the
-file content afterward into a MzScheme module where many useful Scheme
+file content afterward into a Scheme module where many useful Scheme
 and documentation related functions are available, and parses the body
 into a document using @schememodname[scribble/decode].  See
 @secref["docreader"] for more information.
