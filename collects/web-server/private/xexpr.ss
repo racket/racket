@@ -1,6 +1,6 @@
 #lang scheme
 (require scheme/pretty
-         xml/xml)
+         xml)
 
 (provide/contract
  [format-xexpr/errors (any/c . -> . string?)]
@@ -26,7 +26,7 @@
       (symbol? v)
       (exact-nonnegative-integer? v)
       (comment? v)
-      (pi? v)
+      (p-i? v)
       (cdata? v)))
 
 (define (format-xexpr v)

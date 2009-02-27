@@ -12,7 +12,7 @@
  [use-html-spec (parameter/c boolean?)]
  [read-html (() (input-port?) . ->* . html?)]
  [read-xhtml (() (input-port?) . ->* . html?)]
- [read-html-as-xml (() (input-port?) . ->* . (listof content?))])
+ [read-html-as-xml (() (input-port?) . ->* . (listof content/c))])
 
 ;; xml-single-content->html : Content (listof Html-content) -> (listof Html-content)
 (define (xml-single-content->html x acc)

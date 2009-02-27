@@ -16,7 +16,7 @@
  [read-html-comments (parameter/c boolean?)]
  [trim-whitespace (parameter/c boolean?)]
  [gen-may-contain (spec/c . -> . kid-lister/c)]
- [gen-read-sgml (kid-lister/c (symbol? symbol? . -> . (or/c symbol? false/c)) . -> . (() (input-port?) . ->* . (listof content?)))])
+ [gen-read-sgml (kid-lister/c (symbol? symbol? . -> . (or/c symbol? false/c)) . -> . (() (input-port?) . ->* . (listof content/c)))])
 
 ;; Start-tag ::= (make-start-tag Location Location Symbol (listof Attribute))
 (define-struct (start-tag source) (name attrs))

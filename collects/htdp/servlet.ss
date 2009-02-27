@@ -4,10 +4,20 @@
               web-server/servlet
               htdp/error
               xml
+              scheme/contract
               mzlib/etc)
      (provide (all-from web-server/servlet-env)
-              (all-from web-server/servlet)
-              (rename wrapped-build-suspender build-suspender))
+              (all-from web-server/servlet))
+     (provide/contract
+      [build-suspender 
+       (((listof xexpr/c)
+         (listof xexpr/c))
+        ((listof (list/c symbol? string?))
+         (listof (list/c symbol? string?)))
+        . ->* . 
+        (string?
+         . -> .
+         xexpr/c))])
      
      ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response
      (define build-suspender
@@ -20,39 +30,4 @@
                         (title . ,title))
                   (body ,body-attributes
                         (form ([action ,k-url] [method "post"])
-                              ,@content))))))
-     
-     (define wrapped-build-suspender
-       (case-lambda
-         [(title content)
-          (check-suspender2 title content)
-          (build-suspender title content)]
-         [(title content body-attributes)
-          (check-suspender3 title content body-attributes)
-          (build-suspender title content body-attributes)]
-         [(title content body-attributes head-attributes)
-          (check-suspender4 title content body-attributes head-attributes)
-          (build-suspender title content body-attributes head-attributes)]))
-     
-     ; : tst tst -> void
-     (define (check-suspender2 title content)
-       (check-arg 'build-suspender (listof? xexpr? title) "(listof xexpr[HTML])" "1st" title)
-       (check-arg 'build-suspender (listof? xexpr? content) "(listof xexpr[HTML])" "2nd" content))
-     
-     ; : tst tst tst -> void
-     (define (check-suspender3 title content body-attributes)
-       (check-suspender2 title content)
-       (check-arg 'build-suspender (listof? attribute-pair? body-attributes)
-                  "(listof (cons sym str))" "3rd" body-attributes))
-     
-     ; : tst tst tst tst -> void
-     (define (check-suspender4 title content body-attributes head-attributes)
-       (check-suspender3 title content body-attributes)
-       (check-arg 'build-suspender (listof? attribute-pair? head-attributes)
-                  "(listof (cons sym str))" "4th" head-attributes))
-     
-     ; : tst -> bool
-     (define (attribute-pair? b)
-       (and (pair? b)
-            (symbol? (car b))
-            (string? (cdr b)))))
+                              ,@content)))))))

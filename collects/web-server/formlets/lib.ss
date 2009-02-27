@@ -91,7 +91,7 @@
           () #:rest (listof (formlet/c alpha))
           . ->* . (formlet/c beta))]
  [xml-forest (xexpr-forest/c . -> . (formlet/c procedure?))]
- [xml (xexpr? . -> . (formlet/c procedure?))] 
+ [xml (xexpr/c . -> . (formlet/c procedure?))] 
  [text (string? . -> . (formlet/c procedure?))]
  [tag-xexpr (symbol? (listof (list/c symbol? string?)) (formlet/c alpha) . -> . (formlet/c alpha))]
  [formlet-display ((formlet/c alpha) . -> . xexpr-forest/c)]
