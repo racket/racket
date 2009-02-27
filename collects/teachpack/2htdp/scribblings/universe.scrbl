@@ -91,10 +91,13 @@ The simplest kind of animated @tech{world} program is a time-based
 @defproc[(run-simulation [create-image (-> natural-number/c scene)])
          true]{
 
- opens a canvas and starts a clock that tick 28 times per second.
- Every time the clock ticks, DrScheme applies
- @scheme[create-image] to the number of ticks passed since this function
- call. The results of these applications are displayed in the canvas.
+ opens a canvas and starts a clock that tick 28 times per second.  Every
+ time the clock ticks, DrScheme applies @scheme[create-image] to the
+ number of ticks passed since this function call. The results of these
+ function calls are displayed in the canvas. The simulation runs until you
+ click the @tt{Stop} button in DrScheme or close the window. At that
+ point, @scheme[run-simulation] returns the number of ticks that have
+ passed. 
 }
 
 Example:
@@ -183,7 +186,11 @@ The design of a world program demands that you come up with a data
  itself as a scene; when the program must shut down; where to register the
  world with a universe; and whether to record the stream of events. A world
  specification may not contain more than one @scheme[on-tick],
- @scheme[on-draw], or @scheme[register] clause.}
+ @scheme[on-draw], or @scheme[register] clause. A @scheme[big-bang]
+ expression returns the last world when the stop condition is satisfied
+ (see below) or when the programmer clicks on the @tt{Stop} button or
+ closes the canvas.
+}
 
 @itemize[
 
@@ -328,9 +335,10 @@ All @tech{MouseEvent}s are represented via symbols:
          ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)])]{
  tell DrScheme to call the @scheme[last-world?] function whenever the canvas is
  drawn. If this call produces @scheme[true], the world program is shut
-          down. Specifically, the  clock is stopped; no more
+ down. Specifically, the  clock is stopped; no more
  tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
- the respective handlers. 
+ the respective handlers. The @scheme[big-bang] expression returns this
+ last world. 
 }}
 
 @item{
