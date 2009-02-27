@@ -82,8 +82,15 @@
     ; XXX bad because of struct
     [eliminate-whitespace ((listof symbol?) (boolean? . -> . boolean?) . -> . (any/c . -> . any/c))])))
 
+(define-signature xml-syntax^
+  ((contracted
+    ; XXX these should both actually return syntax? that is also xexpr/c
+    [syntax:read-xml (() (input-port?) . ->* . syntax?)]
+    [syntax:read-xml/element (() (input-port?) . ->* . syntax?)])))
+
 (provide xml-structs^
          writer^
          reader^
          xexpr^
-         space^)
+         space^
+         xml-syntax^)
