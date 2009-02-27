@@ -6,7 +6,8 @@
 
   (define (render-mixin %)
     (class %
-      (init [style-file #f]
+      (init [prefix-file #f]
+            [style-file #f]
             [style-extra-files ()])
       
       (define/override (get-substitutions)

@@ -117,8 +117,12 @@
               (lambda (p)
                 (syntax-case p ()
                   [(host) #`(ip> #,tag host)]
-                  [(ip name) #`(list (ip> #,tag ip) (symbol> #,tag name))]
                   [_ (err tag p)])))]
+  [name (lambda (tag)
+          (lambda (p)
+            (syntax-case p ()
+              [(n) #`(symbol> #,tag n)]
+              [_ (err tag p)])))]
   [record? (lambda (tag)
              (lambda (p)
                (syntax-case p ()

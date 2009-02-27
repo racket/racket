@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          net/url
          web-server/http
          web-server/formlets

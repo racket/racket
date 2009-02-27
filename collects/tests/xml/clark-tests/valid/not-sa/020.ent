@@ -1,0 +1,3 @@
+<!ENTITY % e "doc">
+<!ELEMENT doc (#PCDATA)>
+<!ATTLIST%e;a1 CDATA "v1">

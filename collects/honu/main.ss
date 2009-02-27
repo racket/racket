@@ -1,14 +1,18 @@
-(module main "private/mzscheme.ss"
+#lang scheme/base
 
-  (require-for-syntax syntax/stx
-		      "private/ops.ss"
-		      "private/util.ss"
-		      syntax/kerncase
-                      syntax/name
-		      "private/contexts.ss")
-  
+  (require (for-syntax
+             syntax/stx
+             scheme/base
+             syntax/kerncase
+             syntax/define
+             syntax/context
+             syntax/name
+             "private/ops.ss"
+             "private/util.ss"
+             "private/contexts.ss"
+             ))
+
   (begin-for-syntax
-
    ;; these definitions are used as stop-lists in local-expand
    (define kernel-forms (kernel-form-identifier-list))
    (define prop-expand-stop-forms (list* #'honu-typed
@@ -19,6 +23,7 @@
                                         #'honu-prototype))
    (define type-name-expand-stop-forms (list
                                         #'honu-type-name))
+
 
    ;; --------------------------------------------------------
    ;; Transformer procedure property and basic struct
@@ -64,7 +69,7 @@
           [(forall (id ...) rhs bindings)
            (append (map syntax-e (syntax->list #'(id ...)))
                    (list '>-> (format-type #'rhs)))]
-          [_else `(??? ,(syntax-object->datum t))])))
+          [_else `(??? ,(syntax->datum t))])))
 
    ;; --------------------------------------------------------
    ;; Parsing blocks
@@ -83,7 +88,7 @@
      (and (identifier? stx)
 	  (not (ormap (lambda (i) (delim-identifier=? stx i)) (list #'\; #'\,)))
 	  (not (operator? stx))))
-   
+
    (define (get-transformer stx)
      ;; if its an identifier and bound to a transformer return it
      (define (bound-transformer stx)
@@ -113,7 +118,7 @@
                        [else (loop (cdr l))])))]
                 [(and (stx-pair? first)
                       (identifier? (stx-car first))
-                      (module-identifier=? #'#%angles (stx-car first)))
+                      (free-identifier=? #'#%angles (stx-car first)))
                  (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
                    (and (honu-transformer? v) v))]
                 [else #f]))))
@@ -133,7 +138,8 @@
        => (lambda (transformer)
 	    (let-values ([(code rest) (transformer body ctx)])
 	      (k code rest)))]
-      [else (let-values ([(expr-stxs after-expr terminator) (extract-until body (list #'\;))])
+      [else (let-values ([(expr-stxs after-expr terminator)
+                          (extract-until body (list #'\;))])
 	      (unless expr-stxs
 		(raise-syntax-error
 		 #f
@@ -177,7 +183,7 @@
          ;; Since we're parsing an expression in a
          ;; declaration context, we're responsible for
          ;; getting the whole expression:
-         (let ([placeholder (datum->syntax-object #f (gensym))])
+         (let ([placeholder (datum->syntax #f (gensym))])
            (let-values ([(expr-stxs after-expr terminator) (extract-until (cons placeholder rest) (list #'\;))])
              (unless expr-stxs
                (raise-syntax-error
@@ -188,11 +194,11 @@
                                   (cond
                                    [(eq? in-expr placeholder) expr]
                                    [(syntax? in-expr)
-                                    (datum->syntax-object in-expr
-                                                          (loop (syntax-e in-expr))
-                                                          in-expr
-                                                          in-expr
-                                                          in-expr)]
+                                    (datum->syntax in-expr
+                                                   (loop (syntax-e in-expr))
+                                                   in-expr
+                                                   in-expr
+                                                   in-expr)]
                                    [(pair? in-expr) (cons (loop (car in-expr))
                                                           (loop (cdr in-expr)))]
                                    [else in-expr]))])
@@ -272,9 +278,9 @@
                                   (delim-identifier=? #'#%parens id)
                                   (delim-identifier=? #'#%angles id))))
                        (and (identifier? (stx-car stx))
-			    (hash-table-get op-table
-					    (syntax-e (stx-car stx))
-					    (lambda () #f))))
+			    (hash-ref op-table
+                                      (syntax-e (stx-car stx))
+                                      (lambda () #f))))
 	     (raise-syntax-error
 	      'expression
 	      "expected an operator, but found something else"
@@ -362,8 +368,8 @@
 		  [(not (op? (stx-car seq)))
 		   (loop (cdr seq) before op (cons (car seq) since))]
 		  [((if (prefix? op) >= >)
-                    (hash-table-get precedence-table (prec-key (car seq)) (lambda () 0))
-                    (hash-table-get precedence-table (prec-key op) (lambda () 0)))
+                    (hash-ref precedence-table (prec-key (car seq)) (lambda () 0))
+                    (hash-ref precedence-table (prec-key op) (lambda () 0)))
 		   (loop (cdr seq) 
 			 (if op
 			     (append since (list op) before)
@@ -550,11 +556,11 @@
 					   (stx-car orig-stx)
 					   #'id))
 		     (if (and (or (value-definition-context? ctx)
-                                  (not (module-identifier=? #'id #'function)))
+                                  (not (free-identifier=? #'id #'function)))
                               (not (function-definition-context? ctx))
                               (not (prototype-context? ctx))
                               (identifier? (stx-car #'rest))
-			      (module-identifier=? #'set! (stx-car #'rest)))
+			      (free-identifier=? #'set! (stx-car #'rest)))
 			 ;; -- Non-procedure declaration
 			 (if (function-definition-context? ctx)
 			     (raise-syntax-error 
@@ -595,7 +601,7 @@
 				  (with-syntax ([((arg arg-type arg-type-name arg-pred-id arg-protect-id) ...) args]
 						[(temp-id ...) (generate-temporaries (map car args))]
                                                 [def-id (if (and (not (definition-context? ctx))
-                                                                 (module-identifier=? #'id #'function))
+                                                                 (free-identifier=? #'id #'function))
                                                             (or (syntax-local-infer-name #'id)
                                                                 (car (generate-temporaries '(function))))
                                                             #'id)])
@@ -614,7 +620,7 @@
                                                        (define-typed arg #f id arg-type arg-type-name arg-pred-id arg-protect-id temp-id) ...
                                                        (honu-unparsed-block def-id type-name type-name-expr pred-id #t . body))))])
                                           (if (and (not (definition-context? ctx))
-                                                   (module-identifier=? #'id #'function))
+                                                   (free-identifier=? #'id #'function))
                                               ;; Anonymous function:
                                               ;;  We may have to continue parsing...
                                               (finish-parsing-expression "anonymous function"
@@ -663,7 +669,7 @@
      (let-values ([(args-stx ->-stx result-stx) 
 		   (let loop ([stx (stx-cdr (stx-car form))][args null])
 		     (if (and (identifier? (stx-car stx))
-			      (module-identifier=? #'-> (stx-car stx)))
+			      (free-identifier=? #'-> (stx-car stx)))
 			 (values (reverse args) (stx-car stx) (stx-cdr stx))
 			 (loop (stx-cdr stx) (cons (stx-car stx) args))))])
        (when (stx-null? result-stx)
@@ -732,7 +738,7 @@
      (let-values ([(args-stx >->-stx result-stx) 
 		   (let loop ([stx (stx-cdr (stx-car form))][args null])
 		     (if (and (identifier? (stx-car stx))
-			      (module-identifier=? #'>-> (stx-car stx)))
+			      (free-identifier=? #'>-> (stx-car stx)))
 			 (values (reverse args) (stx-car stx) (stx-cdr stx))
 			 (loop (stx-cdr stx) (cons (stx-car stx) args))))])
        (when (stx-null? result-stx)
@@ -789,7 +795,7 @@
         (identifier? t)
         (or (and (identifier? t)
                  (ormap (lambda (orig new)
-                          (and (module-identifier=? t orig)
+                          (and (free-identifier=? t orig)
                                new))
                         orig-ids new-types))
             t)]
@@ -821,8 +827,8 @@
          [(boolean? (syntax-e val-expr)) #'bool]
          [(identifier? val-expr)
           (cond
-           [(module-identifier=? #'false val-expr) #'bool]
-           [(module-identifier=? #'true val-expr) #'bool]
+           [(free-identifier=? #'false val-expr) #'bool]
+           [(free-identifier=? #'true val-expr) #'bool]
            [else #'obj])]
          [else #'obj])]))
        
@@ -833,22 +839,22 @@
      (syntax-case target-type (-> forall)
        [ttid
         (identifier? target-type)
-        (or (module-identifier=? #'obj target-type)
+        (or (free-identifier=? #'obj target-type)
             (and (identifier? val-type)
-                 (module-identifier=? val-type target-type))
+                 (free-identifier=? val-type target-type))
             (let ([val-type
                    (if (not val-type)
                        (apparent-type val-expr)
                        val-type)])
               (or (and (identifier? val-type)
-                       (or (module-identifier=? val-type target-type)
-                           (and (module-identifier=? #'num target-type)
-                                (or (module-identifier=? val-type #'int)
-                                    (module-identifier=? val-type #'real)))
-                           (and (module-identifier=? #'real target-type)
-                                (or (module-identifier=? val-type #'int)))))
+                       (or (free-identifier=? val-type target-type)
+                           (and (free-identifier=? #'num target-type)
+                                (or (free-identifier=? val-type #'int)
+                                    (free-identifier=? val-type #'real)))
+                           (and (free-identifier=? #'real target-type)
+                                (or (free-identifier=? val-type #'int)))))
                   (if (and (identifier? val-type)
-                           (module-identifier=? val-type #'obj))
+                           (free-identifier=? val-type #'obj))
                       #f
                       (fail-k orig-val-expr val-type target-type)))))]
        [(-> (t-result-type t-result-protect-id) (t-arg-type t-arg-type-name t-arg-pred) ...)
@@ -871,7 +877,7 @@
                                                        (do-fail))))
                             t-args v-args)))]
             [_else
-             (if (module-identifier=? val-type #'obj)
+             (if (free-identifier=? val-type #'obj)
                  #f
                  (do-fail))]))]
        [(forall (poly-id ...) poly-t bindings)
@@ -892,7 +898,7 @@
                    (do-fail)))]
             [else
              (if (and (identifier? val-type)
-                      (module-identifier=? val-type #'obj))
+                      (free-identifier=? val-type #'obj))
                  #f
                  (do-fail))]))]
        [_else
@@ -979,7 +985,7 @@
                                v)]))]
       [(lv ([(lhs ...) expr] ...) ... body)
        (ormap (lambda (id)
-                (module-identifier=? #'lv id))
+                (free-identifier=? #'lv id))
               (list #'let-values #'letrec-values #'letrec-syntaxes+values))
        (extract-type #'body)]
       [(begin e ... last-expr)
@@ -1146,9 +1152,9 @@
       [(_ #%angles a (b ...))
        #'(honu-type-app a b ...)]
       [(_ a b ...) 
-       (datum->syntax-object #'a
-                             (cons #'a #'(b ...))
-                             #'a)]))
+       (datum->syntax #'a
+                      (cons #'a #'(b ...))
+                      #'a)]))
 
   (define-syntax (op-cast stx)
     (syntax-case stx (#%parens)
@@ -1292,7 +1298,7 @@
       
   (define-syntax (honu-type-info stx) (raise-syntax-error #f "shouldn't appear unquoted!" stx))
 
-  (require-for-syntax syntax/context)
+  ;; (require-for-syntax syntax/context)
   (define-syntax (honu-block stx)
     ;; A block can have mixed exprs and defns. Wrap expressions with
     ;; `(define-values () ... (values))' as needed, and add a (void)
@@ -1353,7 +1359,7 @@
 				    (begin
 				      (unless (or (not proc-id)
 						  (not (syntax-e proc-id))
-						  (module-identifier=? #'type-name #'obj))
+						  (free-identifier=? #'type-name #'obj))
 					(error "no expression for type check; should have been "
 					       "caught earlier"))
 				      (reverse prev-exprs)))
@@ -1362,8 +1368,8 @@
 				    null))]
 		[(and (stx-pair? (car exprs))
                       (identifier? (stx-car (car exprs)))
-		      (or (module-identifier=? #'define-values (stx-car (car exprs)))
-			  (module-identifier=? #'define-syntaxes (stx-car (car exprs)))))
+		      (or (free-identifier=? #'define-values (stx-car (car exprs)))
+			  (free-identifier=? #'define-syntaxes (stx-car (car exprs)))))
 		 (loop (cdr exprs)
 		       (cons (car exprs)
 			     (append
@@ -1417,7 +1423,7 @@
   ;; --------------------------------------------------------
   ;; Defining a new transformer or new type
 
-  (require-for-syntax syntax/define)
+  ;; (require-for-syntax syntax/define)
   (define-syntax (define-honu-syntax stx)
     (let-values ([(id rhs) (normalize-definition stx #'lambda #f)])
       (with-syntax ([id id]
@@ -1622,7 +1628,7 @@
                               ;; Assume anything else is ok:
                               (loop #'rest (cons #'something accum))]))])
              (unless (block-context? ctx)
-               (unless (module-identifier=? id #'function)
+               (unless (free-identifier=? id #'function)
                  (raise-syntax-error #f 
                                      (format
                                       "named generic allowed only in a block context, not in ~a context" 
@@ -1632,7 +1638,7 @@
              (with-syntax ([(poly-id ...) ids]
                            [(poly-pred-id ...) (generate-temporaries ids)]
                            [(poly-name-id ...) (generate-temporaries ids)]
-                           [def-id (if (module-identifier=? id #'function)
+                           [def-id (if (free-identifier=? id #'function)
                                        (or (syntax-local-infer-name id)
                                            (car (generate-temporaries '(function))))
                                        id)]
@@ -1685,7 +1691,7 @@
                                         (new-id honu-safe-use-hack)
                                         new-id)))))])
 
-                    (if (module-identifier=? id #'function)
+                    (if (free-identifier=? id #'function)
                         ;; Anonymous function:
                         ;;  We may have to continue parsing...
                         (finish-parsing-expression "anonymous generic function"
@@ -2035,6 +2041,7 @@
 			(honu-unparsed-begin #,@rest)))]))
 
   (define-syntax (#%dynamic-honu-module-begin stx)
+    ;; (printf "honu raw sexp ~a\n" (syntax->datum stx))
     #`(#%plain-module-begin
 	(honu-unparsed-begin #,@(stx-cdr stx))))
   
@@ -2071,31 +2078,39 @@
 	   string
            -> >->
 	   \;
-           (rename set! =)
-	   (rename honu-return return)
-	   (rename honu-if if) ? :
-           (rename honu-time time)
-	   (rename honu-class class)
-	   (rename honu+ +) (rename honu- -) (rename honu* *) 
-           / (rename modulo %)
-           < > <= >= (rename equal? ==) !=
+           ? :
            && \|\|
-	   (rename string->number stringToNumber)
-	   (rename number->string numberToString)
-	   cons list
-	   (rename car first) 
-	   (rename cdr rest)
-	   (rename null empty)
-	   (rename null? isEmpty)
-	   (rename pair? isCons)
-	   true false
+           /
+           < > <= >=
+           !=
+           cons list
+           true false
 	   display write newline
 	   #%datum
-	   #%top
+           #%top
 	   #%parens #%brackets #%braces #%angles
            #%prefix #%postfix
-	   (rename #%dynamic-honu-module-begin #%module-begin)
-	   (rename honu-#%app #%app)
-	   define-honu-syntax
-           (rename honu-provide provide)
-           (rename honu-require require)))
+           define-honu-syntax
+
+           (rename-out (set! =)
+                       (honu-return return)
+                       (honu-if if)
+                       (honu-time time)
+                       (honu-class class)
+                       (honu+ +)
+                       (honu- -)
+                       (honu* *) 
+                       (modulo %)
+                       (equal? ==)
+                       (string->number stringToNumber)
+                       (number->string numberToString)
+                       (car first) 
+                       (cdr rest)
+                       (null empty)
+                       (null? isEmpty)
+                       (pair? isCons)
+                       (#%dynamic-honu-module-begin #%module-begin)
+                       (honu-#%app #%app)
+                       (honu-provide provide)
+                       (honu-require require)))
+

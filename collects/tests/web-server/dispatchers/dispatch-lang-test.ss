@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list

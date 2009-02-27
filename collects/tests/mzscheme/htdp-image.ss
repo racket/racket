@@ -1058,6 +1058,19 @@
       (image->color-list (add-line (rectangle 10 10 'solid 'blue)
                                    0.1 #e.2 2.1 2.2 'red)))
 
+(test #t
+      'flooring/rounding-is-consistent
+      (image=? (overlay (rectangle 10 10 'solid 'black)
+                        (move-pinhole
+                         (rectangle 5 5 'solid 'red)
+                         (- (+ 5 1/10))
+                         (- (+ 5 1/10))))
+               (overlay/xy (rectangle 10 10 'solid 'black)
+                           (+ 5 1/10)
+                           (+ 5 1/10)
+                           (rectangle 5 5 'solid 'red))))
+      
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; The tests beginning with "bs-" ensure

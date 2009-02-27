@@ -10,19 +10,27 @@
 ;;   - 'fail' stxparameterized to (non-escaping!) failure procedure
 (define-struct pk (ps k) #:transparent)
 
-;; An ExtPK is one of
+;; A Group (G) is one of
 ;;   - PK
-;;   - (make-idpks stxclass (listof stx) (listof PK))
-;;   - (make-cpks (listof PK) (listof DatumPKS) (listof LiteralPKS))
-;;       the first field has only pair patterns
-(define-struct idpks (stxclass args idpks))
-(define-struct cpks (pairpks datumpks literalpks))
+;;   - (make-idG stxclass (listof stx) (listof PK))
+;;     where each PK starts with an id pattern of given stxclass/args
+;;   - (make-descrimG (listof DatumSG) (listof LiteralSG) (listof CompountSGs))
+;;     where each DatumSG/LiteralSG/CompoundSG has a different datum/lit/kind
+(define-struct idG (stxclass args idpks) #:transparent)
+(define-struct descrimG (datumSGs literalSGs kindSGs) #:transparent)
 
-;; A DatumPKS is (make-datumpks datum (listof PK))
-(define-struct datumpks (datum pks))
+;; A DatumSG is (make-datumSG datum (listof PK))
+;; where each PK starts with a datum pattern equal to datum
+(define-struct datumSG (datum pks))
 
-;; A LiteralPKS is (make-literalpks identifier (listof PK))
-(define-struct literalpks (literal pks))
+;; A LiteralSG is (make-literalSG id (listof PK))
+;; where each PK starts with a literal pattern equal to literal
+(define-struct literalSG (literal pks))
+
+;; A CompoundSG is (make-compoundSG Kind (listof PK))
+;; where each PK starts with a compound pattern of given kind
+(define-struct compoundSG (kind pks))
+
 
 ;; A FrontierContextExpr (FCE) is one of
 ;;  - (make-fce Id FrontierIndexExpr)
@@ -55,6 +63,11 @@
             (cons (fi:add-index (car (fce-indexes fc)) expr)
                   (cdr (fce-indexes fc)))))
 
+(define (frontier:add-unvector fc)
+  (frontier:add-car fc (fce-stx fc)))
+(define (frontier:add-unbox fc)
+  (frontier:add-car fc (fce-stx fc)))
+
 (define (join-frontiers base ext)
   (make-joined-frontier base ext))
 
@@ -80,6 +93,7 @@
        stx]
       [(struct joined-frontier (base ext))
        #`(let ([inner-failure #,ext])
-           (or (and (failed? inner-failure) (failed-frontier-stx inner-failure))
+           (or (and (failed? inner-failure)
+                    (failed-frontier-stx inner-failure))
                #,(loop base)))]))
   (loop fc))

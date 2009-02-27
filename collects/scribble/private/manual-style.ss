@@ -26,7 +26,7 @@
          void-const undefined-const
          math)
 
-(define PLaneT "PLaneT")
+(define PLaneT (make-element "planetName" '("PLaneT")))
 
 (define etc "etc.") ; so we can fix the latex space, one day
 

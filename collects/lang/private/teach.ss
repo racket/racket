@@ -1183,6 +1183,16 @@
          (begin
            (check-string-form stx #'s)
            #'(require s))]
+        [(_ id)
+         (identifier? #'id)
+         (begin
+           (unless (module-path? (syntax-e #'id))
+             (teach-syntax-error
+              'require
+              stx
+              #'id
+              "bad syntax for a module path"))
+           #'(require id))]
         [(_ (lib . rest))
          (let ([s (syntax->list #'rest)])
            (unless ((length s) . >= . 2)

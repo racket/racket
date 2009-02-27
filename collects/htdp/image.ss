@@ -77,6 +77,13 @@ plt/collects/tests/mzscheme/htdp-image.ss
 
 ;; ----------------------------------------
 
+(define (floor0 n)
+  (cond
+    [(< n 0) (- (floor (- n)))]
+    [else (floor n)]))
+
+;; ----------------------------------------
+
 (define (check name p? v desc arg-posn) (check-arg name (p? v) desc arg-posn v))
 
 (define (check-coordinate name val arg-posn) (check name finite-real? val "finite real number" arg-posn))
@@ -169,8 +176,8 @@ plt/collects/tests/mzscheme/htdp-image.ss
            (width w)
            (height h)
            (argb (send i get-argb/no-compute))
-           (px (+ px dx))
-           (py (+ py dy))))))
+           (px (+ px (floor0 dx)))
+           (py (+ py (floor0 dy)))))))
 
 (define (put-pinhole raw-i px py)
   (check-image 'put-pinhole raw-i "first")
@@ -184,8 +191,8 @@ plt/collects/tests/mzscheme/htdp-image.ss
            (width w)
            (height h)
            (argb (send i get-argb/no-compute))
-           (px (floor px))
-           (py (floor py))))))
+           (px (floor0 px))
+           (py (floor0 py))))))
 
 (define (overlay a b . cs)
   (check-image 'overlay a "first")
@@ -209,8 +216,8 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (check-image 'overlay/xy b "fourth")
   (real-overlay/xy 'overlay/xy 
                    a
-                   (floor (if (exact? dx) dx (inexact->exact dx)))
-                   (floor (if (exact? dy) dy (inexact->exact dy)))
+                   (floor0 (if (exact? dx) dx (inexact->exact dx)))
+                   (floor0 (if (exact? dy) dy (inexact->exact dy)))
                    b))
 
 (define (real-overlay/xy name raw-a raw-delta-x raw-delta-y raw-b)
@@ -256,10 +263,10 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (check-size/0 'shrink in-up "third")
   (check-size/0 'shrink in-right "fourth")
   (check-size/0 'shrink in-down "fifth")
-  (let ([left (inexact->exact (floor in-left))]
-        [up (inexact->exact (floor in-up))]
-        [right (inexact->exact (floor in-right))]
-        [down (inexact->exact (floor in-down))]
+  (let ([left (inexact->exact (floor0 in-left))]
+        [up (inexact->exact (floor0 in-up))]
+        [right (inexact->exact (floor0 in-right))]
+        [down (inexact->exact (floor0 in-down))]
         [img (coerce-to-cache-image-snip raw-img)])
     (let-values ([(i-px i-py) (send img get-pinhole)]
                  [(i-width i-height) (send img get-size)])
@@ -289,16 +296,16 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (check-image 'shrink-tl raw-img "first")
   (check-size 'shrink-tl in-x "second")
   (check-size 'shrink-tl in-y "third")
-  (let ([x (inexact->exact (floor in-x))]
-        [y (inexact->exact (floor in-y))])
+  (let ([x (inexact->exact (floor0 in-x))]
+        [y (inexact->exact (floor0 in-y))])
     (put-pinhole (shrink (put-pinhole raw-img 0 0) 0 0 (- x 1) (- y 1)) (/ x 2) (/ y 2))))
 
 (define (shrink-tr raw-img in-x in-y)
   (check-image 'shrink-tr raw-img "first")
   (check-size 'shrink-tr in-x "second")
   (check-size 'shrink-tr in-y "third")
-  (let ([x (inexact->exact (floor in-x))]
-        [y (inexact->exact (floor in-y))])
+  (let ([x (inexact->exact (floor0 in-x))]
+        [y (inexact->exact (floor0 in-y))])
     (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) 0) (- x 1) 0 0 (- y 1))
                  (/ x 2)
                  (/ y 2))))
@@ -307,8 +314,8 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (check-image 'shrink-bl raw-img "first")
   (check-size 'shrink-bl in-x "second")
   (check-size 'shrink-bl in-y "third")
-  (let ([x (inexact->exact (floor in-x))]
-        [y (inexact->exact (floor in-y))])
+  (let ([x (inexact->exact (floor0 in-x))]
+        [y (inexact->exact (floor0 in-y))])
     (put-pinhole (shrink (put-pinhole raw-img 0 (- (image-height raw-img) 1)) 0 (- y 1) (- x 1) 0) 
                  (/ x 2)
                  (/ y 2))))
@@ -317,8 +324,8 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (check-image 'shrink-br raw-img "first")
   (check-size 'shrink-br in-x "second")
   (check-size 'shrink-br in-y "third")
-  (let ([x (inexact->exact (floor in-x))]
-        [y (inexact->exact (floor in-y))])
+  (let ([x (inexact->exact (floor0 in-x))]
+        [y (inexact->exact (floor0 in-y))])
     (put-pinhole (shrink (put-pinhole raw-img (- (image-width raw-img) 1) (- (image-height raw-img) 1))
                          (- x 1)
                          (- y 1)

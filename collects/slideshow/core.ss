@@ -561,6 +561,11 @@
 	(define ah (arrowhead gap-size 0))
 	(define current-item (colorize (hc-append (- (/ gap-size 2)) ah ah) blue))
 	(define other-item (rc-superimpose (ghost current-item) (colorize ah "light gray")))
+        (define (to-next l)
+          (let ([l (cdddr l)])
+            (if (and (pair? l) (number? (car l)))
+                (cdr l)
+                l)))
 	(lambda (which)
 	  (slide/name
 	   (format "--~a--"
@@ -569,7 +574,7 @@
 		      [(null? l) "<unknown>"]
 		      [(eq? (car l) which)
 		       (cadr l)]
-		      [else (loop (cdddr l))])))
+		      [else (loop (to-next l))])))
 	   (blank (+ title-h gap-size))
 	   (lc-superimpose
 	    (blank (current-para-width) 0)
@@ -581,7 +586,7 @@
 				    (and (list? (car l))
 					 (memq which (car l))))])
 		  (vc-append
-		   gap-size
+                   gap-size
 		   (page-para
 		    (hbl-append
 		     (quotient gap-size 2)
@@ -592,8 +597,12 @@
 		       (if (pict? p)
 			   p
 			   (bt p)))))
-		   (let ([rest (loop (cdddr l))]
-			 [sub-items (caddr l)])
+		   (let* ([rest (let ([p (loop (to-next l))]
+                                      [l (cdddr l)])
+                                  (if (and (pair? l) (number? (car l)))
+                                      (inset p 0 (car l) 0 0)
+                                      p))]
+                          [sub-items (caddr l)])
 		     (if (and current?
 			      sub-items
 			      (not (null? sub-items)))

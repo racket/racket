@@ -14,8 +14,11 @@
          (struct-out pat:id)
          (struct-out pat:datum)
          (struct-out pat:literal)
-         (struct-out pat:pair)
+         (struct-out pat:compound)
          (struct-out pat:gseq)
+         (struct-out pat:and)
+         (struct-out pat:orseq)
+         (struct-out kind)
          (struct-out head)
          (struct-out clause:when)
          (struct-out clause:with))
@@ -53,18 +56,24 @@
 ;;   (make-pat:pair <Pattern> Pattern Pattern)
 ;;   (make-pat:seq <Pattern> Pattern Pattern)
 ;;   (make-pat:gseq <Pattern> (listof Head) Pattern)
+;;   (make-pat:and <Pattern> string/#f (listof Pattern))
+;;   (make-pat:compound <Pattern> Kind (listof Pattern))
 ;; when <Pattern> = stx (listof IAttr) number
 (define-struct pattern (orig-stx attrs depth) #:transparent)
 (define-struct (pat:id pattern) (name stxclass args) #:transparent)
 (define-struct (pat:datum pattern) (datum) #:transparent)
 (define-struct (pat:literal pattern) (literal) #:transparent)
-(define-struct (pat:pair pattern) (head tail) #:transparent)
 (define-struct (pat:gseq pattern) (heads tail) #:transparent)
+(define-struct (pat:and pattern) (description subpatterns) #:transparent)
+(define-struct (pat:orseq pattern) (heads) #:transparent)
+(define-struct (pat:compound pattern) (kind patterns) #:transparent)
+
+;; A Kind is (make-kind id (listof (id id -> stx)) (listof (FCE id -> FCE)))
+(define-struct kind (predicate selectors frontier-procs) #:transparent)
 
 ;; A Head is
 ;;   (make-head stx (listof IAttr) nat (listof Pattern) nat/f nat/f boolean id/#f stx/#f)
-(define-struct head (orig-stx attrs depth ps min max as-list? occurs default)
-  #:transparent)
+(define-struct head (orig-stx attrs depth ps min max as-list?) #:transparent)
 
 ;; A SideClause is one of
 ;;   (make-clause:with pattern stx)
@@ -82,7 +91,6 @@
 
 (define (sattr? a)
   (and (attr? a) (symbol? (attr-name a))))
-
 
 
 ;; Environments

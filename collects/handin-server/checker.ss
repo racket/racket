@@ -334,8 +334,7 @@
            (if (memq unknown vals)
              exn
              (apply (struct-type-make-constructor struct-type)
-                    (string->immutable-string
-                     (format "while evaluating ~s:\n  ~a" expr (car vals)))
+                    (format "while evaluating ~s:\n  ~a" expr (car vals))
                     (cdr vals))))
          exn))))
   (with-handlers ([exn? reraise]) (eval expr)))

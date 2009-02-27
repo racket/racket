@@ -257,9 +257,9 @@ to the section.
 
 The @scheme[title-content] field holds the part's title, if any.
 
-The @scheme[style] field is normally either a symbol or a list of
-symbols.  The currently recognized style symbols (alone or in a list)
-are as follows:
+The @scheme[style] field is normally either a symbol or a list.  The
+currently recognized style symbols (alone or in a list) or other
+values (must be in a list) are as follows:
 
 @itemize{
 
@@ -287,6 +287,20 @@ are as follows:
        links (and that only includes an ``on this page'' label for
        multi-page documents) takes on the location and color of the
        main table of contents, instead.}
+
+  @item{@scheme[`(css ,_path)] --- generated HTML refers to (a copy
+        of) @scheme[_path] as CSS.}
+
+  @item{@scheme[`(tex ,_path)] --- generated Latex includes
+        (a copy of) @scheme[_path] in the document header.}
+
+  @item{@scheme[`(body-id ,_string)] --- generated HTML uses
+        @scheme[_string] as the @tt{id} attribute of the @tt{body}
+        tag; this style can be set separately for parts that start
+        different HTML pages, otherwise it is effectively inherited by
+        sub-parts; the default is @scheme["scribble-plt-scheme.org"],
+        but @exec{setup-plt} installs @scheme["doc-plt-scheme.org"]
+        as the @tt{id} for any document that it builds.}
 
 }
 
@@ -350,7 +364,7 @@ The @scheme[style] can be
 @itemize[
 
  @item{A string that corresponds to a CSS class for HTML output or a
-       macro for Latex output.}
+       macro for Latex output (see @secref["extra-style"]).}
 
  @item{An instance of @scheme[with-attributes], which combines a base
        style with a set of additional HTML attributes.}
@@ -386,7 +400,7 @@ The @scheme[style] can be any of the following:
 @itemize[
 
  @item{A string that corresponds to a CSS class for
-       HTML output.}
+       HTML output (see @secref["extra-style"]).}
 
  @item{@scheme['boxed] to render as a definition.}
 
@@ -404,13 +418,16 @@ The @scheme[style] can be any of the following:
 
          @item{@scheme['row-styles] to a list of association lists,
                one for each row in the table. Each of these nested
-               association lists maps @scheme['alignment] and
-               @scheme['valignment] to a list of symbols an
-               @scheme[#f]s, one for each column. The symbols in an
-               @scheme['alignment] list can be @scheme['left],
-               @scheme['right], or @scheme['center]. The symbols in a
-               @scheme['valignment] list can be @scheme['top],
-               @scheme['baseline], or @scheme['bottom].}
+               association lists can map @scheme['alignment] and
+               @scheme['valignment] to a list of symbols and
+               @scheme[#f]s (one for each column cell) and/or
+               @scheme['style] to a list of strings and @scheme[#f]s
+               (one for each column cell) for a CSS class in HTML
+               output. The symbols in an @scheme['alignment] list can
+               be @scheme['left], @scheme['right], or
+               @scheme['center]. The symbols in a @scheme['valignment]
+               list can be @scheme['top], @scheme['baseline], or
+               @scheme['bottom].}
 
          ]}
 
@@ -431,7 +448,8 @@ A @techlink{itemization} has a list of flows.
 
 A @techlink{blockquote} has a style and a list of @tech{blocks}.  The
 @scheme[style] field is normally a string that corresponds to a CSS
-class for HTML output.
+class for HTML output or Latex environment for Latex output (see
+@secref["extra-style"]).
 
 }
 
@@ -452,7 +470,7 @@ The @scheme[style] field is normally either
 @itemize{
 
  @item{a string, which corresponds to a CSS class for HTML output and
-       a macro name for Latex output;}
+       a macro name for Latex output (see @secref["extra-style"]);}
 
  @item{one of the symbols that all renderers recognize: @scheme['tt],
        @scheme['italic], @scheme['bold], @scheme['sf],

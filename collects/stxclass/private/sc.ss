@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require (for-syntax scheme/base
                      scheme/match
@@ -24,11 +23,15 @@
 
          pattern
          basic-syntax-class
+         ~and
+         ~or
          ...*
 
          attribute
 
          (struct-out failed)
+
+         this-syntax
 
          current-expression
          current-macro-name)

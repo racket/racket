@@ -39,12 +39,16 @@
                   (error 'extract-struct-info
                          "struct-info procedure result not properly formed: ~e"
                          v))))
-          si)))
+          (if (set!-transformer? si)
+              (extract-struct-info (set!-transformer-procedure si))
+              si))))
 
   (define-values (struct-info?)
     (lambda (si)
       (or (struct-info-rec? si)
-          (struct-declaration-info? si))))
+          (struct-declaration-info? si)
+          (and (set!-transformer? si)
+               (struct-info-rec? (set!-transformer-procedure si))))))
 
   (define-values (struct-declaration-info?)
     (lambda (x)

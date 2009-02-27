@@ -1,6 +1,5 @@
 #lang scheme
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "util.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          web-server/lang/abort-resume)
 (require/expose web-server/lang/abort-resume (web-prompt))
 (provide abort-resume-tests)

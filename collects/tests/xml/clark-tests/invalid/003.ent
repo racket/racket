@@ -1,0 +1,2 @@
+<!ENTITY % e "<!ELEMENT ">
+%e; doc (#PCDATA)>

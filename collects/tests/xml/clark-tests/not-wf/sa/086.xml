@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ENTITY foo PUBLIC "[" "null.xml">
+]>
+<doc></doc>

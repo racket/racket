@@ -352,13 +352,14 @@ eventually expanded in an expression context.
 @transform-time[]}
 
 
-@defproc[(syntax-local-lift-require [quoted-raw-require-spec any/c][stx syntax?])
+@defproc[(syntax-local-lift-require [raw-require-spec any/c][stx syntax?])
          syntax?]{
 
 Lifts a @scheme[#%require] form corresponding to
-@scheme[quoted-raw-require-spec] to the top-level or to the top of the
-module currently being expanded, wrapping it with @scheme[for-meta] if
-the current expansion context is not @tech{phase level} 0.
+@scheme[raw-require-spec] (either as a @tech{syntax object} or datum)
+to the top-level or to the top of the module currently being expanded,
+wrapping it with @scheme[for-meta] if the current expansion context is
+not @tech{phase level} 0.
 
 The resulting syntax object is the same as @scheme[stx], except that a
 fresh @tech{syntax mark} is added. The same @tech{syntax mark} is

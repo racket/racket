@@ -17,6 +17,7 @@
 
 (define-struct (toc-paragraph paragraph) ())
 
+(define-runtime-path scribble-prefix-tex "scribble-prefix.tex")
 (define-runtime-path scribble-tex "scribble.tex")
 
 (define (gif-to-png p)
@@ -26,7 +27,8 @@
 
 (define (render-mixin %)
   (class %
-    (init-field [style-file #f]
+    (init-field [prefix-file #f]
+                [style-file #f]
                 [style-extra-files null])
 
     (define/override (get-suffix) #".tex")
@@ -35,16 +37,23 @@
              render-block
              render-content
              install-file
-             format-number)
+             format-number
+             extract-part-style-files)
 
     (define/override (render-one d ri fn)
-      (let ([style-file (or style-file scribble-tex)])
+      (let ([style-file (or style-file scribble-tex)]
+            [prefix-file (or prefix-file scribble-prefix-tex)])
         (for-each
          (lambda (style-file)
            (with-input-from-file style-file
              (lambda ()
                (copy-port (current-input-port) (current-output-port)))))
-         (cons style-file style-extra-files))
+         (list* prefix-file style-file 
+                (append style-extra-files
+                        (extract-part-style-files
+                         d
+                         'tex
+                         (lambda (p) #f)))))
         (printf "\\begin{document}\n\\preDoc\n")
         (when (part-title-content d)
           (let ([m (ormap (lambda (v)
@@ -136,7 +145,7 @@
             (printf "\\label{t:~a}"
                     (t-encode (tag-key (target-element-tag e) ri))))
           (when part-label?
-            (printf "\\S")
+            (printf "\\SecRef{")
             (render-content
              (let ([dest (resolve-get part ri (link-element-tag e))])
                (if dest
@@ -149,7 +158,7 @@
                           '("!!!")))
                  (list "???")))
              part ri)
-            (printf " ``"))
+            (printf "}{"))
           (let ([style (and (element? e)
                             (let ([s (flatten-style (element-style e))])
                               (if (with-attributes? s)
@@ -206,7 +215,7 @@
                            (image-file-scale style) fn)))]
               [else (super render-element e part ri)])))
         (when part-label?
-          (printf "''"))
+          (printf "}"))
         (when (and (link-element? e)
                    (show-link-page-numbers)
                    (not (done-link-page-numbers)))
@@ -228,14 +237,6 @@
     (define/override (render-table t part ri inline-table?)
       (let* ([boxed? (eq? 'boxed (table-style t))]
              [index? (eq? 'index (table-style t))]
-             [inline?
-              (and (not boxed?) (not index?)
-                   (or (null? (table-flowss t))
-                       (= 1 (length (car (table-flowss t)))))
-                   (let ([m (current-table-mode)])
-                     (and m
-                          (equal? "bigtabular" (car m))
-                          (= 1 (length (car (table-flowss (cadr m))))))))]
              [tableform
               (cond [index? "list"]
                     [(and (not (current-table-mode)) (not inline-table?))
@@ -244,7 +245,24 @@
              [opt (cond [(equal? tableform "bigtabular") "[l]"]
                         [(equal? tableform "tabular") "[t]"]
                         [else ""])]
-             [flowss (if index? (cddr (table-flowss t)) (table-flowss t))])
+             [flowss (if index? (cddr (table-flowss t)) (table-flowss t))]
+             [row-styles (cdr (or (and (list? (table-style t))
+                                       (assoc 'row-styles (table-style t)))
+                                  (cons #f (map (lambda (x) #f) flowss))))]
+             [inline?
+              (and (not boxed?) 
+                   (not index?)
+                   (ormap (lambda (rs) (equal? rs "inferencetop")) row-styles)
+                   (or (null? (table-flowss t))
+                       (= 1 (length (car (table-flowss t)))))
+                   (let ([m (current-table-mode)])
+                     (and m
+                          (equal? "bigtabular" (car m))
+                          (= 1 (length (car (table-flowss (cadr m))))))))]
+             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"]
+             [twidth (if (null? (table-flowss t))
+                         1
+                         (length (car (table-flowss t))))])
         (unless (or (null? flowss) (null? (car flowss)))
           (parameterize ([current-table-mode
                           (if inline? (current-table-mode) (list tableform t))]
@@ -254,14 +272,7 @@
               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
               [inline? (void)]
               [else
-               (printf "\n\n~a\\begin{~a}~a{@{}~a}\n"
-                       (if boxed?
-                         (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n"
-                                 "\\setlength{\\unitlength}{\\linewidth}"
-                                 (if (equal? tableform "bigtabular")
-                                   "\\bigtabline"
-                                   "\n\n"))
-                         "")
+               (printf "\n\n\\begin{~a}~a{@{}~a}\n~a"
                        tableform
                        opt
                        (string-append*
@@ -276,15 +287,22 @@
                                            (assoc 'alignment
                                                   (or (table-style t) null)))
                                       (cons #f (map (lambda (x) #f)
-                                                    (car flowss))))))))])
+                                                    (car flowss)))))))
+                       (if boxed? 
+                           (if (equal? tableform "bigtabular")
+                               (format "~a \\endfirsthead\n" boxline)
+                               (format "\\multicolumn{~a}{@{}l@{}}{~a} \\\\\n" 
+                                       (length (car flowss))
+                                       boxline))
+                           ""))])
             (let loop ([flowss flowss]
-                       [row-styles
-                        (cdr (or (and (list? (table-style t))
-                                      (assoc 'row-styles (table-style t)))
-                                 (cons #f (map (lambda (x) #f) flowss))))])
+                       [row-styles row-styles])
               (let ([flows (car flowss)]
                     [row-style (car row-styles)])
-                (let loop ([flows flows])
+                (let loop ([flows flows]
+                           [col-v-styles (and (list? row-style)
+                                              (let ([p (assoc 'valignment row-style)])
+                                                (and p (cdr p))))])
                   (unless (null? flows)
                     (when index? (printf "\\item "))
                     (unless (eq? 'cont (car flows))
@@ -294,10 +312,12 @@
                                           (loop (cdr flows) (add1 n))]
                                          [else n]))])
                         (unless (= cnt 1) (printf "\\multicolumn{~a}{l}{" cnt))
-                        (render-table-flow (car flows) part ri)
+                        (render-table-flow (car flows) part ri twidth (and col-v-styles
+                                                                           (car col-v-styles)))
                         (unless (= cnt 1) (printf "}"))
                         (unless (null? (list-tail flows cnt)) (printf " &\n"))))
-                    (unless (null? (cdr flows)) (loop (cdr flows)))))
+                    (unless (null? (cdr flows)) (loop (cdr flows)
+                                                      (and col-v-styles (cdr col-v-styles))))))
                 (unless (or index? (null? (cdr flowss)))
                   (printf " \\\\\n")
                   (when (equal? row-style "inferencetop") (printf "\\hline\n")))
@@ -305,27 +325,44 @@
                   (loop (cdr flowss) (cdr row-styles)))))
             (unless inline?
               (printf "~a\n\n\\end{~a}\n"
-                      (if (equal? tableform "bigtabular") "\n\\\\" "")
+                      "" ; (if (equal? tableform "bigtabular") "\n\\\\" "")
                       tableform)))))
       null)
 
-    (define/private (render-table-flow p part ri)
-      ;; Emit a \\ between blocks:
-      (let loop ([ps (flow-paragraphs p)])
-        (cond
-         [(null? ps) (void)]
-         [else
-          (let ([minipage? (not (or (paragraph? (car ps))
-                                    (table? (car ps))))])
-            (when minipage?
-              (printf "\\begin{minipage}{\\linewidth}\n"))
-            (render-block (car ps) part ri #f)
-            (when minipage?
-              (printf " \\end{minipage}\n"))
-            (unless (null? (cdr ps))
-              (printf " \\\\\n")
-              (loop (cdr ps))))]))
-      null)
+    (define/private (render-table-flow p part ri twidth vstyle)
+      ;; Emit a \\ between blocks in single-column mode,
+      ;; used a nested table otherwise for multiple elements.
+      (let ([in-table? (or (and (not (= twidth 1))
+                                ((length (flow-paragraphs p)) . > . 1))
+                           (eq? vstyle 'top))])
+        (when in-table?
+          (printf "\\begin{tabular}~a{@{}l@{}}\n"
+                  (cond
+                   [(eq? vstyle 'top) "[t]"]
+                   [else ""])))
+        (let loop ([ps (flow-paragraphs p)])
+          (cond
+           [(null? ps) (void)]
+           [else
+            (let ([minipage? (not (or (paragraph? (car ps))
+                                      (table? (car ps))))])
+              (when minipage?
+                (printf "\\begin{minipage}~a{~a\\linewidth}\n"
+                        (cond
+                         [(eq? vstyle 'top) "[t]"]
+                         [else ""])
+                        (/ 1.0 twidth)))
+              (render-block (car ps) part ri #f)
+              (when minipage?
+                (printf " \\end{minipage}\n"))
+              (unless (null? (cdr ps))
+                (printf " \\\\\n")
+                (when in-table?
+                  (printf " ~ \\\\\n"))
+                (loop (cdr ps))))]))
+        (when in-table?
+          (printf "\n\\end{tabular}\n"))
+        null))
 
     (define/override (render-itemization t part ri)
       (printf "\n\n\\begin{itemize}\n")
@@ -405,6 +442,7 @@
                  [(#\u039B) "$\\Lambda$"]
                  [(#\u03BC) "$\\mu$"]
                  [(#\u03C0) "$\\pi$"]
+                 [(#\∞) "$\\infty$"]
                  [else c])))
             (loop (add1 i))))))
 

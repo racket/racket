@@ -143,16 +143,17 @@
                           #f (list (schemeparenfont "[")
                                    (schemeidfont (keyword->string (arg-kw arg)))
                                    spacer
-                                   (to-element (arg-id arg))
+                                   (to-element (make-var-id (arg-id arg)))
                                    (schemeparenfont "]")))
                          (make-element
                           #f (list (to-element (arg-kw arg))
                                    spacer
-                                   (to-element (arg-id arg)))))
-                       (to-element (arg-id arg)))]
+                                   (to-element (make-var-id (arg-id arg))))))
+                       (to-element (make-var-id (arg-id arg))))]
                     [(eq? (arg-id arg) '...+) dots1]
                     [(eq? (arg-id arg) '...) dots0]
-                    [else (to-element (arg-id arg))])]
+                    [(eq? (arg-id arg) '_...superclass-args...) (to-element (arg-id arg))]
+                    [else (to-element (make-var-id (arg-id arg)))])]
            [e (if (arg-ends-optional? arg)
                 (make-element #f (list e "]"))
                 e)]
@@ -425,7 +426,7 @@
                   [def-len (if (arg-optional? arg) (block-width arg-val) 0)]
                   [base-list
                    (list (to-flow (hspace 2))
-                         (to-flow (to-element (arg-id arg)))
+                         (to-flow (to-element (make-var-id (arg-id arg))))
                          flow-spacer
                          (to-flow ":")
                          flow-spacer

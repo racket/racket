@@ -6,7 +6,9 @@
            (rename-in texpict/utils
                       [pin-line t:pin-line]
                       [pin-arrow-line t:pin-arrow-line]
-                      [pin-arrows-line t:pin-arrows-line]))
+                      [pin-arrows-line t:pin-arrows-line])
+           (only-in scheme/gui/base dc-path%)
+           (only-in scheme/class new send))
 
   (define (hline w h #:segment [seg #f])
     (if seg
@@ -40,36 +42,123 @@
              (list? p)
              (andmap pict? p))))
 
-  (define (pin-line p src find-src dest find-dest
-                    #:line-width [lw #f]
+  (define (pin-line sz p 
+                    src src-find
+                    dest dest-find
+                    #:start-angle [sa #f] #:end-angle [ea #f]
+                    #:start-pull [sp #f] #:end-pull [ep #f]
                     #:color [col #f]
-                    #:under? [under? #f])
-    (finish-pin (launder (t:pin-line (ghost p)
-                                     src find-src 
-                                     dest find-dest))
-                p lw col under?))
+                    #:line-width [lw #f]
+                    #:under? [under? #f]
+                    #:solid? [solid? #t])
+    (if (not (or sa ea))
+        (finish-pin (launder (t:pin-line (ghost p)
+                                         src src-find 
+                                         dest dest-find))
+                    p lw col under?)
+        (pin-curve* #f #f p src src-find dest dest-find
+                    sa ea sp ep sz col lw under? #t)))
 
-  (define (pin-arrow-line sz p src find-src dest find-dest
-                          #:line-width [lw #f]
-                          #:color [col #f]
-                          #:under? [under? #f]
-                          #:solid? [solid? #t])
-    (finish-pin (launder (t:pin-arrow-line sz (ghost p)
-                                           src find-src 
-                                           dest find-dest
-                                           #f #f #f solid?))
-                p lw col under?))
+    (define (pin-arrow-line sz p 
+                            src src-find
+                            dest dest-find
+                            #:start-angle [sa #f] #:end-angle [ea #f]
+                            #:start-pull [sp #f] #:end-pull [ep #f]
+                            #:color [col #f]
+                            #:line-width [lw #f]
+                            #:under? [under? #f]
+                            #:solid? [solid? #t])
+      (if (not (or sa ea))
+          (finish-pin (launder (t:pin-arrow-line sz (ghost p)
+                                                 src src-find 
+                                                 dest dest-find
+                                                 #f #f #f solid?))
+                      p lw col under?)
+          (pin-curve* #f #t p src src-find dest dest-find
+                      sa ea sp ep sz col lw under? solid?)))
 
-  (define (pin-arrows-line sz p src find-src dest find-dest
-                           #:line-width [lw #f]
-                           #:color [col #f]
-                           #:under? [under? #f]
-                           #:solid? [solid? #t])
-    (finish-pin (launder (t:pin-arrows-line sz (ghost p)
-                                            src find-src 
-                                            dest find-dest
-                                            #f #f #f solid?))
-                p lw col under?))
+    (define (pin-arrows-line sz p 
+                             src src-find
+                             dest dest-find
+                             #:start-angle [sa #f] #:end-angle [ea #f]
+                             #:start-pull [sp #f] #:end-pull [ep #f]
+                             #:color [col #f]
+                             #:line-width [lw #f]
+                             #:under? [under? #f]
+                             #:solid? [solid? #t])
+      (if (not sa ea)
+          (finish-pin (launder (t:pin-arrows-line sz (ghost p)
+                                                  src src-find 
+                                                  dest dest-find
+                                                  #f #f #f solid?))
+                      p lw col under?)
+          (pin-curve* #t #t p src src-find dest dest-find
+                      sa ea sp ep sz col lw under? solid?)))
+    
+  (define (pin-curve* start-arrow? end-arrow? p 
+                      src src-find
+                      dest dest-find
+                      sa ea sp ep
+                      sz col lw
+                      under? solid?)
+    (let-values ([(sx0 sy0) (src-find p src)]
+                 [(dx0 dy0) (dest-find p dest)])
+      (let* ([sa (or sa
+                     (atan (- sy0 dy0) (- dx0 sx0)))]
+             [ea (or ea
+                     (atan (- sy0 dy0) (- dx0 sx0)))]
+             [d (sqrt (+ (* (- dy0 sy0) (- dy0 sy0)) (* (- dx0 sx0) (- dx0 sx0))))]
+             [sp (* (or sp 1/4) d)]
+             [ep (* (or ep 1/4) d)])
+        (let ([dx (if end-arrow? (- dx0 (* sz (cos ea))) dx0)]
+              [dy (if end-arrow? (+ dy0 (* sz (sin ea))) dy0)]
+              [sx (if start-arrow? (+ sx0 (* sz (cos sa))) sx0)]
+              [sy (if start-arrow? (- sy0 (* sz (sin sa))) sy0)]
+              [path (new dc-path%)]
+              [maybe-pin-line
+               (lambda (arrow? p sx sy dx dy)
+                 (if arrow?
+                     (pin-arrow-line 
+                      sz
+                      p
+                      p (lambda (a b) (values sx sy))
+                      p (lambda (a b) (values dx dy))
+                      #:line-width lw
+                      #:color col
+                      #:under? under?
+                      #:solid? solid?)
+                     p))])
+          (send path move-to sx sy)
+          (send path curve-to
+                (+ sx (* sp (cos sa)))
+                (- sy (* sp (sin sa)))
+                (- dx (* ep (cos ea)))
+                (+ dy (* ep (sin ea)))
+                dx
+                dy)
+          (maybe-pin-line 
+           start-arrow?
+           (maybe-pin-line 
+            end-arrow?
+            ((if under? pin-under pin-over)
+             p
+             0 0
+             (let* ([p (dc (lambda (dc x y)
+                             (let ([b (send dc get-brush)])
+                               (send dc set-brush "white" 'transparent)
+                               (send dc draw-path path x y)
+                               (send dc set-brush b)))
+                           0 0)]
+                    [p (if col
+                           (colorize p col)
+                           p)]
+                    [p (if lw
+                           (linewidth lw p)
+                           p)])
+               p))
+            dx dy dx0 dy0)
+           sx sy sx0 sy0)))))
+
 
   (define (finish-pin l p lw col under?)
     (let* ([l (if lw

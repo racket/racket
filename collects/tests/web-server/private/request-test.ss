@@ -1,6 +1,5 @@
 #lang scheme
-(require (planet "util.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          web-server/private/connection-manager
          web-server/private/timer
          web-server/http)

@@ -3,6 +3,7 @@
 (require (for-syntax scheme/base
                      stxclass
                      syntax/boundmap
+                     syntax/name
                      "unit-compiletime.ss"
                      "unit-contract-syntax.ss"
                      "unit-syntax.ss")
@@ -77,9 +78,13 @@ packed with the neg blame.
                                        #`(let ([old-v/c ((car #,vref))])
                                            (cons #,(wrap-with-proj 
                                                     ctc 
-                                                    #`(contract #,sig-ctc (car old-v/c)
-                                                                (cdr old-v/c) #,pos
-                                                                #,(id->contract-src-info var)))
+                                                    (with-syntax ([sig-ctc-stx
+                                                                   (syntax-property sig-ctc
+                                                                                    'inferred-name
+                                                                                    var)])
+                                                      #`(contract sig-ctc-stx (car old-v/c)
+                                                                  (cdr old-v/c) #,pos
+                                                                  #,(id->contract-src-info var))))
                                                  #,neg))
                                        (wrap-with-proj ctc #`((car #,vref))))])
                            old-v)))
@@ -89,9 +94,13 @@ packed with the neg blame.
                                  #,(if sig-ctc
                                        #`(cons #,(wrap-with-proj 
                                                   ctc 
-                                                  #`(contract #,sig-ctc (car v)
-                                                              (cdr v) #,neg
-                                                              #,(id->contract-src-info var)))
+                                                  (with-syntax ([sig-ctc-stx
+                                                                 (syntax-property sig-ctc
+                                                                                  'inferred-name
+                                                                                  var)])
+                                                    #`(contract sig-ctc-stx (car v)
+                                                                (cdr v) #,neg
+                                                                #,(id->contract-src-info var))))
                                                #,pos)
                                        (wrap-with-proj ctc #'v))])
                            ((cdr #,vref) new-v)))
@@ -126,7 +135,7 @@ packed with the neg blame.
 (define-for-syntax contract-imports (contract-imports/exports #t))
 (define-for-syntax contract-exports (contract-imports/exports #f))
 
-(define-for-syntax (unit/c/core stx)
+(define-for-syntax (unit/c/core name stx)
   (syntax-parse stx
     [(:import-clause/c :export-clause/c)
      (begin
@@ -217,7 +226,7 @@ packed with the neg blame.
                           (vector-immutable export-key ...)) ...)
                    src-info pos name)
                   (make-unit
-                   #f
+                   '#,name
                    (vector-immutable (cons 'import-name
                                            (vector-immutable import-key ...)) ...)
                    (vector-immutable (cons 'export-name 
@@ -261,7 +270,8 @@ packed with the neg blame.
 (define-syntax/err-param (unit/c stx)
   (syntax-case stx ()
     [(_ . sstx)
-     (unit/c/core #'sstx)]))
+     (let ([name (syntax-local-infer-name stx)])
+       (unit/c/core name #'sstx))]))
 
 (define (contract-check-helper sub-sig super-sig import? val src-info blame ctc)
   (define t (make-hash))

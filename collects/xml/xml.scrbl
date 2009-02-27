@@ -4,12 +4,14 @@
           scribble/eval
           (for-label scheme/base
                      scheme/contract
+                     scheme/list
                      xml
                      xml/plist))
 
 @(define xml-eval (make-base-eval))
 @(define plist-eval (make-base-eval))
 @interaction-eval[#:eval xml-eval (require xml)]
+@interaction-eval[#:eval xml-eval (require scheme/list)]
 @interaction-eval[#:eval plist-eval (require xml/plist)]
 
 @title{@bold{XML}: Parsing and Writing}
@@ -71,17 +73,16 @@ and a @scheme[_misc] is an instance of the @scheme[comment] or
 
 @defstruct[document ([prolog prolog?]
                      [element element?]
-                     [misc (or/c comment? pcdata?)])]{
+                     [misc (listof (or/c comment? p-i?))])]{
 
 Represents a document.}
 
-@defstruct[prolog ([misc (listof (or/c comment? pcdata?))]
+@defstruct[prolog ([misc (listof (or/c comment? p-i?))]
                    [dtd (or/c document-type false/c)]
-                   [misc2 (listof (or/c comment? pcdata?))])]{
+                   [misc2 (listof (or/c comment? p-i?))])]{
 
-Represents a document prolog. The @scheme[make-prolog] binding is
-unusual: it accepts two or more arguments, and all arguments after the
-first two are collected into the @scheme[misc2] field.}
+Represents a document prolog. 
+}
 
 @defstruct[document-type ([name symbol?]
                           [external external-dtd?]
@@ -259,7 +260,7 @@ Converts an @tech{X-expression} into XML content.}
 Converts an @tech{X-expression} into a string containing XML.}
 
 @defproc[((eliminate-whitespace [tags (listof symbol?)]
-                                [choose (boolean? . -> . any/c)])
+                                [choose (boolean? . -> . boolean?)])
           [elem element?])
          element?]{
 
@@ -270,7 +271,7 @@ tag names as @scheme[tag]s and the identity function as
 that filters out PCDATA consisting solely of whitespace from those
 elements, and it raises an error if any non-whitespace text appears.
 Passing in @scheme[not] as @scheme[choose] filters all elements which
-are not named in the @scheme[tags] list.  Using @scheme[void] as
+are not named in the @scheme[tags] list.  Using @scheme[(lambda (x) #t)] as
 @scheme[choose] filters all elements regardless of the @scheme[tags]
 list.}
 

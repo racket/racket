@@ -318,8 +318,9 @@
                        [(fvars ...) fvars]
                        [((where-id where-expr) ...) withs]
                        [((bind-id . bind-pat) ...) 
-                        (append (extract-pattern-binds #'lhs)
-                                (extract-term-let-binds #'rhs))])
+                        (extract-pattern-binds #'lhs)]
+                       [((tl-id . tl-pat) ...)
+                       (extract-term-let-binds #'rhs)])
            #`(make-rule-pict 'arrow
                              (to-lw lhs)
                              (to-lw rhs)
@@ -328,6 +329,9 @@
                              (list (to-lw fvars) ...)
                              (list (cons (to-lw bind-id)
                                          (to-lw bind-pat))
+                                   ...
+                                   (cons (to-lw tl-id)
+                                         (to-lw/uq tl-pat))
                                    ...
                                    (cons (to-lw where-id)
                                          (to-lw where-expr))
@@ -519,38 +523,15 @@
   (define (do-leaf stx orig-name lang name-table from to extras lang-id)
     (let* ([lang-nts (language-id-nts lang-id orig-name)]
            [rw-sc (λ (pat) (rewrite-side-conditions/check-errs lang-nts orig-name #t pat))])
-      (let-values ([(name fresh-vars side-conditions/withs) (process-extras stx orig-name name-table extras)])
+      (let-values ([(name sides/withs/freshs) (process-extras stx orig-name name-table extras)])
         (let-values ([(names names/ellipses) (extract-names lang-nts orig-name #t from)])
           (with-syntax ([side-conditions-rewritten (rw-sc from)]
-                        [lhs-w/extras (rw-sc #`(side-condition #,from #,(bind-withs side-conditions/withs #'#t)))]
+                        [lhs-w/extras (rw-sc #`(side-condition #,from #,(bind-withs orig-name #'#t sides/withs/freshs #'#t)))]
                         [to to]
                         [name name]
                         [lang lang]
                         [(names ...) names]
-                        [(names/ellipses ...) names/ellipses]
-                        [(fresh-var-clauses ...) 
-                         (map (λ (fv-clause)
-                                (syntax-case fv-clause ()
-                                  [x
-                                   (identifier? #'x)
-                                   #'[x (variable-not-in main 'x)]]
-                                  [(x name)
-                                   (identifier? #'x)
-                                   #'[x (let ([the-name (term name)])
-                                          (verify-name-ok '#,orig-name the-name)
-                                          (variable-not-in main the-name))]]
-                                  [((y) (x ...))
-                                   #`[(y #,'...)
-                                      (variables-not-in main 
-                                                        (map (λ (_ignore_) 'y)
-                                                             (term (x ...))))]]
-                                  [((y) (x ...) names)
-                                   #`[(y #,'...)
-                                      (let ([the-names (term names)]
-                                            [len-counter (term (x ...))])
-                                        (verify-names-ok '#,orig-name the-names len-counter)
-                                        (variables-not-in main the-names))]]))
-                              fresh-vars)])
+                        [(names/ellipses ...) names/ellipses])
             #`(do-leaf-match
                name
                `side-conditions-rewritten
@@ -560,29 +541,52 @@
                  ;; show up in the `fresh' side-conditions, the bindings for the variables
                  ;; show up in the withs, and the withs show up in the 'fresh' side-conditions
                  (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                           (term-let (fresh-var-clauses ...)
-                                     #,(bind-withs side-conditions/withs
-                                                   #'(make-successful (term to))))))))))))
+                           #,(bind-withs orig-name #'main sides/withs/freshs
+                                         #'(make-successful (term to)))))))))))
   
-  ;; the withs and side-conditions come in backwards order
-  (define (bind-withs stx body)
+  ;; the withs, freshs, and side-conditions come in backwards order
+  (define (bind-withs orig-name main stx body)
     (let loop ([stx stx]
                [body body])
-      (syntax-case stx (side-condition where)
+      (syntax-case stx (side-condition where fresh)
         [() body]
         [((where x e) y ...) 
          (loop #'(y ...) #`(term-let ([x (term e)]) #,body))]
         [((side-condition s ...) y ...)
-         (loop #'(y ...) #`(and s ... #,body))])))
+         (loop #'(y ...) #`(and s ... #,body))]
+        [((fresh x) y ...)
+         (identifier? #'x)
+         (loop #'(y ...) #`(term-let ([x (variable-not-in #,main 'x)]) #,body))]
+        [((fresh x name) y ...)
+         (identifier? #'x)
+         (loop #'(y ...)
+               #`(term-let ([x (let ([the-name (term name)])
+                                 (verify-name-ok '#,orig-name the-name)
+                                 (variable-not-in #,main the-name))])
+                   #,body))]
+        [((fresh (y) (x ...)) z ...)
+         (loop #'(z ...)
+               #`(term-let ([(y #,'...)
+                             (variables-not-in #,main 
+                                               (map (λ (_ignore_) 'y)
+                                                    (term (x ...))))])
+                   #,body))]
+        [((fresh (y) (x ...) names) z ...)
+         (loop #'(z ...)
+               #`(term-let ([(y #,'...)
+                             (let ([the-names (term names)]
+                                   [len-counter (term (x ...))])
+                               (verify-names-ok '#,orig-name the-names len-counter)
+                               (variables-not-in #,main the-names))])
+                   #,body))])))
   
   (define (process-extras stx orig-name name-table extras)
     (let ([the-name #f]
           [the-name-stx #f]
-          [fresh-vars '()]
-          [side-conditions/withs '()])
+          [sides/withs/freshs '()])
       (let loop ([extras extras])
         (cond
-          [(null? extras) (values the-name fresh-vars side-conditions/withs)]
+          [(null? extras) (values the-name sides/withs/freshs)]
           [else
            (syntax-case (car extras) (side-condition fresh where)
              [name 
@@ -614,39 +618,40 @@
                   (loop (cdr extras))))]
              [(fresh var ...)
               (begin
-                (set! fresh-vars 
+                (set! sides/withs/freshs
                       (append 
-                       (map (λ (x)
-                              (syntax-case x ()
-                                [x
-                                 (identifier? #'x)
-                                 #'x]
-                                [(x name)
-                                 (identifier? #'x)
-                                 #'(x name)]
-                                [((ys dots2) (xs dots1))
-                                 (and (eq? (syntax-e #'dots1) (string->symbol "..."))
-                                      (eq? (syntax-e #'dots2) (string->symbol "...")))
-                                 #'((ys) (xs dots1))]
-                                [((ys dots2) (xs dots1) names)
-                                 (and (eq? (syntax-e #'dots1) (string->symbol "..."))
-                                      (eq? (syntax-e #'dots2) (string->symbol "...")))
-                                 #'((ys) (xs dots1) names)]
-                                [x
-                                 (raise-syntax-error orig-name 
-                                                     "malformed fresh variable clause"
-                                                     stx
-                                                     #'x)]))
-                            (syntax->list #'(var ...)))
-                       fresh-vars))
+                       (reverse 
+                        (map (λ (x)
+                               (syntax-case x ()
+                                 [x
+                                  (identifier? #'x)
+                                  #'(fresh x)]
+                                 [(x name)
+                                  (identifier? #'x)
+                                  #'(fresh x name)]
+                                 [((ys dots2) (xs dots1))
+                                  (and (eq? (syntax-e #'dots1) (string->symbol "..."))
+                                       (eq? (syntax-e #'dots2) (string->symbol "...")))
+                                  #'(fresh (ys) (xs dots1))]
+                                 [((ys dots2) (xs dots1) names)
+                                  (and (eq? (syntax-e #'dots1) (string->symbol "..."))
+                                       (eq? (syntax-e #'dots2) (string->symbol "...")))
+                                  #'(fresh (ys) (xs dots1) names)]
+                                 [x
+                                  (raise-syntax-error orig-name 
+                                                      "malformed fresh variable clause"
+                                                      stx
+                                                      #'x)]))
+                             (syntax->list #'(var ...))))
+                       sides/withs/freshs))
                 (loop (cdr extras)))]
              [(side-condition exp ...)
               (begin 
-                (set! side-conditions/withs (cons (car extras) side-conditions/withs))
+                (set! sides/withs/freshs (cons (car extras) sides/withs/freshs))
                 (loop (cdr extras)))]
              [(where x e)
               (begin
-                (set! side-conditions/withs (cons (car extras) side-conditions/withs))
+                (set! sides/withs/freshs (cons (car extras) sides/withs/freshs))
                 (loop (cdr extras)))]
              [(where . x)
               (raise-syntax-error orig-name "malformed where clause" stx (car extras))]
@@ -973,9 +978,9 @@
                                                          [((tl-var tl-exp) ...) bindings])
                                              (syntax 
                                               (λ (name bindings)
-                                                (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                                          (term-let ([tl-var (term tl-exp)] ...)
-                                                                    (term-let-fn ((name name))
+                                                (term-let-fn ((name name))
+                                                             (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
+                                                                       (term-let ([tl-var (term tl-exp)] ...)
                                                                                  (term rhs)))))))))
                                        (syntax->list (syntax (lhs ...)))
                                        (syntax->list (syntax (rhs ...)))
@@ -1027,7 +1032,7 @@
                                                          (to-lw bind-pat))
                                                    ...
                                                    (cons (to-lw rhs-bind-id)
-                                                         (to-lw rhs-bind-pat))
+                                                         (to-lw/uq rhs-bind-pat))
                                                    ...
                                                    (cons (to-lw where-id)
                                                          (to-lw where-pat))
@@ -1141,7 +1146,7 @@
                                   (cons (reverse side-conditions) side-conditionss)
                                   (cons (reverse bindings) bindingss))]
              [else 
-              (syntax-case (car stuff) (side-condition)
+              (syntax-case (car stuff) (where side-condition)
                 [(side-condition tl-side-conds ...) 
                  (s-loop (cdr stuff)
                          (append (syntax->list #'(tl-side-conds ...)) side-conditions)

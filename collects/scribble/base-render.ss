@@ -47,6 +47,30 @@
 
     ;; ----------------------------------------
 
+    (define/public (extract-part-style-files d tag stop-at-part?)
+      (let loop ([p d])
+        (let ([s (part-style p)])
+          (apply
+           append
+           (if (list? s)
+               (filter
+                values
+                (map (lambda (s)
+                       (and (list? s)
+                            (= 2 (length s))
+                            (eq? (car s) tag)
+                            (path-string? (cadr s))
+                            (cadr s)))
+                     s))
+               null)
+           (map (lambda (p)
+                  (if (stop-at-part? p)
+                      null
+                      (loop p)))
+                (part-parts p))))))
+  
+    ;; ----------------------------------------
+
     (define root (make-mobile-root root-path))
     
     (define-values (:path->root-relative

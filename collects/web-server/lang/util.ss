@@ -1,9 +1,21 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         syntax/kerncase
-         mzlib/pretty
-         mzlib/list)
-(provide (all-defined-out))
+         scheme/pretty
+         scheme/list
+         scheme/contract
+         syntax/kerncase)
+(provide/contract
+ [transformer? (parameter/c boolean?)]
+ [recertify (syntax? syntax? . -> . syntax?)]
+ [recertify* (syntax? (listof syntax?) . -> . (listof syntax?))]
+ [recertify/new-defs (syntax? (-> (values syntax? (listof syntax?))) . -> . (values syntax? (listof syntax?)))]
+ [current-code-labeling (parameter/c (syntax? . -> . syntax?))]
+ [generate-formal ((symbol?) ((or/c false/c syntax?)) . ->* . (values syntax? syntax?))]
+ [formals-list (syntax? . -> . (listof syntax?))]
+ [make-define-case/new-defs ((syntax? . -> . (values syntax? (listof syntax?))) . -> . (syntax? . -> . (listof syntax?)))]
+ [make-module-case/new-defs ((syntax? . -> . (listof syntax?)) . -> . (syntax? . -> . (listof syntax?)))]
+ [make-lang-module-begin ((bytes? . -> . (-> symbol?)) (syntax? . -> . (listof syntax?)) . -> . (syntax? . -> . syntax?))]
+ [bound-identifier-member? (syntax? (listof syntax?) . -> . boolean?)])
 
 (define transformer? (make-parameter #f))
 

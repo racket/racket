@@ -14,7 +14,10 @@
          "../util.ss")
 (provide/contract
  [parse:rhs (rhs? (listof sattr?) (listof identifier?) . -> . syntax?)]
- [parse:clauses (syntax? identifier? identifier? . -> . syntax?)])
+ [parse:clauses (syntax? identifier? identifier? . -> . syntax?)]
+ [announce-failures? parameter?])
+
+(define announce-failures? (make-parameter #f))
 
 ;; parse:rhs : RHS (listof SAttr) (listof identifier) -> stx
 ;; Takes a list of the relevant attrs; order is significant!
@@ -27,19 +30,21 @@
                  #,(if (rhs-transparent? rhs)
                        #`(make-failed x expected frontier frontier-stx)
                        #'#f))
-               #,(let ([pks (rhs->pks rhs relsattrs #'x)])
-                   (unless (pair? pks)
-                     (wrong-syntax (rhs-orig-stx rhs)
-                                   "syntax class has no variants"))
-                   (parse:pks (list #'x)
-                              (list (empty-frontier #'x))
-                              pks
-                              #'fail-rhs))))]
+               (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
+                 #,(let ([pks (rhs->pks rhs relsattrs #'x)])
+                     (unless (pair? pks)
+                       (wrong-syntax (rhs-orig-stx rhs)
+                                     "syntax class has no variants"))
+                     (parse:pks (list #'x)
+                                (list (empty-frontier #'x))
+                                #'fail-rhs
+                                (list #f)
+                                pks)))))]
         [(rhs:basic? rhs)
          (rhs:basic-parser rhs)]))
 
 ;; parse:clauses : stx identifier identifier -> stx
-(define (parse:clauses stx var failid)
+(define (parse:clauses stx var phi)
   (define clauses-kw-table
     (list (list '#:literals check-literals-list)))
   (define-values (chunks clauses-stx)
@@ -70,8 +75,9 @@
       (wrong-syntax stx "no variants"))
     (parse:pks (list var)
                (list (empty-frontier var))
-               pks
-               failid)))
+               phi
+               (list #f)
+               pks)))
 
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
@@ -116,8 +122,9 @@
                  [fail-k enclosing-fail])
              #,(parse:pks (list #'x)
                           (list (done-frontier #'x))
-                          (list (make-pk (list p) inner))
-                          #'fail-k))))]))
+                          #'fail-k
+                          (list #f)
+                          (list (make-pk (list p) inner))))))]))
 
 ;; success-expr : (listof IAttr) (listof SAttr) RemapEnv stx -> stx
 (define (success-expr iattrs relsattrs remap main-var)
@@ -137,51 +144,78 @@
                 [fstx-expr (frontier->fstx-expr fce)])
     #`(let ([failcontext fc-expr]
             [failcontext-syntax fstx-expr])
+        #,(when (announce-failures?)
+            #`(printf "failing on ~s\n  reason: ~s\n" x p))
         (k x p failcontext failcontext-syntax))))
 
 ;; Parsing
 
-;; parse:pks : (listof identifier) (listof FCE) (listof PK) identifier -> stx
+#|
+
+The parsing algorithm is based on the classic backtracking
+algorithm (see Optimizing Pattern Matching for an overview). A PK
+corresponds to a row in the pattern matrix. The failure argument
+corresponds to the static catch continuation.
+
+The FCs (frontier contexts, one per column) are an addition for error
+reporting. They track the matcher's progress into the term. The
+matcher compares failures on backtracking, and reports the "furthest
+along" failure, based on the frontiers.
+
+Conventions:
+  <ParseConfig> =
+    vars : listof identifiers, variables, one per column
+    fcs : listof FCEs, failure contexts, one per column
+    phi : id, failure continuation
+    ds : listof (string/#f), description string
+
+|#
+
+
+;; parse:pks : <ParseConfig> (listof PK) -> stx
 ;; Each PK has a list of |vars| patterns.
 ;; The list of PKs must not be empty.
-(define (parse:pks vars fcs pks failid)
+(define (parse:pks vars fcs phi ds pks)
   (cond [(null? pks)
          (error 'parse:pks "internal error: empty list of rows")]
         [(null? vars)
          ;; Success!
-         (let* ([failvar (car (generate-temporaries #'(fail-k)))]
+         (let* ([failvar (generate-temporary 'fail-k)]
                 [exprs
                  (for/list ([pk pks])
                    #`(with-enclosing-fail #,failvar #,(pk-k pk)))])
            (with-syntax ([failvar failvar]
                          [(expr ...) exprs])
-             #`(try failvar [expr ...] #,failid)))]
+             #`(try failvar [expr ...] #,phi)))]
         [else
-         (let-values ([(vars extpks) (split-pks vars pks)])
-           (let* ([failvar (car (generate-temporaries #'(fail-k)))]
+         (let-values ([(vars groups) (split-pks vars pks)])
+           (let* ([failvar (generate-temporary 'fail-k)]
                   [exprs
-                   (for/list ([extpk extpks])
-                     (parse:extpk vars fcs extpk failvar))])
+                   (for/list ([group groups])
+                     (parse:group vars fcs failvar ds group))])
              (with-syntax ([failvar failvar]
                            [(expr ...) exprs])
-               #`(try failvar [expr ...] #,failid))))]))
+               #`(try failvar [expr ...] #,phi))))]))
 
 
-;; parse:extpk : (listof identifier) (listof FCE) ExtPK identifier -> stx
+;; parse:group : <ParseConfig> Group -> stx
 ;; Pre: vars is not empty
-(define (parse:extpk vars fcs extpk failid)
-  (match extpk
-    [(struct idpks (stxclass args pks))
+(define (parse:group vars fcs phi ds group)
+  (match group
+    [(struct idG (stxclass args pks))
      (if stxclass
-         (parse:pk:id/stxclass vars fcs failid stxclass args pks)
-         (parse:pk:id/any  vars fcs failid args pks))]
-    [(struct cpks (pairpks datumpkss literalpkss))
-     (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)]
+         (parse:group:id/stxclass vars fcs phi ds stxclass args pks)
+         (parse:group:id/any vars fcs phi ds args pks))]
+    [(struct descrimG (datumSGs literalSGs kindSGs))
+     (parse:group:descrim vars fcs phi ds datumSGs literalSGs kindSGs)]
+    [(struct pk ((cons (? pat:and? and-pattern) rest-patterns) k))
+     (parse:group:and vars fcs phi ds and-pattern rest-patterns k)]
     [(struct pk ((cons (? pat:gseq? gseq-pattern) rest-patterns) k))
-     (parse:pk:gseq vars fcs failid gseq-pattern rest-patterns k)]))
+     (parse:group:gseq vars fcs phi ds gseq-pattern rest-patterns k)]))
 
-;; parse:pk:id/stxclass : (listof id) (listof FCE) id SC stx (listof pk) -> stx
-(define (parse:pk:id/stxclass vars fcs failid stxclass args pks)
+;; parse:group:id/stxclass : <ParseConfig> SC stx (listof pk)
+;;                        -> stx
+(define (parse:group:id/stxclass vars fcs phi ds stxclass args pks)
   (with-syntax ([var0 (car vars)]
                 [(arg ...) args]
                 [(arg-var ...) (generate-temporaries args)]
@@ -190,77 +224,108 @@
     #`(let ([arg-var arg] ...)
         (let ([result (parser var0 arg-var ...)])
           (if (ok? result)
-              #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)
-              #,(fail failid (car vars)
+              #,(parse:pks (cdr vars) (cdr fcs) phi (cdr ds) (shift-pks:id pks #'result))
+              #,(fail phi (car vars)
                       #:pattern (expectation-of-stxclass stxclass #'(arg-var ...) #'result)
                       #:fce (join-frontiers (car fcs) #'result)))))))
 
-;; parse:pk:id/any : (listof id) (listof FCE) id stx (listof pk) -> stx
-(define (parse:pk:id/any vars fcs failid args pks)
+;; parse:group:id/any : <ParseConfig> stx (listof pk) -> stx
+(define (parse:group:id/any vars fcs phi ds args pks)
   (with-syntax ([var0 (car vars)]
                 [(arg ...) args]
                 [(arg-var ...) (generate-temporaries args)]
                 [result (generate-temporary 'result)])
     #`(let ([arg-var arg] ...)
         (let ([result (list var0)])
-          #,(parse:pks (cdr vars) (cdr fcs) (shift-pks:id pks #'result) failid)))))
+          #,(parse:pks (cdr vars) (cdr fcs) phi (cdr ds) (shift-pks:id pks #'result))))))
 
-;; parse:pk:c : (listof id) (listof FCE) id ??? ... -> stx
-(define (parse:pk:c vars fcs failid pairpks datumpkss literalpkss)
+;; parse:group:descrim : <ParseConfig>
+;;                       (listof DatumSG) (listof LiteralSG) (listof CompoundSG)
+;;                    -> stx
+(define (parse:group:descrim vars fcs phi ds datumSGs literalSGs compoundSGs)
   (define var (car vars))
   (define datum-var (generate-temporary 'datum))
-  (define (datumpks-test datumpks)
-    (let ([datum (datumpks-datum datumpks)])
+  (define (datumSG-test datumSG)
+    (let ([datum (datumSG-datum datumSG)])
       #`(equal? #,datum-var (quote #,datum))))
-  (define (datumpks-rhs datumpks)
-    (let ([pks (datumpks-pks datumpks)])
-      (parse:pks (cdr vars) (cdr fcs) (shift-pks:datum pks) failid)))
-  (define (literalpks-test literalpks)
-    (let ([literal (literalpks-literal literalpks)])
+  (define (datumSG-rhs datumSG)
+    (let ([pks (datumSG-pks datumSG)])
+      (parse:pks (cdr vars) (cdr fcs) phi (cdr ds) (shift-pks:datum pks))))
+  (define (literalSG-test literalSG)
+    (let ([literal (literalSG-literal literalSG)])
       #`(and (identifier? #,var)
              (free-identifier=? #,var (quote-syntax #,literal)))))
-  (define (literalpks-rhs literalpks)
-    (let ([pks (literalpks-pks literalpks)])
-      (parse:pks (cdr vars) (cdr fcs) (shift-pks:literal pks) failid)))
+  (define (literalSG-rhs literalSG)
+    (let ([pks (literalSG-pks literalSG)])
+      (parse:pks (cdr vars) (cdr fcs) phi (cdr ds) (shift-pks:literal pks))))
+  (define (compoundSG-test compoundSG)
+    (let ([kind (compoundSG-kind compoundSG)])
+      #`(#,(kind-predicate kind) #,datum-var)))
+  (define (compoundSG-rhs compoundSG)
+    (let* ([pks (compoundSG-pks compoundSG)]
+           [kind (compoundSG-kind compoundSG)]
+           [selectors (kind-selectors kind)]
+           [frontier-procs (kind-frontier-procs kind)]
+           [part-vars (for/list ([selector selectors]) (generate-temporary 'part))]
+           [part-frontiers
+            (for/list ([fproc frontier-procs] [part-var part-vars])
+              (fproc (car fcs) part-var))]
+           [part-ds (for/list ([selector selectors]) (car ds))])
+      (with-syntax ([(part-var ...) part-vars]
+                    [(part-expr ...)
+                     (for/list ([selector selectors]) (selector var datum-var))])
+        #`(let ([part-var part-expr] ...)
+            #,(parse:pks (append part-vars (cdr vars))
+                         (append part-frontiers (cdr fcs))
+                         phi
+                         (append part-ds (cdr ds))
+                         (shift-pks:compound pks))))))
   (define-pattern-variable var0 var)
   (define-pattern-variable dvar0 datum-var)
   (define-pattern-variable head-var (generate-temporary 'head))
   (define-pattern-variable tail-var (generate-temporary 'tail))
   (with-syntax ([(datum-clause ...)
-                 (for/list ([datumpks datumpkss])
-                   #`[#,(datumpks-test datumpks) #,(datumpks-rhs datumpks)])]
+                 (for/list ([datumSG datumSGs])
+                   #`[#,(datumSG-test datumSG) #,(datumSG-rhs datumSG)])]
                 [(lit-clause ...)
-                 (for/list ([literalpks literalpkss])
-                   #`[#,(literalpks-test literalpks) #,(literalpks-rhs literalpks)])])
+                 (for/list ([literalSG literalSGs])
+                   #`[#,(literalSG-test literalSG) #,(literalSG-rhs literalSG)])]
+                [(compound-clause ...)
+                 (for/list ([compoundSG compoundSGs])
+                   #`[#,(compoundSG-test compoundSG) #,(compoundSG-rhs compoundSG)])])
     #`(let ([dvar0 (if (syntax? var0) (syntax-e var0) var0)])
-        (cond #,@(if (pair? pairpks)
-                     #`([(pair? dvar0)
-                         (let ([head-var (car dvar0)]
-                               [tail-var (datum->syntax var0 (cdr dvar0) var0)])
-                           #,(parse:pks (list* #'head-var #'tail-var (cdr vars))
-                                        (list* (frontier:add-car (car fcs) #'head-var)
-                                               (frontier:add-cdr (car fcs))
-                                               (cdr fcs))
-                                        (shift-pks:pair pairpks)
-                                        failid))])
-                     #`())
+        (cond compound-clause ...
               lit-clause ...
               datum-clause ...
               [else
-               #,(fail failid (car vars)
+               #,(fail phi (car vars)
                        #:pattern (expectation-of-constants
-                                  (pair? pairpks)
-                                  (for/list ([d datumpkss])
-                                    (datumpks-datum d))
-                                  (for/list ([l literalpkss])
-                                    (literalpks-literal l)))
+                                  (pair? compoundSGs)
+                                  (for/list ([d datumSGs])
+                                    (datumSG-datum d))
+                                  (for/list ([l literalSGs])
+                                    (literalSG-literal l))
+                                  (car ds))
                        #:fce (car fcs))]))))
 
-;; parse:pk:gseq : (listof id) (listof FCE) id
-;;                 pat:gseq (listof Pattern)
-;;                 ???
-;;              -> stx
-(define (parse:pk:gseq vars fcs failid gseq-pattern rest-patterns k)
+;; parse:gseq:and : <ParseConfig> pat:and (listof Pattern) stx
+;;               -> stx
+(define (parse:group:and vars fcs phi ds and-pattern rest-patterns k)
+  (match-define (struct pat:and (orig-stx attrs depth description patterns))
+                and-pattern)
+  ;; FIXME: handle description
+  (let ([var0-copies (for/list ([p patterns]) (car vars))]
+        [fc0-copies (for/list ([p patterns]) (car fcs))]
+        [ds-copies (for/list ([p patterns]) (or description (car ds)))])
+    (parse:pks (append var0-copies (cdr vars))
+               (append fc0-copies (cdr fcs))
+               phi
+               (append ds-copies (cdr ds))
+               (list (make pk (append patterns rest-patterns) k)))))
+
+;; parse:compound:gseq : <ParseConfig> pat:gseq (listof Pattern) stx
+;;                    -> stx
+(define (parse:group:gseq vars fcs phi ds gseq-pattern rest-patterns k)
   (match-define (struct pat:gseq (orig-stx attrs depth heads tail)) gseq-pattern)
   (define xvar (generate-temporary 'x))
   (define head-lengths (for/list ([head heads]) (length (head-ps head))))
@@ -268,9 +333,7 @@
   (define hid-initss
     (for/list ([head heads] [head-attrs head-attrss])
       (for/list ([head-attr head-attrs])
-        (cond [(head-default head)
-               => (lambda (x) #`(quote-syntax #,x))]
-              [(head-as-list? head) #'null]
+        (cond [(head-as-list? head) #'null]
               [else #'#f]))))
   (define combinerss
     (for/list ([head heads] [head-attrs head-attrss])
@@ -308,9 +371,6 @@
                    (if maxrep
                        #`(< #,repvar #,maxrep)
                        #`#t))]
-                [(occurs-binding ...)
-                 (for/list ([head heads] [rep reps] #:when (head-occurs head))
-                   #`[#,(head-occurs head) (positive? #,rep)])]
                 [(parse-loop failkv fail-tail)
                  (generate-temporaries #'(parse-loop failkv fail-tail))])
 
@@ -343,12 +403,12 @@
         #`(cond minrep-clause ...
                 [else
                  (let ([hid (finalize hid-arg)] ... ...
-                       occurs-binding ...
                        [fail-tail enclosing-fail])
                    #,(parse:pks (cdr vars)
                                 (cdr fcs)
-                                (list (make-pk rest-patterns k))
-                                #'fail-tail))])))
+                                #'fail-tail
+                                (cdr ds)
+                                (list (make-pk rest-patterns k))))])))
 
     (with-syntax ([tail-rhs tail-rhs-expr]
                   [(rhs ...)
@@ -365,31 +425,33 @@
             #,(parse:pks (list #'x)
                          (list (frontier:add-index (car fcs)
                                                    #'(calculate-index rep ...)))
+                         #'failkv
+                         (list (car ds))
                          (append
                           (map make-pk
                                (map list completed-heads)
                                (syntax->list #'(rhs ...)))
-                          (list (make-pk (list tail) #`tail-rhs)))
-                         #'failkv))
+                          (list (make-pk (list tail) #`tail-rhs)))))
           (let ([hid hid-init] ... ...
                 [rep 0] ...)
-            (parse-loop var0 hid ... ... rep ... #,failid))))))
-
+            (parse-loop var0 hid ... ... rep ... #,phi))))))
 
 ;; complete-heads-patterns : Head identifier number stx -> Pattern
 (define (complete-heads-pattern head rest-var depth seq-orig-stx)
   (define (loop ps pat)
     (if (pair? ps)
-        (make-pat:pair (cons (pattern-orig-stx (car ps)) (pattern-orig-stx pat))
-                       (append (pattern-attrs (car ps)) (pattern-attrs pat))
-                       depth
-                       (car ps)
-                       (loop (cdr ps) pat))
+        (make pat:compound
+              (cons (pattern-orig-stx (car ps)) (pattern-orig-stx pat))
+              (append (pattern-attrs (car ps)) (pattern-attrs pat))
+              depth
+              pairK
+              (list (car ps) (loop (cdr ps) pat)))
         pat))
   (define base 
-    (make-pat:id seq-orig-stx
-                 (list (make-attr rest-var depth null))
-                 depth rest-var #f null))
+    (make pat:id
+          seq-orig-stx
+          (list (make-attr rest-var depth null))
+          depth rest-var #f null))
   (loop (head-ps head) base))
 
 ;; split-pks : (listof identifier) (listof PK)
@@ -405,7 +467,7 @@
 (define (split-pks/first-column pks)
   (define (get-pat x) (car (pk-ps x)))
   (define (constructor-pat? p)
-    (or (pat:pair? p) (pat:datum? p) (pat:literal? p)))
+    (or (pat:compound? p) (pat:datum? p) (pat:literal? p)))
   (define (constructor-pk? pk)
     (constructor-pat? (get-pat pk)))
   (define (id-pk? pk)
@@ -452,13 +514,17 @@
         (pat:id? p2)
         (and (pat:datum? p1) (pat:datum? p2)
              (equal? (pat:datum-datum p1) (pat:datum-datum p2)))
-        (and (pat:pair? p1) (pat:pair? p2)
-             (pattern-intersects? (pat:pair-head p1) (pat:pair-head p2))
-             (pattern-intersects? (pat:pair-tail p1) (pat:pair-tail p2)))
+        (and (pat:compound? p1) (pat:compound? p2)
+             (eq? (pat:compound-kind p1) (pat:compound-kind p2))
+             (andmap pattern-intersects?
+                     (pat:compound-patterns p1)
+                     (pat:compound-patterns p2)))
         ;; FIXME: conservative
         (and (pat:literal? p1) (pat:literal? p2))
         (pat:gseq? p1)
-        (pat:gseq? p2)))
+        (pat:gseq? p2)
+        (pat:and? p1)
+        (pat:and? p2)))
 
   (define (major-loop pks epks)
     (match pks
@@ -480,18 +546,17 @@
                                tail
                                (list head)
                                null)])
-           (let ([id-epk (make idpks this-stxclass this-args (reverse r-id-pks))])
+           (let ([id-epk (make idG this-stxclass this-args (reverse r-id-pks))])
              (major-loop tail (cons id-epk epks)))))]
+      ;; Leave gseq- and and-patterns by themselves (at least for now)
       [(cons head tail)
        (major-loop tail (cons head epks))]))
 
   ;; gather : (PK -> boolean) (listof PK) (listof PK) (listof PK)
   ;;       -> (listof PK) (listof PK)
   (define (gather pred pks taken prefix)
-    #;(printf "called gather (~s pks, ~s prefix)\n" (length pks) (length prefix))
     (match pks
       ['()
-       #;(printf "took ~s, left ~s\n" (length taken) (length prefix))
        (values taken (reverse prefix))]
       [(cons pk tail)
        ;; We can have it if it can move past everything in the prefix.
@@ -503,16 +568,18 @@
 
   ;; group-constructor-pks : (listof PK) -> ExtPK
   (define (group-constructor-pks reversed-pks)
-    (define pairpks null)
-    (define ht (make-hash))
+    (define compound-ht (make-hasheq))
+    (define datum-ht (make-hash))
     (define lit-ht (make-bound-identifier-mapping))
     (for ([pk reversed-pks])
       (let ([p (get-pat pk)])
-        (cond [(pat:pair? p)
-               (set! pairpks (cons pk pairpks))]
+        (cond [(pat:compound? p)
+               (let ([kind (pat:compound-kind p)])
+                 (hash-set! compound-ht
+                            kind (cons pk (hash-ref compound-ht kind null))))]
               [(pat:datum? p)
                (let ([d (pat:datum-datum p)])
-                 (hash-set! ht d (cons pk (hash-ref ht d null))))]
+                 (hash-set! datum-ht d (cons pk (hash-ref datum-ht d null))))]
               [(pat:literal? p)
                (let ([lit (pat:literal-literal p)])
                  (bound-identifier-mapping-put!
@@ -521,9 +588,10 @@
                   (cons pk
                         (bound-identifier-mapping-get lit-ht lit
                                                       (lambda () null)))))])))
-    (let ([datumpkss (hash-map ht make-datumpks)]
-          [litpkss (bound-identifier-mapping-map lit-ht make-literalpks)])
-      (make cpks pairpks datumpkss litpkss)))
+    (let ([datumSGs (hash-map datum-ht make-datumSG)]
+          [literalSGs (bound-identifier-mapping-map lit-ht make-literalSG)]
+          [compoundSGs (hash-map compound-ht make-compoundSG)])
+      (make descrimG datumSGs literalSGs compoundSGs)))
 
   (major-loop pks null))
 
@@ -564,13 +632,14 @@
     (make-pk (cdr (pk-ps pk)) (pk-k pk)))
   (map shift-pk pks))
 
-;; shift-pks:pair : (listof PK) -> (listof PK)
-(define (shift-pks:pair pks)
+;; shift-pks:compound : (listof PK) -> (listof PK)
+(define (shift-pks:compound pks)
   (define (shift-pk pk0)
     (match pk0
-      [(struct pk ((cons (struct pat:pair (orig-stx attrs depth head tail)) rest-ps)
+      [(struct pk ((cons (struct pat:compound (orig-stx attrs depth kind patterns))
+                         rest-ps)
                    k))
-       (make-pk (list* head tail rest-ps) k)]))
+       (make-pk (append patterns rest-ps) k)]))
   (map shift-pk pks))
 
 ;; wrap-pvars : (listof IAttr) stx -> stx

@@ -4,8 +4,8 @@
           (for-syntax scheme/base)
           (for-label scribble/manual-struct))
 
-@(define ellipses (scheme ...))
-@(define ellipses+ (scheme ...+))
+@(define lit-ellipses (scheme ...))
+@(define lit-ellipses+ (scheme ...+))
 
 @title[#:tag "manual" #:style 'toc]{Manual Forms}
 
@@ -357,8 +357,8 @@ sub-sections.}
                          (keyword arg-id contract-expr-datum default-expr)
                          ellipses
                          ellipses+]
-               [ellipses #, @ellipses]
-               [ellipses+ #, @ellipses+])]{
+               [ellipses #, @lit-ellipses]
+               [ellipses+ #, @lit-ellipses+])]{
 
 Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a procedure named @scheme[id]. Nesting
@@ -393,14 +393,14 @@ Each @scheme[arg-spec] must have one of the following forms:
        Like the previous case, but with a default
        value.}
 
-@specsubform[#, @ellipses]{Any number of the preceding argument.  This
+@specsubform[#, @lit-ellipses]{Any number of the preceding argument.  This
        form is normally used at the end, but keyword-based arguments
        can sensibly appear afterward. See also the documentation for
-       @scheme[append] for a use of @ellipses before the last
+       @scheme[append] for a use of @lit-ellipses before the last
        argument.}
 
-@specsubform[#, @ellipses+]{One or more of the preceding argument
-       (normally at the end, like @ellipses).}
+@specsubform[#, @lit-ellipses+]{One or more of the preceding argument
+       (normally at the end, like @lit-ellipses).}
 
 The @scheme[result-contract-expr-datum] is typeset via
 @scheme[schemeblock0], and it represents a contract on the procedure's
@@ -612,6 +612,29 @@ typeset as with @scheme[scheme].}
 
 Like @scheme[schemegrammar], but for typesetting multiple productions
 at once, aligned around the @litchar{=} and @litchar{|}.}
+
+@defproc[(defidentifier [id identifier?]
+                        [#:form? form? any/c #f]
+                        [#:index? index? any/c #t]
+                        [#:show-libs? show-libs? any/c #t])
+         element?]{
+
+Typesets @scheme[id] as a Scheme identifier, and also establishes the
+identifier as the definition of a binding in the same way as
+@scheme[defproc], @scheme[defform], etc. As always, the library that
+provides the identifier must be declared via @scheme[defmodule] or
+@scheme[declare-exporting] for an enclosing section.
+
+If @scheme[form?] is a true value, then the identifier is documented
+as a syntactic form, so that uses of the identifier (normally
+including @scheme[id] itself) are typeset as a syntactic form.
+
+If @scheme[index?] is a true value, then the identifier is registered
+in the index.
+
+If @scheme[show-libs?] is a true value, then the identifier's defining
+module may be exposed in the typeset form (e.g., when viewing HTML and
+the mouse hovers over the identifier).}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-classes"]{Documenting Classes and Interfaces}
@@ -906,7 +929,8 @@ The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[t],
 which is normally defined using @scheme[elemtag].}
 
 
-@defproc[(deftech [pre-content any/c] ...) element?]{
+@defproc[(deftech [pre-content any/c] ...
+                  [#:style? style? any/c #t]) element?]{
 
 Produces an element for the @tech{decode}d @scheme[pre-content], and
 also defines a term that can be referenced elsewhere using
@@ -929,7 +953,10 @@ as follows:
 
 These normalization steps help support natural-language references
 that differ slightly from a defined form. For example, a definition of
-``bananas'' can be referenced with a use of ``banana''.}
+``bananas'' can be referenced with a use of ``banana''.
+
+If @scheme[style?] is true, then @scheme[defterm] is used on
+@scheme[pre-content].}
 
 @defproc[(tech [pre-content any/c] ...
                [#:doc module-path (or/c module-path? false/c) #f])

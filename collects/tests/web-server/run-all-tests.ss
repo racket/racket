@@ -1,6 +1,5 @@
 #lang scheme/base
-(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3/text-ui)
          "all-web-server-tests.ss")
 
-(test/graphical-ui all-web-server-tests)
+(run-tests all-web-server-tests)

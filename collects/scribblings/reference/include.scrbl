@@ -7,9 +7,9 @@
 
 @defform/subs[#:literals (file lib)
               (include path-spec)
-              ([include-spec string
-                             (file string)
-                             (lib string ...+)])]{
+              ([path-spec string
+                          (file string)
+                          (lib string ...+)])]{
 
 Inlines the syntax in the file designated by @scheme[path-spec] in
 place of the @scheme[include] expression.

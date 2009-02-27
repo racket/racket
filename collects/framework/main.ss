@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/gui
+#lang at-exp scheme/gui
 
 (require mred/mred-unit
          mred/mred-sig

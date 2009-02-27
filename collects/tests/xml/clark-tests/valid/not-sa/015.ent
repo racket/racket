@@ -1,0 +1,5 @@
+<!ELEMENT doc (#PCDATA)>
+<![ %e; [
+<!ATTLIST doc a1 CDATA "v1">
+]]>
+<!ATTLIST doc a2 CDATA "v2">

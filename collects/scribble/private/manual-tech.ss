@@ -15,8 +15,10 @@
          [s (regexp-replace* #px"[-\\s]+" s " ")])
     (make-elem style c (list 'tech (doc-prefix doc s)))))
 
-(define (deftech . s)
-  (let* ([e (apply defterm s)]
+(define (deftech #:style? [style? #t] . s)
+  (let* ([e (if style?
+                (apply defterm s)
+                (make-element #f (decode-content s)))]
          [t (*tech make-target-element #f #f (list e))])
     (make-index-element #f
                         (list t)

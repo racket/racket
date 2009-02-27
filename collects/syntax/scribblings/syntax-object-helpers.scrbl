@@ -8,5 +8,6 @@
 @include-section["boundmap.scrbl"]
 @include-section["to-string.scrbl"]
 @include-section["free-vars.scrbl"]
+@include-section["strip-context.scrbl"]
 @include-section["zodiac.scrbl"]
 

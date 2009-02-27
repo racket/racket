@@ -76,8 +76,16 @@
     (define/override (enable e?)
       (unless (equal? disabled? (not e?))
         (set! disabled? (not e?))
+        (set! down? #f)
+        (set! in? #f)
         (refresh)))
     (define/override (is-enabled?) (not disabled?))
+
+    (define/override (on-superwindow-show show?)
+      (unless show?
+        (set! in? #f)
+        (set! down? #f))
+      (super on-superwindow-show show?))
     
     (define/override (on-event evt)
       (cond

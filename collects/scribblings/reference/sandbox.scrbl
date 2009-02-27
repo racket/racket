@@ -478,7 +478,8 @@ specifications in @scheme[sandbox-path-permissions], and it uses
 
 
 @defparam[sandbox-path-permissions perms
-          (listof (list/c (or/c 'execute 'write 'delete 'read-bytecode 'read 'exists)
+          (listof (list/c (or/c 'execute 'write 'delete 
+                                'read-bytecode 'read 'exists)
                           (or/c byte-regexp? bytes? string? path?)))]{
 
 A parameter that configures the behavior of the default sandbox

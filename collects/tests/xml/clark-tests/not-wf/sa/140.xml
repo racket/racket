@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ENTITY e "<&#x309a;></&#x309a;>">
+]>
+<doc>&e;</doc>

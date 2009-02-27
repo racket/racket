@@ -18,12 +18,12 @@
 ;; Create a slide sequence where `mid' takes a number from 0.0 to 1.0.
 ;; The 0.0 slide will wit until you advance, but the remaining ones will
 ;; time out automatically to create the animation.
-(define (play #:title [title #f] mid)
-  (slide #:title title (mid 0))
+(define (play #:title [title #f] #:layout [layout 'auto] mid)
+  (slide #:title title #:layout layout (mid 0))
   (if condense?
       (skip-slides 10)
       (map (lambda (n)
-             (slide #:title title #:timeout 0.05 (mid n)))
+             (slide #:title title #:layout layout #:timeout 0.05 (mid n)))
            (let ([cnt 10])
              (let loop ([n cnt])
                (if (zero? n)
@@ -36,14 +36,15 @@
 ;; arguments will be 0.0. The first argument goes from 0.0 to 1.0
 ;; for the first `play' sequence, and then it stays at 1.0 while
 ;; the second goes from 0.0 to 1.0 for the second sequence, etc.
-(define (play-n #:title [title #f] mid)
+(define (play-n #:title [title #f] #:layout [layout 'auto] mid)
   (let ([n (procedure-arity mid)])
     (let loop ([post (vector->list (make-vector n))]
                [pre null])
       (if (null? post)
-          (slide #:title title (apply mid pre))
+          (slide #:title title #:layout layout (apply mid pre))
           (begin
             (play #:title title
+                  #:layout layout 
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
             (loop (cdr post) (cons 1.0 pre)))))))

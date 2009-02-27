@@ -59,7 +59,7 @@
 (define (mouse-event->parts e)
   (define x (- (send e get-x) INSET))
   (define y (- (send e get-y) INSET))
-  (list x y (cond [(send e button-down?) 'button-down]
+  (values x y (cond [(send e button-down?) 'button-down]
                   [(send e button-up?)   'button-up]
                   [(send e dragging?)    'drag]
                   [(send e moving?)      'move]

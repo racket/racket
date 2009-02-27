@@ -21,11 +21,7 @@ WARNING: printf is rebound in the body of the unit to always
          (prefix-in srfi1: srfi/1))
 (require setup/xref
          scribble/xref
-         scribble/struct
-         scribble/manual-struct
-         scribble/decode
-         scribble/basic
-         (prefix-in s/m: scribble/manual))
+         scribble/manual-struct)
 
 (import mred^
         [prefix icon: framework:icon^]

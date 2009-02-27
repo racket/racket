@@ -285,6 +285,10 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
+                      [#:start-angle start-angle (or/c real? #f) #f]
+                      [#:end-angle end-angle (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f])
@@ -294,6 +298,10 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
+                      [#:start-angle start-angle (or/c real? #f) #f]
+                      [#:end-angle end-angle (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -304,6 +312,10 @@ argument for consistency with the other functions.}
                       [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
                       [find-dest (pict? pict-path? . -> . (values real? real?))]
+                      [#:start-angle start-angle (or/c real? #f) #f]
+                      [#:end-angle end-angle (or/c real? #f) #f]
+                      [#:start-pull start-pull real? 1/4]
+                      [#:end-pull end-pull real? 1/4]
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -317,7 +329,25 @@ and destination of the line.
 If @scheme[under?] is true, then the line and arrows are added under
 the existing @scheme[pict] drawing, instead of on top. If
 @scheme[solid?] is false, then the arrowheads are hollow instead of
-filled.}
+filled.
+
+The @scheme[start-angle], @scheme[end-angle], @scheme[start-pull], and
+@scheme[end-pull] arguments control the curve of the line:
+
+@itemize[
+
+ @item{The @scheme[start-angle] and @scheme[end-angle] arguments
+       specify the direction of curve at its start and end positions;
+       if either is @scheme[#f], it defaults to the angle of a
+       straight line from the start position to end position.}
+
+ @item{The @scheme[start-pull] and @scheme[end-pull] arguments specify
+       a kind of momentum for the starting and ending angles; larger
+       values preserve the angle longer.}
+
+]
+
+The defaults produce a straight line.}
 
 @defthing[text-style/c contract?]{
 

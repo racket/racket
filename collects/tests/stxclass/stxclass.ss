@@ -118,37 +118,37 @@
         (check-equal? (syntax->datum #'(t.a ...)) '(1 4 6)))
       (test-patterns (t:two-to-four/untagged ...) #'((1 2 3) (4 5) (6 7 8))
         (check-equal? (syntax->datum #'(t.b ...)) '(2 5 7)))
-      (test-patterns ({{x:id v:nat} {s:str}} ...*) #'(x 1 y 2 "whee" x 3)
+      (test-patterns ({~or {x:id v:nat} {s:str}} ...) #'(x 1 y 2 "whee" x 3)
         (check-equal? (stx->datum #'((x v) ...)) '((x 1) (y 2) (x 3)))
         (check-equal? (stx->datum #'(s ...)) '("whee")))
-      (test-patterns ({{x:id v:nat} {s:str}} ...*) #'(x 1 y 2 "whee" x 3)
+      (test-patterns ({~or {x:id v:nat} {s:str}} ...) #'(x 1 y 2 "whee" x 3)
         (check-equal? (stx->datum #'((x v) ...)) '((x 1) (y 2) (x 3)))
         (check-equal? (stx->datum #'(s ...)) '("whee")))
-      (test-patterns ({{1} #:min 1 #:max 1
-                       {2} #:min 1 #:max 1
-                       {3} #:min 1 #:max 1} ...*)
+      (test-patterns ({~or {1} #:min 1 #:max 1
+                           {2} #:min 1 #:max 1
+                           {3} #:min 1 #:max 1} ...)
                      #'(1 2 3)
         'ok)
-      (test-patterns ({{a:id} {b:nat} {c:str}} ...*) #'("one" 2 three)
+      (test-patterns ({~or {a:id} {b:nat} {c:str}} ...) #'("one" 2 three)
         (check-equal? (stx->datum #'(a ...)) '(three))
         (check-equal? (stx->datum #'(b ...)) '(2))
         (check-equal? (stx->datum #'(c ...)) '("one")))
-      (test-patterns ({{1} #:min 1 #:max 1
-                       {2} #:min 1 #:max 1
-                       {3} #:min 1 #:max 1
-                       {x} #:min 1 #:max 1
-                       {y} #:min 1 #:max 1
-                       {w} #:min 1 #:max 1} ...*)
+      (test-patterns ({~or {1} #:min 1 #:max 1
+                           {2} #:min 1 #:max 1
+                           {3} #:min 1 #:max 1
+                           {x} #:min 1 #:max 1
+                           {y} #:min 1 #:max 1
+                           {w} #:min 1 #:max 1} ...)
                      #'(1 2 3 x y z)
         (for ([s (syntax->list #'(x ... y ... w ...))]) (check-pred identifier? s))
         (check-equal? (sort 
                        (map symbol->string (stx->datum #'(x ... y ... w ...)))
                        string<?)
                       '("x" "y" "z")))
-      (test-patterns ({{x}
-                       {1} #:min 1 #:max 1
-                       {2} #:min 1 #:max 1
-                       {3} #:min 1 #:max 1} ...*)
+      (test-patterns ({~or {x}
+                           {1} #:min 1 #:max 1
+                           {2} #:min 1 #:max 1
+                           {3} #:min 1 #:max 1} ...)
                      #'(1 2 3 x y z)
         (check-equal? (stx->datum #'(x ...)) '(x y z)))
       )))

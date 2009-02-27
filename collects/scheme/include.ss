@@ -32,7 +32,9 @@
                                   [(pair? e) (or (loop (car e))
                                                  (loop (cdr e)))]
                                   [else #f])))
-                              read-syntax)])
+                              (lambda (src in)
+                                (parameterize ([read-accept-reader #t])
+                                  (read-syntax src in))))])
          (unless (and (procedure? read-syntax)
                       (procedure-arity-includes? read-syntax 2))
            (raise-syntax-error

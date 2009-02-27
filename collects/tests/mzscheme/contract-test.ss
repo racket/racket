@@ -2401,7 +2401,192 @@
       (eval '(require 'foo-dc18)))
    "(unit U@)")
   
+  (test/spec-failed
+   'define/contract19
+   '(let ()
+      (define y 3)
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1)
+   "top-level")
+  
+  (test/spec-passed
+   'define/contract20
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1))
+  
+  (test/spec-passed
+   'define/contract21
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        (if (y n) 3 1))
+      1))
+  
+  (test/spec-failed
+   'define/contract22
+   '(let ()
+      (define y 4)
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        3)
+      1)
+   "top-level")
 
+  (test/spec-failed
+   'define/contract23
+   '(let ()
+      (define y (lambda (n) #t))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? number?)
+        (y n))
+      (f 5))
+   "top-level")
+  
+  (test/spec-failed
+   'define/contract24
+   '(let ()
+      (define y (lambda (n) 4))
+      (define/contract (f n)
+        (-> number? number?)
+        #:freevar y (-> number? boolean?)
+        (if (y #t) 3 1))
+      (f 5))
+   "(function f)")
+  
+  (test/spec-failed
+   'define/contract25
+   '(let ()
+      (define y #t)
+      (define z 3)
+      (define/contract f
+        number?
+        #:freevars ([y number?] [z number?])
+        (+ y z))
+      1)
+   "top-level")
+  
+
+
+;                                                                                                                                  
+;                                                                                                                                  
+;                                                                                                                                  
+;        ;          ;;;;                                                         ;                                                 
+;       ;;         ;   ;                                                         ;                                                 
+;        ;         ;                                ;                      ;    ;                        ;                      ;  
+;        ;         ;                                ;                      ;    ;                        ;                      ;  
+;     ;; ;   ;;;  ;;;; ;  ; ;;    ;;;          ;;; ;;;; ; ;;;;  ;;   ;;;  ;;;;  ;   ;;;     ;;    ; ;;  ;;;; ; ;;  ;;;    ;;;  ;;;;
+;    ;  ;;  ;   ;  ;  ;; ;;;  ;  ;   ;        ;  ;  ;  ;;;   ;   ;  ;   ;  ;   ;   ;   ;   ;  ;  ;;;  ;  ;  ;;;   ;   ;  ;   ;  ;  
+;   ;    ;  ;;;;;  ;   ;  ;   ;  ;;;;;        ;     ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;       ;;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;      ;;;;   ;;   ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;     ;; ;  ;      ;  
+;   ;    ;  ;      ;   ;  ;   ;  ;               ;  ;   ;    ;   ;  ;      ;   ;   ;      ;    ;  ;   ;  ;   ;    ;   ;  ;      ;  
+;    ;  ;;; ;   ;  ;   ;  ;   ;  ;   ;        ;  ;  ; ; ;    ;  ;;; ;   ;  ; ;;    ;   ;   ;  ;   ;   ;  ; ; ;    ;  ;;  ;   ;  ; ;
+;     ;; ;   ;;;  ;;;;;;;;;; ;;;  ;;;         ;;;   ;; ;;;    ;; ;   ;;;   ;; ;     ;;;     ;;   ;;; ;;; ;; ;;;    ;; ;;  ;;;   ;; 
+;                                                                                                                                  
+;                                                                                                                                  
+;                                                                                                                                  
+
+  (test/spec-passed
+   'define-struct/contract1
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      1))
+
+  (test/spec-passed
+   'define-struct/contract2
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (make-foo 1 2)))
+  
+  (test/spec-failed
+   'define-struct/contract3
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (make-foo 1 #t))
+   "top-level")
+  
+  (test/spec-passed
+   'define-struct/contract4
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (foo-y (make-foo 2 3))))
+  
+  (test/spec-failed
+   'define-struct/contract5
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]))
+      (foo-y 1))
+   "top-level")
+  
+  (test/spec-passed
+   'define-struct/contract6
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]) #:mutable)
+      (set-foo-y! (make-foo 1 2) 3)
+      (set-foo-x! (make-foo 1 2) 3)))
+  
+  (test/spec-failed
+   'define-struct/contract7
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]) #:mutable)
+      (set-foo-y! (make-foo 1 2) #f))
+   "top-level")
+  
+  (test/spec-passed
+   'define-struct/contract8
+   '(let ()
+      (define-struct/contract foo ([(x #:mutable) number?] [y number?]))
+      (set-foo-x! (make-foo 1 2) 4)))
+  
+  (test/spec-failed
+   'define-struct/contract9
+   '(let ()
+      (define-struct/contract foo ([(x #:mutable) number?] [y number?]))
+      (set-foo-x! (make-foo 1 2) #f))
+   "top-level")
+  
+  (test/spec-failed
+   'define-struct/contract10
+   '(let ()
+      (define-struct/contract foo ([x number?] [(y #:auto) number?]))
+      (make-foo 1))
+   "(struct foo)")
+  
+  (test/spec-passed
+   'define-struct/contract11
+   '(let ()
+      (define-struct/contract foo ([x number?] [(y #:auto) number?]) #:auto-value 3)
+      (make-foo 1)))
+  
+  (test/spec-passed
+   'define-struct/contract12
+   '(let ()
+      (define-struct/contract foo ([x number?] [(y #:auto #:mutable) number?]) #:auto-value 3)
+      (set-foo-y! (make-foo 1) 3)))
+  
+  (test/spec-failed
+   'define-struct/contract13
+   '(let ()
+      (define-struct/contract foo ([x number?] [(y #:auto #:mutable) number?]) #:auto-value 3)
+      (set-foo-y! (make-foo 1) #t))
+   "top-level")
+  
+  (test/spec-passed
+   'define-struct/contract14
+   '(let ()
+      (define-struct/contract foo ([x number?] [y number?]) #:transparent)
+      1))
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  
@@ -2523,6 +2708,14 @@
         (define (x n) (if (y n) 4 0)))
       (x 4))
    "(region region2)")
+  
+  ;; make sure uncontracted exports make it out
+  (test/spec-passed
+   'with-contract9
+   '(let ()
+      (with-contract region1 (f)
+        (define f 3))
+      f))
 
 ;                                                                                                                         
 ;                                                                                                                         

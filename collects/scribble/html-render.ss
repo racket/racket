@@ -4,6 +4,7 @@
          scheme/class
          scheme/path
          scheme/file
+         scheme/port
          scheme/list
          scheme/string
          mzlib/runtime-path
@@ -43,6 +44,7 @@
                "\n"))))
 
 (define-runtime-path scribble-css "scribble.css")
+(define-runtime-path scribble-prefix-html "scribble-prefix.html")
 (define-runtime-path scribble-js  "scribble-common.js")
 ;; utilities for render-one-part
 (define-values (scribble-css-contents scribble-js-contents)
@@ -232,13 +234,15 @@
              install-file
              get-dest-directory
              format-number
-             quiet-table-of-contents)
+             quiet-table-of-contents
+             extract-part-style-files)
 
     (init-field [css-path #f]
                 ;; up-path is either a link "up", or #t which uses
                 ;; goes to start page (using cookies to get to the
                 ;; user start page)
                 [up-path #f]
+                [prefix-file #f]
                 [style-file #f]
                 [style-extra-files null]
                 [script-path #f]
@@ -568,21 +572,34 @@
           (versioned-part-version d)
           (current-version)))
 
+    (define/public (extract-part-body-id d ri)
+      (or
+       (and (list? (part-style d))
+            (ormap (lambda (s)
+                     (and (list? s)
+                          (= 2 (length s))
+                          (eq? (car s) 'body-id)
+                          (string? (cadr s))
+                          (cadr s)))
+                   (part-style d)))
+       (let ([p (part-parent d ri)])
+         (and p (extract-part-body-id p ri)))))
+
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
-        (let* ([style-file  (or style-file scribble-css)]
+        (let* ([prefix-file (or prefix-file scribble-prefix-html)]
+               [style-file (or style-file scribble-css)]
                [script-file (or script-file scribble-js)]
                [title (cond [(part-title-content d)
                              => (lambda (c)
                                   `(title ,@(format-number number '(nbsp))
                                           ,(content->string c this d ri)))]
                             [else `(title)])])
-          (unless css-path    (install-file style-file))
-          (for-each (lambda (f) (install-file f)) style-extra-files)
+          (unless css-path   (install-file style-file))
           (unless script-path (install-file script-file))
-          (printf "<!DOCTYPE html PUBLIC ~s ~s>\n"
-                  "-//W3C//DTD HTML 4.0 Transitional//EN"
-                  "http://www.w3.org/TR/html4/loose.dtd")
+          (call-with-input-file* prefix-file
+            (lambda (in)
+              (copy-port in (current-output-port))))
           (xml:write-xml/content
            (xml:xexpr->xml
             `(html ()
@@ -592,10 +609,16 @@
                  ,title
                  ,(scribble-css-contents style-file  css-path)
                  ,@(map (lambda (style-file)
-                          (scribble-css-contents style-file  css-path))
-                        style-extra-files)
+                          (install-file style-file)
+                          (scribble-css-contents style-file #f))
+                        (append style-extra-files
+                                (extract-part-style-files
+                                 d
+                                 'css
+                                 (lambda (p) (part-whole-page? p ri)))))
                  ,(scribble-js-contents  script-file script-path))
-               (body ()
+               (body ((id ,(or (extract-part-body-id d ri)
+                               "scribble-plt-scheme-org")))
                  ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
@@ -1011,8 +1034,8 @@
                              (if (path? p)
                                (url->string (path->url (path->complete-path p)))
                                p))]
-                     . ,(attribs))
-                    ,@sz)))]
+                     ,@(attribs)
+                     ,@sz))))]
           [else (render*)])))
 
     (define/override (render-table t part ri need-inline?)
@@ -1021,22 +1044,24 @@
                           (with-attributes-style raw-style)
                           raw-style))
       (define t-style-get (if (and (pair? t-style) (list? t-style))
-                            (lambda (k) (assoc k t-style))
-                            (lambda (k) #f)))
+                              (lambda (k) (assoc k t-style))
+                              (lambda (k) #f)))
       (define (make-row flows style)
-        `(tr (,@(if style `([class ,style]) null))
+        `(tr (,@(if (string? style) `([class ,style]) null))
            ,@(let loop ([ds flows]
-                        [as (cdr (or (t-style-get 'alignment)
+                        [as (cdr (or (and (list? style) (assq 'alignment style))
                                      (cons #f (map (lambda (x) #f) flows))))]
-                        [vas (cdr (or (t-style-get 'valignment)
+                        [vas (cdr (or (and (list? style) (assq 'valignment style))
+                                      (cons #f (map (lambda (x) #f) flows))))]
+                        [sts (cdr (or (and (list? style) (assq 'style style))
                                       (cons #f (map (lambda (x) #f) flows))))]
                         [first? #t])
                (cond
                  [(null? ds) null]
                  [(eq? (car ds) 'cont)
-                  (loop (cdr ds) (cdr as) (cdr vas) first?)]
+                  (loop (cdr ds) (cdr as) (cdr vas) (cdr sts) first?)]
                  [else
-                  (let ([d (car ds)] [a (car as)] [va (car vas)])
+                  (let ([d (car ds)] [a (car as)] [va (car vas)] [st (car sts)])
                     (cons
                      `(td (,@(case a
                                [(#f) null]
@@ -1048,6 +1073,9 @@
                                [(top) '((valign "top"))]
                                [(baseline) '((valign "baseline"))]
                                [(bottom) '((valign "bottom"))])
+                           ,@(if (string? st)
+                                 `([class ,st])
+                                 null)
                            ,@(if (and (pair? (cdr ds))
                                       (eq? 'cont (cadr ds)))
                                `([colspan
@@ -1062,7 +1090,7 @@
                                      (omitable-paragraph? (car (flow-paragraphs d))))
                                 (render-content (paragraph-content (car (flow-paragraphs d))) part ri)
                                 (render-flow d part ri #f)))
-                     (loop (cdr ds) (cdr as) (cdr vas) #f)))]))))
+                     (loop (cdr ds) (cdr as) (cdr vas) (cdr sts) #f)))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline-table; vertical-align: text-top;"])

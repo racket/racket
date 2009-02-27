@@ -78,7 +78,7 @@ Reads HTML from a port, producing an @xexpr compatible with the
   (code:comment #, @t{Pulls out the pcdata strings from an-html-element.})
   (define (extract-pcdata-from-element an-html-element)
     (match an-html-element
-      [(struct h:html-full (content))
+      [(struct h:html-full (attributes content))
        (apply append (map extract-pcdata content))]
       
       [(struct h:html-element (attributes))

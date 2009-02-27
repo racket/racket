@@ -213,8 +213,8 @@
             h))
       (make-element 'hspace (list (make-string n #\space)))))
 
-(define (elem . str)
-  (make-element #f (decode-content str)))
+(define (elem #:style [style #f] . str)
+  (make-element style (decode-content str)))
 
 (define (aux-elem . s)
   (make-aux-element #f (decode-content s)))

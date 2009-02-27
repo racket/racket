@@ -3,6 +3,8 @@
 
 @gametitle["Jewel" "jewel" "3-D Skill Game"]
 
+@author["Peter Ivanyi"]
+
 The board is an 8 by 8 array of jewels of 7 types.  You need to get 3
 or more in a row horizontally or vertically in order to score points.
 You can swap any two jewels that are next to each other up and down or

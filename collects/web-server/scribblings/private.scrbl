@@ -147,21 +147,19 @@ The @scheme[dispatch-server^] signature is an alias for
 
 @defsignature[dispatch-server-config^ ()]{
 
- @defthing[port port?]{Specifies the port to serve on.}
- @defthing[listen-ip string?]{Passed to @scheme[tcp-accept].}
+ @defthing[port port-number?]{Specifies the port to serve on.}
+ @defthing[listen-ip (or/c string? false/c)]{Passed to @scheme[tcp-listen].}
  @defthing[max-waiting integer?]{Passed to @scheme[tcp-accept].}
  @defthing[initial-connection-timeout integer?]{Specifies the initial timeout given to a connection.}
  @defproc[(read-request [c connection?]
-                        [p port?]
-                        [port-addresses (-> port? boolean?
-                                            (or/c (values string? string?)
-                                                  (values string? (integer-in 1 65535)
-                                                          string? (integer-in 1 65535))))])
-          any/c]{
+                        [p port-number?]
+                        [port-addresses 
+                         (input-port? . -> . (values string? string?))])
+          (values any/c boolean?)]{
   Defines the way the server reads requests off connections to be passed
   to @scheme[dispatch].
  }
- @defthing[dispatch dispatcher/c]{How to handle requests.}
+ @defthing[dispatch (-> connection? any/c void)]{How to handle requests.}
 }
 
 }
@@ -173,8 +171,8 @@ The @scheme[dispatch-server^] signature is an alias for
 The @schememodname[web-server/private/dispatch-server-unit] module
 provides the unit that actually implements a dispatching server.
 
-@defthing[dispatch-server@ (unit/c (tcp^ dispatch-server-config^) 
-                                   (dispatch-server^))]{
+@defthing[dispatch-server@ (unit/c (import tcp^ dispatch-server-config^) 
+                                   (export dispatch-server^))]{
  Runs the dispatching server config in a very basic way, except that it uses
  @secref["connection-manager.ss"] to manage connections.
 }

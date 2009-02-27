@@ -32,6 +32,8 @@
     (make-parameter null))
   (define current-xref-input-modules
     (make-parameter null))
+  (define current-prefix-file
+    (make-parameter #f))
   (define current-style-file
     (make-parameter #f))
   (define current-style-extra-files
@@ -67,6 +69,8 @@
        (current-dest-directory dir)]
       [("--dest-name") name "write output as <name>"
        (current-dest-name name)]
+      [("--prefix") file "use given .html/.tex prefix (for doctype/documentclass)"
+       (current-prefix-file file)]
       [("--style") file "use given base .css/.tex file"
        (current-style-file file)]
       [("--redirect") url "redirect external links to tag search via <url>"
@@ -110,6 +114,7 @@
 
       (let ([renderer (new ((current-render-mixin) render%)
                            [dest-dir dir]
+                           [prefix-file (current-prefix-file)]
                            [style-file (current-style-file)]
                            [style-extra-files (reverse (current-style-extra-files))])])
         (when (current-redirect)

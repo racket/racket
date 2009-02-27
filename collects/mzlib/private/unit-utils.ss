@@ -43,13 +43,13 @@
   (for/list ([i (in-list (map car (car sig)))]
              [c (in-list (cadddr sig))])
     (let ([add-ctc
-           (λ (v stx)
-             (if c
-                 #`(let ([v/c ((car #,stx))])
-                     (contract (let ([#,v #,c]) #,v)
-                               (car v/c) (cdr v/c) #,blame
-                               #,(id->contract-src-info v)))
-                 #`((car #,stx))))])
+             (λ (v stx)
+                 (if c
+                     (with-syntax ([c-stx (syntax-property c 'inferred-name v)])
+                       #`(let ([v/c ((car #,stx))])
+                           (contract c-stx (car v/c) (cdr v/c) #,blame
+                                     #,(id->contract-src-info v))))
+                     #`((car #,stx))))])
       #`[#,i
          (make-set!-transformer
           (λ (stx)

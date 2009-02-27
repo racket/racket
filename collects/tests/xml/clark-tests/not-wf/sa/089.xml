@@ -1,0 +1,4 @@
+<!DOCTYPE doc [
+<!ENTITY % foo SYSTEM "foo.xml" NDATA bar>
+]>
+<doc></doc>

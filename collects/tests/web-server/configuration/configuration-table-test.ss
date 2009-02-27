@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+(require (planet schematics/schemeunit:3)
          (only-in mzlib/file
                   make-temporary-file)
          web-server/configuration/configuration-table)

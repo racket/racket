@@ -9,7 +9,11 @@ Although the @exec{scribble} command-line utility generates output
 from a Scribble document (run @exec{scribble -h} for more
 information), documentation of PLT Scheme libraries is normally built
 by @exec{setup-plt}. This chapter emphasizes the @exec{setup-plt}
-approach, which more automatically supports links across documents.
+approach, which more automatically supports links across
+documents.
+
+@margin-note{See @secref["config"] for information on using the
+             @exec{scribble} command-line utility.}
 
 @;----------------------------------------
 @section[#:tag "getting-started"]{Getting Started}

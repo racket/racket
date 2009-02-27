@@ -216,8 +216,7 @@
            (list 
             (make-lw "" 0 0 1 0 #t #f) 
             'spring
-            (make-lw 'x 0 0 7 1 #f #f)
-            'spring)
+            (make-lw 'x 0 0 7 1 #f #f))
            0 0 1 7 #t #f))
          0 0 0 8 #f #f))
 

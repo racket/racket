@@ -64,11 +64,11 @@
 
 (define-metafunction lang
   [(TL 1) (a
-           ,(term-let ((x 1))
+           ,(term-let ((x (term 1)))
                       (term x))
            below-only)]
   [(TL 2) (a
-           ,(term-let ((x 1))
+           ,(term-let ((x (term 1)))
                       (term x)) beside
            below)])
 
@@ -78,7 +78,7 @@
 
 (define-metafunction lang
   [(Name (name x-arg arg)) 
-   ,(term-let ((x-term-let 1))
+   ,(term-let ((x-term-let (term 1)))
               (term (x-where x-term-let)))
    (where x-where 2)])
 

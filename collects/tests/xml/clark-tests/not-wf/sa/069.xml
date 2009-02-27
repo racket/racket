@@ -1,0 +1,6 @@
+<!DOCTYPE doc [
+<!NOTATION eps SYSTEM "eps.exe">
+<!-- missing space before NDATA -->
+<!ENTITY foo SYSTEM "foo.eps"NDATA eps>
+]>
+<doc></doc>

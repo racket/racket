@@ -1427,11 +1427,14 @@ v4 todo:
      src-info
      blame
      orig-str
-     "expected a ~a that accepts ~a~a argument~a~a, given: ~e"
+     "expected a ~a that accepts ~a~a~a argument~a~a~a, given: ~e"
      (if mtd? "method" "procedure")
      (if (zero? dom-length) "no" dom-length)
+     (if (null? optionals) "" " mandatory")
      (if (null? mandatory-kwds) "" " ordinary")
      (if (= 1 dom-length) "" "s")
+     (if (zero? optionals) ""
+         (format " and up to ~a optional argument~a" optionals (if (= 1 optionals) "" "s")))
      (keyword-error-text mandatory-kwds optional-keywords)
      val)))
 

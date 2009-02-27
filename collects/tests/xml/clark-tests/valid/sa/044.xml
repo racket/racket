@@ -1,0 +1,10 @@
+<!DOCTYPE doc [
+<!ELEMENT doc (e*)>
+<!ELEMENT e EMPTY>
+<!ATTLIST e a1 CDATA "v1" a2 CDATA "v2" a3 CDATA #IMPLIED>
+]>
+<doc>
+<e a3="v3"/>
+<e a1="w1"/>
+<e a2="w2" a3="v3"/>
+</doc>

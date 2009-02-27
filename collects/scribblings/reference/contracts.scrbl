@@ -674,10 +674,14 @@ only used in the contract for the sub-struct's maker, and the selector
 or mutators for the super-struct are not provided.}
 
 @defform/subs[
- (with-contract blame-id (wc-export ...) body ...+)
+ (with-contract blame-id (wc-export ...) free-var-list body ...+)
  ([wc-export
    id
-   (id contract-expr)])]{
+   (id contract-expr)]
+  [free-var-list
+   code:blank
+   (code:line #:freevars ([id contract-expr] ...))
+   (code:line #:freevar id contract-expr)])]{
 Generates a local contract boundary.  The @scheme[contract-expr]
 form cannot appear in expression position.  The @scheme[body] of the
 form allows definition/expression interleaving like a @scheme[module]
@@ -689,20 +693,43 @@ exported without a contract.
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken
 within the @scheme[with-contract] @scheme[body] will use the
-@scheme[blame-id] for their negative position.}
+@scheme[blame-id] for their negative position.
 
-@defform*[[(define/contract id contract-expr init-value-expr)
- (define/contract (head args) contract-expr body ...+)]]{
+If a free-var-list is given, then any uses of the free variables
+inside the @scheme[body] will be protected with contracts that
+blame the context of the @scheme[with-contract] form for the positive
+positions and the @scheme[with-contract] form for the negative ones.}
+
+@defform*[[(define/contract id contract-expr free-var-list init-value-expr)
+ (define/contract (head args) contract-expr free-var-list body ...+)]]{
 Works like @scheme[define], except that the contract
-@scheme[contract-expr] is attached to the bound value.
+@scheme[contract-expr] is attached to the bound value.  For the
+definition of @scheme[head] and @scheme[args], see @scheme[define].
+For the definition of @scheme[free-var-list], see @scheme[with-contract].
 
-The @scheme[define/contract] form treats individual definitions as
-units of blame. The definition itself is responsible for positive
-(co-variant) positions of the contract and each reference to
-@scheme[id] (including those in the initial value expression) must
-meet the negative positions of the contract.  It is equivalent to
-wrapping a single @scheme[define] with a @scheme[with-contract] form
-that pairs the @scheme[contract-expr] with the bound identifier.}
+The @scheme[define/contract] form treats the individual definition as
+a contract region. The definition itself is responsible for positive
+(co-variant) positions of the contract and references to
+@scheme[id] outside of the definition must meet the negative
+positions of the contract. Since the contract boundary is
+between the definition and the surrounding context, references to
+@scheme[id] inside the @scheme[define/contract] form are not checked.
+
+If a free-var-list is given, then any uses of the free variables
+inside the @scheme[body] will be protected with contracts that
+blame the context of the @scheme[define/contract] form for the positive
+positions and the @scheme[define/contract] form for the negative ones.}
+
+@defform*[[(define-struct/contract struct-id ([field contract-expr] ...)
+                                   struct-option ...)]]{
+Works like @scheme[define-struct], except that the arguments to the constructor,
+accessors, and mutators are protected by contracts.  For the definitions of
+@scheme[field] and @scheme[struct-option], see @scheme[define-struct].
+
+The @scheme[define-struct/contract] form only allows a subset of the
+@scheme[struct-option] keywords: @scheme[#:mutable], @scheme[#:transparent],
+@scheme[#:auto-value], @scheme[#:omit-define-syntaxes], and
+@scheme[#:omit-define-values].}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)

@@ -34,6 +34,10 @@
       (raise-syntax-error what (format "~a expected to have arguments" name) orig-stx stx))
     (let loop ([term orig-stx])
       (syntax-case term (side-condition variable-except variable-prefix hole name in-hole in-named-hole hide-hole side-condition cross)
+        [(side-condition pre-pat (and))
+         ;; rewriting metafunctions (and possibly other things) that have no where, etc clauses
+         ;; end up with side-conditions that are empty 'and' expressions, so we just toss them here.
+         (loop #'pre-pat)]
         [(side-condition pre-pat exp)
          (with-syntax ([pat (loop (syntax pre-pat))])
            (let-values ([(names names/ellipses) (extract-names all-nts what bind-names? (syntax pat))])
