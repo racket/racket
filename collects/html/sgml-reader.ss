@@ -2,12 +2,12 @@
 ;; warning - this was copied from the XML collection.
 ;; It needs to be abstracted back in.
 #lang scheme
-(require mzlib/list
-         mzlib/string
-         "sgml-reader-sig.ss"
-         xml)
-
-(provide-signature-elements sgml-reader^)
+(require xml)
+(provide
+ read-html-comments
+ trim-whitespace
+ gen-may-contain
+ gen-read-sgml)
 
 ;; Start-tag ::= (make-start-tag Location Location Symbol (listof Attribute))
 (define-struct (start-tag source) (name attrs))
@@ -312,9 +312,7 @@
     (string->symbol
      ;; Common case: string is already lowercased
      (if (regexp-match-positions #rx"[A-Z]" s)
-         (begin
-           (string-lowercase! s)
-           s)
+         (string-downcase s)
          s))))
 ;; lex-name/case-sensitive : Input-port -> Symbol
 (define (lex-name/case-sensitive in)
