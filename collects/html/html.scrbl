@@ -287,7 +287,7 @@ A @scheme[Contents-of-head] is either
 @itemize[
   @item[@scheme[base]]
   @item[@scheme[isindex]]
-  @item[@scheme[link]]
+  @item[@scheme[alink]]
   @item[@scheme[meta]]
   @item[@scheme[object]]
   @item[@scheme[script]]
