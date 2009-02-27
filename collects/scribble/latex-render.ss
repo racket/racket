@@ -365,12 +365,24 @@
         null))
 
     (define/override (render-itemization t part ri)
-      (printf "\n\n\\begin{itemize}\n")
-      (for ([flow (itemization-flows t)])
-        (printf "\n\n\\item ")
-        (render-flow flow part ri #t))
-      (printf "\n\n\\end{itemize}\n")
-      null)
+      (let* ([style-str (and (styled-itemization? t)
+                             (string? (styled-itemization-style t))
+                             (styled-itemization-style t))]
+             [mode (or style-str
+                       (if (and (styled-itemization? t)
+                                (eq? (styled-itemization-style t) 'ordered))
+                           "enumerate"
+                           "itemize"))])
+        (printf "\n\n\\begin{~a}\n" mode)
+        (for ([flow (itemization-flows t)])
+          (printf "\n\n\\~a" (if style-str
+                                  (format "~aItem{" style-str)
+                                  "item "))
+          (render-flow flow part ri #t)
+          (when style-str
+            (printf "}")))
+        (printf "\n\n\\end{~a}\n" mode)
+        null))
 
     (define/override (render-blockquote t part ri)
       (let ([kind (or (blockquote-style t) "quote")])

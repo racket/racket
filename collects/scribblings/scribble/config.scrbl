@@ -40,9 +40,14 @@ extend or configure Scribble fall into two groups:
          #:style `((css "inbox.css") (tex "inbox.tex"))]{Adding a Style}
 
 When a string is uses as a style in an @scheme[element],
-@scheme[styled-paragraph], or @scheme[blockquote], it corresponds to a
-CSS class for HTML output or a Tex macro (or Latex environment, in the
-case of @scheme[blockquote]) for Latex output.
+@scheme[styled-paragraph], @scheme[styled-itemization], or
+@scheme[blockquote], it corresponds to a CSS class for HTML output or
+a Tex macro/environment for Latex output. In Latex output, the string
+is used as a macro name for a @scheme[styled-paragraph] and an
+environment name for a @scheme[itemization] or @scheme[blockquote]. In
+addition, for an itemization, the style string is suffixed with
+@scheme["Item"] and used as a CSS class or Tex macro name to use for
+the itemization's items (in place of @tt{item} in the case of Latex).
 
 Scribble includes a number of predefined styles that are used by the
 exports of @scheme[scribble/manual], but they are not generally

@@ -1120,12 +1120,21 @@
                         (blockquote-paragraphs t)))))
 
     (define/override (render-itemization t part ri)
-      `((ul ,(if (and (styled-itemization? t)
-                      (string? (styled-itemization-style t)))
-               `([class ,(styled-itemization-style t)])
-               `())
-          ,@(map (lambda (flow) `(li ,@(render-flow flow part ri #t)))
-                 (itemization-flows t)))))
+      (let ([style-str (and (styled-itemization? t)
+                            (string? (styled-itemization-style t))
+                            (styled-itemization-style t))])
+        `((,(if (and (styled-itemization? t)
+                     (eq? (styled-itemization-style t) 'ordered))
+                'ol
+                'ul)
+           ,(if style-str
+                `([class ,style-str])
+                `())
+           ,@(map (lambda (flow) `(li ,(if style-str
+                                           `([class ,(string-append style-str "Item")])
+                                           `())
+                                      ,@(render-flow flow part ri #t)))
+                  (itemization-flows t))))))
 
     (define/override (render-other i part ri)
       (cond
