@@ -66,9 +66,9 @@
   ; There is no syntax object representation for comments
   (define (make-comment x) #f)
   
-  ; make-pi : src src sym str -> pi
-  ; There's not really a syntax object representation for pi's either
-  (define (make-pi from to name val) #f)
+  ; make-p-i : src src sym str -> p-i
+  ; There's not really a syntax object representation for p-i's either
+  (define (make-p-i from to name val) #f)
   
   ; make-attribute : src src sym str -> attribute
   (define (make-attribute from to name val)
@@ -126,11 +126,11 @@
   (define (external-dtd/public-public x)
     (error 'external-dtd/public-public "expected an external dtd, given ~e" x))
   
-  (define (pi-instruction x)
-    (error 'pi-instruction "expected a pi, given ~e" x))
+  (define (p-i-instruction x)
+    (error 'p-i-instruction "expected a p-i, given ~e" x))
   
-  (define (pi-target-name x)
-    (error 'pi-target-name "expected a pi, given ~e" x))
+  (define (p-i-target-name x)
+    (error 'p-i-target-name "expected a p-i, given ~e" x))
   
   (define (prolog-dtd x)
     (error 'prolog-dtd "expected a prolog, given ~e" x))
@@ -181,7 +181,7 @@
   (define (external-dtd? x) #f)
   
   (define (prolog? x) #f)
-  (define (pi? x) #f)
+  (define (p-i? x) #f)
   
   ; : tst -> bool
   (define (pcdata? x)
@@ -203,7 +203,7 @@
   (struct! external-dtd/system ())
   (struct! element (name attributes content))
   (struct! attribute (name value))
-  (struct! pi (target-name instruction))
+  (struct! p-i (target-name instruction))
   ;(struct! source (start stop))
   (struct! pcdata (string))
   (struct! cdata (string))

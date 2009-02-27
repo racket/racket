@@ -68,7 +68,7 @@
     (let read-more ()
       (let ([x (lex in pos)])
         (cond
-          [(pi? x)
+          [(p-i? x)
            (let-values ([(lst next) (read-more)])
              (values (cons x lst) next))]
           [(comment? x)
@@ -190,7 +190,7 @@
                          (lex-error in pos "expected ; at the end of an entity")))])])
         (make-entity start (pos) data))))
   
-  ; lex-tag-cdata-pi-comment : Input-port (-> Location) -> Start-tag | Element | End-tag | Cdata | Pi | Comment
+  ; lex-tag-cdata-pi-comment : Input-port (-> Location) -> Start-tag | Element | End-tag | Cdata | p-i | Comment
   ; pre: the first char is a #\<
   (define (lex-tag-cdata-pi-comment in pos)
     (let ([start (pos)])
@@ -215,13 +215,13 @@
            [else (skip-dtd in pos)
                  (skip-space in)
                  (unless (eq? (peek-char-or-special in) #\<)
-                   (lex-error in pos "expected pi, comment, or element after doctype"))
+                   (lex-error in pos "expected p-i, comment, or element after doctype"))
                  (lex-tag-cdata-pi-comment in pos)])]
         [(#\?) (read-char in)
                (let ([name (lex-name in pos)])
                  (skip-space in)
                  (let ([data (lex-pi-data in pos)])
-                   (make-pi start (pos) name data)))]
+                   (make-p-i start (pos) name data)))]
         [(#\/) (read-char in)
                (let ([name (lex-name in pos)])
                  (skip-space in)

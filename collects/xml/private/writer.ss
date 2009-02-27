@@ -72,7 +72,7 @@
     (for-each (lambda (x)
                 ((cond
                    [(comment? x) write-xml-comment]
-                   [(pi? x) write-xml-pi]) x 0 void out)
+                   [(p-i? x) write-xml-p-i]) x 0 void out)
                 (newline out))
               misc))
   
@@ -84,7 +84,7 @@
        [(cdata? el) write-xml-cdata]
        [(entity? el) write-xml-entity]
        [(comment? el) write-xml-comment]
-       [(pi? el) write-xml-pi]
+       [(p-i? el) write-xml-p-i]
        [else (error 'write-xml-content "received ~e" el)])
      el over dent out))
   
@@ -136,9 +136,9 @@
     ;; XXX: Different kind of quote is needed, for assume the user includes the <![CDATA[...]]> with proper quoting
     (write-xml-base (format "~a" (cdata-string cdata)) over dent out))
   
-  ;; write-xml-pi : Processing-instruction Nat (Nat Output-Stream -> Void) Output-Stream -> Void
-  (define (write-xml-pi pi over dent out)
-    (write-xml-base (format "<?~a ~a?>" (pi-target-name pi) (pi-instruction pi)) over dent out))
+  ;; write-xml-p-i : Processing-instruction Nat (Nat Output-Stream -> Void) Output-Stream -> Void
+  (define (write-xml-p-i p-i over dent out)
+    (write-xml-base (format "<?~a ~a?>" (p-i-target-name p-i) (p-i-instruction p-i)) over dent out))
   
   ;; write-xml-comment : Comment Nat (Nat Output-Stream -> Void) Output-Stream -> Void
   (define (write-xml-comment comment over dent out)

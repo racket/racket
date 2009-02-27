@@ -54,9 +54,9 @@
   ; Entity = (make-entity Location Location (U Nat Symbol))
   (define-struct (entity source) (text))
   
-  ; Processing-instruction = (make-pi Location Location String String)
+  ; Processing-instruction = (make-p-i Location Location String String)
   ; also represents XMLDecl
-  (define-struct (pi source) (target-name instruction))
+  (define-struct (p-i source) (target-name instruction))
   
   ; Comment = (make-comment String)
   (define-struct comment (text))
@@ -68,4 +68,4 @@
         (entity? x)
         (comment? x)
         (cdata? x)
-        (pi? x))))
+        (p-i? x))))

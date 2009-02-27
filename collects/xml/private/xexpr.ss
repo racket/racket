@@ -63,7 +63,7 @@
       ((symbol? x) (true))
       ((exact-nonnegative-integer? x) (true))
       ((comment? x) (true))
-      ((pi? x) (true))
+      ((p-i? x) (true))
       ((cdata? x) (true))
       ((pcdata? x) (true))
       ((list? x)
@@ -177,7 +177,7 @@
              (cons (element-name x) (combine atts body)))]
           [(pcdata? x) (pcdata-string x)]
           [(entity? x) (entity-text x)]
-          [(or (comment? x) (pi? x) (cdata? x)) x]
+          [(or (comment? x) (p-i? x) (cdata? x)) x]
           [(document? x) (error 'xml->xexpr "Expected content, given ~e\nUse document-element to extract the content." x)]
           [(permissive?) x]
           [else (error 'xml->xexpr "Expected content, given ~e" x)]))))
@@ -213,7 +213,7 @@
       [(string? x) (make-pcdata 'scheme 'scheme x)]
       [(or (symbol? x) (exact-nonnegative-integer? x))
        (make-entity 'scheme 'scheme x)]
-      [(or (comment? x) (pi? x) (cdata? x) (pcdata? x)) x]
+      [(or (comment? x) (p-i? x) (cdata? x) (pcdata? x)) x]
       [else ;(error 'xexpr->xml "malformed xexpr ~e" x)
        x]))
   

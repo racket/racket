@@ -33,7 +33,7 @@
    (struct external-dtd/system ()) ; XXX needs parent
    (struct element (name attributes content)) ; XXX needs parent
    (struct attribute (name value)) ; XXX needs parent
-   (struct pi (target-name instruction)) ; XXX needs parent
+   (struct p-i (target-name instruction)) ; XXX needs parent
    (struct entity (text)) ; XXX needs parent
    (contracted
     [content? (any/c . -> . boolean?)])))
