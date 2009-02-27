@@ -3,6 +3,7 @@
          web-server/http/request-structs
          web-server/http/response-structs
          xml
+         web-server/private/xexpr
          scheme/contract)
 
 (provide/contract 
@@ -13,7 +14,7 @@
                                             #:secure? (or/c false/c boolean?))
                                  . ->* . cookie?)]
  [cookie->header (cookie? . -> . header?)]
- [xexpr-response/cookies ((listof cookie?) xexpr/c . -> . response/full?)])
+ [xexpr-response/cookies ((listof cookie?) pretty-xexpr/c . -> . response/full?)])
 
 (define (set-when-true fn val)
   (if val

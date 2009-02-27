@@ -1,11 +1,11 @@
 #lang scheme
 (require web-server/servlet
-         xml
+         web-server/private/xexpr
          "lib.ss")
 
 (provide/contract
  [send/formlet (((formlet/c any/c))
-                (#:wrap (xexpr/c . -> . response/c))                 
+                (#:wrap (pretty-xexpr/c . -> . response/c))                 
                 . ->* . any/c)])
 
 (define (send/formlet f
@@ -23,7 +23,7 @@
               ,@(formlet-display f)))))))
 
 (provide/contract
- [embed-formlet (embed/url/c (formlet/c any/c) . -> . xexpr/c)])
+ [embed-formlet (embed/url/c (formlet/c any/c) . -> . pretty-xexpr/c)])
 
 (define (embed-formlet embed/url f)
   `(form ([action ,(embed/url

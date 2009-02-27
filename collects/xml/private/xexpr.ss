@@ -21,6 +21,17 @@
 
 (define xexpr-drop-empty-attributes (make-parameter #f))
 
+(define xexpr-datum/c
+  (or/c string? symbol? exact-nonnegative-integer?
+        comment? p-i? cdata? pcdata?))
+
+#;(define xexpr/c
+  (flat-rec-contract xexpr
+    xexpr-datum/c
+    (cons/c symbol?
+            (or/c (cons/c (listof (list/c symbol? string?)) (listof xexpr))
+                  (listof xexpr)))))
+
 (define xexpr/c 
   (make-proj-contract
    'xexpr?

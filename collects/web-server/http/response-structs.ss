@@ -1,7 +1,8 @@
 #lang scheme/base
 (require mzlib/contract
          scheme/list
-         xml/xml
+         xml
+         web-server/private/xexpr
          web-server/http/request-structs)
 
 (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")
@@ -13,7 +14,7 @@
 (define response/c
   (or/c response/basic?
         (cons/c bytes? (listof (or/c string? bytes?)))
-        xexpr/c))
+        pretty-xexpr/c))
 
 ;; response/full->size: response/full -> number
 (define (response/full->size resp)

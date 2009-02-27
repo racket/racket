@@ -1,8 +1,8 @@
 #lang scheme
 (require scheme/runtime-path
          net/url
-         web-server/http/response-structs
          web-server/private/xexpr
+         web-server/http/response-structs
          web-server/http/request-structs)
 
 (define (format-stack-trace trace)
@@ -33,7 +33,9 @@
           (div ([class "title"]) "Exception")
           (p
            "The application raised an exception with the message:"
-           (pre ,(reformat-xexpr-exn (exn-message exn))))
+           (pre ,(if (exn:pretty? exn)
+                     (exn:pretty-xexpr exn)
+                     (exn-message exn))))
           (p
            "Stack trace:"
            ,(format-stack-trace
