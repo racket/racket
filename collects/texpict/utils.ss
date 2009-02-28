@@ -186,7 +186,7 @@
 	  (send dc set-pen (send the-pen-list
 				 find-or-create-pen
 				 (send p get-color)
-				 0
+				 (if solid? 0 (send p get-width))
 				 'solid))
 	  (send dc set-brush (send the-brush-list
 				   find-or-create-brush
