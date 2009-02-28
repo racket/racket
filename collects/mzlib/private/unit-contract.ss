@@ -31,24 +31,22 @@
                      #,name)
                     #,stx)))])
         (if ctc
-            #`(cons
-               (λ ()
-                 (let* ([old-v
-                         #,(if sig-ctc
-                               #`(let ([old-v/c ((car #,vref))])
-                                   (cons #,(wrap-with-proj 
-                                            ctc 
-                                            (with-syntax ([sig-ctc-stx
-                                                           (syntax-property sig-ctc
-                                                                            'inferred-name
-                                                                            var)])
-                                              #`(contract sig-ctc-stx (car old-v/c)
-                                                          (cdr old-v/c) #,pos
-                                                          #,(id->contract-src-info var))))
-                                         #,neg))
-                               (wrap-with-proj ctc #`((car #,vref))))])
-                   old-v))
-               (cdr #,vref))
+            #`(λ ()
+                (let* ([old-v
+                        #,(if sig-ctc
+                              #`(let ([old-v/c (#,vref)])
+                                  (cons #,(wrap-with-proj 
+                                           ctc 
+                                           (with-syntax ([sig-ctc-stx
+                                                          (syntax-property sig-ctc
+                                                                           'inferred-name
+                                                                           var)])
+                                             #`(contract sig-ctc-stx (car old-v/c)
+                                                         (cdr old-v/c) #,pos
+                                                         #,(id->contract-src-info var))))
+                                        #,neg))
+                              (wrap-with-proj ctc #`(#,vref)))])
+                  old-v))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
