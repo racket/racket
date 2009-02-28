@@ -47,11 +47,17 @@
 
     ;; ----------------------------------------
 
-    (define/public (extract-part-style-files d tag stop-at-part?)
-      (let loop ([p d])
+    (define/public (extract-part-style-files d ri tag stop-at-part?)
+      (let loop ([p d][up? #t][only-up? #f])
         (let ([s (part-style p)])
           (apply
            append
+           (if up?
+               (let ([p (collected-info-parent (part-collected-info p ri))])
+                 (if p
+                     (loop p #t #t)
+                     null))
+               null)
            (if (list? s)
                (filter
                 values
@@ -63,11 +69,13 @@
                             (cadr s)))
                      s))
                null)
-           (map (lambda (p)
-                  (if (stop-at-part? p)
-                      null
-                      (loop p)))
-                (part-parts p))))))
+           (if only-up?
+               null
+               (map (lambda (p)
+                      (if (stop-at-part? p)
+                          null
+                          (loop p #f #f)))
+                    (part-parts p)))))))
   
     ;; ----------------------------------------
 

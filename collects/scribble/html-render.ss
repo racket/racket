@@ -614,6 +614,7 @@
                         (append style-extra-files
                                 (extract-part-style-files
                                  d
+                                 ri
                                  'css
                                  (lambda (p) (part-whole-page? p ri)))))
                  ,(scribble-js-contents  script-file script-path))

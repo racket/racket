@@ -52,6 +52,7 @@
                 (append style-extra-files
                         (extract-part-style-files
                          d
+                         ri
                          'tex
                          (lambda (p) #f)))))
         (printf "\\begin{document}\n\\preDoc\n")
