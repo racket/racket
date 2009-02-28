@@ -32,42 +32,35 @@
                     #,stx)))])
         (if ctc
             #`(λ ()
-                (let* ([old-v
-                        #,(if sig-ctc
-                              #`(let ([old-v/c (#,vref)])
-                                  (cons #,(wrap-with-proj 
-                                           ctc 
-                                           (with-syntax ([sig-ctc-stx
-                                                          (syntax-property sig-ctc
-                                                                           'inferred-name
-                                                                           var)])
-                                             #`(contract sig-ctc-stx (car old-v/c)
-                                                         (cdr old-v/c) #,pos
-                                                         #,(id->contract-src-info var))))
-                                        #,neg))
-                              (wrap-with-proj ctc #`(#,vref)))])
-                  old-v))
+                #,(if sig-ctc
+                      #`(cons #,(wrap-with-proj 
+                                 ctc 
+                                 (with-syntax ([sig-ctc-stx
+                                                (syntax-property sig-ctc
+                                                                 'inferred-name
+                                                                 var)])
+                                   #`(let ([old-v/c (#,vref)])
+                                       (contract sig-ctc-stx (car old-v/c)
+                                                 (cdr old-v/c) #,pos
+                                                 #,(id->contract-src-info var)))))
+                              #,neg)
+                      (wrap-with-proj ctc #`(#,vref))))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
          (let ([v #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info)))])
            (for ([int/ext-name (in-list (car sig))]
                  [index        (in-list (build-list (length (car sig)) values))])
-                (bound-identifier-mapping-put! def-table
-                                               (car int/ext-name)
+                (bound-identifier-mapping-put! def-table (car int/ext-name)
                                                #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig import-sigs])
-                     (let ([rename-bindings 
-                            (get-member-bindings def-table target-sig pos)])
+                     (let ([rename-bindings (get-member-bindings def-table target-sig pos)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([var (car target-int/ext-name)]
-                                [vref
-                                 (bound-identifier-mapping-get def-table var)]
-                                [ctc
-                                 (bound-identifier-mapping-get
-                                  ctc-table var (λ () #f))])
+                                [vref (bound-identifier-mapping-get def-table var)]
+                                [ctc (bound-identifier-mapping-get ctc-table var (λ () #f))])
                            (convert-reference var vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...) 
                    (map tagged-info->keys import-tagged-infos)))

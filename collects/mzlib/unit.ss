@@ -1263,16 +1263,16 @@
                                (define rename-bindings 
                                  (get-member-bindings def-table os #'(#%variable-reference)))
                                (map (λ (tb i v c)
-                                      #`(let ([v/c (#,tb)])
-                                          #,(if c
-                                                (with-syntax ([ctc-stx
-                                                               (syntax-property
-                                                                #`(letrec-syntax #,rename-bindings #,c)
-                                                                'inferred-name v)])
-                                                  #`(contract ctc-stx (car v/c) (cdr v/c)
-                                                              (current-contract-region)
-                                                              #,(id->contract-src-info v)))
-                                                #'v/c)))
+                                      (if c
+                                          (with-syntax ([ctc-stx
+                                                         (syntax-property
+                                                          #`(letrec-syntax #,rename-bindings #,c)
+                                                          'inferred-name v)])
+                                            #`(let ([v/c (#,tb)])
+                                                (contract ctc-stx (car v/c) (cdr v/c)
+                                                          (current-contract-region)
+                                                          #,(id->contract-src-info v))))
+                                          #`(#,tb)))
                                     tbs
                                     (iota (length (car os)))
                                     (map car (car os))
