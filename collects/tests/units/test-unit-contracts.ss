@@ -2,6 +2,60 @@
          scheme/unit
          scheme/contract)
 
+(define temp-unit-blame #rx"(unit temp[0-9]*)")
+(define top-level "top-level")
+
+(define (get-blame msg)
+  (cond
+    [(regexp-match #rx"(^| )(.*) broke" msg) 
+     =>
+     (λ (x) (caddr x))]
+    [else (error 'test-contract-error 
+                 (format "no blame in error message: \"~a\"" msg))]))
+
+(define (get-obj msg)
+  (cond
+    [(regexp-match #rx"(^| )on (.*);" msg)
+     =>
+     (λ (x) (caddr x))]
+    [else (error 'test-contract-error
+                 (format "no object in error message: \"~a\"" msg))]))
+
+(define (get-ctc-err msg)
+  (cond
+    [(regexp-match #rx";[ ]*(.*)" msg)
+     =>
+     (λ (x) (cadr x))]
+    [else (error 'test-contract-error
+                 (format "no specific error in message: \"~a\"" msg))]))
+
+(define-syntax test-contract-error
+  (syntax-rules ()
+    ((_ blame obj err expr)
+     (with-handlers ((exn:fail:contract?
+                      (lambda (exn)
+                        (let ([exn-blame (get-blame (exn-message exn))]
+                              [exn-obj (get-obj (exn-message exn))])
+                          (cond
+                            [(and (string? blame)
+                                  (not (equal? blame exn-blame)))
+                             (error 'test-contract-error "expected blame ~a, got ~a"
+                                     blame exn-blame)]
+                            [(and (regexp? blame)
+                                  (not (regexp-match blame exn-blame)))
+                             (error 'test-contract-error "expected blame ~a, got ~a"
+                                     blame exn-blame)]
+                            [(not (equal? obj exn-obj))
+                             (error 'test-contract-error "expected object ~a, got ~a"
+                                     obj exn-obj)]
+                            [else 
+                             (printf "contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
+                                     err obj exn-blame (get-ctc-err (exn-message exn)))])))))
+       expr
+       (error 'test-contract-error 
+              "expected contract error \"~a\" on ~a, got none"
+              err 'expr)))))
+
 (define-signature sig1
   ((contracted [x number?])))
 (define-signature sig2
@@ -55,13 +109,14 @@
         (define g zero?)
         (define (b t) (if t 3 0))))
 
-(test-runtime-error exn:fail:contract? "x exported by unit1 not a number"
+(test-contract-error "(unit unit1)" "x" "not a number"
   (invoke-unit unit1))
-(test-runtime-error exn:fail:contract? "x exported by unit1 not a number"
+
+(test-contract-error "(unit unit1)" "x"  "not a number"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S1 : sig1)) unit1)
                                     (() unit2 S1)))))
-(test-runtime-error exn:fail:contract? "a provided by anonymous unit not a number"
+(test-contract-error temp-unit-blame "a" "not a number"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -71,7 +126,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit3 S3 S4)))))
 
-(test-runtime-error exn:fail:contract? "g provided by anonymous unit returns the wrong value"
+(test-contract-error temp-unit-blame "g" "not a boolean"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -81,7 +136,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit3 S3 S4)))))
 
-(test-runtime-error exn:fail:contract? "unit4 misuses function b"
+(test-contract-error "(unit unit4)" "b" "not a boolean"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -91,7 +146,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit4 S3 S4)))))
 
-(test-runtime-error exn:fail:contract? "unit5 provides bad value for d"
+(test-contract-error "(unit unit5)" "d" "not a symbol"
   (invoke-unit unit5))
 
 (define-unit unit6
@@ -121,7 +176,7 @@
     (import)
     (export sig1)))
 
-(test-runtime-error exn:fail:contract? "unit7 reexports x with different (wrong) contract"
+(test-contract-error "(unit unit7)" "x" "not a boolean"
   (invoke-unit unit7))
 
 (define-unit unit8
@@ -136,7 +191,7 @@
     (export sig2))
   (f #t))
 
-(test-runtime-error exn:fail:contract? "unit8 misuses f from internal unit"
+(test-contract-error "(unit unit8)" "f" "not a number"
   (invoke-unit unit8))
 
 (define-unit unit9
@@ -151,7 +206,7 @@
     (export sig2))
   (f 3))
 
-(test-runtime-error exn:fail:contract? "unit9-1 provides wrong value for function f"
+(test-contract-error "(unit unit9-1)" "f" "not a number"
   (invoke-unit unit9))
 
 (define-values/invoke-unit
@@ -161,7 +216,7 @@
   (import)
   (export sig2))
 
-(test-runtime-error exn:fail:contract? "top-level misuses f"
+(test-contract-error top-level "f" "not a number"
   (f #t))
 
 (define-unit unit10
@@ -173,13 +228,13 @@
 (let ()
   (define x 0)
   (define f (lambda (x) #t))
-  (test-runtime-error exn:fail:contract? "top-level (via anonymous unit) provides improper f"
+  (test-contract-error "(unit u)" "f" "not a number"
     (invoke-unit unit10 (import sig1 sig2))))
 
 (let ()
   (define x 1)
   (define f values)
-  (test-runtime-error exn:fail:contract? "unit10 misuses f from top-level"
+  (test-contract-error "(unit unit10)" "f" "not a number"
     (invoke-unit unit10 (import sig1 sig2))))
 
 ;; testing that contracts from extended signatures are checked properly
@@ -192,9 +247,9 @@
   (define-values/invoke-unit unit11
     (import)
     (export sig3))
-  (test-runtime-error exn:fail:contract? "unit11 provides improper f"
+  (test-contract-error "(unit unit11)" "f" "not a number"
     (f 3))
-  (test-runtime-error exn:fail:contract? "top-level misuses f"
+  (test-contract-error top-level "f" "not a number"
     (f #t)))
 
 ;; unit/new-import-export tests
@@ -259,7 +314,7 @@
     (export)
     (link [((S : sig8)) unit19]
           [() unit20 S]))
-  (test-runtime-error exn:fail:contract? "unit19 provides bad f"
+  (test-contract-error "(unit unit19)" "f" "not a number"
     (invoke-unit unit22)))
 
 ;; contracted import -> uncontracted import
@@ -280,7 +335,7 @@
     (export)
     (link [((S : sig7)) unit18]
           [() unit23 S]))
-  (test-runtime-error exn:fail:contract? "unit23 provides f with no protection into a bad context"
+  (test-contract-error "(unit unit23)" "f" "not a number"
     (invoke-unit unit25)))
 
 ;; contracted import -> contracted import
@@ -309,7 +364,7 @@
     (export)
     (link [((S : sig9)) unit28-1]
           [() unit26 S]))
-  (test-runtime-error exn:fail:contract? "unit28-1 broke contract on f"
+  (test-contract-error "(unit unit28-1)" "f" "not a number"
     (invoke-unit unit28-2)))
 
 ;; uncontracted export -> contracted export
@@ -330,7 +385,7 @@
     (export)
     (link [((S : sig8)) unit29]
           [() unit17 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit31)))
 
 ;; contracted export -> uncontracted export
@@ -351,7 +406,7 @@
     (export)
     (link [((S : sig7)) unit32]
           [() unit16 S]))
-  (test-runtime-error exn:fail:contract? "unit32 provides f with no protection into bad context"
+  (test-contract-error "(unit unit32)" "f" "not a number"
     (invoke-unit unit34)))
 
 ;; contracted export -> contracted export
@@ -380,7 +435,7 @@
     (export)
     (link [((S : sig9)) unit35]
           [() unit37-1 S]))
-  (test-runtime-error exn:fail:contract? "unit37-1 broke contract on f"
+  (test-contract-error "(unit unit37-1)" "f" "not a number"
     (invoke-unit unit37-2)))
 
 ;; Converting units with internal contract violations
@@ -396,7 +451,7 @@
     (export)
     (link [((S : sig8)) unit15]
           [() unit38 S]))
-  (test-runtime-error exn:fail:contract? "unit38 allowed f to flow into uncontracted bad context"
+  (test-contract-error "(unit unit38)" "f" "not a number"
     (invoke-unit unit39)))
 (let ()
   (define-compound-unit unit40
@@ -404,7 +459,7 @@
     (export)
     (link [((S : sig8)) unit19]
           [() unit38 S]))
-  (test-runtime-error exn:fail:contract? "unit38 allowed f to flow into uncontracted bad context"
+  (test-contract-error "(unit unit38)" "f" "not a number"
     (invoke-unit unit40)))
 
 ;; contracted import -> uncontracted import
@@ -418,7 +473,7 @@
     (export)
     (link [((S : sig7)) unit14]
           [() unit41 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit42)))
 (let ()
   (define-compound-unit unit43
@@ -426,7 +481,7 @@
     (export)
     (link [((S : sig7)) unit18]
           [() unit41 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit43)))
 
 ;; contracted import -> contracted import
@@ -444,7 +499,7 @@
     (export)
     (link [((S : sig9)) unit45-1]
           [() unit44 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit45-2)))
 (let ()
   (define-unit unit46-1
@@ -456,7 +511,7 @@
     (export)
     (link [((S : sig9)) unit46-1]
           [() unit44 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit46-2)))
 
 ;; uncontracted export -> contracted export
@@ -470,7 +525,7 @@
     (export)
     (link [((S : sig8)) unit47]
           [() unit13 S]))
-  (test-runtime-error exn:fail:contract? "unit47 provided bad f"
+  (test-contract-error "(unit unit47)" "f" "not a number"
     (invoke-unit unit48)))
 (let ()
   (define-compound-unit unit49
@@ -478,7 +533,7 @@
     (export)
     (link [((S : sig8)) unit47]
           [() unit17 S]))
-  (test-runtime-error exn:fail:contract? "unit17 misuses f"
+  (test-contract-error "(unit unit17)" "f" "not a number"
     (invoke-unit unit49)))
 
 ;; contracted import -> uncontracted import
@@ -492,7 +547,7 @@
     (export)
     (link [((S : sig7)) unit50]
           [() unit12 S]))
-  (test-runtime-error exn:fail:contract? "unit19 provides bad f"
+  (test-contract-error "(unit unit19)" "f" "not a number"
     (invoke-unit unit51)))
 (let ()
   (define-compound-unit unit52
@@ -500,7 +555,7 @@
     (export)
     (link [((S : sig7)) unit50]
           [() unit16 S]))
-  (test-runtime-error exn:fail:contract? "unit50 provides unprotected f into bad context"
+  (test-contract-error "(unit unit50)" "f" "not a number"
     (invoke-unit unit52)))
 
 ;; contracted export -> contracted export
@@ -518,7 +573,7 @@
     (export)
     (link [((S : sig9)) unit53]
           [() unit54-1 S]))
-  (test-runtime-error exn:fail:contract? "unit19 provides bad f"
+  (test-contract-error "(unit unit19)" "f" "not a number"
     (invoke-unit unit54-2)))
 (let ()
   (define-unit unit55-1
@@ -530,7 +585,7 @@
     (export)
     (link [((S : sig9)) unit53]
           [() unit55-1 S]))
-  (test-runtime-error exn:fail:contract? "unit55-1 misuses f"
+  (test-contract-error "(unit unit55-1)" "f" "not a number"
     (invoke-unit unit55-2)))
 
 (module m1 scheme
@@ -568,8 +623,8 @@
 (require (prefix-in m2: 'm2))
 
 (m2:z)
-(test-runtime-error exn:fail:contract? "m2 broke the contract on U@ (string, not symbol)" (m2:w))
-(test-runtime-error exn:fail:contract? "m1 broke the contract on U@ (number, not string)" (m2:v))
+(test-contract-error "'m2" "U@" "not a symbol" (m2:w))
+(test-contract-error "'m1" "U@" "not a string" (m2:v))
 
 (test-syntax-error "no y in sig1"
   (unit/c (import (sig1 [y number?]))
@@ -580,21 +635,21 @@
 (test-syntax-error "no sig called faux^, so import description matching fails"
   (unit/c (import faux^) (export)))
 
-(test-runtime-error exn:fail:contract? "unit bad-export@ does not export sig1"
+(test-contract-error "(definition bad-export@)" "bad-export@" "unit must export sig1"
   (let ()
     (define/contract bad-export@
       (unit/c (import) (export sig1))
       (unit (import) (export)))
     bad-export@))
 
-(test-runtime-error exn:fail:contract? "contract on bad-import@ does not export sig1"
+(test-contract-error "(definition bad-import@)" "bad-import@" "contract must import sig1"
   (let ()
     (define/contract bad-import@
       (unit/c (import) (export))
       (unit (import sig1) (export) (+ x 1)))
     bad-import@))
 
-(test-runtime-error exn:fail:contract? "value is not a unit"
+(test-contract-error "(definition not-a-unit)" "not-a-unit" "not a unit"
   (let ()
     (define/contract not-a-unit
       (unit/c (import) (export))
@@ -642,12 +697,12 @@
 
 (require (prefix-in m4: 'm4))
 
-(test-runtime-error exn:fail:contract? "misuse of f by 'm4 (leaked uncontracted to top-level)"
+(test-contract-error "'m4" "f" "not an x"
   (m4:f 3))
 
 (require (prefix-in m3: 'm3))
 
-(test-runtime-error exn:fail:contract? "misuse of build-toys by top-level"
+(test-contract-error top-level "build-toys" "not a integer"
   (let ()
     (define-values/invoke-unit/infer m3:simple-factory@)
     (build-toys #f)))
@@ -675,7 +730,7 @@
 
 (m5:f 0)
 
-(test-runtime-error exn:fail:contract? "misuse of f exported by U@ by the top level"
+(test-contract-error top-level "U@" "not an x"
   (m5:f 3))
 
 (let ()
@@ -696,7 +751,7 @@
   (define-values/invoke-unit/infer V@)
   
   (f 0)
-  (test-runtime-error exn:fail:contract? "top-level broke contract on f"
+  (test-contract-error top-level "f" "not an x"
     (f 3)))
 
 (let ()
@@ -717,7 +772,7 @@
   (define-values/invoke-unit/infer V@)
   
   (f 0)
-  (test-runtime-error exn:fail:contract? "V@ broke contract on f"
+  (test-contract-error "(unit V@)" "f" "not an x"
     (f 3)))
 
 (let ()
@@ -735,11 +790,11 @@
     (import) (export) (link U@ V@))
   (define-values/invoke-unit/infer U@)
   y
-  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+  (test-contract-error top-level "U@" "not a number"
     (x #t))
-  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+  (test-contract-error "(unit U@)" "U@" "not a number"
     (x 3))
-  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+  (test-contract-error "(unit U@)" "U@" "not a number"
     (invoke-unit W@)))
 
 (let ()
@@ -753,16 +808,16 @@
   (define-unit V@
     (import foo^)
     (export)
-    (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+    (test-contract-error top-level "U@" "not an x"
       (f 2))
-    (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+    (test-contract-error "(unit U@)" "U@" "not an number"
       (f 3)))
   (define-compound-unit/infer W@
     (import) (export) (link U@ V@))
   (define-values/invoke-unit/infer U@)
-  (test-runtime-error exn:fail:contract? "top-level broke contract on x"
+  (test-contract-error top-level "U@" "not an x"
     (f 4))
-  (test-runtime-error exn:fail:contract? "U@ broke contract on x"
+  (test-contract-error "(unit U@)" "U@" "not a number"
     (f 3))
   (invoke-unit W@))
 
@@ -782,7 +837,7 @@
   (define-values/invoke-unit/infer foo@)
   
   (f 0)
-  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
+  (test-contract-error top-level "f" "not an x"
     (f 4))
   ;; This is a weird one.  The definition for foo@ has two conflicting
   ;; contracts.  Who gets blamed?  Still the top-level, since foo@ can't
@@ -791,7 +846,7 @@
   ;; just be an "overriding" contract, but a) that won't really work and
   ;; b) what about other units that might link with foo@, that expect
   ;; the stronger contract?
-  (test-runtime-error exn:fail:contract? "top-level broke the contract on x"
+  (test-contract-error top-level "x?" "not a number"
     (f #t)))
 
 (let ()
@@ -803,7 +858,7 @@
     (define-struct student (name id)))
   (define-values/invoke-unit/infer student@)
   (make-student "foo" 3)
-  (test-runtime-error exn:fail:contract? "top-level broke contract on make-student"
+  (test-contract-error top-level "make-student" "not a string"
     (make-student 4 3))
-  (test-runtime-error exn:fail:contract? "top-level broke contract on student-id"
+  (test-contract-error top-level "student-id" "not a student"
     (student-id 'a)))
