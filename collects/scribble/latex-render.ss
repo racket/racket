@@ -273,7 +273,10 @@
               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
               [inline? (void)]
               [else
-               (printf "\n\n\\begin{~a}~a{@{}~a}\n~a"
+               (printf "\n\n~a\\begin{~a}~a{@{}~a}\n~a"
+                       (if (string? (table-style t))
+                           (format "\\begin{~a}" (table-style t))
+                           "")
                        tableform
                        opt
                        (string-append*
@@ -325,9 +328,12 @@
                 (unless (null? (cdr flowss))
                   (loop (cdr flowss) (cdr row-styles)))))
             (unless inline?
-              (printf "~a\n\n\\end{~a}\n"
-                      "" ; (if (equal? tableform "bigtabular") "\n\\\\" "")
-                      tableform)))))
+              (printf "~a\n\n\\end{~a}~a\n"
+                      ""
+                      tableform
+                      (if (string? (table-style t))
+                           (format "\\end{~a}" (table-style t))
+                           ""))))))
       null)
 
     (define/private (render-table-flow p part ri twidth vstyle)

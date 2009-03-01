@@ -399,8 +399,8 @@ The @scheme[style] can be any of the following:
 
 @itemize[
 
- @item{A string that corresponds to a CSS class for
-       HTML output (see @secref["extra-style"]).}
+ @item{A string that corresponds to a CSS class for HTML output or an
+       environment for Latex output (see @secref["extra-style"]).}
 
  @item{@scheme['boxed] to render as a definition.}
 
