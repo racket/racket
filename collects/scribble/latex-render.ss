@@ -175,7 +175,7 @@
                (case style
                  [(italic) (wrap e "textit" #f)]
                  [(bold) (wrap e "textbf" #f)]
-                 [(tt) (wrap e "mytexttt" #t)]
+                 [(tt) (wrap e "Scribtexttt" #t)]
                  [(no-break) (super render-element e part ri)]
                  [(sf) (wrap e "textsf" #f)]
                  [(subscript) (wrap e "textsub" #f)]
@@ -185,7 +185,7 @@
                     (case (string-length s)
                       [(0) (void)]
                       [else
-                       (printf "\\mbox{\\hphantom{\\mytexttt{~a}}}"
+                       (printf "\\mbox{\\hphantom{\\Scribtexttt{~a}}}"
                                (regexp-replace* #rx"." s "x"))]))]
                  [(newline) (printf "\\\\")]
                  [else (error 'latex-render
