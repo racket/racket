@@ -166,10 +166,10 @@
                                 (with-attributes-style s)
                                 s)))]
                 [wrap (lambda (e s tt?)
-                        (printf "{\\~a{" s)
+                        (printf "\\~a{" s)
                         (parameterize ([rendering-tt (or tt? (rendering-tt))])
                           (super render-element e part ri))
-                        (printf "}}"))])
+                        (printf "}"))])
             (cond
               [(symbol? style)
                (case style
