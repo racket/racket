@@ -790,18 +790,22 @@
                                                              #`(letrec-syntax #,rename-bindings #,ctc)
                                                              'inferred-name var)
                                                         ctc)])
-                               (if (or target-ctc ctc)
+                               (if target-ctc
                                    #`(λ ()
-                                       (let ([old-v #,(if ctc
-                                                          #`(let ([old-v/c (#,vref)])
-                                                              (contract ctc-stx (car old-v/c) 
-                                                                        (cdr old-v/c) (current-contract-region)
-                                                                        #,(id->contract-src-info var)))
-                                                          #`(#,vref))])
-                                         #,(if target-ctc
-                                               #'(cons old-v (current-contract-region))
-                                               #'old-v)))
-                                   vref))))
+                                       (cons #,(if ctc
+                                                   #`(let ([old-v/c (#,vref)])
+                                                       (contract ctc-stx (car old-v/c) 
+                                                                 (cdr old-v/c) (current-contract-region)
+                                                                 #,(id->contract-src-info var)))
+                                                   #`(#,vref))
+                                             (current-contract-region)))
+                                   (if ctc
+                                       #`(λ ()
+                                           (let ([old-v/c (#,vref)])
+                                             (contract ctc-stx (car old-v/c) 
+                                                       (cdr old-v/c) (current-contract-region)
+                                                       #,(id->contract-src-info var))))
+                                       vref)))))
                          (car target-sig)
                          (cadddr target-sig)))
                       target-import-sigs))
