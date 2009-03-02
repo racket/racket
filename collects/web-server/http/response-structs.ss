@@ -1,6 +1,5 @@
-#lang scheme/base
-(require mzlib/contract
-         scheme/list
+#lang scheme
+(require scheme
          xml
          web-server/private/xexpr
          web-server/http/request-structs)
@@ -70,9 +69,18 @@
     [else
      (normalize-response
       close?
-      (make-response/full 
-       200 #"Okay" (current-seconds) TEXT/HTML-MIME-TYPE empty
-       (list (string->bytes/utf-8 (xexpr->string resp)))))]))
+      (make-xexpr-response resp))]))
+
+(define (make-xexpr-response
+         xexpr
+         #:code [code 200] 
+         #:message [message #"Okay"]
+         #:seconds [seconds (current-seconds)]
+         #:mime-type [mime-type TEXT/HTML-MIME-TYPE]
+         #:headers [hdrs empty])
+  (make-response/full 
+   code message seconds mime-type hdrs
+   (list (string->bytes/utf-8 (xexpr->string xexpr)))))
 
 (provide/contract
  [struct response/basic
@@ -94,7 +102,11 @@
           [seconds number?]
           [mime bytes?]
           [headers (listof header?)]
-          [generator ((() (listof bytes?) . ->* . any) . -> . any)])]
+          [generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]
  [response/c contract?]
+ [make-xexpr-response 
+  ((pretty-xexpr/c)
+   (#:code number? #:message bytes? #:seconds number? #:mime-type bytes? #:headers (listof header?))
+   . ->* . response/full?)]
  [normalize-response (boolean? response/c . -> . (or/c response/full? response/incremental?))]
  [TEXT/HTML-MIME-TYPE bytes?])

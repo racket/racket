@@ -13,6 +13,7 @@ The @web-server implements many HTTP RFCs that are provided by this module.
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{Requests}
 @(require (for-label web-server/http/request-structs
+                     xml
                      scheme/match))
 
 @defmodule[web-server/http/request-structs]{
@@ -198,7 +199,7 @@ Here is an example typical of what you will find in many applications:
 }
 
 @defstruct[(response/incremental response/basic)
-           ([generator ((() (listof bytes?) . ->* . any) . -> . any)])]{
+           ([generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]{
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
  that outputs the content it is called with.
@@ -224,6 +225,20 @@ Here is an example typical of what you will find in many applications:
                              xexpr/c)].
 }
 
+@defproc[(make-xexpr-response [xexpr xexpr/c]
+                              [#:code code number? 200]
+                              [#:message message bytes? #"Okay"]
+                              [#:seconds seconds number? (current-seconds)]
+                              [#:mime-type mime-type bytes? TEXT/HTML-MIME-TYPE]
+                              [#:headers headers (listof header?) empty])
+         response/full?]{
+ Equivalent to
+ @schemeblock[
+(make-response/full 
+   code message seconds mime-type headers
+   (list (string->bytes/utf-8 (xexpr->string xexpr))))
+]}
+                         
 @defproc[(normalize-response [close? boolean?] [response response/c])
          (or/c response/full? response/incremental?)]{
  Coerces @scheme[response] into a full response, filling in additional details where appropriate.
