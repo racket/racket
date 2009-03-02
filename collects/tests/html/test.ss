@@ -1,6 +1,7 @@
 #lang scheme
 (require (planet schematics/schemeunit:3)
          (planet schematics/schemeunit:3/text-ui)
+         net/url
          (prefix-in h: html)
          (prefix-in x: xml))
 
@@ -40,6 +41,12 @@
             '()]))]
       
       (check-equal? (extract-pcdata an-html)
-                    ' ("My title" "Hello world" "Testing" "!"))))))
+                    ' ("My title" "Hello world" "Testing" "!"))))
+   
+   
+   (test-case "Eli - March 1"
+              (check-not-false (lambda () (h:read-html-as-xml (get-pure-port (string->url "http://list.cs.brown.edu/pipermail/plt-scheme/"))))))
+   
+   ))
 
 (run-tests html-tests)

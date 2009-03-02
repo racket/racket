@@ -1,10 +1,5 @@
 #lang scheme/base
 
-(require scribble/manual)
+(require "../../htdp/scribblings/shared.ss")
 
-(provide teachpack)
-
-(define (teachpack tp . name)
-  (apply title #:tag tp
-         `(,@name ": " ,(filepath (format "~a.ss" tp))
-           ,(index (format "~a teachpack" tp)))))
+(provide teachpack beginner-require)

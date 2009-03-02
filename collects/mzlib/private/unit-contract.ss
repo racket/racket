@@ -13,44 +13,6 @@
 
 (provide (for-syntax unit/c/core) unit/c)
 
-#|
-We want to think of the contract as sitting between the outside world
-and the unit in question.  In the case where the signature in question
-is contracted, we have:
-
-                     pos   unit/c   neg
-                             |         
-              ---            |         
-             |   |           |         
-       <---- | i |     <-----|------    (v, o)
-             |   |           |         
-              ---            |
-             |   |           |
-(v, u) ----> | e |     ------|----->
-             |   |           |
-              ---            |
-                             |
-
-So for an import, we start out with (v, o) coming in when the
-import is being set.  We need to first check the contract 
-(sig-ctc, o, neg), to make sure what's coming in appropriately
-satisfies that contract (since it already has given us the
-positive blame for the value incoming).  Then we need to check
-(ctc, neg, pos) (i.e. apply the projection with the blame
-"switched").  That leaves pos as the appropriate thing to pack
-with the value for the sig-ctc check inside the unit.  When
-the unit pulls it out (which isn't affected by the unit/c
-contract combinator), it'll have the correct party to blame as
-far as it knows.
-
-For an export, we start on the other side, so we don't need to do
-anything to the setting function as the unit will handle that.  So for
-the accessing function, we need to grab what's in the box,
-check (sig-ctc, u, pos), then check (ctc, pos, neg) via projection
-application, then last, but not least, return the resulting value
-packed with the neg blame.
-|#
-
 (define-for-syntax (contract-imports/exports import?)
   (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
     (define def-table (make-bound-identifier-mapping))
@@ -69,63 +31,36 @@ packed with the neg blame.
                      #,name)
                     #,stx)))])
         (if ctc
-            #`(cons
-               #,(if import?
-                     #`(car #,vref)
-                     #`(λ ()
-                         (let* ([old-v 
-                                 #,(if sig-ctc
-                                       #`(let ([old-v/c ((car #,vref))])
-                                           (cons #,(wrap-with-proj 
-                                                    ctc 
-                                                    (with-syntax ([sig-ctc-stx
-                                                                   (syntax-property sig-ctc
-                                                                                    'inferred-name
-                                                                                    var)])
-                                                      #`(contract sig-ctc-stx (car old-v/c)
-                                                                  (cdr old-v/c) #,pos
-                                                                  #,(id->contract-src-info var))))
-                                                 #,neg))
-                                       (wrap-with-proj ctc #`((car #,vref))))])
-                           old-v)))
-               #,(if import?
-                     #`(λ (v) 
-                         (let* ([new-v 
-                                 #,(if sig-ctc
-                                       #`(cons #,(wrap-with-proj 
-                                                  ctc 
-                                                  (with-syntax ([sig-ctc-stx
-                                                                 (syntax-property sig-ctc
-                                                                                  'inferred-name
-                                                                                  var)])
-                                                    #`(contract sig-ctc-stx (car v)
-                                                                (cdr v) #,neg
-                                                                #,(id->contract-src-info var))))
-                                               #,pos)
-                                       (wrap-with-proj ctc #'v))])
-                           ((cdr #,vref) new-v)))
-                     #`(cdr #,vref)))
+            #`(λ ()
+                #,(if sig-ctc
+                      #`(cons #,(wrap-with-proj 
+                                 ctc 
+                                 (with-syntax ([sig-ctc-stx
+                                                (syntax-property sig-ctc
+                                                                 'inferred-name
+                                                                 var)])
+                                   #`(let ([old-v/c (#,vref)])
+                                       (contract sig-ctc-stx (car old-v/c)
+                                                 (cdr old-v/c) #,pos
+                                                 #,(id->contract-src-info var)))))
+                              #,neg)
+                      (wrap-with-proj ctc #`(#,vref))))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
           [sig         (in-list import-sigs)])
          (let ([v #`(hash-ref #,table-stx #,(car (tagged-info->keys tagged-info)))])
            (for ([int/ext-name (in-list (car sig))]
                  [index        (in-list (build-list (length (car sig)) values))])
-                (bound-identifier-mapping-put! def-table
-                                               (car int/ext-name)
+                (bound-identifier-mapping-put! def-table (car int/ext-name)
                                                #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig import-sigs])
-                     (let ([rename-bindings 
-                            (get-member-bindings def-table target-sig pos)])
+                     (let ([rename-bindings (get-member-bindings def-table target-sig pos)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([var (car target-int/ext-name)]
-                                [vref
-                                 (bound-identifier-mapping-get def-table var)]
-                                [ctc
-                                 (bound-identifier-mapping-get
-                                  ctc-table var (λ () #f))])
+                                [vref (bound-identifier-mapping-get def-table var)]
+                                [ctc (bound-identifier-mapping-get ctc-table var (λ () #f))])
                            (convert-reference var vref ctc sig-ctc rename-bindings))))))
                   (((export-keys ...) ...) 
                    (map tagged-info->keys import-tagged-infos)))

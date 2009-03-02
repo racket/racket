@@ -48,6 +48,13 @@
 (define (test-not-xexpr? xe)
   (test-false (format "~S" xe) (xexpr? xe)))
 
+(define (contract->predicate c)
+  (lambda (v)
+    (with-handlers ([exn:fail:contract?
+                     (lambda (x) #f)])
+      (contract c v 'pos 'neg)
+      #t)))    
+
 (define xml-tests
   (test-suite
    "XML"
@@ -79,7 +86,7 @@ END
         "DOCTYPE dropping" result-string expected-string)))
     
     (local 
-      [(define a-pi (make-p-i #f #f "foo" "bar"))
+      [(define a-pi (make-p-i #f #f 'foo "bar"))
        (define a-p (make-prolog empty #f empty))
        (define a-p/pi (make-prolog (list a-pi) #f (list)))
        (define a-d0
@@ -137,11 +144,14 @@ END
     
     (test-not-false "element" (element? (make-element #f #f 'br empty empty)))
     
-    (test-not-false "content? pcdata" (content? (make-pcdata #f #f "pcdata")))
-    (test-not-false "content? element" (content? (make-element #f #f 'br empty empty)))
-    (test-not-false "content? entity" (content? (make-entity #f #f 'nbsp)))
-    (test-not-false "content? comment" (content? (make-comment "string")))
-    (test-not-false "content? cdata" (content? (make-cdata #f #f "cdata")))
+    (local [(define content? (contract->predicate content/c))]
+      (test-suite
+       "content?"
+       (test-not-false "content? pcdata" (content? (make-pcdata #f #f "pcdata")))
+       (test-not-false "content? element" (content? (make-element #f #f 'br empty empty)))
+       (test-not-false "content? entity" (content? (make-entity #f #f 'nbsp)))
+       (test-not-false "content? comment" (content? (make-comment "string")))
+       (test-not-false "content? cdata" (content? (make-cdata #f #f "cdata")))))
     
     (test-not-false "attribute" (attribute? (make-attribute #f #f 'name "value")))
     
@@ -152,16 +162,14 @@ END
     
     (test-not-false "cdata" (cdata? (make-cdata #f #f "string")))
     
-    (test-not-false "p-i" (p-i? (make-p-i #f #f "target" "instruction")))
+    (test-not-false "p-i" (p-i? (make-p-i #f #f 'target "instruction")))
     
     (test-not-false "comment" (comment? (make-comment "text")))
     
     (test-not-false "source" (source? (make-source 'start 'stop)))
     (test-not-false "source" (source? (make-source (make-location 1 2 3) 'stop)))
     (test-not-false "source" (source? (make-source 'start (make-location 1 2 3))))
-    (test-not-false "source" (source? (make-source (make-location 1 2 3) (make-location 4 5 6))))
-    
-    (test-not-false "exn:invalid-xexpr" (exn:invalid-xexpr? (make-exn:invalid-xexpr "string" (current-continuation-marks) 'nbsp))))
+    (test-not-false "source" (source? (make-source (make-location 1 2 3) (make-location 4 5 6)))))
    
    (test-suite
     "Reading and Writing XML"
@@ -543,7 +551,7 @@ END
          (test-validate-xexpr (make-pcdata #f #f "pcdata"))
          (test-validate-xexpr (make-cdata #f #f "cdata"))
          (test-validate-xexpr (make-comment "comment"))
-         (test-validate-xexpr (make-p-i #f #f "s1" "s2"))
+         (test-validate-xexpr (make-p-i #f #f 's1 "s2"))
          (test-validate-xexpr '(br))
          (test-validate-xexpr '(br ()))
          (test-validate-xexpr '(a ([href "#"]) "string"))
@@ -561,7 +569,7 @@ END
         "Non-permissive"
         (lambda (exn)
           (and (exn? exn)
-               (regexp-match #rx"Expected content," (exn-message exn))))
+               (regexp-match #rx"not in permissive mode" (exn-message exn))))
         (lambda ()
           (xml->xexpr #f)))
        
@@ -596,7 +604,7 @@ END
        (test-empty-tag-shorthand '(html) "<html>Hey</html>" "<html>Hey</html>")
        (test-empty-tag-shorthand '(p) "<html></html>" "<html></html>")
        (test-empty-tag-shorthand '(p) "<html>Hey</html>" "<html>Hey</html>"))
-
+      
       (test-equal? "html-empty-tags"
                    html-empty-tags
                    '(param meta link isindex input img hr frame col br basefont base area))
@@ -615,7 +623,7 @@ END
        "read-comments"
        (test-read-comments #f "<html><!-- Foo --></html>" "<html />")
        (test-read-comments #t "<html><!-- Foo --></html>" "<html><!-- Foo --></html>"))
-
+      
       (local
         [(define (test-xexpr-drop-empty-attributes v istr xe)
            (test-equal? (format "~S" (list v istr))

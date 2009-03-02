@@ -423,7 +423,7 @@ absolute path; it is an absolute path when adding the
 platform-specific shared-library extension --- as produced by
 @scheme[(system-type 'so-suffix)] --- and then searching in the
 PLT-specific shared-object library directories (as determined by
-@scheme[find-dll-dirs]) locates the path. In this way, shared-object
+@scheme[get-lib-search-dirs]) locates the path. In this way, shared-object
 libraries that are installed specifically for PLT Scheme get carried
 along in distributions.
 

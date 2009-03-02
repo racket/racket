@@ -7,8 +7,7 @@
 
 @teachpack["image"]{Manipulating Images}
 
-
-@declare-exporting[teachpack/htdp/image #:use-sources (htdp/image)]
+@defmodule[#:require-form beginner-require htdp/image]
 
 The teachpack provides primitives for constructing and manipulating
 images. Basic, colored images are created as outlines or solid

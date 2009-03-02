@@ -946,6 +946,8 @@
 
  (module-language-one-line-summary "Start erzeugt eine REPL im Kontext des Moduls inklusive der deklarierten Sprache des Moduls.")
   
+ (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
+
   ;;; from the `not a language language' used initially in drscheme.
  (must-choose-language "DrScheme kann keine Programme verarbeiten, bis Sie eine Sprache auswählen.")
  

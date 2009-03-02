@@ -21,7 +21,8 @@
 	 (syntax (syntax-case** _ #f stxe kl free-identifier=? clause ...))])))
 
   (-define (relocate loc stx)
-    (if (syntax-source loc)
+    (if (or (syntax-source loc)
+            (syntax-position loc))
         (datum->syntax stx
                        (syntax-e stx)
                        loc

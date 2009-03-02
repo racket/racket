@@ -6,7 +6,7 @@
          mzlib/port
          net/url-sig
          (only-in html read-html-as-xml read-html-comments use-html-spec)
-         (except-in xml/xml read-comments)
+         (except-in xml read-comments)
          mzlib/class
          "bullet.ss"
          "option-snip.ss"
@@ -492,7 +492,7 @@
                   (fixup-whitespace content leading-ok?))
                 (values "" leading-ok?)))
           (values "" leading-ok?)))]
-   [(pi? c) (values "" leading-ok?)] ;; processing instruction
+   [(p-i? c) (values "" leading-ok?)] ;; processing instruction
    [else (let ([tag (car c)])
            (if (memq tag exact-whitespace-tags)
                (let-values ([(s done?) (remove-leading-newline c)])
@@ -879,7 +879,7 @@
                                          (values void 0))))]
                                 [(number? e) 
                                  (values (translate-number e) 0)]
-                                [(or (comment? e) (pi? e)) (values void forced-lines)]
+                                [(or (comment? e) (p-i? e)) (values void forced-lines)]
                                 [else (let* ([tag (car e)]
                                              [rest/base/depth/form/fl
                                               (lambda (para-base enum-depth form forced-lines)

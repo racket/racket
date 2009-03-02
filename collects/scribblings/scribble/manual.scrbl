@@ -141,8 +141,10 @@ as a REPL value (i.e., a single color with no hyperlinks).}
 @defform[(schemeid datum ...)]{Like @scheme[scheme], but typeset
 as an unbound identifier (i.e., no coloring or hyperlinks).}
 
-@defform[(schememodname datum)]{Like @scheme[scheme], but typeset as a
-module path. If @scheme[datum] is an identifier, then it is
+@defform*[((schememodname datum)
+           (schememodname ((unsyntax (scheme unsyntax)) expr)))]{
+Like @scheme[scheme], but typeset as a module path. If @scheme[datum]
+is an identifier or @scheme[expr] produces a symbol, then it is
 hyperlinked to the module path's definition as created by
 @scheme[defmodule].}
 
@@ -246,8 +248,10 @@ because the @"@"-reader would drop comments within the
 @; ------------------------------------------------------------------------
 @section[#:tag "doc-modules"]{Documenting Modules}
 
-@defform/subs[(defmodule id maybe-sources pre-flow ...)
-              ([maybe-sources code:blank
+@defform/subs[(defmodule maybe-req id maybe-sources pre-flow ...)
+              ([maybe-req code:blank
+                          (code:line #:require-form expr)]
+               [maybe-sources code:blank
                               (code:line #:use-sources (mod-path ...))])]{
 
 Produces a sequence of flow elements (encaptured in a @scheme[splice])
@@ -261,6 +265,11 @@ Besides generating text, this form expands to a use of
 @scheme[declare-exporting]. Consequently, @scheme[defmodule] should be
 used at most once in a section, though it can be shadowed with
 @scheme[defmodule]s in sub-sections.
+
+If a @scheme[#:require-form] clause is provided, the given expression
+produces an element to use instead of @scheme[(scheme require)] for
+the declaration of the module. This is useful to suggest a different
+way of accessing the module instead of through @scheme[require].
 
 Hyperlinks created by @scheme[schememodname] are associated with the
 enclosing section, rather than the local @scheme[id] text.}
@@ -279,7 +288,7 @@ suitable for use with @schememetafont{#reader}.}
 
 
 @deftogether[(
-@defform[(defmodule* (id ...+) maybe-sources pre-flow ...)]
+@defform[(defmodule* maybe-req  (id ...+) maybe-sources pre-flow ...)]
 @defform[(defmodulelang* (id ...+) maybe-sources pre-flow ...)]
 @defform[(defmodulereader* (id ...+) maybe-sources pre-flow ...)]
 )]{
@@ -288,7 +297,7 @@ Like @scheme[defmodule], etc., but introduces multiple module paths instead
 of just one.}
 
 @deftogether[(
-@defform[(defmodule*/no-declare (id ...) pre-flow ...)]
+@defform[(defmodule*/no-declare maybe-req (id ...) pre-flow ...)]
 @defform[(defmodulelang*/no-declare (id ...) pre-flow ...)]
 @defform[(defmodulereader*/no-declare (id ...) pre-flow ...)]
 )]{

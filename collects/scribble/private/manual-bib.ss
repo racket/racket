@@ -64,7 +64,7 @@
    (make-flow
     (list
      (make-table
-      "bibliography"
+      "SBibliography"
       (map (lambda (c)
              (let ([key (a-bib-entry-key c)]
                    [val (a-bib-entry-val c)])

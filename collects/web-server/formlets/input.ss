@@ -1,6 +1,6 @@
 #lang scheme
 (require web-server/http
-         xml
+         web-server/private/xexpr
          (only-in "lib.ss"
                   formlet/c
                   pure
@@ -31,7 +31,7 @@
          default))))
 
 (provide/contract
- [make-input ((string? . -> . xexpr/c) . -> . (formlet/c (or/c false/c binding?)))]
+ [make-input ((string? . -> . pretty-xexpr/c) . -> . (formlet/c (or/c false/c binding?)))]
  #;[binding:form-required (formlet/c (binding? . -> . bytes?))]
  #;[binding:form/default (bytes? . -> . (formlet/c (binding? . -> . bytes?)))])
 

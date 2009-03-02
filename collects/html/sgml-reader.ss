@@ -2,12 +2,25 @@
 ;; warning - this was copied from the XML collection.
 ;; It needs to be abstracted back in.
 #lang scheme
-(require mzlib/list
-         mzlib/string
-         "sgml-reader-sig.ss"
-         xml)
+(require xml
+         (prefix-in scheme: scheme))
 
-(provide-signature-elements sgml-reader^)
+;; Kid-lister : (Symbol -> (U (listof Symbol) #f))
+(define kid-lister/c
+  (symbol? . -> . (or/c (listof symbol?) false/c)))
+
+(define spec/c
+  (listof (cons/c (listof symbol?) (listof symbol?))))
+
+(provide/contract
+ [spec/c contract?]
+ [read-html-comments (parameter/c boolean?)]
+ [trim-whitespace (parameter/c boolean?)]
+ [gen-may-contain (spec/c . -> . kid-lister/c)]
+ [gen-read-sgml (kid-lister/c (symbol? symbol? . -> . (or/c symbol? false/c)) . -> . (() (input-port?) . ->* . (listof content/c)))])
+
+(define (file-position in)
+  (make-location 0 0 (scheme:file-position in)))
 
 ;; Start-tag ::= (make-start-tag Location Location Symbol (listof Attribute))
 (define-struct (start-tag source) (name attrs))
@@ -19,8 +32,6 @@
 
 (define read-html-comments (make-parameter #f))
 (define trim-whitespace (make-parameter #f))
-
-;; Kid-lister : (Symbol -> (U (listof Symbol) #f))
 
 ;; gen-may-contain : Spec -> Kid-lister
 (define (gen-may-contain spec)
@@ -34,10 +45,8 @@
       (hash-ref table name (lambda () #f)))))
 
 ;; gen-read-sgml : Kid-lister (Symbol Symbol -> (U #f Symbol)) -> [Input-port] -> (listof Content)
-(define (gen-read-sgml may-contain auto-insert)
-  (case-lambda
-    [(in) (read-from-port may-contain auto-insert in)]
-    [() (read-from-port may-contain auto-insert (current-input-port))]))
+(define ((gen-read-sgml may-contain auto-insert) [in (current-input-port)])
+   (read-from-port may-contain auto-insert in))
 
 ;; read-from-port : Kid-lister (Symbol Symbol -> (U #f Symbol)) Input-port -> (listof Content)
 (define (read-from-port may-contain auto-insert in)
@@ -312,9 +321,7 @@
     (string->symbol
      ;; Common case: string is already lowercased
      (if (regexp-match-positions #rx"[A-Z]" s)
-         (begin
-           (string-lowercase! s)
-           s)
+         (string-downcase s)
          s))))
 ;; lex-name/case-sensitive : Input-port -> Symbol
 (define (lex-name/case-sensitive in)

@@ -1,14 +1,39 @@
 #lang scheme
 (require scheme/pretty
-         xml/xml)
+         xml)
+
+(define-struct (exn:pretty exn) (xexpr))
 
 (provide/contract
+ [struct (exn:pretty exn) ([message string?]
+                           [continuation-marks continuation-mark-set?]
+                           [xexpr xexpr/c])]
  [format-xexpr/errors (any/c . -> . string?)]
- [reformat-xexpr-exn (string? . -> . xexpr/c)])
+ [pretty-xexpr/c contract?])
+
+(define pretty-xexpr/c
+  (make-proj-contract
+   'pretty-xexpr/c
+   (lambda (pos neg src-info name)
+     (lambda (val)
+       (define marks (current-continuation-marks))
+       (with-handlers ([exn:fail:contract?
+                        (lambda (exn)
+                          (raise
+                           (make-exn:pretty
+                            (exn-message exn)
+                            marks
+                            `(span ,(drop-after "Context:\n" (exn-message exn))
+                                   ,(make-cdata #f #f (format-xexpr/errors val))))))])
+         (contract xexpr/c val pos neg src-info))))
+   (lambda (v) #t)))
+
+(define (drop-after delim str)
+  (substring str 0 (cdr (first (regexp-match-positions (regexp-quote delim) str)))))
 
 ; Formating Xexprs
 (define (format-xexpr/errors v)
-  (pretty-format (format-xexpr v)))
+  (pretty-format (format-xexpr v) 80))
 
 (define-struct xexpr-error (message content)
   #:property prop:custom-write
@@ -26,7 +51,8 @@
       (symbol? v)
       (exact-nonnegative-integer? v)
       (comment? v)
-      (pi? v)
+      (p-i? v)
+      (pcdata? v)
       (cdata? v)))
 
 (define (format-xexpr v)
@@ -43,7 +69,7 @@
                (format-elements+attributes (cdr v)))])]
     [(xexpr-datum? v) v]
     [else
-     (mark-error "Not a valid Xexpr datum (Must be a string, symbol, exact nonnegative integer, comment, PI, or cdata.)" v)]))
+     (mark-error "Not a valid Xexpr datum (Must be a string, symbol, exact nonnegative integer, comment, PI, pcdata, or cdata.)" v)]))
 
 (define (format-elements+attributes l)
   (match l
@@ -88,38 +114,3 @@
      (list (mark-error "Not a valid attribute name (Must be symbol.)" attr) val)]
     [else
      (mark-error "Not a valid attribute (Must be a list of a symbol and a string.)" l)]))
-
-; Reformating Xexpr errors
-(define (parse-xexpr-error s)
-  (with-input-from-string 
-   s (lambda ()
-       (define violator (read))
-       (define c:broke (read))
-       (define c:the (read))
-       (define c:contract (read))
-       (define contract-expr (read))
-       (define c:on (read))
-       (define contracted (read))
-       (define c:semi (read-char))
-       (define xml:msg (read-line))
-       (define blank (read-line))
-       (define c:context (read-line))
-       (define not-xexpr (read))
-       (when 
-           (or (ormap eof-object? 
-                    (list violator c:broke c:the c:contract contract-expr
-                          c:on contracted c:semi xml:msg blank c:context not-xexpr))
-               (not (andmap symbol=?
-                            (list 'broke 'the 'contract 'on '|;| 'Context:)
-                            (list c:broke c:the c:contract c:on c:semi c:context))))
-         (error 'parse-xexpr-error "Not Xexpr error"))
-       (values violator contract-expr contracted xml:msg not-xexpr))))
-
-(define (reformat-xexpr-exn m)
-  (with-handlers ([exn? (lambda _ m)])
-    (define-values (violator contract-expr contracted xml:msg not-xexpr)
-      (parse-xexpr-error m))
-    `(span ,(format "~a broke the contract~n~a~non ~a;~a~n~nContext:~n"
-                    violator (pretty-format contract-expr) contracted
-                    xml:msg)
-           ,(make-cdata #f #f (format-xexpr/errors not-xexpr)))))

@@ -1,6 +1,6 @@
 #lang scheme
 (require web-server/http
-         xml)
+         web-server/private/xexpr)
 
 ; Combinators
 (define (const x) (lambda _ x))
@@ -68,7 +68,7 @@
 
 ; Contracts
 (define xexpr-forest/c
-  (listof xexpr/c))
+  (listof pretty-xexpr/c))
 
 (define (formlet/c c)
   (integer? . -> . 
@@ -91,7 +91,7 @@
           () #:rest (listof (formlet/c alpha))
           . ->* . (formlet/c beta))]
  [xml-forest (xexpr-forest/c . -> . (formlet/c procedure?))]
- [xml (xexpr? . -> . (formlet/c procedure?))] 
+ [xml (pretty-xexpr/c . -> . (formlet/c procedure?))] 
  [text (string? . -> . (formlet/c procedure?))]
  [tag-xexpr (symbol? (listof (list/c symbol? string?)) (formlet/c alpha) . -> . (formlet/c alpha))]
  [formlet-display ((formlet/c alpha) . -> . xexpr-forest/c)]

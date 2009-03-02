@@ -506,7 +506,7 @@ i {
 .techinside:hover              { color: blue; }
 .techoutside:hover>.techinside { color: inherit; }
 
-.bibliography td {
+.SBibliography td {
   vertical-align: text-top;
 }
 

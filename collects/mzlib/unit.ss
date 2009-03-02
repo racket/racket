@@ -461,12 +461,12 @@
     (if ctc
         (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
           (quasisyntax/loc (error-syntax)
-            (quote-syntax (let ([v/c ((car #,loc))])
+            (quote-syntax (let ([v/c (#,loc)])
                             (contract ctc-stx (car v/c) (cdr v/c)
                                       (current-contract-region)
                                       #,(id->contract-src-info var))))))
         (quasisyntax/loc (error-syntax)
-          (quote-syntax ((car #,loc))))))
+          (quote-syntax (#,loc)))))
   
   ;; build-unit : syntax-object -> 
   ;;             (values syntax-object (listof identifier) (listof identifier))
@@ -546,10 +546,7 @@
                (list (cons 'dept depr) ...)
                (syntax-parameterize ([current-contract-region (lambda (stx) #'(quote (unit name)))])
                  (lambda ()
-                   (let ([eloc (let ([loc (box undefined)])
-                                 (cons
-                                  (λ () (unbox loc))
-                                  (λ (v) (set-box! loc v))))] ... ...)
+                   (let ([eloc (box undefined)] ... ...)
                      (values 
                       (lambda (import-table)
                         (let-values ([(iloc ...)
@@ -576,7 +573,7 @@
                                                         (eloc ... ...)
                                                         (ectc ... ...)
                                                         . body)))))
-                      (unit-export ((export-key ...) (vector-immutable eloc ...)) ...)))))))
+                      (unit-export ((export-key ...) (vector-immutable (λ () (unbox eloc)) ...)) ...)))))))
             import-tagged-sigids
             export-tagged-sigids
             dep-tagged-sigids))))))
@@ -723,12 +720,10 @@
                                                                                         (current-contract-region)
                                                                                         'cant-happen
                                                                                         #,(id->contract-src-info id))
-                                                                              ((cdr #,export-loc) 
-                                                                               (let ([#,id #,tmp])
-                                                                                 (cons #,id (current-contract-region))))))
+                                                                              (set-box! #,export-loc
+                                                                                        (cons #,tmp (current-contract-region)))))
                                                                           (quasisyntax/loc defn-or-expr
-                                                                            ((cdr #,export-loc) 
-                                                                             (let ([#,id #,tmp]) #,id))))
+                                                                            (set-box! #,export-loc #,tmp)))
                                                                       (quasisyntax/loc defn-or-expr
                                                                         (define-syntax #,id 
                                                                           (make-id-mapper (quote-syntax #,tmp)))))))]
@@ -795,27 +790,22 @@
                                                              #`(letrec-syntax #,rename-bindings #,ctc)
                                                              'inferred-name var)
                                                         ctc)])
-                               (if (or target-ctc ctc)
-                                   #`(cons
-                                      (λ ()
-                                        (let ([old-v #,(if ctc
-                                                           #`(let ([old-v/c ((car #,vref))])
-                                                               (contract ctc-stx (car old-v/c) 
-                                                                         (cdr old-v/c) (current-contract-region)
-                                                                         #,(id->contract-src-info var)))
-                                                           #`((car #,vref)))])
-                                          #,(if target-ctc
-                                                #'(cons old-v (current-contract-region))
-                                                #'old-v)))
-                                      (λ (v) (let ([new-v #,(if ctc
-                                                                #`(contract ctc-stx (car v)
-                                                                            (current-contract-region) (cdr v)
-                                                                            #,(id->contract-src-info var))
-                                                                #'v)])
-                                               #,(if target-ctc
-                                                     #`((cdr #,vref) (cons new-v (current-contract-region)))
-                                                     #`((cdr #,vref) new-v)))))
-                                   vref))))
+                               (if target-ctc
+                                   #`(λ ()
+                                       (cons #,(if ctc
+                                                   #`(let ([old-v/c (#,vref)])
+                                                       (contract ctc-stx (car old-v/c) 
+                                                                 (cdr old-v/c) (current-contract-region)
+                                                                 #,(id->contract-src-info var)))
+                                                   #`(#,vref))
+                                             (current-contract-region)))
+                                   (if ctc
+                                       #`(λ ()
+                                           (let ([old-v/c (#,vref)])
+                                             (contract ctc-stx (car old-v/c) 
+                                                       (cdr old-v/c) (current-contract-region)
+                                                       #,(id->contract-src-info var))))
+                                       vref)))))
                          (car target-sig)
                          (cadddr target-sig)))
                       target-import-sigs))
@@ -1277,16 +1267,16 @@
                                (define rename-bindings 
                                  (get-member-bindings def-table os #'(#%variable-reference)))
                                (map (λ (tb i v c)
-                                      #`(let ([v/c ((car #,tb))])
-                                          #,(if c
-                                                (with-syntax ([ctc-stx
-                                                               (syntax-property
-                                                                #`(letrec-syntax #,rename-bindings #,c)
-                                                                'inferred-name v)])
-                                                  #`(contract ctc-stx (car v/c) (cdr v/c)
-                                                              (current-contract-region)
-                                                              #,(id->contract-src-info v)))
-                                                #'v/c)))
+                                      (if c
+                                          (with-syntax ([ctc-stx
+                                                         (syntax-property
+                                                          #`(letrec-syntax #,rename-bindings #,c)
+                                                          'inferred-name v)])
+                                            #`(let ([v/c (#,tb)])
+                                                (contract ctc-stx (car v/c) (cdr v/c)
+                                                          (current-contract-region)
+                                                          #,(id->contract-src-info v))))
+                                          #`(#,tb)))
                                     tbs
                                     (iota (length (car os)))
                                     (map car (car os))

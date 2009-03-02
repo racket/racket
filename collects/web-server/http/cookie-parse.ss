@@ -41,9 +41,9 @@
 (define-empty-tokens keywords (EQUALS SEMI COMMA PATH DOMAIN VERSION EOF))
 
 (define cookie-lexer
-  (lexer
+  (lexer-src-pos
    [(eof) (token-EOF)]
-   [whitespace (cookie-lexer input-port)]
+   [whitespace (return-without-pos (cookie-lexer input-port))]
    ["=" (token-EQUALS)]
    [";" (token-SEMI)]
    ["," (token-COMMA)]
@@ -54,8 +54,18 @@
     (token-QUOTED-STRING (substring lexeme 1 (- (string-length lexeme) 1)))]
    [(:+ token-char) (token-TOKEN lexeme)]))
 
+(define current-source-name (make-parameter #f))
+
+(define (make-srcloc start-pos end-pos)
+  (list (current-source-name) 
+        (position-line start-pos)
+        (position-col start-pos)
+        (position-offset start-pos)
+        (- (position-offset end-pos) (position-offset start-pos))))
+
 (define assoc-list-parser
-  (parser (start cookie)
+  (parser (src-pos)
+          (start cookie)
           (tokens regular keywords)
           (grammar (cookie [(VERSION EQUALS rhs separator items) $5]
                            [(items) $1])
@@ -71,16 +81,26 @@
                    (rhs [(TOKEN) $1]
                         [(QUOTED-STRING) $1]))
           (end EOF)
-          (error (lambda (a b c) (error 'assoc-list-parser "Malformed cookie: ~v ~v ~v" a b c)))))
+          (error (lambda (tok-ok? tok-name tok-value start-pos end-pos)
+                   (raise-syntax-error
+                    'assoc-list-parser
+                    (format 
+                     (if tok-ok? 
+                         "Did not expect token ~a"
+                         "Invalid token ~a")
+                     tok-name)
+                    (datum->syntax #f tok-value (make-srcloc start-pos end-pos)))))))
 
 (define (do-parse str)
   (with-handlers ([exn:fail? 
                    (λ (e) empty)])
-    (let ([ip (open-input-string str)])
-      (dynamic-wind
-       void
-       (λ () (raw->cookies (assoc-list-parser (λ () (cookie-lexer ip)))))
-       (λ () (close-input-port ip))))))
+    (with-input-from-string 
+     str
+     (λ () 
+       (let ([ip (current-input-port)])
+         (port-count-lines! ip)
+         (parameterize ([current-source-name (object-name ip)])
+           (raw->cookies (assoc-list-parser (λ () (cookie-lexer ip))))))))))
 
 ;; raw->cookies : flat-property-list -> (listof cookie)
 (define (raw->cookies associations)

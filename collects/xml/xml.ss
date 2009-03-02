@@ -1,7 +1,14 @@
 #lang scheme
-(require "xml-sig.ss"
-         "xml-unit.ss")
+(require "private/structures.ss"
+         "private/reader.ss"
+         "private/space.ss"
+         "private/writer.ss"
+         "private/xexpr.ss"
+         "private/syntax.ss")
 
-(define-values/invoke-unit/infer xml@)
-
-(provide-signature-elements xml^)
+(provide (all-from-out "private/structures.ss"
+                       "private/reader.ss"
+                       "private/space.ss"
+                       "private/writer.ss"
+                       "private/xexpr.ss"
+                       "private/syntax.ss"))

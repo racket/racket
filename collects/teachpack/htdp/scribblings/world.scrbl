@@ -10,6 +10,8 @@
 
 @teachpack["world"]{Simulations and Animations}
 
+@defmodule[#:require-form beginner-require htdp/world #:use-sources (htdp/image)]
+
 @emph{Note}: For a quick and educational introduction to the teachpack, see
 @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
 to Design Programs, Second Edition: Prologue}. As of August 2008, we also
@@ -25,8 +27,6 @@ symbols.
 The teachpack provides two sets of tools. The first allows students to
 create and display a series of animated scenes, i.e., a simulation. The
 second one generalizes the first by adding interactive GUI features. 
-
-@declare-exporting[teachpack/htdp/world #:use-sources (teachpack/htdp/image)]
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "basics"]{Basics}

@@ -52,6 +52,7 @@
                 (append style-extra-files
                         (extract-part-style-files
                          d
+                         ri
                          'tex
                          (lambda (p) #f)))))
         (printf "\\begin{document}\n\\preDoc\n")
@@ -165,16 +166,16 @@
                                 (with-attributes-style s)
                                 s)))]
                 [wrap (lambda (e s tt?)
-                        (printf "{\\~a{" s)
+                        (printf "\\~a{" s)
                         (parameterize ([rendering-tt (or tt? (rendering-tt))])
                           (super render-element e part ri))
-                        (printf "}}"))])
+                        (printf "}"))])
             (cond
               [(symbol? style)
                (case style
                  [(italic) (wrap e "textit" #f)]
                  [(bold) (wrap e "textbf" #f)]
-                 [(tt) (wrap e "mytexttt" #t)]
+                 [(tt) (wrap e "Scribtexttt" #t)]
                  [(no-break) (super render-element e part ri)]
                  [(sf) (wrap e "textsf" #f)]
                  [(subscript) (wrap e "textsub" #f)]
@@ -184,7 +185,7 @@
                     (case (string-length s)
                       [(0) (void)]
                       [else
-                       (printf "\\mbox{\\hphantom{\\mytexttt{~a}}}"
+                       (printf "\\mbox{\\hphantom{\\Scribtexttt{~a}}}"
                                (regexp-replace* #rx"." s "x"))]))]
                  [(newline) (printf "\\\\")]
                  [else (error 'latex-render
@@ -272,7 +273,10 @@
               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
               [inline? (void)]
               [else
-               (printf "\n\n\\begin{~a}~a{@{}~a}\n~a"
+               (printf "\n\n~a\\begin{~a}~a{@{}~a}\n~a"
+                       (if (string? (table-style t))
+                           (format "\\begin{~a}" (table-style t))
+                           "")
                        tableform
                        opt
                        (string-append*
@@ -324,9 +328,12 @@
                 (unless (null? (cdr flowss))
                   (loop (cdr flowss) (cdr row-styles)))))
             (unless inline?
-              (printf "~a\n\n\\end{~a}\n"
-                      "" ; (if (equal? tableform "bigtabular") "\n\\\\" "")
-                      tableform)))))
+              (printf "~a\n\n\\end{~a}~a\n"
+                      ""
+                      tableform
+                      (if (string? (table-style t))
+                           (format "\\end{~a}" (table-style t))
+                           ""))))))
       null)
 
     (define/private (render-table-flow p part ri twidth vstyle)
@@ -365,12 +372,24 @@
         null))
 
     (define/override (render-itemization t part ri)
-      (printf "\n\n\\begin{itemize}\n")
-      (for ([flow (itemization-flows t)])
-        (printf "\n\n\\item ")
-        (render-flow flow part ri #t))
-      (printf "\n\n\\end{itemize}\n")
-      null)
+      (let* ([style-str (and (styled-itemization? t)
+                             (string? (styled-itemization-style t))
+                             (styled-itemization-style t))]
+             [mode (or style-str
+                       (if (and (styled-itemization? t)
+                                (eq? (styled-itemization-style t) 'ordered))
+                           "enumerate"
+                           "itemize"))])
+        (printf "\n\n\\begin{~a}\n" mode)
+        (for ([flow (itemization-flows t)])
+          (printf "\n\n\\~a" (if style-str
+                                  (format "~aItem{" style-str)
+                                  "item "))
+          (render-flow flow part ri #t)
+          (when style-str
+            (printf "}")))
+        (printf "\n\n\\end{~a}\n" mode)
+        null))
 
     (define/override (render-blockquote t part ri)
       (let ([kind (or (blockquote-style t) "quote")])

@@ -305,7 +305,8 @@ argument for consistency with the other functions.}
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
-                      [#:solid? solid? any/c #t])
+                      [#:solid? solid? any/c #t]
+		      [#:hide-arrowhead? any/c #f])
             pict?]
            [(pin-arrows-line [arrow-size real?] [pict pict?]
                       [src pict-path?]
@@ -319,7 +320,8 @@ argument for consistency with the other functions.}
                       [#:line-width line-width (or/c #f real?) #f]
                       [#:color color (or/c #f string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
-                      [#:solid? solid? any/c #t]) 
+                      [#:solid? solid? any/c #t]
+		      [#:hide-arrowhead? any/c #f])
             pict?])]{
 
 Adds a line or line-with-arrows onto @scheme[pict], using one of the
@@ -346,6 +348,10 @@ The @scheme[start-angle], @scheme[end-angle], @scheme[start-pull], and
        values preserve the angle longer.}
 
 ]
+
+When the @scheme[hide-arrowhead?] argument is a true value, then 
+space for the arrowhead is left behind, but the arrowhead itself 
+is not drawn.
 
 The defaults produce a straight line.}
 

@@ -192,6 +192,7 @@ please adhere to these guidelines:
  (cs-status-loading-docs-index "Check Syntax: loading documentation index")
  (cs-mouse-over-import "binding ~s imported from ~s")
  (cs-view-docs "View documentation for ~a")
+ (cs-view-docs-from "~a from ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
   
  (cs-lexical-variable "lexical variable")
  (cs-imported-variable "imported variable")

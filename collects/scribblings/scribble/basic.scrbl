@@ -102,11 +102,13 @@ removed.}
  unnumbered section heading (for when the nesting gets too deep to
  include in a table of contents).}
 
-@defproc[(itemize [itm (or/c whitespace? an-item?)] ...) itemization?]{
+@defproc[(itemize [itm (or/c whitespace? an-item?)] ...
+                  [#:style style any/c #f]) itemization?]{
 
- Constructs an itemization given a sequence of items constructed by
- @scheme[item]. Whitespace strings among the @scheme[itm]s are
- ignored.
+ Constructs an @scheme[itemization] or (when @scheme[style] is not
+ @scheme[#f]) @scheme[styled-itemization] given a sequence of items
+ constructed by @scheme[item]. Whitespace strings among the
+ @scheme[itm]s are ignored.
 
  }
 

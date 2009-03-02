@@ -399,8 +399,8 @@ The @scheme[style] can be any of the following:
 
 @itemize[
 
- @item{A string that corresponds to a CSS class for
-       HTML output (see @secref["extra-style"]).}
+ @item{A string that corresponds to a CSS class for HTML output or an
+       environment for Latex output (see @secref["extra-style"]).}
 
  @item{@scheme['boxed] to render as a definition.}
 
@@ -442,6 +442,23 @@ The @scheme[style] can be any of the following:
 A @techlink{itemization} has a list of flows.
 
 }
+
+
+@defstruct[(styled-itemization itemization) ([style any/c])]{
+
+The @scheme[style] can be
+
+@itemize[
+
+ @item{A string that corresponds to a CSS class for HTML output or a
+       macro for Latex output (see @secref["extra-style"]).}
+
+ @item{The symbol @scheme['ordered], which generates @tt{<ol>} HTML
+       output instead of @tt{<li>} or an Latex enumeration instead of
+       an itemization.}
+
+]}
+
 
 @defstruct[blockquote ([style any/c]
                        [paragraphs (listof flow-element?)])]{

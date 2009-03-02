@@ -46,10 +46,10 @@
              (λ (v stx)
                  (if c
                      (with-syntax ([c-stx (syntax-property c 'inferred-name v)])
-                       #`(let ([v/c ((car #,stx))])
+                       #`(let ([v/c (#,stx)])
                            (contract c-stx (car v/c) (cdr v/c) #,blame
                                      #,(id->contract-src-info v))))
-                     #`((car #,stx))))])
+                     #`(#,stx)))])
       #`[#,i
          (make-set!-transformer
           (λ (stx)

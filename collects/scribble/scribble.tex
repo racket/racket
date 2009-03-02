@@ -9,7 +9,7 @@
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
 
-\newcommand{\inColor}[2]{{\mytexttt{\color{#1}{#2}}}}
+\newcommand{\inColor}[2]{{\Scribtexttt{\color{#1}{#2}}}}
 \definecolor{CommentColor}{rgb}{0.76,0.45,0.12}
 \definecolor{ParenColor}{rgb}{0.52,0.24,0.14}
 \definecolor{IdentifierColor}{rgb}{0.15,0.15,0.50}
@@ -19,9 +19,9 @@
 \definecolor{PaleBlue}{rgb}{0.90,0.90,1.0}
 \definecolor{LightGray}{rgb}{0.90,0.90,0.90}
 
-\newcommand{\mytexttt}[1]{{\texttt{#1}}}
+\newcommand{\Scribtexttt}[1]{{\texttt{#1}}}
 \newcommand{\schemeplain}[1]{\inColor{black}{#1}}
-\newcommand{\schemekeyword}[1]{{\color{black}{\mytexttt{\textbf{#1}}}}}
+\newcommand{\schemekeyword}[1]{{\color{black}{\Scribtexttt{\textbf{#1}}}}}
 \newcommand{\schemesyntaxlink}[1]{\schemekeyword{#1}}
 \newcommand{\schemecomment}[1]{\inColor{CommentColor}{#1}}
 \newcommand{\schemeparen}[1]{\inColor{ParenColor}{#1}}
@@ -40,8 +40,8 @@
 \newcommand{\schemeerrorcol}[1]{\inColor{red}{#1}}
 \newcommand{\schemeerror}[1]{{\schemeerrorcol{\textrm{\textit{#1}}}}}
 \newcommand{\schemeopt}[1]{#1}
-\newcommand{\textsub}[1]{$_{#1}$}
-\newcommand{\textsuper}[1]{$^{#1}$}
+\newcommand{\textsub}[1]{$_{\hbox{\textsmaller{#1}}}$}
+\newcommand{\textsuper}[1]{$^{\hbox{\textsmaller{#1}}}$}
 \newcommand{\refcolumn}[1]{#1}
 \newcommand{\refcontent}[1]{#1}
 \newcommand{\intextcolor}[2]{\textcolor{#1}{#2}}
@@ -77,6 +77,16 @@
 \newenvironment{bibentry}[1]{\parbox[t]{0.8\linewidth}{#1}}
 
 \newenvironment{bigtabular}{\begin{longtable}}{\end{longtable}\vspace{-3ex}}
+
+\newenvironment{schemeblock}{}{}
+\newenvironment{defmodule}{}{}
+\newenvironment{prototype}{}{}
+\newenvironment{argcontract}{}{}
+\newenvironment{together}{}{}
+\newenvironment{SBibliography}{}{}
+
+\newenvironment{compact}{\begin{itemize}}{\end{itemize}}
+\newcommand{\compactItem}[1]{\item #1}
 
 \newcommand{\SecRef}[2]{\S#1 ``#2''}
 

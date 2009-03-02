@@ -25,4 +25,6 @@
     "syntax-color"
     "typed-scheme"
     "units"
+    "xml"
+    "html"
     "web-server"))

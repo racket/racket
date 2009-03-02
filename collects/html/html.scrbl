@@ -24,10 +24,10 @@ Reads (X)HTML from a port, producing an @scheme[html] instance.}
 
 
 @defproc[(read-html-as-xml [port input-port?])
-         (listof content?)]{
+         (listof content/c)]{
  
 Reads HTML from a port, producing an @xexpr compatible with the
-@schememodname[xml] library (which defines @scheme[content?]).}
+@schememodname[xml] library (which defines @scheme[content/c]).}
 
 @defboolparam[read-html-comments v]{
  If @scheme[v] is not @scheme[#f], then comments are read and returned. Defaults to @scheme[#f].
@@ -287,7 +287,7 @@ A @scheme[Contents-of-head] is either
 @itemize[
   @item[@scheme[base]]
   @item[@scheme[isindex]]
-  @item[@scheme[link]]
+  @item[@scheme[alink]]
   @item[@scheme[meta]]
   @item[@scheme[object]]
   @item[@scheme[script]]

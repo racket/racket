@@ -56,13 +56,13 @@ original file's name:
 
 }
 
-When a file in an active DrScheme editor is modified but not saved,
-DrScheme saves the file to a special autosave file after five minutes
-(in case of a power failure or catastrophic error). If the file is
-later saved, or if the user exists DrScheme without saving the file,
-the autosave file is removed. The autosave file is saved in the same
-directory as the original file, and the autosave file's name is
-generated from the original file's name:
+Every five minutes, DrScheme checks each open file. If any file is
+modified and not saved, DrScheme saves the file to a special autosave
+file (just in case there is a power failure or some other catastrophic
+error). If the file is later saved, or if the user exists DrScheme
+without saving the file, the autosave file is removed. The autosave
+file is saved in the same directory as the original file, and the
+autosave file's name is generated from the original file's name:
 
 @itemize{
 

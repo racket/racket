@@ -72,7 +72,8 @@
                         ((or/c false/c number?) 
                          (or/c false/c string?)
                          boolean?
-                         boolean?)
+                         boolean?
+                         #:hide-arrowhead? any/c)
                         pict?)]
    [pin-arrows-line (->* (number? pict?
                            pict? (-> pict? pict? (values number? number?))
@@ -80,7 +81,8 @@
                           ((or/c false/c number?)
                            (or/c false/c string?)
                            boolean?
-                           boolean?)
+                           boolean?
+                           #:hide-arrowhead? any/c)
                           pict?)])
 
 
@@ -184,7 +186,7 @@
 	  (send dc set-pen (send the-pen-list
 				 find-or-create-pen
 				 (send p get-color)
-				 0
+				 (if solid? 0 (send p get-width))
 				 'solid))
 	  (send dc set-brush (send the-brush-list
 				   find-or-create-brush
@@ -774,7 +776,8 @@
               (send dc set-brush old-brush)))
           w h)))
 
-  (define (-add-line base src find-src dest find-dest thickness color arrow-size arrow2-size under? solid-head?)
+  (define (-add-line base src find-src dest find-dest thickness color arrow-size arrow2-size under? solid-head?
+                     #:hide-arrowhead? [hide-arrowhead? #f])
     (let-values ([(sx sy) (find-src base src)]
                  [(dx dy) (find-dest base dest)])
       (let ([arrows
@@ -790,7 +793,8 @@
                                  [dsx (* (or arrow2-size 0) 0.5 (- cosa))]
                                  [dsy (* (or arrow2-size 0) 0.5 (- sina))])
                             `(connect ,(+ sx dsx) ,(+ sy dsy) ,(+ dx ddx) ,(+ dy ddy)))
-                         ,@(if arrow-size
+                         ,@(if (and arrow-size
+                                    (not hide-arrowhead?))
                                (let-values ([(arrow xo yo)
                                              (arrowhead/delta
                                               (or thickness 0)
@@ -800,7 +804,8 @@
                                               solid-head?)])
                                  `((place ,(+ dx xo) ,(+ dy yo) ,arrow)))
                                null)
-                         ,@(if arrow2-size
+                         ,@(if (and arrow2-size
+                                    (not hide-arrowhead?))
                                (let-values ([(arrow xo yo)
                                              (arrowhead/delta
                                               (or thickness 0)
@@ -827,12 +832,16 @@
       (-add-line base src find-src dest find-dest thickness color #f #f under? #t)))
   
   (define add-arrow-line
-    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
-      (-add-line base src find-src dest find-dest thickness color arrow-size #f under? #t)))
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f]
+                        #:hide-arrowhead? [hide-arrowhead? #f])
+      (-add-line base src find-src dest find-dest thickness color arrow-size #f under? #t
+                 #:hide-arrowhead? hide-arrowhead?)))
   
   (define add-arrows-line
-    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
-      (-add-line base src find-src dest find-dest thickness color arrow-size arrow-size under? #t)))
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f]
+                        #:hide-arrowhead? [hide-arrowhead? #f])
+      (-add-line base src find-src dest find-dest thickness color arrow-size arrow-size under? #t
+                 #:hide-arrowhead? hide-arrowhead?)))
 
   (define (flip-find-y find-)
     (lambda (base path)
@@ -842,17 +851,21 @@
   (define pin-line
     (lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
-		 thickness color #f #f under? #t)))
-  
+                 thickness color #f #f under? #t)))
+
   (define pin-arrow-line
-    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t]
+                        #:hide-arrowhead? [hide-arrowhead? #f])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
-		 thickness color arrow-size #f under? solid-head?)))
+		 thickness color arrow-size #f under? solid-head?
+                 #:hide-arrowhead? hide-arrowhead?)))
   
   (define pin-arrows-line
-    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t]
+                        #:hide-arrowhead? [hide-arrowhead? #f])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
-                 thickness color arrow-size arrow-size under? solid-head?)))
+                 thickness color arrow-size arrow-size under? solid-head?
+                 #:hide-arrowhead? hide-arrowhead?)))
   
   (define black-color (make-object color% 0 0 0))
 
