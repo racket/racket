@@ -21,8 +21,8 @@ If the namespace does not, they are colored the unbound color.
          scheme/unit
          scheme/contract
          scheme/class
+         scheme/list
          drscheme/tool
-         mzlib/list
          syntax/toplevel
          syntax/boundmap
          mrlib/switchable-button
@@ -2574,7 +2574,8 @@ If the namespace does not, they are colored the unbound color.
                           (when path
                             (let ([index-entry (xref-tag->index-entry xref definition-tag)])
                               (when index-entry
-                                (send defs-text syncheck:add-background-color source-editor "navajowhite" start fin (syntax-e stx))
+                                (send defs-text syncheck:add-background-color
+                                      source-editor "navajowhite" start fin (syntax-e stx))
                                 (send defs-text syncheck:add-menu
                                       source-editor
                                       start 
@@ -2583,7 +2584,7 @@ If the namespace does not, they are colored the unbound color.
                                       (λ (menu)
                                         (instantiate menu-item% ()
                                           (parent menu)
-                                          (label (fw:gui-utils:format-literal-label (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
+                                          (label (build-docs-label (entry-desc index-entry)))
                                           (callback
                                            (λ (x y)
                                               (let* ([url (path->url path)]
@@ -2598,6 +2599,24 @@ If the namespace does not, they are colored the unbound color.
                                                                          tag)
                                                                url)])
                                                 (send-url (url->string url2))))))))))))))))))))))
+    
+    (define (build-docs-label desc)
+      (let ([libs (exported-index-desc-from-libs desc)])
+        (cond
+          [(null? libs)
+           (fw:gui-utils:format-literal-label
+            (string-constant cs-view-docs)
+            (exported-index-desc-name desc))]
+          [else
+           (fw:gui-utils:format-literal-label
+            (string-constant cs-view-docs-from)
+            (format 
+             (string-constant cs-view-docs)
+             (exported-index-desc-name desc))
+            (apply string-append 
+                   (add-between 
+                    (map (λ (x) (format "~s" x)) libs) 
+                    ", ")))])))
     
     
     
