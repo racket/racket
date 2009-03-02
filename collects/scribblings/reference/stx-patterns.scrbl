@@ -348,7 +348,8 @@ for use only with a @scheme[quasisyntax] template.}
 Like @scheme[syntax], except that the immediate resulting syntax
 object takes its source-location information from the result of
 @scheme[stx-expr] (which must produce a syntax object), unless the
-@scheme[template] is just a pattern variable.}
+@scheme[template] is just a pattern variable or both the source and
+position of @scheme[stx-expr] are @scheme[#f].}
 
 
 @defform[(quasisyntax/loc stx-expr template)]{
