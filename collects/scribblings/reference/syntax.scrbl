@@ -843,6 +843,20 @@ follows.
    (require 'a)
    foo
    (weak-eval 'foo)
+ ]
+
+ Note that @scheme[require] works within eval as well.
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (protect-out foo))
+     (define foo 1))
+   (define weak-inspector (make-inspector (current-code-inspector)))
+   (define (weak-eval x)
+     (parameterize ([current-code-inspector weak-inspector])
+       (eval x)))
+   (weak-eval '(require 'a))
+   foo
+   (weak-eval 'foo)
  ]}
 
  @specsubform[#:literals (for-meta) 
