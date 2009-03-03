@@ -817,7 +817,7 @@
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
                 (let* ([pdf (scr:call 'run-pdflatex f
                                       (lambda (fmt . xs)
-                                        (apply setup-printf "pdflatex" fmt xs)))]
+                                        (apply setup-printf #f fmt xs)))]
                        [target (build-path dest-dir pdf)])
                   (when (file-exists? target) (delete-file target))
                   (copy-file pdf target)))))
