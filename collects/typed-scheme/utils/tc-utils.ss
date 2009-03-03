@@ -1,4 +1,10 @@
 #lang scheme/base
+
+#|
+This file is for utilities that are only useful for Typed Scheme, but
+don't depend on any other portion of the system
+|#
+
 (provide (all-defined-out))
 (require "syntax-traversal.ss" (for-syntax scheme/base stxclass) scheme/match)
 

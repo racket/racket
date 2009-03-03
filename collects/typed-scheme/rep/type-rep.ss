@@ -12,7 +12,7 @@
 
 (define Type/c
   (flat-named-contract
-   "Type"
+   'Type
    (λ (e)
      (and (Type? e)
           (not (Scope? e))
@@ -129,7 +129,7 @@
 
 (dt Result ([t Type/c] [f LFilterSet?] [o LatentObject?])
     [#:frees (λ (frees) (combine-frees (map frees (list t f o))))]
-    [#:fold-rhs (*Result (type-rec-id t) (latentfilter-rec-id f) (latentobject-rec-id f))])
+    [#:fold-rhs (*Result (type-rec-id t) (latentfilter-rec-id f) (latentobject-rec-id o))])
 
 ;; types : Listof[Type]
 (dt Values ([rs (listof Result?)]) 

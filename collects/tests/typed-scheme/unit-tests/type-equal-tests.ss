@@ -2,12 +2,12 @@
 
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (types comparison type-abbrev)
+	 (types comparison abbrev union)
          (schemeunit))
 
 (provide type-equal-tests)
 
-(define (-base x) (make-Base x #f))
+(define (-base x) (make-Base x #'dummy))
 
 
 (define-syntax (te-tests stx)
@@ -37,13 +37,11 @@
    [(-mu x (Un N Sym x)) (-mu y (Un N Sym y))]     
    ;; found bug
    [FAIL (Un (-mu heap-node 
-                  (-struct 'heap-node #f (list (-base 'comparator) N (-v a) (Un heap-node (-base 'heap-empty))) #f  #f #f values)) 
+                  (-struct 'heap-node #f (list (-base 'comparator) N (-v a) (Un heap-node (-base 'heap-empty))))) 
              (-base 'heap-empty))
          (Un (-mu heap-node 
-                  (-struct 'heap-node #f (list (-base 'comparator) N (-pair N N) (Un heap-node (-base 'heap-empty))) #f #f #f values)) 
+                  (-struct 'heap-node #f (list (-base 'comparator) N (-pair N N) (Un heap-node (-base 'heap-empty))))) 
              (-base 'heap-empty))]))
-
-
 
 (define-go
   type-equal-tests)

@@ -8,7 +8,7 @@
          (for-syntax scheme/base))
 
 
-(require (types comparison type-utils)
+(require (types comparison utils)
          (schemeunit))
 
 (provide private typecheck (rename-out [infer r:infer]) utils env rep types)

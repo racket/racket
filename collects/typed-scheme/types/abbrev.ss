@@ -19,7 +19,6 @@
 
 (define -values make-Values)
 (define -pair make-Pair)
-(define -struct make-Struct)
 (define -val make-Value)
 (define -Param make-Param)
 (define -box make-Box)
@@ -210,6 +209,9 @@
 
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #:drest (cons dty dbound)))
+
+(define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy] [cert values])
+  (make-Struct name parent flds proc poly pred cert))
 
 
 (define make-pred-ty

@@ -1,5 +1,10 @@
 #lang scheme/base
 
+#|
+This file is for utilities that are of general interest, 
+at least theoretically.
+|#
+
 (require (for-syntax scheme/base stxclass)
          scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
          mzlib/struct scheme/unit
@@ -15,9 +20,7 @@
          in-list-forever
          extend
          debug
-         in-syntax
-	 ;; require macros
-	 rep utils typecheck infer env private types)
+         in-syntax)
 
 (define-syntax (define-requirer stx)
   (syntax-parse stx
