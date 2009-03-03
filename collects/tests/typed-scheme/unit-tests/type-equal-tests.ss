@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (private type-comparison type-effect-convenience union subtype)
+	 (types comparison type-abbrev)
          (schemeunit))
 
 (provide type-equal-tests)

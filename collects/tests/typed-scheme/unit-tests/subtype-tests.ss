@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" "planet-requires.ss")
 
-(require (private subtype type-effect-convenience union)
+(require (types subtype type-effect-convenience union)
 	 (rep type-rep)
 	 (env init-envs type-environments)
 	 (r:infer infer infer-dummy)
