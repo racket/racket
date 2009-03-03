@@ -12,7 +12,8 @@
          (for-syntax scheme/base stxclass)
 	 (for-template scheme/base scheme/contract scheme/tcp))
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+         (rename-out [make-Listof -lst]))
 
 ;; convenient constructors
 
@@ -20,7 +21,6 @@
 (define -pair make-Pair)
 (define -struct make-Struct)
 (define -val make-Value)
-(define -lst make-Listof)
 (define -Param make-Param)
 (define -box make-Box)
 (define -vec make-Vector)

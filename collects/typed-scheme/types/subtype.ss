@@ -99,9 +99,29 @@
 				 [args (syntax->list #'(args1 args ...))]
 				 [A (syntax->list #'(init A* ...))]
 				 [A-next (syntax->list #'(A* ... A-last))])
-			 #`[A-next (#,s #,A . #,args)])])
+			 #`[#,A-next (#,s #,A . #,args)])])
 	#'(let* (clauses ...)
 	    A-last)))]))
+
+(define (kw-subtypes* A0 t-kws s-kws)
+  (let loop ([A A0] [t t-kws] [s s-kws])    
+    (match* (t s)
+      [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
+       (cond [(eq? kt ks)
+              (if  
+               ;; if s is optional, t must be as well
+               (or rs (not rt))
+               (loop (subtype A tt ts) rest-t rest-s)
+               (fail! t s))]
+             ;; extra keywords in t are ok
+             ;; we just ignore them
+             [(keyword<? kt ks) (loop A rest-t s)]
+             ;; extra keywords in s are a problem
+             [else (fail! t s)])]
+      ;; no more keywords to satisfy
+      [(_ '()) A]
+      ;; we failed to satisfy all the keyword
+      [(_ _) (fail! s t)])))
 
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
@@ -112,33 +132,11 @@
       [(list _ (top-arr:)) A0]
       [(list (arr: s1 s2 #f #f s-kws) 
              (arr: t1 t2 #f #f t-kws))
-       ;; optional keywords are subtypes of required keywords
-       (unless (for/and ([s-r s-req] [t-r t-req])
-			(or (eq? s-r t-r) (not s-r)))
-	       (fail! s t))
        (subtype-seq A0
-		    (subtypes* t1 s1)
-		    (kw-subtypes* t-kws s-kws)
-		    (subtype* s2 t2))]
-      [(list (arr: s1 s2 s3 #f (list (cons kw s-kw-ty) ...) thn-eff els-eff)
-             (arr: t1 t2 t3 #f (list (cons kw t-kw-ty) ...) thn-eff* els-eff*))
-       (unless 
-           (or (and (null? thn-eff*) (null? els-eff*))
-               (and (effects-equal? thn-eff thn-eff*)
-                    (effects-equal? els-eff els-eff*))
-               (and 
-                (= (length thn-eff) (length thn-eff*))
-                (= (length els-eff) (length els-eff*))
-                (andmap sub-eff thn-eff thn-eff*)
-                (andmap sub-eff els-eff els-eff*)))
-         (fail! s t))
-       ;; either the effects have to be the same, or the supertype can't have effects
-       (let* ([A2 (subtypes*/varargs A0 t1 s1 s3)]
-              [A3 (subtypes* A2 t-kw-ty s-kw-ty)])
-         (if (not t3)
-             (subtype* A3 s2 t2)
-             (let ([A1 (subtype* A3 t3 s3)])
-               (subtype* A1 s2 t2))))]
+                    (subtypes* t1 s1)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s2 t2))]
+      ;; FIXME - handle varargs
       [else 
        (fail! s t)])))
 

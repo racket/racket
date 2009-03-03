@@ -20,7 +20,7 @@
          debug
          in-syntax
 	 ;; require macros
-	 rep utils typecheck infer env private)
+	 rep utils typecheck infer env private types)
 
 (define-syntax (define-requirer stx)
   (syntax-parse stx
