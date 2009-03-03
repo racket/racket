@@ -154,12 +154,12 @@
                 #:filters [filters -no-lfilter] #:object [obj -no-lobj])
   (c:->* ((listof Type/c) Type/c)
          (#:rest Type/c 
-          #:drest (cons/c symbol? Type/c)
+          #:drest (cons/c Type/c symbol?)
           #:kws (listof Keyword?)
           #:filters LFilterSet?
           #:object LatentObject?)
          arr?)
-  (make-arr dom (-result rng filters obj) rest drest (sort #:key Keyword-kw kws keyword<?)))
+  (make-arr dom (-values (list (-result rng filters obj))) rest drest (sort #:key Keyword-kw kws keyword<?)))
 
 (define-syntax ->*
   (syntax-rules (:)
