@@ -220,7 +220,8 @@
               (syntax->list (syntax (shortcuts ...)))
               #'(list lws ...)
               (syntax-e #'allow-zero-rules?)
-              domain-pattern))))]
+              domain-pattern
+              main-arrow))))]
       [(_ id orig-reduction-relation lang args ...)
        (raise-syntax-error (syntax-e #'id) 
                            "expected an identifier for the language name"
@@ -233,7 +234,7 @@
       
       ;; ensure no duplicate keywords
       (let ([ht (make-hash)]
-            [known-keywords '(#;#:arrow #:domain)])  ;; #:arrow not yet implemented
+            [known-keywords '(#:arrow #:domain)])  ;; #:arrow not yet implemented
         (for-each (λ (kwd/stx)  ;; (not necc a keyword)
                     (let ([kwd (syntax-e kwd/stx)])
                       (when (keyword? kwd)
@@ -261,8 +262,14 @@
                                "expected a domain after #:domain"
                                stx)]
           [(#:arrow arrow . args)
+           (identifier? #'arrow)
            (begin (set! default-arrow #'arrow)
                   (loop #'args))]
+          [(#:arrow arrow . args)
+           (raise-syntax-error (syntax-e id) 
+                               "expected an arrow after #:arrow, not a compound expression"
+                               stx
+                               #'arrow)]
           [(#:arrow)
            (raise-syntax-error (syntax-e id) 
                                "expected an arrow after #:arrow"
@@ -383,7 +390,8 @@
   (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts 
                                      lws 
                                      allow-zero-rules?
-                                     domain-pattern)
+                                     domain-pattern
+                                     main-arrow)
     (let ([ht (make-module-identifier-mapping)]
           [all-top-levels '()]
           [withs (make-module-identifier-mapping)])
@@ -421,14 +429,17 @@
                        (set! all-top-levels (cons #'arrow all-top-levels))
                        (table-cons! ht (syntax arrow) rule))]))
                 rules)
+      
       ;; signal a syntax error if there are shortcuts defined, but no rules that use them
       (unless (null? shortcuts)
-        (unless (module-identifier-mapping-get ht (syntax -->) (λ () #f))
-          (raise-syntax-error orig-name "no --> rules" stx)))
+        (unless (module-identifier-mapping-get ht main-arrow (λ () #f))
+          (raise-syntax-error orig-name 
+                              (format "no ~a rules" (syntax-e main-arrow))
+                              stx)))
       
       (for-each (λ (tl)
                   (let loop ([id tl])
-                    (unless (free-identifier=? #'--> id)
+                    (unless (free-identifier=? main-arrow id)
                       (let ([nexts
                              (module-identifier-mapping-get
                               withs id 
@@ -445,7 +456,7 @@
       (let ([name-ht (make-hasheq)]
             [lang-nts (language-id-nts lang-id orig-name)])
         (with-syntax ([lang-id lang-id]
-                      [(top-level ...) (get-choices stx orig-name ht lang-id (syntax -->)
+                      [(top-level ...) (get-choices stx orig-name ht lang-id main-arrow
                                                     name-ht lang-id allow-zero-rules?)]
                       [(rule-names ...) (hash-map name-ht (λ (k v) k))]
                       [lws lws]

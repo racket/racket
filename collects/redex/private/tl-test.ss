@@ -843,6 +843,15 @@
     (test (apply-reduction-relation r1 (term (1 2)))
           (list (term (2 1)))))
   
+  ;;test that #:arrow keyword works
+  (test (apply-reduction-relation 
+         (reduction-relation 
+          empty-language
+          #:arrow :->
+          (:-> 1 2))
+         1)
+        '(2))
+  
   (parameterize ([current-namespace syn-err-test-namespace])
     (eval (quote-syntax
            (define-language grammar
