@@ -218,3 +218,10 @@
      (->* in out : (-LFS (list (make-LTypeFilter t null 0)) (list (make-LNotTypeFilter t null 0))))]
     [(t) (make-pred-ty (list Univ) B t)]))
 
+
+(define (opt-fn args opt-args result)
+  (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         
+                 (make-Function (list (make-arr* (append args (take opt-args i)) result))))))
+
+(define-syntax-rule (->opt args ... [opt ...] res)
+  (opt-fn (list args ...) (list opt ...) res))

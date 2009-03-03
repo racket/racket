@@ -10,7 +10,7 @@
          scheme/promise
          (for-syntax stxclass)
          (for-syntax scheme/base)
-         (for-template scheme/base scheme/contract scheme/tcp))
+         (for-template scheme/base))
 
 (provide (all-defined-out)
          (all-from-out "abbrev.ss")
@@ -23,31 +23,6 @@
 (define (Un/eff . args)
   (apply Un (map tc-result-t args)))
 
-
-(define-syntax (make-env stx)
-  (syntax-case stx ()
-    [(_ e ...)
-     #`(list
-        #,@(map (lambda (e)
-                  (syntax-case e ()
-                    [(nm ty)
-                     (identifier? #'nm)
-                     #`(list  #'nm ty)]
-                    [(e ty extra-mods ...)
-                     #'(let ([x (list (let ([new-ns
-                                             (let* ([ns (make-empty-namespace)])
-                                               (namespace-attach-module (current-namespace)
-                                                                        'scheme/base
-                                                                        ns)
-                                               ns)])
-                                        (parameterize ([current-namespace new-ns])
-                                          (namespace-require 'scheme/base)
-                                          (namespace-require 'extra-mods) ...
-                                          e))
-                                      ty)])
-                         ;(display x) (newline)
-                         x)]))
-                (syntax->list #'(e ...))))]))
 
 ;; if t is of the form (Pair t* (Pair t* ... (Listof t*)))
 ;; return t*
@@ -65,15 +40,6 @@
                t-new
                (exit t)))]
         [_ (exit t)]))))
-
-
-
-(define (opt-fn args opt-args result)
-  (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         
-                 (make-Function (list (make-arr* (append args (take opt-args i)) result))))))
-
-(define-syntax-rule (->opt args ... [opt ...] res)
-  (opt-fn (list args ...) (list opt ...) res))
 
 
 ;; DO NOT USE if t contains #f

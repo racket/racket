@@ -1,11 +1,8 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base stxclass)
-         scheme/contract
-         mzlib/plt-match
-	 scheme/require-syntax
-         mzlib/struct
-         scheme/unit
+         scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
+         mzlib/struct scheme/unit
          (except-in stxclass id))
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
@@ -24,33 +21,51 @@
 
 (define-syntax (define-requirer stx)
   (syntax-parse stx
-    [(_ nm:id)
+    [(_ nm:id nm-out:id)
      #`(...
-	(define-require-syntax (nm stx)
-          (syntax-parse stx
-            [(_ id:identifier ...)
-             (with-syntax ([(id* ...)
-                            (map (lambda (id) 
-                                   (datum->syntax 
-                                    id
-                                    `(file
-                                      ,(path->string
-                                        (build-path (collection-path "typed-scheme"
-                                                                     #,(symbol->string (syntax-e #'nm)))
-                                                    (string-append (symbol->string (syntax-e id))
-                                                                   ".ss"))))
-                                    id id))
-                                 (syntax->list #'(id ...)))])
-               (syntax/loc stx (combine-in id* ...)))])))]))
+        (begin
+          (define-require-syntax (nm stx)
+            (syntax-parse stx
+              [(_ id:identifier ...)
+               (with-syntax ([(id* ...)
+                              (map (lambda (id) 
+                                     (datum->syntax 
+                                      id
+                                      `(file
+                                        ,(path->string
+                                          (build-path (collection-path "typed-scheme"
+                                                                       #,(symbol->string (syntax-e #'nm)))
+                                                      (string-append (symbol->string (syntax-e id))
+                                                                     ".ss"))))
+                                      id id))
+                                   (syntax->list #'(id ...)))])
+                 (syntax/loc stx (combine-in id* ...)))]))
+          (define-provide-syntax (nm-out stx)
+            (syntax-parse stx
+              [(_ id:identifier ...)
+               (with-syntax ([(id* ...)
+                              (map (lambda (id) 
+                                     (datum->syntax 
+                                      id
+                                      `(file
+                                        ,(path->string
+                                          (build-path (collection-path "typed-scheme"
+                                                                       #,(symbol->string (syntax-e #'nm)))
+                                                      (string-append (symbol->string (syntax-e id))
+                                                                     ".ss"))))
+                                      id id))
+                                   (syntax->list #'(id ...)))])
+                 (syntax/loc stx (combine-out (all-from-out id*) ...)))]))
+          (provide nm nm-out)))]))
 
 
-(define-requirer rep)
-(define-requirer infer)
-(define-requirer typecheck)
-(define-requirer utils)
-(define-requirer env)
-(define-requirer private)
-(define-requirer types)
+(define-requirer rep rep-out)
+(define-requirer infer infer-out)
+(define-requirer typecheck typecheck-out)
+(define-requirer utils utils-out)
+(define-requirer env env-out)
+(define-requirer private private-out)
+(define-requirer types types-out)
 
 (define-sequence-syntax in-syntax 
   (lambda () #'syntax->list)
