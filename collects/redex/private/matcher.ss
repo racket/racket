@@ -612,7 +612,7 @@ before the pattern compiler is invoked.
        (mtch-context match)
        (mtch-hole match)))))
 
-;; compile-pattern : compiled-lang pattern boolean (listof sym) -> compiled-pattern
+;; compile-pattern : compiled-lang pattern boolean -> compiled-pattern
 (define (compile-pattern clang pattern bind-names?)
   (let-values ([(pattern has-hole?) (compile-pattern/cross? clang pattern #t bind-names?)])
     (make-compiled-pattern pattern)))

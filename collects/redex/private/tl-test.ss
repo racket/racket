@@ -750,6 +750,99 @@
          '(p q r))
         (list '((p q r))))
 
+  #;
+  (test (apply-reduction-relation
+         (reduction-relation 
+          empty-language
+          #:main-arrow :->
+          (:-> 1 2))
+         1)
+        '(2))
+  
+  (test (apply-reduction-relation
+         (reduction-relation 
+          empty-language
+          #:domain number
+          (--> 1 2))
+         1)
+        '(2))
+  
+  
+  (test (let ([red
+               (reduction-relation 
+                empty-language
+                #:domain number
+                (--> 1 2))])
+          (with-handlers ((exn? exn-message))
+            (apply-reduction-relation red 'x)
+            'no-exception-raised))
+        "reduction-relation: relation not defined for x")
+
+  (test (let ([red
+               (reduction-relation 
+                empty-language
+                #:domain number
+                (--> 1 x))])
+          (with-handlers ((exn? exn-message))
+            (apply-reduction-relation red 1)
+            'no-exception-raised))
+        "reduction-relation: relation reduced to x, which is outside its domain")
+
+  (let* ([red1
+          (reduction-relation 
+           empty-language
+           #:domain (side-condition number_1 (even? (term number_1)))
+           (--> number number))]
+         [red2
+          (reduction-relation 
+           empty-language
+           #:domain (side-condition number_1 (odd? (term number_1)))
+           (--> number number))]
+         [red-c
+          (union-reduction-relations red1 red2)])
+    
+    ;; ensure first branch of 'union' is checked  
+    (test (with-handlers ((exn? exn-message))
+            (apply-reduction-relation red-c 1)
+            'no-exception-raised)
+          "reduction-relation: relation not defined for 1")
+
+    ;; ensure second branch of 'union' is checked
+    (test (with-handlers ((exn? exn-message))
+            (apply-reduction-relation red-c 2)
+            'no-exception-raised)
+          "reduction-relation: relation not defined for 2"))
+
+  (let ()
+    (define-language l1
+      (D 0 1 2))
+    (define r1
+      (reduction-relation 
+       l1
+       #:domain D
+       (--> D D)))
+    (define-language l2
+      (D 0 1 2 3))
+    (define r2
+      (extend-reduction-relation r1 l2))
+    
+    ;; test that the domain is re-interpreted for the extended reduction-relation
+    (test (apply-reduction-relation r2 3)
+          '(3)))
+  
+  (let ()
+    (define-language l1
+      (D 0 1 2))
+    (define r1
+      (reduction-relation 
+       l1
+       #:domain (D D)
+       (--> (D_1 D_2) (D_2 D_1))))
+    
+    ;; test that duplicated identifiers in the domain contract do not have to be equal
+    (test (apply-reduction-relation r1 (term (1 2)))
+          (list (term (2 1)))))
+  
   (parameterize ([current-namespace syn-err-test-namespace])
     (eval (quote-syntax
            (define-language grammar

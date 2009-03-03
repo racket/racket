@@ -638,15 +638,16 @@ all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (--> fresh side-condition where) 
-              (reduction-relation language reduction-case ...)
-              ([reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
+              (reduction-relation language domain reduction-case ...)
+              ([domain (code:line) (code:line #:domain #, @|ttpattern|)]
+               [reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
                [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression ...)
                        (where tl-pat #, @|tttterm|)]
-                [fresh-clause var ((var1 ...) (var2 ...))]
-                [tl-pat identifier (tl-pat-ele ...)]
-                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+               [fresh-clause var ((var1 ...) (var2 ...))]
+               [tl-pat identifier (tl-pat-ele ...)]
+               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Defines a reduction relation casewise, one case for each of the
 clauses beginning with @scheme[-->]. Each of the @scheme[pattern]s

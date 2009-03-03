@@ -126,21 +126,25 @@
      lang
      (map
       (λ (make-proc)
-        (λ (lang)
-          (let ([f (make-proc lang)])
-            (λ (main-exp exp extend acc)
-              (let loop ([ms (or (match-pattern cp exp) '())]
-                         [acc acc])
-                (cond
-                  [(null? ms) acc]
-                  [else
-                   (let* ([mtch (car ms)]
-                          [bindings (mtch-bindings mtch)])
-                     (loop (cdr ms)
-                           (f main-exp
-                              (lookup-binding bindings 'exp)
-                              (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
-                              acc)))]))))))
+        (make-rewrite-proc
+         (λ (lang)
+           (let ([f (make-proc lang)])
+             (λ (main-exp exp extend acc)
+               (let loop ([ms (or (match-pattern cp exp) '())]
+                          [acc acc])
+                 (cond
+                   [(null? ms) acc]
+                   [else
+                    (let* ([mtch (car ms)]
+                           [bindings (mtch-bindings mtch)])
+                      (loop (cdr ms)
+                            (f main-exp
+                               (lookup-binding bindings 'exp)
+                               (λ (x) (extend (plug (lookup-binding bindings 'ctxt) x)))
+                               acc)))])))))
+         (rewrite-proc-name make-proc)
+         (rewrite-proc-lhs make-proc)
+         (rewrite-proc-id make-proc)))
       (reduction-relation-make-procs red))
      (reduction-relation-rule-names red)
      (reduction-relation-lws red)
@@ -200,16 +204,10 @@
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
     (syntax-case stx ()
-      [(_ id orig-reduction-relation allow-zero-rules? lang w/domain-args ...)
+      [(_ id orig-reduction-relation allow-zero-rules? lang . w/domain-args)
        (identifier? #'lang)
-       (let-values ([(args domain-pattern)
-                     (syntax-case #'(w/domain-args ...) ()
-                       ;; commented out this case to diable domain specifications
-                       #;
-                       [(#:domain pat args ...)
-                        (values (syntax (args ...)) #'pat)]
-                       [else
-                        (values (syntax (w/domain-args ...)) #'any)])])
+       (let-values ([(domain-pattern main-arrow args)
+                     (parse-keywords stx #'id #'w/domain-args)])
          (with-syntax ([(rules ...) (before-with args)]
                        [(shortcuts ...) (after-with args)])
            (with-syntax ([(lws ...) (map rule->lws (syntax->list #'(rules ...)))])
@@ -228,6 +226,51 @@
                            "expected an identifier for the language name"
                            stx 
                            #'lang)]))
+  
+  (define (parse-keywords stx id args)
+    (let ([domain-contract #'any]
+          [default-arrow #'-->])
+      
+      ;; ensure no duplicate keywords
+      (let ([ht (make-hash)]
+            [known-keywords '(#;#:arrow #:domain)])  ;; #:arrow not yet implemented
+        (for-each (λ (kwd/stx)  ;; (not necc a keyword)
+                    (let ([kwd (syntax-e kwd/stx)])
+                      (when (keyword? kwd)
+                        (unless (member kwd known-keywords)
+                          (raise-syntax-error (syntax-e id)
+                                              "unknown keyword"
+                                              stx
+                                              kwd/stx))
+                        (when (hash-ref ht kwd #f)
+                          (raise-syntax-error (syntax-e id)
+                                              "duplicate keywords"
+                                              stx
+                                              kwd/stx
+                                              (list (hash-ref ht kwd))))
+                        (hash-set! ht kwd kwd/stx))))
+                  (syntax->list args)))
+      
+      (let loop ([args args])
+        (syntax-case args ()
+          [(#:domain pat args ...)
+           (begin (set! domain-contract #'pat)
+                  (loop #'(args ...)))]
+          [(#:domain)
+           (raise-syntax-error (syntax-e id) 
+                               "expected a domain after #:domain"
+                               stx)]
+          [(#:arrow arrow . args)
+           (begin (set! default-arrow #'arrow)
+                  (loop #'args))]
+          [(#:arrow)
+           (raise-syntax-error (syntax-e id) 
+                               "expected an arrow after #:arrow"
+                               stx)]
+          [_
+           (begin
+             (values domain-contract default-arrow args))]))))
+
   
   (define (before-with stx)
     (let loop ([lst (syntax->list stx)])
@@ -337,7 +380,10 @@
                                          (to-lw where-expr))
                                    ...))))]))
   
-  (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts lws allow-zero-rules? domain-pattern)
+  (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts 
+                                     lws 
+                                     allow-zero-rules?
+                                     domain-pattern)
     (let ([ht (make-module-identifier-mapping)]
           [all-top-levels '()]
           [withs (make-module-identifier-mapping)])
@@ -399,7 +445,8 @@
       (let ([name-ht (make-hasheq)]
             [lang-nts (language-id-nts lang-id orig-name)])
         (with-syntax ([lang-id lang-id]
-                      [(top-level ...) (get-choices stx orig-name ht lang-id (syntax -->) name-ht lang-id allow-zero-rules?)]
+                      [(top-level ...) (get-choices stx orig-name ht lang-id (syntax -->)
+                                                    name-ht lang-id allow-zero-rules?)]
                       [(rule-names ...) (hash-map name-ht (λ (k v) k))]
                       [lws lws]
                       
@@ -407,7 +454,7 @@
                        (rewrite-side-conditions/check-errs
                         lang-nts
                         orig-name
-                        #t
+                        #f
                         domain-pattern)])
                       
           #`(build-reduction-relation
@@ -788,8 +835,6 @@
        (hash-set! h (rewrite-proc-id rwp) (cons (or (rewrite-proc-name rwp) "unnamed") 0)))
      (reduction-relation-make-procs relation))
     (make-coverage h)))
-
-;(define fresh-coverage (compose make-coverage make-hasheq))
 
 (define (do-leaf-match name pat w/extras proc)
   (let ([case-id (gensym)])
