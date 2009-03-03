@@ -18,6 +18,7 @@ There are two API sets provided by the Web Server. One is for standard servlets,
 
 This API provides: 
 @itemize{
+         @item{@schememodname[net/url],}
          @item{@schememodname[web-server/servlet/web-cells],}
          @item{@schememodname[web-server/dispatch],}
          @item{@schememodname[web-server/http/bindings],}
@@ -79,7 +80,7 @@ Example: @schemeblock[(lambda (req)
 }
 
 @defthing[embed/url/c contract?]{
-Equivalent to @scheme[(((request? . -> . any/c)) (expiration-handler/c) . opt-> . string?)].
+Equivalent to @scheme[((request? . -> . any) . -> . string?)].
 
 This is what @scheme[send/suspend/dispatch] gives to its function argument.
 }

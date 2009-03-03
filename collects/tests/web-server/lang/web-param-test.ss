@@ -41,7 +41,7 @@
                       (define (start ignore)
                         (web-parameterize ([first 1]
                                            [second 2])
-                                          (send/suspend (lambda (k) k))
+                                          (call-with-serializable-current-continuation (lambda (k) k))
                                           (+ (first) (second))))))])
        (let ([first-key (meval '(dispatch-start start #f))])
          (check = 3 (meval `(dispatch ,the-dispatch (list ,first-key #f))))))))))

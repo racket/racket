@@ -200,12 +200,12 @@
    
    ;; ****************************************
    ;; ****************************************
-   ;; TESTS INVOLVING send/suspend
+   ;; TESTS INVOLVING call-with-serializable-current-continuation
    (test-suite
-    "Tests Involving send/suspend"
+    "Tests Involving call-with-serializable-current-continuation"
     
     (test-case
-     "curried add with send/suspend"
+     "curried add with call-with-serializable-current-continuation"
      (let ([table-01-eval
             (make-module-eval
              (module table01 mzscheme
@@ -227,7 +227,7 @@
            
            (define (gn which)
              (cadr
-              (send/suspend
+              (call-with-serializable-current-continuation
                (lambda (k)
                  (let ([ignore (printf "Please send the ~a number.~n" which)])
                    (store-k k))))))
@@ -248,7 +248,7 @@
          (check-true (zero? (table-01-eval `(dispatch lookup-k '(,third-key 7))))))))
     
     (test-case
-     "curried with send/suspend and serializaztion"
+     "curried with call-with-serializable-current-continuation and serializaztion"
      
      (let-values ([(test-m06.1)
                    (make-module-eval
@@ -256,7 +256,7 @@
                       (provide start)
                       (define (gn which)
                         (cadr
-                         (send/suspend
+                         (call-with-serializable-current-continuation
                           (lambda (k)
                             (let ([ignore (printf "Please send the ~a number.~n" which)])
                               k)))))
@@ -275,7 +275,7 @@
          (check-true (zero? (test-m06.1 `(dispatch ,the-dispatch (list ,third-key 7))))))))
     
     (test-case
-     "curried with send/suspend and serializaztion (keyword args)"
+     "curried with call-with-serializable-current-continuation and serializaztion (keyword args)"
      
      (let-values ([(test-m06.2)
                    (make-module-eval
@@ -283,7 +283,7 @@
                       (provide start)
                       (define (gn #:page which)
                         (cadr
-                         (send/suspend
+                         (call-with-serializable-current-continuation
                           (lambda (k)
                             (let ([ignore (printf "Please send the ~a number.~n" which)])
                               k)))))
@@ -373,14 +373,14 @@
        (check-false (test-m07 '(dispatch-start start 7)))))
     
     (test-case
-     "send/suspend on rhs of letrec binding forms"
+     "call-with-serializable-current-continuation on rhs of letrec binding forms"
      (let-values ([(test-m08)
                    (make-module-eval
                     (module m08 (lib "lang.ss" "web-server")
                       (provide start)
                       (define (gn which)
                         (cadr
-                         (send/suspend
+                         (call-with-serializable-current-continuation
                           (lambda (k)
                             (let ([ignore (printf "Please send the ~a number.~n" which)])
                               k)))))
@@ -483,7 +483,7 @@
        (check = 2 (ta-eval '(dispatch-start start 1)))))
     
     (test-case
-     "attempt send/suspend from standard call to map"
+     "attempt call-with-serializable-current-continuation from standard call to map"
      
      (let-values ([(m13-eval)
                    (make-module-eval
@@ -491,7 +491,7 @@
                       (provide start)
                       (define (start initial)
                         (map
-                         (lambda (n) (send/suspend
+                         (lambda (n) (call-with-serializable-current-continuation
                                       (lambda (k)
                                         (let ([ignore (printf "n = ~s~n" n)])
                                           k))))
@@ -500,7 +500,7 @@
                     (lambda () (m13-eval '(dispatch-start start 'foo)))))))
     
     (test-case
-     "attempt send/suspend from tail position of untranslated procedure"
+     "attempt call-with-serializable-current-continuation from tail position of untranslated procedure"
      
      (let-values ([(ta-eval)
                    (make-module-eval
@@ -517,7 +517,7 @@
                      (+ 1 (tail-apply
                            (lambda (n)
                              (cadr
-                              (send/suspend
+                              (call-with-serializable-current-continuation
                                (lambda (k)
                                  (let ([ignore (printf "n = ~s~n" n)])
                                    k))))) 7)))))

@@ -13,7 +13,7 @@
         (request? . -> . response/c)))
 
 (define embed/url/c
-  (((request? . -> . any/c)) (expiration-handler/c) . ->* . string?))
+  ((request? . -> . any/c) . -> . string?))
 
 (provide/contract
  [response-generator/c contract?]
