@@ -1,6 +1,7 @@
 #lang scheme
 (require net/url
          web-server/http
+         web-server/dispatch
          web-server/stuffers
          web-server/lang/abort-resume
          web-server/lang/web
@@ -10,6 +11,7 @@
 (provide (except-out (all-from-out scheme) #%module-begin)
          (all-from-out net/url
                        web-server/http
+                       web-server/dispatch
                        web-server/stuffers
                        web-server/lang/abort-resume
                        web-server/lang/web
