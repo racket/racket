@@ -4,10 +4,10 @@
 
 (require (rep type-rep rep-utils)
 	 (utils tc-utils)
-	 (types type-utils subtype type-abbrev printer comparison)
+	 (types utils subtype abbrev printer comparison)
          scheme/match mzlib/trace)
 
-(provide Un #;(rename *Un Un))
+(provide Un)
 
 (define (make-union* set)
   (match set
@@ -40,7 +40,6 @@
          [(subtype a b*) (list b*)]
          [(subtype b* a) (list a)]            
          [else (cons a b)]))
-     #;(union-count!)    
      (let ([types (remove-dups (sort (apply append (map flat args)) type<?))])
        (cond
          [(null? types) (make-union* null)]

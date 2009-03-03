@@ -4,7 +4,7 @@
 (require syntax/boundmap
          mzlib/trace
          (utils tc-utils)
-         (types type-utils))
+         (types utils))
 
 (provide register-type-name
          lookup-type-name

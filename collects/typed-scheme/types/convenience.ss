@@ -3,23 +3,19 @@
 
 (require (rep type-rep effect-rep)
          (utils tc-utils)
+	 (types comparison printer
+		union subtype type-utils type-abbrev)
          scheme/list
          scheme/match
-         "type-comparison.ss"
-         "type-effect-printer.ss"
-         "union.ss"
-         "subtype.ss"
-         "type-utils.ss" 
-         "type-abbrev.ss"
          scheme/promise
          (for-syntax stxclass)
          (for-syntax scheme/base)
          (for-template scheme/base scheme/contract scheme/tcp))
 
 (provide (all-defined-out)
-         (all-from-out "type-abbrev.ss")
+         (all-from-out (types type-abbrev))
          ;; these should all eventually go away
-         make-Name make-ValuesDots make-Function make-Latent-Restrict-Effect make-Latent-Remove-Effect)
+         make-Name make-ValuesDots make-Function)
 
 (define (one-of/c . args)
   (apply Un (map -val args)))

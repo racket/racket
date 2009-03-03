@@ -1,8 +1,10 @@
 #lang scheme/base
 (require "../utils/utils.ss")
 
-(require (rep type-rep)  (env type-name-env) (utils tc-utils)
-         "type-utils.ss"
+(require (rep type-rep)  
+	 (env type-name-env)
+	 (utils tc-utils)
+         (types utils)
          scheme/match
          mzlib/trace)
 

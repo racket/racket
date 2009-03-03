@@ -3,17 +3,12 @@
 
 (require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-	 "type-utils.ss"
-         "comparison.ss"
-         "resolve.ss"
-         "type-abbrev.ss"
+	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match
          mzlib/trace
 	 (for-syntax scheme/base stxclass))
-
-
 
 ;; exn representing failure of subtyping
 ;; s,t both types
