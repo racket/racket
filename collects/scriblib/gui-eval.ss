@@ -7,7 +7,7 @@
          scheme/file
          scheme/runtime-path
          scheme/serialize
-         "private/mr-eval-exn.ss"
+         "private/gui-eval-exn.ss"
          scheme/system)
 
 (define-syntax define-mr
