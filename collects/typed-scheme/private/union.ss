@@ -4,11 +4,7 @@
 
 (require (rep type-rep rep-utils)
 	 (utils tc-utils)
-	 "type-utils.ss"
-	 "subtype.ss" 
-         "type-abbrev.ss"
-         "type-effect-printer.ss" 
-         "type-comparison.ss"
+	 (types type-utils subtype type-abbrev printer comparison)
          scheme/match mzlib/trace)
 
 (provide Un #;(rename *Un Un))
@@ -49,20 +45,9 @@
        (cond
          [(null? types) (make-union* null)]
          [(null? (cdr types)) (car types)]           
-         [(ormap Values? types)
-          (if (andmap Values? types)
-              (make-Values (apply map Un (map Values-types types)))
-              (int-err "Un: should not take the union of multiple values with some other type: ~a" types))]
-         [else (make-union* #;(remove-subtypes types) (foldr union2 '() (remove-subtypes types)))]))]))
-
-#;(defintern (Un-intern args) (lambda (_ args) (apply Un args)) args)
-
-#;(define (*Un . args) (Un-intern args))
-
-;(trace Un)
+         [else (make-union* (foldr union2 '() (remove-subtypes types)))]))]))
 
 (define (u-maker args) (apply Un args))
 
-;(trace u-maker)
 (set-union-maker! u-maker)
 
