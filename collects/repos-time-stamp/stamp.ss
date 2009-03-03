@@ -4,7 +4,7 @@
   (string-append "2mar2009 "
 		 (let ([s "$URL$"])
 		   (substring 
-		    s 0
+		    s 6
 		    (- (string-length s)
 		       (string-length
-			"collects/repos-time-stamp/stamp.ss"))))))
+			"collects/repos-time-stamp/stamp.ss $"))))))
