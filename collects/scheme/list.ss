@@ -86,9 +86,9 @@
 (define (too-large who list n)
   (raise-mismatch-error
    who
-   (format "index ~e too large for list~a: ~e"
-           n (if (list? list) "" " (not a proper list)") list)
-   n))
+   (format "index ~e too large for list~a: "
+           n (if (list? list) "" " (not a proper list)"))
+   list))
 
 (define (take list0 n0)
   (unless (exact-nonnegative-integer? n0)
