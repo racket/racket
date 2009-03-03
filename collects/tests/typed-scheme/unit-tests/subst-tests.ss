@@ -2,14 +2,14 @@
 
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (private type-utils type-effect-convenience)
+	 (types type-utils type-abbrev)
          (schemeunit))
 
 (define-syntax-rule (s img var tgt result)
   (test-eq? "test" (substitute img 'var tgt) result))
 
 (define-syntax-rule (s... imgs var tgt result)
-  (test-eq? "test" (substitute-dots (list . imgs) 'var tgt) result))
+  (test-eq? "test" (substitute-dots (list . imgs) #f 'var tgt) result))
 
 (define (subst-tests)
   (test-suite "Tests for substitution"
