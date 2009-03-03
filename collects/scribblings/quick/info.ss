@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("quick.scrbl" () (getting-started 9))
-                      ("mreval.scrbl")))
+(define scribblings '(("quick.scrbl" () (getting-started 9))))
