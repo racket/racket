@@ -830,7 +830,20 @@ follows.
  @defsubform[(protect-out provide-spec ...)]{ Like the union of the
  @scheme[provide-spec]s, except that the exports are protected; see
  @secref["modprotect"]. The @scheme[provide-spec] must specify only
- bindings that are defined within the exporting module.}
+ bindings that are defined within the exporting module.
+
+ @defexamples[#:eval (syntax-eval)
+   (module a scheme
+     (provide (protect-out foo))
+     (define foo 1))
+   (define weak-inspector (make-inspector (current-code-inspector)))
+   (define (weak-eval x)
+     (parameterize ([current-code-inspector weak-inspector])
+       (eval x)))
+   (require 'a)
+   foo
+   (weak-eval 'foo)
+ ]}
 
  @specsubform[#:literals (for-meta) 
               (for-meta phase-level provide-spec ...)]{ Like the union of the
