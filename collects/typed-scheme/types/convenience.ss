@@ -1,10 +1,10 @@
 #lang scheme/base  
 (require "../utils/utils.ss")
 
-(require (rep type-rep effect-rep)
+(require (rep type-rep)
          (utils tc-utils)
-	 (types comparison printer
-		union subtype type-utils type-abbrev)
+         "abbrev.ss"
+	 (types comparison printer union subtype utils)
          scheme/list
          scheme/match
          scheme/promise
@@ -13,7 +13,7 @@
          (for-template scheme/base scheme/contract scheme/tcp))
 
 (provide (all-defined-out)
-         (all-from-out (types type-abbrev))
+         (all-from-out "abbrev.ss")
          ;; these should all eventually go away
          make-Name make-ValuesDots make-Function)
 
