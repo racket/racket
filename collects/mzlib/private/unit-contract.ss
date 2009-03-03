@@ -122,10 +122,6 @@
        
        (with-syntax ([(isig ...) isig]
                      [(esig ...) esig]
-                     [((import-id ...) ...)
-                      (map (λ (sig) (map car (car sig))) import-sigs)]
-                     [((export-id ...) ...)
-                      (map (λ (sig) (map car (car sig))) export-sigs)]
                      [((import-key ...) ...)
                       (map tagged-info->keys import-tagged-infos)]
                      [((export-key ...) ...)
@@ -143,30 +139,12 @@
                     (cons 'import 
                           (list (cons 'isig
                                       (map list (list 'i.x ...) 
-                                           (let-syntax ([import-id
-                                                         (make-set!-transformer
-                                                          (λ (stx)
-                                                            (syntax-case stx (set!)
-                                                              [(id . x)
-                                                               #'(list 'import-id . x)]
-                                                              [id
-                                                               (identifier? #'id)
-                                                               #''import-id])))] ...)
-                                             (build-compound-type-name i.c ...))))
+                                           (build-compound-type-name 'i.c ...)))
                                 ...))
                     (cons 'export 
                           (list (cons 'esig
                                       (map list (list 'e.x ...)
-                                           (let-syntax ([export-id
-                                                         (make-set!-transformer
-                                                          (λ (stx)
-                                                            (syntax-case stx (set!)
-                                                              [(id . x)
-                                                               #'(list 'export-id . x)]
-                                                              [id
-                                                               (identifier? #'id)
-                                                               #''export-id])))] ...)
-                                             (build-compound-type-name e.c ...))))
+                                           (build-compound-type-name 'e.c ...)))
                                 ...)))
               (λ (pos neg src-info name)
                 (λ (unit-tmp)
