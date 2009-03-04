@@ -12,7 +12,7 @@
 
 (require (prefix-in r: "../utils/utils.ss"))
 (require scheme/match
-         (r:utils tc-utils))
+         (except-in (r:utils tc-utils) make-env))
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 (define-struct env (eq? l))

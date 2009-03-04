@@ -1,11 +1,11 @@
 #lang scheme/unit
 
 (require (except-in "../utils/utils.ss"))
-(require (rep free-variance type-rep effect-rep rep-utils)
-	 (private type-effect-convenience union subtype remove-intersect)
-	 (utils tc-utils)
+(require (rep free-variance type-rep filter-rep rep-utils)
+	 (types convenience union subtype remove-intersect)
+	 (except-in (utils tc-utils) make-env)
 	 (env type-name-env)
-         (except-in (private type-utils) Dotted)
+         (except-in (types utils) Dotted)
          "constraint-structs.ss"
 	 "signatures.ss"
          (only-in (env type-environments) lookup current-tvars)
@@ -100,6 +100,8 @@
 (define (cgen/eff V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
+    ;; FIXME - do something here
+    #;#;
     [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: s))
      (cset-meet (cgen V X t s) (cgen V X s t))]
     [((Latent-Remove-Effect: t) (Latent-Remove-Effect: s))

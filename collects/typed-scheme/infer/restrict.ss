@@ -2,7 +2,7 @@
 
 (require "../utils/utils.ss")
 (require (rep type-rep)
-	 (private type-utils union remove-intersect subtype)
+	 (types utils union subtype remove-intersect)
          "signatures.ss"
          scheme/match)
 
