@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "struct.ss"
-         mzlib/class
+         scheme/class
          scheme/runtime-path
          scheme/port
          scheme/path
