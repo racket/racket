@@ -4,8 +4,8 @@
 (require (rep type-rep)
 	 (utils tc-utils)
 	 (env type-env)
-	 "parse-type.ss" "subtype.ss"
-         "type-effect-convenience.ss" "resolve-type.ss" "union.ss"
+         (types subtype union convenience resolve)
+         (private parse-type)
          scheme/match mzlib/trace)
 (provide type-annotation
          get-type

@@ -2,14 +2,10 @@
 
 (require "../utils/utils.ss")
 
-(require (for-syntax (private type-effect-convenience)
-                     (env init-envs)
+(require (for-syntax (env init-envs)
                      scheme/base
-                     (except-in (rep effect-rep type-rep) make-arr)
-                     (except-in "../rep/type-rep.ss" make-arr)
-                     "type-effect-convenience.ss"
-                     (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-                     "union.ss"))
+                     (except-in (rep filter-rep type-rep) make-arr)
+                     (rename-in (types union convenience) [make-arr* make-arr])))
 
 (define-syntax (#%module-begin stx)
   (syntax-case stx (require)
@@ -35,7 +31,6 @@
          require
          (all-from-out scheme/base)
          (for-syntax
-          (all-from-out scheme/base
-                        "type-effect-convenience.ss"
-                        "../rep/type-rep.ss"
-                        "union.ss")))
+          (types-out convenience union)
+          (rep-out type-rep)
+          (all-from-out scheme/base)))

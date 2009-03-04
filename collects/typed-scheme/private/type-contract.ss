@@ -6,14 +6,11 @@
 (require
  (rep type-rep)
  (typecheck internal-forms)
- (utils tc-utils)
+ (utils tc-utils require-contract)
  (env type-name-env)
- "parse-type.ss"
- "require-contract.ss"
- "resolve-type.ss"
- "type-utils.ss"   
- (only-in "type-effect-convenience.ss" Any-Syntax)
- (prefix-in t: "type-effect-convenience.ss")
+ (types resolve utils)
+ (prefix-in t: (types convenience))
+ (private parse-type)
  scheme/match
  syntax/struct
  syntax/stx
@@ -61,7 +58,7 @@
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          #`(listof #,(t->c elem-ty))]
-        [(? (lambda (e) (eq? Any-Syntax e))) #'syntax?]
+        [(? (lambda (e) (eq? t:Any-Syntax e))) #'syntax?]
         [(Base: sym cnt) cnt]
         [(Union: elems) 
          (with-syntax 
@@ -73,13 +70,13 @@
            (define (f a)
              (define-values (dom* rngs* rst)
                (match a
-                 [(arr: dom (Values: rngs) #f #f '() _ _)
+                 [(arr: dom (Values: rngs) #f #f '())
                   (values (map t->c dom) (map t->c rngs) #f)]
-                 [(arr: dom rng #f #f '() _ _)
+                 [(arr: dom rng #f #f '())
                   (values (map t->c dom) (list (t->c rng)) #f)]
-                 [(arr: dom (Values: rngs) rst #f '() _ _)
+                 [(arr: dom (Values: rngs) rst #f '() )
                   (values (map t->c dom) (map t->c rngs) (t->c rst))]
-                 [(arr: dom rng rst #f '() _ _)
+                 [(arr: dom rng rst #f '())
                   (values (map t->c dom) (list (t->c rng)) (t->c rst))]))
              (with-syntax 
                  ([(dom* ...) dom*]
@@ -91,7 +88,7 @@
                    #'((dom* ...) () #:rest (listof rst*) . ->* . rng*)
                    #'(dom* ...  . -> . rng*))))
            (unless (no-duplicates (for/list ([t arrs])
-                                    (match t [(arr: dom _ _ _ _ _ _) (length dom)])))
+                                    (match t [(arr: dom _ _ _ _) (length dom)])))
              (exit (fail)))
 	   (match (map f arrs)
 	     [(list e) e]
@@ -116,7 +113,7 @@
         [(Struct: _ _ _ _ #f pred? cert) (cert pred?)]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t)
-         (if (equal? ty Any-Syntax)
+         (if (equal? ty t:Any-Syntax)
              #`syntax?
              #`(syntax/c #,(t->c t)))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]

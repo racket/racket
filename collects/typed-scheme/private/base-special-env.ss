@@ -16,11 +16,11 @@
 ;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
+          (utils tc-utils)
           (env init-envs)          
-          (except-in (rep effect-rep type-rep) make-arr)
-          "type-effect-convenience.ss"
-          (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-          "union.ss"
+          (except-in (rep filter-rep object-rep type-rep) make-arr)
+          (types convenience union)
+          (only-in (types convenience) [make-arr* make-arr])          
           (typecheck tc-structs)))
 
 (define-for-syntax (initialize-others) 

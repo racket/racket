@@ -4,17 +4,13 @@
 
 (require (except-in "../utils/utils.ss" extend id))
 (require (except-in (rep type-rep) make-arr)
-         "type-effect-convenience.ss"
-         (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-         (utils tc-utils)
-         "union.ss"
+         (rename-in (types convenience union utils) [make-arr* make-arr])
+         (utils tc-utils stxclass-util)
          syntax/stx
          stxclass stxclass/util
          (env type-environments type-name-env type-alias-env)
-	 "type-utils.ss"
          (prefix-in t: "base-types-extra.ss")
          scheme/match 
-         "stxclass-util.ss"
          (for-template scheme/base "base-types-extra.ss"))
 
 (define enable-mu-parsing (make-parameter #t))

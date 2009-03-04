@@ -2,9 +2,8 @@
 
 (require (except-in "../utils/utils.ss" extend))
 (require (rep type-rep)
-	 (private type-effect-convenience
-		  type-utils parse-type
-		  union resolve-type)
+         (private parse-type)
+	 (types convenience utils union resolve)
 	 (env type-env type-environments type-name-env)
 	 (utils tc-utils)
          "def-binding.ss"
