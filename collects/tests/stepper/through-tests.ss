@@ -1,8 +1,3 @@
-;;#!/bin/sh
-;;#|
-;;exec mred -u "$0" "$@"
-;;|#
-
 #lang scheme/base
 
   (require (for-syntax scheme/base)
@@ -1345,26 +1340,6 @@
   ; add image test: (image-width (filled-rect 10 10 'blue))
 
 
-  ;  ;;;;;;;;;;;;;
-  ;  ;;
-  ;  ;;  TEACHPACK TESTS
-  ;  ;;
-  ;  ;;;;;;;;;;;;;
-  ;
-
-  ; as you can see, many teachpack tests work only in mred:
-  ;; (require mred)
-
-
-  (define test-teachpack-sequence (lambda (teachpack-specs expr-string expected-results)
-                                    ;(let ([new-custodian (make-custodian)])
-                                     ; (parameterize ([current-custodian new-custodian])
-                                      ;  (parameterize ([current-eventspace (make-eventspace)])
-                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #f #f expr-string expected-results)
-                                    ;))
-                                     ; (custodian-shutdown-all new-custodian))
-      ))
-  
   
   (t check-expect test-upto-int/lam
      (check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 1 1) 2) (check-expect (+ 2 2) 4) (+ 4 5)
@@ -1426,6 +1401,27 @@
          (before-after (9 false (check-expect (hilite (+ 3 1)) 4))
                        (9 false (check-expect (hilite 4) 4))))))
 
+  ;  ;;;;;;;;;;;;;
+  ;  ;;
+  ;  ;;  TEACHPACK TESTS
+  ;  ;;
+  ;  ;;;;;;;;;;;;;
+  ;
+
+  ; as you can see, many teachpack tests work only in mred:
+  ;; (require mred)
+
+
+  (define test-teachpack-sequence (lambda (teachpack-specs expr-string expected-results)
+                                    ;(let ([new-custodian (make-custodian)])
+                                     ; (parameterize ([current-custodian new-custodian])
+                                      ;  (parameterize ([current-eventspace (make-eventspace)])
+                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #f #f expr-string expected-results)
+                                    ;))
+                                     ; (custodian-shutdown-all new-custodian))
+      ))
+  
+
   ; uses set-render-settings!
   ;(reconstruct:set-render-settings! fake-beginner-render-settings)
   ;(test-sequence "(define (check-guess guess target) 'TooSmall) (guess-with-gui check-guess)"
@@ -1437,7 +1433,7 @@
   #;
   (t1 teachpack-drawing
   (test-teachpack-sequence
-   `(htdp/draw)
+   `((lib "draw.ss" "htdp"))
    "(define (draw-limb i) (cond
  [(= i 1) (draw-solid-line (make-posn 20 20) (make-posn 20 100) 'blue)]
  [(= i 0) (draw-solid-line (make-posn (+ 1 10) 10) (make-posn 10 100) 'red)]))
@@ -1468,6 +1464,17 @@
      (before-after ((hilite (and true true)))
                    ((hilite true)))
      (finished-stepping))))
+  
+  #;(t1 teachpack-universe
+      (test-teachpack-sequence
+       `((lib "universe.ss" "2htdp"))
+       "(define (z world)
+  (empty-scene 100 100))
+
+(big-bang 3
+          (on-tick add1)
+          (on-draw z))"
+       `((finished-stepping))))
 
   #;
   (t1 teachpack-name-rendering
@@ -1700,7 +1707,7 @@
                    #;[store-steps #f]
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect check-within check-within-bad check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
-      #;(run-tests '(check-expect check-within check-error check-error-bad))
+      #;(run-tests '(teachpack-universe))
       (run-all-tests)))
   
 
