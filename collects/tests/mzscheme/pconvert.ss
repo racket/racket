@@ -5,7 +5,8 @@
 
 (require mzlib/file
          mzlib/class
-         mzlib/pconvert)
+         mzlib/pconvert
+         mzlib/pconvert-prop)
 
 (constructor-style-printing #t)
 (quasi-read-style-printing #f)
@@ -398,5 +399,20 @@
   (test '(list whee whee) 
         (pc #t) 
         (let ([g (lambda (y) (let ([f (lambda (x) y)]) f))]) (list (g 1) (g 2)))))
+
+;; ----------------------------------------
+
+(let ()
+  (define-struct pt (x [y #:mutable])
+    #:property prop:print-converter (lambda (v recur)
+                                      `(PT! ,(recur (pt-y v))
+                                            ,(recur (pt-x v)))))
+  (test '(PT! 2 3) print-convert (make-pt 3 2))
+  (test '(PT! 2 (list 3)) print-convert (make-pt '(3) 2))
+  (let ([p (make-pt 1 2)])
+    (set-pt-y! p p)
+    (test '(shared ([-0- (PT! -0- 1)]) -0-) print-convert p)))
+
+;; ----------------------------------------
 
 (report-errs)

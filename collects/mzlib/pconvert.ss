@@ -115,6 +115,9 @@
                expr
                (lambda (expr)
                  (cond
+                   [(print-converter? expr)
+                    (unless (build-sub expr)
+                      ((print-converter-proc expr) expr build))]
                    [(or (number? expr)
                         (symbol? expr)
                         (boolean? expr)
@@ -322,6 +325,8 @@
                            expr
                            (lambda (expr)
                              (cond
+                               [(print-converter? expr)
+                                ((print-converter-proc expr) expr recur)]
                                [(null? expr) (guard/quasiquote (lambda () 'empty))]
                                [(and (abbreviate-cons-as-list)
                                      (list? expr)
