@@ -3,15 +3,16 @@
 (require 
  "test-utils.ss"
  "planet-requires.ss"
- "typecheck-tests.ss"
- "subtype-tests.ss" ;; done
- "type-equal-tests.ss" ;; done
- "remove-intersect-tests.ss" ;; done
- "parse-type-tests.ss" ;; done
- "type-annotation-test.ss" ;; done
- "module-tests.ss"
- "subst-tests.ss"
- "infer-tests.ss")
+ ;"typecheck-tests.ss" ;; doesn't compile yet
+ "subtype-tests.ss" ;; fail
+ "type-equal-tests.ss" ;; pass
+ "remove-intersect-tests.ss" ;; pass
+ "parse-type-tests.ss" ;; pass
+ "type-annotation-test.ss" ;; fail
+ "module-tests.ss" ;; pass
+ "subst-tests.ss" ;; pass
+ "infer-tests.ss" ;; pass
+ )
 
 (require (r:infer infer infer-dummy)
          (schemeunit))

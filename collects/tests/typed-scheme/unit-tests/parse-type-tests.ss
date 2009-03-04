@@ -3,14 +3,12 @@
 (require (utils tc-utils)
 	 (env type-alias-env type-environments type-name-env init-envs)
 	 (rep type-rep)
-	 (rename-in (private type-comparison parse-type subtype
-                             union type-utils)
-                    [Un t:Un])
-         (schemeunit))
-
-(require (rename-in (private type-effect-convenience) [-> t:->])
+	 (rename-in (types comparison subtype union utils convenience)
+                    [Un t:Un] [-> t:->])
          (private base-types base-types-extra)
-         (for-template (private base-types base-types-extra)))
+         (for-template (private base-types base-types-extra))
+         (private parse-type)
+         (schemeunit))
 
 (provide parse-type-tests)
 

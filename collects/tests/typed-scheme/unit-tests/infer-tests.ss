@@ -2,7 +2,7 @@
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
 	 (r:infer infer)
-	 (private type-effect-convenience union type-utils)
+	 (types convenience union utils)
          (schemeunit))
 
 

@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" "planet-requires.ss")
 
-(require (types subtype type-effect-convenience union)
+(require (types subtype convenience union)
 	 (rep type-rep)
 	 (env init-envs type-environments)
 	 (r:infer infer infer-dummy)
@@ -55,7 +55,7 @@
    [(-mu x (Un N (make-Listof x))) (-mu x (Un N Sym (make-Listof x)))]
    [(-mu x (Un N (make-Listof x))) (-mu y (Un N Sym (make-Listof y)))]
    ;; a hard one
-   [-NE -Sexp]
+   [(-mu x (*Un N (-pair x (-pair Sym (-pair x (-val null)))))) -Sexp]
    ;; simple function types
    ((Univ . -> . N) (N . -> . Univ))
    [(Univ Univ Univ . -> . N) (Univ Univ N . -> . N)]

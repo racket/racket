@@ -1,7 +1,8 @@
 #lang scheme/base
 (require "test-utils.ss" "planet-requires.ss"
          (for-syntax scheme/base))
-(require (private type-annotation type-effect-convenience parse-type)
+(require (private type-annotation parse-type)
+         (types convenience)
 	 (env type-environments type-name-env init-envs)
 	 (utils tc-utils)
 	 (rep type-rep)

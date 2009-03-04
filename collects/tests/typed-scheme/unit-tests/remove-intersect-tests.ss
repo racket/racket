@@ -1,8 +1,8 @@
 #lang scheme/base
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (r:infer infer)
-	 (private type-effect-convenience remove-intersect subtype union)
+	 (r:infer infer infer-dummy)
+         (types convenience subtype union remove-intersect)
          (schemeunit))
 
 (define-syntax (restr-tests stx)    
@@ -10,6 +10,8 @@
     [(_ [t1 t2 res] ...)
      #'(test-suite "Tests for intersect"
                    (test-check (format "Restrict test: ~a ~a" t1 t2) type-compare? (restrict t1 t2) res) ...)]))
+
+(infer-param infer)
 
 (define (restrict-tests) 
   (restr-tests

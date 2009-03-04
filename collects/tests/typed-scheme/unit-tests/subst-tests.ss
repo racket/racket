@@ -2,7 +2,7 @@
 
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (types type-utils type-abbrev)
+	 (types utils abbrev)
          (schemeunit))
 
 (define-syntax-rule (s img var tgt result)
