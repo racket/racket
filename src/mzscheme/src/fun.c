@@ -2517,6 +2517,12 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
       /* Default transparency depends on module-identifier=? comparison
 	 to `begin', `define-values', and `define-syntaxes'. */
       int trans = deflt;
+      if (SCHEME_TRUEP(prop))
+        scheme_log(NULL,
+                   SCHEME_LOG_WARNING,
+                   0,
+                   "warning: unrecognized 'certify-mode property value: %V",
+                   prop);
       if (SCHEME_STX_PAIRP(code)) {
 	Scheme_Object *name;
 	name = SCHEME_STX_CAR(code);
