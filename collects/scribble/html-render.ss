@@ -236,15 +236,13 @@
              format-number
              quiet-table-of-contents
              extract-part-style-files)
+    (inherit-field prefix-file style-file style-extra-files)
 
     (init-field [css-path #f]
                 ;; up-path is either a link "up", or #t which uses
                 ;; goes to start page (using cookies to get to the
                 ;; user start page)
                 [up-path #f]
-                [prefix-file #f]
-                [style-file #f]
-                [style-extra-files null]
                 [script-path #f]
                 [script-file #f]
                 [search-box? #f])

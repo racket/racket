@@ -16,7 +16,10 @@
 
     (init-field dest-dir
                 [refer-to-existing-files #f]
-                [root-path #f])
+                [root-path #f]
+                [prefix-file #f]
+                [style-file #f]
+                [style-extra-files null])
 
     (define/public (get-dest-directory [create? #f])
       (when (and dest-dir create? (not (directory-exists? dest-dir)))

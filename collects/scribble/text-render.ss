@@ -6,9 +6,6 @@
 
   (define (render-mixin %)
     (class %
-      (init [prefix-file #f]
-            [style-file #f]
-            [style-extra-files ()])
       
       (define/override (get-substitutions)
         '((#rx"---" "\U2014")
