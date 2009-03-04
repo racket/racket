@@ -31,6 +31,6 @@
 (provide #%module-begin
          require
          (all-from-out scheme/base)
-         (for-syntax
-          (types convenience union)
+         (for-syntax          
+          (types-out convenience union)
           (all-from-out scheme/base)))

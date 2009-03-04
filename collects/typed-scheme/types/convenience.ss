@@ -1,7 +1,7 @@
 #lang scheme/base  
 (require "../utils/utils.ss")
 
-(require (rep type-rep)
+(require (rep type-rep filter-rep object-rep)
          (utils tc-utils)
          "abbrev.ss"
 	 (types comparison printer union subtype utils)
@@ -15,7 +15,8 @@
 (provide (all-defined-out)
          (all-from-out "abbrev.ss")
          ;; these should all eventually go away
-         make-Name make-ValuesDots make-Function)
+         make-Name make-ValuesDots make-Function
+         (rep-out filter-rep object-rep))
 
 (define (one-of/c . args)
   (apply Un (map -val args)))

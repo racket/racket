@@ -198,6 +198,11 @@
       [(Function: as) as]))
   (make-Function (apply append (map funty-arities args))))
 
+(define-syntax cl->
+  (syntax-parser
+   [(_ [(dom ...) rng] ...)
+    #'(cl->* (dom ... . -> . rng) ...)]))
+
 (define-syntax (->key stx)  
   (syntax-parse stx
                 [(_ ty:expr ... (~or (k:keyword kty:expr opt:boolean)) ... rng)
@@ -213,11 +218,17 @@
 (define (-struct name parent flds [proc #f] [poly #f] [pred #'dummy] [cert values])
   (make-Struct name parent flds proc poly pred cert))
 
+(define (-filter t [p null] [i 0])
+  (make-LTypeFilter t p i))
+
+(define (-not-filter t [p null] [i 0])
+  (make-LNotTypeFilter t p i))
+
 
 (define make-pred-ty
   (case-lambda 
     [(in out t)
-     (->* in out : (-LFS (list (make-LTypeFilter t null 0)) (list (make-LNotTypeFilter t null 0))))]
+     (->* in out : (-LFS (list (-filter t)) (list (-not-filter t))))]
     [(t) (make-pred-ty (list Univ) B t)]))
 
 
