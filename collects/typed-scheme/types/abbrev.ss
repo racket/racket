@@ -17,7 +17,7 @@
 
 ;; convenient constructors
 
-(define -values make-Values)
+
 (define -pair make-Pair)
 (define -val make-Value)
 (define -Param make-Param)
@@ -51,6 +51,10 @@
 (d/c (-result t [f -no-lfilter] [o -no-lobj])
   (c:->* (Type/c) (LFilterSet? LatentObject?) Result?)
   (make-Result t f o))
+
+(d/c (-values args)
+     (c:-> (listof Type/c) Values?)
+     (make-Values (for/list ([i args]) (-result i))))
 
 ;; basic types
 
@@ -151,14 +155,30 @@
 (d/c (make-arr* dom rng
                 #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                 #:filters [filters -no-lfilter] #:object [obj -no-lobj])
-  (c:->* ((listof Type/c) Type/c)
+  (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
          (#:rest Type/c 
           #:drest (cons/c Type/c symbol?)
           #:kws (listof Keyword?)
           #:filters LFilterSet?
           #:object LatentObject?)
          arr?)
-  (make-arr dom (-values (list (-result rng filters obj))) rest drest (sort #:key Keyword-kw kws keyword<?)))
+  (make-arr dom (if (or (Values? rng) (ValuesDots? rng))
+                    rng
+                    (make-Values (list (-result rng filters obj))))
+            rest drest (sort #:key Keyword-kw kws keyword<?)))
+
+(d/c (make-arr/values dom rng
+                      #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
+                      #:filters [filters -no-lfilter] #:object [obj -no-lobj])
+     (c:->* ((listof Type/c) (or/c ValuesDots? Values?))
+            (#:rest Type/c 
+             #:drest (cons/c Type/c symbol?)
+             #:kws (listof Keyword?)
+             #:filters LFilterSet?
+             #:object LatentObject?)
+            arr?)
+  (make-arr dom rng rest drest (sort #:key Keyword-kw kws keyword<?)))
+
 
 (define-syntax ->*
   (syntax-rules (:)
@@ -167,7 +187,7 @@
     [(_ dom rst rng)
      (make-Function (list (make-arr* dom rng #:rest rst)))]
     [(_ dom rng : filters)
-     (make-Function (list (make-arr* dom rng #f #:filters filters)))]
+     (make-Function (list (make-arr* dom rng #:filters filters)))]
     [(_ dom rst rng : filters)
      (make-Function (list (make-arr* dom rng #:rest rst #:filters filters)))]))
 
