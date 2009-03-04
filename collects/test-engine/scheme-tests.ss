@@ -75,9 +75,14 @@
                                   ['stepper-use-val-as-final #t])
                                  (quasisyntax/loc stx
                                    (#,checker-proc-stx
-                                    (car (list
-                                          (lambda () #,test-expr)
-                                          #,(syntax/loc stx (void))))
+                                    #,(with-stepper-syntax-properties
+                                          (['stepper-hide-reduction #t])
+                                        #`(car 
+                                           #,(with-stepper-syntax-properties
+                                                 (['stepper-hide-reduction #t])
+                                               #`(list
+                                                  (lambda () #,test-expr)
+                                                  #,(syntax/loc stx (void))))))
                                     #,@embedded-stxes
                                     #,src-info
                                     #,(with-stepper-syntax-properties
