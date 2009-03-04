@@ -2,11 +2,9 @@
 
 (require (except-in "../utils/utils.ss" extend))
 (require "type-environments.ss" 
-	 (utils tc-utils)
 	 "type-env.ss"
-	 (private mutated-vars)
-	 (private type-utils)
-	 (private type-effect-convenience))
+         (utils tc-utils mutated-vars)
+	 (types utils convenience))
 
 (provide (all-defined-out))
 

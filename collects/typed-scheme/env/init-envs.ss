@@ -4,12 +4,12 @@
 
 (require "type-env.ss" 
 	 "type-name-env.ss"
-	 (rep type-rep effect-rep)
-	 (for-template (rep type-rep effect-rep) 
-		       (private union)
+	 "type-alias-env.ss"
+         (rep type-rep object-rep filter-rep)
+	 (for-template (rep type-rep object-rep filter-rep) 
+		       (types union)
 		       mzlib/pconvert mzlib/shared scheme/base)
-	 (private type-effect-convenience union)
-         "type-alias-env.ss"
+	 (types union convenience)         
 	 mzlib/pconvert scheme/match mzlib/shared)
 
 (define (initialize-type-name-env initial-type-names)
@@ -32,9 +32,10 @@
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
-    [(? Type? (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
-     `(,(gen-constructor tag) ,@(map sub vals))]
-    [(? Effect? (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
+    [(? (lambda (e) (or (Type? e)
+                        (LatentFilter? e)
+                        (LatentObject? e)))
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
      `(,(gen-constructor tag) ,@(map sub vals))]
     [_ (basic v)]))
 
