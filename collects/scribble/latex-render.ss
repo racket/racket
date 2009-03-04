@@ -27,9 +27,7 @@
 
 (define (render-mixin %)
   (class %
-    (init-field [prefix-file #f]
-                [style-file #f]
-                [style-extra-files null])
+    (inherit-field prefix-file style-file style-extra-files)
 
     (define/override (get-suffix) #".tex")
 
