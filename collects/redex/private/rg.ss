@@ -153,16 +153,28 @@ To do a better job of not generating programs with free variables,
 (define (attempt->size n)
   (inexact->exact (floor (/ (log (add1 n)) (log 5)))))
 
-(define (pick-number attempt [random random])
-  (cond [(or (< attempt integer-threshold) (not (exotic-choice? random)))
-         (random-natural (expected-value->p (attempt->size attempt)) random)]
-        [(or (< attempt rational-threshold) (not (exotic-choice? random)))
-         (random-integer (expected-value->p (attempt->size (- attempt integer-threshold))) random)]
-        [(or (< attempt real-threshold) (not (exotic-choice? random)))
-         (random-rational (expected-value->p (attempt->size (- attempt rational-threshold))) random)]
-        [(or (< attempt complex-threshold) (not (exotic-choice? random)))
-         (random-real (expected-value->p (attempt->size (- attempt real-threshold))) random)]
-        [else (random-complex (expected-value->p (attempt->size (- attempt complex-threshold))) random)]))
+(define (pick-number attempt #:top-threshold [top-threshold complex-threshold] [random random])
+  (let loop ([threshold 0] 
+             [generator random-natural]
+             [levels `((,integer-threshold . ,random-integer)
+                       (,rational-threshold . ,random-rational)
+                       (,real-threshold . ,random-real)
+                       (,complex-threshold . ,random-complex))])
+    (if (or (null? levels)
+            (< attempt (caar levels))
+            (< top-threshold (caar levels))
+            (not (exotic-choice? random)))
+        (generator (expected-value->p (attempt->size (- attempt threshold))) random)
+        (loop (caar levels) (cdar levels) (cdr levels)))))
+
+(define (pick-natural attempt [random random])
+  (pick-number attempt #:top-threshold 0 random))
+
+(define (pick-integer attempt [random random])
+  (pick-number attempt #:top-threshold integer-threshold random))
+
+(define (pick-real attempt [random random])
+  (pick-number attempt #:top-threshold real-threshold random))
 
 (define (pick-sequence-length attempt)
   (random-natural (expected-value->p (attempt->size attempt))))
@@ -309,6 +321,9 @@ To do a better job of not generating programs with free variables,
     
     (match pat
       [`number (values ((next-number-decision) attempt) state)]
+      [`natural (values ((next-natural-decision) attempt) state)]
+      [`integer (values ((next-integer-decision) attempt) state)]
+      [`real (values ((next-real-decision) attempt) state)]
       [`(variable-except ,vars ...)
        (generate/pred 'variable
                       (recur/pat/size-attempt 'variable)
@@ -875,6 +890,9 @@ To do a better job of not generating programs with free variables,
 (define-signature decisions^
   (next-variable-decision
    next-number-decision
+   next-natural-decision
+   next-integer-decision
+   next-real-decision
    next-non-terminal-decision
    next-sequence-decision
    next-any-decision
@@ -885,6 +903,9 @@ To do a better job of not generating programs with free variables,
   (unit (import) (export decisions^)
         (define (next-variable-decision) pick-var)
         (define (next-number-decision) pick-number)
+        (define (next-natural-decision) pick-natural)
+        (define (next-integer-decision) pick-integer)
+        (define (next-real-decision) pick-real)
         (define (next-non-terminal-decision) pick-nt)
         (define (next-sequence-decision) pick-sequence-length)
         (define (next-any-decision) pick-any)
@@ -899,7 +920,8 @@ To do a better job of not generating programs with free variables,
          class-reassignments reassign-classes unparse-pattern
          (struct-out ellipsis) (struct-out mismatch) (struct-out class)
          (struct-out binder) check-metafunction-contract prepare-lang
-         pick-number parse-language check-reduction-relation 
+         pick-number pick-natural pick-integer pick-real
+         parse-language check-reduction-relation 
          preferred-production-threshold check-metafunction
          generation-decisions pick-preferred-productions
          default-retries proportion-at-size retry-threshold 
