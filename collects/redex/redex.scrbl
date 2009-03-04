@@ -93,6 +93,9 @@ given term, Redex assumes that it will always match that term.
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole side-condition cross) 
    [pattern any 
             number 
+            natural
+            integer
+            real
             string 
             variable 
             (variable-except symbol ...)
@@ -122,6 +125,28 @@ before the underscore.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[natural] @pattern matches any exact 
+non-negative integer.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[integer] @pattern matches any exact integer.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[real] @pattern matches any real number.
 This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion

@@ -195,6 +195,9 @@ before the pattern compiler is invoked.
       [`any (void)]
       [`number (void)]
       [`string (void)]
+      [`natural (void)]
+      [`integer (void)]
+      [`real (void)]
       [`variable (void)]
       [`(variable-except ,s ...) (void)]
       [`(variable-prefix ,s) (void)]
@@ -230,6 +233,9 @@ before the pattern compiler is invoked.
        [`number #f]
        [`string #f]
        [`variable #f] 
+       [`natural #f]
+       [`integer #f]
+       [`real #f]
        [`(variable-except ,vars ...) #f]
        [`(variable-prefix ,var) #f]
        [`variable-not-otherwise-mentioned #f]
@@ -375,6 +381,9 @@ before the pattern compiler is invoked.
          [`any (lambda (l) 'any)]
          [`number (lambda (l) 'number)]
          [`string (lambda (l) 'string)]
+         [`natural (lambda (l) 'natural)]
+         [`integer (lambda (l) 'integer)]
+         [`real (lambda (l) 'real)]
          [`variable (lambda (l) 'variable)] 
          [`(variable-except ,vars ...) (lambda (l) pattern)]
          [`(variable-prefix ,var) (lambda (l) pattern)]
@@ -482,6 +491,9 @@ before the pattern compiler is invoked.
     [`number #f]
     [`string #f]
     [`variable #f] 
+    [`natural #f]
+    [`integer #f]
+    [`real #f]
     [`(variable-except ,vars ...) #f]
     [`variable-not-otherwise-mentioned #f]
     [`(variable-prefix ,var) #f]
@@ -528,7 +540,10 @@ before the pattern compiler is invoked.
     [`any #t]
     [`number #t]
     [`string #t]
-    [`variable #t] 
+    [`variable #t]
+    [`natural #t]
+    [`integer #t]
+    [`real #t]
     [`(variable-except ,vars ...) #t]
     [`variable-not-otherwise-mentioned #t]
     [`(variable-prefix ,prefix) #t]
@@ -803,10 +818,13 @@ before the pattern compiler is invoked.
   ;; compile-id-pattern : symbol[with-out-underscore] -> (values <compiled-pattern-proc> boolean)
   (define (compile-id-pattern pat)
     (match pat
-      [`any (simple-match 'any (λ (x) #t))]
-      [`number (simple-match 'number number?)]
-      [`string (simple-match 'string string?)]
-      [`variable (simple-match 'variable symbol?)]
+      [`any (simple-match (λ (x) #t))]
+      [`number (simple-match number?)]
+      [`string (simple-match string?)]
+      [`variable (simple-match symbol?)]
+      [`natural (simple-match (λ (x) (and (integer? x) (exact? x) (not (negative? x)))))]
+      [`integer (simple-match (λ (x) (and (integer? x) (exact? x))))]
+      [`real (simple-match real?)]
       [(? is-non-terminal?)
        (values
         (lambda (exp hole-info)
@@ -825,9 +843,9 @@ before the pattern compiler is invoked.
   
   (define (is-non-terminal? sym) (hash-maps? clang-ht sym))
   
-  ;; simple-match : sym (any -> bool) -> (values <compiled-pattern> boolean)
+  ;; simple-match : (any -> bool) -> (values <compiled-pattern> boolean)
   ;; does a match based on a built-in Scheme predicate
-  (define (simple-match binder pred)
+  (define (simple-match pred)
     (values (lambda (exp hole-info) 
               (and (pred exp) 
                    (list (make-mtch

@@ -1437,7 +1437,7 @@
          (for-each 
           (λ (name) 
             (let ([x (syntax->datum name)])
-              (when (memq x '(any number string variable variable-except variable-prefix hole name in-hole in-named-hole hide-hole side-condition cross ...))
+              (when (memq x '(any number string variable natural integer real variable-except variable-prefix hole name in-hole in-named-hole hide-hole side-condition cross ...))
                 (raise-syntax-error 'language 
                                     (format "cannot use pattern language keyword ~a as non-terminal"
                                             x)

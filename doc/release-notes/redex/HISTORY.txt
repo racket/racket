@@ -17,6 +17,8 @@ v4.1.5
   * traces & traces/ps: added the ability to specify a mixin
     to be mixed into the graph pasteboard
 
+  * added built-in patterns natural, integer, and real
+  
 v4.1.4
 
   * added redex-check, a tool for automatically generating test cases
