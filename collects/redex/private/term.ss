@@ -1,6 +1,8 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base "term-fn.ss")
+(require (for-syntax scheme/base 
+                     "term-fn.ss"
+                     stxclass/util/misc)
          "matcher.ss")
 
 (provide term term-let term-let/error-name term-let-fn term-define-fn)
@@ -37,7 +39,7 @@
          (and (identifier? (syntax metafunc-name))
               (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
          (let-values ([(rewritten has-term-let-bound-id?) (loop (syntax (arg ...)) depth)])
-           (let ([term-fn (syntax-local-value (syntax metafunc-name) (λ () #f))])
+           (let ([term-fn (syntax-local-value/catch (syntax metafunc-name) (λ (x) #t))])
              (with-syntax ([f (term-fn-get-id term-fn)])
                (cond
                  [has-term-let-bound-id?
@@ -76,7 +78,7 @@
         [x
          (and (identifier? (syntax x))
               (term-id? (syntax-local-value (syntax x) (λ () #f))))
-         (values (term-id-id (syntax-local-value (syntax x) (λ () #f))) #t)]
+         (values (term-id-id (syntax-local-value/catch (syntax x) (λ (x) #t))) #t)]
         [(unquote x)
          (values (syntax (unsyntax x)) #f)]
         [(unquote . x)
@@ -122,14 +124,15 @@
   
   (syntax-case orig-stx ()
     [(_ arg)
-     (with-syntax ([rewritten (rewrite (syntax arg))])
-       (let loop ([bs (reverse outer-bindings)])
-         (cond
-           [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
-           [else (with-syntax ([rec (loop (cdr bs))]
-                               [fst (car bs)])
-                   (syntax (with-syntax (fst)
-                             rec)))])))]))
+     (with-disappeared-uses
+      (with-syntax ([rewritten (rewrite (syntax arg))])
+        (let loop ([bs (reverse outer-bindings)])
+          (cond
+            [(null? bs) (syntax (syntax->datum (quasisyntax rewritten)))]
+            [else (with-syntax ([rec (loop (cdr bs))]
+                                [fst (car bs)])
+                    (syntax (with-syntax (fst)
+                              rec)))]))))]))
 
 (define-syntax (term-let-fn stx)
   (syntax-case stx ()
@@ -196,6 +199,8 @@
 
 (define-syntax (term-let stx)
   (syntax-case stx ()
+    [(_ () body1)
+     #'body1]
     [(_ ([x rhs] ...) body1 body2 ...)
      (syntax
       (term-let/error-name term-let ((x rhs) ...) body1 body2 ...))]

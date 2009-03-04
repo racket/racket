@@ -975,7 +975,7 @@
            (raise-syntax-error syn-error-name "no clauses" orig-stx))
          (let-values ([(contract-name dom-ctcs codom-contract pats)
                        (split-out-contract orig-stx syn-error-name #'rest)])
-           (with-syntax ([(((name lhs-clauses ...) rhs stuff ...) ...) pats]
+           (with-syntax ([(((original-names lhs-clauses ...) rhs stuff ...) ...) pats]
                          [(lhs-for-lw ...)
                           (with-syntax ([((lhs-for-lw _ _ ...) ...) pats])
                             (map (λ (x) (datum->syntax #f (cdr (syntax-e x)) x))
@@ -983,10 +983,10 @@
              (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
                            [name (let loop ([name (if contract-name
                                                       contract-name
-                                                      (car (syntax->list #'(name ...))))]
+                                                      (car (syntax->list #'(original-names ...))))]
                                             [names (if contract-name
-                                                       (syntax->list #'(name ...))
-                                                       (cdr (syntax->list #'(name ...))))])
+                                                       (syntax->list #'(original-names ...))
+                                                       (cdr (syntax->list #'(original-names ...))))])
                                    (cond
                                      [(null? names) name]
                                      [else
@@ -1063,50 +1063,53 @@
                                  [(((where-id where-pat) ...) ...)
                                   ;; Also for pict, extract where bindings
                                   #'(tl-bindings ...)])
-                     #`(begin
-                         (define-values (name2 name-predicate)
-                           (let ([sc `(side-conditions-rewritten ...)]
-                                 [dsc `dom-side-conditions-rewritten])
-                             (build-metafunction 
-                              lang
-                              sc
-                              (list rhs-fns ...)
-                              #,(if prev-metafunction
-                                    (let ([term-fn (syntax-local-value prev-metafunction)])
-                                      #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
-                                    #''())
-                              #,(if prev-metafunction
-                                    (let ([term-fn (syntax-local-value prev-metafunction)])
-                                      #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
-                                    #''())
-                              (λ (f/dom cps rhss)
-                                (make-metafunc-proc
-                                 (let ([name (lambda (x) (f/dom x))]) name)
-                                 (list (list (to-lw lhs-for-lw)
-                                             (list (to-lw/uq side-cond) ...)
-                                             (list (cons (to-lw bind-id)
-                                                         (to-lw bind-pat))
-                                                   ...
-                                                   (cons (to-lw rhs-bind-id)
-                                                         (to-lw/uq rhs-bind-pat))
-                                                   ...
-                                                   (cons (to-lw where-id)
-                                                         (to-lw where-pat))
-                                                   ...)
-                                             (to-lw rhs))
-                                       ...)
-                                 lang
-                                 #t ;; multi-args?
-                                 'name
-                                 cps
-                                 rhss
-                                 (let ([name (lambda (x) (name-predicate x))]) name)
-                                 dsc
-                                 sc))
-                              dsc
-                              'codom-side-conditions-rewritten
-                              'name)))
-                         (term-define-fn name name2)))))))))]
+                     (syntax-property
+                      #`(begin
+                          (define-values (name2 name-predicate)
+                            (let ([sc `(side-conditions-rewritten ...)]
+                                  [dsc `dom-side-conditions-rewritten])
+                              (build-metafunction 
+                               lang
+                               sc
+                               (list rhs-fns ...)
+                               #,(if prev-metafunction
+                                     (let ([term-fn (syntax-local-value prev-metafunction)])
+                                       #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
+                                     #''())
+                               #,(if prev-metafunction
+                                     (let ([term-fn (syntax-local-value prev-metafunction)])
+                                       #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
+                                     #''())
+                               (λ (f/dom cps rhss)
+                                 (make-metafunc-proc
+                                  (let ([name (lambda (x) (f/dom x))]) name)
+                                  (list (list (to-lw lhs-for-lw)
+                                              (list (to-lw/uq side-cond) ...)
+                                              (list (cons (to-lw bind-id)
+                                                          (to-lw bind-pat))
+                                                    ...
+                                                    (cons (to-lw rhs-bind-id)
+                                                          (to-lw/uq rhs-bind-pat))
+                                                    ...
+                                                    (cons (to-lw where-id)
+                                                          (to-lw where-pat))
+                                                    ...)
+                                              (to-lw rhs))
+                                        ...)
+                                  lang
+                                  #t ;; multi-args?
+                                  'name
+                                  cps
+                                  rhss
+                                  (let ([name (lambda (x) (name-predicate x))]) name)
+                                  dsc
+                                  sc))
+                               dsc
+                               'codom-side-conditions-rewritten
+                               'name)))
+                          (term-define-fn name name2))
+                      'disappeared-use
+                      (map syntax-local-introduce (syntax->list #'(original-names ...)))))))))))]
       [(_ prev-metafunction name lang clauses ...)
        (begin
          (unless (identifier? #'name)
