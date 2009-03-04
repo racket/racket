@@ -115,15 +115,13 @@
 (define (cgen/arr V X t-arr s-arr)
   (define (cg S T) (cgen V X S T))
   (match* (t-arr s-arr)
-    [((arr: ts t #f #f '() t-thn-eff t-els-eff)
-      (arr: ss s #f #f '() s-thn-eff s-els-eff))
+    [((arr: ts t #f #f '())
+      (arr: ss s #f #f '()))
      (cset-meet* 
       (list (cgen/list V X ss ts)
-            (cg t s)
-            (cgen/eff/list V X t-thn-eff s-thn-eff)
-            (cgen/eff/list V X t-els-eff s-els-eff)))]
-    [((arr: ts t t-rest #f '() t-thn-eff t-els-eff)
-      (arr: ss s s-rest #f '() s-thn-eff s-els-eff))
+            (cg t s)))]
+    [((arr: ts t t-rest #f '())
+      (arr: ss s s-rest #f '()))
      (let ([arg-mapping 
             (cond [(and t-rest s-rest (<= (length ts) (length ss)))
                    (cgen/list V X (cons s-rest ss) (cons t-rest (extend ss ts t-rest)))]
@@ -136,11 +134,9 @@
                   [else (fail! S T)])]
            [ret-mapping (cg t s)])
        (cset-meet*
-        (list arg-mapping ret-mapping
-              (cgen/eff/list V X t-thn-eff s-thn-eff)
-              (cgen/eff/list V X t-els-eff s-els-eff))))]
-    [((arr: ts t #f (cons dty dbound) '() t-thn-eff t-els-eff)
-      (arr: ss s #f #f                '() s-thn-eff s-els-eff))
+        (list arg-mapping ret-mapping)))]
+    [((arr: ts t #f (cons dty dbound) '())
+      (arr: ss s #f #f                '()))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ts) (length ss))
@@ -150,10 +146,10 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null t-thn-eff t-els-eff) s-arr)])
+            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null) s-arr)])
        (move-vars-to-dmap new-cset dbound vars))]
-    [((arr: ts t #f #f                '() t-thn-eff t-els-eff)
-      (arr: ss s #f (cons dty dbound) '() s-thn-eff s-els-eff))
+    [((arr: ts t #f #f                '())
+      (arr: ss s #f (cons dty dbound) '()))
      (unless (memq dbound X)
        (fail! S T))
      (unless (<= (length ss) (length ts))
@@ -163,10 +159,10 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null s-thn-eff s-els-eff))])
+            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null))])
        (move-vars-to-dmap new-cset dbound vars))]
-    [((arr: ts t #f (cons t-dty dbound) '() t-thn-eff t-els-eff)
-      (arr: ss s #f (cons s-dty dbound) '() s-thn-eff s-els-eff))
+    [((arr: ts t #f (cons t-dty dbound) '())
+      (arr: ss s #f (cons s-dty dbound) '()))
      (unless (= (length ts) (length ss))
        (fail! S T))
      ;; If we want to infer the dotted bound, then why is it in both types?
@@ -176,22 +172,18 @@
             [darg-mapping (cgen V X s-dty t-dty)]
             [ret-mapping (cg t s)])
        (cset-meet* 
-        (list arg-mapping darg-mapping ret-mapping
-              (cgen/eff/list V X t-thn-eff s-thn-eff)
-              (cgen/eff/list V X t-els-eff s-els-eff))))]
-    [((arr: ts t #f (cons t-dty dbound)  '() t-thn-eff t-els-eff)
-      (arr: ss s #f (cons s-dty dbound*) '() s-thn-eff s-els-eff))
+        (list arg-mapping darg-mapping ret-mapping)))]
+    [((arr: ts t #f (cons t-dty dbound)  '())
+      (arr: ss s #f (cons s-dty dbound*) '()))
      (unless (= (length ts) (length ss))
        (fail! S T))
      (let* ([arg-mapping (cgen/list V X ss ts)]
             [darg-mapping (cgen V (cons dbound* X) s-dty t-dty)]
             [ret-mapping (cg t s)])
        (cset-meet* 
-        (list arg-mapping darg-mapping ret-mapping
-              (cgen/eff/list V X t-thn-eff s-thn-eff)
-              (cgen/eff/list V X t-els-eff s-els-eff))))]
-    [((arr: ts t t-rest #f                  '() t-thn-eff t-els-eff)
-      (arr: ss s #f     (cons s-dty dbound) '() s-thn-eff s-els-eff))
+        (list arg-mapping darg-mapping ret-mapping)))]
+    [((arr: ts t t-rest #f                  '())
+      (arr: ss s #f     (cons s-dty dbound) '()))
      (unless (memq dbound X)
        (fail! S T))
      (if (<= (length ts) (length ss))
@@ -199,9 +191,7 @@
          (let* ([arg-mapping (cgen/list V X ss (extend ss ts t-rest))]
                 [darg-mapping (move-rest-to-dmap (cgen V X s-dty t-rest) dbound)]
                 [ret-mapping (cg t s)])
-           (cset-meet* (list arg-mapping darg-mapping ret-mapping
-                             (cgen/eff/list V X t-thn-eff s-thn-eff)
-                             (cgen/eff/list V X t-els-eff s-els-eff))))
+           (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
          ;; the hard case
          (let* ([num-vars (- (length ts) (length ss))]
                 [vars     (for/list ([n (in-range num-vars)])
@@ -209,11 +199,11 @@
                 [new-tys  (for/list ([var vars])
                             (substitute (make-F var) dbound s-dty))]
                 [new-cset (cgen/arr V (append vars X) t-arr 
-                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null s-thn-eff s-els-eff))])
+                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null))])
            (move-vars+rest-to-dmap new-cset dbound vars)))]
     ;; If dotted <: starred is correct, add it below.  Not sure it is.
-    [((arr: ts t #f     (cons t-dty dbound) '() t-thn-eff t-els-eff)
-      (arr: ss s s-rest #f                  '() s-thn-eff s-els-eff))
+    [((arr: ts t #f     (cons t-dty dbound) '())
+      (arr: ss s s-rest #f                  '()))
      (unless (memq dbound X)
        (fail! S T))
      (cond [(< (length ts) (length ss))
@@ -227,18 +217,14 @@
                    [darg-mapping (cgen V X s-rest t-dty)]
                    [ret-mapping (cg t s)]
                    [new-cset
-                    (cset-meet* (list arg-mapping darg-mapping ret-mapping
-                                      (cgen/eff/list V X t-thn-eff s-thn-eff)
-                                      (cgen/eff/list V X t-els-eff s-els-eff)))])
+                    (cset-meet* (list arg-mapping darg-mapping ret-mapping))])
               (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
            [else
             ;; the simple case
             (let* ([arg-mapping (cgen/list V X (extend ts ss s-rest) ts)]
                    [darg-mapping (move-rest-to-dmap (cgen V X s-rest t-dty) dbound #:exact #t)]
                    [ret-mapping (cg t s)])
-              (cset-meet* (list arg-mapping darg-mapping ret-mapping
-                                (cgen/eff/list V X t-thn-eff s-thn-eff)
-                                (cgen/eff/list V X t-els-eff s-els-eff))))])]
+              (cset-meet* (list arg-mapping darg-mapping ret-mapping)))])]
     [(_ _) (fail! S T)]))
 
 ;; determine constraints on the variables in X that would make T a supertype of S
