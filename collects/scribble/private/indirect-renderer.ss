@@ -40,6 +40,7 @@
             (convert (file-name-from-path tmp)))
           (when (super report-output?) ; use the original
             (printf " [Output to ~a]\n" dst))
+          (when (file-exists? dst) (delete-file dst))
           (copy-file (build-path tmp-dir (file-name-from-path dst)) dst))
         (cleanup)))
     (super-new)))
