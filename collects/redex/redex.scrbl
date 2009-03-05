@@ -250,7 +250,7 @@ guard.
 
 @item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
 closure functions. If the language contains a non-terminal with the
-same name as <symbol>, the @pattern @tt{(cross symbol)} matches the
+same name as @scheme[symbol], the @pattern @scheme[(cross symbol)] matches the
 context that corresponds to the compatible closure of that
 non-terminal.
 }
@@ -481,7 +481,7 @@ different lengths to appear together inside an ellipsis.
 Matches each given id pattern to the value yielded by
 evaluating the corresponding expr and binds each variable in
 the id pattern to the appropriate value (described
-below). These bindings are then accessible to the `term'
+below). These bindings are then accessible to the @|tttterm|
 syntactic form.
 
 Note that each ellipsis should be the literal symbol consisting of
@@ -777,7 +777,7 @@ where the @tt{==>} relation is defined by reducing in the context
 @defform[(extend-reduction-relation reduction-relation language more ...)]{
 
 This form extends the reduction relation in its first
-argument with the rules specified in <more>. They should
+argument with the rules specified in @scheme[more]. They should
 have the same shape as the the rules (including the `with'
 clause) in an ordinary @scheme[reduction-relation].
 
@@ -887,14 +887,14 @@ The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
-the rhs-expressions is implicitly wrapped in `term'. In
+the rhs-expressions is implicitly wrapped in @|tttterm|. In
 addition, recursive calls in the right-hand side of the
-metafunction clauses should appear inside `term'. 
+metafunction clauses should appear inside @|tttterm|. 
 
 If specified, the side-conditions are collected with 
 @scheme[and] and used as guards on the case being matched. The
 argument to each side-condition should be a Scheme
-expression, and the pattern variables in the <pattern> are
+expression, and the pattern variables in the @|ttpattern| are
 bound in that expression.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
@@ -924,7 +924,7 @@ The first argument to define-metafunction is the grammar
 (defined above). Following that are three cases, one for
 each variation of expressions (e in lc-lang). The right-hand
 side of each clause begins with a comma, since they are
-implicitly wrapped in `term'. The free variables of an
+implicitly wrapped in @|tttterm|. The free variables of an
 application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a lambda expression are
