@@ -1725,19 +1725,27 @@
          (compiled-lang-nt-map lang)))
 
 (define (apply-reduction-relation* reductions exp)
+  (let-values ([(results cycle?) (apply-reduction-relation*/cycle? reductions exp)])
+    results))
+
+(define (apply-reduction-relation*/cycle? reductions exp)
   (let ([answers (make-hash)]
+        [cycle? #f]
         [cycles (make-hash)])
     (let loop ([exp exp])
-      (unless (hash-ref cycles exp #f)
-        (hash-set! cycles exp #t)
-        (let ([nexts (apply-reduction-relation reductions exp)])
-          (cond
-            [(null? nexts) (hash-set! answers exp #t)]
-            [else (for-each loop nexts)]))))
-    (sort (hash-map answers (λ (x y) x))
-          string<=?
-          #:key (λ (x) (format "~s" x)))))
-
+      (cond
+        [(hash-ref cycles exp #f)
+         (set! cycle? #t)]
+        [else
+         (hash-set! cycles exp #t)
+         (let ([nexts (apply-reduction-relation reductions exp)])
+           (cond
+             [(null? nexts) (hash-set! answers exp #t)]
+             [else (for-each loop nexts)]))]))
+    (values (sort (hash-map answers (λ (x y) x))
+                  string<=?
+                  #:key (λ (x) (format "~s" x)))
+            cycle?)))
 
 ;; map/mt : (a -> b) (listof a) (listof b) -> (listof b)
 ;; map/mt is like map, except
@@ -1861,21 +1869,31 @@
 
 (define-syntax (test--> stx)
   (syntax-case stx ()
+    [(_ red #:cycles-ok e1 e2 ...)
+     #`(test-->/procs red e1 (list e2 ...) #t #,(get-srcloc stx))]
     [(_ red e1 e2 ...)
-     #`(test-->/procs red e1 (list e2 ...) #,(get-srcloc stx))]))
+     #`(test-->/procs red e1 (list e2 ...) #f #,(get-srcloc stx))]))
 
-(define (test-->/procs red arg expected srcinfo)
-  (let ([got (apply-reduction-relation* red arg)])
+(define (test-->/procs red arg expected cycles-ok? srcinfo)
+  (let-values ([(got got-cycle?) (apply-reduction-relation*/cycle? red arg)])
     (inc-tests)
-    (unless (set-equal? expected got)
-      (inc-failures)
-      (print-failed srcinfo)
-      (for-each
-       (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
-       expected)
-      (for-each
-       (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
-       got))))
+    
+    (cond
+      [(and got-cycle?
+            (not cycles-ok?))
+       (inc-failures)
+       (print-failed srcinfo)
+       (fprintf (current-error-port) "found a cycle in the reduction graph\n")]
+      [else
+       (unless (set-equal? expected got)
+         (inc-failures)
+         (print-failed srcinfo)
+         (for-each
+          (λ (v2) (fprintf (current-error-port) "expected: ~v\n" v2))
+          expected)
+         (for-each
+          (λ (v1) (fprintf (current-error-port) "  actual: ~v\n" v1))
+          got))])))
 
 (define (set-equal? s1 s2)
   (define (⊆ s1 s2) (andmap (λ (x1) (member x1 s2)) s1))
