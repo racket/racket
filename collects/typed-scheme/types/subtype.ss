@@ -122,17 +122,30 @@
 (define (arr-subtype*/no-fail A0 s t)
   (with-handlers
       ([exn:subtype? (lambda _ #f)])
-    (match (list s t)
+    (match* (s t)
       ;; top for functions is above everything
-      [(list _ (top-arr:)) A0]
-      [(list (arr: s1 s2 #f #f s-kws) 
-             (arr: t1 t2 #f #f t-kws))
+      [(_ (top-arr:)) A0]
+      [((arr: s1 s2 #f #f s-kws)
+        (arr: t1 t2 #f #f t-kws))
        (subtype-seq A0
                     (subtypes* t1 s1)
                     (kw-subtypes* t-kws s-kws)
                     (subtype* s2 t2))]
-      ;; FIXME - handle varargs
-      [else 
+      [((arr: s-dom s-rng s-rest #f s-kws)
+        (arr: t-dom t-rng #f #f t-kws))
+       (subtype-seq A0
+                    (subtypes*/varargs t-dom s-dom s-rest)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
+      [((arr: s-dom s-rng s-rest #f s-kws)
+        (arr: t-dom t-rng t-rest #f t-kws))
+       (subtype-seq A0
+                    (subtypes*/varargs t-dom s-dom s-rest)
+                    (subtype* t-rest s-rest)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
+      ;; FIXME - handle dotted varargs
+      [(_ _) 
        (fail! s t)])))
 
 (define (subtypes/varargs args dom rst)
@@ -283,6 +296,9 @@
 	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
+              ;; trivial case for Result
+              [(list (Result: t f o) (Result: t* f o))
+               (subtype* A0 t t*)]
 	      ;; single values shouldn't actually happen, but they're just like the type
 	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
 	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]

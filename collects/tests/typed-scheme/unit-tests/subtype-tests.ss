@@ -33,8 +33,6 @@
    (B Univ)
    (Sym Univ)
    (-Void Univ)
-   #;(Sym Dyn)
-   #;(Dyn N)
    [N N]
    [(Un (-pair Univ (-lst Univ)) (-val '())) (-lst Univ)]
    [(-pair N (-pair N (-pair (-val 'foo) (-val '())))) (-lst Univ)]
@@ -112,6 +110,8 @@
 		     [(N) a]))
     (cl-> [() (-pair N (-v b))]
 	  [(N) (-pair N (-v b))])]
+   
+   [(-values (list N)) (-values (list Univ))]
    
    [(-poly (a) ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list N a))) . -> . (-lst a)))
     ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list N (-pair N (-v a))))) . -> . (-lst (-pair N (-v a))))]

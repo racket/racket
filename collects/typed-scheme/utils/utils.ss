@@ -29,20 +29,25 @@ at least theoretically.
         (begin
           (define-require-syntax (nm stx)
             (syntax-parse stx
-              [(_ id:identifier ...)
+              [(form id:identifier ...)
                (with-syntax ([(id* ...)
                               (map (lambda (id) 
                                      (datum->syntax 
                                       id
                                       `(file
-                                        ,(path->string
-                                          (build-path (collection-path "typed-scheme"
-                                                                       #,(symbol->string (syntax-e #'nm)))
-                                                      (string-append (symbol->string (syntax-e id))
-                                                                     ".ss"))))
+                                        ,(datum->syntax
+                                          #f
+                                          (path->string
+                                           (build-path (collection-path "typed-scheme"
+                                                                        #,(symbol->string (syntax-e #'nm)))
+                                                       (string-append (symbol->string (syntax-e id))
+                                                                      ".ss")))
+                                          id id))
                                       id id))
                                    (syntax->list #'(id ...)))])
-                 (syntax/loc stx (combine-in id* ...)))]))
+                 (syntax-property (syntax/loc stx (combine-in id* ...))
+                                  'disappeared-use
+                                  #'form))]))
           (define-provide-syntax (nm-out stx)
             (syntax-parse stx
               [(_ id:identifier ...)
@@ -183,7 +188,7 @@ at least theoretically.
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #f)
+(define-for-syntax printing? #t)
 
 (define-syntax-rule (defprinter t ...)
   (begin
