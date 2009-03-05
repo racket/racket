@@ -1184,9 +1184,9 @@
              render-one-part
              render-content
              part-whole-page?
-             format-number)
-
-    (inherit-field report-output?)
+             format-number
+             install-extra-files
+             report-output?)
 
     (define/override (get-suffix) #"")
 
@@ -1237,11 +1237,13 @@
 
     (define/override (render ds fns ri)
       (map (lambda (d fn)
-             (when report-output?
+             (when (report-output?)
                (printf " [Output to ~a/index.html]\n" fn))
              (unless (directory-exists? fn)
                (make-directory fn))
              (parameterize ([current-subdirectory (file-name-from-path fn)])
+               ;; install files for each directory
+               (install-extra-files)
                (let ([fn (build-path fn "index.html")])
                  (with-output-to-file fn #:exists 'truncate/replace
                    (lambda () (render-one d ri fn))))))

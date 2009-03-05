@@ -19,7 +19,8 @@
                 [root-path #f]
                 [prefix-file #f]
                 [style-file #f]
-                [style-extra-files null])
+                [style-extra-files null]
+                [extra-files null])
 
     (define/public (get-dest-directory [create? #f])
       (when (and dest-dir create? (not (directory-exists? dest-dir)))
@@ -44,9 +45,9 @@
                 (substring s 0 (sub1 (string-length s))))
               sep)))
 
-    (field [report-output? #f])
-    (define/public (report-output!)
-      (set! report-output? #t))
+    (field [report-output?? #f])
+    (define/public (report-output?) report-output??)
+    (define/public (report-output!) (set! report-output?? #t))
 
     ;; ----------------------------------------
 
@@ -348,10 +349,16 @@
     ;; ----------------------------------------
     ;; render methods
 
+    (define/public (install-extra-files)
+      (for ([fn extra-files]) (install-file fn)))
+
     (define/public (render ds fns ri)
+      ;; maybe this should happen even if fns is empty or all #f?
+      ;; or maybe it should happen for each file rendered (when d is not #f)?
+      (unless (andmap not ds) (install-extra-files))
       (map (lambda (d fn)
              (define (one) (render-one d ri fn))
-             (when report-output? (printf " [Output to ~a]\n" fn))
+             (when (report-output?) (printf " [Output to ~a]\n" fn))
              (if fn
                (with-output-to-file fn #:exists 'truncate/replace one)
                ;; a #f filename means return the contents as a string

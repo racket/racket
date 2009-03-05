@@ -23,6 +23,7 @@
 (define current-prefix-file        (make-parameter #f))
 (define current-style-file         (make-parameter #f))
 (define current-style-extra-files  (make-parameter null))
+(define current-extra-files        (make-parameter null))
 (define current-redirect           (make-parameter #f))
 (define current-redirect-main      (make-parameter #f))
 
@@ -61,6 +62,10 @@
    [("--info-out") file "write format-specific link information to <file>"
     (current-info-output-file file)]
    #:multi
+   [("++extra") file "add given file"
+    (current-extra-files (cons file (current-extra-files)))]
+   [("++style") file "add given .css/.tex file"
+    (current-style-extra-files (cons file (current-style-extra-files)))]
    [("++info-in") file "load format-specific link information from <file>"
     (current-info-input-files
      (cons file (current-info-input-files)))]
@@ -76,8 +81,6 @@
          'scribble "bad procedure identifier for ++ref-in: ~s" proc-id))
       (current-xref-input-modules
        (cons (cons mod id) (current-xref-input-modules))))]
-   [("++style") file "add given .css/.tex file"
-    (current-style-extra-files (cons file (current-style-extra-files)))]
    #:args (file . another-file)
    (let ([files (cons file another-file)])
      (build-docs (map (lambda (file) (dynamic-require `(file ,file) 'doc))
@@ -91,7 +94,8 @@
                     [dest-dir dir]
                     [prefix-file (current-prefix-file)]
                     [style-file (current-style-file)]
-                    [style-extra-files (reverse (current-style-extra-files))])])
+                    [style-extra-files (reverse (current-style-extra-files))]
+                    [extra-files (reverse (current-extra-files))])])
     (when (current-redirect)
       (send renderer set-external-tag-path (current-redirect)))
     (when (current-redirect-main)

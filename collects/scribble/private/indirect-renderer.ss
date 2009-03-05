@@ -10,9 +10,12 @@
           base-renderer base-suffix target-suffix convert)
          %renderer)
   (class (base-renderer %renderer)
+    ;; set to a temp directory when doing the sub-rendering
     (define tmp-dest-dir #f)
     (define/override (get-dest-directory create?)
       (or tmp-dest-dir (super get-dest-directory create?)))
+    (define/override (report-output?)
+      (and (not tmp-dest-dir) (super report-output?)))
     (define/override (get-suffix) target-suffix)
     (define/override (render srcs dests ri)
       (define tmp-dir
@@ -35,6 +38,8 @@
         (for ([tmp tmp-dests] [dst dests])
           (parameterize ([current-directory tmp-dir])
             (convert (file-name-from-path tmp)))
-          (copy-file (build-path tmp-dir(file-name-from-path dst)) dst))
+          (when (super report-output?) ; use the original
+            (printf " [Output to ~a]\n" dst))
+          (copy-file (build-path tmp-dir (file-name-from-path dst)) dst))
         (cleanup)))
     (super-new)))
