@@ -14,10 +14,17 @@
 
   (require "unit200.ss")
 
+  (define (vector-ref* v i)
+    (let ([r (vector-ref v i)])
+      (if (<= 0 r 255) r (error 'vector-ref "BOOM: ~s" r))))
+
+  (define (vector-set!* v i n)
+    (if (<= 0 n 255) (vector-set! v i n) (error 'vector-ref "BOOM!: ~s" n)))
+
   (define-syntax INSERT_STRING
     (syntax-rules ()
       [(_ s match_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
-       (begin (UPDATE_HASH (vector-ref window-vec (+ s MIN_MATCH-1)))
+       (begin (UPDATE_HASH (bytes-ref window-vec (+ s MIN_MATCH-1)))
               (let ([mh (vector-ref head-vec (+ ins_h head-vec-delta))])
                 (set! match_head mh)
                 (vector-set! prev-vec (bitwise-and s  WMASK) mh))
@@ -44,28 +51,13 @@
          (let loop ([n start])
            (when (< n endval) body ... (loop (next n)))))]))
 
-  (define-struct gzvector (vector offset))
-  (define (gzvector-ref v o)
-    (vector-ref (gzvector-vector v) (+ (gzvector-offset v) o)))
-  (define (gzvector-set! v o x)
-    (vector-set! (gzvector-vector v) (+ (gzvector-offset v) o) x))
-  (define (gzvector+ v o)
-    (make-gzvector (gzvector-vector v) (+ (gzvector-offset v) o)))
-
-  (define (gzvector<vec v1 v2)
-    (< (gzvector-offset v1) (gzvector-offset v2)))
-  (define (gzvector-vec v1 v2)
-    (- (gzvector-offset v1) (gzvector-offset v2)))
-
-  (define (gzvector-copy v1 v2 n)
-    (let ([v1 (gzvector-vector v1)] [o1 (gzvector-offset v1)]
-          [v2 (gzvector-vector v2)] [o2 (gzvector-offset v2)])
-      (for m := 0 < n do
-        (vector-set! v1 (+ o1 m) (vector-ref v2 (+ o2 m))))))
-
-  (define (gzvector-zero! v n)
-    (let ([v (gzvector-vector v)] [o (gzvector-offset v)])
-      (for m := o < (+ n o) do (vector-set! v m 0))))
+  (define-struct gzbytes (bytes offset))
+  (define (gzbytes-ref v o)
+    (bytes-ref (gzbytes-bytes v) (+ (gzbytes-offset v) o)))
+  (define (gzbytes-set! v o x)
+    (bytes-set! (gzbytes-bytes v) (+ (gzbytes-offset v) o) x))
+  (define (gzbytes+ v o)
+    (make-gzbytes (gzbytes-bytes v) (+ (gzbytes-offset v) o)))
 
   (define (Trace stderr str . args)
     (apply fprintf (current-error-port) str args))
@@ -214,9 +206,7 @@
 (define real-table (make-vector (<< 1 BITS) 0))
 
 (define prev-vec real-table)
-(define prev (make-gzvector prev-vec 0))
 (define head-vec real-table)
-(define head (make-gzvector head-vec head-vec-delta))
 
 ;;  /* DECLARE(uch, window, 2L*WSIZE); */
 ;;  /* Sliding window. Input bytes are read into the second half of the window,
@@ -241,8 +231,8 @@
 (define window_size (* 2 WSIZE))
 ;;  /* window size, 2*WSIZE
 ;;   */
-(define window-vec (make-vector window_size 0))
-(define window (make-gzvector window-vec 0))
+(define window-vec (make-bytes window_size 0))
+(define window (make-gzbytes window-vec 0))
 
 (define block_start 0)
 ;;  /* window position at the beginning of the current output block. Gets
@@ -354,7 +344,8 @@
     (error "bad pack level"))
 
   ;; /* Initialize the hash table. */
-  (gzvector-zero! head HASH_SIZE)
+  (for i := head-vec-delta < (+ head-vec-delta HASH_SIZE) do
+    (vector-set! head-vec i 0))
 
   ;; /* prev will be initialized on the fly */
 
@@ -391,7 +382,7 @@
               (fill_window)))
 
           (set! ins_h 0)
-          (for j := 0 < MIN_MATCH-1 do (UPDATE_HASH (vector-ref window-vec j)))
+          (for j := 0 < MIN_MATCH-1 do (UPDATE_HASH (bytes-ref window-vec j)))
           (DEBUG (Trace stderr "hash init: ~a\n" ins_h))
           ;; /* If lookahead < MIN_MATCH, ins_h is garbage, but this is
           ;;  * not important since only literal bytes will be emitted.
@@ -450,8 +441,8 @@
       ;; #endif
 
       (set! strendpos (+ strstart MAX_MATCH))
-      (set! scan_end1 (vector-ref window-vec (+ scanpos best_len -1)))
-      (set! scan_end (vector-ref window-vec (+ scanpos best_len)))
+      (set! scan_end1 (bytes-ref window-vec (+ scanpos best_len -1)))
+      (set! scan_end (bytes-ref window-vec (+ scanpos best_len)))
 
       ;; /* Do not waste too much time if we already have a good match: */
       (when (>= prev_length good_match)
@@ -474,10 +465,10 @@
         (longest_match-loop)))
     (define (*++scan)
       (set! scanpos (add1 scanpos))
-      (vector-ref window-vec scanpos))
+      (bytes-ref window-vec scanpos))
     (define (*++match)
       (set! matchpos (add1 matchpos))
-      (vector-ref window-vec matchpos))
+      (bytes-ref window-vec matchpos))
 
     (define (match-eight)
       (when (and (eq? (*++scan) (*++match)) (eq? (*++scan) (*++match))
@@ -499,12 +490,12 @@
       ;;  * or if the match length is less than 2:
       ;;  */
 
-      (if (or (not (eq? (vector-ref window-vec (+ matchpos best_len)) scan_end))
-              (not (eq? (vector-ref window-vec (+ matchpos best_len -1)) scan_end1))
-              (not (eq? (vector-ref window-vec matchpos) (vector-ref window-vec scanpos)))
+      (if (or (not (eq? (bytes-ref window-vec (+ matchpos best_len)) scan_end))
+              (not (eq? (bytes-ref window-vec (+ matchpos best_len -1)) scan_end1))
+              (not (eq? (bytes-ref window-vec matchpos) (bytes-ref window-vec scanpos)))
               (not (eq? (begin (set! matchpos (add1 matchpos))
-                               (vector-ref window-vec matchpos))
-                      (vector-ref window-vec (add1 scanpos)))))
+                               (bytes-ref window-vec matchpos))
+                        (bytes-ref window-vec (add1 scanpos)))))
           (continue)
 
           (begin
@@ -534,8 +525,8 @@
                           (if (>= len nice_match)
                               #f
                               (begin
-                                (set! scan_end1 (vector-ref window-vec (+ scanpos best_len -1)))
-                                (set! scan_end (vector-ref window-vec (+ scanpos best_len)))
+                                (set! scan_end1 (bytes-ref window-vec (+ scanpos best_len -1)))
+                                (set! scan_end (bytes-ref window-vec (+ scanpos best_len)))
                                 #t)))
                         #t))
               (continue)))))
@@ -564,7 +555,8 @@
   ;;  * move the upper half to the lower one to make room in the upper half.
   ;;  */
   (when (>= strstart (+ WSIZE MAX_DIST))
-    (gzvector-copy window (gzvector+ window WSIZE) WSIZE)
+    (let ([bs (gzbytes-bytes window)] [ofs (gzbytes-offset window)])
+      (bytes-copy! bs ofs bs (+ ofs WSIZE) (+ ofs WSIZE WSIZE)))
     (set! match_start (- match_start WSIZE))
     (set! strstart (- strstart WSIZE)) ;; /* we now have strstart >= MAX_DIST: */
 
@@ -597,9 +589,7 @@
 ;;  * IN assertion: strstart is set to the end of the current match.
 ;;  */
 (define (FLUSH-BLOCK eof)
-  (flush_block (if (>= block_start 0)
-                   (gzvector+ window block_start)
-                   null)
+  (flush_block (and (>= block_start 0) (gzbytes+ window block_start))
                (- strstart block_start)
                eof))
 
@@ -620,7 +610,7 @@
     (when (not (zero? lookahead))
       (DEBUG (Trace stderr
                     "prep ~a ~a ~a ~a ~a ~a ~a ~a ~a ~a\n" hash_head prev_length match_length max_lazy_match strstart
-                    ins_h (+ strstart MIN_MATCH-1) (vector-ref window-vec (+ strstart MIN_MATCH-1))
+                    ins_h (+ strstart MIN_MATCH-1) (bytes-ref window-vec (+ strstart MIN_MATCH-1))
                     H_SHIFT HASH_MASK))
 
       ;; /* Insert the string window[strstart .. strstart+2] in the
@@ -630,7 +620,7 @@
 
       (DEBUG (Trace stderr
                     "inh ~a ~a ~a ~a ~a ~a ~a\n" hash_head prev_length match_length max_lazy_match strstart
-                    ins_h (vector-ref window-vec (+ strstart MIN_MATCH-1))))
+                    ins_h (bytes-ref window-vec (+ strstart MIN_MATCH-1))))
 
       ;; /* Find the longest match, discarding those <= prev_length.
       ;;  */
@@ -682,7 +672,7 @@
           (INSERT_STRING strstart hash_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
           (DEBUG (Trace stderr
                         "inhx ~a ~a ~a ~a ~a ~a\n" hash_head prev_length max_lazy_match strstart
-                        ins_h (vector-ref window-vec (+ strstart MIN_MATCH -1))))
+                        ins_h (bytes-ref window-vec (+ strstart MIN_MATCH -1))))
           ;; /* strstart never exceeds WSIZE-MAX_MATCH, so there are
           ;;  * always MIN_MATCH bytes ahead. If lookahead < MIN_MATCH
           ;;  * these bytes are garbage, but it does not matter since the
@@ -707,7 +697,7 @@
         ;;  * is longer, truncate the previous match to a single literal.
         ;;  */
         ;; (Tracevv stderr "~c" (integer->char (vector-ref window-vec (- strstart 1))))
-        (when (ct_tally 0 (vector-ref window-vec (- strstart 1)))
+        (when (ct_tally 0 (bytes-ref window-vec (- strstart 1)))
           (FLUSH-BLOCK 0)
           (set! block_start strstart))
         (set! strstart (add1 strstart))
@@ -742,7 +732,7 @@
       (dloop)))
 
   (when match_available
-    (ct_tally 0 (vector-ref window-vec (- strstart 1))))
+    (ct_tally 0 (bytes-ref window-vec (- strstart 1))))
 
   (FLUSH-BLOCK 1)); /* eof */
 
@@ -984,7 +974,7 @@
 (define base_dist (make-vector D_CODES 0))
 ;; /* First normalized distance for each code (0 = distance of 1) */
 
-(define inbuf (make-gzvector (make-vector (+ INBUFSIZ INBUF_EXTRA) 0) 0))
+(define inbuf (make-bytes (+ INBUFSIZ INBUF_EXTRA) 0))
 (define l_buf inbuf)
 ;; /* DECLARE(uch, l_buf, LIT_BUFSIZE);  buffer for literals or lengths */
 
@@ -1674,8 +1664,7 @@
   ;;  * the whole file is transformed into a stored file:
   ;;  */
   (cond
-   [(and (<= (+ stored_len 4) opt_lenb)
-         (not (null? buf)))
+   [(and buf (<= (+ stored_len 4) opt_lenb))
     ;; /* 4: two words for the lengths */
 
     ;; /* The test buf != NULL is only necessary if LIT_BUFSIZE > WSIZE.
@@ -1732,7 +1721,7 @@
 
       (set! dist _dist)
 
-      (gzvector-set! l_buf last_lit lc)
+      (bytes-set! l_buf last_lit lc)
       (set! last_lit (add1 last_lit))
       (if (= dist 0)
           ;; /* lc is the unmatched char */
@@ -1816,7 +1805,7 @@
         (set! flag (vector-ref flag_buf fx))
         (set! fx (add1 fx)))
 
-      (set! lc (gzvector-ref l_buf lx))
+      (set! lc (bytes-ref l_buf lx))
       (set! lx (add1 lx))
 
       (cond
@@ -1999,7 +1988,7 @@
             (loop (bitwise-xor
                    (vector-ref crc_32_tab
                                (bitwise-and
-                                (bitwise-xor c (vector-ref window-vec (+ s p)))
+                                (bitwise-xor c (bytes-ref window-vec (+ s p)))
                                 #xff))
                    (arithmetic-shift c -8))
                   (add1 p))))
@@ -2078,7 +2067,7 @@
 
   (set! bits_sent (+ bits_sent (<< len 3)))
 
-  (for pos := 0 < len do (put_byte (gzvector-ref buf pos))))
+  (for pos := 0 < len do (put_byte (gzbytes-ref buf pos))))
 
 ;; /* ===========================================================================
 ;;  * Read a new buffer from the current input file, perform end-of-line
@@ -2093,40 +2082,36 @@
   ;; (unless (= insize 0)
   ;;   (error "inbuf not empty"))
 
-  (let* ([s (read-bytes size ifd)]
-         [len (if (eof-object? s)
-                  EOF-const
-                  (bytes-length s))])
+  (let* ([s (read-bytes! window-vec ifd startpos (+ size startpos))]
+         [len (if (eof-object? s) EOF-const s)])
     (when (positive? len)
-      (let rloop ([p 0])
-        (unless (= p len)
-          (vector-set! window-vec (+ p startpos) (bytes-ref s p))
-          (rloop (add1 p))))
-
       (updcrc startpos len)
       (set! bytes_in (+ bytes_in len)))
-
     len))
 
 ;; Assumes being called with c in 0..FF
-(define (put_byte c)
-  (bytes-set! outbuf outcnt c)
-  (set! outcnt (add1 outcnt))
-  (when (= outcnt OUTBUFSIZ) (flush_outbuf)))
+(define-syntax put_byte
+  (syntax-rules ()
+    [(_ c)
+     (begin (bytes-set! outbuf outcnt c)
+            (set! outcnt (add1 outcnt))
+            (when (= outcnt OUTBUFSIZ) (flush_outbuf)))]))
 
 ;; /* Output a 16 bit value, lsb first */
 ;; Assumes being called with c in 0..FFFF
 (define (put_short w)
   (if (< outcnt (- OUTBUFSIZ 2))
     (begin (bytes-set! outbuf outcnt (bitwise-and #xFF w))
-           (bytes-set! outbuf (add1 outcnt) (bitwise-and #xFF (>> w 8)))
+           (bytes-set! outbuf (add1 outcnt) (>> w 8))
+           ;; this is not faster...
+           ;; (integer->integer-bytes w 2 #f #f outbuf outcnt)
            (set! outcnt (+ outcnt 2)))
     (begin (put_byte (bitwise-and #xFF w))
            (put_byte (>> w 8)))))
 
 ;; /* Output a 32 bit value to the bit stream, lsb first */
 (define (put_long n)
-  (put_short n)
+  (put_short (bitwise-and #xFFFF n))
   (put_short (>> n 16)))
 
 (define outcnt 0)
@@ -2207,7 +2192,7 @@
   (put_byte 3) ;; /* OS identifier */
 
   (when origname
-    (for-each put_byte (bytes->list origname))
+    (for-each (lambda (b) (put_byte b)) (bytes->list origname))
     (put_byte 0))
 
   (do-deflate)
