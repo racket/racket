@@ -17,11 +17,11 @@
   (define-syntax INSERT_STRING
     (syntax-rules ()
       [(_ s match_head UPDATE_HASH window-vec head-vec prev-vec ins_h)
-       #'(begin (UPDATE_HASH (vector-ref window-vec (+ s MIN_MATCH-1)))
-                (let ([mh (vector-ref head-vec (+ ins_h head-vec-delta))])
-                  (set! match_head mh)
-                  (vector-set! prev-vec (bitwise-and s  WMASK) mh))
-                (vector-set! head-vec (+ head-vec-delta ins_h) s))]))
+       (begin (UPDATE_HASH (vector-ref window-vec (+ s MIN_MATCH-1)))
+              (let ([mh (vector-ref head-vec (+ ins_h head-vec-delta))])
+                (set! match_head mh)
+                (vector-set! prev-vec (bitwise-and s  WMASK) mh))
+              (vector-set! head-vec (+ head-vec-delta ins_h) s))]))
 
   (define-syntax pqremove
     (syntax-rules ()
