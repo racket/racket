@@ -386,6 +386,10 @@
               ([t-arr t-arr] [s-arr s-arr])
               (with-handlers ([exn:infer? (lambda (_) #f)])
                 (cgen/arr V X t-arr s-arr)))))]
+          ;; this is overly conservative
+          [((Result: s f o)
+            (Result: t f o))
+           (cg s t)]
           [(_ _)
            (cond [(subtype S T) empty]
                  ;; or, nothing worked, and we fail
