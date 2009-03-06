@@ -8525,9 +8525,11 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   v = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   data->num_params = SCHEME_INT_VAL(v);
+  if (data->num_params < 0) return NULL;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
   data->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  if (data->max_let_depth < 0) return NULL;
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return NULL;

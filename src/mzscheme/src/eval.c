@@ -10201,6 +10201,9 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
   char *new_stack;
   struct Validate_Clearing *vc;
 
+  if (data->max_let_depth < (data->num_params + data->closure_size))
+    scheme_ill_formed_code(port);
+
   sz = data->max_let_depth;
   new_stack = scheme_malloc_atomic(sz);
   memset(new_stack, VALID_NOT, sz - data->num_params - data->closure_size);
@@ -10255,7 +10258,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     sz = data->closure_size;
   }
   map = data->closure_map;
-      
+  
   if (sz)
     closure_stack = scheme_malloc_atomic(sz);
   else
@@ -10284,7 +10287,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     if (q == self_pos)
       self_pos_in_closure = i;
     p = q + delta;
-    if ((q < 0) || (p > depth) || (stack[p] == VALID_NOT))
+    if ((q < 0) || (p >= depth) || (stack[p] == VALID_NOT))
       scheme_ill_formed_code(port);
     vld = stack[p];
     if (vld == VALID_VAL_NOCLEAR)
@@ -10679,7 +10682,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       scheme_validate_expr(port, lv->value, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
                            NULL, 0, 0, vc, 0);
-      memset(stack, VALID_NOT, delta);
+      /* memset(stack, VALID_NOT, delta);  <-- seems unnecessary (and slow) */
 
       c = lv->count;
       q = lv->position;
@@ -10737,7 +10740,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       c = l->count;
       
-      if ((c < 0) || (c + delta > depth))
+      if ((c < 0) || (c + delta >= depth))
 	scheme_ill_formed_code(port);
 
       for (i = 0; i < c; i++) {
@@ -10828,7 +10831,8 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 
 void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta)
 {
-  p += delta;
+  if (p >= 0)
+    p += delta;
 
   if ((p < 0) || (p >= depth) || (stack[p] != VALID_VAL))
     scheme_ill_formed_code(port);
