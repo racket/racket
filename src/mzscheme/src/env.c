@@ -5230,6 +5230,9 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   tv = SCHEME_CAR(obj);
   sv = SCHEME_CDR(obj);
 
+  if (!SCHEME_VECTORP(tv)) return NULL;
+  if (!SCHEME_VECTORP(sv)) return NULL;
+
   rp = MALLOC_ONE_TAGGED(Resolve_Prefix);
   rp->so.type = scheme_resolve_prefix_type;
   rp->num_toplevels = SCHEME_VEC_SIZE(tv);
