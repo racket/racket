@@ -10740,7 +10740,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       c = l->count;
       
-      if ((c < 0) || (c + delta >= depth))
+      if ((c < 0) || (c + delta > depth))
 	scheme_ill_formed_code(port);
 
       for (i = 0; i < c; i++) {
