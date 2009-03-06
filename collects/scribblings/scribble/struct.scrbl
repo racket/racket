@@ -266,6 +266,10 @@ values (must be in a list) are as follows:
  @item{@scheme['toc] --- sub-parts of the part are rendered on separate
        pages for multi-page HTML mode.}
 
+ @item{@scheme['non-toc] --- initial sub-parts of the part are
+       @emph{not} rendered on separate pages for multi-page HTML
+       mode; this style applies only to the main part.}
+
  @item{@scheme['index] --- the part represents an index.}
 
  @item{@scheme['reveal] --- shows sub-parts when this part is

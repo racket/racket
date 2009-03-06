@@ -74,9 +74,9 @@
 (define current-subdirectory (make-parameter #f))
 (define current-output-file (make-parameter #f))
 (define current-top-part (make-parameter #f))
-(define on-separate-page (make-parameter #t))
-(define next-separate-page (make-parameter #f))
+(define on-separate-page-ok (make-parameter #t))
 (define collecting-sub (make-parameter 0))
+(define collecting-whole-page (make-parameter #t))
 (define current-no-links (make-parameter #f))
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
@@ -521,7 +521,8 @@
                 (if (nearly-top? d) null (list d))
                 ;; get internal targets:
                 (append-map block-targets (flow-paragraphs (part-flow d)))
-                (map flatten (part-parts d))))))
+                (map (lambda (p) (if (part-whole-page? p ri) null (flatten p)))
+                     (part-parts d))))))
           (define any-parts? (ormap part? ps))
           (if (null? ps)
             null
@@ -1222,12 +1223,26 @@
       (super collect ds (map (lambda (fn) (build-path fn "index.html")) fns)))
 
     (define/override (current-part-whole-page? d)
-      ((collecting-sub) . <= . 2))
+      (collecting-whole-page))
+
+    (define/override (start-collect ds fns ci)
+      (map (lambda (d fn)
+             (parameterize ([collecting-sub
+                             (if (part-style? d 'non-toc)
+                                 1
+                                 0)])
+               (super start-collect (list d) (list fn) ci)))
+           ds
+           fns))
 
     (define/override (collect-part d parent ci number)
       (let ([prev-sub (collecting-sub)])
-        (parameterize ([collecting-sub (if (toc-part? d) 1 (add1 prev-sub))])
-          (if (= 1 prev-sub)
+        (parameterize ([collecting-sub (if (toc-part? d) 
+                                           1 
+                                           (add1 prev-sub))]
+                       [collecting-whole-page (prev-sub . <= . 1)])
+          (if (and (current-part-whole-page? d)
+                   (not (eq? d (current-top-part))))
             (let ([filename (derive-filename d)])
               (parameterize ([current-output-file
                               (build-path (path-only (current-output-file))
@@ -1241,7 +1256,8 @@
                (printf " [Output to ~a/index.html]\n" fn))
              (unless (directory-exists? fn)
                (make-directory fn))
-             (parameterize ([current-subdirectory (file-name-from-path fn)])
+             (parameterize ([current-subdirectory (file-name-from-path fn)]
+                            [current-top-part d])
                ;; install files for each directory
                (install-extra-files)
                (let ([fn (build-path fn "index.html")])
@@ -1266,23 +1282,21 @@
     (define/override (render-part d ri)
       (parameterize ([current-version (extract-version d)])
         (let ([number (collected-info-number (part-collected-info d ri))])
-          (if (and (not (on-separate-page))
-                   (or (= 1 (length number))
-                       (next-separate-page)))
+          (if (and (on-separate-page-ok)
+                   (part-whole-page? d ri)
+                   (not (eq? d (current-top-part))))
             ;; Render as just a link, and put the actual content in a
             ;; new file:
             (let* ([filename (derive-filename d)]
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
-              (parameterize ([on-separate-page #t])
+              (parameterize ([on-separate-page-ok #f])
                 (with-output-to-file full-path #:exists 'truncate/replace
                   (lambda () (render-one-part d ri full-path number)))
                 null))
-            (let ([sep? (on-separate-page)])
-              (parameterize ([next-separate-page (toc-part? d)]
-                             [on-separate-page #f])
-                ;; Normal section render
-                (super render-part d ri)))))))
+            (parameterize ([on-separate-page-ok #t])
+              ;; Normal section render
+              (super render-part d ri))))))
 
     (super-new)))
 
