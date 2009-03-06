@@ -367,11 +367,20 @@
     (define/public (toc-wrap table)
       null)
 
+    (define/private (dest->url dest)
+      (format "~a~a~a"
+              (from-root (relative->path (dest-path dest))
+                         (get-dest-directory))
+              (if (dest-page? dest) "" "#")
+              (if (dest-page? dest)
+                  ""
+                  (anchor-name (dest-anchor dest)))))
+
     (define/public (render-toc-view d ri)
       (define has-sub-parts?
         (pair? (part-parts d)))
       (define sub-parts-on-other-page?
-        (and (pair? (part-parts d))
+        (and has-sub-parts?
              (part-whole-page? (car (part-parts d)) ri)))
       (define toc-chain
         (let loop ([d d] [r (if has-sub-parts? (list d) '())])
@@ -383,14 +392,7 @@
       (define top (car toc-chain))
       (define (toc-item->title+num t show-mine?)
         (values
-         `((a ([href ,(let ([dest (resolve-get t ri (car (part-tags t)))])
-                        (format "~a~a~a"
-                                (from-root (relative->path (dest-path dest))
-                                           (get-dest-directory))
-                                (if (dest-page? dest) "" "#")
-                                (if (dest-page? dest)
-                                  ""
-                                  (anchor-name (dest-anchor dest)))))]
+         `((a ([href ,(dest->url (resolve-get t ri (car (part-tags t))))]
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")])
@@ -456,7 +458,8 @@
               ;; toc-wrap determines if we get the toc or just the title !!!
               `((div ([class "tocview"]) ,@(toc-content))))
           ,@(render-onthispage-contents
-             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
+             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub")
+             sub-parts-on-other-page?)
           ,@(parameterize ([extra-breaking? #t])
               (append-map
                (lambda (t)
@@ -478,11 +481,16 @@
     (define/public (nearly-top? d ri top)
       #f)
 
-    (define/private (render-onthispage-contents d ri top box-class)
+    (define/private (render-onthispage-contents d ri top box-class sections-in-toc?)
       (if (ormap (lambda (p) (part-whole-page? p ri))
                  (part-parts d))
         null
-        (let ([nearly-top? (lambda (d) (nearly-top? d ri top))])
+        (let ([nearly-top? (lambda (d) 
+                             ;; If ToC would be collapsed, then 
+                             ;; no section is nearly the top
+                             (if (not sections-in-toc?)
+                                 #f
+                                 (nearly-top? d ri top)))])
           (define (flow-targets flow)
             (append-map block-targets (flow-paragraphs flow)))
           (define (block-targets e)
@@ -690,7 +698,7 @@
         (define-values (url title)
           (cond [(part? x)
                  (values
-                  (derive-filename x)
+                  (dest->url (resolve-get x ri (car (part-tags x))))
                   (string-append
                    "\""
                    (content->string
@@ -912,13 +920,7 @@
                                     (url-query u))])))]
                         [else
                          ;; Normal link:
-                         (format "~a~a~a"
-                                 (from-root (relative->path (dest-path dest))
-                                            (get-dest-directory))
-                                 (if (dest-page? dest) "" "#")
-                                 (if (dest-page? dest)
-                                   ""
-                                   (anchor-name (dest-anchor dest))))]))
+                         (dest->url dest)]))
                      ,@(if (string? (element-style e))
                          `([class ,(element-style e)])
                          null)]
