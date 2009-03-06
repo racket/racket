@@ -417,7 +417,6 @@
     
     (define black-honu-bitmap 'not-yet-the-bitmap)
     (define black-honu-bdc (make-object bitmap-dc%))
-    (send black-honu-bdc set-smoothing 'aligned)
     
     (define (do-draw dc left-body-color right-body-color) 
       (send dc draw-bitmap black-honu-bitmap 0 0)
@@ -437,6 +436,7 @@
     
     (define (recalc-bitmap)
       (send black-honu-bdc set-bitmap black-honu-bitmap)
+      (send black-honu-bdc set-smoothing 'aligned)
       (draw-palaka black-honu-bdc (send black-honu-bitmap get-width) (send black-honu-bitmap get-height))
       (draw black-honu-bdc
             "black" "black" "black" "black" "black" "black"

@@ -233,9 +233,10 @@
  (cond
    [(or prince-kuhio-day? kamehameha-day?)
     (set-splash-progress-bar? #f)
-    (vector (dynamic-require 'drscheme/private/honu-logo 'draw-honu) 
-            280 
-            280)]
+    (let ([size ((dynamic-require 'drscheme/private/palaka 'palaka-pattern-size) 4)])
+      (vector (dynamic-require 'drscheme/private/honu-logo 'draw-honu) 
+              size 
+              size))]
    [texas-independence-day?
     (build-path (collection-path "icons") "texas-plt-bw.gif")]
    [(and halloween? high-color?)

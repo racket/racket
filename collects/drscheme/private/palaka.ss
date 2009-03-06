@@ -1,16 +1,19 @@
 #lang scheme/base
 (require scheme/class scheme/gui/base)
+(provide draw-palaka palaka-pattern-size)
 
 (define scale 1)
 (define palaka-color (send the-color-database find-color "lightsteelblue"))
 
 (define stripe-width (* scale 6))
 (define stripe-gap (* scale 2))
+(define blank-space-between-stripe-sets (* stripe-width 5))
 (define ε 0)
 (define vert-stripe-percent (- 1/2 ε))
 (define horiz-stripe-percent (+ 1/4 ε))
-(define quadrant-size (* 2 (+ (* stripe-width 4)
-                              (* stripe-gap 3))))
+(define quadrant-size (+ (* stripe-width 4)
+                         (* stripe-gap 3)
+                         blank-space-between-stripe-sets))
 (define-syntax-rule 
   (four-times i e1 e ...)
   (let loop ([i 0])
@@ -50,18 +53,18 @@
          quadrant-size
          stripe-width)))
 
+(define (palaka-pattern-size i) (+ (* quadrant-size i) blank-space-between-stripe-sets))
+
 #;
 (begin
   (define f (new frame% [label "Palaka"]))
   (define c (new canvas%
                  [parent f]
-                 [min-width 200]
-                 [min-height 200]
+                 [min-width (palaka-pattern-size 4)]
+                 [min-height (palaka-pattern-size 4)]
                  [paint-callback
                   (λ (c dc) 
                     (let-values ([(cw ch) (send c get-client-size)])
                       (send dc set-smoothing 'aligned)
                       (draw-palaka dc cw ch)))]))
   (send f show #t))
-
-(provide draw-palaka)
