@@ -11,39 +11,39 @@
 
 (define-signature tc-expr^
   ([cnt tc-expr (syntax? . -> . tc-result?)]
-   [cnt tc-expr/check (syntax? Type? . -> . tc-result?)]
-   [cnt tc-expr/check/t (syntax? Type? . -> . Type?)]
-   [cnt check-below (->d ([s (or/c Type? tc-result?)] [t Type?]) () [_ (if (Type? s) Type? tc-result?)])]
-   [cnt tc-literal (any/c . -> . Type?)]
+   [cnt tc-expr/check (syntax? Type/c . -> . tc-result?)]
+   [cnt tc-expr/check/t (syntax? Type/c . -> . Type/c)]
+   [cnt check-below (->d ([s (or/c Type/c tc-result?)] [t Type/c]) () [_ (if (Type/c s) Type/c tc-result?)])]
+   [cnt tc-literal (any/c . -> . Type/c)]
    [cnt tc-exprs ((listof syntax?) . -> . tc-result?)]
-   [cnt tc-exprs/check ((listof syntax?) Type? . -> . tc-result?)]
-   [cnt tc-expr/t (syntax? . -> . Type?)]))
+   [cnt tc-exprs/check ((listof syntax?) Type/c . -> . tc-result?)]
+   [cnt tc-expr/t (syntax? . -> . Type/c)]))
 
 (define-signature check-subforms^
   ([cnt check-subforms/ignore (syntax? . -> . any)]
    [cnt check-subforms/with-handlers (syntax? . -> . any)]
-   [cnt check-subforms/with-handlers/check (syntax? Type? . -> . any)]))
+   [cnt check-subforms/with-handlers/check (syntax? Type/c . -> . any)]))
 
 (define-signature tc-if^
   ([cnt tc/if-twoarm (syntax? syntax? syntax? . -> . tc-result?)]   
-   [cnt tc/if-twoarm/check (syntax? syntax? syntax? Type? . -> . tc-result?)]))
+   [cnt tc/if-twoarm/check (syntax? syntax? syntax? Type/c . -> . tc-result?)]))
 
 (define-signature tc-lambda^
   ([cnt tc/lambda (syntax? syntax? syntax? . -> . tc-result?)]
-   [cnt tc/lambda/check (syntax? syntax? syntax? Type? . -> . tc-result?)]
-   [cnt tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type?) Type? . -> . Type?)]))
+   [cnt tc/lambda/check (syntax? syntax? syntax? Type/c . -> . tc-result?)]
+   [cnt tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) Type/c . -> . Type/c)]))
 
 (define-signature tc-app^
   ([cnt tc/app (syntax? . -> . tc-result?)] 
-   [cnt tc/app/check (syntax? Type? . -> . tc-result?)]
-   [cnt tc/funapp (syntax? syntax? tc-result? (listof tc-result?) (or/c #f Type?) . -> . tc-result?)]))
+   [cnt tc/app/check (syntax? Type/c . -> . tc-result?)]
+   [cnt tc/funapp (syntax? syntax? tc-result? (listof tc-result?) (or/c #f Type/c) . -> . tc-result?)]))
 
 (define-signature tc-let^
   ([cnt tc/let-values (syntax? syntax? syntax? syntax? . -> . tc-result?)]
    [cnt tc/letrec-values (syntax? syntax? syntax? syntax? . -> . tc-result?)]
-   [cnt tc/let-values/check (syntax? syntax? syntax? syntax? Type? . -> . tc-result?)]
-   [cnt tc/letrec-values/check (syntax? syntax? syntax? syntax? Type? . -> . tc-result?)]))
+   [cnt tc/let-values/check (syntax? syntax? syntax? syntax? Type/c . -> . tc-result?)]
+   [cnt tc/letrec-values/check (syntax? syntax? syntax? syntax? Type/c . -> . tc-result?)]))
 
 (define-signature tc-dots^
-  ([cnt tc/dots (syntax? . -> . (values Type? symbol?))]))
+  ([cnt tc/dots (syntax? . -> . (values Type/c symbol?))]))
 

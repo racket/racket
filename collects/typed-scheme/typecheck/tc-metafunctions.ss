@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rename-in (types subtype convenience remove-intersect)                   
+(require (rename-in (types subtype convenience remove-intersect union)                   
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
@@ -9,6 +9,8 @@
          scheme/contract scheme/match
          stxclass/util
          (for-syntax scheme/base))
+
+(provide combine-filter apply-filter abstract-filter)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
 (define (lcombine l1 l2)

@@ -167,6 +167,17 @@
 
 ;; this structure represents the result of typechecking an expression
 (d-s/c tc-result ([t Type/c] [f FilterSet?] [o Object?]) #:transparent)
+(define-struct tc-result (t f o) #:transparent #:omit-define-values)
+
+(define-match-expander tc-result:
+  (syntax-parser
+   [(_ tp fp op) #'(struct tc-result (tp fp op))]))
+
+(define-match-expander tc-results:
+  (syntax-parser
+   [(_ tp fp op) #'(list (struct tc-result (tp fp op)) (... ...))]))
+
+(provide tc-result: tc-results:)
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
@@ -175,7 +186,10 @@
                     (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
                     (for/list ([i t])
                         (make-tc-result i (make-FilterSet null null) (make-Empty))))]
-               [(t f) (error 'ret "two arguments not supported")]
+               [(t f) (if (Type? t)
+                          (list (make-tc-result t f (make-Empty)))
+                          (for/list ([i t] [f f])
+                            (make-tc-result i f (make-Empty))))]
                [(t f o)
                 (if (and (list? t) (list? f) (list? o))
                     (map make-tc-result t f o)
@@ -187,11 +201,9 @@
        ([f (if (list? t)
                (listof FilterSet?)
                FilterSet?)]
-        [o (if (or (list? f) (FilterSet? f))
-               (if (list? t)
-                   (listof Object?)
-                   Object?)
-               (lambda (e) (eq? e f)))])                
+        [o (if (list? t)
+               (listof Object?)
+               Object?)])                
        [_ (listof tc-result?)])])
 
 (define (subst v t e) (substitute t v e))

@@ -12,6 +12,8 @@
          stxclass/util
          (for-syntax scheme/base))
 
+(provide env+)
+
 (define (replace-nth l i f)
   (cond [(null? l) (error 'replace-nth "list not long enough" l i f)]
         [(zero? i) (cons (f (car l)) (cdr l))]
