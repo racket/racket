@@ -693,7 +693,8 @@ s
                            [buffer-mode (or/c (case-> 
                                                ((or/c 'block 'line 'none) . -> . any)
                                                (-> (or/c 'block 'line 'none #f)))
-                                              #f)])
+                                              #f)
+                                        #f])
           output-port?]{
 
 Creates an output port, which is immediately open for
