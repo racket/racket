@@ -578,7 +578,7 @@
                           (if (memq 'preserves-marks flags) CLOS_PRESERVES_MARKS 0)
                           (if (memq 'is-method flags) CLOS_IS_METHOD 0)
                           (if (memq 'single-result flags) CLOS_SINGLE_RESULT 0))
-                       ((if rest? add1 0) num-params)
+                       ((if rest? add1 values) num-params)
                        max-let-depth
                        name
                        l)
