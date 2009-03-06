@@ -4,7 +4,7 @@
           (for-label scheme/base
                      compiler/decompile
                      (only-in compiler/zo-parse compilation-top?)
-                     compiler/write-bytecode))
+                     compiler/zo-marshal))
 
 @title[#:tag "decompile"]{Decompiling Bytecode}
 
@@ -105,11 +105,11 @@ Consumes the result of parsing bytecode and returns an S-expression
 
 @; ------------------------------------------------------------
 
-@section{Scheme API for Recompiling}
+@section{Scheme API for Marshaling Bytecode}
 
-@defmodule[compiler/write-bytecode]
+@defmodule[compiler/zo-marshal]
 
-@defproc[(write-bytecode [top compilation-top?]) bytes?]{
+@defproc[(zo-marshal [top compilation-top?]) bytes?]{
 
 Consumes a representation of bytecode and generates a byte string for
 the marshaled bytecode. Currently, modules and quoted syntax objects

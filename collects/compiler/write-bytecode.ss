@@ -2,12 +2,12 @@
 (require compiler/zo-parse
          scheme/match)
 
-(provide write-bytecode)
+(provide zo-marshal)
 
 ;; Doesn't write as compactly as MzScheme, since list and pair sequences
 ;; are not compated, and symbols are not written in short form
 
-(define (write-bytecode top)
+(define (zo-marshal top)
   (match top
     [(struct compilation-top (max-let-depth prefix form))
      (let ([encountered (make-hasheq)]
