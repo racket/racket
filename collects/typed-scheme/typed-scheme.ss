@@ -2,10 +2,11 @@
 
 (require (rename-in "utils/utils.ss" [infer r:infer]))
 
-(require (private #;base-env base-types)
+(require (private base-types)
          (for-syntax 
           scheme/base
-	  (private type-utils type-contract type-effect-convenience)
+          (private type-contract)
+          (types utils convenience)
 	  (typecheck typechecker provide-handling)
 	  (env type-environments type-name-env type-alias-env)
 	  (r:infer infer)

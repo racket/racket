@@ -2,7 +2,7 @@
 (require scheme/unit scheme/contract "../utils/utils.ss")
 (require (rep type-rep)
          (utils unit-utils)
-         (private type-utils))
+         (types utils))
 (provide (all-defined-out))
 
 (define-signature typechecker^

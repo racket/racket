@@ -31,6 +31,7 @@
 (provide #%module-begin
          require
          (all-from-out scheme/base)
+         types rep private utils
          (for-syntax          
           (types-out convenience union)
           (all-from-out scheme/base)))

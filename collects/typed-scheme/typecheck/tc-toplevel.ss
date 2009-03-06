@@ -8,9 +8,10 @@
          "signatures.ss"
          "tc-structs.ss"
          (rep type-rep)
-         (private type-utils type-effect-convenience parse-type type-annotation mutated-vars type-contract)
+         (types utils convenience)
+         (private parse-type type-annotation type-contract)
 	 (env type-env init-envs type-name-env type-alias-env)
-	 (utils tc-utils)
+	 (utils tc-utils mutated-vars)
 	 "provide-handling.ss"
          "def-binding.ss"
          (for-template

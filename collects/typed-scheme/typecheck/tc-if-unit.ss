@@ -2,13 +2,12 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require "signatures.ss"
-         (rep type-rep effect-rep)
-         (private type-effect-convenience subtype union type-utils type-comparison mutated-vars)
+         (rep type-rep filter-rep object-rep)
+         (rename-in (types convenience subtype union utils comparison remove-intersect)
+                    [remove *remove])
          (env lexical-env)
-         (only-in (private remove-intersect)
-                  [remove *remove])
          (r:infer infer)
-	 (utils tc-utils)
+	 (utils tc-utils mutated-vars)
          syntax/kerncase
          mzlib/trace
          mzlib/plt-match)
@@ -24,17 +23,14 @@
 ;;      neccessary for handling true/false effects
 ;; Boolean Expr listof[Effect] option[type] -> TC-Result
 (define (tc-expr/eff t/f expr effs expected)
-  #;(printf "tc-expr/eff : ~a~n" (syntax-object->datum expr))
   ;; this flag represents whether the refinement proves that this expression cannot be executed
   (let ([flag (box #f)])
     ;; this does the operation on the old type
     ;; type-op : (Type Type -> Type) Type -> _ Type -> Type
     (define ((type-op f t) _ old)
       (let ([new-t (f old t)])
-        ;(printf "new-t ~a~n" new-t)
         ;; if this operation produces an uninhabitable type, then this expression can't be executed
         (when (type-equal? new-t (Un))
-          ;(printf "setting flag!~n")
           (set-box! flag #t))
         ;; have to return something here, so that we can continue typechecking
         new-t))
@@ -87,16 +83,10 @@
 
 ;; the main function
 (define (tc/if-twoarm tst thn els)
-  #;(printf "tc-if/twoarm~n")
   ;; check in the context of the effects, and return
   (match-let* ([(tc-result: tst-ty tst-thn-eff tst-els-eff) (tc-expr tst)]
                [(tc-result: thn-ty thn-thn-eff thn-els-eff) (tc-expr/eff #t thn tst-thn-eff #f)]
-               #;[_ (printf "v is ~a~n" v)]
-               #;[c (current-milliseconds)]
                [(tc-result: els-ty els-thn-eff els-els-eff) (tc-expr/eff #f els tst-els-eff #f)])
-    #;(printf "tst thn-eff: ~a~ntst els-eff: ~a~n" tst-thn-eff tst-els-eff)
-    #;(printf "thn ty:~a thn-eff: ~a thn els-eff: ~a~n" thn-ty thn-thn-eff thn-els-eff)
-    #;(printf "els ty:~a thn-eff: ~a els els-eff: ~a~n" els-ty els-thn-eff els-els-eff)
     (match* (els-ty thn-thn-eff thn-els-eff els-thn-eff els-els-eff)
       ;; this is the case for `or'
       ;; the then branch has to be #t
@@ -106,7 +96,6 @@
       ;; FIXME - mzscheme's or macro doesn't match this!
       [(_ (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
        (=> unmatch)
-       #;(printf "or branch~n")
        (match (list tst-thn-eff tst-els-eff)
          ;; check that the test was also a simple predicate
          [(list (list (Restrict-Effect: s u)) (list (Remove-Effect: s u*)))
@@ -126,7 +115,6 @@
          [_ (unmatch)])]
       ;; this is the case for `and'
       [(_ _ _ (list (False-Effect:)) (list (False-Effect:)))
-       #;(printf "and branch~n")
        (ret (Un (-val #f) thn-ty) 
             ;; we change variable effects to type effects in the test, 
             ;; because only the boolean result of the test is used
@@ -136,41 +124,17 @@
             (list))]
       ;; if the else branch can never happen, just use the effect of the then branch
       [((Union: (list)) _ _ _ _)
-       #;(printf "and branch~n")
-       (ret thn-ty 
-            ;; we change variable effects to type effects in the test, 
-            ;; because only the boolean result of the test is used
-            ;; whereas, the actual value of the then branch is returned, not just the boolean result
-            (append #;(map var->type-eff tst-thn-eff) thn-thn-eff)
-            ;; no else effects for and, because any branch could have been false
-            (append #;(map var->type-eff tst-els-eff) thn-els-eff))]
+       (ret thn-ty thn-thn-eff thn-els-eff)]
       ;; otherwise this expression has no effects
       [(_ _ _ _ _) 
-       #;(printf "if base case:~a ~n" (syntax-object->datum tst))
-       #;(printf "els-ty ~a ~a~n" 
-                 els-ty c)
-       #;(printf "----------------------~nels-ty ~a ~nUn~a~n ~a~n" 
-                 els-ty (Un thn-ty els-ty) c)
        (ret (Un thn-ty els-ty))])))
 
 ;; checking version
 (define (tc/if-twoarm/check tst thn els expected)
-  #;(printf "tc-if/twoarm/check~n")
   ;; check in the context of the effects, and return
   (match-let* ([(tc-result: tst-ty tst-thn-eff tst-els-eff) (tc-expr tst)]
-               #;[_ (printf "got to here 0~n")]
                [(tc-result: thn-ty thn-thn-eff thn-els-eff) (tc-expr/eff #t thn tst-thn-eff expected)]
-               #;[_ (printf "v is ~a~n" v)]
-               #;[c (current-milliseconds)]
-               #;[_ (printf "got to here 1~n")]
-               [(tc-result: els-ty els-thn-eff els-els-eff) (tc-expr/eff #f els tst-els-eff expected)]
-               #;[_ (printf "got to here 2~n")])
-    #;(printf "check: v now is ~a~n" (ret els-ty els-thn-eff els-els-eff))
-    #;(printf "els-ty ~a ~a~n" 
-              els-ty c)
-    #;(printf "tst/check thn-eff: ~a~ntst els-eff: ~a~n" tst-thn-eff tst-els-eff)
-    #;(printf "thn/check thn-eff: ~a~nthn els-eff: ~a~n" thn-thn-eff thn-els-eff)
-    #;(printf "els/check thn-eff: ~a~nels els-eff: ~a~n" els-thn-eff els-els-eff)
+               [(tc-result: els-ty els-thn-eff els-els-eff) (tc-expr/eff #f els tst-els-eff expected)])
     (match* (els-ty thn-thn-eff thn-els-eff els-thn-eff els-els-eff) 
       ;; this is the case for `or'
       ;; the then branch has to be #t
@@ -180,7 +144,6 @@
       ;; FIXME - mzscheme's or macro doesn't match this!
       [(_ (list (True-Effect:)) (list (True-Effect:)) (list (Restrict-Effect: t v)) (list (Remove-Effect: t v*)))
        (=> unmatch)
-       ;(printf "or branch~n")
        (match (list tst-thn-eff tst-els-eff)
          ;; check that the test was also a simple predicate
          [(list (list (Restrict-Effect: s u)) (list (Remove-Effect: s u*)))
@@ -202,7 +165,6 @@
          [_ (unmatch)])]
       ;; this is the case for `and'
       [(_ _ _ (list (False-Effect:)) (list (False-Effect:)))
-       #;(printf "and branch~n")
        (let ([t (Un thn-ty (-val #f))])
          (check-below t expected)              
          (ret t 
@@ -226,6 +188,3 @@
        (let ([t (Un thn-ty els-ty)])
          (check-below t expected)
          (ret t))])))
-
-
-;)

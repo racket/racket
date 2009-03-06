@@ -66,10 +66,10 @@
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
 
-(define N (make-Base 'Number #'number?))
+(define -Number (make-Base 'Number #'number?))
 (define -Integer (make-Base 'Integer #'exact-integer?))
-(define B (make-Base 'Boolean #'boolean?))
-(define Sym (make-Base 'Symbol #'symbol?))
+(define -Boolean (make-Base 'Boolean #'boolean?))
+(define -Symbol (make-Base 'Symbol #'symbol?))
 (define -Void (make-Base 'Void #'void?))
 (define -Bytes (make-Base 'Bytes #'bytes?))
 (define -Regexp (make-Base 'Regexp #'(and/c regexp? (not/c pregexp?) (not/c byte-regexp?))))
@@ -99,24 +99,24 @@
 (define Any-Syntax
   (-mu x
        (-Syntax (*Un 
-                 N
-                 B
-                 Sym
+                 -Number
+                 -Boolean
+                 -Symbol
                  -String
 		 -Keyword                 
                  (-mu y (*Un (-val '()) (-pair x (*Un x y))))
                  (make-Vector x)
                  (make-Box x)))))
 
-(define Ident (-Syntax Sym))
+(define Ident (-Syntax -Symbol))
 
-(define -Sexp (-mu x (*Un (-val null) N B Sym -String (-pair x x))))
+(define -Sexp (-mu x (*Un (-val null) -Number -Boolean -Symbol -String (-pair x x))))
 (define -Port (*Un -Output-Port -Input-Port))
 
 (define -Pathlike (*Un -String -Path))
 (define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
 (define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
-(define -Byte N)
+(define -Byte -Number)
 
 (define -no-lfilter (make-LFilterSet null null))
 (define -no-filter (make-FilterSet null null))
@@ -249,7 +249,7 @@
   (case-lambda 
     [(in out t)
      (->* in out : (-LFS (list (-filter t)) (list (-not-filter t))))]
-    [(t) (make-pred-ty (list Univ) B t)]))
+    [(t) (make-pred-ty (list Univ) -Boolean t)]))
 
 
 (define (opt-fn args opt-args result)

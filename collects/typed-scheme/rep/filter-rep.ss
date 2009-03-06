@@ -3,6 +3,20 @@
 (require scheme/match scheme/contract)
 (require "rep-utils.ss" "free-variance.ss")
 
+(define Filter/c
+  (flat-named-contract
+   'Filter
+   (λ (e)
+     (and (Filter? e) (not (FilterSet? e))))))
+
+(define LatentFilter/c
+  (flat-named-contract
+   'LatentFilter
+   (λ (e)
+     (and (LatentFilter? e) (not (LFilterSet? e))))))
+
+(provide Filter/c LatentFilter/c index/c)
+
 (df Bot () [#:fold-rhs #:base])
 
 (df TypeFilter ([t Type?] [p (listof PathElem?)] [v identifier?])
@@ -17,11 +31,22 @@
 	   (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
-(df FilterSet ([thn (listof (and/c Filter? (not/c FilterSet?)))]
-	       [els (listof (and/c Filter? (not/c FilterSet?)))])
+(df FilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))
 	      (combine-frees (map free-idxs* (append thn els)))]
-     [#:fold-rhs (*FilterSet (map filter-rec-id thn) (map filter-rec-id els))])
+     [#:fold-rhs (*FilterSet (map filter-rec-id thn) (map filter-rec-id els))]
+     [#:contract (->d ([t (cond [(ormap Bot? t)
+                                 (list/c Bot?)]
+                                [(ormap Bot? e)
+                                 (list/c)]
+                                [else (listof Filter/c)])]
+                       [e (cond [(ormap Bot? e)
+                                 (list/c Bot?)]
+                                [(ormap Bot? t)
+                                 (list/c)]
+                                [else (listof Filter/c)])])
+                      ()
+                      [result FilterSet?])])
 
 (define index/c (or/c natural-number/c keyword?))
 
@@ -35,8 +60,19 @@
   [#:frees (lambda (frees*) (combine-frees (map (compose make-invariant frees*) (cons t p))))]
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
-(dlf LFilterSet ([thn (listof (and/c LatentFilter? (not/c LFilterSet?)))]
-		 [els (listof (and/c LatentFilter? (not/c LFilterSet?)))])
+(dlf LFilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))
 	      (combine-frees (map free-idxs* (append thn els)))]
-     [#:fold-rhs (*LFilterSet (map latentfilter-rec-id thn) (map latentfilter-rec-id els))])
+     [#:fold-rhs (*LFilterSet (map latentfilter-rec-id thn) (map latentfilter-rec-id els))]
+     [#:contract (->d ([t (cond [(ormap LBot? t)
+                                 (list/c LBot?)]
+                                [(ormap LBot? e)
+                                 (list/c)]
+                                [else (listof LatentFilter/c)])]
+                       [e (cond [(ormap LBot? e)
+                                 (list/c LBot?)]
+                                [(ormap LBot? t)
+                                 (list/c)]
+                                [else (listof LatentFilter/c)])])
+                      ()
+                      [result LFilterSet?])])

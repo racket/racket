@@ -9,7 +9,8 @@
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in string-constants/private/only-once maybe-print-message)
- (only-in scheme/match/runtime match:error))
+ (only-in scheme/match/runtime match:error)
+ (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
 
 [raise (Univ . -> . (Un))]
 

@@ -95,7 +95,7 @@
          [provides (if #'no-provide?
                        #'(begin)                                 
                        #`(begin 
-                           (provide ex pred acc ...)
+                           (provide #;nm ex pred acc ...)
                            (p/c (rename *maker maker *maker-cnt))))]
          [intern 
           (let ([mk (lambda (int) 

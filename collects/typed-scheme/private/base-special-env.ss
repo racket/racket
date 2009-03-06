@@ -25,8 +25,8 @@
 
 (define-for-syntax (initialize-others) 
   (d-s date 
-       ([second : N] [minute : N] [hour : N] [day : N] [month : N] 
-        [year : N] [weekday : N] [year-day : N] [dst? : B] [time-zone-offset : N])
+       ([second : -Number] [minute : -Number] [hour : -Number] [day : -Number] [month : -Number] 
+        [year : -Number] [weekday : -Number] [year-day : -Number] [dst? : -Boolean] [time-zone-offset : -Number])
        ())
   (d-s exn ([message : -String] [continuation-marks : Univ]) ())
   (d-s (exn:fail exn) () (-String -Cont-Mark-Set))
@@ -65,7 +65,7 @@
   ;; make-promise
   (-poly (a) (-> (-> a) (-Promise a)))
   ;; language
-  Sym
+  -Symbol
   ;; qq-append
   (-poly (a b) 
          (cl->*
