@@ -44,7 +44,7 @@
     [_ null]))
 
 (define/contract (apply-filter lfs t o)
-  (-> LFilterSet? Type/c Object?)
+  (-> LFilterSet? Type/c Object? FilterSet?)
   (match lfs
     [(LFilterSet: lf+ lf-)
      (combine
