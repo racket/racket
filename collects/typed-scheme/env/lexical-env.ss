@@ -23,8 +23,8 @@
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifer -> Type
-(define (lookup-type/lexical i)
-  (lookup (lexical-env) i 
+(define (lookup-type/lexical i [env (lexical-env)])
+  (lookup env i 
           (lambda (i) (lookup-type 
                        i (lambda () 
                            (cond [(lookup (dotted-env) i (lambda _ #f))
@@ -35,7 +35,7 @@
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment
-(define (update-type/lexical f i)
+(define (update-type/lexical f i [env (lexical-env)])
   ;; do the updating on the given env
   ;; (identifier type -> type) identifier environment -> environment
   (define (update f k env)
@@ -48,9 +48,9 @@
   ;; check if i is ever the target of a set!
   (if (is-var-mutated? i)
       ;; if it is, we do nothing
-      (lexical-env)
+      env
       ;; otherwise, refine the type
-      (update f i (lexical-env))))
+      (update f i env)))
 
 ;; convenience macro for typechecking in the context of an updated env
 (define-syntax with-update-type/lexical

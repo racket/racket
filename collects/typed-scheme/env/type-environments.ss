@@ -2,12 +2,14 @@
 
 (provide current-tvars
          extend
+         env?
          lookup
          make-empty-env
          extend-env
          extend/values
          dotted-env
          initial-tvar-env
+         env-map
          with-dotted-env/extend)
 
 (require (prefix-in r: "../utils/utils.ss"))
@@ -29,7 +31,8 @@
 ;; the environment for types of ... variables
 (define dotted-env (make-parameter (make-empty-env free-identifier=?)))
 
-
+(define (env-map f env)
+  (make-env (env-eq? env) (map f (env-l env))))
 
 ;; extend that works on single arguments
 (define (extend e k v) 

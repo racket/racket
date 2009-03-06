@@ -1,12 +1,13 @@
 #lang scheme/base
 
 (require (rename-in "../utils/utils.ss" [infer infer-in]))
-(require (rename-in (types subtype convenience remove-intersect)                   
+(require (rename-in (types subtype convenience remove-intersect union)                   
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
          (infer-in infer)
          (rep type-rep)
+         (only-in (env type-environments lexical-env) env? update-type/lexical env-map)
          scheme/contract scheme/match
          stxclass/util
          (for-syntax scheme/base))
@@ -42,3 +43,11 @@
      (restrict t u)]
     [(t (NotTypeFilter: u (list) _))
      (remove t u)]))
+
+(define/contract (env+ env fs)
+  (env? (listof Filter/c) . -> . env?)
+  (for/fold ([Γ env]) ([f fs])
+    (match f
+      [(Bot:) (env-map (lambda (_) (Un)) Γ)]
+      [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
+       (update-type/lexical (lambda (x t) (update t f)) x Γ)])))
