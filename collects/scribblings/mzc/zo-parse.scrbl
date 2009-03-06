@@ -269,8 +269,8 @@ run, the first value on the stack is the first value captured by the
 @scheme[closure-map] array, and so on.
 
 The @scheme[max-let-depth] field indicates the maximum stack depth
-created by @scheme[body] (not including arguments and closure-captured
-values pushed onto the stack). The @scheme[body] field is the
+created by @scheme[body] plus the arguments and closure-captured
+values pushed onto the stack. The @scheme[body] field is the
 expression for the closure's body.}
 
 

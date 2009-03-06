@@ -127,20 +127,21 @@
                       (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
                           (values (vector-length v) v rest)
                           (values v (car rest) (cdr rest)))]
-                     [(arg-types) (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
-                                      (for/list ([i (in-range num-params)]) 'val)
-                                      (for/list ([i (in-range num-params)])
-                                        (if (bitwise-bit-set?
-                                             (vector-ref closed-over
-                                                         (+ closure-size (quotient i BITS_PER_MZSHORT)))
-                                             (remainder i BITS_PER_MZSHORT))
-                                            'ref
-                                            'val)))])
+                     [(arg-types) (let ([num-params ((if rest? sub1 values) num-params)])
+                                    (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
+                                        (for/list ([i (in-range num-params)]) 'val)
+                                        (for/list ([i (in-range num-params)])
+                                          (if (bitwise-bit-set?
+                                               (vector-ref closed-over
+                                                           (+ closure-size (quotient i BITS_PER_MZSHORT)))
+                                               (remainder i BITS_PER_MZSHORT))
+                                              'ref
+                                              'val))))])
          (make-lam name
                    (append
-                    (if (bitwise-and flags flags CLOS_PRESERVES_MARKS) '(preserves-marks) null)
-                    (if (bitwise-and flags flags CLOS_IS_METHOD) '(is-method) null)
-                    (if (bitwise-and flags flags CLOS_SINGLE_RESULT) '(single-result) null))
+                    (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
+                    (if (zero? (bitwise-and flags flags CLOS_IS_METHOD)) null '(is-method))
+                    (if (zero? (bitwise-and flags flags CLOS_SINGLE_RESULT)) null '(single-result)))
                    ((if rest? sub1 values) num-params)
                    arg-types
                    rest?
