@@ -1,6 +1,7 @@
-#lang scheme
+#lang scheme/base
 (require compiler/zo-parse
-         syntax/modcollapse)
+         syntax/modcollapse
+         scheme/match)
 
 (provide decompile)
 
@@ -146,7 +147,7 @@
 
 (define (extract-id expr)
   (match expr
-    [(struct lam (name flags num-params rest? closure-map max-let-depth body))
+    [(struct lam (name flags num-params arg-types rest? closure-map max-let-depth body))
      (extract-name name)]
     [(struct case-lam (name lams))
      (extract-name name)]
@@ -184,7 +185,7 @@
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
             ,(decompile-expr rhs globs stack closed))]
-    [(struct localref (unbox? offset clear?))
+    [(struct localref (unbox? offset clear? other-clears?))
      (let ([id (list-ref/protect stack offset 'localref)])
        (let ([e (if unbox?
                     `(#%unbox ,id)
@@ -276,9 +277,12 @@
   (match expr
     [(struct indirect (val)) (decompile-lam val globs stack closed)]
     [(struct closure (lam gen-id)) (decompile-lam lam globs stack closed)]
-    [(struct lam (name flags num-params rest? closure-map max-let-depth body))
-     (let ([vars (for/list ([i (in-range num-params)]) 
-                   (gensym (format "arg~a-" i)))]
+    [(struct lam (name flags num-params arg-types rest? closure-map max-let-depth body))
+     (let ([vars (for/list ([i (in-range num-params)]
+                            [type (in-list arg-types)])
+                   (gensym (format "~a~a-" 
+                                   (if (eq? type 'ref) "argbox" "arg")
+                                   i)))]
            [rest-vars (if rest? (list (gensym 'rest)) null)]
            [captures (map (lambda (v)
                             (list-ref/protect stack v 'lam))
