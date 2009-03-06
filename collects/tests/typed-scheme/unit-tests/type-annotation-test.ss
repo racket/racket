@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "test-utils.ss" "planet-requires.ss"
          (for-syntax scheme/base))
-(require (private type-annotation parse-type)
+(require (private type-annotation parse-type base-types)
          (types convenience)
 	 (env type-environments type-name-env init-envs)
 	 (utils tc-utils)
@@ -18,6 +18,7 @@
                                           (namespace-attach-module ons 'scheme/base ns)
                                           (namespace-require 'scheme/base)
                                           (namespace-require 'typed-scheme/private/prims)
+                                          (namespace-require 'typed-scheme/private/base-types)
                                           (expand 'ann-stx))))
                      ty))
 

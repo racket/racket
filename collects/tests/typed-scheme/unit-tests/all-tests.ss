@@ -4,7 +4,7 @@
  "test-utils.ss"
  "planet-requires.ss"
  ;"typecheck-tests.ss" ;; doesn't compile yet
- "subtype-tests.ss" ;; fail
+ "subtype-tests.ss" ;; pass
  "type-equal-tests.ss" ;; pass
  "remove-intersect-tests.ss" ;; pass
  "parse-type-tests.ss" ;; pass
