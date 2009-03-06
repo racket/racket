@@ -663,8 +663,9 @@
    [(svector? expr)
     (out-byte CPT_SVECTOR out)
     (out-number (vector-length (svector-vec expr)) out)
-    (for ([n (in-vector (svector-vec expr))])
-      (out-number n out))]
+    (let ([vec (svector-vec expr)])
+      (for ([n (in-range (sub1 (vector-length vec)) -1 -1)])
+        (out-number (vector-ref vec n) out)))]
    [else
     (out-byte CPT_QUOTE out)
     (let ([s (open-output-bytes)])

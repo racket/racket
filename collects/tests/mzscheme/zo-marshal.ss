@@ -20,6 +20,7 @@
                 (open-input-bytes (get-output-bytes s)))))))
 
 (define values-id (get-id #'values))
+(define list-id (get-id #'list))
 (define object-name-id (get-id #'object-name))
 
 ;; ----------------------------------------
@@ -155,6 +156,28 @@
 
 ;; ----------------------------------------
 
+(check (make-simple 
+        (make-let-one
+         'v1
+         (make-let-one
+          'v0
+          (make-let-one
+           (make-lam 'proc
+                     null
+                     1
+                     '(val)
+                     #f
+                     #(1 2)
+                     20
+                     (make-application
+                      (make-primval list-id)
+                      (list
+                       (make-localref #f 2 #f #f)
+                       (make-localref #f 3 #f #f))))
+           (make-application
+            (make-localref #f 1 #f #f)
+            (list 5))))))
+       '(v0 v1))
 
 ;; ----------------------------------------
 
