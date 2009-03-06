@@ -14,6 +14,14 @@
          DEBUG
          R)
 
+(define-syntax-rule (with-syntax1 ([pattern rhs]) . body)
+  (syntax-case rhs ()
+    [pattern (let () . body)]
+    [x (raise-syntax-error 'with-syntax1
+                           (format "failed pattern match against ~s"
+                                   'pattern)
+                           #'x)]))
+
 (begin-for-syntax
  (expr/c-use-contracts? #f))
 
@@ -99,12 +107,12 @@
     ;; Execute expressions for effect
     [(R** f v p s ws [#:do expr ...] . more)
      #'(begin
-         (with-syntax ([p f])
+         (with-syntax1 ([p f])
            expr ... (void))
          (R** f v p s ws . more))]
 
     [(R** f v p s ws [#:let var expr] . more)
-     #'(let ([var (with-syntax ([p f]) expr)])
+     #'(let ([var (with-syntax1 ([p f]) expr)])
          (R** f v p s ws . more))]
 
     [(R** f v p s ws [#:parameterize ((param expr) ...) . clauses] . more)
@@ -116,14 +124,14 @@
     ;; Change syntax
     [(R** f v p s ws [#:set-syntax form] . more)
      #:declare form (expr/c #'syntaxish?)
-     #'(let ([f2 (with-syntax ([p f]) form)])
+     #'(let ([f2 (with-syntax1 ([p f]) form)])
          ;; FIXME: should (current-pass-hides?) be relevant?
          (let ([v2 (if (visibility) f2 v)])
            (R** f2 v2 p s ws . more)))]
 
     [(R** f v p s ws [#:expect-syntax expr ds] . more)
      #:declare expr (expr/c #'syntax?)
-     #'(let ([expected (with-syntax ([p f]) expr)])
+     #'(let ([expected (with-syntax1 ([p f]) expr)])
          (STRICT-CHECKS
           (check-same-stx 'expect-syntax f expected ds))
          (R** f v p s ws . more))]
@@ -140,7 +148,7 @@
      #:declare fs (expr/c #'syntaxish?)
      #:declare type (expr/c #'(or/c step-type? false/c))
      #'(let ([s2 (and (visibility)
-                      (current-state-with v (with-syntax ([p f]) fs)))]
+                      (current-state-with v (with-syntax1 ([p f]) fs)))]
              [type-var type])
          (DEBUG
           (printf "visibility = ~s\n" (visibility))
@@ -154,7 +162,7 @@
 
     [(R** f v p s ws [#:walk form2 description] . more)
      #:declare form2 (expr/c #'syntaxish?)
-     #'(let ([wfv (with-syntax ([p f]) form2)])
+     #'(let ([wfv (with-syntax1 ([p f]) form2)])
          (R** f v p s ws
               [#:left-foot]
               [#:set-syntax wfv]
@@ -165,7 +173,7 @@
      #:declare rs (expr/c #'(listof step?))
      #'(let ([ws2
               (if (visibility)
-                  (revappend (with-syntax ([p f]) rs) ws)
+                  (revappend (with-syntax1 ([p f]) rs) ws)
                   ws)])
          (R** f v p s ws2 . more))]
 
@@ -184,10 +192,10 @@
 
     [(R** f v p s ws [#:rename* pattern renames description mark-flag] . more)
      #'(let-values ([(renames-var description-var)
-                     (with-syntax ([p f])
+                     (with-syntax1 ([p f])
                        (values renames description))])
          (let* ([pre-renames-var
-                 (with-syntax ([p f]) (syntax pattern))]
+                 (with-syntax1 ([p f]) (syntax pattern))]
                 [f2
                  ((CC pattern f p) renames)]
                 [whole-form-rename? (eq? f pre-renames-var)]
@@ -221,7 +229,7 @@
     [(R** f v p s ws [#:rename/mark pvar from to] . more)
      #:declare from (expr/c #'syntaxish?)
      #:declare to (expr/c #'syntaxish?)
-     #'(let ([real-from (with-syntax ([p f]) #'pvar)])
+     #'(let ([real-from (with-syntax1 ([p f]) #'pvar)])
          (STRICT-CHECKS
           (check-same-stx 'rename/mark real-from from))
          (when (marking-table)
@@ -231,7 +239,7 @@
     [(R** f v p s ws [#:rename/unmark pvar from to] . more)
      #:declare from (expr/c #'syntaxish?)
      #:declare to (expr/c #'syntaxish?)
-     #'(let ([real-from (with-syntax ([p f]) #'pvar)])
+     #'(let ([real-from (with-syntax1 ([p f]) #'pvar)])
          (STRICT-CHECKS
           (check-same-stx 'rename/mark real-from from))
          (R** f v p s ws [#:rename* pvar to #f 'unmark] . more))]
@@ -240,7 +248,7 @@
     [(R** f v p s ws [#:rename/no-step pvar from to] . more)
      #:declare from (expr/c #'syntaxish?)
      #:declare to (expr/c #'syntaxish?)
-     #'(let ([real-from (with-syntax ([p f]) #'pvar)])
+     #'(let ([real-from (with-syntax1 ([p f]) #'pvar)])
          (STRICT-CHECKS
           (check-same-stx 'rename/no-step real-from from))
          (R** f v p s ws [#:rename pvar to] . more))]
@@ -248,20 +256,20 @@
     ;; Add to definite uses
     [(R** f v p s ws [#:learn ids] . more)
      #:declare ids (expr/c #'(listof identifier?))
-     #'(begin (learn-definites (with-syntax ([p f]) ids))
+     #'(begin (learn-definites (with-syntax1 ([p f]) ids))
               (R** f v p s ws . more))]
 
     ;; Conditional (pattern changes lost afterwards ...)
     [(R** f v p s ws [#:if test [consequent ...] [alternate ...]] . more)
      #'(let ([continue (RP p . more)])
-         (if (with-syntax ([p f]) test)
+         (if (with-syntax1 ([p f]) test)
              (R** f v p s ws consequent ... => continue)
              (R** f v p s ws alternate ... => continue)))]
 
     ;; Conditional (pattern changes lost afterwards ...)
     [(R** f v p s ws [#:when test consequent ...] . more)
      #'(let ([continue (RP p . more)])
-         (if (with-syntax ([p f]) test)
+         (if (with-syntax1 ([p f]) test)
              (R** f v p s ws consequent ... => continue)
              (continue f v s ws)))]
 
@@ -285,8 +293,9 @@
     ;; ** Multi-pass reductions **
 
     ;; Pass1 does expansion.
-    ;; If something should happen regardless of whether hiding occurred in pass1,
-    ;; put it before the Pass2 marker (eg, lifting).
+    ;; If something should happen regardless of whether hiding occurred
+    ;; in pass1 (eg, lifting), put it before the Pass2 marker.
+
     ;; Use #:unsafe-bind-visible to access 'v'
     ;; Warning: don't do anything that relies on real 'f' before pass2
 
@@ -294,7 +303,8 @@
     ;; put it after the Pass2 marker (eg, splice, block->letrec).
 
     [(R** f v p s ws [#:pass1] . more)
-     #'(parameterize ((hides-flags (cons (box (not (visibility))) (hides-flags))))
+     #'(parameterize ((hides-flags
+                       (cons (box (not (visibility))) (hides-flags))))
          (DEBUG (printf "** pass1\n"))
          (R** f v p s ws . more))]
 
@@ -335,11 +345,12 @@
 (define-syntax (Run stx)
   (syntax-case stx ()
     ;; Implementation of subterm handling for (hole ...) sequences
-    [(Run reducer f v p s ws (hole :::) fills k)
+    [(Run reducer f v p s ws (hole :::) fills-e k)
      (and (identifier? #':::)
           (free-identifier=? #'::: (quote-syntax ...)))
      #'(let* ([fctx (CC (hole :::) f p)]
-              [init-e1s (with-syntax ([p f]) (syntax->list #'(hole :::)))])
+              [init-e1s (with-syntax1 ([p f]) (syntax->list #'(hole :::)))]
+              [fills fills-e])
          (DEBUG
            (printf "Run (multi, vis=~s)\n" (visibility))
            (printf " f: ~e\n" (stx->datum f))
@@ -349,12 +360,12 @@
            (print-viable-subterms v))
          (if (visibility)
              (let ([vctx (CC (hole :::) v p)]
-                   [vsubs (with-syntax ([p v]) (syntax->list #'(hole :::)))])
+                   [vsubs (with-syntax1 ([p v]) (syntax->list #'(hole :::)))])
                (run-multiple/visible reducer init-e1s fctx vsubs vctx fills s ws k))
              (run-multiple/nonvisible reducer init-e1s fctx v fills s ws k)))]
     ;; Implementation of subterm handling
     [(Run reducer f v p s ws hole fill k)
-     #'(let* ([init-e (with-syntax ([p f]) #'hole)]
+     #'(let* ([init-e (with-syntax1 ([p f]) #'hole)]
               [fctx (CC hole f p)])
          (DEBUG
            (printf "Run (single, vis=~s)\n" (visibility))
@@ -365,7 +376,7 @@
            (print-viable-subterms v))
          (if (visibility)
              (let ([vctx (CC hole v p)]
-                   [vsub (with-syntax ([p v]) #'hole)])
+                   [vsub (with-syntax1 ([p v]) #'hole)])
                (run-one reducer init-e fctx vsub vctx fill s ws k))
              (run-one reducer init-e fctx v values fill s ws k)))]))
 
@@ -384,7 +395,11 @@
   (DEBUG
     (printf "run-multiple/visible\n")
     (printf "  fctx: ~e\n" (stx->datum (fctx (for/list ([dummy init-e1s]) #'HOLE))))
-    (printf "  vctx: ~e\n" (stx->datum (vctx (for/list ([dummy init-e1s]) #'HOLE)))))
+    (printf "  vctx: ~e\n" (stx->datum (vctx (for/list ([dummy init-e1s]) #'HOLE))))
+    (unless (= (length fills) (length init-e1s))
+      (printf "  fills(~s): ~e\n" (length fills) fills)
+      (printf "  init-e1s: ~s\n" (stx->datum init-e1s))
+      (printf "  vsubs: ~s\n" (stx->datum vsubs))))
   (let loop ([fills fills] [prefix null] [vprefix null] [suffix init-e1s] [vsuffix vsubs] [s s] [ws ws])
     (cond
      [(pair? fills)

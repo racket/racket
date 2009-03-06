@@ -61,7 +61,8 @@
         [#:when (not (bound-identifier=? e1 e2))
                 [#:walk e2 'resolve-variable]])]
     [(Wrap p:module (e1 e2 rs ?1 ?2 tag rename check tag2 ?3 body shift))
-     (R [! ?1]
+     (R ;; [#:hide-check rs] ;; FIXME: test and enable!!!
+        [! ?1]
         [#:pattern (?module ?name ?language . ?body-parts)]
         [! ?2]
         [#:when tag
@@ -69,11 +70,13 @@
                            [#:walk (list tag) 'tag-module-begin]]]
         [#:pattern (?module ?name ?language ?body)]
         [#:rename ?body rename]
+        [#:pass1]
         [#:when check
                 [Expr ?body check]]
         [#:when tag2
                 [#:in-hole ?body
                            [#:walk tag2 'tag-module-begin]]]
+        [#:pass2]
         [! ?3]
         [Expr ?body body]
         [#:pattern ?form]
@@ -533,7 +536,8 @@
 (define (BindSyntaxes bindrhs)
   (match bindrhs
     [(Wrap bind-syntaxes (rhs ?1))
-     (R [#:pattern ?form]
+     (R [#:set-syntax (node-z1 rhs)] ;; set syntax; could be in local-bind
+        [#:pattern ?form]
         [Expr/PhaseUp ?form rhs]
         [! ?1])]))
 
@@ -570,7 +574,8 @@
     [(cons (Wrap mod:lift (head renames stxs)) rest)
      (R [#:pattern (?firstL . ?rest)]
         ;; renames has form (head-e2 . ?rest)
-        ;; stxs has form (lifted ...), specifically (last-lifted ... first-lifted)
+        ;; stxs has form (lifted ...),
+        ;;   specifically (last-lifted ... first-lifted)
         [#:parameterize ((available-lift-stxs (reverse stxs))
                          (visible-lift-stxs null))
           [#:pass1]
