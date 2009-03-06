@@ -39,8 +39,8 @@
     (lambda (stx) #'(? (lambda (id) (free-identifier=? id x)))))
   (match f
     [(Bot:) (list (make-LBot))]
-    [(TypeFilter: t p (=x)) (list (make-LTypeFilter t p))]
-    [(NotTypeFilter: t p (=x)) (list (make-LNotTypeFilter t p))]
+    [(TypeFilter: t p (=x)) (list (make-LTypeFilter t p idx))]
+    [(NotTypeFilter: t p (=x)) (list (make-LNotTypeFilter t p idx))]
     [_ null]))
 
 (define/contract (apply-filter lfs t o)
@@ -58,5 +58,32 @@
     [((LNotTypeFilter: (? (lambda (t) (subtype s t))) (list) _) _ _) (list (make-Bot))]
     [((LTypeFilter: (? (lambda (t) (not (overlap s t)))) (list) _) _ _) (list (make-Bot))]
     [(_ _ (Empty:)) null]
-    [((LTypeFilter: t pi* _) _ (Path: pi x)) (make-TypeFilter t (append pi* pi) x)]
-    [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (make-NotTypeFilter t (append pi* pi) x)]))
+    [((LTypeFilter: t pi* _) _ (Path: pi x)) (list (make-TypeFilter t (append pi* pi) x))]
+    [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (list (make-NotTypeFilter t (append pi* pi) x))]))
+
+(define-match-expander T-FS:
+  (lambda (stx) #'(FilterSet: _ (list (Bot:)))))
+(define-match-expander F-FS:
+  (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
+
+(define/contract (combine-filter f1 f2 f3)
+  (FilterSet? FilterSet? FilterSet? . -> . FilterSet?)
+  (match* (f1 f2 f3)
+    [(f (T-FS:) (F-FS:)) f] ;; the student expansion
+    [((T-FS:) f _) f]
+    [((F-FS:) _ f) f]
+    ;; skipping the general or/predicate rule because it's really complicated
+    ;; or/predicate special case for one elem lists
+    ;; note that we are relying on equal? on identifiers here
+    [((FilterSet: (list (TypeFilter: t pi x)) (list (NotTypeFilter: t pi x)))
+      (T-FS:)
+      (FilterSet: (list (TypeFilter: s pi x)) (list (NotTypeFilter: s pi x))))
+     (make-FilterSet (list (make-TypeFilter (Un t s) pi x)) (list (make-NotTypeFilter (Un t s) pi x)))]
+    ;; or
+    [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (combine null (append f1- f3-))]
+    ;; and
+    [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) (combine (append f1+ f2+) null)]
+    [(f f* f*) f*]
+    [(_ _ _)
+     ;; could intersect f2 and f3 here
+     (make-FilterSet null null)]))
