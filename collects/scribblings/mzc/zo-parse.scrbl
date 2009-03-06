@@ -242,8 +242,9 @@ only other things that can be expressions).}
 
 
 @defstruct+[(lam expr) ([name (or/c symbol? vector?)]
-                        [flags exact-integer?]
+                        [flags (listof (or/c 'preserves-marks 'is-method 'single-result))]
                         [num-params exact-nonnegative-integer?]
+                        [param-types (listof (or/c 'val 'ref))]
                         [rest? boolean?]
                         [closure-map (vectorof exact-nonnegative-integer?)]
                         [max-let-depth exact-nonnegative-integer?]
@@ -254,8 +255,12 @@ for debugging purposes. The @scheme[num-params] field indicates the
 number of arguments accepted by the procedure, not counting a rest
 argument; the @scheme[rest?] field indicates whether extra arguments
 are accepted and collected into a ``rest'' variable. The
-@scheme[closure-map] field is a vector of stack positions that are
-captured when evaluating the @scheme[lambda] form to create a closure.
+@scheme[param-types] list contains @scheme[num-params] symbols
+indicating the type of each argumet, either @scheme['val] for a normal
+argument or @scheme['ref] for a boxed argument (representing a mutable
+local variable). The @scheme[closure-map] field is a vector of stack
+positions that are captured when evaluating the @scheme[lambda] form
+to create a closure.
 
 When the function is called, the rest-argument list (if any) is pushed
 onto the stack, then the normal arguments in reverse order, then the
@@ -350,14 +355,17 @@ the value so that it can be mutated later.}
 
 @defstruct+[(localref expr) ([unbox? boolean?]
                              [pos nonnegative-exact-integer?]
-                             [clear? boolean?])]{
+                             [clear? boolean?]
+                             [other-clears? boolean?])]{
 
 Represents a local-variable reference; it accesses the value in the
 stack slot after the first @scheme[pos] slots. If @scheme[unbox?]  is
 @scheme[#t], the stack slot contains a box, and a value is extracted
 from the box. If @scheme[clear?] is @scheme[#t], then after the value
 is obtained, the stack slot is cleared (to avoid retaining a reference
-that can prevent reclamation of the value as garbage).}
+that can prevent reclamation of the value as garbage). If
+@scheme[other-clears?] is @scheme[#t], then some later reference to
+the same stack slot may clear after reading.}
 
 
 @defstruct+[(toplevel expr) ([depth nonnegative-exact-integer?]
@@ -451,7 +459,7 @@ Represents @scheme[(call-with-values (lambda () args-expr) proc)],
 which is handled specially by the run-time system.}
 
 
-@defstruct+[(primval expr) ([id symbol?])]{
+@defstruct+[(primval expr) ([id exact-nonnegative-integer?])]{
 
 Represents a direct reference to a variable imported from the run-time
 kernel.}
