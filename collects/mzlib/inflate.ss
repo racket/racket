@@ -1,5 +1,5 @@
-
-(module inflate mzscheme
+#lang scheme/base
+(require (for-syntax scheme/base))
 
   (provide inflate 
 	  gunzip-through-ports
@@ -120,7 +120,7 @@
    error in the data. */
 |#
 
-  (define-struct huft (e b v))
+  (define-struct huft (e b v) #:mutable)
   
   (define (huft-copy dest src)
     (set-huft-e! dest (huft-e src))
@@ -591,8 +591,8 @@
 	(set! t (vector-ref tl (bitwise-and bb ml)))
 	; (printf "t->e: ~s t->b: ~s\n" (huft-e t) (huft-b t))
 	(set! e (huft-e t))
-	(if (> e 16)
-	    (jump-to-next))
+	(when (> e 16)
+          (jump-to-next))
 	(DUMPBITS (huft-b t))
 	; (printf "e: ~s\n" e)
 	(if (= e 16) ; /* then it's a literal */
@@ -928,4 +928,4 @@
 	 void
 	 (lambda () (do-gunzip in #f name-filter))
 	 (lambda () (close-input-port in))))]))	     
-)
+

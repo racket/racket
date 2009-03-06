@@ -1,15 +1,16 @@
 #lang scheme/unit
 
-(require setup/getinfo
-         mred
-         scheme/class
+(require scheme/class
          scheme/list
+         scheme/runtime-path
+         scheme/contract
+         setup/getinfo
+         mred
+         framework
+         framework/splash
          "drsig.ss"
          "language-object-contract.ss"
-         scheme/contract
-         framework
-         string-constants
-         scheme/runtime-path)
+         string-constants)
 
 (require (for-syntax scheme/base scheme/match))
 
@@ -349,13 +350,12 @@
       (unless (and (is-a? bitmap bitmap%)
                    (send bitmap ok?))
         (k #f))
-      (let ([splash-eventspace ((dynamic-require 'framework/splash 'get-splash-eventspace))]
-            [splash-bitmap ((dynamic-require 'framework/splash 'get-splash-bitmap))]
-            [splash-canvas ((dynamic-require 'framework/splash 'get-splash-canvas))])
+      (let ([splash-eventspace (get-splash-eventspace)]
+            [splash-canvas (get-splash-canvas)]
+            [splash-width (get-splash-width)]
+            [splash-height (get-splash-height)])
         
         (unless (and (eventspace? splash-eventspace)
-                     (is-a? splash-bitmap bitmap%)
-                     (send splash-bitmap ok?)
                      (is-a? splash-canvas canvas%))
           (k (void)))
         
@@ -363,36 +363,26 @@
           (queue-callback
            (lambda ()
              (let ([bdc (make-object bitmap-dc%)]
-                   [translated-tool-bitmap-y (max 0 (- (send splash-bitmap get-height) tool-bitmap-y tool-bitmap-size))])
+                   [translated-tool-bitmap-y 
+                    (max 0 (- splash-height tool-bitmap-y tool-bitmap-size))])
                
-               ;; truncate/expand the bitmap, if necessary
-               (unless (and (= tool-bitmap-size (send bitmap get-width))
-                            (= tool-bitmap-size (send bitmap get-height)))
-                 (let ([new-b (make-object bitmap% tool-bitmap-size tool-bitmap-size #f)])
-                   (send bdc set-bitmap new-b)
-                   (send bdc clear)
-                   (send bdc draw-bitmap-section splash-bitmap 
-                         0 0 
-                         tool-bitmap-x translated-tool-bitmap-y
-                         tool-bitmap-size tool-bitmap-size)
-                   (send bdc draw-bitmap bitmap 
-                         (max 0 (- (/ tool-bitmap-size 2)
-                                   (/ (send bitmap get-width) 2)))
-                         (max 0 (- (/ tool-bitmap-size 2)
-                                   (/ (send bitmap get-height) 2)))
-                         'solid
-                         (make-object color% "black")
-                         (send bitmap get-loaded-mask))
-                   (send bdc set-bitmap #f)
-                   (set! bitmap new-b)))
-               
+               ;; add the bitmap, but centered at its position
+               ;; (used to truncate the bitmap
+               ;; if it was too large, but no longer)
                ((dynamic-require 'framework/splash 'add-splash-icon)
-                bitmap tool-bitmap-x translated-tool-bitmap-y)
+                bitmap
+                (floor (+ tool-bitmap-x
+                          (- (/ tool-bitmap-size 2)
+                             (/ (send bitmap get-width) 2))))
+                (floor (+ translated-tool-bitmap-y
+                          (- (/ tool-bitmap-size 2)
+                             (/ (send bitmap get-height) 2)))))
+               
                (set! tool-bitmap-x (+ tool-bitmap-x tool-bitmap-size tool-bitmap-gap))
-               (when ((+ tool-bitmap-x tool-bitmap-gap tool-bitmap-size) . > . (send splash-bitmap get-width))
+               (when ((+ tool-bitmap-x tool-bitmap-gap tool-bitmap-size) . > . splash-width)
                  (set! tool-bitmap-y (+ tool-bitmap-y tool-bitmap-size tool-bitmap-gap))
                  (set! tool-bitmap-x tool-bitmap-gap))
-               (when ((+ tool-bitmap-y tool-bitmap-gap tool-bitmap-size) . > . (send splash-bitmap get-width))
+               (when ((+ tool-bitmap-y tool-bitmap-gap tool-bitmap-size) . > . splash-width)
                  (set! tool-bitmap-y tool-bitmap-gap)))))))
       bitmap)))
 

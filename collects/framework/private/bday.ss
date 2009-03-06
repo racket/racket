@@ -1,7 +1,6 @@
-#lang mzscheme
-
-  (require framework/private/encode-decode)
-  (decode
+#lang scheme/base
+(require "decode.ss")
+(decode
                  \5d8f4
               \10ec22010
              \45aff297b02
