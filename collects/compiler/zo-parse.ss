@@ -214,7 +214,7 @@
 (define (read-apply-values v)
   (make-apply-values (car v) (cdr v)))
 (define (read-splice v)
-  (make-splice v))
+  (make-splice (seq-forms v)))
 
 (define (read-module v)
   (match v

@@ -129,14 +129,14 @@
     [(struct primval (id))
      (void)]
     [(struct assign (id rhs undef-ok?))
-     (traverse-expr rhs)]
+     (traverse-expr rhs visit)]
     [(struct localref (unbox? offset clear? other-clears?))
      (void)]
     [(? lam?)
      (traverse-lam expr visit)]
     [(struct case-lam (name lams))
      (traverse-data name visit)
-     (for-each (lambda (lam) (traverse-lam expr visit)) lams)]
+     (for-each (lambda (lam) (traverse-lam lam visit)) lams)]
     [(struct let-one (rhs body))
      (traverse-expr rhs visit)
      (traverse-expr body visit)]
@@ -212,6 +212,7 @@
 (define variable-type-num 24)
 (define top-type-num 87)
 (define case-lambda-sequence-type-num 96)
+(define begin0-sequence-type-num 97)
 (define prefix-type-num 103)
 
 (define-syntax define-enum
@@ -300,6 +301,7 @@
                           #f))
 
 (define-struct case-seq (name lams))
+(define-struct (seq0 seq) ())
 
 (define-struct out (s shared-index))
 
@@ -414,6 +416,8 @@
                                       *dummy*
                                       ids))
                  out)]
+    [(struct seq0 (forms))
+     (out-marshaled begin0-sequence-type-num (map protect-quote forms) out)]
     [(struct seq (forms))
      (out-marshaled sequence-type-num (map protect-quote forms) out)]
     [(struct splice (forms))
@@ -425,12 +429,14 @@
   (match expr
     [(struct toplevel (depth pos const? ready?))
      (out-marshaled toplevel-type-num
-                    (if (or const? ready?)
-                        (cons pos
-                              (bitwise-ior 
-                               (if const? #x1 0)
-                               (if ready? #x2 0)))
-                        pos)
+                    (cons
+                     depth
+                     (if (or const? ready?)
+                         (cons pos
+                               (bitwise-ior 
+                                (if const? #x1 0)
+                                (if ready? #x2 0)))
+                         pos))
                     out)]
     [(struct topsyntax (depth pos midpt))
      (out-marshaled quote-syntax-type-num
@@ -464,8 +470,17 @@
     [(? lam?)
      (out-lam expr out)]
     [(struct case-lam (name lams))
-     (out-syntax CASE_LAMBDA_EXPD
-                 (make-case-seq name lams))]
+     (let ([seq (make-case-seq name lams)])
+       ;; If all closures are empy, generate a case sequence directly
+       (if (andmap (lambda (lam)
+                     (or (closure? lam)
+                         (and (lam? lam)
+                              (equal? (lam-closure-map lam) #()))))
+                   lams)
+           (out-data seq out)
+           (out-syntax CASE_LAMBDA_EXPD
+                       seq
+                       out)))]
     [(struct case-seq (name lams))
      (out-marshaled case-lambda-sequence-type-num
                     (cons (or name null)
@@ -526,7 +541,7 @@
      (out-form expr out)]
     [(struct beg0 (exprs))
      (out-syntax BEGIN0_EXPD
-                 (make-seq exprs)
+                 (make-seq0 exprs)
                  out)]
     [(struct with-cont-mark (key val body))
      (out-marshaled wcm-type-num
@@ -539,6 +554,10 @@
      (out-lam expr out)]
     [(struct indirect (val))
      (out-expr val out)]
+    [(struct varref (expr))
+     (out-syntax REF_EXPD
+                 expr
+                 out)]
     [else (out-value expr out)]))
 
 (define (out-lam expr out)
@@ -549,7 +568,9 @@
       expr
       out
       (lambda ()
-        (out-lam expr out)))]
+        (out-byte CPT_CLOSURE out)
+        (out-number ((out-shared-index out) expr) out)
+        (out-lam lam out)))]
     [(struct lam (name flags num-params param-types rest? closure-map max-let-depth body))
      (let* ([l (protect-quote body)]
             [any-refs? (ormap (lambda (t) (eq? t 'ref)) param-types)]
@@ -594,6 +615,8 @@
 (define (out-data expr out)
   (cond
    [(prefix? expr) (out-prefix expr out)]
+   [(global-bucket? expr) (out-toplevel expr out)]
+   [(module-variable? expr) (out-toplevel expr out)]
    [else (out-form expr out)]))
 
 (define (out-value expr out)
@@ -666,6 +689,11 @@
     (let ([vec (svector-vec expr)])
       (for ([n (in-range (sub1 (vector-length vec)) -1 -1)])
         (out-number (vector-ref vec n) out)))]
+   [(module-path-index? expr)
+    (out-byte CPT_MODULE_INDEX out)
+    (let-values ([(name base) (module-path-index-split expr)])
+      (out-data name out)
+      (out-data base out))]
    [else
     (out-byte CPT_QUOTE out)
     (let ([s (open-output-bytes)])
