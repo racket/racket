@@ -1592,7 +1592,11 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     return scheme_compiled_void();
   
   if (count == 1) {
-    if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL)) {
+    if (opt < -1) {
+      /* can't optimize away a begin0 at read time; it's too late, since the
+         return is combined with EXPD_BEGIN0 */
+      addconst = 1;
+    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
@@ -10879,7 +10883,7 @@ static Scheme_Object *read_sequence(Scheme_Object *obj)
 
 static Scheme_Object *read_sequence_save_first(Scheme_Object *obj)
 {
-  return scheme_make_sequence_compilation(obj, -1);
+  return scheme_make_sequence_compilation(obj, -2);
 }
 
 static Scheme_Object *write_branch(Scheme_Object *obj)
