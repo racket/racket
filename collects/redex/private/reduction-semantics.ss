@@ -1850,9 +1850,13 @@
     [(= tests 0)
      (printf "No tests run.\n")]
     [(= test-failures 0)
-     (if (= tests 1)
-         (printf "One test passed.\n")
-         (printf "All ~a tests passed.\n" tests))]
+     (cond
+       [(= tests 1)
+        (printf "One test passed.\n")]
+       [(= tests 2)
+        (printf "Both tests passed.\n")]
+       [else
+        (printf "All ~a tests passed.\n" tests)])]
     [else
      (printf "~a test~a failed (out of ~a total).\n"
              test-failures
