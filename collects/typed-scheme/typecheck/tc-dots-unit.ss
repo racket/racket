@@ -4,7 +4,7 @@
 (require "signatures.ss"
          (utils tc-utils)
          (env type-environments)
-         (private type-utils)
+         (types utils)
          (rep type-rep)
          syntax/kerncase
          scheme/match)

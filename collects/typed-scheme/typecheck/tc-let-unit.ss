@@ -2,7 +2,8 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require "signatures.ss"
-         (private type-effect-convenience type-annotation parse-type type-utils)
+         (types utils convenience)
+         (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env)
          syntax/free-vars
          mzlib/trace

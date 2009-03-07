@@ -4,7 +4,7 @@
 (require syntax/kerncase
          scheme/match
          "signatures.ss"
-         (private type-utils type-effect-convenience union subtype)
+         (types utils convenience union subtype)
 	 (utils tc-utils)
 	 (rep type-rep))
 
@@ -18,7 +18,7 @@
   (define body-ty #f)    
   (define (get-result-ty t)
     (match t
-      [(Function: (list (arr: _ rngs #f _ '() _ _) ...)) (apply Un rngs)]
+      [(Function: (list (arr: _ (Values: (list (Result: rngs _ _))) #f _ '()) ...)) (apply Un rngs)]
       [_ (tc-error "Internal error in get-result-ty: not a function type: ~n~a" t)]))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
