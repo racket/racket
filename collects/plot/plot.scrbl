@@ -433,7 +433,7 @@ curve fitting.  The code that implements the algorithm is public
 domain, and is used by the @tt{gnuplot} package.
 
 @defproc[(fit [f (real? ... . -> . real?)]
-              [guess-list (list/c (cons symbol? real?))]
+              [guess-list (list/c (list symbol? real?))]
               [data (or/c (list-of (vector/c real? real? real?))
                           (list-of (vector/c real? real? real? real?)))])
          fit-result?]{

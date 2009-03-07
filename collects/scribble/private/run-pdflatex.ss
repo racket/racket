@@ -8,6 +8,8 @@
   (define (err fmt . args) (apply error 'run-pdflatex fmt args))
   (define cmd
     (list (or (find-executable-path "pdflatex")
+              (and (eq? 'windows (system-type))
+                   (find-executable-path "pdflatex.exe"))
               (err "could not find a `pdflatex' executable"))
           "-interaction=batchmode"
           (format "~a" file)))

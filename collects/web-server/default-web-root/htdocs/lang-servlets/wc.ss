@@ -10,7 +10,7 @@
   (define include1 (include-counter counter1))
   (define include2 (include-counter counter2))
   ; counter1 and counter2 may have been modified
-  (send/suspend/dispatch
+  (send/suspend/url/dispatch
    (lambda (embed/url)
      ; The frame (ref) must have been captured, any changes to web-cells after this will be lost
      `(html 

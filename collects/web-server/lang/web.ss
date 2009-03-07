@@ -17,9 +17,11 @@
  initialize-servlet 
  
  ;; Servlet Interface
+ send/suspend
+ send/suspend/dispatch
  send/suspend/hidden
  send/suspend/url
- send/suspend/dispatch)
+ send/suspend/url/dispatch)
 
 (provide/contract
  [make-stateless-servlet
@@ -34,8 +36,8 @@
    ;; Servlet Interface
    [send/suspend/hidden ((url? list? . -> . response/c) . -> . request?)]
    [send/suspend/url ((url? . -> . response/c) . -> . request?)]
-   [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
-                           . -> . any/c)])
+   [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c)
+                               . -> . any/c)])
 
 ;; initial-servlet : (request -> response) -> (request -> response/c)
 (define (initialize-servlet start)
@@ -55,7 +57,7 @@
 ;; send/suspend/hidden: (url input-field -> response) -> request
 ;; like send/suspend except the continuation is encoded in a hidden field
 (define (send/suspend/hidden page-maker)
-  (send/suspend
+  (call-with-serializable-current-continuation
    (lambda (k)
      (define stuffer (stateless-servlet-stuffer (current-servlet)))
      (define p-cont ((stuffer-in stuffer) k))
@@ -66,7 +68,7 @@
 ;; send/suspend/url: (url -> response) -> request
 ;; like send/suspend except the continuation is encoded in the url
 (define (send/suspend/url page-maker)
-  (send/suspend
+  (call-with-serializable-current-continuation
    (lambda (k)
      (define stuffer (stateless-servlet-stuffer (current-servlet)))
      (page-maker
@@ -74,14 +76,30 @@
                  (request-uri (execution-context-request (current-execution-context)))
                  k)))))
 
+(define (send/suspend page-maker)
+  (send/suspend/url
+   (lambda (k-url)
+     (page-maker (url->string k-url)))))
+
 (define-closure embed/url (proc) (k)
   (stuff-url (stateless-servlet-stuffer (current-servlet))
              (request-uri (execution-context-request (current-execution-context)))
              (kont-append-fun k proc)))
-(define (send/suspend/dispatch response-generator)
-  (send/suspend
+(define (send/suspend/url/dispatch response-generator)
+  (call-with-serializable-current-continuation
    (lambda (k)
      (response-generator (make-embed/url (lambda () k))))))
+
+; XXX Uncopy&paste
+(define-closure embed (proc) (k)
+  (url->string
+   (stuff-url (stateless-servlet-stuffer (current-servlet))
+              (request-uri (execution-context-request (current-execution-context)))
+              (kont-append-fun k proc))))
+(define (send/suspend/dispatch response-generator)
+  (call-with-serializable-current-continuation
+   (lambda (k)
+     (response-generator (make-embed (lambda () k))))))
 
 ;; request->continuation: req -> continuation
 ;; decode the continuation from the hidden field of a request

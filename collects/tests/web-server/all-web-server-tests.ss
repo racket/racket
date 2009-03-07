@@ -10,6 +10,7 @@
          "servlet/all-servlet-tests.ss"
          "stuffers-test.ss"
          "formlets-test.ss"
+         "dispatch-test.ss"
          "servlet-env-test.ss")
 (provide all-web-server-tests)
 
@@ -19,6 +20,7 @@
    all-http-tests
    all-stuffers-tests
    all-formlets-tests
+   all-dispatch-tests
    all-configuration-tests
    all-dispatchers-tests
    all-lang-tests

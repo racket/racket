@@ -776,17 +776,20 @@
     (unless (file-exists? (build-path (collection-path "setup") "scribble.ss"))
       (make-docs #f)))
 
+  (define (scr:call name . xs)
+    (parameterize ([current-namespace
+                    (namespace-anchor->empty-namespace anchor)])
+      (apply (dynamic-require 'setup/scribble name) xs)))
+
   (define (set-doc:verbose)
-    (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-      ((dynamic-require 'setup/scribble 'verbose) (verbose))))
+    (scr:call 'verbose (verbose)))
+
   (define (doc:setup-scribblings latex-dest auto-start-doc?)
-    (parameterize ([current-namespace (namespace-anchor->empty-namespace
-                                       anchor)])
-      ((dynamic-require 'setup/scribble 'setup-scribblings)
-       (if no-specific-collections? #f (map cc-path ccs-to-compile))
-       latex-dest auto-start-doc? (make-user)
-       (lambda (what go alt) (record-error what "Building docs" go alt))
-       setup-printf)))
+    (scr:call 'setup-scribblings
+              (if no-specific-collections? #f (map cc-path ccs-to-compile))
+              latex-dest auto-start-doc? (make-user)
+              (lambda (what go alt) (record-error what "Building docs" go alt))
+              setup-printf))
 
   (when (make-docs)
     (setup-printf #f "--- building documentation ---")
@@ -795,34 +798,6 @@
                      (lambda (exn)
                        (setup-printf #f "docs failure: ~a" (exn->string exn)))])
       (doc:setup-scribblings #f (not (null? (archives))))))
-
-  (define (render-pdf file)
-    (define cmd
-      (format "pdflatex -interaction=batchmode \"~a\" > /dev/null" file))
-    (define logfile (path-replace-suffix file #".log"))
-    (let loop ([n 0])
-      (when (= n 5)
-        (error 'render-pdf "didn't get a stable result after ~a runs" n))
-      (if (zero? n)
-        (setup-printf "running" "pdflatex on ~a" file)
-        (setup-printf #f " re-running ~a~a time"
-                      (add1 n) (case (add1 n) [(2) 'nd] [(3) 'rd] [else 'th])))
-      (unless (system cmd)
-        (call-with-input-file logfile
-          (lambda (log) (copy-port log (current-error-port))))
-        (error 'setup-plt "pdflatex failed"))
-      ;; see if we get a "Rerun" note, these seem to come in two flavors
-      ;; * Label(s) may have changed. Rerun to get cross-references right.
-      ;; * Package longtable Warning: Table widths have changed. Rerun LaTeX.
-      (cond
-        [(call-with-input-file logfile
-           (lambda (log) (regexp-match? #px#"changed\\.\\s+Rerun" log)))
-         (loop (add1 n))]
-        [(zero? n)
-         (setup-printf "WARNING" 
-                       "no \"Rerun\" found in first run of pdflatex for ~a"
-                       file)]))
-    (path-replace-suffix file #".pdf"))
 
   (when (doc-pdf-dest)
     (setup-printf #f "building PDF documentation (via pdflatex)")
@@ -840,7 +815,9 @@
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
-                (let* ([pdf    (render-pdf f)]
+                (let* ([pdf (scr:call 'run-pdflatex f
+                                      (lambda (fmt . xs)
+                                        (apply setup-printf #f fmt xs)))]
                        [target (build-path dest-dir pdf)])
                   (when (file-exists? target) (delete-file target))
                   (copy-file pdf target)))))

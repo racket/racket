@@ -81,6 +81,10 @@
 (test (pick-number 2624 (make-random 0 0 0 0 1 1 1/5 1/5 2 .5 0 .5))
       (make-rectangular 7/8 -3.0))
 
+(test (pick-natural 224 (make-random 1/5)) 5)
+(test (pick-integer 900 (make-random 0 0 1/5)) -7)
+(test (pick-real 9000 (make-random 0 0 0 .5 1 1/8)) 11.0)
+
 (let* ([lits '("bcd" "cbd")]
        [chars (sort (unique-chars lits) char<=?)])
   (test (pick-char 0 chars (make-random 1)) #\c)
@@ -148,6 +152,9 @@
                    #:nt [nt pick-nt]
                    #:str [str pick-string]
                    #:num [num pick-number]
+                   #:nat [nat pick-natural]
+                   #:int [int pick-integer]
+                   #:real [real pick-real]
                    #:any [any pick-any]
                    #:seq [seq pick-sequence-length]
                    #:pref [pref pick-preferred-productions])
@@ -158,6 +165,9 @@
         (define next-variable-decision (decision var))
         (define next-non-terminal-decision (decision nt))
         (define next-number-decision (decision num))
+        (define next-natural-decision (decision nat))
+        (define next-integer-decision (decision int))
+        (define next-real-decision (decision real))
         (define next-string-decision (decision str))
         (define next-any-decision (decision any))
         (define next-sequence-decision (decision seq))
@@ -235,6 +245,24 @@
     var e 2 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
    'z))
+
+(let ()
+  (define-language L
+    (n natural)
+    (i integer)
+    (r real))
+  (test (let ([n (generate-term L n 0 #:attempt 10000)])
+          (and (integer? n)
+               (exact? n)
+               (not (negative? n))))
+        #t)
+  (test (generate-term/decisions L n 0 1 (decisions #:nat (λ (_) 42))) 42)
+  (test (let ([i (generate-term L i 0 #:attempt 10000)])
+          (and (integer? i) (exact? i)))
+        #t)
+  (test (generate-term/decisions L i 0 1 (decisions #:int (λ (_) -42))) -42)
+  (test (real? (generate-term L r 0 #:attempt 10000)) #t)
+  (test (generate-term/decisions L r 0 1 (decisions #:real (λ (_) 4.2))) 4.2))
 
 (let ()
   (define-language lang

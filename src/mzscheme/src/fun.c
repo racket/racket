@@ -2517,6 +2517,12 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
       /* Default transparency depends on module-identifier=? comparison
 	 to `begin', `define-values', and `define-syntaxes'. */
       int trans = deflt;
+      if (SCHEME_TRUEP(prop))
+        scheme_log(NULL,
+                   SCHEME_LOG_WARNING,
+                   0,
+                   "warning: unrecognized 'certify-mode property value: %V",
+                   prop);
       if (SCHEME_STX_PAIRP(code)) {
 	Scheme_Object *name;
 	name = SCHEME_STX_CAR(code);
@@ -8519,9 +8525,11 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
   v = SCHEME_CAR(obj);
   obj = SCHEME_CDR(obj);
   data->num_params = SCHEME_INT_VAL(v);
+  if (data->num_params < 0) return NULL;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
   data->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  if (data->max_let_depth < 0) return NULL;
   obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return NULL;

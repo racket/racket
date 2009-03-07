@@ -1,8 +1,3 @@
-;;#!/bin/sh
-;;#|
-;;exec mred -u "$0" "$@"
-;;|#
-
 #lang scheme/base
 
   (require (for-syntax scheme/base)
@@ -702,6 +697,17 @@
        -> ,@defs (+ {-9} 10)
        :: ,@defs {(+ -9 10)}
        -> ,@defs {1}))
+  
+  
+  ;; loops; I should add a mechanism to stop testing after n steps...
+  #;(let ([defs '((define (f x) (cond (else (f x))))
+                (define (g x) x))])
+    (t pnkfelix test-intermediate/lambda-sequence
+      ,@defs (f (g empty))
+      :: ,@defs ({f} (g empty))
+      -> ,@defs ({(lambda (x) (cond (else (f x))))} (g empty))
+      :: ,@defs ((lambda (x) (cond (else (f x)))) ({g} empty))
+      -> ,@defs ((lambda (x) (cond (else (f x)))) ({(lambda (x) x)} empty))))
 
   (t bad-cons test-upto-int/lam
      (cons 1 2)
@@ -1334,6 +1340,67 @@
   ; add image test: (image-width (filled-rect 10 10 'blue))
 
 
+  
+  (t check-expect test-upto-int/lam
+     (check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 1 1) 2) (check-expect (+ 2 2) 4) (+ 4 5)
+     :: {(+ 4 5)} -> {9}
+     :: 9 (check-expect (+ 3 4) {(+ 8 9)}) -> 9 (check-expect (+ 3 4) {17})
+     :: 9 (check-expect {(+ 3 4)} 17) -> 9 (check-expect {7} 17)
+     :: 9 false (check-expect {(+ 1 1)} 2) -> 9 false (check-expect {2} 2)
+     :: 9 false true (check-expect {(+ 2 2)} 4) -> 9 false true (check-expect {4} 4))
+  
+  (t1 check-within
+      (test-upto-int/lam
+       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (check-expect (+ 1 1) 2)(+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
+                       (9 (check-within (+ 3 4) (hilite 18) (+ 10 90))))
+         (before-after (9 (check-within (+ 3 4) 18 (hilite (+ 10 90))))
+                       (9 (check-within (+ 3 4) 18 (hilite 100))))
+         (before-after (9 (check-within (hilite (+ 3 4)) 18 100))
+                       (9 (check-within (hilite 7) 18 100)))
+         (before-after (9 true (check-expect (hilite (+ 1 1)) 2))
+                       (9 true (check-expect (hilite 2) 2))))))
+  
+  
+  (t1 check-within-bad
+      (test-upto-int/lam
+       "(check-within (+ 3 4) (+ 8 10) 0.01) (+ 4 5) (check-expect (+ 1 1) 2)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) 0.01))
+                       (9 (check-within (+ 3 4) (hilite 18) 0.01)))
+         (before-after (9 (check-within (hilite (+ 3 4)) 18 0.01))
+                       (9 (check-within (hilite 7) 18 0.01)))
+         (before-after (9 false (check-expect (hilite (+ 1 1)) 2))
+                       (9 false (check-expect (hilite 2) 2))))))
+
+  (let ([errmsg "rest: expected argument of type <non-empty list>; given ()"])
+  (t1 check-error
+      (test-upto-int/lam
+       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"rest: \" \"expected argument of type <non-empty list>; given ()\")) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "rest: " "expected argument of type <non-empty list>; given ()"))))
+                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite ,errmsg))))
+         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) ,errmsg))
+                       (9 (check-error (+ (hilite 7) (rest empty)) ,errmsg)))
+         (before-after (9 true (check-expect (hilite (+ 3 1)) 4))
+                       (9 true (check-expect (hilite 4) 4)))))))
+  
+  (t1 check-error-bad
+      (test-upto-int/lam
+       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
+                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
+         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
+                       (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
+         (before-after (9 false (check-expect (hilite (+ 3 1)) 4))
+                       (9 false (check-expect (hilite 4) 4))))))
+
   ;  ;;;;;;;;;;;;;
   ;  ;;
   ;  ;;  TEACHPACK TESTS
@@ -1354,66 +1421,6 @@
                                      ; (custodian-shutdown-all new-custodian))
       ))
   
-  
-  (t check-expect test-bwla-to-int/lam
-     (check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 1 1) 2) (check-expect (+ 2 2) 4) (+ 4 5)
-     :: {(+ 4 5)} -> {9}
-     :: 9 (check-expect (+ 3 4) {(+ 8 9)}) -> 9 (check-expect (+ 3 4) {17})
-     :: 9 (check-expect {(+ 3 4)} 17) -> 9 (check-expect {7} 17)
-     :: 9 false (check-expect {(+ 1 1)} 2) -> 9 false (check-expect {2} 2)
-     :: 9 false true (check-expect {(+ 2 2)} 4) -> 9 false true (check-expect {4} 4))
-  
-  (t1 check-within
-      (test-bwla-to-int/lam
-       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (check-expect (+ 1 1) 2)(+ 4 5)"
-       `((before-after ((hilite (+ 4 5)))
-                       ((hilite 9)))
-         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
-                       (9 (check-within (+ 3 4) (hilite 18) (+ 10 90))))
-         (before-after (9 (check-within (+ 3 4) 18 (hilite (+ 10 90))))
-                       (9 (check-within (+ 3 4) 18 (hilite 100))))
-         (before-after (9 (check-within (hilite (+ 3 4)) 18 100))
-                       (9 (check-within (hilite 7) 18 100)))
-         (before-after (9 true (check-expect (hilite (+ 1 1)) 2))
-                       (9 true (check-expect (hilite 2) 2))))))
-  
-  
-  (t1 check-within-bad
-      (test-bwla-to-int/lam
-       "(check-within (+ 3 4) (+ 8 10) 0.01) (+ 4 5) (check-expect (+ 1 1) 2)"
-       `((before-after ((hilite (+ 4 5)))
-                       ((hilite 9)))
-         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) 0.01))
-                       (9 (check-within (+ 3 4) (hilite 18) 0.01)))
-         (before-after (9 (check-within (hilite (+ 3 4)) 18 0.01))
-                       (9 (check-within (hilite 7) 18 0.01)))
-         (before-after (9 false (check-expect (hilite (+ 1 1)) 2))
-                       (9 false (check-expect (hilite 2) 2))))))
-
-  (let ([errmsg "rest: expected argument of type <non-empty list>; given ()"])
-  (t1 check-error
-      (test-bwla-to-int/lam
-       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"rest: \" \"expected argument of type <non-empty list>; given ()\")) (check-expect (+ 3 1) 4) (+ 4 5)"
-       `((before-after ((hilite (+ 4 5)))
-                       ((hilite 9)))
-         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "rest: " "expected argument of type <non-empty list>; given ()"))))
-                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite ,errmsg))))
-         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) ,errmsg))
-                       (9 (check-error (+ (hilite 7) (rest empty)) ,errmsg)))
-         (before-after (9 true (check-expect (hilite (+ 3 1)) 4))
-                       (9 true (check-expect (hilite 4) 4)))))))
-  
-  (t1 check-error-bad
-      (test-bwla-to-int/lam
-       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (check-expect (+ 3 1) 4) (+ 4 5)"
-       `((before-after ((hilite (+ 4 5)))
-                       ((hilite 9)))
-         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
-                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
-         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
-                       (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
-         (before-after (9 false (check-expect (hilite (+ 3 1)) 4))
-                       (9 false (check-expect (hilite 4) 4))))))
 
   ; uses set-render-settings!
   ;(reconstruct:set-render-settings! fake-beginner-render-settings)
@@ -1426,7 +1433,7 @@
   #;
   (t1 teachpack-drawing
   (test-teachpack-sequence
-   `(htdp/draw)
+   `((lib "draw.ss" "htdp"))
    "(define (draw-limb i) (cond
  [(= i 1) (draw-solid-line (make-posn 20 20) (make-posn 20 100) 'blue)]
  [(= i 0) (draw-solid-line (make-posn (+ 1 10) 10) (make-posn 10 100) 'red)]))
@@ -1457,6 +1464,17 @@
      (before-after ((hilite (and true true)))
                    ((hilite true)))
      (finished-stepping))))
+  
+  #;(t1 teachpack-universe
+      (test-teachpack-sequence
+       `((lib "universe.ss" "2htdp"))
+       "(define (z world)
+  (empty-scene 100 100))
+
+(big-bang 3
+          (on-tick add1)
+          (on-draw z))"
+       `((finished-stepping))))
 
   #;
   (t1 teachpack-name-rendering
@@ -1681,6 +1699,7 @@
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
+  
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
     (parameterize (#;[disable-stepper-error-handling #t]
@@ -1688,8 +1707,8 @@
                    #;[store-steps #f]
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect check-within check-within-bad check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
-      (run-tests '(check-expect check-within check-error check-error-bad))
-      #;(run-all-tests)))
+      #;(run-tests '(teachpack-universe))
+      (run-all-tests)))
   
 
 

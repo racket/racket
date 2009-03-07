@@ -251,8 +251,10 @@
 						 (char-set #\v #\b)))
 	   (test #t char-set= cs1 (char-set-diff (char-set #\U #\t #\a #\h #\v #\w) 
 						 (char-set #\v #\b)
-						 (char-set #\w))))])
+						 (char-set #\w)))
+           (test #t char-set= cs1 (char-set-diff (char-set #\U #\t #\a #\h))))])
     (go char-set-difference)
+    (go char-set-difference!)
     (go char-set-difference!))
 
   (let ([go 
@@ -267,7 +269,12 @@
 
   (let ([go 
 	 (lambda (char-set-diff+i)
-	   (test #t andmap char-set= (list cs1 (char-set #\v))
+	   (test #t andmap char-set= (list cs1 (char-set-union))
+		 (call-with-values
+		     (lambda ()
+		       (char-set-diff+i (char-set #\U #\t #\a #\h)))
+		   list))
+           (test #t andmap char-set= (list cs1 (char-set #\v))
 		 (call-with-values
 		     (lambda ()
 		       (char-set-diff+i (char-set #\U #\t #\a #\h #\v) 
@@ -280,6 +287,7 @@
 					(char-set #\v #\b)
 					(char-set #\w)))
 		   list)))])
+    (go char-set-diff+intersection)
     (go char-set-diff+intersection)
     (go char-set-diff+intersection!))
 

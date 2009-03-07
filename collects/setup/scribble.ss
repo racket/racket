@@ -15,11 +15,13 @@
          scribble/struct
          scribble/basic
          scribble/manual ; really shouldn't be here... see dynamic-require-doc
+         scribble/private/run-pdflatex
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render))
 
 (provide setup-scribblings
-         verbose)
+         verbose
+         run-pdflatex)
 
 (define verbose (make-parameter #t))
 
@@ -691,4 +693,3 @@
     (if (path? r)
         (path->bytes r)
         r)))
-

@@ -4,7 +4,7 @@
 
 (define (gn which)
   (cadr
-   (send/suspend
+   (call-with-serializable-current-continuation
     (lambda (k)
       (let ([ignore (printf "Please send the ~a number.~n" which)])
         k)))))

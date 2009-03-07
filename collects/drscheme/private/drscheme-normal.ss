@@ -2,40 +2,34 @@
 
 (require mred
          scheme/class
-         mzlib/cmdline
+         scheme/cmdline
          scheme/list
-         framework/private/bday)
+         framework/private/bday
+         framework/splash)
 
-; (current-load text-editor-load-handler)
-
-(define files-to-open
-  (command-line
-   (case (system-type)
-     [(windows) "DrScheme.exe"]
-     [(macosx) "drscheme" #;"DrScheme"]
-     [else "drscheme"])
-   (current-command-line-arguments)
-   (args filenames filenames)))
-
-(define icons-bitmap
-  (let ([icons (collection-path "icons")])
-    (lambda (name)
-      (make-object bitmap% (build-path icons name)))))
+(define files-to-open (command-line #:args filenames filenames))
 
 ;; updates the command-line-arguments with only the files
 ;; to open. See also main.ss.
 (current-command-line-arguments (apply vector files-to-open))
 
-(define-values (texas-independence-day? halloween?)
+(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween?)
   (let* ([date (seconds->date (current-seconds))]
          [month (date-month date)]
          [day (date-day date)])
     (values (and (= 3 month) (= 2 day))
+            (and (= 3 month) (= 26 day))
+            (and (= 6 month) (= 11 day))
             (and (= 10 month) (= 31 day)))))
 
 (define high-color? ((get-display-depth) . > . 8))
 (define special-state #f)
 (define normal-bitmap #f) ; set by load-magic-images
+
+(define icons-bitmap
+  (let ([icons (collection-path "icons")])
+    (lambda (name)
+      (make-object bitmap% (build-path icons name)))))
 
 (define-struct magic-image (chars filename [bitmap #:mutable]))
 
@@ -77,23 +71,21 @@
   (when ((length key-codes) . > . longest-magic-string)
     (set! key-codes (take key-codes longest-magic-string))))
 
-(let ([set-splash-bitmap
-       (dynamic-require 'framework/splash 'set-splash-bitmap)])
-  ((dynamic-require 'framework/splash 'set-splash-char-observer)
-   (λ (evt)
-     (let ([ch (send evt get-key-code)])
-       (when (char? ch)
-         ;; as soon as something is typed, load the bitmaps
-         (load-magic-images)
-         (add-key-code ch)
-         (let ([match (find-magic-image)])
-           (when match
-             (set! key-codes null)
-             (set-splash-bitmap
-              (if (eq? special-state match)
-                  (begin (set! special-state #f) normal-bitmap)
-                  (begin (set! special-state match)
-                         (magic-image-bitmap match)))))))))))
+(set-splash-char-observer
+ (λ (evt)
+   (let ([ch (send evt get-key-code)])
+     (when (char? ch)
+       ;; as soon as something is typed, load the bitmaps
+       (load-magic-images)
+       (add-key-code ch)
+       (let ([match (find-magic-image)])
+         (when match
+           (set! key-codes null)
+           (set-splash-bitmap
+            (if (eq? special-state match)
+                (begin (set! special-state #f) normal-bitmap)
+                (begin (set! special-state match)
+                       (magic-image-bitmap match))))))))))
 
 (when (eb-bday?)
   (let ()
@@ -137,7 +129,7 @@
         [(< angle 0) (normalize-angle (+ angle (* 2 pi)))]
         [else (normalize-angle (- angle (* 2 pi)))]))
     
-    (define splash-canvas ((dynamic-require 'framework/splash 'get-splash-canvas)))
+    (define splash-canvas (get-splash-canvas))
     (define (draw-single-step dc offset)
       (send bdc draw-bitmap eli 0 0)
       (draw-single-loop omega-str bdc offset (/ main-size 2) (/ main-size 2) 120 32 outer-color)
@@ -184,7 +176,7 @@
     (define (eli-event evt)
       (cond
         [(send evt leaving?)
-         ((dynamic-require 'framework/splash 'set-splash-paint-callback) orig-paint)
+         (set-splash-paint-callback orig-paint)
          (when gc-b
            (unregister-collecting-blit splash-canvas))
          (send splash-canvas refresh)
@@ -192,7 +184,7 @@
            (kill-thread draw-thread)
            (set! draw-thread #f))]
         [(send evt entering?)
-         ((dynamic-require 'framework/splash 'set-splash-paint-callback) eli-paint)
+         (set-splash-paint-callback eli-paint)
          (when gc-b
            (register-collecting-blit splash-canvas 
                                      (floor (- (/ main-size 2)
@@ -206,7 +198,7 @@
          (unless draw-thread
            (start-thread))]))
     
-    (define splash-eventspace ((dynamic-require 'framework/splash 'get-splash-eventspace)))
+    (define splash-eventspace (get-splash-eventspace))
     (define draw-next-state
       (let ([o 0])
         (lambda ()
@@ -231,24 +223,30 @@
                  (draw-next-state)
                  (sleep .01)
                  (loop))))))
-    (define orig-paint ((dynamic-require 'framework/splash 'get-splash-paint-callback)))
+    (define orig-paint (get-splash-paint-callback))
     
     (draw-next-state)
-    ((dynamic-require 'framework/splash 'set-splash-event-callback) eli-event)
+    (set-splash-event-callback eli-event)
     (send splash-canvas refresh)))
 
-((dynamic-require 'framework/splash 'start-splash)
- (build-path (collection-path "icons") 
-             (cond
-               [texas-independence-day?
-                "texas-plt-bw.gif"]
-               [(and halloween? high-color?)
-                "PLT-pumpkin.png"]
-               [high-color? "PLT-206.png"]
-               [(= (get-display-depth) 1)
-                "pltbw.gif"]
-               [else
-                "plt-flat.gif"]))
+(start-splash
+ (cond
+   [(or prince-kuhio-day? kamehameha-day?)
+    (set-splash-progress-bar? #f)
+    (let ([size ((dynamic-require 'drscheme/private/palaka 'palaka-pattern-size) 4)])
+      (vector (dynamic-require 'drscheme/private/honu-logo 'draw-honu) 
+              size 
+              size))]
+   [texas-independence-day?
+    (build-path (collection-path "icons") "texas-plt-bw.gif")]
+   [(and halloween? high-color?)
+    (build-path (collection-path "icons") "PLT-pumpkin.png")]
+   [high-color?  
+    (build-path (collection-path "icons") "PLT-206.png")]
+   [(= (get-display-depth) 1)
+    (build-path (collection-path "icons") "pltbw.gif")]
+   [else
+    (build-path (collection-path "icons") "plt-flat.gif")])
  "DrScheme"
  99)
 

@@ -5,7 +5,7 @@
 ;; get-number-from-user: string -> number
 ;; ask the user for a number
 (define (gn msg)
-  (send/suspend/dispatch
+  (send/suspend/url/dispatch
    (lambda (embed/url)
      `(hmtl (head (title ,(format "Get ~a number" msg)))
             (body

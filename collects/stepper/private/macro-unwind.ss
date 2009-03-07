@@ -121,83 +121,89 @@
    (define (unwind-define stx settings)
      (kernel-syntax-case stx #f
        [(define-values (name . others) body)
-        (begin
-          (unless (null? (syntax-e #'others))
-            (error 'reconstruct
-                   "reconstruct fails on multiple-values define: ~v\n"
-                   (syntax->datum stx)))
-          (let* ([printed-name
-                  (or (stepper-syntax-property #`name 'stepper-lifted-name)
-                      (stepper-syntax-property #'name 'stepper-orig-name)
-                      #'name)]
-                 [unwound-body (unwind #'body settings)]
-                 ;; see notes in internal-docs.txt
-                 [define-type (stepper-syntax-property
-                               unwound-body 'stepper-define-type)])
-            (if define-type
-                (kernel-syntax-case 
-                    unwound-body #f
-                  [(lambda arglist lam-body ...)
-                   (case define-type
-                     [(shortened-proc-define)
-                      (let ([proc-define-name
-                             (stepper-syntax-property
-                              unwound-body
-                              'stepper-proc-define-name)])
-                        (if (or (free-identifier=? proc-define-name
-                                                   #'name)
-                                (and (stepper-syntax-property #'name
-                                                              'stepper-orig-name)
-                                     (free-identifier=?
-                                      proc-define-name
-                                      (stepper-syntax-property
-                                       #'name 'stepper-orig-name))))
-                            #`(define (#,printed-name . arglist)
-                                lam-body ...)
-                            #`(define #,printed-name
-                                #,unwound-body)))]
-                     [(lambda-define)
-                      #`(define #,printed-name #,unwound-body)]
-                     [else (error 'unwind-define
-                                  "unknown value for syntax property 'stepper-define-type: ~e"
-                                  define-type)])]
-                  [else (error 'unwind-define
-                               "expr with stepper-define-type is not a lambda: ~e"
-                               (syntax->datum unwound-body))])
-                #`(define #,printed-name #,unwound-body))))]
+        (if (null? (syntax-e #'others))
+            ;; this is supported:
+            (let* ([printed-name
+                    (or (stepper-syntax-property #`name 'stepper-lifted-name)
+                        (stepper-syntax-property #'name 'stepper-orig-name)
+                        #'name)]
+                   [unwound-body (unwind #'body settings)]
+                   ;; see notes in internal-docs.txt
+                   [define-type (stepper-syntax-property
+                                 unwound-body 'stepper-define-type)])
+              (if define-type
+                  (kernel-syntax-case 
+                      unwound-body #f
+                    [(lambda arglist lam-body ...)
+                     (case define-type
+                       [(shortened-proc-define)
+                        (let ([proc-define-name
+                               (stepper-syntax-property
+                                unwound-body
+                                'stepper-proc-define-name)])
+                          (if (or (free-identifier=? proc-define-name
+                                                     #'name)
+                                  (and (stepper-syntax-property #'name
+                                                                'stepper-orig-name)
+                                       (free-identifier=?
+                                        proc-define-name
+                                        (stepper-syntax-property
+                                         #'name 'stepper-orig-name))))
+                              #`(define (#,printed-name . arglist)
+                                  lam-body ...)
+                              #`(define #,printed-name
+                                  #,unwound-body)))]
+                       [(lambda-define)
+                        #`(define #,printed-name #,unwound-body)]
+                       [else (error 'unwind-define
+                                    "unknown value for syntax property 'stepper-define-type: ~e"
+                                    define-type)])]
+                    [else (error 'unwind-define
+                                 "expr with stepper-define-type is not a lambda: ~e"
+                                 (syntax->datum unwound-body))])
+                  #`(define #,printed-name #,unwound-body)))
+            ;; this is there just to see the unsupported stuff go by...
+            #`(define-values (name . others) #,(unwind #'body settings))
+            )]
        [else (error 'unwind-define
                     "expression is not a define-values: ~e"
                     (syntax->datum stx))]))
    
    (define (unwind-mz-let stx settings)
-     (with-syntax ([(label ([(var) rhs] ...) . bodies) stx])
-       (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
-                     [new-label
-                      (if (improper-member 'comes-from-let*
-                                           (stepper-syntax-property
-                                            stx 'stepper-hint))
-                          #`let*
-                          (case (syntax-e #'label)
-                            [(let-values) #'let]
-                            [(letrec-values) #'letrec]))]
-                     [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
-         ;; is this let and the nested one part of a let*?
-         (syntax-case #`new-bodies (let*)
-           [((let* bindings inner-body ...))
-            (and
-             (improper-member 'comes-from-let*
-                              (stepper-syntax-property stx 'stepper-hint))
-             (eq? (stepper-syntax-property stx 'stepper-source)
-                  (stepper-syntax-property (car (syntax->list #`new-bodies))
-                                   'stepper-source))
-             (eq? (stepper-syntax-property stx 'stepper-position)
-                  (stepper-syntax-property (car (syntax->list #`new-bodies))
-                                   'stepper-position)))
-            #`(let* #,(append (syntax->list #`([var rhs2] ...))
-                              (syntax->list #`bindings))
-                inner-body ...)]
-           [else
-            #`(new-label ([var rhs2] ...) . new-bodies)]))))
+     (syntax-case stx ()
+       [(label ([(var) rhs] ...) . bodies)
+        (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
+                      [new-label
+                       (if (improper-member 'comes-from-let*
+                                            (stepper-syntax-property
+                                             stx 'stepper-hint))
+                           #`let*
+                           (case (syntax-e #'label)
+                             [(let-values) #'let]
+                             [(letrec-values) #'letrec]))]
+                      [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
+          ;; is this let and the nested one part of a let*?
+          (syntax-case #`new-bodies (let*)
+            [((let* bindings inner-body ...))
+             (and
+              (improper-member 'comes-from-let*
+                               (stepper-syntax-property stx 'stepper-hint))
+              (eq? (stepper-syntax-property stx 'stepper-source)
+                   (stepper-syntax-property (car (syntax->list #`new-bodies))
+                                            'stepper-source))
+              (eq? (stepper-syntax-property stx 'stepper-position)
+                   (stepper-syntax-property (car (syntax->list #`new-bodies))
+                                            'stepper-position)))
+             #`(let* #,(append (syntax->list #`([var rhs2] ...))
+                               (syntax->list #`bindings))
+                 inner-body ...)]
+            [else
+             #`(new-label ([var rhs2] ...) . new-bodies)]))]
+       [;; it's not part of the language we support... might as well just blow it on out there
+        (label ([(var ...) rhs] ...) . bodies)
+        (with-syntax ([(rhs2 ...) (map (lambda (rhs) (unwind rhs settings)) (syntax->list #'(rhs ...)))]
+                      [new-bodies (map (lambda (body) (unwind body settings)) (syntax->list #'bodies))])
+          #`(,label ([(var ...) rhs2] ...) . new-bodies))]))
    
    (define (unwind-local stx settings)
      (kernel-syntax-case stx #f

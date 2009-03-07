@@ -74,9 +74,9 @@
 (define current-subdirectory (make-parameter #f))
 (define current-output-file (make-parameter #f))
 (define current-top-part (make-parameter #f))
-(define on-separate-page (make-parameter #t))
-(define next-separate-page (make-parameter #f))
+(define on-separate-page-ok (make-parameter #t))
 (define collecting-sub (make-parameter 0))
+(define collecting-whole-page (make-parameter #t))
 (define current-no-links (make-parameter #f))
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
@@ -236,15 +236,13 @@
              format-number
              quiet-table-of-contents
              extract-part-style-files)
+    (inherit-field prefix-file style-file style-extra-files)
 
     (init-field [css-path #f]
                 ;; up-path is either a link "up", or #t which uses
                 ;; goes to start page (using cookies to get to the
                 ;; user start page)
                 [up-path #f]
-                [prefix-file #f]
-                [style-file #f]
-                [style-extra-files null]
                 [script-path #f]
                 [script-file #f]
                 [search-box? #f])
@@ -369,11 +367,20 @@
     (define/public (toc-wrap table)
       null)
 
+    (define/private (dest->url dest)
+      (format "~a~a~a"
+              (from-root (relative->path (dest-path dest))
+                         (get-dest-directory))
+              (if (dest-page? dest) "" "#")
+              (if (dest-page? dest)
+                  ""
+                  (anchor-name (dest-anchor dest)))))
+
     (define/public (render-toc-view d ri)
       (define has-sub-parts?
         (pair? (part-parts d)))
       (define sub-parts-on-other-page?
-        (and (pair? (part-parts d))
+        (and has-sub-parts?
              (part-whole-page? (car (part-parts d)) ri)))
       (define toc-chain
         (let loop ([d d] [r (if has-sub-parts? (list d) '())])
@@ -385,14 +392,7 @@
       (define top (car toc-chain))
       (define (toc-item->title+num t show-mine?)
         (values
-         `((a ([href ,(let ([dest (resolve-get t ri (car (part-tags t)))])
-                        (format "~a~a~a"
-                                (from-root (relative->path (dest-path dest))
-                                           (get-dest-directory))
-                                (if (dest-page? dest) "" "#")
-                                (if (dest-page? dest)
-                                  ""
-                                  (anchor-name (dest-anchor dest)))))]
+         `((a ([href ,(dest->url (resolve-get t ri (car (part-tags t))))]
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")])
@@ -458,7 +458,8 @@
               ;; toc-wrap determines if we get the toc or just the title !!!
               `((div ([class "tocview"]) ,@(toc-content))))
           ,@(render-onthispage-contents
-             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
+             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub")
+             sub-parts-on-other-page?)
           ,@(parameterize ([extra-breaking? #t])
               (append-map
                (lambda (t)
@@ -480,11 +481,16 @@
     (define/public (nearly-top? d ri top)
       #f)
 
-    (define/private (render-onthispage-contents d ri top box-class)
+    (define/private (render-onthispage-contents d ri top box-class sections-in-toc?)
       (if (ormap (lambda (p) (part-whole-page? p ri))
                  (part-parts d))
         null
-        (let ([nearly-top? (lambda (d) (nearly-top? d ri top))])
+        (let ([nearly-top? (lambda (d) 
+                             ;; If ToC would be collapsed, then 
+                             ;; no section is nearly the top
+                             (if (not sections-in-toc?)
+                                 #f
+                                 (nearly-top? d ri top)))])
           (define (flow-targets flow)
             (append-map block-targets (flow-paragraphs flow)))
           (define (block-targets e)
@@ -523,7 +529,8 @@
                 (if (nearly-top? d) null (list d))
                 ;; get internal targets:
                 (append-map block-targets (flow-paragraphs (part-flow d)))
-                (map flatten (part-parts d))))))
+                (map (lambda (p) (if (part-whole-page? p ri) null (flatten p)))
+                     (part-parts d))))))
           (define any-parts? (ormap part? ps))
           (if (null? ps)
             null
@@ -691,7 +698,7 @@
         (define-values (url title)
           (cond [(part? x)
                  (values
-                  (derive-filename x)
+                  (dest->url (resolve-get x ri (car (part-tags x))))
                   (string-append
                    "\""
                    (content->string
@@ -913,13 +920,7 @@
                                     (url-query u))])))]
                         [else
                          ;; Normal link:
-                         (format "~a~a~a"
-                                 (from-root (relative->path (dest-path dest))
-                                            (get-dest-directory))
-                                 (if (dest-page? dest) "" "#")
-                                 (if (dest-page? dest)
-                                   ""
-                                   (anchor-name (dest-anchor dest))))]))
+                         (dest->url dest)]))
                      ,@(if (string? (element-style e))
                          `([class ,(element-style e)])
                          null)]
@@ -1186,9 +1187,9 @@
              render-one-part
              render-content
              part-whole-page?
-             format-number)
-
-    (inherit-field report-output?)
+             format-number
+             install-extra-files
+             report-output?)
 
     (define/override (get-suffix) #"")
 
@@ -1224,12 +1225,26 @@
       (super collect ds (map (lambda (fn) (build-path fn "index.html")) fns)))
 
     (define/override (current-part-whole-page? d)
-      ((collecting-sub) . <= . 2))
+      (collecting-whole-page))
+
+    (define/override (start-collect ds fns ci)
+      (map (lambda (d fn)
+             (parameterize ([collecting-sub
+                             (if (part-style? d 'non-toc)
+                                 1
+                                 0)])
+               (super start-collect (list d) (list fn) ci)))
+           ds
+           fns))
 
     (define/override (collect-part d parent ci number)
       (let ([prev-sub (collecting-sub)])
-        (parameterize ([collecting-sub (if (toc-part? d) 1 (add1 prev-sub))])
-          (if (= 1 prev-sub)
+        (parameterize ([collecting-sub (if (toc-part? d) 
+                                           1 
+                                           (add1 prev-sub))]
+                       [collecting-whole-page (prev-sub . <= . 1)])
+          (if (and (current-part-whole-page? d)
+                   (not (eq? d (current-top-part))))
             (let ([filename (derive-filename d)])
               (parameterize ([current-output-file
                               (build-path (path-only (current-output-file))
@@ -1239,11 +1254,14 @@
 
     (define/override (render ds fns ri)
       (map (lambda (d fn)
-             (when report-output?
+             (when (report-output?)
                (printf " [Output to ~a/index.html]\n" fn))
              (unless (directory-exists? fn)
                (make-directory fn))
-             (parameterize ([current-subdirectory (file-name-from-path fn)])
+             (parameterize ([current-subdirectory (file-name-from-path fn)]
+                            [current-top-part d])
+               ;; install files for each directory
+               (install-extra-files)
                (let ([fn (build-path fn "index.html")])
                  (with-output-to-file fn #:exists 'truncate/replace
                    (lambda () (render-one d ri fn))))))
@@ -1266,23 +1284,21 @@
     (define/override (render-part d ri)
       (parameterize ([current-version (extract-version d)])
         (let ([number (collected-info-number (part-collected-info d ri))])
-          (if (and (not (on-separate-page))
-                   (or (= 1 (length number))
-                       (next-separate-page)))
+          (if (and (on-separate-page-ok)
+                   (part-whole-page? d ri)
+                   (not (eq? d (current-top-part))))
             ;; Render as just a link, and put the actual content in a
             ;; new file:
             (let* ([filename (derive-filename d)]
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
-              (parameterize ([on-separate-page #t])
+              (parameterize ([on-separate-page-ok #f])
                 (with-output-to-file full-path #:exists 'truncate/replace
                   (lambda () (render-one-part d ri full-path number)))
                 null))
-            (let ([sep? (on-separate-page)])
-              (parameterize ([next-separate-page (toc-part? d)]
-                             [on-separate-page #f])
-                ;; Normal section render
-                (super render-part d ri)))))))
+            (parameterize ([on-separate-page-ok #t])
+              ;; Normal section render
+              (super render-part d ri))))))
 
     (super-new)))
 

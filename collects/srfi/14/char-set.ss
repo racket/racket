@@ -273,14 +273,17 @@
 
   (define char-set-diff+intersection
     (case-lambda
-     [(cs1 cs2)
-      (let-values ([(cs1^cs2 cs1-cs2 cs2-cs1) (split (char-set-set cs1) (char-set-set cs2))])
-	(values (make-char-set cs1-cs2)
-		(make-char-set cs1^cs2)))]
-     [(cs1 cs2 . more)
-      (let-values ([(d i) (char-set-diff+intersection cs1 cs2)])
-	(values (apply char-set-difference d more)
-		(apply char-set-intersection i more)))]))
+      [(cs)
+       (values (char-set-difference cs)
+               (char-set-intersection cs (char-set-union)))]
+      [(cs1 cs2)
+       (let-values ([(cs1^cs2 cs1-cs2 cs2-cs1) (split (char-set-set cs1) (char-set-set cs2))])
+         (values (make-char-set cs1-cs2)
+                 (make-char-set cs1^cs2)))]
+      [(cs1 cs2 . more)
+       (let-values ([(d i) (char-set-diff+intersection cs1 cs2)])
+         (values (apply char-set-difference d more)
+                 (apply char-set-intersection i more)))]))
 
   (define char-set-adjoin! char-set-adjoin)
   (define char-set-delete! char-set-delete)
@@ -432,13 +435,13 @@
    [char-set-union char-sets0/c]
    [char-set-union! char-sets/c]
    [char-set-intersection char-sets0/c]
-   [char-set-intersection! char-sets/c]
+   [char-set-intersection! char-sets0/c]
    [char-set-difference char-sets/c]
-   [char-set-difference! char-sets+/c]
+   [char-set-difference! char-sets/c]
    [char-set-xor char-sets0/c]
    [char-set-xor! char-sets/c]
-   [char-set-diff+intersection char-sets+/c]
-   [char-set-diff+intersection! char-sets+/c])
+   [char-set-diff+intersection char-sets/c]
+   [char-set-diff+intersection! char-sets/c])
   (provide
    char-set:lower-case
    char-set:upper-case

@@ -940,7 +940,8 @@ Bool wxCanvasDC::GlyphAvailable(int c, wxFont *f)
 void wxCanvasDC::SetAntiAlias(Bool v)
 {
   if (anti_alias != v) {
-    cMacDC->EndCG();
+    if (cMacDC)
+      cMacDC->EndCG();
   }
   wxbCanvasDC::SetAntiAlias(v);
 }

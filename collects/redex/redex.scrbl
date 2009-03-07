@@ -93,6 +93,9 @@ given term, Redex assumes that it will always match that term.
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole side-condition cross) 
    [pattern any 
             number 
+            natural
+            integer
+            real
             string 
             variable 
             (variable-except symbol ...)
@@ -122,6 +125,28 @@ before the underscore.
 }
 
 @item{The @defpattech[number] @pattern matches any number.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[natural] @pattern matches any exact 
+non-negative integer.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[integer] @pattern matches any exact integer.
+This @pattern may also be suffixed with an underscore and another
+identifier, in which case they bind the full name (as if it
+were an implicit @pattech[name] @pattern) and match the portion
+before the underscore.
+}
+
+@item{The @defpattech[real] @pattern matches any real number.
 This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion
@@ -225,7 +250,7 @@ guard.
 
 @item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
 closure functions. If the language contains a non-terminal with the
-same name as <symbol>, the @pattern @tt{(cross symbol)} matches the
+same name as @scheme[symbol], the @pattern @scheme[(cross symbol)] matches the
 context that corresponds to the compatible closure of that
 non-terminal.
 }
@@ -456,7 +481,7 @@ different lengths to appear together inside an ellipsis.
 Matches each given id pattern to the value yielded by
 evaluating the corresponding expr and binds each variable in
 the id pattern to the appropriate value (described
-below). These bindings are then accessible to the `term'
+below). These bindings are then accessible to the @|tttterm|
 syntactic form.
 
 Note that each ellipsis should be the literal symbol consisting of
@@ -638,18 +663,21 @@ all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (--> fresh side-condition where) 
-              (reduction-relation language reduction-case ...)
-              ([reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
+              (reduction-relation language domain main-arrow reduction-case ...)
+              ([domain (code:line) (code:line #:domain #, @|ttpattern|)]
+               [main-arrow (code:line) (code:line #:arrow arrow)]
+               [reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
                [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression ...)
                        (where tl-pat #, @|tttterm|)]
-                [fresh-clause var ((var1 ...) (var2 ...))]
-                [tl-pat identifier (tl-pat-ele ...)]
-                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+               [fresh-clause var ((var1 ...) (var2 ...))]
+               [tl-pat identifier (tl-pat-ele ...)]
+               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Defines a reduction relation casewise, one case for each of the
-clauses beginning with @scheme[-->]. Each of the @scheme[pattern]s
+clauses beginning with @scheme[-->] (or with @scheme[arrow], if
+specified). Each of the @scheme[pattern]s
 refers to the @scheme[language], and binds variables in the
 @|tttterm|. 
 
@@ -749,7 +777,7 @@ where the @tt{==>} relation is defined by reducing in the context
 @defform[(extend-reduction-relation reduction-relation language more ...)]{
 
 This form extends the reduction relation in its first
-argument with the rules specified in <more>. They should
+argument with the rules specified in @scheme[more]. They should
 have the same shape as the the rules (including the `with'
 clause) in an ordinary @scheme[reduction-relation].
 
@@ -859,14 +887,14 @@ The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
-the rhs-expressions is implicitly wrapped in `term'. In
+the rhs-expressions is implicitly wrapped in @|tttterm|. In
 addition, recursive calls in the right-hand side of the
-metafunction clauses should appear inside `term'. 
+metafunction clauses should appear inside @|tttterm|. 
 
 If specified, the side-conditions are collected with 
 @scheme[and] and used as guards on the case being matched. The
 argument to each side-condition should be a Scheme
-expression, and the pattern variables in the <pattern> are
+expression, and the pattern variables in the @|ttpattern| are
 bound in that expression.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
@@ -896,7 +924,7 @@ The first argument to define-metafunction is the grammar
 (defined above). Following that are three cases, one for
 each variation of expressions (e in lc-lang). The right-hand
 side of each clause begins with a comma, since they are
-implicitly wrapped in `term'. The free variables of an
+implicitly wrapped in @|tttterm|. The free variables of an
 application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a lambda expression are
@@ -969,7 +997,8 @@ all non-GUI portions of Redex) and also exported by
 Tests to see if @scheme[e1] is equal to @scheme[e2].
 }
 
-@defform[(test--> reduction-relation e1 e2 ...)]{
+@defform/subs[(test--> reduction-relation maybe-cycles e1 e2 ...)
+              ([cycles (code:line) #:cycles-ok])]{
 
 Tests to see if the value of @scheme[e1] (which should be a term),
 reduces to the @scheme[e2]s under @scheme[reduction-relation]

@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(require "matcher.ss")
+
 ;; don't provide reduction-relation directly, so that we can use that for the macro's name.
 (provide reduction-relation-lang
          reduction-relation-make-procs
@@ -20,7 +22,9 @@
 ;;   we want to avoid doing it multiple times, so it is cached in a reduction-relation struct
 
 
-(define-values (make-rewrite-proc rewrite-proc? rewrite-proc-name rewrite-proc-lhs rewrite-proc-id)
+(define-values (make-rewrite-proc 
+                rewrite-proc? 
+                rewrite-proc-name rewrite-proc-lhs rewrite-proc-id)
   (let ()
     (define-values (type constructor predicate accessor mutator) 
       (make-struct-type 'rewrite-proc #f 4 0 #f '() #f 0))
@@ -45,19 +49,44 @@
 ;; the domain pattern isn't actually used here.
 ;; I started to add it, but didn't finish. -robby
 (define (build-reduction-relation orig-reduction-relation lang make-procs rule-names lws domain-pattern)
-  (cond
-    [orig-reduction-relation
-     (let* ([new-names (map rewrite-proc-name make-procs)]
-            [all-make-procs
-             (append (filter (λ (x) (or (not (rewrite-proc-name x))
-                                        (not (member (rewrite-proc-name x) new-names))))
-                             (reduction-relation-make-procs orig-reduction-relation))
-                     make-procs)])
-       (make-reduction-relation lang 
-                                all-make-procs
-                                (append (reduction-relation-rule-names orig-reduction-relation)
-                                        rule-names)
-                                lws ;; only keep new lws for typesetting
-                                (map (λ (make-proc) (make-proc lang)) all-make-procs)))]
-    [else
-     (make-reduction-relation lang make-procs rule-names lws (map (λ (make-proc) (make-proc lang)) make-procs))]))
+  (let* ([make-procs/check-domain
+          (map (λ (make-proc)
+                 (make-rewrite-proc
+                  (λ (lang)
+                    (let ([compiled-domain-pat (compile-pattern lang domain-pattern #f)]
+                          [proc (make-proc lang)])
+                      (λ (tl-exp exp f acc)
+                        (unless (match-pattern compiled-domain-pat tl-exp)
+                          (error 'reduction-relation "relation not defined for ~s" tl-exp))
+                        (let ([ress (proc tl-exp exp f acc)])
+                          (for-each
+                           (λ (res)
+                             (let ([term (cadr res)])
+                               (unless (match-pattern compiled-domain-pat term)
+                                 (error 'reduction-relation "relation reduced to ~s, which is outside its domain"
+                                        term))))
+                           ress)
+                          ress))))
+                  (rewrite-proc-name make-proc)
+                  (rewrite-proc-lhs make-proc)
+                  (rewrite-proc-id make-proc)))
+               make-procs)])
+    (cond
+      [orig-reduction-relation
+       (let* ([new-names (map rewrite-proc-name make-procs)]
+              [all-make-procs
+               (append
+                (filter (λ (x) (or (not (rewrite-proc-name x))
+                                   (not (member (rewrite-proc-name x) new-names))))
+                        (reduction-relation-make-procs orig-reduction-relation))
+                make-procs/check-domain)])
+         (make-reduction-relation lang 
+                                  all-make-procs
+                                  (append (reduction-relation-rule-names orig-reduction-relation)
+                                          rule-names)
+                                  lws ;; only keep new lws for typesetting
+                                  (map (λ (make-proc) (make-proc lang)) all-make-procs)))]
+      [else
+       (make-reduction-relation lang make-procs/check-domain rule-names lws 
+                                (map (λ (make-proc) (make-proc lang)) 
+                                     make-procs/check-domain))])))

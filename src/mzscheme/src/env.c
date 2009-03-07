@@ -4592,6 +4592,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
   Scheme_Object *introducers = scheme_null, *mappers = scheme_null;
   int renamed = 0;
   Scheme_Comp_Env *env;
+  Scheme_Object *certs;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -4605,6 +4606,8 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 
   sym = scheme_stx_activate_certs(sym);
 
+  certs = scheme_current_thread->current_local_certs;
+
   while (1) {
     binder = NULL;
 
@@ -4613,7 +4616,7 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
 			       + SCHEME_RESOLVE_MODIDS
 			       + SCHEME_APP_POS + SCHEME_ENV_CONSTANTS_OK
 			       + SCHEME_OUT_OF_CONTEXT_OK + SCHEME_ELIM_CONST),
-			      scheme_current_thread->current_local_certs, 
+			      certs, 
 			      scheme_current_thread->current_local_modidx, 
 			      NULL, NULL, &binder);
     
@@ -4642,7 +4645,10 @@ local_make_delta_introduce(int argc, Scheme_Object *argv[])
     
     v = SCHEME_PTR_VAL(v);
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_id_macro_type)) {
+      certs = scheme_stx_extract_certs(sym, certs);
+
       sym = SCHEME_PTR1_VAL(v);
+      sym = scheme_stx_activate_certs(sym);
 
       v = SCHEME_PTR2_VAL(v);
       if (!SCHEME_FALSEP(v))
@@ -5223,6 +5229,9 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 
   tv = SCHEME_CAR(obj);
   sv = SCHEME_CDR(obj);
+
+  if (!SCHEME_VECTORP(tv)) return NULL;
+  if (!SCHEME_VECTORP(sv)) return NULL;
 
   rp = MALLOC_ONE_TAGGED(Resolve_Prefix);
   rp->so.type = scheme_resolve_prefix_type;

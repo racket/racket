@@ -1,5 +1,6 @@
-#lang scheme
+#lang scheme/base
 (require mzlib/etc 
+         scheme/match
          scheme/list)
 
 (provide zo-parse)
@@ -35,7 +36,7 @@
 
 (define-form-struct (mod form) (name self-modidx prefix provides requires body syntax-body max-let-depth))
 
-(define-form-struct (lam expr) (name flags num-params rest? closure-map max-let-depth body)) ; `lambda'
+(define-form-struct (lam expr) (name flags num-params param-types rest? closure-map max-let-depth body)) ; `lambda'
 (define-form-struct (closure expr) (code gen-id)) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) (name clauses)) ; each clause is an lam
 
@@ -45,7 +46,7 @@
 (define-form-struct (let-rec expr) (procs body)) ; put `letrec'-bound closures into existing stack slots
 (define-form-struct (boxenv expr) (pos body)) ; box existing stack element
 
-(define-form-struct (localref expr) (unbox? pos clear?)) ; access local via stack
+(define-form-struct (localref expr) (unbox? pos clear? other-clears?)) ; access local via stack
 
 (define-form-struct (toplevel expr) (depth pos const? ready?))  ; access binding via prefix array (which is on stack)
 (define-form-struct (topsyntax expr) (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
@@ -115,16 +116,34 @@
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)
   (define CLOS_HAS_REF_ARGS 2)
+  (define CLOS_PRESERVES_MARKS 4)
+  (define CLOS_IS_METHOD 16)
+  (define CLOS_SINGLE_RESULT 32)
+  (define BITS_PER_MZSHORT 32)
   (match v
     [`(,flags ,num-params ,max-let-depth ,name ,v . ,rest)
      (let ([rest? (positive? (bitwise-and flags CLOS_HAS_REST))])
-       (let-values ([(closure-size closed-over body)
-                     (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
-                         (values (vector-length v) v rest)
-                         (values v (car rest) (cdr rest)))])
+       (let*-values ([(closure-size closed-over body)
+                      (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
+                          (values (vector-length v) v rest)
+                          (values v (car rest) (cdr rest)))]
+                     [(arg-types) (let ([num-params ((if rest? sub1 values) num-params)])
+                                    (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
+                                        (for/list ([i (in-range num-params)]) 'val)
+                                        (for/list ([i (in-range num-params)])
+                                          (if (bitwise-bit-set?
+                                               (vector-ref closed-over
+                                                           (+ closure-size (quotient i BITS_PER_MZSHORT)))
+                                               (remainder i BITS_PER_MZSHORT))
+                                              'ref
+                                              'val))))])
          (make-lam name
-                   flags
+                   (append
+                    (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
+                    (if (zero? (bitwise-and flags flags CLOS_IS_METHOD)) null '(is-method))
+                    (if (zero? (bitwise-and flags flags CLOS_SINGLE_RESULT)) null '(single-result)))
                    ((if rest? sub1 values) num-params)
+                   arg-types
                    rest?
                    (if (= closure-size (vector-length closed-over))
                        closed-over
@@ -195,7 +214,7 @@
 (define (read-apply-values v)
   (make-apply-values (car v) (cdr v)))
 (define (read-splice v)
-  (make-splice v))
+  (make-splice (seq-forms v)))
 
 (define (read-module v)
   (match v
@@ -428,7 +447,10 @@
 
 (define (make-local unbox? pos flags)
   (define SCHEME_LOCAL_CLEAR_ON_READ #x01)
-  (make-localref unbox? pos (positive? (bitwise-and flags SCHEME_LOCAL_CLEAR_ON_READ))))
+  (define SCHEME_LOCAL_OTHER_CLEARS #x02)
+  (make-localref unbox? pos 
+                 (positive? (bitwise-and flags SCHEME_LOCAL_CLEAR_ON_READ))
+                 (positive? (bitwise-and flags SCHEME_LOCAL_OTHER_CLEARS))))
 
 (define (a . << . b)
   (arithmetic-shift a b))

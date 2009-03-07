@@ -232,6 +232,8 @@ TODO
   
   (define (cut-out-top-of-stack exn)
     (let ([initial-stack (continuation-mark-set->context (exn-continuation-marks exn))])
+      initial-stack ;; just give up on trying to trim out DrScheme's frame's from the stack for now.
+      #;
       (let loop ([stack initial-stack])
         (cond
           [(null? stack) 

@@ -42,9 +42,11 @@
  [clear-continuation-table! (-> void?)]
  [send/back (response/c . -> . void?)]
  [send/finish (response/c . -> . void?)]
- [send/suspend ((response-generator/c) (expiration-handler/c) . ->* . request?)]
- [send/forward ((response-generator/c) (expiration-handler/c) . ->* . request?)]
- [send/suspend/dispatch ((embed/url/c . -> . response/c) . -> . any/c)])
+ [send/forward (response-generator/c . -> . request?)]
+ [send/suspend (response-generator/c . -> . request?)]
+ [send/suspend/dispatch ((embed/url/c . -> . response/c) . -> . any/c)]
+ [send/suspend/url ((url? . -> . response/c) . -> . request?)]
+ [send/suspend/url/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response/c) . -> . any/c)])
 
 ;; ************************************************************
 ;; EXPORTS
@@ -73,10 +75,9 @@
   (clear-continuation-table!)
   (send/back resp))
 
-;; send/suspend: (url -> response) [(request -> response)] -> request
+;; send/suspend: (url -> response) -> request
 ;; send a response and apply the continuation to the next request
-(define (send/suspend response-generator
-                      [expiration-handler (current-servlet-continuation-expiration-handler)])
+(define (send/suspend response-generator)
   (define wcs (capture-web-cell-set))
   (begin0
     (call-with-composable-continuation
@@ -86,7 +87,7 @@
        (define k-embedding ((manager-continuation-store! (current-servlet-manager))
                             instance-id
                             (make-custodian-box (current-custodian) k)
-                            expiration-handler))
+                            (current-servlet-continuation-expiration-handler)))
        (define k-url (embed-ids 
                       (list* instance-id k-embedding)
                       (request-uri (execution-context-request ctxt))))
@@ -94,12 +95,16 @@
      servlet-prompt)
     (restore-web-cell-set! wcs)))
 
+(define (send/suspend/url response-generator)
+  (send/suspend
+   (lambda (k-url)
+     (response-generator (string->url k-url)))))
+
 ;; send/forward: (url -> response) [(request -> response)] -> request
 ;; clear the continuation table, then behave like send/suspend
-(define (send/forward response-generator
-                      [expiration-handler (current-servlet-continuation-expiration-handler)])
+(define (send/forward response-generator)
   (clear-continuation-table!)
-  (send/suspend response-generator expiration-handler))
+  (send/suspend response-generator))
 
 ;; send/suspend/dispatch : ((proc -> url) -> response) [(request -> response)] -> request
 ;; send/back a response generated from a procedure that may convert
@@ -113,16 +118,23 @@
           (lambda (k0)
             (send/back
              (response-generator
-              (lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
+              (lambda (proc)
                 (let/ec k1 
                   ; This makes the second continuation captured by send/suspend smaller
                   (call-with-continuation-prompt
                    (lambda ()
-                     (let ([new-request (send/suspend k1 expiration-handler)])
+                     (let ([new-request (send/suspend k1)])
                        (k0 (lambda () (proc new-request)))))
                    servlet-prompt))))))
           servlet-prompt)])
     (thunk)))
+
+(define (send/suspend/url/dispatch response-generator)
+  (send/suspend/dispatch
+   (lambda (embed/url)
+     (response-generator
+      (lambda (proc)
+        (string->url (embed/url proc)))))))
 
 ;; ************************************************************
 ;; HIGHER-LEVEL EXPORTS

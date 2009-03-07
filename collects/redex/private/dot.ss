@@ -1,7 +1,7 @@
 #lang scheme/gui
 
 (provide/contract [dot-positioning (-> (is-a?/c pasteboard%) string? boolean? void?)]
-                  [find-dot (-> (or/c string? false/c))])
+                  [find-dot (-> (or/c path? false/c))])
       
 (require scheme/system)
 
@@ -11,6 +11,9 @@
 (define neato-hier-label "neato – hier")
 (define neato-ipsep-label "neato – ipsep")
 
+;; these paths are explicitly checked (when find-executable-path
+;; fails) because starting drscheme from the finder (or the doc) 
+;; under mac os x generally does not get the path right.
 (define dot-paths 
   '("/usr/bin"
     "/bin"
@@ -18,10 +21,17 @@
     "/opt/local/bin/"))
 
 (define (find-dot [neato? #f])
-  (ormap (λ (x) (and (file-exists? (build-path x "dot"))
-                     (file-exists? (build-path x "neato"))
-                     (path->string (build-path x (if neato? "neato" "dot")))))
-         dot-paths))
+  (cond
+    [(and (find-executable-path "dot")
+          (find-executable-path "neato"))
+     (if neato?
+         (find-executable-path "neato")
+         (find-executable-path "dot"))]
+    [else
+     (ormap (λ (x) (and (file-exists? (build-path x "dot"))
+                        (file-exists? (build-path x "neato"))
+                        (build-path x (if neato? "neato" "dot"))))
+            dot-paths)]))
 
 (define (dot-positioning pb option overlap?)
   (let ([info (snip-info pb)])
@@ -92,7 +102,7 @@
      (λ ()
        (parameterize ([current-input-port in1]
                       [current-output-port out2])
-         (system (format "~a -Tplain" (find-dot (regexp-match #rx"neato" option)))))
+         (system (format "~a -Tplain" (path->string (find-dot (regexp-match #rx"neato" option))))))
        (close-output-port out2)
        (close-input-port in1)))
     (parse-plain in2)))

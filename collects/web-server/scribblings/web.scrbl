@@ -4,7 +4,8 @@
 @title[#:tag "web.ss"]{Web Interaction}
 @(require (for-label web-server/servlet/web
                      web-server/servlet/servlet-structs
-                     web-server/http))
+                     web-server/http
+                     net/url))
 
 @defmodule[web-server/servlet/web]{The
 @schememodname[web-server/servlet/web] library provides the primary
@@ -25,8 +26,7 @@ functions of interest for the servlet developer.
  ]
 }
 
-@defproc[(send/suspend [make-response response-generator/c]
-                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
+@defproc[(send/suspend [make-response (string? . -> . response/c)])
          request?]{
  Captures the current continuation, stores it with @scheme[exp] as the expiration
  handler, and binds it to a URL. @scheme[make-response] is called with this URL and
@@ -50,8 +50,13 @@ functions of interest for the servlet developer.
  Thus, the request will be ``returned'' from @scheme[send/suspend] to the continuation of this call.
 }
                   
-@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response/c)])
-         any/c]{
+@defproc[(send/suspend/url [make-response (url? . -> . response/c)])
+         request?]{
+ Like @scheme[send/suspend] but with a URL struct.
+}
+                  
+@defproc[(send/suspend/dispatch [make-response (((request? . -> . any) . -> . string?) . -> . response/c)])
+         any]{
  Calls @scheme[make-response] with a function (@scheme[embed/url]) that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
  the function with the @scheme[request?] object and return the result to the caller of
@@ -110,9 +115,13 @@ functions of interest for the servlet developer.
                  "+")))))))
   ]
 }
+             
+@defproc[(send/suspend/url/dispatch [make-response (((request? . -> . any) . -> . url?) . -> . response/c)])
+         any]{
+ Like @scheme[send/suspend/dispatch], but with a URL struct.
+}
 
-@defproc[(send/forward [make-response response-generator/c]
-                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
+@defproc[(send/forward [make-response (string? . -> . response/c)])
          request?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
        

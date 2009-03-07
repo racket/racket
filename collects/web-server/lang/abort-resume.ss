@@ -116,7 +116,7 @@
 
 ;; send/suspend: (continuation -> response) -> request
 ;; produce the current response and wait for the next request
-(define (send/suspend response-maker)
+(define (call-with-serializable-current-continuation response-maker)
   (with-continuation-mark safe-call? '(#t send/suspend)
     (let ([current-marks (activation-record-list)]
           [wcs (capture-web-cell-set)])
@@ -189,4 +189,4 @@
 (provide
  ;; "SERVLET" INTERFACE
  ; A contract would interfere with the safe-call? key
- send/suspend)
+ call-with-serializable-current-continuation)

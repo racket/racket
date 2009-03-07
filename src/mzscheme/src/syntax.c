@@ -2326,6 +2326,9 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
   Scheme_Object *e;
   int i;
 
+  if (!SAME_TYPE(SCHEME_TYPE(data), scheme_case_lambda_sequence_type))
+    scheme_ill_formed_code(port);
+
   for (i = 0; i < seq->count; i++) { 
     e = seq->array[i];
     if (!SAME_TYPE(SCHEME_TYPE(e), scheme_unclosed_procedure_type)
@@ -2468,7 +2471,7 @@ Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int mode)
 
     if (mode == 2) {
       /* sfs */
-      return scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, expr);
+      return scheme_make_syntax_resolved(CASE_LAMBDA_EXPD, (Scheme_Object *)cl2);
     } else if (mode == 1) {
       /* JIT */
       return case_lambda_jit((Scheme_Object *)cl2);
@@ -5002,14 +5005,19 @@ static Scheme_Object *splice_one_expr(void *expr, int argc, Scheme_Object **argv
 
 static Scheme_Object *splice_execute(Scheme_Object *data)
 {
-  Scheme_Sequence *seq = (Scheme_Sequence *)data;
-  int i, cnt = seq->count - 1;
-
-  for (i = 0; i < cnt; i++) {
-    (void)_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]);
+  if (SAME_TYPE(SCHEME_TYPE(data), scheme_sequence_type)) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)data;
+    int i, cnt = seq->count - 1;
+    
+    for (i = 0; i < cnt; i++) {
+      (void)_scheme_call_with_prompt_multi(splice_one_expr, seq->array[i]);
+    }
+    
+    return _scheme_eval_linked_expr_multi(seq->array[cnt]);
+  } else {
+    /* sequence was optimized on read? */
+    return _scheme_eval_linked_expr_multi(data);
   }
-
-  return _scheme_eval_linked_expr_multi(seq->array[cnt]);
 }
 
 static Scheme_Object *splice_jit(Scheme_Object *data)
@@ -6323,8 +6331,11 @@ static Scheme_Object *read_case_lambda(Scheme_Object *obj)
   for (i = 0; i < count; i++, s = SCHEME_CDR(s)) {
     a = SCHEME_CAR(s);
     cl->array[i] = a;
-    if (!SCHEME_PROCP(a))
+    if (!SCHEME_PROCP(a)) {
+      if (!SAME_TYPE(SCHEME_TYPE(a), scheme_unclosed_procedure_type))
+        return NULL;
       all_closed = 0;
+    }
   }
 
   if (all_closed) {
