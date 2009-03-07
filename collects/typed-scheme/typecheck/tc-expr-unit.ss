@@ -1,14 +1,14 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.ss" [private r:private]))
+(require (rename-in "../utils/utils.ss" [private private-in]))
 (require syntax/kerncase
          scheme/match
          "signatures.ss"
-         (r:private type-utils type-effect-convenience union subtype 
-		    parse-type type-annotation stxclass-util)
-         (rep type-rep effect-rep)
-         (utils tc-utils)
+         (types utils convenience union subtype)
+         (private-in parse-type type-annotation)
+         (rep type-rep)
+         (utils tc-utils stxclass-util)
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
          scheme/private/class-internal
@@ -23,12 +23,18 @@
 
 ;; return the type of a literal value
 ;; scheme-value -> type
-(define (tc-literal v-stx)
+(define (tc-literal v-stx [expected #f])
+  (define-syntax-class exp
+    (pattern i
+             #:when expected
+             #:with datum (syntax-e #'i)
+             #:when (subtype (-val #'datum) expected)))
   (syntax-parse v-stx 
+    [i:exp expected]
     [i:boolean (-val #'i.datum)]
     [i:identifier (-val #'i.datum)]
     [i:exact-integer -Integer]
-    [i:number N]
+    [i:number -Number]
     [i:str -String]
     [i:char -Char]
     [i:keyword (-val #'i.datum)]
@@ -99,12 +105,15 @@
 ;; tc-id : identifier -> tc-result
 (define (tc-id id)
   (let* ([ty (lookup-type/lexical id)])
-    (ret ty (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id)))))
+    (ret ty
+         (make-LFilterSet (list (make-NotTypeFilter (-val #f) null id)) 
+                          (list (make-TypeFilter (-val #f) null id)))
+         (make-Path null id))))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
 (define (tc-expr/t e) (match (tc-expr e)
-                        [(tc-result: t) t]
+                        [(tc-result: t _ _) t]
 			[t (int-err "tc-expr returned ~a, not a tc-result, for ~a" t (syntax->datum e))]))
 
 (define (tc-expr/check/t e t)
@@ -148,9 +157,9 @@
              (int-err "internal error: ignore-some"))
            (check-below ty expected))]
         ;; data
-        [(quote #f) (ret (-val #f) (list (make-False-Effect)) (list (make-False-Effect)))]
-        [(quote #t) (ret (-val #t) (list (make-True-Effect)) (list (make-True-Effect)))]
-        [(quote val)  (ret (tc-literal #'val))]
+        [(quote #f) (ret (-val #f) false-filter)]
+        [(quote #t) (ret (-val #t) true-filter)]
+        [(quote val)  (ret (tc-literal #'val expected))]
         ;; syntax
         [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
         ;; mutation!
@@ -232,8 +241,8 @@
          ty)]
       
       ;; data
-      [(quote #f) (ret (-val #f) (list (make-False-Effect)) (list (make-False-Effect)))]
-      [(quote #t) (ret (-val #t) (list (make-True-Effect)) (list (make-True-Effect)))]
+      [(quote #f) (ret (-val #f) false-filter)]
+      [(quote #t) (ret (-val #t) true-filter)]
       
       [(quote val)  (ret (tc-literal #'val))]
       ;; syntax

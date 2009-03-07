@@ -167,15 +167,16 @@
 
 ;; this structure represents the result of typechecking an expression
 (d-s/c tc-result ([t Type/c] [f FilterSet?] [o Object?]) #:transparent)
-(define-struct tc-result (t f o) #:transparent #:omit-define-values)
 
 (define-match-expander tc-result:
   (syntax-parser
-   [(_ tp fp op) #'(struct tc-result (tp fp op))]))
+   [(_ tp fp op) #'(struct tc-result (tp fp op))]
+   [(_ tp) #'(struct tc-result (tp _ _))]))
 
 (define-match-expander tc-results:
   (syntax-parser
-   [(_ tp fp op) #'(list (struct tc-result (tp fp op)) (... ...))]))
+   [(_ tp fp op) #'(list (struct tc-result (tp fp op)) (... ...))]
+   [(_ tp) #'(list (struct tc-result (tp _ _)) (... ...))]))
 
 (provide tc-result: tc-results:)
 

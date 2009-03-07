@@ -24,6 +24,7 @@
 (define -box make-Box)
 (define -vec make-Vector)
 (define -LFS make-LFilterSet)
+(define -FS make-FilterSet)
 
 (define-syntax *Un
   (syntax-rules ()
@@ -250,6 +251,9 @@
     [(in out t)
      (->* in out : (-LFS (list (-filter t)) (list (-not-filter t))))]
     [(t) (make-pred-ty (list Univ) -Boolean t)]))
+
+(define true-filter (-FS (list) (list (make-Bot))))
+(define false-filter (-FS (list (make-Bot)) (list)))
 
 
 (define (opt-fn args opt-args result)
