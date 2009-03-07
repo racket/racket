@@ -1730,18 +1730,19 @@
 
 (define (apply-reduction-relation*/cycle? reductions exp)
   (let ([answers (make-hash)]
-        [cycle? #f]
-        [cycles (make-hash)])
-    (let loop ([exp exp])
+        [cycle? #f])
+    (let loop ([exp exp]
+               [path (make-immutable-hash '())])
       (cond
-        [(hash-ref cycles exp #f)
+        [(hash-ref path exp #f)
          (set! cycle? #t)]
         [else
-         (hash-set! cycles exp #t)
          (let ([nexts (apply-reduction-relation reductions exp)])
            (cond
              [(null? nexts) (hash-set! answers exp #t)]
-             [else (for-each loop nexts)]))]))
+             [else (for-each 
+                    (λ (next) (loop next (hash-set path exp #t)))
+                    nexts)]))]))
     (values (sort (hash-map answers (λ (x y) x))
                   string<=?
                   #:key (λ (x) (format "~s" x)))
@@ -1849,9 +1850,13 @@
     [(= tests 0)
      (printf "No tests run.\n")]
     [(= test-failures 0)
-     (if (= tests 1)
-         (printf "One test passed.\n")
-         (printf "All ~a tests passed.\n" tests))]
+     (cond
+       [(= tests 1)
+        (printf "One test passed.\n")]
+       [(= tests 2)
+        (printf "Both tests passed.\n")]
+       [else
+        (printf "All ~a tests passed.\n" tests)])]
     [else
      (printf "~a test~a failed (out of ~a total).\n"
              test-failures

@@ -132,7 +132,8 @@ improve method arity mismatch contract violation error messages?
   
   (define (build-struct-names name field-infos)
     (let ([name-str (symbol->string (syntax-e name))])
-      (list* (datum->syntax 
+      (list* name
+             (datum->syntax 
               name
               (string->symbol
                (string-append "struct:" name-str)))
@@ -284,7 +285,7 @@ improve method arity mismatch contract violation error messages?
        (let* ([field-infos (map check-field fields (syntax->list #'(ctc ...)))]
               [sinfo (check-kwds (syntax->list #'(kwds ...)) field-infos)]
               [names (build-struct-names #'name field-infos)]
-              [pred (caddr names)]
+              [pred (cadddr names)]
               [ctcs (build-contracts stx pred field-infos)])
          (let-values ([(non-auto-fields auto-fields)
                        (let loop ([fields field-infos]
@@ -306,7 +307,7 @@ improve method arity mismatch contract violation error messages?
                                                          (field-info-stx (car fields)))))))])
            (with-syntax ([ctc-bindings
                           (let ([val-bindings (if (s-info-def-vals? sinfo)
-                                                  (map list (cdr names) ctcs)
+                                                  (cons (cadr names) (map list (cddr names) ctcs))
                                                   null)])
                             (if (s-info-def-stxs? sinfo)
                                 (cons (car names) val-bindings)

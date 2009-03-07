@@ -1393,4 +1393,57 @@
       (test (sort (covered-cases c) <)
             '(("shortcut" . 1) ("side-condition" . 2) ("unnamed" . 1)))))
   
+  
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                                       
+;                                                 ;;;                   
+;   ;;                ;;           ;             ;; ;;                  
+;   ;;                ;;            ;            ;; ;;                  
+;  ;;;;;  ;;;    ;;; ;;;;;           ;;           ;;;      ;;;;   ;;;;  
+;   ;;   ;; ;;  ;; ;  ;;  ;;;;;;;;     ;;        ;;;      ;; ;   ;;  ;; 
+;   ;;   ;;;;;  ;;;   ;;              ;;;       ;;  ;  ;; ;;     ;;  ;; 
+;   ;;   ;;       ;;  ;;            ;;;         ;;  ;;;;  ;;     ;;  ;; 
+;   ;;   ;;  ;  ; ;;  ;;           ;;           ;;   ;;   ;; ;   ;;  ;; 
+;   ;;;;  ;;;   ;;;   ;;;;         ;             ;;;;; ;;  ;;;;   ;;;;  
+;                                                                       
+;                                                                       
+;                                                                       
+
+  
+  (define-syntax-rule 
+    (capture-output arg1 args ...)
+    (let ([p (open-output-string)])
+      (parameterize ([current-output-port p]
+                     [current-error-port p])
+        arg1 args ...)
+      (get-output-string p)))
+  
+  (let ()
+    (define red (reduction-relation empty-language (--> 1 2)))
+    (test (capture-output (test--> red 1 2) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test--> red 2 3) (test-results))
+          #rx"FAILED tl-test.ss:[0-9.]+\nexpected: 3\n  actual: 2\n1 test failed \\(out of 1 total\\).\n"))
+    
+  (let ()
+    (define red-share (reduction-relation 
+                       empty-language
+                       (--> a b)
+                       (--> a c)
+                       (--> c d)
+                       (--> b d)))
+    (test (capture-output (test--> red-share (term a) (term d)) (test-results))
+          "One test passed.\n"))
+  
+  (let ()
+    (define red-cycle (reduction-relation 
+                       empty-language
+                       (--> a a)))
+    (test (capture-output (test--> red-cycle #:cycles-ok (term a)) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test--> red-cycle (term a)) (test-results))
+          #rx"FAILED tl-test.ss:[0-9.]+\nfound a cycle in the reduction graph\n1 test failed \\(out of 1 total\\).\n"))
+  
   (print-tests-passed 'tl-test.ss))
