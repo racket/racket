@@ -997,7 +997,7 @@ all non-GUI portions of Redex) and also exported by
 Tests to see if @scheme[e1] is equal to @scheme[e2].
 }
 
-@defform/subs[(test--> reduction-relation maybe-cycles e1 e2 ...)
+@defform/subs[(test-->> reduction-relation maybe-cycles e1 e2 ...)
               ([cycles (code:line) #:cycles-ok])]{
 
 Tests to see if the value of @scheme[e1] (which should be a term),

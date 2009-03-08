@@ -37,7 +37,7 @@
          make-bind bind? bind-name bind-exp
          
          test-equal
-         test-->
+         test-->>
          test-predicate
          test-results)
 

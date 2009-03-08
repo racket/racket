@@ -8,9 +8,8 @@ and a few numeric predicates
 
 |#
 
-(require redex redex/examples/subst)
-
-(reduction-steps-cutoff 10)
+(require redex/reduction-semantics
+         redex/examples/subst)
 
 (define-language lang
   (e (e e ...)
@@ -113,41 +112,41 @@ and a few numeric predicates
   [(¬ +) -]
   [(¬ -) +])
 
-(test--> reds (term ((λ (x y) x) 1 2)) 1)
-(test--> reds (term ((λ (x y) y) 1 2)) 2)
-(test--> reds (term (if (if #t #f #t) #f #t)) (term #t))
-(test--> reds (term (positive? 1)) #t)
-(test--> reds (term (positive? -1)) #f)
-(test--> reds (term (positive? (λ (x) x))) #f)
-(test--> reds (term (odd? 1)) #t)
-(test--> reds (term (odd? 2)) #f)
-(test--> reds (term (odd? (λ (x) x))) #f)
-(test--> reds (term (car (cdr (cdr (cons 1 (cons 2 (cons 3 #f))))))) 3)
+(test-->> reds (term ((λ (x y) x) 1 2)) 1)
+(test-->> reds (term ((λ (x y) y) 1 2)) 2)
+(test-->> reds (term (if (if #t #f #t) #f #t)) (term #t))
+(test-->> reds (term (positive? 1)) #t)
+(test-->> reds (term (positive? -1)) #f)
+(test-->> reds (term (positive? (λ (x) x))) #f)
+(test-->> reds (term (odd? 1)) #t)
+(test-->> reds (term (odd? 2)) #f)
+(test-->> reds (term (odd? (λ (x) x))) #f)
+(test-->> reds (term (car (cdr (cdr (cons 1 (cons 2 (cons 3 #f))))))) 3)
 
-(test--> reds (term ((λ (x) x) (blame -))) (term (blame -)))
-(test--> reds (term (ac number? 1 +)) 1)
-(test--> reds (term (ac number? (λ (x) x) +)) (term (blame +)))
-(test--> reds (term ((ac (-> number? number?) (λ (x) x) +) 1)) 1)
-(test--> reds 
+(test-->> reds (term ((λ (x) x) (blame -))) (term (blame -)))
+(test-->> reds (term (ac number? 1 +)) 1)
+(test-->> reds (term (ac number? (λ (x) x) +)) (term (blame +)))
+(test-->> reds (term ((ac (-> number? number?) (λ (x) x) +) 1)) 1)
+(test-->> reds 
          (term ((ac (-> number? number?) (λ (x) x) +) #f)) 
          (term (blame -)))
-(test--> reds 
+(test-->> reds 
          (term ((ac (-> number? number?) (λ (x) #f) +) 1))
          (term (blame +)))
-(test--> reds
+(test-->> reds
          (term (ac (or/c odd? positive?) 1 +))
          1)
-(test--> reds
+(test-->> reds
          (term (ac (or/c odd? positive?) -1 +))
          -1)
-(test--> reds
+(test-->> reds
          (term (ac (or/c odd? positive?) 2 +))
          2)
-(test--> reds
+(test-->> reds
          (term (ac (or/c odd? positive?) -2 +))
          (term (blame +)))
 
-(test--> reds
+(test-->> reds
          (term (ac (cons odd? positive?) (cons 3 1) +))
          (term (cons 3 1)))
 
