@@ -1446,4 +1446,29 @@
     (test (capture-output (test-->> red-cycle (term a)) (test-results))
           #rx"FAILED tl-test.ss:[0-9.]+\nfound a cycle in the reduction graph\n1 test failed \\(out of 1 total\\).\n"))
   
+  (let ()
+    (define-metafunction empty-language [(f any) ((any))])
+    (test (capture-output (test-equal (term (f 1)) (term ((1))))
+                          (test-results))
+          "One test passed.\n"))
+  
+  (let ()
+    (test (capture-output (test-predicate odd? 1)
+                          (test-results))
+          "One test passed.\n"))
+  
+  (let ()
+    (define red (reduction-relation empty-language (--> any (any))))
+    (test (capture-output (test--> red (term (1 2 3)) (term ((1 2 3)))) (test-results))
+          "One test passed.\n"))
+  
+  (let ()
+    (define red (reduction-relation empty-language 
+                                    (--> any (any))
+                                    (--> (any) any)))
+    (test (capture-output (test--> red (term (x)) (term ((x))) (term x)) (test-results))
+          "One test passed.\n")
+    (test (capture-output (test--> red (term (x)) (term x) (term ((x)))) (test-results))
+          "One test passed.\n"))
+
   (print-tests-passed 'tl-test.ss))

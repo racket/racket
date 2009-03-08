@@ -38,6 +38,7 @@
          
          test-equal
          test-->>
+         test-->
          test-predicate
          test-results)
 

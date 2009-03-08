@@ -1005,6 +1005,13 @@ reduces to the @scheme[e2]s under @scheme[reduction-relation]
 (using @scheme[apply-reduction-relation*], so it may not terminate).
 }
 
+@defform[(test--> reduction-relation e1 e2 ...)]{
+
+Tests to see if the value of @scheme[e1] (which should be a term),
+reduces to the @scheme[e2]s in a single step, under @scheme[reduction-relation]
+(using @scheme[apply-reduction-relation]).
+}
+
 @defform[(test-predicate p? e)]{
 Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].
 }
