@@ -2,6 +2,8 @@ v4.1.5
 
   * renamed test--> to test-->>
 
+  * added #:cycles-ok flag to (what is now called) test-->>.
+
   * define-metafunction and reduction-relation now work better with
     Check Syntax, as
     
