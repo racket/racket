@@ -78,14 +78,16 @@
        (define post? (not (null? (syntax-e #'(post ...)))))
        (define (wrap expr)
          (if (or pre? post?)
-           #`(begin #,@(if pre? #'((decor '(pre ...))) #'())
+           #`(begin #,@(if pre?  #'((decor 'pre)  ...) #'())
                     #,expr
-                    #,@(if post? #'((decor '(post ...))) #'()))
+                    #,@(if post? #'((decor 'post) ...) #'()))
            expr))
        (cond [(begin?->list expr*)
               => (lambda (xs)
                    (if (null? xs)
-                     (if (or pre? post?) #'(decor '(pre ... post ...)) expr*)
+                     (if (or pre? post?)
+                       #'(begin (decor 'pre) ... (decor 'post) ...)
+                       expr*)
                      #`(process-begin/text begin decor
                                            pre ... #,@xs post ...)))]
              [(definition? expr*) expr*] ; dump pre/post
