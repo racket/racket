@@ -198,7 +198,9 @@ Returns @scheme[#t] if @scheme[v] is an @tech{internal-definition
 context}, @scheme[#f] otherwise.}
 
 
-@defproc[(syntax-local-make-definition-context) internal-definition-context?]{
+@defproc[(syntax-local-make-definition-context
+          [intdef-ctx (or/c internal-definition-context? #f) #f])
+         internal-definition-context?]{
 
 Creates an opaque @tech{internal-definition context} value to be used
 with @scheme[local-expand] and other functions. A transformer should
@@ -211,6 +213,11 @@ Finally, the transformer must call
 @scheme[internal-definition-context-seal] after all bindings have been
 added; if an unsealed @tech{internal-definition context} is detected
 in a fully expanded expression, the @exnraise[exn:fail:contract].
+
+If @scheme[intdef-ctx] is not @scheme[#f], then the new
+internal-definition context extends the given one. That is, expanding
+in the new internal-definition context can use bindings previously
+introduced into @scheme[intdef-ctx].
 
 @transform-time[]}
 
