@@ -20,7 +20,7 @@
  [interface-version dispatcher-interface-version/c]
  [make (->* ()
             (#:format format-req/c
-                      #:log-path path-string?)
+             #:log-path path-string?)
             dispatcher/c)])
 
 (define interface-version 'v1)
