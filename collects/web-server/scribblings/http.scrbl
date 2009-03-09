@@ -360,11 +360,12 @@ transmission that the server @bold{will not catch}.}
 
 @; ------------------------------------------------------------
 @section[#:tag "redirect.ss"]{Redirect}
-@(require (for-label web-server/http/redirect))
+@(require (for-label web-server/http/redirect
+                     web-server/private/util))
 
 @defmodule[web-server/http/redirect]{
 
-@defproc[(redirect-to [uri string?]
+@defproc[(redirect-to [uri non-empty-string/c]
                       [perm/temp redirection-status? temporarily]
                       [#:headers headers (listof header?) (list)])
          response/c]{

@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/contract)
-(require web-server/http/response-structs
+(require web-server/private/util
+         web-server/http/response-structs
          web-server/http/request-structs)
 
 ; redirection-status = (make-redirection-status nat bytes)
@@ -24,7 +25,7 @@
 
 (provide/contract
  [redirect-to
-  (->* (string?) (redirection-status? #:headers (listof header?))
+  (->* (non-empty-string/c) (redirection-status? #:headers (listof header?))
        response/full?)]
  [redirection-status? (any/c . -> . boolean?)]
  [permanently redirection-status?]
