@@ -7356,7 +7356,7 @@ static void inform_GC(int major_gc, long pre_used, long post_used)
 {
   if (scheme_main_logger)
     scheme_log(scheme_main_logger,
-               SCHEME_LOG_INFO, 0,
+               SCHEME_LOG_DEBUG, 0,
                "GC [%s] at %ld bytes; %ld collected in %ld msec",
                (major_gc ? "major" : "minor"),
                pre_used, pre_used - post_used,
