@@ -27,7 +27,7 @@ in the matching clause is evaluated in tail position with respect to
 the @scheme[match] expression.
 
 The @scheme[clause]s are tried in order to find a match. If no
-@scheme[clause] matches, then the @exnraise[exn:fail].
+@scheme[clause] matches, then the @exnraise[exn:misc:match?].
 
 An optional @scheme[(=> id)] between a @scheme[pat] and the
 @scheme[expr]s is bound to a @defterm{failure procedure} of zero
@@ -408,6 +408,13 @@ matching against the result of @scheme[expr].
 (match-define (list a b) '(1 2))
 b
 ]}
+
+@; ----------------------------------------
+
+@defproc[(exn:misc:match? [v any/c]) boolean?]{
+A predicate for the exception raised by in the case of a match failure.
+}
+
 
 @; ----------------------------------------
 
