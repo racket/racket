@@ -47,9 +47,9 @@ The @scheme[callback] procedure is called (with the event type
  @indexed-scheme['tab-panel]) when the user changes the tab selection.
 
 If the @scheme[style] list includes @scheme['no-border], no border is
- drawn around the panel content. @DeletedStyleNote{tab panel}
+ drawn around the panel content. @DeletedStyleNote[@scheme[style] @scheme[parent]]{tab panel}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 

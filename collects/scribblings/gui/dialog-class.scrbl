@@ -75,7 +75,7 @@ Even if the dialog is not shown, a few notification events may be
  resources (e.g., memory) cannot be reclaimed until some events are
  handled, or the dialog's eventspace is shut down.
 
-@WindowKWs[] @AreaContKWs[] @AreaKWs[]
+@WindowKWs[@scheme[enabled]] @AreaContKWs[] @AreaKWs[]
 }
 
 @defmethod[#:mode override 

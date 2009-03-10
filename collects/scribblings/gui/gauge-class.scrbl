@@ -37,9 +37,9 @@ The @scheme[range] argument is an integer specifying the maximum value of
 
 The @scheme[style] list must include either @scheme['horizontal],
  specifying a horizontal gauge, or @scheme['vertical], specifying
- a vertical gauge. @HVLabelNote{gauge} @DeletedStyleNote{gauge}
+ a vertical gauge. @HVLabelNote[@scheme[style]]{gauge} @DeletedStyleNote[@scheme[style] @scheme[parent]]{gauge}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 

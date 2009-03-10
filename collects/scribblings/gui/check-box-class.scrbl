@@ -35,12 +35,12 @@ Creates a check box with a string or bitmap label. @bitmaplabeluse[label]
 The @scheme[callback] procedure is called (with the event type
  @indexed-scheme['check-box]) whenever the user clicks the check box.
 
-@DeletedStyleNote{check box}
+@DeletedStyleNote[@scheme[style] @scheme[parent]]{check box}
 
 If @scheme[value] is true, it is passed to
 @method[check-box% set-value] so that the box is initially checked.
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 

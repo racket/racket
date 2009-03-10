@@ -52,9 +52,9 @@ The @scheme[style] argument must include either @scheme['vertical] for
  a vertical slider, or @scheme['horizontal] for a horizontal
  slider. If @scheme[style] includes @scheme['plain], the slider does
  not display numbers for its range and current value to the user.
- @HVLabelNote{slider} @DeletedStyleNote{slider}
+ @HVLabelNote[@scheme[style]]{slider} @DeletedStyleNote[@scheme[style] @scheme[parent]]{slider}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 }

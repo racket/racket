@@ -93,7 +93,7 @@ If @scheme[horizontal-inset] is not @scheme[5], it is passed on to the
  @scheme[vertical-inset] is not @scheme[5], it is passed on to the
  @method[editor-canvas% vertical-inset] method.
 
-@WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 

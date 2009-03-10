@@ -86,7 +86,7 @@ The @scheme[gl-config] argument determines properties of an OpenGL
 @xmethod[dc<%> get-gl-context].
 
 
-@WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 

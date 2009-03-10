@@ -86,10 +86,10 @@ The style must contain exactly one of @scheme['single] or
  autowrapping is enabled. A multiple-line text field always has a
  vertical scrollbar. The @scheme['password] style indicates that the
  field should draw each character of its content using a generic
- symbol instead of the actual character.  @HVLabelNote{text field}
- @DeletedStyleNote{text field}.
+ symbol instead of the actual character.  @HVLabelNote[@scheme[style]]{text field}
+ @DeletedStyleNote[@scheme[style] @scheme[parent]]{text field}.
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 

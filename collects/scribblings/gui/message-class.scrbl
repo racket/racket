@@ -33,9 +33,9 @@ Creates a string or bitmap message initially showing @scheme[label].
 
 @labelsimplestripped[(scheme label) @elem{message}]
 
-@DeletedStyleNote{message}
+@DeletedStyleNote[@scheme[style] @scheme[parent]]{message}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 If @scheme[auto-resize] is not @scheme[#f], then automatic resizing is
 initially enanbled (see @method[message% auto-resize]), and the
