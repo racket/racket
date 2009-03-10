@@ -3,12 +3,15 @@
 
 (require syntax/boundmap
          mzlib/trace
+         (env type-alias-env)
          (utils tc-utils)
+         (rep type-rep)
          (private type-utils))
 
 (provide register-type-name
          lookup-type-name
          register-type-names
+         add-alias
          type-name-env-map)
 
 ;; a mapping from id -> type (where id is the name of the type)
@@ -42,3 +45,7 @@
 ;; (id type -> T) -> listof[T]
 (define (type-name-env-map f)
   (module-identifier-mapping-map the-mapping f))
+
+(define (add-alias from to)  
+  (when (lookup-type-name to (lambda () #f))
+    (register-resolved-type-alias from (make-Name to))))

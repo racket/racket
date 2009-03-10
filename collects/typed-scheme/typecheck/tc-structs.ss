@@ -132,11 +132,13 @@
          (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) setters external-fld-types/no-parent)
          null)))
   (register-type-name nm (wrapper sty))
-  (for/list ([e bindings])
-    (let ([nm (car e)]
-          [t (cdr e)])
-      (register-type nm t)
-      (make-def-binding nm t))))
+  (cons
+   (make-def-stx-binding nm)
+   (for/list ([e bindings])
+             (let ([nm (car e)]
+                   [t (cdr e)])
+               (register-type nm t)
+               (make-def-binding nm t)))))
 
 ;; check and register types for a polymorphic define struct
 ;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void

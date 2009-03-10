@@ -3,6 +3,7 @@
 (require (except-in "../utils/utils.ss" extend))
 (require (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
+         (env type-name-env type-alias-env)
          mzlib/trace
          (private type-contract)
          (rep type-rep)
@@ -73,7 +74,9 @@
                #`(begin                    
                    (define-syntax export-id
                      (if (unbox typed-context?)
-                         (make-rename-transformer #'id)
+                         (begin
+                           (add-alias #'export-id #'id)
+                           (make-rename-transformer #'id))
                          (lambda (stx)
                            (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'out-id)))))
                    (provide (rename-out [export-id out-id]))))))]
