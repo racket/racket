@@ -340,7 +340,6 @@ file @cpp{HANDLE}.}
 
 @function[(long scheme_get_port_fd
            [Scheme_Object* port]
-           [Scheme_Object* port]
            [long* s])]{
 
 Fills @cpp{*@var{s}} with a socket value for @var{port} if one is
