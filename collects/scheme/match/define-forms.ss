@@ -20,8 +20,14 @@
          [(_ es . clauses)
           (go parse-id stx #'es #'clauses (syntax-local-certifier))]))
 
-     (define-syntax-rule (match arg [p . es] ...)
-       (match* (arg) [(p) . es] ...))
+     (define-syntax (match stx)
+       (syntax-case stx ()
+	   [(match arg cl ...)
+	    (with-syntax ([clauses
+			   (for/list ([c (syntax->list #'(cl ...))])
+			     (syntax-case c ()
+			       [[p . es] (syntax/loc c [(p) . es])]))])			 
+	      (syntax/loc stx (match* (arg) . clauses)))]))
 
      (define-syntax (match-lambda stx)
        (syntax-case stx ()
