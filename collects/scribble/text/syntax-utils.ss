@@ -112,7 +112,9 @@
 
 ;; module-begin for text files
 (define-syntax-rule (module-begin/text expr ...)
-  (process-begin/text #%plain-module-begin output expr ...))
+  (#%plain-module-begin
+   (port-count-lines! (current-output-port))
+   (process-begin/text begin output expr ...)))
 
 ;; `begin'-like utility that allows definitions and collects values
 (define-for-syntax (split-collect-body exprs ctx)
