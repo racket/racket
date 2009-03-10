@@ -42,22 +42,26 @@
         (kernel-syntax-case stx #f
           [(define-values (var ...) expr)
            (let ([var-list (syntax->list #'(var ...))])
-             (cond [(= (length var-list) 1) #`(define-values (var ...) #,(expr-iterator #'expr (car var-list) (current-code-inspector)))]
-                   [else #`(define-values (var ...) #,(expr-iterator #'expr #f (current-code-inspector)))]))]
+             (cond [(= (length var-list) 1) #`(define-values (var ...) 
+                                                #,(expr-iterator #'expr 
+                                                                 (car var-list)
+                                                                 (current-code-inspector)
+                                                                 #f))]
+                   [else #`(define-values (var ...) #,(expr-iterator #'expr #f (current-code-inspector) #f))]))]
           [(define-syntaxes (var ...) expr)
-           #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f (current-code-inspector)))]
+           #`(define-syntaxes (var ...) #,(expr-iterator #'expr #f (current-code-inspector) #t))]
           [(begin . top-level-exprs)
            #`(begin #,@(map top-level-expr-iterator (syntax->list #'top-level-exprs)))]
           [(#%require . require-specs)
            stx]
           [else
-           (expr-iterator stx #f (current-code-inspector))]))
+           (expr-iterator stx #f (current-code-inspector) #f)]))
   
-      (define (expr-iterator stx potential-name insp)
+      (define (expr-iterator stx potential-name insp trans?-expr)
         (let* ([name-guess (or (syntax-property stx 'inferred-name) potential-name)]
-               [recur-tail (lambda (expr) (expr-iterator expr name-guess insp))]
-               [recur-non-tail (lambda (expr) (expr-iterator expr #f insp))]
-               [recur-with-name (lambda (expr name) (expr-iterator expr name insp))]
+               [recur-tail (lambda (expr) (expr-iterator expr name-guess insp trans?-expr))]
+               [recur-non-tail (lambda (expr) (expr-iterator expr #f insp trans?-expr))]
+               [recur-with-name (lambda (expr name) (expr-iterator expr name insp trans?-expr))]
                [recur-on-sequence (lambda (exprs) 
                                     (let loop ([remaining exprs])
                                       (cond [(null? remaining) null]
@@ -112,7 +116,7 @@
                             ;(syntax->datum stx)
                             )]))]) 
           (syntax-recertify
-           (kernel-syntax-case stx #f
+           (kernel-syntax-case stx trans?-expr
              [var-stx
               (identifier? (syntax var-stx))
               stx]
@@ -149,8 +153,11 @@
              [(#%top . var)
               stx]
              [else
-              (error 'expr-iterator "unknown expr: ~a" 
-                     (syntax->datum stx))])
+              (if trans?-expr
+                  stx
+                  (error 'expr-iterator "unknown expression: ~s ~s" 
+                         stx
+                         (syntax->datum stx)))])
            stx
            insp
            #f)))

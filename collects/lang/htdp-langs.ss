@@ -267,7 +267,6 @@
                                   (string-constant use-pretty-printer-label)
                                   output-panel
                                   void)]
-               #;
                [tracing (new check-box%
                              (parent output-panel)
                              (label sc-tracing)
@@ -306,7 +305,7 @@
               (and allow-sharing-config? (send show-sharing get-value))
               (send insert-newlines get-value)
               'none
-              #f ;; (send tracing get-value) -- disabled tracing
+              (send tracing get-value)
               tps)]
             [(settings)
              (send case-sensitive set-value (drscheme:language:simple-settings-case-sensitive settings))
@@ -341,8 +340,7 @@
                                [parent tp-panel]
                                [label (format "~s" tp)]))
                   tps))
-             ;; disabled tracing
-             #; (send tracing set-value (htdp-lang-settings-tracing? settings))
+             (send tracing set-value (htdp-lang-settings-tracing? settings))
              (void)])))
       
       (define simple-htdp-language%
