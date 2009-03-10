@@ -1193,9 +1193,9 @@ the settings above should match r5rs
     (clear-definitions drs)
     (type-in-definitions drs expression)
     
-    (test "write" 'off #t "((2) (2))")
+    (test "print" 'off #t "((2) (2))")
     (when has-sharing?
-      (test "write" 'on #t "(#0=(2) #0#)"))
+      (test "print" 'on #t "(#0=(2) #0#)"))
     (when quasi-quote?
       (test "Quasiquote" 'off #t "`((2) (2))")
       (when has-sharing?
@@ -1211,7 +1211,7 @@ the settings above should match r5rs
                 "(shared ((-1- (list 2))) (list -1- -1-))"
                 "(shared ((-1- (cons 2 empty))) (cons -1- (cons -1- empty)))")))
     
-    ;; setup write / pretty-print difference
+    ;; setup print / pretty-print difference
     (clear-definitions drs)
     (for-each fw:test:keystroke
               (string->list
@@ -1224,11 +1224,11 @@ the settings above should match r5rs
           (case-lambda
             [(x) (member #\newline (string->list x))]
             [() "newlines in result (may need to make the window smaller)"]))
-    (test "write" #f #f
+    (test "print" #f #f
           (case-lambda
             [(x) (not (member #\newline (string->list x)))]
             [() "no newlines in result"]))
-    (test "write" #f #t
+    (test "print" #f #t
           (case-lambda
             [(x) (member #\newline (string->list x))]
             [() "newlines in result (may need to make the window smaller)"]))))
@@ -1353,11 +1353,10 @@ the settings above should match r5rs
                     (printf ">> finished ~a\n" (syntax->datum #'arg))))]))
 
 (define (run-test)
-  (go pretty-big)
-  (go r5rs)
   (go beginner)
   (go beginner/abbrev)
   (go intermediate)
   (go intermediate/lambda)
   (go advanced)
-  )
+  (go pretty-big)
+  (go r5rs))
