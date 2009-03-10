@@ -29,7 +29,7 @@
                (for/list ([clause (syntax->list clauses)]
                           [pats (syntax->list #'(pats ...))]
                           [rhs (syntax->list #'(rhs ...))])
-		 (unless (list? pats)
+		 #;(unless (list? pats)
 		   (raise-syntax-error 
 		    'match*
 		    "expected a sequence of patterns"
