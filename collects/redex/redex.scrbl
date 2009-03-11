@@ -90,7 +90,7 @@ Note that pattern matching is caching (including caching the results
 of side-conditions). This means that once a pattern has matched a
 given term, Redex assumes that it will always match that term. 
 
-@(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole side-condition cross) 
+@(schemegrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
    [pattern any 
             number 
             natural
@@ -220,12 +220,12 @@ If the symbol otherwise has an underscore, it is an error.
 }
 
 @item{The @pattern @tt{(@defpattech[name] symbol @ttpattern)}
-matches @tt{@pattern} and binds using it to the name @tt{symbol}. 
+matches @ttpattern and binds using it to the name @tt{symbol}. 
 }
 
 @item{The @tt{(@defpattech[in-hole] @ttpattern @ttpattern)} @pattern
-matches the first @|pattern|. This match must include exactly one match
-against the second @|pattern|. If there are zero matches or more
+matches the first @|ttpattern|. This match must include exactly one match
+against the second @|ttpattern|. If there are zero matches or more
 than one match, an exception is raised.
 
 When matching the first argument of in-hole, the `hole' @pattern
@@ -234,13 +234,13 @@ matches any sexpression. Then, the sexpression that matched the hole
 }
 
 @item{The @tt{(@defpattech[hide-hole] @ttpattern)} @pattern matches what
-the embedded @pattern matches but if the @pattern matcher is
+the embedded @ttpattern matches but if the @pattern matcher is
 looking for a decomposition, it ignores any holes found in
-that @|pattern|.
+that @|ttpattern|.
 }
 
 @item{The @tt{(@defpattech[side-condition] @ttpattern guard)} @pattern
-matches what the embedded @pattern matches, and then the guard
+matches what the embedded @ttpattern matches, and then the guard
 expression is evaluated. If it returns @scheme[#f], the @pattern fails
 to match, and if it returns anything else, the @pattern matches. Any
 occurrences of `name' in the @pattern (including those implicitly
