@@ -371,8 +371,6 @@ module browser threading seems wrong.
                   (reset-highlighting) 
                   (inner (void) after-delete x y)) 
                 
-                (printf "creating a program editor mixin\n") (flush-output)
-                
                 (apply super-make-object args))]
              [get-program-editor-mixin
               (λ ()
