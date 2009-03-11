@@ -155,6 +155,21 @@ typedef struct Scheme_UDP {
 
 #endif /* USE_TCP */
 
+#if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
+# define DECL_OS_FDSET(n) fd_set n[1]
+# define INIT_DECL_OS_FDSET(n) /* empty */
+# define MZ_OS_FD_ZERO(p) FD_ZERO(p)
+# define MZ_OS_FD_SET(n, p) FD_SET(n, p)
+# define MZ_OS_FD_CLR(n, p) FD_CLR(n, p)
+#else
+# define DECL_OS_FDSET(n) DECL_FDSET(n, 1)
+# define INIT_DECL_OS_FDSET(n) INIT_DECL_FDSET(n, 1)
+# define MZ_OS_FD_ZERO(p) MZ_FD_ZERO(p)
+# define MZ_OS_FD_SET(n, p) MZ_FD_SET(n, p)
+# define MZ_OS_FD_CLR(n, p) MZ_FD_CLR(n, p)
+#endif
+#define MZ_OS_FD_ISSET(n, p) FD_ISSET(n, p)
+
 static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_connect_break(int argc, Scheme_Object *argv[]);
 static Scheme_Object *tcp_listen(int argc, Scheme_Object *argv[]);
@@ -937,25 +952,25 @@ static int tcp_check_accept(Scheme_Object *_listener)
 #ifdef USE_SOCKETS_TCP
   tcp_t s, mx;
   listener_t *listener = (listener_t *)_listener;
-  DECL_FDSET(readfds, 1);
-  DECL_FDSET(exnfds, 1);
+  DECL_OS_FDSET(readfds);
+  DECL_OS_FDSET(exnfds);
   struct timeval time = {0, 0};
   int sr, i;
 
-  INIT_DECL_FDSET(readfds, 1);
-  INIT_DECL_FDSET(exnfds, 1);
+  INIT_DECL_OS_FDSET(readfds);
+  INIT_DECL_OS_FDSET(exnfds);
 
   if (LISTENER_WAS_CLOSED(listener))
     return 1;
 
-  MZ_FD_ZERO(readfds);
-  MZ_FD_ZERO(exnfds);
+  MZ_OS_FD_ZERO(readfds);
+  MZ_OS_FD_ZERO(exnfds);
 
   mx = 0;
   for (i = 0; i < listener->count; i++) {
     s = listener->s[i];
-    MZ_FD_SET(s, readfds);
-    MZ_FD_SET(s, exnfds);
+    MZ_OS_FD_SET(s, readfds);
+    MZ_OS_FD_SET(s, exnfds);
     if (s > mx)
       mx = s;
   }
@@ -967,8 +982,8 @@ static int tcp_check_accept(Scheme_Object *_listener)
   if (sr) {
     for (i = 0; i < listener->count; i++) {
       s = listener->s[i];
-      if (FD_ISSET(s, readfds)
-	  || FD_ISSET(s, exnfds))
+      if (MZ_OS_FD_ISSET(s, readfds)
+	  || MZ_OS_FD_ISSET(s, exnfds))
 	return i + 1;
     }
   }
@@ -1001,21 +1016,21 @@ static int tcp_check_connect(Scheme_Object *connector_p)
 {
 #ifdef USE_SOCKETS_TCP
   tcp_t s;
-  DECL_FDSET(writefds, 1);
-  DECL_FDSET(exnfds, 1);
+  DECL_OS_FDSET(writefds);
+  DECL_OS_FDSET(exnfds);
   struct timeval time = {0, 0};
   int sr;
 
-  INIT_DECL_FDSET(writefds, 1);
-  INIT_DECL_FDSET(exnfds, 1);
+  INIT_DECL_OS_FDSET(writefds);
+  INIT_DECL_OS_FDSET(exnfds);
 
   s = *(tcp_t *)connector_p;
 
-  MZ_FD_ZERO(writefds);
-  MZ_FD_ZERO(exnfds);
+  MZ_OS_FD_ZERO(writefds);
+  MZ_OS_FD_ZERO(exnfds);
 
-  MZ_FD_SET(s, writefds);
-  MZ_FD_SET(s, exnfds);
+  MZ_OS_FD_SET(s, writefds);
+  MZ_OS_FD_SET(s, exnfds);
     
   do {
     sr = select(s + 1, NULL, writefds, exnfds, &time);
@@ -1056,20 +1071,20 @@ static int tcp_check_write(Scheme_Object *port)
 #ifdef USE_SOCKETS_TCP
   {
     tcp_t s;
-    DECL_FDSET(writefds, 1);
-    DECL_FDSET(exnfds, 1);
+    DECL_OS_FDSET(writefds);
+    DECL_OS_FDSET(exnfds);
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_FDSET(writefds, 1);
-    INIT_DECL_FDSET(exnfds, 1);
+    INIT_DECL_OS_FDSET(writefds);
+    INIT_DECL_OS_FDSET(exnfds);
     
     s = data->tcp;
     
-    MZ_FD_ZERO(writefds);
-    MZ_FD_SET(s, writefds);
-    MZ_FD_ZERO(exnfds);
-    MZ_FD_SET(s, exnfds);
+    MZ_OS_FD_ZERO(writefds);
+    MZ_OS_FD_SET(s, writefds);
+    MZ_OS_FD_ZERO(exnfds);
+    MZ_OS_FD_SET(s, exnfds);
     
     do {
       sr = select(s + 1, NULL, writefds, exnfds, &time);
@@ -1156,12 +1171,12 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
   Scheme_Tcp *data;
 #ifdef USE_SOCKETS_TCP
   int sr;
-  DECL_FDSET(readfds, 1);
-  DECL_FDSET(exfds, 1);
+  DECL_OS_FDSET(readfds);
+  DECL_OS_FDSET(exfds);
   struct timeval time = {0, 0};
 
-  INIT_DECL_FDSET(readfds, 1);
-  INIT_DECL_FDSET(exfds, 1);
+  INIT_DECL_OS_FDSET(readfds);
+  INIT_DECL_OS_FDSET(exfds);
 #endif
 
   if (port->closed)
@@ -1175,10 +1190,10 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
     return 1;
 
 #ifdef USE_SOCKETS_TCP
-  MZ_FD_ZERO(readfds);
-  MZ_FD_ZERO(exfds);
-  MZ_FD_SET(data->tcp, readfds);
-  MZ_FD_SET(data->tcp, exfds);
+  MZ_OS_FD_ZERO(readfds);
+  MZ_OS_FD_ZERO(exfds);
+  MZ_OS_FD_SET(data->tcp, readfds);
+  MZ_OS_FD_SET(data->tcp, exfds);
     
   do {
     sr = select(data->tcp + 1, readfds, NULL, exfds, &time);
@@ -2880,18 +2895,18 @@ static int udp_check_send(Scheme_Object *_udp)
     return 1;
 
   {
-    DECL_FDSET(writefds, 1);
-    DECL_FDSET(exnfds, 1);
+    DECL_OS_FDSET(writefds);
+    DECL_OS_FDSET(exnfds);
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_FDSET(writefds, 1);
-    INIT_DECL_FDSET(exnfds, 1);
+    INIT_DECL_OS_FDSET(writefds);
+    INIT_DECL_OS_FDSET(exnfds);
     
-    MZ_FD_ZERO(writefds);
-    MZ_FD_SET(udp->s, writefds);
-    MZ_FD_ZERO(exnfds);
-    MZ_FD_SET(udp->s, exnfds);
+    MZ_OS_FD_ZERO(writefds);
+    MZ_OS_FD_SET(udp->s, writefds);
+    MZ_OS_FD_ZERO(exnfds);
+    MZ_OS_FD_SET(udp->s, exnfds);
     
     do {
       sr = select(udp->s + 1, NULL, writefds, exnfds, &time);
@@ -3112,18 +3127,18 @@ static int udp_check_recv(Scheme_Object *_udp)
     return 1;
 
   {
-    DECL_FDSET(readfds, 1);
-    DECL_FDSET(exnfds, 1);
+    DECL_OS_FDSET(readfds);
+    DECL_OS_FDSET(exnfds);
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_FDSET(readfds, 1);
-    INIT_DECL_FDSET(exnfds, 1);
+    INIT_DECL_OS_FDSET(readfds);
+    INIT_DECL_OS_FDSET(exnfds);
     
-    MZ_FD_ZERO(readfds);
-    MZ_FD_SET(udp->s, readfds);
-    MZ_FD_ZERO(exnfds);
-    MZ_FD_SET(udp->s, exnfds);
+    MZ_OS_FD_ZERO(readfds);
+    MZ_OS_FD_SET(udp->s, readfds);
+    MZ_OS_FD_ZERO(exnfds);
+    MZ_OS_FD_SET(udp->s, exnfds);
     
     do {
       sr = select(udp->s + 1, readfds, NULL, exnfds, &time);

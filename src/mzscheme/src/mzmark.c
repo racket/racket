@@ -3519,27 +3519,6 @@ static int mark_input_file_FIXUP(void *p) {
 #define mark_input_file_IS_CONST_SIZE 1
 
 
-#if defined(WIN32_FD_HANDLES)
-static int mark_tcp_select_info_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Tcp_Select_Info));
-}
-
-static int mark_tcp_select_info_MARK(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Tcp_Select_Info));
-}
-
-static int mark_tcp_select_info_FIXUP(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Tcp_Select_Info));
-}
-
-#define mark_tcp_select_info_IS_ATOMIC 1
-#define mark_tcp_select_info_IS_CONST_SIZE 1
-
-#endif
-
 static int mark_output_file_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Output_File));

@@ -1431,14 +1431,6 @@ mark_input_file {
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_File));
 }
 
-#if defined(WIN32_FD_HANDLES)
-mark_tcp_select_info {
- mark:
- size:
-  gcBYTES_TO_WORDS(sizeof(Tcp_Select_Info));
-}
-#endif
-
 mark_output_file {
  mark:
   Scheme_Output_File *o = (Scheme_Output_File *)p;
