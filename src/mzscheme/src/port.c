@@ -868,6 +868,10 @@ void scheme_add_fd_eventmask(void *fds, int mask)
 #endif
 }
 
+void scheme_collapse_win_fd(void *fds)
+{
+}
+
 /*========================================================================*/
 /*                      Windows thread suspension                         */
 /*========================================================================*/
