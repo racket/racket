@@ -4190,7 +4190,6 @@ fi
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then
   COMPFLAGS="$COMPFLAGS -Wall"
-  XFORMFLAGS="$XFORMFLAGS --keep-lines"
 
   # Use -MMD when we have gcc and gnumake:
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
@@ -6042,6 +6041,65 @@ if test "$inline" = "no" ; then
 fi
 { echo "$as_me:$LINENO: result: $inline" >&5
 echo "${ECHO_T}$inline" >&6; }
+
+ msg="for GNU preprocessor"
+{ echo "$as_me:$LINENO: checking $msg" >&5
+echo $ECHO_N "checking $msg... $ECHO_C" >&6; }
+if test "$cross_compiling" = yes; then
+  using_gnu_cpp=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+int main () {
+   #ifdef __GNUC__
+    return 0;
+   #else
+    return 1;
+   #endif
+   }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  using_gnu_cpp=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+using_gnu_cpp=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+if test "$using_gnu_cpp" = "yes" ; then
+  XFORMFLAGS="$XFORMFLAGS --keep-lines"
+fi
+{ echo "$as_me:$LINENO: result: $using_gnu_cpp" >&5
+echo "${ECHO_T}$using_gnu_cpp" >&6; }
 
 { echo "$as_me:$LINENO: checking for nl_langinfo (CODESET)" >&5
 echo $ECHO_N "checking for nl_langinfo (CODESET)... $ECHO_C" >&6; }

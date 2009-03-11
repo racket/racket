@@ -419,7 +419,6 @@ fi
 # If using gcc, we want all warnings:
 if test "$CC" = "gcc" ; then 
   COMPFLAGS="$COMPFLAGS -Wall"
-  XFORMFLAGS="$XFORMFLAGS --keep-lines"
 
   # Use -MMD when we have gcc and gnumake:
   is_gmake=`make -v no-such-target-we-hope 2>&1 | grep "GNU Make"`
@@ -728,6 +727,21 @@ if test "$inline" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_INLINE_KEYWORD"
 fi
 AC_MSG_RESULT($inline) 
+
+[ msg="for GNU preprocessor" ]
+AC_MSG_CHECKING($msg)
+AC_TRY_RUN(
+   int main () {
+   #ifdef __GNUC__
+    return 0;
+   #else
+    return 1;
+   #endif
+   }, using_gnu_cpp=yes, using_gnu_cpp=no, using_gnu_cpp=no)
+if test "$using_gnu_cpp" = "yes" ; then
+  XFORMFLAGS="$XFORMFLAGS --keep-lines"
+fi
+AC_MSG_RESULT($using_gnu_cpp) 
 
 AC_MSG_CHECKING([for nl_langinfo (CODESET)])
 AC_TRY_LINK([#include <langinfo.h>],
