@@ -1311,7 +1311,7 @@ long scheme_equal_hash_key2(Scheme_Object *o)
 
 long scheme_eqv_hash_key(Scheme_Object *o)
 {
-  if (!SCHEME_INTP(o) && SCHEME_NUMBERP(o))
+  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
     return scheme_equal_hash_key(o);
   else
     return (PTR_TO_LONG(o) >> 2);
@@ -1319,7 +1319,7 @@ long scheme_eqv_hash_key(Scheme_Object *o)
 
 long scheme_eqv_hash_key2(Scheme_Object *o)
 {
-  if (!SCHEME_INTP(o) && SCHEME_NUMBERP(o))
+  if (!SCHEME_INTP(o) && (SCHEME_NUMBERP(o) || SCHEME_CHARP(o)))
     return scheme_equal_hash_key2(o);
   else
     return (PTR_TO_LONG(o) >> 3);
