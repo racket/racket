@@ -6,7 +6,8 @@
 (import [prefix drscheme:unit: drscheme:unit^]
         [prefix drscheme:frame: drscheme:frame^]
         [prefix drscheme:rep: drscheme:rep^]
-        [prefix drscheme:debug: drscheme:debug^])
+        [prefix drscheme:debug: drscheme:debug^]
+        [prefix drscheme:tracing: drscheme:tracing^])
 (export drscheme:get/extend^)
 
 (define make-extender
@@ -43,9 +44,10 @@
          built)))))
 
 (define (get-base-tab%)
-  (drscheme:debug:test-coverage-tab-mixin
-   (drscheme:debug:profile-tab-mixin
-    drscheme:unit:tab%)))
+  (drscheme:tracing:tab-mixin
+   (drscheme:debug:test-coverage-tab-mixin
+    (drscheme:debug:profile-tab-mixin
+     drscheme:unit:tab%))))
 
 (define-values (extend-tab get-tab) (make-extender get-base-tab% 'tab%))
 
@@ -62,8 +64,9 @@
   (make-extender get-base-definitions-canvas% 'definitions-canvas%))  
 
 (define (get-base-unit-frame%) 
-  (drscheme:debug:profile-unit-frame-mixin
-   drscheme:unit:frame%))
+  (drscheme:tracing:frame-mixin
+   (drscheme:debug:profile-unit-frame-mixin
+    drscheme:unit:frame%)))
 
 (define-values (extend-unit-frame get-unit-frame)
   (make-extender get-base-unit-frame% 'drscheme:unit:frame))

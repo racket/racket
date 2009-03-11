@@ -24,7 +24,8 @@
         [prefix drscheme:init: drscheme:init^]
         [prefix drscheme:debug: drscheme:debug^]
         [prefix drscheme:eval: drscheme:eval^]
-        [prefix drscheme:modes: drscheme:modes^])
+        [prefix drscheme:modes: drscheme:modes^]
+        [prefix drscheme:tracing: drscheme:tracing^])
 (export drscheme:tools^)
 
 ;; An installed-tool is
