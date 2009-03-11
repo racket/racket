@@ -167,6 +167,7 @@
 
 ;; this structure represents the result of typechecking an expression
 (d-s/c tc-result ([t Type/c] [f FilterSet?] [o Object?]) #:transparent)
+(d-s/c tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c symbol? Type/c) #f)]))
 
 (define-match-expander tc-result:
   (syntax-parser
@@ -175,26 +176,33 @@
 
 (define-match-expander tc-results:
   (syntax-parser
-   [(_ tp fp op) #'(list (struct tc-result (tp fp op)) (... ...))]
-   [(_ tp) #'(list (struct tc-result (tp _ _)) (... ...))]))
+   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) #f))]
+   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
 
 (provide tc-result: tc-results:)
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t) 
-                (if (Type? t)
-                    (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
-                    (for/list ([i t])
-                        (make-tc-result i (make-FilterSet null null) (make-Empty))))]
-               [(t f) (if (Type? t)
-                          (list (make-tc-result t f (make-Empty)))
-                          (for/list ([i t] [f f])
-                            (make-tc-result i f (make-Empty))))]
-               [(t f o)
-                (if (and (list? t) (list? f) (list? o))
-                    (map make-tc-result t f o)
-                    (list (make-tc-result t f o)))]))
+		(make-tc-results
+		 (if (Type? t)
+		     (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
+		     (for/list ([i t])
+			       (make-tc-result i (make-FilterSet null null) (make-Empty))))
+		 #f)]
+	       [(t f)
+		(make-tc-results
+		 (if (Type? t)
+		     (list (make-tc-result t f (make-Empty)))
+		     (for/list ([i t] [f f])
+			       (make-tc-result i f (make-Empty))))
+		 #f)]
+	       [(t f o)
+		(make-tc-results
+		 (if (and (list? t) (list? f) (list? o))
+		     (map make-tc-result t f o)
+		     (list (make-tc-result t f o)))
+		 #f)]))
 
 (p/c
  [ret    

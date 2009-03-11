@@ -4,28 +4,30 @@
 (require "signatures.ss"
          mzlib/trace
          scheme/list
-         (except-in (rep type-rep effect-rep) make-arr) ;; doesn't need tests
-         (private type-effect-convenience type-annotation union type-utils)
+         (rename-in scheme/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
+         (except-in (rep type-rep) make-arr)
+         (rename-in (types convenience utils union)
+                    [make-arr* make-arr])
+         (private type-annotation)
 	 (env type-environments lexical-env)
 	 (utils tc-utils)
-         mzlib/plt-match
-         (only-in (private type-effect-convenience) [make-arr* make-arr]))
+         mzlib/plt-match)
 (require (for-template scheme/base "internal-forms.ss"))
 
 (import tc-expr^)
 (export tc-lambda^)
 
-(define (remove-var id thns elss)
-  (let/ec exit
-    (define (fail) (exit #f))
-    (define (rv e)
-      (match e
-        [(Var-True-Effect: v) (if (free-identifier=? v id) (make-Latent-Var-True-Effect) (fail))]
-        [(Var-False-Effect: v) (if (free-identifier=? v id) (make-Latent-Var-False-Effect) (fail))]
-        [(or (True-Effect:) (False-Effect:)) e]
-        [(Restrict-Effect: t v) (if (free-identifier=? v id) (make-Latent-Restrict-Effect t) (fail))]
-        [(Remove-Effect: t v) (if (free-identifier=? v id) (make-Latent-Remove-Effect t) (fail))]))
-    (cons (map rv thns) (map rv elss))))
+(d-s/c lam-result ([args (listof (list identifier? Type/c))] 
+                   [kws (listof (list keyword? Type/c boolean?))]
+                   [rest (or/c #f Type/c)]
+                   [drest (or/c #f (cons symbol? Type/c))]
+                   [body (listof tc-result?)])
+       #:transparent)
+
+(d/c (abstract-filters lr)
+     (--> lam-result? arr?)
+     (when (and rest drest)
+       (int-err 'abstract-filters "rest and drest both provided")))
 
 (define (expected-str tys-len rest-ty drest arg-len rest)
   (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
@@ -56,15 +58,7 @@
        arg-list arg-types
        (match (tc-exprs/check (syntax->list body) ret-ty)
          [(tc-result: t thn els)
-          (cond
-            ;; this is T-AbsPred                
-            ;; if this function takes only one argument, and all the effects are about that one argument
-            [(and (not rest-ty) (not drest) (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
-             => (lambda (thn/els) (make-arr arg-types t rest-ty drest (car thn/els) (cdr thn/els)))]
-            ;; otherwise, the simple case
-            [else (make-arr arg-types t rest-ty drest null null)])]
-         [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
-    #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+          (make-arr arg-types t rest-ty drest null null)])))
     (when (or (not (= arg-len tys-len))
               (and rest (and (not rest-ty)
                              (not drest))))
@@ -109,23 +103,13 @@
     [(args ...)       
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (get-types arg-list #:default Univ)])
-       #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
        (with-lexical-env/extend 
         arg-list arg-types
         (match (tc-exprs (syntax->list body))
-          [(tc-result: t thn els)
-           (cond
-             ;; this is T-AbsPred                
-             ;; if this function takes only one argument, and all the effects are about that one argument
-             [(and (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
-              => (lambda (thn/els) (make-arr arg-types t #f (car thn/els) (cdr thn/els)))]
-             ;; otherwise, the simple case
-             [else (make-arr arg-types t)])]
-          [t (int-err "bad match - not a tc-result: ~a no ret-ty" t)])))]
+          [(tc-result: t thn els) (make-arr arg-types t)])))]
     [(args ... . rest)
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (get-types arg-list #:default Univ)])
-       #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) (cons #'rest arg-list))
        (cond 
          [(dotted? #'rest)
           =>
@@ -175,7 +159,7 @@
       (let loop ([expected expected])        
         (match expected          
           [(Mu: _ _) (loop (unfold expected))]
-          [(Function: (list (arr: argss rets rests drests '() _ _) ...)) 
+          [(Function: (list (arr: argss rets rests drests '()) ...)) 
            (for ([args argss] [ret rets] [rest rests] [drest drests])
              (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest drest))
            expected]
