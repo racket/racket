@@ -303,7 +303,8 @@ void MrEdDispatchEvent(MSG *msg)
     LeaveEvent *e;
     e = (LeaveEvent *)GET_SAFEREF(sr);
     FREE_SAFEREF(sr);
-    wxDoLeaveEvent(e->wnd, e->x, e->y, e->flags);
+    if (e)
+      wxDoLeaveEvent(e->wnd, e->x, e->y, e->flags);
   } else if (!wxTheApp->ProcessMessage(msg)) {
 #if wxLOG_EVENTS
     if (!log)
@@ -983,7 +984,10 @@ void MrEdMSWSleep(float secs, void *fds)
     }
 
     if (th2) {
-      closesocket(fake);
+      while (closesocket(fake)) {
+	if (WSAGetLastError() != WSAEINPROGRESS)
+	  break;
+      }
       WaitForSingleObject(th2, INFINITE);
       scheme_forget_thread(thread_memory);
       CloseHandle(th2);

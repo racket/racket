@@ -8102,7 +8102,11 @@ static void default_sleep(float v, void *fds)
 	}
 	clean_up_wait(result, array, rps, count);
 
-	closesocket(fake); /* cause selector thread to end */
+	/* cause selector thread to end: */
+	while (closesocket(fake)) {
+	  if (WSAGetLastError() != WSAEINPROGRESS)
+	    break;
+	}
 
 	WaitForSingleObject(th, INFINITE);
 	scheme_forget_thread(thread_memory);
