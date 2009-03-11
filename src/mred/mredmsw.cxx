@@ -986,7 +986,12 @@ void MrEdMSWSleep(float secs, void *fds)
     }
 
     if (th2) {
-      closesocket(fake);
+      while (closesocket(fake)) {
+	/* I don't think WSAEINPROGRESS should happen, but just in case... */
+	if (WSAGetLastError() != WSAEINPROGRESS)
+	  break;
+      }
+      scheme_interrupt_win32_thread(th2);
       WaitForSingleObject(th2, INFINITE);
       scheme_forget_thread(thread_memory);
       CloseHandle(th2);

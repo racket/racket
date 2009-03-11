@@ -4607,6 +4607,16 @@ static CSI_proc get_csi(void)
   END_XFORM_SKIP;
   return csi;
 }
+
+MZ_EXTERN void scheme_interrupt_win32_thread(HANDLE th);
+void scheme_interrupt_win32_thread(HANDLE th)
+{
+  CSI_proc csi;
+  csi = get_csi();
+  if (csi)
+    csi(th);
+}
+
 # endif
 
 /* forward decl: */
@@ -8104,7 +8114,13 @@ static void default_sleep(float v, void *fds)
 	clean_up_wait(result, array, rps, count);
 
 	/* cause selector thread to end: */
-	closesocket(fake);
+	while (closesocket(fake)) {
+	  /* I don't think WSAEINPROGRESS should happen, but just in case... */
+	  if (WSAGetLastError() != WSAEINPROGRESS)
+	    break;
+	}
+
+	scheme_interrupt_win32_thread(th);
 
 	WaitForSingleObject(th, INFINITE);
 	scheme_forget_thread(thread_memory);
