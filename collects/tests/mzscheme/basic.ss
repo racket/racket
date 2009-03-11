@@ -2151,6 +2151,18 @@
 (test #t hash-weak? (make-weak-hash))
 (test #t hash-weak? (make-weak-hasheqv))
 
+(let ([ht (make-hasheqv)]
+      [l (list #x03B1 #x03B2 #x03B3)]
+      [l2 '(1 2 3)])
+  (for-each (lambda (a b)
+              (hash-set! ht (integer->char a) b))
+            l l2)
+  (test '(3 2 1) 
+        map
+        (lambda (a)
+          (hash-ref ht (integer->char a) #f))
+        (reverse l)))
+
 (err/rt-test (hash-eq? 5))
 (err/rt-test (hash-eqv? 5))
 (err/rt-test (hash-weak? 5))
