@@ -167,7 +167,7 @@
 
 ;; this structure represents the result of typechecking an expression
 (d-s/c tc-result ([t Type/c] [f FilterSet?] [o Object?]) #:transparent)
-(d-s/c tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c symbol? Type/c) #f)]))
+(d-s/c tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)]) #:transparent)
 
 (define-match-expander tc-result:
   (syntax-parser
@@ -177,9 +177,10 @@
 (define-match-expander tc-results:
   (syntax-parser
    [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) #f))]
+   [(_ tp fp op dty dbound) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) (cons dty dbound)))]
    [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
 
-(provide tc-result: tc-results:)
+(provide tc-result: tc-results: tc-result? tc-results?)
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret

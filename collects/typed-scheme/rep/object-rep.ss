@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract "rep-utils.ss" "free-variance.ss")
+(require scheme/match scheme/contract "rep-utils.ss" "free-variance.ss" "filter-rep.ss")
 
 (dpe CarPE () [#:fold-rhs #:base])
 (dpe CdrPE () [#:fold-rhs #:base])
@@ -17,6 +17,6 @@
 
 (dlo LEmpty () [#:fold-rhs #:base])
 
-(dlo LPath ([p (listof PathElem?)] [idx natural-number/c])
+(dlo LPath ([p (listof PathElem?)] [idx index/c])
   [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
   [#:fold-rhs (*LPath (map pathelem-rec-id p) idx)])

@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rename-in (types subtype convenience remove-intersect union)                   
+(require (rename-in (types subtype convenience remove-intersect union utils)                   
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
@@ -27,22 +27,48 @@
          (make-FilterSet null (list (make-Bot)))]
         [else (make-FilterSet l1 l2)]))
 
-(define/contract (abstract-filter x idx fs)
-  (-> identifier? index/c FilterSet? LFilterSet?)
+(d/c (abstract-filters keys ids results)
+     (-> (listof index/c) (listof identifier?) tc-results? (or/c Values? ValuesDots?))
+     (define (mk l [drest #f])
+       (if drest (make-ValuesDots l (car drest) (cdr drest)) (make-Values l)))
+     (match results
+       [(tc-results: ts fs os dty dbound)
+        (make-ValuesDots 
+         (for/list ([t ts]
+                    [f fs]
+                    [o os])
+           (make-Result t (abstract-filter ids keys f) (abstract-object ids keys o))))]))
+
+(define/contract (abstract-object ids keys o)
+  (-> (listof identifier?) (listof index/c) Object? LatentObject?)
+  (define (lookup y)
+    (for/first ([x ids] [i keys] #:when (free-identifier=? x y)) i))
+  (define-match-expander lookup:
+    (syntax-rules ()
+      [(_ i) (app lookup (? values i))]))
+  (match o    
+    [(Path: p (lookup: idx)) (make-LPath p idx)]
+    [_ (make-LEmpty)]))
+
+(define/contract (abstract-filter ids keys fs)
+  (-> (listof identifier?) (listof index/c) FilterSet? LFilterSet?)
   (match fs
     [(FilterSet: f+ f-)
      (lcombine
-      (apply append (for/list ([f f+]) (abo x idx f)))
-      (apply append (for/list ([f f-]) (abo x idx f))))]))
+      (apply append (for/list ([f f+]) (abo ids keys f)))
+      (apply append (for/list ([f f-]) (abo ids keys f))))]))
 
-(define/contract (abo x idx f)
-  (-> identifier? index/c Filter/c (or/c '() (list/c LatentFilter/c)))
-  (define-match-expander =x
-    (lambda (stx) #'(? (lambda (id) (free-identifier=? id x)))))
+(define/contract (abo xs idxs f)
+  (-> (listof identifier?) (listof index/c) Filter/c (or/c '() (list/c LatentFilter/c)))
+  (define (lookup y)
+    (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i)) 
+  (define-match-expander lookup:
+    (syntax-rules ()
+      [(_ i) (app lookup (? values i))]))
   (match f
     [(Bot:) (list (make-LBot))]
-    [(TypeFilter: t p (=x)) (list (make-LTypeFilter t p idx))]
-    [(NotTypeFilter: t p (=x)) (list (make-LNotTypeFilter t p idx))]
+    [(TypeFilter: t p (lookup: idx)) (list (make-LTypeFilter t p idx))]
+    [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
     [_ null]))
 
 (define/contract (apply-filter lfs t o)
