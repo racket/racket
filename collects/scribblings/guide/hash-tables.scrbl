@@ -5,7 +5,7 @@
 
 @title[#:tag "hash-tables"]{Hash Tables}
 
-A @defterm{hash table} implements a mapping from keys to values, where
+A @deftech{hash table} implements a mapping from keys to values, where
 both keys and values can be arbitrary Scheme values, and access and
 update to the table are normally constant-time operations. Keys are
 compared using @scheme[equal?] or @scheme[eq?], depending on whether
