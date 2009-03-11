@@ -42,6 +42,7 @@ extern long last_msg_time;
 extern "C" {
   struct Scheme_Thread_Memory *scheme_remember_thread(void *);
   void scheme_forget_thread(struct Scheme_Thread_Memory *);
+  void scheme_interrupt_win32_thread(HANDLE th);
 };
 
 static int found_nothing;
@@ -959,6 +960,7 @@ void MrEdMSWSleep(float secs, void *fds)
     if (r->set.fd_count || w->set.fd_count || e->set.fd_count) {
       fake = socket(PF_INET, SOCK_STREAM, 0);
       FD_SET(fake, e);
+      FD_SET(fake, r);
 
       th2 = CreateThread(NULL, 4096,
 	              (LPTHREAD_START_ROUTINE)signal_fddone,
@@ -984,10 +986,7 @@ void MrEdMSWSleep(float secs, void *fds)
     }
 
     if (th2) {
-      while (closesocket(fake)) {
-	if (WSAGetLastError() != WSAEINPROGRESS)
-	  break;
-      }
+      closesocket(fake);
       WaitForSingleObject(th2, INFINITE);
       scheme_forget_thread(thread_memory);
       CloseHandle(th2);

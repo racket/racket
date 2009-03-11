@@ -8064,6 +8064,7 @@ static void default_sleep(float v, void *fds)
 
 	fake = socket(MZ_PF_INET, SOCK_STREAM, 0);
 	FD_SET(fake, ex);
+	FD_SET(fake, rd);
 
 	info->rd = rd;
 	info->wr = wr;
@@ -8103,10 +8104,7 @@ static void default_sleep(float v, void *fds)
 	clean_up_wait(result, array, rps, count);
 
 	/* cause selector thread to end: */
-	while (closesocket(fake)) {
-	  if (WSAGetLastError() != WSAEINPROGRESS)
-	    break;
-	}
+	closesocket(fake);
 
 	WaitForSingleObject(th, INFINITE);
 	scheme_forget_thread(thread_memory);
