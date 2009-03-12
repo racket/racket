@@ -3163,8 +3163,8 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
 
 #define EXPLAIN_RESOLVE 0
 #if EXPLAIN_RESOLVE
-static int explain_resolves = 1;
-# define EXPLAIN(x) if (explain_resolves) { x; }
+int scheme_explain_resolves = 0;
+# define EXPLAIN(x) if (scheme_explain_resolves) { x; }
 #else
 # define EXPLAIN(x) /* empty */
 #endif
@@ -3754,7 +3754,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             EXPLAIN(fprintf(stderr, "%d  tl_id_sym\n", depth));
 	    if (!bdg) {
               EXPLAIN(fprintf(stderr, "%d   get bdg\n", depth));
-	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs, NULL, NULL, depth+1);
+	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, recur_skip_ribs, NULL, NULL, depth+1);
               if (SCHEME_FALSEP(bdg)) {
                 if (!floating_checked) {
                   floating = check_floating_id(a);
@@ -4418,9 +4418,9 @@ int scheme_stx_bound_eq(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase
 #if EXPLAIN_RESOLVE
 Scheme_Object *scheme_explain_resolve_env(Scheme_Object *a)
 {
-  explain_resolves++;
+  scheme_explain_resolves++;
   a = resolve_env(NULL, a, 0, 0, NULL, NULL, NULL, NULL, 0);
-  --explain_resolves;
+  --scheme_explain_resolves;
   return a;
 }
 #endif
@@ -4814,7 +4814,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   Scheme_Object *v, *v2, *v2l, *stx, *name, *svl, *end_mutable = NULL;
   Scheme_Lexical_Rib *did_rib = NULL;
   Scheme_Hash_Table *skip_ribs_ht = NULL, *prev_skip_ribs_ht;
-  int copy_on_write;
+  int copy_on_write, no_rib_mutation = 1;
   long size, vsize, psize, i, j, pos;
 
   /* Although it makes no sense to simplify the rename table itself,
@@ -4886,7 +4886,12 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	if (SCHEME_RIBP(v)) {
 	  /* A rib certainly isn't simplified yet. */
           Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)v;
+          no_rib_mutation = 0;
           add = 1;
+          if (!*rib->sealed) {
+            scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
+            return NULL;
+          }
           if (SAME_OBJ(did_rib, rib)
               || !nonempty_rib(rib)) {
             skip_this = 1;
@@ -4894,10 +4899,6 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                               scheme_write_to_string(rib->timestamp, NULL)));
           } else {
             did_rib = rib;
-            if (!*rib->sealed) {
-              scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
-              return NULL;
-            }
             prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
 
             EXPLAIN_S(fprintf(stderr, " down rib %p=%s\n", rib, 
@@ -5226,36 +5227,36 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	  ii++;
 	}
 
-	if (pos != size) {
-	  /* Shrink simplified vector */
-	  if (!pos)
-	    v2 = empty_simplified;
-	  else {
-	    v = v2;
-	    v2 = scheme_make_vector(2 + (2 * pos), NULL);
-	    for (i = 0; i < pos; i++) {
-	      SCHEME_VEC_ELS(v2)[2+i] = SCHEME_VEC_ELS(v)[2+i];
-	      SCHEME_VEC_ELS(v2)[2+pos+i] = SCHEME_VEC_ELS(v)[2+size+i];
-	    }
-	  }
-	}
-
-	SCHEME_VEC_ELS(v2)[0] = scheme_false;
-	SCHEME_VEC_ELS(v2)[1] = scheme_false;
-
-        {
-          /* Sometimes we generate the same simplified lex table, so
-             look for an equivalent one in the cache. */
-          v = scheme_hash_get(lex_cache, scheme_true);
-          if (!v) {
-            v = (Scheme_Object *)scheme_make_hash_table_equal();
-            scheme_hash_set(lex_cache, scheme_true, v);
+        if (!pos)
+          v2 = empty_simplified;
+        else {
+          if (pos != size) {
+            /* Shrink simplified vector */
+            v = v2;
+            v2 = scheme_make_vector(2 + (2 * pos), NULL);
+            for (i = 0; i < pos; i++) {
+              SCHEME_VEC_ELS(v2)[2+i] = SCHEME_VEC_ELS(v)[2+i];
+              SCHEME_VEC_ELS(v2)[2+pos+i] = SCHEME_VEC_ELS(v)[2+size+i];
+            }
           }
-          svl = scheme_hash_get((Scheme_Hash_Table *)v, v2);
-          if (svl)
-            v2 = svl;
-          else
-            scheme_hash_set((Scheme_Hash_Table *)v, v2, v2);
+
+          SCHEME_VEC_ELS(v2)[0] = scheme_false;
+          SCHEME_VEC_ELS(v2)[1] = scheme_false;
+
+          if (no_rib_mutation) {
+            /* Sometimes we generate the same simplified lex table, so
+               look for an equivalent one in the cache. */
+            v = scheme_hash_get(lex_cache, scheme_true);
+            if (!v) {
+              v = (Scheme_Object *)scheme_make_hash_table_equal();
+              scheme_hash_set(lex_cache, scheme_true, v);
+            }
+            svl = scheme_hash_get((Scheme_Hash_Table *)v, v2);
+            if (svl)
+              v2 = svl;
+            else
+              scheme_hash_set((Scheme_Hash_Table *)v, v2, v2);
+          }
         }
 
 	v2l = CONS(v2, v2l);
