@@ -1052,8 +1052,10 @@
         `(tr (,@(if (string? style) `([class ,style]) null))
            ,@(let loop ([ds flows]
                         [as (cdr (or (and (list? style) (assq 'alignment style))
+                                     (t-style-get 'alignment)
                                      (cons #f (map (lambda (x) #f) flows))))]
                         [vas (cdr (or (and (list? style) (assq 'valignment style))
+                                      (t-style-get 'valignment)
                                       (cons #f (map (lambda (x) #f) flows))))]
                         [sts (cdr (or (and (list? style) (assq 'style style))
                                       (cons #f (map (lambda (x) #f) flows))))]

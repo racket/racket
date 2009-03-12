@@ -303,8 +303,11 @@
                     [row-style (car row-styles)])
                 (let loop ([flows flows]
                            [col-v-styles (and (list? row-style)
-                                              (let ([p (assoc 'valignment row-style)])
-                                                (and p (cdr p))))])
+                                              (or (let ([p (assoc 'valignment row-style)])
+                                                    (and p (cdr p)))
+                                                  (let ([p (and (list? (table-style t))
+                                                                (assoc 'valignment (table-style t)))])
+                                                    (and p (cdr p)))))])
                   (unless (null? flows)
                     (when index? (printf "\\item "))
                     (unless (eq? 'cont (car flows))
