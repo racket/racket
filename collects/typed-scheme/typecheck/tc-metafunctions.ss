@@ -10,7 +10,7 @@
          stxclass/util
          (for-syntax scheme/base))
 
-(provide combine-filter apply-filter abstract-filter)
+(provide combine-filter apply-filter abstract-filter abstract-filters)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
 (define (lcombine l1 l2)
@@ -34,6 +34,13 @@
      (match results
        [(tc-results: ts fs os dty dbound)
         (make-ValuesDots 
+         (for/list ([t ts]
+                    [f fs]
+                    [o os])
+           (make-Result t (abstract-filter ids keys f) (abstract-object ids keys o)))
+         dty dbound)]
+       [(tc-results: ts fs os)
+        (make-Values
          (for/list ([t ts]
                     [f fs]
                     [o os])
