@@ -552,7 +552,8 @@ the right choice when using @scheme[lexer] in other situations.
       @item{@scheme[(tokens group-id ...)]
 
       Declares that all of the tokens defined in each
-      @scheme[group-id] can be used by the parser in the
+      @scheme[group-id]---as bound by @scheme[define-tokens] or
+      @scheme[define-empty-tokens]---can be used by the parser in the
       @scheme[grammar] declaration.}
 
 
