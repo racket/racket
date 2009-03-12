@@ -12,7 +12,7 @@ blah @angled{blah @shout{@z} blah} blah
 
 @twice{@twice{blah}}
 
-@include{i3a}
+@include{i03a}
 
-@(let ([name "Eli"]) (let ([foo (include "i3b")]) (list foo "\n" foo)))
+@(let ([name "Eli"]) (let ([foo (include "i03b")]) (list foo "\n" foo)))
 Repeating yourself much?
