@@ -397,6 +397,7 @@ There are a number of other miscellaneous utilities the @web-server
 needs. They are provided by @filepath{private/util.ss}.
 
 @subsection{Contracts}
+@defthing[non-empty-string/c contract?]{Contract for non-empty strings.}
 @defthing[port-number? contract?]{Equivalent to @scheme[(between/c 1 65535)].}
 @defthing[path-element? contract?]{Equivalent to @scheme[(or/c path-string? (symbols 'up 'same))].}
 

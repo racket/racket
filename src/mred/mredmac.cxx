@@ -300,15 +300,17 @@ static void EnsureWNEReturn()
     ProcessSerialNumber psn;
     AppleEvent ae, ae_target;
 
-    pending_self_ae = 1;
-
-    GetCurrentProcess(&psn);
-    AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &ae_target);
-    AECreateAppleEvent('MrEd', 'Smug', &ae_target, kAutoGenerateReturnID, kAnyTransactionID, &ae);
-    AESend(&ae, NULL, kAENoReply, kAENormalPriority, kNoTimeOut, NULL, NULL);
-    /* Not supposed to dispose? */
-    /* AEDisposeDesc(&ae); */
-    /* AEDisposeDesc(&ae_target); */
+    if (GetCurrentProcess(&psn) == noErr) {
+      if (AECreateDesc(typeProcessSerialNumber, &psn, sizeof(psn), &ae_target) == noErr) {
+        if (AECreateAppleEvent('MrEd', 'Smug', &ae_target, kAutoGenerateReturnID, kAnyTransactionID, &ae) == noErr) {
+          if (AESend(&ae, NULL, kAENoReply, kAENormalPriority, kNoTimeOut, NULL, NULL) == noErr) {
+            pending_self_ae = 1;
+          }
+          AEDisposeDesc(&ae_target);
+        }
+        AEDisposeDesc(&ae);
+      }
+    }
   }
 }
 

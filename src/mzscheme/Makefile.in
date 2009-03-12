@@ -16,6 +16,8 @@ builddir = @builddir@
 mainsrcdir = @srcdir@/..
 @INCLUDEDEP@ @srcdir@/version.mak
 
+NOOP = :
+
 CC = @CC@
 CPP = @CPP@
 
@@ -289,7 +291,7 @@ unix-install-cgc:
 	./mzscheme@CGC@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-cgc-final:
-	cd .
+	$(NOOP)
 
 unix-install-3m:
 	cd ..; $(ICP) mzscheme/mzscheme@MMM@ "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
@@ -298,7 +300,7 @@ unix-install-3m:
 	./mzscheme@MMM@ -cu "$(srcdir)/collects-path.ss" "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 unix-install-3m-final:
-	cd .
+	$(NOOP)
 
 # OS X install ----------------------------------------
 

@@ -104,6 +104,7 @@ typedef struct {
 static void init_thread_memory();
 
 # define WIN32_FD_HANDLES
+# include <winsock2.h>
 # include <windows.h>
 # include <process.h>
 # include <signal.h>
@@ -739,17 +740,20 @@ void *scheme_alloc_fdset_array(int count, int permanent)
 {
 #if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
   void *fdarray;
+# if defined(WIN32_FD_HANDLES)
+  if (count) {
+    fdarray = scheme_malloc_allow_interior(count * sizeof(fdset_type));
+    if (permanent)
+      scheme_dont_gc_ptr(fdarray);
+    
+    scheme_init_fdset_array(fdarray, count);
+  } else
+    fdarray = NULL;
+# else
   if (permanent)
     fdarray = scheme_malloc_eternal(count * sizeof(fdset_type));
   else
     fdarray = scheme_malloc_atomic(count * sizeof(fdset_type));
-# if defined(WIN32_FD_HANDLES)
-  if (count) {
-    ((win_extended_fd_set *)fdarray)->added = 0;
-    ((win_extended_fd_set *)fdarray)->num_handles = 0;
-    ((win_extended_fd_set *)fdarray)->no_sleep = 0;
-    ((win_extended_fd_set *)fdarray)->wait_event_mask = 0;
-  }
 # endif
   return fdarray;
 #else
@@ -757,13 +761,37 @@ void *scheme_alloc_fdset_array(int count, int permanent)
 #endif
 }
 
+#if defined(WIN32_FD_HANDLES)
+static void reset_wait_array(win_extended_fd_set *efd)
+{
+  /* Allocate an array that may be big enough to hold all events
+     when we eventually call WaitForMultipleObjects. One of the three
+     arrays will be big enough. */
+  int sz = (3 * (SCHEME_INT_VAL(efd->alloc) + SCHEME_INT_VAL(efd->num_handles))) + 2;
+  HANDLE *wa;
+  wa = MALLOC_N_ATOMIC(HANDLE, sz);
+  efd->wait_array = wa;
+}
+#endif
+
 void *scheme_init_fdset_array(void *fdarray, int count)
 {
 #if defined(WIN32_FD_HANDLES)
   if (count) {
-    ((win_extended_fd_set *)fdarray)->added = 0;
-    ((win_extended_fd_set *)fdarray)->num_handles = 0;
-    ((win_extended_fd_set *)fdarray)->wait_event_mask = 0;
+    int i;
+    win_extended_fd_set *fd;
+    for (i = 0; i < count; i++) {
+      fd = (win_extended_fd_set *)scheme_get_fdset(fdarray, i);
+      fd->sockets = NULL;
+      fd->added = scheme_make_integer(0);
+      fd->alloc = scheme_make_integer(0);
+      fd->handles = NULL;
+      fd->num_handles = scheme_make_integer(0);
+      fd->no_sleep = NULL;
+      fd->wait_event_mask = scheme_make_integer(0);
+      fd->wait_array = NULL;
+      reset_wait_array(fdarray);
+    }
   }
 #endif
   return fdarray;
@@ -780,11 +808,12 @@ void *scheme_get_fdset(void *fdarray, int pos)
 
 void scheme_fdzero(void *fd)
 {
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
-  FD_ZERO((fd_set *)fd);
-#endif
 #if defined(WIN32_FD_HANDLES)
-  ((win_extended_fd_set *)fd)->added = 0;
+  scheme_init_fdset_array(fd, 1);
+#else
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+  FD_ZERO((fd_set *)fd);
+# endif
 #endif
 }
 
@@ -793,37 +822,64 @@ void scheme_fdzero(void *fd)
 void scheme_fdclr(void *fd, int n)
 {
 #if defined(WIN32_FD_HANDLES)
-  if (FD_ISSET(n, ((fd_set *)fd)))
-    --((win_extended_fd_set *)fd)->added;
-#endif
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+  win_extended_fd_set *efd = (win_extended_fd_set *)fd;
+  int i;
+  for (i = SCHEME_INT_VAL(efd->added); i--; ) {
+    if (efd->sockets[i] == n)
+      efd->sockets[i] = INVALID_SOCKET;
+  }
+#else
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
   FD_CLR((unsigned)n, ((fd_set *)fd));
+# endif
 #endif
 }
 
 void scheme_fdset(void *fd, int n)
 {
 #if defined(WIN32_FD_HANDLES)
-  if (!FD_ISSET(n, ((fd_set *)fd)))
-    ((win_extended_fd_set *)fd)->added++;
-#endif
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
-# ifdef STORED_ACTUAL_FDSET_LIMIT
+  win_extended_fd_set *efd = (win_extended_fd_set *)fd;
+  if (SCHEME_INT_VAL(efd->added) >= SCHEME_INT_VAL(efd->alloc)) {
+    SOCKET *naya;
+    int na;
+    na = (SCHEME_INT_VAL(efd->alloc) * 2) + 10;
+    naya = (SOCKET *)scheme_malloc_atomic(na * sizeof(SOCKET));
+    memcpy(naya, efd->sockets, SCHEME_INT_VAL(efd->alloc) * sizeof(SOCKET));
+    efd->sockets = naya;
+    efd->alloc = scheme_make_integer(na);
+    reset_wait_array(efd);
+  }
+  efd->sockets[SCHEME_INT_VAL(efd->added)] = n;
+  efd->added = scheme_make_integer(1 + SCHEME_INT_VAL(efd->added));
+#else
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+#  ifdef STORED_ACTUAL_FDSET_LIMIT
   int mx;
   mx = FDSET_LIMIT(fd);
   if (n > mx)
     FDSET_LIMIT(fd) = n;
-# endif
+#  endif
   FD_SET(n, ((fd_set *)fd));
+# endif
 #endif
 }
 
 int scheme_fdisset(void *fd, int n)
 {
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
-  return FD_ISSET(n, ((fd_set *)fd));
-#else
+#if defined(WIN32_FD_HANDLES)
+  win_extended_fd_set *efd = (win_extended_fd_set *)fd;
+  int i;
+  for (i = SCHEME_INT_VAL(efd->added); i--; ) {
+    if (efd->sockets[i] == n)
+      return 1;
+  }
   return 0;
+#else
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+  return FD_ISSET(n, ((fd_set *)fd));
+# else
+  return 0;
+# endif
 #endif
 }
 
@@ -834,19 +890,19 @@ void scheme_add_fd_handle(void *h, void *fds, int repost)
   OS_SEMAPHORE_TYPE *hs;
   int i, *rps;
 
-  i = efd->num_handles;
-  hs = MALLOC_N_ATOMIC(OS_SEMAPHORE_TYPE, i + 3);
-  /*                 Leave room for two more -^ */
-  rps = MALLOC_N_ATOMIC(int, i + 3);
+  i = SCHEME_INT_VAL(efd->num_handles);
+  hs = MALLOC_N_ATOMIC(OS_SEMAPHORE_TYPE, i + 1);
+  rps = MALLOC_N_ATOMIC(int, i + 1);
   hs[i] = (OS_SEMAPHORE_TYPE)h;
   rps[i] = repost;
   while (i--) {
     hs[i] = efd->handles[i];
     rps[i] = efd->repost_sema[i];
   }
-  efd->num_handles++;
-  efd->handles= hs;
+  efd->num_handles = scheme_make_integer(1 + SCHEME_INT_VAL(efd->num_handles));
+  efd->handles = hs;
   efd->repost_sema = rps;
+  reset_wait_array(efd);
 #else
   /* Do nothing. */
 #endif
@@ -856,7 +912,7 @@ void scheme_add_fd_nosleep(void *fds)
 {
 #if defined(WIN32_FD_HANDLES)
   win_extended_fd_set *efd = (win_extended_fd_set *)fds;
-  efd->no_sleep = 1;
+  efd->no_sleep = scheme_true;
 #else
 #endif
 }
@@ -864,7 +920,146 @@ void scheme_add_fd_nosleep(void *fds)
 void scheme_add_fd_eventmask(void *fds, int mask)
 {
 #if defined(WIN32_FD_HANDLES)
-  ((win_extended_fd_set *)fds)->wait_event_mask |= mask;
+  win_extended_fd_set *efd = (win_extended_fd_set *)fds;
+  efd->wait_event_mask = scheme_make_integer(mask | SCHEME_INT_VAL(efd->wait_event_mask));
+#endif
+}
+
+void scheme_collapse_win_fd(void *fds)
+{
+#if defined(WIN32_FD_HANDLES)
+  win_extended_fd_set *rfd, *wfd, *efd;
+  HANDLE *wa, e;
+  int i, p = 0, mask, j;
+  SOCKET s;
+
+  rfd = (win_extended_fd_set *)fds;
+  wfd = (win_extended_fd_set *)scheme_get_fdset(fds, 1);
+  efd = (win_extended_fd_set *)scheme_get_fdset(fds, 2);
+
+  if (rfd->combined_wait_array) {
+    /* clean up */
+    for (i = SCHEME_INT_VAL(rfd->added); i--; ) {
+      if (rfd->sockets[i] != INVALID_SOCKET)
+	WSAEventSelect(rfd->sockets[i], NULL, 0);
+    }
+    for (i = SCHEME_INT_VAL(wfd->added); i--; ) {
+      if (wfd->sockets[i] != INVALID_SOCKET)
+	WSAEventSelect(wfd->sockets[i], NULL, 0);
+    }
+    for (i = SCHEME_INT_VAL(efd->added); i--; ) {
+      if (efd->sockets[i] != INVALID_SOCKET)
+	WSAEventSelect(efd->sockets[i], NULL, 0);
+    }
+    p = SCHEME_INT_VAL(rfd->num_handles);
+    for (i = SCHEME_INT_VAL(rfd->combined_len); i-- > p; ) {
+      WSACloseEvent(rfd->combined_wait_array[i]);
+    }
+    rfd->combined_wait_array = NULL;
+  } else {
+    /* merge */
+    if (SCHEME_INT_VAL(rfd->alloc) < SCHEME_INT_VAL(wfd->alloc)) {
+      if (SCHEME_INT_VAL(wfd->alloc) < SCHEME_INT_VAL(efd->alloc))
+	wa = efd->wait_array;
+      else
+	wa = wfd->wait_array;
+    } else {
+      if (SCHEME_INT_VAL(rfd->alloc) < SCHEME_INT_VAL(efd->alloc))
+	wa = efd->wait_array;
+      else
+	wa = rfd->wait_array;
+    }
+
+    rfd->combined_wait_array = wa;
+
+    p = SCHEME_INT_VAL(rfd->num_handles);
+    for (i = 0; i < p; i++) {
+      wa[i] = rfd->handles[i];
+    }
+  
+    for (i = SCHEME_INT_VAL(rfd->added); i--; ) {
+      s = rfd->sockets[i];
+      if (s != INVALID_SOCKET) {
+	mask = FD_READ | FD_ACCEPT | FD_CONNECT | FD_CLOSE;
+	
+	for (j = SCHEME_INT_VAL(wfd->added); j--; ) {
+	  if (wfd->sockets[j] == s) {
+	    mask |= FD_WRITE;
+	    break;
+	  }
+	}
+
+	for (j = SCHEME_INT_VAL(efd->added); j--; ) {
+	  if (efd->sockets[j] == s) {
+	    mask |= FD_OOB;
+	    break;
+	  }
+	}
+
+	e = WSACreateEvent();
+	wa[p++] = e;
+	WSAEventSelect(s, e, mask);
+      }
+    }
+
+    for (i = SCHEME_INT_VAL(wfd->added); i--; ) {
+      s = wfd->sockets[i];
+      if (s != INVALID_SOCKET) {
+	mask = FD_WRITE | FD_CONNECT | FD_CLOSE;
+	
+	for (j = SCHEME_INT_VAL(rfd->added); j--; ) {
+	  if (rfd->sockets[j] == s) {
+	    mask = 0;
+	    break;
+	  }
+	}
+
+	if (mask) {
+	  for (j = SCHEME_INT_VAL(efd->added); j--; ) {
+	    if (efd->sockets[j] == s) {
+	      mask |= FD_OOB;
+	      break;
+	    }
+	  }
+	  
+	  e = WSACreateEvent();
+	  wa[p++] = e;
+	  WSAEventSelect(s, e, mask);
+	}
+      }
+    }
+
+    for (i = SCHEME_INT_VAL(efd->added); i--; ) {
+      s = efd->sockets[i];
+      if (s != INVALID_SOCKET) {
+	mask = FD_OOB | FD_CLOSE;
+	
+	for (j = SCHEME_INT_VAL(rfd->added); j--; ) {
+	  if (rfd->sockets[j] == s) {
+	    mask = 0;
+	    break;
+	  }
+	}
+
+	if (mask) {
+	  for (j = SCHEME_INT_VAL(wfd->added); j--; ) {
+	    if (wfd->sockets[j] == s) {
+	      mask = 0;
+	      break;
+	    }
+	  }
+	  
+	  if (mask) {
+	    e = WSACreateEvent();
+	    wa[p++] = e;
+	    WSAEventSelect(s, e, mask);
+	  }
+	}
+      }
+    }
+
+    rfd->combined_len = scheme_make_integer(p);
+  }
 #endif
 }
 
@@ -4607,6 +4802,7 @@ static CSI_proc get_csi(void)
   END_XFORM_SKIP;
   return csi;
 }
+
 # endif
 
 /* forward decl: */
@@ -7813,49 +8009,7 @@ void scheme_release_file_descriptor(void)
 
 /* This code is used to implement sleeping when MzScheme is completely
    blocked on external objects, such as ports. For Unix, sleeping is
-   essentially just a select(). For Windows, we essentially have to
-   implement select() ourselves, so that it works with both TCP
-   connections and stream ports all at once. */
-
-/********************* Windows TCP watcher *****************/
-
-#if defined(WIN32_FD_HANDLES)
-typedef struct
-{
-  MZTAG_IF_REQUIRED
-  fd_set *rd, *wr, *ex;
-} Tcp_Select_Info;
-
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
-static long select_for_tcp(void *data)
-{
-  /* Precise GC: we rely on the fact that a GC can't occur
-     during this thread's lifetime. */
-  Tcp_Select_Info *info = (Tcp_Select_Info *)data;
-
-  select(0, info->rd, info->wr, info->ex, NULL);
-
-  return 0;
-}
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
-
-# ifdef USE_WINSOCK_TCP
-#  define TCP_T SOCKET
-# else
-#  define TCP_T int
-# endif
-
-# ifndef MZ_PF_INET
-#  define MZ_PF_INET PF_INET
-# endif
-
-#endif
+   essentially just a select(). */
 
 /****************** Windows cleanup  *****************/
 
@@ -8003,113 +8157,47 @@ static void default_sleep(float v, void *fds)
     {
       long result;
       OS_SEMAPHORE_TYPE *array, just_two_array[2], break_sema;
-      int count, *rps, just_two_rps[2];
-      int fd_added;
+      int count, rcount, *rps;
 
       if (((win_extended_fd_set *)rd)->no_sleep)
 	return;
 
-      fd_added = (((win_extended_fd_set *)rd)->added
-		  || ((win_extended_fd_set *)wr)->added
-		  || ((win_extended_fd_set *)ex)->added);
-      count = ((win_extended_fd_set *)fds)->num_handles;
-      array = ((win_extended_fd_set *)fds)->handles;
+      scheme_collapse_win_fd(fds); /* merges */
+
+      rcount = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->num_handles);
+      count = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->combined_len);
+      array = ((win_extended_fd_set *)fds)->combined_wait_array;
       rps = ((win_extended_fd_set *)fds)->repost_sema;
 
       /* add break semaphore: */
       if (!count) {
 	array = just_two_array;
-	rps = just_two_rps;
       }
-      rps[count] = 0;
       break_sema = scheme_break_semaphore;
       array[count++] = break_sema;
 
-      if (count && !fd_added) {
-	/* Simple: just wait for HANDLE-based input: */
-	/* Extensions may handle events */
-	if (((win_extended_fd_set *)fds)->wait_event_mask
-	    && GetQueueStatus(((win_extended_fd_set *)fds)->wait_event_mask))
-	  result = WAIT_TIMEOUT; /* doesn't matter... */
-	else {
-	  DWORD msec;
-	  if (v) {
-	    if (v > 100000)
-	      msec = 100000000;
-	    else
-	      msec = (DWORD)(v * 1000);
-	  } else {
-	    msec = INFINITE;
-	  }
-	  result = MsgWaitForMultipleObjects(count, array, FALSE, msec,
-					     ((win_extended_fd_set *)fds)->wait_event_mask);
+      /* Wait for HANDLE-based input: */
+      /* Extensions may handle events */
+      if (SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask)
+	  && GetQueueStatus(SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask)))
+	result = WAIT_TIMEOUT; /* doesn't matter... */
+      else {
+	DWORD msec;
+	if (v) {
+	  if (v > 100000)
+	    msec = 100000000;
+	  else
+	    msec = (DWORD)(v * 1000);
+	} else {
+	  msec = INFINITE;
 	}
-	clean_up_wait(result, array, rps, count);
-	return;
-      } else if (count) {
-	/* What a mess! We must wait for either HANDLE-based input or TCP
-	   status. Use a thread to select() for TCP status, and then
-	   hit a semaphore if the status changes. Meanwhile, in this
-	   thread, wait on both the console input and the semaphore.
-	   When either happens, kill the thread. */
-	OS_THREAD_TYPE th;
-	Tcp_Select_Info *info;
-	TCP_T fake;
-	struct Scheme_Thread_Memory *thread_memory;
-
-	info = MALLOC_ONE_RT(Tcp_Select_Info);
-#ifdef MZTAG_REQUIRED
-	info->type = scheme_rt_tcp_select_info;
-#endif
-
-	fake = socket(MZ_PF_INET, SOCK_STREAM, 0);
-	FD_SET(fake, ex);
-
-	info->rd = rd;
-	info->wr = wr;
-	info->ex = ex;
-
-	{
-	  DWORD id;
-	  th = CreateThread(NULL, 4096,
-			    (LPTHREAD_START_ROUTINE)select_for_tcp,
-			    info, 0, &id);
-	  /* Not actually necessary, since GC can't occur during the
-	     thread's life, but better safe than sorry if we change the
-	     code later. */
-	  thread_memory = scheme_remember_thread((void *)th, 0);
-	}
-
-	rps[count] = 0;
-	array[count++] = th;
-
-	if (((win_extended_fd_set *)fds)->wait_event_mask
-	    && GetQueueStatus(((win_extended_fd_set *)fds)->wait_event_mask))
-	  result = WAIT_TIMEOUT; /* doesn't matter... */
-	else {
-	  DWORD msec;
-	  if (v) {
-	    if (v > 100000)
-	      msec = 100000000;
-	    else
-	      msec = (DWORD)(v * 1000);
-	  } else {
-	    msec = INFINITE;
-	  }
-	  result = MsgWaitForMultipleObjects(count, array, FALSE,
-					     v ? (DWORD)(v * 1000) : INFINITE,
-					     ((win_extended_fd_set *)fds)->wait_event_mask);
-	}
-	clean_up_wait(result, array, rps, count);
-
-	closesocket(fake); /* cause selector thread to end */
-
-	WaitForSingleObject(th, INFINITE);
-	scheme_forget_thread(thread_memory);
-	CloseHandle(th);
-
-	return;
+	result = MsgWaitForMultipleObjects(count, array, FALSE, msec,
+					   SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask));
       }
+      clean_up_wait(result, array, rps, rcount);
+      scheme_collapse_win_fd(fds); /* cleans up */
+
+      return;
     }
 #endif
 
@@ -8501,9 +8589,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_thread_memory, mark_thread_memory);
 #endif
   GC_REG_TRAV(scheme_rt_input_file, mark_input_file);
-#if defined(WIN32_FD_HANDLES)
-  GC_REG_TRAV(scheme_rt_tcp_select_info, mark_tcp_select_info);
-#endif
   GC_REG_TRAV(scheme_rt_output_file, mark_output_file);
 
 #ifdef MZ_FDS

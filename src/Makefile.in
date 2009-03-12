@@ -15,6 +15,8 @@ mandir = @mandir@
 docdir = @docdir@
 builddir = @builddir@
 
+NOOP = :
+
 ALLDIRINFO = "$(DESTDIR)$(bindir)" \
              "$(DESTDIR)$(collectsdir)" \
              "$(DESTDIR)$(docdir)" \
@@ -34,7 +36,7 @@ mred-3m:
 	cd mred; $(MAKE) 3m
 
 no-3m:
-	cd .
+	$(NOOP)
 
 cgc:
 	cd mzscheme; $(MAKE) cgc
@@ -44,7 +46,7 @@ mred-cgc:
 	cd mred; $(MAKE) cgc
 
 no-cgc:
-	cd .
+	$(NOOP)
 
 both:
 	$(MAKE) cgc
@@ -78,7 +80,7 @@ lib-finish:
 	@LIBFINISH@ "$(libdir)"
 
 no-run:
-	cd .
+	$(NOOP)
 
 copytree-run:
 	mzscheme/mzscheme@CGC@ -u \
@@ -90,7 +92,7 @@ install-mred-post-collects:
 	cd mred; $(MAKE) install-post-collects
 
 install-no-post-collects:
-	cd .
+	$(NOOP)
 
 fix-paths:
 	if [ "$(DESTDIR)" != "" ]; then \
@@ -118,7 +120,7 @@ plain-install-3m:
 	$(MAKE) install-common-last
 
 install-no-3m:
-	cd .
+	$(NOOP)
 
 install-mred-3m:
 	cd mred; $(MAKE) install-3m
@@ -141,7 +143,7 @@ plain-install-cgc:
 	$(MAKE) install-common-last
 
 install-no-cgc:
-	cd .
+	$(NOOP)
 
 install-mred-cgc:
 	cd mred; $(MAKE) install-cgc
@@ -164,7 +166,7 @@ plain-install-both:
 	$(MAKE) install-common-last
 
 install-no-both:
-	cd .
+	$(NOOP)
 
 install-mred-both:
 	cd mred; $(MAKE) install-both

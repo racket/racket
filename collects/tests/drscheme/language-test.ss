@@ -50,7 +50,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #f)
-    (generic-output #t #t #t)
+    (generic-output #t #t #t #t)
     
     (test-hash-bang)
     (test-error-after-definition)
@@ -150,7 +150,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #f)
-    (generic-output #t #t #t)
+    (generic-output #t #t #t #t)
     
     (test-hash-bang)
     (test-error-after-definition)
@@ -250,7 +250,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #t)
-    (generic-output #f #f #f)
+    (generic-output #f #f #f #f)
     (teaching-language-fraction-output)
     
     (test-hash-bang)
@@ -415,7 +415,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #t)
-    (generic-output #t #f #f)
+    (generic-output #t #f #f #f)
     (teaching-language-fraction-output)
     
     (test-hash-bang)
@@ -578,7 +578,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #t)
-    (generic-output #t #f #f)
+    (generic-output #t #f #f #f)
     (teaching-language-fraction-output)
     
     (test-hash-bang)
@@ -738,7 +738,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #t)
-    (generic-output #t #f #f)
+    (generic-output #t #f #f #f)
     (teaching-language-fraction-output)
     
     (test-hash-bang)
@@ -892,7 +892,7 @@ the settings above should match r5rs
     (check-top-of-repl)
     
     (generic-settings #t)
-    (generic-output #t #t #t)
+    (generic-output #t #t #t #f)
     (teaching-language-fraction-output)
     
     (test-hash-bang)
@@ -1150,8 +1150,9 @@ the settings above should match r5rs
    "(eq? 'g 'G)" 
    (if false/true? "true" "#t")))
 
-(define (generic-output list? quasi-quote? has-sharing?)
-  (let* ([drs (wait-for-drscheme-frame)]
+(define (generic-output list? quasi-quote? has-sharing? has-print-printing?)
+  (let* ([plain-print-style (if has-print-printing? "print" "write")]
+         [drs (wait-for-drscheme-frame)]
          [expression (format "(define x (list 2))~n(list x x)")]
          [set-output-choice
           (lambda (option show-sharing pretty?)
@@ -1193,9 +1194,9 @@ the settings above should match r5rs
     (clear-definitions drs)
     (type-in-definitions drs expression)
     
-    (test "write" 'off #t "((2) (2))")
+    (test plain-print-style 'off #t "((2) (2))")
     (when has-sharing?
-      (test "write" 'on #t "(#0=(2) #0#)"))
+      (test plain-print-style 'on #t "(#0=(2) #0#)"))
     (when quasi-quote?
       (test "Quasiquote" 'off #t "`((2) (2))")
       (when has-sharing?
@@ -1211,7 +1212,7 @@ the settings above should match r5rs
                 "(shared ((-1- (list 2))) (list -1- -1-))"
                 "(shared ((-1- (cons 2 empty))) (cons -1- (cons -1- empty)))")))
     
-    ;; setup write / pretty-print difference
+    ;; setup print / pretty-print difference
     (clear-definitions drs)
     (for-each fw:test:keystroke
               (string->list
@@ -1224,11 +1225,11 @@ the settings above should match r5rs
           (case-lambda
             [(x) (member #\newline (string->list x))]
             [() "newlines in result (may need to make the window smaller)"]))
-    (test "write" #f #f
+    (test plain-print-style #f #f
           (case-lambda
             [(x) (not (member #\newline (string->list x)))]
             [() "no newlines in result"]))
-    (test "write" #f #t
+    (test plain-print-style #f #t
           (case-lambda
             [(x) (member #\newline (string->list x))]
             [() "newlines in result (may need to make the window smaller)"]))))
@@ -1353,11 +1354,10 @@ the settings above should match r5rs
                     (printf ">> finished ~a\n" (syntax->datum #'arg))))]))
 
 (define (run-test)
-  (go pretty-big)
-  (go r5rs)
   (go beginner)
   (go beginner/abbrev)
   (go intermediate)
   (go intermediate/lambda)
   (go advanced)
-  )
+  (go pretty-big)
+  (go r5rs))

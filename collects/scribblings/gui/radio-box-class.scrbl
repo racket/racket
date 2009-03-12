@@ -61,13 +61,13 @@ The @scheme[callback] procedure is called (with the event type
 The @scheme[style] argument must include either @scheme['vertical] for a
  collection of radio buttons vertically arranged, or
  @scheme['horizontal] for a horizontal arrangement.
- @HVLabelNote{radio box} @DeletedStyleNote{radio box}
+ @HVLabelNote[@scheme[style]]{radio box} @DeletedStyleNote[@scheme[style] @scheme[parent]]{radio box}
 
 By default, the first radio button is initially selected. If
  @scheme[selection] is positive, it is passed to @method[radio-box%
  set-selection] to set the initial radio button selection.
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 

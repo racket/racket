@@ -795,6 +795,33 @@ all of the names in the tools library, for use defining keybindings
      raises an error, disallowing any more extensions.})
   
   
+  
+;                                                
+;                                                
+;                                                
+;                                                
+;    ;                       ;;;                 
+;  ;;;                                           
+;  ;;;; ;;; ;;;;;;;    ;;;   ;;; ;;; ;;   ;; ;;; 
+;  ;;;; ;;;;;;;;;;;;  ;;;;;  ;;; ;;;;;;; ;;;;;;; 
+;  ;;;  ;;;  ;;  ;;; ;;;  ;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;    ;;;;; ;;;     ;;; ;;; ;;; ;;; ;;; 
+;  ;;;  ;;;  ;;; ;;; ;;;  ;; ;;; ;;; ;;; ;;; ;;; 
+;  ;;;; ;;;  ;;; ;;;  ;;;;;  ;;; ;;; ;;; ;;;;;;; 
+;   ;;; ;;;   ;;;;;;   ;;;   ;;; ;;; ;;;  ;; ;;; 
+;                                            ;;; 
+;                                        ;;;;;;  
+;                                                
+;                                                
+
+  (proc-doc/names
+   drscheme:tracing:annotate
+   (-> syntax? syntax?)
+   (stx)
+   @{Call this function to add tracing annotations to the a fully-expanded
+     expression. When the program runs, DrScheme will pop open the tracing
+     window to display the trace.})
+  
   ;                                                           
   ;                                                           
   ;                                                           

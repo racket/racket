@@ -95,6 +95,7 @@
  (cs-mouse-over-import "Bindung ~s importiert aus ~s")
 
  (cs-view-docs "Dokumentation für ~a anschauen")
+ (cs-view-docs-from "~a aus ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
   
  (cs-lexical-variable "lexikalische Variable")
  (cs-imported-variable "importierte Variable")

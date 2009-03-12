@@ -24,6 +24,9 @@
    
    (test-suite
     "redirect-to"
+    (test-exn "Empty"
+              exn:fail:contract?
+              (lambda () (redirect-to "")))
     (test-equal? "Code (temp)"  
                  (response/basic-code (redirect-to "http://test.com/foo"))
                  302)
@@ -49,3 +52,6 @@
     (test-case "permanently" (check-true (redirection-status? permanently)))
     (test-case "temporarily" (check-true (redirection-status? temporarily)))
     (test-case "see-other" (check-true (redirection-status? see-other))))))
+
+;(require (planet schematics/schemeunit:3/text-ui))
+;(run-tests helpers-tests)

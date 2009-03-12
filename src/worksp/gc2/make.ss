@@ -233,7 +233,7 @@
 (define dll "../../../lib/libmzsch3mxxxxxxx.dll")
 (define exe "../../../MzScheme.exe")
 
-(define libs "kernel32.lib user32.lib wsock32.lib shell32.lib advapi32.lib")
+(define libs "kernel32.lib user32.lib ws2_32.lib shell32.lib advapi32.lib")
 
 (define (link-dll objs delayloads sys-libs dll link-options exe?)
   (let ([ms (if (file-exists? dll)

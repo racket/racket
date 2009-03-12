@@ -1,5 +1,5 @@
 #lang scheme
-(require redex)
+(require redex/reduction-semantics)
 (provide subst subst-n)
 
 (define-language subst-lang

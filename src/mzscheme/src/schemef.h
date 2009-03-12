@@ -875,6 +875,7 @@ MZ_EXTERN void scheme_fdclr(void *fd, int pos);
 MZ_EXTERN int scheme_fdisset(void *fd, int pos);
 MZ_EXTERN void scheme_add_fd_handle(void *h, void *fds, int repost);
 MZ_EXTERN void scheme_add_fd_eventmask(void *fds, int mask);
+MZ_EXTERN void scheme_collapse_win_fd(void *fds);
 
 MZ_EXTERN void scheme_security_check_file(const char *who, const char *filename, int guards);
 MZ_EXTERN void scheme_security_check_file_link(const char *who, const char *filename, const char *content);

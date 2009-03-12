@@ -4,15 +4,17 @@
            scribble/manual
            scribble/scheme
            scribble/decode
-           (for-label scheme/gui/base))
+           (for-label scheme/gui/base)
+           (for-syntax scheme/base))
 
-  (provide (except-out (all-defined-out) p))
+  (provide (except-out (all-defined-out) p define-inline))
+
+  (define-syntax-rule (define-inline (name) body)
+    (define-syntax (name stx)
+      (datum->syntax stx 'body stx)))
 
   (define (p . l)
     (decode-paragraph l))
-
-  (define (itemstyleinfo)
-    @elem{The @scheme[style] argument is reserved for future use.})
 
   (define (labelsimplestripped where what)
     @elem{If @litchar{&} occurs in @|where|, it is specially parsed; 
@@ -83,13 +85,6 @@
   (define (insertscrolldetails what)
     @elem{@|what| editor's display is scrolled to show the new selection @techlink{position}.})
 
-  (define (insertdetails what)
-    @elem{If @scheme[end] is
-          not @scheme['same], then the region from @scheme[start] to @scheme[end] is
-          replaced with the text. @insertmovedetails[@scheme[end]]. If @scheme[scroll-ok?] is not @scheme[#f]
-          @insertscrolldetails[@elem{and @scheme[start] is the same as the
-          current caret @techlink{position}, then the}]})
-
   (define (insertmovedetails what)
     @elem{If the insertion @techlink{position} is before
 or equal to the selection's start/end @techlink{position}, then the selection's
@@ -143,13 +138,6 @@ information@|details|, even if the editor currently has delayed refreshing (see
   (define seesniporderdiscuss
     @elem{See @secref["tb:miaoverview"] for information about snip order in pasteboards.})
 
-  (define (clipboardtypes)
-    @elem{The @scheme[format] string is typically four capital letters. (Under
-          Mac OS X, only four characters for @scheme[format] are ever used.) For
-          example, @scheme["TEXT"] is the name of the UTF-8-encoded string format. New
-          format names can be used to communicate application- and
-          platform-specific data formats.})
-
   (define PrintNote
     (make-splice
      (list
@@ -170,37 +158,40 @@ information@|details|, even if the editor currently has delayed refreshing (see
   (define LineNumbering @elem{Lines are numbered starting with @scheme[0].})
   (define ParagraphNumbering @elem{Paragraphs are numbered starting with @scheme[0].})
 
-  (define (italicptyStyleNote)
-    @elem{The @scheme[style] argument is provided for future extensions. Currently, @scheme[style] must be the empty list.})
+  (define (italicptyStyleNote style)
+    @elem{The @|style| argument is provided for future extensions. Currently, @|style| must be the empty list.})
 
-  (define (HVLabelNote what)
-    @elem{If @scheme[style] includes @scheme['vertical-label], then the @|what| is
-          created with a label above the control; if @scheme[style] does not include
+  (define (HVLabelNote style what)
+    @elem{If @|style| includes @scheme['vertical-label], then the @|what| is
+          created with a label above the control; if @|style| does not include
           @scheme['vertical-label] (and optionally includes @scheme['horizontal-label]), then the
           label is created to the left of the @|what|.})
 
-  (define (DeletedStyleNote what)
-    @elem{If @scheme[style] includes @scheme['deleted], then the @|what| is created as hidden,
+  (define (DeletedStyleNote style parent what)
+    @elem{If @|style| includes @scheme['deleted], then the @|what| is created as hidden,
           and it does not affect its parent's geometry; the @|what| can be made active later by calling
-          @scheme[parent]'s @method[area-container<%> add-child] method.})
+          @|parent|'s @method[area-container<%> add-child] method.})
 
-  (define (InStyleListNote)
-    @elem{The editor's style list must contain @scheme[style], otherwise
+  (define (InStyleListNote style)
+    @elem{The editor's style list must contain @style, otherwise
           the style is not changed. See also @xmethod[style-list% convert].})
 
-  (define (FontKWs) @elem{The @scheme[font] argument determines the font for the control.})
-  (define (FontLabelKWs) @elem{The @scheme[font] argument determines the font for the control content, 
-                               and @scheme[label-font] determines the font for the control label.})
+  (define (FontKWs font) @elem{The @|font| argument determines the font for the control.})
+  (define (FontLabelKWs font label-font) @elem{The @|font| argument determines the font for the control content, 
+                               and @|label-font| determines the font for the control label.})
 
-  (define (WindowKWs) @elem{For information about the @scheme[enabled] argument, see @scheme[window<%>].})
-  (define (SubareaKWs) @elem{For information about the @scheme[horiz-margin] and @scheme[vert-margin]
-                                 arguments, see @scheme[subarea<%>].})
-  (define (AreaContKWs) @elem{For information about the @scheme[border], @scheme[spacing], and @scheme[alignment]
-                                  arguments, see @scheme[area-container<%>].})
+  (define (WindowKWs enabled) @elem{For information about the @|enabled| argument, see @scheme[window<%>].})
+  (define-inline (SubareaKWs)
+    @elem{For information about the @scheme[horiz-margin] and @scheme[vert-margin]
+              arguments, see @scheme[subarea<%>].})
+  (define-inline (AreaContKWs) 
+    @elem{For information about the @scheme[border], @scheme[spacing], and @scheme[alignment]
+              arguments, see @scheme[area-container<%>].})
 
-  (define (AreaKWs) @elem{For information about the
-                              @scheme[min-width], @scheme[min-height], @scheme[stretchable-width], and 
-                              @scheme[stretchable-height] arguments, see @scheme[area<%>].})
+  (define-inline (AreaKWs) 
+    @elem{For information about the
+              @scheme[min-width], @scheme[min-height], @scheme[stretchable-width], and 
+              @scheme[stretchable-height] arguments, see @scheme[area<%>].})
 
   (define MismatchExn @elem{an @scheme[exn:fail:contract] exception is raised})
   

@@ -468,7 +468,7 @@ Changes the style of @scheme[style] to a specific style or by applying
  a style delta.  If @scheme[snip] is @scheme[#f], then all currently
  selected snips are changed. See also @xmethod[editor<%> change-style].
 
-When a @scheme[style] is provided: @InStyleListNote[]
+When a @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
 }
 

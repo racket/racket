@@ -72,7 +72,10 @@
   (values update-password-cache!
           (lambda (path user pass)
             (define denied? (read-password-cache))
-            (denied? path (if user (lowercase-symbol! user) #f) pass))))
+            (if denied?
+                (denied? path (if user (lowercase-symbol! user) #f) pass)
+                ; Fail un-safe
+                #f))))
 
 ;; pass-entry = (make-pass-entry str regexp (list sym str))
 (define-struct pass-entry (domain pattern users))

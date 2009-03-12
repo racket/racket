@@ -278,7 +278,7 @@
                  [callback (lambda (but evt) (stop-and-restart))])]
      [text  (new text%)]
      [edit  (new editor-canvas% [parent this] [editor text]
-                 [style '(no-border combo no-hscroll auto-vscroll)])])
+                 [style '(no-border no-hscroll auto-vscroll)])])
     
     ;; add lines to the end of the text 
     (define/public (add str)

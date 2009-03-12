@@ -1872,15 +1872,23 @@
      '#,(syntax-column stx)
      '#,(syntax-position stx)))
 
-(define-syntax (test--> stx)
+(define-syntax (test-->> stx)
   (syntax-case stx ()
     [(_ red #:cycles-ok e1 e2 ...)
-     #`(test-->/procs red e1 (list e2 ...) #t #,(get-srcloc stx))]
+     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #t #,(get-srcloc stx))]
     [(_ red e1 e2 ...)
-     #`(test-->/procs red e1 (list e2 ...) #f #,(get-srcloc stx))]))
+     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation*/cycle? #f #,(get-srcloc stx))]))
 
-(define (test-->/procs red arg expected cycles-ok? srcinfo)
-  (let-values ([(got got-cycle?) (apply-reduction-relation*/cycle? red arg)])
+(define-syntax (test--> stx)
+  (syntax-case stx ()
+    [(_ red e1 e2 ...)
+     #`(test-->>/procs red e1 (list e2 ...) apply-reduction-relation/dummy-second-value #t #,(get-srcloc stx))]))
+
+(define (apply-reduction-relation/dummy-second-value red arg)
+  (values (apply-reduction-relation red arg) #f))
+
+(define (test-->>/procs red arg expected apply-red cycles-ok? srcinfo)
+  (let-values ([(got got-cycle?) (apply-red red arg)])
     (inc-tests)
     
     (cond
@@ -1991,6 +1999,7 @@
          make-match
          
          test-equal
+         test-->>
          test-->
          test-predicate
          test-results)

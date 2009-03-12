@@ -1,0 +1,25 @@
+function foo() {
+  if (1 < 2)
+    something1
+  else
+    if (2<3)
+      something2
+    else
+      something3
+    fi
+    repeat 3 {
+      if (2<3)
+        something2
+      else
+        something3
+      fi
+      if (2<3)
+        something2.1
+        something2.2
+      else
+        something3
+      fi
+    }
+  fi
+  return
+}

@@ -24,7 +24,11 @@ Creates a clipboard client that supports no data formats.
 Adds a new data format name to the list supported by the clipboard
  client.
 
-@clipboardtypes[]
+The @scheme[format] string is typically four capital letters. (Under
+ Mac OS X, only four characters for @scheme[format] are ever used.)
+ For example, @scheme["TEXT"] is the name of the UTF-8-encoded string
+ format. New format names can be used to communicate application- and
+ platform-specific data formats.
 
 }
 

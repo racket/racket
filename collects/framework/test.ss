@@ -352,7 +352,7 @@
               [(zero? n) (error 'test:set-radio-box!
                                 "did not find ~e as a label for ~e; labels: ~a"
                                 state in-cb
-                                (build-labels in-cb))]
+                                (build-labels rb))]
               [else (let ([i (- total n)])
                       (if (or (string=? state (send rb get-item-label i))
                               (string=? state (send rb get-item-plain-label i)))

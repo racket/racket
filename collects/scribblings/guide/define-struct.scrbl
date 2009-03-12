@@ -189,6 +189,72 @@ library cannot manipulate the data in the structure except as allowed
 by the library.
 
 @; ------------------------------------------------------------
+@section[#:tag "struct-equal"]{Stucture Comparisons}
+
+A generic @scheme[equal?] comparison automatically recurs on the
+fields of a transparent structure type, but @scheme[equal?] defaults
+to mere instance identity for opaque structure types:
+
+@def+int[
+#:eval posn-eval
+(define-struct glass (width height) #:transparent)
+(equal? (make-glass 1 2) (make-glass 1 2))
+]
+@def+int[
+#:eval posn-eval
+(define-struct lead (width height))
+(define slab (make-lead 1 2))
+(equal? slab slab)
+(equal? slab (make-lead 1 2))
+]
+
+To support instances comparisons via @scheme[equal?] without making
+the structure type transparent, you can use the @scheme[#:property]
+keyword, @scheme[prop:equal+hash], and then a list of three functions:
+
+@def+int[
+#:eval posn-eval
+(define-struct lead (width height)
+  #:property
+  prop:equal+hash
+  (list (lambda (a b equal?-recur) 
+          (code:comment #, @t{compare @scheme[a] and @scheme[b]})
+          (and (equal?-recur (lead-width a) (lead-width b))
+               (equal?-recur (lead-height a) (lead-height b))))
+        (lambda (a hash-recur)
+          (code:comment #, @t{compute primary hash code of @scheme[a]})
+          (+ (hash-recur (lead-width a))
+             (* 3 (hash-recur (lead-height a)))))
+        (lambda (a hash2-recur)
+          (code:comment #, @t{compute secondary hash code of @scheme[a]})
+          (+ (hash2-recur (lead-width a))
+             (hash2-recur (lead-height a))))))
+(equal? (make-lead 1 2) (make-lead 1 2))
+]
+
+The first function in the list implements the @scheme[equal?] test on
+two @scheme[lead]s; the third argument to the function is used instead
+of @scheme[equal?] for recursive equality testing, so that data cycles
+can be handled correctly. The other two functions compute primary and
+secondary hash codes for use with @tech{hash tables}:
+
+@interaction[
+#:eval posn-eval
+(define h (make-hash))
+(hash-set! h (make-lead 1 2) 3)
+(hash-ref h (make-lead 1 2))
+(hash-ref h (make-lead 2 1))
+]
+
+The first function provided with @scheme[prop:equal+hash] is not
+required to recursively compare the fields of the structure. For
+example, a structure type representing a set might implement equality
+by checking that the members of the set are the same, independent of
+the order of elements in the internal representation. Just take care
+that the hash functions produce the same value for any two structure
+types that are supposed to be equivalent.
+
+@; ------------------------------------------------------------
 @section{Structure Type Generativity}
 
 Each time that a @scheme[define-struct] form is evaluated, it

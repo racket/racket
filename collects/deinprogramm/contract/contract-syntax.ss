@@ -1,0 +1,214 @@
+#lang scheme/base
+
+(provide :
+	 contract
+	 define-contract
+	 define/contract define-values/contract
+	 -> mixed one-of predicate combined property)
+
+(require deinprogramm/contract/contract
+	 scheme/promise
+	 (for-syntax scheme/base)
+	 (for-syntax syntax/stx)
+	 (for-syntax stepper/private/shared))
+
+(define-for-syntax (phase-lift stx)
+  (with-syntax ((?stx stx))
+    (with-syntax ((?stx1 (syntax/loc stx #'?stx))) ; attach the occurrence position to the syntax object
+      #'?stx1)))
+
+(define-for-syntax (parse-contract name stx)
+  (syntax-case* stx (mixed one-of predicate list -> combined property reference at) module-or-top-identifier=?
+    ((mixed ?contract ...)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   ((?contract-expr ...) (map (lambda (ctr)
+						(parse-contract #f ctr))
+					      (syntax->list #'(?contract ...)))))
+       #'(make-mixed-contract '?name
+			      (list ?contract-expr ...)
+			      ?stx)))
+    ((one-of ?exp ...)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name))
+       #'(make-case-contract '?name (list ?exp ...) ?stx)))
+    ((predicate ?exp)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name))
+       #'(make-predicate-contract '?name (delay ?exp) ?stx)))
+    ((list ?contract)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   (?contract-expr (parse-contract #f #'?contract)))
+       #'(make-list-contract '?name ?contract-expr ?stx)))
+    ((list ?contract1 ?rest ...)
+     (raise-syntax-error #f
+			 "list-Vertrag darf nur einen Operanden haben."
+			 (syntax ?contract1)))
+    ((?arg-contract ... -> ?return-contract)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   ((?arg-contract-exprs ...) (map (lambda (ctr)
+						     (parse-contract #f ctr))
+						   (syntax->list #'(?arg-contract ...))))
+		   (?return-contract-expr (parse-contract #f #'?return-contract)))
+       #'(make-procedure-contract '?name (list ?arg-contract-exprs ...) ?return-contract-expr ?stx)))
+    ((?arg-contract ... -> ?return-contract1 ?return-contract2 . ?_)
+     (raise-syntax-error #f
+			 "Nach dem -> darf nur ein Vertrag stehen."
+			 (syntax ?return-contract2)))
+    ((at ?loc ?ctr)
+     (with-syntax ((?ctr-expr (parse-contract #f #'?ctr)))
+       #'(contract-update-syntax ?ctr-expr #'?loc)))
+    (?id
+     (identifier? #'?id)
+     (with-syntax ((?stx (phase-lift stx)))
+       (let ((name (symbol->string (syntax->datum #'?id))))
+	 (if (char=? #\% (string-ref name 0))
+	     #'(make-type-variable-contract '?id ?stx)
+	     (with-syntax
+		 ((?raise
+		   (syntax/loc #'?stx
+			       (error 'contracts "expected a contract, found ~e" ?id))))
+	       #'(make-delayed-contract '?name
+					(delay
+					  (begin
+					    (when (not (contract? ?id))
+					      ?raise)
+					    (contract-update-syntax ?id ?stx)))
+					#'?stx))))))
+    ((combined ?contract ...)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   ((?contract-expr ...) (map (lambda (ctr)
+						(parse-contract #f ctr))
+					      (syntax->list #'(?contract ...)))))
+       #'(make-combined-contract '?name
+				 (list ?contract-expr ...)
+				 ?stx)))
+    ((property ?access ?contract)
+     (with-syntax ((?stx (phase-lift stx))
+		   (?name name)
+		   (?contract-expr (parse-contract #f #'?contract)))
+       #'(make-property-contract '?name
+				 ?access
+				 ?contract-expr
+				 ?stx)))
+    ((?contract-abstr ?contract ...)
+     (identifier? #'?contract-abstr)
+     (with-syntax (((?contract-expr ...) (map (lambda (ctr)
+						(parse-contract #f ctr))
+					      (syntax->list #'(?contract ...)))))
+       (with-syntax
+	   ((?call (syntax/loc stx (?contract-abstr ?contract-expr ...))))
+	 #'(make-delayed-contract '?name
+				  (delay ?call)
+				  #'?stx))))
+    (else
+     (raise-syntax-error 'contract
+			 "ungültiger Vertrag" stx))))
+
+(define-syntax contract
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ?contr)
+       #'(contract #f ?contr))
+      ((_ ?name ?contr)
+       (parse-contract (syntax->datum #'?name) #'?contr)))))
+
+(define-syntax define-contract
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ?name ?ctr)
+       (identifier? #'?name)
+       (stepper-syntax-property #'(define ?name (contract ?name ?ctr))
+				'stepper-skip-completely
+				#t))
+      ((_ (?name ?param ...) ?ctr)
+       (and (identifier? #'?name)
+	    (andmap identifier? (syntax->list #'(?param ...))))
+       (stepper-syntax-property #'(define (?name ?param ...) (contract ?name ?ctr))
+				'stepper-skip-completely
+				#t)))))
+
+(define-syntax define/contract
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ?name ?cnt ?expr)
+       (with-syntax ((?enforced
+		       (stepper-syntax-property #'(attach-name '?name (apply-contract/blame (contract ?cnt) ?expr))
+						'stepper-skipto/discard
+						;; apply-contract/blame takes care of itself
+						;; remember there's an implicit #%app
+						'(syntax-e cdr syntax-e cdr cdr car))))
+							   
+	 #'(define ?name ?enforced))))))
+
+(define-syntax define-values/contract
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ (?id ...) ?expr)
+       (andmap identifier? (syntax->list #'(?id ...)))
+       (syntax-track-origin
+	#'(define-values (?id ...) ?expr)
+	stx
+	(car (syntax-e stx))))
+      ((_ ((?id ?cnt)) ?expr)
+       (identifier? #'?id)
+       #'(define/contract ?id ?cnt ?expr)) ; works with stepper
+      ((_ (?bind ...) ?expr)
+       (let ((ids+enforced
+	      (map (lambda (bind)
+		     (syntax-case bind ()
+		       (?id
+			(identifier? #'?id)
+			(cons #'?id #'?id))
+		       ((?id ?cnt)
+			(identifier? #'?id)
+			(cons #'?id
+			      #'(attach-name '?id (apply-contract/blame (contract ?cnt) ?id))))))
+		   (syntax->list #'(?bind ...)))))
+	 (with-syntax (((?id ...) (map car ids+enforced))
+		       ((?enforced ...) (map cdr ids+enforced)))
+	   (stepper-syntax-property
+	    #'(define-values (?id ...)
+		(call-with-values
+		    (lambda () ?expr)
+		  (lambda (?id ...)
+		    (values ?enforced ...))))
+	    'stepper-skip-completely #t)))))))
+
+;; Matthew has promised a better way of doing this in the future.
+(define (attach-name name thing)
+  (if (procedure? thing)
+      (procedure-rename thing name)
+      thing))
+
+(define-syntax :
+  (syntax-rules ()
+    ((: ?id ?ctr) (begin)))) ; probably never used, we're only interested in the binding for :
+
+(define-for-syntax (within-contract-syntax-error stx name)
+  (raise-syntax-error #f
+		      "darf nur in Verträgen vorkommen"
+		      name))
+
+;; Expression -> Expression
+;; Transforms unfinished code (... and the like) to code
+;; raising an appropriate error.
+(define-for-syntax within-contract-syntax-transformer
+  (make-set!-transformer
+   (lambda (stx)
+     (syntax-case stx (set!)
+       [(set! form expr) (within-contract-syntax-error stx (syntax form))]
+       [(form . rest) (within-contract-syntax-error stx (syntax form))]
+       [form (within-contract-syntax-error stx stx)]))))
+
+(define-syntax -> within-contract-syntax-transformer)
+(define-syntax mixed within-contract-syntax-transformer)
+(define-syntax one-of within-contract-syntax-transformer)
+(define-syntax predicate within-contract-syntax-transformer)
+(define-syntax combined within-contract-syntax-transformer)
+(define-syntax property within-contract-syntax-transformer)
+; not a good idea:
+; (define-syntax list within-contract-syntax-transformer)

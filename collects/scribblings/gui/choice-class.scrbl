@@ -49,7 +49,7 @@ The @scheme[callback] procedure is called (with the event type
  @indexed-scheme['choice]) when the user selects a choice item (or
  re-selects the currently selected item).
 
-@HVLabelNote{choice item} @DeletedStyleNote{choice item}
+@HVLabelNote[@scheme[style]]{choice item} @DeletedStyleNote[@scheme[style] @scheme[parent]]{choice item}
 
 By default, the first choice (if any) is initially selected. If
  @scheme[selection] is positive, it is passed to
@@ -57,7 +57,7 @@ By default, the first choice (if any) is initially selected. If
  must be less than the length of @scheme[choices], it can be @scheme[0]
  when @scheme[choices] is empty.
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }}
 

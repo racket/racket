@@ -420,6 +420,14 @@ The @scheme[style] can be any of the following:
  
          @item{@scheme['style] to a string for a CSS class for HTML output.}
 
+         @item{@scheme['alignment] to a list of symbols and
+               @scheme[#f]s (one for each column); each symbol can be
+               @scheme['left], @scheme['right], or @scheme['center].}
+
+         @item{@scheme['valignment] to a list of symbols and
+               @scheme[#f]s (one for each column); each symbol can be
+               @scheme['top], @scheme['baseline], or @scheme['bottom].}
+
          @item{@scheme['row-styles] to a list of association lists,
                one for each row in the table. Each of these nested
                association lists can map @scheme['alignment] and
@@ -427,11 +435,9 @@ The @scheme[style] can be any of the following:
                @scheme[#f]s (one for each column cell) and/or
                @scheme['style] to a list of strings and @scheme[#f]s
                (one for each column cell) for a CSS class in HTML
-               output. The symbols in an @scheme['alignment] list can
-               be @scheme['left], @scheme['right], or
-               @scheme['center]. The symbols in a @scheme['valignment]
-               list can be @scheme['top], @scheme['baseline], or
-               @scheme['bottom].}
+               output. Row-specific @scheme['valignment] and
+               @scheme['alignment] associations override row-independent
+               associations.}
 
          ]}
 

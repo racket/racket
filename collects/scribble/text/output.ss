@@ -2,19 +2,180 @@
 
 (require scheme/promise)
 
-(provide output)
+(provide output splice verbatim unverbatim flush prefix)
+
+;; Outputs some value, for the preprocessor langauge.
+;;
+;; Uses global state because `output' is wrapped around each expression in a
+;; scribble/text file so this is much more convenient than wrapping the whole
+;; module's body in a `list' (which will be difficult with definitions etc).
+;; The state is a pair of prefixes -- one that is the prefix for the current
+;; value (which gets accumulated to with nested lists), and the other is the
+;; prefix for the current "line" (which is reset after a newline).  The
+;; line-prefix is needed because a line can hold a list, which means that the
+;; line-prefix will apply for the contents of the list including newlines in
+;; it.  This state is associated to a port via a hash table.  Another state
+;; that is used is the port's column position, which is maintained by the
+;; system (when line counts are enabled) -- this is used to tell what part of a
+;; prefix is already displayed.
+;;
+;; Each prefix is either an integer (for a number of spaces), a string, or #f
+;; indicating that prefixes are disabled (different from 0 -- they will not be
+;; accumulated).
+;;
 (define (output x [p (current-output-port)])
-  (let loop ([x x])
-    (cond [(or (void? x) (not x) (null? x)) (void)]
-          [(pair? x) (loop (car x)) (loop (cdr x))]
-          [(promise? x) (loop (force x))]
-          [(keyword? x) (loop (keyword->string x))]
-          [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
-          [(bytes? x)  (write-bytes x p)]
-          [(string? x) (write-string x p)]
-          [(char? x)   (write-char x p)]
-          [(number? x) (write x p)]
-          [(symbol? x) (display x p)]
-          ;; generic fallback
-          [else (error 'output "don't know how to render value: ~v" x)]))
+  ;; these are the global prefix and the one that is local to the current line
+  (define pfxs (port->state p))
+  ;; to get the output column
+  (define (getcol) (let-values ([(line col pos) (port-next-location p)]) col))
+  ;; total size of the two prefixes
+  (define (2pfx-length pfx1 pfx2)
+    (if (and pfx1 pfx2)
+      (+ (if (number? pfx1) pfx1 (string-length pfx1))
+         (if (number? pfx2) pfx2 (string-length pfx2)))
+      0))
+  ;; combines a prefix with a target column to get to
+  (define (pfx+col pfx)
+    (and pfx (let ([col (getcol)])
+               (cond [(number? pfx) (max pfx col)]
+                     [(>= (string-length pfx) col) pfx]
+                     [else (string-append
+                            pfx (make-spaces (- col (string-length pfx))))]))))
+  ;; adds two prefixes
+  (define (pfx+ pfx1 pfx2)
+    (and pfx1 pfx2
+         (if (and (number? pfx1) (number? pfx2)) (+ pfx1 pfx2)
+             (string-append (if (number? pfx1) (make-spaces pfx1) pfx1)
+                            (if (number? pfx2) (make-spaces pfx2) pfx2)))))
+  ;; prints two prefixes
+  (define (output-pfx col pfx1 pfx2)
+    (define-syntax-rule (->str pfx) (if (number? pfx) (make-spaces pfx) pfx))
+    (define-syntax-rule (show pfx) ; optimize when not needed
+      (unless (eq? pfx 0) (write-string (->str pfx) p)))
+    (when (and pfx1 pfx2)
+      (if (eq? 0 col)
+        (begin (show pfx1) (show pfx2))
+        (let ([len1 (if (number? pfx1) pfx1 (string-length pfx1))])
+          (cond [(< col len1) (write-string (->str pfx1) p col) (show pfx2)]
+                [(= col len1) (show pfx2)]
+                [(eq? 0 pfx2)]
+                [else
+                 (let ([col (- col len1)]
+                       [len2 (if (number? pfx2) pfx2 (string-length pfx2))])
+                   (when (< col len2) (write-string (->str pfx2) p col )))])))))
+  ;; main loop
+  (define (loop x)
+    (cond
+      ;; no output for these
+      [(or (void? x) (not x) (null? x)) (void)]
+      ;; for lists and pairs the current line prefix is added to the global
+      ;; one, then output the contents recursively (no need to change the
+      ;; state, since we pass the values in the loop, and we'd need to restore
+      ;; it afterwards anyway)
+      [(pair? x) (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+                        [npfx (pfx+col (pfx+ pfx lpfx))])
+                   (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+                   (if (list? x)
+                     (for ([x (in-list x)]) (loop x))
+                     (let ploop ([x x])
+                       (if (pair? x)
+                         (begin (loop (car x)) (ploop (cdr x)))
+                         (loop x))))
+                   (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+      ;; delayed values
+      [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
+      [(promise? x) (loop (force x))]
+      ;; special output wrappers
+      [(special? x)
+       (let ([c (special-contents x)])
+         (case (special-flag x)
+           [(splice) (for-each loop c)]
+           [(verbatim) ; save the previous pfxs
+            (let ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)])
+              (set-mcar! pfxs #f)  (set-mcdr! pfxs (cons pfx lpfx))
+              (for-each loop c)
+              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+           [(unverbatim) ; restore the previous pfxs
+            (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+                   [npfx (pfx+col (if (and (not pfx) (pair? lpfx))
+                                    (pfx+ (car lpfx) (cdr lpfx))
+                                    (pfx+ pfx lpfx)))])
+              (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
+              (for-each loop c)
+              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+           [(flush) ; useful before verbatim
+            (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
+           [(prefix)
+            (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+                   [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
+              (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+              (for ([x (in-list (cdr c))]) (loop x))
+              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+           [else (error 'output "unknown special value flag: ~e"
+                        (special-flag x))]))]
+      [else
+       (let* ([x (cond [(string? x)  x]
+                       [(bytes? x)   (bytes->string/utf-8 x)]
+                       [(symbol? x)  (symbol->string      x)]
+                       [(path? x)    (path->string        x)]
+                       [(keyword? x) (keyword->string     x)]
+                       [(number? x)  (number->string      x)]
+                       [(char? x)    (string              x)]
+                       ;; generic fallback: throw an error
+                       [else (error 'output "don't know how to render value: ~v"
+                                    x)])]
+              [len (string-length x)]
+              [nls (regexp-match-positions* #rx"\n" x)]
+              [pfx (mcar pfxs)])
+         (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
+           (cond [(pair? nls)
+                  (let ([nl (car nls)])
+                    (output-pfx col pfx lpfx)
+                    (write-string x p start (cdr nl))
+                    (loop (cdr nl) (cdr nls) 0 0))]
+                 ;; last substring from here (always set lpfx state when done)
+                 [(start . = . len)
+                  (set-mcdr! pfxs lpfx)]
+                 [(col . > . (2pfx-length pfx lpfx))
+                  (set-mcdr! pfxs lpfx)
+                  ;; the prefix was already shown, no accumulation needed
+                  (write-string x p start)]
+                 [else
+                  (let ([m (regexp-match-positions #rx"^ +" x start)])
+                    ;; accumulate spaces to lpfx, display if it's not all spaces
+                    (let ([lpfx (if m (pfx+ lpfx (- (cdar m) (caar m))) lpfx)])
+                      (set-mcdr! pfxs lpfx)
+                      (unless (and m (= len (cdar m)))
+                        (output-pfx col pfx lpfx)
+                        ;; the spaces were already added to lpfx
+                        (write-string x p (if m (cdar m) start)))))])))]))
+  ;;
+  (port-count-lines! p)
+  (loop x)
   (void))
+
+(define port->state
+  (let ([t (make-weak-hasheq)]
+        [last '(#f #f)]) ; cache for the last port, to avoid a hash lookup
+    (lambda (p)
+      (if (eq? p (car last)) (cdr last)
+          (let ([s (or (hash-ref t p #f)
+                       (let ([s (mcons 0 0)]) (hash-set! t p s) s))])
+            (set! last (cons p s))
+            s)))))
+
+(define-struct special (flag contents))
+
+(define (splice     . contents) (make-special 'splice     contents))
+(define (verbatim   . contents) (make-special 'verbatim   contents))
+(define (unverbatim . contents) (make-special 'unverbatim contents))
+(define flush                   (make-special 'flush      #f))
+(define (prefix pfx . contents) (make-special 'prefix     (cons pfx contents)))
+
+(define make-spaces ; (efficiently)
+  (let ([t (make-hasheq)] [v (make-vector 80 #f)])
+    (lambda (n)
+      (or (if (< n 80) (vector-ref v n) (hash-ref t n #f))
+          (let ([spaces (make-string n #\space)])
+            (if (< n 80) (vector-set! v n spaces) (hash-set! t n spaces))
+            spaces)))))

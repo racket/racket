@@ -17,15 +17,11 @@ module browser threading seems wrong.
            scheme/path
            scheme/port
            scheme/list
-           (only-in mzlib/etc compose)
            string-constants
            framework
            mrlib/name-message
            mrlib/bitmap-label
            mrlib/include-bitmap
-           "drsig.ss"
-           "auto-language.ss"
-           "insert-large-letters.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
            mrlib/include-bitmap
@@ -33,6 +29,9 @@ module browser threading seems wrong.
            net/sendurl
            net/url
            
+           "drsig.ss"
+           "auto-language.ss"
+           "insert-large-letters.ss"
            (prefix-in drscheme:arrow: "../arrow.ss")
            
            mred
@@ -380,10 +379,10 @@ module browser threading seems wrong.
              [add-to-program-editor-mixin
               (λ (mixin)
                 (drscheme:tools:only-in-phase 'drscheme:unit:add-to-program-editor-mixin 'phase1)
-                (set! program-editor-mixin (compose mixin program-editor-mixin)))])
+                (let ([old program-editor-mixin])
+                  (set! program-editor-mixin (λ (x) (mixin (old x))))))])
         (values get-program-editor-mixin
                 add-to-program-editor-mixin)))
-    
     
     ;; this sends a message to it's frame when it gets the focus
     (define make-searchable-canvas%

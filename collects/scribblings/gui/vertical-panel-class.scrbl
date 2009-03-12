@@ -27,9 +27,9 @@ A vertical panel arranges its subwindows in a single column. See
 
 If the @scheme['border] style is specified, the window is created with
  a thin border (only in this case, the client size of the panel may be
- less than its total size). @DeletedStyleNote{panel}
+ less than its total size). @DeletedStyleNote[@scheme[style] @scheme[parent]]{panel}
 
-@WindowKWs[] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
+@WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
 }
 
 @defmethod[(set-orientation [horizontal? boolean?]) void?]{

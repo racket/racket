@@ -13,6 +13,11 @@
     [([pats . rhs] ...)
      (nest
        ([parameterize ([orig-stx stx])]
+        [begin (unless (syntax->list exprs)
+                 (raise-syntax-error
+                  'match*
+                  "expected a sequence of expressions to match"
+                  exprs))]
         [let ([len (length (syntax->list exprs))])]
         [with-syntax ([(xs ...) (generate-temporaries exprs)]
                       [(exprs ...) exprs]
@@ -21,9 +26,20 @@
             ([body 
               (compile*
                (syntax->list #'(xs ...))
-               (for/list ([pats (syntax->list #'(pats ...))]
+               (for/list ([clause (syntax->list clauses)]
+                          [pats (syntax->list #'(pats ...))]
                           [rhs (syntax->list #'(rhs ...))])
+		 (unless (syntax->list pats)
+		   (raise-syntax-error 
+		    'match*
+		    "expected a sequence of patterns"
+		    pats))
                  (let ([lp (length (syntax->list pats))])
+                   (when (null? (syntax->list rhs))
+                     (raise-syntax-error 
+                      'match
+                      "expected at least one expression on the right-hand side"
+                      clause))
                    (unless (= len lp)
                      (raise-syntax-error
                       'match

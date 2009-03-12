@@ -303,7 +303,8 @@ void MrEdDispatchEvent(MSG *msg)
     LeaveEvent *e;
     e = (LeaveEvent *)GET_SAFEREF(sr);
     FREE_SAFEREF(sr);
-    wxDoLeaveEvent(e->wnd, e->x, e->y, e->flags);
+    if (e)
+      wxDoLeaveEvent(e->wnd, e->x, e->y, e->flags);
   } else if (!wxTheApp->ProcessMessage(msg)) {
 #if wxLOG_EVENTS
     if (!log)
@@ -844,28 +845,8 @@ int MrEdCheckForBreak(void)
   }
 }
 
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
-static long signal_fddone(void *fds)
-{
-  win_extended_fd_set *r = (win_extended_fd_set *)fds;
-  win_extended_fd_set *w = ((win_extended_fd_set *)fds) + 1;
-  win_extended_fd_set *e = ((win_extended_fd_set *)fds) + 2;
-
-  select(0, &r->set, &w->set, &e->set, 0);
-
-  return 0;
-}
-
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
-
 void MrEdMSWSleep(float secs, void *fds)
 {
-  win_extended_fd_set *r, *w, *e;
   DWORD msecs;
 
   if (fds && ((win_extended_fd_set *)fds)->no_sleep)
@@ -928,65 +909,27 @@ void MrEdMSWSleep(float secs, void *fds)
   }
 
   if (fds) {
+    win_extended_fd_set *r;
+    int num_handles, num_rhandles, *rps, result;
+    HANDLE *handles;
+
+    scheme_collapse_win_fd(fds); /* merges */
+
     r = (win_extended_fd_set *)fds;
-    w = ((win_extended_fd_set *)fds) + 1;
-    e = ((win_extended_fd_set *)fds) + 2;
-  } else
-    r = w = e = NULL;
-
-  /* Block: use different stratgey if there are handles or fds to watch: */
-  if (fds && ((r->added || w->added || e->added)
-              || r->num_handles)) {
-
-    int num_handles = r->num_handles, *rps, two_rps[2];
-    HANDLE *handles, two_handles[2];
-    SOCKET fake;
-    HANDLE th2;
-    DWORD result;
-    DWORD id;
-    struct Scheme_Thread_Memory *thread_memory;
-
-    if (num_handles) {
-      /* handles has been set up with an extra couple of slots: */
-      handles = r->handles;
-      rps = r->repost_sema;
-    } else {
-      handles = two_handles;
-      rps = two_rps;
-    }
-
-    if (r->set.fd_count || w->set.fd_count || e->set.fd_count) {
-      fake = socket(PF_INET, SOCK_STREAM, 0);
-      FD_SET(fake, e);
-
-      th2 = CreateThread(NULL, 4096,
-	              (LPTHREAD_START_ROUTINE)signal_fddone,
-		      fds, 0, &id);
-      /* Not actually necessary, since GC can't occur during the
-	 thread's life, but better safe than sorry if we change the
-	 code later. */
-      thread_memory = scheme_remember_thread((void *)th2);
-
-      rps[num_handles] = 0;
-      handles[num_handles++] = th2;
-    } else
-      th2 = NULL;
+    
+    num_rhandles = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->num_handles);
+    num_handles = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->combined_len);
+    handles = ((win_extended_fd_set *)fds)->combined_wait_array;
+    rps = ((win_extended_fd_set *)fds)->repost_sema;
 
     result = MsgWaitForMultipleObjects(num_handles, handles, FALSE,
 				       secs ? msecs : INFINITE,
 				       QS_ALLINPUT);
 
-    if ((result >= WAIT_OBJECT_0) && (result < WAIT_OBJECT_0 + num_handles)) {
+    if ((result >= WAIT_OBJECT_0) && (result < WAIT_OBJECT_0 + num_rhandles)) {
       result -= WAIT_OBJECT_0;
       if (rps[result])
         ReleaseSemaphore(handles[result], 1, NULL);
-    }
-
-    if (th2) {
-      closesocket(fake);
-      WaitForSingleObject(th2, INFINITE);
-      scheme_forget_thread(thread_memory);
-      CloseHandle(th2);
     }
   } else if (wxTheApp->keep_going) {
     MsgWaitForMultipleObjects(0, NULL, FALSE,

@@ -339,7 +339,13 @@ available, zero otherwise. Under Windows, a ``file dscriptor'' is a
 file @cpp{HANDLE}.}
 
 @function[(long scheme_get_port_fd
-           [Scheme_Object* port]
+           [Scheme_Object* port])]{
+
+Like @cpp{scheme_get_port_file_descriptor}, but a file
+ descriptor or @cpp{HANDLE} is returned directly, and the result is
+ @cpp{-1} if no file descriptor or @cpp{HANDLE} is available.}
+
+@function[(long scheme_get_port_socket
            [Scheme_Object* port]
            [long* s])]{
 
@@ -668,17 +674,67 @@ Creates a Scheme output file port from an ANSI C file pointer. The
            [int fd]
            [Scheme_Object* name]
            [int regfile]
-           [int win_textmode]
+           [int win_textmode])]{
+
+Creates a Scheme input port for a file descriptor @var{fd}. Under
+ Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
+ never be a file descriptor from the C library or a WinSock socket.
+
+The @var{name} object is used for the port's name. Specify a non-zero
+ value for @var{regfile} only if the file descriptor corresponds to a
+ regular file (which implies that reading never blocks, for example).
+
+Under Windows, @var{win_textmode} can be non-zero to make trigger
+ auto-conversion (at the byte level) of CRLF combinations to LF.
+
+Closing the resulting port closes the file descriptor.
+
+Instead of calling both @cpp{scheme_make_fd_input_port} and
+ @cpp{scheme_make_fd_output_port} on the same file descriptor, call
+ @cpp{scheme_make_fd_output_port} with a non-zero last
+ argument. Otherwise, closing one of the ports causes the file
+ descriptor used by the other to be closed as well.}
+
+@function[(Scheme_Object* scheme_make_fd_output_port
            [int fd]
            [Scheme_Object* name]
            [int regfile]
            [int win_textmode]
-           [int read_too]
+           [int read_too])]{
+
+Creates a Scheme output port for a file descriptor @var{fd}. Under
+ Windows, @var{fd} can be a @cpp{HANDLE} for a stream, and it should
+ never be a file descriptor from the C library or a WinSock socket.
+
+The @var{name} object is used for the port's name. Specify a non-zero
+ value for @var{regfile} only if the file descriptor corresponds to a
+ regular file (which implies that reading never blocks, for example).
+
+Under Windows, @var{win_textmode} can be non-zero to make trigger
+ auto-conversion (at the byte level) of CRLF combinations to LF.
+
+Closing the resulting port closes the file descriptor.
+
+If @var{read_too} is non-zero, the function produces multiple values
+ (see @secref["multiple"]) instead of a single port. The first result is
+ an input port for @var{fd}, and the second is an output port for
+ @var{fd}. These ports are connected in that the file descriptor is
+ closed only when both of the ports are closed.}
+
+
+@function[(void scheme_socket_to_ports
            [long s]
            [const-char* name]
            [int close]
            [Scheme_Object** inp]
-           [Scheme_Object** outp]
+           [Scheme_Object** outp])]{
+
+Creates Scheme input and output ports for a TCP socket @var{s}. The
+ @var{name} argument supplies the name for the ports. If @var{close}
+ is non-zero, then the ports assume responsibility for closing the
+ socket. The resulting ports are written to @var{inp} and @var{outp}.}
+
+@function[(Scheme_Object* scheme_make_byte_string_input_port
            [char* str])]{
 
 Creates a Scheme input port from a byte string; successive
@@ -720,7 +776,7 @@ Creates a pair of ports, setting @cpp{*@var{read}} and
            [Scheme_Object** write]
            [int limit])]{
 
-Like @cpp{scheme_pipe} is @var{limit} is @cpp{0}. If @var{limit} is
+Like @cpp{scheme_pipe} if @var{limit} is @cpp{0}. If @var{limit} is
  positive, creates a pipe that stores at most @var{limit} unread
  characters, blocking writes when the pipe is full.}
 

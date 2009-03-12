@@ -31,9 +31,9 @@ Unlike most panel classes, a group-box panel's horizontal and vertical
 
 Creates a group pane whose title is @scheme[label].
 
-@DeletedStyleNote{group panel}
+@DeletedStyleNote[@scheme[style] @scheme[parent]]{group panel}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 }}

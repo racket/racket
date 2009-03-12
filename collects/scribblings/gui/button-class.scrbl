@@ -50,9 +50,9 @@ The @scheme[callback] procedure is called (with the event type
 If @scheme[style] includes @scheme['border], the button is drawn with
 a special border that indicates to the user that it is the default
 action button (see @method[top-level-window<%>
-on-traverse-char]). @DeletedStyleNote{button}
+on-traverse-char]). @DeletedStyleNote[@scheme[style] @scheme[parent]]{button}
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]}
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]}
 
 
 @defmethod[#:mode override

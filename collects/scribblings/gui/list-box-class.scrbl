@@ -83,13 +83,13 @@ The @scheme['multiple] and @scheme['extended] styles determine a
  user can deselect the (sole) selected item in a @scheme['single] list
  box.
 
-@HVLabelNote{list box} @DeletedStyleNote{list box}
+@HVLabelNote[@scheme[style]]{list box} @DeletedStyleNote[@scheme[style] @scheme[parent]]{list box}
 
 If @scheme[selection] is an integer, it is passed to
 @method[list-control<%> set-selection] to set the initial selection. The @scheme[selection] must be less than
  the length of @scheme[choices].
 
-@FontLabelKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontLabelKWs[@scheme[font] @scheme[label-font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 }
 

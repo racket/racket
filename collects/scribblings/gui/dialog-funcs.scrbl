@@ -422,7 +422,7 @@ Lets the user select a color though the platform-specific
  dialog if possible. If @scheme[init-color] is provided, the dialog is
  initialized to the given color.
 
-@italicptyStyleNote[]
+@italicptyStyleNote[@scheme[style]]
 
 The result is @scheme[#f] if the user cancels the dialog, the selected
  color otherwise.
@@ -443,7 +443,7 @@ Lets the user select a font though the platform-specific
  dialog if possible. If @scheme[init-font] is provided, the dialog is
  initialized to the given font.
 
-@italicptyStyleNote[]
+@italicptyStyleNote[@scheme[style]]
 
 The result is @scheme[#f] if the user cancels the dialog, the selected
  font otherwise.
@@ -465,7 +465,7 @@ Lets the user select a PostScript configuration though a (modal)
  the given configuration, otherwise the current configuration from
 @scheme[current-ps-setup]  is used.
 
-@italicptyStyleNote[]
+@italicptyStyleNote[@scheme[style]]
 
 The result is @scheme[#f] if the user cancels the dialog, , a
  @scheme[ps-setup%] object that encapsulates the selected PostScript
@@ -494,7 +494,7 @@ The @scheme[parent] argument is used as the parent window for a dialog if
  configuration from
 @scheme[current-ps-setup]  is used.
 
-@italicptyStyleNote[]
+@italicptyStyleNote[@scheme[style]]
 
 The result is @scheme[#f] if the user cancels the dialog, a
  @scheme[ps-setup%] object that encapsulates the selected

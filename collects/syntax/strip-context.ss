@@ -18,5 +18,6 @@
    [(prefab-struct-key e)
     => (lambda (k)
          (apply make-prefab-struct
+                k
                 (strip-context (cdr (vector->list (struct->vector e))))))]
    [else e]))

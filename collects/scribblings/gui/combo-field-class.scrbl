@@ -55,9 +55,9 @@ If @scheme[init-value] is not @scheme[""], the minimum width of the text item
  is made wide enough to show @scheme[init-value]. Otherwise, a built-in
  default width is selected.
 
-@HVLabelNote{combo} @DeletedStyleNote{combo}.
+@HVLabelNote[@scheme[style]]{combo} @DeletedStyleNote[@scheme[style] @scheme[parent]]{combo}.
 
-@FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+@FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
 
 }

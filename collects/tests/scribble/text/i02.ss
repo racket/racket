@@ -5,7 +5,7 @@
 Suggested price list for "@name"
 
 @; test mutual recursion, throwing away inter-definition spaces
-@; <-- this is needed to get one line of space only
+@; <-- this is needed to get only one line of space above
 @(define (items-num)
    (length items))
 

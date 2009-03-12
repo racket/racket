@@ -33,11 +33,24 @@ is @scheme[mzscheme], since the binding of @mzscheme-if from
 @scheme[mzscheme] is different than the primitive @scheme[if].}
 
 
-@defform[(kernel-syntax-case* stx-expr trans?-expr (extras ...) clause ...)]{
+@defform[(kernel-syntax-case* stx-expr trans?-expr (extra-id ...) clause ...)]{
 
 A syntactic form like @scheme[kernel-syntax-case], except that it
 takes an additional list of extra literals that are in addition to the
 primitive PLT Scheme forms.}
+
+
+@defform[(kernel-syntax-case/phase stx-expr phase-expr clause ...)]{
+
+Generalizes @scheme[kernel-syntax-case] to work at an arbitrary phase
+level, as indicated by @scheme[phase-expr].}
+
+
+@defform[(kernel-syntax-case*/phase stx-expr phase-expr (extra-id ..) 
+           clause ...)]{
+
+Generalizes @scheme[kernel-syntax-case*] to work at an arbitrary phase
+level, as indicated by @scheme[phase-expr].}
 
 
 @defproc[(kernel-form-identifier-list) (listof indentifier?)]{

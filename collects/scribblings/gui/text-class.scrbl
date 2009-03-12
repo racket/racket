@@ -344,7 +344,7 @@ Changes the style for a region in the editor by applying a style delta
  then @method[editor<%> set-modified] is not called after applying the
  style change.
 
-When @scheme[style] is provided: @InStyleListNote[]
+When @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
 }
 
