@@ -1,4 +1,7 @@
 start
-  x y
-z
+  foo();
+loop:
+  if (something) {
+    blah(stuff);
+  }
 end
