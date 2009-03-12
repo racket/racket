@@ -1,103 +1,147 @@
-;; Utilities for .ssc preprocessor files.
+;; Preprocessor utilities for the .ssc file.
 
-(define (~ . args) (apply show args) (newline*))
-(define \\ newline*)
+#lang at-exp scheme/base
 
-(define (seplist l sep)
-  (cdr (apply append (map (lambda (x) (list sep x)) l))))
-(define-syntax push!
-  (syntax-rules () [(push! x l) (set! l (cons x l))]))
-(define-syntax pop!
-  (syntax-rules () [(pop! l) (begin0 (car l) (set! l (cdr l)))]))
-(define (upcase x)
-  (list->string (map char-upcase (string->list (format "~a" x)))))
+(require (for-syntax scheme/base) scheme/list scribble/text/output)
 
+(provide maplines)
+(define (maplines #:semicolons? [semi? #t] fun . ls)
+  (add-between
+   (apply filter-map (lambda xs
+                       (let ([r (apply fun xs)])
+                         (cond [(list? r) (if semi? (append r '(";")) r)]
+                               [(or (not r) (void? r)) #f]
+                               [else (error 'maplines "bad result: ~e" r)])))
+          ls)
+   "\n"))
+
+;; thunks are forced -- so this can be used as @@IFDEF{...}{...} too!
+(provide IFDEF IFNDEF)
+(define ((((IF*DEF token choose) . c) . t) . e)
+  (if (null? e)
+    @list{@verbatim{#}@token @c
+          @t
+          @verbatim{#}endif /* @c */}
+    @list{@verbatim{#}@token @c
+          @t
+          @verbatim{#}else /* @c @(choose '("undefined" . "defined")) */
+          @e
+          @verbatim{#}endif /* @c */}))
+(define IFDEF  (IF*DEF "ifdef"  car))
+(define IFNDEF (IF*DEF "ifndef" cdr))
+
+(provide DEFINE UNDEF)
+(define (DEFINE . t) @list{@verbatim{#}define @t})
+(define (UNDEF  . t) @list{@verbatim{#}undef @t})
+
+(provide scheme-id->c-name)
 (define (scheme-id->c-name str)
-  (let loop ([str (format "~a" str)]
-             [substs '((#rx"->" "_to_") (#rx"[-/]" "_") (#rx"\\*" "S")
-                       (#rx"\\?$" "_p") (#rx"!$" "_bang"))])
-    (if (null? substs)
-      str
-      (loop (regexp-replace* (caar substs) str (cadar substs)) (cdr substs)))))
+  (set! str (format "~a" str))
+  (for ([subst '([#rx"->" "_to_"] [#rx"[-/]" "_"] [#rx"\\*" "S"]
+                 [#rx"\\?$" "_p"] [#rx"!$" "_bang"])])
+    (set! str (regexp-replace* (car subst) str (cadr subst))))
+  str)
+
+;; Used to avoid bogus compilation errors
+(provide hush)
+(define hush @'{return NULL@";" /* hush the compiler */})
 
 ;; User function definition
-(define cfunctions '())
-(define (_cdefine name minargs . maxargs)
-  (define cname
-    (list "foreign_" (scheme-id->c-name name)))
-  (set! maxargs (if (null? maxargs) minargs (car maxargs)))
-  (push! (list name cname minargs maxargs) cfunctions)
-  (list "#undef MYNAME" \\ "#define MYNAME \""name"\""\\
-        "static Scheme_Object *"cname"(int argc, Scheme_Object *argv[])"\\))
-(define-syntax cdefine
-  (syntax-rules ()
-    [(_ name minargs maxargs) (_cdefine `name minargs maxargs)]
-    [(_ name args) (_cdefine `name args args)]))
+(provide cfunctions)
+(define cfunctions (make-parameter '()))
+(define (_cdefine name minargs maxargs . body)
+  (define cname @list{foreign_@(scheme-id->c-name name)})
+  (cfunctions (cons (list name cname minargs maxargs) (cfunctions)))
+  @list{@verbatim{#define MYNAME "@name"}
+        static Scheme_Object *@|cname|(int argc, Scheme_Object *argv[])
+        {
+          @body
+        }
+        @verbatim{#undef MYNAME}})
+(provide cdefine)
+(define-syntax (cdefine stx)
+  (syntax-case stx ()
+    [(_ name minargs maxargs body ...)
+     (number? (syntax-e #'maxargs))
+     #'(_cdefine `name minargs maxargs body ...)]
+    [(_ name args body ...)
+     #'(_cdefine `name args args body ...)]))
 
 ;; Struct definitions
-(define cstructs '())
+(provide cstructs)
+(define cstructs (make-parameter '()))
 (define (_cdefstruct name slots types)
-  (define cname
-    (regexp-replace* #rx"-" (symbol->string name) "_"))
-  (define mname
-    (list->string
-     (map char-upcase (string->list (regexp-replace* #rx"_" cname "")))))
-  (define predname
-    (string->symbol (string-append (symbol->string name)"?")))
-  (~ "/* "name" structure definition */")
-  (~ "static Scheme_Type "cname"_tag;" \\
-     "typedef struct "cname"_struct {" \\
-     "  Scheme_Object so;")
-  (for-each (lambda (s t) (~ "  "t" "s";")) slots types)
-  (~ "} "cname"_struct;" \\
-     "#define SCHEME_"mname"P(x) (SCHEME_TYPE(x)=="cname"_tag)")
-  (~ (_cdefine predname 1)
-     "{ return SCHEME_"mname"P(argv[0]) ? scheme_true : scheme_false; }")
-  (~ "/* 3m stuff for "cname" */" \\
-     "#ifdef MZ_PRECISE_GC" \\
-     "START_XFORM_SKIP;"
-     "int "cname"_SIZE(void *p) {" \\
-     "  return gcBYTES_TO_WORDS(sizeof("cname"_struct));" \\
-     "}")
-  (let ([mark/fix (lambda (mode)
-                    (~ "int "cname"_"mode"(void *p) {" \\
-                       "  "cname"_struct *s = ("cname"_struct *)p;")
-                    (for-each (lambda (s t)
-                                (when (regexp-match #rx"[*]" t)
-                                  (~ "  gc"mode"(s->"s");")))
-                              slots types)
-                    (~ "  return gcBYTES_TO_WORDS(sizeof("cname"_struct));" \\
-                       "}"))])
-    (mark/fix "MARK")
-    (mark/fix "FIXUP"))
-  (~ "END_XFORM_SKIP;" \\
-     "#endif")
-  (push! (list* name cname slots) cstructs))
-(define-syntax cdefstruct
-  (syntax-rules ()
-    [(_ name (slot type) ...)
-     (_cdefstruct `name (list `slot ...) (list type ...))]))
+  (define cname (regexp-replace* #rx"-" (symbol->string name) "_"))
+  (define mname (string-upcase (regexp-replace* #rx"_" cname "")))
+  (define predname (string->symbol (format "~a?" name)))
+  (define (mark/fix mode)
+    @list{int @|cname|_@|mode|(void *p) {
+            @|cname|_struct *s = (@|cname|_struct *)p;
+            @(maplines (lambda (s t)
+                         (when (regexp-match #rx"[*]" t)
+                           @list{gc@|mode|(s->@s)}))
+                       slots types)
+            return gcBYTES_TO_WORDS(sizeof(@|cname|_struct));
+          }})
+  (cstructs (cons (list* name cname slots) (cstructs)))
+  @list{/* @name structure definition */
+        static Scheme_Type @|cname|_tag;
+        typedef struct @|cname|_struct {
+          Scheme_Object so;
+          @(maplines (lambda (s t) @list{@t @s}) slots types)
+        } @|cname|_struct;
+        #define SCHEME_@|mname|P(x) (SCHEME_TYPE(x)==@|cname|_tag)
+        @_cdefine[predname 1 1]{
+          return SCHEME_@|mname|P(argv[0]) ? scheme_true : scheme_false@";"
+        }
+        /* 3m stuff for @cname */
+        #ifdef MZ_PRECISE_GC
+        START_XFORM_SKIP;
+        int @|cname|_SIZE(void *p) {
+          return gcBYTES_TO_WORDS(sizeof(@|cname|_struct));
+        }
+        @mark/fix{MARK}
+        @mark/fix{FIXUP}
+        END_XFORM_SKIP;
+        #endif})
+(provide cdefstruct)
+(define-syntax-rule (cdefstruct name [slot type] ...)
+  (_cdefstruct `name (list `slot ...) (list type ...)))
 
 ;; Tagged object allocation
-(define (_cmake-object var type . values)
-  (define cstruct (cdr (assq type cstructs)))
-  (~ var" = ("(car cstruct)"_struct*)scheme_malloc_tagged(sizeof("
-            (car cstruct)"_struct));" \\
-     var"->so.type = "(car cstruct)"_tag;")
-  (for-each (lambda (v f) (~ var"->"f" = ("v");")) values (cdr cstruct)))
-(define-syntax cmake-object
-  (syntax-rules () [(_ var type val ...) (_cmake-object var `type val ...)]))
+(define (_cmake var type . values)
+  (define cstruct (cdr (assq type (cstructs))))
+  (define cname (car cstruct))
+  @list{@var = (@|cname|_struct*)scheme_malloc_tagged(sizeof(@|cname|_struct));
+        @|var|->so.type = @|cname|_tag;
+        @(maplines (lambda (v f) @list{@|var|->@f = (@v)})
+                   values (cdr cstruct))})
+(provide cmake)
+(define-syntax-rule (cmake var type val ...) (_cmake var `type val ...))
 
 ;; Pre-allocated symbols
-(define symbols '())
+(provide symbols)
+(define symbols (make-parameter '()))
 (define (add-symbols syms)
-  (map (lambda (s)
-         (when (assq s symbols)
-           (error 'add-symbols "symbol ~s already defined" s))
-         (push! (list s (list (regexp-replace #rx"-" (symbol->string s) "_")
-                              "_sym"))
-                symbols)
-         (list "static Scheme_Object *"(cadar symbols)";"\\))
-       syms))
+  (maplines (lambda (s)
+              (define new
+                @list{@(regexp-replace #rx"-" (symbol->string s) "_")_sym})
+              (when (assq s (symbols))
+                (error 'add-symbols "symbol ~s already defined" s))
+              (symbols (cons (list s new) (symbols)))
+              @list{static Scheme_Object *@new})
+            syms))
+(provide defsymbols)
 (define-syntax defsymbols
   (syntax-rules () [(_ sym ...) (add-symbols '(sym ...))]))
+
+;; warn against manual edits to the generated file
+(provide header)
+(define (header orig)
+  @list{/********************************************
+         ** Do not edit this file!
+         ** This file is generated from @orig,
+         ** to make changes, edit that file and
+         ** run it to generate an updated version
+         ** of this file.
+         ********************************************/})
