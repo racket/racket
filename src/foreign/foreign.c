@@ -1621,7 +1621,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         return NULL; /* hush the compiler */
       }
     case FOREIGN_fpointer:
-      if (!ret_loc) scheme_wrong_type("Scheme->C","non-void-C-type",0,1,&(type));
+      if (!(ret_loc)) scheme_wrong_type("Scheme->C","fpointer",0,1,&(val));
       break;
     case FOREIGN_struct:
       if (!SCHEME_FFIANYPTRP(val))
