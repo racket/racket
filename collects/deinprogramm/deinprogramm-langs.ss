@@ -211,18 +211,13 @@
 	    ;; DeinProgramm addition, copied from language.ss
 	    (run-in-user-thread
 	     (lambda ()
-	       (global-port-print-handler
+               (global-port-print-handler
 		(lambda (value port)
-		  (let ([converted-value (simple-module-based-language-convert-value value settings)])
-		    (setup-printing-parameters 
-		     (lambda ()
-		       (parameterize ([pretty-print-columns 'infinity])
-			 (pretty-print converted-value port)))
-		     settings
-		     'infinity)))))))
-
+                  (parameterize ([pretty-print-columns 'infinity])
+                    (pretty-print value port)))))))
+          
 	  ;; set-printing-parameters : settings ( -> TST) -> TST
-	  ;; is implicitly exposed to the stepper.  watch out!  --  john
+          ;; is implicitly exposed to the stepper.  watch out!  --  john
           (define/public (set-printing-parameters settings thunk)
             (parameterize ([pc:booleans-as-true/false #f]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
@@ -240,16 +235,12 @@
               (thunk)))
           
           (define/override (render-value/format value settings port width)
-            (set-printing-parameters
-             settings
-             (lambda ()
-	       (simple-module-based-language-render-value/format value settings port width))))
+            (parameterize ([pretty-print-columns width])
+              (pretty-print value port)))
           
           (define/override (render-value value settings port)
-            (set-printing-parameters
-             settings
-             (lambda ()
-               (simple-module-based-language-render-value/format value settings port 'infinity))))
+            (parameterize ([pretty-print-columns 'infinity])
+              (pretty-print value port)))
           
           (super-new)))
 
