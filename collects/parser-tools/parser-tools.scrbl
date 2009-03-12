@@ -83,7 +83,7 @@ style lexer and parser generators.
 Note that both @scheme[(concatenation)] and @scheme[""] match the
 empty string, @scheme[(union)] matches nothing,
 @scheme[(intersection)] matches any string, and
-@scheme[(char-complement)] matches any single character.
+@scheme[(char-complement (union))] matches any single character.
 
 The regular expression language is not designed to be used directly,
 but rather as a basis for a user-friendly notation written with
@@ -484,7 +484,7 @@ the right choice when using @scheme[lexer] in other situations.
 
 @defmodule[parser-tools/yacc]
 
-@defform/subs[#:literals (grammar tokens start end precs error src-pos
+@defform/subs[#:literals (grammar tokens start end precs src-pos
                           suppress debug yacc-output prec)
               (parser clause ...)
               ([clause (grammar (non-terminal-id 
@@ -494,7 +494,7 @@ the right choice when using @scheme[lexer] in other situations.
                        (tokens group-id ...)
                        (start non-terminal-id ...)
                        (end token-id ...)
-                       (error expr)
+                       (#, @schemeidfont{error} expr)
                        (precs (assoc token-id ...) ...)
                        (src-pos)
                        (suppress)
@@ -570,7 +570,7 @@ the right choice when using @scheme[lexer] in other situations.
       that parses entire lines individually.}
 
 
-      @item{@scheme[(error expr)]
+      @item{@scheme[(#, @schemeidfont{error} expr)]
 
       The @scheme[expr] should evaluate to a function which will be
       executed for its side-effect whenever the parser encounters an
