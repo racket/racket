@@ -20,6 +20,7 @@ WXDIR = $(srcdir)/../wxxt
 PLTSRCDIR = $(srcdir)/..
 PLTBUILDDIR = $(builddir)/..
 
+NOOP = :
 
 ###########################
 #      Common Macros      #
@@ -120,7 +121,7 @@ both:
 	$(MAKE) 3m
 
 ext-libs: @JPEG_A@ @PNG_A@ @ZLIB_A@
-	cd .
+	$(NOOP)
 
 mred@CGC@ : $(MZSCHEMEDEPS) mrmain.@LTO@ $(MREDOBJECTS) $(@WXLIBS@) $(MRSTATIC_STUB)
 	$(MREDLINKER) $(MREDLDFLAGS) $(MRSTATIC) -o mred@CGC@ $(MREDOBJECTS) $(MREDLDLIBS) $(MRSTATIC_STUB)
@@ -310,7 +311,7 @@ install-wx_xt-cgc:
 	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@CGC_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-cgc-final:
-	cd .
+	$(NOOP)
 
 install-no-lib-3m-wx_xt:
 	echo "no dynamic libs"
@@ -324,10 +325,10 @@ install-wx_xt-3m:
 	$(MZSCHEME) -cu "$(srcdir)/../mzscheme/collects-path.ss" "$(DESTDIR)$(bindir)/mred@MMM_INSTALLED@@EXE_SUFFIX@" @COLLECTS_PATH@
 
 install-wx_xt-3m-final:
-	cd .
+	$(NOOP)
 
 install-wx_xt-post-collects:
-	cd .
+	$(NOOP)
 
 # Mac OS X ----------------------------------------
 
