@@ -111,7 +111,7 @@
  (struct (attribute source) ([start location/c]
                              [stop location/c]
                              [name symbol?]
-                             [value string?]))
+                             [value (or/c string? permissive/c)]))
  [permissive? (parameter/c boolean?)]
  [permissive/c contract?]
  [content/c contract?] 
