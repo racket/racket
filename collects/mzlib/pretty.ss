@@ -1050,6 +1050,11 @@
 	 (pp-two-up expr extra pp-expr-list depth
                     apair? acar acdr open close))
 
+       (define (pp-module expr extra depth
+                          apair? acar acdr open close)
+         (pp-two-up expr extra pp-expr depth
+                    apair? acar acdr open close))
+
        (define (pp-make-object expr extra depth
                                apair? acar acdr open close)
 	 (pp-one-up expr extra pp-expr-list depth
@@ -1138,8 +1143,10 @@
 	   ((do letrec-syntaxes+values)
             (and (no-sharing? expr 2 apair? acdr)
                  pp-do))
-
-	   ((send syntax-case instantiate module)
+           ((module)
+            (and (no-sharing? expr 2 apair? acdr)
+                 pp-module))
+	   ((send syntax-case instantiate)
             (and (no-sharing? expr 2 apair? acdr)
                  pp-syntax-case))
 	   ((make-object)
