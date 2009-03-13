@@ -8,12 +8,15 @@
          trace/k
          hide-all-policy
          hide-none-policy
-         simple-policy
+
+         T-policy
+         Tm-policy
 
          stx/hide-none
          stx/hide-all
          stx/hide-standard
-         stx/hide-simple)
+         stx/hide-T
+         stx/hide-Tm)
 
 (define (trace/t expr)
   (trace/ns expr #f))
@@ -133,22 +136,25 @@
   (stx/hide-policy d hide-none-policy))
 (define (stx/hide-all d)
   (stx/hide-policy d hide-all-policy))
-(define (stx/hide-simple d)
-  (stx/hide-policy d simple-policy))
 (define (stx/hide-standard d)
   (stx/hide-policy d standard-policy))
-#|
-(define (hide/standard d) (hide/policy d standard-policy))
-(define (hide/all d) (hide/policy d hide-all-policy))
-(define (hide/null d) (hide/policy d hide-none-policy))
-(define (hide/except d syms)
-  (hide/policy d (lambda (id) (memq (syntax-e id) syms))))
-(define (hide/simple d) (hide/policy d simple-policy))
-|#
 
-;; Simple hiding policy
-;; ALL MACROS & primitive tags are hidden
-;; EXCEPT Tlist and Tlet (and #%module-begin)
-(define (simple-policy id)
+(define (stx/hide-T d)
+  (stx/hide-policy d T-policy))
+(define (stx/hide-Tm d)
+  (stx/hide-policy d Tm-policy))
+
+;; T hiding policy
+;; ALL macros & primitives are hidden
+;; EXCEPT those starting with T (Tlist and Tlet)
+(define (T-policy id)
   (or (memq (syntax-e id) '())
+      (regexp-match #rx"^T" (symbol->string (syntax-e id)))))
+
+;; Tm hiding policy
+;; ALL MACROS & primitive tags are hidden
+;; EXCEPT those starting with T (Tlist and Tlet)
+;; EXCEPT module (=> #%module-begin gets tagged)
+(define (Tm-policy id)
+  (or (memq (syntax-e id) '(module))
       (regexp-match #rx"^T" (symbol->string (syntax-e id)))))

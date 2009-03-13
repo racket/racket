@@ -56,7 +56,7 @@
     ;; Printing parameters (mzscheme manual 7.9.1.4)
     [print-unreadable #t]
     [print-graph #f]
-    [print-struct #f]
+    [print-struct #t]
     [print-box #t]
     [print-vector-length #t]
     [print-hash-table #f]

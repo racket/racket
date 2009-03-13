@@ -89,6 +89,13 @@
                  lp-datum)]
               [(pair? obj)
                (pairloop obj)]
+              [(struct? obj)
+               ;; Only traverse prefab structs
+               (let ([pkey (prefab-struct-key obj)])
+                 (if pkey
+                     (let-values ([(refold fields) (unfold-pstruct obj)])
+                       (refold (map loop fields)))
+                     obj))]
               [(symbol? obj)
                (unintern obj)]
               [(null? obj)
@@ -116,6 +123,14 @@
       (values (loop stx)
               flat=>stx
               stx=>flat))))
+
+;; unfold-pstruct : prefab-struct -> (values (list -> prefab-struct) list)
+(define (unfold-pstruct obj)
+  (define key (prefab-struct-key obj))
+  (define fields (cdr (vector->list (struct->vector obj))))
+  (values (lambda (new-fields)
+            (apply make-prefab-struct key new-fields))
+          fields))
 
 ;; check+convert-special-expression : syntax -> #f/syntaxish
 (define (check+convert-special-expression stx)

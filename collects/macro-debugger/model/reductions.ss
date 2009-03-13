@@ -3,7 +3,6 @@
 (require scheme/match
          "stx-util.ss"
          "deriv-util.ss"
-         "context.ss"
          "deriv.ss"
          "reductions-engine.ss")
 
@@ -61,7 +60,7 @@
         [#:when (not (bound-identifier=? e1 e2))
                 [#:walk e2 'resolve-variable]])]
     [(Wrap p:module (e1 e2 rs ?1 ?2 tag rename check tag2 ?3 body shift))
-     (R ;; [#:hide-check rs] ;; FIXME: test and enable!!!
+     (R [#:hide-check rs]
         [! ?1]
         [#:pattern (?module ?name ?language . ?body-parts)]
         [! ?2]

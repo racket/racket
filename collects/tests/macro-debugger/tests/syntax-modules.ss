@@ -18,7 +18,7 @@
         [#:steps
          (tag-module-begin
           (module m '#%kernel (#%module-begin (define-values (x) 'a))))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
   (test "module, MB, def, use"
         (module m '#%kernel (#%module-begin (define-values (x) 'a) x))
         #:no-steps
@@ -28,7 +28,7 @@
         [#:steps
          (tag-module-begin
           (module m '#%kernel (#%module-begin (define-values (x) 'a) x)))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
   (test "module, MB, quote"
         (module m '#%kernel (#%module-begin 'a))
         #:no-steps
@@ -37,12 +37,12 @@
         (module m '#%kernel 'a)
         [#:steps
          (tag-module-begin (module m '#%kernel (#%module-begin 'a)))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
   (test "module, 2 quotes"
         (module m '#%kernel 'a 'b)
         [#:steps
          (tag-module-begin (module m '#%kernel (#%module-begin 'a 'b)))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
   (test "module, MB, begin"
         (module m '#%kernel (#%module-begin (begin 'a 'b)))
         [#:steps
@@ -53,7 +53,7 @@
         [#:steps
          (tag-module-begin (module m '#%kernel (#%module-begin (begin 'a 'b))))
          (splice-module (module m '#%kernel (#%module-begin 'a 'b)))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
   (test "module, MB, def in begin"
         (module m '#%kernel (#%module-begin (begin (define-values (x) 'a) x)))
         [#:steps
@@ -67,7 +67,7 @@
           (module m '#%kernel (#%module-begin (begin (define-values (x) 'a) x))))
          (splice-module
           (module m '#%kernel (#%module-begin (define-values (x) 'a) x)))]
-        #:same-hidden-steps)
+        #:no-hidden-steps)
 
   (test "module, MB, defstx, use"
         (module m '#%kernel
@@ -106,7 +106,11 @@
             (#%module-begin
              (#%require 'helper)
              'a)))]
-        #:same-hidden-steps)
+        [#:hidden-steps
+         (macro
+          (module m '#%kernel
+            (#%require 'helper)
+            'a))])
 
   (test "module k+helper, defs and opaque macros"
         (module m '#%kernel
@@ -196,14 +200,12 @@
          (tag-module-begin
           (module m mzscheme (#%module-begin (define-values (x) 'a) x)))
          (macro
-             (module m mzscheme 
-               (#%plain-module-begin
-                (#%require (for-syntax scheme/mzscheme))
-                (define-values (x) 'a)
-                x)))]
-        [#:hidden-steps
-         (tag-module-begin
-          (module m mzscheme (#%module-begin (define-values (x) 'a) x)))])
+          (module m mzscheme 
+            (#%plain-module-begin
+             (#%require (for-syntax scheme/mzscheme))
+             (define-values (x) 'a)
+             x)))]
+        #:no-hidden-steps)
   (test "module mz, def"
         (module m mzscheme (define-values (x) 'a))
         [#:steps
@@ -214,9 +216,7 @@
                (#%plain-module-begin 
                 (#%require (for-syntax scheme/mzscheme))
                 (define-values (x) 'a))))]
-        [#:hidden-steps
-         (tag-module-begin
-          (module m mzscheme (#%module-begin (define-values (x) 'a))))])
+        #:no-hidden-steps)
   (test "module mz, quote"
         (module m mzscheme 'a)
         [#:steps
@@ -227,10 +227,8 @@
                (#%plain-module-begin
                 (#%require (for-syntax scheme/mzscheme))
                 'a)))]
-        [#:hidden-steps
-         (tag-module-begin
-          (module m mzscheme (#%module-begin 'a)))])
-  
+        #:no-hidden-steps)
+
   (test "module mz, begin with 2 quotes"
         (module m mzscheme (begin 'a 'b))
         [#:steps
@@ -246,9 +244,7 @@
             (#%plain-module-begin
              (#%require (for-syntax scheme/mzscheme))
              'a 'b)))]
-        [#:hidden-steps
-         (tag-module-begin
-          (module m mzscheme (#%module-begin (begin 'a 'b))))])
+        #:no-hidden-steps)
 
   (test "module mz, macro use, quote"
         (module m mzscheme (or 'a 'b) 'c)
@@ -289,9 +285,7 @@
               (let-values ([(or-part) 'a])
                 (if or-part or-part 'b))
               'c)))]
-        [#:hidden-steps
-         (tag-module-begin
-          (module m mzscheme (#%module-begin (or 'a 'b) 'c)))])
+        #:no-hidden-steps)
 
   (test "module mz, macro use"
         (module m mzscheme (or 'a 'b))
