@@ -1076,6 +1076,7 @@
                                [(#f) null]
                                [(top) '((valign "top"))]
                                [(baseline) '((valign "baseline"))]
+                               [(center) '((valign "center"))]
                                [(bottom) '((valign "bottom"))])
                            ,@(if (string? st)
                                  `([class ,st])
