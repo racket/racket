@@ -157,8 +157,8 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
      action:
 
      @itemize{
-       @item{@scheme[start-pos] --- a position struct for the first character matched.}
-       @item{@scheme[end-pos] --- a position struct for the character after the last character in the match.}
+       @item{@scheme[start-pos] --- a @scheme[position] struct for the first character matched.}
+       @item{@scheme[end-pos] --- a @scheme[position] struct for the character after the last character in the match.}
        @item{@scheme[lexeme] --- the matched string.}
        @item{@scheme[input-port] --- the input-port being
             processed (this is useful for matching input with multiple
