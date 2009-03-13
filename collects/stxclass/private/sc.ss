@@ -12,8 +12,6 @@
          "runtime.ss")
 
 (provide define-syntax-class
-         define-basic-syntax-class
-         define-basic-syntax-class*
          parse-sc
          attrs-of
 
@@ -22,7 +20,6 @@
          with-patterns
 
          pattern
-         basic-syntax-class
          ~and
          ~or
          ...*
@@ -91,39 +88,6 @@
     [(define-syntax-class name . rhss)
      (syntax/loc stx
        (define-syntax-class (name) . rhss))]))
-
-(define-syntax define-basic-syntax-class
-  (syntax-rules ()
-    [(define-basic-syntax-class (name arg ...)
-       ([attr-name attr-depth] ...)
-       parser-expr)
-     (define-basic-syntax-class* (name arg ...)
-       ([attr-name attr-depth] ...)
-       (let ([name parser-expr])
-         (let ([name 
-                (lambda (x arg ...)
-                  (let ([r (name x arg ...)])
-                    (if (ok? r)
-                        (cons x r)
-                        r)))])
-           name)))]
-    [(define-basic-syntax-class name
-       ([attr-name attr-depth] ...)
-       parser-expr)
-     (define-basic-syntax-class (name)
-       ([attr-name attr-depth] ...)
-       parser-expr)]))
-
-(define-syntax define-basic-syntax-class*
-  (syntax-rules ()
-    [(define-basic-syntax-class* (name arg ...)
-       ([attr-name attr-depth] ...)
-       parser-expr)
-     (define-syntax-class (name arg ...)
-       #:attributes ([attr-name attr-depth] ...)
-       (basic-syntax-class
-        #:transforming
-        (let ([name parser-expr]) name)))]))
 
 (define-syntax (rhs->parser+description stx)
   (syntax-case stx ()

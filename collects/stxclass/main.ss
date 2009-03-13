@@ -4,10 +4,8 @@
          "private/lib.ss")
 
 (provide define-syntax-class
-         define-basic-syntax-class
-         define-basic-syntax-class*
          pattern
-         basic-syntax-class
+
          ~and
          ~or
          ...*

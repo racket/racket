@@ -23,25 +23,22 @@
 ;; Takes a list of the relevant attrs; order is significant!
 ;; Returns either fail or a list having length same as 'relsattrs'
 (define (parse:rhs rhs relsattrs args)
-  (cond [(rhs:union? rhs)
-         (with-syntax ([(arg ...) args])
-           #`(lambda (x arg ...)
-               (define (fail-rhs x expected frontier frontier-stx)
-                 #,(if (rhs-transparent? rhs)
-                       #`(make-failed x expected frontier frontier-stx)
-                       #'#f))
-               (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
-                 #,(let ([pks (rhs->pks rhs relsattrs #'x)])
-                     (unless (pair? pks)
-                       (wrong-syntax (rhs-orig-stx rhs)
-                                     "syntax class has no variants"))
-                     (parse:pks (list #'x)
-                                (list (empty-frontier #'x))
-                                #'fail-rhs
-                                (list #f)
-                                pks)))))]
-        [(rhs:basic? rhs)
-         (rhs:basic-parser rhs)]))
+  (with-syntax ([(arg ...) args])
+    #`(lambda (x arg ...)
+        (define (fail-rhs x expected frontier frontier-stx)
+          #,(if (rhs-transparent? rhs)
+                #`(make-failed x expected frontier frontier-stx)
+                #'#f))
+        (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
+          #,(let ([pks (rhs->pks rhs relsattrs #'x)])
+              (unless (pair? pks)
+                (wrong-syntax (rhs-ostx rhs)
+                              "syntax class has no variants"))
+              (parse:pks (list #'x)
+                         (list (empty-frontier #'x))
+                         #'fail-rhs
+                         (list #f)
+                         pks))))))
 
 ;; parse:clauses : stx identifier identifier -> stx
 (define (parse:clauses stx var phi)
@@ -82,15 +79,15 @@
 ;; rhs->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs->pks rhs relsattrs main-var)
   (match rhs
-    [(struct rhs:union (orig-stx attrs transparent? description patterns))
+    [(struct rhs:union (_ attrs transparent? description patterns))
      (for*/list ([rhs patterns] [pk (rhs-pattern->pks rhs relsattrs main-var)]) 
        pk)]))
 
 ;; rhs-pattern->pks : RHS (listof SAttr) identifier -> (listof PK)
 (define (rhs-pattern->pks rhs relsattrs main-var)
   (match rhs
-    [(struct rhs:pattern (orig-stx attrs pattern decls remap sides))
-     (parameterize ((current-syntax-context orig-stx))
+    [(struct rhs:pattern (ostx attrs pattern decls remap sides))
+     (parameterize ((current-syntax-context ostx))
        (define iattrs
          (append-attrs
           (cons (pattern-attrs pattern)
@@ -311,7 +308,7 @@ Conventions:
 ;; parse:gseq:and : <ParseConfig> pat:and (listof Pattern) stx
 ;;               -> stx
 (define (parse:group:and vars fcs phi ds and-pattern rest-patterns k)
-  (match-define (struct pat:and (orig-stx attrs depth description patterns))
+  (match-define (struct pat:and (_ _ _ description patterns))
                 and-pattern)
   ;; FIXME: handle description
   (let ([var0-copies (for/list ([p patterns]) (car vars))]
@@ -326,7 +323,7 @@ Conventions:
 ;; parse:compound:gseq : <ParseConfig> pat:gseq (listof Pattern) stx
 ;;                    -> stx
 (define (parse:group:gseq vars fcs phi ds gseq-pattern rest-patterns k)
-  (match-define (struct pat:gseq (orig-stx attrs depth heads tail)) gseq-pattern)
+  (match-define (struct pat:gseq (ostx attrs depth heads tail)) gseq-pattern)
   (define xvar (generate-temporary 'x))
   (define head-lengths (for/list ([head heads]) (length (head-ps head))))
   (define head-attrss (for/list ([head heads]) (flatten-attrs* (head-attrs head))))
@@ -348,7 +345,7 @@ Conventions:
       (map attr-name head-attrs)))
   (define completed-heads
     (for/list ([head heads])
-      (complete-heads-pattern head xvar (add1 depth) orig-stx)))
+      (complete-heads-pattern head xvar (add1 depth) ostx)))
   (define hid-argss (map generate-temporaries head-idss))
   (define hid-args (apply append hid-argss))
   (define mins (map head-min heads))
@@ -436,12 +433,12 @@ Conventions:
                 [rep 0] ...)
             (parse-loop var0 hid ... ... rep ... #,phi))))))
 
-;; complete-heads-patterns : Head identifier number stx -> Pattern
-(define (complete-heads-pattern head rest-var depth seq-orig-stx)
+;; complete-heads-patterns : Head identifier number -> Pattern
+(define (complete-heads-pattern head rest-var depth seq-ostx)
   (define (loop ps pat)
     (if (pair? ps)
         (make pat:compound
-              (cons (pattern-orig-stx (car ps)) (pattern-orig-stx pat))
+              (cons (pattern-ostx (car ps)) (pattern-ostx pat))
               (append (pattern-attrs (car ps)) (pattern-attrs pat))
               depth
               pairK
@@ -449,7 +446,7 @@ Conventions:
         pat))
   (define base 
     (make pat:id
-          seq-orig-stx
+          seq-ostx
           (list (make-attr rest-var depth null))
           depth rest-var #f null))
   (loop (head-ps head) base))
@@ -493,8 +490,8 @@ Conventions:
     (let ([result (not (pattern-intersects? p1 p2))])
       (when #f ;; result
         (printf "commutes!\n    ~s\n  & ~s\n"
-                (syntax->datum (pattern-orig-stx p1))
-                (syntax->datum (pattern-orig-stx p2))))
+                (syntax->datum (pattern-ostx p1))
+                (syntax->datum (pattern-ostx p2))))
       result))
 
   (define (pattern-intersects? p1 p2)
@@ -636,8 +633,7 @@ Conventions:
 (define (shift-pks:compound pks)
   (define (shift-pk pk0)
     (match pk0
-      [(struct pk ((cons (struct pat:compound (orig-stx attrs depth kind patterns))
-                         rest-ps)
+      [(struct pk ((cons (struct pat:compound (_ _ _ _ patterns)) rest-ps)
                    k))
        (make-pk (append patterns rest-ps) k)]))
   (map shift-pk pks))
