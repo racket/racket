@@ -329,6 +329,7 @@ MenuHandle wxMenu::CreateCopy(char *title, Bool doabouthack, MenuHandle toHandle
       title = wxBuildMacMenuString(tempString, menuItem->itemName, NULL, NULL, NULL);
       subMenu = menuItem->subMenu;
       subMenu->wxMacInsertSubmenu();
+      ::InsertMenu(subMenu->cMacMenu, -1);
       hId = subMenu->cMacMenuId;
     } else {
       title = wxBuildMacMenuString(tempString, menuItem->itemName, &spc, &modifiers, &is_virt);
