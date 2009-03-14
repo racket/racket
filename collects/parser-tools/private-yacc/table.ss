@@ -129,9 +129,13 @@
           (newline port)))
       
       (when (> SR-conflicts 0)
-        (fprintf port "~a shift/reduce conflicts~n" SR-conflicts))
+        (fprintf port "~a shift/reduce conflict~a~n" 
+                 SR-conflicts
+                 (if (= SR-conflicts 1) "" "s")))
       (when (> RR-conflicts 0)
-        (fprintf port "~a reduce/reduce conflicts~n" RR-conflicts))))
+        (fprintf port "~a reduce/reduce conflict~a~n"
+                 RR-conflicts
+                 (if (= RR-conflicts 1) "" "s")))))
   
   ;; resolve-conflict : (listof action?) -> action? bool bool
   (define (resolve-conflict actions)
@@ -176,12 +180,14 @@
       (unless suppress
         (when (> SR-conflicts 0)
           (fprintf (current-error-port) 
-                   "~a shift/reduce conflicts~n" 
-                   SR-conflicts))
+                   "~a shift/reduce conflict~a~n" 
+                   SR-conflicts
+                   (if (= SR-conflicts 1) "" "s")))
         (when (> RR-conflicts 0)
           (fprintf (current-error-port)
-                   "~a reduce/reduce conflicts~n"
-                   RR-conflicts)))
+                   "~a reduce/reduce conflict~a~n"
+                   RR-conflicts
+                   (if (= RR-conflicts 1) "" "s"))))
       table))
   
 
