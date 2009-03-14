@@ -111,7 +111,8 @@ files that already exist:
 
  @item{@indexed-scheme['update] --- open an existing file without
        truncating it; if the file does not exist, the
-       @exnraise[exn:fail:filesystem].}
+       @exnraise[exn:fail:filesystem]. Use @scheme[file-position]
+       to change the current read/write position.}
 
  @item{@indexed-scheme['can-update] --- open an existing file without
        truncating it, or create the file if it does not exist.}
