@@ -77,10 +77,10 @@ static Scheme_Object *origin_symbol;
 static Scheme_Object *lexical_symbol;
 static Scheme_Object *protected_symbol;
 
-static Scheme_Object *nominal_ipair_cache;
+static THREAD_LOCAL Scheme_Object *nominal_ipair_cache;
 
-static Scheme_Object *mark_id = scheme_make_integer(0);
-static Scheme_Object *current_rib_timestamp = scheme_make_integer(0);
+static THREAD_LOCAL Scheme_Object *mark_id = scheme_make_integer(0);
+static THREAD_LOCAL Scheme_Object *current_rib_timestamp = scheme_make_integer(0);
 
 static Scheme_Stx_Srcloc *empty_srcloc;
 
@@ -88,11 +88,12 @@ static Scheme_Object *empty_simplified;
 
 static Scheme_Hash_Table *empty_hash_table;
 
-static Scheme_Object *last_phase_shift;
+static THREAD_LOCAL Scheme_Object *last_phase_shift;
 
-/* caches */
-static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht;
-static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht;
+static THREAD_LOCAL Scheme_Object *unsealed_dependencies;
+
+static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht; /* a cache */
+static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht; /* a cache */
 
 static Scheme_Object *no_nested_inactive_certs;
 
@@ -225,6 +226,9 @@ static Module_Renames *krn;
                               ->pos)           void => not yet computed
                               or #f            sym => mark check done, 
                                                       var-resolved is answer to replace #f
+                                                      for nozero skipped ribs
+                                               (rlistof (rcons skipped sym)) => generalization of sym
+                                               (mcons var-resolved next) => depends on unsealed rib
    - A wrap-elem (vector <any> <ht> <sym> ... <sym> ...) is also a lexical rename
                                     var       resolved
          where the variables have already been resolved and filtered (no mark
@@ -560,6 +564,8 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(no_nested_inactive_certs);
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
   SCHEME_SET_IMMUTABLE(no_nested_inactive_certs);
+
+  REGISTER_SO(unsealed_dependencies);
 }
 
 /*========================================================================*/
@@ -1059,6 +1065,7 @@ Scheme_Object *scheme_make_rename_rib()
 void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename)
 {
   Scheme_Lexical_Rib *rib, *naya;
+  Scheme_Object *next;
 
   naya = MALLOC_ONE_TAGGED(Scheme_Lexical_Rib);
   naya->so.type = scheme_lexical_rib_type;
@@ -1070,6 +1077,13 @@ void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename)
 
   naya->timestamp = rib->timestamp;
   naya->sealed = rib->sealed;
+
+  while (unsealed_dependencies) {
+    next = SCHEME_CDR(unsealed_dependencies);
+    SCHEME_CAR(unsealed_dependencies) = NULL;
+    SCHEME_CDR(unsealed_dependencies) = NULL;    
+    unsealed_dependencies = next;
+  }
 }
 
 void scheme_drop_first_rib_rename(Scheme_Object *ro)
@@ -3614,7 +3628,89 @@ static int in_skip_set(Scheme_Object *timestamp, Scheme_Object *skip_ribs)
 
 static Scheme_Object *add_skip_set(Scheme_Object *timestamp, Scheme_Object *skip_ribs)
 {
-  return scheme_make_raw_pair(timestamp, skip_ribs);
+  if (in_skip_set(timestamp, skip_ribs))
+    return skip_ribs;
+  else
+    return scheme_make_raw_pair(timestamp, skip_ribs);
+}
+
+XFORM_NONGCING static int same_skipped_ribs(Scheme_Object *a, Scheme_Object *b)
+{
+  while (a) {
+    if (!b) return 0;
+    if (!SAME_OBJ(SCHEME_CAR(a), SCHEME_CAR(b)))
+      return 0;
+    a = SCHEME_CDR(a);
+    b = SCHEME_CDR(b);
+  }
+  return !b;
+}
+
+XFORM_NONGCING static Scheme_Object *filter_cached_env(Scheme_Object *other_env, Scheme_Object *skip_ribs)
+{
+  Scheme_Object *p;
+
+  if (SCHEME_MPAIRP(other_env)) {
+    other_env = SCHEME_CAR(other_env);
+    if (!other_env) 
+      return scheme_void;
+  }
+
+  if (SCHEME_RPAIRP(other_env)) {
+    while (other_env) {
+      p = SCHEME_CAR(other_env);
+      if (same_skipped_ribs(SCHEME_CAR(p), skip_ribs))
+        return SCHEME_CDR(p);
+      other_env = SCHEME_CDR(other_env);
+    }
+    return scheme_void;
+  } else if (!skip_ribs)
+    return other_env;
+  else
+    return scheme_void;
+}
+
+static Scheme_Object *extend_cached_env(Scheme_Object *orig, Scheme_Object *other_env, Scheme_Object *skip_ribs,
+                                        int depends_on_unsealed_rib)
+{
+  Scheme_Object *in_mpair = NULL;
+
+  if (SCHEME_MPAIRP(orig)) {
+    in_mpair = orig;
+    orig = SCHEME_CAR(orig);
+    if (!depends_on_unsealed_rib && !orig) {
+      /* no longer depends on unsealed rib: */
+      in_mpair = NULL;
+      orig = scheme_void;
+    } else {
+      /* (some) still depends on unsealed rib: */
+      if (!orig) {
+        /* re-register in list of dependencies */
+        SCHEME_CDR(in_mpair) = unsealed_dependencies;
+        unsealed_dependencies = in_mpair;
+        orig = scheme_void;
+      }
+    }
+  } else if (depends_on_unsealed_rib) {
+    /* register dependency: */
+    in_mpair = scheme_make_mutable_pair(NULL, unsealed_dependencies);
+    unsealed_dependencies = in_mpair;
+  }
+
+  if (SCHEME_VOIDP(orig) && !skip_ribs) {
+    orig = other_env;
+  } else {
+    if (!SCHEME_RPAIRP(orig))
+      orig = scheme_make_raw_pair(scheme_make_raw_pair(NULL, orig), NULL);
+
+    orig = scheme_make_raw_pair(scheme_make_raw_pair(skip_ribs, other_env), orig);
+  }
+
+  if (in_mpair) {
+    SCHEME_CAR(in_mpair) = orig;
+    return in_mpair;
+  } else
+    return orig;
 }
 
 #define QUICK_STACK_SIZE 8
@@ -4000,13 +4096,18 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	    } else {
 	      envname = SCHEME_VEC_ELS(rename)[0];
 	      other_env = SCHEME_VEC_ELS(rename)[2+c+ri];
-	    	      
+              other_env = filter_cached_env(other_env, recur_skip_ribs);
+              
 	      if (SCHEME_VOIDP(other_env)) {
                 int rib_dep = 0;
 		SCHEME_USE_FUEL(1);
 		other_env = resolve_env(NULL, renamed, 0, 0, NULL, recur_skip_ribs, NULL, &rib_dep, depth+1);
-		if (!is_rib && !rib_dep)
-		  SCHEME_VEC_ELS(rename)[2+c+ri] = other_env;
+		{
+                  Scheme_Object *e;
+                  e = extend_cached_env(SCHEME_VEC_ELS(rename)[2+c+ri], other_env, recur_skip_ribs,
+                                        (is_rib && !(*is_rib->sealed)) || rib_dep);
+                  SCHEME_VEC_ELS(rename)[2+c+ri] = e;
+                }
                 if (rib_dep)
                   depends_on_unsealed_rib = 1;
 		SCHEME_USE_FUEL(1);
@@ -4065,6 +4166,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
         }
       }
       if (rib) {
+        if (!*rib->sealed)
+          depends_on_unsealed_rib = 1;
         if (nonempty_rib(rib)) {
           if (SAME_OBJ(did_rib, rib)) {
             EXPLAIN(fprintf(stderr, "%d Did rib\n", depth));
@@ -4925,6 +5028,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                   /* No. Should we skip? */
                   Scheme_Object *other_env;
                   other_env = SCHEME_VEC_ELS(rib->rename)[2+vsize+i];
+                  other_env = filter_cached_env(other_env, prec_ribs);
                   if (SCHEME_VOIDP(other_env)) {
                     int rib_dep;
                     other_env = resolve_env(NULL, stx, 0, 0, NULL, prec_ribs, NULL, &rib_dep, 0);
@@ -5093,6 +5197,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
             }
 
             other_env = SCHEME_VEC_ELS(v)[2+vvsize+ii];
+            other_env = filter_cached_env(other_env, prec_ribs);
             if (SCHEME_VOIDP(other_env)) {
               int rib_dep;
               other_env = resolve_env(NULL, stx, 0, 0, NULL, prec_ribs, NULL, &rib_dep, 0);
@@ -5100,7 +5205,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                 scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
                 return NULL;
               }
-              if (!rib)
+              if (!prec_ribs)
                 SCHEME_VEC_ELS(v)[2+vvsize+ii] = other_env;
             }
 
