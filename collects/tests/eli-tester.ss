@@ -19,7 +19,8 @@
                 [(list 'values x)  (format "~e" x)]
                 [(list 'values xs ...) (format "~e" (cons 'values xs))]))
 
-(define test-context (make-parameter #f))
+(define test-context    (make-parameter #f))
+(define failure-message (make-parameter #f))
 
 (define-syntax (test-thunk stx)
   (define (blame e fmt . args)
@@ -32,7 +33,10 @@
                        [(syntax-position e) => (lambda (p) (format "#~a" p))]
                        [else "?"])))))
     (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
-      #'(error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))
+      #'(let ([msg (failure-message)])
+          (if msg
+            (error 'loc "test failure\n  ~a" (msg))
+            (error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
@@ -55,23 +59,35 @@
           #,(apply t args))))
   (define (tb x) x)
   (let loop ([xs (map (lambda (x)
-                        (if (memq (syntax-e x) '(do => <= =error> <error=))
-                          (syntax-e x) x))
+                        (let ([e (syntax-e x)])
+                          (if (or (memq e '(do => <= =error> <error=))
+                                  (keyword? e))
+                            e x)))
                       (cdr (syntax->list stx)))]
              [r '()])
-    (let ([t (match xs
-               [(list* 'do x r)        (cons (tb x) r)]
-               [(list* x '=> y r)      (cons (try t2 x y) r)]
-               [(list* y '<= x r)      (cons (try t2 x y) r)]
-               [(list* x '=error> y r) (cons (try te x y) r)]
-               [(list* y '<error= x r) (cons (try te x y) r)]
-               [(list* x r)
-                ;; if x = (test ...), then it's implicitly in a `do'
-                ;; (not really needed, but avoids an extra count of tests)
-                (syntax-case x (test)
-                  [(test x0 x1 ...) (cons (tb x) r)]
-                  [_ (cons (try t1 x) r)])]
-               [(list) '()])])
+    (let ([t (let tloop ([xs xs])
+               (match xs
+                 [(list* #:failure-message msg r)
+                  (let ([r (tloop r)])
+                    (if (pair? r)
+                      (cons
+                       #`(parameterize ([failure-message (lambda () #,msg)])
+                           #,(car r))
+                       (cdr r))
+                      r))]
+                 [(list* 'do x r) ; to avoid counting non-test exprs as tests
+                  (cons (tb x) r)]
+                 [(list* x '=> y r)      (cons (try t2 x y) r)]
+                 [(list* y '<= x r)      (cons (try t2 x y) r)]
+                 [(list* x '=error> y r) (cons (try te x y) r)]
+                 [(list* y '<error= x r) (cons (try te x y) r)]
+                 [(list* x r)
+                  ;; if x = (test ...), then it's implicitly in a `do'
+                  ;; (not really needed, but avoids an extra count of tests)
+                  (syntax-case x (test)
+                    [(test x0 x1 ...) (cons (tb x) r)]
+                    [_ (cons (try t1 x) r)])]
+                 [(list) '()]))])
       (if (pair? t)
         (loop (cdr t) (cons (car t) r))
         #`(lambda () #,@(reverse r))))))
@@ -98,7 +114,7 @@
 (define-syntax-rule (test  x0 x ...) (run-tests (test-thunk x0 x ...) #f))
 (define-syntax-rule (test* x0 x ...) (run-tests (test-thunk x0 x ...) #t))
 
-#; ;; test the `test' macro
+#; ; test the `test' macro
 
 (test
  ;; test usage
