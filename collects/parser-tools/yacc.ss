@@ -1,9 +1,10 @@
-(module yacc mzscheme
-  
-  (require-for-syntax "private-yacc/parser-builder.ss"
-                      "private-yacc/grammar.ss"
-                      "private-yacc/yacc-helper.ss"
-                      "private-yacc/parser-actions.ss")
+#lang scheme/base
+
+(require (for-syntax scheme/base
+                     "private-yacc/parser-builder.ss"
+                     "private-yacc/grammar.ss"
+                     "private-yacc/yacc-helper.ss"
+                     "private-yacc/parser-actions.ss"))
   (require "private-lex/token.ss"
            "private-yacc/parser-actions.ss"
            mzlib/etc
@@ -19,12 +20,12 @@
     (list->vector
      (map
       (lambda (state-entry)
-        (let ((ht (make-hash-table)))
+        (let ((ht (make-hasheq)))
           (for-each
            (lambda (gs/action)
-             (hash-table-put! ht
-                              (gram-sym-symbol (car gs/action))
-                              (action->runtime-action (cdr gs/action))))
+             (hash-set! ht
+                        (gram-sym-symbol (car gs/action))
+                        (action->runtime-action (cdr gs/action))))
            state-entry)
           ht))
       (vector->list table))))
@@ -177,13 +178,14 @@
                                  yacc-output)))]
                (call-with-output-file yacc-output
                  (lambda (port)
-                   (display-yacc (syntax-object->datum grammar) 
+                   (display-yacc (syntax->datum grammar) 
                                  tokens 
-                                 (map syntax-object->datum start)
+                                 (map syntax->datum start)
                                  (if precs
-                                     (syntax-object->datum precs)
+                                     (syntax->datum precs)
                                      #f)
-                                 port)))))
+                                 port))
+                 #:exists 'truncate)))
            (with-syntax ((check-syntax-fix check-syntax-fix)
                          (err error)
                          (ends end)
@@ -245,7 +247,7 @@
   (define (extract-no-src-pos ip)
     (extract-helper ip #f #f))
   
-  (define-struct stack-frame (state value start-pos end-pos) (make-inspector))
+  (define-struct stack-frame (state value start-pos end-pos) #:inspector (make-inspector))
   
   (define (make-empty-stack i) (list (make-stack-frame i #f #f #f)))
   
@@ -304,17 +306,17 @@
                           (remove-states)))))))))
             
             (define (find-action stack tok val start-pos end-pos)
-              (unless (hash-table-get all-term-syms
-                                      tok
-                                      (lambda () #f))
+              (unless (hash-ref all-term-syms
+                                tok
+                                #f)
                 (if src-pos
                     (err #f tok val start-pos end-pos)
                     (err #f tok val))
                 (raise-read-error (format "parser: got token of unknown type ~a" tok)
                                   #f #f #f #f #f))
-              (hash-table-get (vector-ref table (stack-frame-state (car stack)))
-                              tok
-                              (lambda () #f)))
+              (hash-ref (vector-ref table (stack-frame-state (car stack)))
+                        tok
+                        #f))
 
             (define (make-parser start-number)
               (lambda (get-token)
@@ -341,7 +343,7 @@
                                                      src-pos)))
                            (let ((goto 
                                   (runtime-goto-state
-                                   (hash-table-get 
+                                   (hash-ref 
                                     (vector-ref table (stack-frame-state (car new-stack)))
                                     (runtime-reduce-lhs action)))))
                              (parsing-loop 
@@ -378,4 +380,3 @@
            (cond
              ((null? l) null)
              (else (cons (make-parser i) (loop (cdr l) (add1 i))))))))))
-  )
