@@ -1,7 +1,7 @@
 #lang scribble/doc
-@(require scribble/manual
-          "utils.ss"
+@(require scribble/manual scribble/struct "utils.ss"
           (for-label scheme/base))
+@initialize-tests
 
 @title[#:tag "preprocessor"]{Text Preprocessor}
 
@@ -12,35 +12,106 @@ changes that make it suitable as a preprocessor language:
 @itemize{
 
   @item{It uses @scheme[read-syntax-inside] to read the body of the
-        module, similar to @secref["docreader"].}
+        module, similar to @secref["docreader"].  This means that by
+        default, all text is read in as Scheme strings; and
+        @seclink["reader"]|{@-forms}| can be used to use Scheme
+        functions and expression escapes.}
 
-  @item{It has a custom printer (@scheme[current-print]) that displays
-        all values.  The printer is also installed as the
-        @scheme[port-display-handler] so it can be used through
-        @scheme[display] as well as @litchar{~a} in format strings.
-        The printer displays most values (as is usual for
-        @scheme[display]), except for
-        @itemize{@item{@scheme[void] and @scheme[#f] are not
-                       displayed,}
-                 @item{pairs are displayed recursively (just their
-                       contents, no parentheses),}
-                 @item{promises are forced, thunks are invoked.}}}}
+  @item{Values of expressions are printed with a custom
+        @scheme[output] function.  This function displays most values
+        in a similar way to @scheme[display], except that it is more
+        convenient for a preprocessor output.}}
 
 }
 
-This means that to write a text file that has scheme code, you simply
-write it as a module in the @scheme[scribble/text] language, and run
-it through @exec{mzscheme}.  Here is a sample file:
+@;--------------------------------------------------------------------
+@section{Writing Preprocessor Files}
 
-@verbatim[#:indent 2]|{
-  #lang scribble/text
-  @(define (angled . body) (list "<" body ">"))@;
-  @(define (shout . body) @angled[(map string-upcase body)])@;
-  blah @angled{blah @shout{blah} blah} blah
-}|
+The combination of the two features makes text in files in the
+@scheme[scribble/text] language be read as strings, which get printed
+out when the module is @scheme[require]d, for example, when a file is
+given as an argument to @exec{mzscheme}.  (In these example the left
+part shows the source input, and the right part the printed result.)
 
-(Note how @litchar["@;"] is used to avoid empty lines in the output.)
+@example|-{#lang scribble/text
+           Programming languages should
+           be designed not by piling
+           feature on top of feature, but
+           blah blah blah.
+           ---***---
+           Programming languages should
+           be designed not by piling
+           feature on top of feature, but
+           blah blah blah.}-|
 
+Using @seclink["reader"]|{@-forms}| we can define and use Scheme
+functions.
+
+@example|-{#lang scribble/text
+           @(require scheme/list)
+           @(define Foo "Preprocessing")
+           @(define (3x . x)
+              (add-between (list x x x) " "))
+           @Foo languages should
+           be designed not by piling
+           feature on top of feature, but
+           @3x{blah}.
+           ---***---
+           Preprocessing languages should
+           be designed not by piling
+           feature on top of feature, but
+           blah blah blah.}-|
+
+As demonstrated in this case, the @scheme[output] function simply
+scans nested list structures recursively, which makes them convenient
+for function results.  In addition, @scheme[output] prints most values
+similarly to @scheme[display] \- a notable exception are void and
+false values which cause no output to appear.  This can be used for
+convenient conditional output.
+
+@example|-{#lang scribble/text
+           @(define (errors n)
+              (list n
+                    " error"
+                    (and (not (= n 1)) "s")))
+           You have @errors[3] in your code,
+           I fixed @errors[1].
+           ---***---
+           You have 3 errors in your code,
+           I fixed 1 error.}-|
+
+Using the scribble @seclink["reader"]|{@-forms}| syntax, you can write
+functions more conveniently too.
+
+@example|-{#lang scribble/text
+           @(define (errors n)
+              @list{@n error@;
+                    @and[(not (= n 1))]{s}})
+           You have @errors[3] in your code,
+           I fixed @errors[1].
+           ---***---
+           You have 3 errors in your code,
+           I fixed 1 error.}-|
+
+Following the details of the scribble reader, you may notice that in
+these examples there are newline strings after each definition, yet
+they do not show in the output.  To make it easier to write
+definitions, newlines after definitions and indentation spaces before
+them are ignored.
+
+@example|-{#lang scribble/text
+
+           @(define (plural n)
+              (unless (= n 1) "s"))
+
+           @(define (errors n)
+              @list{@n error@plural[n]})
+
+           You have @errors[3] in your code,
+           I fixed @errors[1].
+           ---***---
+           You have 3 errors in your code,
+           I fixed 1 error.}-|
 
 @;--------------------------------------------------------------------
 @section{Using External Files}

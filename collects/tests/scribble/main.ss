@@ -1,8 +1,10 @@
 #lang scheme/base
 
-(require tests/eli-tester scribble/text/syntax-utils scheme/runtime-path)
+(require tests/eli-tester scribble/text/syntax-utils scheme/runtime-path
+         scheme/sandbox (lib "scribblings/scribble/preprocessor.scrbl"))
 
 (define-runtime-path text-dir "text")
+(define-runtime-path this-dir ".")
 
 (test
 
@@ -78,7 +80,7 @@
                 (f 3 #:> "]" #:< "["))
  => '(1 ("<" 1 ">") ("[" 2 ">") ("[" 3 "]"))
 
- ;; preprocessor functionality
+ ;; preprocessor tests
  (parameterize ([current-directory text-dir])
    (for ([ifile (map path->string (directory-list))]
          #:when (and (file-exists? ifile)
@@ -90,5 +92,16 @@
      (parameterize ([current-output-port o])
        (dynamic-require (path->complete-path ifile) #f))
      (test (get-output-bytes o) => expected)))
+ ;; preprocessor tests that are part of the documentation
+ (parameterize ([current-directory this-dir]
+                [sandbox-output 'string]
+                [sandbox-error-output current-output-port])
+   (define (text-test line in out . more)
+     (define e (make-module-evaluator in))
+     (test
+      #:failure-message (format "preprocessor test failure at line ~s" line)
+      (equal? (get-output e) out)))
+   (call-with-trusted-sandbox-configuration
+    (lambda () (for ([t (in-list (tests))]) (apply text-test t)))))
 
  )

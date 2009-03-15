@@ -102,9 +102,9 @@
 
 (require scheme/list (for-syntax scheme/base scheme/list))
 
-(define max-textsample-width 32)
+(define max-textsample-width 35)
 
-(define (textsample-verbatim-boxes 1st 2nd more)
+(define (textsample-verbatim-boxes line 1st 2nd more)
   (define (split str) (regexp-split #rx"\n" str))
   (define strs1 (split 1st))
   (define strs2 (split 2nd))
@@ -128,7 +128,8 @@
                                          [s (in-list s)])
                                (max m (string-length s))))])
                    (if (negative? d)
-                     (error 'textsample-verbatim-boxes "left box too wide")
+                     (error 'textsample-verbatim-boxes
+                            "left box too wide for sample at line ~s" line)
                      (hspace d))))
   (values
    (make-table '([alignment right left] [valignment top top])
@@ -141,8 +142,8 @@
                 filenames strsm)))
    box2))
 
-(define (textsample 1st 2nd . more)
-  (define-values (box1 box2) (textsample-verbatim-boxes 1st 2nd more))
+(define (textsample line 1st 2nd . more)
+  (define-values (box1 box2) (textsample-verbatim-boxes line 1st 2nd more))
   (make-table '([alignment left left left] [valignment center center center])
     (list (map as-flow (list box1 (make-paragraph '(nbsp rarr nbsp)) box2)))))
 
@@ -189,8 +190,8 @@
                              [((file text ...) ...) files]
                              [add-to-tests (cadr tests-ids)])
                  (syntax/loc stx
-                   (let ([t (list (string-append i/o ...) ...
+                   (let ([t (list line (string-append i/o ...) ...
                                   (cons file (string-append text ...)) ...)])
-                     (add-to-tests (cons line t))
+                     (add-to-tests t)
                      (apply textsample t)))))]
          [_ (raise-syntax-error #f "no separator found in example text")]))]))
