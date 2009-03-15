@@ -25,21 +25,18 @@
 
 (provide scribble-examples litchar/lines)
 
+(define (as-flow e)
+  (make-flow (list (if (block? e) e (make-paragraph (list e))))))
+
 (define (litchar/lines . strs)
   (let ([strs (regexp-split #rx"\n" (apply string-append strs))])
     (if (= 1 (length strs))
       (litchar (car strs))
       (make-table
        #f
-       (map (lambda (s)
-              (let ([line (if (string=? s "")
-                            '(nbsp) ; needed for IE
-                            (list (litchar s)))])
-                (list (make-flow (list (make-paragraph line))))))
+       (map (lambda (s) ; the nbsp is needed for IE
+              (list (as-flow (if (string=? s "") 'nbsp (litchar s)))))
             strs)))))
-
-(define (as-flow e)
-  (make-flow (list (if (block? e) e (make-paragraph (list e))))))
 
 (define spacer (hspace 2))
 
@@ -100,3 +97,100 @@
                           [reads-as (if x reads-as "")])
                       (map as-flow (list spacer @expr reads-as sexpr))))
                   r))))))))
+
+;; stuff for the preprocessor examples
+
+(require scheme/list (for-syntax scheme/base scheme/list))
+
+(define max-textsample-width 32)
+
+(define (textsample-verbatim-boxes 1st 2nd more)
+  (define (split str) (regexp-split #rx"\n" str))
+  (define strs1 (split 1st))
+  (define strs2 (split 2nd))
+  (define strsm (map (compose split cdr) more))
+  (define (str->elts str)
+    (let ([spaces (regexp-match-positions #rx"(?:^| ) +" str)])
+      (if spaces
+        (list* (substring str 0 (caar spaces))
+               (hspace (- (cdar spaces) (caar spaces)))
+               (str->elts (substring str (cdar spaces))))
+        (list (make-element 'tt (list str))))))
+  (define (make-line str) (list (as-flow (make-element 'tt (str->elts str)))))
+  (define (make-box strs) (make-table 'boxed (map make-line strs)))
+  (define box1 (make-box strs1))
+  (define box2 (make-box strs2))
+  (define boxm (map make-box strsm))
+  (define filenames (map car more))
+  (define indent (let ([d (- max-textsample-width
+                             (for*/fold ([m 0])
+                                        ([s (in-list (cons strs1 strsm))]
+                                         [s (in-list s)])
+                               (max m (string-length s))))])
+                   (if (negative? d)
+                     (error 'textsample-verbatim-boxes "left box too wide")
+                     (hspace d))))
+  (values
+   (make-table '([alignment right left] [valignment top top])
+     (cons (list (as-flow indent) (as-flow box1))
+           (map (lambda (file strs)
+                  (let* ([file (make-element 'tt (list file ":" 'nbsp))]
+                         [file (list (make-element 'italic (list file)))])
+                    (list (as-flow (make-element '(bg-color 232 232 255) file))
+                          (as-flow (make-box strs)))))
+                filenames strsm)))
+   box2))
+
+(define (textsample 1st 2nd . more)
+  (define-values (box1 box2) (textsample-verbatim-boxes 1st 2nd more))
+  (make-table '([alignment left left left] [valignment center center center])
+    (list (map as-flow (list box1 (make-paragraph '(nbsp rarr nbsp)) box2)))))
+
+(define-for-syntax tests-ids #f)
+
+(provide initialize-tests)
+(define-syntax (initialize-tests stx)
+  (set! tests-ids (map (lambda (x) (datum->syntax stx x stx))
+                       '(tests add-to-tests)))
+  (with-syntax ([(tests add-to-tests) tests-ids])
+    #'(begin (provide tests)
+             (define-values (tests add-to-tests)
+               (let ([l '()])
+                 (values (lambda () (reverse l))
+                         (lambda (x) (set! l (cons x l)))))))))
+
+(provide example)
+(define-syntax (example stx)
+  (define sep-rx  #px"^---[*]{3}---(?: +(.*))?$")
+  (define file-rx #rx"^[a-z0-9_.+-]+$")
+  (syntax-case stx ()
+    [(_ x ...)
+     (let loop ([xs #'(x ...)] [text '(#f)] [texts '()])
+       (syntax-case xs ()
+         [("\n" sep "\n" . xs)
+          (and (string? (syntax-e #'sep))
+               (regexp-match? sep-rx (syntax-e #'sep)))
+          (let ([m (cond [(regexp-match sep-rx (syntax-e #'sep)) => cadr]
+                         [else #f])])
+            (if (and m (not (regexp-match? file-rx m)))
+              (raise-syntax-error #f "bad filename specified" stx #'sep)
+              (loop #'xs
+                    (list (and m (datum->syntax #'sep m #'sep #'sep)))
+                    (cons (reverse text) texts))))]
+         [(x . xs) (loop #'xs (cons #'x text) texts)]
+         [() (let ([texts (reverse (cons (reverse text) texts))]
+                   [line  (syntax-line stx)])
+               (define-values (files i/o) (partition car texts))
+               (unless ((length i/o) . = . 2)
+                 (raise-syntax-error
+                  'example "need at least an input and an output block" stx))
+               (with-syntax ([line  line]
+                             [((i/o ...) ...) (map cdr i/o)]
+                             [((file text ...) ...) files]
+                             [add-to-tests (cadr tests-ids)])
+                 (syntax/loc stx
+                   (let ([t (list (string-append i/o ...) ...
+                                  (cons file (string-append text ...)) ...)])
+                     (add-to-tests (cons line t))
+                     (apply textsample t)))))]
+         [_ (raise-syntax-error #f "no separator found in example text")]))]))
