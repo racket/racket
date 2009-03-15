@@ -1,4 +1,4 @@
-(module table mzscheme
+#lang scheme/base
 
   ;; Routine to build the LALR table
   
@@ -31,14 +31,14 @@
     (list->vector
      (map
       (lambda (state-entry)
-        (let ((ht (make-hash-table 'equal)))
+        (let ((ht (make-hash)))
           (for-each
            (lambda (gs/actions)
-             (let ((group (hash-table-get ht (car gs/actions) (lambda () null))))
+             (let ((group (hash-ref ht (car gs/actions) (lambda () null))))
                (unless (member (cdr gs/actions) group)
-                 (hash-table-put! ht (car gs/actions) (cons (cdr gs/actions) group)))))
+                 (hash-set! ht (car gs/actions) (cons (cdr gs/actions) group)))))
            state-entry)
-          (hash-table-map ht cons)))
+          (hash-map ht cons)))
       (vector->list table))))
   
   ;; table-map : (vectorof (listof (cons/c gram-sym? X))) (gram-sym? X -> Y) ->
@@ -119,10 +119,10 @@
                  (print-entry sym (car act) port))
                 (else
                  (fprintf port "begin conflict:~n")
-                 (if (> (count reduce? act) 1)
-                     (set! RR-conflicts (add1 RR-conflicts)))
-                 (if (> (count shift? act) 0)
-                     (set! SR-conflicts (add1 SR-conflicts)))
+                 (when (> (count reduce? act) 1)
+                   (set! RR-conflicts (add1 RR-conflicts)))
+                 (when (> (count shift? act) 0)
+                   (set! SR-conflicts (add1 SR-conflicts)))
                  (map (lambda (x) (print-entry sym x port)) act)
                  (fprintf port "end conflict~n")))))
            (vector-ref grouped-table (kernel-index state)))
@@ -236,7 +236,7 @@
            (end-terms (send g get-end-terms))
            (table (make-parse-table (send a get-num-states)))
            (get-lookahead (compute-LA a g))
-           (reduce-cache (make-hash-table 'equal)))
+           (reduce-cache (make-hash)))
 
       (for-each
        (lambda (trans-key/state)
@@ -262,17 +262,17 @@
                (bit-vector-for-each 
                 (lambda (term-index)
                   (unless (start-item? item)
-                    (let ((r (hash-table-get reduce-cache item-prod
+                    (let ((r (hash-ref reduce-cache item-prod
                                              (lambda ()
                                                (let ((r (make-reduce item-prod)))
-                                                 (hash-table-put! reduce-cache item-prod r)
+                                                 (hash-set! reduce-cache item-prod r)
                                                  r)))))
                       (table-add! table
                                   (kernel-index state)
                                   (vector-ref term-vector term-index)
                                   r))))
                 (get-lookahead state item-prod))))
-           (append (hash-table-get (send a get-epsilon-trans) state (lambda () null))
+           (append (hash-ref (send a get-epsilon-trans) state (lambda () null))
                    (filter (lambda (item)
                              (not (move-dot-right item)))
                            (kernel-items state))))))
@@ -283,13 +283,12 @@
                            (lambda (e)
                              (fprintf 
                               (current-error-port)
-                              "Cannot write debug output to file \"~a\".~n"
-                              file)))]
+                              "Cannot write debug output to file \"~a\": ~a\n"
+                              file
+                              (exn-message e))))]
             (call-with-output-file file
               (lambda (port)
-                (display-parser a grouped-table (send g get-prods) port)))))
+                (display-parser a grouped-table (send g get-prods) port))
+              #:exists 'truncate)))
         (resolve-conflicts grouped-table suppress))))
   
-  )
-
-
