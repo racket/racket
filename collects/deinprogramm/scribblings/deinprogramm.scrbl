@@ -9,9 +9,9 @@ Note: This is documentation for the teachpacks that go with the German
 textbook @italic{@link["http://www.deinprogramm.de/dmda/"]{Die Macht
 der Abstraktion}}.
 
-Die Sprachebenen und Teachpacks in diesem Handbuch sind für Verwendung
-mit dem Buch the @italic{@link["http://www.deinprogramm.de/dmda/"]{Die
-Macht der Abstraktion}} gedacht.
+Das Material in diesem Handbuch ist für die Verwendung mit dem Buch
+the @italic{@link["http://www.deinprogramm.de/dmda/"]{Die Macht der
+Abstraktion}} gedacht.
 
 @table-of-contents[]
 
@@ -27,5 +27,7 @@ Macht der Abstraktion}} gedacht.
 @include-section["turtle.scrbl"]
 @include-section["sound.scrbl"]
 @include-section["line3d.scrbl"]
+
+@include-section["DMdA-lib.scrbl"]
 
 @index-section[]

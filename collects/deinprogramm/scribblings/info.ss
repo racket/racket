@@ -1,5 +1,4 @@
 #lang setup/infotab
 
-(define scribblings '(("deinprogramm.scrbl" (multi-page) (language -14))
-		      ("DMdA-lib.scrbl")))
+(define scribblings '(("deinprogramm.scrbl" (multi-page) (language -14))))
 
