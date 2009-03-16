@@ -89,7 +89,7 @@ separated by a prompt tagged with @scheme[prompt-tag]..}
 
 @defproc[(continuation-mark-set->list* 
           [mark-set continuation-mark-set?]
-          [key-v any/c]
+          [key-list (listof any/c)]
           [none-v any/c #f]
           [prompt-tag prompt-tag? (default-continuation-prompt-tag)])
          (listof vector?)]{

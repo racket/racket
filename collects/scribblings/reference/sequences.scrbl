@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-syntax scheme/base))
+          (for-syntax scheme/base)
+          scribble/scheme)
 
 @(define-syntax speed
    (syntax-rules ()
@@ -246,23 +247,24 @@ the structure and returns a sequence. If @scheme[v] is an instance of
 a structure type with this property, then @scheme[(sequence? v)]
 produces @scheme[#t].
 
-@examples[
-(define-struct train (car next)
-  #:property prop:sequence (lambda (t)
-                             (make-do-sequence 
-                              (lambda ()
-                                (values train-car
-                                        train-next
-                                        t
-                                        (lambda (t) t)
-                                        (lambda (v) #t)
-                                        (lambda (t v) #t))))))
-(for/list ([c (make-train 'engine
-                          (make-train 'boxcar
-                                      (make-train 'caboose
-                                                  #f)))])
-  c)
-]}
+@let-syntax[([car (make-element-id-transformer (lambda (id) #'@schemeidfont{car}))])
+ @examples[
+ (define-struct train (car next)
+   #:property prop:sequence (lambda (t)
+                              (make-do-sequence 
+                               (lambda ()
+                                 (values train-car
+                                         train-next
+                                         t
+                                         (lambda (t) t)
+                                         (lambda (v) #t)
+                                         (lambda (t v) #t))))))
+ (for/list ([c (make-train 'engine
+                           (make-train 'boxcar
+                                       (make-train 'caboose
+                                                   #f)))])
+   c)
+ ]]}
 
 @section{Sequence Generators}
 

@@ -1489,8 +1489,8 @@ created first and filled with @|undefined-const|, and all
                      (or (zero? n)
                          (is-odd? (sub1 n))))]
          [is-odd? (lambda (n)
-                    (or (= n 1)
-                        (is-even? (sub1 n))))])
+                    (and (not (zero? n))
+                         (is-even? (sub1 n))))])
   (is-odd? 11))
 ]}
 
