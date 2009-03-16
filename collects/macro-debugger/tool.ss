@@ -79,7 +79,6 @@
     (define drscheme-eventspace (current-eventspace))
 
     (define-local-member-name check-language)
-    (define-local-member-name get-debug-button)
     
     (define macro-debugger-bitmap 
       (make-object bitmap%
@@ -113,14 +112,19 @@
         (inherit register-toolbar-button)
         (register-toolbar-button macro-debug-button)
 
+        (define/augment (enable-evaluation)
+          (send macro-debug-button enable #t)
+          (inner (void) enable-evaluation))
+        (define/augment (disable-evaluation)
+          (send macro-debug-button enable #f)
+          (inner (void) disable-evaluation))
+
         (define/override (execute-callback)
           (execute #f))
 
         (define/private (execute debugging?)
           (send (get-interactions-text) enable-macro-debugging debugging?)
           (super execute-callback))
-
-        (define/public (get-debug-button) macro-debug-button)
 
         ;; Hide button for inappropriate languages
 
@@ -155,17 +159,6 @@
             (when tlw
               (send tlw check-language)))
           (inner (void) after-set-next-settings s))
-        (super-new)))
-
-    (define (macro-debugger-tab-mixin %)
-      (class %
-        (inherit get-frame)
-        (define/override (enable-evaluation)
-          (super enable-evaluation)
-          (send (send (get-frame) get-debug-button) enable #t))
-        (define/override (disable-evaluation)
-          (super disable-evaluation)
-          (send (send (get-frame) get-debug-button) enable #f))
         (super-new)))
 
     (define (macro-debugger-interactions-text-mixin %)
@@ -268,7 +261,5 @@
      macro-debugger-interactions-text-mixin)
     (drscheme:get/extend:extend-definitions-text
      macro-debugger-definitions-text-mixin)
-    (drscheme:get/extend:extend-tab
-     macro-debugger-tab-mixin)
 
     ))
