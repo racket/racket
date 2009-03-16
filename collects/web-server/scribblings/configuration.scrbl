@@ -234,6 +234,10 @@ turn the paths given in the @scheme[configuration-table] into responders for the
  Generates a @scheme[response/full] with the given @scheme[http-code] and @scheme[short-version]
 as the corresponding fields; with the content of the @scheme[text-file] as the body; and, with
 the @scheme[header]s as, you guessed it, headers.
+
+This does not cause redirects to a well-known URL, such as @filepath{conf/not-found.html}, but rather use the contents
+of @filepath{not-found.html} (for example) as its contents. Therefore, any relative URLs in @scheme[text-file] are relative
+to whatever URL @scheme[file-response] is used to respond @emph{to}. Thus, you should probably use absolute URLs in these files.
 }
 
 @defproc[(servlet-loading-responder (url url?) (exn exn?))
