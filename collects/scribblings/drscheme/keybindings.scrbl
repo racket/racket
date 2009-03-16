@@ -1,10 +1,15 @@
 #lang scribble/doc
 @(require "common.ss"
+	  scribble/struct
           scribble/bnf
+          scheme/list
+	  mrlib/tex-table
           (for-label scheme/gui/base))
 
 @(define (keybinding key . desc)
-   (apply item @index[(list (format "~a keybinding" key)) key] " : " desc))
+   (let* ([keys (if (string? key) (list key) key)]
+          [key-str (apply string-append (add-between keys " "))])
+     (apply item @index[(map (lambda (x) (format "~a keybinding" x)) keys) key-str] " : " desc)))
 
 @(define-syntax-rule (def-mod-beg id)
   (begin
@@ -164,6 +169,25 @@ as the @tech{definitions window} plus a few more:
 @keybinding["M-p"]{bring the previously entered expression down to the prompt}
 @keybinding["M-n"]{bring the expression after the current expression in the
   expression history down to the prompt}
+]
+
+@section{LaTeX and TeX inspired keybindings}
+
+@itemize[
+@keybinding['("C-\\" "M-\\")]{traces backwards from the insertion
+point, looking for a backslash followed by a @index["LaTeX"]{LaTeX} macro name; if one is
+found, it replaces the backslash and the macro's name with the keybinding.
+These are the currently supported macro names and the keys they map into:
+@(make-table
+  '()
+  (map (lambda (line) 
+	 (let ([macro (list-ref line 0)]
+	       [char (list-ref line 1)])
+	   (list (make-flow (list (make-paragraph (list (index (format "\\~a keyboard shortcut" macro))
+							(tt (format "\\~a" macro))))))
+		 (make-flow (list (make-paragraph (list char)))))))
+       tex-shortcut-table))
+}
 ]
 
 @section[#:tag "defining-shortcuts"]{Defining Custom Shortcuts}

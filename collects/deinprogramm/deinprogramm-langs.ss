@@ -177,6 +177,7 @@
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
+                 (ensure-drscheme-secrets-declared drs-namespace)
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
                  (namespace-attach-module drs-namespace deinprogramm-struct-module-name)
                  (error-display-handler teaching-languages-error-display-handler)
@@ -243,6 +244,27 @@
               (pretty-print value port)))
           
           (super-new)))
+
+      ;; this inspector should be powerful enough to see
+      ;; any structure defined in the user's namespace
+      (define drscheme-inspector (current-inspector))
+
+      ;; FIXME: brittle, mimics drscheme-secrets
+      ;; as declared in lang/htdp-langs.ss.
+      ;; Is it even needed for DeinProgramm langs?
+      ;; Only used by htdp/hangman teachpack.
+      (define (ensure-drscheme-secrets-declared drs-namespace)
+        (parameterize ((current-namespace drs-namespace))
+          (define (declare)
+            (eval `(,#'module drscheme-secrets mzscheme
+                     (provide drscheme-inspector)
+                     (define drscheme-inspector ,drscheme-inspector)))
+            (namespace-require ''drscheme-secrets))
+          (with-handlers ([exn:fail? (lambda (e) (declare))])
+            ;; May have been declared by lang/htdp-langs tool, if loaded
+            (dynamic-require ''drscheme-secrets 'drscheme-inspector))
+          (void)))
+
 
       ;; {
       ;;   all this copied from collects/drscheme/private/language.ss
@@ -1051,24 +1073,31 @@
         answer)
       
       (define (stepper-settings-language %)
-        (class* % (stepper-language<%>)
-	  (init-field stepper:supported)
-	  (define/override (stepper:supported?) stepper:supported)
-	  (define/override (stepper:render-to-sexp val settings language-level)
-	    (parameterize ([pc:current-print-convert-hook (make-print-convert-hook settings)])
-	      (set-print-settings
-	       language-level
-	       settings
-	       (lambda () 
-		 (stepper-convert-value val settings)))))
-
-	  (super-new)))
+        (if (implementation? % stepper-language<%>)
+            (class* % (stepper-language<%>)
+              (init-field stepper:supported)
+              (define/override (stepper:supported?) stepper:supported)
+              (define/override (stepper:render-to-sexp val settings language-level)
+                (parameterize ([pc:current-print-convert-hook (make-print-convert-hook settings)])
+                  (set-print-settings
+                   language-level
+                   settings
+                   (lambda () 
+                     (stepper-convert-value val settings)))))
+              (super-new))
+            (class %
+              (init stepper:supported)
+              (super-new))))
 
       (define (debugger-settings-language %)
-	(class* % (debugger-language<%>)
-	  (init-field [debugger:supported #f])
-	  (define/override (debugger:supported?) debugger:supported)
-	  (super-new)))
+        (if (implementation? % debugger-language<%>)
+            (class* % (debugger-language<%>)
+              (init-field [debugger:supported #f])
+              (define/override (debugger:supported?) debugger:supported)
+              (super-new))
+            (class %
+              (init [debugger:supported #f])
+              (super-new))))
 
       ;; make-print-convert-hook:
       ;;   simple-settings -> (TST (TST -> TST) (TST -> TST) -> TST)
