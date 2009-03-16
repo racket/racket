@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
           (for-label net/cgi
+                     net/uri-codec
                      net/cgi-unit
                      net/cgi-sig))
 
@@ -41,7 +42,10 @@ Returns the bindings that corresponding to the options specified by
 the user.  The @scheme[get-bindings/post] and
 @scheme[get-bindings/get] variants work only when POST and GET forms
 are used, respectively, while @scheme[get-bindings] determines the
-kind of form that was used and invokes the appropriate function.}
+kind of form that was used and invokes the appropriate function.
+
+These functions respect @scheme[current-alist-separator-mode].
+}
 
 
 @defproc[(extract-bindings [key? (or/c symbol? string?)]
