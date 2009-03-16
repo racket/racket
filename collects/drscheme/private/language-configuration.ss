@@ -521,9 +521,9 @@
                                                             (send language default-settings)))]
                                                [else (values #f #f)])])
                                  (cond
-                                   [(not vis-lang) (void)]
-                                   [(equal? (send vis-lang get-language-position)
-                                            (send language get-language-position))
+                                   [(and vis-lang
+                                         (equal? (send vis-lang get-language-position)
+                                                 (send language get-language-position)))
                                     (get/set-settings vis-settings)
                                     (send details-panel active-child language-details-panel)]
                                    [else
