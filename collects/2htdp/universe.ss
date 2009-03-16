@@ -146,15 +146,18 @@
                                 (syntax-case #'E ()
                                   [(V) (set! rec? #'V)]
                                   [_ (err 'record? stx)]))
-                              (cons (syntax-e #'kw) (syntax E)))]
+                              (cons #'kw #;(syntax-e #'kw) (syntax E)))]
                            [_ (raise-syntax-error
                                'big-bang "not a legal big-bang clause" stx)]))
                        (syntax->list (syntax (s ...))))]
             ;; assert: all bind = (kw . E) and kw is constrained via Bind 
             [args (map (lambda (x) 
                          (define kw (car x))
-                         (define co (assq kw Spec))
-                         (list kw ((cadr co) (cdr x))))
+                         (define co ;; patch from Jay to allow rename on import
+                           (findf (lambda (n) (free-identifier=? kw (car n)))
+                                  (map (lambda (k s) (cons k (cdr s))) 
+                                       kwds Spec)))
+                         (list (syntax-e (car co)) ((cadr co) (cdr x))))
                        spec)])
        #`(send (new (if #,rec? aworld% world%) [world0 w]  #,@args) last))]))
 
@@ -276,7 +279,7 @@
                            [(kw . E)
                             (and (identifier? #'kw) 
                                  (for/or ([n kwds]) (free-identifier=? #'kw n)))
-                            (cons (syntax-e #'kw) (syntax E))]
+                            (cons #'kw (syntax E))]
                            [(kw E)
                             (and (identifier? #'kw) 
                                  (for/or ([n kwds]) (free-identifier=? #'kw n)))
@@ -285,6 +288,15 @@
                                'universe "not a legal universe clause" stx)]))
                        (syntax->list (syntax (bind ...))))]
             ;; assert: all bind = (kw . E) and kw is constrained via Bind 
+            [args (map (lambda (x) 
+                         (define kw (car x))
+                         (define co ;; patch from Jay to allow rename on import
+                           (findf (lambda (n) (free-identifier=? kw (car n)))
+                                  (map (lambda (k s) (cons k (cdr s))) 
+                                       kwds Spec)))
+                         (list (syntax-e (car co)) ((cadr co) (cdr x))))
+                       spec)]
+            #;
             [args (map (lambda (x) 
                          (define kw (car x))
                          (define co (assq kw Spec))
