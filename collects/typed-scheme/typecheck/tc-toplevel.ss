@@ -161,7 +161,7 @@
       [(define-values (var ...) expr)
        (let* ([vars (syntax->list #'(var ...))]
               [ts (map lookup-type vars)])
-         (tc-expr/check #'expr (-values ts)))
+         (tc-expr/check #'expr (ret ts)))
        (void)]
       
       ;; to handle the top-level, we have to recur into begins

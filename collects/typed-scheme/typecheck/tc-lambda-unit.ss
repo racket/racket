@@ -19,10 +19,10 @@
 (import tc-expr^)
 (export tc-lambda^)
 
-(d-s/c lam-result ([args (listof (list identifier? Type/c))] 
-                   [kws (listof (list keyword? identifier? Type/c boolean?))]
+(d-s/c lam-result ([args (listof (list/c identifier? Type/c))] 
+                   [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                    [rest (or/c #f Type/c)]
-                   [drest (or/c #f (cons symbol? Type/c))]
+                   [drest (or/c #f (cons/c symbol? Type/c))]
                    [body tc-results?])
        #:transparent)
 

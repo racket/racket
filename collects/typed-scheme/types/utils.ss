@@ -180,7 +180,12 @@
    [(_ tp fp op dty dbound) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) (cons dty dbound)))]
    [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
 
-(provide tc-result: tc-results: tc-result? tc-results?)
+(define-match-expander tc-result1:
+  (syntax-parser
+   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op))) #f))]
+   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _))) #f))]))
+
+(provide tc-result: tc-results: tc-result1: tc-result? tc-results?)
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
@@ -214,7 +219,7 @@
         [o (if (list? t)
                (listof Object?)
                Object?)])                
-       [_ (listof tc-result?)])])
+       [_ tc-results?])])
 
 (define (subst v t e) (substitute t v e))
 

@@ -3,7 +3,7 @@
 
 (require (rename-in "../utils/utils.ss" [private private-in]))
 (require syntax/kerncase
-         scheme/match
+         scheme/match (prefix-in - scheme/contract)
          "signatures.ss"
          (types utils convenience union subtype)
          (private-in parse-type type-annotation)
@@ -23,7 +23,8 @@
 
 ;; return the type of a literal value
 ;; scheme-value -> type
-(define (tc-literal v-stx [expected #f])
+(d/c (tc-literal v-stx [expected #f])
+  (-->* (syntax?) ((-or/c #f Type/c)) Type/c)
   (define-syntax-class exp
     (pattern i
              #:when expected
@@ -45,7 +46,7 @@
     [(i ...) 
      (-Tuple (map tc-literal (syntax->list #'(i ...))))]
     [i #:declare i (3d vector?)
-     (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
+       (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
     [_ Univ]))
 
 
@@ -120,15 +121,20 @@
   (match (tc-expr/check e t)
     [(tc-result: t) t]))
 
-;; check-below : (/\ (Result Type -> Result)
+;; check-below : (/\ (Results Type -> Result)
+;;                   (Results Results -> Result)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
-  (match (list tr1 expected)      
-    [(list (tc-result: t1 te1 ee1) t2)
+  (match* (tr1 expected)
+    [((tc-results: t1) (tc-results: t2))
+     (unless (andmap subtype t1 t2)
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+     (ret expected)]
+    [((tc-result1: t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      (ret expected)]
-    [(list t1 t2)
+    [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr"Expected ~a, but got ~a" t2 t1))
      expected]))
@@ -159,7 +165,9 @@
         ;; data
         [(quote #f) (ret (-val #f) false-filter)]
         [(quote #t) (ret (-val #t) true-filter)]
-        [(quote val)  (ret (tc-literal #'val expected))]
+        [(quote val)  (match expected
+                        [(tc-result1: t)
+                         (ret (tc-literal #'val t))])]
         ;; syntax
         [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
         ;; mutation!
@@ -314,9 +322,9 @@
                                                  (tc-expr/check form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
-        [(tc-result: t eff1 eff2)
-         (let ([ty* (do-inst form t)])
-           (ret ty* eff1 eff2))]))))
+        [(tc-results: ts fs os)
+         (let ([ts* (do-inst form ts)])
+           (ret ts fs os))]))))
 
 (define (tc/send rcvr method args [expected #f])
   (match (tc-expr rcvr)
