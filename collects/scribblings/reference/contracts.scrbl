@@ -367,7 +367,7 @@ The @scheme[case->] contract is a specialized contract,
 designed to match @scheme[case-lambda] and
 @scheme[unconstrained-domain->] allows range checking
 without requiring that the domain have any particular shape
-(see below for an exmaple use).
+(see below for an example use).
 
 @defform*/subs[#:literals (any values)
                [(-> dom ... range)]
