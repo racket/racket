@@ -1,4 +1,10 @@
-Version 4.1.4, January 2008
+Version 4.1.5, March 2009
+
+Minor bug fixes
+
+----------------------------------------------------------------------
+
+Version 4.1.4, January 2009
 
 Changed image-snip% to implement equal<%>
 
