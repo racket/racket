@@ -542,8 +542,13 @@ also handled specially by the expander and by @scheme[set!] as a
 transformer binding's value. When @scheme[_id] is bound to a
 @deftech{rename transformer} produced by
 @scheme[make-rename-transformer], it is replaced with the identifier
-passed to @scheme[make-rename-transformer]. Furthermore, the binding
-is also specially handled by @scheme[syntax-local-value] and
+passed to @scheme[make-rename-transformer]. In addition, the lexical
+information that contains the binding of @scheme[_id] is also enriched
+so that @scheme[_id] is @scheme[free-identifier=?] to the identifier
+passed to @scheme[make-rename-transformer], and
+@scheme[identifier-binding] returns the same results for both
+identifiers. Finally, the binding is treated specially by
+@scheme[syntax-local-value], and
 @scheme[syntax-local-make-delta-introducer] as used by @tech{syntax
 transformer}s.
 

@@ -415,6 +415,7 @@
            [(define-values (id) rhs)
             (begin
               (syntax-local-bind-syntaxes (list #'id) #f def-ctx)
+              (internal-definition-context-seal def-ctx)
               #'(begin
                   (define-values (id) rhs)
                   (define-syntax handle (quote-syntax id))))]

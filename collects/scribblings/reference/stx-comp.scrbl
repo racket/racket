@@ -22,15 +22,16 @@ suitable expression context at the @tech{phase level} indicated by
 
 Returns @scheme[#t] if @scheme[a-id] and @scheme[b-id] access the same
 @tech{local binding}, @tech{module binding}, or @tech{top-level
-binding} at the @tech{phase level} indicated by
-@scheme[phase-level]. A @scheme[#f] value for @scheme[phase-level]
-corresponds to the @tech{label phase level}.
+binding}---perhaps via @tech{rename transformers}---at the @tech{phase
+level} indicated by @scheme[phase-level]. A @scheme[#f] value for
+@scheme[phase-level] corresponds to the @tech{label phase level}.
 
 ``Same module binding'' means that the identifiers refer to the same
-original definition site, not necessarily the @scheme[require] or
-@scheme[provide] site. Due to renaming in @scheme[require] and
-@scheme[provide], the identifiers may return distinct results with
-@scheme[syntax-e].}
+original definition site, and not necessarily to the same
+@scheme[require] or @scheme[provide] site. Due to renaming in
+@scheme[require] and @scheme[provide], or due to a transformer binding
+to a @tech{rename transformer}, the identifiers may return distinct
+results with @scheme[syntax-e].}
 
 
 @defproc[(free-transformer-identifier=? [a-id syntax?][b-id syntax?]) boolean?]{
@@ -132,7 +133,13 @@ Returns one of three kinds of values, depending on the binding of
             @tech{top-level binding} (or, equivalently, if it is
             @tech{unbound}).}
 
-      }}
+      }
+
+If @scheme[id-stx] is bound to a @tech{rename-transformer}, the result
+from @scheme[identifier] binding is for the identifier in the
+transformer, so that @scheme[identifier-binding] is consistent with
+@scheme[free-identifier=?].}
+
 
 @defproc[(identifier-transformer-binding [id-stx syntax?])
          (or/c 'lexical

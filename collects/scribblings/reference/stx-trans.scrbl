@@ -66,10 +66,12 @@ Returns the procedure that was passed to
 Creates a @tech{rename transformer} that, when used as a
 @tech{transformer binding}, acts as a transformer that insert the
 identifier @scheme[id-stx] in place of whatever identifier binds the
-transformer, including in non-application positions, and in
-@scheme[set!] expressions. Such a transformer could be written
-manually, but the one created by @scheme[make-rename-transformer]
-cooperates specially with @scheme[syntax-local-value] and
+transformer, including in non-application positions, in @scheme[set!]
+expressions. Such a transformer could be written manually, but the one
+created by @scheme[make-rename-transformer] also causes the parser to
+install a @scheme[free-identifier=?] and @scheme[identifier-binding]
+equivalence, and it cooperates specially with
+@scheme[syntax-local-value] and
 @scheme[syntax-local-make-delta-introducer].}
 
 

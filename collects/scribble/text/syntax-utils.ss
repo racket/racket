@@ -159,8 +159,10 @@
     (cond [(pair? rest) #`(list* #,@nondefns (begin/collect* #t #,@rest))]
           [(and (not always-list?) (= 1 (length nondefns))) (car nondefns)]
           [else #`(list #,@nondefns)]))
-  (local-expand (if (null? defns) body #`(let () #,@defns #,body))
-                context stoplist (car context)))
+  (begin0
+   (local-expand (if (null? defns) body #`(let () #,@defns #,body))
+                 context stoplist (car context))
+   (internal-definition-context-seal (car context))))
 (define-syntax-rule (begin/collect x ...) (begin/collect* #f x ...))
 
 ;; begin for templates (allowing definition blocks)
