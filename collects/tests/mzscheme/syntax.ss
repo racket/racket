@@ -1203,6 +1203,52 @@
                                                           (define x 10))
                                   (abcdefg)))
 
+
+;; ----------------------------------------
+
+(test 79 'splicing-let (let ()
+                         (splicing-let ([x 79])
+                           (define (y) x))
+                         (y)))
+(test 77 'splicing-let (let ()
+                         (define q 77)
+                         (splicing-let ([q 8]
+                                        [x q])
+                           (define (z) x))
+                         (z)))
+(test 81 'splicing-letrec (let ()
+                            (define q 77)
+                            (splicing-letrec ([q 81]
+                                              [x q])
+                              (define (z) x))
+                            (z)))
+(test 82 'splicing-letrec (let ()
+                            (define q 77)
+                            (splicing-letrec ([x (lambda () (q))]
+                                              [q (lambda () 82)])
+                              (define (z) x))
+                            ((z))))
+(test 81 'splicing-letrec (eval
+                            '(begin
+                               (define q 77)
+                               (splicing-letrec ([q 81]
+                                                 [x q])
+                                                (define (z) x))
+                               (z))))
+(test 82 'splicing-letrec (eval
+                            '(begin
+                               (define q 77)
+                               (splicing-letrec ([x (lambda () (q))]
+                                                 [q (lambda () 82)])
+                                                (define (z) x))
+                               ((z)))))
+(err/rt-test (eval
+              '(begin
+                 (splicing-letrec ([x q]
+                                   [q 81])
+                  x)))
+             exn:fail:contract:variable?)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -8,9 +8,13 @@
          splicing-let-syntaxes
          splicing-letrec-syntax
          splicing-letrec-syntaxes
+         splicing-let
+         splicing-let-values
+         splicing-letrec
+         splicing-letrec-values
          splicing-syntax-parameterize)
 
-(define-for-syntax (do-let-syntax stx rec? multi? let-stx-id)
+(define-for-syntax (do-let-syntax stx rec? multi? let-id def-id need-top-decl?)
   (syntax-case stx ()
     [(_ ([ids expr] ...) body ...)
      (let ([all-ids (map (lambda (ids-stx)
@@ -42,11 +46,11 @@
             stx
             dup-id)))
        (if (eq? 'expression (syntax-local-context))
-           (with-syntax ([let-stx let-stx-id])
+           (with-syntax ([LET let-id])
              (syntax/loc stx
-               (let-stx ([ids expr] ...)
-                        (#%expression body)
-                        ...)))
+               (LET ([ids expr] ...)
+                    (#%expression body)
+                    ...)))
            (let ([def-ctx (syntax-local-make-definition-context)]
                  [ctx (list (gensym 'intdef))])
              (syntax-local-bind-syntaxes (apply append all-ids) #f def-ctx)
@@ -69,23 +73,41 @@
                                     (map add-context exprs)
                                     exprs))]
                              [(body ...)
-                              (map add-context (syntax->list #'(body ...)))])
-                 #'(begin
-                     (define-syntaxes (id ...) expr)
-                     ...
-                     body ...))))))]))
+                              (map add-context (syntax->list #'(body ...)))]
+                             [DEF def-id])
+                 (with-syntax ([(top-decl ...)
+                                (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
+                                    #'((define-syntaxes (id ... ...) (values)))
+                                    null)])
+                   #'(begin
+                       top-decl ...
+                       (DEF (id ...) expr)
+                       ...
+                       body ...)))))))]))
 
 (define-syntax (splicing-let-syntax stx)
-  (do-let-syntax stx #f #f #'let-syntax))
+  (do-let-syntax stx #f #f #'let-syntax #'define-syntaxes #f))
 
 (define-syntax (splicing-let-syntaxes stx)
-  (do-let-syntax stx #f #t #'let-syntaxes))
+  (do-let-syntax stx #f #t #'let-syntaxes #'define-syntaxes #f))
 
 (define-syntax (splicing-letrec-syntax stx)
-  (do-let-syntax stx #t #f #'letrec-syntax))
+  (do-let-syntax stx #t #f #'letrec-syntax #'define-syntaxes #f))
 
 (define-syntax (splicing-letrec-syntaxes stx)
-  (do-let-syntax stx #t #t #'letrec-syntaxes))
+  (do-let-syntax stx #t #t #'letrec-syntaxes #'define-syntaxes #f))
+
+(define-syntax (splicing-let stx)
+  (do-let-syntax stx #f #f #'let #'define-values #f))
+
+(define-syntax (splicing-let-values stx)
+  (do-let-syntax stx #f #t #'let-values #'define-values #f))
+
+(define-syntax (splicing-letrec stx)
+  (do-let-syntax stx #t #f #'letrec #'define-values #t))
+
+(define-syntax (splicing-letrec-values stx)
+  (do-let-syntax stx #t #t #'letrec-values #'define-values #t))
 
 ;; ----------------------------------------
 

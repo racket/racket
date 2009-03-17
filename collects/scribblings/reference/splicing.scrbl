@@ -13,16 +13,25 @@
 @note-lib-only[scheme/splicing]
 
 @deftogether[(
+@defidform[splicing-let]
+@defidform[splicing-letrec]
+@defidform[splicing-let-values]
+@defidform[splicing-letrec-values]
 @defidform[splicing-let-syntax]
 @defidform[splicing-letrec-syntax]
 @defidform[splicing-let-syntaxes]
 @defidform[splicing-letrec-syntaxes]
 )]{
 
-Like @scheme[let-syntax], @scheme[letrec-syntax],
+Like @scheme[let], @scheme[letrec], @scheme[let-values],
+@scheme[letrec-values], @scheme[let-syntax], @scheme[letrec-syntax],
 @scheme[let-syntaxes], and @scheme[letrec-syntaxes], except that in a
 definition context, the body forms are spliced into the enclosing
-definition context (in the same as as for @scheme[begin]).
+definition context (in the same as as for @scheme[begin]). Also, for
+@scheme[splicing-letrec] and @scheme[splicing-letrec-values], a
+reference to a bound identifiers before is initialized is treated in
+the same way as definition in the enclosing context, which may be
+different than for @scheme[letrec] and @scheme[letrec-values].
 
 @examples[
 #:eval splice-eval
