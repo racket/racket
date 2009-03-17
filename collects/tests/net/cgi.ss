@@ -1,5 +1,6 @@
 #lang scheme
-(require net/cgi net/uri-codec tests/eli-tester)
+(require net/cgi (only-in net/uri-codec current-alist-separator-mode)
+         tests/eli-tester)
 
 (define (test-bindings mode query-string)
   (parameterize ([current-alist-separator-mode mode])
