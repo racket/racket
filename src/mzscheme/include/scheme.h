@@ -790,7 +790,7 @@ typedef struct {
 
 typedef struct Scheme_Hash_Table
 {
-  Scheme_Inclhash_Object iso;
+  Scheme_Inclhash_Object iso; /* 0x1 flag => marshal as #t (hack for stxobj bytecode) */
   int size; /* power of 2 */
   int count;
   Scheme_Object **keys;
@@ -1024,6 +1024,7 @@ typedef struct Scheme_Thread {
   struct Scheme_Marshal_Tables *current_mt;
 
   Scheme_Object *constant_folding; /* compiler hack */
+  Scheme_Object *reading_delayed; /* reader hack */
 
   Scheme_Object *(*overflow_k)(void);
   Scheme_Object *overflow_reply;

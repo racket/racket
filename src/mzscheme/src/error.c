@@ -661,6 +661,9 @@ call_error(char *buffer, int len, Scheme_Object *exn)
                  scheme_optimize_context_to_string(scheme_current_thread->constant_folding),
                  buffer);
     scheme_longjmp(scheme_error_buf, 1);
+  } else if (scheme_current_thread->reading_delayed) {
+    scheme_current_thread->reading_delayed = exn;
+    scheme_longjmp(scheme_error_buf, 1);
   } else {
     mz_jmp_buf savebuf;
     Scheme_Object *p[2], *display_handler, *escape_handler, *v;
@@ -1592,7 +1595,8 @@ static void do_wrong_syntax(const char *where,
  	  if (scheme_current_thread->current_local_env)
 	    phase = scheme_current_thread->current_local_env->genv->phase;
 	  else phase = 0;
-	  scheme_stx_module_name(&first, scheme_make_integer(phase), &mod, &nomwho, NULL, NULL, NULL);
+	  scheme_stx_module_name(0, &first, scheme_make_integer(phase), &mod, &nomwho, 
+                                 NULL, NULL, NULL, NULL, NULL);
 	}
       }
     } else {

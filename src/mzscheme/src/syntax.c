@@ -5737,7 +5737,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           Scheme_Env *exp_env, Scheme_Object *insp, 
                           Scheme_Compile_Expand_Info *rec, int drec,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
-                          int *_pos)
+                          int *_pos, Scheme_Object *rename_rib)
 {
   Scheme_Object **results, *l;
   Scheme_Comp_Env *eenv;
@@ -5841,10 +5841,16 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     macro->type = scheme_macro_type;
     if (vc == 1)
       SCHEME_PTR_VAL(macro) = a;
-    else
+    else 
       SCHEME_PTR_VAL(macro) = results[j];
     
     scheme_set_local_syntax(i++, name, macro, stx_env);
+
+    if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(macro)), scheme_id_macro_type)) {
+      /* Install a free-id=? rename */
+      scheme_install_free_id_rename(name, SCHEME_PTR1_VAL(SCHEME_PTR_VAL(macro)), rename_rib,
+                                    scheme_make_integer(rhs_env->genv->phase));
+    }
   }
   *_pos = i;
 
@@ -6033,7 +6039,7 @@ do_letrec_syntaxes(const char *where,
                            stx_env->insp,
                            rec, drec,
                            stx_env, rhs_env, 
-                           &i);
+                           &i, NULL);
     }
   }
 

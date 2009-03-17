@@ -662,6 +662,7 @@ thread_val {
   gcMARK(pr->current_mt);
 
   gcMARK(pr->constant_folding);
+  gcMARK(pr->reading_delayed);
   
   gcMARK(pr->overflow_reply);
 
@@ -2068,6 +2069,7 @@ mark_rename_table {
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->set_identity);
   gcMARK(rn->marked_names);
+  gcMARK(rn->free_id_renames);
  size:
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }

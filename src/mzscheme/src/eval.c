@@ -6070,7 +6070,8 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
     if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
       /* Since the module has a rename for this id, it's certainly defined. */
     } else {
-      modidx = scheme_stx_module_name(&symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, NULL, NULL);
+      modidx = scheme_stx_module_name(0, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
+                                      NULL, NULL, NULL, NULL);
       if (modidx) {
 	/* If it's an access path, resolve it: */
 	if (env->genv->module
@@ -6535,7 +6536,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 				 names, expr,
 				 new_env->genv->exp_env, new_env->insp, rec, drec,
 				 new_env, new_env,
-				 &pos);
+				 &pos, rib);
 	  }
 
 	  /* Remember extended environment */
@@ -9800,7 +9801,7 @@ local_eval(int argc, Scheme_Object **argv)
     scheme_bind_syntaxes("local syntax definition", names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,
-			 &pos);
+			 &pos, rib);
   }
 
   /* Extend shared rib with renamings */

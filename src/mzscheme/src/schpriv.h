@@ -743,6 +743,11 @@ Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *re
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 
+void scheme_install_free_id_rename(Scheme_Object *id, 
+                                   Scheme_Object *orig_id,
+                                   Scheme_Object *rename_rib,
+                                   Scheme_Object *phase);
+
 #define mzMOD_RENAME_TOPLEVEL 0
 #define mzMOD_RENAME_NORMAL   1
 #define mzMOD_RENAME_MARKED   2
@@ -763,11 +768,11 @@ void scheme_seal_module_rename_set(Scheme_Object *rns, int level);
 #define STX_SEAL_ALL   2
 
 Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_Hash_Table *mns);
-void scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
-				 Scheme_Object *locname, Scheme_Object *exname,
-				 Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
-				 int mod_phase, Scheme_Object *src_phase_index, 
-                                 Scheme_Object *nom_export_phase, int drop_for_marshal);
+Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *modname,
+                                           Scheme_Object *locname, Scheme_Object *exname,
+                                           Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
+                                           int mod_phase, Scheme_Object *src_phase_index, 
+                                           Scheme_Object *nom_export_phase, int drop_for_marshal);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
                                              struct Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
@@ -797,12 +802,15 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase);
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
-Scheme_Object *scheme_stx_module_name(Scheme_Object **name, Scheme_Object *phase,
+Scheme_Object *scheme_stx_module_name(int recur,
+                                      Scheme_Object **name, Scheme_Object *phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
 				      Scheme_Object **mod_phase, 
                                       Scheme_Object **src_phase_index, 
-                                      Scheme_Object **nominal_src_phase);
+                                      Scheme_Object **nominal_src_phase,
+                                      Scheme_Object **lex_env,
+                                      int *_sealed);
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
@@ -2111,7 +2119,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           Scheme_Env *exp_env, Scheme_Object *insp, 
                           Scheme_Compile_Expand_Info *rec, int drec,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
-                          int *_pos);
+                          int *_pos, Scheme_Object *rename_rib);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
 typedef struct SFS_Info {

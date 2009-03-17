@@ -116,7 +116,8 @@ static void eval_exptime(Scheme_Object *names, int count,
                          Scheme_Env *genv, Scheme_Comp_Env *env,
                          Resolve_Prefix *rp, int let_depth, int shift,
                          Scheme_Bucket_Table *syntax, int for_stx,
-                         Scheme_Object *certs);
+                         Scheme_Object *certs,
+                         Scheme_Object *free_id_rename_rn);
 
 static Scheme_Module_Exports *make_module_exports();
 
@@ -3947,7 +3948,7 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
 
     eval_exptime(names, scheme_list_length(names), e, exp_env, rhs_env,
                  rp, let_depth, 1, (for_stx ? for_stx_globals : syntax), for_stx,
-                 NULL);
+                 NULL, scheme_false);
   }
 
   if (set_ns) {
@@ -4401,13 +4402,15 @@ static void *eval_exptime_k(void)
   Resolve_Prefix *rp;
   int let_depth, shift;
   Scheme_Bucket_Table *syntax;
+  Scheme_Object *free_id_rename_rn;
 
   names = (Scheme_Object *)p->ku.k.p1;
   expr = (Scheme_Object *)p->ku.k.p2;
   genv = (Scheme_Env *)SCHEME_CAR((Scheme_Object *)p->ku.k.p3);
   comp_env = (Scheme_Comp_Env *)SCHEME_CDR((Scheme_Object *)p->ku.k.p3);
-  rp = (Resolve_Prefix *)SCHEME_CAR((Scheme_Object *)p->ku.k.p4);
-  syntax = (Scheme_Bucket_Table *)SCHEME_CDR((Scheme_Object *)p->ku.k.p4);
+  free_id_rename_rn = SCHEME_CAR((Scheme_Object *)p->ku.k.p4);
+  rp = (Resolve_Prefix *)SCHEME_CAR(SCHEME_CDR((Scheme_Object *)p->ku.k.p4));
+  syntax = (Scheme_Bucket_Table *)SCHEME_CDR(SCHEME_CDR((Scheme_Object *)p->ku.k.p4));
   count = p->ku.k.i1;
   let_depth = p->ku.k.i2;
   shift = p->ku.k.i3;
@@ -4420,7 +4423,8 @@ static void *eval_exptime_k(void)
   p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
-  eval_exptime(names, count, expr, genv, comp_env, rp, let_depth, shift, syntax, for_stx, certs);
+  eval_exptime(names, count, expr, genv, comp_env, rp, let_depth, shift, syntax, for_stx, 
+               certs, free_id_rename_rn);
 
   return NULL;
 }
@@ -4441,7 +4445,8 @@ static void eval_exptime(Scheme_Object *names, int count,
                          Scheme_Env *genv, Scheme_Comp_Env *comp_env,
                          Resolve_Prefix *rp,
                          int let_depth, int shift, Scheme_Bucket_Table *syntax,
-                         int for_stx, Scheme_Object *certs)
+                         int for_stx, Scheme_Object *certs,
+                         Scheme_Object *free_id_rename_rn)
 {
   Scheme_Object *macro, *vals, *name, **save_runstack;
   int i, g, depth;
@@ -4454,6 +4459,7 @@ static void eval_exptime(Scheme_Object *names, int count,
     vals = scheme_make_pair((Scheme_Object *)genv, (Scheme_Object *)comp_env);
     p->ku.k.p3 = vals;
     vals = scheme_make_pair((Scheme_Object *)rp, (Scheme_Object *)syntax);
+    vals = scheme_make_pair(free_id_rename_rn, vals);
     p->ku.k.p4 = vals;
     p->ku.k.i1 = count;
     p->ku.k.i2 = let_depth;
@@ -4511,6 +4517,11 @@ static void eval_exptime(Scheme_Object *names, int count,
 	  macro = scheme_alloc_small_object();
 	  macro->type = scheme_macro_type;
 	  SCHEME_PTR_VAL(macro) = values[i];
+
+          if (SCHEME_TRUEP(free_id_rename_rn)
+              && SAME_TYPE(SCHEME_TYPE(values[i]), scheme_id_macro_type))
+            scheme_install_free_id_rename(name, SCHEME_PTR1_VAL(values[i]), free_id_rename_rn, 
+                                          scheme_make_integer(0));
 	} else
 	  macro = values[i];
 	
@@ -4526,6 +4537,11 @@ static void eval_exptime(Scheme_Object *names, int count,
       macro = scheme_alloc_small_object();
       macro->type = scheme_macro_type;
       SCHEME_PTR_VAL(macro) = vals;
+
+      if (SCHEME_TRUEP(free_id_rename_rn)
+          && SAME_TYPE(SCHEME_TYPE(vals), scheme_id_macro_type))
+        scheme_install_free_id_rename(name, SCHEME_PTR1_VAL(vals), free_id_rename_rn, 
+                                      scheme_make_integer(0));
     } else
       macro = vals;
 
@@ -6170,6 +6186,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  Optimize_Info *oi;
 	  int count = 0;
 	  int for_stx;
+          int use_post_ex = 0;
 
 	  for_stx = scheme_stx_module_eq(define_for_syntaxes_stx, fst, 0);
 
@@ -6233,6 +6250,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	      scheme_extend_module_rename(for_stx ? post_ex_et_rn : post_ex_rn, self_modidx, name, name, self_modidx, name,
 					  for_stx ? 1 : 0, NULL, NULL, 0);
               *all_simple_renames = 0;
+              use_post_ex = 1;
 	    } else
 	      scheme_extend_module_rename(for_stx ? et_rn : rn, self_modidx, name, name, self_modidx, name,
 					  for_stx ? 1 : 0, NULL, NULL, 0);
@@ -6304,8 +6322,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	
 	  eval_exptime(names, count, m, eenv->genv, rhs_env, rp, ri->max_let_depth, 0, 
                        (for_stx ? env->genv->exp_env->toplevel : env->genv->syntax), for_stx,
-                       rec[drec].certs);
-
+                       rec[drec].certs, 
+                       for_stx ? scheme_false : (use_post_ex ? post_ex_rn : rn));
+          
 	  if (rec[drec].comp)
 	    e = NULL;
 	  else {
@@ -6369,11 +6388,11 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   }
   /* first =  a list of (cons semi-expanded-expression kind) */
 
-  /* Bound names will be re-bound at this point: */
+  /* Bound names will not be re-bound at this point: */
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     scheme_seal_module_rename_set(rn_set, STX_SEAL_BOUND);
-    scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_BOUND);
   }
+  scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_BOUND);
 
   /* Pass 2 */
   SCHEME_EXPAND_OBSERVE_NEXT_GROUP(observer);
@@ -6534,8 +6553,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     scheme_seal_module_rename_set(rn_set, STX_SEAL_ALL);
-    scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_ALL);
   }
+  scheme_seal_module_rename_set(post_ex_rn_set, STX_SEAL_ALL);
 
   /* Compute provides for re-provides and all-defs-out: */
   reprovide_kernel = compute_reprovides(all_provided,
@@ -8441,7 +8460,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                                             exets ? exets[j] : 0,
                                             src_phase_index,
                                             pt->phase_index,
-                                            for_unmarshal || (!has_context && can_save_marshal));
+                                            (for_unmarshal || (!has_context && can_save_marshal)) ? 1 : 0);
               }
             }
           }

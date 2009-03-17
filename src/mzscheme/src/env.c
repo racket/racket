@@ -1171,6 +1171,22 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
   } else {
     if (env->shadowed_syntax)
       scheme_hash_set(env->shadowed_syntax, n, NULL);
+
+    if (rn) {
+      /* If the syntax binding is a rename transformer, need to install 
+         a mapping. */
+      Scheme_Object *v;
+      v = scheme_lookup_in_table(env->syntax, (const char *)n);
+      if (v) {
+        v = SCHEME_PTR_VAL(v);
+        if (SAME_TYPE(SCHEME_TYPE(v), scheme_id_macro_type)) {
+          scheme_install_free_id_rename(n, 
+                                        SCHEME_PTR1_VAL(v), 
+                                        rn, 
+                                        scheme_make_integer(env->phase));
+        }
+      }
+    }
   }
 }
 
@@ -1959,7 +1975,8 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (mode < 2)) {
       Scheme_Object *mod, *nm = id;
-      mod = scheme_stx_module_name(&nm, scheme_make_integer(env->phase), NULL, NULL, NULL, NULL, NULL);
+      mod = scheme_stx_module_name(0, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+                                   NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
 		 have been an error before getting here */
 	  && NOT_SAME_OBJ(nm, sym))
@@ -2634,7 +2651,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   src_find_id = find_id;
-  modidx = scheme_stx_module_name(&find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, NULL, NULL);
+  modidx = scheme_stx_module_name(0, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
+                                  NULL, NULL, NULL, NULL);
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
@@ -2646,9 +2664,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     }
     
     if (modidx) {
-      if (!(flags & SCHEME_OUT_OF_CONTEXT_OK))
+      if (!(flags & SCHEME_OUT_OF_CONTEXT_OK)) {
         scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
                             "identifier used out of context");
+      }
       if (flags & SCHEME_OUT_OF_CONTEXT_LOCAL)
         return scheme_make_local(scheme_local_type, 0, 0);
       return NULL;
@@ -2910,7 +2929,8 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
   if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
     return 1;
   } else {
-    mod = scheme_stx_module_name(&id, scheme_make_integer(env->phase), NULL, NULL, NULL, NULL, NULL);
+    mod = scheme_stx_module_name(0, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+                                 NULL, NULL, NULL, NULL);
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;
   }
