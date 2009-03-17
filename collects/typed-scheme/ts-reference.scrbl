@@ -52,6 +52,8 @@ The following base types are parameteric in their type arguments.
                                the first is the type the parameter accepts, and the second is the type returned.}
 @defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
   and @scheme[t] as the @scheme[cdr]}
+@defform[(HashTable k v)]{is the type of a @rtech{hash table} with key type
+   @scheme[k] and value type @scheme[v].}
 
 @subsubsub*section{Type Constructors}
 

@@ -538,6 +538,10 @@
 
 [maybe-print-message (-String . -> . -Void)]
 
+[list->string ((-lst -Char) . -> . -String)]
+[string->list (-String . -> . (-lst -Char))]
+[sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
+
 ;; scheme/list
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> . 
