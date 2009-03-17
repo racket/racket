@@ -2138,7 +2138,7 @@ static Scheme_Object *abs_sym;
 
 /* (ptr-ref cpointer type [['abs] n]) -> the object at the given location */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
-/* if n is given, an 'abs flag can precede it to make n be a byte offset rather
+/* if n is given, an 'abs flag can precede it to make n be a byte offset rather */
 /* than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
 #define MYNAME "ptr-ref"
@@ -2191,7 +2191,7 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
-/* if n is given, an 'abs flag can precede it to make n be a byte offset rather
+/* if n is given, an 'abs flag can precede it to make n be a byte offset rather */
 /* than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
 #define MYNAME "ptr-set!"
