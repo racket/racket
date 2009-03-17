@@ -96,12 +96,22 @@
 ;; -- operates on the default input port; the second value indicates whether
 ;; reading stopped because an EOF was hit (as opposed to the delimiter being
 ;; seen); the delimiter is not part of the result
-(define (read-until-char ip delimiter)
+(define (read-until-char ip delimiter?)
   (let loop ([chars '()])
     (let ([c (read-char ip)])
       (cond [(eof-object? c) (values (reverse chars) #t)]
-            [(char=? c delimiter) (values (reverse chars) #f)]
+            [(delimiter? c) (values (reverse chars) #f)]
             [else (loop (cons c chars))]))))
+
+;; delimiter->predicate :
+;; symbol -> (char -> bool)
+;; returns a predicates to pass to read-until-char
+(define (delimiter->predicate delimiter)
+  (case delimiter
+    [(eq) (lambda (c) (char=? c #\=))]
+    [(amp) (lambda (c) (char=? c #\&))]
+    [(semi) (lambda (c) (char=? c #\;))]
+    [(amp-or-semi) (lambda (c) (or (char=? c #\&) (char=? c #\;)))]))
 
 ;; read-name+value : iport -> (symbol + bool) x (string + bool) x bool
 ;; -- If the first value is false, so is the second, and the third is true,
@@ -109,19 +119,24 @@
 ;; and second values contain strings and the third is either true or false
 ;; depending on whether the EOF has been reached.  The strings are processed
 ;; to remove the CGI spec "escape"s.  This code is _slightly_ lax: it allows
-;; an input to end in `&'.  It's not clear this is legal by the CGI spec,
+;; an input to end in (current-alist-separator-mode).  
+;; It's not clear this is legal by the CGI spec,
 ;; which suggests that the last value binding must end in an EOF.  It doesn't
 ;; look like this matters.  It would also introduce needless modality and
 ;; reduce flexibility.
 (define (read-name+value ip)
-  (let-values ([(name eof?) (read-until-char ip #\=)])
+  (let-values ([(name eof?) (read-until-char ip (delimiter->predicate 'eq))])
     (cond [(and eof? (null? name)) (values #f #f #t)]
           [eof?
            (generate-error-output
             (list "Server generated malformed input for POST method:"
                   (string-append
                    "No binding for `" (list->string name) "' field.")))]
-          [else (let-values ([(value eof?) (read-until-char ip #\&)])
+          [else (let-values ([(value eof?) 
+                              (read-until-char 
+                               ip 
+                               (delimiter->predicate
+                                (current-alist-separator-mode)))])
                   (values (string->symbol (query-chars->string name))
                           (query-chars->string value)
                           eof?))])))

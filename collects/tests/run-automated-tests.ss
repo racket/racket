@@ -38,6 +38,8 @@
     ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
     [require "lazy/main.ss"]
     [require "scribble/main.ss"]
+    [require "net/main.ss"]
+    [require "file/main.ss"]
     ))
 
 

@@ -152,11 +152,14 @@
 (define (read-bindings&post-data/raw conn meth uri headers)
   (cond
     [(bytes-ci=? #"GET" meth)
-     (values (map (match-lambda
-                    [(list-rest k v)
-                     (make-binding:form (string->bytes/utf-8 (symbol->string k))
-                                        (string->bytes/utf-8 v))])
-                  (url-query uri))
+     (values (filter (lambda (x) x)
+                     (map (match-lambda
+                            [(list-rest k v)
+                             (if (and (symbol? k) (string? v))
+                                 (make-binding:form (string->bytes/utf-8 (symbol->string k))
+                                                    (string->bytes/utf-8 v))
+                                 #f)])
+                          (url-query uri)))
              #f)]
     [(bytes-ci=? #"POST" meth)
      (local
