@@ -1,7 +1,10 @@
 #lang scribble/doc
 
-@begin[(require scribble/manual)
-       (require (for-label typed-scheme))]
+@begin[(require scribble/manual scribble/eval
+                scheme/sandbox)
+       (require (for-label typed-scheme
+                           scheme/list srfi/14
+                           version/check))]
 
 @begin[
 (define (item* header . args) (apply item @bold[header]{: } args))
@@ -247,3 +250,47 @@ known to Typed Scheme, either via @scheme[define-struct:] or
 Like @scheme[do], but each @scheme[id] having the associated type @scheme[t], and 
 the final body @scheme[expr] having the type @scheme[u].
 }
+
+@section{Libraries Provided With Typed Scheme}
+
+The @schememodname[typed-scheme] language corresponds to the
+@schememodname[scheme/base] language---that is, any identifier provided
+by @schememodname[scheme/base], such as @scheme[mod] is available by default in
+@schememodname[typed-scheme].  
+
+@schememod[typed-scheme
+(modulo 12 2)
+]
+
+Any value provided by @schememodname[scheme] is available by simply
+@scheme[require]ing it; use of @scheme[require/typed] is not
+neccessary.  
+
+@schememod[typed-scheme
+(require scheme/list)
+(display (first (list 1 2 3)))
+]
+
+Some libraries have counterparts in the @schemeidfont{typed}
+collection, which provide the same exports as the untyped versions.
+Such libraries include @schememodname[srfi/14],
+@schememodname[net/url], and many others.  
+
+@schememod[typed-scheme
+(require typed/srfi/14)
+(char-set= (string->char-set "hello")
+           (string->char-set "olleh"))
+]
+
+To participate in making more libraries available, please visit 
+@link["http://www.ccs.neu.edu/home/samth/adapt/"]{here}.
+
+
+Other libraries can be used with Typed Scheme via
+@scheme[require/typed].
+
+@schememod[typed-scheme
+(require/typed version/check
+               [check-version (-> (U Symbol (Listof Any)))])
+(check-version)
+]
