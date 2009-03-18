@@ -1,12 +1,10 @@
-Version 4.1.4.3
+Version 4.1.5, March 2009
 Allow infix notation for prefab structure literals
 Change quasiquote so that unquote works in value positions of #hash
 Change read-syntax to represent #hash value forms as syntax
-
-Version 4.1.4.2
 Added bitwise-bit-field
 
-Version 4.1.4, January 2008
+Version 4.1.4, January 2009
 Changed memory accounting to bias charges to parent instead of children
 Changed function contracts to preserve tail recursion in many cases
 Added scheme/package, scheme/splicing, ffi/objc

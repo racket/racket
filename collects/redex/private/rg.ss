@@ -620,7 +620,7 @@ To do a better job of not generating programs with free variables,
   (struct-copy 
    compiled-lang lang
    [lang (map (parse-nt 'grammar) (compiled-lang-lang lang))]
-   [cclang (map (parse-nt 'top-level) (compiled-lang-cclang lang))]))
+   [cclang (map (parse-nt 'cross) (compiled-lang-cclang lang))]))
 
 ;; unparse-pattern: parsed-pattern -> pattern
 (define unparse-pattern
