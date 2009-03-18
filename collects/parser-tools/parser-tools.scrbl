@@ -526,23 +526,27 @@ the right choice when using @scheme[lexer] in other situations.
 
       Each action is scheme code that has the same scope as its
       parser's definition, except that the variables @scheme[$1], ...,
-      @schemeidfont{$}@math{n} are bound, where @math{n} is the number
+      @schemeidfont{$}@math{i} are bound, where @math{i} is the number
       of @scheme[grammar-id]s in the corresponding production. Each
-      @schemeidfont{$}@math{i} is bound to the result of the action
-      for the @math{i}@superscript{th} grammar symbol on the right of
+      @schemeidfont{$}@math{k} is bound to the result of the action
+      for the @math{k}@superscript{th} grammar symbol on the right of
       the production, if that grammar symbol is a non-terminal, or the
       value stored in the token if the grammar symbol is a terminal.
       If the @scheme[src-pos] option is present in the parser, then
       variables @scheme[$1-start-pos], ...,
-      @schemeidfont{$}@math{n}@schemeidfont{-start-pos} and
+      @schemeidfont{$}@math{i}@schemeidfont{-start-pos} and
       @scheme[$1-end-pos], ...,
-      @schemeidfont{$}@math{n}@schemeidfont{-end-pos} and are also
+      @schemeidfont{$}@math{i}@schemeidfont{-end-pos} and are also
       available, and they refer to the position structures
       corresponding to the start and end of the corresponding
       @scheme[grammar-symbol]. Grammar symbols defined as empty-tokens
-      have no @schemeidfont{$}@math{i} associated, but do have
+      have no @schemeidfont{$}@math{k} associated, but do have
+      @schemeidfont{$}@math{k}@schemeidfont{-start-pos} and
+      @schemeidfont{$}@math{k}@schemeidfont{-end-pos}.
+      Also @schemeidfont{$n-start-pos} and @schemeidfont{$n-end-pos}
+      are bound to the largest start and end positions, (i.e.,
       @schemeidfont{$}@math{i}@schemeidfont{-start-pos} and
-      @schemeidfont{$}@math{i}@schemeidfont{-end-pos}.
+      @schemeidfont{$}@math{i}@schemeidfont{-end-pos}).
 
       All of the productions for a given non-terminal must be grouped
       with it. That is, no @scheme[non-terminal-id] may appear twice
