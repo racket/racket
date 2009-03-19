@@ -660,6 +660,11 @@ call_error(char *buffer, int len, Scheme_Object *exn)
                  "optimizer constant-fold attempt failed%s: %s",
                  scheme_optimize_context_to_string(scheme_current_thread->constant_folding),
                  buffer);
+    if (SCHEME_STRUCTP(exn)
+        && scheme_is_struct_instance(exn_table[MZEXN_BREAK].type, exn)) {
+      /* remember to re-raise exception */
+      scheme_current_thread->reading_delayed = exn;
+    }
     scheme_longjmp(scheme_error_buf, 1);
   } else if (scheme_current_thread->reading_delayed) {
     scheme_current_thread->reading_delayed = exn;
@@ -3256,6 +3261,11 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
                  "warning%s: optimizer constant-fold attempt failed: %s",
                  scheme_optimize_context_to_string(p->constant_folding),
                  msg);
+    }
+    if (SCHEME_STRUCTP(arg)
+        && scheme_is_struct_instance(exn_table[MZEXN_BREAK].type, arg)) {
+      /* remember to re-raise exception */
+      scheme_current_thread->reading_delayed = arg;
     }
     scheme_longjmp (scheme_error_buf, 1);
   }

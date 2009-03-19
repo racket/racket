@@ -1012,19 +1012,30 @@ static Scheme_Object *try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Ob
         folding attempts */
 {
   Scheme_Object * volatile result;
+  Scheme_Object * volatile exn = NULL;
   mz_jmp_buf *savebuf, newbuf;
 
+  scheme_current_thread->reading_delayed = NULL;
   scheme_current_thread->constant_folding = (context ? context : scheme_true);
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
 
-  if (scheme_setjmp(newbuf))
+  if (scheme_setjmp(newbuf)) {
     result = NULL;
-  else
+    exn = scheme_current_thread->reading_delayed;
+  } else
     result = _scheme_apply_to_list(f, args);
   
   scheme_current_thread->error_buf = savebuf;
   scheme_current_thread->constant_folding = NULL;
+  scheme_current_thread->reading_delayed = NULL;
+
+  if (scheme_current_thread->cjs.is_kill) {
+    scheme_longjmp(*scheme_current_thread->error_buf, 1);
+  }
+
+  if (exn)
+    scheme_raise(exn);
 
   return result;
 }

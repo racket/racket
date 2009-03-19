@@ -21,13 +21,11 @@ MA 02111-1307, USA. */
 #define _FORCE_INLINES
 #define _EXTERN_INLINE /* empty */
 
-/* We use malloc for now; this will have to change. */
-/* The allocation function should not create collectable
-   memory, though it can safely GC when allocating. */
-extern void *malloc(unsigned long);
-extern void free(void *);
-#define MALLOC malloc
-#define FREE(p, s) free(p)
+extern void *scheme_malloc_gmp(unsigned long, void **mem_pool);
+extern void scheme_free_gmp(void *, void **mem_pool);
+static void *mem_pool = 0;
+#define MALLOC(amt) scheme_malloc_gmp(amt, &mem_pool)
+#define FREE(p, s) scheme_free_gmp(p, &mem_pool)
 
 #include "../../sconfig.h"
 #include "mzconfig.h"
@@ -5796,18 +5794,21 @@ void scheme_gmp_tls_init(long *s)
   ((tmp_marker *)(s + 3))->alloc_point = &xxx;
 }
 
-void scheme_gmp_tls_load(long *s) 
+void *scheme_gmp_tls_load(long *s) 
 {
   s[0] = (long)current_total_allocation;
   s[1] = (long)max_total_allocation;
   s[2] = (long)current;
+  return mem_pool;
 }
 
-void scheme_gmp_tls_unload(long *s)
+void scheme_gmp_tls_unload(long *s, void *data)
 {
   current_total_allocation = (unsigned long)s[0];
   max_total_allocation = (unsigned long)s[1];
   current = (tmp_stack *)s[2];
+  s[0] = 0;
+  mem_pool = data;
 }
 
 void scheme_gmp_tls_snapshot(long *s, long *save)
@@ -5817,14 +5818,16 @@ void scheme_gmp_tls_snapshot(long *s, long *save)
   __gmp_tmp_mark((tmp_marker *)(s + 3));
 }
 
-void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free)
+void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free)
 {
   long other[6];
+  void *other_data;
 
   if (do_free == 2) {
-    scheme_gmp_tls_load(other);
-    scheme_gmp_tls_unload(s);
-  }
+    other_data = scheme_gmp_tls_load(other);
+    scheme_gmp_tls_unload(s, data);
+  } else
+    other_data = NULL;
 
   if (do_free)
     __gmp_tmp_free((tmp_marker *)(s + 3));  
@@ -5832,11 +5835,12 @@ void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free)
   if (save) {
     s[3] = save[0];
     s[4] = save[1];
+    
   }
 
   if (do_free == 2) {
-    scheme_gmp_tls_load(s);
-    scheme_gmp_tls_unload(other);
+    data = scheme_gmp_tls_load(s);
+    scheme_gmp_tls_unload(other, other_data);
   }
 }
 

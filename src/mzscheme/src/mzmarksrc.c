@@ -690,6 +690,7 @@ thread_val {
   gcMARK(pr->private_kill_next);
   
   gcMARK(pr->user_tls);
+  gcMARK(pr->gmp_tls_data);
   
   gcMARK(pr->mr_hop);
   gcMARK(pr->mref);

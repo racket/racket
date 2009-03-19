@@ -5457,7 +5457,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
         
     return v;
   } else {
-    if (v_exn)
+    if (v_exn && !scheme_current_thread->cjs.is_kill)
       scheme_raise(v_exn);
     scheme_longjmp(*scheme_current_thread->error_buf, 1);
     return NULL;

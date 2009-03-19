@@ -1079,6 +1079,7 @@ typedef struct Scheme_Thread {
 
   /* save thread-specific GMP state: */
   long gmp_tls[6];
+  void *gmp_tls_data;
 
   struct Scheme_Thread_Custodian_Hop *mr_hop;
   Scheme_Custodian_Reference *mref;
