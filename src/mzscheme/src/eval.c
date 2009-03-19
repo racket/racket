@@ -5204,9 +5204,10 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
         SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
         return first;
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
-        if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(val)), scheme_id_macro_type)) {
+        if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
           /* It's a rename. Look up the target name and try again. */
-          name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL, 1);
+          name = scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
+                                 scheme_false, menv, name, NULL, 1);
           menv = NULL;
           SCHEME_USE_FUEL(1);
         } else {
@@ -5247,7 +5248,7 @@ compile_expand_macro_app(Scheme_Object *name, Scheme_Env *menv, Scheme_Object *m
 
   xformer = (Scheme_Object *)SCHEME_PTR_VAL(macro);
 
-  if (SAME_TYPE(SCHEME_TYPE(xformer), scheme_set_macro_type)) {
+  if (scheme_is_set_transformer(xformer)) {
     /* scheme_apply_macro unwraps it */
   } else {
     if (!scheme_check_proc_arity(NULL, 1, 0, -1, &xformer)) {
@@ -5402,10 +5403,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
 
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	    && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	  /* It's a rename. Look up the target name and try again. */
 	  Scheme_Object *new_name;
-	  new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
@@ -5508,10 +5509,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	    && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	  /* It's a rename. Look up the target name and try again. */
 	  Scheme_Object *new_name;
-	  new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
@@ -5595,10 +5596,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 
       if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	  && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	  && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	/* It's a rename. Look up the target name and try again. */
 	Scheme_Object *new_name;
-	new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	if (!rec[drec].comp) {
 	  new_name = scheme_stx_track(new_name, find_name, find_name);
 	}

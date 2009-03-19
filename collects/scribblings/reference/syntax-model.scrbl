@@ -531,23 +531,27 @@ is the one left with a mark, and the reference @scheme[x] has no mark,
 so the binding @scheme[x] is not @scheme[bound-identifier=?] to the
 body @scheme[x].
 
-The @scheme[set!] form and the @scheme[make-set!-transformer]
-procedure work together to support @deftech{assignment transformers}
-that transformer @scheme[set!] expression. @tech{Assignment
-transformers} are applied by @scheme[set!] in the same way as a normal
+The @scheme[set!] form works with the @scheme[make-set!-transformer]
+and @scheme[prop:set!-transformer] property to support
+@deftech{assignment transformers} that transform @scheme[set!]
+expressions. An @tech{assignment transformer} contains a procedure
+that is applied by @scheme[set!] in the same way as a normal
 transformer by the expander.
 
-The @scheme[make-rename-transformer] procedure creates a value that is
-also handled specially by the expander and by @scheme[set!] as a
+The @scheme[make-rename-transformer] procedure or
+@scheme[prop:rename-transformer] property creates a value that is also
+handled specially by the expander and by @scheme[set!] as a
 transformer binding's value. When @scheme[_id] is bound to a
 @deftech{rename transformer} produced by
-@scheme[make-rename-transformer], it is replaced with the identifier
-passed to @scheme[make-rename-transformer]. In addition, the lexical
-information that contains the binding of @scheme[_id] is also enriched
-so that @scheme[_id] is @scheme[free-identifier=?] to the identifier
-passed to @scheme[make-rename-transformer], and
+@scheme[make-rename-transformer], it is replaced with the target
+identifier passed to @scheme[make-rename-transformer]. In addition, as
+long as the target identifier does not have a true value for the
+@scheme['not-free-identifier=?] @tech{syntax property}, the lexical information that
+contains the binding of @scheme[_id] is also enriched so that
+@scheme[_id] is @scheme[free-identifier=?] to the target identifier,
 @scheme[identifier-binding] returns the same results for both
-identifiers. Finally, the binding is treated specially by
+identifiers, and @scheme[provide] exports @scheme[_id] as the target
+identifier. Finally, the binding is treated specially by
 @scheme[syntax-local-value], and
 @scheme[syntax-local-make-delta-introducer] as used by @tech{syntax
 transformer}s.

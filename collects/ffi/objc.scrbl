@@ -14,9 +14,7 @@
 
 @title{@bold{Objective-C} FFI}
 
-@declare-exporting[ffi/private/objc-doc-unsafe #:use-sources (ffi/objc)]
-
-@defmodule*/no-declare[(ffi/objc)]{The @schememodname[ffi/objc] library builds on
+@defmodule[ffi/objc]{The @schememodname[ffi/objc] library builds on
 @schememodname[scheme/foreign] to support interaction with
 @link["http://developer.apple.com/documentation/Cocoa/Conceptual/ObjectiveC/"]{Objective-C}.}
 

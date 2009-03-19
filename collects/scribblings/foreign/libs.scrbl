@@ -21,7 +21,6 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 
 @declare-exporting[scribblings/foreign/unsafe-foreign]
 
-
 @defproc[(ffi-lib [path (or/c path-string? #f)]
                   [version (or/c string? (listof string?) #f) #f]) any]{
 

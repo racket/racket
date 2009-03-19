@@ -2603,10 +2603,10 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
   Scheme_Object *certs;
   certs = rec[drec].certs;
 
-  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_id_macro_type)) {
+  if (scheme_is_rename_transformer(rator)) {
     Scheme_Object *mark;
    
-    rator = SCHEME_PTR1_VAL(rator);
+    rator = scheme_rename_transformer_id(rator);
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */
@@ -2639,8 +2639,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     certs = scheme_stx_extract_certs(code, certs);
  
-    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_set_macro_type))
-      rator = SCHEME_PTR_VAL(rator);
+    if (scheme_is_set_transformer(rator))
+      rator = scheme_set_transformer_proc(rator);
 
     mark = scheme_new_mark();
     code = scheme_add_remove_mark(code, mark);

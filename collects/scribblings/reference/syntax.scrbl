@@ -702,7 +702,13 @@ follows.
       (define foo 2))
    (require 'test)
    foo
- ]}
+ ]
+
+ If @scheme[id] has a transformer binding to a @tech{rename
+ transformer}, then the exported binding is the target identifier of
+ the @tech{rename transformer}, instead of @scheme[id], unless the
+ target identifier has a true value for the
+ @scheme['not-free-identifier=?] @tech{syntax property}.}
 
  @defsubform[(all-defined-out)]{ Exports all identifiers that are
  defined at @tech{phase level} 0 or @tech{phase level} 1 within the
@@ -2109,14 +2115,19 @@ Equivalent to @scheme[(when (not test-expr) expr ...)].
 
 @defform[(set! id expr)]{
 
-If @scheme[id] has a @tech{transformer binding} to an
-@tech{assignment transformer}, as produced by
-@scheme[make-set!-transformer], then this form is expanded by calling
-the assignment transformer with the full expressions. If @scheme[id]
-has a @tech{transformer binding} to a @tech{rename transformer} as
-produced by @scheme[make-rename-transformer], then this form is
-expanded by replacing @scheme[id] with the one provided to
-@scheme[make-rename-transformer].
+If @scheme[id] has a @tech{transformer binding} to an @tech{assignment
+transformer}, as produced by @scheme[make-set!-transformer] or as an
+instance of a structure type with the @scheme[prop:set!-transformer]
+property, then this form is expanded by calling the assignment
+transformer with the full expressions. If @scheme[id] has a
+@tech{transformer binding} to a @tech{rename transformer} as produced
+by @scheme[make-rename-transformer] or as an instance of a structure
+type with the @scheme[prop:rename-transformer] property, then this
+form is expanded by replacing @scheme[id] with the target identifier
+(e.g., the one provided to @scheme[make-rename-transformer]). If a
+transformer binding has both @scheme[prop:set!-transformer] ad
+@scheme[prop:rename-transformer] properties, the latter takes
+precedence.
 
 Otherwise, evaluates @scheme[expr] and installs the result into the
 location for @scheme[id], which must be bound as a local variable or

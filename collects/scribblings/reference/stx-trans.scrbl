@@ -16,15 +16,22 @@ expander, otherwise the @exnraise[exn:fail:contract].})
 
 @title[#:tag "stxtrans"]{Syntax Transformers}
 
+@defproc[(set!-transformer? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a value created by
+@scheme[make-set!-transformer] or an instance of a structure type with
+the @scheme[prop:set!-transformer] property, @scheme[#f] otherwise.}
+
+
 @defproc[(make-set!-transformer [proc (syntax? . -> . syntax?)])
          set!-transformer?]{
 
-Creates a @tech{syntax transformer} that cooperates with
+Creates an @tech{assignment transformer} that cooperates with
 @scheme[set!]. If the result of @scheme[make-set!-transformer] is
-bound to @scheme[identifier] as a @tech{transformer binding}, then
-@scheme[proc] is applied as a transformer when @scheme[identifier] is
+bound to @scheme[_id] as a @tech{transformer binding}, then
+@scheme[proc] is applied as a transformer when @scheme[_id] is
 used in an expression position, or when it is used as the target of a
-@scheme[set!] assignment as @scheme[(set! identifier _expr)]. When the
+@scheme[set!] assignment as @scheme[(set! _id _expr)]. When the
 identifier appears as a @scheme[set!] target, the entire @scheme[set!]
 expression is provided to the transformer.
 
@@ -45,17 +52,48 @@ expression is provided to the transformer.
 ]}
 
 
-@defproc[(set!-transformer? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a value created by
-@scheme[make-set!-transformer], @scheme[#f] otherwise.}
-
-
 @defproc[(set!-transformer-procedure [transformer set!-transformer?])
          (syntax? . -> . syntax?)]{
 
 Returns the procedure that was passed to
-@scheme[make-set!-transformer] to create @scheme[transformer].}
+@scheme[make-set!-transformer] to create @scheme[transformer] or that
+is identified by the @scheme[prop:set!-transformer] property of
+@scheme[transformer].}
+
+
+@defthing[prop:set!-transformer struct-type-property?]{
+
+A @tech{structure type property} to indentify structure types that act
+as @tech{assignment transformers} like the ones created by
+@scheme[make-set!-transformer].
+
+The property value must be an exact integer or procedure of one
+argument. In the former case, the integer designates a field within
+the structure that should contain a procedure; the integer must be
+between @scheme[0] (inclusive) and the number of non-automatic fields
+in the structure type (exclusive, not counting supertype fields), and
+the designated field must also be specified as immutable.
+
+If the property value is an procedure, then the procedure serves as a
+@tech{syntax transformer} and for @scheme[set!] transformations. If
+the property value is an integer, the target identifier is extracted
+from the structure instance; if the field value is not a procedure of
+one argument, then a procedure that always calls
+@scheme[raise-syntax-error] is used, instead.
+
+If a value has both the @scheme[prop:set!-transformer] and
+@scheme[prop:rename-transformer] properties, then the latter takes
+precedence. If a structure type has the @scheme[prop:set!-transformer]
+and @scheme[prop:procedure] properties, then the former takes
+precedence for the purposes of macro expansion.}
+
+
+@defproc[(rename-transformer? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a value created by
+@scheme[make-rename-transformer] or an instance of a structure type
+with the @scheme[prop:rename-transformer] property, @scheme[#f]
+otherwise.}
 
 
 @defproc[(make-rename-transformer [id-stx syntax?]
@@ -64,28 +102,49 @@ Returns the procedure that was passed to
          rename-transformer?]{
 
 Creates a @tech{rename transformer} that, when used as a
-@tech{transformer binding}, acts as a transformer that insert the
+@tech{transformer binding}, acts as a transformer that inserts the
 identifier @scheme[id-stx] in place of whatever identifier binds the
 transformer, including in non-application positions, in @scheme[set!]
-expressions. Such a transformer could be written manually, but the one
-created by @scheme[make-rename-transformer] also causes the parser to
-install a @scheme[free-identifier=?] and @scheme[identifier-binding]
-equivalence, and it cooperates specially with
+expressions.
+
+Such a transformer could be written manually, but the one created by
+@scheme[make-rename-transformer] also causes the parser to install a
+@scheme[free-identifier=?] and @scheme[identifier-binding]
+equivalence, as long as @scheme[id-stx] does not have a true value for the
+@indexed-scheme['not-free-identifier=?] @tech{syntax property}.
+In addition, the rename transformer cooperates specially with
 @scheme[syntax-local-value] and
 @scheme[syntax-local-make-delta-introducer].}
 
 
-@defproc[(rename-transformer? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a value created by
-@scheme[make-rename-transformer], @scheme[#f] otherwise.}
-
-
 @defproc[(rename-transformer-target [transformer rename-transformer?])
-         syntax?]{
+         identifier?]{
 
 Returns the identifier passed to @scheme[make-rename-transformer] to
-create @scheme[transformer].}
+create @scheme[transformer] or as indicated by a
+@scheme[prop:rename-transformer] property on @scheme[transformer].}
+
+
+@defthing[prop:rename-transformer struct-type-property?]{
+
+A @tech{structure type property} to indentify structure types that act
+as @tech{rename transformers} like the ones created by
+@scheme[make-rename-transformer].
+
+The property value must be an exact integer or an identifier
+@tech{syntax object}. In the former case, the integer designates a
+field within the structure that should contain an identifier; the
+integer must be between @scheme[0] (inclusive) and the number of
+non-automatic fields in the structure type (exclusive, not counting
+supertype fields), and the designated field must also be specified as
+immutable.
+
+If the property value is an identifier, the identifier serves as the
+target for renaming, just like the first argument to
+@scheme[make-rename-transformer]. If the property value is an integer,
+the target identifier is extracted from the structure instance; if the
+field value is not an identifier, then an identifier @schemeidfont{?}
+with an empty context is used, instead.}
 
 
 @defproc[(local-expand [stx syntax?]
@@ -307,6 +366,28 @@ being expanded for the body of a module, then resolving
 @scheme[id-stx] can access any identifier defined by the module.
 
 @transform-time[]}
+
+
+@defproc[(syntax-local-value/immediate [id-stx syntax?]
+                                       [failure-thunk (or/c (-> any) #f)
+                                                      #f]
+                                       [intdef-ctx (or/c internal-definition-context?
+                                                         #f)
+                                                   #f])
+         any]{
+
+Like @scheme[syntax-local-value], but the result is normally two
+values. If @scheme[id-stx] is bound to a @tech{rename transformer},
+the results are the rename transformer and the identifier in the
+transformer augmented with certificates from @scheme[id-stx]. If
+@scheme[id-stx] is not bound to a @tech{rename transformer}, then the
+results are the value that @scheme[syntax-local-value] would produce
+and @scheme[#f].
+
+If @scheme[id-stx] has no transformer biding, then
+@scheme[failure-thunk] is called (and it can return any number of
+values), or an exception is raised if @scheme[failure-thunk] is
+@scheme[#f].}
 
 
 @defproc[(syntax-local-lift-expression [stx syntax?])

@@ -4816,11 +4816,11 @@ Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *pha
 
 Scheme_Object *scheme_stx_module_name(int recur,
                                       Scheme_Object **a, Scheme_Object *phase, 
-				      Scheme_Object **nominal_modidx,
-				      Scheme_Object **nominal_name,
-				      Scheme_Object **mod_phase, 
-                                      Scheme_Object **src_phase_index,
-                                      Scheme_Object **nominal_src_phase,
+				      Scheme_Object **nominal_modidx,    /* how it was imported */
+				      Scheme_Object **nominal_name,      /* imported as name */
+				      Scheme_Object **mod_phase,         /* original defn phase level */
+                                      Scheme_Object **src_phase_index,   /* phase level of import from nominal modidx */ 
+                                      Scheme_Object **nominal_src_phase, /* phase level of export from nominal modidx */
                                       Scheme_Object **lex_env,
                                       int *_sealed)
      /* If module bound, result is module idx, and a is set to source name.
