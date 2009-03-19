@@ -1,3 +1,12 @@
+Version 4.1.5.3
+Change provide to convert an exported rename transformer to its
+ free-identifier=? target
+Add 'not-free-identifier=? syntax property to disable free-identifier=? 
+ propagation through a rename transformer
+Add prop:rename-transformer and prop:set!-transformer
+Fix scheme/local so that local syntax bindings are visible to later
+ local definitions
+
 Version 4.1.5.2
 Changed expander to detect a reaname transformer and install a
  free-identifier=? syntax-object equivalence
