@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label r5rs
+          (for-label (only-meta-in 0 r5rs)
+                     (only-in r5rs syntax-rules ...)
                      (only-in mzscheme #%plain-module-begin)
                      (only-in scheme/mpair mmap)
                      (only-in scheme/contract one-of/c)
