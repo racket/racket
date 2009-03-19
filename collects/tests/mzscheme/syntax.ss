@@ -1249,7 +1249,77 @@
                   x)))
              exn:fail:contract:variable?)
 
+(test 82 'splicing-letrec-syntaxes+values
+      (let ()
+        (define q 77)
+        (splicing-letrec-syntaxes+values
+           ([(mx) (lambda (stx) (quote-syntax (x)))]
+            [(m) (lambda (stx) (quote-syntax (mx)))])
+           ([(x) (lambda () (q))]
+            [(q) (lambda () 82)])
+          (define (a) (m)))
+        (a)))
+
+(test 82 'splicing-letrec-syntaxes+values
+      (eval
+       '(begin
+          (define q 77)
+          (splicing-letrec-syntaxes+values
+              ([(mx) (lambda (stx) (quote-syntax (x)))]
+               [(m) (lambda (stx) (quote-syntax (mx)))])
+              ([(x) (lambda () (q))]
+               [(q) (lambda () 82)])
+            (define (a) (m)))
+          (a))))
+
+(test 82 'splicing-local
+      (let ()
+        (define (x) q)
+        (define q 77)
+        (define-syntax (m stx) (quote-syntax (x)))
+        (splicing-local
+            [(define-syntax (m stx) (quote-syntax (mx)))
+             (define (x) (q))
+             (define-syntax (mx stx) (quote-syntax (x)))
+             (define (q) 82)]
+          (define (a) (m)))
+        (a)))
+
+(test 82 'splicing-local
+      (eval
+       '(begin
+          (define (x) q)
+          (define q 77)
+          (define-syntax (m stx) (quote-syntax (x)))
+          (splicing-local
+              [(define-syntax (m stx) (quote-syntax (mx)))
+               (define (x) (q))
+               (define-syntax (mx stx) (quote-syntax (x)))
+               (define (q) 82)]
+            (define (a) (m)))
+          (a))))
+
+;; local names are not visible outside
+(test 77 'splicing-local
+      (let ()
+        (define q 77)
+        (define-syntax (m stx) (quote-syntax (x)))
+        (splicing-local
+            [(define-syntax (m stx) (quote-syntax (q)))
+             (define (q) 82)]
+          (define (a) (m)))
+        (m)))
+(test 77 'splicing-local
+      (eval
+       '(begin
+          (define q 77)
+          (define-syntax (m stx) (quote-syntax (x)))
+          (splicing-local
+              [(define-syntax (m stx) (quote-syntax (q)))
+               (define (q) 82)]
+            (define (a) (m)))
+          (m))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
-
