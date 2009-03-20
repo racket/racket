@@ -713,12 +713,14 @@ follows.
  @defsubform[(all-defined-out)]{ Exports all identifiers that are
  defined at @tech{phase level} 0 or @tech{phase level} 1 within the
  exporting module, and that have the same lexical context as the
- @scheme[(all-defined-out)] form. The external name for each
- identifier is the symbolic form of the identifier. Only identifiers
- accessible from the lexical context of the @scheme[(all-defined-out)]
- form are included; that is, macro-introduced imports are not
- re-exported, unless the @scheme[(all-defined-out)] form was
- introduced at the same time.
+ @scheme[(all-defined-out)] form, excluding bindings to @tech{rename
+ transformers} where the target identifier has the
+ @scheme['not-provide-all-defined] @tech{syntax property}. The
+ external name for each identifier is the symbolic form of the
+ identifier. Only identifiers accessible from the lexical context of
+ the @scheme[(all-defined-out)] form are included; that is,
+ macro-introduced imports are not re-exported, unless the
+ @scheme[(all-defined-out)] form was introduced at the same time.
 
  @defexamples[#:eval (syntax-eval)
    (module test scheme

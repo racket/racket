@@ -54,8 +54,6 @@ Like @scheme[list->cblock], but for Scheme vectors.}
 
 @section{Unsafe Miscellaneous Operations}
 
-@declare-exporting[scribblings/foreign/unsafe-foreign]
-
 @defproc[(cblock->list [cblock any/c][type ctype?][length exact-nonnegative-integer?])
          list?]{
 

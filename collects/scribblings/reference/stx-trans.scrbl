@@ -110,9 +110,15 @@ expressions.
 Such a transformer could be written manually, but the one created by
 @scheme[make-rename-transformer] also causes the parser to install a
 @scheme[free-identifier=?] and @scheme[identifier-binding]
-equivalence, as long as @scheme[id-stx] does not have a true value for the
-@indexed-scheme['not-free-identifier=?] @tech{syntax property}.
-In addition, the rename transformer cooperates specially with
+equivalence, as long as @scheme[id-stx] does not have a true value for
+the @indexed-scheme['not-free-identifier=?] @tech{syntax property}.
+Also, if @scheme[id-stx] has a true value for the
+@indexed-scheme['not-provide-all-defined] @tech{syntax property} and
+it is bound as a module-level transformer, the bound identifier is not
+exported by @scheme[all-defined-out]; the @scheme[provide] form
+otherwise uses a symbol-valued @indexed-scheme['nominal-id] property
+of @scheme[id-stx] to specify the ``nominal source identifier'' of the
+binding. Finally, the rename transformer cooperates specially with
 @scheme[syntax-local-value] and
 @scheme[syntax-local-make-delta-introducer].}
 

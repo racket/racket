@@ -653,7 +653,16 @@
                      (memq 0 modes))
                  (map (lambda (id)
                         (make-export id (syntax-e id) 0 #f stx))
-                      (filter (same-ctx? free-identifier=?)
+                      (filter (lambda (id)
+                                (and ((same-ctx? free-identifier=?) id)
+                                     (let-values ([(v id) (syntax-local-value/immediate
+                                                           id
+                                                           (lambda () (values #f #f)))])
+                                       (not
+                                        (and (rename-transformer? v)
+                                             (syntax-property 
+                                              (rename-transformer-target v)
+                                              'not-provide-all-defined))))))
                               ids))
                  null)))]))))
 

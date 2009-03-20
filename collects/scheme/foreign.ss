@@ -51,7 +51,13 @@
                                                         stx 'to stx)
                                                        ...)])
                            #'(begin (define-syntax id
-                                      (make-rename-transformer #'from))
+                                      (make-rename-transformer (syntax-property
+                                                                (syntax-property
+                                                                 #'from
+                                                                 'not-provide-all-defined
+                                                                 #t)
+                                                                'nominal-id
+                                                                'to)))
                                     ...))]))))])))))
 
 (provide* ctype-sizeof ctype-alignof compiler-sizeof

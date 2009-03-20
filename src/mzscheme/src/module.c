@@ -157,6 +157,7 @@ static Scheme_Object *lib_symbol;
 static Scheme_Object *planet_symbol;
 static Scheme_Object *file_symbol;
 static Scheme_Object *module_name_symbol;
+static Scheme_Object *nominal_id_symbol;
 
 /* global read-only syntax */
 Scheme_Object *scheme_module_stx;
@@ -566,6 +567,9 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   REGISTER_SO(module_name_symbol);
   module_name_symbol = scheme_intern_symbol("enclosing-module-name");
+
+  REGISTER_SO(nominal_id_symbol);
+  nominal_id_symbol = scheme_intern_symbol("nominal-id");
 }
 
 int scheme_is_kernel_modname(Scheme_Object *modname)
@@ -7381,7 +7385,10 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
             /* free-id=? equivalence to a name that is not necessarily imported explicitly */
             if (_implicit_src) {
               *_implicit_src = mod;
-              *_implicit_src_name = id;
+              *_implicit_src_name = id;              
+              name2 = scheme_stx_property(name2, nominal_id_symbol, NULL);
+              if (SCHEME_SYMBOLP(name2))
+                *_implicit_nominal_name = name2;
             }
             *_implicit = 1;
             break;
@@ -7468,7 +7475,8 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
           prnt_name = name;
 
           name = extract_free_id_name(name, phase, genv, 1, &implicit, 
-                                      NULL, NULL, NULL, NULL, NULL);
+                                      NULL, NULL, NULL, 
+                                      NULL, NULL);
 
           if (!implicit
               && genv 

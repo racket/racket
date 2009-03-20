@@ -76,6 +76,7 @@ static Scheme_Object *share_symbol; /* uninterned! */
 static Scheme_Object *origin_symbol;
 static Scheme_Object *lexical_symbol;
 static Scheme_Object *protected_symbol;
+static Scheme_Object *nominal_id_symbol;
 
 static THREAD_LOCAL Scheme_Object *nominal_ipair_cache;
 
@@ -544,11 +545,13 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(origin_symbol);
   REGISTER_SO(lexical_symbol);
   REGISTER_SO(protected_symbol);
+  REGISTER_SO(nominal_id_symbol);
   source_symbol = scheme_make_symbol("source"); /* not interned! */
   share_symbol = scheme_make_symbol("share"); /* not interned! */
   origin_symbol = scheme_intern_symbol("origin");
   lexical_symbol = scheme_intern_symbol("lexical");
   protected_symbol = scheme_intern_symbol("protected");
+  nominal_id_symbol = scheme_intern_symbol("nominal-id");
 
   REGISTER_SO(mark_id);
 
@@ -1935,12 +1938,14 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
   Scheme_Object *result;
   Scheme_Object *modname;
   Scheme_Object *nominal_modidx;
-  Scheme_Object *nominal_name;
+  Scheme_Object *nominal_name, *nom2;
   Scheme_Object *mod_phase;
   Scheme_Object *src_phase_index;
   Scheme_Object *nominal_src_phase;
   Scheme_Object *lex_env;
   
+  nom2 = scheme_stx_property(orig_id, nominal_id_symbol, NULL);
+
   modname = scheme_stx_module_name(1,
                                    &orig_id, ((Module_Renames *)mrn)->phase, &nominal_modidx,
                                    &nominal_name,
@@ -1949,6 +1954,9 @@ static Scheme_Object *extract_module_free_id_binding(Scheme_Object *mrn,
                                    &nominal_src_phase,
                                    &lex_env,
                                    _sealed);
+ 
+  if (SCHEME_SYMBOLP(nom2))
+    nominal_name = nom2;
   
   if (!modname)
     result = scheme_box(CONS(SCHEME_STX_VAL(orig_id), scheme_false));
@@ -5356,7 +5364,7 @@ static Scheme_Object *extract_free_id_info(Scheme_Object *id)
 {
   Scheme_Object *bind;
   Scheme_Object *nominal_modidx;
-  Scheme_Object *nominal_name;
+  Scheme_Object *nominal_name, *nom2;
   Scheme_Object *mod_phase;
   Scheme_Object *src_phase_index;
   Scheme_Object *nominal_src_phase;
@@ -5366,10 +5374,15 @@ static Scheme_Object *extract_free_id_info(Scheme_Object *id)
   phase = SCHEME_CDR(id);
   id = SCHEME_CAR(id);
 
+  nom2 = scheme_stx_property(id, nominal_id_symbol, NULL);
+
   bind = scheme_stx_module_name(1, 
                                 &id, phase, &nominal_modidx, &nominal_name,
                                 &mod_phase, &src_phase_index, &nominal_src_phase,
                                 &lex_env, NULL);
+
+  if (SCHEME_SYMBOLP(nom2))
+    nominal_name = nom2;
   if (!nominal_name)
     nominal_name = SCHEME_STX_VAL(id);
 
