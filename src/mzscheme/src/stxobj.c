@@ -3629,7 +3629,8 @@ static void add_all_marks(Scheme_Object *wraps, Scheme_Hash_Table *marks)
   }
 }
 
-static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache, int depth)
+static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme_Object **marks_cache, int depth, 
+                                int *_skipped)
 {
   int l1, l2;
   Scheme_Object *m1, *m2;
@@ -3638,6 +3639,7 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme
   p = SCHEME_CDR(p); /* skip phase_export */
   if (SCHEME_PAIRP(p)) {
     /* has marks */
+    int skip = 0;
     
     EXPLAIN(fprintf(stderr, "%d       has marks\n", depth));
 
@@ -3658,25 +3660,30 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme
     while (l2 > l1) {
       m2 = SCHEME_CDR(m2);
       l2--;
+      skip++;
     }
 
-    if (scheme_equal(m1, m2))
+    if (scheme_equal(m1, m2)) {
+      if (_skipped ) *_skipped = skip;
       return l1; /* matches */
-    else
+    } else
       return -1; /* no match */
-  } else
+  } else {
+    if (_skipped) *_skipped = -1;
     return 0; /* match empty mark set */
+  }
 }
 
 static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes, 
                                         Scheme_Object *glob_id, Scheme_Object *orig_id,
                                         Scheme_Object **get_names, int get_orig_name,
-                                        int depth)
+                                        int depth,
+                                        int *_skipped)
 {
   Scheme_Object *pr, *idx, *pos, *src, *best_match = NULL;
   Scheme_Module_Phase_Exports *pt;
   Scheme_Hash_Table *ht;
-  int i, phase, best_match_len = -1;
+  int i, phase, best_match_len = -1, skip;
   Scheme_Object *marks_cache = NULL;
 
   for (pr = shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
@@ -3699,10 +3706,11 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
       /* Found it, maybe. Check marks. */
       int mark_len;
       EXPLAIN(fprintf(stderr, "%d     found %p\n", depth, pos));
-      mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth);
+      mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth, &skip);
       if (mark_len > best_match_len) {
         /* Marks match and improve on previously found match. Build suitable rename: */
         best_match_len = mark_len;
+        if (_skipped) *_skipped = skip;
         
         idx = SCHEME_CAR(SCHEME_CAR(pr));
 
@@ -3752,11 +3760,12 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
       kpr = scheme_hash_get(krn->ht, glob_id);
       if (kpr) {
         /* Found it, maybe. Check marks. */
-        int mark_len;
-        mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth);
+        int mark_len, skip;
+        mark_len = check_matching_marks(SCHEME_CAR(pr), orig_id, &marks_cache, depth, &skip);
         if (mark_len > best_match_len) {
           /* Marks match and improve on previously found match. Build suitable rename: */
           best_match_len = mark_len;
+          if (_skipped) *_skipped = skip;
 
           if (get_orig_name)
             best_match = glob_id;
@@ -4168,7 +4177,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
           get_names_done = 0;
           if (!rename) {
             EXPLAIN(fprintf(stderr, "%d    in pes\n", depth));
-            rename = search_shared_pes(mrn->shared_pes, glob_id, a, get_names, 0, depth);
+            rename = search_shared_pes(mrn->shared_pes, glob_id, a, get_names, 0, depth, &skipped);
             if (rename)
               get_names_done = 1;
           }
@@ -4646,7 +4655,7 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    rename = scheme_hash_get(krn->ht, glob_id);
 
           if (!rename)
-            result = search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1, 0);
+            result = search_shared_pes(mrn->shared_pes, glob_id, a, NULL, 1, 0, NULL);
 	  else {
 	    /* match; set result: */
 	    if (mrn->kind == mzMOD_RENAME_MARKED)
