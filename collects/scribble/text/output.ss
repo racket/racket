@@ -2,7 +2,7 @@
 
 (require scheme/promise)
 
-(provide output splice verbatim unverbatim flush prefix)
+(provide output)
 
 ;; Outputs some value, for the preprocessor langauge.
 ;;
@@ -68,7 +68,7 @@
   ;; the basic printing unit: strings
   (define (output-string x)
     (define pfx (mcar pfxs))
-    (if (not pfx) ; vervatim mode?
+    (if (not pfx) ; verbatim mode?
       (write-string x p)
       (let ([len (string-length x)]
             [nls (regexp-match-positions* #rx"\n" x)])
@@ -105,16 +105,13 @@
       ;; one, then output the contents recursively (no need to change the
       ;; state, since we pass the values in the loop, and we'd need to restore
       ;; it afterwards anyway)
-      [(pair? x) (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-                        [npfx (pfx+col (pfx+ pfx lpfx))])
-                   (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-                   (if (list? x)
+      [(pair? x) (if (list? x)
+                   (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+                          [npfx (pfx+col (pfx+ pfx lpfx))])
+                     (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
                      (for ([x (in-list x)]) (loop x))
-                     (let ploop ([x x])
-                       (if (pair? x)
-                         (begin (loop (car x)) (ploop (cdr x)))
-                         (loop x))))
-                   (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+                     (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))
+                   (begin (loop (car x)) (loop (cdr x))))]
       ;; delayed values
       [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
       [(promise? x) (loop (force x))]
@@ -172,6 +169,10 @@
             (set! last (cons p s))
             s)))))
 
+;; special constructs
+
+(provide splice verbatim unverbatim flush prefix)
+
 (define-struct special (flag contents))
 
 (define (splice     . contents) (make-special 'splice     contents))
@@ -187,3 +188,25 @@
           (let ([spaces (make-string n #\space)])
             (if (< n 80) (vector-set! v n spaces) (hash-set! t n spaces))
             spaces)))))
+
+;; Convenient utilities
+
+(provide add-newlines)
+(define (add-newlines list #:sep [sep "\n"])
+  (define r
+    (let loop ([list list])
+      (if (null? list)
+        null
+        (let ([1st (car list)])
+          (if (or (not 1st) (void? 1st))
+            (loop (cdr list))
+            (list* sep 1st (loop (cdr list))))))))
+  (if (null? r) r (cdr r)))
+
+(provide split-lines)
+(define (split-lines list)
+  (let loop ([list list] [cur '()] [r '()])
+    (cond
+      [(null? list) (reverse (cons (reverse cur) r))]
+      [(equal? "\n" (car list)) (loop (cdr list) '() (cons (reverse cur) r))]
+      [else (loop (cdr list) (cons (car list) cur) r)])))
