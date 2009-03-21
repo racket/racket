@@ -7543,6 +7543,7 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
 Scheme_Object *
 scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
 		int get_value)
+  /* If rands == MZ_RUNSTACK on entry, rands elements can be modified. */
 {
   Scheme_Type type;
   Scheme_Object *v;
@@ -7930,6 +7931,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       v = data->code(obj, num_rands, rands);
 
+      if (v == SCHEME_TAIL_CALL_WAITING) {
+        /* [TC-SFS]; see schnapp.inc */
+        if (rands == old_runstack) {
+          int i;
+          for (i = 0; i < num_rands; i++) { rands[i] = NULL; }
+        }
+      }
+
       DEBUG_CHECK_TYPE(v);
 #endif
     } else if (type == scheme_cont_type) {
@@ -8008,6 +8017,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
       
       v = prim->prim_val(prim->data, num_rands, rands);
+
+      if (v == SCHEME_TAIL_CALL_WAITING) {
+        /* [TC-SFS]; see schnapp.inc */
+        if (rands == old_runstack) {
+          int i;
+          for (i = 0; i < num_rands; i++) { rands[i] = NULL; }
+        }
+      }
 
       DEBUG_CHECK_TYPE(v);
     } else {

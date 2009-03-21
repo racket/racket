@@ -631,6 +631,15 @@ static Scheme_Object *tail_call_with_values_from_multiple_result(Scheme_Object *
   return scheme_tail_apply(f, num_rands, p->ku.multiple.array);
 }
 
+static Scheme_Object *clear_runstack(long amt, Scheme_Object *sv)
+{
+  int i;
+  for (i = 0; i < amt; i++) {
+    MZ_RUNSTACK[i] = NULL;
+  }
+  return sv;
+}
+
 /*========================================================================*/
 /*                           code-gen utils                               */
 /*========================================================================*/
@@ -1981,7 +1990,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   jit_subr_l(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
   CHECK_RUNSTACK_OVERFLOW();
 
-  /* Copy argument to runstack, then jump to reftop. */
+  /* Copy arguments to runstack, then jump to reftop. */
   jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
   jit_ldxi_l(JIT_V1, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_rands);
   jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
@@ -2007,6 +2016,31 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   mz_patch_branch(ref);
   jit_movi_l(JIT_R0, SCHEME_TAIL_CALL_WAITING);
 
+  return 1;
+}
+
+static int generate_clear_previous_args(mz_jit_state *jitter, int num_rands)
+{
+  if (num_rands >= 0) {
+    int i;
+    for (i = 0; i < num_rands; i++) {
+      jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_RUNSTACK);
+      CHECK_LIMIT();
+    }
+  } else {
+    /* covered by generate_clear_slow_previous_args */
+  }
+  return 1;
+}
+
+static int generate_clear_slow_previous_args(mz_jit_state *jitter)
+{
+  CHECK_LIMIT();
+  mz_prepare(2);
+  jit_pusharg_p(JIT_R0);
+  jit_pusharg_l(JIT_V1);
+  mz_finish(clear_runstack);
+  jit_retval(JIT_R0);
   return 1;
 }
 
@@ -2152,6 +2186,8 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     __START_SHORT_JUMPS__(1);
   }
   ref6 = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_TAIL_CALL_WAITING);
+  generate_clear_previous_args(jitter, num_rands);
+  CHECK_LIMIT();
   if (pop_and_jump) {
     /* Expects argc in V1 if num_rands < 0: */
     generate_retry_call(jitter, num_rands, multi_ok, reftop);
@@ -2159,6 +2195,10 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
   if (need_set_rs) {
     JIT_UPDATE_THREAD_RSPTR();
+  }
+  if (num_rands < 0) {
+    generate_clear_slow_previous_args(jitter);
+    CHECK_LIMIT();
   }
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
@@ -2203,11 +2243,17 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       __START_SHORT_JUMPS__(1);
     }
     ref10 = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_TAIL_CALL_WAITING);
+    generate_clear_previous_args(jitter, num_rands);
+    CHECK_LIMIT();
     if (pop_and_jump) {
       /* Expects argc in V1 if num_rands < 0: */
       generate_retry_call(jitter, num_rands, multi_ok, reftop);
     }
     CHECK_LIMIT();
+    if (num_rands < 0) {
+      generate_clear_slow_previous_args(jitter);
+      CHECK_LIMIT();
+    }
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     if (multi_ok) {
