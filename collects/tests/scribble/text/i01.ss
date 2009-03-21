@@ -1,3 +1,0 @@
-#lang scribble/text
-
-foo

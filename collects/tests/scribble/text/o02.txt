@@ -1,8 +1,0 @@
-Suggested price list for "PLT Scheme"
-
-0. PLT Scheme Home edition: $99.99
-1. PLT Scheme Professional edition: $149.99
-2. PLT Scheme Enterprize edition: $349.99
-
-Total: 3 items
-Average price: $199.99

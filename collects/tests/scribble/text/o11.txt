@@ -1,7 +1,0 @@
-start
-  foo();
-loop:
-  if (something) {
-    blah(stuff);
-  }
-end
