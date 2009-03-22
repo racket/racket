@@ -7095,6 +7095,18 @@ static void make_tail_buffer_safe()
   p->tail_buffer = tb;
 }
 
+static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, Scheme_Object **runstack)
+{
+  if (rands == runstack) {
+    /* See [TC-SFS] in "schnapp.inc" */
+    Scheme_Thread *p = scheme_current_thread;
+    (void)scheme_tail_apply(scheme_void, num_rands, rands);
+    rands = p->ku.apply.tail_rands;
+    p->ku.apply.tail_rands = NULL;
+    return rands;
+  }
+}
+
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
                                          Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth)
 {
@@ -7615,6 +7627,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     if ((RUNSTACK - RUNSTACK_START) < SCHEME_TAIL_COPY_THRESHOLD) {
       /* It's possible that a sequence of primitive _scheme_tail_apply()
 	 calls will exhaust the Scheme stack. Watch out for that. */
+      rands = evacuate_runstack(num_rands, rands, RUNSTACK);
+
       p->ku.k.p1 = (void *)obj;
       p->ku.k.i1 = num_rands;
       p->ku.k.p2 = (void *)rands;
@@ -7687,6 +7701,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       data = SCHEME_COMPILED_CLOS_CODE(obj);
 
       if ((RUNSTACK - RUNSTACK_START) < data->max_let_depth) {
+        rands = evacuate_runstack(num_rands, rands, RUNSTACK);
+
 	if (rands == p->tail_buffer) {
 	  UPDATE_THREAD_RSPTR_FOR_GC();
 	  make_tail_buffer_safe();
