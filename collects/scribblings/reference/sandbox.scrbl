@@ -411,12 +411,18 @@ collected by sandbox evaluators.  Use
 
 @defboolparam[sandbox-propagate-breaks propagate?]{
 
-When this boolean parameter is true, breaking while an evaluator is
-running evaluator propagates the break signal to the sandboxed
+When both this boolean parameter and @scheme[(break-enabled)] are true, 
+breaking while an evaluator is
+running propagates the break signal to the sandboxed
 context.  This makes the sandboxed evaluator break, typically, but
 beware that sandboxed evaluation can capture and avoid the breaks (so
 if safe execution of code is your goal, make sure you use it with a
-time limit).  The default is @scheme[#t].}
+time limit).  Also, beware that a break may be received after the
+evaluator's result, in which case the evaluation result is lost. Finally,
+beware that a break may be propagated after an evaluator has produced
+a result, so that the break is visible on the next interaction with
+the evaluator (or the break is lost if the evaluator is not used
+further). The default is @scheme[#t].}
 
 
 @defparam[sandbox-namespace-specs spec (cons/c (-> namespace?) 
