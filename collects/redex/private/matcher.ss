@@ -18,8 +18,6 @@ before the pattern compiler is invoked.
 
 (define-struct compiled-pattern (cp))
 
-(define count 0)
-
 (define caching-enabled? (make-parameter #t))
 
 ;; lang = (listof nt)
