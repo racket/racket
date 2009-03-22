@@ -350,6 +350,26 @@
                                                                           (current-tvars))])
                                   (parse-type #'rest))
                                 (syntax-e #'bound)))))))]
+      [(dom ... rest ::: -> rng)
+       (and (eq? (syntax-e #'->) '->) 
+            (eq? (syntax-e #':::) '...))
+       (begin
+         (add-type-name-reference #'->)
+         (let ([bounds (filter (compose Dotted? cdr) (env-keys+vals (current-tvars)))])
+           (when (null? bounds)
+             (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
+           (unless (null? (cdr bounds))
+             (tc-error/stx stx "Cannot infer bound for ... type"))
+           (match-let ([(cons var (struct Dotted (t))) (car bounds)])
+             (make-Function
+              (list
+               (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+                              (parse-type #'rng)
+                              (parameterize ([current-tvars (extend-env (list var)
+                                                                        (list (make-DottedBoth t))
+                                                                        (current-tvars))])
+                                (parse-type #'rest))
+                              var))))))]
       ;; has to be below the previous one
       [(dom ... -> rng) 
        (eq? (syntax-e #'->) '->)
@@ -369,6 +389,23 @@
                                                                         (current-tvars))])
                                 (parse-type #'dty))
                               (syntax-e #'bound))))]
+      [(values tys ... dty dd)
+       (and (eq? (syntax-e #'values) 'values) 
+            (eq? (syntax-e #'dd) '...))
+       (begin
+         (add-type-name-reference #'values)
+         (let ([bounds (filter (compose Dotted? cdr) (env-keys+vals (current-tvars)))])
+           (when (null? bounds)
+             (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
+           (unless (null? (cdr bounds))
+             (tc-error/stx stx "Cannot infer bound for ... type"))
+           (match-let ([(cons var (struct Dotted (t))) (car bounds)])
+             (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
+                              (parameterize ([current-tvars (extend-env (list var) 
+                                                                        (list (make-DottedBoth t))
+                                                                        (current-tvars))])
+                                            (parse-type #'dty))
+                              var))))]
       [(values tys ...) 
        (eq? (syntax-e #'values) 'values)
        (-values (map parse-type (syntax->list #'(tys ...))))]

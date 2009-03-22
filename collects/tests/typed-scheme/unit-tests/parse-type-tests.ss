@@ -80,6 +80,10 @@
    [(All (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
    [(∀ (a) (Listof a)) (-poly (a) (make-Listof  a))]
    [(∀ (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
+   [(All (a ...) (a ... -> Number))
+    (-polydots (a) ((list) [a a] . ->... . N))]
+   [(All (a ...) (values a ...))
+    (-polydots (a) (make-ValuesDots (list) a 'a))]
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [1 (-val 1)]
@@ -91,6 +95,8 @@
    
    [a (-v a) (extend-env (list 'a) (list (-v a))
                             initial-tvar-env)]
+   [(All (a ...) (a ... -> Number))
+    (-polydots (a) ((list) [a a] . ->... . N))]
    
    ))
 
