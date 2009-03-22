@@ -7527,7 +7527,7 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i)
 
 typedef struct {
   Scheme_Closure_Data *data;
-  void *code, *tail_code, *code_end, **patch_depth;
+  void *arity_code, *code, *tail_code, *code_end, **patch_depth;
   int max_extra, max_depth;
   Scheme_Native_Closure *nc;
 } Generate_Closure_Data;
@@ -7536,8 +7536,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 {
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
-  void *code, *tail_code, *code_end;
-  int i, r, cnt, has_rest;
+  void *code, *tail_code, *code_end, *arity_code;
+  int i, r, cnt, has_rest, is_method, num_params;
 
   code = jit_get_ip().ptr;
 
@@ -7553,7 +7553,35 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 				 (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST),
 				 data->num_params);
   CHECK_LIMIT();
+
+  /* A tail call with arity checking can start here.
+     (This is a little reundant checking when `code' is the
+     etry point, but that's the slow path anyway.) */
   
+  has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
+  is_method = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD) ? 1 : 0);
+  num_params = data->num_params;
+  if (num_params && has_rest)
+    --num_params;
+
+  if (num_params < MAX_SHARED_ARITY_CHECK) {
+    void *shared_arity_code;
+
+    shared_arity_code = shared_arity_check[num_params][has_rest][is_method];
+    if (!shared_arity_code) {
+      shared_arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 1);
+      shared_arity_check[num_params][has_rest][is_method] = shared_arity_code;
+    }
+
+    arity_code = jit_get_ip().ptr;
+  
+    if (!has_rest)
+      (void)jit_bnei_i(shared_arity_code, JIT_R1, num_params);
+    else
+      (void)jit_blti_i(shared_arity_code, JIT_R1, num_params);
+  } else
+    arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
+
   /* A tail call starts here. Caller must ensure that the
      stack is big enough, right number of arguments, closure
      is in R0. If the closure has a rest arg, also ensure
@@ -7563,8 +7591,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   /* 0 params and has_rest => (lambda args E) where args is not in E,
      so accept any number of arguments and ignore them. */
 
-  if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-      && data->num_params) {
+  if (has_rest && data->num_params) {
     /* If runstack == argv and argc == cnt, then we didn't
        copy args down, and we need to make room for scheme_null. */
     jit_insn *ref, *ref2, *ref3;
@@ -7622,7 +7649,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   /* Keeping the native-closure pointer on the runstack
      ensures that the code won't be GCed while we're running
      it. */
-  mz_pushr_p(JIT_R0);
+  mz_pushr_p(JIT_R0); 
 #endif
 
   /* Extract closure to runstack: */
@@ -7710,6 +7737,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   code_end = jit_get_ip().ptr;
 
   if (jitter->retain_start) {
+    gdata->arity_code = arity_code;
     gdata->code = code;
     gdata->tail_code = tail_code;
     gdata->max_extra = jitter->max_extra_pushed;
@@ -7727,7 +7755,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   Scheme_Closure_Data *data;
   Generate_Closure_Data gdata;
   void *code, *tail_code, *arity_code;
-  int has_rest, is_method, num_params, max_depth;
+  int max_depth;
 
   data = ndata->u2.orig_code;
   
@@ -7748,6 +7776,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SINGLE_RESULT)
     SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_IS_SINGLE_RESULT;
 
+  arity_code = gdata.arity_code;
   code = gdata.code;
   tail_code = gdata.tail_code;
   
@@ -7759,21 +7788,6 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
 #endif
   }
   
-  has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
-  is_method = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD) ? 1 : 0);
-  num_params = data->num_params;
-  if (num_params && has_rest)
-    --num_params;
-
-  if (num_params < MAX_SHARED_ARITY_CHECK) {
-    arity_code = shared_arity_check[num_params][has_rest][is_method];
-    if (!arity_code) {
-      arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 1);
-      shared_arity_check[num_params][has_rest][is_method] = arity_code;
-    }
-  } else
-    arity_code = generate_lambda_simple_arity_check(num_params, has_rest, is_method, 0);
-
   /* Add a couple of extra slots to computed let-depth, in case
      we haven't quite computed right for inlined uses, etc. */
   max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + 2);
