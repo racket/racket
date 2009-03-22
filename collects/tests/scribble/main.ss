@@ -134,7 +134,7 @@
         (call-with-output-file (car m) #:exists 'truncate
           (lambda (o) (display (cdr m) o))))
       (set! thd (thread run))
-      (t (with-limits 1 #f
+      (t (with-limits 2 #f
            (if len-to-read (read-string len-to-read i) (port->string i)))
          => expected)
       (t (begin (kill-thread thd) (cond [exn => raise] [else #t])))))
