@@ -633,6 +633,13 @@ Returns @scheme[(filter (lambda (x) x) (map proc lst ...))], but
 without building the intermediate list.}
 
 
+@defproc[(count [proc procedure?] [lst list?] ...+)
+         list?]{
+
+Returns @scheme[(length (filter proc lst ...))], but
+without building the intermediate list.}
+
+
 @defproc[(partition [pred procedure?] [lst list?])
          (values list? list?)]{
 

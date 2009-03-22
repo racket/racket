@@ -263,6 +263,15 @@
   (test '(1 2 3) fm values '(#f 1 #f 2 #f 3 #f))
   (test '(4 8 12) fm (lambda (x) (and (even? x) (* x 2))) '(1 2 3 4 5 6)))
 
+;; ---------- count ----------
+
+(let ()
+  (test 0 count even? '())
+  (test 4 count even? '(0 2 4 6))
+  (test 0 count even? '(1 3 5 7))
+  (test 2 count even? '(1 2 3 4))
+  (test 2 count < '(1 2 3 4) '(4 3 2 1)))
+
 ;; ---------- append-map ----------
 (let ()
   (define am append-map)
@@ -273,53 +282,53 @@
 ;; ---------- argmin & argmax ----------
 
 (let ()
-  
+
   (define ((check-regs . regexps) exn)
     (and (exn:fail? exn)
          (andmap (λ (reg) (regexp-match reg (exn-message exn)))
                  regexps)))
-  
+
   (test 'argmin object-name argmin)
   (test 1 argmin (lambda (x) 0) (list 1))
   (test 1 argmin (lambda (x) x) (list 1 2 3))
   (test 1 argmin (lambda (x) 1) (list 1 2 3))
-  
+
   (test 3
         'argmin-makes-right-number-of-calls
         (let ([c 0])
           (argmin (lambda (x) (set! c (+ c 1)) 0)
                   (list 1 2 3))
           c))
-  
+
   (test '(1 banana) argmin car '((3 pears) (1 banana) (2 apples)))
-  
+
   (err/rt-test (argmin 1 (list 1)) (check-regs #rx"argmin" #rx"procedure"))
   (err/rt-test (argmin (lambda (x) x) 3) (check-regs #rx"argmin" #rx"list"))
   (err/rt-test (argmin (lambda (x) x) (list 1 #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
   (err/rt-test (argmin (lambda (x) x) (list #f)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
-  
+
   (err/rt-test (argmin (lambda (x) x) (list +i)) (check-regs #rx"argmin" #rx"procedure that returns real numbers"))
   (err/rt-test (argmin (lambda (x) x) (list)) (check-regs #rx"argmin" #rx"non-empty list"))
-  
+
   (test 'argmax object-name argmax)
   (test 1 argmax (lambda (x) 0) (list 1))
   (test 3 argmax (lambda (x) x) (list 1 2 3))
   (test 1 argmax (lambda (x) 1) (list 1 2 3))
-  
+
   (test 3
         'argmax-makes-right-number-of-calls
         (let ([c 0])
           (argmax (lambda (x) (set! c (+ c 1)) 0)
                   (list 1 2 3))
           c))
-  
+
   (test '(3 pears) argmax car '((3 pears) (1 banana) (2 apples)))
-  
+
   (err/rt-test (argmax 1 (list 1)) (check-regs #rx"argmax" #rx"procedure"))
   (err/rt-test (argmax (lambda (x) x) 3) (check-regs #rx"argmax" #rx"list"))
   (err/rt-test (argmax (lambda (x) x) (list 1 #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
   (err/rt-test (argmax (lambda (x) x) (list #f)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
-  
+
   (err/rt-test (argmax (lambda (x) x) (list +i)) (check-regs #rx"argmax" #rx"procedure that returns real numbers"))
   (err/rt-test (argmax (lambda (x) x) (list)) (check-regs #rx"argmax" #rx"non-empty list")))
 

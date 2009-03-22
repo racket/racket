@@ -20,11 +20,12 @@
          add-between
          remove-duplicates
          filter-map
+         count
          partition
 
          argmin
          argmax
-         
+
          ;; convenience
          append-map
          filter-not)
@@ -236,6 +237,27 @@
         null
         (let ([x (f (car l))])
           (if x (cons x (loop (cdr l))) (loop (cdr l))))))))
+
+;; very similar to `filter-map', one more such function will justify some macro
+(define (count f l . ls)
+  (unless (and (procedure? f) (procedure-arity-includes? f (add1 (length ls))))
+    (raise-type-error
+     'count (format "procedure (arity ~a)" (add1 (length ls))) f))
+  (unless (and (list? l) (andmap list? ls))
+    (raise-type-error
+     'count "proper list"
+     (ormap (lambda (x) (and (not (list? x)) x)) (cons l ls))))
+  (if (pair? ls)
+    (let ([len (length l)])
+      (if (andmap (lambda (l) (= len (length l))) ls)
+        (let loop ([l l] [ls ls] [c 0])
+          (if (null? l)
+            c
+            (loop (cdr l) (map cdr ls)
+                  (if (apply f (car l) (map car ls)) (add1 c) c))))
+        (error 'count "all lists must have same size")))
+    (let loop ([l l] [c 0])
+      (if (null? l) c (loop (cdr l) (if (f (car l)) (add1 c) c))))))
 
 ;; Originally from srfi-1 -- shares common tail with the input when possible
 ;; (define (partition f l)
