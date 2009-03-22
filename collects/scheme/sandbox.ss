@@ -682,8 +682,8 @@
             (evaluate-program
              (if (procedure? program-maker) (program-maker) program-maker)
              limit-thunk
-             (and coverage? (lambda (es+get) (set! uncovered es+get)))))))
-       (channel-put result-ch 'ok)
+             (and coverage? (lambda (es+get) (set! uncovered es+get))))))
+         (channel-put result-ch 'ok))
        (set! eval-handler (cadr (sandbox-eval-handlers))) ; interactions handler
        ;; finally wait for interaction expressions
        (let ([n 0])
@@ -711,25 +711,22 @@
                                                (call-with-values run list))))))
              (loop)))))))
   (define (get-user-result)
-    (let ([get-result (lambda () (sync user-done-evt result-ch))])
-      (if (and (sandbox-propagate-breaks)
-               ;; The following test is weird. We reliably catch breaks if breaks
-               ;; are enabled, except that a break just before or after isn't
-               ;; reliably propagated. A `get-result/enable-breaks' function
-               ;; would make more sense.
-               (break-enabled))
-          ;; The following loop ensures that breaks are disabled while trying
-          ;; to handle a break, which ensures that we don't fail to
-          ;; propagate a break.
-          (parameterize-break
-           #f
-           (let loop ()
-             (with-handlers* ([exn:break? (lambda (e) (user-break) (loop))])
-               (parameterize-break
-                #t
-                (get-result)))))
-          ;; The same case doesn't have to deal with breaks:
-          (get-result))))
+    (if (and (sandbox-propagate-breaks)
+             ;; The following test is weird. We reliably catch breaks if breaks
+             ;; are enabled, except that a break just before or after isn't
+             ;; reliably propagated. A `get-result/enable-breaks' function
+             ;; would make more sense.
+             (break-enabled))
+        ;; The following loop ensures that breaks are disabled while trying
+        ;; to handle a break, which ensures that we don't fail to
+        ;; propagate a break.
+        (parameterize-break
+         #f
+         (let loop ()
+           (with-handlers* ([exn:break? (lambda (e) (user-break) (loop))])
+             (sync/enable-break user-done-evt result-ch))))
+        ;; The simple case doesn't have to deal with breaks:
+        (sync user-done-evt result-ch)))
   (define (user-eval expr)
     ;; the thread will usually be running, but it might be killed outside of
     ;; the sandboxed environment, for example, if you do something like
