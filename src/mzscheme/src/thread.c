@@ -363,6 +363,7 @@ static Scheme_Object *will_executor_go(int argc, Scheme_Object *args[]);
 static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost);
 
 static Scheme_Object *check_break_now(int argc, Scheme_Object *args[]);
+static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo);
 
 static void make_initial_config(Scheme_Thread *p);
 
@@ -3772,6 +3773,11 @@ static void raise_break(Scheme_Thread *p)
 
   p->external_break = 0;
 
+  if (p->blocker && (p->block_check == syncing_ready)) {
+    /* Get out of lines for channels, etc., before calling a break exn handler. */
+    scheme_post_syncing_nacks((Syncing *)p->blocker);
+  }
+
   block_descriptor = p->block_descriptor;
   blocker = p->blocker;
   block_check = p->block_check;
@@ -5677,7 +5683,7 @@ Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
 }
 
 void scheme_post_syncing_nacks(Syncing *syncing)
-     /* Also removes channel-syncers */
+     /* Also removes channel-syncers. Can be called multiple times. */
 {
   int i, c;
   Scheme_Object *l;
@@ -5792,7 +5798,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
     timeout = 0.0; /* means "no timeout" to block_until */
 
   if (with_break) {
-    /* Suspended breaks when something is selected: */
+    /* Suspended breaks when something is selected. */
     syncing->disable_break = scheme_current_thread;
   }
 
