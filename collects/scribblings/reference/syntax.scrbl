@@ -277,8 +277,7 @@ In a @tech{top-level context}, @scheme[require] instantiates modules
 @scheme[require] @tech{visits} modules (see @secref["mod-parse"]). In
 both contexts, @scheme[require] introduces bindings into a
 @tech{namespace} or a module (see @secref["intro-binding"]). 
- A
-@scheme[require] form in a @tech{expression context} or
+A @scheme[require] form in a @tech{expression context} or
 @tech{internal-definition context} is a syntax error.
 
 A @scheme[require-spec] designates a particular set of identifiers to
@@ -289,8 +288,11 @@ identifier. Each identifier also binds at a particular @tech{phase
 level}.
 
 The syntax of @scheme[require-spec] can be extended via
-@scheme[define-require-syntax], but the
-pre-defined forms are as follows.
+@scheme[define-require-syntax], and when multiple
+@scheme[require-spec]s are specified in a @scheme[require], the
+bindings of each @scheme[require-spec] are visible for expanding later
+@scheme[require-spec]s. The pre-defined forms (as exported by
+@scheme[scheme/base]) are as follows:
 
  @specsubform[module-path]{ Imports all exported bindings from the
   named module, using the export identifiers as the local identifiers.
@@ -432,9 +434,7 @@ pre-defined forms are as follows.
 
  @specsubform[derived-require-spec]{See @scheme[define-require-syntax]
  for information on expanding the set of @scheme[require-spec]
- forms. When multiple @scheme[require-spec]s are specified in a
- @scheme[require], the bindings of each @scheme[require-spec] are
- visible for expanding later @scheme[require-spec]s.}
+ forms.}
 
 @guideintro["module-paths"]{module paths}
 
@@ -998,7 +998,7 @@ sets of imported identifiers.
                       #rx"-" (string-titlecase name) "")))
               scheme/base))]
   will get the @scheme[scheme/base] bindings that match the regexp,
-  and renamed to use ``camel case''.}
+  and renamed to use ``camel case.''}
 
 @; --------------------
 
