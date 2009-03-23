@@ -101,10 +101,14 @@
 [fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                 ((-lst b) b) . ->... . c))]
 [foldl
- (-poly (a b c)
+ (-poly (a b c d)
         (cl-> [((a b . -> . b) b (-lst a)) b]
-              [((a b c . -> . c) c (-lst a) (-lst b)) c]))]
-[foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
+              [((a b c . -> . c) c (-lst a) (-lst b)) c]
+              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+[foldr  (-poly (a b c d)
+               (cl-> [((a b . -> . b) b (-lst a)) b]
+                     [((a b c . -> . c) c (-lst a) (-lst b)) c]
+                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
 [filter (-poly (a b) (cl->*
                       ((a . -> . B
                           :
