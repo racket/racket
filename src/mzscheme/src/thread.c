@@ -2532,12 +2532,24 @@ static void do_swap_thread()
       scheme_takeover_stacks(scheme_current_thread);
     }
 
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->current_start_process_msec = cpm;
+    }
+
     if (scheme_current_thread->return_marks_to) {
       stash_current_marks();
       goto start;
     }
   } else {
     Scheme_Thread *new_thread = swap_target;
+
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
+    }
 
     swap_target = NULL;
 
@@ -2844,6 +2856,12 @@ static void start_child(Scheme_Thread * volatile child,
 	o = SCHEME_CLOS_DATA(o);
 	f(o);
       }
+    }
+
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->current_start_process_msec = cpm;
     }
 
     RESETJMP(child);

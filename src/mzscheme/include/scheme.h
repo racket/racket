@@ -1081,6 +1081,9 @@ typedef struct Scheme_Thread {
   long gmp_tls[6];
   void *gmp_tls_data;
 
+  long accum_process_msec;
+  long current_start_process_msec;
+
   struct Scheme_Thread_Custodian_Hop *mr_hop;
   Scheme_Custodian_Reference *mref;
   Scheme_Object *extra_mrefs; /* More owning custodians */

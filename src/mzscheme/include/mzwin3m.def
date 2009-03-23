@@ -566,6 +566,7 @@ EXPORTS
  scheme_get_milliseconds
  scheme_get_inexact_milliseconds
  scheme_get_process_milliseconds
+ scheme_get_thread_milliseconds
  scheme_banner
  scheme_version
  scheme_check_proc_arity

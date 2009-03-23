@@ -886,6 +886,7 @@ long (*scheme_get_seconds)(void);
 long (*scheme_get_milliseconds)(void);
 double (*scheme_get_inexact_milliseconds)(void);
 long (*scheme_get_process_milliseconds)(void);
+long (*scheme_get_thread_milliseconds)(Scheme_Object *thrd);
 char *(*scheme_banner)(void);
 char *(*scheme_version)(void);
 int (*scheme_check_proc_arity)(const char *where, int a,

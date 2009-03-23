@@ -447,7 +447,7 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("current-process-milliseconds",
 			     scheme_make_prim_w_arity(current_process_milliseconds,
 						      "current-process-milliseconds",
-						      0, 0),
+						      0, 1),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
 			     scheme_make_prim_w_arity(current_gc_milliseconds,
@@ -7986,6 +7986,19 @@ long scheme_get_process_milliseconds(void)
 #endif
 }
 
+long scheme_get_thread_milliseconds(Scheme_Object *thrd)
+{
+  Scheme_Thread *t = thrd ? (Scheme_Thread *)thrd : scheme_current_thread;
+
+  if (t == scheme_current_thread) {
+    long cpm;
+    cpm = scheme_get_process_milliseconds();
+    return t->accum_process_msec + (cpm - t->current_start_process_msec);
+  } else {
+    return t->accum_process_msec;
+  }
+}
+
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
 #endif
@@ -8272,7 +8285,14 @@ static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **arg
 
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv)
 {
-  return scheme_make_integer(scheme_get_process_milliseconds());
+  if (!argc || SCHEME_FALSEP(argv[0]))
+    return scheme_make_integer(scheme_get_process_milliseconds());
+  else {
+    if (SCHEME_THREADP(argv[0]))
+      return scheme_make_integer(scheme_get_thread_milliseconds(argv[0]));
+    scheme_wrong_type("current-process-milliseconds", "thread", 0, argc, argv);
+    return NULL;
+  }
 }
 
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv)

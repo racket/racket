@@ -6,6 +6,7 @@ Add 'not-free-identifier=? syntax property to disable free-identifier=?
 Add prop:rename-transformer and prop:set!-transformer
 Fix scheme/local so that local syntax bindings are visible to later
  local definitions
+Changed current-process-milliseconds to accept a thread argument
 
 Version 4.1.5.2
 Changed expander to detect a reaname transformer and install a

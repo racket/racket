@@ -72,12 +72,16 @@ Like @scheme[current-milliseconds], but the result never decreases
 (until the machine is turned off).}
 
 
-@defproc[(current-process-milliseconds) exact-integer?]{
+@defproc[(current-process-milliseconds [thread (or/c thread? #f)]) 
+         exact-integer?]{
 
-Returns the amount of processor time in @tech{fixnum} milliseconds
+Returns an amount of processor time in @tech{fixnum} milliseconds
 that has been consumed by the Scheme process on the underlying
 operating system. (Under @|AllUnix|, this includes both user and
-system time.)  The precision of the result is platform-specific, and
+system time.)  If @scheme[thread] is @scheme[#f], the reported time
+is for all Scheme threads, otherwise the result is specific to the
+time while @scheme[thread] ran.
+The precision of the result is platform-specific, and
 since the result is a @tech{fixnum}, the value increases only over a
 limited (though reasonably long) time.}
 
