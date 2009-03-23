@@ -137,7 +137,9 @@
       (t (with-limits 2 #f
            (if len-to-read (read-string len-to-read i) (port->string i)))
          => expected)
-      (t (begin (kill-thread thd) (cond [exn => raise] [else #t])))))
+      (t (begin (kill-thread thd) (cond [exn => raise] [else #t])))
+      (for ([m more])
+        (when (file-exists? (car m)) (delete-file (car m))))))
   (call-with-trusted-sandbox-configuration
     (lambda ()
       (for ([t (in-list (doc:tests))])
