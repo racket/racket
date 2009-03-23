@@ -2903,14 +2903,10 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
     t = scheme_optimize_expr(t, info);
 
   /* For test position, convert (if <expr> #t #f) to <expr> */
-  while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
-        && SAME_OBJ(((Scheme_Branch_Rec *)t)->tbranch, scheme_true)
-        && SAME_OBJ(((Scheme_Branch_Rec *)t)->fbranch, scheme_false))
-      t = ((Scheme_Branch_Rec *)t)->test;
-    else
-      break;
-  }
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
+      && SAME_OBJ(((Scheme_Branch_Rec *)t)->tbranch, scheme_true)
+      && SAME_OBJ(((Scheme_Branch_Rec *)t)->fbranch, scheme_false))
+    t = ((Scheme_Branch_Rec *)t)->test;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
     if (SCHEME_FALSEP(t))
