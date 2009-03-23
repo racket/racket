@@ -32,5 +32,7 @@
 /* Whether getaddrinfo works. */
 #undef HAVE_GETADDRINFO
 
+/* Whether __attribute__ ((noinline)) works */
+#undef MZ_USE_NOINLINE
 
 #endif

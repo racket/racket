@@ -3222,7 +3222,8 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
   return scheme_void; /* misuse of exception handler (wrong kind of thread or under prompt) */
 }
 
-/* private, but declared as public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], void *max_bottom));
+
 Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], void *max_bottom)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -3791,7 +3792,7 @@ static void raise_break(Scheme_Thread *p)
 
   p->external_break = 0;
 
-  if (p->blocker && (p->block_check == syncing_ready)) {
+  if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
     /* Get out of lines for channels, etc., before calling a break exn handler. */
     scheme_post_syncing_nacks((Syncing *)p->blocker);
   }

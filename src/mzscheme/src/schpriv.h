@@ -104,6 +104,13 @@ int scheme_num_types(void);
 # define SET_REQUIRED_TAG(e) /* empty */
 #endif
 
+#if MZ_USE_NOINLINE
+# define MZ_DO_NOT_INLINE(decl) decl __attribute__ ((noinline));
+#else
+# define MZ_DO_NOT_INLINE()
+#endif
+
+
 void scheme_reset_finalizations(void);
 
 extern unsigned long scheme_get_current_os_thread_stack_base(void);

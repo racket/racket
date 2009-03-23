@@ -722,9 +722,23 @@ AC_TRY_RUN(
    static inline int foo() { return 0; }
    int main() {
       return foo();
-   }, inline=yes, inline=no, inline=no)
+   }, 
+  inline=yes, inline=no, inline=no)
 if test "$inline" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_INLINE_KEYWORD"
+fi
+AC_MSG_RESULT($inline) 
+
+[ msg="for noinline attribute" ]
+AC_MSG_CHECKING($msg)
+AC_TRY_RUN(
+   static int foo() __attribute__ ((noinline));
+   static int foo() { return 0; }
+   int main() {
+      return foo();
+   }, noinline=yes, noinline=no, noinline=no)
+if test "$noinline" = "yes" ; then
+  AC_DEFINE(MZ_USE_NOINLINE,1,[Have noinline attribute])
 fi
 AC_MSG_RESULT($inline) 
 

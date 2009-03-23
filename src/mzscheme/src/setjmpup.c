@@ -325,7 +325,9 @@ void MZ_NO_INLINE scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *star
 	 size);
 }
 
-static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
+MZ_DO_NOT_INLINE(void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev));
+
+void scheme_uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 {
   GC_CAN_IGNORE Scheme_Jumpup_Buf *c;
   long top_delta = 0, bottom_delta = 0, size;
@@ -337,7 +339,7 @@ static void uncopy_stack(int ok, Scheme_Jumpup_Buf *b, long *prev)
 
     z = (unsigned long)&junk[0];
 
-    uncopy_stack(STK_COMP(z, DEEPPOS(b)), b, junk);
+    scheme_uncopy_stack(STK_COMP(z, DEEPPOS(b)), b, junk);
   }
 
   /* Vague attempt to prevent the compiler from optimizing away `prev': */
@@ -619,7 +621,7 @@ void scheme_longjmpup(Scheme_Jumpup_Buf *b)
   scheme_flush_stack_cache();
 #endif
 
-  uncopy_stack(STK_COMP((unsigned long)&z, DEEPPOS(b)), b, junk);
+  scheme_uncopy_stack(STK_COMP((unsigned long)&z, DEEPPOS(b)), b, junk);
 }
 
 void scheme_init_jmpup_buf(Scheme_Jumpup_Buf *b)

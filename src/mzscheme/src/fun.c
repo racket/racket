@@ -1827,7 +1827,8 @@ typedef Scheme_Object *(*Overflow_K_Proc)(void);
 THREAD_LOCAL Scheme_Overflow_Jmp *scheme_overflow_jmp;
 THREAD_LOCAL void *scheme_overflow_stack_start;
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(void scheme_really_create_overflow(void *stack_base));
+
 void scheme_really_create_overflow(void *stack_base)
 {
   Scheme_Overflow_Jmp *jmp;
@@ -5747,7 +5748,9 @@ void scheme_drop_prompt_meta_continuations(Scheme_Object *prompt_tag)
   scheme_current_thread->meta_continuation = mc;
 }
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *_prompt_tag, 
+                                                               Scheme_Object *proc, int argc, Scheme_Object **argv));
+
 Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *_prompt_tag, 
                                               Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
@@ -5887,7 +5890,9 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
   }
 }
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *prompt_tag, 
+                                                        Scheme_Object *proc, int argc, Scheme_Object **argv));
+
 Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *prompt_tag, 
                                        Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
