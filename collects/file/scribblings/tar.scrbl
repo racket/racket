@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label file/tar))
+          (for-label file/tar file/gzip))
 
 @title[#:tag "tar"]{@exec{tar} File Creation}
 
@@ -13,7 +13,7 @@ information is not preserved; the owner that is stored in the archive
 is always ``root.''}
 
 @defproc[(tar [tar-file path-string?][path path-string?] ...) 
-         void?]{
+         exact-nonnegative-integer?]{
 
 Creates @scheme[tar-file], which holds the complete content of all
 @scheme[path]s.  The given @scheme[path]s are all expected to be
@@ -23,12 +23,18 @@ to the current directory).  If a nested path is provided as a
 resulting tar file, up to the current directory (using
 @scheme[pathlist-closure]).}
 
-@defproc[(tar->output [paths (listof path-string?)]
+@defproc[(tar->output [paths (listof path?)]
                       [out output-port? (current-output-port)])
-         void?]{
+         exact-nonnegative-integer?]{
 
 Packages each of the given @scheme[paths] in a @exec{tar} format
 archive that is written directly to the @scheme[out].  The specified
 @scheme[paths] are included as-is; if a directory is specified, its
 content is not automatically added, and nested directories are added
 without parent directories.}
+
+@defproc[(tar-gzip [tar-file path-string?] [paths path-string?] ...)
+         void?]{
+
+Like @scheme[tar], but compresses the resulting file with @scheme[gzip].
+}
