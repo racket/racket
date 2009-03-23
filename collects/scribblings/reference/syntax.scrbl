@@ -434,7 +434,7 @@ pre-defined forms are as follows.
  for information on expanding the set of @scheme[require-spec]
  forms. When multiple @scheme[require-spec]s are specified in a
  @scheme[require], the bindings of each @scheme[require-spec] are
- vsible for expanding later @scheme[require-spec]s.}
+ visible for expanding later @scheme[require-spec]s.}
 
 @guideintro["module-paths"]{module paths}
 
