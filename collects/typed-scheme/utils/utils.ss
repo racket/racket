@@ -19,6 +19,7 @@
          extend
          debug
          in-syntax
+	 symbol-append
 	 ;; require macros
 	 rep utils typecheck infer env private)
 
