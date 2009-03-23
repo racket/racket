@@ -673,8 +673,8 @@ all of the names in the tools library, for use defining keybindings
   (proc-doc/names
    drscheme:get/extend:extend-tab
    (case->
-    ((make-mixin-contract drscheme:unit:tab%) . -> . void?)
-    ((make-mixin-contract drscheme:unit:tab%) boolean? . -> . void?))
+    ((make-mixin-contract drscheme:unit:tab<%>) . -> . void?)
+    ((make-mixin-contract drscheme:unit:tab<%>) boolean? . -> . void?))
    ((mixin) (mixin before?))
    
    @{This class implements the tabs in drscheme. One is created for each tab
