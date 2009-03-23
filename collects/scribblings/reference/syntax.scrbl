@@ -272,7 +272,8 @@ In a @tech{top-level context}, @scheme[require] instantiates modules
 (see @secref["module-eval-model"]). In a @tech{module context},
 @scheme[require] @tech{visits} modules (see @secref["mod-parse"]). In
 both contexts, @scheme[require] introduces bindings into a
-@tech{namespace} or a module (see @secref["intro-binding"]). A
+@tech{namespace} or a module (see @secref["intro-binding"]). 
+ A
 @scheme[require] form in a @tech{expression context} or
 @tech{internal-definition context} is a syntax error.
 
@@ -282,6 +283,12 @@ particular export of a particular module; the identifier to bind may
 be different from the symbolic name of the originally exported
 identifier. Each identifier also binds at a particular @tech{phase
 level}.
+
+A @scheme[require] scopes over all subsequent forms in @tech{top-level
+contexts}, and all subsequent module top-level forms in a @tech{module
+context} as well as all expression forms in a module.  In both cases,
+each @scheme[require-spec] scopes over all subsequent
+@scheme[require-spec]s in them same @scheme[require] form.
 
 The syntax of @scheme[require-spec] can be extended via
 @scheme[define-require-syntax], but the

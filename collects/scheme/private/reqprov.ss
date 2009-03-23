@@ -317,12 +317,12 @@
                                (syntax->list #'(elem ...))))]
                   [_ (transform-simple in 0 #| run phase |#)]))])
       (syntax-case stx ()
-        [(_ in ...)
-         (with-syntax ([(new-in ...)
-                        (apply append
-                               (map transform-one (syntax->list #'(in ...))))])
+        [(_ in)
+         (with-syntax ([(new-in ...) (transform-one #'in)])
            (syntax/loc stx
-             (#%require new-in ...)))])))
+             (#%require new-in ...)))]
+        [(_ in ...)
+         (syntax/loc stx (begin (require in) ...))])))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers
