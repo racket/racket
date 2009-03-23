@@ -7104,7 +7104,8 @@ static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, S
     rands = p->ku.apply.tail_rands;
     p->ku.apply.tail_rands = NULL;
     return rands;
-  }
+  } else
+    return rands;
 }
 
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
