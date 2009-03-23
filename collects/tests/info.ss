@@ -6,6 +6,7 @@
 
 (define compile-omit-paths
   '("aligned-pasteboard"
+    "deinprogramm"
     "honu"
     "match"
     "macro-debugger"
