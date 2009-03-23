@@ -203,11 +203,8 @@
 (define (construct-gui f)
   (define info-editor (new text%))
   (define vp (new vertical-panel% [parent f]))
-  (define ec1 (new editor-canvas%
-                   [parent vp]
-                   [min-height 800]
-                   [min-width 400]))
-  (define lp (new vertical-panel% [parent vp]))
+  (define ec1 (new editor-canvas% [parent vp]))
+  (define lp (new vertical-panel% [parent vp] [stretchable-height #f]))
   (define ec2 (new editor-canvas%
                    [parent lp]
                    [min-height 100]
@@ -244,8 +241,11 @@
 (begin
   (define evt (make-eventspace))
   (define f (parameterize ([current-eventspace evt])
-              (new frame% [label ""])))
-  (define cumulative-t (construct-gui f))
+              (new frame%
+                   [label ""]
+                   [width 400]
+                   [height 800])))
+  (define-values (panel cumulative-t) (construct-gui f))
   (send f show #t)
   
   (void (make-prod-thread (let ([t (current-thread)])
@@ -259,10 +259,15 @@
   (time (dynamic-require '(lib "scribblings/reference/reference.scrbl")
                          #f)))
 
-
+;; tool code, for integration with drscheme
 (begin
   (require drscheme/tool
-           scheme/unit)
+           scheme/unit
+           string-constants/string-constant)
+  
+  (define sc-show-sprof "Show SProfile")
+  (define sc-hide-sprof "Hide SProfile")
+  
   (provide tool@)
   (define tool@
     (unit
@@ -271,32 +276,121 @@
       (define (phase1) (void))
       (define (phase2) (void))
       
-      #;
       (define-local-member-name
-        )
+        show/hide-sprof-panel
+        update-sprof-panel
+        toggle-sprof-visiblity
+        stop-profiling-thread
+        start-profiling-thread
+        get-threads-to-profile)
       
       (define unit-frame-mixin
         (mixin (drscheme:unit:frame<%>) ()
+          (inherit get-current-tab)
+          
           (define main-panel #f)
           (define sprof-main-panel #f)
           (define everything-else #f)
           (define cumulative-t #f)
+          (define show/hide-menu-item #f)
+          
+          (define/public (show/hide-sprof-panel show?)
+            (let ([main-children (send main-panel get-children)])
+              (send show/hide-menu-item 
+                    set-label
+                    (if show? sc-hide-sprof sc-show-sprof))
+              (unless (or (and show? (= 2 (length main-children)))
+                          (and (not show?) (= 1 (length main-children))))
+                (send main-panel change-children 
+                      (λ (l) 
+                        (if show?
+                            (list everything-else sprof-main-panel)
+                            (list everything-else)))))))
+          
           (define/override (make-root-area-container cls parent)
-            (set! main-panel (super make-root-area-container horizontal-panel% parent))
+            (set! main-panel (super make-root-area-container panel:horizontal-dragable% parent))
             (set! everything-else (make-object cls main-panel))
             (set!-values (sprof-main-panel cumulative-t) (construct-gui main-panel))
             (send main-panel change-children (λ (l) (list everything-else)))
             everything-else)
+          
+          (define/augment (on-tab-change from-tab to-tab)
+            (inner (void) on-tab-change from-tab to-tab)
+            (send to-tab update-sprof-panel))
+          
+          (define/override (add-show-menu-items show-menu)
+            (super add-show-menu-items show-menu)
+            (set! show/hide-menu-item
+                  (new menu-item%
+                       [parent show-menu]
+                       [label sc-show-sprof]
+                       [callback 
+                        (λ (x y)
+                          (send (get-current-tab) toggle-sprof-visiblity))])))
+          
+          ;; FIX: the cumulative-t text object shouldn't be handed out like this
+          ;; instead its contents need to be tab specific, so switching tabs
+          ;; (ala the update-sprof-panel method) should change the contents of
+          ;; the cumulative-t, presumably via the set-gui-display-data/refresh method.
+          (define/public (get-cumulative-t) cumulative-t)
+          
           (super-new)))
       
       (define tab-mixin
         (mixin (drscheme:unit:tab<%>) ()
+          (inherit get-frame get-ints)
           (define prof-visible? #f)
+          (define/public (toggle-sprof-visiblity)
+            (set! prof-visible? (not prof-visible?))
+            (cond
+              [prof-visible?
+               (start-profiling-thread)]
+              [else
+               (stop-profiling-thread)])
+            (update-sprof-panel))
+          (define/public (update-sprof-panel)
+            (send (get-frame) show/hide-sprof-panel prof-visible?))
+          
+          (define profiling-thread #f)
+          
+          (define/public (stop-profiling-thread)
+            (when profiling-thread
+              (kill-thread profiling-thread))
+            (set! profiling-thread #f))
+          
+          (define current-traces-table #f)
+          
+          (define/public (start-profiling-thread)
+            (stop-profiling-thread)
+            (set! profiling-thread (make-prod-thread 
+                                    (λ () (send (get-ints) get-threads-to-profile))
+                                    (λ (traces-table)
+                                      (queue-callback
+                                       (λ ()
+                                         (send (send (get-frame) get-cumulative-t) set-gui-display-data/refresh traces-table)))))))
           
           (super-new)))
       
+      (define system-custodian (current-custodian))
+      
       (define repl-mixin
         (mixin (drscheme:rep:text<%>) ()
+          (inherit get-user-custodian)
+          (define/public (get-threads-to-profile)
+            (let ([thds '()])
+              (let loop ([cust (get-user-custodian)])
+                (for-each
+                 (λ (obj)
+                   (cond 
+                     [(custodian? obj) (loop obj)]
+                     [(thread? obj) (set! thds (cons obj thds))]))
+                 (custodian-managed-list cust system-custodian)))
+              thds))
+
+          ;; FIX
+          ;; something needs to happen here so that the profiling gets shutdown when the repl dies.
+          ;; the right call back isn't obvious, tho. :(
+          
           (super-new)))
        
       (drscheme:get/extend:extend-tab tab-mixin)
