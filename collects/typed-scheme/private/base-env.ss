@@ -576,3 +576,18 @@
 [real->decimal-string (N [-Nat] . ->opt .  -String)]
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
+
+;; path.ss
+
+[explode-path (-Pathlike . -> . (-lst (Un -Path (-val 'up) (-val 'same))))]
+[find-relative-path (-Pathlike -Pathlike . -> . -Path)]
+[simple-form-path (-Pathlike . -> . -Path)]
+[normalize-path (cl->* (-Pathlike . -> . -Path)
+                       (-Pathlike -Pathlike . -> . -Path))]
+[filename-extension (-Pathlike . -> . (-opt -Bytes))]
+[file-name-from-path (-Pathlike . -> . (-opt -Path))]
+[path-only (-Pathlike . -> . -Path)]
+[some-system-path->string (-Path . -> . -String)]
+[string->some-system-path 
+ (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
+
