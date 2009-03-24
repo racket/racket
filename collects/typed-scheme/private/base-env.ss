@@ -577,7 +577,7 @@
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
 
-;; path.ss
+;; scheme/path
 
 [explode-path (-Pathlike . -> . (-lst (Un -Path (-val 'up) (-val 'same))))]
 [find-relative-path (-Pathlike -Pathlike . -> . -Path)]
@@ -591,3 +591,13 @@
 [string->some-system-path 
  (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
 
+;; scheme/math
+
+[sgn (-Real . -> . -Real)]
+[pi N]
+[sqr (N . -> . N)]
+[sgn (N . -> . N)]
+[conjugate (N . -> . N)]
+[sinh (N . -> . N)]
+[cosh (N . -> . N)]
+[tanh (N . -> . N)]

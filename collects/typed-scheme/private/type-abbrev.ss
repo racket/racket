@@ -204,6 +204,8 @@
 (define -Pattern (*Un -String -Bytes -Regexp -Byte-Regexp -PRegexp -Byte-PRegexp))
 (define -Byte N)
 
+(define -Real N)
+
 (define (-Tuple l)
   (foldr -pair (-val '()) l))
 
