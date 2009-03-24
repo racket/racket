@@ -927,7 +927,7 @@
 
    (define rst (read-bytes size* port))
 
-   (unless (eof-object? (read port))
+   (unless (eof-object? (read-byte port))
      (error 'not-end))
    
    (unless (= size* (bytes-length rst))
