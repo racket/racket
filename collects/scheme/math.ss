@@ -7,7 +7,7 @@
 (provide pi
          sqr
          sgn conjugate
-         sinh cosh)
+         sinh cosh tanh)
 
 (define (sqr z) (* z z))
 
@@ -29,3 +29,5 @@
 
 (define (cosh x)
   (/ (+ (exp x) (exp (- x))) 2.0))
+
+(define (tanh x) (/ (sinh x) (cosh x)))
