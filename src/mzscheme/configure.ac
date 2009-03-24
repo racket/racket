@@ -1453,8 +1453,12 @@ if test "${enable_mred}" = "yes" ; then
   makefiles="$makefiles
              mred/Makefile
                mred/wxs/Makefile mred/wxme/Makefile
-               mred/gc2/Makefile
+               mred/gc2/Makefile"
+
+  if test "${enable_libpng}" != "yes" ; then
+    makefiles="$makefiles 
                wxcommon/libpng/Makefile wxcommon/zlib/Makefile"
+  fi
 
   if test "${enable_quartz}" = "yes" ; then
     makefiles="$makefiles
