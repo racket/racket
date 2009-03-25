@@ -8436,16 +8436,6 @@ Scheme_Object *scheme_native_stack_trace(void)
   check_stack();
 #endif
 
-#ifdef MZ_USE_DWARF_LIBUNWIND
-  unw_getcontext(&cx);
-  unw_init_local(&c, &cx);
-  use_unw = 1;
-  p = NULL;
-#else
-  gs = (Get_Stack_Proc)get_stack_pointer_code;
-  p = gs();
-#endif
-
   stack_start = scheme_approx_sp();
 
   if (stack_cache_stack_pos) {
@@ -8460,6 +8450,16 @@ Scheme_Object *scheme_native_stack_trace(void)
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_set_safe_pointer_range(stack_start, stack_end);
   unw_reset_bad_ptr_flag();
+#endif
+
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_getcontext(&cx);
+  unw_init_local(&c, &cx);
+  use_unw = 1;
+  p = NULL;
+#else
+  gs = (Get_Stack_Proc)get_stack_pointer_code;
+  p = gs();
 #endif
 
   halfway = STK_DIFF(stack_end, (unsigned long)p) / 2;
