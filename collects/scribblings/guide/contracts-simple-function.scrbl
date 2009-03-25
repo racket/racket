@@ -278,7 +278,7 @@ scheme
 
 @ctc-section[#:tag "coercion"]{Contracts Coerced from Other Values}
 
-The contract library treates a number of Scheme values as if they are
+The contract library treats a number of Scheme values as if they are
 contracts directly. We've already seen one main use of that: predicates. Every
 function that accepts one argument can be treated as a predicate
 and thus used as a contract.
