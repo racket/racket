@@ -164,7 +164,9 @@ misspelling errors:
 
 @defproc*[([(make-check-name (name string?)) check-info?]
            [(make-check-params (params (listof any))) check-info?]
-	   [(make-check-location (loc (list any (or/c number? #f) (or/c number? #f) (or/c number? #f) (or/c number? #f)))) check-info?]
+	   [(make-check-location (loc (list/c any (or/c number? #f) (or/c number? #f) 
+                                                  (or/c number? #f) (or/c number? #f))))
+            check-info?]
      	   [(make-check-expression (msg any)) check-info?]
 	   [(make-check-message (msg string?)) check-info?]
 	   [(make-check-actual (param any)) check-info?]
