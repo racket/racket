@@ -667,7 +667,7 @@ Returns whether selection dots are drawn around the edge of selected
 
 Inserts @scheme[snip] at @techlink{location} @math{(@scheme[x],
  @scheme[y])} just in front of
- @scheme[before]. (@|seesniporderdiscuss|) If @scheme[before] is nor
+ @scheme[before]. (@|seesniporderdiscuss|) If @scheme[before] is not
  provided or is @scheme[#f], then @scheme[snip] is inserted behind all
  other snips. If @scheme[x] and @scheme[y] are not provided, the snip
  is added at @math{(0, 0)}.

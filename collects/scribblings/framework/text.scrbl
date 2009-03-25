@@ -444,7 +444,7 @@
     changes. Ensures the snip is as wide as the viewing area.
 
     This method should only be called by
-    @method[canvas:wide-snip<%> add-tall-snip].
+    @xmethod[canvas:wide-snip<%> add-wide-snip].
 
   }
   @defmethod*[(((add-tall-snip (snip (is-a?/c snip%))) void))]{
@@ -452,7 +452,7 @@
     viewing area of the editor changes.
 
     This method should only be called by
-    @method[canvas:wide-snip<%> add-tall-snip].
+    @xmethod[canvas:wide-snip<%> add-tall-snip].
 
   }
 }
