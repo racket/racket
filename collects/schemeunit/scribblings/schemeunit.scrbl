@@ -3,8 +3,8 @@
 
 @title{@bold{SchemeUnit}: Unit Testing for Scheme}
 
-by  Noel Welsh  (@tt{noelwelsh at GMail})
-and Ryan Culpepper (@tt{ryan_sml at yahoo dot com})
+@author[(author+email "Noel Welsh" "noelwelsh@gmail.com")
+        (author+email "Ryan Culpepper" "ryan_sml@yahoo.com")]
 
 SchemeUnit is a unit-testing framework for PLT Scheme.  It
 is designed to handle the needs of all Scheme programmers,
