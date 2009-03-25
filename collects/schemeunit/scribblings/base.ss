@@ -5,12 +5,12 @@
  scribble/manual
 
  (for-label scheme/base
-            (file "../test.ss")
-            (file "../text-ui.ss")))
+            schemeunit
+            schemeunit/text-ui))
 
 (provide
  (all-from-out scribble/eval
                scribble/manual)
  (for-label (all-from-out scheme/base
-                          (file "../test.ss")
-                          (file "../text-ui.ss"))))
+                          schemeunit
+                          schemeunit/text-ui)))
