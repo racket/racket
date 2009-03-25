@@ -4,7 +4,7 @@
 @title[#:tag "api"]{SchemeUnit API}
 
 @defmodule[schemeunit
-  #:use-sources (schemeunit/test)]
+  #:use-sources (schemeunit)]
 
 @include-section["overview.scrbl"]
 @include-section["check.scrbl"]
