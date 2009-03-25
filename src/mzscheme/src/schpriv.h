@@ -107,7 +107,7 @@ int scheme_num_types(void);
 #if MZ_USE_NOINLINE
 # define MZ_DO_NOT_INLINE(decl) decl __attribute__ ((noinline));
 #else
-# define MZ_DO_NOT_INLINE()
+# define MZ_DO_NOT_INLINE(decl)
 #endif
 
 
