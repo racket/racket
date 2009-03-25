@@ -54,15 +54,18 @@
                             (define/contract cnt-id #,cnt id)
                             (define-syntax export-id
                               (if (unbox typed-context?)
-                                  (make-rename-transformer #'id)
-                                  (make-rename-transformer #'cnt-id)))
+                                  (make-rename-transformer (syntax-property #'id 
+                                                                            'not-free-identifier=? #t))
+                                  (make-rename-transformer (syntax-property #'cnt-id
+                                                                            'not-free-identifier=? #t))))
                             (#%provide (rename export-id out-id)))))]
                    [else 
                     (with-syntax ([(export-id) (generate-temporaries #'(id))])
                       #`(begin                             
                           (define-syntax export-id
                             (if (unbox typed-context?)
-                                (make-rename-transformer #'id)
+                                (make-rename-transformer (syntax-property #'id 
+                                                                          'not-free-identifier=? #t))
                                 (lambda (stx) (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
                           (provide (rename-out [export-id out-id]))))])))]
         [(mem? internal-id stx-defs) 
@@ -76,7 +79,8 @@
                      (if (unbox typed-context?)
                          (begin
                            (add-alias #'export-id #'id)
-                           (make-rename-transformer #'id))
+                           (make-rename-transformer (syntax-property #'id 
+                                                                     'not-free-identifier=? #t)))
                          (lambda (stx)
                            (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'out-id)))))
                    (provide (rename-out [export-id out-id]))))))]

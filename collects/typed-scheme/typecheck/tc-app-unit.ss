@@ -342,6 +342,19 @@
                                              drest-bound
                                              (subst-all (alist-delete drest-bound substitution eq?)
                                                         (car rngs*)))))]
+               ;; ... function, (List A B C etc) arg
+               [(and (car drests*)
+                     (not tail-bound)
+                     (eq? (cdr (car drests*)) dotted-var)
+                     (= (length (car doms*))
+                        (length arg-tys))
+                     (untuple tail-ty)
+                     (infer/dots fixed-vars dotted-var (append arg-tys (untuple tail-ty)) (car doms*)
+                                 (car (car drests*)) (car rngs*) (fv (car rngs*))))
+                => (lambda (substitution) 
+                     (define drest-bound (cdr (car drests*)))
+                     (do-apply-log substitution 'dots 'dots)
+                     (ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result: (PolyDots: vars (Function: '())))

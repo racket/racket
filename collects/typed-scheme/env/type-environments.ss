@@ -10,6 +10,9 @@
          dotted-env
          initial-tvar-env
          env-map
+         env-filter
+         env-vals
+         env-keys+vals
          with-dotted-env/extend)
 
 (require (prefix-in r: "../utils/utils.ss"))
@@ -18,6 +21,17 @@
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 (define-struct env (eq? l))
+
+(define (env-vals e)
+  (map cdr (env-l e)))
+
+(define (env-keys+vals e)
+  (env-l e))
+
+(define (env-filter f e)
+  (match e
+    [(struct env (eq? l))
+    (make-env eq? (filter f l))]))
 
 ;; the initial type variable environment - empty
 ;; this is used in the parsing of types

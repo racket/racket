@@ -96,6 +96,7 @@
 (define Err (make-Error))
 
 (define -Nat -Integer)
+(define -Real -Number)
 
 (define Any-Syntax
   (-mu x

@@ -102,10 +102,14 @@
 [fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                 ((-lst b) b) . ->... . c))]
 [foldl
- (-poly (a b c)
+ (-poly (a b c d)
         (cl-> [((a b . -> . b) b (-lst a)) b]
-              [((a b c . -> . c) c (-lst a) (-lst b)) c]))]
-[foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
+              [((a b c . -> . c) c (-lst a) (-lst b)) c]
+              [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
+[foldr  (-poly (a b c d)
+               (cl-> [((a b . -> . b) b (-lst a)) b]
+                     [((a b c . -> . c) c (-lst a) (-lst b)) c]
+                     [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
 [filter (-poly (a b) (cl->*
                       ((make-pred-ty (list a) B b)
                        (-lst a)
@@ -537,6 +541,10 @@
 
 [maybe-print-message (-String . -> . -Void)]
 
+[list->string ((-lst -Char) . -> . -String)]
+[string->list (-String . -> . (-lst -Char))]
+[sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
+
 ;; scheme/list
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> . 
@@ -567,3 +575,28 @@
 [real->decimal-string (N [-Nat] . ->opt .  -String)]
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
+
+;; scheme/path
+
+[explode-path (-Pathlike . -> . (-lst (Un -Path (-val 'up) (-val 'same))))]
+[find-relative-path (-Pathlike -Pathlike . -> . -Path)]
+[simple-form-path (-Pathlike . -> . -Path)]
+[normalize-path (cl->* (-Pathlike . -> . -Path)
+                       (-Pathlike -Pathlike . -> . -Path))]
+[filename-extension (-Pathlike . -> . (-opt -Bytes))]
+[file-name-from-path (-Pathlike . -> . (-opt -Path))]
+[path-only (-Pathlike . -> . -Path)]
+[some-system-path->string (-Path . -> . -String)]
+[string->some-system-path 
+ (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
+
+;; scheme/math
+
+[sgn (-Real . -> . -Real)]
+[pi N]
+[sqr (N . -> . N)]
+[sgn (N . -> . N)]
+[conjugate (N . -> . N)]
+[sinh (N . -> . N)]
+[cosh (N . -> . N)]
+[tanh (N . -> . N)]

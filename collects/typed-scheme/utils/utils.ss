@@ -20,7 +20,9 @@ at least theoretically.
          in-list-forever
          extend
          debug
-         in-syntax)
+         in-syntax
+	 symbol-append
+	 rep utils typecheck infer env private)
 
 (define-syntax (define-requirer stx)
   (syntax-parse stx
