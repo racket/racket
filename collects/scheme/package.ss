@@ -70,6 +70,10 @@
                                 #f
                                 "misuse of a package name"
                                 stx)))
+
+ (define (generate-hidden id)
+   ;; Like `generate-temporaries', but preserve the symbolic name
+   ((make-syntax-introducer) (datum->syntax #f (syntax-e id))))
  
  (define (reverse-mapping who id exports hidden)
    (or (ormap (lambda (m)
@@ -85,7 +89,7 @@
                      ;; avoid potential duplicate-definition errors
                      ;; when the name is bound in the same context as
                      ;; the package.
-                     (car (generate-temporaries (list id)))))
+                     (generate-hidden id)))
               hidden)
        id)))
 
@@ -172,7 +176,7 @@
                                                                     ;; It's not accessible, so just hide the name
                                                                     ;;  to avoid re-binding errors. (Is this necessary,
                                                                     ;;  or would `pre-package-id' take care of it?)
-                                                                    (car (generate-temporaries (list id)))))
+                                                                    (generate-hidden id)))
                                                               (syntax->list #'(export ...)))])
                                             (syntax/loc stx
                                               (define-syntaxes (pack-id)
