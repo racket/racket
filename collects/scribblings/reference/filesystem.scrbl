@@ -682,6 +682,9 @@ If @scheme[start-path] does not refer to an existing file or
 directory, then @scheme[predicate] will be called exactly once with
 @scheme[start-path] as the argument.}
 
+The @scheme[find-files] procedure signals an error if it encounters a directory
+on which @scheme[directory-list] fails.
+
 @defproc[(pathlist-closure [path-list (listof path-string?)])
          (listof path?)]{
 
