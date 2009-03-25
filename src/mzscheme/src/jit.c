@@ -8406,6 +8406,7 @@ static void check_stack(void)
 }
 #endif
 
+MZ_DO_NOT_INLINE(unsigned long scheme_approx_sp());
 unsigned long scheme_approx_sp()
 {
   unsigned long p;
