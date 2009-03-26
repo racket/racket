@@ -378,6 +378,7 @@
                              (quasisyntax/loc expr (#%plain-app . #,subexprs)))))]
             
             [(#%top . var) expr]
+            [(#%variable-reference . _) expr]
             
             [else (error 'expr-syntax-object-iterator "unknown expr: ~a"
                          (syntax->datum expr))])
