@@ -42,7 +42,7 @@ parameter). Consequently, Scheme implicitly converts a path like
 
 Otherwise, Scheme follows standard Windows path conventions, but also
  adds @litchar{\\?\REL} and @litchar{\\?\RED} conventions to
- deal with paths inexpressible in the standard conventsion, plus
+ deal with paths inexpressible in the standard convention, plus
  conventions to deal with excessive @litchar{\}s in @litchar{\\?\}
  paths.
 

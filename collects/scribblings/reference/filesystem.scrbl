@@ -680,10 +680,10 @@ following links, use the more general @scheme[fold-files] procedure.
 
 If @scheme[start-path] does not refer to an existing file or
 directory, then @scheme[predicate] will be called exactly once with
-@scheme[start-path] as the argument.}
+@scheme[start-path] as the argument.
 
-The @scheme[find-files] procedure signals an error if it encounters a directory
-on which @scheme[directory-list] fails.
+The @scheme[find-files] procedure raises and exception if it encounters 
+a directory for which @scheme[directory-list] fails.}
 
 @defproc[(pathlist-closure [path-list (listof path-string?)])
          (listof path?)]{
@@ -761,8 +761,8 @@ the procedure may return two values, the second indicating whether the
 recursive scan should include the given directory or not.  If it
 returns a single value, the directory is scanned.
 
-An error is signaled if the @scheme[start-path] is provided but no
-such path exists, or if paths disappear during the scan.}
+If the @scheme[start-path] is provided but no such path exists, or if
+paths disappear during the scan, then an exception is raised.}
 
 
 @defproc[(make-directory* [path path-string?]) void?]{

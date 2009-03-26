@@ -350,8 +350,8 @@ When @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 
 
 @defmethod[#:mode extend
-           (copy [extend? any/c]
-                 [time (and/c exact? integer?)]
+           (copy [extend? any/c #f]
+                 [time (and/c exact? integer?) 0]
                  [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
                  [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end])
            void?]{
@@ -381,8 +381,8 @@ In addition to the default @xmethod[editor<%> copy-self-to] work,
 
 
 @defmethod[#:mode override
-           (cut [extend? any/c]
-                [time (and/c exact? integer?)]
+           (cut [extend? any/c #f]
+                [time (and/c exact? integer?) 0]
                 [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
                 [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end])
            void?]{
@@ -1547,7 +1547,7 @@ If the paragraph starts with invisible @techlink{item}s and @scheme[visible?] is
 
 
 @defmethod[#:mode override
-           (paste [time (and/c exact? integer?)]
+           (paste [time (and/c exact? integer?) 0]
                   [start (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
                   [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same])
            void?]{
