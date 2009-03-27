@@ -98,25 +98,24 @@
   (test (random-string chars lits 3 0 (make-random 0 1)) "cbd")
   (test (random-string chars lits 3 0 (make-random 1 2 1 0)) "dcb")
   (test (pick-string chars lits 0 (make-random .5 1 2 1 0)) "dcb")
-  (test (pick-var chars lits null 0 (make-random .01 1 2 1 0)) 'dcb)
-  (test (pick-var chars lits '(x) 0 (make-random .5 0)) 'x)
+  (test (pick-var chars lits 0 (make-random .01 1 2 1 0)) 'dcb)
   (test (pick-char 0 null (make-random 65)) #\a)
   (test (random-string null null 1 0 (make-random 65)) "a"))
 
 (let ()
   (define-language L
-    (a 5 (x a) #:binds x a)
+    (a 5 (x a))
     (b 4))
-  (test (pick-nt 'a L '(x) 1 'dontcare)
+  (test (pick-nt 'a L 1 'dontcare)
         (nt-rhs (car (compiled-lang-lang L))))
-  (test (pick-nt 'a L '(x) preferred-production-threshold 'dontcare (make-random 1))
+  (test (pick-nt 'a L preferred-production-threshold 'dontcare (make-random 1))
         (nt-rhs (car (compiled-lang-lang L))))
   (let ([pref (car (nt-rhs (car (compiled-lang-lang L))))])
-    (test (pick-nt 'a L '(x) preferred-production-threshold
+    (test (pick-nt 'a L preferred-production-threshold
                    (make-immutable-hash `((a ,pref)))
                    (make-random 0))
           (list pref)))
-  (test (pick-nt 'b L null preferred-production-threshold #f)
+  (test (pick-nt 'b L preferred-production-threshold #f)
         (nt-rhs (cadr (compiled-lang-lang L)))))
 
 (define-syntax raised-exn-msg
@@ -132,7 +131,7 @@
 
 (define (patterns . selectors) 
   (map (λ (selector) 
-         (λ (name lang vars size pref-prods)
+         (λ (name lang size pref-prods)
            (list (selector (nt-rhs (nt-by-name lang name))))))
        selectors))
 
@@ -207,35 +206,6 @@
                #:var (list (λ _ 'x) (λ _ 'y))))
    '(x y)))
 
-;; #:binds
-(let ()
-  (define-language lang
-    (a (b c d) #:binds b c #:binds b d)
-    (b variable)
-    (c variable)
-    (d variable))
-  (let* ([x null]
-         [prepend! (λ (c l b a) (begin (set! x (cons (car b) x)) 'x))])
-    (test (begin
-            (generate-term/decisions
-             lang a 5 0
-             (decisions #:var (list (λ _ 'x) prepend! prepend!)))
-            x)
-          '(x x))))
-
-;; Detection of binding kludge
-(let ()
-  (define-language postfix
-    (e (e e) x (e (x) λ) #:binds x e)
-    (x (variable-except λ)))
-  (test 
-   (raised-exn-msg 
-     (generate-term/decisions 
-      postfix e 2 0
-      (decisions #:var (list (λ _ 'x) (λ _ 'y))
-                 #:nt (patterns third second first first))))
-   #rx"kludge"))
-
 ;; variable-except pattern
 (let ()
   (define-language var
@@ -301,23 +271,6 @@
         '((0 0 0) (0 0 0 0) (1 1 1) (1 1 1 1 1))))
 
 (let ()
-  (define-language lc
-    (e (λ (x ...) e) #:binds x e
-       (e e)
-       x)
-    (x (variable-except λ)))
-  
-  ;; x and y bound in body
-  (test 
-   (let/ec k 
-     (generate-term/decisions 
-      lc e 10 0
-      (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b)))
-                 #:nt (patterns first first first third first)
-                 #:seq (list (λ (_) 2)))))
-   '(y x)))
-
-(let ()
   (define-language lang (e (variable-prefix pf)))
   (test 
    (generate-term/decisions
@@ -339,17 +292,6 @@
     (decisions #:nt (patterns second first first first)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
    '(2 3 4 2 3)))
-
-(let ()
-  (define-language lang
-    (e (x x_1 x_1) #:binds x x_1)
-    (x variable))
-  (test
-   (let/ec k
-     (generate-term/decisions
-      lang e 5 0
-      (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
-   '(x)))
 
 (let ()
   (define-language lang
@@ -387,19 +329,12 @@
     (a 43)
     (b (side-condition a_1 (odd? (term a_1))))
     (c (side-condition a_1 (even? (term a_1))))
-    (d (side-condition (x_1 x_1 x) (not (eq? (term x_1) 'x))) #:binds x_1 x)
     (e (side-condition (x_1 x_!_2 x_!_2) (not (eq? (term x_1) 'x))))
     (x variable))
   (test (generate-term lang b 5) 43)
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
   (test (raised-exn-msg exn:fail:redex? (generate-term lang c 5))
         #rx"unable to generate")
-  (test ; binding works for with side-conditions failure/retry
-   (let/ec k
-     (generate-term/decisions
-      lang d 5 0
-      (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b))))))
-   '(y))
   (test ; mismatch patterns work with side-condition failure/retry
    (generate-term/decisions
     lang e 5 0
@@ -409,14 +344,7 @@
    (generate-term/decisions 
     lang (side-condition x_1 (not (eq? (term x_1) 'x))) 5 0
     (decisions #:var (list (λ _ 'x) (λ _ 'y))))
-   'y)
-  (test ; bindings within ellipses collected properly
-   (let/ec k
-     (generate-term/decisions 
-      lang (side-condition (((number_1 3) ...) ...) (k (term ((number_1 ...) ...)))) 5 0
-      (decisions #:seq (list (λ (_) 2) (λ (_) 3) (λ (_) 4))
-                 #:num (build-list 7 (λ (n) (λ (_) n))))))
-   '((0 1 2) (3 4 5 6))))
+   'y))
 
 (let ()
   (define-language lang
@@ -434,7 +362,6 @@
     (a number (+ a a))
     (A hole (+ a A) (+ A a))
     (C hole)
-    (d (x (in-hole C y)) #:binds x y)
     (e ((in-hole (in-hole f (number_1 hole)) number_1) number_1)) 
     (f (in-hole C (number_1 hole)))
     (g (in-hole (side-condition (hole number_1) (zero? (term number_1))) number_2))
@@ -462,9 +389,6 @@
          lang (variable_!_1 (in-hole C variable_!_1)) 5 0
          (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'x) (λ _ 'y))))
         '(x y))
-  (test (let/ec k 
-          (generate-term/decisions lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
-        '(x))
   (test (generate-term/decisions lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
         '((2 (1 1)) 1))
   (test (generate-term/decisions lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
@@ -565,7 +489,7 @@
   (test
    (generate-term/decisions
     L (side-condition x (number? (term x))) 0 0
-    (decisions #:var (λ (lang-chars lang-lits bound-vars attempt)
+    (decisions #:var (λ (lang-chars lang-lits attempt)
                        (if (>= attempt retry-threshold) 0 'x))))
    0)
   
@@ -574,7 +498,7 @@
         [finish (+ retry-threshold post-threshold-incr)])
     (generate-term/decisions
      L (side-condition x (number? (term x))) 0 start
-     (decisions #:var (λ (lang-chars lang-lits bound-vars attempt)
+     (decisions #:var (λ (lang-chars lang-lits attempt)
                         (set! attempts (cons attempt attempts))
                         (if (= attempt finish) 0 'x))))
     (test attempts (list finish retry-threshold start))))

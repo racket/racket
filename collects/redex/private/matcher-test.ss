@@ -56,7 +56,7 @@
     (test-empty '(variable-except x) 'x #f)
     (test-empty '(variable-except x) 'y (list (make-test-mtch (make-bindings null) 'y none)))
     (test-lang 'x 'y (list (make-mtch (make-bindings (list (make-bind 'x 'y))) 'y none))
-               (list (make-nt 'x (list (make-rhs '(variable-except x) '())))))
+               (list (make-nt 'x (list (make-rhs '(variable-except x))))))
     (test-empty '(variable-prefix x:) 'x: (list (make-test-mtch (make-bindings null) 'x: none)))
     (test-empty '(variable-prefix x:) 'x:x (list (make-test-mtch (make-bindings null) 'x:x none)))
     (test-empty '(variable-prefix x:) ': #f)
@@ -527,84 +527,84 @@
      (build-compatible-context-language
       (mk-hasheq '((exp . ()) (ctxt . ())))
       (list (make-nt 'exp
-                     (list (make-rhs '(+ exp exp) '())
-                           (make-rhs 'number '())))
+                     (list (make-rhs '(+ exp exp))
+                           (make-rhs 'number)))
             (make-nt 'ctxt
-                     (list (make-rhs '(+ ctxt exp) '())
-                           (make-rhs '(+ exp ctxt) '())
-                           (make-rhs 'hole '())))))
+                     (list (make-rhs '(+ ctxt exp))
+                           (make-rhs '(+ exp ctxt))
+                           (make-rhs 'hole)))))
      (list
       (make-nt 'ctxt-ctxt
-               (list (make-rhs 'hole '())
-                     (make-rhs `(+ (cross ctxt-ctxt) exp) '())
-                     (make-rhs `(+ ctxt (cross ctxt-exp)) '())
-                     (make-rhs `(+ (cross ctxt-exp) ctxt) '())
-                     (make-rhs `(+ exp (cross ctxt-ctxt)) '())))
+               (list (make-rhs 'hole)
+                     (make-rhs `(+ (cross ctxt-ctxt) exp))
+                     (make-rhs `(+ ctxt (cross ctxt-exp)))
+                     (make-rhs `(+ (cross ctxt-exp) ctxt))
+                     (make-rhs `(+ exp (cross ctxt-ctxt)))))
       (make-nt 'ctxt-exp
-               (list (make-rhs `(+ (cross ctxt-exp) exp) '())
-                     (make-rhs `(+ exp (cross ctxt-exp)) '())))
+               (list (make-rhs `(+ (cross ctxt-exp) exp))
+                     (make-rhs `(+ exp (cross ctxt-exp)))))
       (make-nt 'exp-ctxt
-               (list (make-rhs `(+ (cross exp-ctxt) exp) '())
-                     (make-rhs `(+ ctxt (cross exp-exp)) '())
-                     (make-rhs `(+ (cross exp-exp) ctxt) '())
-                     (make-rhs `(+ exp (cross exp-ctxt)) '())))
+               (list (make-rhs `(+ (cross exp-ctxt) exp))
+                     (make-rhs `(+ ctxt (cross exp-exp)))
+                     (make-rhs `(+ (cross exp-exp) ctxt))
+                     (make-rhs `(+ exp (cross exp-ctxt)))))
       (make-nt 'exp-exp 
-               (list (make-rhs 'hole '()) 
-                     (make-rhs `(+ (cross exp-exp) exp) '()) 
-                     (make-rhs `(+ exp (cross exp-exp)) '())))))
+               (list (make-rhs 'hole) 
+                     (make-rhs `(+ (cross exp-exp) exp)) 
+                     (make-rhs `(+ exp (cross exp-exp)))))))
     
     (run-test
      'compatible-context-language2
      (build-compatible-context-language
       (mk-hasheq '((m . ()) (v . ())))
-      (list (make-nt 'm (list (make-rhs '(m m) '()) (make-rhs '(+ m m) '()) (make-rhs 'v '())))
-            (make-nt 'v (list (make-rhs 'number '()) (make-rhs '(lambda (x) m) '())))))
+      (list (make-nt 'm (list (make-rhs '(m m)) (make-rhs '(+ m m)) (make-rhs 'v)))
+            (make-nt 'v (list (make-rhs 'number) (make-rhs '(lambda (x) m))))))
      (list
-      (make-nt 'v-v (list (make-rhs 'hole '()) (make-rhs (list 'lambda (list 'x) (list 'cross 'v-m)) '())))
+      (make-nt 'v-v (list (make-rhs 'hole) (make-rhs (list 'lambda (list 'x) (list 'cross 'v-m)))))
       (make-nt 'v-m
                (list
-                (make-rhs (list (list 'cross 'v-m) 'm) '())
-                (make-rhs (list 'm (list 'cross 'v-m)) '())
-                (make-rhs (list '+ (list 'cross 'v-m) 'm) '())
-                (make-rhs (list '+ 'm (list 'cross 'v-m)) '())
-                (make-rhs (list 'cross 'v-v) '())))
-      (make-nt 'm-v (list (make-rhs (list 'lambda (list 'x) (list 'cross 'm-m)) '())))
+                (make-rhs (list (list 'cross 'v-m) 'm))
+                (make-rhs (list 'm (list 'cross 'v-m)))
+                (make-rhs (list '+ (list 'cross 'v-m) 'm))
+                (make-rhs (list '+ 'm (list 'cross 'v-m)))
+                (make-rhs (list 'cross 'v-v))))
+      (make-nt 'm-v (list (make-rhs (list 'lambda (list 'x) (list 'cross 'm-m)))))
       (make-nt 'm-m
                (list
-                (make-rhs 'hole '())
-                (make-rhs (list (list 'cross 'm-m) 'm) '())
-                (make-rhs (list 'm (list 'cross 'm-m)) '())
-                (make-rhs (list '+ (list 'cross 'm-m) 'm) '())
-                (make-rhs (list '+ 'm (list 'cross 'm-m)) '())
-                (make-rhs (list 'cross 'm-v) '())))))
+                (make-rhs 'hole)
+                (make-rhs (list (list 'cross 'm-m) 'm))
+                (make-rhs (list 'm (list 'cross 'm-m)))
+                (make-rhs (list '+ (list 'cross 'm-m) 'm))
+                (make-rhs (list '+ 'm (list 'cross 'm-m)))
+                (make-rhs (list 'cross 'm-v))))))
     
     (run-test
      'compatible-context-language3
      (build-compatible-context-language
       (mk-hasheq '((m . ()) (seven . ())))
-      (list (make-nt 'm (list (make-rhs '(m seven m) '()) (make-rhs 'number '())))
-            (make-nt 'seven (list (make-rhs 7 '())))))
+      (list (make-nt 'm (list (make-rhs '(m seven m)) (make-rhs 'number)))
+            (make-nt 'seven (list (make-rhs 7)))))
      `(,(make-nt
          'm-m
-         `(,(make-rhs 'hole '()) ,(make-rhs `((cross m-m) seven m) '()) ,(make-rhs `(m seven (cross m-m)) '())))
+         `(,(make-rhs 'hole) ,(make-rhs `((cross m-m) seven m)) ,(make-rhs `(m seven (cross m-m)))))
        ,(make-nt
          'seven-m
-         `(,(make-rhs `((cross seven-m) seven m) '()) ,(make-rhs `(m (cross seven-seven) m) '()) ,(make-rhs `(m seven (cross seven-m)) '())))
-       ,(make-nt 'seven-seven `(,(make-rhs 'hole '())))))
+         `(,(make-rhs `((cross seven-m) seven m)) ,(make-rhs `(m (cross seven-seven) m)) ,(make-rhs `(m seven (cross seven-m)))))
+       ,(make-nt 'seven-seven `(,(make-rhs 'hole)))))
     
     (run-test
      'compatible-context-language4
      (build-compatible-context-language
       (mk-hasheq '((a . ()) (b . ()) (c . ())))
-      (list (make-nt 'a (list (make-rhs 'b '())))
-            (make-nt 'b (list (make-rhs 'c '())))
-            (make-nt 'c (list (make-rhs 3 '())))))
-     (list (make-nt 'c-c (list (make-rhs 'hole '())))
-           (make-nt 'c-b (list (make-rhs '(cross c-c) '())))
-           (make-nt 'c-a (list (make-rhs '(cross c-b) '())))
-           (make-nt 'b-b (list (make-rhs 'hole '())))
-           (make-nt 'b-a (list (make-rhs '(cross b-b) '())))
-           (make-nt 'a-a (list (make-rhs 'hole '())))))
+      (list (make-nt 'a (list (make-rhs 'b)))
+            (make-nt 'b (list (make-rhs 'c)))
+            (make-nt 'c (list (make-rhs 3)))))
+     (list (make-nt 'c-c (list (make-rhs 'hole)))
+           (make-nt 'c-b (list (make-rhs '(cross c-c))))
+           (make-nt 'c-a (list (make-rhs '(cross c-b))))
+           (make-nt 'b-b (list (make-rhs 'hole)))
+           (make-nt 'b-a (list (make-rhs '(cross b-b))))
+           (make-nt 'a-a (list (make-rhs 'hole)))))
     
     #;
     (test-xab '(in-hole (cross exp) (+ number number))
@@ -667,40 +667,40 @@
     (unless xab-lang
       (let ([nts
              (list (make-nt 'exp
-                            (list (make-rhs '(+ exp exp) '())
-                                  (make-rhs 'number '())))
+                            (list (make-rhs '(+ exp exp))
+                                  (make-rhs 'number)))
                    (make-nt 'ctxt
-                            (list (make-rhs '(+ ctxt exp) '())
-                                  (make-rhs '(+ exp ctxt) '())
-                                  (make-rhs 'hole '())))
+                            (list (make-rhs '(+ ctxt exp))
+                                  (make-rhs '(+ exp ctxt))
+                                  (make-rhs 'hole)))
                    
                    (make-nt 'ec-one
-                            (list (make-rhs '(+ (hole xx) exp) '())
-                                  (make-rhs '(+ exp (hole xx)) '())))
+                            (list (make-rhs '(+ (hole xx) exp))
+                                  (make-rhs '(+ exp (hole xx)))))
                    
-                   (make-nt 'same-in-nt (list (make-rhs '((name x any) (name x any)) '())))
+                   (make-nt 'same-in-nt (list (make-rhs '((name x any) (name x any)))))
                    
-                   (make-nt 'forever-list (list (make-rhs '(forever-list forever-list ...) '())
-                                                (make-rhs 'x '())))
+                   (make-nt 'forever-list (list (make-rhs '(forever-list forever-list ...))
+                                                (make-rhs 'x)))
                    
                    (make-nt 'lsts
-                            (list (make-rhs '() '())
-                                  (make-rhs '(x) '())
-                                  (make-rhs 'x '())
-                                  (make-rhs '#f '())))
+                            (list (make-rhs '())
+                                  (make-rhs '(x))
+                                  (make-rhs 'x)
+                                  (make-rhs '#f)))
                    (make-nt 'split-out
-                            (list (make-rhs 'split-out2 '())))
+                            (list (make-rhs 'split-out2)))
                    (make-nt 'split-out2
-                            (list (make-rhs 'number '())))
+                            (list (make-rhs 'number)))
                    
-                   (make-nt 'simple (list (make-rhs 'simple-rhs '())))
+                   (make-nt 'simple (list (make-rhs 'simple-rhs)))
                    
                    (make-nt 'nesting-names
-                            (list (make-rhs '(a (name x nesting-names)) '())
-                                  (make-rhs 'b '())))
-                   (make-nt 'var (list (make-rhs `variable-not-otherwise-mentioned '())))
+                            (list (make-rhs '(a (name x nesting-names)))
+                                  (make-rhs 'b)))
+                   (make-nt 'var (list (make-rhs `variable-not-otherwise-mentioned)))
                    
-                   (make-nt 'underscore (list (make-rhs 'exp_1 '())))
+                   (make-nt 'underscore (list (make-rhs 'exp_1)))
                    )])
       (set! xab-lang
             (compile-language 'pict-stuff-not-used
@@ -720,9 +720,9 @@
             (compile-language 
              'pict-stuff-not-used
              (list (make-nt 'aa
-                            (list (make-rhs 'a '())))
+                            (list (make-rhs 'a)))
                    (make-nt 'bb
-                            (list (make-rhs 'b '()))))
+                            (list (make-rhs 'b))))
              '((aa) (bb)))))
     (run-match-test
      `(match-pattern (compile-pattern ab-lang ',pat #t) ',exp)

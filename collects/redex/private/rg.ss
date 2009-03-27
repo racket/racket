@@ -1,18 +1,3 @@
-#|
-
-redex: disallow non-terminals on rhs of rules unless they are actually bound(?)
-
-need support for: 
- - collecting statistics
- - simplifying test cases
-
-To do a better job of not generating programs with free variables, 
-  keep track of which forms introduce binders 
-  and prefer to generate that before generating any variables
-  (also get rid of kludge, as below)
-
-|#
-
 #lang scheme
 
 (require "matcher.ss"
@@ -27,13 +12,11 @@ To do a better job of not generating programs with free variables,
          (for-syntax "keyword-macros.ss")
          mrlib/tex-table)
 
-(define (allow-free-var? [random random]) (= 0 (random 30)))
 (define (exotic-choice? [random random]) (= 0 (random 5)))
 (define (use-lang-literal? [random random]) (= 0 (random 20)))
 (define (preferred-production? attempt [random random]) 
   (and (>= attempt preferred-production-threshold)
        (zero? (random 2))))
-(define (try-to-introduce-binder?) (= 0 (random 2)) #f)
 
 ;; unique-chars : (listof string) -> (listof char)
 (define (unique-chars strings)
@@ -49,11 +32,9 @@ To do a better job of not generating programs with free variables,
 (define tex-chars-threshold 500)
 (define chinese-chars-threshold 2000)
 
-(define (pick-var lang-chars lang-lits bound-vars attempt [random random])
-  (if (or (null? bound-vars) (allow-free-var? random))
-      (let ([length (add1 (random-natural 4/5 random))])
-        (string->symbol (random-string lang-chars lang-lits length attempt random)))
-      (pick-from-list bound-vars random)))
+(define (pick-var lang-chars lang-lits attempt [random random])
+  (let ([length (add1 (random-natural 4/5 random))])
+    (string->symbol (random-string lang-chars lang-lits length attempt random))))
 
 (define (pick-char attempt lang-chars [random random])
   (if (and (not (null? lang-chars)) 
@@ -83,16 +64,11 @@ To do a better job of not generating programs with free variables,
 (define (pick-string lang-chars lang-lits attempt [random random])
   (random-string lang-chars lang-lits (random-natural 1/5 random) attempt random))
 
-(define (pick-nt name lang bound-vars attempt pref-prods 
+(define (pick-nt name lang attempt pref-prods 
                  [random random]
                  [pref-prod? preferred-production?])
-  (let* ([prods (nt-rhs (nt-by-name lang name))]
-         [binders (filter (λ (x) (not (null? (rhs-var-info x)))) prods)]
-         [do-intro-binder? (and (null? bound-vars)
-                                (not (null? binders))
-                                (try-to-introduce-binder?))])
-    (cond [do-intro-binder? binders]
-          [(and pref-prods (pref-prod? attempt random))
+  (let ([prods (nt-rhs (nt-by-name lang name))])
+    (cond [(and pref-prods (pref-prod? attempt random))
            (hash-ref pref-prods name)]
           [else prods])))
 
@@ -197,23 +173,22 @@ To do a better job of not generating programs with free variables,
     (import) (export decisions^))
   
   (define ((generate-nt lang generate base-table pref-prods)
-           name fvt-id bound-vars size attempt in-hole state)
+           name size attempt in-hole state)
     (let*-values
-        ([(bound-vars) (append (extract-bound-vars fvt-id state) bound-vars)]
-         [(term _)
+        ([(term _)
           (generate/pred 
            name
            (λ (size attempt) 
              (let ([rhs (pick-from-list
                          (if (zero? size)
                              (min-prods (nt-by-name lang name) base-table)
-                             ((next-non-terminal-decision) name lang bound-vars attempt pref-prods)))])
-               (generate bound-vars (max 0 (sub1 size)) attempt 
-                         (make-state (map fvt-entry (rhs-var-info rhs)) #hash())
+                             ((next-non-terminal-decision) name lang attempt pref-prods)))])
+               (generate (max 0 (sub1 size)) attempt 
+                         (make-state #hash())
                          in-hole (rhs-pattern rhs))))
            (λ (_ env) (mismatches-satisfied? env))
            size attempt)])
-      (values term (extend-found-vars fvt-id term state))))
+      term))
   
   (define (generate-sequence ellipsis generate state length)
     (define (split-environment env)
@@ -228,16 +203,15 @@ To do a better job of not generating programs with free variables,
                (hash-set env var (map (λ (seq-env) (hash-ref seq-env var)) seq-envs)))
              (state-env state) (ellipsis-vars ellipsis)))
     (let-values
-        ([(seq envs fvt)
-          (let recur ([fvt (state-fvt state)]
-                      [envs (split-environment (state-env state))])
+        ([(seq envs)
+          (let recur ([envs (split-environment (state-env state))])
             (if (null? envs)
-                (values null null fvt)
+                (values null null)
                 (let*-values 
-                    ([(term state) (generate (make-state fvt (car envs)) the-hole (ellipsis-pattern ellipsis))]
-                     [(terms envs fvt) (recur (state-fvt state) (cdr envs))])
-                  (values (cons term terms) (cons (state-env state) envs) fvt))))])
-      (values seq (make-state fvt (merge-environments envs)))))
+                    ([(term state) (generate (make-state (car envs)) the-hole (ellipsis-pattern ellipsis))]
+                     [(terms envs) (recur (cdr envs))])
+                  (values (cons term terms) (cons (state-env state) envs)))))])
+      (values seq (make-state (merge-environments envs)))))
   
   (define (generate/pred name gen pred init-sz init-att)
     (let ([pre-threshold-incr 
@@ -290,10 +264,10 @@ To do a better job of not generating programs with free variables,
               (and (not (hash-ref prior val #f))
                    (hash-set! prior val #t)))))))
   
-  (define-struct state (fvt env))
-  (define new-state (make-state null #hash()))
+  (define-struct state (env))
+  (define new-state (make-state #hash()))
   (define (set-env state name value)
-    (make-state (state-fvt state) (hash-set (state-env state) name value)))
+    (make-state (hash-set (state-env state) name value)))
   
   (define (bindings env)
     (make-bindings
@@ -302,15 +276,11 @@ To do a better job of not generating programs with free variables,
                    (cons (make-bind (binder-name key) val) bindings)
                    bindings))))
   
-  (define-struct found-vars (nt source bound-vars found-nt?))
-  (define (fvt-entry binds)
-    (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
-  
-  (define (generate-pat lang sexp pref-prods bound-vars size attempt state in-hole pat)
-    (define recur (curry generate-pat lang sexp pref-prods bound-vars size attempt))
+  (define (generate-pat lang sexp pref-prods size attempt state in-hole pat)
+    (define recur (curry generate-pat lang sexp pref-prods size attempt))
     (define recur/pat (recur state in-hole))
     (define ((recur/pat/size-attempt pat) size attempt)
-      (generate-pat lang sexp pref-prods bound-vars size attempt state in-hole pat))
+      (generate-pat lang sexp pref-prods size attempt state in-hole pat))
     
     (define clang (rg-lang-clang lang))
     (define gen-nt (generate-nt 
@@ -331,7 +301,7 @@ To do a better job of not generating programs with free variables,
                       size attempt)]
       [`variable 
        (values ((next-variable-decision)
-                (rg-lang-chars lang) (rg-lang-lits lang) bound-vars attempt)
+                (rg-lang-chars lang) (rg-lang-lits lang) attempt)
                state)]
       [`variable-not-otherwise-mentioned
        (generate/pred 'variable
@@ -363,22 +333,22 @@ To do a better job of not generating programs with free variables,
        (let*-values ([(new-lang nt) ((next-any-decision) lang sexp)]
                      ; Don't use preferred productions for the sexp language.
                      [(pref-prods) (if (eq? new-lang lang) pref-prods #f)]
-                     [(term _) (generate-pat new-lang sexp pref-prods null size attempt new-state the-hole nt)])
+                     [(term _) (generate-pat new-lang sexp pref-prods size attempt new-state the-hole nt)])
          (values term state))]
       [(? (is-nt? clang))
-       (gen-nt pat pat bound-vars size attempt in-hole state)]
+       (values (gen-nt pat size attempt in-hole state) state)]
       [(struct binder ((and name (or (? (is-nt? clang) nt) (app (symbol-match named-nt-rx) (? (is-nt? clang) nt))))))
-       (generate/prior pat state (λ () (gen-nt nt name bound-vars size attempt in-hole state)))]
+       (generate/prior pat state (λ () (values (gen-nt nt size attempt in-hole state) state)))]
       [(struct binder ((or (? built-in? b) (app (symbol-match named-nt-rx) (? built-in? b)))))
        (generate/prior pat state (λ () (recur/pat b)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? (is-nt? clang) nt)))))
-       (let-values ([(term state) (gen-nt nt pat bound-vars size attempt in-hole state)])
+       (let ([term (gen-nt nt size attempt in-hole state)])
          (values term (set-env state pat term)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? built-in? b)))))
        (let-values ([(term state) (recur/pat b)])
          (values term (set-env state pat term)))]
       [`(cross ,(? symbol? cross-nt))
-       (gen-nt cross-nt #f bound-vars size attempt in-hole state)]
+       (values (gen-nt cross-nt size attempt in-hole state) state)]
       [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
       [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
        (let*-values ([(length) (let ([prior (hash-ref (state-env state) class #f)])
@@ -395,40 +365,6 @@ To do a better job of not generating programs with free variables,
       [else
        (error what "unknown pattern ~s\n" pat)]))
   
-  (define (extract-bound-vars pat state)
-    (let loop ([found-vars-table (state-fvt state)])
-      (cond
-        [(null? found-vars-table) '()]
-        [else (let ([found-vars (car found-vars-table)])
-                (if (eq? pat (found-vars-nt found-vars))
-                    (found-vars-bound-vars found-vars)
-                    (loop (cdr found-vars-table))))])))
-  
-  (define (extend-found-vars pat res state)
-    (make-state
-     (map
-      (λ (found-vars)
-        (cond
-          [(eq? (found-vars-source found-vars) pat)
-           (let ([new-found-vars
-                  (make-found-vars (found-vars-nt found-vars)
-                                   (found-vars-source found-vars)
-                                   (cons res (found-vars-bound-vars found-vars))
-                                   #f)])
-             (when (found-vars-found-nt? found-vars)
-               (error what "kludge in #:binds was exposed! #:binds ~s ~s" 
-                      (found-vars-nt found-vars)
-                      (found-vars-source found-vars)))
-             new-found-vars)]
-          [(eq? (found-vars-nt found-vars) pat)
-           (make-found-vars (found-vars-nt found-vars)
-                            (found-vars-source found-vars)
-                            (found-vars-bound-vars found-vars)
-                            #t)]
-          [else found-vars]))
-      (state-fvt state))
-     (state-env state)))
-  
   (let ([rg-lang (prepare-lang lang)]
         [rg-sexp (prepare-lang sexp)])
     (λ (pat)
@@ -440,7 +376,7 @@ To do a better job of not generating programs with free variables,
                          (λ (size attempt)
                            (generate-pat 
                             rg-lang rg-sexp ((next-pref-prods-decision) (rg-lang-clang rg-lang))
-                            null size attempt new-state the-hole parsed))
+                            size attempt new-state the-hole parsed))
                          (λ (_ env) (mismatches-satisfied? env))
                          size attempt)])
             (values term (bindings (state-env state)))))))))
@@ -615,8 +551,8 @@ To do a better job of not generating programs with free variables,
   (define ((parse-nt mode) nt)
     (make-nt (nt-name nt) (map (parse-rhs mode) (nt-rhs nt))))
   (define ((parse-rhs mode) rhs)
-    (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) lang mode))
-              (rhs-var-info rhs)))
+    (make-rhs (reassign-classes (parse-pattern (rhs-pattern rhs) lang mode))))
+  
   (struct-copy 
    compiled-lang lang
    [lang (map (parse-nt 'grammar) (compiled-lang-lang lang))]

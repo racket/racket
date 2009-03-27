@@ -22,10 +22,10 @@ before the pattern compiler is invoked.
 
 ;; lang = (listof nt)
 ;; nt = (make-nt sym (listof rhs))
-;; rhs = (make-rhs single-pattern (listof var-info??))
+;; rhs = (make-rhs single-pattern)
 ;; single-pattern = sexp
 (define-struct nt (name rhs) #:inspector (make-inspector))
-(define-struct rhs (pattern var-info) #:inspector  (make-inspector))
+(define-struct rhs (pattern) #:inspector  (make-inspector))
 
 ;; var = (make-var sym sexp)
 ;; patterns are sexps with `var's embedded
@@ -300,7 +300,7 @@ before the pattern compiler is invoked.
             (if (eq? (nt-name nt1) (nt-name nt2))
                 (make-nt (nt-name compat-nt)
                          (cons
-                          (make-rhs 'hole '())
+                          (make-rhs 'hole)
                           (nt-rhs compat-nt)))
                 compat-nt)))
         lang))
@@ -350,7 +350,7 @@ before the pattern compiler is invoked.
                  (cond
                    [(zero? i) null]
                    [else (let ([nts (build-across-nts (nt-name nt) count (- i 1))])
-                           (cons (make-rhs (maker (box nts)) '())
+                           (cons (make-rhs (maker (box nts)))
                                  (loop (- i 1))))]))))
            (nt-rhs nt)))))
 
