@@ -696,6 +696,9 @@ To do a better job of not generating programs with free variables,
 (define (assert-nat name x)
   (unless (and (integer? x) (>= x 0))
     (raise-type-error name "natural number" x)))
+(define (assert-rel name x)
+  (unless (reduction-relation? x)
+    (raise-type-error 'redex-check "reduction-relation" x)))
 
 (define-for-syntax (term-generator lang pat decisions@ retries what)
   (with-syntax ([pattern 
@@ -719,6 +722,22 @@ To do a better job of not generating programs with free variables,
     [(_ lang pat size)
      (syntax/loc stx (generate-term lang pat size #:attempt 1))]))
 
+(define-for-syntax (show-message stx)
+  (syntax-case stx ()
+    [(what . _)
+     (identifier? #'what)
+     (with-syntax ([loc (if (and (path? (syntax-source stx))
+                                 (syntax-line stx))
+                            (format "~a:~a"
+                                    (path->string (syntax-source stx)) 
+                                    (syntax-line stx))
+                            #f)])
+       #`(λ (msg)
+           (fprintf 
+            (current-output-port)
+            "~a: ~a~a"
+            'what (if loc (string-append loc "\n") "") msg)))]))
+
 (define-syntax (redex-check stx)
   (syntax-case stx ()
     [(_ lang pat property . kw-args)
@@ -735,7 +754,8 @@ To do a better job of not generating programs with free variables,
        (with-syntax ([(name ...) names]
                      [(name/ellipses ...) names/ellipses]
                      [attempts attempts-stx]
-                     [retries retries-stx])
+                     [retries retries-stx]
+                     [show (show-message stx)])
          (with-syntax ([property (syntax
                                   (λ (_ bindings)
                                     (term-let ([name/ellipses (lookup-binding bindings 'name)] ...)
@@ -756,49 +776,57 @@ To do a better job of not generating programs with free variables,
                                                       (metafunc-proc-lang #,m)))]
                                     [else
                                      #`(let ([r #,source-stx])
-                                         (unless (reduction-relation? r)
-                                           (raise-type-error 'redex-check "reduction-relation" r))
+                                         (assert-rel 'redex-check r)
                                          (values
                                           (map rewrite-proc-lhs (reduction-relation-make-procs r))
                                           (reduction-relation-srcs r)
                                           (reduction-relation-lang r)))])])
-                        (check-property-many 
+                        (check-prop-srcs 
                          lang pats srcs property random-decisions@ (max 1 (floor (/ att (length pats)))) ret
                          'redex-check
+                         show
                          (test-match lang pat)
                          (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
-                    #`(check-property
+                    #`(check-prop
                        #,(term-generator #'lang #'pat #'random-decisions@ #'ret 'redex-check)
-                       property att)))
+                       property att show)))
                (void))))))]))
 
-(define (check-property generator property attempts 
-                        #:source [source #f]
-                        #:match [match #f]
-                        #:match-fail [match-fail #f])
+(define (format-attempts a)
+  (format "~a attempt~a" a (if (= 1 a) "" "s")))
+
+(define (check-prop generator property attempts show)
+  (when (check generator property attempts show)
+    (show (format "no counterexamples in ~a\n"
+                  (format-attempts attempts)))))
+
+(define (check generator property attempts show
+               #:source [source #f]
+               #:match [match #f]
+               #:match-fail [match-fail #f])
   (let loop ([remaining attempts])
     (if (zero? remaining)
         #t
         (let ([attempt (add1 (- attempts remaining))])
           (let-values ([(term bindings) (generator (attempt->size attempt) attempt)])
             (if (andmap (λ (bindings) 
-                          (with-handlers ([exn:fail? (λ (exn) 
-                                                       (fprintf (current-error-port) 
-                                                                "checking ~s raises an exception\n"
-                                                                term)
-                                                       (raise exn))])
+                          (with-handlers 
+                              ([exn:fail?
+                                (λ (exn) 
+                                  (show 
+                                   (format "checking ~s raises an exception\n" term))
+                                  (raise exn))])
                             (property term bindings)))
-                        (cond [(and match (match term)) 
+                        (cond [(and match match-fail (match term)) 
                                => (curry map (compose make-bindings match-bindings))]
                               [match (match-fail term)]
                               [else (list bindings)]))
                 (loop (sub1 remaining))
                 (begin
-                  (fprintf (current-output-port)
-                           "counterexample found after ~a attempt~a~a:\n"
-                           attempt
-                           (if (= attempt 1) "" "s")
-                           (if source (format " with ~a" source) ""))
+                  (show
+                   (format "counterexample found after ~a~a:\n"
+                           (format-attempts attempt)
+                           (if source (format " with ~a" source) "")))
                   (pretty-print term (current-output-port))
                   #f)))))))
 
@@ -811,33 +839,39 @@ To do a better job of not generating programs with free variables,
                     (parse-kw-args `((#:attempts . ,#'default-check-attempts)
                                      (#:retries . ,#'default-retries))
                                    (syntax kw-args)
-                                   stx)])
+                                   stx)]
+                   [show (show-message stx)])
        (syntax/loc stx 
         (let ([lang (metafunc-proc-lang m)]
               [dom (metafunc-proc-dom-pat m)]
               [decisions@ (generation-decisions)]
               [att attempts])
           (assert-nat 'check-metafunction-contract att)
-          (check-property 
+          (check-prop 
            ((generate lang decisions@ retries 'check-metafunction-contract)
             (if dom dom '(any (... ...))))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
                (begin (term (name ,@t)) #t)))
-           att)
-          (void))))]))
+           att
+           show))))]))
 
-(define (check-property-many lang pats srcs prop decisions@ attempts retries what [match #f] [match-fail #f])
+(define (check-prop-srcs lang pats srcs prop decisions@ attempts retries what show
+                         [match #f]
+                         [match-fail #f])
   (let ([lang-gen (generate lang decisions@ retries what)])
-    (for/and ([pat pats] [src srcs])
-      (check-property
-       (lang-gen pat)
-       prop
-       attempts
-       #:source src
-       #:match match
-       #:match-fail match-fail))
-    (void)))
+    (when (for/and ([pat pats] [src srcs])
+            (check
+             (lang-gen pat)
+             prop
+             attempts
+             show
+             #:source src
+             #:match match
+             #:match-fail match-fail))
+      (show
+       (format "no counterexamples in ~a (with each clause)\n"
+               (format-attempts attempts))))))
 
 (define (metafunc-srcs m)
   (build-list (length (metafunc-proc-lhs-pats m))
@@ -845,20 +879,19 @@ To do a better job of not generating programs with free variables,
 
 (define-syntax (check-metafunction stx)
   (syntax-case stx ()
-    [(_ name property)
-     (syntax/loc stx (check-metafunction name property #:attempts default-check-attempts))]
     [(_ name property . kw-args)
      (with-syntax ([m (metafunc/err #'name stx)]
                    [(attempts retries)
                     (parse-kw-args `((#:attempts . , #'default-check-attempts)
                                      (#:retries . ,#'default-retries))
                                    (syntax kw-args)
-                                   stx)])
+                                   stx)]
+                   [show (show-message stx)])
        (syntax/loc stx
          (let ([att attempts]
                [ret retries])
            (assert-nat 'check-metafunction att)
-           (check-property-many 
+           (check-prop-srcs 
             (metafunc-proc-lang m)
             (metafunc-proc-lhs-pats m)
             (metafunc-srcs m)
@@ -866,26 +899,39 @@ To do a better job of not generating programs with free variables,
             (generation-decisions)
             att
             ret
-            'check-metafunction))))]))
+            'check-metafunction
+            show))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc) 'unnamed))
        (reduction-relation-make-procs r)))
 
-(define (check-reduction-relation 
-         relation property 
-         #:decisions [decisions@ random-decisions@]
-         #:attempts [attempts default-check-attempts]
-         #:retries [retries default-retries])
-  (check-property-many
-   (reduction-relation-lang relation)
-   (map rewrite-proc-lhs (reduction-relation-make-procs relation))
-   (reduction-relation-srcs relation)
-   (λ (term _) (property term))
-   decisions@
-   attempts
-   retries
-   'check-reduction-relation))
+(define-syntax (check-reduction-relation stx)
+  (syntax-case stx ()
+    [(_ relation property . kw-args)
+     (with-syntax ([(attempts retries decisions@)
+                    (parse-kw-args `((#:attempts . , #'default-check-attempts)
+                                     (#:retries . ,#'default-retries)
+                                     (#:decisions . ,#'random-decisions@))
+                                   (syntax kw-args)
+                                   stx)]
+                   [show (show-message stx)])
+       (syntax/loc stx
+         (let ([att attempts]
+               [ret retries]
+               [rel relation])
+           (assert-nat 'check-reduction-relation att)
+           (assert-rel 'check-reduction-relation rel)
+           (check-prop-srcs
+            (reduction-relation-lang rel)
+            (map rewrite-proc-lhs (reduction-relation-make-procs rel))
+            (reduction-relation-srcs rel)
+            (λ (term _) (property term))
+            decisions@
+            attempts
+            retries
+            'check-reduction-relation
+            show))))]))
 
 (define-signature decisions^
   (next-variable-decision
