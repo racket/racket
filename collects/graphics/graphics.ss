@@ -6,9 +6,6 @@
 	   "graphics-unit.ss")
   (provide-signature-elements graphics^ graphics:posn^)
 
-  (define-compound-unit/infer graphics+mred@
-    (import)
+  (define-values/invoke-unit/infer
     (export graphics^ graphics:posn^)
-    (link standard-mred@ graphics@))
-  
-  (define-values/invoke-unit/infer graphics+mred@))
+    (link standard-mred@ graphics@)))

@@ -30,21 +30,17 @@
 (require scheme/unit
          "mime-sig.ss"
          "mime-unit.ss"
-         "qp-sig.ss"
          "qp.ss"
-         "base64-sig.ss"
          "base64.ss"
-         "head-sig.ss"
          "head.ss")
 
-(define-unit-from-context base64@ base64^)
-(define-unit-from-context qp@ qp^)
-(define-unit-from-context head@ head^)
+;(define-unit-from-context base64@ base64^)
+;(define-unit-from-context qp@ qp^)
+;(define-unit-from-context head@ head^)
 
-(define-compound-unit/infer mime@2 (import) (export mime^)
-  (link base64@ qp@ head@ mime@))
-
-(define-values/invoke-unit/infer mime@2)
+(define-values/invoke-unit/infer 
+  (export mime^)
+  (link mime@))
 
 (provide-signature-elements mime^)
 
