@@ -10,10 +10,11 @@ reflects the (broken) spec).
 |#
 
 #lang scheme
-(require redex)
+(require redex/reduction-semantics) 
 
 (provide run-tests
-         run-big-test)
+         run-big-test
+         reductions)
 
 #|
   
@@ -53,7 +54,7 @@ reflects the (broken) spec).
      boolean
      string)
   
-  (prim-op + / cons first rest empty? struct? symbol=?)
+  (prim-op + * / cons first rest empty? struct? symbol=?)
   
   (p-ctxt (d/e-v ... d/e-ctxt d/e ...))
   (d/e-ctxt (define x e-ctxt)
@@ -213,6 +214,7 @@ reflects the (broken) spec).
     "procedure symbol=?: expects 2 arguments")
    
    ((+ number_1 ...) . ==> . ,(apply + (term (number_1 ...))))
+   ((* number_1 ...) . ==> . ,(apply * (term (number_1 ...))))
    ((side-condition (+ v_arg ...)
                     (ormap (lambda (v_arg) (not (number? v_arg))) (term (v_arg ...))))
     . e==> .
