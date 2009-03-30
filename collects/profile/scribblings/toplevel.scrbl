@@ -14,11 +14,15 @@ high-level entry points for timing expressions.  This hides the
 details that are available through other parts of the library, and is
 intended as a convenient tool for profiling code.
 
-@defproc[(profile-thunk [thunk (-> any/c)]
-                        [#:delay delay nonnegative-number? 0.05]
-                        [#:repeat  iterations exact-nonnegative-integer? 1]
-                        [#:threads threads?   any/c #f]
-                        [#:render  renderer   text:render])
+@defproc[(profile-thunk
+          [thunk (-> any/c)]
+          [#:delay   delay      nonnegative-number?        0.05]
+          [#:repeat  iterations exact-nonnegative-integer? 1]
+          [#:threads threads?   any/c                      #f]
+          [#:render  renderer   (profile? . -> . any/c)    text:render]
+          [#:periodic-renderer periodic-renderer
+           (or/c #f (list/c nonnegative-number? (profile? . -> . any/c)))
+           #f])
          void?]{
 
 Executes the given thunk while collecting profiling data, and render
@@ -57,6 +61,12 @@ this data when done.  Keyword arguments can customize the profiling:
   a renderer.  Use an identity function (@scheme[values]) to get the
   analyzed result, and render it yourself, or use one of the existing
   renderers (see @secref["renderers"]).}
+
+@item{The @scheme[periodic-renderer] argument can be set to a list
+  holding a delay time and a renderer.  In this case, the given
+  renderer will be called periodically.  This is useful for cases
+  where you want a dynamically updated display of the results.  This
+  delay should be larger than the sampler delay.}
 
 ]}
 

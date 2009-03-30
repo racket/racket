@@ -10,12 +10,22 @@
                        #:delay   [delay 0.05]
                        #:repeat  [rpt 1]
                        #:threads [threads? #f]
-                       #:render  [renderer text:render])
+                       #:render  [renderer text:render]
+                       #:periodic-renderer [periodic-renderer #f])
   (define cust (and threads? (make-custodian (current-custodian))))
   (define sampler (create-sampler (if threads?
                                     (list cust (current-thread))
                                     (current-thread))
                                   delay))
+  (define periodic-thread
+    (and periodic-renderer
+         (let ([delay (car periodic-renderer)]
+               [renderer (cadr periodic-renderer)])
+           (thread (lambda ()
+                     (let loop ()
+                       (sleep delay)
+                       (renderer (analyze-samples (sampler 'get-snapshots)))
+                       (loop)))))))
   (define (run) (for ([i (in-range rpt)]) (thunk)))
   (with-handlers ([void (lambda (e)
                           (fprintf (current-error-port)
@@ -26,6 +36,7 @@
     (if threads?
       (parameterize ([current-custodian cust]) (run))
       (run)))
+  (when periodic-thread (kill-thread periodic-thread))
   (sampler 'stop)
   (renderer (analyze-samples (sampler 'get-snapshots))))
 
@@ -61,13 +72,16 @@
   (define ch (make-channel))
   (define (bg-fib) (channel-put ch (fib1 n)))
   (thread bg-fib)
-  (list (fib22 n) (channel-get ch)))
+  (list (fibs n) (channel-get ch)))
 
 (require "render-graphviz.ss")
 
-(profile (fibs 35)
+(profile ;(fibs 40)
          ;(dynamic-require '(lib "scribblings/reference/reference.scrbl") #f)
-         ;(foo 35)
+         (foo 40)
          ;#:render render
-         #:threads #t)
+         #:threads #t
+         #:periodic-renderer
+         (list 0.5 text:render)
+         )
 |#
