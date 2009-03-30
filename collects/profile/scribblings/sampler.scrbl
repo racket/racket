@@ -9,7 +9,8 @@
 
 @defproc[(create-sampler [to-track (or/c thread? custodian?
                                          (listof (or/c thread? custodian?)))]
-                         [delay nonnegative-number?])
+                         [delay nonnegative-number?]
+                         [super-cust custodian? (current-custodian)])
          ((symbol?) (any/c) . ->* . any/c)]{
 
 Creates a sample collector thread, which tracks the given
@@ -17,7 +18,8 @@ Creates a sample collector thread, which tracks the given
 @scheme[to-track] value can be either a thread (track just that
 thread), a custodian (track all threads managed by the custodian), or
 a list of threads and/or custodians.  If a custodian is given, it must
-be subordinate to the current custodian.
+be subordinate to @scheme[super-cust], which defaults to the current
+custodian.
 
 The resulting value is a controller function, which consumes a message
 consisting of a symbol and an optional argument, and can affect the

@@ -57,9 +57,9 @@ Represents the analyzed profile result.
 @item{@scheme[nodes] is a list of nodes representing all observed
   functions.  These nodes are the components of the call-graph that
   the analyzer assembles (see the @scheme[edge] field).  The nodes are
-  sorted by decreasing total amount of time (time spent either in the
-  function or in its callees), and by a top-to-bottom topological
-  sort.}
+  sorted by a topological top-to-bottom sort, and by decreasing total
+  amount of time (time spent either in the function or in its callees)
+  as a secondary key.}
 
 @item{@scheme[*-node] holds a ``special'' node value that is
   constructed for every graph.  This node is used as the caller for

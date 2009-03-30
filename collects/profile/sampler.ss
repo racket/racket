@@ -11,7 +11,7 @@
 ;; * The input value can be either a thread (track just that thread), a
 ;;   custodian (track all threads managed by the custodian), or a list of
 ;;   threads and/or custodians.  If a custodian is given, it must be
-;;   subordinate to the current custodian.
+;;   subordinate to the current custodian or to the given super custodian.
 ;; * The collected values are (<thread-id> <thread-time> . <stack>), where
 ;;   - The <thread-id> is an integer number identifying the thread, starting
 ;;     from 0.  If the collected data has thread ids in a 0..N range
@@ -39,6 +39,8 @@
 ;;     data.  (There is no message to start a new sampler thread, although
 ;;     adding one will not be difficult.)
 ;;   - 'set-tracked! <new>: changes the thread/s and/or custodian/s to track.
+;;     (Custodians should still be subordinate to the original one or to the
+;;     given argument.)
 ;;   - 'set-delay! <new>: changes the sampling delay.  This means that we won't
 ;;     have a direct correlation between the number of samples and the time
 ;;     they represent -- but the samples are statistical snapshots anyway, and
@@ -48,10 +50,9 @@
 ;;   - 'get-snapshots: returns the currently collected list of snapshots.  Note
 ;;     that this can be called multiple times, each will return the data that
 ;;     is collected up to that point in time.
-(define (create-sampler to-track delay)
+(define (create-sampler to-track delay [super-cust (current-custodian)])
   ;; the collected data
   (define snapshots '())
-  (define cust (current-custodian))
   ;; intern the entries (which are (cons id/#f srcloc/#f))
   (define entry-table (make-hash))
   (define (intern-entry entry)
@@ -74,8 +75,8 @@
           who "thread, custodian, or a list of threads/csutodians" to-track)]
         ;; test that it's subordinate
         [(with-handlers ([exn:fail:contract? (lambda (_) #t)])
-           (custodian-managed-list t cust) #f)
-         (error who "got a custodian that is not subordinate to current")])))
+           (custodian-managed-list t super-cust) #f)
+         (error who "got an insubordinate custodian")])))
   (define paused 0)
   (define thread-id
     (let ([next-id 0] [t (make-weak-hasheq)])
@@ -98,7 +99,8 @@
                                          (continuation-mark-set->context
                                           (continuation-marks t))))
                              snapshots)))]
-              [(custodian? t) (for-each loop (custodian-managed-list t cust))]
+              [(custodian? t)
+               (for-each loop (custodian-managed-list t super-cust))]
               ;; cannot assume that it's a list: we might get other values from
               ;; a custodian managed list
               [(list? t) (for-each loop t)])))
