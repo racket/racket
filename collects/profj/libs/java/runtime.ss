@@ -14,7 +14,7 @@
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
            check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by
-           compare-rand check-effect)
+           compare-rand check-effect check-inspect)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -345,6 +345,21 @@
               (report-results (cdr checks)))))
         result-value)))
   
+  ;check-inspect: (-> val) (-> bool) info src test-obj -> boolean
+  (define (check-inspect test check info src test-obj)
+    (let ((fail? #f))
+      (set! test 
+            (with-handlers ([exn? 
+                             (lambda (e) 
+                               (set! fail? #t)
+                               (list exception #t e "eval"))])
+              (test)))
+      (let ([res (if fail? #f (check test))])
+        (if (in-check-mutate?)
+            (stored-checks (cons (list res 'check-inspect info null src) (stored-checks)))
+            (report-check-result res 'check-inspect info null src test-obj))
+        res)))
+  
   ;check-effects: (-> (listof val)) (-> (listof val)) (list string) src object -> boolean
   (define (check-effect tests checks info src test-obj)
     (let ([app (lambda (thunk) (thunk))])
@@ -380,6 +395,7 @@
               (case check-kind
                 ((check-expect check-by) "to produce ")
                 ((check-rand) "to produce one of ")
+                ((check-inspect) "to satisfy the post-conditions given ")
                 ((check-catch) "to throw an instance of "))])
       (cond 
         [(not (eq? 'check-by check-kind))

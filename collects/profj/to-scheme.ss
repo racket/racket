@@ -498,7 +498,7 @@
                                                            (append (accesses-public fields) (accesses-package fields)
                                                                    (accesses-protected fields)))
                                         (generate-contract-defs (class-name))))
-               #;(stm-class (generate-stm-class (class-name)
+               (stm-class (generate-stm-class (class-name)
                                               (parent-name)
                                               (class-record-methods class-rec)
                                               (class-record-fields class-rec)))
@@ -731,7 +731,7 @@
                              ))
                     
                           ,@wrapper-classes
-                          #;,@(if (testcase-ext?) (list stm-class) null)
+                          ,@(if (testcase-ext?) (list stm-class) null)
                           
                           #;,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)
@@ -2583,16 +2583,19 @@
           (expression (if expr (translate-expression expr) #f))
           (unique-name (gensym))
           (translated-args 
-           (if (method-contract? method-record)
-               (map (lambda (arg type)
-                      (guard-convert-value arg type))
-                    args arg-types)
-               (map (lambda (arg type call-type)
+           (cond 
+             [(method-contract? method-record)
+              (map (lambda (arg type)
+                     (guard-convert-value arg type))
+                   args arg-types)]
+             [(symbol? method-record) null]
+             [else (map (lambda (arg type call-type)
                       (if (eq? 'dynamic call-type)
                           (guard-convert-value arg type)
                           arg))
-                    args arg-types (method-record-atypes method-record)))))
+                    args arg-types (method-record-atypes method-record))])))
       (cond
+        [(eq? method-record 'test-method-old) (car args)]
         ;Constructor case
         ((special-name? method-name)
          (let* ((name (if (equal? (special-name-name method-name) "super")
@@ -3057,10 +3060,12 @@
       ((check-mutate? expr) (translate-check-mutate (check-mutate-mutate expr)
                                                     (check-mutate-check expr)
                                                     (expr-src expr)))
-      ((check-effect? expr) (translate-check-effect (check-effect-vars expr)
-                                                    (check-effect-conds expr)
-                                                    (check-effect-test expr)
-                                                    (expr-src expr)))))
+      ((check-inspect? expr) (translate-check-inspect (check-inspect-val expr)
+                                                      (check-inspect-post expr)
+                                                      (check-inspect-range expr)
+                                                      (check-inspect-snaps expr)
+                                                      (expr-src expr)))
+      ))
 
   
   ;translate-check: expression expression (U expression #f) src -> syntax
@@ -3132,6 +3137,37 @@
                    `(javaRuntime:check-mutate ,t ,c ,(checked-info mutatee) (quote ,(src->list src))
                                               (namespace-variable-value 'current~test~object% #f
                                                                         (lambda () #f)))
+                   (build-src src))))
+  
+  (define inspect-test? (make-parameter #f))
+  
+  ;IGNORES RANGE
+  ;IGNORES COLLECTING PRINTING INFORMATION
+  ;translate-check-inspect: expr expr (U #f expr) (listof snap) src -> syntax
+  (define (translate-check-inspect val post range snaps src)
+    (let ([command (create-syntax #f `(lambda () ,(translate-expression val)) #f)]
+          [post (create-syntax #f `(lambda (result~f) ,(parameterize ([inspect-test? #t]) (translate-expression post))) #f)])
+      (make-syntax #f
+                   `(let (,@(apply
+                             append
+                             (map (lambda (snap)
+                                    (let* ([name (snap-name snap)]
+                                           [id (build-var-name name)]
+                                           [type (snap-type snap)])
+                                      `((,(build-identifier (build-var-name (string-append name "@old"))) ,(build-identifier id))
+                                        (,(build-identifier id)
+                                         ,(cond
+                                            [(or (prim-numeric-type? type) (eq? type 'boolean)) (build-identifier id)]
+                                            [else 
+                                             `(let ([obj@ (make-object 
+                                                              ,(build-identifier 
+                                                                (string-append (ref-type-class/iface type) "-stm")))])
+                                                (send obj@ log ,(build-identifier id))
+                                                obj@)])))))
+                                  snaps)))
+                      (javaRuntime:check-inspect ,command ,post 
+                                                 'test-info (quote ,(src->list src))
+                                                 (namespace-variable-value 'current~test~object% #f (lambda () #f))))
                    (build-src src))))
   
   ;translate-check-effect: (listof access) (listof expression) (listof expression) src -> syntax
