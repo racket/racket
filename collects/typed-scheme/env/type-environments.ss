@@ -1,10 +1,14 @@
 #lang scheme/base  
 
+(require scheme/contract
+         (prefix-in r: "../utils/utils.ss")
+         scheme/match
+         (except-in (r:utils tc-utils) make-env))
+
 (provide current-tvars
          extend
          env?
          lookup
-         make-empty-env
          extend-env
          extend/values
          dotted-env
@@ -15,9 +19,8 @@
          env-keys+vals
          with-dotted-env/extend)
 
-(require (prefix-in r: "../utils/utils.ss"))
-(require scheme/match
-         (except-in (r:utils tc-utils) make-env))
+(provide/contract [make-empty-env ((-> any/c any/c any/c) . -> . env?)]
+                  [])
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 (define-struct env (eq? l))
