@@ -55,23 +55,3 @@ Equivalent to @scheme[(path? . -> . servlet?)].
 } 
                          
 }
-
-@section{Internal Servlet Representation}
-
-@defmodule[web-server/private/servlet]{                                       
- @defstruct[servlet ([custodian custodian?]
-                     [namespace namespace?]
-                     [manager manager?]
-                     [directory path-string?]
-                     [handler (request? . -> . response/c)])
-                    #:mutable]{
-  Instances of this structure hold the necessary parts of a servlet:
-  the @scheme[custodian] responsible for the servlet's resources,
-  the @scheme[namespace] the servlet is executed within,
-  the @scheme[manager] responsible for the servlet's continuations,
-  the current @scheme[directory] of the servlet,
-  and the @scheme[handler] for all requests to the servlet.
- }
-}
-                                       
-

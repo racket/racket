@@ -1,14 +1,11 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "http"
-       #:style 'toc]{HTTP}
+@title[#:tag "http"]{HTTP: Hypertext Transfer Protocol}
 
 @defmodule[web-server/http]
 
 The @web-server implements many HTTP RFCs that are provided by this module.
-
-@local-table-of-contents[]
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{Requests}
@@ -210,7 +207,7 @@ Here is an example typical of what you will find in many applications:
     200 #"OK" (current-seconds)
     #"application/octet-stream"
     (list (make-header #"Content-Disposition"
-                       #"attachement; filename=\"file\""))
+                       #"attachment; filename=\"file\""))
     (lambda (send/bytes)
       (send/bytes #"Some content")
       (send/bytes)
@@ -220,9 +217,12 @@ Here is an example typical of what you will find in many applications:
 }
 
 @defthing[response/c contract?]{
- Equivalent to @scheme[(or/c response/basic?
-                             (cons/c bytes? (listof (or/c string? bytes?)))
-                             xexpr/c)].
+ Equivalent to 
+ @schemeblock[
+ (or/c response/basic?
+       (cons/c bytes? (listof (or/c string? bytes?)))
+       xexpr/c)
+ ]
 }
 
 @defproc[(make-xexpr-response [xexpr xexpr/c]
@@ -234,10 +234,10 @@ Here is an example typical of what you will find in many applications:
          response/full?]{
  Equivalent to
  @schemeblock[
-(make-response/full 
-   code message seconds mime-type headers
-   (list (string->bytes/utf-8 (xexpr->string xexpr))))
-]}
+ (make-response/full 
+  code message seconds mime-type headers
+  (list (string->bytes/utf-8 (xexpr->string xexpr))))
+ ]}
                          
 @defproc[(normalize-response [close? boolean?] [response response/c])
          (or/c response/full? response/incremental?)]{

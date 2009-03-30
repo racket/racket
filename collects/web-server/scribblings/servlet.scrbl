@@ -1,7 +1,12 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title{Version 2 Servlets}
+@title[#:tag "servlet"]{Stateful Servlets}
+
+@defmodule[web-server/servlet]
+
+A stateful servlet should @scheme[provide] the following exports:
+
 @(require (for-label web-server/http
                      (except-in web-server/managers/manager manager)
                      "dummy-v2-servlet.ss")) @; to give a binding context
@@ -38,4 +43,12 @@ An example version 2 module:
           (body (h1 "Hi Mom!"))))
  ]
 
-These servlets should use the @schememodname[web-server/servlet] API.
+These servlets have an extensive API available to them: @schememodname[net/url], @schememodname[web-server/http],
+      @schememodname[web-server/http/bindings], @schememodname[web-server/servlet/servlet-structs], @schememodname[web-server/servlet/web],
+      @schememodname[web-server/servlet/web-cells], and @schememodname[web-server/dispatch].
+      Some of these are documented in the subsections that follow.
+
+@include-section["contracts.scrbl"]
+@include-section["web.scrbl"]
+@include-section["web-cells.scrbl"]
+@include-section["managers.scrbl"]

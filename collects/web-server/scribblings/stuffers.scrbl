@@ -19,7 +19,7 @@
 
 @defmodule[web-server/stuffers]
 
-The @schememod[web-server] module language provides serializable continuations. 
+The @schememodname[web-server] language provides serializable continuations. 
 The serialization functionality is abstracted into @deftech{stuffers} that control how it operates.
 You can supply your own (built with these functions) when you write a stateless servlet.
 

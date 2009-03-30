@@ -1,29 +1,39 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "web-server-ref"]{@bold{Web Server}: PLT HTTP Server}
+@title[#:tag "web-server-ref"]{@bold{Web}: PLT Web Applications}
 
-@author[(author+email "Jay McCarthy" "jay@plt-scheme.org")]
+@author{Jay McCarthy}
 
-The @web-server collection provides libraries that can be used to
-develop Web applications in Scheme.
+This manual describes the PLT libraries for building Web applications.
 
-@table-of-contents[]
+@secref["run.ss"] describes how to run the servlets you've written. 
+
+@secref["servlet"] and @secref["stateless"] describe two ways to write Web applications. 
+@secref["servlet"] use the entire PLT Scheme language, but their continuations are stored in the Web server's memory.
+@secref["stateless"] use a slightly restricted PLT Scheme language, but their continuation can be stored by the Web client or on a Web server's disk.
+
+The @secref["http"] section describes the common library function for manipulating HTTP requests and creating HTTP responses.
+In particular, this section covers cookies, authentication, and request bindings.
+
+The final three sections (@secref["dispatch"], @secref["formlets"], and @secref["templates"]) cover utility libraries that
+ease the creation of typical Web applications.
+
+This manual closes with a frequently asked questions section: @secref["faq"].
+
+@local-table-of-contents[]
 
 @include-section["running.scrbl"]
-@include-section["writing.scrbl"]
-@include-section["extending.scrbl"]
+
+@include-section["servlet.scrbl"]
+@include-section["lang-api.scrbl"]
+
+@include-section["http.scrbl"]
+
+@include-section["dispatch.scrbl"]
+@include-section["formlets.scrbl"]
+@include-section["templates.scrbl"]
+
 @include-section["faq.scrbl"]
-
-@; ------------------------------------------------------------
-@section[#:tag "ack"]{Acknowledgements}
-
-We thank Matthew Flatt for his superlative work on MzScheme.
-We thank the previous maintainers of the @web-server : Paul T. Graunke, Mike Burns, and Greg Pettyjohn
-Numerous people have
-provided invaluable feedback on the server, including Eli Barzilay, Ryan Culpepper, Robby
-Findler, Dave Gurnell, Matt Jadud, Dan Licata, Jacob Matthews, Matthias Radestock, Andrey Skylar,
-Michael Sperber, Anton van Straaten, Dave Tucker, and Noel Welsh. We also thank the
-many other PLT Scheme users who have exercised the server and offered critiques.
 
 @index-section[]

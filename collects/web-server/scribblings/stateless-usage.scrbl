@@ -1,51 +1,8 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "stateless-servlets"]{Stateless Servlets}
-
-@(require (for-label web-server/http
-                     scheme/serialize
-                     web-server/stuffers
-                     (except-in "dummy-stateless-servlet.ss" stuffer))) @; to give a binding context
-@declare-exporting[#:use-sources (web-server/scribblings/dummy-stateless-servlet)]
-
-@defthing[interface-version (one-of/c 'stateless)]{
- This indicates that the servlet is a stateless servlet.
-}
-
-@defthing[stuffer (stuffer/c serializable? bytes?)]{
- This is the @scheme[stuffer] that will be used for the servlet.
-      
- If it is not provided, it defaults to @scheme[default-stuffer].
-}
-
-@defproc[(start [initial-request request?])
-         response/c]{
- This function is called when an instance of this servlet is started.
- The argument is the HTTP request that initiated the instance.
-}
-
-An example @scheme['stateless] servlet module:
-@schememod[
- web-server
- (define interface-version 'stateless)
- (define stuffer
-  (stuffer-chain
-   serialize-stuffer
-   (md5-stuffer (build-path (find-system-path 'home-dir) ".urls"))))
- (define (start req)
-   `(html (body (h2 "Look ma, no state!"))))
-]
-
-The @schememodname[web-server] language automatically provides the @schememodname[web-server/lang/lang-api] API.
-
-@; ------------------------------------------------------------
-@section[#:tag "considerations"]{Usage Considerations}
-
-@(require (for-label web-server/lang/web))
+@title[#:tag "considerations"]{Usage Considerations}
                      
-@defmodulelang[web-server]
-
 A servlet has the following process performed on it automatically:
 @itemize[
  @item{All uses of @scheme[letrec] are removed and replaced with equivalent uses of

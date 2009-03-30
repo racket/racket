@@ -17,7 +17,7 @@
 
 @defmodule[web-server/servlet-env]{
 
-The @web-server provides a way to quickly configure and start a server instance.
+The @web-server provides a way to quickly configure and start a servlet.
 
 Here's a simple example:
 @schememod[
@@ -77,7 +77,8 @@ Suppose you would like to start a server for a stateless Web servlet @filepath{s
 Note: If you put the call to @scheme[serve/servlet] in the module like normal, strange things will happen because of the way
 the top-level interacts with continuations. (Read: Don't do it.)
 
-If you want to use @scheme[serve/servlet] in a start up script for a Web server, and don't want a browser opened or the DrScheme banner printed, then you can write:
+If you want to use @scheme[serve/servlet] in a start up script for a Web application,
+and don't want a browser opened or the DrScheme banner printed, then you can write:
 @schemeblock[
 (serve/servlet my-app
                #:command-line? #t)
@@ -160,55 +161,6 @@ If you want to use @scheme[serve/servlet] in a start up script for a Web server,
 
  If @scheme[log-file] is given, then it used to log requests using @scheme[log-format] as the format. Allowable formats
  are those allowed by @scheme[log-format->format].
-}
-
-@defproc[(dispatch/servlet 
-          [start (request? . -> . response/c)]
-          [#:regexp regexp regexp? #rx""]
-          [#:stateless? stateless? boolean? #f]
-          [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
-          [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
-          [#:namespace namespace (listof module-path?) empty]
-          [#:current-directory servlet-current-directory path-string? (current-directory)])
-         dispatcher/c]{
- @scheme[serve/servlet] starts a server and uses a particular dispatching sequence. For some applications, this
- nails down too much, but users are conflicted, because the interface is so convenient. For those users, @scheme[dispatch/servlet]
- does the hardest part of @scheme[serve/servlet] and constructs a dispatcher just for the @scheme[start] servlet.
- 
- The dispatcher responds to requests that match @scheme[regexp]. The current directory
- of servlet execution is @scheme[servlet-current-directory]. 
- 
- If @scheme[stateless?] is true, then the servlet is run as a stateless @schememod[web-server] module and @scheme[stuffer] is used
- as the @tech{stuffer}.
-
- The servlet is loaded with @scheme[manager] as its continuation manager. (The default manager limits the amount of memory to 64 MB and
- deals with memory pressure as discussed in the @scheme[make-threshold-LRU-manager] documentation.)
- 
- The modules specified by @scheme[servlet-namespace] are shared with other servlets.
-}
-                      
-@defproc[(serve/launch/wait
-          [make-dispatcher (semaphore? . -> . dispatcher/c)]
-          [#:launch-path launch-path (or/c false/c string?) #f]
-          [#:banner? banner? boolean? #f]
-          [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
-          [#:port port number? 8000]
-          [#:ssl-keys ssl-keys (or/c false/c (cons/c path-string? path-string?)) #f])
-         void]{
- The other interesting part of @scheme[serve/servlet] is its ability to start up a server and immediately
- launch a browser at it. This is provided by @scheme[serve/launch/wait].
- 
- It starts a server using the result of @scheme[make-dispatcher] as the dispatcher. @scheme[make-dispatcher] is supplied
- a semaphore that if posted, will cause the server to quit.
- 
- If @scheme[launch-path] is not false, then a browser is launched with that path appended to the URL to the server itself.
- 
- If @scheme[banner?] is true, then a banner is printed informing the user of the server's URL.
- 
- The server listens on @scheme[listen-ip] and port @scheme[port].
- 
- If @scheme[ssl-keys] is not false, then the server runs in HTTPS mode with @scheme[(car ssl-keys)]
- and @scheme[(cdr ssl-keys)] as paths to the certificate and private key.    
 }
               
 }

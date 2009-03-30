@@ -1,8 +1,7 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "web-config-unit.ss"
-             #:style 'toc]{Web Config Unit}
+@title[#:tag "web-config-unit.ss" #:tag-prefix "web-config"]{Configuration Units}
 @(require (for-label web-server/web-config-unit
                      web-server/configuration/namespace
                      web-server/configuration/configuration-table
@@ -13,11 +12,7 @@
                      (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
                      web-server/web-config-sig))
 
-The @web-server offers a unit-based approach to configuring the server.
-
-@local-table-of-contents[]
-
-@section{Configuration Signature}
+@section[#:style 'hidden]{Signature}
 
 @defmodule[web-server/web-config-sig]{
 
@@ -54,7 +49,7 @@ Provides contains the following identifiers.
              
 }
 
-@section{Configuration Units}
+@section[#:style 'hidden]{Unit}
 
 @defmodule[web-server/web-config-unit]{
 
