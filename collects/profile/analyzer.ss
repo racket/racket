@@ -156,10 +156,10 @@
   (let loop ([todo (list x)] [seen (list x)])
     (if (null? todo)
       '()
-      (let* ([next (append-map (lambda (x) (map edge-callee (node-callees x)))
+      (let* ([next (append-map (lambda (x)
+                                 (subsort (map edge-callee (node-callees x))))
                                todo)]
-             [next (remove-duplicates next)]
-             [next (subsort (remq* seen next))])
+             [next (remq* seen (remove-duplicates next))])
         (append todo (loop next (append next seen)))))))
 #|
 (define (node id) (make-node id #f '() 0 0 '() '()))
