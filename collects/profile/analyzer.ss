@@ -66,7 +66,8 @@
 ;; This function analyzes the output of the sampler.  Returns a `profile'
 ;; struct holding a list of `node' values, each one representing a node in the
 ;; call graph, with the relevant information filled in.  The results are sorted
-;; by the total time.
+;; using a topological sort from the top, and by the total time for nodes at
+;; the same level.
 (define (analyze-samples cpu-time+samples)
   (define cpu-time (car cpu-time+samples))
   (define samples  (cdr cpu-time+samples))
