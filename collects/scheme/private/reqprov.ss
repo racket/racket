@@ -317,12 +317,12 @@
                                (syntax->list #'(elem ...))))]
                   [_ (transform-simple in 0 #| run phase |#)]))])
       (syntax-case stx ()
-        [(_ in ...)
-         (with-syntax ([(new-in ...)
-                        (apply append
-                               (map transform-one (syntax->list #'(in ...))))])
+        [(_ in)
+         (with-syntax ([(new-in ...) (transform-one #'in)])
            (syntax/loc stx
-             (#%require new-in ...)))])))
+             (#%require new-in ...)))]
+        [(_ in ...)
+         (syntax/loc stx (begin (require in) ...))])))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; require transformers
@@ -653,7 +653,16 @@
                      (memq 0 modes))
                  (map (lambda (id)
                         (make-export id (syntax-e id) 0 #f stx))
-                      (filter (same-ctx? free-identifier=?)
+                      (filter (lambda (id)
+                                (and ((same-ctx? free-identifier=?) id)
+                                     (let-values ([(v id) (syntax-local-value/immediate
+                                                           id
+                                                           (lambda () (values #f #f)))])
+                                       (not
+                                        (and (rename-transformer? v)
+                                             (syntax-property 
+                                              (rename-transformer-target v)
+                                              'not-provide-all-defined))))))
                               ids))
                  null)))]))))
 

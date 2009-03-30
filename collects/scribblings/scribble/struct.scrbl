@@ -426,7 +426,8 @@ The @scheme[style] can be any of the following:
 
          @item{@scheme['valignment] to a list of symbols and
                @scheme[#f]s (one for each column); each symbol can be
-               @scheme['top], @scheme['baseline], or @scheme['bottom].}
+               @scheme['top], @scheme['baseline], @scheme['center], 
+               or @scheme['bottom].}
 
          @item{@scheme['row-styles] to a list of association lists,
                one for each row in the table. Each of these nested

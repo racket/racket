@@ -3,6 +3,13 @@
    scheme_do_eval()'s increment, because this
    might be the continuation of a tail call. */
 
+/* The arguments in argv are in the runstack. If computation can go
+   back into native code, those arguments should not live past the
+   native-code call. The native code clears/reuses arguments itself if
+   they are on the stack, but there's a problem if a tail buffer leads
+   to new pushes onto the run stack. We handle this with code marked
+   [TC-SFS]. */
+
 /* This code is written in such a way that xform can
    see that no GC cooperation is needed. */
 
@@ -26,8 +33,11 @@ static MZ_INLINE Scheme_Object *PRIM_APPLY_NAME_FAST(Scheme_Object *rator,
   v = f(argc, argv, (Scheme_Object *)prim);
   
 #if PRIM_CHECK_VALUE
-  if (v == SCHEME_TAIL_CALL_WAITING)
+  if (v == SCHEME_TAIL_CALL_WAITING) {
+    int i;
+    for (i = 0; i < argc; i++) { argv[i] = NULL; } /* [TC-SFS]; see above */
     v = scheme_force_value_same_mark(v);
+  }
 #endif
   
 #if PRIM_CHECK_MULTI

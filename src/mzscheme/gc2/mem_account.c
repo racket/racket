@@ -590,7 +590,7 @@ inline static void BTC_run_account_hooks(NewGC *gc)
     if( ((work->type == MZACCT_REQUIRE) && 
           ((gc->used_pages > (gc->max_pages_for_use / 2))
            || ((((gc->max_pages_for_use / 2) - gc->used_pages) * APAGE_SIZE)
-             < (work->amount + custodian_super_require(gc, work->c1)))))
+               < (work->amount + custodian_super_require(gc, work->c1)))))
         ||
         ((work->type == MZACCT_LIMIT) &&
          (GC_get_memory_use(work->c1) > work->amount))) {

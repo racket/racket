@@ -238,7 +238,8 @@
     (call-with-trusted-sandbox-configuration
      (lambda ()
        (parameterize ([sandbox-output 'string]
-                      [sandbox-error-output 'string])
+                      [sandbox-error-output 'string]
+                      [sandbox-propagate-breaks #f])
          (make-evaluator '(begin (require scheme/base)))))))
 
   (define (close-eval e)
@@ -246,23 +247,24 @@
     "")
 
   (define (do-plain-eval ev s catching-exns?)
-    (call-with-values (lambda () 
-                        ((scribble-eval-handler) 
-                         ev
-                         catching-exns? 
-                         (let ([s (strip-comments s)])
-                           (cond
-                            [(syntax? s)
-                             (syntax-case s (module)
-                               [(module . _rest)
-                                (syntax->datum s)]
-                               [_else s])]
-                            [(bytes? s)
-                             `(begin ,s)]
-                            [(string? s)
-                             `(begin ,s)]
-                            [else s]))))
-      list))
+    (parameterize ([sandbox-propagate-breaks #f])
+      (call-with-values (lambda () 
+                          ((scribble-eval-handler) 
+                           ev
+                           catching-exns? 
+                           (let ([s (strip-comments s)])
+                             (cond
+                              [(syntax? s)
+                               (syntax-case s (module)
+                                 [(module . _rest)
+                                  (syntax->datum s)]
+                                 [_else s])]
+                              [(bytes? s)
+                               `(begin ,s)]
+                              [(string? s)
+                               `(begin ,s)]
+                              [else s]))))
+        list)))
 
   (define-syntax-rule (quote-expr e) 'e)
 

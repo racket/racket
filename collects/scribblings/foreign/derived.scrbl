@@ -64,8 +64,6 @@ obtain a tag. The tag is the string form of @schemevarfont{id}.}
 
 @subsection{Unsafe Tagged C Pointer Functions}
 
-@declare-exporting[scribblings/foreign/unsafe-foreign]
-
 @defproc*[([(cpointer-has-tag? [cptr any/c] [tag any/c]) boolean?]
            [(cpointer-push-tag! [cptr any/c] [tag any/c]) void])]{
 
@@ -156,8 +154,6 @@ Converts the list @scheme[lst] to a C vector of the given
 @; ----------------------------------------
 
 @subsection{Unsafe C Vector Construction}
-
-@declare-exporting[scribblings/foreign/unsafe-foreign]
 
 @defproc[(make-cvector* [cptr any/c] [type ctype?]
                         [length exact-nonnegative-integer?])

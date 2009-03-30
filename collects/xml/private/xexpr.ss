@@ -129,7 +129,8 @@
 ;; True if the list is a list of String,Symbol pairs.
 (define (attribute-symbol-string? attr true false)
   (if (symbol? (car attr))
-      (if (string? (cadr attr))
+      (if (or (string? (cadr attr))
+              (permissive?))
           (true)
           (false (make-exn:invalid-xexpr
                   (format "Expected a string, given ~a" (cadr attr))

@@ -120,6 +120,8 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 #define PRINTABLE_STRUCT(obj, pp) (scheme_inspector_sees_part(obj, pp->inspector, -1))
 #define SCHEME_PREFABP(obj) (((Scheme_Structure *)(obj))->stype->prefab_key)
 
+#define SCHEME_HASHTPx(obj) ((SCHEME_HASHTP(obj) && !(MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)obj)->iso)) & 0x1)))
+
 #define HAS_SUBSTRUCT(obj, qk) \
    (SCHEME_PAIRP(obj) \
     || SCHEME_MUTABLE_PAIRP(obj) \
@@ -129,7 +131,7 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 	   && SCHEME_STRUCTP(obj) \
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
     || (qk(SCHEME_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
-    || (qk(pp->print_hash_table, 1) && (SCHEME_HASHTP(obj) || SCHEME_HASHTRP(obj))))
+    || (qk(pp->print_hash_table, 1) && (SCHEME_HASHTPx(obj) || SCHEME_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
 #define ssALL(x, isbox) 1
@@ -486,7 +488,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
 	}
       }
     }
-  } else if (SCHEME_HASHTP(obj)) {
+  } else if (SCHEME_HASHTPx(obj)) {
     /* got here => printable */
     Scheme_Hash_Table *t;
     Scheme_Object **keys, **vals, *val;
@@ -591,7 +593,7 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
     } else
       cycle = 0;
   } else if (pp->print_hash_table
-	     && SCHEME_HASHTP(obj)) {
+	     && SCHEME_HASHTPx(obj)) {
     if (!((Scheme_Hash_Table *)obj)->count)
       cycle = 0;
     else
@@ -702,7 +704,7 @@ static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Tab
 	  setup_graph_table(((Scheme_Structure *)obj)->slots[i], for_write, ht, counter, pp);
       }
     }
-  } else if (pp && SCHEME_HASHTP(obj)) { /* got here => printable */
+  } else if (pp && SCHEME_HASHTPx(obj)) { /* got here => printable */
     Scheme_Hash_Table *t;
     Scheme_Object **keys, **vals, *val;
     int i;
@@ -1831,7 +1833,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       }
     }
   else if ((compact || pp->print_hash_table) 
-           && (SCHEME_HASHTP(obj) || SCHEME_HASHTRP(obj)))
+           && (SCHEME_HASHTPx(obj) || SCHEME_HASHTRP(obj)))
     {
       Scheme_Hash_Table *t;
       Scheme_Hash_Tree *tr;
@@ -1917,6 +1919,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ")", 0, 1);
 
       closed = 1;
+    }
+  else if (compact && SCHEME_HASHTP(obj))
+    {
+      /* since previous case didn't catch this table, it has a 0x1 flag
+         and should be marshalled as #t */
+      print_compact(pp, CPT_TRUE);
     }
   else if (SAME_OBJ(obj, scheme_true))
     {

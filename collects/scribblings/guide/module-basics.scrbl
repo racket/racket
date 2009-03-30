@@ -67,7 +67,7 @@ scheme
 In addition to the main @tech{collection} directory, which contains
 all collections that are part of the installation, collections can
 also be installed in a user-specific location. Finally, additional
-collection directories can be specified n configuration files or
+collection directories can be specified in configuration files or
 through the @envvar{PLTCOLLECTS} search path. Try running the
 following program to find out where your collections are:
 

@@ -2062,7 +2062,7 @@
 
   (when header
     (put_short len)
-    (put_short (bitwise-not len))
+    (put_short (bitwise-and (bitwise-not len) #xFFFF))
     (set! bits_sent (+ bits_sent (* 2 16))))
 
   (set! bits_sent (+ bits_sent (<< len 3)))
@@ -2112,7 +2112,7 @@
 ;; /* Output a 32 bit value to the bit stream, lsb first */
 (define (put_long n)
   (put_short (bitwise-and #xFFFF n))
-  (put_short (>> n 16)))
+  (put_short (bitwise-and #xFFFF (>> n 16))))
 
 (define outcnt 0)
 (define bytes_out 0)

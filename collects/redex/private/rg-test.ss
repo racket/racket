@@ -530,6 +530,14 @@
          (decisions #:nt (patterns fourth first first second first first first)
                     #:var (list (λ _ 'x) (λ _ 'y))))
         (term (λ (x) (hole y)))))
+(let ()
+  (define-language L
+    (a ((a ...) ...)))
+  (test (generate-term/decisions
+         L (cross a) 3 0 
+         (decisions #:nt (patterns second first)
+                    #:seq (list (λ _ 0) (λ _ 0) (λ _ 0) (λ _ 0))))
+        (term ((hole)))))
 
 ;; generation failures increase size and attempt
 (let ()

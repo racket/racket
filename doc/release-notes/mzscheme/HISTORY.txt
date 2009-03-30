@@ -1,12 +1,24 @@
-Version 4.1.4.3
+Version 4.1.5.3
+Change provide to convert an exported rename transformer to its
+ free-identifier=? target
+Add 'not-free-identifier=? syntax property to disable free-identifier=? 
+ propagation through a rename transformer
+Add prop:rename-transformer and prop:set!-transformer
+Fix scheme/local so that local syntax bindings are visible to later
+ local definitions
+Changed current-process-milliseconds to accept a thread argument
+
+Version 4.1.5.2
+Changed expander to detect a reaname transformer and install a
+ free-identifier=? syntax-object equivalence
+
+Version 4.1.5, March 2009
 Allow infix notation for prefab structure literals
 Change quasiquote so that unquote works in value positions of #hash
 Change read-syntax to represent #hash value forms as syntax
-
-Version 4.1.4.2
 Added bitwise-bit-field
 
-Version 4.1.4, January 2008
+Version 4.1.4, January 2009
 Changed memory accounting to bias charges to parent instead of children
 Changed function contracts to preserve tail recursion in many cases
 Added scheme/package, scheme/splicing, ffi/objc

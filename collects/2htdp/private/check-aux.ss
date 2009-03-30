@@ -135,7 +135,7 @@
 ;; Symbol Any String -> Void
 (define (check-pos t c r)
   (check-arg 
-   t (and (number? c) (> (number->integer c) 0)) "positive integer" r c))
+   t (and (number? c) (>= (number->integer c) 0)) "positive integer" r c))
 
 ;; Symbol Any String String *-> Void
 (define (check-image tag i rank . other-message)

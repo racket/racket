@@ -5,7 +5,7 @@
 
 @author["Eli Barzilay"]
 
-@defmodule[scheme/foreign]
+@defmodule[scheme/foreign #:use-sources ('#%foreign)]
 
 The @schememodname[scheme/foreign] library enables the direct use of
 C-based APIs within Scheme programs---without writing any new C

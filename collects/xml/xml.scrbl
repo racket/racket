@@ -28,6 +28,7 @@ called an @deftech{X-expression}.
 The @schememodname[xml] library does not provide Document Type
 Declaration (DTD) processing, including preservation of DTDs in read documents, or validation.
 It also does not expand user-defined entities or read user-defined entities in attributes.
+It does interpret namespaces either.
 
 @; ----------------------------------------------------------------------
 
@@ -96,7 +97,7 @@ Represents a document.}
                              [content (listof content/c)])]{
 Represents an element.}
 
-@defstruct[(attribute source) ([name symbol?] [value string?])]{
+@defstruct[(attribute source) ([name symbol?] [value (or/c string? permissive/c)])]{
 
 Represents an attribute within an element.}
 

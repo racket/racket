@@ -81,7 +81,8 @@
                         (((special) act)
                            (not (ormap
                                  (lambda (x)
-                                   (module-or-top-identifier=? (syntax special) x))
+                                   (and (identifier? #'special)
+                                        (module-or-top-identifier=? (syntax special) x)))
                                  ids)))
                         (_ #t)))
                     spec/re-act-lst))

@@ -1071,6 +1071,7 @@ MZ_EXTERN long scheme_get_seconds(void);
 MZ_EXTERN long scheme_get_milliseconds(void);
 MZ_EXTERN double scheme_get_inexact_milliseconds(void);
 MZ_EXTERN long scheme_get_process_milliseconds(void);
+MZ_EXTERN long scheme_get_thread_milliseconds(Scheme_Object *thrd);
 
 MZ_EXTERN char *scheme_banner(void);
 MZ_EXTERN char *scheme_version(void);

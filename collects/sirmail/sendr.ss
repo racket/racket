@@ -6,6 +6,7 @@
   (require scheme/tcp
            scheme/unit
            scheme/class
+           scheme/string
 	   mred/mred-sig
            framework)
 
@@ -133,12 +134,34 @@
       ;;  `body-lines' is a list of strings and byte strings
       ;;  `enclosures' is a list of `enclosure' structs
       (define (enclose header body-lines enclosures)
+        (define qp-body-lines?
+          (ormap (lambda (l)
+                   (or ((string-length l) . > . 1000)
+                       (regexp-match? #rx"[^\0-\177]" l)))
+                 body-lines))
+        (define (encode-body-lines)
+          (if qp-body-lines?
+              (map
+               bytes->string/utf-8
+               (regexp-split #rx"\r\n"
+                             (qp-encode (string->bytes/utf-8 
+                                         (string-join body-lines "\r\n")))))
+              body-lines))
+        (define (add-body-encoding-headers header)
+          (insert-field
+           "Content-Type"
+            "text/plain; charset=UTF-8"
+            (insert-field
+             "Content-Transfer-Encoding"
+             (if qp-body-lines? "quoted-printable" "7bit")
+             header)))
 	(if (null? enclosures)
 	    (values (insert-field
-		     "Content-Type"
-		     "text/plain; charset=UTF-8"
-		     header)
-		    body-lines)
+                     "MIME-Version"
+                     "1.0"
+                     (add-body-encoding-headers
+                      header))
+		    (encode-body-lines))
 	    (let* ([enclosure-datas
                     (map (lambda (e) ((enclosure-data-thunk e))) enclosures)]
                    [boundary
@@ -175,28 +198,23 @@
 			  "This is a multi-part message in MIME format."
 			  (format "--~a" boundary))
 			 (header->lines
-			  (insert-field
-			   "Content-Type"
-			   "text/plain; charset=UTF-8"
-			   (insert-field
-			    "Content-Transfer-Encoding"
-			    "7bit"
-			    empty-header)))
-			  body-lines
-			  (apply
-			   append
-			   (map
-			    (lambda (enc data)
-			      (cons
-			       (format "--~a" boundary)
-			       (append
-				(header->lines
-				 (enclosure-subheader enc))
-				data)))
-			    enclosures enclosure-datas))
-			  (list
-			   (format "--~a--" boundary))))))))
-
+                          (add-body-encoding-headers
+                           empty-header))
+                         (encode-body-lines)
+                         (apply
+                          append
+                          (map
+                           (lambda (enc data)
+                             (cons
+                              (format "--~a" boundary)
+                              (append
+                               (header->lines
+                                (enclosure-subheader enc))
+                               data)))
+                           enclosures enclosure-datas))
+                         (list
+                          (format "--~a--" boundary))))))))
+      
       (define (get-enclosure-type-and-encoding filename mailer-frame auto?)
         (let ([types '("application/postscript"
                        "text/plain"

@@ -387,6 +387,7 @@ static int out_of_line(Scheme_Object *a)
 }
 
 static void get_into_line(Scheme_Sema *sema, Scheme_Channel_Syncer *w)
+  /* Can be called multiple times. */
 {
   Scheme_Channel_Syncer *last, *first;
   
@@ -430,6 +431,8 @@ static void get_outof_line(Scheme_Sema *sema, Scheme_Channel_Syncer *w)
 {
   Scheme_Channel_Syncer *last, *first;
 
+  if (!w->in_line)
+    return;
   w->in_line = 0;
 
   if (SAME_TYPE(SCHEME_TYPE(sema), scheme_never_evt_type)) {

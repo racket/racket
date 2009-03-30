@@ -447,7 +447,7 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("current-process-milliseconds",
 			     scheme_make_prim_w_arity(current_process_milliseconds,
 						      "current-process-milliseconds",
-						      0, 0),
+						      0, 1),
 			     env);
   scheme_add_global_constant("current-gc-milliseconds",
 			     scheme_make_prim_w_arity(current_gc_milliseconds,
@@ -1827,7 +1827,8 @@ typedef Scheme_Object *(*Overflow_K_Proc)(void);
 THREAD_LOCAL Scheme_Overflow_Jmp *scheme_overflow_jmp;
 THREAD_LOCAL void *scheme_overflow_stack_start;
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(void scheme_really_create_overflow(void *stack_base));
+
 void scheme_really_create_overflow(void *stack_base)
 {
   Scheme_Overflow_Jmp *jmp;
@@ -2603,10 +2604,10 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
   Scheme_Object *certs;
   certs = rec[drec].certs;
 
-  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_id_macro_type)) {
+  if (scheme_is_rename_transformer(rator)) {
     Scheme_Object *mark;
    
-    rator = SCHEME_PTR1_VAL(rator);
+    rator = scheme_rename_transformer_id(rator);
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */
@@ -2639,8 +2640,8 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     certs = scheme_stx_extract_certs(code, certs);
  
-    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_set_macro_type))
-      rator = SCHEME_PTR_VAL(rator);
+    if (scheme_is_set_transformer(rator))
+      rator = scheme_set_transformer_proc(rator);
 
     mark = scheme_new_mark();
     code = scheme_add_remove_mark(code, mark);
@@ -5747,7 +5748,9 @@ void scheme_drop_prompt_meta_continuations(Scheme_Object *prompt_tag)
   scheme_current_thread->meta_continuation = mc;
 }
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *_prompt_tag, 
+                                                               Scheme_Object *proc, int argc, Scheme_Object **argv));
+
 Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *_prompt_tag, 
                                               Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
@@ -5887,7 +5890,9 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
   }
 }
 
-/* private, but declared public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *prompt_tag, 
+                                                        Scheme_Object *proc, int argc, Scheme_Object **argv));
+
 Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *prompt_tag, 
                                        Scheme_Object *proc, int argc, Scheme_Object **argv)
 {
@@ -7986,6 +7991,19 @@ long scheme_get_process_milliseconds(void)
 #endif
 }
 
+long scheme_get_thread_milliseconds(Scheme_Object *thrd)
+{
+  Scheme_Thread *t = thrd ? (Scheme_Thread *)thrd : scheme_current_thread;
+
+  if (t == scheme_current_thread) {
+    long cpm;
+    cpm = scheme_get_process_milliseconds();
+    return t->accum_process_msec + (cpm - t->current_start_process_msec);
+  } else {
+    return t->accum_process_msec;
+  }
+}
+
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
 #endif
@@ -8272,7 +8290,14 @@ static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **arg
 
 static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **argv)
 {
-  return scheme_make_integer(scheme_get_process_milliseconds());
+  if (!argc || SCHEME_FALSEP(argv[0]))
+    return scheme_make_integer(scheme_get_process_milliseconds());
+  else {
+    if (SCHEME_THREADP(argv[0]))
+      return scheme_make_integer(scheme_get_thread_milliseconds(argv[0]));
+    scheme_wrong_type("current-process-milliseconds", "thread", 0, argc, argv);
+    return NULL;
+  }
 }
 
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv)

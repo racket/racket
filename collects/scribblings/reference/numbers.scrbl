@@ -890,6 +890,10 @@ Returns the hyperbolic sine of @scheme[z].}
 
 Returns the hyperbolic cosine of @scheme[z].}
 
+@defproc[(tanh [z number?]) number?]{
+
+Returns the hyperbolic tangent of @scheme[z].}
+
 @; ----------------------------------------------------------------------
 
 @close-eval[math-eval]

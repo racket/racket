@@ -7,19 +7,28 @@
   (syntax-case stx ()
     [(_ expr)
      ;; catch syntax errors while expanding, turn them into runtime errors
-     (with-handlers ([exn? (lambda (e) #`(list 'error #,(exn-message e)))])
+     (with-handlers ([exn? (lambda (e) #`(list 'error #,(exn-message e) #,e))])
        (define-values (_ opaque)
          (syntax-local-expand-expression
-          #'(with-handlers ([exn? (lambda (e) (list 'error (exn-message e)))])
+          #'(with-handlers
+                ([(lambda (_) #t)
+                  (lambda (e) (list 'error (and (exn? e) (exn-message e)) e))])
               (cons 'values (call-with-values (lambda () expr) list)))))
        opaque)]))
 
 (define show
-  (match-lambda [(list 'error msg) (format "error: ~a" msg)]
-                [(list 'values x)  (format "~e" x)]
-                [(list 'values xs ...) (format "~e" (cons 'values xs))]))
+  (match-lambda
+    [(list 'values x)        (format "~e" x)]
+    [(list 'values xs ...)   (format "~e" (cons 'values xs))]
+    [(list 'error err val)
+     (cond [(procedure? err) (format "error satisfying ~s" err)]
+           [(regexp? err)    (format "error matching ~s" err)]
+           [err              (format "error: ~a" err)]
+           [else             (format "a raised non-exception ~s" val)])]
+    [x (format "INTERNAL ERROR, unexpected value: ~s" x)]))
 
-(define test-context (make-parameter #f))
+(define test-context    (make-parameter #f))
+(define failure-message (make-parameter #f))
 
 (define-syntax (test-thunk stx)
   (define (blame e fmt . args)
@@ -32,22 +41,44 @@
                        [(syntax-position e) => (lambda (p) (format "#~a" p))]
                        [else "?"])))))
     (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
-      #'(error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))
+      #'(let ([msg (failure-message)])
+          (if msg
+            (error 'loc "test failure\n  ~a" (msg))
+            (error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
           #,(blame x "expected non-#f single value; got: ~a" #'(show x)))))
-  (define (t2 x y)
-    #`(let ([x (safe #,x)] [y (safe #,y)])
-        (cond [(and (eq? 'values (car x)) (eq? 'error (car y)))
-               #,(blame x "expected an error; got ~a" #'(show x))]
-              [(and (eq? 'error (car x)) (eq? 'error (car y)))
-               (unless (regexp-match? (regexp-quote (cadr y)) (cadr x))
-                 #,(blame x "bad error message, expected ~s; got ~s"
-                          #'(cadr y) #'(cadr x)))]
-              [(not (equal? x y))
-               #,(blame x "expected ~a; got: ~a" #'(show y) #'(show x))])))
-  (define (te x y) (t2 x #`(error #,y)))
+  (define (t2 x y [eval2? #t])
+    #`(let* ([x (safe #,x)]                   [xtag (car x)]
+             [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
+        (cond
+          [(eq? ytag 'values)
+           (unless (equal? x y)
+             #,(blame x "expected ~a; got: ~a" #'(show y) #'(show x)))]
+          [(eq? xtag 'values)
+           #,(blame x "expected an error; got ~a" #'(show x))]
+          ;; both are errors (or other raised values)
+          [(not (cadr x)) ; expecting a non-exception raise
+           (unless (or (equal? x y)
+                       (and (procedure? (cadr y)) ((cadr y) (caddr x))))
+             #,(blame x "expected ~a; got ~a" #'(show y) #'(show x)))]
+          [else
+           (let ([xerr (cadr x)] [xval (caddr x)] [yerr (cadr y)])
+             (cond [(string? yerr)
+                    (unless (regexp-match? (regexp-quote yerr) xerr)
+                      #,(blame x "bad error message, expected ~s; got ~s"
+                               #'yerr #'xerr))]
+                   [(regexp? yerr)
+                    (unless (regexp-match? yerr xerr)
+                      #,(blame x "bad error message, expected ~a ~s; got ~s"
+                               "a match for" #'yerr #'xerr))]
+                   [(and (procedure? yerr) (procedure-arity-includes? yerr 1))
+                    (unless (yerr xval)
+                      #,(blame x "bad error message, expected ~a ~s; got ~s"
+                               "an exception satisfying" #'yerr #'xerr))]
+                   [else (error 'test "bad error specification: ~e" yerr)]))])))
+  (define (te x y) (t2 x #`(list 'error #,y #f) #f))
   (define (try t . args)
     #`(let ([c (test-context)])
         (with-handlers ([exn? (lambda (e) (set-mcdr! c (cons e (mcdr c))))])
@@ -55,23 +86,35 @@
           #,(apply t args))))
   (define (tb x) x)
   (let loop ([xs (map (lambda (x)
-                        (if (memq (syntax-e x) '(do => <= =error> <error=))
-                          (syntax-e x) x))
+                        (let ([e (syntax-e x)])
+                          (if (or (memq e '(do => <= =error> <error=))
+                                  (keyword? e))
+                            e x)))
                       (cdr (syntax->list stx)))]
              [r '()])
-    (let ([t (match xs
-               [(list* 'do x r)        (cons (tb x) r)]
-               [(list* x '=> y r)      (cons (try t2 x y) r)]
-               [(list* y '<= x r)      (cons (try t2 x y) r)]
-               [(list* x '=error> y r) (cons (try te x y) r)]
-               [(list* y '<error= x r) (cons (try te x y) r)]
-               [(list* x r)
-                ;; if x = (test ...), then it's implicitly in a `do'
-                ;; (not really needed, but avoids an extra count of tests)
-                (syntax-case x (test)
-                  [(test x0 x1 ...) (cons (tb x) r)]
-                  [_ (cons (try t1 x) r)])]
-               [(list) '()])])
+    (let ([t (let tloop ([xs xs])
+               (match xs
+                 [(list* #:failure-message msg r)
+                  (let ([r (tloop r)])
+                    (if (pair? r)
+                      (cons
+                       #`(parameterize ([failure-message (lambda () #,msg)])
+                           #,(car r))
+                       (cdr r))
+                      r))]
+                 [(list* 'do x r) ; to avoid counting non-test exprs as tests
+                  (cons (tb x) r)]
+                 [(list* x '=> y r)      (cons (try t2 x y) r)]
+                 [(list* y '<= x r)      (cons (try t2 x y) r)]
+                 [(list* x '=error> y r) (cons (try te x y) r)]
+                 [(list* y '<error= x r) (cons (try te x y) r)]
+                 [(list* x r)
+                  ;; if x = (test ...), then it's implicitly in a `do'
+                  ;; (not really needed, but avoids an extra count of tests)
+                  (syntax-case x (test)
+                    [(test x0 x1 ...) (cons (tb x) r)]
+                    [_ (cons (try t1 x) r)])]
+                 [(list) '()]))])
       (if (pair? t)
         (loop (cdr t) (cons (car t) r))
         #`(lambda () #,@(reverse r))))))
@@ -98,7 +141,7 @@
 (define-syntax-rule (test  x0 x ...) (run-tests (test-thunk x0 x ...) #f))
 (define-syntax-rule (test* x0 x ...) (run-tests (test-thunk x0 x ...) #t))
 
-#; ;; test the `test' macro
+#; ; test the `test' macro
 
 (test
  ;; test usage
@@ -117,11 +160,22 @@
  ;; syntax errors
  (if 1) =error> "if: bad syntax"
 
+ ;; error (and non-exception raises) predicates
+ (+ 1 "2")   =error> exn:fail:contract?
+ (+ 1 "2")   =error> (lambda (x) (not (exn:fail:filesystem? x)))
+ (+ 1 "2")   =error> #rx"expects.*<number>"
+ (error "1") =error> exn?
+ (raise 1)   =error> number?
+ (raise "1") =error> string?
+
  ;; test `test' errors
  (test* (/ 0)) =error> "expected non-#f single value"
  (test* 1 => 2) =error> "expected 2"
  (test* 1 =error> "") =error> "expected an error"
  (test* (/ 0) =error> "zzz") =error> "bad error message"
+ (test* (raise 1) =error> "foo") =error> "raised non-exception"
+ (test* #:failure-message "FOO" (/ 0) => 1) =error> "FOO"
+ (test* #:failure-message "FOO" (/ 0)) =error> "FOO"
  )
 
 ;; SchemeUnit stuff

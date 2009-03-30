@@ -50,8 +50,6 @@ offset is always in bytes.}
 
 @section{Unsafe Pointer Operations}
 
-@declare-exporting[scribblings/foreign/unsafe-foreign]
-
 @defproc[(set-ptr-offset! [cptr cpointer?][offset exact-integer?][ctype ctype? _byte]) 
          void?]{
 
@@ -208,8 +206,6 @@ can contain other information).}
 @; ------------------------------------------------------------
 
 @section{Unsafe Memory Management}
-
-@declare-exporting[scribblings/foreign/unsafe-foreign]
 
 For general information on C-level memory management with PLT Scheme,
 see @|InsideMzScheme|.

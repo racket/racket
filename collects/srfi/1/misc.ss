@@ -39,16 +39,18 @@
          "selector.ss"
          "util.ss"
          (only-in "fold.ss" reduce-right)
-         (rename-in "fold.ss" [map s:map] [for-each s:for-each]))
+         (rename-in "fold.ss" [map s:map] [for-each s:for-each])
+         (only-in scheme/list count append*))
 
 (provide length+
-         concatenate (rename-out [concatenate concatenate!])
+         (rename-out [append* concatenate] [append* concatenate!])
          (rename-out [append append!])
          (rename-out [reverse reverse!])
          append-reverse (rename-out [append-reverse append-reverse!])
          zip unzip1 unzip2 unzip3 unzip4 unzip5
          count)
 
+#; ; reprovided from scheme/list
 ;; count
 ;;;;;;;;
 (define (count pred list1 . lists)
@@ -169,6 +171,7 @@
           (set-cdr! rev-head tail)
           (lp next-rev rev-head)))))
 
+#; ; reprovide scheme/list's `append*' function
 (define (concatenate lists) (reduce-right append '() lists))
 #; ; lists are immutable
 (define (concatenate! lists) (reduce-right my-append! '() lists))

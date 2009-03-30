@@ -90,7 +90,8 @@ typically used to typeset results.}
 
 When @scheme[to-paragraph] and variants encounter a @scheme[var-id]
 structure, it is typeset as @scheme[sym] in the variable font, like
-@scheme[schemevarfont].}
+@scheme[schemevarfont]---unless the @scheme[var-id] appears under
+quote or quasiquote, in which case @scheme[sym] is typeset as a symbol.}
 
 
 @defstruct[shaped-parens ([val any/c]
@@ -149,4 +150,5 @@ Provided @scheme[for-syntax]; returns @scheme[#t] if @scheme[v] is an
 
 Provided @scheme[for-syntax]; like @scheme[element-id-transformer] for
 a transformer that produces @scheme[sym] typeset as a variable (like
-@scheme[schemevarfont]).}
+@scheme[schemevarfont])---unless it appears under quote or quasiquote,
+in which case @scheme[sym] is typeset as a symbol.}

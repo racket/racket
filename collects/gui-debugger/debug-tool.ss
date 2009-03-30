@@ -1006,14 +1006,6 @@
           (define/public (hide-debug)
             (send (get-frame) hide-debug))
           
-          (define/override (enable-evaluation)
-            (send (send (get-frame) get-debug-button) enable #t)
-            (super enable-evaluation))
-          
-          (define/override (disable-evaluation)
-            (send (send (get-frame) get-debug-button) enable #f)
-            (super disable-evaluation))
-          
           (super-new)))
       
       (define debug-bitmap 
@@ -1284,6 +1276,14 @@
                  (callback (λ (button) (debug-callback)))))
           (inherit register-toolbar-button)
           (register-toolbar-button debug-button)
+
+          (define/augment (enable-evaluation)
+            (send debug-button enable #t)
+            (inner (void) enable-evaluation))
+
+          (define/augment (disable-evaluation)
+            (send debug-button enable #f)
+            (inner (void) disable-evaluation))
 
           (define pause-button
             (instantiate button% ()

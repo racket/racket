@@ -2,7 +2,7 @@
 
 (require scheme/promise)
 
-(provide output splice verbatim unverbatim flush prefix)
+(provide output)
 
 ;; Outputs some value, for the preprocessor langauge.
 ;;
@@ -19,9 +19,11 @@
 ;; system (when line counts are enabled) -- this is used to tell what part of a
 ;; prefix is already displayed.
 ;;
-;; Each prefix is either an integer (for a number of spaces), a string, or #f
-;; indicating that prefixes are disabled (different from 0 -- they will not be
-;; accumulated).
+;; Each prefix is either an integer (for a number of spaces) or a
+;; string.  The prefix mechanism can be disabled by using #f for the
+;; global prefix, and in this case the line prefix can have (cons pfx
+;; lpfx) so it can be restored -- used by `verbatim' and `unverbatim'
+;; resp.  (This is different from 0 -- no prefix will be accumulated).
 ;;
 (define (output x [p (current-output-port)])
   ;; these are the global prefix and the one that is local to the current line
@@ -63,6 +65,37 @@
                  (let ([col (- col len1)]
                        [len2 (if (number? pfx2) pfx2 (string-length pfx2))])
                    (when (< col len2) (write-string (->str pfx2) p col )))])))))
+  ;; the basic printing unit: strings
+  (define (output-string x)
+    (define pfx (mcar pfxs))
+    (if (not pfx) ; verbatim mode?
+      (write-string x p)
+      (let ([len (string-length x)]
+            [nls (regexp-match-positions* #rx"\n" x)])
+        (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
+          (cond [(pair? nls)
+                 (let ([nl (car nls)])
+                   (if (regexp-match? #rx"^ *$" x start (car nl))
+                     (newline p) ; only spaces before the end of the line
+                     (begin (output-pfx col pfx lpfx)
+                            (write-string x p start (cdr nl))))
+                   (loop (cdr nl) (cdr nls) 0 0))]
+                ;; last substring from here (always set lpfx state when done)
+                [(start . = . len)
+                 (set-mcdr! pfxs lpfx)]
+                [(col . > . (2pfx-length pfx lpfx))
+                 (set-mcdr! pfxs lpfx)
+                 ;; the prefix was already shown, no accumulation needed
+                 (write-string x p start)]
+                [else
+                 (let ([m (regexp-match-positions #rx"^ +" x start)])
+                   ;; accumulate spaces to lpfx, display if it's not all spaces
+                   (let ([lpfx (if m (pfx+ lpfx (- (cdar m) (caar m))) lpfx)])
+                     (set-mcdr! pfxs lpfx)
+                     (unless (and m (= len (cdar m)))
+                       (output-pfx col pfx lpfx)
+                       ;; the spaces were already added to lpfx
+                       (write-string x p (if m (cdar m) start)))))])))))
   ;; main loop
   (define (loop x)
     (cond
@@ -72,16 +105,13 @@
       ;; one, then output the contents recursively (no need to change the
       ;; state, since we pass the values in the loop, and we'd need to restore
       ;; it afterwards anyway)
-      [(pair? x) (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
-                        [npfx (pfx+col (pfx+ pfx lpfx))])
-                   (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-                   (if (list? x)
+      [(pair? x) (if (list? x)
+                   (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
+                          [npfx (pfx+col (pfx+ pfx lpfx))])
+                     (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
                      (for ([x (in-list x)]) (loop x))
-                     (let ploop ([x x])
-                       (if (pair? x)
-                         (begin (loop (car x)) (ploop (cdr x)))
-                         (loop x))))
-                   (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+                     (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))
+                   (begin (loop (car x)) (loop (cdr x))))]
       ;; delayed values
       [(and (procedure? x) (procedure-arity-includes? x 0)) (loop (x))]
       [(promise? x) (loop (force x))]
@@ -114,41 +144,16 @@
            [else (error 'output "unknown special value flag: ~e"
                         (special-flag x))]))]
       [else
-       (let* ([x (cond [(string? x)  x]
-                       [(bytes? x)   (bytes->string/utf-8 x)]
-                       [(symbol? x)  (symbol->string      x)]
-                       [(path? x)    (path->string        x)]
-                       [(keyword? x) (keyword->string     x)]
-                       [(number? x)  (number->string      x)]
-                       [(char? x)    (string              x)]
-                       ;; generic fallback: throw an error
-                       [else (error 'output "don't know how to render value: ~v"
-                                    x)])]
-              [len (string-length x)]
-              [nls (regexp-match-positions* #rx"\n" x)]
-              [pfx (mcar pfxs)])
-         (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
-           (cond [(pair? nls)
-                  (let ([nl (car nls)])
-                    (output-pfx col pfx lpfx)
-                    (write-string x p start (cdr nl))
-                    (loop (cdr nl) (cdr nls) 0 0))]
-                 ;; last substring from here (always set lpfx state when done)
-                 [(start . = . len)
-                  (set-mcdr! pfxs lpfx)]
-                 [(col . > . (2pfx-length pfx lpfx))
-                  (set-mcdr! pfxs lpfx)
-                  ;; the prefix was already shown, no accumulation needed
-                  (write-string x p start)]
-                 [else
-                  (let ([m (regexp-match-positions #rx"^ +" x start)])
-                    ;; accumulate spaces to lpfx, display if it's not all spaces
-                    (let ([lpfx (if m (pfx+ lpfx (- (cdar m) (caar m))) lpfx)])
-                      (set-mcdr! pfxs lpfx)
-                      (unless (and m (= len (cdar m)))
-                        (output-pfx col pfx lpfx)
-                        ;; the spaces were already added to lpfx
-                        (write-string x p (if m (cdar m) start)))))])))]))
+       (output-string
+        (cond [(string? x)  x]
+              [(bytes? x)   (bytes->string/utf-8 x)]
+              [(symbol? x)  (symbol->string      x)]
+              [(path? x)    (path->string        x)]
+              [(keyword? x) (keyword->string     x)]
+              [(number? x)  (number->string      x)]
+              [(char? x)    (string              x)]
+              ;; generic fallback: throw an error
+              [else (error 'output "don't know how to render value: ~v" x)]))]))
   ;;
   (port-count-lines! p)
   (loop x)
@@ -163,6 +168,10 @@
                        (let ([s (mcons 0 0)]) (hash-set! t p s) s))])
             (set! last (cons p s))
             s)))))
+
+;; special constructs
+
+(provide splice verbatim unverbatim flush prefix)
 
 (define-struct special (flag contents))
 
@@ -179,3 +188,25 @@
           (let ([spaces (make-string n #\space)])
             (if (< n 80) (vector-set! v n spaces) (hash-set! t n spaces))
             spaces)))))
+
+;; Convenient utilities
+
+(provide add-newlines)
+(define (add-newlines list #:sep [sep "\n"])
+  (define r
+    (let loop ([list list])
+      (if (null? list)
+        null
+        (let ([1st (car list)])
+          (if (or (not 1st) (void? 1st))
+            (loop (cdr list))
+            (list* sep 1st (loop (cdr list))))))))
+  (if (null? r) r (cdr r)))
+
+(provide split-lines)
+(define (split-lines list)
+  (let loop ([list list] [cur '()] [r '()])
+    (cond
+      [(null? list) (reverse (cons (reverse cur) r))]
+      [(equal? "\n" (car list)) (loop (cdr list) '() (cons (reverse cur) r))]
+      [else (loop (cdr list) (cons (car list) cur) r)])))

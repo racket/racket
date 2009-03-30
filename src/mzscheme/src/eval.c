@@ -1012,19 +1012,30 @@ static Scheme_Object *try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Ob
         folding attempts */
 {
   Scheme_Object * volatile result;
+  Scheme_Object * volatile exn = NULL;
   mz_jmp_buf *savebuf, newbuf;
 
+  scheme_current_thread->reading_delayed = NULL;
   scheme_current_thread->constant_folding = (context ? context : scheme_true);
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
 
-  if (scheme_setjmp(newbuf))
+  if (scheme_setjmp(newbuf)) {
     result = NULL;
-  else
+    exn = scheme_current_thread->reading_delayed;
+  } else
     result = _scheme_apply_to_list(f, args);
   
   scheme_current_thread->error_buf = savebuf;
   scheme_current_thread->constant_folding = NULL;
+  scheme_current_thread->reading_delayed = NULL;
+
+  if (scheme_current_thread->cjs.is_kill) {
+    scheme_longjmp(*scheme_current_thread->error_buf, 1);
+  }
+
+  if (exn)
+    scheme_raise(exn);
 
   return result;
 }
@@ -2890,6 +2901,12 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
     t = scheme_optimize_lets_for_test(t, info);
   } else
     t = scheme_optimize_expr(t, info);
+
+  /* For test position, convert (if <expr> #t #f) to <expr> */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
+      && SAME_OBJ(((Scheme_Branch_Rec *)t)->tbranch, scheme_true)
+      && SAME_OBJ(((Scheme_Branch_Rec *)t)->fbranch, scheme_false))
+    t = ((Scheme_Branch_Rec *)t)->test;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
     if (SCHEME_FALSEP(t))
@@ -5193,9 +5210,10 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
         SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
         return first;
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
-        if (SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(val)), scheme_id_macro_type)) {
+        if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
           /* It's a rename. Look up the target name and try again. */
-          name = scheme_stx_cert(SCHEME_PTR_VAL(SCHEME_PTR_VAL(val)), scheme_false, menv, name, NULL, 1);
+          name = scheme_stx_cert(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)), 
+                                 scheme_false, menv, name, NULL, 1);
           menv = NULL;
           SCHEME_USE_FUEL(1);
         } else {
@@ -5236,7 +5254,7 @@ compile_expand_macro_app(Scheme_Object *name, Scheme_Env *menv, Scheme_Object *m
 
   xformer = (Scheme_Object *)SCHEME_PTR_VAL(macro);
 
-  if (SAME_TYPE(SCHEME_TYPE(xformer), scheme_set_macro_type)) {
+  if (scheme_is_set_transformer(xformer)) {
     /* scheme_apply_macro unwraps it */
   } else {
     if (!scheme_check_proc_arity(NULL, 1, 0, -1, &xformer)) {
@@ -5391,10 +5409,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
 
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	    && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	  /* It's a rename. Look up the target name and try again. */
 	  Scheme_Object *new_name;
-	  new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
@@ -5497,10 +5515,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	    && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	  /* It's a rename. Look up the target name and try again. */
 	  Scheme_Object *new_name;
-	  new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	  if (!rec[drec].comp) {
 	    new_name = scheme_stx_track(new_name, find_name, find_name);
 	  }
@@ -5584,10 +5602,10 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 
       if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
-	  && SAME_TYPE(SCHEME_TYPE(SCHEME_PTR_VAL(var)), scheme_id_macro_type)) {
+	  && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	/* It's a rename. Look up the target name and try again. */
 	Scheme_Object *new_name;
-	new_name = SCHEME_PTR_VAL(SCHEME_PTR_VAL(var));
+	new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
 	if (!rec[drec].comp) {
 	  new_name = scheme_stx_track(new_name, find_name, find_name);
 	}
@@ -6070,7 +6088,8 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
     if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
       /* Since the module has a rename for this id, it's certainly defined. */
     } else {
-      modidx = scheme_stx_module_name(&symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, NULL, NULL);
+      modidx = scheme_stx_module_name(0, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
+                                      NULL, NULL, NULL, NULL);
       if (modidx) {
 	/* If it's an access path, resolve it: */
 	if (env->genv->module
@@ -6535,7 +6554,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 				 names, expr,
 				 new_env->genv->exp_env, new_env->insp, rec, drec,
 				 new_env, new_env,
-				 &pos);
+				 &pos, rib);
 	  }
 
 	  /* Remember extended environment */
@@ -7082,6 +7101,19 @@ static void make_tail_buffer_safe()
   p->tail_buffer = tb;
 }
 
+static Scheme_Object **evacuate_runstack(int num_rands, Scheme_Object **rands, Scheme_Object **runstack)
+{
+  if (rands == runstack) {
+    /* See [TC-SFS] in "schnapp.inc" */
+    Scheme_Thread *p = scheme_current_thread;
+    (void)scheme_tail_apply(scheme_void, num_rands, rands);
+    rands = p->ku.apply.tail_rands;
+    p->ku.apply.tail_rands = NULL;
+    return rands;
+  } else
+    return rands;
+}
+
 static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_Wind *b, 
                                          Scheme_Object *prompt_tag, int b_has_tag, int *_common_depth)
 {
@@ -7530,6 +7562,7 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
 Scheme_Object *
 scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
 		int get_value)
+  /* If rands == MZ_RUNSTACK on entry, rands elements can be modified. */
 {
   Scheme_Type type;
   Scheme_Object *v;
@@ -7601,6 +7634,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     if ((RUNSTACK - RUNSTACK_START) < SCHEME_TAIL_COPY_THRESHOLD) {
       /* It's possible that a sequence of primitive _scheme_tail_apply()
 	 calls will exhaust the Scheme stack. Watch out for that. */
+      rands = evacuate_runstack(num_rands, rands, RUNSTACK);
+
       p->ku.k.p1 = (void *)obj;
       p->ku.k.i1 = num_rands;
       p->ku.k.p2 = (void *)rands;
@@ -7673,6 +7708,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       data = SCHEME_COMPILED_CLOS_CODE(obj);
 
       if ((RUNSTACK - RUNSTACK_START) < data->max_let_depth) {
+        rands = evacuate_runstack(num_rands, rands, RUNSTACK);
+
 	if (rands == p->tail_buffer) {
 	  UPDATE_THREAD_RSPTR_FOR_GC();
 	  make_tail_buffer_safe();
@@ -7917,6 +7954,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       v = data->code(obj, num_rands, rands);
 
+      if (v == SCHEME_TAIL_CALL_WAITING) {
+        /* [TC-SFS]; see schnapp.inc */
+        if (rands == old_runstack) {
+          int i;
+          for (i = 0; i < num_rands; i++) { rands[i] = NULL; }
+        }
+      }
+
       DEBUG_CHECK_TYPE(v);
 #endif
     } else if (type == scheme_cont_type) {
@@ -7995,6 +8040,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
       
       v = prim->prim_val(prim->data, num_rands, rands);
+
+      if (v == SCHEME_TAIL_CALL_WAITING) {
+        /* [TC-SFS]; see schnapp.inc */
+        if (rands == old_runstack) {
+          int i;
+          for (i = 0; i < num_rands; i++) { rands[i] = NULL; }
+        }
+      }
 
       DEBUG_CHECK_TYPE(v);
     } else {
@@ -9800,7 +9853,7 @@ local_eval(int argc, Scheme_Object **argv)
     scheme_bind_syntaxes("local syntax definition", names, expr,
 			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
 			 stx_env, stx_env,
-			 &pos);
+			 &pos, rib);
   }
 
   /* Extend shared rib with renamings */

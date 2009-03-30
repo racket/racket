@@ -183,8 +183,8 @@ Matthew
 ;                                                                              
 
 (define (nw:rectangle width height mode color)
-  (check-pos 'rectangle width "first")
-  (check-pos 'rectangle height "second")
+  (check-size/0 'nw:rectangle width "first")
+  (check-size/0 'nw:rectangle height "second")
   (check-mode 'rectangle mode "third")
   (check-color 'rectangle color "fourth")
   (put-pinhole (rectangle width height mode color) 0 0))
@@ -199,8 +199,8 @@ Matthew
     (place-image0 image x y scene)))
 
 (define (empty-scene width height)
-  (check-pos 'empty-scene width "first")
-  (check-pos 'empty-scene height "second")    
+  (check-size/0 'empty-scene width "first")
+  (check-size/0 'empty-scene height "second")    
   (put-pinhole 
    (overlay (rectangle width height 'solid 'white)
             (rectangle width height 'outline 'black))
@@ -253,8 +253,8 @@ Matthew
   (case-lambda 
     [(w h delta world) (big-bang w h delta world #f)]
     [(w h delta world animated-gif) 
-     (check-pos 'big-bang w "first")
-     (check-pos 'big-bang h "second")
+     (check-size/0 'big-bang w "first")
+     (check-size/0 'big-bang h "second")
      ;; ============================================
      ;; WHAT IF THEY ARE NOT INTs?
      ;; ============================================
@@ -361,8 +361,8 @@ Matthew
 (define run-simulation0
   (case-lambda
     [(width height rate f record?)
-     (check-pos 'run-simulation width "first")
-     (check-pos 'run-simulation height "second")
+     (check-size/0 'run-simulation width "first")
+     (check-size/0 'run-simulation height "second")
      (check-arg 'run-simulation (number? rate) 'number "third" rate)
      (check-proc 'run-simulation f 1 "fourth" "one argument")
      (check-arg 'run-simulation (boolean? record?) 'number "fifth [and optional]" record?)
@@ -390,9 +390,9 @@ Matthew
 ;                                     
 
 ;; Symbol Any String -> Void
-(define (check-pos tag c rank)
-  (check-arg tag (and (number? c) (> (coerce c) 0))
-             "positive integer" rank c))
+(define (check-size/0 tag c rank)
+  (check-arg tag (and (number? c) (>= (coerce c) 0))
+             "natural number" rank c))
 
 ;; Symbol Any String String *-> Void
 (define (check-image tag i rank . other-message)

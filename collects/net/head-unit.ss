@@ -33,15 +33,15 @@
           [(and (= (+ offset 2) len)
                 (bytes=? CRLF/bytes (subbytes s offset len)))
            (void)] ; validated
-          [(= offset len) (error 'validate-header/bytes "missing ending CRLF")]
+          [(= offset len) (error 'validate-header "missing ending CRLF")]
           [(or (regexp-match re:field-start/bytes s offset)
                (regexp-match re:continue/bytes s offset))
            (let ([m (regexp-match-positions #rx#"\r\n" s offset)])
              (if m
                (loop (cdar m))
-               (error 'validate-header/bytes "missing ending CRLF")))]
-          [else (error 'validate-header/bytes "ill-formed header at ~s"
-                       (subbytes s offset (string-length s)))])))
+               (error 'validate-header "missing ending CRLF")))]
+          [else (error 'validate-header "ill-formed header at ~s"
+                       (subbytes s offset (bytes-length s)))])))
     ;; otherwise it should be a string:
     (begin
       (let ([m (regexp-match #rx"[^\000-\377]" s)])

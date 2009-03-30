@@ -722,9 +722,23 @@ AC_TRY_RUN(
    static inline int foo() { return 0; }
    int main() {
       return foo();
-   }, inline=yes, inline=no, inline=no)
+   }, 
+  inline=yes, inline=no, inline=no)
 if test "$inline" = "no" ; then
   MZOPTIONS="$MZOPTIONS -DNO_INLINE_KEYWORD"
+fi
+AC_MSG_RESULT($inline) 
+
+[ msg="for noinline attribute" ]
+AC_MSG_CHECKING($msg)
+AC_TRY_RUN(
+   static int foo() __attribute__ ((noinline));
+   static int foo() { return 0; }
+   int main() {
+      return foo();
+   }, noinline=yes, noinline=no, noinline=no)
+if test "$noinline" = "yes" ; then
+  AC_DEFINE(MZ_USE_NOINLINE,1,[Have noinline attribute])
 fi
 AC_MSG_RESULT($inline) 
 
@@ -1439,8 +1453,12 @@ if test "${enable_mred}" = "yes" ; then
   makefiles="$makefiles
              mred/Makefile
                mred/wxs/Makefile mred/wxme/Makefile
-               mred/gc2/Makefile
+               mred/gc2/Makefile"
+
+  if test "${enable_libpng}" != "yes" ; then
+    makefiles="$makefiles 
                wxcommon/libpng/Makefile wxcommon/zlib/Makefile"
+  fi
 
   if test "${enable_quartz}" = "yes" ; then
     makefiles="$makefiles

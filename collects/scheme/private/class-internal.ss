@@ -148,10 +148,12 @@
 
   (define-for-syntax not-in-a-class
     (lambda (stx)
-      (raise-syntax-error
-       #f
-       "use of a class keyword is not in a class"
-       stx)))
+      (if (eq? (syntax-local-context) 'expression)
+          (raise-syntax-error
+           #f
+           "use of a class keyword is not in a class"
+           stx)
+          (quasisyntax/loc stx (#%expression #,stx)))))
 
   (define-syntax define/provide-context-keyword
     (syntax-rules ()

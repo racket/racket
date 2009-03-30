@@ -144,6 +144,32 @@
 	  (set! f 7)
 	  x)))
 
+(test 77 'set!-transformer-prop
+      (let ([x 3])
+	(let-syntax ([f (let ()
+                          (define-struct s!t (proc)
+                            #:property prop:set!-transformer 0)
+                          (make-s!t
+                           (lambda (stx)
+                             (syntax-case stx ()
+                               [(_ __ val)
+                                #'(set! x val)]))))])
+	  (set! f 77)
+	  x)))
+
+(test 777 'set!-transformer-prop2
+      (let ([x 3])
+	(let-syntax ([f (let ()
+                          (define-struct s!t ()
+                            #:property prop:set!-transformer
+                            (lambda (stx)
+                              (syntax-case stx ()
+                                [(_ __ val)
+                                 #'(set! x val)])))
+                          (make-s!t))])
+	  (set! f 777)
+	  x)))
+
 (test 7 'rename-transformer
       (let ([x 3])
 	(let-syntax ([f (make-rename-transformer #'x)])
@@ -415,6 +441,7 @@
            [(define-values (id) rhs)
             (begin
               (syntax-local-bind-syntaxes (list #'id) #f def-ctx)
+              (internal-definition-context-seal def-ctx)
               #'(begin
                   (define-values (id) rhs)
                   (define-syntax handle (quote-syntax id))))]
@@ -429,6 +456,85 @@
   (bind h (define q 5))
   (define q 8)
   (nab h))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module rename-transformer-tests scheme/base
+  (require (for-syntax scheme/base))
+
+  (define x 12)
+  (define-syntax bar (let ([x 10])
+                       (make-rename-transformer #'x)))
+  (define-syntax foo (make-rename-transformer #'x))
+  (list foo
+        (identifier-binding #'foo)
+        (free-identifier=? #'x #'foo))
+  (identifier-binding #'bar)
+
+  (begin-for-syntax 
+   (define-struct rt (id)
+     #:property prop:rename-transformer 0
+     #:omit-define-syntaxes))
+
+  (let-syntax ([q (make-rt #'x)])
+    (list q
+          (identifier-binding #'q)
+          (free-identifier=? #'q #'x)))
+
+  (let ([w 11])
+    (letrec-syntax ([q (let ()
+                         (define-struct rt ()
+                           #:property prop:rename-transformer #'w)
+                         (make-rt))])
+      (list q
+            (identifier-binding #'q)
+            (free-identifier=? #'q #'w))))
+
+  (letrec-syntax ([n (make-rename-transformer #'glob)])
+    (list (identifier-binding #'n)
+          (free-identifier=? #'n #'glob)))
+
+  (letrec-syntax ([i (make-rename-transformer #'glob)])
+    (letrec-syntax ([n (make-rename-transformer (syntax-property #'i 'not-free-identifier=? #f))])
+      (list (identifier-binding #'n)
+            (free-identifier=? #'n #'glob)))))
+
+(let ([accum null])
+  (parameterize ([current-print (lambda (v)
+                                  (set! accum (cons (let loop ([v v])
+                                                      (cond
+                                                       [(module-path-index? v) 'mpi]
+                                                       [(pair? v) (cons (loop (car v))
+                                                                        (loop (cdr v)))]
+                                                       [else v]))
+                                                    accum)))])
+    (dynamic-require ''rename-transformer-tests #f))
+  (test '((#f #t) 
+          (#f #t)
+          (11 lexical #t)
+          (12 (mpi x mpi x 0 0 0) #t)
+          lexical
+          (12 (mpi x mpi x 0 0 0) #t))
+        values accum))
+
+(module rename-transformer-tests:m scheme/base
+  (require (for-syntax scheme/base))
+  (define-syntax x 1)
+  (define-syntax x* (make-rename-transformer #'x))
+  (define-syntax x** (make-rename-transformer (syntax-property #'x 'not-free-identifier=? #t)))
+  (define-syntax (get stx)
+    (syntax-case stx ()
+      [(_ i)
+       #`#,(free-identifier=? #'i #'x)]))
+  (provide get x* x**))
+
+(module rename-transformer-tests:n scheme
+  (require 'rename-transformer-tests:m)
+  (provide go)
+  (define (go)
+    (list (get x*) (get x**))))
+
+(test '(#t #f) (dynamic-require ''rename-transformer-tests:n 'go))
 
 ;; ----------------------------------------
 

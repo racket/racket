@@ -8,7 +8,6 @@
          (struct-out attr)
          (struct-out rhs)
          (struct-out rhs:union)
-         (struct-out rhs:basic)
          (struct-out rhs:pattern)
          (struct-out pattern)
          (struct-out pat:id)
@@ -34,21 +33,49 @@
   #:transparent)
 
 ;; RHSBase is stx (listof SAttr) boolean stx/#f
-(define-struct rhs (orig-stx attrs transparent? description)
+(define-struct rhs (ostx attrs transparent? description)
   #:transparent)
 
 ;; A RHS is one of
 ;;   (make-rhs:union <RHSBase> (listof RHS))
-;;   (make-rhs:basic <RHSBase> stx)
 (define-struct (rhs:union rhs) (patterns)
-  #:transparent)
-(define-struct (rhs:basic rhs) (parser)
   #:transparent)
 
 ;; An RHSPattern is
 ;;   (make-rhs:pattern stx (listof SAttr) Pattern Env Env (listof SideClause))
-(define-struct rhs:pattern (stx attrs pattern decls remap whens)
+(define-struct rhs:pattern (stx attrs pattern decls remap sides)
   #:transparent)
+
+#|
+
+NOT YET ...
+
+;; A Pattern is
+;;   (make-pattern (listof IAttr) PCtx (listof id) string/#f Descriminator)
+(define-struct pattern (attrs ctx names description descrim) #:transparent)
+
+;; A PatternContext (PCtx) is
+;;   (make-pctx stx nat (listof IAttr) (listof IAttr))
+(define-struct pctx (ostx depth env outer-env) #:transparent)
+
+;; A Descriminator is one of
+;;  (make-d:any)
+;;  (make-d:stxclass SC (listof stx))
+;;  (make-d:datum datum)
+;;  (make-d:literal id)
+;;  (make-d:gseq (listof Head) Pattern)
+;;  (make-d:and (listof Pattern))
+;;  (make-d:orseq (listof Head))
+;;  (make-d:compound Kind (listof Pattern))
+(define-struct d:any () #:transparent)
+(define-struct d:stxclass (stxclass args) #:transparent)
+(define-struct d:datum (datum) #:transparent)
+(define-struct d:literal (literal) #:transparent)
+(define-struct d:gseq (heads tail) #:transparent)
+(define-struct d:and (subpatterns) #:transparent)
+(define-struct d:orseq (heads) #:transparent)
+(define-struct d:compound (kind patterns) #:transparent)
+|#
 
 ;; A Pattern is one of
 ;;   (make-pat:id <Pattern> identifier SC/#f (listof stx))
@@ -59,7 +86,7 @@
 ;;   (make-pat:and <Pattern> string/#f (listof Pattern))
 ;;   (make-pat:compound <Pattern> Kind (listof Pattern))
 ;; when <Pattern> = stx (listof IAttr) number
-(define-struct pattern (orig-stx attrs depth) #:transparent)
+(define-struct pattern (ostx attrs depth) #:transparent)
 (define-struct (pat:id pattern) (name stxclass args) #:transparent)
 (define-struct (pat:datum pattern) (datum) #:transparent)
 (define-struct (pat:literal pattern) (literal) #:transparent)
@@ -72,8 +99,9 @@
 (define-struct kind (predicate selectors frontier-procs) #:transparent)
 
 ;; A Head is
-;;   (make-head stx (listof IAttr) nat (listof Pattern) nat/f nat/f boolean id/#f stx/#f)
-(define-struct head (orig-stx attrs depth ps min max as-list?) #:transparent)
+;;   (make-head stx (listof IAttr) nat (listof Pattern)
+;;              nat/f nat/f boolean id/#f stx/#f)
+(define-struct head (ostx attrs depth ps min max as-list?) #:transparent)
 
 ;; A SideClause is one of
 ;;   (make-clause:with pattern stx)

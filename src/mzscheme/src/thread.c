@@ -114,10 +114,10 @@ static int swapping = 0;
 #endif
 
 extern void scheme_gmp_tls_init(long *s);
-extern void scheme_gmp_tls_load(long *s);
-extern void scheme_gmp_tls_unload(long *s);
+extern void *scheme_gmp_tls_load(long *s);
+extern void scheme_gmp_tls_unload(long *s, void *p);
 extern void scheme_gmp_tls_snapshot(long *s, long *save);
-extern void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free);
+extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free);
 
 static void check_ready_break();
 
@@ -363,6 +363,7 @@ static Scheme_Object *will_executor_go(int argc, Scheme_Object *args[]);
 static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost);
 
 static Scheme_Object *check_break_now(int argc, Scheme_Object *args[]);
+static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo);
 
 static void make_initial_config(Scheme_Thread *p);
 
@@ -2511,7 +2512,9 @@ static void do_swap_thread()
 #if WATCH_FOR_NESTED_SWAPS
     swapping = 0;
 #endif
-    scheme_gmp_tls_unload(scheme_current_thread->gmp_tls);
+    scheme_gmp_tls_unload(scheme_current_thread->gmp_tls, scheme_current_thread->gmp_tls_data);
+    scheme_current_thread->gmp_tls_data = NULL;
+
     {
       Scheme_Object *l, *o;
       Scheme_Closure_Func f;
@@ -2529,12 +2532,24 @@ static void do_swap_thread()
       scheme_takeover_stacks(scheme_current_thread);
     }
 
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->current_start_process_msec = cpm;
+    }
+
     if (scheme_current_thread->return_marks_to) {
       stash_current_marks();
       goto start;
     }
   } else {
     Scheme_Thread *new_thread = swap_target;
+
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->accum_process_msec += (cpm - scheme_current_thread->current_start_process_msec);
+    }
 
     swap_target = NULL;
 
@@ -2558,7 +2573,11 @@ static void do_swap_thread()
       cb = can_break_param(scheme_current_thread);
       scheme_current_thread->can_break_at_swap = cb;
     }
-    scheme_gmp_tls_load(scheme_current_thread->gmp_tls);
+    {
+      GC_CAN_IGNORE void *data;
+      data = scheme_gmp_tls_load(scheme_current_thread->gmp_tls);
+      scheme_current_thread->gmp_tls_data = data;
+    }
 #ifdef RUNSTACK_IS_GLOBAL
     scheme_current_thread->runstack = MZ_RUNSTACK;
     scheme_current_thread->runstack_start = MZ_RUNSTACK_START;
@@ -2782,7 +2801,8 @@ static void remove_thread(Scheme_Thread *r)
   thread_is_dead(r);
 
   /* In case we kill a thread while in a bignum operation: */
-  scheme_gmp_tls_restore_snapshot(r->gmp_tls, NULL, ((r == scheme_current_thread) ? 1 : 2));
+  scheme_gmp_tls_restore_snapshot(r->gmp_tls, r->gmp_tls_data, 
+                                  NULL, ((r == scheme_current_thread) ? 1 : 2));
 
   if (r == scheme_current_thread) {
     /* We're going to be swapped out immediately. */
@@ -2825,7 +2845,8 @@ static void start_child(Scheme_Thread * volatile child,
     MZ_CONT_MARK_STACK = scheme_current_thread->cont_mark_stack;
     MZ_CONT_MARK_POS = scheme_current_thread->cont_mark_pos;
 #endif
-    scheme_gmp_tls_unload(scheme_current_thread->gmp_tls);
+    scheme_gmp_tls_unload(scheme_current_thread->gmp_tls, scheme_current_thread->gmp_tls_data);
+    scheme_current_thread->gmp_tls_data = NULL;
     {
       Scheme_Object *l, *o;
       Scheme_Closure_Func f;
@@ -2835,6 +2856,12 @@ static void start_child(Scheme_Thread * volatile child,
 	o = SCHEME_CLOS_DATA(o);
 	f(o);
       }
+    }
+
+    {
+      long cpm;
+      cpm = scheme_get_process_milliseconds();
+      scheme_current_thread->current_start_process_msec = cpm;
     }
 
     RESETJMP(child);
@@ -3195,7 +3222,8 @@ static Scheme_Object *def_nested_exn_handler(int argc, Scheme_Object *argv[])
   return scheme_void; /* misuse of exception handler (wrong kind of thread or under prompt) */
 }
 
-/* private, but declared as public to avoid inlining: */
+MZ_DO_NOT_INLINE(Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], void *max_bottom));
+
 Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], void *max_bottom)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -3745,7 +3773,7 @@ static Scheme_Object *raise_user_break(int argc, Scheme_Object ** volatile argv)
     int cont;
     cont = SAME_OBJ((Scheme_Object *)scheme_jumping_to_continuation,
 		    argv[0]);
-    scheme_gmp_tls_restore_snapshot(scheme_current_thread->gmp_tls, save, !cont);
+    scheme_gmp_tls_restore_snapshot(scheme_current_thread->gmp_tls, NULL, save, !cont);
     scheme_longjmp(*savebuf, 1);
   }
 
@@ -3763,6 +3791,11 @@ static void raise_break(Scheme_Thread *p)
   Scheme_Cont_Frame_Data cframe;
 
   p->external_break = 0;
+
+  if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
+    /* Get out of lines for channels, etc., before calling a break exn handler. */
+    scheme_post_syncing_nacks((Syncing *)p->blocker);
+  }
 
   block_descriptor = p->block_descriptor;
   blocker = p->blocker;
@@ -5669,7 +5702,7 @@ Scheme_Object *scheme_make_evt_set(int argc, Scheme_Object **argv)
 }
 
 void scheme_post_syncing_nacks(Syncing *syncing)
-     /* Also removes channel-syncers */
+     /* Also removes channel-syncers. Can be called multiple times. */
 {
   int i, c;
   Scheme_Object *l;
@@ -5784,7 +5817,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
     timeout = 0.0; /* means "no timeout" to block_until */
 
   if (with_break) {
-    /* Suspended breaks when something is selected: */
+    /* Suspended breaks when something is selected. */
     syncing->disable_break = scheme_current_thread;
   }
 
@@ -7325,6 +7358,12 @@ static void get_ready_for_GC()
   scheme_block_child_signals(1);
 #endif
 
+  {
+    GC_CAN_IGNORE void *data;
+    data = scheme_gmp_tls_load(scheme_current_thread->gmp_tls);
+    scheme_current_thread->gmp_tls_data = data;
+  }
+
   did_gc_count++;
 }
 
@@ -7332,6 +7371,9 @@ extern int GC_words_allocd;
 
 static void done_with_GC()
 {
+  scheme_gmp_tls_unload(scheme_current_thread->gmp_tls, scheme_current_thread->gmp_tls_data);
+  scheme_current_thread->gmp_tls_data = NULL;
+
 #ifdef RUNSTACK_IS_GLOBAL
 # ifdef MZ_PRECISE_GC
   if (scheme_current_thread->running) {
@@ -7503,6 +7545,45 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
   }
 
   return scheme_void;
+}
+
+/*========================================================================*/
+/*                             gmp allocation                             */
+/*========================================================================*/
+
+/* Allocate atomic, immobile memory for GMP. Although we have set up
+   GMP to reliably free anything that it allocates, we allocate via
+   the GC to get accounting with 3m. The set of allocated blocks are
+   stored in a "mem_pool" variable, which is a linked list; GMP
+   allocates with a stack discipline, so maintaining the list is easy.
+   Meanwhile, scheme_gmp_tls_unload, etc., attach to the pool to the
+   owning thread as needed for GC. */
+
+void *scheme_malloc_gmp(unsigned long amt, void **mem_pool)
+{
+  void *p, *mp;
+
+#ifdef MZ_PRECISE_GC      
+  if (amt < GC_malloc_stays_put_threshold())
+    amt = GC_malloc_stays_put_threshold();
+#endif
+
+  p = scheme_malloc_atomic(amt);
+
+  mp = scheme_make_raw_pair(p, *mem_pool);
+  *mem_pool = mp;
+
+  return p;
+}
+
+void scheme_free_gmp(void *p, void **mem_pool)
+{
+  if (p != SCHEME_CAR(*mem_pool))
+    scheme_log(NULL,
+               SCHEME_LOG_FATAL,
+               0,
+               "bad GMP memory free");
+  *mem_pool = SCHEME_CDR(*mem_pool);
 }
 
 /*========================================================================*/

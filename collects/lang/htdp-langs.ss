@@ -864,7 +864,9 @@
               (init-field [debugger:supported #f])
               (define/override (debugger:supported?) debugger:supported)
               (super-new))
-            %))
+            (class %
+              (init [debugger:supported #f])
+              (super-new))))
 
       ;; filter/hide-ids : syntax[list] -> listof syntax
       (define (filter/hide-ids ids)

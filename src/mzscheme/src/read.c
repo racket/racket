@@ -5322,6 +5322,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   unsigned char *st;
   Scheme_Object * volatile port;
   Scheme_Object * volatile v;
+  Scheme_Object * volatile v_exn;
   Scheme_Hash_Table ** volatile ht;
   mz_jmp_buf newbuf, * volatile savebuf;
 
@@ -5417,12 +5418,16 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   /* Perform the read, catching escapes so we can clean up: */
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
+  scheme_current_thread->reading_delayed = scheme_true;
   if (scheme_setjmp(newbuf)) {
     v = NULL;
+    v_exn = scheme_current_thread->reading_delayed;
   } else {
     v = read_compact(rp, 0);
+    v_exn = NULL;
   }
   scheme_current_thread->error_buf = savebuf;
+  scheme_current_thread->reading_delayed = NULL;
 
   /* Clean up: */
 
@@ -5452,6 +5457,8 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
         
     return v;
   } else {
+    if (v_exn && !scheme_current_thread->cjs.is_kill)
+      scheme_raise(v_exn);
     scheme_longjmp(*scheme_current_thread->error_buf, 1);
     return NULL;
   }

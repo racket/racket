@@ -8,7 +8,6 @@
          (for-syntax "rep-data.ss")
          (for-syntax "../util/error.ss"))
 (provide pattern
-         basic-syntax-class
          ~and
          ~or
          ...*
@@ -44,7 +43,6 @@
       (raise-syntax-error #f "keyword used out of context" stx))))
 
 (define-keyword pattern)
-(define-keyword basic-syntax-class)
 (define-keyword ~and)
 (define-keyword ~or)
 (define-keyword ...*)

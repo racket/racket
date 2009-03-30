@@ -940,7 +940,7 @@ for universe programs. For example:
 }
 
 @item{Each event handler produces a @emph{bundle}, which is a structure
- that contains the list of @emph{iworld}s to keep track of; the
+ that contains the list of @emph{iworld}s that the universe must track; the
  @tech{server}'s remaining state; and a list of mails to other
  worlds: 
 
@@ -948,8 +948,11 @@ for universe programs. For example:
  determines whether @scheme[x] is a @emph{bundle}.}
 
 @defproc[(make-bundle [low (listof iworld?)] [state any/c] [mails (listof mail?)]) bundle?]{
- creates a @emph{bundle} from a list of iworlds, a piece of data that represents a server
- state, and a list of mails.}
+ creates a @emph{bundle} from a list of iworlds, a piece of data that
+ represents a server state, and a list of mails.}
+
+If an event handler returns a bundle with an empty list of worlds, the
+universe server is restarted in the initial state. 
 
 A @emph{mail} represents a message from an event handler to a world. The
 teachpack provides only a predicate and a constructor for these structures:
@@ -960,7 +963,6 @@ teachpack provides only a predicate and a constructor for these structures:
 @defproc[(make-mail [to iworld?] [content sexp?]) mail?]{
  creates a @emph{mail} from a @emph{iworld} and an @tech{S-expression}.}
 }
-
 ]
 
 @; -----------------------------------------------------------------------------
@@ -1039,7 +1041,6 @@ The mandatory clauses of a @scheme[universe] server description are
  @scheme[w] is guaranteed to be on the list @scheme[low]. 
  }
 }]
-
  All proper event handlers produce a @emph{bundle}. The list of worlds in
  this @emph{bundle} becomes the server's list of worlds, meaning that only
  the server listens only to messages from "approved" worlds.  The state in

@@ -1733,17 +1733,17 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
   if (basetype == 0) basetype = 1; /* int is the default type */
   /* don't assume anything, so it can be used to verify compiler assumptions */
   /* (only forbid stuff that the compiler doesn't allow) */
-#define RETSIZE(t) res=((stars==0)?sizeof(t):sizeof(t *))
+# define RETSIZE(t) res=((stars==0)?sizeof(t):sizeof(t *))
   switch (basetype) {
   case 1: /* int */
     switch (intsize) {
     case 0:  RETSIZE(int); break;
     case 1:  RETSIZE(long int); break;
-#ifdef INT64_AS_LONG_LONG
+#   ifdef INT64_AS_LONG_LONG
     case 2:  RETSIZE(_int64); break; /* MSVC doesn't allow long long */
-#else
+#   else /* INT64_AS_LONG_LONG undefined */
     case 2:  RETSIZE(long long int); break;
-#endif
+#   endif /* INT64_AS_LONG_LONG */
     case -1: RETSIZE(short int); break;
     }
     break;
@@ -1768,7 +1768,7 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
     scheme_signal_error(MYNAME": internal error (unexpected type %d)",
                         basetype);
   }
-#undef RETSIZE
+# undef RETSIZE
   return scheme_make_integer(res);
 }
 #undef MYNAME
@@ -2138,8 +2138,8 @@ static Scheme_Object *abs_sym;
 
 /* (ptr-ref cpointer type [['abs] n]) -> the object at the given location */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
-/* if n is given, an 'abs flag can precede it to make n be a byte offset rather
- * than some multiple of sizeof(type). */
+/* if n is given, an 'abs flag can precede it to make n be a byte offset */
+/* rather than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
 #define MYNAME "ptr-ref"
 static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
@@ -2191,8 +2191,8 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
-/* if n is given, an 'abs flag can precede it to make n be a byte offset rather
- * than some multiple of sizeof(type). */
+/* if n is given, an 'abs flag can precede it to make n be a byte offset */
+/* rather than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
 #define MYNAME "ptr-set!"
 static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
@@ -2253,11 +2253,11 @@ static Scheme_Object *foreign_ptr_equal_p(int argc, Scheme_Object *argv[])
 /* (make-sized-byte-string cpointer len) */
 #define MYNAME "make-sized-byte-string"
 static Scheme_Object *foreign_make_sized_byte_string(int argc, Scheme_Object *argv[])
-/* Warning: no copying is done so it is possible to share string contents. */
-/* Warning: if source ptr has a offset, resulting string object uses shifted
- * pointer.
- * (Should use real byte-strings with new version.) */
 {
+  /* Warning: no copying is done so it is possible to share string contents. */
+  /* Warning: if source ptr has a offset, resulting string object uses shifted
+   * pointer.
+   * (Should use real byte-strings with new version.) */
   long len;
   if (!SCHEME_FFIANYPTRP(argv[0]))
     scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
@@ -2302,31 +2302,29 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
 /*
-
-(defsymbols pointer)
-(cdefine register-finalizer 2 3)
-{
-  void *ptr, *old = NULL;
-  int ptrsym = (argc == 3 && argv[2] == pointer_sym);
-  if (ptrsym) {
-    if (!SCHEME_FFIANYPTRP(argv[0]))
-      scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
-    ptr = SCHEME_FFIANYPTR_VAL(argv[0]);
-    if (ptr == NULL)
-      scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
-  } else {
-    if (argc == 3)
-      scheme_wrong_type(MYNAME, "pointer-mode", 2, argc, argv);
-    ptr = argv[0];
-  }
-  if (!(SCHEME_FALSEP(argv[1]) || SCHEME_PROCP(argv[1])))
-    scheme_wrong_type(MYNAME, "procedure-or-false", 1, argc, argv);
-  scheme_register_finalizer
-    (ptr, (ptrsym ? do_ptr_finalizer : do_scm_finalizer),
-     argv[1], NULL, &old);
-  return (old == NULL) ? scheme_false : (Scheme_Object*)old;
-}
-*/
+ * defsymbols[pointer]
+ * cdefine[register-finalizer 2 3]{
+ *   void *ptr, *old = NULL;
+ *   int ptrsym = (argc == 3 && argv[2] == pointer_sym);
+ *   if (ptrsym) {
+ *     if (!SCHEME_FFIANYPTRP(argv[0]))
+ *       scheme_wrong_type(MYNAME, "cpointer", 0, argc, argv);
+ *     ptr = SCHEME_FFIANYPTR_VAL(argv[0]);
+ *     if (ptr == NULL)
+ *       scheme_wrong_type(MYNAME, "non-null-cpointer", 0, argc, argv);
+ *   } else {
+ *     if (argc == 3)
+ *       scheme_wrong_type(MYNAME, "pointer-mode", 2, argc, argv);
+ *     ptr = argv[0];
+ *   }
+ *   if (!(SCHEME_FALSEP(argv[1]) || SCHEME_PROCP(argv[1])))
+ *     scheme_wrong_type(MYNAME, "procedure-or-false", 1, argc, argv);
+ *   scheme_register_finalizer
+ *     (ptr, (ptrsym ? do_ptr_finalizer : do_scm_finalizer),
+ *      argv[1], NULL, &old);
+ *   return (old == NULL) ? scheme_false : (Scheme_Object*)old;
+ * }
+ */
 
 /*****************************************************************************/
 /* Calling foreign function objects */
@@ -2415,7 +2413,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     /* Otherwise it was a struct pointer, and avalues[i] is already fine. */
     /* Add offset, if any: */
     if (offsets[i] != 0) {
-      ivals[i].x_pointer = (char *)ivals[i].x_pointer + offsets[i]; 
+      ivals[i].x_pointer = (char *)ivals[i].x_pointer + offsets[i];
     }
   }
   /* Finally, call the function */
@@ -2643,16 +2641,16 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   data->itypes = (argv[1]);
   data->otype = (argv[2]);
   data->call_in_scheduler = (((argc > 4) && SCHEME_TRUEP(argv[4])));
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
   {
     /* put data in immobile, weak box */
     void **tmp;
     tmp = GC_malloc_immobile_box(GC_malloc_weak_box(data, NULL, 0));
     cl_cif_args->data = (struct immobile_box*)tmp;
   }
-#else
+# else /* MZ_PRECISE_GC undefined */
   cl_cif_args->data = (void*)data;
-#endif
+# endif /* MZ_PRECISE_GC */
   if (ffi_prep_closure(cl, cif, &ffi_do_callback, (void*)(cl_cif_args->data))
       != FFI_OK)
     scheme_signal_error
@@ -2697,12 +2695,12 @@ void scheme_init_foreign(Scheme_Env *env)
   ffi_obj_tag = scheme_make_type("<ffi-obj>");
   ctype_tag = scheme_make_type("<ctype>");
   ffi_callback_tag = scheme_make_type("<ffi-callback>");
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
   GC_register_traversers(ffi_lib_tag, ffi_lib_SIZE, ffi_lib_MARK, ffi_lib_FIXUP, 1, 0);
   GC_register_traversers(ffi_obj_tag, ffi_obj_SIZE, ffi_obj_MARK, ffi_obj_FIXUP, 1, 0);
   GC_register_traversers(ctype_tag, ctype_SIZE, ctype_MARK, ctype_FIXUP, 1, 0);
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
-#endif
+# endif /* MZ_PRECISE_GC */
   scheme_set_type_printer(ctype_tag, ctype_printer);
   MZ_REGISTER_STATIC(opened_libs);
   opened_libs = scheme_make_hash_table(SCHEME_hash_string);
@@ -2757,7 +2755,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global("make-ctype",
     scheme_make_prim_w_arity(foreign_make_ctype, "make-ctype", 3, 3), menv);
   scheme_add_global("make-cstruct-type",
-    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 1), menv);
+    scheme_make_prim_w_arity(foreign_make_cstruct_type, "make-cstruct-type", 1, 2), menv);
   scheme_add_global("ffi-callback?",
     scheme_make_prim_w_arity(foreign_ffi_callback_p, "ffi-callback?", 1, 1), menv);
   scheme_add_global("cpointer?",

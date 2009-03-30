@@ -221,6 +221,9 @@
 (htdp-top (require (lib "unit.ss" "mzlib")))
 (htdp-test #f unit? 12)
 (htdp-top-pop 1)
+(htdp-top (require mzlib/unit))
+(htdp-test #f unit? 12)
+(htdp-top-pop 1)
 
 ;; Error messages
 (htdp-top (define my-x 5))
@@ -236,7 +239,7 @@
 (htdp-syntax-test #'define #rx"does not follow")
 
 (htdp-syntax-test #'(require) #rx"found nothing")
-(htdp-syntax-test #'(require a) #rx"expected a module name as a")
+(htdp-syntax-test #'(require a!) #rx"bad syntax for a module path")
 (htdp-syntax-test #'(require "a" "b") #rx"a single module name")
 (htdp-syntax-test #'(require "") #rx"empty")
 (htdp-syntax-test #'(require "/a") #rx"start with a slash")

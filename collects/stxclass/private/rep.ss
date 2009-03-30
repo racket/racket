@@ -102,30 +102,6 @@
   (define transparent? (and trans0 #t))
   (define attributes (and attrs0 (caddr attrs0)))
 
-  (define (parse-rhs*-basic rhss)
-    (syntax-case rhss (basic-syntax-class)
-      [((basic-syntax-class . rest))
-       (let-values ([(basic-chunks rest)
-                     (chunk-kw-seq/no-dups #'rest basic-rhs-directive-table
-                                           #:context (stx-car rhss))])
-         (syntax-case rest ()
-           [(parser-expr)
-            (make rhs:basic ctx
-                  (or attributes null)
-                  transparent?
-                  description
-                  (if (assq '#:transforming basic-chunks)
-                      #'parser-expr
-                      #`(let ([parser parser-expr])
-                          (lambda (x . args)
-                            (let ([result (apply parser x args)])
-                              (if (ok? result)
-                                  (cons x result)
-                                  result))))))]
-           [_
-            (wrong-syntax (stx-car rhss)
-                          "expected parser expression")]))]))
-
   (define (parse-rhs*-patterns rest)
     (define (gather-patterns stx)
       (syntax-case stx (pattern)
@@ -145,11 +121,7 @@
             description
             patterns)))
 
-  (syntax-case rest (pattern basic-syntax-class)
-    [((basic-syntax-class . _))
-     (parse-rhs*-basic rest)]
-    [_
-     (parse-rhs*-patterns rest)]))
+  (parse-rhs*-patterns rest))
 
 ;; parse-rhs-pattern : stx boolean boolean (listof id+id) -> RHS
 (define (parse-rhs-pattern stx allow-unbound? literals)
@@ -278,8 +250,8 @@
 
 (define (pattern->head p)
   (match p
-    [(struct pattern (orig-stx iattrs depth))
-     (make head orig-stx iattrs depth (list p) #f #f #t)]))
+    [(struct pattern (ostx iattrs depth))
+     (make head ostx iattrs depth (list p) #f #f #t)]))
 
 (define (parse-heads stx decls enclosing-depth)
   (syntax-case stx ()
@@ -467,10 +439,6 @@
         (list '#:description values)
         (list '#:transparent)
         (list '#:attributes check-attr-arity-list)))
-
-;; basic-rhs-directive-table
-(define basic-rhs-directive-table
-  (list (list '#:transforming)))
 
 ;; pattern-directive-table
 (define pattern-directive-table

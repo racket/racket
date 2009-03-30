@@ -1649,6 +1649,7 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->current_mt);
 
   gcMARK(pr->constant_folding);
+  gcMARK(pr->reading_delayed);
   
   gcMARK(pr->overflow_reply);
 
@@ -1759,6 +1760,7 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->current_mt);
 
   gcFIXUP(pr->constant_folding);
+  gcFIXUP(pr->reading_delayed);
   
   gcFIXUP(pr->overflow_reply);
 
@@ -5036,6 +5038,7 @@ static int mark_rename_table_MARK(void *p) {
   gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->set_identity);
   gcMARK(rn->marked_names);
+  gcMARK(rn->free_id_renames);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }
@@ -5050,6 +5053,7 @@ static int mark_rename_table_FIXUP(void *p) {
   gcFIXUP(rn->plus_kernel_nominal_source);
   gcFIXUP(rn->set_identity);
   gcFIXUP(rn->marked_names);
+  gcFIXUP(rn->free_id_renames);
   return
   gcBYTES_TO_WORDS(sizeof(Module_Renames));
 }

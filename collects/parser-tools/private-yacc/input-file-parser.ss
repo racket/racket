@@ -18,9 +18,10 @@
 
   (define stx-for-original-property (read-syntax #f (open-input-string "original")))
 
-  ;; get-args: ???
+  ;; get-args: ??? -> (values (listof syntax) (or/c #f (cons integer? stx)))
   (define (get-args i rhs src-pos term-defs)
-    (let ((empty-table (make-hash-table)))
+    (let ((empty-table (make-hash-table))
+          (biggest-pos #f))
       (hash-table-put! empty-table 'error #t)
       (for-each (lambda (td)
                   (let ((v (syntax-local-value td)))
@@ -29,24 +30,31 @@
                                     (hash-table-put! empty-table (syntax-object->datum s) #t))
                                   (syntax->list (e-terminals-def-t v))))))
                 term-defs)
-      (let get-args ((i i) 
-                     (rhs rhs))
-        (cond
-          ((null? rhs) null)
-          (else
-           (let ((b (car rhs))
-                 (name (if (hash-table-get empty-table (syntax-object->datum (car rhs)) (lambda () #f))
-                           (gensym)
-                           (string->symbol (format "$~a" i)))))
-             (cond
-               (src-pos
-                `(,(datum->syntax-object b name b stx-for-original-property)
-                  ,(datum->syntax-object b (string->symbol (format "$~a-start-pos" i)) b stx-for-original-property)
-                  ,(datum->syntax-object b (string->symbol (format "$~a-end-pos" i)) b stx-for-original-property)
-                  ,@(get-args (add1 i) (cdr rhs))))
-               (else
-                `(,(datum->syntax-object b name b stx-for-original-property)
-                  ,@(get-args (add1 i) (cdr rhs)))))))))))
+      (let ([args
+             (let get-args ((i i) 
+                            (rhs rhs))
+               (cond
+                 ((null? rhs) null)
+                 (else
+                  (let ((b (car rhs))
+                        (name (if (hash-table-get empty-table (syntax-object->datum (car rhs)) (lambda () #f))
+                                  (gensym)
+                                  (string->symbol (format "$~a" i)))))
+                    (cond
+                      (src-pos
+                       (let ([start-pos-id
+                              (datum->syntax-object b (string->symbol (format "$~a-start-pos" i)) b stx-for-original-property)]
+                             [end-pos-id
+                              (datum->syntax-object b (string->symbol (format "$~a-end-pos" i)) b stx-for-original-property)])
+                       (set! biggest-pos (cons start-pos-id end-pos-id))
+                       `(,(datum->syntax-object b name b stx-for-original-property)
+                         ,start-pos-id
+                         ,end-pos-id
+                         ,@(get-args (add1 i) (cdr rhs)))))
+                      (else
+                       `(,(datum->syntax-object b name b stx-for-original-property)
+                         ,@(get-args (add1 i) (cdr rhs)))))))))])
+        (values args biggest-pos))))
     
   ;; Given the list of terminal symbols and the precedence/associativity definitions,
   ;; builds terminal structures (See grammar.ss)
@@ -250,9 +258,18 @@
              ;; parse-action: syntax-object * syntax-object -> syntax-object
              (parse-action 
               (lambda (rhs act)
-                (quasisyntax/loc act
-                  (lambda #,(get-args 1 (syntax->list rhs) src-pos term-defs)
-                    #,act))))
+                (let-values ([(args biggest) (get-args 1 (syntax->list rhs) src-pos term-defs)])
+                  (let ([act 
+                         (if biggest
+                             (with-syntax ([$n-start-pos (datum->syntax-object (car biggest) '$n-start-pos)]
+                                           [$n-end-pos (datum->syntax-object (cdr biggest) '$n-end-pos)])
+                               #`(let ([$n-start-pos #,(car biggest)]
+                                       [$n-end-pos #,(cdr biggest)])
+                                   #,act))
+                             act)])
+                    (quasisyntax/loc act
+                      (lambda #,args
+                        #,act))))))
              
 	     ;; parse-prod+action: non-term * syntax-object -> production
 	     (parse-prod+action

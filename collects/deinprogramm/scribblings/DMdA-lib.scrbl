@@ -10,7 +10,7 @@
                      lang/prim))
 
 @(define DMdA @italic{Die Macht der Abstraktion})
-@(define (DMdA-ref s) @secref[#:doc '(lib "deinprogramm/scribblings/deinprogramm-langs.scrbl") s])
+@(define (DMdA-ref s) @secref[#:doc '(lib "deinprogramm/scribblings/deinprogramm.scrbl") s])
 
 Note: This is documentation for the language levels that go with the
 German textbook @italic{@link["http://www.deinprogramm.de/dmda/"]{Die

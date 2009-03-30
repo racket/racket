@@ -302,12 +302,12 @@
               (let ([flows (car flowss)]
                     [row-style (car row-styles)])
                 (let loop ([flows flows]
-                           [col-v-styles (and (list? row-style)
-                                              (or (let ([p (assoc 'valignment row-style)])
-                                                    (and p (cdr p)))
-                                                  (let ([p (and (list? (table-style t))
-                                                                (assoc 'valignment (table-style t)))])
-                                                    (and p (cdr p)))))])
+                           [col-v-styles (or (and (list? row-style)
+                                                  (let ([p (assoc 'valignment row-style)])
+                                                    (and p (cdr p))))
+                                             (let ([p (and (list? (table-style t))
+                                                           (assoc 'valignment (table-style t)))])
+                                               (and p (cdr p))))])
                   (unless (null? flows)
                     (when index? (printf "\\item "))
                     (unless (eq? 'cont (car flows))
@@ -347,17 +347,20 @@
           (printf "\\begin{tabular}~a{@{}l@{}}\n"
                   (cond
                    [(eq? vstyle 'top) "[t]"]
+                   [(eq? vstyle 'center) "[c]"]
                    [else ""])))
         (let loop ([ps (flow-paragraphs p)])
           (cond
            [(null? ps) (void)]
            [else
-            (let ([minipage? (not (or (paragraph? (car ps))
-                                      (table? (car ps))))])
+            (let ([minipage? (or (not (or (paragraph? (car ps))
+                                          (table? (car ps))))
+                                 (eq? vstyle 'center))])
               (when minipage?
                 (printf "\\begin{minipage}~a{~a\\linewidth}\n"
                         (cond
                          [(eq? vstyle 'top) "[t]"]
+                         [(eq? vstyle 'center) "[c]"]
                          [else ""])
                         (/ 1.0 twidth)))
               (render-block (car ps) part ri #f)

@@ -1,10 +1,14 @@
 
 (module main scheme/base
   (require scheme/mpair
-           (for-syntax scheme/base syntax/kerncase)
+           (for-syntax scheme/base syntax/kerncase
+                       "private/r5rs-trans.ss")
            (only-in mzscheme transcript-on transcript-off))
 
-  (provide (for-syntax syntax-rules ...)
+  (provide (for-syntax syntax-rules ...
+                       (rename-out [syntax-rules-only #%top]
+                                   [syntax-rules-only #%app]
+                                   [syntax-rules-only #%datum]))
            (rename-out
             [mcons cons]
             [mcar car]

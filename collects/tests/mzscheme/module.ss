@@ -237,6 +237,23 @@
 (test 18 values w_cr)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test `require' scoping
+
+
+(module fake-prefix-in scheme
+  (require scheme/require-syntax)
+  (define-require-syntax (pseudo-+ stx)
+    (syntax-case stx ()
+      [(_ id)
+       #'(only-in scheme [+ id])]))
+  (provide pseudo-+))
+
+(require 'fake-prefix-in
+         (pseudo-+ ++))
+(test 12 values (++ 7 5))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test proper bindings for `#%module-begin'
 
 (define expand-test-use-toplevel? #t)

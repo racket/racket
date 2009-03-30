@@ -91,23 +91,28 @@
  [char-set:ascii Char-Set]
  [char-set:empty Char-Set]
  [char-set:full Char-Set]
+ [char-set-fold (All (A) ((Char A -> A) A Char-Set -> A))]
+ [char-set-unfold
+  (All (A)
+       (case-lambda
+        ((A -> Any) (A -> Char) (A -> A) A -> Char-Set)
+        ((A -> Any) (A -> Char) (A -> A) A Char-Set -> Char-Set)))]
+ [char-set-unfold! 
+  (All (A) ((A -> Any) (A -> Char) (A -> A) A Char-Set -> Char-Set))]
+ [char-set-for-each (All (A) ((Char -> A) Char-Set -> (U A Void)))]
+ [char-set-any (All (A) ((Char -> A) Char-Set -> (U A #f)))]
+ [char-set-every (All (A) ((Char -> A) Char-Set -> (U A Boolean)))]
  ) ; end of require/typed
 
 ;; Definitions provided here for polymorphism
-
-(: char-set-fold (All (A) ((Char A -> A) A Char-Set -> A)))
+#;
 (define (char-set-fold comb base cs)
   (let loop ((c (char-set-cursor cs)) (b base))
     (cond [(end-of-char-set? c) b]
           [else
            (loop (char-set-cursor-next cs c)
                  (comb (char-set-ref cs c) b))])))
-
-(: char-set-unfold
-   (All (A)
-        (case-lambda
-          ((A -> Any) (A -> Char) (A -> A) A -> Char-Set)
-          ((A -> Any) (A -> Char) (A -> A) A Char-Set -> Char-Set))))    
+#;
 (define char-set-unfold
   (pcase-lambda: (A) 
      [([p : (A -> Any)] [f : (A -> Char)] [g : (A -> A)] [seed : A])
@@ -115,29 +120,25 @@
      [([p : (A -> Any)] [f : (A -> Char)] [g : (A -> A)] [seed : A] 
                         [base-cs : Char-Set])
       (char-set-unfold! p f g seed (char-set-copy base-cs))]))
-
-(: char-set-unfold! 
-   (All (A) ((A -> Any) (A -> Char) (A -> A) A Char-Set -> Char-Set)))
+#;
 (define (char-set-unfold! p f g seed base-cs)
   (let lp ((seed seed) (cs base-cs))
         (if (p seed) cs                                 ; P says we are done.
             (lp (g seed)                                ; Loop on (G SEED).
                 (char-set-adjoin! cs (f seed))))))
 
-(: char-set-for-each (All (A) ((Char -> A) Char-Set -> (U A Void))))
+#;
 (define (char-set-for-each f cs)
   (char-set-fold (lambda: ([c : Char] [b : (U A Void)]) (f c)) 
                  (void) 
                  cs))
-
-(: char-set-any (All (A) ((Char -> A) Char-Set -> (U A #f))))
+#;
 (define (char-set-any pred cs)
   (let loop ((c (char-set-cursor cs)))
     (and (not (end-of-char-set? c))
          (or (pred (char-set-ref cs c))
              (loop (char-set-cursor-next cs c))))))
-
-(: char-set-every (All (A) ((Char -> A) Char-Set -> (U A Boolean))))
+#;
 (define (char-set-every pred cs)
   (let loop ((c (char-set-cursor cs)) (b (ann #t (U #t A))))
     (cond [(end-of-char-set? c) b]

@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require dynext/compile
+         setup/dirs
          (prefix-in xform: "private/xform.ss"))
 
 (provide xform)
@@ -11,7 +12,9 @@
                 (current-extension-preprocess-flags))]
         [headers (apply append
                         (map (current-make-compile-include-strings)
-                             header-dirs))])
+                             (append
+                              header-dirs
+                              (list (find-include-dir)))))])
     (xform:xform quiet?
                  (cons exe
                        (append flags headers))

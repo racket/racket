@@ -191,7 +191,8 @@
   (cs-status-expanding-expression "Vérificateur de syntaxe : expansion d'une expression")
   (cs-status-loading-docs-index "Vérificateur de syntaxe : chargement de l'index de la documentation")
   (cs-mouse-over-import "l'identificateur ~s est importé de ~s")
-  (cs-view-docs "Regarder la documentation pour ~a")
+  (cs-view-docs "Documentation pour ~a")
+  (cs-view-docs-from "~a dans ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
 
   (cs-lexical-variable "variables lexicales")
   (cs-imported-variable "variables importées")
@@ -200,7 +201,7 @@
   (collect-button-label "Ramassage") ; de miettes
   (read-only "Lecture seulement")
   (auto-extend-selection "Autosélection") ; "Sélection auto-étendable" ?
-  (overwrite "Correction") ; vs Insertion ? surimpression ?
+  (overwrite "Écrasement") ; vs Insertion ? surimpression ?
   (running "en cours")
   (not-running "en attente") ; "en attente" ; pause ?
   
@@ -241,6 +242,11 @@
   (logging-to "Enregistrer dans : ")
   (erase-log-directory-contents "Effacer le contenu du répertoire d'enregistrement : ~a ?")
   (error-erasing-log-directory "Erreur durant l'effacement du contenu du répertoire d'enregistrement.\n\n~a\n")
+  
+  ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
+  (show-log "Montrer le journa&l") ; "journaux" ne contient pas de "l"...
+  (hide-log "Cacher le journa&l")
+  (logging-all "Tous") ;; in the logging window in drscheme, shows all logs simultaneously
   
   ;; modes
   (mode-submenu-label "Modes")
@@ -676,6 +682,9 @@
   (complete-word "Compléter le mot") ; the complete word menu item in the edit menu
   (no-completions "... pas de complétion connue") ; shows up in the completions menu when there are no completions (in italics)
   
+  (overwrite-mode "Mode d'écrasement")
+  (enable-overwrite-mode-keybindings "Raccourci clavier pour le mode d'écrasement")
+  
   (preferences-info "Configurer vos préférences.")
   (preferences-menu-item "Préférences...")
   
@@ -707,18 +716,21 @@
   
   (wrap-text-item "Replier le texte")
   
+  ;; windows menu
   (windows-menu-label "Fe&nêtres")
   (minimize "Minimiser") ;; minimize and zoom are only used under mac os x
   (zoom "Agrandir") ; Zoomer?
   (bring-frame-to-front "Amener une fenêtre au premier plan")       ;;; title of dialog
   (bring-frame-to-front... "Amener une fenêtre au premier plan...") ;;; corresponding title of menu item
   (most-recent-window "Fenêtre la plus récente")
+  (next-tab "Onglet suivant")
+  (prev-tab "Onglet précédent")
   
   (view-menu-label "&Montrer")
-  (show-overview "Montrer le contour")
-  (hide-overview "Cacher le contour")
-  (show-module-browser "Montrer le navigateur de modules")
-  (hide-module-browser "Cacher le navigateur de modules")
+  (show-overview "Montrer le contour du &programme")
+  (hide-overview "Cacher le contour du &programme")
+  (show-module-browser "Montrer le navigateur de &modules")
+  (hide-module-browser "Cacher le navigateur de &modules")
   
   (help-menu-label "&Aide")
   (about-info "Auteurs et détails concernant ce logiciel.")
@@ -783,7 +795,7 @@
   ;;; file modified warning
   (file-has-been-modified
    "Ce fichier a été modifié depuis sa dernière sauvegarde. Voulez-vous écraser les modifications ?")
-  (overwrite-file-button-label "Ecraser")
+  (overwrite-file-button-label "Écraser")
   
   (definitions-modified 
    "Le texte de la fenêtre de définition a été modifié directement sur le disque dur. Sauvegardez ou retournez à la version sur le disque.")
@@ -842,7 +854,7 @@
   (close-tab "Fermer l'onglet")
   (close-tab-amp "Fermer l'onglet") ;; like close-tab, but with an ampersand on the same letter as the one in close-menu-item
 
-  ;;; edit-menu
+  ;;; edit menu
   (split-menu-item-label "Di&viser")
   (collapse-menu-item-label "&Rassembler")
   
@@ -859,10 +871,10 @@
   (force-quit-menu-item-help-string "Utilise custodian-shutdown-all pour terminer toute l'évaluation courante")
   (limit-memory-menu-item-label "Limiter la mémoire...")
   (limit-memory-msg-1 "La limite prendra effet à la prochaine exécution du programme.")
-  (limit-memory-msg-2 "Elle doit être d'au moins 1 megaoctet.")
+  (limit-memory-msg-2 "Elle doit être d'au moins un megaoctet.")
   (limit-memory-unlimited "Illimitée")
-  (limit-memory-limited "Limitée")
-  (limit-memory-megabytes "Megaoctets")
+  (limit-memory-limited "Limitée à")
+  (limit-memory-megabytes "megaoctets")
   (clear-error-highlight-menu-item-label "Effacer le surlignage d'erreur")
   (clear-error-highlight-item-help-string "Efface le surlignage rose après une erreur")
   (reindent-menu-item-label "&Réindenter")
@@ -996,6 +1008,7 @@
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
   (enforce-primitives-group-box-label "Définitions initiales")
   (enforce-primitives-check-box-label "Interdire la redéfinition des définition initiales")
+  (automatically-compile? "Compiler automatiquement les fichiers source ?")
 
   ; used in the bottom left of the drscheme frame as the label
   ; used the popup menu from the just above; greyed out and only
@@ -1033,6 +1046,7 @@
   (no-language-chosen "Aucun langage sélectionné")
   
   (module-language-one-line-summary "Exécuter crée une fenêtre d'interaction dans le contexte du module, incluant le langage du module lui-même")
+  (module-language-auto-text "Ligne #lang automatique") ;; shows up in the details section of the module language
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrScheme ne peut pas traiter un programme avant que vous aillez sélectionné un langage.")
@@ -1423,5 +1437,18 @@
   (bug-track-forget "Oublier")
   (bug-track-forget-all "Oublier tous")
   
+  ;; planet status messages in the bottom of the drscheme window; the ~a is filled with the name of the package
+  (planet-downloading "PLaneT: téléchargement de ~a...")
+  (planet-installing "PLaneT: installation de ~a...")
+  (planet-finished "PLaneT: ~a à jour.")
+  (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
+  
+  ;; string normalization. To see this, paste some text with a ligature into DrScheme
+  ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
+  (normalize "Normaliser")
+  (leave-alone "Ne pas changer")
+  (normalize-string-info "La chaîne de caractères à coller contient des ligatures ou des caractères non-normalisés. Normaliser la chaîne ?")
+  (normalize-string-preference "Normaliser les chaînes de caractères durant le collage")
+  (ask-about-normalizing-strings "Demander à propos de la normalisation des chaînes de caractères")
 
   ); "aâàbcçdeéêèëfghiîïjklmnoôpqrstuûùüvwxyz"

@@ -620,6 +620,7 @@
   scheme_extension_table->scheme_get_milliseconds = scheme_get_milliseconds;
   scheme_extension_table->scheme_get_inexact_milliseconds = scheme_get_inexact_milliseconds;
   scheme_extension_table->scheme_get_process_milliseconds = scheme_get_process_milliseconds;
+  scheme_extension_table->scheme_get_thread_milliseconds = scheme_get_thread_milliseconds;
   scheme_extension_table->scheme_banner = scheme_banner;
   scheme_extension_table->scheme_version = scheme_version;
   scheme_extension_table->scheme_check_proc_arity = scheme_check_proc_arity;

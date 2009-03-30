@@ -887,6 +887,21 @@ Scheme_Object *do_big_power(const Scheme_Object *a, const Scheme_Object *b)
 Scheme_Object *scheme_generic_integer_power(const Scheme_Object *a, const Scheme_Object *b)
 {
   unsigned long exponent;
+
+  if (scheme_current_thread->constant_folding) {
+    /* if we're trying to fold a constant, limit the work that we're willing to do at compile time */
+    GC_CAN_IGNORE const char *too_big = "arguments too big to fold `expt'";
+    if (SCHEME_BIGNUMP(b)
+        || (SCHEME_INT_VAL(b) > 10000))
+      scheme_signal_error(too_big);
+    else if (SCHEME_BIGNUMP(a)) {
+      int len = SCHEME_BIGLEN(a);
+      if ((len > 10000)
+          || (len * SCHEME_INT_VAL(b)) > 10000)
+        scheme_signal_error(too_big);
+    }
+  }
+
   if (scheme_get_unsigned_int_val((Scheme_Object *)b, &exponent))
     return do_power(a, exponent);
   else

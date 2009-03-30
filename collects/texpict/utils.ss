@@ -56,19 +56,25 @@
            clip
 
 	   hyperlinkize)
+
+  (define (pict-path? p)
+    (or (pict? p) 
+        (and (pair? p)
+             (list? p)
+             (andmap pict? p))))
   
   (provide/contract 
    [pin-line (->* (pict?
-                   pict? (-> pict? pict? (values number? number?))
-                   pict? (-> pict? pict? (values number? number?)))
+                   pict-path? (-> pict? pict-path? (values number? number?))
+                   pict-path? (-> pict? pict-path? (values number? number?)))
                   ((or/c false/c number?)
                    (or/c false/c string?)
                    boolean?)
                   pict?)]
    [pin-arrow-line (->* (number?
                          pict?
-                         pict? (-> pict? pict? (values number? number?))
-                         pict? (-> pict? pict? (values number? number?)))
+                         pict-path? (-> pict? pict-path? (values number? number?))
+                         pict-path? (-> pict? pict-path? (values number? number?)))
                         ((or/c false/c number?) 
                          (or/c false/c string?)
                          boolean?
@@ -76,8 +82,8 @@
                          #:hide-arrowhead? any/c)
                         pict?)]
    [pin-arrows-line (->* (number? pict?
-                           pict? (-> pict? pict? (values number? number?))
-                           pict? (-> pict? pict? (values number? number?)))
+                           pict-path? (-> pict? pict-path? (values number? number?))
+                           pict-path? (-> pict? pict-path? (values number? number?)))
                           ((or/c false/c number?)
                            (or/c false/c string?)
                            boolean?

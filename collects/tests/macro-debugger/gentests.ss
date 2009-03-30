@@ -57,7 +57,7 @@
                       [expect-ok? (cdr key+expect-ok?)])
                   (check-hide d hide-none-policy expect-ok?)
                   (check-hide d hide-all-policy expect-ok?)
-                  (check-hide d simple-policy expect-ok?))))]
+                  (check-hide d T-policy expect-ok?))))]
         [else #f]))
 
 (define (check-hide d policy expect-ok?)
@@ -86,14 +86,14 @@
            (error 'checker-for-hidden-steps "no steps given for ~s" label))
          (test-case label
            (let* ([d (trace/ns form (assq '#:kernel attrs))]
-                  [rs (parameterize ((macro-policy simple-policy))
+                  [rs (parameterize ((macro-policy T-policy))
                         (reductions d))])
              (check-steps (cdr (assq '#:steps attrs)) rs)))]
         [(assq '#:hidden-steps attrs)
          => (lambda (key+expected)
               (test-case label
                 (let* ([d (trace/ns form (assq '#:kernel attrs))]
-                       [rs (parameterize ((macro-policy simple-policy))
+                       [rs (parameterize ((macro-policy T-policy))
                              (reductions d))])
                   (check-steps (cdr (assq '#:hidden-steps attrs)) rs))))]
         [else #f]))

@@ -1,23 +1,27 @@
 #lang scheme/base
 
-(provide strip-context)
+(provide strip-context
+         replace-context)
 
 (define (strip-context e)
+  (replace-context #f e))
+
+(define (replace-context ctx e)
   (cond
    [(syntax? e)
-    (datum->syntax #f
-                   (strip-context (syntax-e e))
+    (datum->syntax ctx
+                   (replace-context ctx (syntax-e e))
                    e
                    e)]
-   [(pair? e) (cons (strip-context (car e))
-                    (strip-context (cdr e)))]
+   [(pair? e) (cons (replace-context ctx (car e))
+                    (replace-context ctx (cdr e)))]
    [(vector? e) (list->vector
-                 (map strip-context
+                 (map (lambda (e) (replace-context ctx e))
                       (vector->list e)))]
-   [(box? e) (box (strip-context (unbox e)))]
+   [(box? e) (box (replace-context ctx (unbox e)))]
    [(prefab-struct-key e)
     => (lambda (k)
          (apply make-prefab-struct
                 k
-                (strip-context (cdr (vector->list (struct->vector e))))))]
+                (replace-context ctx (cdr (vector->list (struct->vector e))))))]
    [else e]))
