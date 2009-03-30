@@ -131,9 +131,10 @@
   (set-node-total! *-node total-time)
   ;; convert the nodes from the hash to a list, do a topological sort, and then
   ;; sort by total time (combining both guarantees(?) sensible order)
-  (let* ([nodes (hash-map id+src->node-hash (lambda (k v) v))]
-         [nodes (topological-sort *-node (length nodes))]
-         [nodes (sort (remq *-node nodes) > #:key node-total)])
+  (let ([nodes (remq *-node (topological-sort
+                             *-node
+                             (lambda (nodes)
+                               (sort nodes > #:key node-total))))])
     ;; sort all the edges in the nodes according to total time
     (for ([n (in-list nodes)])
       (set-node-callees! n (sort (node-callees n) > #:key edge-callee-time))
@@ -148,21 +149,30 @@
      *-node)))
 
 ;; A simple topological sort of nodes using BFS, starting from node `x' which
-;; will be the special *-node.  Note that `expected-length' is only given for
-;; the sanity check in the end.
-(define (topological-sort x expected-length)
-  (define sorted
-    (let loop ([todo (list x)] [seen (list x)])
-      (if (null? todo)
-        '()
-        (let* ([next (append-map (lambda (x) (map edge-caller (node-callers x)))
-                                 todo)]
-               [next (remove-duplicates next)]
-               [next (remq* seen next)])
-          (append todo (loop next (append next seen)))))))
-  (if (= expected-length (length sorted))
-    sorted
-    (error 'topological "internal error")))
+;; will be the special *-node.  `subsort' is a `resolver' function to sort
+;; nodes on the same level.
+(define (topological-sort x subsort)
+  (let loop ([todo (list x)] [seen (list x)])
+    (if (null? todo)
+      '()
+      (let* ([next (append-map (lambda (x) (map edge-callee (node-callees x)))
+                               todo)]
+             [next (remove-duplicates next)]
+             [next (subsort (remq* seen next))])
+        (append todo (loop next (append next seen)))))))
+#|
+(define (node id) (make-node id #f '() 0 0 '() '()))
+(define (X . -> . Y)
+  (let ([e (make-edge 0 X 0 Y 0)])
+    (set-node-callers! Y (cons e (node-callers Y)))
+    (set-node-callees! X (cons e (node-callees X)))))
+(define A (node 'A))
+(define B (node 'B))
+(define C (node 'C))
+(A . -> . B)
+(B . -> . C)
+(topological-sort A 3)
+|#
 
 ;; Groups raw samples by their thread-id, returns a vector with a field for
 ;; each thread id holding the sample data for that thread.  The samples in
