@@ -3,7 +3,7 @@
 @(require scribble/manual
           (for-label scheme))
 
-@title{Statistical Profiler}
+@title{@bold{Profile}: Statistical Profiler}
 
 The @scheme[profile] collection implements a statistical profiler.
 The profiling is done by running a background thread that collects
