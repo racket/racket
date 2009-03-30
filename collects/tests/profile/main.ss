@@ -20,7 +20,7 @@
     (for/list ([edge (get node)])
       `(,(node-id* (edge-caller edge)) -> ,(node-id* (edge-callee edge))
         time=  ,(get-time edge)
-        total= ,(edge-time edge))))
+        total= ,(edge-total edge))))
   (define (node->sexpr node)
     `(,(node-id* node)
           total=   ,(node-total node)
