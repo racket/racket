@@ -181,13 +181,22 @@
             [else out]))))
     )
   
-  (define-unit rank-defaults@
+  #;(define-unit rank-defaults@
     (import)
     (export ranking-parameters^)
     (define (rank-choice choices) (apply max choices))
     (define-values 
       (rank-misspell rank-caps rank-class rank-wrong rank-end)
       (values 4/5 9/10 2/5 1/5 2/5)))
+  
+  (define-unit rank-defaults@
+    (import)
+    (export ranking-parameters^)
+    (define (rank-choice choices) (apply max choices))
+    (define-values 
+      (rank-misspell rank-caps rank-class rank-wrong rank-end rank-repeat)
+      (values 16/71 18/71 8/71 4/71 8/71 17/71)))
+ 
   
   (define-unit out-struct@
     (import)

@@ -15,6 +15,7 @@
     (export combinator-parser-forms^)
     
     (define return-name "dummy")
+    (define terminal-occurs "unique-eq")
     
     (define (make-weak-map) (make-weak-hasheq))
  
@@ -34,7 +35,8 @@
     ;terminal: ('a -> bool 'a -> 'b string) -> ( (list 'a) -> res )
     (define terminal
       (opt-lambda (pred build name [spell? #f] [case? #f] [class? #f])
-        (let* ([fail-str (string-append "failed " name)]
+        (let* ([memo-table (make-weak-map)]
+               [fail-str (string-append "failed " name)]
                [t-name (if src? (lambda (t) (token-name (position-token-token t))) token-name)]
                [t-val (if src? (lambda (t) (token-value (position-token-token t))) token-value)]
                [spell? (or spell? 
@@ -62,49 +64,53 @@
           (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
             #;(printf "terminal ~a~n" name)
             #;(cond
-                [(eq? input return-name)
-                 (printf "dummy given~n")]
-                [(null? input) (printf "null given~n")]
+                [(eq? input return-name) (printf "name requested~n")]
+                [(null? input) (printf "null input~n")]
                 [else
                  (let ([token (position-token-token (car input))])
-                   (printf "Look at token ~a~n" token)
-                   (printf "calling pred: ~a~n" (pred token)))])
+                   (printf "Token given ~a, match? ~a~n" token (pred token)))])
             (cond
               [(eq? input return-name) name]
-              [(null? input) 
-               (fail-res null (make-terminal-fail rank-end last-src name 0 0 'end #f))]
-              [else 
-               (let* ([curr-input (car input)]
-                      [token (if src? (position-token-token curr-input) curr-input)])
-                 (cond
-                   [(pred token)
-                    (make-res (list (builder curr-input)) 
-                              (cdr input) name 
-                              (value curr-input) 1 #f curr-input)]
-                   [else 
-                    #;(printf "Incorrect input for ~a : ~a miscase? ~a misspell? ~a ~n" name 
-                            (cond 
-                              [(token-value token)
-                               (token-value token)]
-                              [else (token-name token)])
-                            (case? curr-input)
-                            (spell? curr-input))
-                    (fail-res (cdr input) 
-                              (let-values ([(chance kind may-use)
-                                            (cond
-                                              [(case? curr-input) (values rank-caps 'misscase 1)]
-                                              [(> (spell? curr-input) 3/5)
-                                               (values (* rank-misspell 
-                                                          (spell? curr-input)) 'misspell 1)]
-                                              [(class? curr-input) (values rank-class 'missclass 1)]
-                                              [else (values rank-wrong 'wrong 0)])])
-                                (make-fail chance name kind curr-input may-use)))]))])))))
-    
+              [(eq? input terminal-occurs) (list (make-occurs name 1))]
+              [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]
+              [else
+               (let ([result
+                      (cond
+                        [(null? input) 
+                         (fail-res null (make-terminal-fail rank-end last-src name 0 0 'end #f))]
+                        [else 
+                         (let* ([curr-input (car input)]
+                                [token (if src? (position-token-token curr-input) curr-input)])
+                           (cond
+                             [(pred token)
+                              (make-res (list (builder curr-input)) 
+                                        (cdr input) name 
+                                        (value curr-input) 1 #f curr-input)]
+                             [else 
+                              #;(printf "Incorrect input for ~a : ~a miscase? ~a misspell? ~a ~n" name 
+                                        (cond 
+                                          [(token-value token) (token-value token)]
+                                          [else (token-name token)])
+                                        (case? curr-input)
+                                        (spell? curr-input))
+                              (fail-res (cdr input) 
+                                        (let-values ([(chance kind may-use)
+                                                      (cond
+                                                        [(case? curr-input) (values rank-caps 'misscase 1)]
+                                                        [(> (spell? curr-input) 3/5)
+                                                         (values (* rank-misspell 
+                                                                  (spell? curr-input)) 'misspell 1)]
+                                                      [(class? curr-input) (values rank-class 'missclass 1)]
+                                                      [else (values rank-wrong 'wrong 0)])])
+                                          (make-fail chance name kind curr-input may-use)))]))])])
+                 (weak-map-put! memo-table input result))])))))
+
     ;seq: ( (list ((list 'a) -> res)) ((list 'b) -> 'c) string -> ((list 'a) -> result)
     (define seq 
       (opt-lambda (sub-list build name [id-position 0])
         (let* ([sequence-length (length sub-list)]
                [memo-table (make-weak-map)]
+               [terminal-counts #f]
                [prev (lambda (x) 
                        (cond [(eq? x return-name) "default previous"]
                              [else (fail-res null null)]))]
@@ -131,6 +137,13 @@
             #;(unless (eq? input return-name) (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
+              [(eq? input terminal-occurs)
+               (or terminal-counts
+                   (begin
+                     (set! terminal-counts 'counting)
+                     (set! terminal-counts
+                           (consolidate-count (map (lambda (symbol) (symbol terminal-occurs)) sub-list)))
+                     terminal-counts))]
               [(weak-map-get memo-table input #f) 
                (weak-map-get memo-table input)]
               [(null? sub-list)
@@ -659,6 +672,7 @@
         (opt-lambda (input [start-src (list 1 0 1 0)] [alts 1])
           (cond
             [(eq? input return-name) (repeat-name)]
+            [(eq? input terminal-occurs) (sub terminal-occurs)]
             [(weak-map-get memo-table input #f)(weak-map-get memo-table input)]
             [else
              (let ([ans
@@ -739,6 +753,7 @@
     ;choice: [list [[list 'a ] -> result]] name -> result
     (define (choice opt-list name)
       (let ([memo-table (make-weak-map)]
+            [terminal-counts #f]
             [num-choices (length opt-list)]
             [choice-names (lambda () (map (lambda (o) (o return-name)) opt-list))])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
@@ -746,8 +761,15 @@
           #;(printf "possible options are ~a~n" (choice-names))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
-              [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]
               [(eq? input return-name) name]
+              [(eq? input terminal-occurs)
+               (or terminal-counts
+                   (begin
+                     (set! terminal-counts 'counting)
+                     (set! terminal-counts
+                           (consolidate-count (map (lambda (symbol) (symbol terminal-occurs)) opt-list)))
+                     terminal-counts))]
+              [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]              
               [else
                #;(printf "choice ~a~n" name)
                #;(printf "possible options are ~a~n" (choice-names))
