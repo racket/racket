@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(provide profile-thunk profile)
+
 (require "sampler.ss" (except-in "analyzer.ss" profile)
          (prefix-in text: "render-text.ss")
          (for-syntax scheme/base))
@@ -46,6 +48,7 @@
                                    stx (car xs))]
          [else (loop (car xs) kwds (cdr xs))]))]))
 
+#|
 
 (define (fib1 n) (if (<= n 1) n (+ (fib1 (- n 1)) (fib1 (- n 2)))))
 (define (fib22 n) (if (<= n 2) 1 (+ (fib22 (- n 1)) (fib22 (- n 2)))))
@@ -67,3 +70,4 @@
          ;(foo 35)
          ;#:render render
          #:threads #t)
+|#
