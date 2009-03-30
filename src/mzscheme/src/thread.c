@@ -2587,7 +2587,7 @@ static void do_swap_thread()
     scheme_current_thread = new_thread;
 
     /* Fixup current pointers in thread sets */
-    {
+    if (!scheme_current_thread->return_marks_to) {
       Scheme_Thread_Set *t_set = new_thread->t_set_parent;
       t_set->current = (Scheme_Object *)new_thread;
       while (t_set->parent) {
