@@ -52,7 +52,8 @@
   (define total-time    (profile-total-time    profile))
   (define cpu-time      (profile-cpu-time      profile))
   (define sample-number (profile-sample-number profile))
-  (define granularity   (/ total-time sample-number))
+  (define granularity   (if (zero? sample-number) 0
+                            (/ total-time sample-number)))
   (define threads+times (profile-thread-times  profile))
   (define *-node        (profile-*-node profile))
   (define hidden        (get-hidden profile hide-self% hide-subs%))
@@ -100,10 +101,10 @@
       (define name   (node-> 'label node))
       (define total  (node-total node))
       (define totalS (f:msec total))
-      (define total% @string-append{(@(format-percent (/ total total-time)))})
+      (define total% @string-append{(@(format-percent total total-time))})
       (define self   (node-self node))
       (define selfS  (f:msec self))
-      (define self%  @string-append{(@(format-percent (/ self total-time)))})
+      (define self%  @string-append{(@(format-percent self total-time))})
       (define name+src
         (let* ([src      (format-source (node-src node))]
                [src-len  (string-length src)]
@@ -124,7 +125,7 @@
                     #:when (not (or (eq? *-node sub)        ; <-- ...for this
                                     (memq sub hidden))))
           (define name   (node-> 'sub-label sub))
-          (define local% (format-percent (/ (get-node-time edge) total)))
+          (define local% (format-percent (get-node-time edge) total))
           `("" "" "" "" "" "" "" ""
             ,(string-append "  " name) ,local%
             "" "")))
