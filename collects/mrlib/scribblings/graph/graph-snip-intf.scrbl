@@ -51,6 +51,8 @@ this snip.
 
   Removes a child snip from this snip. Be sure to remove
   this snip as a parent from the argument, too.
+  Instead of calling this method, consider using the
+  @scheme[remove-links] function.
 }
 
 
@@ -59,7 +61,8 @@ this snip.
 
   Removes a parent snip from this snip. Be sure to remove this
   snip as a child from the argument, too.
-
+  Instead of calling this method, consider using the
+  @scheme[remove-links] function.
 }
 
 
@@ -69,7 +72,6 @@ this snip.
 
   Changes the label on the edge going to the @scheme[parent] to be
   @scheme[label].  Ignored if no such egde exists.
-
 }
 
 }

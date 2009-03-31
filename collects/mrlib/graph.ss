@@ -21,7 +21,9 @@
       add-parent
       remove-parent
       has-self-loop?
-      
+
+      set-parent-link-label
+
       find-shortest-path))
   
   (define-local-member-name get-parent-links)
@@ -84,6 +86,11 @@
                        (or/c false/c string?)
                        . -> .
 		       void?))
+                    (remove-links
+                     ((is-a?/c graph-snip<%>)
+                      (is-a?/c graph-snip<%>)
+                      . -> .
+                      void?))
                     (set-link-label
                      ((is-a?/c graph-snip<%>)
                       (is-a?/c graph-snip<%>)
@@ -146,6 +153,10 @@
                                  label)
     (send parent add-child child)
     (send child add-parent parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
+
+  (define (remove-links parent child)
+    (send parent remove-child child)
+    (send child remove-parent parent))
 
   (define (set-link-label parent child label)
     (send child set-parent-link-label parent label))
