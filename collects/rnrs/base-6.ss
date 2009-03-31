@@ -3,6 +3,7 @@
 (require (for-syntax (rename-in r6rs/private/base-for-syntax
                                 [syntax-rules r6rs:syntax-rules])
                      scheme/base)
+         scheme/promise
          scheme/splicing
          r6rs/private/qq-gen
          r6rs/private/exns
@@ -346,7 +347,7 @@
          [s (if (regexp-match? #rx"#[dDxXoObB]" s)
                 s
                 (string-append prefix s))])
-    (and (regexp-match? rx:number s)
+    (and (regexp-match? (force rx:number) s)
          (string->number (regexp-replace* #rx"[|][0-9]+" s "")))))
 
 (define r6rs:symbol=?

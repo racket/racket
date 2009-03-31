@@ -3,6 +3,7 @@
 ;; Readtable-based R6RS reading
 
 (require syntax/readerr
+         scheme/promise
          (for-syntax scheme/base))
 
 (provide with-r6rs-reader-parameters
@@ -436,8 +437,8 @@
                        (num 8)
                        (num 2)))
 
-    (values (pregexp (string-append "^" identifier "$"))
-            (pregexp (string-append "^" number "$")))))
+    (values (delay (pregexp (string-append "^" identifier "$")))
+            (delay (pregexp (string-append "^" number "$"))))))
 
 (define (do-read-symbol-or-number num? prefix port src line col pos)
   ;; Read a delimited sequence (using an extended notion of delimiter),
@@ -453,7 +454,7 @@
      [(regexp-match? #rx"^[a-zA-Z!$%&*/:<=>?^_~][a-zA-Z0-9+!$%&*/:<=>?^_~.@-]*$" thing)
       ;; Simple symbol:
       (string->symbol thing)]
-     [(regexp-match? rx:number thing)
+     [(regexp-match? (force rx:number) thing)
       (let ([n (string->number 
                 ;; MzScheme doesn't handle mantissa widths, yet, so strip them out:
                 (regexp-replace* #rx"[|][0-9]+" thing ""))])
@@ -461,7 +462,7 @@
           (error 'r6rs-parser "number didn't convert: ~e" thing))
         n)]
      [(and (not num?)
-           (regexp-match? rx:id thing))
+           (regexp-match? (force rx:id) thing))
       (string->symbol
        (bytes->string/utf-8 
         (let loop ([t (string->bytes/utf-8 thing)])
