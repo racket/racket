@@ -84,7 +84,7 @@
                        (or/c false/c string?)
                        . -> .
 		       void?))
-                    (set-links-label!
+                    (set-link-label
                      ((is-a?/c graph-snip<%>)
                       (is-a?/c graph-snip<%>)
                       (or/c false/c string?)
@@ -147,7 +147,7 @@
     (send parent add-child child)
     (send child add-parent parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
 
-  (define (set-links-label! parent child label)
+  (define (set-link-label parent child label)
     (send child set-parent-link-label parent label))
 
   (define graph-snip-mixin
