@@ -252,6 +252,7 @@
       set-arrowhead-params
       get-arrowhead-params
       set-draw-arrow-heads?
+      set-flip-labels?
       draw-edges))
   
   (define-struct rect (left top right bottom))
@@ -264,23 +265,21 @@
                   [edge-labels? #t])
       
       (define draw-arrow-heads? #t)
+      (define flip-labels?      #t)
       (inherit refresh get-admin)
-      (define/public (set-draw-arrow-heads? x)
-        (set! draw-arrow-heads? x)
+      (define (refresh*)
         (let ([admin (get-admin)])
           (when admin
-            (let ([xb (box 0)]
-                  [yb (box 0)]
-                  [wb (box 0)]
-                  [hb (box 0)])
+            (let ([xb (box 0)] [yb (box 0)] [wb (box 0)] [hb (box 0)])
               (send admin get-view xb yb wb hb)
               (send admin needs-update
-                    (unbox xb)
-                    (unbox yb)
-                    (unbox wb)
-                    (unbox hb))))))
-      
-      
+                    (unbox xb) (unbox yb) (unbox wb) (unbox hb))))))
+      (define/public (set-draw-arrow-heads? x)
+        (set! draw-arrow-heads? x)
+        (refresh*))
+      (define/public (set-flip-labels? x)
+        (set! flip-labels? x)
+        (refresh*))
       
       (define arrowhead-angle-width (* 1/4 pi))
       (define arrowhead-short-side 8)
@@ -644,7 +643,8 @@
                                       [arrowhead-end (make-rectangular arrow-end-x arrow-end-y)]
                                       [vec (- arrowhead-end from-pt)]
                                       [angle (- (angle vec))]
-                                      [flip? (not (< (/ pi -2) angle (/ pi 2)))]
+                                      [flip? (and flip-labels?
+                                                  (not (< (/ pi -2) angle (/ pi 2))))]
                                       [angle (if flip? (+ angle pi) angle)]
                                       [middle (+ from-pt
                                                  (- (* 1/2 vec)

@@ -45,6 +45,17 @@ different nodes.
 
 }
 
+@defmethod[(set-draw-arrow-heads? [flip-labels? any/c])
+           void?]{
+
+Sets a boolean controlling whether or not arrow labels are flipped so
+the are always right-side-up.
+
+This setting does not affect self-links---only links between two
+different nodes.
+
+}
+
 @defmethod[(draw-edges [dc (is-a?/c dc<%>)]
 [left real?]
 [top real?]
