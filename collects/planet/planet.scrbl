@@ -89,6 +89,61 @@ in the abbreviated syntax to omit a filename to be required entirely;
 in that case, PLaneT requires the file @filepath{main.ss} in the given
 package.
 
+@subsection{Networking troubles}
+
+Sometimes, when PLaneT tries to download and install a
+package for the first time, your operating system may block
+it from access to the network. If you are uncomfortable
+giving DrScheme free access to the network (or if your
+attempts to do so do not seem to work), then you can use
+your browser to manually install a planet package.
+
+To see how this works, lets assume you want to install the PLAI package
+and @schemeblock[(require (planet plai/plai:1))] is not working for you.
+@itemize[
+@item{First, 
+fire up a command-line window and use @tt{planet url} to 
+determine the url for downloading the package. 
+To find the url for version @tt{(1 1)} of the plai package,
+do this:
+
+@tt{% planet url plai plai.plt 1 1}
+
+and get this as a response:
+
+@tt{http://planet.plt-scheme.org/servlets/planet-servlet.ss?lang=%224.1.5.3%22&name=%22plai.plt%22&maj=1&min-lo=1&min-hi=%23f&path=%28%22plai%22%29}}
+
+@item{Copy and paste that url into your browser, which
+should trigger the dowload of a file called
+@tt{plai.plt}. Note that your browser will probably try to
+call the file something else. Rename it to @tt{plai.plt}.}
+
+@item{Now run the command-line tool one more time to install the plt file:
+
+@tt{% planet fileinject plai plai.plt 1 1}
+
+This command should be run from the same directory where you saved @tt{plai.plt}.
+
+This command may fail, since version @tt{(1 1)} of the PLAI
+package depends on @tt{cce/scheme:4:1}. If it does, simply
+repeat the above steps for that package first, and then
+continue with the @tt{fileinject} command for PLAI.}
+
+@item{Finally, to check that the installation is successful,
+run @tt{planet show}. You should see output like this
+(possibly with slightly different version numbers, if the
+packages have been updated since this was written):
+@verbatim{
+Normally-installed packages:
+  cce	scheme.plt	4 1
+  plai	plai.plt	1 1
+}}
+]
+
+Once that is complete, PLaneT will use that version of the
+package for any subsequent @scheme[require]s and won't try
+to use the network.
+
 @subsection{Fine-Grained Control Over Package Imports}
 
 The PLaneT client is designed to balance two competing goals:
