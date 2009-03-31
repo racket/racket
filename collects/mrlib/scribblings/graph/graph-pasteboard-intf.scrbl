@@ -49,7 +49,10 @@ different nodes.
            void?]{
 
 Sets a boolean controlling whether or not arrow labels are flipped so
-the are always right-side-up.
+the are always right-side-up.  Note that if there are two nodes with
+edges going from the first to the second, and from the second to the
+first, and the two have labels, then this should be turned off or the
+labels will appear in the same space.
 
 This setting does not affect self-links---only links between two
 different nodes.
