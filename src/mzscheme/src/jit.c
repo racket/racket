@@ -104,6 +104,8 @@ static void assert_failure(int where) { printf("JIT assert failed %d\n", where);
 /* Used by vector-set-performance-stats!: */
 int scheme_jit_malloced;
 
+static int skip_checks = 0;
+
 #define MAX_SHARED_CALL_RANDS 25
 static void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
 static void *shared_non_tail_code[4][MAX_SHARED_CALL_RANDS][2];
@@ -4131,38 +4133,42 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         jit_movr_p(JIT_R2, JIT_R0); /* save original argument */
       }
       for (i = 0; i < steps; i++) {
-        if (!i) {
-          ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-          reffail = _jit.x.pc;
-          __END_TINY_JUMPS__(1);
-          if (steps == 1) {
-            if (name[1] == 'a') {
-              (void)jit_calli(bad_car_code);
+        if (!skip_checks) {
+          if (!i) {
+            ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+            reffail = _jit.x.pc;
+            __END_TINY_JUMPS__(1);
+            if (steps == 1) {
+              if (name[1] == 'a') {
+                (void)jit_calli(bad_car_code);
+              } else {
+                (void)jit_calli(bad_cdr_code);
+              }
             } else {
-              (void)jit_calli(bad_cdr_code);
+              if (name[1] == 'a') {
+                if (name[2] == 'a') {
+                  (void)jit_calli(bad_caar_code);
+                } else {
+                  (void)jit_calli(bad_cadr_code);
+                }
+              } else {
+                if (name[2] == 'a') {
+                  (void)jit_calli(bad_cdar_code);
+                } else {
+                  (void)jit_calli(bad_cddr_code);
+                }
+              }
             }
+            __START_TINY_JUMPS__(1);
+            mz_patch_branch(ref);
           } else {
-            if (name[1] == 'a') {
-              if (name[2] == 'a') {
-                (void)jit_calli(bad_caar_code);
-              } else {
-                (void)jit_calli(bad_cadr_code);
-              }
-            } else {
-              if (name[2] == 'a') {
-                (void)jit_calli(bad_cdar_code);
-              } else {
-                (void)jit_calli(bad_cddr_code);
-              }
-            }
+            (void)jit_bmsi_ul(reffail, JIT_R0, 0x1);
           }
-          __START_TINY_JUMPS__(1);
-          mz_patch_branch(ref);
+          jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+          (void)jit_bnei_i(reffail, JIT_R1, scheme_pair_type);
         } else {
-          (void)jit_bmsi_ul(reffail, JIT_R0, 0x1);
+          reffail = NULL;
         }
-        jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-        (void)jit_bnei_i(reffail, JIT_R1, scheme_pair_type);
         if (name[steps - i] == 'a') {
           (void)jit_ldxi_p(JIT_R0, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.car);
         } else {
@@ -4524,35 +4530,54 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   return 1;
 }
 
-static int generate_vector_op(mz_jit_state *jitter, int set)
+static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready)
+/* if int_ready, JIT_R1 has num index and JIT_V1 has pre-computed offset,
+   otherwise JIT_R1 has fixnum index */
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
 
-  __START_TINY_JUMPS__(1);
-  ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-  __END_TINY_JUMPS__(1);
+  if (!skip_checks) {
+    __START_TINY_JUMPS__(1);
+    ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    __END_TINY_JUMPS__(1);
 
-  reffail = _jit.x.pc;
-  if (set) {
-    (void)jit_calli(vector_set_check_index_code);
+    reffail = _jit.x.pc;
+    if (int_ready) {
+      jit_lshi_ul(JIT_R1, JIT_R1, 1);
+      jit_ori_l(JIT_R1, JIT_R1, 0x1);
+    }
+    if (set) {
+      (void)jit_calli(vector_set_check_index_code);
+    } else {
+      (void)jit_calli(vector_ref_check_index_code);
+    }
+    /* doesn't return */
+    CHECK_LIMIT();
+
+    __START_TINY_JUMPS__(1);
+    mz_patch_branch(ref);
+    if (!int_ready)
+      (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
+    jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
+    if (!int_ready) {
+      jit_rshi_ul(JIT_V1, JIT_R1, 1);
+      (void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
+    } else {
+      (void)jit_bler_ul(reffail, JIT_R2, JIT_R1);
+    }
+    CHECK_LIMIT();
+    __END_TINY_JUMPS__(1);
   } else {
-    (void)jit_calli(vector_ref_check_index_code);
+    if (!int_ready)
+      jit_rshi_ul(JIT_V1, JIT_R1, 1);
   }
-  /* doesn't return */
-  CHECK_LIMIT();
 
-  __START_TINY_JUMPS__(1);
-  mz_patch_branch(ref);
-  (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
-  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-  (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
-  jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
-  jit_rshi_ul(JIT_V1, JIT_R1, 1);
-  (void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
-  CHECK_LIMIT();
-
-  jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
-  jit_addi_p(JIT_V1, JIT_V1, (int)&SCHEME_VEC_ELS(0x0));
+  if (!int_ready) {
+    jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+    jit_addi_p(JIT_V1, JIT_V1, (int)&SCHEME_VEC_ELS(0x0));
+  }
   if (set) {
     jit_ldr_p(JIT_R2, JIT_RUNSTACK);
     jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
@@ -4560,7 +4585,6 @@ static int generate_vector_op(mz_jit_state *jitter, int set)
   } else {
     jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
   }
-  __END_TINY_JUMPS__(1);
 
   return 1;
 }
@@ -4736,7 +4760,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
-          generate_vector_op(jitter, 0);
+          generate_vector_op(jitter, 0, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
 	  (void)jit_calli(string_ref_check_index_code);
@@ -4761,7 +4785,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
-	  (void)jit_calli(vector_ref_code);
+          /* vector-ref is relatively simple and worth inlining */
+          generate_vector_op(jitter, 0, 1);
+          CHECK_LIMIT();
 	} else if (which == 1) {
 	  (void)jit_calli(string_ref_code);
 	} else {
@@ -4975,7 +5001,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       if (!simple) {
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
-          generate_vector_op(jitter, 1);
+          generate_vector_op(jitter, 1, 0);
           CHECK_LIMIT();
 	} else if (which == 1) {
 	  (void)jit_calli(string_set_check_index_code);
@@ -4992,7 +5018,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
-	  (void)jit_calli(vector_set_code);
+          /* vector-set! is relatively simple and worth inlining */
+          generate_vector_op(jitter, 1, 1);
+          CHECK_LIMIT();
 	} else if (which == 1) {
 	  (void)jit_calli(string_set_code);
 	} else {
