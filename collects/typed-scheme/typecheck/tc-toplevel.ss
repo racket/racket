@@ -9,7 +9,7 @@
          "tc-structs.ss"
          (rep type-rep)
          (private type-utils type-effect-convenience parse-type type-annotation mutated-vars type-contract)
-	 (env type-env init-envs type-name-env type-alias-env)
+	 (env type-env init-envs type-name-env type-alias-env lexical-env)
 	 (utils tc-utils)
 	 "provide-handling.ss"
          "def-binding.ss"
@@ -38,6 +38,17 @@
       ;; type aliases have already been handled by an earlier pass
       [(define-values () (begin (quote-syntax (define-type-alias-internal nm ty)) (#%plain-app values)))
        (list)]
+
+      ;; declare-refinement
+      [(define-values () (begin (quote-syntax (declare-refinement-internal pred)) (#%plain-app values)))
+       (match (lookup-type/lexical #'pred)
+              [(and t (Function: (list (arr: (list dom) rng #f #f '() _ _))))
+               (register-type #'pred 
+                              (make-pred-ty (list dom)
+                                            rng
+                                            (make-Refinement dom #'pred (syntax-local-certifier))))
+               (list)]
+              [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       
       ;; require/typed
       [(define-values () (begin (quote-syntax (require/typed-internal nm ty)) (#%plain-app values)))

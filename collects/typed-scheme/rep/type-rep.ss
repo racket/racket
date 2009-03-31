@@ -209,6 +209,17 @@
 ;; value : Type
 (dt Hashtable (key value) [#:key 'hash])
 
+;; parent : Type
+;; pred : Identifier
+;; cert : Certifier
+(dt Refinement (parent pred cert)
+    [#:key (Type-key parent)]
+    [#:intern (list parent (hash-id pred))]
+    [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
+    [#:frees (free-vars* parent)
+             (free-idxs* parent)])
+    
+
 ;; t : Type
 (dt Syntax (t) [#:key 'syntax])
 

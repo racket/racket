@@ -65,6 +65,8 @@
          #`(listof #,(t->c elem-ty))]
         [(? (lambda (e) (eq? Any-Syntax e))) #'syntax?]
         [(Base: sym cnt) cnt]
+        [(Refinement: par p? cert)
+         #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
         [(Union: elems) 
          (with-syntax 
              ([cnts (map t->c elems)])
@@ -103,7 +105,7 @@
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
-         #`(flat-contract #,(cert p?))]
+         #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
         [(F: v) (cond [(assoc v (vars)) => (if pos? second third)]
                       [else (int-err "unknown var: ~a" v)])]
 	[(Poly: vs (and b (Function: _)))
@@ -125,7 +127,8 @@
         [(Instance: _) #'(is-a?/c object%)]
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
-        [(Struct: _ _ _ _ #f pred? cert) (cert pred?)]
+        [(Struct: _ _ _ _ #f pred? cert) 
+         #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]

@@ -408,3 +408,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx
        (begin (: i t) ...
               (provide i ...)))]))
+
+(define-syntax (declare-refinement stx)
+  (syntax-parse stx
+    [(_ p:id)
+     (quasisyntax/loc stx #,(internal #'(declare-refinement-internal p)))]))

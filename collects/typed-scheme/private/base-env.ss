@@ -545,6 +545,19 @@
 [list->string ((-lst -Char) . -> . -String)]
 [string->list (-String . -> . (-lst -Char))]
 [sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
+[find-system-path (Sym . -> . -Path)]
+
+;; scheme/cmdline
+
+[parse-command-line
+ (let ([mode-sym (one-of/c 'once-each 'once-any 'multi 'final 'help-labels)])
+   (-polydots (b a)
+              (cl->* (-Pathlike 
+                      (Un (-lst -String) (-vec -String))
+                      (-lst (-pair mode-sym (-lst (-lst Univ))))
+                      ((list Univ) [a a] . ->... . b)
+                      (-lst -String)
+                      . -> . b))))]
 
 ;; scheme/list
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
