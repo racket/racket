@@ -245,7 +245,12 @@
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
-  (define graph-pb (new (extra-graph-pasteboard-mixin graph-pasteboard%) [layout layout] [edge-label-font edge-label-font] [edge-labels? edge-labels?]))
+  (define graph-pb
+    (let ([pb (new (extra-graph-pasteboard-mixin graph-pasteboard%)
+                   [layout layout] [edge-label-font edge-label-font]
+                   [edge-labels? edge-labels?])])
+      (send pb set-flip-labels? #f)
+      pb))
   (define user-char-width (initial-char-width))
   (define f (instantiate red-sem-frame% ()
               (label "PLT Redex Reduction Graph")
