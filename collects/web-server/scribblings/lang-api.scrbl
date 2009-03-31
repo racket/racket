@@ -5,6 +5,8 @@
 
 @defmodulelang[web-server]
 
+@section[#:style 'hidden #:tag "stateless-example"]{Example}
+
 A stateless servlet should @scheme[provide] the following exports:
 
 @(require (for-label web-server/http
