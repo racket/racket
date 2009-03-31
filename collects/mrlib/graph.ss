@@ -83,7 +83,13 @@
                        number?
                        (or/c false/c string?)
                        . -> .
-		       void?)))
+		       void?))
+                    (set-links-label!
+                     ((is-a?/c graph-snip<%>)
+                      (is-a?/c graph-snip<%>)
+                      (or/c false/c string?)
+                      . -> .
+                      void?)))
 
   (define self-offset 10)
   
@@ -140,6 +146,8 @@
                                  label)
     (send parent add-child child)
     (send child add-parent parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
+  (define (set-links-label! parent child label)
+    (send child set-parent-link-label parent label))
   
   (define graph-snip-mixin
     (mixin ((class->interface snip%)) (graph-snip<%>)
@@ -155,6 +163,15 @@
       (field (parent-links null))
       (define/public (get-parent-links) parent-links)
       (define/public (get-parents) (map link-snip parent-links))
+      (define/public (set-parent-link-label parent label)
+        (let ([parent-link
+               (cond [(memf (lambda (parent-link)
+                              (eq? (link-snip parent-link) parent))
+                            parent-links)
+                      => car]
+                     [else #f])])
+          (when parent-link
+            (set-link-label! parent-link label))))
       (define/public add-parent
         (case-lambda
           [(parent) (add-parent parent #f #f #f #f)]
