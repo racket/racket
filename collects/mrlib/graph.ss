@@ -614,9 +614,12 @@
                                       [arrow-end-y (send point3 get-y)]
                                       [arrowhead-end (make-rectangular arrow-end-x arrow-end-y)]
                                       [vec (- arrowhead-end from-pt)]
+                                      [angle (- (angle vec))]
+                                      [flip? (not (< (/ pi -2) angle (/ pi 2)))]
+                                      [angle (if flip? (+ angle pi) angle)]
                                       [middle (+ from-pt
                                                  (- (* 1/2 vec)
-                                                    (make-polar (/ text-len 2) (angle vec))))])
+                                                    (make-polar (/ text-len 2) (- angle))))])
                                  (when (> (sqrt (+ (sqr (- arrow-end-x from-x))
                                                         (sqr (- arrow-end-y from-y))))
                                                text-len)
@@ -625,7 +628,7 @@
                                          (+ dy (imag-part middle))
                                          #f
                                          0
-                                         (- (angle vec)))))))]))))))))
+                                         angle)))))]))))))))
           
           (define (set-pen/brush from-link dark-lines?)
             (send dc set-brush 
