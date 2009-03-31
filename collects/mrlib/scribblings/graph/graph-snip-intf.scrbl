@@ -60,4 +60,16 @@ this snip.
   Removes a parent snip from this snip. Be sure to remove this
   snip as a child from the argument, too.
 
-}}
+}
+
+
+@defmethod[(set-parent-link-label [parent (is-a?/c graph-snip<%>)]
+                                  [label (or/c false/c string/)])
+           void?]{
+
+  Changes the label on the edge going to the @scheme[parent] to be
+  @scheme[label].  Ignored if no such egde exists.
+
+}
+
+}
