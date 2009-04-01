@@ -22,7 +22,7 @@
         [(symbol? d) `(quote ,d)]
         [(string? d) `(quote ,d)]
         [(pair? d) `(cons ,(serialize-datum (car d)) ,(serialize-datum (cdr d)))]
-        [(null? d) '()]
+        [(null? d) ''()]
         [(exn? d) `(make-exn ,(exn-message d) (current-continuation-marks))]
         [(syntax? d) `(datum->syntax #f ',(syntax->datum d))]
         #;[(syntax? d) `(eval (quote ,(compile `(,#'quote-syntax ,d))))]

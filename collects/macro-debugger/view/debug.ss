@@ -22,10 +22,8 @@
     (super-new)))
 
 (define (make-stepper)
-  (let ([f (new macro-stepper-frame%
-                (config (new macro-stepper-config/prefs%)))])
-    (send f show #t)
-    (send f get-widget)))
+  (define director (new macro-stepper-director%))
+  (send director new-stepper))
 
 (define (debug-file file)
   (let-values ([(events msg ctx) (load-debug-file file)])
