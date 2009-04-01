@@ -21,15 +21,16 @@
            set!-trans-extract
            process-tagged-import process-tagged-export
            lookup-signature lookup-def-unit make-id-mapper make-id-mappers sig-names sig-int-names sig-ext-names
-           map-sig split-requires apply-mac complete-exports complete-imports check-duplicate-subs
+           map-sig split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
            process-spec)
   
   (define-syntax (apply-mac stx)
     (syntax-case stx ()
       ((_ f x) ((syntax-e #'f) #'x))))
 
-  ;; split-requires : (listof syntax-object) -> (values (listof syntax-object) (listof syntax-object))
-  (define (split-requires l)
+  ;; split-requires* : (listof identifier) -> (listof syntax) -> (values (listof syntax) (listof syntax))
+  ;; Parameterized over identifiers for require forms.
+  (define ((split-requires* req-forms) l)
     (let loop ((l l)
                (requires null))
       (cond
@@ -37,14 +38,18 @@
         (else
          (syntax-case (car l) ()
            ((r . x)
-            (or (module-identifier=? #'r #'require)
-                (module-identifier=? #'r #'require-for-syntax)
-                (module-identifier=? #'r #'require-for-template))
+            (ormap (lambda (req) (module-identifier=? #'r req))
+                   req-forms)
             (loop (cdr l) (cons (car l) requires)))
            (_
             (cons (reverse requires) l)))))))
-                 
-        
+
+  ;; split-requires : (listof syntax) -> (values (listof syntax) (listof syntax))
+  ;; Recognizes mzscheme require forms.
+  (define split-requires
+    (split-requires*
+     (list #'require #'require-for-syntax #'require-for-template)))
+
   ;; (make-var-info bool bool identifier (U #f syntax-object))
   (define-struct var-info (syntax? [exported? #:mutable] id [ctc #:mutable]))
   
