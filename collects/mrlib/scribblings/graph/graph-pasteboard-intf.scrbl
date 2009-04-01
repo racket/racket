@@ -45,7 +45,7 @@ different nodes.
 
 }
 
-@defmethod[(set-draw-arrow-heads? [flip-labels? any/c])
+@defmethod[(set-flip-labels? [flip-labels? any/c])
            void?]{
 
 Sets a boolean controlling whether or not arrow labels are flipped so
