@@ -350,11 +350,16 @@ calls to @schemein[test-covered] are inserted into the code (and
 @schemein[initialize-test-coverage-point] is called during compilation).
 If not, no calls to test-covered are inserted.}
 
-@defproc[(test-covered (key any/c)) void?]{
+@defproc[(test-covered (key any/c)) (or/c (-> void?) syntax? #f)]{
+This is called during compilation of the program with a key value once
+ for each point with the key for that program point that was passed to
+@schemein[initialize-test-coverage-point].
 
-During execution of the program, this is called for each point with
-the key for that program point that was passed to
-@schemein[initialize-test-coverage-point].}
+If the result is @scheme[#f], this program point is not
+instrumented. If the result is syntax, it is inserted into the code,
+and if it is a thunk, the thunk is inserted into the code in an
+application. In either case, the syntax or the thunk should register
+that the relevant point was covered.}
 
 @defproc[(initialize-test-coverage-point (key any/c) (stx any/c)) void?]{
 

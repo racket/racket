@@ -83,14 +83,23 @@
       ;; test-coverage-point : syntax syntax -> syntax
       ;; sets a test coverage point for a single expression
       (define (test-coverage-point body expr phase)
-        (if (and (test-coverage-enabled) (zero? phase))
-            (let ([key (gensym 'test-coverage-point)])
+        (if (and (test-coverage-enabled)
+                 (zero? phase)
+                 (syntax-position expr))
+            (let* ([key (gensym 'test-coverage-point)])
               (initialize-test-coverage-point key expr)
-              (with-syntax ([key (datum->syntax
-                                  #f key (quote-syntax here))]
-                            [body body]
-                            [test-covered test-covered])
-                #'(begin (#%plain-app test-covered 'key) body)))
+              (let ([thunk (test-covered key)])
+                (cond
+                  [(procedure? thunk)
+                   (with-syntax ([body body]
+                                 [thunk thunk])
+                     #'(begin (#%plain-app thunk) body))]
+                  [(syntax? thunk)
+                   (with-syntax ([body body]
+                                 [thunk thunk])
+                     #'(begin thunk body))]
+                  [else
+                   body])))
             body))
 
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

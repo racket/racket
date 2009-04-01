@@ -9,7 +9,8 @@
   (define (initialize-test-coverage-point key expr)
     (hash-table-put! test-coverage-info key (mcons expr #f)))
   (define (test-covered key)
-    (set-mcdr! (hash-table-get test-coverage-info key) #t))
+    (let ([mpair (hash-table-get test-coverage-info key)])
+      (λ () (set-mcdr! mpair #t))))
 
   (define (get-uncovered-expressions)
     (let* ([xs (hash-table-map test-coverage-info (lambda (k v) 
