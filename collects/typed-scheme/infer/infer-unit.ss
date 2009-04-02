@@ -255,6 +255,9 @@
           [(a a) empty]
           [(_ (Univ:)) empty]
           
+          [((Refinement: S _ _) T)
+           (cg S T)]
+          
           [((F: (? (lambda (e) (memq e X)) v)) S)
            (when (match S
                    [(F: v*)

@@ -123,6 +123,8 @@
     [(F: nm) (fp "~a" nm)]      
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
+    [(Refinement: parent p? _)
+     (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameter ~a)" in)           

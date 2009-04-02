@@ -220,6 +220,9 @@
 		       (unmatch))
 					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
 	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
+              ;; A refinement is a subtype of its parent
+              [(list (Refinement: par _ _) t)
+               (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here
 	      [(list (Poly: vs b) s)
 	       (=> unmatch)
@@ -292,10 +295,7 @@
 	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
 	      ;; single values shouldn't actually happen, but they're just like the type
 	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
-	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]
-              ;; A refinement is a subtype of its parent
-              [(list (Refinement: par _ _) t)
-               (subtype* A0 par t)]
+	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]              
 	      ;; subtyping on other stuff
 	      [(list (Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]
