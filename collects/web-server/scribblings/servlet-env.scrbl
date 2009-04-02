@@ -6,6 +6,7 @@
 @(require (for-label web-server/servlet-env
                      web-server/http
                      web-server/managers/lru
+                     web-server/lang/lang-api
                      web-server/private/util
                      web-server/dispatchers/dispatch
                      web-server/configuration/configuration-table
@@ -64,7 +65,14 @@ Suppose you wanted to use a style-sheet (@filepath{style.css}) found on your Des
                 (build-path "/Users/jay/Desktop")))
 ]
 These files are served @emph{in addition} to those from the @scheme[#:server-root-path] @filepath{htdocs} directory.
-Notice that you may pass any number of extra paths.
+You may pass any number of extra paths.
+
+If you want to use @scheme[serve/servlet] in a start up script for a Web application,
+and don't want a browser opened or the DrScheme banner printed, then you can write:
+@schemeblock[
+(serve/servlet my-app
+               #:command-line? #t)
+]
 
 Suppose you would like to start a server for a stateless Web servlet @filepath{servlet.ss} that provides @schemeid[start]:
 @schememod[
@@ -74,15 +82,26 @@ Suppose you would like to start a server for a stateless Web servlet @filepath{s
 
  (serve/servlet start #:stateless? #t)
 ]
-Note: If you put the call to @scheme[serve/servlet] in the module like normal, strange things will happen because of the way
-the top-level interacts with continuations. (Read: Don't do it.)
 
-If you want to use @scheme[serve/servlet] in a start up script for a Web application,
-and don't want a browser opened or the DrScheme banner printed, then you can write:
-@schemeblock[
-(serve/servlet my-app
-               #:command-line? #t)
+@bold{Warning:} If you put the call to @scheme[serve/servlet] in a @schememodname[web-server] module directly it will not work correctly. 
+Consider the following module:
+@schememod[
+ web-server
+ (require web-server/servlet-env)
+ 
+ (define (start req)
+   (start
+    (send/suspend
+     (lambda (k-url)
+       `(html (body (a ([href ,k-url]) "Hello world!")))))))
+ 
+ (serve/servlet start #:stateless? #t)
 ]
+First, if this module is not saved in a file (e.g., @filepath{servlet.ss}), then the serialization layer cannot locate the definitions of the 
+serialized continuations. Second, due to an unfortunately subtle bug that we have not yet corrected,
+every time the continuation link is clicked, @scheme[serve/servlet] will
+run and attempt to start a Web server instance and open a browser window. These problems do not occur if your servlet is saved in a file
+and if @scheme[serve/servlet] is run in another module.
 
 @defproc[(serve/servlet [start (request? . -> . response/c)]
                         [#:command-line? command-line? boolean? #f]
