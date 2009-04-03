@@ -20,21 +20,28 @@
   (define-language lc
     (e x (e e) (λ (x) e))
     (x variable))
-  (test (to-table (find-base-cases lc))
-        '((e . (1 2 2)) (e-e . (0 2 2 1)) (x . (0)) (x-e . (1 2 2 2 2)) (x-x . (0)))))
+  (let ([bc (find-base-cases lc)])
+    (test (to-table (base-cases-non-cross bc))
+          '((e . (1 2 2)) (x . (0))))
+    (test (to-table (base-cases-cross bc))
+          '((e-e . (0 2 2 1)) (x-e . (1 2 2 2 2)) (x-x . (0))))))
 
 (let ()
   (define-language lang
     (e (e e)))
-  (test (to-table (find-base-cases lang))
-        '((e . (inf)) (e-e . (0 inf inf)))))
+  (let ([bc (find-base-cases lang)])
+    (test (to-table (base-cases-non-cross bc)) '((e . (inf))))
+    (test (to-table (base-cases-cross bc)) '((e-e . (0 inf inf))))))
 
 (let ()
   (define-language lang
     (a 1 2 3)
     (b a (a_1 b_!_1)))
-  (test (to-table (find-base-cases lang))
-        '((a . (0 0 0)) (a-a . (0)) (a-b . (1)) (b . (1 2)) (b-b . (0)))))
+  (let ([bc (find-base-cases lang)])
+    (test (to-table (base-cases-non-cross bc))
+          '((a . (0 0 0)) (b . (1 2))))
+    (test (to-table (base-cases-cross bc))
+          '((a-a . (0)) (a-b . (1)) (b-b . (0))))))
 
 (let ()
   (define-language lc
@@ -45,24 +52,28 @@
     (v (λ (x) e)
        number)
     (x variable))
-  (test (to-table (find-base-cases lc))
-        '((e . (2 2 1 1)) (e-e . (0 2 2 2 2 2)) (e-v . (1))
-          (v . (2 0)) (v-e . (2 2 2 2 1)) (v-v . (0 2))
-          (x . (0)) (x-e . (2 2 2 2 1 3)) (x-v . (2 2)) (x-x . (0)))))
+  (let ([bc (find-base-cases lc)])
+    (test (to-table (base-cases-non-cross bc)) 
+          '((e . (2 2 1 1)) (v . (2 0)) (x . (0))))
+    (test (to-table (base-cases-cross bc))
+          '((e-e . (0 2 2 2 2 2)) (e-v . (1)) (v-e . (2 2 2 2 1)) (v-v . (0 2))
+                                  (x-e . (2 2 2 2 1 3)) (x-v . (2 2)) (x-x . (0))))))
 
 (let ()
   (define-language L
     (x (variable-prefix x)
        (variable-except y))
     (y y))
-  (test (hash-ref (find-base-cases L) 'x) '(0 0)))
+  (test (hash-ref (base-cases-non-cross (find-base-cases L)) 'x)
+        '(0 0)))
 
 (let ()
   (define-language lang
     (e number x y)
     (x variable)
     (y y))
-  (test (min-prods (car (compiled-lang-lang lang)) (find-base-cases lang))
+  (test (min-prods (car (compiled-lang-lang lang))
+                   (base-cases-non-cross (find-base-cases lang)))
         (list (car (nt-rhs (car (compiled-lang-lang lang)))))))
 
 (define (make-random . nums)
@@ -106,16 +117,17 @@
   (define-language L
     (a 5 (x a))
     (b 4))
-  (test (pick-nt 'a L 1 'dontcare)
+  (test (pick-nt 'a #f L 1 'dontcare)
         (nt-rhs (car (compiled-lang-lang L))))
-  (test (pick-nt 'a L preferred-production-threshold 'dontcare (make-random 1))
+  (test (pick-nt 'a #f L preferred-production-threshold 'dontcare (make-random 1))
         (nt-rhs (car (compiled-lang-lang L))))
   (let ([pref (car (nt-rhs (car (compiled-lang-lang L))))])
-    (test (pick-nt 'a L preferred-production-threshold
-                   (make-immutable-hash `((a ,pref)))
+    (test (pick-nt 'a #f L preferred-production-threshold
+                   (make-pref-prods 'dont-care
+                                    (make-immutable-hash `((a ,pref))))
                    (make-random 0))
           (list pref)))
-  (test (pick-nt 'b L preferred-production-threshold #f)
+  (test (pick-nt 'b #f L preferred-production-threshold #f)
         (nt-rhs (cadr (compiled-lang-lang L)))))
 
 (define-syntax raised-exn-msg
@@ -131,8 +143,8 @@
 
 (define (patterns . selectors) 
   (map (λ (selector) 
-         (λ (name lang size pref-prods)
-           (list (selector (nt-rhs (nt-by-name lang name))))))
+         (λ (name cross? lang size pref-prods)
+           (list (selector (nt-rhs (nt-by-name lang name cross?))))))
        selectors))
 
 (define (iterator name items)
@@ -449,11 +461,24 @@
     (e x (e e) v)
     (v (λ (x) e))
     (x variable-not-otherwise-mentioned))
+  (define-extended-language name-collision lang (e-e 47))
+  
   (test (generate-term/decisions
          lang (cross e) 3 0 
          (decisions #:nt (patterns fourth first first second first first first)
                     #:var (list (λ _ 'x) (λ _ 'y))))
-        (term (λ (x) (hole y)))))
+        (term (λ (x) (hole y))))
+  
+  (test (generate-term/decisions name-collision (cross e) 3 0
+                                 (decisions #:nt (patterns first)))
+        (term hole))
+  (test (generate-term/decisions name-collision e-e 3 0
+                                 (decisions #:nt (patterns first)))
+        47)
+  
+  (test (hash-ref (base-cases-non-cross (find-base-cases name-collision)) 'e-e)
+        '(0)))
+
 (let ()
   (define-language L
     (a ((a ...) ...)))
@@ -517,11 +542,15 @@
 (let ([make-pick-nt (λ opt (λ req (apply pick-nt (append req opt))))])
   (define-language L
     (e (+ e e) (* e e) 7))
-  (let ([pats (λ (L) (nt-rhs (car (compiled-lang-lang (parse-language L)))))])
+  (define-language M (e 0) (e-e 1))
+  
+  (let ([pats (λ (L) (nt-rhs (car (compiled-lang-lang L))))])
     (test 
      (generate-term/decisions
       L e 2 preferred-production-threshold
-      (decisions #:pref (list (λ (L) (make-immutable-hash `((e ,(car (pats L)))))))
+      (decisions #:pref (list (λ (L) (make-pref-prods
+                                      'dont-care
+                                      (make-immutable-hash `((e ,(car (pats L))))))))
                  #:nt (make-pick-nt (make-random 0 0 0))))
      '(+ (+ 7 7) (+ 7 7)))
     (test
@@ -534,10 +563,23 @@
     (test
      (generate-term/decisions
       L any 2 preferred-production-threshold
-      (decisions #:pref (list (λ (L) (make-immutable-hash `((e ,(car (pats L)))))))
+      (decisions #:pref (list (λ (L) (make-pref-prods
+                                      'dont-care
+                                      (make-immutable-hash `((e ,(car (pats L))))))))
                  #:nt (make-pick-nt (make-random 0 0 0))
                  #:any (list (λ (lang sexp) (values lang 'e)))))
      '(+ (+ 7 7) (+ 7 7)))
+    (test
+     (generate-term/decisions
+      M (cross e) 2 preferred-production-threshold
+      (decisions #:nt (make-pick-nt (make-random) (λ (att rand) #t))))
+     (term hole))
+    (test
+     (generate-term/decisions
+      M e-e 2 preferred-production-threshold
+      (decisions #:nt (make-pick-nt (make-random) (λ (att rand) #t))))
+     1)
+    
     (test
      (let ([generated null])
        (output
@@ -550,8 +592,13 @@
                                   #:pref (list (λ (_) 'dontcare)
                                                (λ (_) 'dontcare)
                                                (λ (_) 'dontcare)
-                                               (λ (L) (make-immutable-hash `((e ,(car (pats L))))))
-                                               (λ (L) (make-immutable-hash `((e ,(cadr (pats L))))))))
+                                               ; size 0 terms prior to this attempt
+                                               (λ (L) (make-pref-prods
+                                                       'dont-care
+                                                       (make-immutable-hash `((e ,(car (pats L)))))))
+                                               (λ (L) (make-pref-prods
+                                                       'dont-care
+                                                       (make-immutable-hash `((e ,(cadr (pats L)))))))))
            #:attempts 5)))
        generated)
      '((* 7 7) (+ 7 7) 7 7 7))))

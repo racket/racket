@@ -64,18 +64,27 @@
 (define (pick-string lang-chars lang-lits attempt [random random])
   (random-string lang-chars lang-lits (random-natural 1/5 random) attempt random))
 
-(define (pick-nt name lang attempt pref-prods 
+(define (pick-nt name cross? lang attempt pref-prods 
                  [random random]
                  [pref-prod? preferred-production?])
-  (let ([prods (nt-rhs (nt-by-name lang name))])
+  (let ([prods (nt-rhs (nt-by-name lang name cross?))])
     (cond [(and pref-prods (pref-prod? attempt random))
-           (hash-ref pref-prods name)]
+           (hash-ref 
+            ((if cross? pref-prods-cross pref-prods-non-cross)
+             pref-prods)
+            name)]
           [else prods])))
 
+(define-struct pref-prods (cross non-cross))
+
 (define (pick-preferred-productions lang)
-  (for/hash ([nt (append (compiled-lang-lang lang) 
-                         (compiled-lang-cclang lang))])
-            (values (nt-name nt) (list (pick-from-list (nt-rhs nt))))))
+  (let ([pick (λ (sel)
+                (for/hash ([nt (sel lang)])
+                          (values (nt-name nt)
+                                  (list (pick-from-list (nt-rhs nt))))))])
+    (make-pref-prods
+     (pick compiled-lang-cclang)
+     (pick compiled-lang-lang))))
 
 (define (pick-from-list l [random random]) (list-ref l (random (length l))))
 
@@ -163,17 +172,18 @@
          [min-size (apply min/f sizes)])
     (map cadr (filter (λ (x) (equal? min-size (car x))) (zip sizes (nt-rhs nt))))))
 
-(define-struct rg-lang (clang lits chars base-table))
+(define-struct rg-lang (clang lits chars base-cases))
 (define (prepare-lang lang)
-  (let ([lits (map symbol->string (compiled-lang-literals lang))])
-    (make-rg-lang (parse-language lang) lits (unique-chars lits) (find-base-cases lang))))
+  (let ([lits (map symbol->string (compiled-lang-literals lang))]
+        [parsed (parse-language lang)])
+    (make-rg-lang parsed lits (unique-chars lits) (find-base-cases parsed))))
 
 (define (generate lang decisions@ retries what)
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
-  (define ((generate-nt lang generate base-table pref-prods)
-           name size attempt in-hole state)
+  (define ((generate-nt lang base-cases generate pref-prods)
+           name cross? size attempt in-hole state)
     (let*-values
         ([(term _)
           (generate/pred 
@@ -181,8 +191,10 @@
            (λ (size attempt) 
              (let ([rhs (pick-from-list
                          (if (zero? size)
-                             (min-prods (nt-by-name lang name) base-table)
-                             ((next-non-terminal-decision) name lang attempt pref-prods)))])
+                             (min-prods (nt-by-name lang name cross?) 
+                                        ((if cross? base-cases-cross base-cases-non-cross)
+                                         base-cases))
+                             ((next-non-terminal-decision) name cross? lang attempt pref-prods)))])
                (generate (max 0 (sub1 size)) attempt 
                          (make-state #hash())
                          in-hole (rhs-pattern rhs))))
@@ -283,11 +295,12 @@
       (generate-pat lang sexp pref-prods size attempt state in-hole pat))
     
     (define clang (rg-lang-clang lang))
-    (define gen-nt (generate-nt 
-                    clang 
-                    (curry generate-pat lang sexp pref-prods)
-                    (rg-lang-base-table lang)
-                    pref-prods))
+    (define gen-nt 
+      (generate-nt 
+       clang 
+       (rg-lang-base-cases lang)
+       (curry generate-pat lang sexp pref-prods)
+       pref-prods))
     
     (match pat
       [`number (values ((next-number-decision) attempt) state)]
@@ -336,19 +349,19 @@
                      [(term _) (generate-pat new-lang sexp pref-prods size attempt new-state the-hole nt)])
          (values term state))]
       [(? (is-nt? clang))
-       (values (gen-nt pat size attempt in-hole state) state)]
+       (values (gen-nt pat #f size attempt in-hole state) state)]
       [(struct binder ((and name (or (? (is-nt? clang) nt) (app (symbol-match named-nt-rx) (? (is-nt? clang) nt))))))
-       (generate/prior pat state (λ () (values (gen-nt nt size attempt in-hole state) state)))]
+       (generate/prior pat state (λ () (values (gen-nt nt #f size attempt in-hole state) state)))]
       [(struct binder ((or (? built-in? b) (app (symbol-match named-nt-rx) (? built-in? b)))))
        (generate/prior pat state (λ () (recur/pat b)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? (is-nt? clang) nt)))))
-       (let ([term (gen-nt nt size attempt in-hole state)])
+       (let ([term (gen-nt nt #f size attempt in-hole state)])
          (values term (set-env state pat term)))]
       [(struct mismatch (name (app (symbol-match mismatch-nt-rx) (? symbol? (? built-in? b)))))
        (let-values ([(term state) (recur/pat b)])
          (values term (set-env state pat term)))]
       [`(cross ,(? symbol? cross-nt))
-       (values (gen-nt cross-nt size attempt in-hole state) state)]
+       (values (gen-nt cross-nt #t size attempt in-hole state) state)]
       [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat state)]
       [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
        (let*-values ([(length) (let ([prior (hash-ref (state-env state) class #f)])
@@ -381,9 +394,11 @@
                          size attempt)])
             (values term (bindings (state-env state)))))))))
 
-;; find-base-cases : compiled-language -> hash-table
+(define-struct base-cases (cross non-cross))
+
+;; find-base-cases : (list/c nt) -> base-cases
 (define (find-base-cases lang)
-  (define nt-table (make-hasheq))
+  (define nt-table (make-hash))
   (define changed? #f)
   (define (nt-get nt) (hash-ref nt-table nt 'inf))
   (define (nt-set nt new) 
@@ -392,8 +407,8 @@
         (set! changed? #t)
         (hash-set! nt-table nt new))))
   
-  (define (process-nt nt)
-    (nt-set (nt-name nt) (apply min/f (map process-rhs (nt-rhs nt)))))
+  (define ((process-nt cross?) nt)
+    (nt-set (cons cross? (nt-name nt)) (apply min/f (map process-rhs (nt-rhs nt)))))
   
   (define (process-rhs rhs)
     (let ([nts (rhs->nts (rhs-pattern rhs))])
@@ -401,7 +416,7 @@
           0
           (add1/f (apply max/f (map nt-get nts))))))
   
-  ;; rhs->path : pattern -> (listof symbol)
+  ;; rhs->path : pattern -> (listof (cons/c boolean symbol))
   ;; determines all of the non-terminals in a pattern
   (define (rhs->nts pat)
     (let ([nts '()])
@@ -409,9 +424,9 @@
         (match pat
           [(? symbol? pat)
            (when ((is-nt? lang) (symbol->nt pat))
-             (set! nts (cons (symbol->nt pat) nts)))]
+             (set! nts (cons (cons #f (symbol->nt pat)) nts)))]
           [`(cross ,(? symbol? x-nt))
-           (set! nts (cons x-nt nts))]
+           (set! nts (cons (cons #t x-nt) nts))]
           [`(variable-except ,s ...) (void)]
           [`(variable-prefix ,p) (void)]
           [`() (void)]
@@ -422,19 +437,25 @@
            (loop b)]
           [_ (void)]))
       nts))
-  
-  (let ([nts (append (compiled-lang-lang lang) (compiled-lang-cclang lang))])
-    (let loop ()
-      (set! changed? #f)
-      (for-each process-nt nts)
-      (when changed?
-        (loop)))
-    
-    (let ([ht (make-hash)])
+
+  ;; build-table : (listof nt) -> hash
+  (define (build-table nts)
+    (let ([tbl (make-hasheq)])
       (for-each
-       (λ (nt) (hash-set! ht (nt-name nt) (map process-rhs (nt-rhs nt))))
+       (λ (nt) (hash-set! tbl (nt-name nt) (map process-rhs (nt-rhs nt))))
        nts)
-      ht)))
+      tbl))
+  
+  (let loop ()
+    (set! changed? #f)
+    (for-each (process-nt #f) (compiled-lang-lang lang))
+    (for-each (process-nt #t) (compiled-lang-cclang lang))
+    (when changed?
+      (loop)))
+  
+  (make-base-cases
+   (build-table (compiled-lang-cclang lang))
+   (build-table (compiled-lang-lang lang))))
 
 (define min/f
   (case-lambda
@@ -464,11 +485,12 @@
 (define (built-in? x)
   (and (memq x underscore-allowed) #t))
 
-;; nt-by-name : lang symbol -> nt
-(define (nt-by-name lang name)
+;; nt-by-name : lang symbol boolean -> nt
+(define (nt-by-name lang name cross?)
   (findf (λ (nt) (eq? name (nt-name nt))) 
-         (append (compiled-lang-lang lang)
-                 (compiled-lang-cclang lang))))
+         (if cross? 
+             (compiled-lang-cclang lang)
+             (compiled-lang-lang lang))))
 
 (define named-nt-rx #rx"^([^_]+)_[^_]*$")
 (define mismatch-nt-rx #rx"([^_]+)_!_[^_]*$")
@@ -896,18 +918,30 @@
 
 (define generation-decisions (make-parameter random-decisions@))
 
-(provide pick-from-list pick-var min-prods decisions^ pick-sequence-length
-         is-nt? pick-char random-string pick-string redex-check nt-by-name
-         pick-nt unique-chars pick-any sexp generate-term parse-pattern
-         class-reassignments reassign-classes unparse-pattern
-         (struct-out ellipsis) (struct-out mismatch) (struct-out class)
-         (struct-out binder) check-metafunction-contract prepare-lang
-         pick-number pick-natural pick-integer pick-real
-         parse-language check-reduction-relation 
-         preferred-production-threshold check-metafunction
-         generation-decisions pick-preferred-productions
-         default-retries proportion-at-size retry-threshold 
-         proportion-before-threshold post-threshold-incr)
+(provide redex-check
+         generate-term
+         check-metafunction-contract
+         check-reduction-relation
+         check-metafunction)
 
-(provide/contract
- [find-base-cases (-> compiled-lang? hash?)])
+(provide (struct-out ellipsis) 
+         (struct-out mismatch)
+         (struct-out class)
+         (struct-out binder)
+         (struct-out base-cases)
+         (struct-out pref-prods))
+
+(provide pick-from-list pick-sequence-length
+         pick-char pick-var pick-string 
+         pick-nt pick-any pick-preferred-productions
+         pick-number pick-natural pick-integer pick-real
+         parse-pattern unparse-pattern
+         parse-language prepare-lang
+         class-reassignments reassign-classes
+         default-retries proportion-at-size
+         preferred-production-threshold retry-threshold 
+         proportion-before-threshold post-threshold-incr
+         is-nt? nt-by-name min-prods
+         generation-decisions decisions^ 
+         random-string unique-chars
+         sexp find-base-cases)
