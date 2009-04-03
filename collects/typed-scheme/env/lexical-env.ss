@@ -33,7 +33,7 @@
                                   =>
                                   (lambda (a)
                                     (-lst (substitute Univ (cdr a) (car a))))]
-                                 [else (lookup-fail (syntax-e i))]))))))
+                                 [else (lookup-fail i)]))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment

@@ -29,7 +29,8 @@
          (struct-out DottedBoth)
          just-Dotted?
          tc-error/expr
-         lookup-fail)
+         lookup-fail
+         lookup-type-fail)
 
 
 ;; substitute : Type Name Type -> Type
@@ -218,4 +219,16 @@
   return)
 
 ;; error for unbound variables
-(define (lookup-fail e) (tc-error/expr "unbound identifier ~a" e))
+(define (lookup-fail e) 
+  (match (identifier-binding e)
+    ['lexical (int-err "untyped lexical variable ~a" (syntax-e e))]
+    [#f (int-err "untyped top-level variable ~a" (syntax-e e))]
+    [(list _ _ nominal-source-mod nominal-source-id _ _ _)
+     (let-values ([(x y) (module-path-index-split nominal-source-mod)])
+       (cond [(and (not x) (not y))
+              (tc-error/expr "untyped identifier ~a" (syntax-e e))]
+             [else 
+              (tc-error/expr "untyped identifier ~a imported from module <~a>" (syntax-e e) x)]))]))
+
+(define (lookup-type-fail i)
+  (tc-error/expr "~a is not bound as a type" (syntax-e i)))

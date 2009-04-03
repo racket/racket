@@ -35,7 +35,7 @@
 ;; given an identifier, return the type associated with it
 ;; optional argument is failure continuation - default calls lookup-fail
 ;; identifier (-> error) -> type 
-(define (lookup-type-name id [k (lambda () (lookup-fail (syntax-e id)))])
+(define (lookup-type-name id [k (lambda () (lookup-type-fail id))])
   (begin0
     (module-identifier-mapping-get the-mapping id k)
     (add-type-name-reference id)))

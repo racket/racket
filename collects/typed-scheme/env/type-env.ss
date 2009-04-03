@@ -39,7 +39,7 @@
 ;; given an identifier, return the type associated with it
 ;; if none found, calls lookup-fail
 ;; identifier -> type 
-(define (lookup-type id [fail-handler (lambda () (lookup-fail (syntax-e id)))])
+(define (lookup-type id [fail-handler (lambda () (lookup-type-fail id))])
   (let ([v (module-identifier-mapping-get the-mapping id fail-handler)])
     (if (box? v) (unbox v) v)))
 
