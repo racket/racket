@@ -3024,11 +3024,22 @@
                        (add-var-to-env "result" command-type final-method-var env-p))])
       (parameterize ([inspect-test? #t] [snaps null])
         (let ([posts/te (check-e posts env-posts)])
-          (set-check-inspect-snaps! exp (snaps))
+          (set-check-inspect-snaps! exp (remove-dup-snaps (snaps)))
           (unless (eq? 'boolean (type/env-t posts/te))
             (check-inspect-post-error (type/env-t posts/te) (expr-src posts)))
           ;SKIPS RANGE FOR NOW
           (make-type/env 'boolean (remove-var-from-env "result" (type/env-e posts/te)))))))
+  
+  (define (remove-dup-snaps snaps)
+    (cond
+      [(null? snaps) snaps]
+      [(snap-member? (car snaps) (cdr snaps)) (remove-dup-snaps (cdr snaps))]
+      [else (cons (car snaps) (remove-dup-snaps (cdr snaps)))]))
+  (define (snap-member? snap snaps)
+    (cond
+      [(null? snaps) #f]
+      [(equal? (snap-name snap) (snap-name (car snaps))) #t]
+      [else (snap-member? snap (cdr snaps))]))
       
     
   ;check-test-effect: (list access) (list exp) (list exp) (exp env -> type/env) env src type-records -> type/env

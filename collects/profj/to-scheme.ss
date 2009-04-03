@@ -1150,6 +1150,19 @@
                             (hash-set! field-map field value)
                             value)
                           (define/public (my-name) (send o my-name))
+                          (define/public (fields-for-display)
+                            (let ((field-name-list (send o field-names))
+                                  (field-value-list (send o field-values)))
+                              (lambda ()
+                                (if (null? field-name-list) 
+                                    #f
+                                    (begin0 (list (car field-name-list)
+                                                  (or (hash-ref field-map 
+                                                                (string->symbol (string-append (car field-name-list) "~f")) 
+                                                                #f)
+                                                      (car field-value-list)))
+                                            (set! field-name-list (cdr field-name-list))
+                                            (set! field-value-list (cdr field-value-list)))))))
                           ,@(generate-stm-fields fields)
                           ,@(generate-stm-methods methods))))
                    #f))
@@ -3142,11 +3155,11 @@
   (define inspect-test? (make-parameter #f))
   
   ;IGNORES RANGE
-  ;IGNORES COLLECTING PRINTING INFORMATION
   ;translate-check-inspect: expr expr (U #f expr) (listof snap) src -> syntax
   (define (translate-check-inspect val post range snaps src)
     (let ([command (create-syntax #f `(lambda () ,(translate-expression val)) #f)]
-          [post (create-syntax #f `(lambda (result~f) ,(parameterize ([inspect-test? #t]) (translate-expression post))) #f)])
+          [post (create-syntax #f `(lambda (result~f) 
+                                     ,(parameterize ([inspect-test? #t]) (translate-post-conds post))) #f)])
       (make-syntax #f
                    `(let (,@(apply
                              append
@@ -3166,9 +3179,61 @@
                                                 obj@)])))))
                                   snaps)))
                       (javaRuntime:check-inspect ,command ,post 
-                                                 'test-info (quote ,(src->list src))
+                                                 ,(checked-info val)
+                                                 (quote ,(src->list src))
                                                  (namespace-variable-value 'current~test~object% #f (lambda () #f))))
                    (build-src src))))
+  
+  
+  ;translate-post-conds: expr -> syntax
+  (define (translate-post-conds exp)
+    (create-syntax #f
+                   (cond
+                     [(bin-op? exp) 
+                      (case (bin-op-op exp)
+                        [(oror &&) 
+                         `(list ,(translate-expression (bin-op-left exp))
+                                (quote ,(bin-op-op exp))
+                                ,(extract-report (bin-op-left exp))
+                                (lambda ()
+                                  ,(translate-post-conds (bin-op-right exp))))]
+                        [else
+                         `(list ,(translate-expression exp)
+                                (quote ,(bin-op-op exp))
+                                ,(extract-report (bin-op-left exp))
+                                ,(extract-report (bin-op-right exp)))])]
+                     [(call? exp) 
+                      `(list ,(translate-expression exp)
+                             'call ,(id-string (call-method-name exp))
+                             ,(extract-report (call-expr exp))
+                             ,@(map extract-report (call-args exp)))]
+                     [else `(list ,(translate-expression exp) 'other null)])
+                   #f))
+         
+  ;extract-report: expr -> (listof syntax)
+  (define (extract-report exp)
+    (cond
+      [(and (access? exp) (local-access? (access-name exp))) 
+       `(list 'local ,(id-string (local-access-name (access-name exp))) ,(translate-expression exp))]
+      [(and (access? exp) (field-access? (access-name exp)))
+       (if (old-call? (field-access-object (access-name exp)))
+           `(list 'field-old ,(old-var (field-access-object (access-name exp))) 
+                  ,(id-string (field-access-field (access-name exp))))
+           `(list 'field-access ,(extract-report (field-access-object (access-name exp))) 
+                  ,(id-string (field-access-field (access-name exp)))))]
+      [(literal? exp) `(list (quote lit) ,(translate-expression exp))]
+      [(call? exp) '...]
+      [(array-access? exp) '...]
+      [(bin-op? exp) `(list (quote ,(bin-op-op exp)) ,(extract-report (bin-op-left exp))
+                            ,(extract-report (bin-op-right exp)))]))
+  
+  ;old-call? exp -> bool
+  (define (old-call? exp)
+    (and (call? exp)
+         (eq? 'test-method-old (call-method-record exp))))
+  
+  ;old-var: exp -> syntax
+  (define (old-var exp) (translate-expression exp))
   
   ;translate-check-effect: (listof access) (listof expression) (listof expression) src -> syntax
   (define (translate-check-effect ids conds test src)
@@ -3197,7 +3262,7 @@
                                                 (namespace-variable-value 'current~test~object% #f
                                                                           (lambda () #f))))
                    (build-src src))))
-  
+    
   (require "error-messaging.ss")
   
   ;checked-info: expression -> (list sym string...)
