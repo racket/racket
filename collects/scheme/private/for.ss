@@ -636,7 +636,7 @@
                                              vals))))))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;  runnign sequences outside of a loop:
+  ;;  running sequences outside of a loop:
 
   (define (sequence-generate g)
     (unless (sequence? g)
