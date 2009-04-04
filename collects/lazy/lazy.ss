@@ -160,7 +160,8 @@
         (apply values (map ! (multiple-values-values x)))
         x)))
 
-  (define* (~values . xs) (make-multiple-values xs))
+  (define* ~values
+    (case-lambda [(x) x] [xs (make-multiple-values xs)]))
 
   ;; Redefine multiple-value constructs so they split the results
   (defsubst (~define-values (v ...) body)
