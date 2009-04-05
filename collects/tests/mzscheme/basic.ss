@@ -1920,7 +1920,7 @@
 
 (define (hash-tests make-hash make-hasheq make-hasheqv
                     make-weak-hash make-weak-hasheq make-weak-hasheqv
-                    hash-ref hash-set! hash-update!
+                    hash-ref hash-set! hash-ref! hash-update! hash-has-key?
                     hash-remove! hash-count
                     hash-map hash-for-each
                     hash-iterate-first hash-iterate-next
@@ -1942,6 +1942,14 @@
       (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
       (hash-set! h1 l 'ok)
       (test 'ok hash-ref h1 l)
+      (test #t hash-has-key? h1 l)
+      (test #f hash-has-key? h1 (cdr l))
+      (when hash-ref!
+        (test 'ok hash-ref! h1 l 'blah)
+        (test 'blah hash-ref! h1 (cdr l) 'blah)
+        (test #t hash-has-key? h1 (cdr l))
+        (test 'blah hash-ref h1 (cdr l))
+        (hash-remove! h1 (cdr l)))
       (hash-update! h1 l (curry cons 'more))
       (test '(more . ok) hash-ref h1 l)
       (hash-update! h1 l cdr)
@@ -2086,7 +2094,7 @@
 
 (hash-tests make-hash make-hasheq make-hasheqv
             make-weak-hash make-weak-hasheq make-weak-hasheqv
-            hash-ref hash-set! hash-update!
+            hash-ref hash-set! hash-ref! hash-update! hash-has-key?
             hash-remove! hash-count
             hash-map hash-for-each
             hash-iterate-first hash-iterate-next
@@ -2101,9 +2109,11 @@
               #f #f #f
               (ub-wrap hash-ref)
               (lambda (ht k v) (set-box! ht (hash-set (unbox ht) k v)))
-              (case-lambda 
+              #f
+              (case-lambda
                [(ht k u) (set-box! ht (hash-update (unbox ht) k u))]
                [(ht k u def) (set-box! ht (hash-update (unbox ht) k u def))])
+              (ub-wrap hash-has-key?)
               (lambda (ht k) (set-box! ht (hash-remove (unbox ht) k)))
               (ub-wrap hash-count)
               (ub-wrap hash-map)

@@ -360,7 +360,7 @@
   (define-log log-info info)
   (define-log log-debug debug)
 
-  (define-values (hash-update hash-update!)
+  (define-values (hash-update hash-update! hash-has-key? hash-ref!)
     (let* ([not-there (gensym)]
            [up (lambda (who mut? set ht key xform default)
                  (unless (and (hash? ht)
@@ -385,8 +385,19 @@
               [(ht key xform default)
                (up 'hash-update! #t hash-set! ht key xform default)]
               [(ht key xform)
-               (hash-update! ht key xform not-there)])])
-        (values hash-update hash-update!))))
+               (hash-update! ht key xform not-there)])]
+            [hash-has-key?
+             (lambda (ht key)
+               (not (eq? not-there (hash-ref ht key not-there))))]
+            [hash-ref!
+             (lambda (ht key new)
+               (let ([v (hash-ref ht key not-there)])
+                 (if (eq? not-there v)
+                   (let ([n (if (procedure? new) (new) new)])
+                     (hash-set! ht key n)
+                     n)
+                   v)))])
+        (values hash-update hash-update! hash-has-key? hash-ref!))))
 
   (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
@@ -395,4 +406,4 @@
              set!-values
              let/cc fluid-let time
              log-fatal log-error log-warning log-info log-debug
-             hash-update hash-update!))
+             hash-ref! hash-has-key? hash-update hash-update!))

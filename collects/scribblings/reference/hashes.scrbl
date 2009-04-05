@@ -181,7 +181,6 @@ returning the extended hash table.
 
 @see-also-mutable-key-caveat[]}
 
-
 @defproc[(hash-ref [hash hash?]
                    [key any/c]
                    [failure-result any/c (lambda () 
@@ -202,6 +201,23 @@ result:
 }
 
 @see-also-caveats[]}
+
+@defproc[(hash-ref! [hash hash?] [key any/c] [to-set any/c])
+         any]{
+
+Returns the value for @scheme[key] in @scheme[hash].  If no value is
+found for @scheme[key], then @scheme[to-set] determines the result as
+in @scheme[hash-ref] (i.e., it is either a thunk that computes a value
+or a plain value), and this result is stored in @scheme[hash] for the
+@scheme[key].  (Note that is @scheme[to-set] is a thunk, it is not
+invoked in tail position.)}
+
+
+@defproc[(hash-has-key? [hash hash?] [key any/c])
+         any]{
+
+Returns a true value if @scheme[hash] contains the given
+@scheme[key].}
 
 
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
