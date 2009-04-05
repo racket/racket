@@ -96,7 +96,7 @@ values in the same way the REPL does.  The conversion process does not
 transform every continuous piece of text into a single Scheme string
 because doing this:
 
-@itemize{
+@itemize[
 
   @item{the Scheme process will need to allocating big strings which makes
   this unfeasible for big files,}
@@ -107,7 +107,7 @@ because doing this:
 
   @item{special treatment for newlines in these strings will become expensive.}
 
-}
+]
 
 (Note that this is different from the BRL approach.)
 
@@ -118,7 +118,7 @@ where text is transformed into Scheme expressions.  These directives
 cannot be changed from withing transformed text because they change the
 way this transformation happens.  Some of these transformation
 
-@itemize{
+@itemize[
 
   @item{Skipping input:
 
@@ -142,7 +142,7 @@ way this transformation happens.  Some of these transformation
 @verbatim[#:indent 2]|{
     shell output
     Some preprocessed text
-    123*456*789 = 44253432}
+    123*456*789 = 44253432
 }|}
 
   @item{Quoting the markers:
@@ -170,7 +170,7 @@ way this transformation happens.  Some of these transformation
   change already-transformed text, which is the reason for this special
   format.}
 
-}
+]
 
 @section{The mzpp read-eval-print loop}
 
@@ -182,7 +182,7 @@ code that @DFlag{debug} shows).  Each expression is evaluated and its result
 is printed using the @scheme[show] function (multiple values are all printed), where
 @scheme[show] works in the following way:
 
-@itemize{
+@itemize[
 
   @item{@|void-const| and @scheme[#f] values are ignored.}
 
@@ -201,7 +201,7 @@ is printed using the @scheme[show] function (multiple values are all printed), w
   @item{All other values are printed with @scheme[display].  No newlines are used
   after printing values.}
 
-}
+]
 
 @section[#:tag "mzpp-lib"]{Provided bindings}
 

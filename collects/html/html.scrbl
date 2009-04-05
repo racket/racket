@@ -117,10 +117,10 @@ A @scheme[html-content] is either
 }
 
 A @scheme[Contents-of-html] is either
-@itemize{
+@itemize[
   @item{@scheme[body]}
   @item{@scheme[head]}
-}
+]
 
 
 @defstruct[(div html-full)()]{

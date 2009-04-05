@@ -53,7 +53,7 @@ also install single @filepath{.plt} files.
 
 The @|setup-plt| executable performs two main services:
 
-@itemize{
+@itemize[
 
  @item{@bold{Compiling and setting up all (or some of the)
    collections:} When @|setup-plt| is run without any arguments, it
@@ -92,7 +92,7 @@ The @|setup-plt| executable performs two main services:
    contained in the @filepath{.plt} archive are unpacked (according to
    specifications embedded in the @filepath{.plt} file) and only
    collections specified by the @filepath{.plt} file are compiled and
-   setup.}}
+   setup.}]
 
 Run @|setup-plt| with the @Flag{h} flag to see a list of all options
 accepted by the @|setup-plt| executable.
@@ -112,7 +112,7 @@ information on the format of an @filepath{info.ss} file.
 Optional @filepath{info.ss} fields trigger additional actions by
 @|setup-plt|:
 
-@itemize{
+@itemize[
 
  @item{@as-index{@schemeidfont{scribblings}} : @scheme[(listof (cons/c string? list?))] ---
    A list of documents to build. Each document in the list is itself
@@ -147,7 +147,7 @@ Optional @filepath{info.ss} fields trigger additional actions by
    Each mode symbol in @scheme[_flags] can be one of the following,
    where only @scheme['multi-page] is commonly used:
 
-   @itemize{
+   @itemize[
 
      @item{@scheme['multi-page] : Generates multi-page HTML output,
            instead of the default single-page format.}
@@ -191,14 +191,14 @@ Optional @filepath{info.ss} fields trigger additional actions by
            that currently has this mode should be the only one with
            the mode.}
 
-    }
+    ]
 
     The @scheme[_category] list specifies how to show the document in
     the root table of contents. The list must start with a symbol,
     usually one of the following categories, which are ordered as
     below in the root documentation page:
 
-   @itemize{
+   @itemize[
 
      @item{@scheme['getting-started] : High-level, introductory
            documentation.}
@@ -239,7 +239,7 @@ Optional @filepath{info.ss} fields trigger additional actions by
      @item{@scheme['omit] : Documentation that should not be listed on
            the root page.}
 
-   }
+   ]
 
    If the category list has a second element, it must be a real number
    that designates the manual's sorting position with the category;
@@ -360,7 +360,7 @@ Optional @filepath{info.ss} fields trigger additional actions by
    Supplying a specific list of collections to @|setup-plt| disables
    this dependency-based deletion of compiled files.}
 
-}
+]
 
 @; ------------------------------------------------------------------------
 
@@ -627,12 +627,12 @@ for making @filepath{.plt} archives:}
   mapped to the installation's main @filepath{collects} directory, and
   so on, for the following the initial directory names:
 
-  @itemize{
+  @itemize[
      @item{@filepath{collects}}
      @item{@filepath{doc}}
      @item{@filepath{lib}}
      @item{@filepath{include}}
-   }
+   ]
 
   If @scheme[#:test-plt-dirs] is a @scheme[list], then
   @scheme[#:at-plt-home?] must be @scheme[#t]. In that case, when the archive
@@ -885,7 +885,7 @@ when a base64-encoded file is decoded).
 
 The raw format is
 
-@itemize{
+@itemize[
   @item{
     @litchar{PLT} are the first three characters.}
 
@@ -895,7 +895,7 @@ The raw format is
     failure thunk for unrecognized symbols. The information symbols
     are:
     
-    @itemize{
+    @itemize[
       @item{
         @scheme['name] --- a human-readable string describing the archive's
         contents. This name is used only for printing messages to the
@@ -928,7 +928,7 @@ The raw format is
         in the latter case, a true value of @scheme['plt-home-relative?] is
         cancelled if any of the directories in the list (relative to the PLT
         Scheme installation) is unwritable by the user.}
-   }
+   ]
 
    The procedure is extracted from the archive using the @scheme[read]
    and @scheme[eval] procedures in a fresh namespace.  }
@@ -950,7 +950,7 @@ The raw format is
    procedure. The filter procedure is called for each directory and
    file to be unpacked. It is called with three arguments:
 
-   @itemize{
+   @itemize[
       @item{
         @scheme['dir], @scheme['file], @scheme['file-replace] 
         --- indicates whether the item to be
@@ -964,7 +964,7 @@ The raw format is
         a path string for the unpack directory (which can vary for a
         PLT-relative install when elements of the archive start with
         @scheme["collects"], @scheme["lib"], etc.).}
-   }
+   ]
    
    If the filter procedure returns @scheme[#f] for a directory or file, the
    directory or file is not unpacked. If the filter procedure returns
@@ -977,7 +977,7 @@ The raw format is
    unpacked, the directory must already exist.
 
    The unit is extracted from the archive using @scheme[read] and
-   @scheme[eval].}  }
+   @scheme[eval].}  ]
 
 Assuming that the unpacking unit calls the @scheme[unmztar] procedure, the
 archive should continue with @tech{unpackables}. @tech{Unpackables} are
@@ -986,7 +986,7 @@ in the base64-encoded input archive).
 
 An @deftech{unpackable} is one of the following:
 
-@itemize{
+@itemize[
    @item{
      The symbol @scheme['dir] followed by a list. The @scheme[build-path]
      procedure will be applied to the list to obtain a relative path for
@@ -1015,7 +1015,7 @@ An @deftech{unpackable} is one of the following:
      The symbol @scheme['file-replace] is treated like @scheme['file], 
      but if the file exists on disk already, the file in the archive replaces
      the file on disk.}
-}
+]
 
 @; ----------------------------------------------------------
 

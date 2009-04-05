@@ -6,7 +6,7 @@
 Some ports---especially those that read from and write to files---are
 internally buffered:
 
-@itemize{
+@itemize[
 
  @item{An input port is typically block buffered by default, which
        means that on any read, the buffer is filled with
@@ -25,7 +25,7 @@ internally buffered:
        @scheme[close-output-port], or when a flush is explicitly
        requested via a procedure like @scheme[flush-output].}
 
-}
+]
 
 If a port supports buffering, its buffer mode can be changed via
 @scheme[file-stream-buffer-mode] (even if the port is not a

@@ -16,7 +16,7 @@ generic @scheme[ports->ssl-ports] interface.
 To use this library, you will need OpenSSL installed on your machine,
 but
 
-@itemize{
+@itemize[
   @item{for Windows, the PLT Scheme distribution for Windows includes
   the necessary DLLs.}
 
@@ -26,7 +26,7 @@ but
   @item{for Unix, @filepath{libssl.so} and @filepath{libcrypto.so} are
   likely to be installed on your machine, already.}
 
-}
+]
 
 
 @defthing[ssl-available? boolean?]{
@@ -106,13 +106,13 @@ section @secref["cert-procs"] below for more information on
 certificates.
 
 The @scheme[protocol] must be one of the following:
-@itemize{
+@itemize[
   @item{@scheme['sslv2-or-v3] : SSL protocol versions 2 or 3, as
   appropriate (this is the default)}
   @item{@scheme['sslv2] : SSL protocol version 2}
   @item{@scheme['sslv3] : SSL protocol version 3}
   @item{@scheme['tls] : the TLS protocol version 1}
-}
+]
 
 By default, the context returned by @scheme[ssl-make-client-context] does not
 request verification of a server's certificate. Use @scheme[ssl-set-verify!]

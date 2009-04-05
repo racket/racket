@@ -103,7 +103,7 @@ A pair prints starting with @litchar{(} followed by the printed form
 of its @scheme[car]. The rest of the printed form depends on the
 @scheme[cdr]:
 
-@itemize{
+@itemize[
 
  @item{If the @scheme[cdr] is a pair or the empty list, then the
        printed form of the pair completes with the printed form of the
@@ -114,7 +114,7 @@ of its @scheme[car]. The rest of the printed form depends on the
        @litchar{.}, another space, the printed form of the
        @scheme[cdr], and a @litchar{)}.}
 
-}
+]
 
 The printed form of a pair is the same in both @scheme[write] and
 @scheme[display] modes, except as the printed form of the pair's
@@ -180,7 +180,7 @@ When the @scheme[print-struct] parameter is set to @scheme[#t], then
 the way that structures print depends on details of the structure type
 for which the structure is an instance:
 
-@itemize{
+@itemize[
 
  @item{If the structure type is a @techlink{prefab} structure type,
        then it prints using @litchar{#s(} followed by the @tech{prefab}
@@ -198,7 +198,7 @@ for which the structure is an instance:
  @item{For any other structure type, the structure prints as an
        unreadable value; see @secref["print-unreadable"] for more
        information.}
-}
+]
 
 If the @scheme[print-struct] parameter is set to @scheme[#f], then all
 structures without a @scheme[prop:custom-write] property print as

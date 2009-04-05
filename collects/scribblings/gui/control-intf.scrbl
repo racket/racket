@@ -5,7 +5,7 @@
 
 The @scheme[control<%>] interface is implemented by the built-in
  control window classes:
-@itemize{
+@itemize[
 @item{@scheme[message%]}
 @item{@scheme[button%]}
 @item{@scheme[check-box%]}
@@ -15,7 +15,7 @@ The @scheme[control<%>] interface is implemented by the built-in
 @item{@scheme[radio-box%]}
 @item{@scheme[choice%]}
 @item{@scheme[list-box%]}
-}
+]
 
 
 

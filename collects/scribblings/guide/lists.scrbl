@@ -125,13 +125,13 @@ iterations using a handful of list primitives.
 Since a Scheme list is a linked list, the two core operations on a
 non-empty list are
 
-@itemize{
+@itemize[
 
  @item{@scheme[first]: get the first thing in the list; and}
 
  @item{@scheme[rest]: get the rest of the list.}
 
-}
+]
 
 @examples[
 #:eval list-eval

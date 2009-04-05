@@ -69,12 +69,12 @@ all of the names in the tools library, for use defining keybindings
      initialization and @scheme[drscheme:eval:build-user-eventspace/custodian]
      
      Specifically, it sets these parameters:
-     @itemize{
+     @itemize[
        @item{ @scheme[current-namespace] has been set to a newly
        created empty namespace. This namespace has the following modules 
        copied (with @scheme[namespace-attach-module])
        from DrScheme's original namespace:
-       @itemize{@item{@scheme['mzscheme]}@item{@scheme['mred]}}
+       @itemize[@item{@scheme['mzscheme]}@item{@scheme['mred]}]
      }@item{
        @scheme[read-curly-brace-as-paren]
        is @scheme[#t],
@@ -94,7 +94,7 @@ all of the names in the tools library, for use defining keybindings
      @scheme[get-the-snip-class-list]
      is initialized with all of the snipclasses in DrScheme's eventspace's snip-class-list.
      
-     }}})
+     }]})
   
  (proc-doc/names
   drscheme:eval:get-snip-classes
@@ -235,12 +235,12 @@ all of the names in the tools library, for use defining keybindings
      
      It initializes the
      user's eventspace's main thread with several parameters:
-     @itemize{
+     @itemize[
      @item{ @scheme[current-custodian] is set to a new custodian.
      }@item{
      In addition, it calls
      @scheme[drscheme:eval:set-basic-parameters].
-     }}
+     }]
      
      The @scheme[language-settings] argument is the current
      language and its settings. See

@@ -151,14 +151,14 @@
   (name-list val-list)
   @{Like @scheme[put-preferences], but has more sophisticated error
          handling.  In particular, it
-         @itemize{
+         @itemize[
                   @item{waits for three consecutive failures before informing the
                               user}
                        @item{gives the user the opportunity to ``steal'' the lockfile
                                    after the third failure, and}
                        @item{when failures occur, it remembers what its arguments were
                               and if any preference save eventually succeeds, all of the
-                              past failures are also written at that point.}}})
+                              past failures are also written at that point.}]})
  
  (proc-doc/names
   preferences:add-panel
@@ -351,7 +351,7 @@
   (-> any)
   ()
   @{@scheme[exit:exit] performs four actions:
-           @itemize{
+           @itemize[
                     @item{sets the result of the @scheme[exit:exiting?] function to
                                @scheme[#t].}
                          @item{invokes the exit-callbacks, with @scheme[exit:can-exit?] if
@@ -359,7 +359,7 @@
                          @item{invokes @scheme[exit:on-exit] and then}
                          @item{queues a callback that calls @scheme[exit] 
                                       (a mzscheme procedure) and (if @scheme[exit] returns) sets the result of
-                                      @scheme[exit:exiting?] back to @scheme[#t].}}})
+                                      @scheme[exit:exiting?] back to @scheme[#t].}]})
  
  (proc-doc/names
   exit:user-oks-exit
@@ -719,22 +719,22 @@
          Otherwise, it invokes the appropriate format handler to open the
          file (see @scheme[handler:insert-format-handler]).
          
-         @itemize{
+         @itemize[
                   @item{If @scheme[filename] is a string, this function checks the
                            result of @scheme[group:get-the-frame-group] to see if the
                            @scheme[filename] is already open by a frame in the group.
-                           @itemize{
+                           @itemize[
                                     @item{If so, it returns the frame.}
                                          @item{If not, this function calls
                                                   @scheme[handler:find-format-handler] with
                                                   @scheme[filename].
-                                                  @itemize{
+                                                  @itemize[
                                                            @item{If a handler is found, it is applied to
                                                                     @scheme[filename] and it's result is the
                                                                     final result.}
-                                                                @item{If not, @scheme[make-default] is used.}}}}}
+                                                                @item{If not, @scheme[make-default] is used.}]}]}
                        @item{If @scheme[filename] is @scheme[#f], @scheme[make-default]
-                                is used.}}})
+                                is used.}]})
  
  (parameter-doc
   handler:current-create-new-window
@@ -966,13 +966,13 @@
   @{This returns a keymap for handling standard editing operations.  It
          binds these keys:
          
-         @itemize{
+         @itemize[
                   @item{@scheme["z"]: undo}
                        @item{@scheme["y"]: redo}
                        @item{@scheme["x"]: cut}
                        @item{@scheme["c"]: copy}
                        @item{@scheme["v"]: paste}
-                       @item{@scheme["a"]: select all}}
+                       @item{@scheme["a"]: select all}]
          where each key is prefixed with the menu-shortcut key, based on the
          platform.  Under unix, the shortcut is @scheme["a:"]; under windows
          the shortcut key is @scheme["c:"] and under MacOS, the shortcut key
@@ -1055,7 +1055,7 @@
             
             This function extends a @scheme[keymap%] with the following
             functions:
-            @itemize{
+            @itemize[
                      @item{@mapdesc[ring-bell any] --- Rings the bell 
                                    (using @scheme[bell]) and removes the search panel from the frame,
                                    if there.}
@@ -1128,12 +1128,12 @@
                           @item{@mapdesc[end-macro key] --- Stops building a keyboard macro}
                           @item{@mapdesc[do-macro key] --- Executes the last keyboard macro}
                           @item{@mapdesc[toggle-overwrite key] --- Toggles overwriting
-                                        mode}}
+                                        mode}]
             
             These functions are bound to the following keys 
             (C = control, S = shift, A = alt, M = ``meta'', D = command):
             
-            @itemize{
+            @itemize[
                      @item{C-g : ``ring-bell''}
                           @item{M-C-g : ``ring-bell''}
                           @item{C-c C-g : ``ring-bell''}
@@ -1213,7 +1213,7 @@
                           @item{MIDDLEBUTTON : ``paste-click-region''}
                           @item{C-RIGHTBUTTON : ``copy-clipboard''}
                           @item{INSERT : ``toggle-overwrite''}
-                          @item{M-o : ``toggle-overwrite''}}})
+                          @item{M-o : ``toggle-overwrite''}]})
  
  (proc-doc/names
   keymap:setup-search

@@ -904,7 +904,7 @@ Useful for implementing languages that are textual by default (see
 Constructs an @"@"-readtable.  The keyword arguments can customize the
 resulting reader in several ways:
 
-@itemize{
+@itemize[
 
 @item{@scheme[readtable] --- a readtable to base the @"@"-readtable
   on.}
@@ -937,7 +937,7 @@ resulting reader in several ways:
 @item{@scheme[start-inside?] --- if true, creates a readtable for
 use starting in text mode, instead of S-expression mode.}
 
-}}
+]}
 
 @defproc[(use-at-readtable ...) void?]{
 

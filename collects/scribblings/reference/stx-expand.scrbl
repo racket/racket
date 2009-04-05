@@ -70,7 +70,7 @@ Information for an expanded @scheme[module] declaration is stored in a
 set of @tech{syntax properties} (see @secref["stxprops"]) attached
 to the syntax object:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['module-direct-requires] --- a list of
  @tech{module path index}es (or symbols) representing the modules
@@ -87,7 +87,7 @@ to the syntax object:
  @item{@indexed-scheme['module-variable-provides] --- a list of
  provided items, where each item is one of the following:
  
-  @itemize{
+  @itemize[
 
   @item{@scheme[symbol] --- represents a locally defined variable that
   is provided with its defined name.}
@@ -106,7 +106,7 @@ to the syntax object:
   @scheme[_defined-sym] is the originally defined name in the module
   specified by @scheme[module-path-index].}
 
-  }}
+  ]}
 
  @item{@indexed-scheme['module-syntax-provides] --- like
  @scheme['module-variable-provides], but for syntax exports instead of
@@ -117,5 +117,5 @@ to the syntax object:
  be exported indirectly through macro expansions.  Definitions of
  macro-generated identifiers create uninterned symbols in this list.}
 
-}
+]
 

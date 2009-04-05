@@ -71,7 +71,7 @@ the enclosing module, so that a relative reference can be converted to
 an absolute symbol or @tech{resolved module path}.
 
 A @tech{module name resolver} takes one and four arguments:
-@itemize{
+@itemize[
 
   @item{When given one argument, it is a name for a module declaration
   that is already loaded. Such a call to the module name resolver is a
@@ -92,7 +92,7 @@ A @tech{module name resolver} takes one and four arguments:
   not already), otherwise the module path should be simply resolved to
   a name. The result is the resolved name.}
 
-}
+]
 
 For the second case, the standard module name resolver keeps a
 per-registry table of loaded module name. If a resolved module path is

@@ -70,7 +70,7 @@ The following completes the grammar for @scheme[pregexp], which uses
 In addition to matching a grammars, regular expressions must meet two
 syntactic restrictions:
 
-@itemize{
+@itemize[
 
  @item{In a @nonterm{repeat} other than @nonterm{atom}@litchar{?},
        then @nonterm{atom} must not match an empty sequence.}
@@ -79,7 +79,7 @@ syntactic restrictions:
        @litchar{(?<!}@nonterm{regexp}@litchar{)},
        the @nonterm{regexp} must match a bounded sequence, only.}
 
-}
+]
 
 These contraints are checked syntactically by the following type
 system. A type [@math{n}, @math{m}] corresponds to an expression that

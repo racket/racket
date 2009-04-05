@@ -41,7 +41,7 @@ Gets the identity of the scrollbar that was modified by the event,
 
 Returns the type of the event, one of the following:
 
-@itemize{
+@itemize[
 @item{@scheme['top] --- user clicked a scroll-to-top button}
 @item{@scheme['bottom] --- user clicked a scroll-to-bottom button}
 @item{@scheme['line-up]  --- user clicked an arrow to scroll up or left one step}
@@ -49,7 +49,7 @@ Returns the type of the event, one of the following:
 @item{@scheme['page-up]  --- user clicked an arrow to scroll up or left one page}
 @item{@scheme['page-down] --- user clicked an arrow to scroll down or right one page}
 @item{@scheme['thumb] --- user dragged the scroll position indicator}
-}
+]
 
 }
 

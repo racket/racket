@@ -8,7 +8,7 @@
 
 The syntax of a Scheme program is defined by
 
-@itemize{
+@itemize[
 
  @item{a @deftech{read} phase that processes a character stream into a
        @tech{syntax object}; and}
@@ -16,7 +16,7 @@ The syntax of a Scheme program is defined by
  @item{an @deftech{expand} phase that processes a syntax object to
        produce one that is fully parsed.}
 
-}
+]
 
 For details on the @tech{read} phase, see @secref["reader"]. Source
 code is normally read in @scheme[read-syntax] mode, which produces a
@@ -259,7 +259,7 @@ In a recursive expansion, each single step in expanding a @tech{syntax
 object} at a particular @tech{phase level} depends on the immediate shape of
 the @tech{syntax object} being expanded:
 
-@itemize{
+@itemize[
 
  @item{If it is an @tech{identifier} (i.e., a syntax-object symbol),
        then a @tech{binding} is determined by the @tech{identifier}'s
@@ -305,13 +305,13 @@ the @tech{syntax object} being expanded:
        @tech{lexical information} as the original pair), and the
        @schemeidfont{#%datum} @tech{binding} is used to continue.}
 
-}
+]
 
 Thus, the possibilities that do not fail lead to an @tech{identifier}
 with a particular @tech{binding}. This binding refers to one of three
 things:
 
-@itemize{
+@itemize[
 
  @item{A @tech{transformer binding}, such as introduced by
        @scheme[define-syntax] or @scheme[let-syntax]. If the
@@ -343,7 +343,7 @@ things:
        introduce @tech{bindings} that determine the parsing of
        sub-forms.}
 
-}
+]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "expand-context-model"]{Expansion Context}
@@ -354,7 +354,7 @@ different @tech{contexts}. For example, a @scheme[module] form is
 allowed only in a @tech{top-level context}, and it fails in other
 contexts. The possible @tech{contexts} are as follows:
 
-@itemize{
+@itemize[
 
  @item{@deftech{top-level context} : outside of any module, definition, or
        expression, except that sub-expressions of a top-level
@@ -372,7 +372,7 @@ contexts. The possible @tech{contexts} are as follows:
  @item{@deftech{expression context} : in a context where only
        expressions are allowed.}
 
-}
+]
 
 Different core @tech{syntactic forms} parse sub-forms using different
 @tech{contexts}. For example, a @scheme[let] form always parses the
@@ -386,7 +386,7 @@ context}.
 @tech{Bindings} are introduced during @tech{expansion} when certain
 core syntactic forms are encountered:
 
-@itemize{
+@itemize[
 
  @item{When a @scheme[require] form is encountered at the top level or
        module level, all lexical information derived from the top
@@ -446,7 +446,7 @@ core syntactic forms are encountered:
  @item{Definitions in @scheme[internal-definition contexts] introduce
        bindings as described in @secref["intdef-body"].}
 
-}
+]
 
 A new binding in lexical information maps to a new variable. The
 identifiers mapped to this variable are those that currently have the
@@ -602,7 +602,7 @@ definitions starts by expanding its first form in an
 internal-definition context, but only partially. That is, it
 recursively expands only until the form becomes one of the following:
 
-@itemize{
+@itemize[
 
  @item{A @scheme[define-values] or @scheme[define-syntaxes] form, for
        any form other than the last one: The definition form is not
@@ -636,7 +636,7 @@ recursively expands only until the form becomes one of the following:
        expansion continues with the first of the newly-spliced forms
        (or the next form, if the @scheme[begin] had no sub-forms).}
 
-}
+]
 
 If the last expression form turns out to be a @scheme[define-values]
 or @scheme[define-syntaxes] form, expansion fails with a syntax error.
@@ -707,7 +707,7 @@ instances and top-level variables.
 For expansion purposes, a namespace maps each symbol in each
 @tech{phase level} to one of three possible bindings:
 
-@itemize{
+@itemize[
 
  @item{a particular @tech{module binding} from a particular module}
 
@@ -715,7 +715,7 @@ For expansion purposes, a namespace maps each symbol in each
 
  @item{a top-level variable named by the symbol}
 
-}
+]
 
 An ``empty'' namespace maps all symbols to top-level variables.
 Certain evaluations extend a namespace for future expansions;

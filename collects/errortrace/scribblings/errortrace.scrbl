@@ -19,7 +19,7 @@ MzScheme's limited stack-trace reporting.
 
 @section[#:tag "quick-instructions"]{Quick Instructions}
 
-@itemize{@item{Throw away @filepath{.zo} versions of your source.}
+@itemize[@item{Throw away @filepath{.zo} versions of your source.}
               
          @item{Prefix your program with
                @schemeblock[(require errortrace)]
@@ -33,7 +33,7 @@ MzScheme's limited stack-trace reporting.
 
          @item{When an exception occurs, the exception handler prints
                something like a stack trace, most recent contexts first.}
-         }
+         ]
 
 The @schememodname[errortrace] module is strange; don't import it
 into another module. Instead, the @schememodname[errortrace] 
@@ -117,7 +117,7 @@ and sorts by either time or call counts.}
 Returns a list of lists that contain all profiling information accumulated
 so far:
 
-@itemize{
+@itemize[
    @item{the number of times a procedure was called.}
 
    @item{the number of milliseconds consumed by the procedure's body across
@@ -133,19 +133,19 @@ so far:
    @item{optionally, a list of unique call paths (i.e. stack traces) 
          recorded if @scheme[profile-paths-enabled] is set to @scheme[#t].
          Each call path is a pair of 
-         @itemize{
+         @itemize[
            @item{a count (the number of times the path occurred), and}
                 
            @item{a list containing two-element lists. Each two-element list
                  contains 
-                 @itemize{
+                 @itemize[
                    @item{the calling procedure's name or source expression,
                          and}
-                   @item{the calling procedure's source file or @scheme[#f].}}
+                   @item{the calling procedure's source file or @scheme[#f].}]
                 }
-        }
+        ]
         Collecting this information is relatively expensive.}
-}}
+]}
 
 @defboolparam[profile-paths-enabled on?]{
 

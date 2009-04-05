@@ -29,7 +29,7 @@ and it adjusts the copied @filepath{hello.exe} and
 The layout of files within a distribution directory is
 platform-specific:
 
-@itemize{
+@itemize[
 
 @item{Under Windows, executables are put directly into the
       distribution directory, and DLLs and other run-time files go
@@ -54,7 +54,7 @@ platform-specific:
       without colliding with an existing PLT Scheme installation or
       other executables created by @|mzc|.}
 
-}
+]
 
 A distribution also has a @filepath{collects} directory that is used
 as the main library collection directory for the packaged executables.

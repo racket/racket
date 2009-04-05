@@ -69,7 +69,7 @@ re-exported from other other module, for the other module
 The @scheme[mode] argument specifies the relevant phase level for the
 binding. The @scheme[binding] is specified in one of four ways:
 
-@itemize{
+@itemize[
 
  @item{If @scheme[binding] is an identifier, then
        @scheme[identifier-binding] is used with @scheme[mode] to
@@ -89,7 +89,7 @@ binding. The @scheme[binding] is specified in one of four ways:
        elements are as in the last four elements of the seven-element
        case.}
 
-}
+]
 
 If a documentation point exists in @scheme[xref], a tag is returned,
 which might be used with @scheme[xref-tag->path+anchor] or embedded in

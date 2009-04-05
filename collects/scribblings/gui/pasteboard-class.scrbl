@@ -812,7 +812,7 @@ Deselects all selected snips in the editor.
 
 Selects, drags, and resizes snips:
 
-@itemize{
+@itemize[
 
 @item{Clicking on a snip selects the snip. Shift-clicking extends
 the current selection with the snip.}
@@ -831,7 +831,7 @@ with the new snips.}
 @item{Clicking on a hiliting tab for a selected object resizes the
 object.}
 
-}
+]
 }
 
 

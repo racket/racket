@@ -18,7 +18,7 @@ images. The @scheme[gif-end] function ends the GIF stream.
 
 A GIF stream can be in any one of the following states:
 
-@itemize{
+@itemize[
 
  @item{@scheme['init] : no images or controls have been added to the
        stream}
@@ -31,6 +31,6 @@ A GIF stream can be in any one of the following states:
 
  @item{@scheme['done] : nothing more can be added}
 
-}
+]
 
 @(include-extracted "../gif.ss")

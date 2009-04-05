@@ -26,7 +26,7 @@ A @scheme[canvas%] object is a general-purpose window for drawing
 
 The @scheme[style] argument indicates one or more of the following styles:
 
-@itemize{
+@itemize[
 
  @item{@scheme['border] --- gives the canvas a thin border}
 
@@ -63,7 +63,7 @@ The @scheme[style] argument indicates one or more of the following styles:
                              later by calling @scheme[parent]'s @method[area-container<%> add-child]
                              method}
  
-}
+]
 
 The @scheme['hscroll] and @scheme['vscroll] styles create a
  canvas with an initially inactive scrollbar. The scrollbars are

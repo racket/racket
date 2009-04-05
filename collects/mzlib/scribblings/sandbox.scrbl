@@ -62,7 +62,7 @@ exn:fail:resource-resource
 Like @scheme-make-evaluator or @scheme[make-module-evaluator], but
 with several differences:
 
-@itemize{
+@itemize[
 
  @item{The @scheme[language] argument can be one of a fixed set of
        symbols: @scheme['r5rs], etc. They are converted by adding a
@@ -79,4 +79,4 @@ with several differences:
        detect @scheme[require]), and the @scheme[require]d modules are
        added to the @scheme[#:allow] list for @|scheme-make-evaluator|.}
 
-}}
+]}

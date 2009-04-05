@@ -17,7 +17,7 @@
 
 The @schememodname[slideshow] module acts as a language that includes:
 
-@itemize{
+@itemize[
 
  @item{all of @schememodname[scheme];}
 
@@ -25,7 +25,7 @@ The @schememodname[slideshow] module acts as a language that includes:
 
  @item{slide-composing functions from @schememodname[slideshow/base].}
 
-}
+]
 
 The @schememodname[slideshow] and @schememodname[slideshow/base]
 module initialization also check the
@@ -129,7 +129,7 @@ The @scheme[slide] function also has built-in support for some common
 multi-slide patterns. Each element argument to @scheme[slide] is
 usually a pict, but there are a few other possibilities:
 
-@itemize{
+@itemize[
 
   @item{If an element is @scheme['next], then a slide is generated
     containing only the preceding elements, and then the elements are
@@ -155,7 +155,7 @@ usually a pict, but there are a few other possibilities:
   @item{A comment produced by @scheme[comment] is ignored, except when
     commentary is displayed.}
 
-}
+]
 
 Here's an example to illustrate how @scheme['next] and @scheme['alts]
 work:

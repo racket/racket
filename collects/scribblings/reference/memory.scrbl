@@ -40,7 +40,7 @@ Returns @scheme[#t] if @scheme[v] is a weak box, @scheme[#f] otherwise.}
 An @deftech{ephemeron} is similar to a weak box (see
 @secref["weakbox"]), except that
 
-@itemize{
+@itemize[
 
  @item{an ephemeron contains a key and a value; the value can be
  extracted from the ephemeron, but the value is replaced
@@ -55,7 +55,7 @@ An @deftech{ephemeron} is similar to a weak box (see
  non-weak reference (see @secref["weakbox"] for information on weak
  references).}
 
-}
+]
 
 In particular, an ephemeron can be combined with a weak hash table
 (see @secref["hashtables"]) to produce a mapping where the memory

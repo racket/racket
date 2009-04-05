@@ -8,12 +8,12 @@ A @scheme[window<%>] object is an @scheme[area<%>] with a graphical
 
 All @scheme[window<%>] classes accept the following named instantiation
  arguments:
-@itemize{
+@itemize[
 
  @item{@indexed-scheme[enabled] --- default is @scheme[#t]; passed to
 @method[window<%> enable] if @scheme[#f]}
 
-}
+]
 
 
 
@@ -113,7 +113,7 @@ Returns an exact integer representing a handle to the window in the
 current platform's GUI toolbox. Cast this number from a C @tt{long}
 to a platform-specific C type:
 
-@itemize{
+@itemize[
 
  @item{Windows: @tt{HWND}}
 
@@ -122,7 +122,7 @@ to a platform-specific C type:
 
  @item{X: @tt{Widget*}}
 
-}
+]
 
 Some windows may not have a representation in the platform's GUI level,
  in which case the result of this method is @scheme[0].

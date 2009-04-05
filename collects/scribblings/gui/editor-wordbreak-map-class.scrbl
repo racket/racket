@@ -16,13 +16,13 @@ A global object @scheme[the-editor-wordbreak-map] is created
 A wordbreak objects implements a mapping from each character to a list
   of symbols. The following symbols are legal elements of the list:
 
-@itemize{
+@itemize[
 @item{@indexed-scheme['caret]}
 @item{@indexed-scheme['line]}
 @item{@indexed-scheme['selection]}
 @item{@indexed-scheme['user1]}
 @item{@indexed-scheme['user2]}
-}
+]
 
 The presence of a flag in a character's value indicates that the
  character does not break a word when searching for breaks using the

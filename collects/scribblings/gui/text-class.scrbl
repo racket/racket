@@ -588,7 +588,7 @@ Returns the snip at a given @techlink{position}, or @scheme[#f] if an appropriat
 If the @techlink{position} @scheme[pos] is between
 two snips, @scheme[direction] specifies which snip to return; @scheme[direction]
 can be any of the following:
-@itemize{
+@itemize[
 
  @item{@scheme['before-or-none] --- returns the snip before the
  @techlink{position}, or @scheme[#f] if @scheme[pos] is @scheme[0]}
@@ -602,7 +602,7 @@ can be any of the following:
  @item{@scheme['after-or-none] -- returns the snip after the
  @techlink{position}, or @scheme[#f] if @scheme[pos] is the last @techlink{position} or larger}
 
-}
+]
 
 @boxisfillnull[(scheme s-pos) @elem{the @techlink{position} where the returned snip starts}]
 
@@ -679,13 +679,13 @@ The @scheme[reason] argument specifies more information about what the
  caret may be different from the wordbreaks used to break lines. The
  possible values of @scheme[reason] are:
 
-@itemize{
+@itemize[
 @item{@scheme['caret] --- find a wordbreak suitable for moving the caret}
 @item{@scheme['line] --- find a wordbreak suitable for breaking lines}
 @item{@scheme['selection] --- find a wordbreak suitable for selecting the closest word}
 @item{@scheme['user1] --- for other (not built-in) uses}
 @item{@scheme['user2] --- for other (not built-in) uses}
-}
+]
 
 The actual handling of @scheme[reason] is controlled by the current
  wordbreak procedure; see @method[text% set-wordbreak-func]for
@@ -1227,7 +1227,7 @@ If the line starts with invisible @techlink{item}s and @scheme[visible?] is not
 @|FCAMW|
 
 To calculate lines, if the following are true:
-@itemize{
+@itemize[
 
  @item{the editor is not displayed (see @secref["tb:miaoverview"]),}
 
@@ -1235,7 +1235,7 @@ To calculate lines, if the following are true:
 
  @item{the editor has never been viewed}
 
-}
+]
 
 then this method ignores the editor's maximum width and any automatic
  line breaks it might imply.  If the first two of the above conditions
@@ -1256,14 +1256,14 @@ Moves the current selection.
 
 The possible values for @scheme[code] are:
 
-@itemize{
+@itemize[
 @item{@scheme['home] --- go to start of file}
 @item{@scheme['end] --- go to end of file}
 @item{@scheme['right] --- move right}
 @item{@scheme['left] --- move left}
 @item{@scheme['up] --- move up}
 @item{@scheme['down] --- move down}
-}
+]
 
 If @scheme[extend?] is not @scheme[#f], the selection range is
  extended instead of moved.  If anchoring is on (see @method[text%
@@ -1272,12 +1272,12 @@ If @scheme[extend?] is not @scheme[#f], the selection range is
 
 The possible values for @scheme[kind] are:
 
-@itemize{
+@itemize[
 @item{@scheme['simple] --- move one item or line}
 @item{@scheme['word] --- works with @scheme['right] or @scheme['left]}
 @item{@scheme['page] --- works with @scheme['up] or @scheme['down]}
 @item{@scheme['line] --- works with @scheme['right] or @scheme['left]; moves to the start or end of the line}
-}
+]
 
 See also @method[text% set-position].
 
@@ -1317,7 +1317,7 @@ Does nothing.
 
 Handles the following:
 
-@itemize{
+@itemize[
 
  @item{Delete and Backspace --- calls @method[text% delete].} 
 
@@ -1329,7 +1329,7 @@ Handles the following:
  @scheme[(integer->char 255)] --- inserts the character into the
  editor.}
 
-}
+]
 
 Note that an editor's @scheme[editor-canvas%] normally handles mouse
  wheel events (see also @method[editor-canvas% on-char] ).
@@ -1346,7 +1346,7 @@ Tracks clicks on a clickback (see @method[text% set-clickback]) of
  dispatches to a caret-owning snip and detects a click on an
  event-handling snip before calling to this method.
 
-@itemize{
+@itemize[
 
  @item{Clicking on a clickback region starts clickback tracking. See
  @method[text% set-clickback] for more information. Moving over a
@@ -1358,7 +1358,7 @@ Tracks clicks on a clickback (see @method[text% set-clickback]) of
  @item{Dragging extends the selection, scrolling if possible when the
  selection is dragged outside the editor's visible region.}
 
-}
+]
 }
 
 
@@ -1821,11 +1821,11 @@ Set the format of the file saved from this editor.
 
 The legal formats are:
 
-@itemize{
+@itemize[
 @item{@scheme['standard] ---  a standard editor  file}
 @item{@scheme['text] --- a text file}
 @item{@scheme['text-force-cr] --- a text file; when writing, change automatic newlines (from word-wrapping) into real carriage returns}
-}
+]
 
 @MonitorMethod[@elem{The file format of an editor} @elem{the
  system in response to file loading and saving
@@ -1910,7 +1910,7 @@ See @|ateoldiscuss| for a discussion of @scheme[at-eol?]. If
 
 The @scheme[seltype] argument is only used when the X Window System
  selection mechanism is enabled. The possible values are:
-@itemize{
+@itemize[
 
  @item{@scheme['default] --- if this window has the keyboard focus
  and given selection is non-empty, make it the current X selection}
@@ -1921,7 +1921,7 @@ The @scheme[seltype] argument is only used when the X Window System
  @item{@scheme['local] --- do not change the
  current X selection}
 
-}
+]
 
 Setting the @techlink{position} is disallowed when the editor is internally
  locked for reflowing (see also @|lockdiscuss|).
@@ -1945,13 +1945,13 @@ See also @scheme[editor-set-x-selection-mode].
 Like  @method[text% set-position], but a scrolling bias can be specified.
 
 The possible values for @scheme[bias] are:
-@itemize{
+@itemize[
 @item{@scheme['start-only] --- only insure that the starting @techlink{position} is visible}
 @item{@scheme['start] --- if the range doesn't fit in the visible area, show the starting @techlink{position}}
 @item{@scheme['none] --- no special scrolling instructions}
 @item{@scheme['end] --- if the range doesn't fit in the visible area, show the ending @techlink{position}}
 @item{@scheme['end-only] --- only insure that the ending @techlink{position} is visible}
-}
+]
 
 See also @method[text% scroll-to-position].
 

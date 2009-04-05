@@ -14,7 +14,7 @@ constraints.
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various
 ordinary Scheme values that double as contracts, including 
-@itemize{
+@itemize[
 @item{@tech{symbols}, @tech{booleans}, @tech{characters}, and
 @scheme[null], which are treated as contracts that recognize
 themselves, using @scheme[eq?], }
@@ -32,7 +32,7 @@ predicate. During contract checking, it is applied to the values that
 appear and should return @scheme[#f] to indicate that the contract
 failed, and anything else to indicate it passed.}
 
-}
+]
 
 @note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
                                          scheme/private/contract
@@ -760,7 +760,7 @@ blame for positive and negative positions of the contract specified by
 
 If specified, @scheme[contract-source-info], indicates where the
 contract was assumed. Its value must be a either:
-@itemize{
+@itemize[
 @item{a list of two elements: @scheme[srcloc] struct and
 either a string or @scheme[#f]. The srcloc struct inidates
 where the contract was assumed. Its @tt{source} field
@@ -775,7 +775,7 @@ identifier whose contract was assumed.}
 source location of the location where the contract was assumed. If the
 syntax object wraps a symbol, the symbol is used as the name of the
 primitive whose contract was assumed.}
-}
+]
 
 If absent, it defaults to the source location of the
 @scheme[contract] expression with no identifying name.
@@ -1093,14 +1093,14 @@ name @scheme[sexp-name] when signaling a contract violation.}
 This is a parameter that is used when constructing a
 contract violation error. Its value is procedure that
 accepts five arguments: 
-@itemize{
+@itemize[
 @item{the value that the contract applies to,}
 @item{a syntax object representing the source location where
 the contract was established, }
 @item{the name of the party that violated the contract (@scheme[#f] indicates that the party is not known, not that the party's name is @scheme[#f]), }
 @item{an sexpression representing the contract, and }
 @item{a message indicating the kind of violation.
-}}
+}]
 The procedure then
 returns a string that is put into the contract error
 message. Note that the value is often already included in

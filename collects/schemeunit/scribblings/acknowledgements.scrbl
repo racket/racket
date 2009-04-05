@@ -5,7 +5,7 @@
 
 The following people have contributed to SchemeUnit:
 
-@itemize{
+@itemize[
   @item{Robby Findler pushed me to release version 3}
 
   @item{Matt Jadud and his students at Olin College
@@ -42,4 +42,4 @@ The following people have contributed to SchemeUnit:
 
   @item{The Extreme Programming community started the whole
     testing framework thing}
-}
+]

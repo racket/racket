@@ -306,12 +306,12 @@ Adds a menu item for printing the interactions.
            void?]{
 
 Adds a submenu that contains various save options:
-@itemize{
+@itemize[
 @item{save definitions as text}
 @item{save interactions}
 @item{save interactions as}
 @item{save interactions as text}
-}
+]
 
 and adds a separator item.
 

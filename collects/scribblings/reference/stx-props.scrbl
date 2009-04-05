@@ -42,7 +42,7 @@ Besides @scheme['origin] tracking for general macro expansion,
 MzScheme adds properties to expanded syntax (often using
 @scheme[syntax-track-origin]) to record additional expansion details:
 
-@itemize{
+@itemize[
 
  @item{When a @scheme[begin] form is spliced into a sequence with
  internal definitions (see @secref["intdef-body"]),
@@ -88,7 +88,7 @@ MzScheme adds properties to expanded syntax (often using
  to recognize such syntax objects. (See @secref["stxops"] for more
  information.)}
 
-}
+]
 
 See @secref["modinfo"] for information about properties generated
 by the expansion of a module declaration. See @scheme[lambda] and

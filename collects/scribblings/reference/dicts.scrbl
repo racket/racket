@@ -141,14 +141,14 @@ Returns the value for @scheme[key] in @scheme[dict]. If no value
 is found for @scheme[key], then @scheme[failure-result] determines the
 result: 
 
-@itemize{
+@itemize[
 
  @item{If @scheme[failure-result] is a procedure, it is called
        (through a tail call) with no arguments to produce the result.}
 
  @item{Otherwise, @scheme[failure-result] is returned as the result.}
 
-}
+]
 
 @examples[
 #:eval dict-eval

@@ -114,13 +114,13 @@ function is allowed to accept zero arguments.}
 The same as Intermediate's @|intm-define-struct|, but defines an
 additional set of operations:
 
-@itemize{
+@itemize[
 
  @item{@schemeidfont{set-}@scheme[structid]@schemeidfont{-}@scheme[fieldid]@schemeidfont{!}
        : takes an instance of the structure and a value, and changes
        the instance's field to the given value.}
 
-}}
+]}
 
 @; ----------------------------------------------------------------------
 

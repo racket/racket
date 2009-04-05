@@ -131,7 +131,7 @@ Returns a value for @scheme[sym] in @scheme[namespace], using
 @scheme[namespace]'s @tech{base phase}. The returned value depends on
 @scheme[use-mapping?]:
 
- @itemize{
+ @itemize[
 
    @item{If @scheme[use-mapping?] is true (the default), and if
    @scheme[sym] maps to a top-level variable or an imported variable
@@ -149,7 +149,7 @@ Returns a value for @scheme[sym] in @scheme[namespace], using
    the variable is undefined, then @scheme[failure-thunk] is called or
    the @exnraise[exn:fail:contract:variable].}
 
- }
+ ]
 
 If @scheme[failure-thunk] is not @scheme[#f],
 @scheme[namespace-variable-value] calls @scheme[failure-thunk] to

@@ -31,7 +31,7 @@ Generates the names bound by @scheme[define-struct] given an
 identifier for the struct type name and a list of identifiers for the
 field names. The result is a list of identifiers:
 
-@itemize{
+@itemize[
   @item{@schemeidfont{struct:}@scheme[name-id]}
   @item{@schemeidfont{make-}@scheme[name-id]}
   @item{@scheme[name-id]@schemeidfont{?}}
@@ -39,7 +39,7 @@ field names. The result is a list of identifiers:
         @scheme[_field] in @scheme[field-ids].}
   @item{@schemeidfont{set-}@scheme[name-id]@schemeidfont{-}@scheme[_field]@schemeidfont{!}
         (getter and setter names alternate).}
-  @item{....}}
+  @item{....}]
 
 If @scheme[omit-sel?] is true, then the selector names are omitted from the
 result list. If @scheme[omit-set?] is true, then the setter names are omitted

@@ -7,7 +7,7 @@
 The editor toolbox provides a foundation for two common kinds of
  applications:
 
-@itemize{
+@itemize[
 
  @item{@italic{Programs that need a sophisticated text editor} ---
  The simple text field control is inadequate for text-intensive
@@ -19,7 +19,7 @@ The editor toolbox provides a foundation for two common kinds of
  lines and boxes, but many applications need an interactive canvas,
  where the user can drag and resize individual objects.}
 
-}
+]
 
 Both kinds of applications need an extensible editor that can handle
  text, images, programmer-defined items, and even embedded
@@ -27,7 +27,7 @@ Both kinds of applications need an extensible editor that can handle
  editor toolbox therefore provides two kinds of editors via two
  classes:
 
-@itemize{
+@itemize[
 
  @item{@scheme[text%] --- in a @deftech{text editor}, items are
  automatically positioned in a paragraph flow.}
@@ -35,7 +35,7 @@ Both kinds of applications need an extensible editor that can handle
  @item{@scheme[pasteboard%] --- in a @deftech{pasteboard editor},
  items are explicitly positioned and dragable.}
 
-}
+]
 
 This editor architecture addresses the full range of real-world
  issues for an editor---including cut-and-paste, extensible file
@@ -160,7 +160,7 @@ Applications that use the editor classes typically derive new versions
 The editor toolbox supports extensible and nestable editors by
  decomposing an editor assembly into three functional parts:
 
-@itemize{
+@itemize[
 
  @item{The @deftech{editor} itself stores the state of the text or
  pasteboard and handles most events and editing operations. The
@@ -183,7 +183,7 @@ The editor toolbox supports extensible and nestable editors by
  @scheme[editor-snip%] class also acts as a display for embedded
  editors.}
 
-}
+]
 
 These three parts are illustrated by a simple word processor. The
  editor corresponds to the text document. The editor object receives
@@ -275,7 +275,7 @@ Styles are hierarchical: each style is defined in terms of another
  style is encoded in a @deftech{style delta} (or simply
  @deftech{delta}). A delta encodes changes such as
 
-@itemize{
+@itemize[
 
  @item{change the font family to @italic{X};}
 
@@ -285,7 +285,7 @@ Styles are hierarchical: each style is defined in terms of another
  
  @item{change everything to match the style description @italic{Z}.}
 
-}
+]
 
 Style objects are never created separately; rather, they are always
  created through a @deftech{style list}, an instance of the
@@ -298,7 +298,7 @@ Style objects are never created separately; rather, they are always
 
 Each new style is defined in one of two ways:
 
-@itemize{
+@itemize[
 
  @item{A @deftech{derived style} is defined in terms of a base style
  and a delta. Every style (except for the root style) has a base
@@ -317,7 +317,7 @@ Each new style is defined in one of two ways:
  character style is the shift style.  However, FrameMaker allows only
  those two levels; with join styles support any number of levels.)}
 
-}
+]
 
 @index*['("Standard style") (list @elem{@scheme["Standard"]
  style})]{Usually}, when text is inserted into a text editor, it
@@ -383,7 +383,7 @@ The editor file data format can be embedded within another file, and
 Graceful and extensible encoding of snips requires that 
  two issues are addressed:
 
-@itemize{
+@itemize[
 
  @item{The encoding function for a snip can be associated with the snip
  itself. To convert a snip from an encoded representation (e.g., as
@@ -407,7 +407,7 @@ Graceful and extensible encoding of snips requires that
  each editor data object has an @deftech{editor data class}, which is
  an instance of the @scheme[editor-data-class%] class.}
 
-}
+]
 
 Snip classes, snip data, and snip data classes solve problems related
  to encoding and decoding snips. In an application that has no need
@@ -472,7 +472,7 @@ Just as a snip must be associated with a snip class to be decoded (see
 
 To store and load information about a snip or region in an editor:
 
-@itemize{
+@itemize[
 
  @item{derive new classes from @scheme[editor-data%] and
  @scheme[editor-data-class%].}
@@ -488,7 +488,7 @@ To store and load information about a snip or region in an editor:
   not for file-saving encoding; see @|globaleditordatadiscuss| for
   information on extending the file format.}
 
-} 
+] 
 
 
 @subsection[#:tag "globaleditordata"]{Global Data: Headers and Footers}
@@ -497,7 +497,7 @@ The editor file format provides for adding extra global data in
  special header and footer sections. To save and load special header
  and/or footer records:
 
-@itemize{
+@itemize[
 
  @item{Pick a name for each header/footer record. This name should not
  conflict with any other header/footer record name in use, and no one
@@ -512,7 +512,7 @@ The editor file format provides for adding extra global data in
  @method[editor<%> read-header-from-file] and/or @method[editor<%>
  read-footer-from-file] methods.}
 
-}
+]
 
 When an editor is saved, the methods @method[editor<%>
  write-headers-to-file] and @method[editor<%> write-footers-to-file]
@@ -564,7 +564,7 @@ In plain text editors, there is a simple correlation between
 
 Text can be extracted from an editor in either of two forms:
 
-@itemize{
+@itemize[
 
  @item{@deftech{Simple text}, where there is one character per
  @techlink{item}. @techlink{Item}s that are characters are mapped to
@@ -582,7 +582,7 @@ Text can be extracted from an editor in either of two forms:
  ``flattened'' because the editor's @techlink{item}s have been reduced
  to a linear sequence of characters.}
 
-}
+]
 
 @section[#:tag "drawcaretinfo"]{Caret Ownership}
 
@@ -604,7 +604,7 @@ When an editor or snip is drawn, an argument to the drawing method
  specifies whether the caret should be drawn with the data. This
  argument can be any of (in increasing order):
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['no-caret] --- The caret should not be drawn at
  all.}
@@ -616,7 +616,7 @@ When an editor or snip is drawn, an argument to the drawing method
  @item{@indexed-scheme['show-caret] --- The caret should be drawn to show
  keyboard focus ownership.}
 
-}
+]
 
 The @scheme['show-inactive-caret] display mode is useful for showing
  selection ranges in text editors that do not have the focus. This
@@ -668,7 +668,7 @@ Note that there is no attempt to save clickback information when a
 Instances of @scheme[editor<%>] have three levels of internal
  locking:
 
-@itemize{
+@itemize[
 
  @item{write locking --- When an editor is internally locked for
  writing, the abstract content of the editor cannot be changed (e.g.,
@@ -696,7 +696,7 @@ Instances of @scheme[editor<%>] have three levels of internal
  snips.  The @method[editor<%> locked-for-read?]  method reports
  whether an editor is currently locked for reading.}
 
-}
+]
 
 The internal lock for an editor is @italic{not} affected by calls to
  @method[editor<%> lock].
@@ -727,7 +727,7 @@ Nevertheless, the editor supports certain concurrent patterns
  refreshes do not prevent editor modifications, the following are
  guaranteed:
 
-@itemize{
+@itemize[
 
  @item{When an editor's @method[editor<%> refresh] method is
  called during an edit sequence (which is started by
@@ -749,7 +749,7 @@ Nevertheless, the editor supports certain concurrent patterns
  delegated to the edit-sequence thread, to be called when the edit
  sequence is complete.}
 
-}
+]
 
 Thus, disabling an @scheme[editor-canvas%] object (using
  @method[window<%> enable]) is sufficient to ensure that a

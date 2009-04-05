@@ -11,7 +11,7 @@ interface. For example, the @method[canvas<%> get-dc] method of a
 canvas returns a @scheme[dc<%>] instance for drawing into the canvas
 window.  Other kinds of DCs draw to different kinds of devices:
 
-@itemize{
+@itemize[
 
  @item{@scheme[bitmap-dc%] --- a @deftech{bitmap DC} draws to an
  offscreen bitmap.}
@@ -22,7 +22,7 @@ window.  Other kinds of DCs draw to different kinds of devices:
  @item{@scheme[printer-dc%] --- a @deftech{printer DC} draws to a
  platform-specific printer device (Windows, Mac OS X).}
 
-}
+]
 
 Tools that are used for drawing include the following: @scheme[pen%]
  objects for drawing lines and shape outlines, @scheme[brush%]

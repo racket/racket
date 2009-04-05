@@ -60,7 +60,7 @@ they are created).
 The @scheme[style] flags adjust the appearance of the frame on
 some platforms:
 
-@itemize{
+@itemize[
 
  @item{@scheme['no-resize-border] --- omits the resizeable border
   around the window (Windows, X MWM) or grow box in the bottom right
@@ -102,7 +102,7 @@ some platforms:
  background (Mac OS X); this style is ignored when
  @scheme['no-caption] is specified}
 
-}
+]
 
 If the @scheme['mdi-child] style is specified, the @scheme[parent] must be
  a frame with the @scheme['mdi-parent] style, otherwise @|MismatchExn|.
@@ -274,7 +274,7 @@ Sets the large or small icon bitmap for this frame.  Future changes to
 
 The icon is used in a platform-specific way:
 
-@itemize{
+@itemize[
 
  @item{Windows --- the small icon is used for the frame's icon (in the
        top-left) and in the task bar, and the large icon is used for
@@ -286,7 +286,7 @@ The icon is used in a platform-specific way:
        as Windows, and others use the small icon when iconifying the
        frame; the large icon is ignored.}
 
-}
+]
 
 The bitmap for either icon can be any size, but most platforms scale
  the small bitmap to 16 by 16 pixels and the large bitmap to 32 by 32

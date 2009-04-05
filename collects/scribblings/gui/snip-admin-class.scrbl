@@ -259,7 +259,7 @@ If @scheme[refresh?] is not @scheme[#f], then the editor is requesting to
  be updated immediately.
 
 The @scheme[bias] argument is one of:
-@itemize{
+@itemize[
 
  @item{@scheme['start] --- if the range doesn't fit in the visible area, show the top-left region}
 
@@ -267,7 +267,7 @@ The @scheme[bias] argument is one of:
 
  @item{@scheme['end] --- if the range doesn't fit in the visible area, show the bottom-right region}
 
-}
+]
 
 The result is @scheme[#t] if the editor is scrolled, @scheme[#f]
  otherwise.

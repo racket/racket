@@ -14,7 +14,7 @@ A @scheme[control-event%] object contains information about a
                 [time-stamp (and/c exact? integer?) 0])]{
 
 The @scheme[event-type] argument is one of the following:
-@itemize{
+@itemize[
 @item{@scheme['button] --- for @scheme[button%] clicks}
 @item{@scheme['check-box] --- for @scheme[check-box%] toggles}
 @item{@scheme['choice] --- for @scheme[choice%] item selections}
@@ -28,7 +28,7 @@ The @scheme[event-type] argument is one of the following:
 @item{@scheme['menu-popdown] --- for @scheme[popup-menu%] callbacks (item selected)}
 @item{@scheme['menu-popdown-none] --- for @scheme[popup-menu%] callbacks (no item selected)}
 @item{@scheme['tab-panel] --- for @scheme[tab-panel%] tab changes}
-}
+]
 
 This value is extracted out of a @scheme[control-event%] object with
  the

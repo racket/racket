@@ -22,7 +22,7 @@ syntactic forms or with the procedures returned by
 The sequence datatype overlaps with many other datatypes. Among
 built-in datatypes, the sequence datatype includes the following:
 
-@itemize{
+@itemize[
 
  @item{lists (see @secref["pairs"])}
 
@@ -36,7 +36,7 @@ built-in datatypes, the sequence datatype includes the following:
 
  @item{input ports (see @secref["ports"])}
 
-}
+]
 
 In addition, @scheme[make-do-sequence] creates a sequence given a
 thunk that returns procedures to implement a generator, and the
@@ -219,7 +219,7 @@ values.
 
 The @scheme[thunk] results define the generated elements as follows:
 
-@itemize{
+@itemize[
 
  @item{The first result is a @scheme[_pos->element] procedure that takes
        the current position and returns the value(s) for the current element.}
@@ -242,7 +242,7 @@ The @scheme[thunk] results define the generated elements as follows:
        determines a sequence end after the current element is already
        included in the sequence.}
 
-}
+]
 
 Each of the procedures listed above is called only once per position.
 Among the last three procedures, as soon as one of the procedures

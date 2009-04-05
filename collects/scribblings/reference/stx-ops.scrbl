@@ -86,7 +86,7 @@ Unwraps the immediate datum structure from a @tech{syntax object},
 leaving nested syntax structure (if any) in place.  The result of
 @scheme[(syntax-e stx)] is one of the following:
 
-    @itemize{
+    @itemize[
 
        @item{a symbol}
 
@@ -105,7 +105,7 @@ leaving nested syntax structure (if any) in place.  The result of
 
        @item{some other kind of datum---usually a number, boolean, or string}
 
-    }
+    ]
 
 A @deftech{syntax pair} is a pair containing a @tech{syntax object} as its
 first element, and either the empty list, a syntax pair, or a syntax

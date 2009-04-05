@@ -116,7 +116,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
 @section[#:tag "intermedAcc:import"]{@scheme[import]}
 
 @elemtag['(inta "import")]
-@itemize{
+@itemize[
 @item{@(scheme import Name (code:comment ""))
        
        Imports a specified class to use within the program.}
@@ -124,12 +124,12 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
        
        Imports a group of classes that can all be used within the program.}
 
-}
+]
 
 @section[#:tag "intermedAcc:class"]{@scheme[class]}
 
 @elemtag['(inta "class")]
-@itemize{
+@itemize[
  @item{@(scheme class Id { Member ...})
         
         Creates a class named Id. If no constructor is present, one is generated that takes no arguments.
@@ -174,13 +174,13 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
         the listed interfaces.
         }
 
- }
+ ]
 
 @section[#:tag "intermedAcc:iface"]{@scheme[interface]}
 
 @elemtag['(inta "iface")]
 
-@itemize{
+@itemize[
 
 @item{@(scheme interface Id { Signature ... })
 
@@ -191,7 +191,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
        Creates an interface named Id that specifies a set of method signatures for classes to implement, and
        inherits the method signatures of the interfaces specified in the extends list.
        }
-}
+]
 
 @elemtag['(inta "sig")]
 
@@ -219,7 +219,7 @@ by the containing class. A protected member can be accessed by the containing cl
 
 @elemtag['(inta "field")]
 
-@itemize{
+@itemize[
   @item{@(scheme Type Id (code:comment "")) 
          
          Creates a field, bound to Id, that can be used within the current class, or on instances of the 
@@ -232,7 +232,7 @@ by the containing class. A protected member can be accessed by the containing cl
          current class using an @elemref['(inta "acc")]{expression}.
          This field will have the declared type and the value of the evaluated @(scheme Expression). 
   }
-  }
+  ]
 
 @section[#:tag "intermedAcc:method"]{@scheme[Method]}
 
@@ -267,7 +267,7 @@ us unique. Each constructor may set its own @elemref['(inta "mods")]{access}. A 
 
 @elemtag['(inta "stmt")]{}
 
-@itemize{
+@itemize[
  @item{@elemtag['(inta "if")] @(scheme if (Expression) { Statement ... } else { Statement  ...})
                
        In this statement the expression should have a boolean type. It is evaluated first. 
@@ -314,11 +314,11 @@ us unique. Each constructor may set its own @elemref['(inta "mods")]{access}. A 
           This set of expressions can be used in a statement position, provided they
           are followed by ';'.
           }
-   }
+   ]
 
 @section[#:tag "intermedAcc:expr"]{@scheme[Expression]}
 
-@itemize{
+@itemize[
  
    @item{@elemtag['(inta "op")]@(scheme Expression Op Expression)
                  
@@ -421,4 +421,4 @@ us unique. Each constructor may set its own @elemref['(inta "mods")]{access}. A 
    @item{@(scheme false)}
    
    
-   }
+   ]

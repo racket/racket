@@ -62,11 +62,11 @@ typed-scheme
 
 There are two differences between these programs:
 
-@itemize{
+@itemize[
   @item*[@elem{The Language}]{@schememodname[scheme] has been replaced by @schememodname[typed-scheme].}
 
   @item*[@elem{The Type Annotation}]{We have added a type annotation
-for the @scheme[fib] function, using the @scheme[:] form.}  }
+for the @scheme[fib] function, using the @scheme[:] form.}  ]
 
 In general, these are most of the changes that have to be made to a
 PLT Scheme program to transform it into a Typed Scheme program.

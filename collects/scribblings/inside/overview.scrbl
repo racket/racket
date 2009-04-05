@@ -9,7 +9,7 @@ Before mixing any C code with MzScheme, first decide whether to use
 the @bold{3m} variant of PLT Scheme, the @bold{CGC} variant of PLT
 Scheme, or both:
 
-@itemize{
+@itemize[
 
 @item{@bold{@as-index{3m}} : the main variant of PLT Scheme, which
   uses @defterm{precise} garbage collection instead of conservative
@@ -22,7 +22,7 @@ Scheme, or both:
   references to managed values from C local variables and (on some
   platforms) static variables.}
 
-}
+]
 
 At the C level, working with CGC can be much easier than working with
 3m, but overall system performance is typically better with 3m.
@@ -43,7 +43,7 @@ the process for CGC.
 To write a C/C++-based extension for PLT Scheme CGC, follow these
 steps:
 
-@itemize{
+@itemize[
 
  @item{@index['("header files")]{For} each C/C++ file that uses PLT
  Scheme library functions, @cpp{#include} the file
@@ -147,7 +147,7 @@ steps:
  platform-specific location as described above, and use
  @scheme[require].}
 
-}
+]
 
 @index['("allocation")]{@bold{IMPORTANT:}} With PLT Scheme CGC, Scheme
 values are garbage collected using a conservative garbage collector,
@@ -190,7 +190,7 @@ distribution contains additional examples.
 To build an extension to work with PLT Scheme 3m, the CGC instructions
 must be extended as follows:
 
-@itemize{
+@itemize[
 
  @item{Adjust code to cooperate with the garbage collector as
  described in @secref["im:3m"]. Using @|mzc| with the
@@ -208,7 +208,7 @@ must be extended as follows:
  object.  When using @|mzc|, use the @DFlag{ld} and @DFlag{3m} flags
  to link to these libraries.}
 
-}
+]
 
 For a relatively simple extension @filepath{hw.c}, the extension is
 compiled under Unix for 3m with the following three commands:
@@ -236,7 +236,7 @@ PLT Scheme CGC.
 
 To embed PLT Scheme CGC in a program, follow these steps:
 
-@itemize{
+@itemize[
 
  @item{Locate or build the PLT Scheme CGC libraries. Since the
   standard distribution provides 3m libraries, only, you will most
@@ -330,7 +330,7 @@ To embed PLT Scheme CGC in a program, follow these steps:
 
  @item{Compile the program and link it with the MzScheme libraries.}
 
-}
+]
 
 @index['("allocation")]{With} PLT Scheme CGC, Scheme values are
 garbage collected using a conservative garbage collector, so pointers
@@ -435,7 +435,7 @@ is automatically defined.
 
 In addition, some library details are different:
 
-@itemize{
+@itemize[
 
  @item{Under Unix, the library is just
   @as-index{@filepath{libmzscheme3m.a}} (or
@@ -455,7 +455,7 @@ In addition, some library details are different:
   @filepath{PLT_MzScheme} framework, just as for CGC, but as a version
   suffixed with @filepath{_3m}.}
 
-}
+]
 
 For MzScheme3m, an embedding application must call @cpp{scheme_main_setup}
 with a non-zero first argument.

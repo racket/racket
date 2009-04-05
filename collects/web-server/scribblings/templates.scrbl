@@ -102,7 +102,7 @@ However, Scheme values that are ultimately returned must be printable by the @te
 For example, consider the following outputs of the 
 title line of different calls to @scheme[fast-template]:
 
-@itemize{
+@itemize[
 
 @item{
 @schemeblock[
@@ -148,7 +148,7 @@ title line of different calls to @scheme[fast-template]:
   <head><title>Fastest Laziness in the West!</title></head>
 }|
 }
-}
+]
 
 @section{Gotchas}
 

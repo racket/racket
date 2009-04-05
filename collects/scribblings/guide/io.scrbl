@@ -33,7 +33,7 @@ stream for writing data.
 Various functions create various kinds of ports. Here are a few
 examples:
 
-@itemize{
+@itemize[
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  @item{@bold{Files:} The @scheme[open-output-file] function opens a
@@ -156,7 +156,7 @@ with the output port; when the function returns, the port is closed.
   (read-line in)
  ]}
 
-}
+]
 
 @;------------------------------------------------------------------------
 @section{Default Ports}
@@ -207,7 +207,7 @@ their values can be set with @scheme[parameterize].
 As noted throughout @secref["datatypes"], Scheme provides two
 ways to print an instance of a built-in value:
 
-@itemize{
+@itemize[
 
  @item{ @scheme[write], which prints a value in the same way that is it
         printed for a @tech{REPL} result; and }
@@ -217,7 +217,7 @@ ways to print an instance of a built-in value:
        are primarily about characters or bytes, otherwise it falls
        back to the same output as @scheme[write].}
 
-}
+]
 
 Here are some examples using each:
 

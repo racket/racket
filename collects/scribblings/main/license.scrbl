@@ -9,7 +9,7 @@
 PLT software and documentation is distributed under the GNU Lesser
 General Public License (LGPL).  This means
 
-@itemize{
+@itemize[
 
  @item{You can link PLT software (such as MzScheme or MrEd) into
        proprietary applications, provided you follow the specific
@@ -20,7 +20,7 @@ General Public License (LGPL).  This means
        which in particular means that you must release the source code
        for the modified software.}
 
-}
+]
 
 See @filepath{doc/release-notes/COPYING.LIB} in your PLT installation
 for more information.

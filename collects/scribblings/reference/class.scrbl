@@ -81,7 +81,7 @@
 
 A @deftech{class} specifies
 
-@itemize{
+@itemize[
  
  @item{a collection of fields;}
 
@@ -92,7 +92,7 @@ A @deftech{class} specifies
  @item{initialization variables that are bound to initialization
  arguments.}
 
-}
+]
 
 In the context of the class system, an @defterm{object} is a
 collection of bindings for fields that are instantiated according to a
@@ -102,7 +102,7 @@ The class system allows a program to define a new class (a
 @deftech{derived class}) in terms of an existing class (the
 @deftech{superclass}) using inheritance, overriding, and augmenting:
 
-@itemize{
+@itemize[
 
  @item{@deftech{inheritance}: An object of a derived class supports
  methods and instantiates fields declared by the derived class's
@@ -117,13 +117,13 @@ The class system allows a program to define a new class (a
  be merely extended in the derived class. The superclass method
  specifically delegates to the augmenting method in the derived class.}
 
-}
+]
 
 An @deftech{interface} is a collection of method names to be
 implemented by a class, combined with a derivation requirement. A
 class @deftech{implements} an interface when it
 
-@itemize{
+@itemize[
 
  @item{declares (or inherits) a public method for each variable in the
  interface;}
@@ -132,7 +132,7 @@ class @deftech{implements} an interface when it
 
  @item{specifically declares its intention to implement the interface.}
 
-}
+]
 
 A class can implement any number of interfaces. A derived class
 automatically implements any interface that its superclass
@@ -454,7 +454,7 @@ from a method is a syntax error.
 
 The values bound to initialization variables are
 
-@itemize{
+@itemize[
 
  @item{the arguments provided with @scheme[instantiate] or passed to
  @scheme[make-object], if the object is created as a direct instance
@@ -464,7 +464,7 @@ The values bound to initialization variables are
  procedure, if the object is created as an instance of a derived
  class.}
 
-}
+]
 
 If an initialization argument is not provided for an initialization
 variable that has an associated @scheme[_default-value-expr], then the
@@ -1337,7 +1337,7 @@ Produces a new @tech{trait} that is like the @tech{trait} result of
 @scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner]
 declaration is added:
 
-@itemize{
+@itemize[
 
  @item{A method declared with @scheme[public], @scheme[pubment], or
   @scheme[public-final] is replaced with a @scheme[inherit]
@@ -1352,7 +1352,7 @@ declaration is added:
  @item{A method declared with @scheme[overment] is not replaced
   with any @scheme[inherit] declaration.}
 
-}
+]
 
 If the trait produced by @scheme[trait-expr] has no method definition for
 @scheme[id], the @exnraise[exn:fail:contract].}
@@ -1555,7 +1555,7 @@ provided from the module.
 
 Serialization for the class works in one of two ways:
 
-@itemize{
+@itemize[
 
  @item{If the class implements the built-in interface
        @scheme[externalizable<%>], then an object is serialized by
@@ -1584,7 +1584,7 @@ Serialization for the class works in one of two ways:
        values. Serialization support does not otherwise make an
        object's fields mutable.}
 
-}
+]
 
 In the second case, a serializable subclass can implement
 @scheme[externalizable<%>], in which case the @scheme[externalize]
@@ -1746,7 +1746,7 @@ not including fields whose names are local (i.e., declared with
 Returns two values, analogous to the return
 values of @scheme[struct-info]:
 K%
-@itemize{
+@itemize[
 
   @item{@scheme[class]: a class or @scheme[#f]; the result is
   @scheme[#f] if the current inspector does not control any class for
@@ -1756,7 +1756,7 @@ K%
   to the most specific class of @scheme[object], @scheme[#t]
   otherwise.}
 
-}}
+]}
 
 
 @defproc[(class-info [class class?])
@@ -1771,7 +1771,7 @@ K%
 Returns seven values, analogous to the return
 values of @scheme[struct-type-info]:
 
-@itemize{
+@itemize[
 
   @item{@scheme[name]: the class's name as a symbol;}
 
@@ -1800,7 +1800,7 @@ values of @scheme[struct-type-info]:
   @item{@scheme[skipped?]: @scheme[#f] if the sixth result is the most
    specific ancestor class, @scheme[#t] otherwise.}
 
-}}
+]}
 
 @defstruct[(exn:fail:object exn:fail) ()]{
 

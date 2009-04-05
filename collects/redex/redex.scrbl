@@ -115,7 +115,7 @@ given term, Redex assumes that it will always match that term.
      (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
-@itemize{
+@itemize[
 
 @item{The @defpattech[any] @pattern matches any sepxression.
 This @pattern may also be suffixed with an underscore and another
@@ -319,7 +319,7 @@ two matches occur, one where @tt{x} is bound to @scheme['()] and
 bound to @scheme['()].
 
 }
-}
+]
 
 @defform*[[(redex-match lang #, @|ttpattern| any)
            (redex-match lang #, @|ttpattern|)]]{
@@ -410,7 +410,7 @@ stands for repetition unless otherwise indicated):
      ,@scheme-expression
      (code:line ... (code:comment "literal ellipsis"))])
 
-@itemize{
+@itemize[
 
 @item{A term written @scheme[_identifier] is equivalent to the
 corresponding symbol, unless the identifier is bound by
@@ -437,7 +437,7 @@ them.}
 
 @item{A term written as a literal boolean or a string
 produces the boolean or the string.}
-}
+]
 
 @defform[(term #, @|tttterm|)]{
 
@@ -1882,7 +1882,7 @@ lw structs for each of the non-lws in the
 list (see the description of lw below for an
 explanation of logical-space):
 
-@itemize{
+@itemize[
 @item{
     If there are two adjacent lws, then the logical
     space between them is filled with whitespace.}
@@ -1903,7 +1903,7 @@ explanation of logical-space):
     the logical space between the two lws is
     absorbed by a new lw that renders using no
     actual space in the typeset version.
-}}
+}]
 }
 
 

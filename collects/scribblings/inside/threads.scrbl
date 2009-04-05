@@ -13,7 +13,7 @@ Information about each internal Scheme thread is kept in a
 structure is available as @cppi{scheme_current_thread}.  A
 @cpp{Scheme_Thread} structure includes the following fields:
 
-@itemize{
+@itemize[
 
  @item{@cppi{error_buf} --- the @cppi{mz_jmp_buf} value used to escape
  from errors. The @cpp{error_buf} value of the current thread is
@@ -33,7 +33,7 @@ structure is available as @cppi{scheme_current_thread}.  A
  @item{@cppi{next} --- The next thread in the linked list of threads;
  this is @cpp{NULL} for the main thread.}
 
-}
+]
 
 The list of all scheduled threads is kept in a linked list;
 @cppi{scheme_first_thread} points to the first thread in the list.
@@ -45,7 +45,7 @@ The last thread in the list is always the main thread.
 
 Scheme's threads can break external C code under two circumstances:
 
-@itemize{
+@itemize[
 
  @item{@italic{Pointers to stack-based values can be communicated
  between threads.}  For example, if thread A stores a pointer to a
@@ -62,7 +62,7 @@ Scheme's threads can break external C code under two circumstances:
  the first thread before completing the second F, then F's internal
  stack will be corrupted.}
 
-}
+]
 
 If either of these circumstances occurs, Scheme will probably crash.
 

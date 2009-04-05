@@ -223,7 +223,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     If that returns @scheme[#t], 
     it checks for one of the these three conditions:
 
-    @itemize{
+    @itemize[
     @item{
     @scheme[exit:exiting?]
     returns @scheme[#t]}
@@ -233,7 +233,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     @scheme[group:get-the-frame-group], or}
     @item{the procedure
     @scheme[exit:user-oks-exit]
-    returns @scheme[#t].}}
+    returns @scheme[#t].}]
     If any of those conditions hold, the 
     method returns @scheme[#t].
   }

@@ -43,7 +43,7 @@ If @scheme[top-level-form] is a syntax object whose datum is not a
 compiled form, then its @tech{lexical information} is enriched before
 it is sent to the @tech{evaluation handler}:
 
-@itemize{
+@itemize[
 
  @item{If @scheme[top-level-form] is a pair whose @scheme[car] is a
        symbol or identifier, and if applying
@@ -57,7 +57,7 @@ it is sent to the @tech{evaluation handler}:
        @scheme[namespace-syntax-introduce] is applied to the entire
        syntax object.}
 
-}
+]
 
 For interactive evaluation in the style of
 @scheme[read-eval-print-loop] and @scheme[load], wrap each expression
@@ -104,7 +104,7 @@ of the @scheme[load] call.
 
 If the second argument to the load handler is a symbol, then:
 
-@itemize{
+@itemize[
 
  @item{The @scheme[read-syntax] from the file is additionally
        @scheme[parameterize]d as follows (to provide consistent reading
@@ -136,7 +136,7 @@ If the second argument to the load handler is a symbol, then:
        @scheme[module], so that the form corresponds to a module
        declaration independent of the current namespace's bindings.}
 
-}
+]
 
 If the second argument to the load handler is @scheme[#f], then each
 expression read from the file is wrapped with

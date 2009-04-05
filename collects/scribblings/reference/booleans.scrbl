@@ -115,7 +115,7 @@ A @tech{structure type property} (see @secref["structprops"]) that
 supplies an equality predicate and hashing functions for a structure
 type. The property value must be a list of three procedures:
 
-@itemize{
+@itemize[
 
  @item{@scheme[_equal-proc : (any/c any/c (any/c any/c . ->
         . boolean?)  . -> . any/c)] --- tests whether the first two
@@ -156,7 +156,7 @@ type. The property value must be a list of three procedures:
        given structure. This procedure is like @scheme[_hash-proc],
        but analogous to @scheme[equal-secondary-hash-code].}
 
-}
+]
 
 Take care to ensure that @scheme[_hash-proc] and @scheme[_hash2-proc]
 are consistent with @scheme[_equal-proc]. Specifically,

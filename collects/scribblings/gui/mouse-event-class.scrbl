@@ -31,7 +31,7 @@ See also @|mousekeydiscuss|.
 Creates a mouse event for a particular type of event. The event types
  are:
 
-@itemize{
+@itemize[
 @item{@scheme['enter] --- mouse pointer entered the window}
 @item{@scheme['leave] --- mouse pointer left the window}
 @item{@scheme['left-down] --- left mouse button pressed}
@@ -41,7 +41,7 @@ Creates a mouse event for a particular type of event. The event types
 @item{@scheme['right-down] --- right mouse button pressed (Mac OS X: click with control key pressed)}
 @item{@scheme['right-up] --- right mouse button released (Mac OS X: release with control key pressed)}
 @item{@scheme['motion] --- mouse moved, with or without button(s) pressed}
-}
+]
 
 See the corresponding @schemeidfont{get-} and @schemeidfont{set-}
  methods for information about @scheme[left-down],

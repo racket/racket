@@ -16,7 +16,7 @@
     and should return the style-name that the token should be colored.
 
     get-token takes an input port and returns the next token as 5 values:
-    @itemize{
+    @itemize[
     @item{
     An unused value.  This value is intended to represent the textual
     component of the token and may be used as such in the future.}
@@ -34,12 +34,12 @@
     @item{
     The starting position of the token.}
     @item{
-    The ending position of the token.}}
+    The ending position of the token.}]
 
     get-token will usually be implemented with a lexer using the 
     @scheme[parser-tools/lex] library.
     get-token must obey the following invariants:
-    @itemize{
+    @itemize[
     @item{
     Every position in the buffer must be accounted for in exactly one
     token.}
@@ -58,7 +58,7 @@
     @verbatim{" 1 2 3"}
     would result in a single string token modifying previous tokens.  To
     handle these situations, get-token must treat the first line as a
-    single token.}}
+    single token.}]
 
     @scheme[pairs] is a list of different kinds of matching parens.  The second
     value returned by get-token is compared to this list to see how the

@@ -37,13 +37,13 @@ scheme
 ]
 
 It exports two functions: 
-@itemize{
+@itemize[
 
 @item{@scheme[create]: The function's contract says that it consumes two
 arguments, a string and a number, and it promises nothing about the return value. }
 
 @item{@scheme[deposit]: The function's contract demands from the client modules
-that they apply it to numbers.  It promises nothing about the return value. }}
+that they apply it to numbers.  It promises nothing about the return value. }]
 
 If a ``client'' module were to apply @scheme[deposit] to
 @scheme['silly], it would violate the contract.  The

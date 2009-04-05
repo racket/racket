@@ -35,7 +35,7 @@ without an additional glue script or a makefile.  The following examples
 use @exec{mzpp}, but they work with @exec{mztext} too.  @DFlag{run} uses a single
 argument which is a string specifying a command to run:
 
-@itemize{
+@itemize[
 
 @item{1. In its simplest form, the command string specifies some shell command
    which will be executed with its standard input piped in from the
@@ -59,7 +59,7 @@ argument which is a string specifying a command to run:
 
 @item{4. Any other cases where the command string contains a @litchar{*} are invalid.}
 
-}
+]
 
 If an executed command fails with a return status different than 0, the
 preprocessor execution will signal a failure by returning 1.

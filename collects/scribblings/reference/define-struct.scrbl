@@ -36,7 +36,7 @@ transformers and variables related to the @tech{structure type}.
 A @scheme[define-struct] form with @math{n} @scheme[field]s defines up
 to @math{4+2n} names:
 
-@itemize{
+@itemize[
 
  @item{@schemeidfont{struct:}@scheme[id], a @deftech{structure type
        descriptor} value that represents the @tech{structure type}.}
@@ -74,7 +74,7 @@ to @math{4+2n} names:
        information about the binding of @scheme[id], see
        @secref["structinfo"].}
 
-}
+]
 
 If @scheme[super-id] is provided, it must have a transformer binding
 of the same sort bound to @scheme[id] (see @secref["structinfo"]),

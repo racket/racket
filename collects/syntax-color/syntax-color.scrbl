@@ -46,7 +46,7 @@ specifically for @scheme[color:text%].
 
 The @scheme[scheme-lexer] function returns 5 values:
 
-@itemize{
+@itemize[
   @item{Either a string containing the matching text or the eof object.  
    Block comments and specials currently return an empty string.  
    This may change in the future to other string or non-string data.}
@@ -58,7 +58,7 @@ The @scheme[scheme-lexer] function returns 5 values:
 
   @item{A number representing the starting position of the match (or @scheme[#f] if eof).}
 
-  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}}
+  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
 
 @section{Default lexer}
 @defmodule[syntax-color/default-lexer]
@@ -76,7 +76,7 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 
 @scheme[default-lexer] returns 5 values:
 
-@itemize{
+@itemize[
   @item{Either a string containing the matching text or the eof object.  
    Block specials currently return an empty string.  
    This may change in the future to other string or non-string data.}
@@ -87,7 +87,7 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 
   @item{A number representing the starting position of the match (or @scheme[#f] if eof).}
 
-  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}}
+  @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
 
                      
 @; ----------------------------------------------------------------------

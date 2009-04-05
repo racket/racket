@@ -243,7 +243,7 @@ selects an identifier, all terms in the same equivalence class as the
 selected term are highlighted in yellow.
 
 The available secondary partitionings are:
-@itemize{
+@itemize[
 @item{@scheme[bound-identifier=?]}
 @item{@scheme[module-identifier=?]}
 @item{@scheme[module-or-top-identifier=?]}
@@ -263,14 +263,14 @@ The available secondary partitionings are:
   The bindings of the two identifiers were imported into the current
   context by requiring the same module.
 }
-}
+]
 
 @subsection{Properties}
 
 When the properties pane is shown, it displays properties of the
 selected syntax object. The properties pane has two tabbed pages:
 
-@itemize{
+@itemize[
 @item{@bold{Term}:
 
       If the selection is an identifier, shows the binding information
@@ -282,7 +282,7 @@ selected syntax object. The properties pane has two tabbed pages:
       Displays source location information and other properties (see
       @scheme[syntax-property]) carried by the syntax object.
 }
-}
+]
 
 @subsection{Interpreting syntax}
 

@@ -7,7 +7,7 @@ An @scheme[area-container<%>] is a container @scheme[area<%>].
 
 All @scheme[area-container<%>] classes accept the following named
  instantiation arguments:
-@itemize{
+@itemize[
 
  @item{@indexed-scheme[border] --- default is @scheme[0]; passed to
 @method[area-container<%> border]} 
@@ -17,7 +17,7 @@ All @scheme[area-container<%>] classes accept the following named
  @scheme['(center top)] for @scheme[vertical-panel%]; the list
  elements are passed to
 @method[area-container<%> set-alignment]} 
-}
+]
 
 
 

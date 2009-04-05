@@ -145,11 +145,11 @@ Sets the parameters described in @secref["compile-params"] for a
 particular known compiler. The acceptable names are
 platforms-specific:
 
-@itemize{
+@itemize[
 @item{Unix: @scheme['cc] or @scheme['gcc]}
 @item{Windows: @scheme['gcc], @scheme['msvc], or @scheme['borland]}
 @item{MacOS: @scheme['cw]}
-}}
+]}
 
 
 @defproc[(get-standard-compilers) (listof symbol?)]{

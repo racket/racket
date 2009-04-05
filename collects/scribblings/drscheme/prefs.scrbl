@@ -30,7 +30,7 @@ The preferences dialog consists of several panels.
   
   The @onscreen{Editing} panel consists of several sub-panels:
 
-  @itemize{
+  @itemize[
 
    @item{@onscreen{Indenting}
 
@@ -40,7 +40,7 @@ The preferences dialog consists of several panels.
  @item{@onscreen{Square bracket}
 
       This panel controls which keywords DrScheme uses to determine
-      when to rewrite @litchar{[} to @litchar{(}. For
+      when to rewrite @litchar["["] to @litchar["("]. For
       @scheme[cond]-like keywords, the number in parenthesis indicates
       how many sub-expressions are skipped before square brackets are
       started.
@@ -50,7 +50,7 @@ The preferences dialog consists of several panels.
 
  @item{@onscreen{General}
 
-  @itemize{
+  @itemize[
 
    @item{@PrefItem{Number of recent items} --- controls the
      length of the @onscreen{Open Recent} menu (in the @onscreen{File}
@@ -128,11 +128,11 @@ The preferences dialog consists of several panels.
   that the @hash-lang[] line is the first line in the file.
 }
 
-  }}
+  ]}
 
  @item{@onscreen{Scheme}
 
-  @itemize{
+  @itemize[
 
    @item{@PrefItem{Highlight between matching parens} --- If checked, the
     editor marks the region between matching parenthesis with a gray
@@ -140,23 +140,23 @@ The preferences dialog consists of several panels.
     the blinking caret is next to a parenthesis.}
 
    @item{@PrefItem{Correct parens} --- If checked, the editor
-    automatically converts a typed @litchar{)} to @litchar{]} to
-    match @litchar{[}, or it converts a typed @litchar{]} to
-    @litchar{)} to match @litchar{(}. Also, the editor changes
-    typed @litchar{[} to match the context (as explained in
+    automatically converts a typed @litchar[")"] to @litchar["]"] to
+    match @litchar["["], or it converts a typed @litchar["]"] to
+    @litchar[")"] to match @litchar["("]. Also, the editor changes
+    typed @litchar["["] to match the context (as explained in
     @secref["editor"]).}
 
    @item{@PrefItem{Flash paren match} --- If checked, typing a closing
     parenthesis, square bracket, or quotation mark flashes the
     matching open parenthesis/bracket/quote.}
 
-  }}
+  ]}
 
-}
+]
 
 @section{@onscreen{Warnings}}
 
-  @itemize{
+  @itemize[
 
    @item{@PrefItem{Ask before changing save format} --- If checked,
     DrScheme consults the user before saving a file in non-text format
@@ -181,7 +181,7 @@ The preferences dialog consists of several panels.
      checked, DrScheme periodically polls a server to determine
      whether a newer version of DrScheme is available.}
 
- }
+ ]
 
 @section{@onscreen{Profiling}}
   

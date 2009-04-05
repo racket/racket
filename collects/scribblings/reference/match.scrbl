@@ -44,7 +44,7 @@ identifiers are recognized symbolically (i.e., not by binding).
 
 In more detail, patterns match as follows:
 
-@itemize{
+@itemize[
 
  @item{@scheme[_id], excluding the reserved names @schemeidfont{_},
        @schemeidfont{...}, @schemeidfont{.._},
@@ -350,7 +350,7 @@ In more detail, patterns match as follows:
  @item{@scheme[_derived-pattern] --- matches a pattern defined by a
        macro extension via @scheme[define-match-expander].}
 
-}}
+]}
 
 @; ----------------------------------------------------------------------
 

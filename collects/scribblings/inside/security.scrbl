@@ -29,7 +29,7 @@ Consults the current security manager to determine whether access is
 allowed to @var{filename}. The @var{guards} argument should be a
 bitwise combination of the following:
 
-@itemize{
+@itemize[
 
  @item{@cppi{SCHEME_GUARD_FILE_READ}}
  @item{@cppi{SCHEME_GUARD_FILE_WRITE}}
@@ -37,7 +37,7 @@ bitwise combination of the following:
  @item{@cppi{SCHEME_GUARD_FILE_DELETE}}
  @item{@cppi{SCHEME_GUARD_FILE_EXISTS} (do not combine with other values)}
 
-}
+]
 
 The @var{filename} argument can be @cpp{NULL} (in which case
 @scheme[#f] is sent to the security manager's procedure), and

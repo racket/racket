@@ -84,7 +84,7 @@ In a specific import or export position, the set of identifiers bound
 or required by a particular @scheme[sig-id] can be adjusted in a few
 ways:
 
-@itemize{
+@itemize[
 
  @item{@scheme[(prefix id sig-spec)] as an import binds the same as
  @scheme[sig-spec], except that each binding is prefixed with @scheme[id].
@@ -111,7 +111,7 @@ ways:
  @scheme[bound-identifier=?] to each @scheme[id]).  This form is not
  allowed for an export.}
 
-}
+]
 
 As suggested by the grammar, these adjustments to a signature can be
 nested arbitrarily.
@@ -171,7 +171,7 @@ the corresponding import. Each @scheme[tagged-sig-id] in an
 Binds an identifier to a signature that specifies a group
 of bindings for import or export:
 
-@itemize{
+@itemize[
 
  @item{Each @scheme[id] in a signature declaration means that a unit
  implementing the signature must supply a variable definition for the
@@ -210,7 +210,7 @@ of bindings for import or export:
  @scheme[define-signature-form].  One such binding is for
  @scheme[struct].}
 
-}
+]
 
 When a @scheme[define-signature] form includes a @scheme[extends]
 clause, then the define signature automatically includes everything in
@@ -817,7 +817,7 @@ If @scheme[sig-identifier] is bound to static unit information via
 @scheme[define-signature] (or other such forms), the result is four
 values:
 
-@itemize{
+@itemize[
 
   @item{an identifier or @scheme[#f] indicating the signature (of any)
         that is extended by the @scheme[sig-identifier] binding;}
@@ -832,7 +832,7 @@ values:
 
   @item{a list of identifiers with syntax definitions in the signature.}
 
-}
+]
 
 If @scheme[sig-identifier] is not bound to a signature, then the
 @exnraise[exn:fail:syntax]. In that case, the given

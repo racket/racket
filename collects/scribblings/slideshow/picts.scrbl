@@ -160,7 +160,7 @@ function, a drawing context must be installed with
 
 The @scheme[style] argument must be one of the following:
 
-@itemize{
+@itemize[
 
  @item{@scheme[null] --- the default, same as @scheme['default]}
 
@@ -184,7 +184,7 @@ The @scheme[style] argument must be one of the following:
       (the default, unless the @scheme['modern] family is specified)}
 
  @item{@scheme[(cons 'no-combine style)] --- renders characters individually}
-}
+]
 
 If both @scheme['combine] and @scheme['no-combine] are specified, the
 first one takes precedence. If caps is specified, the angle must be
@@ -821,7 +821,7 @@ Returns a pict for a pre-configured face with the given base
 color. The built-in configurations, selected by mood-symbol, are as
 follows:
 
-@itemize{
+@itemize[
 
     @item{@scheme['unhappy] --- @scheme[(face* 'none 'plain #t default-face-color 6)]}
     @item{@scheme['sortof-unhappy] --- @scheme[(face* 'worried 'grimace #t default-face-color 6)]}
@@ -837,7 +837,7 @@ follows:
     @item{@scheme['mean] --- @scheme[(face* 'angry 'narrow #f default-face-color 0)]}
     @item{@scheme['surprised] --- @scheme[(face* 'worried 'oh #t default-face-color -4 -3 2)]}
 
-}}
+]}
 
 @defproc[(face* [eyebrow-kind (or/c 'none 'normal 'worried 'angry)]
                 [mouth-kind (or/c 'plain 'smaller 'narrow 'medium 'large 
@@ -858,7 +858,7 @@ follows:
 
 Returns a pict for a face:
 
-@itemize{
+@itemize[
 
  @item{@scheme[eyebrow-kind] determines the eyebrow shape.}
 
@@ -881,7 +881,7 @@ Returns a pict for a face:
  @item{@scheme[pupil-dy] adjusts the pupil; recommend values are
        between -15 and 15.}
 
-}
+]
 
 The @scheme[#:eyebrow-shading?] through
 @scheme[#:face-background-shading?] arguments control whether a

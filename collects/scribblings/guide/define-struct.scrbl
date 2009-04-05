@@ -44,7 +44,7 @@ Meanwhile, in addition to defining @scheme[_struct-id],
 @scheme[define-struct] also defines a number of identifiers that are
 built from @scheme[_struct-id] and the @scheme[_field-id]s:
 
-@itemize{
+@itemize[
 
  @item{@schemeidfont{make-}@scheme[_struct-id] : a
        @deftech{constructor} function that takes as many arguments as
@@ -74,7 +74,7 @@ built from @scheme[_struct-id] and the @scheme[_field-id]s:
        @scheme[#:super], as discussed later in
        @secref["struct-options"]).}
 
-}
+]
 
 A @scheme[define-struct] form places no constraints on the kinds of
 values that can appear for fields in an instance of the structure
@@ -368,7 +368,7 @@ or existing examples. Overall, the different options for structure
 types offer a spectrum of possibilities from more abstract to more
 convenient:
 
-@itemize{
+@itemize[
 
  @item{@tech{Opaque} (the default) : Instances cannot be inspected or
        forged without access to the structure-type declaration. As
@@ -394,7 +394,7 @@ convenient:
        manufacture instances directly. The instance cannot have a
        @tech{constructor guard} or @tech{properties}.}
 
-}
+]
 
 Since the expression reader can generate @tech{prefab} instances, they
 are useful when convenient @tech{serialization} is more important than

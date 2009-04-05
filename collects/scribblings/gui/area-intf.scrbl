@@ -10,7 +10,7 @@ An @scheme[area<%>] object is either a window or a windowless
 
 All @scheme[area<%>] classes accept the following named instantiation
  arguments:
-@itemize{
+@itemize[
 
  @item{@indexed-scheme[min-width] --- default is the initial graphical minimum width; passed to
 @method[area<%> min-width]} 
@@ -20,7 +20,7 @@ All @scheme[area<%>] classes accept the following named instantiation
 @method[area<%> stretchable-width]} 
  @item{@indexed-scheme[stretchable-height] --- default is class-specific; passed to
 @method[area<%> stretchable-height]} 
-}
+]
 
 
 

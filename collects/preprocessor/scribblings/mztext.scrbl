@@ -68,9 +68,9 @@ generates this output:
 
 An explanation of a few lines:
 
-@itemize{
+@itemize[
 
-  @item{@litchar|{@"bar"}|, @litchar|{[@(+ 1 2)}|---the Scheme objects
+  @item{@litchar|{@"bar"}|, @litchar|{@(+ 1 2)}|---the Scheme objects
   that is read is evaluated and displayed back on the input port which
   is then printed.}
 
@@ -82,11 +82,11 @@ An explanation of a few lines:
   @item{@litchar|{@(/ (read) 3)12}| --- demonstrates that the Scheme
   code can do anything with the current input.}
 
-}
+]
 
 The complete behavior of the command dispatcher follows:
 
-@itemize{
+@itemize[
 
   @item{If the marker sequence is followed by itself, then it is simply
   displayed, using the default, @litchar["@@"] outputs a @litchar["@"].}
@@ -94,7 +94,7 @@ The complete behavior of the command dispatcher follows:
   @item{Otherwise a Scheme expression is read and evaluated, and the result is
   processed as follows:
 
-    @itemize{
+    @itemize[
 
       @item{If the result consists of multiple values, each one is processed,}
 
@@ -118,13 +118,13 @@ The complete behavior of the command dispatcher follows:
 
       @item{All other values are ignored.}
 
-    }
+    ]
   }
 
   @item{When this processing is done, and printable results have been re-added
   to the input port, control is returned to the main processing loop.}
 
-}
+]
 
 A built-in convenient behavior is that if the evaluation of the Scheme
 expression returned a @|void-const| or @scheme[#f] value (or multiple values that are
@@ -145,7 +145,7 @@ done in a better way using macros).  The special treatment of procedure
 values is what allows more powerful constructs.  There are handled by
 their arity (preferring a the nullary treatment over the unary one):
 
-@itemize{
+@itemize[
 
 @item{A procedure of arity 0 is simply invoked, and its resulting value is
   used.  The procedure can freely use the input stream to retrieve
@@ -218,7 +218,7 @@ their arity (preferring a the nullary treatment over the unary one):
   facility that is rarely needed, similarly to the fact that @scheme[call/cc]
   is rarely needed in Scheme.}
 
-}
+]
 
 Remember that when procedures are used, generated output is not
 reprocessed, just like evaluating other expressions.
@@ -375,7 +375,7 @@ Dispatching-related bindings:
   commands.  It should be used as a command, not from Scheme code
   directly, and it should receive three arguments:
 
-  @itemize{
+  @itemize[
 
     @item{The name for the new command (the contents of this argument is
     converted to a string),}
@@ -386,7 +386,7 @@ Dispatching-related bindings:
     @item{Arbitrary text, with @bold{textual} instances of the variables that
     denote places they are used.}
 
-  }
+  ]
 
   For example, the sample code above:
 

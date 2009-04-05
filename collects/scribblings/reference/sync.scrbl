@@ -5,7 +5,7 @@
 
 Scheme's synchronization toolbox spans three layers:
 
-@itemize{
+@itemize[
 
 @item{@tech{synchronizable events} --- a general framework for
 synchronization;}
@@ -17,7 +17,7 @@ that compose events); and}
 @item{@tech{semaphores} --- a simple and especially cheap primitive
 for synchronization.}
 
-}
+]
 
 
 @local-table-of-contents[]

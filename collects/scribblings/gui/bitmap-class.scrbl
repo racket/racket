@@ -140,7 +140,7 @@ Loads a bitmap from a file. If the bitmap is in use by a
 
 The @scheme[kind] argument specifies the file's format:
 
-@itemize{
+@itemize[
 @item{@scheme['unknown] --- examine the file to determine its format}
 @item{@scheme['unknown/mask] --- like @scheme['unknown], but see @method[bitmap% get-loaded-mask]}
 @item{@scheme['gif] --- load a @as-index{GIF} bitmap file (X, Windows, Mac OS X)}
@@ -152,7 +152,7 @@ The @scheme[kind] argument specifies the file's format:
 @item{@scheme['xpm] --- load an @as-index{XPM} bitmap file (X, Windows, Mac OS X)}
 @item{@scheme['bmp] --- load a Windows bitmap file (X, Windows, Mac OS X)}
 @item{@scheme['pict] --- load a @as-index{PICT} bitmap file (Mac OS X)}
-}
+]
 
 An XBM image is always loaded as a monochrome bitmap. A 1-bit
  grayscale PNG without a mask or alpha channel is also loaded as a
@@ -198,7 +198,7 @@ Saves a bitmap in the named file.
 The @scheme[kind] argument determined the type of file that is created,
  one of:
 
-@itemize{
+@itemize[
 
  @item{@scheme['png] --- save a @as-index{PNG} file (X, Windows, Mac OS X)}
 
@@ -210,7 +210,7 @@ The @scheme[kind] argument determined the type of file that is created,
 
  @item{@scheme['bmp] --- save a Windows bitmap file (Windows)}
 
-}
+]
 
 The @scheme[quality] argument is used only for saving as @scheme['jpeg], in
  which case it specifies the trade-off between image precision (high

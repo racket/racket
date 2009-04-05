@@ -20,7 +20,7 @@ controls the module invocation.
 
 Control over a module invocation enables
 
-@itemize{
+@itemize[
 
  @item{the use of @scheme[module->namespace] on the module;}
 
@@ -30,7 +30,7 @@ Control over a module invocation enables
  @item{access to the module's protected and unexported variables
  within compiled code from @scheme[read] (see @scheme[current-compile]).}
 
-}
+]
 
 If the value of @scheme[current-code-inspector] never changes, then no
 control is lost for any module invocation, since the module's

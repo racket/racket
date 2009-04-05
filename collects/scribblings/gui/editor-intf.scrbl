@@ -466,7 +466,7 @@ Returns the name of a style to be used for newly inserted text,
 Performs a generic edit command. The @scheme[op] argument must be a
 valid edit command, one of:
 
-@itemize{
+@itemize[
 @item{@scheme['undo] --- undoes the last operation}
 @item{@scheme['redo] --- undoes the last undo}
 @item{@scheme['clear] --- deletes the current selection}
@@ -481,7 +481,7 @@ valid edit command, one of:
 @method[editor<%> on-new-box] .}
 @item{@scheme['insert-image] --- gets a filename from the user and inserts the image as an @techlink{item} in this editor; see also
 @method[editor<%> on-new-image-snip] .}
-}
+]
 
 If @scheme[recursive?] is not @scheme[#f], then the command is passed on to
  any active snips of this editor (i.e., snips which own the caret).
@@ -1074,7 +1074,7 @@ prompted for a name.
 The possible values for @scheme[format] are listed below. A single set of
 @scheme[format] values are used for loading and saving files:
 
-@itemize{
+@itemize[
 
 @item{@scheme['guess] --- guess the format based on
 extension and/or contents; when saving a file, this is the same as
@@ -1097,7 +1097,7 @@ extension and/or contents; when saving a file, this is the same as
 (@scheme[text%] only); when writing, change automatic newlines (from
 word-wrapping) into real carriage returns}
 
-}
+]
 
 In a @scheme[text%] instance, the format returned from @method[text%
  get-file-format] is always one of @scheme['standard], @scheme['text],
@@ -1713,7 +1713,7 @@ The @scheme[output-mode] setting is used for Windows and Mac OS X. It
  using the platform-specific standard printing mechanism. The possible
  values are
 
-@itemize{
+@itemize[
 
  @item{@scheme['standard] --- print using the platform-standard
  mechanism (via a @scheme[printer-dc%]) under Windows and
@@ -1722,7 +1722,7 @@ The @scheme[output-mode] setting is used for Windows and Mac OS X. It
  @item{@scheme['postscript] --- print to a PostScript file (via a
  @scheme[post-script-dc%])}
 
-}
+]
 
 If @scheme[parent] is not @scheme[#f], it is used as the parent window
  for configuration dialogs (for either PostScript or platform-standard
@@ -1807,7 +1807,7 @@ The stream provides either new mappings for names in the editor's
  when the editor was written to the stream; see also @method[editor<%>
  write-to-file]).
 
-@itemize{
+@itemize[
 
  @item{In the former case, if the @scheme[overwrite-styles?] argument
  is @scheme[#f], then each style name in the loaded file that is already
@@ -1818,7 +1818,7 @@ The stream provides either new mappings for names in the editor's
  @item{In the latter case, the editor's style list will be changed to
  the previously-read list.}
 
-}
+]
 }
 
 
@@ -2105,7 +2105,7 @@ If @scheme[#f] is provided as the new owner, then the local focus is
 
 The domain of focus-setting is one of:
 
-@itemize{
+@itemize[
 
  @item{@scheme['immediate] --- only set the focus owner within the
  editor}
@@ -2117,7 +2117,7 @@ The domain of focus-setting is one of:
  @item{@scheme['global] --- make this editor or the new focus
  owner get the keyboard focus among all elements in the editor's frame}
 
-}
+]
 
 @MonitorMethod[@elem{The focus state of an editor} @elem{by the
 system} @elem{@method[editor<%> on-focus]} @elem{focus}]

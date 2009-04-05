@@ -7,11 +7,11 @@
 
 A Scheme @deftech{number} is either exact or inexact:
 
-@itemize{
+@itemize[
 
  @item{An @defterm{exact} number is either
 
-       @itemize{
+       @itemize[
 
        @item{an arbitrarily large or small integer, such as @scheme[5],
              @scheme[99999999999999999], or @scheme[-17];}
@@ -24,11 +24,11 @@ A Scheme @deftech{number} is either exact or inexact:
              (where the imaginary part is not zero), such as @scheme[1+2i] or
              @scheme[1/2+3/4i].}
 
-       }}
+       ]}
 
  @item{An @defterm{inexact} number is either
 
-       @itemize{
+       @itemize[
 
         @item{an IEEE floating-point representation of a number, such
               as @scheme[2.0] or @scheme[3.14e87], where the IEEE
@@ -42,8 +42,8 @@ A Scheme @deftech{number} is either exact or inexact:
               special case, an inexact complex number can have an
               exact zero real part with an inexact imaginary part.}
 
-        }}
-}
+        ]}
+]
 
 Inexact numbers print with a decimal point or exponent specifier, and
 exact numbers print as integers and fractions.  The same conventions

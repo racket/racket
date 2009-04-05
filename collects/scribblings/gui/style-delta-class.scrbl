@@ -5,7 +5,7 @@
 
 A @scheme[style-delta%] object encapsulates a style change. The changes expressible
 by a delta include:
-@itemize{
+@itemize[
 @item{changing the font family}
 @item{changing the font face}
 @item{changing the font size to a new value}
@@ -21,7 +21,7 @@ by a delta include:
 @item{dimming or brightening the foreground color, etc.}
 @item{changing the background color, etc.}
 @item{changing text backing transparency}
-}
+]
 
 The @method[style-delta% set-delta] method is convenient for most
 style delta settings; it takes a high-level delta specification and
@@ -36,7 +36,7 @@ turns on a weight setting when it is not present and
 @scheme[weight-off] turns off a weight setting when it is
 present. These two interact precisely in the following way:
 
-@itemize{
+@itemize[
 @item{If both @scheme[weight-on] and @scheme[weight-off] are set to @scheme['base], 
 then the font weight is not changed.}
 @item{If @scheme[weight-on] is not @scheme['base], then the weight is set to 
@@ -51,65 +51,65 @@ the base style has the weight @scheme[weight-on], then weight is changed to
 @item{If both @scheme[weight-on] and @scheme[weight-off] are set, but to
 different values, then the weight is changed to @scheme[weight-on] 
 only when the base style has the weight @scheme[weight-off].}
-}
+]
 
 Font styles, smoothing, underlining, and alignment work in an analogous manner.
 
 The possible values for @scheme[alignment-on] and @scheme[alignment-off] are:
-@itemize{
+@itemize[
 @item{@indexed-scheme['base]}
 @item{@indexed-scheme['top]}
 @item{@indexed-scheme['center]}
 @item{@indexed-scheme['bottom]}
-}
+]
 
 The possible values for @scheme[style-on] and @scheme[style-off] are:
-@itemize{
+@itemize[
 @item{@indexed-scheme['base]}
 @item{@indexed-scheme['normal]}
 @item{@indexed-scheme['italic]}
 @item{@indexed-scheme['slant]}
-}
+]
 
 The possible values for @scheme[smoothing-on] and @scheme[smoothing-off] are:
-@itemize{
+@itemize[
 @item{@indexed-scheme['base]}
 @item{@indexed-scheme['default]}
 @item{@indexed-scheme['partly-smoothed]}
 @item{@indexed-scheme['smoothed]}
 @item{@indexed-scheme['unsmoothed]}
-}
+]
 
 The possible values for @scheme[underlined-on] and @scheme[underlined-off] are:
-@itemize{
+@itemize[
 @item{@scheme[#f] (acts like @scheme['base])}
 @item{@scheme[#t]}
-}
+]
 
 The possible values for @scheme[size-in-pixels-on] and @scheme[size-in-pixels-off] are:
-@itemize{
+@itemize[
 @item{@scheme[#f] (acts like @scheme['base])}
 @item{@scheme[#t]}
-}
+]
 
 The possible values for @scheme[transparent-text-backing-on] and 
 @scheme[transparent-text-backing-off] are:
-@itemize{
+@itemize[
 @item{@scheme[#f] (acts like @scheme['base])}
 @item{@scheme[#t]}
-}
+]
 
 The possible values for @scheme[weight-on] and @scheme[weight-off] are:
-@itemize{
+@itemize[
 @item{@indexed-scheme['base]}
 @item{@indexed-scheme['normal]}
 @item{@indexed-scheme['bold]}
 @item{@indexed-scheme['light]}
-}
+]
 
 The family and face settings in a style delta are interdependent:
 
-@itemize{
+@itemize[
 
  @item{When a delta's face is @scheme[#f] and its family is
        @scheme['base], then neither the face nor family are modified by
@@ -124,7 +124,7 @@ The family and face settings in a style delta are interdependent:
        @scheme[#f], so that the family setting prevails in choosing a
        font.}
 
-}
+]
 
 
 
@@ -236,7 +236,7 @@ See also @method[style-delta% get-family].
                      'swiss 'modern 'symbol 'system)]{
 
 Returns the delta's font family. The possible values are
-@itemize{
+@itemize[
 @item{@indexed-scheme['base] --- no change to family}
 @item{@indexed-scheme['default]}
 @item{@indexed-scheme['decorative]}
@@ -246,7 +246,7 @@ Returns the delta's font family. The possible values are
 @item{@indexed-scheme['modern] (fixed width)}
 @item{@indexed-scheme['symbol] (Greek letters)}
 @item{@indexed-scheme['system] (used to draw control labels)}
-}
+]
 
 See also
 @method[style-delta% get-face].
@@ -401,7 +401,7 @@ Except for @scheme['change-nothing] and
 
 The @scheme[change-command] argument specifies how the delta is changed;
 the possible values are:
-@itemize{
+@itemize[
 @item{@scheme['change-nothing] --- reset all changes}
 @item{@scheme['change-normal] --- turn off all styles and resizings}
 @item{@scheme['change-toggle-underline] --- underline regions that are currently not underlined, and vice-versa}
@@ -430,7 +430,7 @@ the possible values are:
 @item{@scheme['change-smaller] --- make the text smaller (@scheme[param] is an additive amount)}
 @item{@scheme['change-underline] --- set the underline status to either underlined or plain}
 @item{@scheme['change-size-in-pixels] --- set the size interpretation to pixels or points}
-}
+]
 }
 
 

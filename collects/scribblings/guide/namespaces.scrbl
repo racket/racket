@@ -219,7 +219,7 @@ scheme
 
 A @tech{namespace} encapsulates two pieces of information:
 
-@itemize{
+@itemize[
 
  @item{A mapping from identifiers to bindings. For example, a
        namespace might map the identifier @schemeidfont{lambda} to the
@@ -229,7 +229,7 @@ A @tech{namespace} encapsulates two pieces of information:
  @item{A mapping from module names to module declarations and
        instances.}
 
-}
+]
 
 The first mapping is used for evaluating expressions in a top-level
 context, as in @scheme[(eval '(lambda (x) (+ x 1)))]. The second

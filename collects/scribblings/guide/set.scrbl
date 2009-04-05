@@ -51,7 +51,7 @@ Although using @scheme[set!] is sometimes appropriate, Scheme style
 generally discourages the use of @scheme[set!]. The following
 guidelines may help explain when using @scheme[set!] is appropriate.
 
-@itemize{
+@itemize[
 
  @item{As in any modern language, assigning to shared identifier is no
        substitute for passing an argument to a procedure or getting
@@ -150,7 +150,7 @@ guidelines may help explain when using @scheme[set!] is appropriate.
        (next-number!)
        (next-number!)]]}
 
-}
+]
 
 All else being equal, a program that uses no assignments or mutation
 is always preferable to one that uses assignments or mutation. While

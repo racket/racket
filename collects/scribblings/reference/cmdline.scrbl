@@ -67,7 +67,7 @@ A @scheme[#:multi], @scheme[#:once-each], @scheme[#:once-any], or
 specifications. The clause tag indicates how many times the flag can
 appear on the command line:
 
-@itemize{
+@itemize[
 
  @item{@scheme[#:multi] --- Each flag specified in the set can be
  represented any number of times on the command line; i.e., the flags
@@ -90,11 +90,11 @@ appear on the command line:
  example, if @Flag{a} is a @scheme[#:final] flag, then @Flag{aa} combines
  two instances of @Flag{a} in a single command-line argument.}
 
-}
+]
 
 A normal flag specification has four parts:
 
-@itemize{
+@itemize[
 
  @item{@scheme[flags] --- a flag string, or a set of flag strings.  If
  a set of flags is provided, all of the flags are equivalent.  Each
@@ -131,7 +131,7 @@ A normal flag specification has four parts:
  evaluated, the preceding @scheme[id]s are bound to the arguments
  provided for the flag on the command line.}
 
-}
+]
 
 A flag specification using @scheme[=>] escapes to a more general
 method of specifying the handler and help strings. In this case, the
@@ -146,7 +146,7 @@ line of text.
 After the flag clauses, a final clause handles command-line arguments
 that are not parsed as flags:
 
-@itemize{
+@itemize[
 
  @item{Supplying no finish clause is the same as suppling
  @scheme[#:args () (void)].}
@@ -171,7 +171,7 @@ that are not parsed as flags:
  of the expressions are used like the last two to four arguments
  @scheme[parse-command-line].}
 
-}
+]
 
 Example:
 
@@ -267,7 +267,7 @@ other modes, a list of flag specifications is provided, where each
 specification maps a number of flags to a single handler procedure. A
 specification is a list of three items:
 
-@itemize{
+@itemize[
 
  @item{A list of strings for the flags defined by the spec. See
  @scheme[command-line] for information about the format of flag
@@ -299,7 +299,7 @@ specification is a list of three items:
  number of extra help strings provided for a spec must match the
  number of arguments accepted by the spec's handler procedure.}
 
-}
+]
 
 The following example is the same as the core example for
 @scheme[command-line], translated to the procedural form:

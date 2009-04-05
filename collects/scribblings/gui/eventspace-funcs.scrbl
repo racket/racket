@@ -158,7 +158,7 @@ If @scheme[v] is @indexed-scheme['wait], and @scheme[yield] is called
  in the handler thread of an eventspace, then @scheme[yield] starts
  processing events in that eventspace until
 
-@itemize{
+@itemize[
 
   @item{no top-level windows in the eventspace are visible;}
 
@@ -170,7 +170,7 @@ If @scheme[v] is @indexed-scheme['wait], and @scheme[yield] is called
         with @scheme['root] (i.e., creating a @scheme['root] menu bar
         prevents an eventspace from ever unblocking).}
 
-}
+]
 
 When called in a non-handler thread, @scheme[yield] returns
  immediately. In either case, the result is @scheme[#t].

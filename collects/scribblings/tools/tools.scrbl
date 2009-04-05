@@ -68,7 +68,7 @@ info.ss files contents created by setup-plt. Be sure to
 re-run setup-plt if you change the contents of
 the @File{info.ss} files).  DrScheme checks for these
 fields:
-@itemize{
+@itemize[
 @item/cap['tools]{
   @scheme[(listof (listof string[subcollection-name]))]
 }
@@ -82,7 +82,7 @@ fields:
 }
 @item/cap['tool-urls]{
 @scheme[(listof (union #f string[url]))]
-}}
+}]
 
 The @scheme[tools] field names a list of tools in this
 collection. Each tool is specified as a collection path,
@@ -139,17 +139,17 @@ extension can supply non-default implementations of the
 additional functionality.
 
 Phase 1 functions:
-@itemize{
+@itemize[
 @item{@scheme[drscheme:language:extend-language-interface]}
 @item{@scheme[drscheme:unit:add-to-program-editor-mixin]}
-}
+]
 
 Phase 2 functions:
-@itemize{
+@itemize[
 @item{@scheme[drscheme:language-configuration:add-language]}
 @item{@scheme[drscheme:language:get-default-mixin]}
 @item{@scheme[drscheme:language:get-language-extensions]}
-}
+]
 
 If the tool raises an error as it is loaded, invoked, or as
 the @scheme[phase1] or @scheme[phase2] thunks are called,

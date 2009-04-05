@@ -56,7 +56,7 @@ structure types.}
 
 Returns two values:
 
-@itemize{
+@itemize[
 
   @item{@scheme[struct-type]: a structure type descriptor or @scheme[#f];
   the result is a structure type descriptor of the most specific type
@@ -68,7 +68,7 @@ Returns two values:
   @item{@scheme[skipped?]: @scheme[#f] if the first result corresponds to
   the most specific structure type of @scheme[v], @scheme[#t] otherwise.}
 
-}}
+]}
 
 @defproc[(struct-type-info [struct-type struct-type?])
          (values symbol?
@@ -84,7 +84,7 @@ Returns eight values that provide information about the structure type
  descriptor @scheme[struct-type], assuming that the type is controlled
  by the current inspector:
 
- @itemize{
+ @itemize[
 
   @item{@scheme[name]: the structure type's name as a symbol;}
 
@@ -115,7 +115,7 @@ Returns eight values that provide information about the structure type
    most specific ancestor type or if the type has no supertype,
    @scheme[#t] otherwise.}
 
-}
+]
 
 If the type for @scheme[struct-type] is not controlled by the current inspector,
 the @exnraise[exn:fail:contract].}

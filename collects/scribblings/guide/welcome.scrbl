@@ -10,7 +10,7 @@
 
 Depending on how you look at it, @bold{PLT Scheme} is
 
-@itemize{
+@itemize[
 
  @item{a @defterm{programming language}---a descendant of Scheme, which
        is a dialect of Lisp;
@@ -22,14 +22,14 @@ Depending on how you look at it, @bold{PLT Scheme} is
        Scheme, and more; or}
 
  @item{a set of @defterm{tools}---for using a family of programming languages.}
-}
+]
 
 Where there is no room for confusion, we use simply @defterm{Scheme}
 to refer to any of these facets of PLT Scheme.
 
 PLT Scheme's two main tools are
 
-@itemize{
+@itemize[
 
  @tool["MzScheme"]{the core compiler, interpreter, and run-time
  system; and}
@@ -37,7 +37,7 @@ PLT Scheme's two main tools are
  @tool["DrScheme"]{the programming environment (which runs on top of
  MzScheme).}
 
-}
+]
 
 Most likely, you'll want to explore PLT Scheme using DrScheme,
 especially at the beginning. If you prefer, you can also work with the

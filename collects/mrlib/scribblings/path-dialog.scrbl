@@ -72,7 +72,7 @@ user to create a new directory.
 
 The @scheme[filters] argument is one of:
 
-@itemize{
+@itemize[
 
    @item{@scheme[(list (list _filter-name _filter-glob) ...)] --- a
      list of pattern names (e.g., @scheme["Scheme Files"]) and glob
@@ -89,7 +89,7 @@ The @scheme[filters] argument is one of:
      @scheme["*.*"] under Windows and @scheme["*"] on other
      platforms.}
 
-}
+]
 
 The @scheme[show-file?] predicate is used to filter file paths that
 are shown in the dialog.  The predicate is applied to the file name as

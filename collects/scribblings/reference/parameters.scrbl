@@ -134,14 +134,14 @@ forms.}
 Returns a parameter procedure that sets or retrieves the same value as
 @scheme[parameter], but with:
 
-@itemize{
+@itemize[
 
  @item{@scheme[guard] applied when setting the parameter (before any
        guard associated with @scheme[parameter]), and}
 
  @item{@scheme[wrap] applied when obtaining the parameter's value.}
 
-}}
+]}
 
 @defproc[(parameter? [v any/c]) boolean?]{
 

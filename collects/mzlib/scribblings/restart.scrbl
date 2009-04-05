@@ -38,7 +38,7 @@ created for the ``restarted'' MzScheme. (The new namespace is
 installed as the current namespace in the new thread.) In the new
 thread, restarting performs the following actions:
 
-@itemize{
+@itemize[
 
  @item{The @scheme[init-namespace] procedure is called with no
        arguments.  The return value is ignored.}
@@ -53,7 +53,7 @@ thread, restarting performs the following actions:
        @scheme[read-eval-print-loop] returns, the return value for
        @scheme[restart-mzscheme] is set to @scheme[#t].}
 
-}
+]
 
 Before evaluating command-line arguments, an exit handler is installed
 that immediately returns from @scheme[restart-mzscheme] with the value

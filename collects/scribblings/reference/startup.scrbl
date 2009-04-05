@@ -18,7 +18,7 @@
 
 The core PLT Scheme run-time system is available in two main variants:
 
-@itemize{
+@itemize[
 
  @item{MzScheme, which provides the primitives libraries on which
        @schememodname[scheme/base] is implemented. Under Unix and Mac
@@ -33,7 +33,7 @@ The core PLT Scheme run-time system is available in two main variants:
        @as-index{@exec{MrEd.exe}}. Under Mac OS X, the @exec{mred}
        script launches @as-index{@exec{MrEd.app}}.}
 
-}
+]
 
 @; ----------------------------------------------------------------------
 
@@ -116,11 +116,11 @@ value.
 The MzScheme and MrEd executables recognize the following command-line
 flags:
 
-@itemize{
+@itemize[
 
  @item{File and expression options:
 
- @itemize{
+ @itemize[
 
   @item{@FlagFirst{e} @nonterm{expr} or @DFlagFirst{eval}
         @nonterm{expr} : @scheme[eval]s @nonterm{expr}. The results of
@@ -174,11 +174,11 @@ flags:
         @scheme[#%plain-app] and @scheme[#%datum], but the lexical
         context of @schemeidfont{main} is the top-level environment.}
 
- }}
+ ]}
 
  @item{Interaction options:
 
- @itemize{
+ @itemize[
 
   @item{@FlagFirst{i} or @DFlagFirst{repl} : Runs interactive read-eval-print
         loop, using either @scheme[read-eval-print-loop] (MzScheme) or
@@ -204,11 +204,11 @@ flags:
         frames are closed, @|etc| in the main @|eventspace| before
         exiting.}
 
- }}
+ ]}
 
  @item{@deftech{Configuration options}:
 
- @itemize{
+ @itemize[
 
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled byte-code @filepath{.zo} files, by initializing
@@ -274,11 +274,11 @@ flags:
         are the same as for the @envvar{PLTSYSLOG} environment
         variable. See @secref["logging"] for more information.}
 
- }}
+ ]}
 
  @item{Meta options:
 
- @itemize{
+ @itemize[
 
   @item{@FlagFirst{-} : No argument following this flag is itself used
         as a flag.}
@@ -287,9 +287,9 @@ flags:
         the command-line flags and start-up process and exits,
         ignoring all other flags.}
  
- }}
+ ]}
 
-}
+]
 
 If at least one command-line argument is provided, and if the first
 one after any @tech{configuration option} is not a flag, then a
@@ -305,7 +305,7 @@ at the beginning of the command line, and they count as configuration
 options (i.e., they do not disable the read-eval-print loop or prevent
 the insertion of @Flag{u}/@DFlag{require-script}):
 
-@itemize{
+@itemize[
 
   @item{@FlagFirst{display} @nonterm{display} : Sets the X11 display
         to use.}
@@ -334,7 +334,7 @@ the insertion of @Flag{u}/@DFlag{require-script}):
         MrEd instance via the application file handler (see
         @scheme[application-file-handler]).}
 
-}
+]
 
 Similarly, under Mac OS X, a leading switch starting with
 @FlagFirst{psn_} is treated as a special configuration option. It

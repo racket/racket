@@ -29,7 +29,7 @@ of written events in each case is system-specific, and the default can
 be changed through command-line flags (see @secref["mz-cmdline"]) or
 through environment variables:
 
-@itemize{
+@itemize[
 
  @item{If the @indexed-envvar{PLTSTDERR} environment variable is
        defined and is not overridden by a command-line flag, it
@@ -49,7 +49,7 @@ through environment variables:
        The default is @scheme["none"] for Unix or @scheme["error"] for
        Windows and Mac OS X.}
 
-}
+]
 
 The @scheme[current-logger] @tech{parameter} determines the
 @deftech{current logger} that is used by forms such as

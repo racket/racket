@@ -142,10 +142,10 @@ information@|details|, even if the editor currently has delayed refreshing (see
     (make-splice
      (list
       @p{Be sure to use the following methods to start/end drawing:}
-      @itemize{@item{@method[dc<%> start-doc]}
+      @itemize[@item{@method[dc<%> start-doc]}
                @item{@method[dc<%> start-page]}
                @item{@method[dc<%> end-page]}
-               @item{@method[dc<%> end-doc]}}
+               @item{@method[dc<%> end-doc]}]
       @p{Attempts to use a drawing method outside of an active page raises an exception.})))
 
   (define reference-doc '(lib "scribblings/reference/reference.scrbl"))

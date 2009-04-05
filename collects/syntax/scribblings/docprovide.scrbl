@@ -24,7 +24,7 @@ documentation is organized into ``rows'', each with a section title.
 
 A @scheme[row] has one of the following forms:
 
-@itemize{
+@itemize[
   @item{@scheme[(section-string (name type-datum doc-string ...) ...)]
 
      Creates a documentation section whose title is @scheme[section-string],
@@ -47,7 +47,7 @@ the first mention of each section.}
 into the current one; the @scheme[prefix-id] is used to prefix the imports
 into the current module (so they can be re-exported). If @scheme[id]s are
 provided, the specified @scheme[id]s are not re-exported and their
-documentation is not merged.}}}
+documentation is not merged.}]}
 
 @defproc[(lookup-documentation [module-path-v module-path?] 
                                [label-sym symbol?]) 

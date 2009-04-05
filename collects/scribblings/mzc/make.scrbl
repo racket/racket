@@ -28,7 +28,7 @@ detects such a bytecode file.
 
 For example, in a directory that contains the following files:
 
-@itemize{
+@itemize[
 
  @item{@filepath{a.scm}:
 
@@ -52,7 +52,7 @@ scheme
 scheme
 (provide c)
 (define c 1)
-]}}
+]}]
 
 then
 
@@ -126,7 +126,7 @@ procedure that is installed when
 but first it automatically compiles a source file to a @filepath{.zo}
 file if
 
-@itemize{
+@itemize[
 
  @item{the file is expected to contain a module (i.e., the second
  argument to the handler is a symbol);}
@@ -147,7 +147,7 @@ file if
 
  @item{one of the following holds:
 
- @itemize{
+ @itemize[
 
   @item{the source file is newer than the @filepath{.zo} file in the
         first sub-directory listed in @scheme[use-compiled-file-paths]
@@ -165,9 +165,9 @@ file if
         @filepath{.zo} timestamp newer than the one recorded in the
         @filepath{.dep} file.}
 
-  }}
+  ]}
 
-}
+]
 
 After the handler procedure compiles a @filepath{.zo} file, it creates
 a corresponding @filepath{.dep} file that lists the current version,

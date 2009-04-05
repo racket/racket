@@ -36,7 +36,7 @@ that was introduced by the transformer (see
 certificate to parts of the transformer's result, depending on the
 shape and properties of the result:
 
-@itemize{
+@itemize[
 
  @item{If the result has a @indexed-scheme['certify-mode] property
           (see @secref["stxprops"]) that is
@@ -75,7 +75,7 @@ shape and properties of the result:
           as if the syntax object had the @scheme['transparent-binding]
           property value.}
 
-}
+]
 
 The the expander attaches a new active certificate to a syntax object,
 it also removes any @tech{inactive certificates} attached to any
@@ -87,7 +87,7 @@ As the expander processes a form, it accumulates @tech{active
 certificates} that are attached to enclosing forms as part of the
 expansion context:
 
-@itemize{
+@itemize[
 
  @item{To check access to an unexported identifier, the expander
    checks each of the identifier's marks and module bindings; if, for
@@ -121,7 +121,7 @@ expansion context:
    objects). In addition, any inactive certificates within the quoted
    syntax object are lifted to the immediate syntax object.}
 
-}
+]
 
 
 @defproc[(syntax-recertify [new-stx syntax?]

@@ -233,13 +233,13 @@ otherwise.}
 @defproc[(remainder [n integer?] [m integer?]) integer?]{ Returns
  @scheme[q] with the same sign as @scheme[n] such that
 
-@itemize{
+@itemize[
 
  @item{@scheme[(abs q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
 
  @item{@scheme[(+ q (* m (quotient n m)))] equals @scheme[n].}
 
-}
+]
 
 @mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
 
@@ -256,13 +256,13 @@ otherwise.}
 @defproc[(modulo [n integer?] [m integer?]) number?]{  Returns
  @scheme[q] with the same sign as @scheme[m] where
 
-@itemize{
+@itemize[
 
  @item{@scheme[(abs q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
 
  @item{the difference between @scheme[q] and @scheme[(- n (* m (quotient n m)))] is a multiple of @scheme[m].}
 
-}
+]
 
 @mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (modulo +inf.0 3)]}
 

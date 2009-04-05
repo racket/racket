@@ -39,7 +39,7 @@ Teachpacks are designed to supplement student programs with code that
 cannot be expressed in a teaching language. For
 example, to enable students to play hangman, we supply a teachpack that
 
-@itemize{
+@itemize[
 
  @item{implements the random choosing of a word,}
 
@@ -47,7 +47,7 @@ example, to enable students to play hangman, we supply a teachpack that
 
  @item{manages the GUI.}
 
-}
+]
 
 All these tasks are beyond students in the third week and/or impose
 memorization of currently useless knowledge on students. The essence

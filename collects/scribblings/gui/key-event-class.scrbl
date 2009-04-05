@@ -67,7 +67,7 @@ Under Mac OS X, if a control-key press is combined with a mouse button
 Gets the virtual key code for the key event. The virtual key code is
  either a character or a special key symbol, one of the following:
 
-@itemize{
+@itemize[
 @item{@indexed-scheme['start]}
 @item{@indexed-scheme['cancel]}
 @item{@indexed-scheme['clear]}
@@ -138,13 +138,13 @@ Gets the virtual key code for the key event. The virtual key code is
 @item{@indexed-scheme['wheel-down] --- mouse wheel down one notch}
 @item{@indexed-scheme['release] --- indicates a key-release event}
 @item{@indexed-scheme['press] --- indicates a key-press event; usually only from @scheme[get-key-release-code]}
-}
+]
 
 The special key symbols attempt to capture useful keys that have no
  standard ASCII representation. A few keys have standard
  representations that are not obvious:
 
-@itemize{
+@itemize[
 
  @item{@scheme[#\space] --- the space bar}
 
@@ -159,7 +159,7 @@ The special key symbols attempt to capture useful keys that have no
 
  @item{@scheme[#\rubout] --- the delete key}
 
-}
+]
 
 If a suitable special key symbol or ASCII representation is not
  available, @scheme[#\nul] (the NUL character) is reported.

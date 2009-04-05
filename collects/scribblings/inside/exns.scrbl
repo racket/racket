@@ -231,7 +231,7 @@ another evaluation (where you would use
 Raises a generic primitive exception. The parameters are roughly as
 for @cpp{printf}, but with the following format directives:
 
-@itemize{
+@itemize[
 
  @item{@FormatD{c} : a Unicode character (of type @cpp{mzchar})}
 
@@ -279,7 +279,7 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{%} : a percent sign}
 
-}
+]
 
 The arguments following the format string must include no more than 25
 strings and Scheme values, 25 integers, and 25 floating-point

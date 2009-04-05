@@ -14,13 +14,13 @@ Sets @scheme[port]'s display handler (via
 @scheme[port-display-handler]) so that when it encounters these
 values:
 
-@itemize{
+@itemize[
  
  @item{exact, real, non-integral numbers}
 
  @item{syntax objects}
 
-}
+]
 
 it uses @scheme[write-special] to send snips to the port,
 instead of those values. Otherwise, it behaves like the

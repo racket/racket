@@ -30,7 +30,7 @@ instrumentation is described further in @secref["im:3m"].
 
 The basic collector allocation functions are:
 
-@itemize{
+@itemize[
 
  @item{@cppi{scheme_malloc} --- Allocates collectable memory that may
  contain pointers to collectable objects; for 3m, the memory must be
@@ -72,7 +72,7 @@ The basic collector allocation functions are:
  objects. There is no way to free the memory. The newly allocated
  memory is initially zeroed. This function is not available in 3m.}
 
-}
+]
 
 @index['("globals" "in extension code")]{If} a PLT Scheme extension
 stores Scheme pointers in a global or static variable, then that
@@ -120,7 +120,7 @@ fixnum).
 
 Pointers are registered in three different ways:
 
-@itemize{
+@itemize[
 
  @item{Pointers in static variables should be registered with
  @cppi{scheme_register_static} or @cpp{MZ_REGISTER_STATIC}.}
@@ -136,7 +136,7 @@ Pointers are registered in three different ways:
  must be registered through the @cpp{MZ_GC_DECL_REG}, @|etc| macros
  that are described in @secref["im:3m:stack"].}
 
-}
+]
 
 A pointer must never refer to the interior of an allocated object
 (when a garbage collection is possible), unless the object was
@@ -462,7 +462,7 @@ degree, @DFlag{xform} can work on C++ code. Inspect the output of
 
 Some specific limitations:
 
-@itemize{
+@itemize[
 
  @item{The body of a @cpp{for}, @cpp{while}, or @cpp{do} loop must be
        surrounded with curly braces.  (A conversion error is normally
@@ -510,7 +510,7 @@ Some specific limitations:
  @item{Pointer arithmetic cannot be converted away, and is instead
        reported as an error.}
 
-} 
+] 
 
 @; - -  - -  - -  - -  - -  - -  - -  - -  - -  - -  - -  - - 
 
@@ -519,7 +519,7 @@ Some specific limitations:
 The following macros can be used (with care!) to navigate
 @DFlag{xform} around code that it cannot handle:
 
-@itemize{
+@itemize[
 
 @item{@cppdef{XFORM_START_SKIP} and @cppdef{XFORM_END_SKIP}: code
   between these two statements is ignored by the transform tool,
@@ -595,7 +595,7 @@ The following macros can be used (with care!) to navigate
 @item{@cppdef{XFORM_TRUST_MINUS}: a replacement for @cpp{-} that does
   not trigger pointer-arithmetic warnings. Use with care.}
 
-}
+]
 
 @section{Memory Functions}
 

@@ -18,7 +18,7 @@ also supports @filepath{.plt} unpacking.
 
 An archive contains the following elements:
 
-@itemize{
+@itemize[
 
  @item{A set of files and directories to be unpacked, and flags
  indicating whether they are to be unpacked relative to the PLT Scheme
@@ -62,7 +62,7 @@ An archive contains the following elements:
  other requirements and conflicts from the @filepath{info.ss} files of
  collections for @DFlag{collection-plt}.}
 
-}
+]
 
 Use the @DFlag{plt} flag to specify individual directories and files
 for the archive. Each file and directory must be specified with a
@@ -95,7 +95,7 @@ When packing collections, @|mzc| checks the following fields of each
 collection's @filepath{info.ss} file (see @secref["info.ss" #:doc
 '(lib "scribblings/setup-plt/setup-plt.scrbl")]):
 
-@itemize{
+@itemize[
 
  @item{@scheme[requires] --- A list of the form @scheme[(list (list
  _coll _vers) ...)] where each @scheme[_coll] is a non-empty list of
@@ -116,7 +116,7 @@ collection's @filepath{info.ss} file (see @secref["info.ss" #:doc
  strings. The indicated collections must @emph{not} be installed at
  unpacking time.}
 
-}
+]
 
 For example, the @filepath{info.ss} file in the @filepath{sirmail} collection
 might contain the following @scheme[info] declaration:

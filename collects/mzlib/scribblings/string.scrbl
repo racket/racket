@@ -77,13 +77,13 @@ returned, and if @scheme[str] contains multiple expressions, the
 result will be contain multiple values from all subexpressions.
 
 The @scheme[err-handler] argument can be:
-@itemize{
+@itemize[
 @item{@scheme[#f] (the default) which means that errors are not
       caught;}
 @item{a one-argument procedure, which will be used with an exception
       (when an error occurs) and its result will be returned}
 @item{a thunk, which will be used to produce a result.}
-}}
+]}
 
 
 @defproc[(expr->string [expr any/c]) string?]{

@@ -179,7 +179,7 @@ are members of the named package.
 @section[#:tag "advanced:import"]{@scheme[import]}
 
 @elemtag['(adv "import")]
-@itemize{
+@itemize[
 @item{@(scheme import Name (code:comment ""))
        
        Imports a specified class to use within the program.}
@@ -187,12 +187,12 @@ are members of the named package.
        
        Imports a group of classes that can all be used within the program.}
 
-}
+]
 
 @section[#:tag "advanced:class"]{@scheme[class]}
 
 @elemtag['(adv "class")]
-@itemize{
+@itemize[
  @item{@(scheme class Id { Member ...})
         
         Creates a class named Id. If no constructor is present, one is generated that takes no arguments.
@@ -237,13 +237,13 @@ are members of the named package.
         the listed interfaces.
         }
 
- }
+ ]
 
 @section[#:tag "advanced:iface"]{@scheme[interface]}
 
 @elemtag['(adv "iface")]
 
-@itemize{
+@itemize[
 
 @item{@(scheme interface Id { Signature ... })
 
@@ -254,7 +254,7 @@ are members of the named package.
        Creates an interface named Id that specifies a set of method signatures for classes to implement, and
        inherits the method signatures of the interfaces specified in the extends list.
        }
-}
+]
 
 @elemtag['(adv "sig")]
 
@@ -284,7 +284,7 @@ by all members of the same package.
 
 @elemtag['(adv "field")]
 
-@itemize{
+@itemize[
   @item{@(scheme Type Id (code:comment "")) 
          
          Creates a field, bound to Id, that can be used within the current class, or on instances of the 
@@ -303,7 +303,7 @@ by all members of the same package.
          current class using an @elemref['(adv "acc")]{expression}.
          This field must have an array type and the value is that of the evaluated @elemref['(adv "ainit")]{array initialization specification}.
   }
-  }
+  ]
   
   All fields with @(scheme static) preceeding their declaration are tied to the class and not tied
   to an instance of the class. They can be accessed and initialized using the standard techniques
@@ -354,7 +354,7 @@ is unique. Each constructor may set its own @elemref['(adv "mods")]{access}. A c
 
 @elemtag['(adv "stmt")]{}
 
-@itemize{
+@itemize[
  @item{@elemtag['(adv "asgn")] @(scheme Expression = Expression (code:comment ""))
                
        The first expression must be a field reference, array position reference, or a variable. 
@@ -449,7 +449,7 @@ is unique. Each constructor may set its own @elemref['(adv "mods")]{access}. A c
           This set of expressions can be used in a statement position, provided they
           are followed by ';'.
           }
-   }
+   ]
 
 @section[#:tag "advanced:arrayInt"]{@scheme[ArrayInit]}
 
@@ -469,7 +469,7 @@ with their values specified by the ArrayInit.
 
 @section[#:tag "advanced:expr"]{@scheme[Expression]}
 
-@itemize{
+@itemize[
  
    @item{@elemtag['(adv "op")]@(scheme Expression Op Expression)
                  
@@ -611,4 +611,4 @@ with their values specified by the ArrayInit.
    @item{@(scheme false)}
    
    
-   }
+   ]

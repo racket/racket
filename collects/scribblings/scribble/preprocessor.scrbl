@@ -12,7 +12,7 @@
 language provides everything from @scheme[scheme/base] with a few
 changes that make it suitable as a preprocessor language:
 
-@itemize{
+@itemize[
 
   @item{It uses @scheme[read-syntax-inside] to read the body of the
         module, similar to @secref["docreader"].  This means that by
@@ -23,7 +23,7 @@ changes that make it suitable as a preprocessor language:
   @item{Values of expressions are printed with a custom
         @scheme[output] function.  This function displays most values
         in a similar way to @scheme[display], except that it is more
-        convenient for a preprocessor output.}}
+        convenient for a preprocessor output.}]
 
 }
 

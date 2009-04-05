@@ -6,7 +6,7 @@
 A list control gives the user a list of string items to choose from.
  There are two built-in classes that implement
  @scheme[list-control<%>]: 
-@itemize{
+@itemize[
 
  @item{@scheme[choice%] --- presents the list in a popup menu (so
  the user can choose only one item at a time)}
@@ -15,7 +15,7 @@ A list control gives the user a list of string items to choose from.
  allowing the use to choose one item (if the style includes
  @scheme['single]) or any number of items}
 
-}
+]
 In either case, the set of user-selectable items can be changed
  dynamically.
 

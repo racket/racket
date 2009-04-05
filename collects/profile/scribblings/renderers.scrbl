@@ -40,7 +40,7 @@ this table looks like:
 
 Where actual numbers appear in the printout.  The meaning of the
 numbers and labels is as follows:
-@itemize{
+@itemize[
 @item{@tt{A} --- the name of the function that this node represents,
   followed by the source location for the function if it is known.
   The name can be ``???'' for functions with no identifier, but in
@@ -87,7 +87,7 @@ numbers and labels is as follows:
   These values correspond to the @scheme[edge-caller-time] and
   @scheme[edge-callee-time] fields; see the documentation for further
   details.}
-}
+]
 
 The function has a few keyword arguments to customize its output:
 @itemize[

@@ -113,7 +113,7 @@ thread has no custodian and @scheme[benefactor] is not supplied, then
 @scheme[benefactor] is supplied, it triggers up to three
 additional actions:
 
-@itemize{
+@itemize[
 
    @item{If @scheme[benefactor] is a thread, whenever it is resumed
    from a suspended state in the future, then @scheme[thd] is also
@@ -137,7 +137,7 @@ additional actions:
    trigger adding the custodians to other threads that were previously
    attached to @scheme[thd] through @scheme[thread-resume].)}
 
-}}
+]}
 
 
 @defproc[(kill-thread [thd thread?]) void?]{

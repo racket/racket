@@ -13,7 +13,7 @@ is @indexed-file{.ss}. The extensions @indexed-file{.scm} and
 
 DrScheme's editor can save a program file in two different formats:
 
-@itemize{
+@itemize[
 
  @item{@deftech{Plain-text file format} --- All text editors can read
        this format. DrScheme saves a program in plain-text format by
@@ -34,7 +34,7 @@ DrScheme's editor can save a program file in two different formats:
        encoding (so that different ways of transferring the file are
        unlikely to corrupt the file).}
 
-}
+]
 
 @; ----------------------------------------
 
@@ -46,7 +46,7 @@ backup file exists. The backup file is saved in the same directory as
 the original file, and the backup file's name is generated from the
 original file's name:
 
-@itemize{
+@itemize[
 
  @item{Under Unix and Mac OS X, a @filepath{~} is added to the end of
        the file's name.}
@@ -54,7 +54,7 @@ original file's name:
  @item{Under Windows, the file's extension is replaced with
        @filepath{.bak}.}
 
-}
+]
 
 Every five minutes, DrScheme checks each open file. If any file is
 modified and not saved, DrScheme saves the file to a special autosave
@@ -64,7 +64,7 @@ without saving the file, the autosave file is removed. The autosave
 file is saved in the same directory as the original file, and the
 autosave file's name is generated from the original file's name:
 
-@itemize{
+@itemize[
 
  @item{Under Unix and Mac OS X, a @filepath{#} is added to the start
        and end of the file's name, then a number is added after the
@@ -75,7 +75,7 @@ autosave file's name is generated from the original file's name:
  @item{Under Windows, the file's extension is replaced with a number
        to make the autosave filename unique.}
 
-}
+]
 
 If the definitions window is modified and there is no current file,
 then an autosave file is written to the user's ``documents''

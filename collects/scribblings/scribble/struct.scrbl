@@ -44,7 +44,7 @@ A @deftech{block} is either a @techlink{table}, an
  @techlink{itemization}, @techlink{blockquote}, @techlink{paragraph},
  or a @techlink{delayed block}.
 
-@itemize{
+@itemize[
 
        @item{A @deftech{table} is an instance of @scheme[table]; it
              has a list of list of @techlink{flows} with a particular
@@ -62,7 +62,7 @@ A @deftech{block} is either a @techlink{table}, an
              @scheme[paragraph]; it has a @deftech{content}, which is
              a list of @techlink{elements}:
 
-             @itemize{
+             @itemize[
 
              @item{An @deftech{element} can be a string, one of a few
                    symbols, an instance of @scheme[element] (possibly
@@ -71,7 +71,7 @@ A @deftech{block} is either a @techlink{table}, an
                    @techlink{delayed element}, or anything else
                    allowed by the current renderer.
 
-                   @itemize{
+                   @itemize[
 
                    @item{A string element is included in the result
                          document verbatim, except for space, and
@@ -160,14 +160,14 @@ A @deftech{block} is either a @techlink{table}, an
                          @techlink{render pass} of document
                          processing.}
 
-             }}}}
+             ]}]}
 
        @item{A @deftech{delayed block} is an instance of
              @scheme[delayed-block], which has a procedure that
              is called in the @techlink{resolve pass} of document
              processing to obtain a @defterm{block}.}
 
-}
+]
 
 @; ------------------------------------------------------------------------
 
@@ -261,7 +261,7 @@ The @scheme[style] field is normally either a symbol or a list.  The
 currently recognized style symbols (alone or in a list) or other
 values (must be in a list) are as follows:
 
-@itemize{
+@itemize[
 
  @item{@scheme['toc] --- sub-parts of the part are rendered on separate
        pages for multi-page HTML mode.}
@@ -306,7 +306,7 @@ values (must be in a list) are as follows:
         but @exec{setup-plt} installs @scheme["doc-plt-scheme.org"]
         as the @tt{id} for any document that it builds.}
 
-}
+]
 
 The @scheme[to-collect] field contains @techlink{content} that is
 inspected during the @techlink{collect pass}, but ignored in later
@@ -495,7 +495,7 @@ pass} to obtain a normal @tech{block}. The first argument to
 
 The @scheme[style] field is normally either
 
-@itemize{
+@itemize[
 
  @item{a string, which corresponds to a CSS class for HTML output and
        a macro name for Latex output (see @secref["extra-style"]);}
@@ -526,7 +526,7 @@ The @scheme[style] field is normally either
  @item{an instance of @scheme[with-attributes], which combines a base
        style with a set of additional HTML attributes.}
 
-}
+]
 
 The @scheme[content] field is a list of @techlink{elements}.
 

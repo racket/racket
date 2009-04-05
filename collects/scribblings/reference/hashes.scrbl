@@ -44,7 +44,7 @@ modification:}} A mutable hash table can be manipulated with
 concurrently by multiple threads, and the operations are protected by
 a table-specific semaphore as needed. Three caveats apply, however:
 
- @itemize{
+ @itemize[
 
   @item{If a thread is terminated while applying @scheme[hash-ref],
   @scheme[hash-set!], or @scheme[hash-remove!] to a hash table that
@@ -68,7 +68,7 @@ a table-specific semaphore as needed. Three caveats apply, however:
  of its functionality, which means that the update as a whole is not
  ``atomic.''}
 
- }
+ ]
 
 @elemtag['(caveat "mutable-keys")]{@bold{Caveat concerning mutable
 keys:}} If a key in an @scheme[equal?]-based hash table is mutated
@@ -191,14 +191,14 @@ Returns the value for @scheme[key] in @scheme[hash]. If no value
 is found for @scheme[key], then @scheme[failure-result] determines the
 result: 
 
-@itemize{
+@itemize[
 
  @item{If @scheme[failure-result] is a procedure, it is called
        (through a tail call) with no arguments to produce the result.}
 
  @item{Otherwise, @scheme[failure-result] is returned as the result.}
 
-}
+]
 
 @see-also-caveats[]}
 

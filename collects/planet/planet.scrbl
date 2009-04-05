@@ -312,7 +312,7 @@ where @italic{command} is a subcommand from the following list, and
 @(define (cmd name desc)
     @item{@(seclink name (exec name)): @desc})
 
-@itemize{
+@itemize[
   @cmd["create"]{create a PLaneT archive from a directory}
   @cmd["install"]{download and install a given package}
   @cmd["remove"]{remove the specified package from the local cache}
@@ -325,7 +325,7 @@ where @italic{command} is a subcommand from the following list, and
   @cmd["url"]{get a URL for the given package}
   @cmd["open"]{unpack the contents of the given package}
   @cmd["structure"]{display the structure of a given .plt archive}
-  @cmd["print"]{display a file within of the given .plt archive}}
+  @cmd["print"]{display a file within of the given .plt archive}]
 
 Each of these commands is described in more detail below. All the
 functionality of the command-line tool is also provided with a programmatic interface by 
@@ -339,9 +339,9 @@ Create a PLaneT archive in the current directory whose contents are the
 directory @exec{<path>}.
 
 @exec{<option>} is one of:
-@itemize{
+@itemize[
   @item{@exec{-f, --force}: force a package to be created even if its info.ss file contains
-    errors.}}
+    errors.}]
 
 @subsection[#:tag "install"]{@exec{install}}
 
@@ -358,9 +358,9 @@ Remove the specified package from the local cache, optionally also removing its
 distribution file.
 
 @exec{<option>} is one of:
-@itemize{
+@itemize[
 	@item{@exec{-e, --erase}: also remove the package's distribution file from the
-    uninstalled-package cache}}
+    uninstalled-package cache}]
 
 @subsection[#:tag "show"]{@exec{show}}
 
@@ -369,10 +369,10 @@ Usage:
 List the packages installed in the local cache.
 
 @exec{<option>} is one of:
-@itemize{
+@itemize[
   @item{@exec{-p, --packages}: show packages only (default)}
   @item{@exec{-l, --linkage}: show linkage table only}
-  @item{@exec{-a, --all}: show packages and linkage}}
+  @item{@exec{-a, --all}: show packages and linkage}]
 
 @subsection[#:tag "clearlinks"]{@exec{clearlinks}}
 
@@ -694,7 +694,7 @@ already-existing package:
 
 PLaneT can distribute whatever programs you write, but keep
 these guidelines in mind as you write:
-@itemize{
+@itemize[
   @item{Organize your code into modules. Since the PLaneT client is
 integrated into the @scheme[require] form, it works best if your code
 is arranged into modules.}
@@ -709,7 +709,7 @@ instead of
 
 @scheme[(require (planet "helper.ss" ("username" "packagename.plt" 1 0)))]
 
-in files that will also be a part of the package.}}
+in files that will also be a part of the package.}]
 
 @subsubsection[#:tag "devlinks"]{Development Links}
 
@@ -764,7 +764,7 @@ PLaneT system (as well as the rest of the PLT Scheme tool suite) will
 look in it for descriptive metadata about your package. The PLaneT
 system looks for certain names in that file:
 
-@itemize{
+@itemize[
 
 @item{The @scheme['blurb] field: If present, the blurb field should contain a list of XHTML fragments 
 encoded as x-expressions (see the xml collection for details) that
@@ -781,7 +781,7 @@ corresponding to the categories under which this package should be listed.
 
 The valid categories are:
 
-@itemize{
+@itemize[
   @item{@scheme['devtools]:         Development Tools}
   @item{@scheme['net]:              Networking and Protocols}
   @item{@scheme['media]:            Graphics and Audio}
@@ -793,7 +793,7 @@ The valid categories are:
   @item{@scheme['ui]:               Textual and Graphical User Interface}
   @item{@scheme['metaprogramming]:  Metaprogramming Tools}
   @item{@scheme['planet]:           PLaneT-Related}
-  @item{@scheme['misc]:             Miscellaneous}}
+  @item{@scheme['misc]:             Miscellaneous}]
 
 If you put symbols other than these the categories field, they will be
 ignored. If you put no legal symbols in the categories field or do not
@@ -882,7 +882,7 @@ or above version 4.0), and the string @scheme["3xx"] indicates that
 the package should be included in the v3xx repository (containing
 packages intended to run in PLT Scheme versions in the 3xx series). A
 single package (and a single version of a package) may be included in
-multiple repositories with the same PLaneT version number.}}
+multiple repositories with the same PLaneT version number.}]
 
 In addition, PLaneT uses the setup-plt installer to install packages
 on client machines, so most fields it looks for can be included with
@@ -951,7 +951,7 @@ of thumb is to remember that modules written to work with the
 previously-released version of your package should unmodified with the
 new package. This means that at a minimum, a backwards compatible
 update should:
-@itemize{
+@itemize[
 @item{Contain all the same Scheme source files in that the previous
 version contained in directories intended for public access}
 @item{In each public file, provide at least all the bindings that the
@@ -959,9 +959,9 @@ previous version provided}
 @item{For each name provided with a contract (see @(secref #:doc '(lib
 "scribblings/guide/guide.scrbl") "contracts" )), provide it
 with a contract that is at least as permissive as the previous
-contract}}
+contract}]
 A backwards-compatible upgrade may, however:
-@itemize{
+@itemize[
 @item{Change any behavior that
 reasonable consumers of your package would not consider guaranteed
 (@italic{e.g.}, by fixing bugs or improving the efficiency of
@@ -970,7 +970,7 @@ operations).}
 sections. By convention, the contents of any directory called
 @filepath{private} are considered private and should not be relied
 upon by external users of your package.}
-@item{Extend the set of names exported by a module.}}
+@item{Extend the set of names exported by a module.}]
 Currently these rules are guidelines only, but in the future some or
 all of them may be enforced programmatically. Ultimately, though, no
 technical device can precisely capture what it means for a package to
