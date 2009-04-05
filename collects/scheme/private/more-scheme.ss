@@ -362,7 +362,7 @@
 
   (define-values (hash-update hash-update!)
     (let* ([not-there (gensym)]
-           [up (lambda (who mut? ref set ht key xform default)
+           [up (lambda (who mut? set ht key xform default)
                  (unless (and (hash? ht)
                               (or (not mut?)
                                   (not (immutable? ht))))
@@ -370,20 +370,20 @@
                  (unless (and (procedure? xform)
                               (procedure-arity-includes? xform 1))
                    (raise-type-error who "procedure (arity 1)" xform))
-                 (let ([v (ref ht key default)])
+                 (let ([v (hash-ref ht key default)])
                    (if (eq? v not-there)
                        (raise-mismatch-error who "no value found for key: " key)
                        (set ht key (xform v)))))])
       (let ([hash-update
              (case-lambda
               [(ht key xform default)
-               (up 'hash-update #f hash-ref hash-set ht key xform default)]
+               (up 'hash-update #f hash-set ht key xform default)]
               [(ht key xform)
                (hash-update ht key xform not-there)])]
             [hash-update!
              (case-lambda
               [(ht key xform default)
-               (up 'hash-update! #t hash-ref hash-set! ht key xform default)]
+               (up 'hash-update! #t hash-set! ht key xform default)]
               [(ht key xform)
                (hash-update! ht key xform not-there)])])
         (values hash-update hash-update!))))
