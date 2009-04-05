@@ -176,10 +176,20 @@ where each element has two values: the value produced by @scheme[seq],
 and a non-negative exact integer starting with @scheme[0]. The
 elements of @scheme[seq] must be single-valued.}
 
+@defproc[(in-sequences [seq sequence?] ...) sequence?]{Returns a
+sequence that is made of all input sequences, one after the other. The
+elements of each @scheme[seq] must all have the same number of
+values.}
+
+@defproc[(in-cycle [seq sequence?] ...) sequence?]{Similar to
+@scheme[in-sequences], but the sequences are repeated in an infinite
+cycle.}
+
 @defproc[(in-parallel [seq sequence?] ...) sequence?]{Returns a
 sequence where each element has as many values as the number of
 supplied @scheme[seq]s; the values, in order, are the values of each
-@scheme[seq]. The elements of each @scheme[seq] must be single-valued.}
+@scheme[seq]. The elements of each @scheme[seq] must be
+single-valued.}
 
 @defproc[(stop-before [seq sequence?] [pred (any/c . -> . any)])
 sequence?]{ Returns a sequence that contains the elements of

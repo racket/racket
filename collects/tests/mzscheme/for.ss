@@ -129,6 +129,25 @@
 (test-generator [(65 66 67)] (open-input-bytes #"ABC"))
 (test-generator [(65 66 67)] (in-input-port-bytes (open-input-bytes #"ABC")))
 
+(test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 6)))
+(test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 4) '(4 5)))
+(test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 6) '()))
+(test-generator [(0 1 2 3 4 5)] (in-sequences '() (in-range 4) '() '(4 5)))
+(test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 0 2) (in-range 2 4) (in-range 4 6)))
+(test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 0 2)
+                                              (in-sequences (in-range 2 4) (in-range 4 6))))
+(test-generator [(0 1 2 3 #\a #\b #\c) (10 11 12 13 #\A #\B #\C)]
+                (in-sequences (in-parallel (in-range 0 4) (in-range 10 14))
+                              (in-parallel "abc" "ABC")))
+
+;; use in-parallel to get a finite number of items
+(test-generator [(0 1 2 3 0 1 2 3) (0 1 2 3 4 5 6 7)]
+                (in-parallel (in-cycle (in-range 0 4)) (in-range 0 8)))
+(test-generator [(0 1 2 3 4 5 6 7) (0 1 2 0 1 2 0 1)]
+                (in-parallel (in-range 0 8) (in-cycle (in-range 0 3))))
+(test-generator [(0 1 2 3 2 1 0 1) (0 1 2 3 4 5 6 7)]
+                (in-parallel (in-cycle (in-range 0 4) (in-range 2 0 -1)) (in-range 0 8)))
+
 (test-generator [(0 1 2) (a b c)] (in-parallel (in-range 3) (in-list '(a b c))))
 (test-generator [(0 1 2) (a b c)] (in-parallel (in-range 10) (in-list '(a b c))))
 (test-generator [(0 1 2) (a b c)] (in-parallel (in-range 3) (in-list '(a b c d))))

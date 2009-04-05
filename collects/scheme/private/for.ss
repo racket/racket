@@ -38,6 +38,8 @@
              in-hash-values
              in-hash-pairs
              
+             in-sequences
+             in-cycle
              in-parallel
              stop-before
              stop-after
@@ -604,11 +606,42 @@
 
   ;; ----------------------------------------
 
-  (define (in-parallel . sequences)
+  (define (append-sequences sequences cyclic?)
+    (define (seqs->m+g+r seqs)
+      (if (pair? seqs)
+        (let-values ([(more? get) (sequence-generate (car seqs))]
+                     [(seqs) (cdr seqs)])
+          (if (more?) (list* more? get seqs) (seqs->m+g+r seqs)))
+        (and cyclic? (seqs->m+g+r sequences))))
+    (make-do-sequence
+     (lambda ()
+       ;; place is (cur-more? cur-get rest-seqs ...) or #f
+       (values (lambda (m+g+r) ((cadr m+g+r)))
+               (lambda (m+g+r)
+                 (if (and (pair? m+g+r) (not ((car m+g+r))))
+                   (seqs->m+g+r (cddr m+g+r))
+                   m+g+r))
+               (seqs->m+g+r sequences)
+               (lambda (p) p)
+               (lambda _ #t)
+               (lambda _ #t)))))
+
+  (define (check-sequences who sequences)
     (for-each (lambda (g)
-                (unless (sequence? g)
-                  (raise-type-error 'in-parallel "sequence" g)))
-              sequences)
+                (unless (sequence? g) (raise-type-error who "sequence" g)))
+              sequences))
+
+  (define (in-sequences sequence . sequences)
+    (let ([all (cons sequence sequences)])
+      (check-sequences 'in-sequences all)
+      (if (null? sequences) sequence (append-sequences all #f))))
+  (define (in-cycle sequence . sequences)
+    (let ([all (cons sequence sequences)])
+      (check-sequences 'in-cycle sequences)
+      (append-sequences all #t)))
+
+  (define (in-parallel . sequences)
+    (check-sequences 'in-parallel sequences)
     (if (= 1 (length sequences))
         (car sequences)
         (make-do-sequence
