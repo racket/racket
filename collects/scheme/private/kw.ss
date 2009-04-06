@@ -778,12 +778,15 @@
                    (if (and (null? args) (null? kws))
                      "no arguments supplied"
                      ;; Hack to format arguments:
-                     (with-handlers ([exn:fail?
-                                      (lambda (exn)
-                                        (format "arguments were: ~a"
-                                                (cadr (regexp-match
-                                                       #rx"other arguments were: (.*)$"
-                                                       (exn-message exn)))))])
+                     (with-handlers
+                         ([exn:fail?
+                           (lambda (exn)
+                             ;; the message can end with:
+                             ;; ..., given: x; given 117 arguments total
+                             ;; ..., given: x; other arguments were: 1 2 3
+                             (regexp-replace #rx"^.*? given: x; (other )?"
+                                             (exn-message exn)
+                                             ""))])
                        (apply
                         raise-type-error 'x "x" 0 'x
                         (append args (apply append (map list kws kw-args))))))])
