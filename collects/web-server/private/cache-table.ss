@@ -25,12 +25,7 @@
      (call-with-semaphore
       sema
       (lambda ()
-        (hash-ref
-         ht entry-id
-         (lambda ()
-           (define entry (entry-thunk))
-           (hash-set! ht entry-id entry)
-           entry)))))))
+        (hash-ref! ht entry-id entry-thunk))))))
 
 (provide/contract
  [rename new-cache-table make-cache-table
