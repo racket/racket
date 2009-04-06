@@ -236,7 +236,7 @@ Similar to @scheme[map], but @scheme[proc] is called only for its
 
 
 @defproc[(foldl [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
+         any/c]{
 
 Like @scheme[map], @scheme[foldl] applies a procedure to the
  elements of one or more lists. Whereas @scheme[map] combines the return
@@ -263,7 +263,7 @@ Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
 ]}
 
 @defproc[(foldr [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
+         any/c]{
 
 Like @scheme[foldl], but the lists are traversed from right to left.
  Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
