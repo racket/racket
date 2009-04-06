@@ -343,7 +343,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                             (list #'struct-info
                                                   #'maker
                                                   #'pred
-                                                  (list #'sel ...)
+                                                  (reverse (list #'sel ...))
                                                   (list mut ...)
                                                   #f))))
                        #,(internal #'(define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
