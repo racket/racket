@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          (only-in mzlib/file
                   file-name-from-path
                   make-temporary-file)

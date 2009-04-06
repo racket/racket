@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          "cookies-test.ss"
          "digest-auth-test.ss")
 (provide all-http-tests)

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          "bindings-test.ss"
          "basic-auth-test.ss"
          "helpers-test.ss"

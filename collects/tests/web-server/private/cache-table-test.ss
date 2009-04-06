@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/private/cache-table)
 (provide cache-table-tests)
 

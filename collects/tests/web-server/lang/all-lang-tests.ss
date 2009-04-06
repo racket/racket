@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          "abort-resume-test.ss"
          "anormal-test.ss"
          "defun-test.ss"

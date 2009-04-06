@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          net/url
          web-server/http/request-structs
          web-server/http/response-structs

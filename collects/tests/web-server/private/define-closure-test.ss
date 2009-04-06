@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          mzlib/serialize
          mzlib/match
          web-server/private/define-closure)

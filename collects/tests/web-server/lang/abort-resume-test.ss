@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/lang/abort-resume)
 (require/expose web-server/lang/abort-resume (web-prompt))
 (provide abort-resume-tests)

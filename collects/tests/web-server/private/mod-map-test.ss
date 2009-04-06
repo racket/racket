@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/private/mod-map
          mzlib/serialize
          "../util.ss")

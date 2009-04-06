@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          #;(only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
                  ssax:xml->sxml)
          #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))

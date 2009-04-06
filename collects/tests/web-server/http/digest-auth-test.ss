@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/http
          net/url)
 (provide digest-auth-tests)

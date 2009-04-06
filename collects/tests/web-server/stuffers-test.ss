@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/stuffers
          web-server/private/servlet
          web-server/http

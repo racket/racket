@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/lang/file-box
          (only-in mzlib/file make-temporary-file))
 (provide file-box-tests)
