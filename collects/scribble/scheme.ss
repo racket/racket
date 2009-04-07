@@ -338,7 +338,7 @@
               (if (paragraph? v)
                   (map (lambda (v) 
                          (let ([v (no-fancy-chars v)])
-                           (if (string? v)
+                           (if (or (string? v) (symbol? v))
                                (out v comment-color)
                                (out v #f))))
                        (paragraph-content v))
