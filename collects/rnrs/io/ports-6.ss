@@ -8,7 +8,8 @@
          r6rs/private/readtable
          r6rs/private/exns
          scheme/port
-         scheme/pretty)
+         scheme/pretty
+         scheme/promise)
 
 (provide (all-from-out r6rs/private/io-conds)
          file-options
@@ -938,7 +939,7 @@
                     (cond
                      [(symbol? v)
                       (let ([s (symbol->string v)])
-                        (and (not (regexp-match rx:id s))
+                        (and (not (regexp-match (force rx:id) s))
                              (for/fold ([len 0])
                                  ([c (in-string s)]
                                   [pos (in-naturals)])
