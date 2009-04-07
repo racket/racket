@@ -71,7 +71,7 @@ parsing.
 
 }
 
-@defproc[(decode-flow [lst list?]) (listof flow-element?)]{
+@defproc[(decode-flow [lst list?]) flow?]{
 
 Decodes a flow. A sequence of two or more newlines separated only by
 whitespace counts is parsed as a paragraph separator. In @scheme[lst],
