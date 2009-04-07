@@ -321,6 +321,7 @@
       
       (define/override (on-new-image-snip filename kind relative-path? inline?)
         (super on-new-image-snip 
+               filename
                (if (eq? kind 'unknown) 'unknown/mask kind) 
                relative-path? 
                inline?))

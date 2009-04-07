@@ -356,9 +356,22 @@ Scheme_Object *GetTypes(wxClipboardClient *c)
   return first;
 }
 
+typedef Scheme_Object *Scheme_Object_Ptr;
+static int SameClipboardClientEventspace(wxClipboardClient *c, Scheme_Object *es)
+{
+  return (c->context == es);
+}
+
+static int SameClipboardClient(wxClipboard *cb, wxClipboardClient *cc)
+{
+  return (cb->GetClipboardClient() == cc);
+}
+
+
 
 
 // @ "get-clipboard-client" : wxClipboardClient^ GetClipboardClient();
+
 
 
 class os_wxClipboard : public wxClipboard {
@@ -386,6 +399,30 @@ static Scheme_Object *os_wxClipboard_interface;
 os_wxClipboard::~os_wxClipboard()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxClipboardSameClipboardClient(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxClipboard_class, "same-clipboard-client? in clipboard<%>", n, p);
+  class wxClipboardClient* x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_wxClipboardClient(p[POFFSET+0], "same-clipboard-client? in clipboard<%>", 0));
+
+  
+  r = WITH_VAR_STACK(SameClipboardClient(((wxClipboard *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *os_wxClipboardGetClipboardBitmap(int n,  Scheme_Object *p[])
@@ -545,8 +582,9 @@ void objscheme_setup_wxClipboard(Scheme_Env *env)
   wxREGGLOB(os_wxClipboard_class);
   wxREGGLOB(os_wxClipboard_interface);
 
-  os_wxClipboard_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "clipboard%", "object%", NULL, 6));
+  os_wxClipboard_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "clipboard%", "object%", NULL, 7));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboard_class, "same-clipboard-client?" " method", (Scheme_Method_Prim *)os_wxClipboardSameClipboardClient, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboard_class, "get-clipboard-bitmap" " method", (Scheme_Method_Prim *)os_wxClipboardGetClipboardBitmap, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboard_class, "set-clipboard-bitmap" " method", (Scheme_Method_Prim *)os_wxClipboardSetClipboardBitmap, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboard_class, "get-clipboard-data" " method", (Scheme_Method_Prim *)os_wxClipboardGetClipboardData, 2, 2));
@@ -694,6 +732,7 @@ void objscheme_setup_wxClipboardGlobal(Scheme_Env *env)
 
 
 
+
 class os_wxClipboardClient : public wxClipboardClient {
  public:
 
@@ -801,6 +840,30 @@ void os_wxClipboardClient::BeingReplaced()
   
      READY_TO_RETURN;
   }
+}
+
+static Scheme_Object *os_wxClipboardClientSameClipboardClientEventspace(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  Bool r;
+  objscheme_check_valid(os_wxClipboardClient_class, "same-eventspace? in clipboard-client%", n, p);
+  Scheme_Object_Ptr x0 INIT_NULLED_OUT;
+
+  SETUP_VAR_STACK_REMEMBERED(2);
+  VAR_STACK_PUSH(0, p);
+  VAR_STACK_PUSH(1, x0);
+
+  
+  x0 = p[POFFSET+0];
+
+  
+  r = WITH_VAR_STACK(SameClipboardClientEventspace(((wxClipboardClient *)((Scheme_Class_Object *)p[0])->primdata), x0));
+
+  
+  
+  READY_TO_RETURN;
+  return (r ? scheme_true : scheme_false);
 }
 
 static Scheme_Object *os_wxClipboardClientGetTypes(int n,  Scheme_Object *p[])
@@ -936,8 +999,9 @@ void objscheme_setup_wxClipboardClient(Scheme_Env *env)
 
   wxREGGLOB(os_wxClipboardClient_class);
 
-  os_wxClipboardClient_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "clipboard-client%", "object%", (Scheme_Method_Prim *)os_wxClipboardClient_ConstructScheme, 4));
+  os_wxClipboardClient_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "clipboard-client%", "object%", (Scheme_Method_Prim *)os_wxClipboardClient_ConstructScheme, 5));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboardClient_class, "same-eventspace?" " method", (Scheme_Method_Prim *)os_wxClipboardClientSameClipboardClientEventspace, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboardClient_class, "get-types" " method", (Scheme_Method_Prim *)os_wxClipboardClientGetTypes, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboardClient_class, "add-type" " method", (Scheme_Method_Prim *)os_wxClipboardClientAddType, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxClipboardClient_class, "get-data" " method", (Scheme_Method_Prim *)os_wxClipboardClientGetData, 1, 1));

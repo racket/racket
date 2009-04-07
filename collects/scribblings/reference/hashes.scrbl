@@ -47,9 +47,10 @@ a table-specific semaphore as needed. Three caveats apply, however:
  @itemize[
 
   @item{If a thread is terminated while applying @scheme[hash-ref],
-  @scheme[hash-set!], or @scheme[hash-remove!] to a hash table that
+  @scheme[hash-set!], @scheme[hash-remove!], @scheme[hash-ref!],
+  or @scheme[has-update!] to a hash table that
   uses @scheme[equal?] or @scheme[eqv?] key comparisons, all current
-  and future operations on the hash table block indefinitely.}
+  and future operations on the hash table may block indefinitely.}
 
   @item{The @scheme[hash-map] and @scheme[hash-for-each] procedures do
   not use the table's semaphore. Consequently, if a hash table is
@@ -63,7 +64,8 @@ a table-specific semaphore as needed. Three caveats apply, however:
   otherwise the traversal skips a deleted key or uses the remapped
   key's new value).}
 
- @item{The @scheme[hash-update!] function uses a table's semaphore
+ @item{The @scheme[hash-update!] and @scheme[hash-set!] functions 
+ use a table's semaphore
  independently for the @scheme[hash-ref] and @scheme[hash-set!] parts
  of its functionality, which means that the update as a whole is not
  ``atomic.''}
@@ -209,15 +211,17 @@ Returns the value for @scheme[key] in @scheme[hash].  If no value is
 found for @scheme[key], then @scheme[to-set] determines the result as
 in @scheme[hash-ref] (i.e., it is either a thunk that computes a value
 or a plain value), and this result is stored in @scheme[hash] for the
-@scheme[key].  (Note that is @scheme[to-set] is a thunk, it is not
-invoked in tail position.)}
+@scheme[key].  (Note that if @scheme[to-set] is a thunk, it is not
+invoked in tail position.)
+
+@see-also-caveats[]}
 
 
 @defproc[(hash-has-key? [hash hash?] [key any/c])
-         any]{
+         boolean?]{
 
-Returns a true value if @scheme[hash] contains the given
-@scheme[key].}
+Returns @scheme[#t] if @scheme[hash] contains a value for the given
+@scheme[key], @scheme[#f] otherwise.}
 
 
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]

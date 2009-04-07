@@ -3,6 +3,7 @@
 	   mzlib/class100
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/cycle.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"
@@ -63,4 +64,6 @@
 					 (wx:queue-callback go wx:middle-queue-key)
 					 (go))))
 				 (no-val->#f font)))
-	   (super-init wx)))))))
+	   (super-init wx))))))
+
+  (wx:set-popup-menu%! popup-menu%))

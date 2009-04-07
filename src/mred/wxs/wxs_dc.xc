@@ -736,6 +736,8 @@ START_XFORM_SKIP;
 @ "set-alpha" : void SetAlpha(rdouble[0|1]);
 @ "get-alpha" : double GetAlpha();
 
+@ "cache-font-metrics-key" : int CacheFontMetricsKey();
+
 @END
 
 @GLOBAL wxDCGlobal

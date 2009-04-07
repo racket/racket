@@ -43,7 +43,7 @@
 				InlineFunctionExpansion="2"
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\mzscheme\include,..\..\mred\wxme,..\..\mzscheme\utils,..\..\wxwindow\contrib\fafa"
+				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\mzscheme\include,..\..\mzscheme\utils,..\..\wxwindow\contrib\fafa"
 				PreprocessorDefinitions="WIN32,NDEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -130,7 +130,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\mzscheme\include,..\..\mred\wxme,..\..\mzscheme\utils,..\..\wxwindow\contrib\fafa"
+				AdditionalIncludeDirectories="..,..\..\mzscheme\gc,..\..\wxwindow\include\base,..\..\wxwindow\include\msw,..\..\mzscheme\include,..\..\mzscheme\utils,..\..\wxwindow\contrib\fafa"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,__WINDOWS__,GC_DLL,__STDC__,_CRT_SECURE_NO_DEPRECATE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -214,47 +214,7 @@
 			Filter="h;hpp;hxx;hm;inl;fi;fd"
 			>
 			<File
-				RelativePath="..\..\mred\wxme\edjr.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\mred\mred.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\Wx_cgrec.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\Wx_keym.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\Wx_medad.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\wxme\wx_media.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\wxme\wx_medio.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\wx_mline.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\wx_mpriv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\Wx_snip.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\wxme\wx_style.h"
 				>
 			</File>
 			<File

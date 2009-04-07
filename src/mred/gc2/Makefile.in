@@ -40,7 +40,7 @@ WXINC_wx_xt = -I$(PLTSRCDIR)/wxxt/src/AIAI-include -I$(PLTSRCDIR)/wxxt/src
 WXINC_wx_mac = -I$(PLTSRCDIR)/wxmac/include/base -I$(PLTSRCDIR)/wxmac/include/mac -I$(PLTSRCDIR)/wxcommon -I$(PLTSRCDIR)/a-list/c-headers/
 
 WXINC = $(WXINC_@WXVARIANT@)
-NOGCINC = $(WXINC) -I$(PLTSRCDIR)/mred/wxme/ -I$(PLTBUILDDIR)/mzscheme/ -I$(PLTSRCDIR)/mzscheme/include/
+NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/mzscheme/ -I$(PLTSRCDIR)/mzscheme/include/
 INC = -I$(PLTSRCDIR)/mzscheme/$(GCDIRECTORY) $(NOGCINC)
 CXXFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@ @PREFLAGS@
 CFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
@@ -74,7 +74,7 @@ XFORMDEP = $(srcdir)/../../mzscheme/gc2/xform.ss $(srcdir)/../../mzscheme/gc2/xf
 WXBDIR=../../wxxt
 WXMACBDIR=../../wxmac/src
 
-MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS) -L../../mzscheme -L../wxs -L../wxme -L$(WXBDIR)/src
+MREDLDFLAGS = -L$(WXBDIR)/utils/image/src -L$(WXBDIR)/contrib/xpm/lib $(LDFLAGS) -L../../mzscheme -L../wxs -L$(WXBDIR)/src
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
@@ -367,43 +367,6 @@ wx_mac_XFORMPRECOMP = $(MACXPRECOMPDEP)
 XFORMPRECOMP = $(@WXVARIANT@_XFORMPRECOMP)
 XFORMPRECOMPDEP = 
 
-xsrc/wx_media.cc: $(srcdir)/../wxme/wx_media.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_media.cc $(srcdir)/../wxme/wx_media.cxx
-
-xsrc/wx_mpriv.cc: $(srcdir)/../wxme/wx_mpriv.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_mpriv.cc $(srcdir)/../wxme/wx_mpriv.cxx
-
-xsrc/wx_snip.cc: $(srcdir)/../wxme/wx_snip.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_snip.cc $(srcdir)/../wxme/wx_snip.cxx
-
-xsrc/wx_msnip.cc: $(srcdir)/../wxme/wx_msnip.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_msnip.cc $(srcdir)/../wxme/wx_msnip.cxx
-
-xsrc/wx_mbuf.cc: $(srcdir)/../wxme/wx_mbuf.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_mbuf.cc $(srcdir)/../wxme/wx_mbuf.cxx
-
-xsrc/wx_mpbrd.cc: $(srcdir)/../wxme/wx_mpbrd.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_mpbrd.cc $(srcdir)/../wxme/wx_mpbrd.cxx
-
-xsrc/wx_keym.cc: $(srcdir)/../wxme/wx_keym.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_keym.cc $(srcdir)/../wxme/wx_keym.cxx
-
-xsrc/wx_medio.cc: $(srcdir)/../wxme/wx_medio.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_medio.cc $(srcdir)/../wxme/wx_medio.cxx
-
-xsrc/wx_medad.cc: $(srcdir)/../wxme/wx_medad.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_medad.cc $(srcdir)/../wxme/wx_medad.cxx
-
-xsrc/wx_style.cc: $(srcdir)/../wxme/wx_style.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_style.cc $(srcdir)/../wxme/wx_style.cxx
-
-xsrc/wx_mline.cc: $(srcdir)/../wxme/wx_mline.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_mline.cc $(srcdir)/../wxme/wx_mline.cxx
-
-xsrc/wx_cgrec.cc: $(srcdir)/../wxme/wx_cgrec.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wx_cgrec.cc $(srcdir)/../wxme/wx_cgrec.cxx
-
-
 xsrc/wxscheme.cc: $(srcdir)/../wxs/wxscheme.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxscheme.cc $(srcdir)/../wxs/wxscheme.cxx
 
@@ -448,20 +411,10 @@ xsrc/wxs_item.cc: $(srcdir)/../wxs/wxs_item.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_item.cc $(srcdir)/../wxs/wxs_item.cxx
 xsrc/wxs_lbox.cc: $(srcdir)/../wxs/wxs_lbox.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_lbox.cc $(srcdir)/../wxs/wxs_lbox.cxx
-xsrc/wxs_madm.cc: $(srcdir)/../wxs/wxs_madm.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_madm.cc $(srcdir)/../wxs/wxs_madm.cxx
-xsrc/wxs_mede.cc: $(srcdir)/../wxs/wxs_mede.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_mede.cc $(srcdir)/../wxs/wxs_mede.cxx
-xsrc/wxs_medi.cc: $(srcdir)/../wxs/wxs_medi.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_medi.cc $(srcdir)/../wxs/wxs_medi.cxx
 xsrc/wxs_menu.cc: $(srcdir)/../wxs/wxs_menu.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_menu.cc $(srcdir)/../wxs/wxs_menu.cxx
-xsrc/wxs_mio.cc: $(srcdir)/../wxs/wxs_mio.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_mio.cc $(srcdir)/../wxs/wxs_mio.cxx
 xsrc/wxs_misc.cc: $(srcdir)/../wxs/wxs_misc.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_misc.cc $(srcdir)/../wxs/wxs_misc.cxx
-xsrc/wxs_mpb.cc: $(srcdir)/../wxs/wxs_mpb.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_mpb.cc $(srcdir)/../wxs/wxs_mpb.cxx
 xsrc/wxs_obj.cc: $(srcdir)/../wxs/wxs_obj.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_obj.cc $(srcdir)/../wxs/wxs_obj.cxx
 xsrc/wxs_panl.cc: $(srcdir)/../wxs/wxs_panl.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
@@ -470,10 +423,6 @@ xsrc/wxs_rado.cc: $(srcdir)/../wxs/wxs_rado.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_rado.cc $(srcdir)/../wxs/wxs_rado.cxx
 xsrc/wxs_slid.cc: $(srcdir)/../wxs/wxs_slid.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_slid.cc $(srcdir)/../wxs/wxs_slid.cxx
-xsrc/wxs_snip.cc: $(srcdir)/../wxs/wxs_snip.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_snip.cc $(srcdir)/../wxs/wxs_snip.cxx
-xsrc/wxs_styl.cc: $(srcdir)/../wxs/wxs_styl.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
-	$(XFORMWP) xsrc/wxs_styl.cc $(srcdir)/../wxs/wxs_styl.cxx
 xsrc/wxs_tabc.cc: $(srcdir)/../wxs/wxs_tabc.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxs_tabc.cc $(srcdir)/../wxs/wxs_tabc.cxx
 xsrc/wxs_win.cc: $(srcdir)/../wxs/wxs_win.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
@@ -769,31 +718,6 @@ wx_xt_EXTRAFLAGS =
 wx_mac_EXTRAFLAGS = $(MACUSEPRECOMP) -Imacxsrc
 EXTRAFLAGS = $(@WXVARIANT@_EXTRAFLAGS)
 
-wx_media.@LTO@: xsrc/wx_media.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_media.@LTO@ xsrc/wx_media.cc
-wx_mpriv.@LTO@: xsrc/wx_mpriv.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_mpriv.@LTO@ xsrc/wx_mpriv.cc
-wx_snip.@LTO@: xsrc/wx_snip.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_snip.@LTO@ xsrc/wx_snip.cc
-wx_msnip.@LTO@: xsrc/wx_msnip.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_msnip.@LTO@ xsrc/wx_msnip.cc
-wx_mbuf.@LTO@: xsrc/wx_mbuf.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_mbuf.@LTO@ xsrc/wx_mbuf.cc
-wx_mpbrd.@LTO@: xsrc/wx_mpbrd.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_mpbrd.@LTO@ xsrc/wx_mpbrd.cc
-wx_keym.@LTO@: xsrc/wx_keym.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_keym.@LTO@ xsrc/wx_keym.cc
-wx_medio.@LTO@: xsrc/wx_medio.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_medio.@LTO@ xsrc/wx_medio.cc
-wx_medad.@LTO@: xsrc/wx_medad.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_medad.@LTO@ xsrc/wx_medad.cc
-wx_style.@LTO@: xsrc/wx_style.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_style.@LTO@ xsrc/wx_style.cc
-wx_mline.@LTO@: xsrc/wx_mline.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_mline.@LTO@ xsrc/wx_mline.cc
-wx_cgrec.@LTO@: xsrc/wx_cgrec.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wx_cgrec.@LTO@ xsrc/wx_cgrec.cc
-
 wxscheme.@LTO@: xsrc/wxscheme.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxscheme.@LTO@ xsrc/wxscheme.cc
 wxs_bmap.@LTO@: xsrc/wxs_bmap.cc $(PRECOMPDEP)
@@ -822,20 +746,10 @@ wxs_item.@LTO@: xsrc/wxs_item.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_item.@LTO@ xsrc/wxs_item.cc
 wxs_lbox.@LTO@: xsrc/wxs_lbox.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_lbox.@LTO@ xsrc/wxs_lbox.cc
-wxs_madm.@LTO@: xsrc/wxs_madm.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_madm.@LTO@ xsrc/wxs_madm.cc
-wxs_mede.@LTO@: xsrc/wxs_mede.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_mede.@LTO@ xsrc/wxs_mede.cc
-wxs_medi.@LTO@: xsrc/wxs_medi.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_medi.@LTO@ xsrc/wxs_medi.cc
 wxs_menu.@LTO@: xsrc/wxs_menu.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_menu.@LTO@ xsrc/wxs_menu.cc
-wxs_mio.@LTO@: xsrc/wxs_mio.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_mio.@LTO@ xsrc/wxs_mio.cc
 wxs_misc.@LTO@: xsrc/wxs_misc.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_misc.@LTO@ xsrc/wxs_misc.cc
-wxs_mpb.@LTO@: xsrc/wxs_mpb.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_mpb.@LTO@ xsrc/wxs_mpb.cc
 wxs_obj.@LTO@: xsrc/wxs_obj.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_obj.@LTO@ xsrc/wxs_obj.cc
 wxs_panl.@LTO@: xsrc/wxs_panl.cc $(PRECOMPDEP)
@@ -844,10 +758,6 @@ wxs_rado.@LTO@: xsrc/wxs_rado.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_rado.@LTO@ xsrc/wxs_rado.cc
 wxs_slid.@LTO@: xsrc/wxs_slid.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_slid.@LTO@ xsrc/wxs_slid.cc
-wxs_snip.@LTO@: xsrc/wxs_snip.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_snip.@LTO@ xsrc/wxs_snip.cc
-wxs_styl.@LTO@: xsrc/wxs_styl.cc $(PRECOMPDEP)
-	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_styl.@LTO@ xsrc/wxs_styl.cc
 wxs_tabc.@LTO@: xsrc/wxs_tabc.cc $(PRECOMPDEP)
 	$(CXX) $(EXTRAFLAGS) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o wxs_tabc.@LTO@ xsrc/wxs_tabc.cc
 wxs_win.@LTO@: xsrc/wxs_win.cc $(PRECOMPDEP)
@@ -1033,36 +943,16 @@ MRED_XSRCS = \
   xsrc/wxs_glob.cc \
   xsrc/wxs_item.cc \
   xsrc/wxs_lbox.cc \
-  xsrc/wxs_madm.cc \
-  xsrc/wxs_mede.cc \
-  xsrc/wxs_medi.cc \
   xsrc/wxs_menu.cc \
-  xsrc/wxs_mio.cc \
   xsrc/wxs_misc.cc \
-  xsrc/wxs_mpb.cc \
   xsrc/wxs_obj.cc \
   xsrc/wxs_panl.cc \
   xsrc/wxs_rado.cc \
   xsrc/wxs_slid.cc \
-  xsrc/wxs_snip.cc \
-  xsrc/wxs_styl.cc \
   xsrc/wxs_tabc.cc \
   xsrc/wxs_win.cc \
 \
   xsrc/wxscheme.cc \
-\
-  xsrc/wx_media.cc \
-  xsrc/wx_mpriv.cc \
-  xsrc/wx_snip.cc \
-  xsrc/wx_msnip.cc \
-  xsrc/wx_mbuf.cc \
-  xsrc/wx_mpbrd.cc \
-  xsrc/wx_keym.cc \
-  xsrc/wx_medio.cc \
-  xsrc/wx_medad.cc \
-  xsrc/wx_style.cc \
-  xsrc/wx_mline.cc \
-  xsrc/wx_cgrec.cc \
 \
   xsrc/wxJPEG.cc \
 \
@@ -1230,36 +1120,16 @@ MRED_XOBJS = \
   wxs_glob.@LTO@ \
   wxs_item.@LTO@ \
   wxs_lbox.@LTO@ \
-  wxs_madm.@LTO@ \
-  wxs_mede.@LTO@ \
-  wxs_medi.@LTO@ \
   wxs_menu.@LTO@ \
-  wxs_mio.@LTO@ \
   wxs_misc.@LTO@ \
-  wxs_mpb.@LTO@ \
   wxs_obj.@LTO@ \
   wxs_panl.@LTO@ \
   wxs_rado.@LTO@ \
   wxs_slid.@LTO@ \
-  wxs_snip.@LTO@ \
-  wxs_styl.@LTO@ \
   wxs_tabc.@LTO@ \
   wxs_win.@LTO@ \
 \
   wxscheme.@LTO@ \
-\
-  wx_media.@LTO@ \
-  wx_mpriv.@LTO@ \
-  wx_snip.@LTO@ \
-  wx_msnip.@LTO@ \
-  wx_mbuf.@LTO@ \
-  wx_mpbrd.@LTO@ \
-  wx_keym.@LTO@ \
-  wx_medio.@LTO@ \
-  wx_medad.@LTO@ \
-  wx_style.@LTO@ \
-  wx_mline.@LTO@ \
-  wx_cgrec.@LTO@ \
 \
   wxJPEG.@LTO@ \
 \
@@ -1540,15 +1410,6 @@ gen-deps:
 @INCLUDEDEP@ wx_style.dd
 @INCLUDEDEP@ wx_keym.dd
 @INCLUDEDEP@ wx_mbuf.dd
-@INCLUDEDEP@ wx_media.dd
-@INCLUDEDEP@ wx_mpriv.dd
-@INCLUDEDEP@ wx_msnip.dd
-@INCLUDEDEP@ wx_mline.dd
-@INCLUDEDEP@ wx_mpbrd.dd
-@INCLUDEDEP@ wx_medad.dd
-@INCLUDEDEP@ wx_snip.dd
-@INCLUDEDEP@ wx_cgrec.dd
-@INCLUDEDEP@ wx_medio.dd
 @INCLUDEDEP@ xcglue.dd
 @INCLUDEDEP@ wxs_bmap.dd
 @INCLUDEDEP@ wxs_butn.dd
@@ -1563,19 +1424,12 @@ gen-deps:
 @INCLUDEDEP@ wxs_glob.dd
 @INCLUDEDEP@ wxs_item.dd
 @INCLUDEDEP@ wxs_lbox.dd
-@INCLUDEDEP@ wxs_madm.dd
-@INCLUDEDEP@ wxs_mede.dd
-@INCLUDEDEP@ wxs_medi.dd
 @INCLUDEDEP@ wxs_menu.dd
-@INCLUDEDEP@ wxs_mio.dd
 @INCLUDEDEP@ wxs_misc.dd
-@INCLUDEDEP@ wxs_mpb.dd
 @INCLUDEDEP@ wxs_obj.dd
 @INCLUDEDEP@ wxs_panl.dd
 @INCLUDEDEP@ wxs_rado.dd
 @INCLUDEDEP@ wxs_slid.dd
-@INCLUDEDEP@ wxs_snip.dd
-@INCLUDEDEP@ wxs_styl.dd
 @INCLUDEDEP@ wxs_tabc.dd
 @INCLUDEDEP@ wxs_win.dd
 @INCLUDEDEP@ wxscheme.dd

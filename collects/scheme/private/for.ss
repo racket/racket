@@ -637,7 +637,7 @@
       (if (null? sequences) sequence (append-sequences all #f))))
   (define (in-cycle sequence . sequences)
     (let ([all (cons sequence sequences)])
-      (check-sequences 'in-cycle sequences)
+      (check-sequences 'in-cycle all)
       (append-sequences all #t)))
 
   (define (in-parallel . sequences)

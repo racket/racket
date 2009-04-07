@@ -847,6 +847,9 @@ namespace_val {
   gcMARK(e->tt_require_names);
   gcMARK(e->dt_require_names);
   gcMARK(e->other_require_names);
+  gcMARK(e->did_starts);
+  gcMARK(e->available_next[0]);
+  gcMARK(e->available_next[1]);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);

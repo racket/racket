@@ -4,6 +4,8 @@
 	   mzlib/etc
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/editor-canvas.ss")
+           (prefix wx: "wxme/editor-snip.ss")
 	   "lock.ss"
 	   "helper.ss"
 	   "const.ss"

@@ -158,7 +158,7 @@
       (send c set-editor e)
 
       (when file
-	(if (regexp-match "[.](gif|bmp|jpe?g|xbm|xpm|png)$" file)
+	(if (regexp-match "[.](gif|bmp|jpe?g|xbm|xpm|png)$" (string-downcase file))
 	    (send e insert (make-object image-snip% file))
 	    (send e load-file file)))
 

@@ -29,7 +29,6 @@
 #include "wx_buttn.h"
 #include "wx_messg.h"
 #include "wx_timer.h"
-#include "wx_media.h"
 #include "wx_dialg.h"
 #include "wx_cmdlg.h"
 #include "wx_menu.h"
@@ -116,7 +115,6 @@ wxFrame *mred_real_main_frame;
 
 static Scheme_Thread *user_main_thread;
 
-extern void wxMediaIOCheckLSB(void);
 extern void wxMouseEventHandled(void);
 #ifdef wx_xt
 extern int wx_single_instance;
@@ -296,8 +294,6 @@ static int mark_eventspace_val(void *p)
   gcMARK_TYPED(MrEdFinalizedContext *, c->finalized);
 
   gcMARK_TYPED(wxChildList *, c->topLevelWindowList);
-  gcMARK_TYPED(wxStandardSnipClassList *, c->snipClassList);
-  gcMARK_TYPED(wxBufferDataClassList *, c->bufferDataClassList);
   gcMARK_TYPED(wxWindow *, c->modal_window);
   gcMARK_TYPED(MrEd_Saved_Modal *, c->modal_stack);
 
@@ -330,8 +326,6 @@ static int fixup_eventspace_val(void *p)
   gcFIXUP_TYPED(MrEdFinalizedContext *, c->finalized);
 
   gcFIXUP_TYPED(wxChildList *, c->topLevelWindowList);
-  gcFIXUP_TYPED(wxStandardSnipClassList *, c->snipClassList);
-  gcFIXUP_TYPED(wxBufferDataClassList *, c->bufferDataClassList);
   gcFIXUP_TYPED(wxWindow *, c->modal_window);
   gcFIXUP_TYPED(MrEd_Saved_Modal *, c->modal_stack);
 
@@ -521,22 +515,6 @@ void wxPopModalWindow(wxObject *w, wxWindow *win)
     } else
       prev = save;
   }
-}
-
-wxStandardSnipClassList *wxGetTheSnipClassList()
-{
-  MrEdContext *c;
-  c = MrEdGetContext();
-
-  return c->snipClassList;
-}
-
-wxBufferDataClassList *wxGetTheBufferDataClassList()
-{
-  MrEdContext *c;
-  c = MrEdGetContext();
-
-  return c->bufferDataClassList;
 }
 
 int wxGetBusyState(void)
@@ -739,8 +717,6 @@ static MrEdContext *MakeContext(MrEdContext *c)
 
   if (!c) {
     wxChildList *tlwl;
-    wxStandardSnipClassList *scl;
-    wxBufferDataClassList *bdcl;
     MrEdFinalizedContext *fc;
 
     c = (MrEdContext *)scheme_malloc_tagged(sizeof(MrEdContext));
@@ -748,10 +724,6 @@ static MrEdContext *MakeContext(MrEdContext *c)
 
     tlwl = new WXGC_PTRS wxChildList();
     c->topLevelWindowList = tlwl;
-    scl = wxMakeTheSnipClassList();
-    c->snipClassList = scl;
-    bdcl = wxMakeTheBufferDataClassList();
-    c->bufferDataClassList = bdcl;
     fc = new WXGC_PTRS MrEdFinalizedContext;
     c->finalized = fc;
   }
@@ -1638,27 +1610,11 @@ static int check_initialized(Scheme_Object *)
 
 # define KEEP_GOING wxTheApp->keep_going
 
-#if WINDOW_STDIO
-static Scheme_Custodian *main_custodian;
-#endif
-
 void wxDoEvents()
 {
   /* When we get here, we are in the main dispatcher thread */
   if (!TheMrEdApp->initialized) {
     MrEdContext *c;
-#if WINDOW_STDIO
-    Scheme_Custodian *m, *oldm = NULL;
-    Scheme_Config *config = NULL;
-    if (!wx_in_terminal) {
-      config = scheme_current_config();
-      oldm = (Scheme_Custodian *)scheme_get_param(config, MZCONFIG_CUSTODIAN);
-      m = scheme_make_custodian(oldm);
-      scheme_set_param(config, MZCONFIG_CUSTODIAN, (Scheme_Object *)m);
-      wxREGGLOB(main_custodian);
-      main_custodian = m;
-    }
-#endif
 
     /* Create the user's main thread: */
 
@@ -1680,11 +1636,6 @@ void wxDoEvents()
       cp = scheme_intern_symbol("mred");
       user_main_thread->name = cp;
     }
-
-#if WINDOW_STDIO
-    if (!wx_in_terminal)
-      scheme_set_param(config, MZCONFIG_CUSTODIAN, (Scheme_Object *)oldm);
-#endif
 
     /* Block until the user's main thread is initialized: */
     scheme_block_until(CAST_BLKCHK check_initialized, NULL, NULL, 0.0);
@@ -2255,234 +2206,10 @@ void MrEdQueueInEventspace(void *context, Scheme_Object *thunk)
 /*                        Redirected Standard I/O                           */
 /****************************************************************************/
 
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if REDIRECT_STDIO || WCONSOLE_STDIO
 static void MrEdSchemeMessages(char *, ...);
 static Scheme_Object *stdin_pipe;
 #endif
-
-#if WINDOW_STDIO
-
-static int have_stdio = 0;
-static int stdio_kills_prog = 0;
-static Bool RecordInput(void *media, wxEvent *event, void *data);
-static Bool SendBreak(void *media, wxEvent *event, void *data);
-static void break_console_reading_threads();
-static char utf8_leftover[8];
-static int utf8_leftover_count;
-
-class IOMediaEdit : public wxMediaEdit
-{
-public:
-    Bool CanInsert(long start, long);
-    Bool CanDelete(long start, long);
-};
-
-class IOFrame : public wxFrame
-{
-public:
-  wxMediaCanvas *display;
-  wxMediaEdit *media;
-  wxMenu *fileMenu;
-  Bool hidden, beginEditSeq;
-  int endpos;
-
-  IOFrame();
-  void OnSize(int x, int y);
-  Bool OnClose(void);
-  void OnMenuCommand(long id);
-  Bool PreOnChar(wxWindow *, wxKeyEvent *e);
-  Bool PreOnEvent(wxWindow *, wxMouseEvent *e);
-  void CloseIsQuit(void);
-};
-
-IOFrame::IOFrame()
- : wxFrame(NULL, "Standard Output", -1, -1, 600, 400, 0, "stdout")
-{
-  wxKeymap *km;
-  wxStyle *style;
-  wxStyleList *sl;
-  wxStyleDelta *sd;
-  wxMenuBar *mb;
-  wxMenu *m;
-
-  display = new WXGC_PTRS wxMediaCanvas(this);
-
-  media = new WXGC_PTRS IOMediaEdit();
-  display->SetMedia(media);
-  endpos = 0;
-  hidden = FALSE;
-
-  /* Map copy keys: */
-  km = media->GetKeymap();
-  media->AddBufferFunctions(km);
-  media->AddEditorFunctions(km);
-  km->AddFunction("send-break", SendBreak, NULL);
-# ifdef wx_msw
-  km->MapFunction("c:c", "copy-clipboard");
-  km->MapFunction("c:x", "copy-clipboard");
-  km->MapFunction("c:v", "paste-clipboard");
-# else
-  km->MapFunction("d:c", "copy-clipboard");
-  km->MapFunction("d:x", "copy-clipboard");
-  km->MapFunction("d:v", "paste-clipboard");
-  km->MapFunction("d:.", "send-break");
-# endif
-  km->MapFunction("return", "record-input");
-  km->AddFunction("record-input", RecordInput, NULL);
-
-  /* Fixed-width font: */
-  sl = media->GetStyleList();
-  style = sl->FindNamedStyle("Standard");
-  sd = new WXGC_PTRS wxStyleDelta(wxCHANGE_FAMILY, wxMODERN);
-  style->SetDelta(sd);
-
-#ifdef wx_mac
-  OnSize(600, 400);
-#endif
-
-#ifdef wx_mac
-# define CLOSE_MENU_ITEM "Close\tCmd+W"
-#else
-# define CLOSE_MENU_ITEM "Close"
-#endif
-
-  mb = new WXGC_PTRS wxMenuBar();
-  SetMenuBar(mb);
-  fileMenu = new WXGC_PTRS wxMenu();
-  fileMenu->Append(77, CLOSE_MENU_ITEM);
-  m = new WXGC_PTRS wxMenu();
-  m->Append(79, "&Copy\tCmd+C");
-  m->Append(81, "&Paste\tCmd+V");
-  m->AppendSeparator();
-  m->Append(83, "&Break\tCmd+.");
-  mb->Append(fileMenu, "File");
-  mb->Append(m, "Edit");
-
-  have_stdio = 1;
-  Show(TRUE);
-
-  beginEditSeq = 0;
-}
-
-void IOFrame::OnSize(int x, int y)
-{
-  GetClientSize(&x, &y);
-  if (display)
-    display->SetSize(0, 0, x, y);
-  if (media && (x > 30))
-    media->SetMaxWidth((float)(x - 30));
-}
-
-Bool IOFrame::OnClose(void)
-{
-  hidden = TRUE;
-  if (stdio_kills_prog) {
-    if (scheme_exit)
-      scheme_exit(exit_val);
-#ifdef wx_msw
-    mred_clean_up_gdi_objects();
-#endif
-    scheme_immediate_exit(exit_val);
-  } else {
-    break_console_reading_threads();
-    have_stdio = 0;
-  }
-  return TRUE;
-}
-
-void IOFrame::OnMenuCommand(long id)
-{
-  if (id == 79)
-    media->Copy();
-  else if (id == 81)
-    media->Paste();
-  else if (id == 83)
-    scheme_break_main_thread();
-  else if (id == 77)
-    if (OnClose())
-      Show(FALSE);
-}
-
-Bool IOFrame::PreOnChar(wxWindow *, wxKeyEvent *e)
-{
-  PreOnEvent(NULL, NULL);
-
-#if defined(wx_mac) && WINDOW_STDIO
-  if (e->metaDown && e->KeyCode() == (stdio_kills_prog ? 'q' : 'w')) {
-    OnMenuCommand(77);
-    return TRUE;
-  }
-#endif
-
-  return FALSE;
-}
-
-Bool IOFrame::PreOnEvent(wxWindow *, wxMouseEvent *e)
-{
-  if (beginEditSeq) {
-    beginEditSeq = 0;
-    media->EndEditSequence();
-  }
-
-  return FALSE;
-}
-
-void IOFrame::CloseIsQuit(void)
-{
-#ifdef wx_mac
-# define QUIT_MENU_ITEM "Quit\tCmd+Q"
-#else
-# define QUIT_MENU_ITEM "E&xit"
-#endif
-  fileMenu->Delete(77);
-  fileMenu->Append(77, QUIT_MENU_ITEM);
-
-  media->Insert("\n[Exited]", media->LastPosition());
-  if (beginEditSeq) {
-    beginEditSeq = 0;
-    media->EndEditSequence();
-  }
-  media->Lock(1);
-}
-
-static IOFrame *ioFrame = NULL;
-
-Bool IOMediaEdit::CanInsert(long start, long)
-{
-    return (start >= ioFrame->endpos);
-}
-
-Bool IOMediaEdit::CanDelete(long start, long)
-{
-    return (start >= ioFrame->endpos);
-}
-
-static Bool RecordInput(void *m, wxEvent *event, void *data)
-{
-  char *s;
-  long len, start;
-  wxMediaEdit *media = ioFrame->media;
-
-  media->Insert("\n");
-  start = media->GetStartPosition();
-  len = start - ioFrame->endpos;
-  if (len > 0) {
-    s = media->GetTextUTF8(ioFrame->endpos, start);
-    ioFrame->endpos = start;
-    
-    scheme_write_byte_string(s, len, stdin_pipe);
-  }
-
-  return TRUE;
-}
-
-static Bool SendBreak(void *m, wxEvent *event, void *data)
-{
-  scheme_break_main_thread();
-  return TRUE;
-}
-
-#else  /* !WINDOW_STDIO */
 
 #if WCONSOLE_STDIO
 
@@ -2498,66 +2225,15 @@ static FILE *mrerr = NULL;
 
 #endif /* WCONSOLE_STDIO */
 
-#endif /* WINDOW_STDIO */
-
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if REDIRECT_STDIO || WCONSOLE_STDIO
 static void MrEdSchemeMessages(char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
-#if WINDOW_STDIO
-  char *arg_s = NULL;
-  long arg_d = 0, arg_l = 0;
-# define VSP_BUFFER_SIZE 4096
-  char arg_buffer[VSP_BUFFER_SIZE];
-#endif
   
   scheme_start_atomic();
 
   HIDE_FROM_XFORM(va_start(args, msg));
 
-#if WINDOW_STDIO
-  if (!wx_in_terminal) {
-    static int opening = 0;
-
-    if (opening) {
-      HIDE_FROM_XFORM(va_end(args));
-      return;
-    }
-
-    /* Need to extract arguments before a potential GC */
-    if (!msg) {
-      arg_s = HIDE_FROM_XFORM(va_arg(args, char*));
-      arg_d = HIDE_FROM_XFORM(va_arg(args, long));
-      arg_l = HIDE_FROM_XFORM(va_arg(args, long));
-    } else {
-# ifdef MPW_CPLUS
-      /* FIXME: No vsnprintf in MPW. */
-#  define vsnprintf(x, y, z, w) vsprintf(x, z, w)
-# endif
-      MSC_IZE(vsnprintf)(arg_buffer, VSP_BUFFER_SIZE, msg, args);
-    }
-
-    opening = 1;
-    if (!ioFrame) {
-      wxREGGLOB(ioFrame);
-      if (mred_only_context)
-	ioFrame = new WXGC_PTRS IOFrame;
-      else {
-	/* Set eventspace ... */
-	mred_only_context = mred_main_context;
-	only_context_just_once = 1;
-	ioFrame = new WXGC_PTRS IOFrame;
-	mred_only_context = NULL;
-      }
-    }
-    opening = 0;
-    if (ioFrame->hidden) {
-      ioFrame->hidden = FALSE;
-      have_stdio = 1;
-      ioFrame->Show(TRUE);
-    }
-  }
-#endif
 #if WCONSOLE_STDIO
   if (!console_out) {
     AllocConsole();
@@ -2574,60 +2250,6 @@ static void MrEdSchemeMessages(char *msg, ...)
   }
 #endif
 
-#if WINDOW_STDIO
-  if (wx_in_terminal) {
-    vfprintf(stderr, msg, args);
-    fflush(stderr);
-  } else if (!msg) {
-    char *s;
-    wxchar *us;
-    long d, l, ulen, ipos;
-
-    s = arg_s;
-    d = arg_d;
-    l = arg_l;
-
-    if (!ioFrame->beginEditSeq) {
-      ioFrame->media->BeginEditSequence();
-      ioFrame->beginEditSeq = 1;
-    }
-    
-    if (utf8_leftover_count) {
-      char *naya;
-      naya = new WXGC_ATOMIC char[l + utf8_leftover_count];
-      memcpy(naya, utf8_leftover, utf8_leftover_count);
-      memcpy(naya + utf8_leftover_count, s + d, l);
-      s = naya;
-      d = 0;
-      l += utf8_leftover_count;
-    }
-
-    ulen = scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
-					NULL, 0, -1,
-					&ipos, 0, '?');
-    utf8_leftover_count = (l - (ipos - d));
-    memcpy(utf8_leftover, s + ipos, utf8_leftover_count);
-    
-    us = (wxchar *)scheme_malloc_atomic(sizeof(wxchar) * ulen);
-    scheme_utf8_decode_as_prefix((unsigned char *)s, d, l,
-				 us, 0, -1,
-				 &ipos, 0, '?');
-    ioFrame->media->Insert(ulen, us, ioFrame->endpos);
-    ioFrame->endpos += ulen;
-
-    if (ulen != 1 || s[0] == '\n') {
-      ioFrame->media->EndEditSequence();
-      ioFrame->beginEditSeq = 0;
-    }
-  } else {
-    ioFrame->media->Insert((char *)arg_buffer, ioFrame->endpos);
-    ioFrame->endpos += strlen(arg_buffer);
-    if (ioFrame->beginEditSeq) {
-      ioFrame->media->EndEditSequence();
-      ioFrame->beginEditSeq = 0;
-    }
-  }
-#endif
 #if WCONSOLE_STDIO
   if (!msg) {
     char *s;
@@ -2645,7 +2267,7 @@ static void MrEdSchemeMessages(char *msg, ...)
     WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
   }
 #endif
-#if !WINDOW_STDIO && !WCONSOLE_STDIO
+#if !WCONSOLE_STDIO
   vfprintf(mrerr, msg, args);
   fflush(mrerr);
 #endif
@@ -2662,7 +2284,7 @@ static void MrEdSchemeMessagesOutput(char *s, long l)
 }
 #endif
 
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if REDIRECT_STDIO || WCONSOLE_STDIO
 
 static Scheme_Object *console_reading;
 
@@ -2769,7 +2391,7 @@ static Scheme_Object *MrEdMakeStdIn(void)
 static long stdout_write(Scheme_Output_Port*, const char *s, long d, long l, 
 			 int rarely_block, int enable_break)
 {
-#if WINDOW_STDIO || WCONSOLE_STDIO
+#if WCONSOLE_STDIO
   if (l)
     MrEdSchemeMessages(NULL, s, d, l);
 #else
@@ -2800,7 +2422,7 @@ static Scheme_Object *MrEdMakeStdOut(void)
 static long stderr_write(Scheme_Output_Port*, const char *s, long d, long l, 
 			 int rarely_block, int enable_break)
 {
-#if WINDOW_STDIO || WCONSOLE_STDIO
+#if WCONSOLE_STDIO
   if (l)
     MrEdSchemeMessages(NULL, s, d, l);
 #else
@@ -2849,7 +2471,7 @@ extern "C" GC_word GC_fo_entries;
 
 Scheme_Object *OBJDump(int, Scheme_Object *[])
 {
-# if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE
+# if REDIRECT_STDIO || WCONSOLE_STDIO
 # define PRINT_IT MrEdSchemeMessages
 # else
 # define PRINT_IT scheme_console_printf
@@ -3202,19 +2824,6 @@ void *wxMallocAtomicIfPossible(size_t s)
   return v;
 }
 
-static const char *CallSchemeExpand(const char *filename, const char *who, int to_write)
-{
-  char *s;
-
-  s = scheme_expand_filename((char *)filename, strlen(filename),
-			     who, 0,
-			     (to_write
-			      ? SCHEME_GUARD_FILE_WRITE
-			      : SCHEME_GUARD_FILE_READ));
-
-  return s ? s : filename;
-}
-
 #if !defined(USE_SENORA_GC) && !defined(MZ_PRECISE_GC)
 static void MrEdIgnoreWarnings(char *, GC_word)
 {
@@ -3232,8 +2841,6 @@ static Scheme_Env *setup_basic_env()
   global_env = scheme_basic_env();
 
   scheme_set_banner(BANNER);
-
-  wxmeExpandFilename = CallSchemeExpand;
 
 #ifdef DANGER_ALARM
   {
@@ -3316,7 +2923,7 @@ wxFrame *MrEdApp::OnInit(void)
   new WXGC_PTRS Regex("a", 0);
 #endif
 
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if REDIRECT_STDIO || WCONSOLE_STDIO
   if (!wx_in_terminal) {
     scheme_make_stdin = CAST_MK MrEdMakeStdIn;
     scheme_make_stdout = CAST_MK MrEdMakeStdOut;
@@ -3337,7 +2944,7 @@ wxFrame *MrEdApp::OnInit(void)
 # endif
 #endif
 
-#if REDIRECT_STDIO || WINDOW_STDIO || WCONSOLE_STDIO
+#if REDIRECT_STDIO || WCONSOLE_STDIO
   scheme_console_printf = CAST_PRINTF MrEdSchemeMessages;
   if (!wx_in_terminal) {
     scheme_console_output = CAST_OUTPUT MrEdSchemeMessagesOutput;
@@ -3347,8 +2954,6 @@ wxFrame *MrEdApp::OnInit(void)
   mred_eventspace_param = scheme_new_param();
   mred_event_dispatch_param = scheme_new_param();
   mred_ps_setup_param = scheme_new_param();
-
-  wxInitSnips(); /* and snip classes */
 
   mred_eventspace_type = scheme_make_type("<eventspace>");
   mred_nested_wait_type = scheme_make_type("<eventspace-nested-wait>");
@@ -3390,16 +2995,6 @@ wxFrame *MrEdApp::OnInit(void)
     mmc->topLevelWindowList = cl;
   }
   {
-    wxStandardSnipClassList *scl;
-    scl = wxMakeTheSnipClassList();
-    mmc->snipClassList = scl;
-  }
-  {
-    wxBufferDataClassList *dcl;
-    dcl = wxMakeTheBufferDataClassList();
-    mmc->bufferDataClassList = dcl;
-  }
-  {
     MrEdFinalizedContext *fc;
     fc = new WXGC_PTRS MrEdFinalizedContext;
     mmc->finalized = fc;
@@ -3418,7 +3013,7 @@ wxFrame *MrEdApp::OnInit(void)
   TheMrEdApp->wx_frame = mred_real_main_frame;
 #endif
 
-  wxInitMedia();
+  wxInitClipboard();
 
   wxscheme_early_gl_init();
 
@@ -3432,40 +3027,8 @@ wxFrame *MrEdApp::OnInit(void)
 
   mred_run_from_cmd_line(argc, argv, setup_basic_env);
 
-#if WINDOW_STDIO
-  if (!wx_in_terminal) {
-    /* The only reason we get here is that a command-line error or
-       -h occured. In either case, stick around for the sake of the
-       console. */
-    setup_basic_env();
-    TheMrEdApp->initialized = 1;
-    stdio_kills_prog = 1;
-    if (ioFrame)
-      ioFrame->CloseIsQuit();
-    wxTheApp->MainLoop();
-  }
-#endif
-
   return NULL;
 }
-
-#if WINDOW_STDIO
-static void MrEdExit(int v)
-{
-  if (have_stdio) {
-    stdio_kills_prog = 1;
-    if (ioFrame)
-      ioFrame->CloseIsQuit();
-    scheme_close_managed(main_custodian);
-    return;
-  }
-
-#ifdef wx_msw
-  mred_clean_up_gdi_objects();
-#endif
-  scheme_immediate_exit(v);
-}
-#endif
 
 static void on_main_killed(Scheme_Thread *p)
 {
@@ -3488,13 +3051,7 @@ void MrEdApp::RealInit(void)
 
   initialized = 1;
 
-  wxMediaIOCheckLSB(/* scheme_console_printf */);
-
   thread->on_kill = CAST_TOK on_main_killed;
-#if WINDOW_STDIO
-  if (!wx_in_terminal)
-    scheme_exit = CAST_EXIT MrEdExit;
-#endif
 
 #ifdef wx_xt
   if (wx_single_instance) {
@@ -3968,13 +3525,6 @@ void wxDrop_Runtime(char **argv, int argc)
 #if defined(wx_mac) || defined(wx_msw)
 void wxDrop_Quit()
 {
-#if WINDOW_STDIO
-  if (ioFrame) {
-    if (ioFrame->OnClose())
-      ioFrame->Show(FALSE);
-  }
-#endif
-
   wxDo(wxs_app_quit_proc, 0, NULL);
 }
 #endif

@@ -10,7 +10,10 @@
 #include "common.h"
 
 #include "wx_main.h"
-#include "wx_media.h"
+#include "wx_win.h"
+#include "wx_frame.h"
+#include "wx_canvs.h"
+#include "wx_utils.h"
 #include "scheme.h"
 #include "wx_macevents.h"
 #include "wx_het.h"

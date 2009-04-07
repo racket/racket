@@ -252,17 +252,17 @@ path, but no module is loaded; the resolved form of @scheme[modname]
 is used as the module name in @scheme[dest-namespace]. In addition to
 @scheme[modname], every module that it imports (directly or
 indirectly) is also recorded in the current namespace's @tech{module
-registry}. The inspector of the module invocation in
-@scheme[dest-namespace] is the same as inspector of the invocation in
-@scheme[src-namespace].
+registry}, and instances at the same @tech{phase} or lower are also
+attached to @scheme[dest-namespace] (while @tech{visits} at the
+module's phase and instances at higher phases are not attached, nor
+even made @tech{available} for on-demand @tech{visits}). The inspector
+of the module invocation in @scheme[dest-namespace] is the same as
+inspector of the invocation in @scheme[src-namespace].
 
 If @scheme[modname] does not refer to an @tech{instantiate}d module in
 @scheme[src-namespace], or if the name of any module to be attached
-already has a different declaration or instance in
-@scheme[dest-namespace], then the @exnraise[exn:fail:contract].  If
-the module to attach has not been @tech{visit}ed (see
-@secref["mod-parse"]), then it is @tech{visit}ed in the original
-namespace before being attached.
+already has a different declaration or same-@tech{phase} instance in
+@scheme[dest-namespace], then the @exnraise[exn:fail:contract].
 
 If @scheme[src-namespace] and @scheme[dest-namespace] do not have the
 same @tech{base phase}, then the @exnraise[exn:fail:contract].}

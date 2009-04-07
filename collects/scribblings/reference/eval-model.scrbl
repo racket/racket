@@ -563,18 +563,21 @@ If a module @tech{instantiate}d at @tech{phase} @math{n}
 first @tech{instantiate}d at phase @math{n}, and so on
 transitively. (Module @scheme[require]s cannot form cycles.) If a
 module @tech{instantiate}d at phase @math{n} @scheme[require]s
-@scheme[for-syntax] another module, the other module is first
-@tech{instantiate}d at @tech{phase} @math{n+1}, and so on.  If a
-module @tech{instantiate}d at phase @math{n} for non-zero @math{n}
-@scheme[require]s @scheme[for-template] another module, the other
-module is first @tech{instantiate}d at @tech{phase} @math{n-1}, and so
-on.
+@scheme[for-syntax] another module, the other module becomes
+@deftech{available} at @tech{phase} @math{n+1}, and it may later be
+@tech{instantiate}d at @tech{phase} @math{n+1}.  If a module that is
+@tech{available} at phase @math{n} for @math{n>0} @scheme[require]s
+@scheme[for-template] another module, the other module becomes
+@tech{available} at @tech{phase} @math{n-1}, and so
+on. @tech{Instantiation}s of @tech{available} modules above
+@tech{phase} 0 are triggered on demand as described in
+@secref["mod-parse"].
 
 A final distinction among module @tech{instantiations} is that
-multiple @tech{instantiations} may exist at @tech{phase} 1 and higher. These
-@tech{instantiations} are created by the parsing of module forms (see
-@secref["mod-parse"]), and are, again, conceptually distinguished
-by prefixes.
+multiple @tech{instantiations} may exist at @tech{phase} 1 and
+higher. These @tech{instantiations} are created by the parsing of
+module forms (see @secref["mod-parse"]), and are, again, conceptually
+distinguished by prefixes.
 
 Top-level variables can exist in multiple phases in the same way as
 within modules. For example, @scheme[define-for-syntax] creates a

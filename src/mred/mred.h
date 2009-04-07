@@ -52,8 +52,6 @@ typedef struct MrEdContext {
   MrEdFinalizedContext *finalized;
 
   wxChildList *topLevelWindowList;
-  wxStandardSnipClassList *snipClassList;
-  wxBufferDataClassList *bufferDataClassList;
   wxWindow *modal_window;
   MrEd_Saved_Modal *modal_stack;
 
@@ -191,19 +189,8 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #endif
 #define BANNER "MrEd v" MZSCHEME_VERSION mrVERSION_SUFFIX ", Copyright (c) 2004-2009 PLT Scheme Inc.\n"
 
-#ifndef WINDOW_STDIO
-/* Removing "|| defined(wx_msw)" below uses the Windows console.
-   The danger is that closing that console kills MrEd without
-   any chance of cancelling the kill. */
-# if defined(wx_mac) || defined(wx_msw)
-#  define WINDOW_STDIO 1
-# else
-#  define WINDOW_STDIO 0
-# endif
-#endif
-
 #ifndef WCONSOLE_STDIO
-# if defined(wx_msw) && !WINDOW_STDIO
+# if defined(wx_msw)
 #  define WCONSOLE_STDIO 1
 # else
 #  define WCONSOLE_STDIO 0
@@ -211,7 +198,7 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #endif
 
 #ifndef REDIRECT_STDIO
-# if (defined(wx_msw) || defined(wx_mac)) && !WINDOW_STDIO && !WCONSOLE_STDIO
+# if (defined(wx_msw) || defined(wx_mac)) && !WCONSOLE_STDIO
 #  define REDIRECT_STDIO 1
 # else
 #  define REDIRECT_STDIO 0

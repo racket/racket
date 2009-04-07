@@ -272,12 +272,13 @@ Legal only in a @tech{module begin context}, and handled by the
                            ((unsyntax (schemeidfont "+")) nat)
                            ((unsyntax (schemeidfont "-")) nat)])]{
 
-In a @tech{top-level context}, @scheme[require] instantiates modules
-(see @secref["module-eval-model"]). In a @tech{module context},
-@scheme[require] @tech{visits} modules (see @secref["mod-parse"]). In
-both contexts, @scheme[require] introduces bindings into a
-@tech{namespace} or a module (see @secref["intro-binding"]). 
-A @scheme[require] form in a @tech{expression context} or
+In a @tech{top-level context}, @scheme[require] @tech{instantiates}
+modules (see @secref["module-eval-model"]). In a @tech{top-level
+context} or @tech{module context}, expansion of @scheme[require]
+@tech{visits} modules (see @secref["mod-parse"]). In both contexts and
+both evaluation and expansion, @scheme[require] introduces bindings
+into a @tech{namespace} or a module (see @secref["intro-binding"]).  A
+@scheme[require] form in a @tech{expression context} or
 @tech{internal-definition context} is a syntax error.
 
 A @scheme[require-spec] designates a particular set of identifiers to

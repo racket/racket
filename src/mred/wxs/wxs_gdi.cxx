@@ -1001,6 +1001,9 @@ class os_wxColour : public wxColour {
 #ifndef MZ_PRECISE_GC
   os_wxColour CONSTRUCTOR_ARGS((string x0));
 #endif
+#ifndef MZ_PRECISE_GC
+  os_wxColour CONSTRUCTOR_ARGS((class wxColour* x0));
+#endif
   ~os_wxColour();
 #ifdef MZ_PRECISE_GC
   void gcMark();
@@ -1033,6 +1036,13 @@ CONSTRUCTOR_INIT(: wxColour(x0, x1, x2))
 
 #ifndef MZ_PRECISE_GC
 os_wxColour::os_wxColour CONSTRUCTOR_ARGS((string x0))
+CONSTRUCTOR_INIT(: wxColour(x0))
+{
+}
+#endif
+
+#ifndef MZ_PRECISE_GC
+os_wxColour::os_wxColour CONSTRUCTOR_ARGS((class wxColour* x0))
 CONSTRUCTOR_INIT(: wxColour(x0))
 {
 }
@@ -1183,7 +1193,29 @@ static Scheme_Object *os_wxColour_ConstructScheme(int n,  Scheme_Object *p[])
   PRE_VAR_STACK_PUSH(0, p);
   os_wxColour *realobj INIT_NULLED_OUT;
   REMEMBER_VAR_STACK();
-  if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_string(p[POFFSET+0], NULL))) {
+  if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_wxColour(p[POFFSET+0], NULL, 1))) {
+    class wxColour* x0 INIT_NULLED_OUT;
+
+    SETUP_VAR_STACK_PRE_REMEMBERED(3);
+    VAR_STACK_PUSH(0, p);
+    VAR_STACK_PUSH(1, realobj);
+    VAR_STACK_PUSH(2, x0);
+
+    
+    if (n != (POFFSET+1)) 
+      WITH_VAR_STACK(scheme_wrong_count_m("initialization in color% (color object case)", POFFSET+1, POFFSET+1, n, p, 1));
+    x0 = WITH_VAR_STACK(objscheme_unbundle_wxColour(p[POFFSET+0], "initialization in color% (color object case)", 1));
+
+    
+    realobj = WITH_VAR_STACK(new os_wxColour CONSTRUCTOR_ARGS((x0)));
+#ifdef MZ_PRECISE_GC
+    WITH_VAR_STACK(realobj->gcInit_wxColour(x0));
+#endif
+    realobj->__gc_external = (void *)p[0];
+    
+    
+    READY_TO_PRE_RETURN;
+  } else if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_string(p[POFFSET+0], NULL))) {
     string x0 INIT_NULLED_OUT;
 
     SETUP_VAR_STACK_PRE_REMEMBERED(3);

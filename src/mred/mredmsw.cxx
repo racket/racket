@@ -12,7 +12,7 @@
 # include "wx.h"
 #endif
 #include "wx_main.h"
-#include "wx_media.h"
+#include "wx_utils.h"
 #include "scheme.h"
 #include "wx_dialg.h"
 

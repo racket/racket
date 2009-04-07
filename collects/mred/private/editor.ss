@@ -5,6 +5,15 @@
 	   mzlib/list
 	   mzlib/file
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/style.ss")
+           (prefix wx: "wxme/keymap.ss")
+           (prefix wx: "wxme/editor.ss")
+           (prefix wx: "wxme/text.ss")
+           (prefix wx: "wxme/pasteboard.ss")
+           (prefix wx: "wxme/editor-snip.ss")
+           (rename "wxme/cycle.ss" wx:set-extended-editor-snip%! set-extended-editor-snip%!)
+           (rename "wxme/cycle.ss" wx:set-extended-text%! set-extended-text%!)
+           (rename "wxme/cycle.ss" wx:set-extended-pasteboard%! set-extended-pasteboard%!)
 	   "seqcontract.ss"
 	   "lock.ss"
 	   "check.ss"
@@ -324,7 +333,7 @@
 		   (when (and can-wrap? auto-set-wrap?)
 		     (let-values ([(current-width) (as-exit (lambda () (get-max-width)))]
 				  [(new-width new-height) (max-view-size)])
-		       (when (and (not (= current-width new-width))
+		       (when (and (not (equal? current-width new-width))
 				  (< 0 new-width))
 			 (as-exit (lambda () (set-max-width new-width)))))))
 		 (as-exit (lambda () (inner (void) on-display-size)))))])
@@ -481,9 +490,9 @@
 				       min-height
 				       max-height))))
 
-  (wx:set-editor-snip-maker (lambda args (apply make-object editor-snip% args)))
-  (wx:set-text-editor-maker (lambda () (make-object text%)))
-  (wx:set-pasteboard-editor-maker (lambda () (make-object pasteboard%)))
+  (wx:set-extended-editor-snip%! editor-snip%)
+  (wx:set-extended-text%! text%)
+  (wx:set-extended-pasteboard%! pasteboard%)
 
   ;; ----------------------- Keymap ----------------------------------------
 

@@ -386,7 +386,8 @@
                                                         #`[core 
                                                            #,(annotate-method
                                                               (syntax-property
-                                                               #`(lambda #,(syntax-property
+                                                               (quasisyntax/loc stx
+                                                                 (lambda #,(syntax-property
                                                                             #`(given-kws given-args
                                                                                          new-plain-id ... 
                                                                                          opt-arg ...
@@ -402,7 +403,7 @@
                                                                                        (opt-arg ...) (opt-arg? ...)
                                                                                        (new-plain-id ... . new-rest)
                                                                                        ;; the original body, finally:
-                                                                                       body1 body ...)))
+                                                                                       body1 body ...))))
                                                                'certify-mode
                                                                'transparent))]
                                                         'certify-mode

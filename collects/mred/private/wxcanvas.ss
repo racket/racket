@@ -2,6 +2,8 @@
   (require mzlib/class
 	   mzlib/class100
 	   (prefix wx: "kernel.ss")
+	   (prefix wx: "wxme/text.ss")
+	   (prefix wx: "wxme/editor-canvas.ss")
 	   "lock.ss"
 	   "helper.ss"
 	   "wx.ss"
@@ -216,6 +218,11 @@
 	    (when mred
 	      (as-exit (lambda () (send init-buffer add-canvas mred)))))))))
 
-  (define wx-editor-canvas% (make-canvas-glue%
-			     (make-editor-canvas% (make-control% wx:editor-canvas%
-								 0 0 #t #t)))))
+  (define wx-editor-canvas% 
+    (class (make-canvas-glue%
+            (make-editor-canvas% (make-control% wx:editor-canvas%
+                                                0 0 #t #t)))
+      (inherit editor-canvas-on-scroll)
+      (define/override (on-scroll e)
+        (editor-canvas-on-scroll))
+      (super-new))))

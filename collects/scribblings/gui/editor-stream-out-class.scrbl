@@ -62,8 +62,9 @@ This method is called by @scheme[write-editor-global-header].
 
 Writes @scheme[v], or @scheme[n] bytes of @scheme[v]. 
 
-When @scheme[n] is supplied, use @method[editor-stream-in%
- get-unterminated-bytes] to read the bytes later.
+When @scheme[n] is supplied with a byte-string @scheme[v], use
+ @method[editor-stream-in% get-unterminated-bytes] to read the bytes
+ later.
 
 If @scheme[n] is not supplied and @scheme[v] is a byte string, then
  for historical reasons, the actual number of bytes written includes a
@@ -85,9 +86,14 @@ Puts a fixed-sized integer into the stream. This method is needed
  fixed-size number.
 
 Numbers written to a stream with @method[editor-stream-out% put-fixed]
- must be read with @method[editor-stream-in% get-fixed].
+ must be read with @method[editor-stream-in% get-fixed].}
 
-}
+
+@defmethod[(put-unterminated [v bytes?]) (is-a?/c editor-stream-out%)]{
+
+The same as calling @method[editor-stream-out% put] with
+@scheme[(bytes-length v)] and @scheme[v].}
+
 
 @defmethod[(tell)
            exact-nonnegative-integer?]{

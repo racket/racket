@@ -3,6 +3,7 @@
 	   mzlib/class100
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/keymap.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"

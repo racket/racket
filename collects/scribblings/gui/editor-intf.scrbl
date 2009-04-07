@@ -59,7 +59,7 @@ The system adds undoers to an editor (in response to other method
 }
 
 @defmethod[(adjust-cursor [event (is-a?/c mouse-event%)])
-           (or/c (is-a?/c cursor%) false/c)]{
+           (or/c (is-a?/c cursor%) #f)]{
 
 @methspec{
 
@@ -332,9 +332,9 @@ Returns @scheme[#t].
 
 }}
 
-@defmethod*[([(change-style [delta (or/c (is-a?/c style-delta%) false/c)])
+@defmethod*[([(change-style [delta (or/c (is-a?/c style-delta%) #f)])
               void?]
-             [(change-style [style (or/c (is-a?/c style<%>) false/c)])
+             [(change-style [style (or/c (is-a?/c style<%>) #f)])
               void?])]{
 
 Changes the style for @techlink{items} in the editor, either by
@@ -456,6 +456,12 @@ Returns the name of a style to be used for newly inserted text,
 
 }
 
+
+@defmethod[(do-copy) void?]{
+
+See @xmethod[text% do-copy] or @xmethod[pasteboard% do-copy].}
+
+
 @defmethod[(do-edit-operation [op (one-of/c 'undo 'redo 'clear 'cut 'copy 'paste 
                                             'kill 'select-all 'insert-text-box 
                                             'insert-pasteboard-box 'insert-image)]
@@ -491,6 +497,17 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
  @|MismatchExn|.
 
 }
+
+
+@defmethod[(do-paste) void?]{
+
+See @xmethod[text% do-paste] or @xmethod[pasteboard% do-paste].}
+
+
+@defmethod[(do-paste-x-selection) void?]{
+
+See @xmethod[text% do-paste-x-selection] or @xmethod[pasteboard% do-paste-x-selection].}
+
 
 @defmethod[(editor-location-to-dc-location [x real?]
                                            [y real?])
@@ -530,7 +547,7 @@ more information.
 
 
 @defmethod[(find-first-snip)
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 Returns the first snip in the editor, or @scheme[#f] if the editor is
  empty. To get all of the snips in the editor, use the @xmethod[snip%
@@ -553,7 +570,7 @@ For @scheme[text%] objects: @|FCA| @|OVD|
 }
 
 @defmethod[(get-active-canvas)
-           (or/c (is-a?/c editor-canvas%) false/c)]{
+           (or/c (is-a?/c editor-canvas%) #f)]{
 
 If the editor is displayed in a canvas, this method returns the canvas
  that most recently had the keyboard focus (while the editor was
@@ -562,7 +579,7 @@ If the editor is displayed in a canvas, this method returns the canvas
 }
 
 @defmethod[(get-admin)
-           (or/c (is-a?/c editor-admin%) false/c)]{
+           (or/c (is-a?/c editor-admin%) #f)]{
 
 Returns the @scheme[editor-admin%] object currently managing this
  editor or @scheme[#f] if the editor is not displayed.
@@ -570,7 +587,7 @@ Returns the @scheme[editor-admin%] object currently managing this
 }
 
 @defmethod[(get-canvas)
-           (or/c (is-a?/c editor-canvas%) false/c)]{
+           (or/c (is-a?/c editor-canvas%) #f)]{
 
 If @method[editor<%> get-active-canvas] returns a canvas, that canvas
  is also returned by this method. Otherwise, if @method[editor<%>
@@ -591,7 +608,7 @@ Returns a list of canvases displaying the editor. An editor may be
 }
 
 @defmethod[(get-dc)
-           (or/c (is-a?/c dc<%>) false/c)]{
+           (or/c (is-a?/c dc<%>) #f)]{
 
 Typically used (indirectly) by snip objects belonging to the
  editor. Returns a destination drawing context which is suitable for
@@ -610,8 +627,8 @@ Returns the font descent for the editor. This method is primarily used
 
 }
 
-@defmethod[(get-extent [w (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                       [h (or/c (box/c (and/c real? (not/c negative?))) false/c)])
+@defmethod[(get-extent [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                       [h (or/c (box/c (and/c real? (not/c negative?))) #f)])
            void?]{
 
 Gets the current extent of the editor's graphical representation.
@@ -622,8 +639,8 @@ Gets the current extent of the editor's graphical representation.
 
 }
 
-@defmethod[(get-file [directory (or/c path? false/c)])
-           (or/c path-string? false/c)]{
+@defmethod[(get-file [directory (or/c path? #f)])
+           (or/c path-string? #f)]{
 @methspec{
 
 Called when the user must be queried for a filename to load an
@@ -644,8 +661,8 @@ If the editor is displayed in a single canvas, then the canvas's
 
 }}
 
-@defmethod[(get-filename [temp (box/c (or/c any/c false/c)) #f])
-           (or/c path-string? false/c)]{
+@defmethod[(get-filename [temp (box/c (or/c any/c #f)) #f])
+           (or/c path-string? #f)]{
 
 Returns the path name of the last file saved from or loaded into this
  editor, @scheme[#f] if the editor has no filename.
@@ -665,7 +682,7 @@ a discussion of flattened vs. non-flattened text.
 
 
 @defmethod[(get-focus-snip)
-           (or/c (is-a?/c snip%) false/c)]{
+           (or/c (is-a?/c snip%) #f)]{
 
 @index['("keyboard focus" "snips")]{Returns} the snip within the
  editor that gets the keyboard focus when the editor has the focus, or
@@ -698,7 +715,7 @@ See also @method[editor<%> set-inactive-caret-threshold] and
 
 
 @defmethod[(get-keymap)
-           (or/c (is-a?/c keymap%) false/c)]{
+           (or/c (is-a?/c keymap%) #f)]{
 
 Returns the main keymap currently used by the editor.
 
@@ -788,7 +805,7 @@ If the result is @scheme[#t], then the editor accepts only plain-text
 }
 
 @defmethod[(get-snip-data [thesnip (is-a?/c snip%)])
-           (or/c (is-a?/c editor-data%) false/c)]{
+           (or/c (is-a?/c editor-data%) #f)]{
 
 @methspec{
 
@@ -805,8 +822,8 @@ Returns @scheme[#f].
 
 
 @defmethod[(get-snip-location [thesnip (is-a?/c snip%)]
-                              [x (or/c (box/c real?) false/c) #f]
-                              [y (or/c (box/c real?) false/c) #f]
+                              [x (or/c (box/c real?) #f) #f]
+                              [y (or/c (box/c real?) #f) #f]
                               [bottom-right? any/c #f])
            boolean?]{
 
@@ -850,8 +867,8 @@ Returns the style list currently in use by the editor.
 }
 
 
-@defmethod[(get-view-size [w (or/c (box/c (and/c real? (not/c negative?))) false/c)]
-                          [h (or/c (box/c (and/c real? (not/c negative?))) false/c)])
+@defmethod[(get-view-size [w (or/c (box/c (and/c real? (not/c negative?))) #f)]
+                          [h (or/c (box/c (and/c real? (not/c negative?))) #f)])
            void?]{
 
 Returns the visible area into which the editor is currently being
@@ -868,8 +885,8 @@ If the @techlink{display} is an editor canvas, see also
 
 }
 
-@defmethod[(global-to-local [x (or/c (box/c real?) false/c)]
-                            [y (or/c (box/c real?) false/c)])
+@defmethod[(global-to-local [x (or/c (box/c real?) #f)]
+                            [y (or/c (box/c real?) #f)])
            void?]{
 
 Converts the given coordinates from top-level @techlink{display} coordinates
@@ -949,7 +966,7 @@ The @scheme[show-errors?] argument is no longer used.
 }
 
 
-@defmethod[(insert-image [filename (or/c path-string? false/c) #f]
+@defmethod[(insert-image [filename (or/c path-string? #f) #f]
                          [type (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict) 'unknown]
                          [relative-path? any/c #f]
                          [inline? any/c #t])
@@ -974,7 +991,7 @@ calling
 @defmethod[(insert-port [port input-port]
                         [format (one-of/c 'guess 'same 'copy 'standard
                                           'text 'text-force-cr) 'guess]
-                        [show-errors? any/c #t])
+                        [replace-styles? any/c #t])
            (one-of/c 'standard 'text 'text-force-cr)]{
 
 Use @method[editor<%> insert-file], instead.
@@ -991,8 +1008,8 @@ The @scheme[port] must support position setting with @scheme[file-position].
 For information on @scheme[format], see
 @method[editor<%> load-file]. 
 
-The @scheme[show-errors?] argument is no longer used.
-
+if @scheme[replace-styles?] is true, then styles in the current style
+ list are replaced by style specifications in @scheme[port]'s stream.
 }
 
 @defmethod[(invalidate-bitmap-cache [x real? 0.0]
@@ -1030,11 +1047,18 @@ Returns @scheme[#t] if the editor is currently locked, @scheme[#f]
 @defmethod[(is-modified?)
            boolean?]{
 
-Returns @scheme[#t] is the editor has been modified since the last
+Returns @scheme[#t] if the editor has been modified since the last
  save or load (or the last call to @method[editor<%> set-modified]
  with @scheme[#f]), @scheme[#f] otherwise.
 
 }
+
+
+@defmethod[(is-printing?)
+           boolean?]{
+
+Returns @scheme[#t] if the editor is currently being printed through
+the @method[editor<%> print] method, @scheme[#f] otherwise.}
 
 
 @defmethod[(kill [time (and/c exact? integer?) 0])
@@ -1056,7 +1080,7 @@ See also @method[editor<%> cut].
 }
 
 
-@defmethod[(load-file [filename (or/c path-string? false/c) #f]
+@defmethod[(load-file [filename (or/c path-string? #f) #f]
                       [format (one-of/c 'guess 'same 'copy 'standard
                                         'text 'text-force-cr) 'guess]
                       [show-errors? any/c #t])
@@ -1117,8 +1141,8 @@ See also @method[editor<%> on-load-file], @method[editor<%>
 
 }
 
-@defmethod[(local-to-global [x (box/c real?)]
-                            [y (box/c real?)])
+@defmethod[(local-to-global [x (or/c (box/c real?) #f)]
+                            [y (or/c (box/c real?) #f)])
            void?]{
 
 Converts the given coordinates from editor @techlink{location}
@@ -1499,7 +1523,7 @@ Creates a @scheme[editor-snip%] with either a sub-editor from
 }}
 
 
-@defmethod[(on-new-image-snip [filename (or/c path? false/c)]
+@defmethod[(on-new-image-snip [filename (or/c path? #f)]
                               [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
                               [relative-path? any/c]
                               [inline? any/c])
@@ -1689,7 +1713,7 @@ To extend or re-implement copying, override the @xmethod[text%
 @defmethod[(print [interactive? any/c #t]
                   [fit-on-page? any/c #t]
                   [output-mode (one-of/c 'standard 'postscript) 'standard]
-                  [parent (or/c (or/c @scheme[frame%] (is-a?/c dialog%)) false/c) #f]
+                  [parent (or/c (or/c @scheme[frame%] (is-a?/c dialog%)) #f) #f]
                   [force-ps-page-bbox? any/c #t]
                   [as-eps? any/c #f])
            void?]{
@@ -1750,18 +1774,26 @@ The printing margins are determined by @method[ps-setup%
 }
 
 
-@defmethod[(print-to-dc [dc (is-a?/c dc<%>)])
+@defmethod[(print-to-dc [dc (is-a?/c dc<%>)]
+                        [page-number exact-integer? -1])
            void?]{
 
 Prints the editor into the given drawing context. See also
  @method[editor<%> print].
 
+If @scheme[page-number] is a non-negative integer, then just the
+indicated page is printed, where pages are numbered from
+@scheme[1]. (So, supplying @scheme[0] as @scheme[page-number] produces
+no output.) When @scheme[page-number] is negative, the
+@method[dc<%> start-page] and @scheme[dc<%> end-page] methods of @scheme[dc] are
+called for each page.
+
 }
 
 
-@defmethod[(put-file [directory (or/c path? false/c)]
-                     [default-name (or/c path? false/c)])
-           (or/c path-string? false/c)]{
+@defmethod[(put-file [directory (or/c path? #f)]
+                     [default-name (or/c path? #f)])
+           (or/c path-string? #f)]{
 @methspec{
 
 Called when the user must be queried for a filename to save an
@@ -1860,7 +1892,7 @@ See also @method[editor<%> add-undo].
                     [width (and/c real? (not/c negative?))]
                     [height (and/c real? (not/c negative?))]
                     [draw-caret (one-of/c 'no-caret 'show-inactive-caret 'show-caret)]
-                    [background (or/c (is-a?/c color%) false/c)])
+                    [background (or/c (is-a?/c color%) #f)])
            void?]{
 
 Repaints a region of the editor, generally called by an editor
@@ -1940,7 +1972,7 @@ If @scheme[redraw-now?] is @scheme[#f], the editor will require
 }
 
 
-@defmethod[(save-file [filename (or/c path-string? false/c) #f]
+@defmethod[(save-file [filename (or/c path-string? #f) #f]
                       [format (one-of/c 'guess 'same 'copy 'standard
                                         'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
@@ -2074,7 +2106,7 @@ Normally, this method is called only by @xmethod[editor-canvas%
 
 }
 
-@defmethod[(set-admin [admin (or/c (is-a?/c editor-admin%) false/c)])
+@defmethod[(set-admin [admin (or/c (is-a?/c editor-admin%) #f)])
            void?]{
 
 Sets the editor's administrator. This method is only called by an
@@ -2087,7 +2119,7 @@ get-admin]}]
 }
 
 
-@defmethod[(set-caret-owner [snip (or/c (is-a?/c snip%) false/c)]
+@defmethod[(set-caret-owner [snip (or/c (is-a?/c snip%) #f)]
                             [domain (one-of/c 'immediate 'display 'global) 'immediate])
            void?]{
 
@@ -2127,8 +2159,8 @@ See also @method[editor<%> get-focus-snip].
 }
 
 
-@defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) false/c)]
-                       [override? any/c @scheme[#t]])
+@defmethod[(set-cursor [cursor (or/c (is-a?/c cursor%) #f)]
+                       [override? any/c #t])
            void?]{
 
 Sets the custom cursor for the editor to @scheme[cursor]. If
@@ -2148,7 +2180,7 @@ An embedding editor's custom cursor can override the cursor of an
 }
 
 
-@defmethod[(set-filename [filename (or/c path-string? false/c)]
+@defmethod[(set-filename [filename (or/c path-string? #f)]
                          [temporary? any/c #f])
            void?]{
 
@@ -2172,7 +2204,7 @@ Sets the threshold for painting an inactive selection.  See
 }
 
 
-@defmethod[(set-keymap [keymap (or/c (is-a?/c keymap%) false/c) #f])
+@defmethod[(set-keymap [keymap (or/c (is-a?/c keymap%) #f) #f])
            void?]{
 
 Sets the current keymap for the editor. A @scheme[#f] argument removes
@@ -2336,7 +2368,7 @@ recalculated on demand.
 See also @method[editor<%> invalidate-bitmap-cache].}
 
 
-@defmethod[(style-has-changed [style (or/c (is-a?/c style<%>) false/c)])
+@defmethod[(style-has-changed [style (or/c (is-a?/c style<%>) #f)])
            void?]{
 
 Notifies the editor that a style in its style list has changed. This

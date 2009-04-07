@@ -3,6 +3,7 @@
 	   mzlib/class100
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/keymap.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "helper.ss"
@@ -285,11 +286,12 @@
 								 ":"
 								 "")])
 						  (case (system-type)
-						    [(unix windows) (format "~a~a~a~a~a?:~a" 
+						    [(unix windows) (format "~a~a~a~a?:~a" 
 									    exact
 									    (if (memq 'shift prefix) "s:" "")
-									    (if (memq 'meta prefix) "m:" "~m:")
-									    (if (memq 'alt prefix) "m:" "~m:")
+                                                                            (if (or (memq 'meta prefix)
+                                                                                    (memq 'alt prefix))
+                                                                                "m:" "~m:")
 									    (if (memq 'ctl prefix) "c:" "")
 									    base)]
 						    [(macosx) (format "~a~a~a~a~a?:~a" 

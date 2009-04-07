@@ -39,6 +39,12 @@ Returns the current stream position.
 @defmethod[(write [data (listof char?)])
            void?]{
 
-Writes data (encoded as Latin-1 characters) to the stream.
+Writes data (encoded as Latin-1 characters) to the stream. This method
+is implemented by default via @method[editor-stream-out-base%
+write-bytes].}
 
-}}
+@defmethod[(write-bytes [bstr bytes?]) void?]{
+
+Writes data to the stream.}}
+
+

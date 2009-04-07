@@ -499,7 +499,8 @@ Deletes @scheme[snip] when provided, or deletes the currently selected
 }
 
 
-@defmethod[(do-copy [time (and/c exact? integer?)]
+@defmethod[#:mode override 
+           (do-copy [time (and/c exact? integer?)]
                     [extend? any/c])
            void?]{
 
@@ -523,7 +524,8 @@ Copies the current selection, extending the current clipboard contexts
 }}
 
 
-@defmethod[(do-paste [time (and/c exact? integer?)])
+@defmethod[#:mode override
+           (do-paste [time (and/c exact? integer?)])
            void?]{
 @methspec{
 
@@ -544,7 +546,8 @@ Pastes.
 }}
 
 
-@defmethod[(do-paste-x-selection [time (and/c exact? integer?)])
+@defmethod[#:mode override
+           (do-paste-x-selection [time (and/c exact? integer?)])
            void?]{
 @methspec{
 
@@ -806,7 +809,7 @@ Deselects all selected snips in the editor.
 }
 
 
-@defmethod[#:mode override 
+@defmethod[#:mode override
            (on-default-event [event (is-a?/c mouse-event%)])
            void?]{
 

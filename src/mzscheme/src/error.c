@@ -1899,17 +1899,25 @@ void scheme_unbound_global(Scheme_Bucket *b)
 
   if (((Scheme_Bucket_With_Home *)b)->home->module) {
     const char *errmsg;
+    char *phase, phase_buf[20];
     
     if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
-      errmsg = "reference to an identifier before its definition: %S in module: %D";
+      errmsg = "reference to an identifier before its definition: %S in module: %D%s";
     else
-      errmsg = "reference to an identifier before its definition: %S";
+      errmsg = "reference to an identifier before its definition: %S%s";
+
+    if (SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase)) {
+      sprintf(phase_buf, " phase: %ld", SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase));
+      phase = phase_buf;
+    } else
+      phase = "";
 
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
 		     name,
 		     errmsg,
 		     name,
-		     ((Scheme_Bucket_With_Home *)b)->home->module->modname);
+		     ((Scheme_Bucket_With_Home *)b)->home->module->modname,
+                     phase);
   } else {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT_VARIABLE,
 		     name,

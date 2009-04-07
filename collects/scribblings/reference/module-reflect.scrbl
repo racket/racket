@@ -322,27 +322,29 @@ See also @scheme[module->language-info].}
                           [fail-thunk (-> any) (lambda () ....)])
          any]{
 
-Dynamically instantiates the module specified by @scheme[mod] for
-@tech{phase} 0 in the current namespace's registry, if it is not yet
-@tech{instantiate}d. The current @tech{module name resolver} may load
-a module declaration to resolve @scheme[mod] (see
-@scheme[current-module-name-resolver]); the path is resolved relative
-to @scheme[current-load-relative-directory] and/or
+Dynamically @tech{instantiates} the module specified by @scheme[mod]
+in the current namespace's registry at the namespace's @tech{base
+phase}, if it is not yet @tech{instantiate}d. The current @tech{module
+name resolver} may load a module declaration to resolve @scheme[mod]
+(see @scheme[current-module-name-resolver]); the path is resolved
+relative to @scheme[current-load-relative-directory] and/or
 @scheme[current-directory].
 
 If @scheme[provided] is @scheme[#f], then the result is @|void-const|,
-and the module is not @tech{visit}ed (see @secref["mod-parse"]).
+and the module is not @tech{visit}ed (see @secref["mod-parse"]) or
+even made @tech{available} (for on-demand @tech{visits}) in phases
+above the @tech{base phase}.
 
 When @scheme[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
 @tech{visit}ed. If the module exports @scheme[provide] as syntax, then
 a use of the binding is expanded and evaluated in a fresh namespace to
 which the module is attached, which means that the module is
-@tech{visit}ed. If the module has no such exported variable or syntax,
-then @scheme[fail-thunk] is called; the default @scheme[fail-thunk]
-raises @scheme[exn:fail:contract]. If the variable named by
-@scheme[provided] is exported protected (see @secref["modprotect"]),
-then the @exnraise[exn:fail:contract].
+@tech{visit}ed in the fresh namespace. If the module has no such
+exported variable or syntax, then @scheme[fail-thunk] is called; the
+default @scheme[fail-thunk] raises @scheme[exn:fail:contract]. If the
+variable named by @scheme[provided] is exported protected (see
+@secref["modprotect"]), then the @exnraise[exn:fail:contract].
 
 If @scheme[provided] is @|void-const|, then the module is
 @tech{visit}ed but not @tech{instantiate}d (see @secref["mod-parse"]),
@@ -354,7 +356,8 @@ and the result is @|void-const|.}
                                      [fail-thunk (-> any) (lambda () ....)])
          any]{
 
-Like @scheme[dynamic-require], but in @tech{phase} 1.}
+Like @scheme[dynamic-require], but in a @tech{phase} that is @math{1}
+more than the namespace's @tech{base phase}.}
 
 
 @defproc[(module->language-info [mod module-path?])

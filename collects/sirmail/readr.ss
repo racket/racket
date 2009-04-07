@@ -2395,8 +2395,10 @@
 
       (send header-list focus)
       
-      (for-each add-message mailbox)
-      
+      (send (send header-list get-editor) begin-edit-sequence)
+      (for-each add-message mailbox)      
+      (send (send header-list get-editor) end-edit-sequence)
+
       (send main-frame create-status-line)
       
       (send main-frame show #t)

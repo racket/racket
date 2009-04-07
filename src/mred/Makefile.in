@@ -44,7 +44,7 @@ WXINC_wx_xt = -I$(PLTSRCDIR)/wxxt/src/AIAI-include -I$(PLTSRCDIR)/wxxt/src
 WXINC_wx_mac = -I$(PLTSRCDIR)/wxmac/include/base -I$(PLTSRCDIR)/wxmac/include/mac -I$(PLTSRCDIR)/wxcommon -I$(PLTSRCDIR)/a-list/c-headers/
 
 WXINC = $(WXINC_@WXVARIANT@)
-NOGCINC = $(WXINC) -I$(PLTSRCDIR)/mred/wxme/ -I$(PLTBUILDDIR)/mzscheme/ -I$(PLTSRCDIR)/mzscheme/include/
+NOGCINC = $(WXINC) -I$(PLTBUILDDIR)/mzscheme/ -I$(PLTSRCDIR)/mzscheme/include/
 INC = -I$(PLTSRCDIR)/mzscheme/$(GCDIRECTORY) $(NOGCINC)
 CXXFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@ @PREFLAGS@
 CFLAGS = $(INC) $(XINCLUDE) $(OPTIONS) -D$(WXVARIANT) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@ @PREFLAGS@
@@ -67,7 +67,7 @@ WXLIBS_wx_xt = ../wxxt/src/libwx_xt.@LIBSFX@ ../wxxt/contrib/xpm/lib/libXpm.@LIB
 MREDX_wx_xt = mredx.@LTO@
 WXLIBS_wx_mac = ../wxmac/src/libwxmac.@LIBSFX@
 MREDX_wx_mac = mredmac.@LTO@ simpledrop.@LTO@
-WXLIBSNORM = mred.@LTO@ $(MREDX_@WXVARIANT@) wxGC.@LTO@ wxJPEG.@LTO@ wxs/libwxscheme.@LIBSFX@ wxme/libwxme.@LIBSFX@ $(WXLIBS_@WXVARIANT@) @JPEG_A@ @PNG_A@ @ZLIB_A@
+WXLIBSNORM = mred.@LTO@ $(MREDX_@WXVARIANT@) wxGC.@LTO@ wxJPEG.@LTO@ wxs/libwxscheme.@LIBSFX@ $(WXLIBS_@WXVARIANT@) @JPEG_A@ @PNG_A@ @ZLIB_A@
 WXLIBSDYN = libmred.@LIBSFX@
 GUILIBS_wx_xt = $(LDLIBS)
 GUILIBS_wx_mac = @LIBS@
@@ -81,7 +81,6 @@ MREDOBJECTS = mrmain.@LTO@
 
 MZSCHEMEDEPS = ../mzscheme/libmzscheme.@LIBSFX@ ../mzscheme/libmzgc.@LIBSFX@
 WXSCHEME = wxs/libwxscheme.@LIBSFX@
-WXME = wxme/libwxme.@LIBSFX@
 
 INSTALLDEST=/home/scheme/plt
 
@@ -113,7 +112,6 @@ cgc:
 	$(MAKE) ext-libs
 	$(MAKE) @WXVARIANT@
 	cd wxs; $(MAKE)
-	cd wxme; $(MAKE)
 	$(MAKE) $(LINKRESULT)
 
 both:
@@ -171,7 +169,7 @@ wx_mac:
 wx_mac-min:
 	cd ../wxmac/src; $(MAKE) min
 
-mred.@LTO@ :  $(srcdir)/mred.cxx $(srcdir)/wxme/wx_media.h $(srcdir)/wxme/wx_medad.h \
+mred.@LTO@ :  $(srcdir)/mred.cxx \
           $(srcdir)/wxs/wxscheme.h $(srcdir)/mred.h \
           $(srcdir)/../mzscheme/include/scheme.h \
           $(srcdir)/wxs/wxsmred.h $(WXINCDEP) $(srcdir)/../wxcommon/wxGC.h \
@@ -238,7 +236,6 @@ clean:
 	rm -f *.@LTO@ *.d core mred mred3m
 	rm -f gc2/*.@LTO@ gc2/xsrc/* gc2/macxsrc/* gc2/*.d gc2/*.dd
 	rm -rf gc2/xform-collects
-	cd wxme; $(MAKE) clean
 	cd wxs; $(MAKE) clean
 	if [ -f ../wxcommon/jpeg/Makefile ] ; then cd ../wxcommon/jpeg; $(MAKE) clean ; fi
 	if [ -f ../wxcommon/libpng/Makefile ] ; then cd ../wxcommon/libpng; $(MAKE) clean ; fi

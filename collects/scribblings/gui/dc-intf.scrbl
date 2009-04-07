@@ -13,6 +13,21 @@ when the drawing coordinates are in the range @scheme[-16383] to
 @scheme[16383]. This restriction applies to the coordinates both
 before and after offsets and scaling factors are applied.
 
+
+@defmethod[(cache-font-metrics-key)
+           exact-integer?]{
+
+Returns an integer that, if not @scheme[0], corresponds to a
+particular kind of device and scaling factor, such that text-extent
+information (from @method[dc<%> get-text-extent], @method[dc<%>
+get-char-height], etc.) is the same. The key is valid across all
+@scheme[dc<%>] instances, even among different classes.
+
+A @scheme[0] result indicates that the current configuration of
+@this-obj[] does not fit into a common category, and so no key is
+available for caching text-extent information.}
+
+
 @defmethod[(clear)
            void?]{
 
