@@ -32,6 +32,8 @@
       (when (equal? #\; (peek-char port))
         (read-char port)
         (loop)))
+    (when (equal? #\space (peek-char port))
+      (read-char port))
     `(code:comment
       (unsyntax
        (t
@@ -53,18 +55,21 @@
       (cond
        [(null? l) (if (null? s)
                       null
-                      (list (apply string-append (reverse s))))]
-       [(and (equal? " " (car l))
-             (pair? s)
-             (equal? " " (car s)))
-        (append (loop null s)
-                (cons ''nbsp
-                      (loop (cdr l) null)))]
+                      (preserve-space (apply string-append (reverse s))))]
        [(string? (car l))
         (loop (cdr l) (cons (car l) s))]
        [else
         (append (loop null s)
                 (cons
                  (car l)
-                 (loop (cdr l) null)))]))))
+                 (loop (cdr l) null)))])))
+
+  (define (preserve-space s)
+    (let ([m (regexp-match-positions #rx"  +" s)])
+      (if m
+          (append (preserve-space (substring s 0 (caar m)))
+                  (list `(hspace ,(- (cdar m) (caar m))))
+                  (preserve-space (substring s (cdar m))))
+          (list s)))))
+
 
