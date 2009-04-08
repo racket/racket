@@ -124,6 +124,8 @@ static void eval_exptime(Scheme_Object *names, int count,
 
 static Scheme_Module_Exports *make_module_exports();
 
+XFORM_NONGCING static void should_run_for_compile(Scheme_Env *menv);
+
 #define cons scheme_make_pair
 
 
@@ -891,7 +893,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                 if (!phase) {
                   /* Evaluate id in a fresh namespace */
                   Scheme_Object *a[3], *ns;
-                  start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null);
+                  start_module(m, env, 0, modidx, -1, 1, base_phase, scheme_null);
                   a[0] = scheme_intern_symbol("empty");
                   ns = scheme_make_namespace(1, a);
                   a[0] = (Scheme_Object *)env;
@@ -984,7 +986,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   if (SCHEME_VOIDP(name))
     start_module(m, env, 0, modidx, 1, 0, base_phase, scheme_null);
   else
-    start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null);
+    start_module(m, env, 0, modidx, -1, 1, base_phase, scheme_null);
 
   if (SCHEME_SYMBOLP(name)) {
     Scheme_Bucket *b;
@@ -1688,6 +1690,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
               
               check_phase(menv2, NULL, phase);
               scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
+              if (menv2->phase > orig_phase) {
+                should_run_for_compile(menv2);
+              }
             }
 	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv->module);
 	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv->module->me);
@@ -3981,7 +3986,7 @@ static void do_start_module(Scheme_Module *m, Scheme_Env *menv, Scheme_Env *env,
   }
 }
 
-static void should_run_for_compile(Scheme_Env *menv)
+XFORM_NONGCING static void should_run_for_compile(Scheme_Env *menv)
 {
   if (!menv->available_next[0]) {
     menv->available_next[0] = MODCHAIN_AVAIL(menv->modchain, 0);
@@ -4687,7 +4692,9 @@ module_execute(Scheme_Object *data)
 
   /* Replacing an already-running or already-syntaxing module? */
   if (old_menv) {
-    start_module(m, env, 1, NULL, 0, (old_menv->running > 0) ? 1 : 0, env->phase, scheme_null);
+    start_module(m, env, 1, NULL, 
+                 (old_menv->et_running ? 1 : 0), (old_menv->running > 0) ? 1 : 0, 
+                 env->phase, scheme_null);
   }
 
   return scheme_void;

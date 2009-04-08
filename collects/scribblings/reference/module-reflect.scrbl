@@ -331,9 +331,10 @@ relative to @scheme[current-load-relative-directory] and/or
 @scheme[current-directory].
 
 If @scheme[provided] is @scheme[#f], then the result is @|void-const|,
-and the module is not @tech{visit}ed (see @secref["mod-parse"]) or
-even made @tech{available} (for on-demand @tech{visits}) in phases
-above the @tech{base phase}.
+and the module is not @tech{visit}ed (see @secref["mod-parse"]) in
+phases above the @tech{base phase}, although it is made
+@tech{available} for on-demand @tech{visits}.
+
 
 When @scheme[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not

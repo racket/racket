@@ -254,8 +254,8 @@ is used as the module name in @scheme[dest-namespace]. In addition to
 indirectly) is also recorded in the current namespace's @tech{module
 registry}, and instances at the same @tech{phase} or lower are also
 attached to @scheme[dest-namespace] (while @tech{visits} at the
-module's phase and instances at higher phases are not attached, nor
-even made @tech{available} for on-demand @tech{visits}). The inspector
+module's phase and instances at higher phases are not attached, although it is
+made @tech{available} for on-demand @tech{visits}). The inspector
 of the module invocation in @scheme[dest-namespace] is the same as
 inspector of the invocation in @scheme[src-namespace].
 
