@@ -294,3 +294,18 @@ Other libraries can be used with Typed Scheme via
                [check-version (-> (U Symbol (Listof Any)))])
 (check-version)
 ]
+
+@section{Typed Scheme Syntax Without Type Checking}
+
+@defmodulelang[typed-scheme/no-check]
+
+On occasions where the Typed Scheme syntax is useful, but actual
+typechecking is not desired, the @schememodname[typed-scheme/no-check]
+language is useful.  It provides the same bindings and syntax as Typed
+Scheme, but does no type checking.
+
+Examples:
+
+@schememod[typed-scheme/no-check
+(: x Number)
+(define x "not-a-number")]
