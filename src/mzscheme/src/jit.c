@@ -139,9 +139,9 @@ static void *on_demand_jit_code;
 static void *on_demand_jit_arity_code;
 static void *get_stack_pointer_code;
 static void *stack_cache_pop_code;
-static void *struct_pred_code;
+static void *struct_pred_code, *struct_pred_multi_code;
 static void *struct_pred_branch_code;
-static void *struct_get_code;
+static void *struct_get_code, *struct_get_multi_code;
 static void *bad_app_vals_target;
 static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
 static void *finish_tail_call_code, *finish_tail_call_fixup_code;
@@ -3894,7 +3894,8 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
 static int generate_inlined_struct_op(int kind, mz_jit_state *jitter, 
 				      Scheme_Object *rator, Scheme_Object *rand,
-				      jit_insn **for_branch, int branch_short)
+				      jit_insn **for_branch, int branch_short, 
+                                      int multi_ok)
 /* de-sync'd ok; for branch, sync'd before */
 {
   mz_runstack_skipped(jitter, 1);
@@ -3933,9 +3934,17 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
     for_branch[2] = jit_patchable_movi_p(JIT_V1, jit_forward());
     (void)jit_calli(struct_pred_branch_code);
   } else if (kind == 1) {
-    (void)jit_calli(struct_pred_code);
+    if (multi_ok) {
+      (void)jit_calli(struct_pred_multi_code);
+    } else {
+      (void)jit_calli(struct_pred_code);
+    }
   } else {
-    (void)jit_calli(struct_get_code);
+    if (multi_ok) {
+      (void)jit_calli(struct_get_multi_code);
+    } else {
+      (void)jit_calli(struct_get_code);
+    }
   }
 
   return 1;
@@ -3955,11 +3964,11 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     int k;
     k = inlineable_struct_prim(rator, jitter, 1);
     if (k == 1) {
-      generate_inlined_struct_op(1, jitter, rator, app->rand, for_branch, branch_short);
+      generate_inlined_struct_op(1, jitter, rator, app->rand, for_branch, branch_short, multi_ok);
       scheme_direct_call_count++;
       return 1;
     } else if ((k == 2) && !for_branch) {
-      generate_inlined_struct_op(2, jitter, rator, app->rand, for_branch, branch_short);
+      generate_inlined_struct_op(2, jitter, rator, app->rand, for_branch, branch_short, multi_ok);
       scheme_direct_call_count++;
       return 1;
     }
@@ -7393,22 +7402,27 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** struct_{pred,get}[_branch]_code *** */
   /* R1 is (potential) struct proc, R0 is (potential) struct */
   /* In branch mode, V1 is target address for false branch */
-  {
+  for (ii = 0; ii < 2; ii++) {
     for (i = 0; i < 3; i++) {
       void *code, *code_end;
       int kind, for_branch;
       jit_insn *ref, *ref2, *refslow, *bref1, *bref2, *bref3, *bref4, *bref5, *bref6, *bref8;
+
+      if ((ii == 1) && (i == 1)) continue; /* no multi variant of pred branch */
 
       code = jit_get_ip().ptr;
 
       if (!i) {
 	kind = 1;
 	for_branch = 0;
-	struct_pred_code = jit_get_ip().ptr;
+        if (ii == 1) 
+          struct_pred_multi_code = jit_get_ip().ptr;
+        else
+          struct_pred_code = jit_get_ip().ptr;
       } else if (i == 1) {
 	kind = 1;
 	for_branch = 1;
-	struct_pred_branch_code = jit_get_ip().ptr;
+        struct_pred_branch_code = jit_get_ip().ptr;
 	/* Save target address for false branch: */
 #ifdef MZ_USE_JIT_PPC
 	jit_movr_p(JIT_V(3), JIT_V1);
@@ -7423,7 +7437,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       } else {
 	kind = 2;
 	for_branch = 0;
-	struct_get_code = jit_get_ip().ptr;
+        if (ii == 1) 
+          struct_get_multi_code = jit_get_ip().ptr;
+        else
+          struct_get_code = jit_get_ip().ptr;
       }
 
       mz_prolog(JIT_V1);
@@ -7445,7 +7462,11 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_RUNSTACK);
       jit_pusharg_p(JIT_V1);
       jit_pusharg_p(JIT_R1);
-      (void)mz_finish(_scheme_apply_from_native);
+      if (ii == 1) {
+        (void)mz_finish(_scheme_apply_multi_from_native);
+      } else {
+        (void)mz_finish(_scheme_apply_from_native);
+      }
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
       jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
