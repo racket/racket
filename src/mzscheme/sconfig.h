@@ -155,6 +155,7 @@
 # if defined(i386)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-linux"
 #  define REGISTER_POOR_MACHINE
+#  define ASM_DBLPREC_CONTROL_87
 # endif
 # if defined(powerpc)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-linux"
@@ -178,6 +179,7 @@
 # if defined(__x86_64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-linux"
 #  define REGISTER_POOR_MACHINE
+#  define ASM_DBLPREC_CONTROL_87
 # endif
 # ifndef SCHEME_PLATFORM_LIBRARY_SUBPATH
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "unknown-linux"
@@ -672,6 +674,7 @@
 
 # define USE_CARBON_FP_PREDS
 # define TRIG_ZERO_NEEDS_SIGN_CHECK
+# define ASM_DBLPREC_CONTROL_87
 
 # define USE_DYNAMIC_FDSET_SIZE
 
@@ -1171,6 +1174,10 @@
  /* DEFEAT_FP_COMP_OPTIMIZATION avoids a compiler optimization that
     converts (a == a) to TRUE, even if `a' is floating-point. Used
     only when USE_[SCO_]IEEE_FP_PREDS is not defined. */
+
+ /* ASM_DBLPREC_CONTROL_87 uses inline assembly to set Intel '387
+    floating-point operations to double-precision instead of
+    extended-precision arithmetic. */
 
  /* IGNORE_BY_BORLAND_CONTROL_87 turns off floating-point error for
     Intel '387 with Borlad-style _control87. DONT_IGNORE_PIPE_SIGNAL
