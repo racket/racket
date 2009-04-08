@@ -1039,7 +1039,7 @@
         'unknown))
 
   (def/public (set-bitmap [(make-or-false bitmap%) map]
-                          [(make-or-false bitmap%) msk])
+                          [(make-or-false bitmap%) [msk #f]])
     (do-set-bitmap map msk #t))
 
   (define/private (do-set-bitmap map msk refresh?)
