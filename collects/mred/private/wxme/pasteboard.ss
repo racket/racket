@@ -1637,23 +1637,23 @@
 
   ;; ----------------------------------------
   
-  (def/override (set-min-width [real? w])
-    (set! min-width (if (w . <= . 0) 'none w))
+  (def/override (set-min-width [(make-alts real? (symbol-in none)) w])
+    (set! min-width (if (and (real? w) (w . <= . 0)) 'none w))
     (set! need-resize? #t)
     (update-all))
   
-  (def/override (set-max-width [real? w])
-    (set! max-width (if (w . <= . 0) 'none w))
+  (def/override (set-max-width [(make-alts real? (symbol-in none)) w])
+    (set! max-width (if (and (real? w) (w . <= . 0)) 'none w))
     (set! need-resize? #t)
     (update-all))
   
-  (def/override (set-min-height [real? h])
-    (set! min-height (if (h . <= . 0) 'none h))
+  (def/override (set-min-height [(make-alts real? (symbol-in none)) h])
+    (set! min-height (if (and (real? h) (h . <= . 0)) 'none h))
     (set! need-resize? #t)
     (update-all))
   
-  (def/override (set-max-height [real? h])
-    (set! max-height (if (h . <= . 0) 'none h))
+  (def/override (set-max-height [(make-alts real? (symbol-in none)) h])
+    (set! max-height (if (and (real? h) (h . <= . 0)) 'none h))
     (set! need-resize? #t)
     (update-all))
   

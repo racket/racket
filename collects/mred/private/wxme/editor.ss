@@ -1109,10 +1109,10 @@
                (let loop ([s (send this find-first-snip)])
                  (if s
                      (if (send this is-selected? s)
+                         (loop (snip->next s))
                          (begin
                            (send this add-selected s)
-                           (cons s (loop (snip->next s))))
-                         (loop (snip->next s)))
+                           (cons s (loop (snip->next s)))))
                      null))])
           (send this copy #t 0)
           (for-each (lambda (s)
@@ -1134,7 +1134,7 @@
 
         (for-each (lambda (s bfd)
                     (unless (this . is-a? . text%)
-                      (send m insert s s)) ;; before itself -> at end
+                      (send m insert s #f))
                     (when bfd
                       (send m set-snip-data s bfd)))
                   copy-snips
