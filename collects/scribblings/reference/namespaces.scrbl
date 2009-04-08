@@ -292,10 +292,12 @@ is useful only for identification via @scheme[eq?].}
 
 Returns a namespace that corresponds to the body of an instantiated
 module in the current namespace's @tech{module registry} and in the
-current namespace's @tech{base phase}. The returned namespace has the
-same @tech{module registry} as the current namespace. Modifying a
-binding in the namespace changes the binding seen in modules that
-require the namespace's module.
+current namespace's @tech{base phase}, making the module at the
+@tech{available} for on-demand @tech{visits} at the namespace's
+@tech{base phase}. The returned namespace has the same @tech{module
+registry} as the current namespace. Modifying a binding in the
+namespace changes the binding seen in modules that require the
+namespace's module.
 
 Module paths in a top-level @scheme[require] expression are resolved
 with respect to the namespace's module. New @scheme[provide]
