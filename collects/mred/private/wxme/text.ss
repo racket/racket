@@ -3461,7 +3461,7 @@
 
                                           (let* ([n (sub1 n)]
                                                  [c (string-ref text i)]
-                                                 [c (if case-sens? (char-foldcase c) c)]
+                                                 [c (if case-sens? c (char-foldcase c))]
                                                  [s (let loop ([s s])
                                                       (if (and (not (= beyond s))
                                                                (not (char=? (string-ref str (+ s direction)) c)))
