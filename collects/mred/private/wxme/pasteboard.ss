@@ -337,7 +337,7 @@
                                                     [f? #f])
                                             (set-box! f? (find-dot loc x y dx dy))
                                           (set! sizedxm dx)
-                                          (set! sizedxm dy)
+                                          (set! sizedym dy)
                                           (when f?
                                             (set! resizing snip))
                                           (init-dragging event)))))
@@ -1102,11 +1102,11 @@
   ;; ----------------------------------------
   
   (define/private (find-dot loc x y dxm dym)
-    (define (check-y)
+    (define (check-y can-mid?)
       (cond
        [(inbox? (loc-y loc) y)
         (set-box! dym -1) #t]
-       [(inbox? (loc-vm loc) y)
+       [(and can-mid? (inbox? (loc-vm loc) y))
         (set-box! dym 0) #t]
        [(inbox? (loc-b loc) y)
         (set-box! dym 1) #t]
@@ -1114,13 +1114,13 @@
     (cond
      [(inbox? (loc-x loc) x)
       (set-box! dxm -1)
-      (check-y)]
+      (check-y #t)]
      [(inbox? (loc-hm loc) x)
       (set-box! dxm 0)
-      (check-y)]
+      (check-y #f)]
      [(inbox? (loc-r loc) x)
       (set-box! dxm 1)
-      (check-y)]
+      (check-y #t)]
      [else #f]))
 
   (def/public (find-snip [real? x] [real? y] [(make-or-false snip%) [after #f]])
