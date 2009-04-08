@@ -310,7 +310,7 @@ inner-expr] ...)] section.
 
 The actual @scheme[loop] binding and call has additional loop
 arguments to support iterations in parallel with the @scheme[:do-in]
-form, and the other pieces are similarly accompanied by pieces form
+form, and the other pieces are similarly accompanied by pieces from
 parallel iterations.}
 
 
