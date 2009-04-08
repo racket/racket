@@ -674,7 +674,6 @@
 
 # define USE_CARBON_FP_PREDS
 # define TRIG_ZERO_NEEDS_SIGN_CHECK
-# define ASM_DBLPREC_CONTROL_87
 
 # define USE_DYNAMIC_FDSET_SIZE
 
@@ -698,6 +697,7 @@
 # define MZ_USE_JIT_PPC
 #else
 # define MZ_USE_JIT_I386
+# define ASM_DBLPREC_CONTROL_87
 #endif
 # define MZ_JIT_USE_MPROTECT
 
