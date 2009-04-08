@@ -19,7 +19,8 @@
   
   (define cue-text-mixin
     (mixin ((class->interface text%)) ()
-      (inherit insert change-style erase clear-undos)
+      (inherit insert change-style erase clear-undos
+               copy-self-to get-line-spacing)
       (init [cue-text ""]
             [color "gray"])
       (init-field
@@ -47,6 +48,13 @@
         (when (member 'on-char behavior)
           (clear-cue-text))
         (super on-local-char akeyevent))
+
+      (define/override (copy-self)
+        (let ([m (new cue-text% 
+                      [behavior behavior]
+                      [line-spacing (get-line-spacing)])])
+          (copy-self-to m)
+          m))
       
       ;; Insert the cue text into the text% on instantiation
       (super-new)

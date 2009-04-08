@@ -80,7 +80,7 @@
       (define/public (realign-to-alloted)
         (when (and alloted-width alloted-height)
           (when (not (and (positive? alloted-width) (positive? alloted-height)))
-            (error 'here "I am"))
+            (error "allotted width or height is not positive"))
           (dynamic-let ([ignore-resizing? true])
             (let* ([first-snip (find-first-snip)]
                    [aligned-rects
