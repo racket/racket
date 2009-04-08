@@ -419,11 +419,12 @@
 [symbol->string (Sym . -> . -String)]
 [vector-length (-poly (a) ((-vec a) . -> . -Integer))]
 
-[call-with-input-file (-poly (a) (cl-> [(-String (-Port . -> . a))  a]
-                                       [(-String (-Port . -> . a) Sym)  a]))]
+[call-with-input-file (-poly (a) (-String (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
+[call-with-output-file (-poly (a) (-String (-Output-Port . -> . a)
+                                   #:exists (one-of/c error 'append 'update 'replace 'truncate 'truncate/replace) #f
+                                   #:mode (Un (-val 'binary) (-val 'text)) #f 
+                                   . ->key .  a))]
 
-[call-with-output-file (-poly (a) (cl-> [(-String (-Port . -> . a))  a]
-                                        [(-String (-Port . -> . a) Sym)  a]))]
 [current-output-port (-Param -Output-Port -Output-Port)]
 [current-error-port (-Param -Output-Port -Output-Port)]
 [current-input-port (-Param -Input-Port -Input-Port)]

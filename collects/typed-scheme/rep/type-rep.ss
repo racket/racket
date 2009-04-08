@@ -364,8 +364,7 @@
                         (cons (sb (car drest))
                               (if (eq? (cdr drest) name) (+ count outer) (cdr drest)))
                         #f)
-                    (for/list ([kw kws])
-                      (cons (car kw) (sb (cdr kw))))
+                    (map sb kws)
                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
        [#:ValuesDots tys dty dbound
@@ -410,8 +409,7 @@
                         (cons (sb (car drest))
                               (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
                         #f)
-                    (for/list ([kw kws])
-                      (cons (car kw) (sb (cdr kw))))
+                    (map sb kws)
                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
        [#:ValuesDots tys dty dbound
