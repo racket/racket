@@ -7308,7 +7308,7 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
                                      _implicit_nominal_mod, _implicit_nominal_name,
                                      _implicit_mod_phase, 
                                      NULL, NULL, NULL, NULL);
-        if (SAME_TYPE(SCHEME_TYPE(mod), scheme_module_index_type)) {
+        if (mod && SAME_TYPE(SCHEME_TYPE(mod), scheme_module_index_type)) {
           if (SCHEME_FALSEP(((Scheme_Modidx *)mod)->path)) {
             /* keep looking locally */
             name = name2;
