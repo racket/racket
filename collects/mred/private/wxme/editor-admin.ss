@@ -39,7 +39,7 @@
                          [(symbol-in start none end) [bias 'none]])
     (void))
 
-  (def/public (grab-caret [(symbol-in immediate display global) dist])
+  (def/public (grab-caret [(symbol-in immediate display global) [dist 'global]])
     (void))
 
   (def/public (resized [any? redraw-now]) (void))

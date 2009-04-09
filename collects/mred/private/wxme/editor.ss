@@ -387,7 +387,7 @@
 
   ;; ----------------------------------------
 
-  (def/public (set-keymap [keymap% k])
+  (def/public (set-keymap [keymap% [k #f]])
     (set! s-keymap k))
   (def/public (get-keymap) s-keymap)
   (def/public (get-style-list) s-style-list)
@@ -481,7 +481,7 @@
 
   (define/public (really-can-edit?) #f)
 
-  (def/public (insert-box [symbol? type])
+  (def/public (insert-box [symbol? [type 'text]])
     (let ([snip (on-new-box type)])
       (when snip
         (let ([sname (default-style-name)])

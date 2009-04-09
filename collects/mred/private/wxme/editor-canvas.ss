@@ -273,7 +273,7 @@
       (send blink-timer kill)
       (set! blink-timer #f))
     (send admin set-canvas #f)
-    #;(super ~))
+    #|(super ~)|#)
   
   (define/override (on-size w h)
     (unless noloop?
@@ -352,14 +352,13 @@
 
   (define/public (is-focus-on?) focuson?)
 
-  (define (force-display-focus on?)
+  (define/public (force-display-focus on?)
     (let ([old-on? focusforcedon?])
       (set! focusforcedon? on?)
       (send admin adjust-std-flag)
       (when (not (equal? (or focuson? focusforcedon?)
                          (or focuson? old-on?)))
         (refresh))))
-
 
   (define/override (on-event event)
     ;; Turn off auto-dragger, if there is one
@@ -493,7 +492,7 @@
                need-refresh?)
       (on-paint)))
 
-  (define (get-lazy-refresh) lazy-refresh?)
+  (define/public (get-lazy-refresh) lazy-refresh?)
 
   (define/public (set-custom-cursor cursor)
     (if (not cursor)
@@ -879,7 +878,7 @@
 
   (define/public (get-editor) media)
 
-  (define/public (set-editor m update?)
+  (define/public (set-editor m [update? #t])
     (unless (eq? media m)
       (when media
         (when (eq? admin (send media get-admin))
@@ -932,8 +931,8 @@
     (set! scroll-to-last? to-last?)
     (reset-visual #f)
     (repaint))
-  
-  (define (scroll-with-bottom-base bottom?)
+
+  (define/public (scroll-with-bottom-base bottom?)
     (set! scroll-bottom-based? bottom?)
     (reset-visual #f)
     (repaint)))

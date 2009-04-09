@@ -1073,9 +1073,9 @@
   (def/public (equal-to? [image-snip% other] [any? recur])
     (send other other-equal-to? this recur))
 
-  (def/public (other-equal-to? [image-snip% one] [image-snip% other] [any? recur])
-    (let ([bm (send one get-bitmap)]
-          [bm2 (send other get-bitmap)])
+  (def/public (other-equal-to? [image-snip% other] [any? recur])
+    (let* ([bm (send this get-bitmap)]
+           [bm2 (send other get-bitmap)])
       (and
        bm (send bm ok?)
        bm2 (send bm ok?)
@@ -1089,7 +1089,7 @@
                 [s2 (make-bytes (* w h 4))])
             (send bm get-argb-pixels 0 0 w h s1 #f)
             (send bm2 get-argb-pixels 0 0 w h s2 #f)
-            (let ([mask (send one get-bitmap-mask)])
+            (let ([mask (send this get-bitmap-mask)])
               (when (and mask
                          (send mask ok?)
                          (= w (send mask get-width))

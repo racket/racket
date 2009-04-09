@@ -193,7 +193,8 @@
   (super-new)
   (set-delta change-command param)
 
-  (def/public (set-delta [symbol? change-command] [any? [param 0]])
+  (def/public (set-delta [symbol? [change-command 'change-nothing]]
+                         [any? [param 0]])
     (case change-command
       [(change-nothing)
        (set! family 'base)

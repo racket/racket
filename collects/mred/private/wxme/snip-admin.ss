@@ -19,7 +19,7 @@
     #f)
 
   (def/public (get-view [maybe-box? x] [maybe-box? y] [maybe-box? w] [maybe-box? h] 
-                        [(make-or-false snip%) snip])
+                        [(make-or-false snip%) [snip #f]])
     #f)
 
   (def/public (scroll-to [snip% s]

@@ -1734,7 +1734,7 @@
           (loop (snip->next snip))))
       (install-copy-buffer time sl)))
   
-  (def/override (copy [bool? extend?] [exact-integer? time])
+  (def/override (copy [bool? [extend? #f]] [exact-integer? [time 0]])
     (begin-copy-buffer)
     (when (not extend?)
       (free-old-copies))
@@ -1795,10 +1795,10 @@
           (do-paste time))
       (end-edit-sequence)))
   
-  (def/override (paste [exact-integer? time])
+  (def/override (paste [exact-integer? [time 0]])
     (generic-paste #f time))
 
-  (def/override (paste-x-selection [exact-integer? time])
+  (def/override (paste-x-selection [exact-integer? [time 0]])
     (generic-paste #t time))
 
   (define/override (insert-paste-snip snip data)
@@ -1812,7 +1812,7 @@
       (send snip insert str)
       (insert-paste-snip snip #f)))
   
-  (def/override (kill [exact-integer? time])
+  (def/override (kill [exact-integer? [time 0]])
     (cut time))
 
   (define/override (own-x-selection on? update? force?)
@@ -1912,7 +1912,8 @@
          (write-snips-to-file f s-style-list #f snips #f #f this)
          (do-write-headers-footers f #f)))
 
-  (def/override (read-from-file [editor-stream-in% f] [bool? overwritestyle?])
+  (def/override (read-from-file [editor-stream-in% f]
+                                [bool? [overwritestyle? #t]])
     (if (or s-user-locked? 
             (not (zero? write-locked)))
         #f
