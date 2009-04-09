@@ -129,7 +129,8 @@
         
         (let ploop ([phase1-complete? #f]
                     [text text]
-                    [tend tend])
+                    [tend tend]
+                    [end end])
           (let-values ([(end phase1-complete?)
                         (if phase1-complete?
                             (values end #t)
@@ -147,5 +148,6 @@
                   (if (and (= tend end) (not (= lend tend)))
                       (ploop phase1-complete?
                              (send win get-text lstart (+ lstart lend))
-                             lend)
+                             lend
+                             end)
                       (set-box! endp (+ end lstart)))))))))))
