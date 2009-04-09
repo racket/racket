@@ -427,7 +427,7 @@
                                   -1
                                   1))
                            0)])
-               (scroll x y #t))))]
+               (do-scroll x y #t))))]
         [else
          (when (and media (not (send media get-printing)))
            (using-admin
@@ -673,7 +673,7 @@
                               (send hscroll set-value sx))
                             (when vscroll
                               (send vscroll set-value sy))
-                            (scroll sx sy refresh?)
+                            (do-scroll sx sy refresh?)
                             #t)
                           #f)))))))))
 
@@ -840,26 +840,23 @@
 
                     retval)))))))
 
-  (define/override scroll
-    (case-lambda 
-     [(x y refresh?)
-      (let ([savenoloop? noloop?])
-        (set! noloop? #t)
-        
-        (when (and (x . > . -1)
-                   (not fake-x-scroll?))
-          (when (positive? scroll-width)
-            (set-scroll-pos 'horizontal (->long (min x scroll-width)))))
-        
-        (when (and (y . > . -1)
-                   (not fake-y-scroll?))
-          (when (positive? scroll-height)
-            (set-scroll-pos 'vertical (->long (min y scroll-height)))))
-        
-        (set! noloop? savenoloop?)
-        
-        (when refresh? (repaint)))]
-     [(scroll x y) (void)]))
+  (define/private (do-scroll x y refresh?)
+    (let ([savenoloop? noloop?])
+      (set! noloop? #t)
+      
+      (when (and (x . > . -1)
+                 (not fake-x-scroll?))
+        (when (positive? scroll-width)
+          (set-scroll-pos 'horizontal (->long (min x scroll-width)))))
+      
+      (when (and (y . > . -1)
+                 (not fake-y-scroll?))
+        (when (positive? scroll-height)
+          (set-scroll-pos 'vertical (->long (min y scroll-height)))))
+      
+      (set! noloop? savenoloop?)
+      
+      (when refresh? (repaint))))
 
   (define/override (set-scrollbars x y x2 y2 x3 y3 x4 y4 ?) (void))
 
