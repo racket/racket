@@ -423,7 +423,7 @@
                 
                 #t))]))))
 
-  (def/public (equal [style-delta% delta-in])
+  (def/public (equal? [style-delta% delta-in])
     (define-syntax-rule (same? fld)
       (and (eq? (-on fld) ((-don fld) delta-in))
            (eq? (-off fld) ((-doff fld) delta-in))))
@@ -943,7 +943,7 @@
                  (and (not (send s get-s-name))
                       (not (send s get-s-join-shift-style))
                       (eq? (send s get-s-base-style) base-style)
-                      (send delta equal (send s get-s-nonjoin-delta))
+                      (send delta equal? (send s get-s-nonjoin-delta))
                       s))
                
                ;; Create style

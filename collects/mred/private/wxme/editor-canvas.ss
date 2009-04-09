@@ -184,6 +184,9 @@
   (define xmargin 5)
   (define ymargin 5)
 
+  (define/public (set-wheel-step v) (set! wheel-amt v))
+  (define/public (get-wheel-step) wheel-amt)
+
   (set! noloop? #t)
   (init parent x y width height
         name style 
