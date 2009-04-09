@@ -114,14 +114,14 @@
 ;; check-below : (/\ (Result Type -> Result)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
-  (match (list tr1 expected)      
-    [(list (tc-result: t1 te1 ee1) t2)
+  (match* (tr1 expected)
+    [((tc-result: t1 te1 ee1) t2)
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      (ret expected)]
-    [(list t1 t2)
+    [(t1 t2)
      (unless (subtype t1 t2)
-       (tc-error/expr"Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]))
 
 (define (tc-expr/check form expected)
