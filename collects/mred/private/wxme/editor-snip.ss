@@ -184,7 +184,7 @@
     (and editor
          (send editor can-do-edit-operation? op recur?)))
 
-  (def/override (match [snip% s])
+  (def/override (match? [snip% s])
     #f)
 
   (def/override (size-cache-invalid)
@@ -699,7 +699,7 @@
                  (+ x (send snip do-get-left-margin))
                  (+ y (send snip do-get-top-margin))))))
   
-  (def/override (delay-refresh?)
+  (def/override (refresh-delayed?)
     (let ([sadmin (send snip get-admin)])
       (or (not sadmin)
           (and (sadmin . is-a? . standard-snip-admin%)

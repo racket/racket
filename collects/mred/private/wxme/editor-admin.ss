@@ -33,7 +33,7 @@
   (def/public (get-max-view [maybe-box? x] [maybe-box? y]
                             [maybe-box? w] [maybe-box? h]
                             [any? [full? #f]])
-    (get-view x y w h))
+    (get-view x y w h full?))
 
   (def/public (scroll-to [real? localx] [real? localy] [real? w] [real? h] [any? [refresh? #t]] 
                          [(symbol-in start none end) [bias 'none]])
@@ -50,7 +50,7 @@
 
   (def/public (update-cursor) (void))
 
-  (def/public (delay-refresh?) #f)
+  (def/public (refresh-delayed?) #f)
 
   (def/public (popup-menu [popup-menu% m] [real? x] [real? y]) #f)
 

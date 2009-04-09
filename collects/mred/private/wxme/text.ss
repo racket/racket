@@ -336,7 +336,7 @@
       (send m set-wordbreak-func word-break)
       (send m set-wordbreak-map (get-wordbreak-map))
       (send m set-between-threshold (get-between-threshold))
-      (send m hide-caret (caret-hidden))
+      (send m hide-caret (caret-hidden?))
       (send m set-overwrite-mode (get-overwrite-mode))
 
       (send m set-autowrap-bitmap auto-wrap-bitmap)
@@ -619,7 +619,7 @@
 
   (def/override (locked-for-read?)
     read-locked?)
-  (def/public (locked-for-flow?)
+  (def/override (locked-for-flow?)
     flow-locked?)
   (def/override (locked-for-write?)
     write-locked?)
@@ -710,7 +710,7 @@
   (def/override (refresh-delayed?)
     (or (delay-refresh . > . 0)
         (not s-admin)
-        (send s-admin delay-refresh?)))
+        (send s-admin refresh-delayed?)))
 
   (def/override (in-edit-sequence?)
     (delay-refresh . > . 0))
@@ -3852,7 +3852,7 @@
       (when (or s-own-caret? (not (= endpos startpos)))
         (need-caret-refresh))))
 
-  (def/public (caret-hidden) (not hilite-on?))
+  (def/public (caret-hidden?) (not hilite-on?))
 
   (def/public (get-between-threshold) between-threshold)
 
@@ -4324,7 +4324,7 @@
 
   (define/override (init-new-admin)
     (when (and (zero? delay-refresh)
-               (or (not s-admin) (not (send s-admin delay-refresh?))))
+               (or (not s-admin) (not (send s-admin refresh-delayed?))))
       (redraw)))
 
   (define/private (end-streaks exceptions)
@@ -4655,7 +4655,7 @@
 
     (unless (or flow-locked? (not s-admin))
       (let-values ([(continue? notify?)
-                    (if (send s-admin delay-refresh?)
+                    (if (send s-admin refresh-delayed?)
                         ;; does the admin know the refresh box already?
                         (if (and (not (= delayedscroll -1))
                                  (not delayedscrollbox?)
@@ -5200,7 +5200,7 @@
   (define/private (continue-refresh)
     (if (and (zero? delay-refresh)
              (not (super is-printing?))
-             (or (not s-admin) (not (send s-admin delay-refresh?))))
+             (or (not s-admin) (not (send s-admin refresh-delayed?))))
         (redraw)
         (begin
           (when (and (zero? delay-refresh)

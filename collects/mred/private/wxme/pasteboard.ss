@@ -1681,7 +1681,7 @@
   (def/override (get-descent) 0.0)
   (def/override (get-space) 0.0)
 
-  (define/private (get-center)
+  (def/public (get-center)
     (let-boxes ([x 0.0]
                 [y 0.0]
                 [w 0.0]
@@ -1971,7 +1971,7 @@
   (def/override (refresh-delayed?)
     (or (positive? sequence)
         (not s-admin)
-        (send s-admin delay-refresh?)))
+        (send s-admin refresh-delayed?)))
 
   (def/override (in-edit-sequence?)
     (positive? sequence))

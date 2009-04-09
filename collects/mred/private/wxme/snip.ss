@@ -180,7 +180,7 @@
   (def/public (can-do-edit-operation? [symbol? op] [any? [recur? #t]])
     #f)
 
-  (def/public (match [snip% other])
+  (def/public (match? [snip% other])
     (and (eq? s-snipclass (snip->snipclass other))
          (= s-count (get-field s-count other))))
   
@@ -1365,6 +1365,8 @@
   (properties [[bool? required?] #f])
   (define/public (get-s-required?) required?)
 
+  (def/public (read [editor-stream-in% f]) (void))
+
   (super-new))
 
 (defclass location-editor-data-class% editor-data-class%
@@ -1376,7 +1378,7 @@
   (set-classname "wxloc")
   (set-required? #t)
 
-  (def/public (read [editor-stream-in% f])
+  (def/override (read [editor-stream-in% f])
     (let ([x (send f get-inexact)]
           [y (send f get-inexact)])
       (new location-editor-data% [x x][y y]))))

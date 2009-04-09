@@ -1121,12 +1121,3 @@
                         1)))
 
   (def/override (modified [bool? modified?]) (void)))
-
-
-;; For editor-admin%:
-#;(
-    (define/override (get-max-view fx fy fw fh full?)
-      (get-view fx fy fh fw full?))
-
-    (define/override (delay-refresh?) #f)
-)

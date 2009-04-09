@@ -182,6 +182,7 @@
   (def/public (size-cache-invalid) (void))
   (def/public (locked-for-read?) #f)
   (def/public (locked-for-write?) #f)
+  (def/public (locked-for-flow?) #f)
 
   (def/public (resized) (void))
   (def/public (recounted) (void))
