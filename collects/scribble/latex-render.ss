@@ -316,7 +316,7 @@
                                                            (assoc 'valignment (table-style t)))])
                                                (and p (cdr p))))])
                   (unless (null? flows)
-                    (when index? (printf "\\item "))
+                    (when index? (printf "\n\\item "))
                     (unless (eq? 'cont (car flows))
                       (let ([cnt (let loop ([flows (cdr flows)][n 1])
                                    (cond [(null? flows) n]
