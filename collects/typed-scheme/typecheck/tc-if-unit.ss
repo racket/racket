@@ -31,7 +31,7 @@
     ;; type-op : (Type Type -> Type) Type -> _ Type -> Type
     (define ((type-op f t) _ old)
       (let ([new-t (f old t)])
-        ;(printf "new-t ~a~n" new-t)
+        ;(printf "f old t new: ~a\n" (list f old t new-t))
         ;; if this operation produces an uninhabitable type, then this expression can't be executed
         (when (type-equal? new-t (Un))
           ;(printf "setting flag!~n")
