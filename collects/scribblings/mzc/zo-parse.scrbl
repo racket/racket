@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           (for-label scheme/base
+                     scheme/contract
                      compiler/zo-parse))
 
 @(define-syntax-rule (defstruct+ id fields . rest)
@@ -164,11 +165,11 @@ from before evaluating @scheme[rhs].}
 @defstruct+[(def-syntaxes form) ([ids (listof toplevel?)]
                                  [rhs (or/c expr? seq? indirect? any/c)]
                                  [prefix prefix?]
-                                 [max-let-depth nonnegative-exact-integer?])]
+                                 [max-let-depth exact-nonnegative-integer?])]
 @defstruct+[(def-for-syntax form) ([ids (listof toplevel?)]
                                    [rhs (or/c expr? seq? indirect? any/c)]
                                    [prefix prefix?]
-                                   [max-let-depth nonnegative-exact-integer?])]
+                                   [max-let-depth exact-nonnegative-integer?])]
 )]{
 
 Represents a @scheme[define-syntaxes] or
@@ -308,7 +309,7 @@ from before evaluating @scheme[rhs]. Note that the new slot is created
 before evaluating @scheme[rhs].}
 
 
-@defstruct+[(let-void expr) ([count nonnegative-exact-integer?]
+@defstruct+[(let-void expr) ([count exact-nonnegative-integer?]
                              [boxes? boolean?]
                              [body (or/c expr? seq? indirect? any/c)])]{
 
@@ -317,8 +318,8 @@ Pushes @scheme[count] uninitialized slots onto the stack and then runs
 filled with boxes that contain @|undefined-const|.}
 
 
-@defstruct+[(install-value expr) ([count nonnegative-exact-integer?]
-                                  [pos nonnegative-exact-integer?]
+@defstruct+[(install-value expr) ([count exact-nonnegative-integer?]
+                                  [pos exact-nonnegative-integer?]
                                   [boxes? boolean?]
                                   [rhs (or/c expr? seq? indirect? any/c)]
                                   [body (or/c expr? seq? indirect? any/c)])]{
@@ -342,7 +343,7 @@ each shell's closure using the created shells, and then evaluates
 @scheme[body].}
 
 
-@defstruct+[(boxenv expr) ([pos nonnegative-exact-integer?]
+@defstruct+[(boxenv expr) ([pos exact-nonnegative-integer?]
                            [body (or/c expr? seq? indirect? any/c)])]{
 
 Skips @scheme[pos] elements of the stack, setting the slot afterward
@@ -354,7 +355,7 @@ the value so that it can be mutated later.}
 
 
 @defstruct+[(localref expr) ([unbox? boolean?]
-                             [pos nonnegative-exact-integer?]
+                             [pos exact-nonnegative-integer?]
                              [clear? boolean?]
                              [other-clears? boolean?])]{
 
@@ -368,8 +369,8 @@ that can prevent reclamation of the value as garbage). If
 the same stack slot may clear after reading.}
 
 
-@defstruct+[(toplevel expr) ([depth nonnegative-exact-integer?]
-                             [pos nonnegative-exact-integer?]
+@defstruct+[(toplevel expr) ([depth exact-nonnegative-integer?]
+                             [pos exact-nonnegative-integer?]
                              [const? boolean?]
                              [ready? boolean?])]{
 
@@ -386,9 +387,9 @@ value might change in the future). If @scheme[const?] and
 determine whether the variable is defined.}
 
 
-@defstruct+[(topsyntax expr) ([depth nonnegative-exact-integer?]
-                              [pos nonnegative-exact-integer?]
-                              [midpt nonnegative-exact-integer?])]{
+@defstruct+[(topsyntax expr) ([depth exact-nonnegative-integer?]
+                              [pos exact-nonnegative-integer?]
+                              [midpt exact-nonnegative-integer?])]{
 
 Represents a reference to a quoted syntax object via the
 @scheme[prefix] array. The @scheme[depth] field indicates the number
