@@ -2769,7 +2769,8 @@ static int do_peekc_skip(Scheme_Object *port, Scheme_Object *skip,
 				      NULL);
 
     if (!v) {
-      *unavail = 1;
+      if (unavail)
+        *unavail = 1;
       return 0;
     }
 
