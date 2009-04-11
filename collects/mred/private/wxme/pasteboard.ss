@@ -2081,7 +2081,7 @@
             (when (or (zero? (unbox w))
                       (zero? (unbox h)))
               (get-default-print-size w h))
-            (send (current-ps-setup) get-editor-marginhm vm))
+            (send (current-ps-setup) get-editor-margin hm vm))
         (let ([W (- w (* 2 hm))]
               [H (- h (* 2 vm))])
           (let-boxes ([w 0.0]
