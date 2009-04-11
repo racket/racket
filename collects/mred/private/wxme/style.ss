@@ -663,19 +663,17 @@
                                   (cons (send font get-family)
                                         (send font get-face)))
                                 (let ([fam (style-delta-family nonjoin-delta)])
-                                  (if (eq? fam 'base)
-                                      (cons (send (send base get-s-font) get-family)
-                                            #f)
-                                      (if (style-delta-face nonjoin-delta)
-                                          (cons fam (style-delta-face nonjoin-delta))
-                                          (cons fam #f)))))]
+                                  (cons (if (eq? fam 'base)
+                                            (send (send base get-s-font) get-family)
+                                            fam)
+                                        (style-delta-face nonjoin-delta))))]
                   [style (match-field style 'normal)]
                   [weight (match-field weight 'normal)]
                   [smoothing (match-field smoothing 'default)]
                   [alignment (match-field* alignment 'bottom target)]
                   [underlined (match-bool underlined (-send-get underlined (send base get-s-font)))]
                   [size-in-pixels (match-bool size-in-pixels (-send-get size-in-pixels (send base get-s-font)))])
-
+              
               (send target set-s-alignment alignment)
 
               (let ([font (if (cdr fam+face)
