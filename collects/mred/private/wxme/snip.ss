@@ -324,7 +324,7 @@
           (let ([count (if (count . < . 0)
                            10; this is a failure; we make up something
                            count)])
-            (send snip read count f))
+            (send snip s-read count f))
           (send snip set-s-flags flags)
           snip)))))
 
@@ -547,7 +547,7 @@
       (let ([bytes (string->bytes/utf-8 s-buffer 0 s-dtext (+ s-dtext s-count))])
         (send f put (bytes-length bytes) bytes))))
 
-  (def/public (read [exact-integer? len] [editor-stream-in% f])
+  (define/public (s-read len f)
     (unless (len . <= . 0)
       (when ((string-length s-buffer) . < . len)
         (set! s-buffer (make-string (* 2 len))))
@@ -586,7 +586,8 @@
 
 (defclass tab-snip-class% string-snip-class%
   (inherit set-classname
-           set-version)
+           set-version
+           s-read)
   (inherit-field s-required?)
 
   (super-new)
@@ -597,7 +598,7 @@
 
   (def/override (read [editor-stream-in% f])
     (let ([ts (new tab-snip%)])
-      (super read ts f))))
+      (s-read ts f))))
 
 ;; ------------------------------------------------------------
 

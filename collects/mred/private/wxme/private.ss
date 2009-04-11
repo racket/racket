@@ -28,7 +28,8 @@
 
 ;; snip-class%
 (define-local-member-name
-  get-s-required?)
+  get-s-required?
+  s-read)
 
 ;; editor-data%
 (define-local-member-name

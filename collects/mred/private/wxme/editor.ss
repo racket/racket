@@ -1729,7 +1729,7 @@
                              v)))])
                (equal? s MRED-READER+START-STR))))))
 
-(define (read-editor-version mf b parse-format? show-errors?)
+(define (read-editor-version mf b parse-format? [show-errors? #t])
   (and
    (or
     (not parse-format?)
