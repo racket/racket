@@ -2088,8 +2088,8 @@
                       [h 0.0])
               (get-extent w h)
 
-            (let ([hcount (->long (ceiling (/ W w)))]
-                  [vcount (->long (ceiling (/ H h)))])
+            (let ([hcount (->long (ceiling (/ w W)))]
+                  [vcount (->long (ceiling (/ h H)))])
 
               (if (not print?)
                   (page . <= . (* hcount vcount))
@@ -2097,20 +2097,21 @@
                                 (if (negative? page)
                                     (values 1 (* hcount vcount))
                                     (values page page))])
-                    (for ([p (in-range start end)])
+                    (for ([p (in-range start (add1 end))])
                       (let ([vpos (quotient (- p 1) hcount)]
                             [hpos (modulo (- p 1) hcount)])
                         (let ([x (* hpos w)]
                               [y (* vpos h)])
                           (when (negative? page)
-                            (send dc start-page)
+                            (send dc start-page))
                             
-                            (draw dc (+ (- x) hm) (+ (- y) vm)
-                                  x y (+ x w) (+ y h)
-                                  #f
-                                  #f)
-                            (when (negative? page)
-                              (send dc end-page))))))))))))))
+                          (draw dc (+ (- x) hm) (+ (- y) vm)
+                                x y (+ x w) (+ y h)
+                                'no-caret
+                                #f)
+
+                          (when (negative? page)
+                            (send dc end-page)))))))))))))
 
   ;; ----------------------------------------
   )

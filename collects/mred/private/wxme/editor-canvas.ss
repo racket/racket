@@ -907,14 +907,15 @@
               (set! media #f)
               (if oldadmin
                   (begin
-                    (send admin set-nextadmin oldadmin)
-                    (send admin set-prevadmin (send oldadmin get-prevadmin))
-                    (send oldadmin set-prevadmin admin)
-                    (send oldadmin adjust-std-flag)
-                    (let ([a (send admin get-prevadmin)])
-                      (when a
-                        (send a set-nextadmin admin)
-                        (send a adjust-std-flag)))
+                    (unless (in-chain? admin oldadmin)
+                      (send admin set-nextadmin oldadmin)
+                      (send admin set-prevadmin (send oldadmin get-prevadmin))
+                      (send oldadmin set-prevadmin admin)
+                      (send oldadmin adjust-std-flag)
+                      (let ([a (send admin get-prevadmin)])
+                        (when a
+                          (send a set-nextadmin admin)
+                          (send a adjust-std-flag))))
                     ;; get the right cursor:
                     (send admin update-cursor))
                   (begin
@@ -926,6 +927,16 @@
       (reset-visual #t)
       (when update?
         (repaint))))
+
+  (define/private (in-chain? admin oldadmin)
+    (or (let loop ([oldadmin oldadmin])
+          (and oldadmin
+               (or (eq? admin oldadmin)
+                   (loop (send oldadmin get-prevadmin)))))
+        (let loop ([oldadmin oldadmin])
+          (and oldadmin
+               (or (eq? admin oldadmin)
+                   (loop (send oldadmin get-nextadmin)))))))
 
   (define/public (allow-scroll-to-last to-last?)
     (set! scroll-to-last? to-last?)
