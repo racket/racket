@@ -391,17 +391,20 @@
                                                      (syntax-local-introduce (cdr p))))
                                              ((package-exports v)))]
                          [(h ...) (map syntax-local-introduce ((package-hidden v)))])
-             #`(#,define-syntaxes-id (intro ...)
-                 (let ([rev-map (lambda (x)
-                                  (reverse-mapping
-                                   'pack-id
-                                   x
-                                   (list (cons (quote-syntax a)
-                                               (quote-syntax b))
-                                         ...)
-                                   (list (quote-syntax h) ...)))])
-                   (values (make-rename-transformer #'defined rev-map)
-                           ...)))))))]))
+             (syntax-property
+              #`(#,define-syntaxes-id (intro ...)
+                  (let ([rev-map (lambda (x)
+                                   (reverse-mapping
+                                    'pack-id
+                                    x
+                                    (list (cons (quote-syntax a)
+                                                (quote-syntax b))
+                                          ...)
+                                    (list (quote-syntax h) ...)))])
+                    (values (make-rename-transformer #'defined rev-map)
+                            ...)))
+              'disappeared-use
+              (syntax-local-introduce id))))))]))
 
 (define-syntax (open-package stx)
   (do-open stx #'define-syntaxes))
