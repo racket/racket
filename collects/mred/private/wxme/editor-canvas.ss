@@ -1046,7 +1046,7 @@
     (let ([v (do-scroll-to localx localy w h refresh? bias #t #t #f)])
       (and v (car v))))
 
-  (define/private (do-scroll-to localx localy w h refresh? bias prev? next? only-focus?)
+  (define/public (do-scroll-to localx localy w h refresh? bias prev? next? only-focus?)
     (and canvas
          (or (and (not (send canvas is-focus-on?))
                   (or

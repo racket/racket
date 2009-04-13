@@ -107,7 +107,8 @@
 
 ;; editor-canvas-editor-admin%
 (define-local-member-name
-  do-get-canvas)
+  do-get-canvas
+  do-scroll-to)
 
 ;; editor-stream%
 (define-local-member-name
