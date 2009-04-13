@@ -124,7 +124,7 @@
     (set! s-line #f))
 
   (def/public (next) s-next)
-  (def/public (previous) s-next)
+  (def/public (previous) s-prev)
   (def/public (get-admin) s-admin)
 
   (def/public (set-admin [(make-or-false snip-admin%) a])
