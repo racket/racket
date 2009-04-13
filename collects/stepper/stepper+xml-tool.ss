@@ -2,7 +2,9 @@
   (require mzlib/unit
            drscheme/tool
            "stepper-tool.ss"
-           "xml-tool.ss")
+           "xml-tool.ss"
+           "view-controller.ss"
+           "private/shared.ss")
 
   (provide tool@)
 
@@ -19,4 +21,5 @@
       (import drscheme:tool^)
       (export STEPPER-TOOL)
       (link xml-tool@ 
-            (((STEPPER-TOOL : drscheme:tool-exports^)) stepper-tool@)))))
+            view-controller@
+            [((STEPPER-TOOL : drscheme:tool-exports^)) stepper-tool@]))))

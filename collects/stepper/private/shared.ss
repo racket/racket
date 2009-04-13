@@ -1,14 +1,10 @@
-(module shared mzscheme
-  
-  (require "my-macros.ss"
-	   mzlib/contract
-           mzlib/list
-           mzlib/etc
-           mzlib/match
-           srfi/26
-           mzlib/class)
-  
-  (require (for-syntax mzlib/list))
+#lang scheme
+
+(require "my-macros.ss"
+         srfi/26
+         scheme/class)
+
+#;(require (for-syntax mzlib/list))
 
   ; CONTRACTS
   
@@ -36,73 +32,75 @@
    [arglist->ilist (-> arglist? any)]
    [arglist-flatten (-> arglist? (listof identifier?))])
   
-  (provide
-   skipto/auto
-   in-closure-table
-   sublist
-   attach-info
-   transfer-info
-   arglist->ilist
-   arglist-flatten
-   binding-set-union
-   binding-set-pair-union
-   varref-set-union
-   varref-set-pair-union
-   varref-set-remove-bindings
-   binding-set-varref-set-intersect
-   step-result?
-   (struct before-after-result (pre-exps post-exps kind))
-   (struct before-error-result (pre-exps err-msg))
-   (struct error-result (err-msg))
-   (struct finished-stepping ())
-   list-take
-   list-partition
-   (struct closure-record (name mark constructor? lifted-index))
-   *unevaluated* 
-   no-sexp
-   skipped-step
-   struct-flag
-   multiple-highlight
-   flatten-take
-   closure-table-put!
-   closure-table-lookup
-   get-lifted-var
-   get-arg-var
-   begin0-temp
-   zip
-   let-counter
-   syntax-pair-map
-   make-queue ; -> queue
-   queue-push ; queue val -> 
-   queue-pop ; queue -> val
-   queue-length ; queue -> num
-   rebuild-stx ; datum syntax-object -> syntax-object
-   break-kind? ; predicate
-   varref-set? ; predicate
-   binding-set? ; predicate
-   ; get-binding-name
-   ; bogus-binding?
-   ; get-lifted-gensym
-   ; expr-read
-   ; set-expr-read!
-   values-map
-   a...b ; a list of numbers from a to b
-   reset-profiling-table ; profiling info
-   get-set-pair-union-stats ; profiling info
-   re-intern-identifier
-   finished-xml-box-table
-   language-level->name
-   
-   stepper-syntax-property
-   with-stepper-syntax-properties
+(provide
+ skipto/auto
+ in-closure-table
+ sublist
+ attach-info
+ transfer-info
+ arglist->ilist
+ arglist-flatten
+ binding-set-union
+ binding-set-pair-union
+ varref-set-union
+ varref-set-pair-union
+ varref-set-remove-bindings
+ binding-set-varref-set-intersect
+ step-result?
+ (struct-out before-after-result)
+ (struct-out before-error-result)
+ (struct-out error-result)
+ (struct-out finished-stepping)
+ list-take
+ list-partition
+ (struct-out closure-record)
+ *unevaluated* 
+ struct-flag
+ multiple-highlight
+ flatten-take
+ closure-table-put!
+ closure-table-lookup
+ get-lifted-var
+ get-arg-var
+ begin0-temp
+ zip
+ let-counter
+ syntax-pair-map
+ make-queue ; -> queue
+ queue-push ; queue val -> 
+ queue-pop ; queue -> val
+ queue-length ; queue -> num
+ rebuild-stx ; datum syntax -> syntax
+ break-kind? ; predicate
+ varref-set? ; predicate
+ binding-set? ; predicate
+ ; get-binding-name
+ ; bogus-binding?
+ ; get-lifted-gensym
+ ; expr-read
+ ; set-expr-read!
+ values-map
+ a...b ; a list of numbers from a to b
+ reset-profiling-table ; profiling info
+ get-set-pair-union-stats ; profiling info
+ re-intern-identifier
+ finished-xml-box-table
+ language-level->name
+ 
+ stepper-syntax-property
+ with-stepper-syntax-properties
+ 
+ skipto/cdr
+ skipto/cddr
+ skipto/first
+ skipto/second
+ skipto/third
+ skipto/fourth
+ skipto/firstarg
 
-   skipto/cdr
-   skipto/cddr
-   skipto/first
-   skipto/second
-   skipto/third
-   skipto/fourth
-   skipto/firstarg)
+ view-controller^
+ stepper-frame^
+ )
   
   ;; stepper-syntax-property : like syntax property, but adds properties to an association
   ;; list associated with the syntax property 'stepper-properties
@@ -135,10 +133,10 @@
   ; or (make-error-result finished-exps err-msg)
   ; or (make-finished-result finished-exps)
   
-  (define-struct before-after-result (pre-exps post-exps kind) (make-inspector))
-  (define-struct before-error-result (pre-exps err-msg) (make-inspector))
-  (define-struct error-result (err-msg) (make-inspector))
-  (define-struct finished-stepping () (make-inspector))
+  (define-struct before-after-result (pre-exps post-exps kind pre-src post-src) #:transparent)
+  (define-struct before-error-result (pre-exps err-msg pre-src) #:transparent)
+  (define-struct error-result (err-msg) #:transparent)
+  (define-struct finished-stepping () #:transparent)
   
   (define step-result? (or/c before-after-result? before-error-result? error-result? finished-stepping?))
   
@@ -150,7 +148,7 @@
   
   (define (create-bogus-binding name)
     (let* ([gensymed-name (gensym name)]
-           [binding (datum->syntax-object #'here gensymed-name)])
+           [binding (datum->syntax #'here gensymed-name)])
       binding))
   
   ; make-binding-source creates a pool of bindings, indexed by arbitrary keys. These bindings
@@ -162,14 +160,14 @@
   ; make-gensym-source : (string -> (key -> binding))
   
   (define (make-binding-source id-string binding-maker key-displayer)
-    (let ([assoc-table (make-hash-table 'weak)])
+    (let ([assoc-table (make-weak-hash)])
       (lambda (key)
-        (let ([maybe-fetch (hash-table-get assoc-table key (lambda () #f))])
+        (let ([maybe-fetch (hash-ref assoc-table key (lambda () #f))])
           (or maybe-fetch
               (begin
                 (let* ([new-binding (binding-maker 
                                      (string-append id-string (key-displayer key) "-"))])
-                  (hash-table-put! assoc-table key new-binding)
+                  (hash-set! assoc-table key new-binding)
                   new-binding)))))))
   
   
@@ -249,27 +247,21 @@
   (define (next-lifted-symbol str)
     (let ([index lifted-index]) 
       (set! lifted-index (+ lifted-index 1))
-      (datum->syntax-object #'here (string->symbol (string-append str (number->string index))))))
+      (datum->syntax #'here (string->symbol (string-append str (number->string index))))))
  
   (define get-lifted-var
    (let ([assoc-table (box null)])
       (lambda (stx)
-        (let ([maybe-fetch (weak-assoc-search assoc-table stx module-identifier=?)])
+        (let ([maybe-fetch (weak-assoc-search assoc-table stx free-identifier=?)])
           (or maybe-fetch
               (begin
                 (let* ([new-binding (next-lifted-symbol
-                                     (string-append "lifter-" (format "~a" (syntax-object->datum stx)) "-"))])
+                                     (string-append "lifter-" (format "~a" (syntax->datum stx)) "-"))])
                   (weak-assoc-add assoc-table stx new-binding)
                   new-binding)))))))
   
   ; gensyms needed by many modules:
 
-  ; no-sexp is used to indicate no sexpression for display.
-  ; e.g., on an error message, there's no sexp.
-  (define no-sexp (gensym "no-sexp-"))
-  
-  ; skipped-step is used to indicate that the "before" step was skipped.
-  (define skipped-step (gensym "skipped-step-"))
 
   ; multiple-highlight is used to indicate multiple highlighted expressions
   (define multiple-highlight (gensym "multiple-highlight-"))
@@ -306,16 +298,16 @@
     (apply append (list-take n a-list)))
   
   (define-values (closure-table-put! closure-table-lookup in-closure-table)
-    (let ([closure-table (make-hash-table 'weak)])
+    (let ([closure-table (make-weak-hash)])
       (values
        (lambda (key value)
-	 (hash-table-put! closure-table key value)
+	 (hash-set! closure-table key value)
 	 key)                                  ; this return allows a run-time-optimization
        (lambda args ; key or key & failure-thunk
-         (apply hash-table-get closure-table args))
+         (apply hash-ref closure-table args))
        (lambda (key)
          (let/ec k
-           (hash-table-get closure-table key (lambda () (k #f)))
+           (hash-ref closure-table key (lambda () (k #f)))
            #t)))))
   
   ;(begin (closure-table-put! 'foo 'bar)
@@ -395,7 +387,7 @@
     (length (unbox queue)))
 
   (define (rebuild-stx new old)
-    (syntax-recertify (datum->syntax-object old new old old)
+    (syntax-recertify (datum->syntax old new old old)
                       old
                       (current-code-inspector)
                       #f))
@@ -472,9 +464,9 @@
   (define skipto/fourth `(syntax-e cdr cdr cdr car))
   (define skipto/firstarg (append skipto/cdr skipto/second))
   
-  ;; skipto/auto : syntax-object?
+  ;; skipto/auto : syntax?
   ;;               (symbols 'rebuild 'discard)
-  ;;               (syntax-object? . -> . syntax-object?)
+  ;;               (syntax? . -> . syntax?)
   ;; "skips over" part of a tree to find a subtree indicated by the
   ;; stepper-skipto property.  If the traversal argument is 'rebuild, the
   ;; result of transformation is embedded again in the same tree.  if the
@@ -488,7 +480,7 @@
           [else (transformer stx)]))
 
   ;  small test case:
-  #;(display (equal? (syntax-object->datum
+  #;(display (equal? (syntax->datum
                     (skipto/auto (stepper-syntax-property #`(a #,(stepper-syntax-property #`(b c)
                                                                           'stepper-skipto
                                                                           '(syntax-e cdr car)))
@@ -509,12 +501,12 @@
   ; binding-set-union: (listof BINDING-SET) -> BINDING-SET
   ; varref-set-union: (listof VARREF-SET) -> VARREF-SET
 
-  (define profiling-table (make-hash-table 'equal))
+  (define profiling-table (make-hash))
   (define (reset-profiling-table)
-    (set! profiling-table (make-hash-table 'equal)))
+    (set! profiling-table (make-hash)))
 
   (define (get-set-pair-union-stats)
-    (hash-table-map profiling-table (lambda (k v) (list k (unbox v)))))
+    (hash-map profiling-table (lambda (k v) (list k (unbox v)))))
 
   ;; test cases :
   ;; (profiling-table-incr 1 2)
@@ -623,12 +615,10 @@
     #`#,(string->symbol (symbol->string (syntax-e identifier))))
   
   
-  (provide/contract [syntax-object->hilite-datum ((syntax?) ; input
-                                                  (boolean?) ; ignore-highlight?
-                                                  . opt-> .
-                                                  any/c)]) ; sexp with explicit tags
+  (provide/contract [syntax->hilite-datum 
+                     ((syntax?) (#:ignore-highlight? boolean?) . ->* . any)]) ; sexp with explicit tags
   
-  ;; syntax-object->hilite-datum : takes a syntax object with zero or more
+  ;; syntax->hilite-datum : takes a syntax object with zero or more
   ;; subexpressions tagged with the 'stepper-highlight', 'stepper-xml-hint', and 'stepper-xml-value-hint' syntax-properties
   ;; and turns it into a datum, where expressions with the named
   ;; properties result in (hilite <datum>), (xml-box <datum>), (scheme-box <datum>) and (splice-box <datum>) rather than <datum>. It also
@@ -637,52 +627,51 @@
   ;; 
   ;; this procedure is useful in checking the output of the stepper.
   
-  (define syntax-object->hilite-datum
-    (opt-lambda (stx [ignore-highlight? #f])
-      (let ([datum (syntax-case stx ()
-                     [(a . rest) (cons (syntax-object->hilite-datum #`a) (syntax-object->hilite-datum #`rest))]
-                     [id
-                      (identifier? stx)
-                      (string->symbol (symbol->string (syntax-e stx)))]
-                     [else (if (syntax? stx)
-                               (syntax-object->datum stx)
-                               stx)])])
-        (let* ([it (case (stepper-syntax-property stx 'stepper-xml-hint)
-                     [(from-xml-box) `(xml-box ,datum)]
-                     [(from-scheme-box) `(scheme-box ,datum)]
-                     [(from-splice-box) `(splice-box ,datum)]
-                     [else datum])]
-               [it (case (stepper-syntax-property stx 'stepper-xml-value-hint)
-                     [(from-xml-box) `(xml-box-value ,it)]
-                     [else it])]
-               [it (if (and (not ignore-highlight?)
-                            (stepper-syntax-property stx 'stepper-highlight))
-                       `(hilite ,it)
-                       it)])
-          it))))
+  (define (syntax->hilite-datum stx #:ignore-highlight? [ignore-highlight? #f])
+    (let ([datum (syntax-case stx ()
+                   [(a . rest) (cons (syntax->hilite-datum #`a) (syntax->hilite-datum #`rest))]
+                   [id
+                    (identifier? stx)
+                    (string->symbol (symbol->string (syntax-e stx)))]
+                   [else (if (syntax? stx)
+                             (syntax->datum stx)
+                             stx)])])
+      (let* ([it (case (stepper-syntax-property stx 'stepper-xml-hint)
+                   [(from-xml-box) `(xml-box ,datum)]
+                   [(from-scheme-box) `(scheme-box ,datum)]
+                   [(from-splice-box) `(splice-box ,datum)]
+                   [else datum])]
+             [it (case (stepper-syntax-property stx 'stepper-xml-value-hint)
+                   [(from-xml-box) `(xml-box-value ,it)]
+                   [else it])]
+             [it (if (and (not ignore-highlight?)
+                          (stepper-syntax-property stx 'stepper-highlight))
+                     `(hilite ,it)
+                     it)])
+        it)))
   
   ;; finished-xml-box-table : this table tracks values that are the result
   ;; of evaluating xml boxes.  These values should be rendered as xml boxes,
   ;; and not as simple lists.
   
-  (define finished-xml-box-table (make-hash-table 'weak))
+  (define finished-xml-box-table (make-weak-hash))
   
-  (provide/contract [syntax-object->interned-datum (syntax? ; input
+  (provide/contract [syntax->interned-datum (syntax? ; input
                                                     . -> .
                                                     any)]) ; sexp 
   
-  ;; syntax-object->interned-datum : like syntax-object->datum, except
+  ;; syntax->interned-datum : like syntax->datum, except
   ;; that it re-interns all identifiers.  Useful in checking whether
   ;; two sexps will have the same printed representation.
   
-  (define (syntax-object->interned-datum stx)
+  (define (syntax->interned-datum stx)
     (syntax-case stx ()
-      [(a . rest) (cons (syntax-object->interned-datum #`a) (syntax-object->interned-datum #`rest))]
+      [(a . rest) (cons (syntax->interned-datum #`a) (syntax->interned-datum #`rest))]
       [id
        (identifier? stx)
        (string->symbol (symbol->string (syntax-e stx)))]
       [else (if (syntax? stx)
-                (syntax-object->datum stx)
+                (syntax->datum stx)
                 stx)]))
   
   
@@ -727,7 +716,11 @@
   (define (language-level->name language)
     (car (last-pair (send language get-language-position))))
   
-  )
+  
+  
+  (define-signature view-controller^ (go))
+  (define-signature stepper-frame^ (stepper-frame%))
+  
 
   
 ; test cases
@@ -736,12 +729,12 @@
 ;(load (build-path (collection-path "tests" "mzscheme") "testing.ss"))
 ;
 ;(define (a sym) 
-;  (syntax-object->datum (get-lifted-var sym)))
+;  (syntax->datum (get-lifted-var sym)))
 ;(define cd-stx 
-;  (datum->syntax-object #f 'cd))
-;(test 'lifter-ab-0  a (datum->syntax-object #f 'ab))
+;  (datum->syntax #f 'cd))
+;(test 'lifter-ab-0  a (datum->syntax #f 'ab))
 ;(test 'lifter-cd-1 a cd-stx)
-;(test 'lifter-ef-2 a (datum->syntax-object #f 'ef))
+;(test 'lifter-ef-2 a (datum->syntax #f 'ef))
 ;(test 'lifter-cd-1 a cd-stx)
 ;
 ;(test '(a b c) map syntax-e (arglist->ilist #'(a b c)))
@@ -786,5 +779,6 @@
 ;(test 'yes stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'abc)
 ;(test 'yes stepper-syntax-property (stepper-syntax-property (stepper-syntax-property #`13 'abc 'no) 'abc 'yes) 'abc)
 ;(test 'yes stepper-syntax-property (stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'def 'arg) 'abc)
-;(test 13 syntax-object->datum (stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'def 'arg))
+;(test 13 syntax->datum (stepper-syntax-property (stepper-syntax-property #`13 'abc 'yes) 'def 'arg))
+
 

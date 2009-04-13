@@ -173,8 +173,8 @@
     (define (varref-skip-step? varref)
       (with-handlers ([exn:fail:contract:variable? (lambda (dc-exn) #f)])
         (let ([val (lookup-binding mark-list varref)])
-          (equal? (syntax-object->interned-datum (recon-value val render-settings))
-                  (syntax-object->interned-datum (case (stepper-syntax-property varref 'stepper-binding-type)
+          (equal? (syntax->interned-datum (recon-value val render-settings))
+                  (syntax->interned-datum (case (stepper-syntax-property varref 'stepper-binding-type)
                                                    ([let-bound]
                                                     (binding-lifted-name mark-list varref))
                                                    ([non-lexical]
@@ -497,7 +497,7 @@
   (define re:beginner: (regexp "^beginner:(.*)$"))
   
  
-  ;; eval-quoted : take a syntax-object that is an application of quote, and evaluate it (for display)
+  ;; eval-quoted : take a syntax that is an application of quote, and evaluate it (for display)
   ;; Frankly, I'm worried by the fact that this isn't done at expansion time.
   
   (define (eval-quoted stx)
@@ -878,7 +878,7 @@
                                               "stepper:reconstruct: unknown object to reconstruct: ~a" (syntax->datum exp))]))))
          
          ; the main recursive reconstruction loop is in recon:
-         ; recon : (syntax-object mark-list boolean -> syntax-object)
+         ; recon : (syntax mark-list boolean -> syntax)
          
          (define (recon so-far mark-list first)
            (cond [(null? mark-list) ; now taken to indicate a callback:
