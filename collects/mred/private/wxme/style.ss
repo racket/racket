@@ -1253,7 +1253,7 @@
               (and (= (style-list-link-list-id sll) list-id)
                    (style-list-link-style-list sll)))
             (send f get-s-sll))
-     
+
      (let-boxes ([nms 0])
          (send f get nms)
 

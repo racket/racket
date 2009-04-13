@@ -124,7 +124,7 @@
   (define undomode? #f)
   (define redomode? #f)
   (define interceptmode? #f)
-  (define loadoverwritesstyles? #f)
+  (define loadoverwritesstyles? #t)
 
   (field [s-custom-cursor-overrides? #f]
          [s-need-on-display-size? #f])

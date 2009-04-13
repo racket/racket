@@ -569,10 +569,10 @@
         #t
         (cond
          [(and (pair? boundaries)
-               ((tell) . > . (car boundaries)))
+               (items . > . (car boundaries)))
           (set! is-bad? #t)
           (error 'editor-stream-in%
-                 "overread (caused by file corruption?; ~a vs ~a)" (tell) (car boundaries))]
+                 "overread (caused by file corruption?; ~a vs ~a)" items (car boundaries))]
          [(send f bad?)
           (set! is-bad? #t)
           (error 'editor-stream-in% "stream error")]
@@ -587,6 +587,8 @@
     (if (read-version . < . 8)
         (send f tell)
         (let ([pos (send f tell)])
+          (when (not (equal? (hash-ref pos-map items pos) pos))
+            (error "again"))
           (hash-set! pos-map items pos)
           items)))
 

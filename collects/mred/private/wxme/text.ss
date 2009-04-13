@@ -2479,7 +2479,7 @@
 
   (def/override (insert-port [input-port? f] 
                              [(symbol-in guess same copy standard text text-force-cr) [format 'guess]]
-                             [any? [replace-styles? #f]])
+                             [any? [replace-styles? #t]])
     (if (or write-locked? s-user-locked?)
         'guess ;; FIXME: docs say that this is more specific
         (do-insert-file (method-name 'text% 'insert-file) f format replace-styles?)))
