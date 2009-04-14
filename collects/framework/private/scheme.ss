@@ -1183,7 +1183,8 @@
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "ss"]
-                     [finder:default-filters '(("SCM" "*.scm") ("Any" "*.*"))])
+                     [finder:default-filters '(["Scheme Sources" "*.ss;*.scm"]
+                                               ["Any" "*.*"])])
         ;; don't call the surrogate's super, since it sets the default extension
         (sup directory default-name)))
     
