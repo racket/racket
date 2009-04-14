@@ -1,7 +1,7 @@
 #lang scheme/gui
 
 #| TODO: 
-   -- make window resizable :: why? 
+   -- make window resizable :: why
 |#
 
 (require (for-syntax "private/syn-aux.ss")
