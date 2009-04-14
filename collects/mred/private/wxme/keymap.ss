@@ -473,12 +473,14 @@
     (for/fold ([r 0])
         ([c (in-list chain-to)]
          #:when (r . <= . 0))
-      (let ([r (send c chain-handle-key-event obj event grab try-prefixed? score)])
-        (if (r . > . 0)
+      (let ([r2 (send c chain-handle-key-event obj event grab try-prefixed? score)])
+        (if (r2 . > . 0)
             (begin
               (reset)
-              r)
-            r))))
+              r2)
+            (if (r2 . < . 0)
+                r2
+                r)))))
 
   (define/public (chain-handle-key-event obj event grab only-prefixed? score)
     ;; results: 0 = no match, 1 = match, -1 = matched prefix
