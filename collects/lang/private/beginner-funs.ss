@@ -44,7 +44,7 @@
 	"to determine the remainder of dividing the first by the second integer (exact or inexact)")
       (modulo (integer integer -> integer)
 	"to find the remainder of the division of the first number by the second; try (modulo 4 3) (modulo 4 -3)") 
-      (sqr (number -> number)
+      ((beginner-sqr sqr) (number -> number)
 	"to compute the square of a number")
       (sqrt (number -> number)
 	"to compute the square root of a number")
