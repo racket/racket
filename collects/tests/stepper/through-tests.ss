@@ -13,6 +13,7 @@
 
          )
 
+
 (define list-of-tests null)
 
 (define (add-test test)
@@ -1425,12 +1426,10 @@
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
     (parameterize (#;[disable-stepper-error-handling #t]
-                   #;[display-only-errors #f]
+                   #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
-      #;(run-tests '(check-expect check-within check-within-bad check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
+      #;(run-tests '(check-expect forward-ref check-within #;check-within-bad #;check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
       #;(run-tests '(teachpack-universe))
       (run-all-tests)))
   
-
-
