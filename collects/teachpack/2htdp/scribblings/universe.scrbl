@@ -21,7 +21,7 @@
 
 @; -----------------------------------------------------------------------------
 
-@title{Worlds and the Universe}
+@teachpack["universe"]{Worlds and the Universe}
 
 @author{Matthias Felleisen}
 
