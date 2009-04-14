@@ -2510,13 +2510,20 @@
                                  (send s-style-list new-named-style "Standard" (send s-style-list basic-style))
                                  (send mf ok?))))))]
               [(or (eq? format 'text) (eq? format 'text-force-cr))
-               (let loop ()
+               (let loop ([saved-cr? #f])
                  (let ([l (read-string 256 f)])
                    (unless (eof-object? l)
-                     (insert l)
-                     (loop))))
+                     (let ([l2 (if (equal? l "")
+                                   l
+                                   (if (equal? #\return (string-ref l (sub1 (string-length l))))
+                                       (substring l 0 (sub1 (string-length l)))
+                                       l))])
+                       (insert (regexp-replace* #rx"\r\n" 
+                                                (if saved-cr? (string-append "\r" l2) l2)
+                                                "\n"))
+                       (loop (not (eq? l l2)))))))
                #f])])
-
+        
         (when fileerr?
           (error who "error loading the file"))
 
