@@ -152,7 +152,8 @@
            get-scroll-page set-scroll-page
            get-scroll-range set-scroll-range
            is-shown-to-root?
-           show-scrollbars)
+           show-scrollbars
+	   set-focus)
 
   (define blink-timer #f)
   (define noloop? #f)
@@ -373,6 +374,12 @@
           [y (send event get-y)])
       (set! last-x x)
       (set! last-y y)
+
+      (when (and (eq? 'windows (system-type))
+		 (not focuson?)
+		 (send event button-down?))
+	(set-focus)
+	(on-focus #t))
       
       (when (and media
                  (not (send media get-printing)))
