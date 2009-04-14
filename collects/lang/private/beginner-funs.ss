@@ -172,9 +172,8 @@
       (integer->char (integer -> char)
 	"to lookup the character that corresponds to the given integer (exact only!) in the ASCII table (if any)")
     
-      (random (integer -> integer)
-	"to generate a random natural number less than some given integer
-	(exact only!)")
+      ((beginner-random random) (integer -> integer)
+	"to generate a random natural number less than some given integer (exact only!)")
     
       (current-seconds (-> integer)
 	"to compute the current time in seconds elapsed"

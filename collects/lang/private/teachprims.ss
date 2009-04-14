@@ -126,6 +126,10 @@ namespace.
 	    (current-continuation-marks))))
       (not a)))
 
+  (define-teach beginner random 
+    (lambda (a)
+      (random a)))
+
   (define-teach beginner +
     (lambda (a b . args)
       (apply + a b args)))
@@ -304,6 +308,7 @@ namespace.
   (provide  
     false?
     beginner-not
+    beginner-random
     beginner-+
     beginner-/
     beginner-*
