@@ -845,7 +845,7 @@ int MrEdCheckForBreak(void)
   }
 }
 
-void MrEdMSWSleep(float secs, void *fds)
+void MrEdMSWSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
 {
   DWORD msecs;
 
@@ -909,30 +909,8 @@ void MrEdMSWSleep(float secs, void *fds)
   }
 
   if (fds) {
-    win_extended_fd_set *r;
-    int num_handles, num_rhandles, *rps, result;
-    HANDLE *handles;
-
-    scheme_collapse_win_fd(fds); /* merges */
-
-    r = (win_extended_fd_set *)fds;
-    
-    num_rhandles = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->num_handles);
-    num_handles = SCHEME_INT_VAL(((win_extended_fd_set *)fds)->combined_len);
-    handles = ((win_extended_fd_set *)fds)->combined_wait_array;
-    rps = ((win_extended_fd_set *)fds)->repost_sema;
-
-    result = MsgWaitForMultipleObjects(num_handles, handles, FALSE,
-				       secs ? msecs : INFINITE,
-				       QS_ALLINPUT);
-
-    if ((result >= WAIT_OBJECT_0) && (result < WAIT_OBJECT_0 + num_rhandles)) {
-      result -= WAIT_OBJECT_0;
-      if (rps[result])
-        ReleaseSemaphore(handles[result], 1, NULL);
-    }
-
-    scheme_collapse_win_fd(fds); /* cleans up */
+    scheme_add_fd_eventmask(fds, QS_ALLINPUT);
+    mzsleep(secs, fds);
   } else if (wxTheApp->keep_going) {
     MsgWaitForMultipleObjects(0, NULL, FALSE,
 			      secs ? msecs : INFINITE,

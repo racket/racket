@@ -110,7 +110,7 @@ extern "C" {
 }
 
 #ifdef wx_msw
-void MrEdMSWSleep(float secs, void *fds);
+void MrEdMSWSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep);
 MRED_EXTERN void mred_clean_up_gdi_objects(void);
 #endif
 

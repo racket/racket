@@ -1743,7 +1743,7 @@ static void MrEdSleep(float secs, void *fds)
   }
 
 #ifdef wx_msw
-  MrEdMSWSleep(secs, fds);
+  MrEdMSWSleep(secs, fds, mzsleep);
 #else
 # ifdef wx_mac
   MrEdMacSleep(secs, fds, mzsleep);
@@ -2214,6 +2214,52 @@ static Scheme_Object *stdin_pipe;
 #if WCONSOLE_STDIO
 
 static HANDLE console_out;
+static HANDLE console_in;
+static Scheme_Object *console_inport;
+static HWND console_hwnd;
+static int has_stdio, stdio_kills_prog;
+static HANDLE waiting_sema;
+
+typedef HWND (WINAPI* gcw_proc)();
+
+static void HideConsole()
+{
+  
+}
+
+static BOOL WINAPI ConsoleHandler(DWORD op)
+{
+  if (stdio_kills_prog) {
+    ReleaseSemaphore(waiting_sema, 1, NULL);
+  } else {
+    scheme_break_main_thread();
+    scheme_signal_received();
+    if ((op != CTRL_C_EVENT)
+	&& (op != CTRL_BREAK_EVENT))
+      HideConsole();
+  }
+  return TRUE;
+}
+
+static void WaitOnConsole()
+{
+  DWORD wrote;
+
+  stdio_kills_prog = 1;
+  if (console_hwnd) {
+    AppendMenu(GetSystemMenu(console_hwnd, FALSE), 
+	       MF_STRING,
+	       SC_CLOSE,
+	       "Close");
+    /* Un-gray the close box: */
+    RedrawWindow(console_hwnd, NULL, NULL, 
+		 RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
+  }
+
+  WriteConsole(console_out, "\n[Exited]", 9, &wrote, NULL);
+  
+  WaitForSingleObject(waiting_sema, INFINITE);
+}
 
 #else  /* !WCONSOLE_STDIO */
 
@@ -2238,6 +2284,33 @@ static void MrEdSchemeMessages(char *msg, ...)
   if (!console_out) {
     AllocConsole();
     console_out = GetStdHandle(STD_OUTPUT_HANDLE);
+    console_in = GetStdHandle(STD_INPUT_HANDLE);
+    has_stdio = 1;
+    waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
+    SetConsoleCtrlHandler(ConsoleHandler, TRUE);
+    
+    wxREGGLOB(console_inport);
+    console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+
+    {
+      HMODULE hm;
+      gcw_proc gcw;
+
+      hm = LoadLibrary("kernel32.dll");
+      if (hm)
+	gcw = (gcw_proc)GetProcAddress(hm, "GetConsoleWindow");
+      else
+	gcw = NULL;
+    
+      if (gcw)
+	console_hwnd = gcw();
+    }
+
+    if (console_hwnd) {
+      EnableMenuItem(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE,
+		     MF_BYCOMMAND | MF_GRAYED);
+      RemoveMenu(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE, MF_BYCOMMAND);
+    }
   }
 #endif
 #if REDIRECT_STDIO
@@ -2253,18 +2326,21 @@ static void MrEdSchemeMessages(char *msg, ...)
 #if WCONSOLE_STDIO
   if (!msg) {
     char *s;
-    long l;
-	DWORD wrote;
+    long l, d;
+    DWORD wrote;
 
     s = va_arg(args, char*);
+    d = va_arg(args, long);
     l = va_arg(args, long);
 
-    WriteConsole(console_out, s, l, &wrote, NULL);
+    WriteConsole(console_out, s XFORM_OK_PLUS d, l, &wrote, NULL);
   } else {
-    char buffer[2048];
+    char *buffer;
     DWORD wrote;
+    buffer = (char *)malloc(5 * strlen(msg));
     vsprintf(buffer, msg, args);
     WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
+    free(buffer);
   }
 #endif
 #if !WCONSOLE_STDIO
@@ -2345,22 +2421,64 @@ static long mrconsole_get_string(Scheme_Input_Port *ip,
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
   MrEdSchemeMessages("");
 
+#if WCONSOLE_STDIO
+  pipe = console_inport;
+#endif
+
   add_console_reading();
-  result = scheme_get_byte_string("console get-string", pipe, buffer, offset, size, nonblock ? 2 : 0, 0, 0);
+  result = scheme_get_byte_string_unless("console get-string", pipe, 
+					 buffer, offset, size, 
+					 nonblock, 0, NULL,
+					 unless);
   remove_console_reading();
   return result;
+}
+
+static Scheme_Object *mrconsole_progress_evt(Scheme_Input_Port *ip)
+{
+  Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+  MrEdSchemeMessages("");
+
+#if WCONSOLE_STDIO
+  pipe = console_inport;
+#endif
+
+  return scheme_progress_evt(pipe);
+}
+
+static int mrconsole_peeked_read(Scheme_Input_Port *ip,
+					    long amount,
+					    Scheme_Object *unless,
+					    Scheme_Object *target_ch)
+{
+  Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+  MrEdSchemeMessages("");
+
+#if WCONSOLE_STDIO
+  pipe = console_inport;
+#endif
+
+  return scheme_peeked_read(pipe, amount, unless, target_ch);
 }
 
 static int mrconsole_char_ready(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
   MrEdSchemeMessages("");
+
+#if WCONSOLE_STDIO
+  pipe = console_inport;
+#endif
+
   return scheme_char_ready(pipe);
 }
 
 static void mrconsole_close(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
+#if WCONSOLE_STDIO
+  pipe = console_inport;
+#endif
   scheme_close_input_port(pipe);
 }
 
@@ -2378,8 +2496,8 @@ static Scheme_Object *MrEdMakeStdIn(void)
 			      scheme_intern_symbol("mred-console"),
 			      CAST_GS mrconsole_get_string,
 			      NULL,
-			      scheme_progress_evt_via_get,
-			      scheme_peeked_read_via_get,
+			      mrconsole_progress_evt,
+			      mrconsole_peeked_read,
 			      CAST_IREADY mrconsole_char_ready,
 			      CAST_ICLOSE mrconsole_close,
 			      NULL,
@@ -2898,6 +3016,20 @@ static Scheme_Env *setup_basic_env()
   return global_env;
 }
 
+#if WCONSOLE_STDIO
+static void MrEdExit(int v)
+{
+  if (has_stdio) {
+    WaitOnConsole();
+  }
+
+#ifdef wx_msw
+  mred_clean_up_gdi_objects();
+#endif
+  scheme_immediate_exit(v);
+}
+#endif
+
 wxFrame *MrEdApp::OnInit(void)
 {
   MrEdContext *mmc;
@@ -3027,6 +3159,15 @@ wxFrame *MrEdApp::OnInit(void)
 
   mred_run_from_cmd_line(argc, argv, setup_basic_env);
 
+#if WCONSOLE_STDIO
+  if (!wx_in_terminal) {
+    /* The only reason we get here is that a command-line error or
+       -h occured. In either case, stick around for the sake of the
+       console. */
+    MrEdExit(1);
+  }
+#endif
+
   return NULL;
 }
 
@@ -3052,6 +3193,10 @@ void MrEdApp::RealInit(void)
   initialized = 1;
 
   thread->on_kill = CAST_TOK on_main_killed;
+#if WCONSOLE_STDIO
+  if (!wx_in_terminal)
+    scheme_exit = CAST_EXIT MrEdExit;
+#endif
 
 #ifdef wx_xt
   if (wx_single_instance) {
@@ -3525,6 +3670,13 @@ void wxDrop_Runtime(char **argv, int argc)
 #if defined(wx_mac) || defined(wx_msw)
 void wxDrop_Quit()
 {
+#if WCONSOLE_STDIO
+  if (has_stdio) {
+    has_stdio = 0;
+    HideConsole();
+  }
+#endif
+
   wxDo(wxs_app_quit_proc, 0, NULL);
 }
 #endif
