@@ -809,7 +809,7 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase);
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
-Scheme_Object *scheme_stx_module_name(int recur,
+Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *recur,
                                       Scheme_Object **name, Scheme_Object *phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,

@@ -2003,7 +2003,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (mode < 2)) {
       Scheme_Object *mod, *nm = id;
-      mod = scheme_stx_module_name(0, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+      mod = scheme_stx_module_name(NULL, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
                                    NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
 		 have been an error before getting here */
@@ -2679,7 +2679,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   src_find_id = find_id;
-  modidx = scheme_stx_module_name(0, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
+  modidx = scheme_stx_module_name(NULL, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
                                   NULL, NULL, NULL, NULL);
 
   /* Used out of context? */
@@ -2957,7 +2957,7 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
   if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
     return 1;
   } else {
-    mod = scheme_stx_module_name(0, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+    mod = scheme_stx_module_name(NULL, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
                                  NULL, NULL, NULL, NULL);
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;

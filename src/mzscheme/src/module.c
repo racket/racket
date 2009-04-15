@@ -7304,7 +7304,7 @@ static Scheme_Object *extract_free_id_name(Scheme_Object *name,
 
         name2 = scheme_rename_transformer_id(SCHEME_PTR_VAL(v2));
         id = name2;
-        mod = scheme_stx_module_name(0, &id, phase, 
+        mod = scheme_stx_module_name(NULL, &id, phase, 
                                      _implicit_nominal_mod, _implicit_nominal_name,
                                      _implicit_mod_phase, 
                                      NULL, NULL, NULL, NULL);
