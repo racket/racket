@@ -768,12 +768,15 @@
 (expect (send fi2 tell) 10)
 
 (send fi2 jump-to 3)
-(send fi2 set-boundary 5)
+(send fi2 set-boundary 2)
 (expect (send fi2 get-unterminated-bytes) #"hi")
 (send fi2 jump-to 3)
 (expect (send fi2 ok?) #t)
-(send fi2 set-boundary 4)
-(expect (send fi2 get-unterminated-bytes) #"")
+(expect (send fi2 tell) 3)
+(send fi2 set-boundary 1)
+(expect (with-handlers ([values (lambda (exn) #"")])
+          (send fi2 get-unterminated-bytes))
+        #"")
 (expect (send fi2 ok?) #f)
 
 ;; ----------------------------------------

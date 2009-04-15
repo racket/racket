@@ -611,11 +611,8 @@
                     (and
                      ;; Read headers
                      (for/and ([i (in-range num-headers)])
-                       (let-boxes ([n 0]
-                                   [len 0])
-                           (begin
-                             (send f get n)
-                             (send f get-fixed len))
+                       (let ([n (send f get-exact)]
+                             [len (send f get-fixed-exact)])
                          (and (send f ok?)
                               (or (zero? len)
                                   (let ([sclass (send (send f get-s-scl) find-by-map-position f n)])
@@ -646,11 +643,10 @@
                                     (let ([sclass (if (n . >= . 0)
                                                       (send (send f get-s-scl) find-by-map-position f n)
                                                       #f)]) ; -1 => unknown
-                                      (let-boxes ([len 0])
-                                          (if (or (not sclass)
-                                                  (not (send sclass get-s-required?)))
-                                              (send f get-fixed len)
-                                              (set-box! len -1))
+                                      (let ([len (if (or (not sclass)
+                                                         (not (send sclass get-s-required?)))
+                                                     (send f get-fixed-exact)
+                                                     -1)])
                                         (and (send f ok?)
                                              (or (and (zero? len) accum)
                                                  (and
@@ -658,8 +654,7 @@
                                                       (let ([start (send f tell)])
                                                         (when (len . >= . 0)
                                                           (send f set-boundary len))
-                                                        (let-boxes ([style-index 0])
-                                                            (send f get style-index)
+                                                        (let ([style-index (send f get-exact)])
                                                           (let ([snip (send sclass read f)])
                                                             (and 
                                                              snip
@@ -1337,7 +1332,7 @@
     (editor-get-file "choose a file" (extract-parent) #f path))
 
   (def/public (put-file [(make-or-false path-string?) dir]
-                        [(make-or-false string?) suggested-name])
+                        [(make-or-false path-string?) suggested-name])
     (editor-put-file "save file as" (extract-parent) dir suggested-name))
   
   (def/public (set-load-overwrites-styles [any? b?])
@@ -1419,7 +1414,7 @@
                       (let ([sclass (snip->snipclass snip)])
                         (unless sclass
                           (error 'write-snips-to-file "snip has no snipclass"))
-                        (if (send f do-get-header-flag sclass)
+                        (if (not (send f do-get-header-flag sclass))
                             (begin
                               (send f put (send f do-map-position sclass))
                               (let ([header-start (send f tell)])

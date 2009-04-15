@@ -315,11 +315,9 @@
     (s-read (make-object string-snip% 0) f))
 
   (def/public (s-read [string-snip% snip] [editor-stream-in% f])
-    (let-boxes ([flags 0])
-        (send f get flags)
+    (let ([flags (send f get-exact)])
       (let ([pos (send f tell)])
-        (let-boxes ([count 0])
-            (send f get count)
+        (let ([count (send f get-exact)])
           (send f jump-to pos)
           (let ([count (if (count . < . 0)
                            10; this is a failure; we make up something

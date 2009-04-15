@@ -8,6 +8,7 @@
                    browser/external
                    browser/tool
                    scheme/base
+                   scheme/contract
                    scheme/class
                    scheme/gui/base
                    net/url
@@ -26,8 +27,8 @@ The @schememodname[browser] library provides the following
 procedures and classes for parsing and viewing HTML files.  The
 @schememodname[browser/htmltext] library provides a simplified
 interface for rendering to a subclass of the MrEd @scheme[text%]
-class. The [browser/external] library provides utilities for launching
-an external browser (such as Firefox).
+class. The @schememodname[browser/external] library provides utilities
+for launching an external browser (such as Firefox).
 
 @section[#:tag "browser"]{Browser}
 
@@ -80,7 +81,7 @@ examples). The Scheme code is executed through @scheme[eval].
 The @(litchar "MZSCHEME") forms are disabled unless the web page is a
 @(litchar "file:") url that points into the @scheme[doc] collection.
 
-@defproc[(open-url [url (or/c url? string? input-port?)]) void?]{
+@defproc[(open-url [url (or/c url? string? input-port?)]) (is-a?/c hyper-frame%)]{
         Opens the given url 
         in a vanilla browser frame and returns
         the frame. The frame is an instance of
