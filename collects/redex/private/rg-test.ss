@@ -347,6 +347,10 @@
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
   (test (raised-exn-msg exn:fail:redex? (generate-term lang c 5))
         #rx"unable to generate")
+  (test (let/ec k
+          (generate-term lang (number_1 (side-condition any (k (term number_1)))) 5))
+        'number_1)
+  
   (test ; mismatch patterns work with side-condition failure/retry
    (generate-term/decisions
     lang e 5 0
@@ -839,6 +843,89 @@
          exn:fail:redex?
          (check-metafunction n (λ (_) #t) #:retries 42))
         #rx"check-metafunction: unable .* in 42"))
+
+;; custom generators
+(let ()
+  (define-language L
+    (x variable))
+  
+  (test
+   (generate-term 
+    L x_1 0
+    #:custom (λ (pat sz i-h acc env att rec def)
+               (match pat
+                 ['x (values 'x env)]
+                 [_ (def acc)])))
+   'x)
+  (test
+   (let/ec k
+     (equal?
+      (generate-term 
+       L (x x) 0
+       #:custom (let ([once? #f])
+                  (λ (pat sz i-h acc env att rec def)
+                    (match pat
+                      ['x (if once?
+                              (k #f)
+                              (begin
+                                (set! once? #t)
+                                (values 'x env)))]
+                      [_ (def acc)]))))
+      '(x x)))
+   #t)
+  
+  (test
+   (hash-ref
+    (let/ec k
+      (generate-term 
+       L (x (x)) 0
+       #:custom (λ (pat sz i-h acc env att rec def)
+                  (match pat
+                    [(struct binder ('x))
+                     (values 'y (hash-set env pat 'y))]
+                    [(list (struct binder ('x))) (k env)]
+                    [_ (def acc)]))))
+    (make-binder 'x))
+   'y)
+  
+  (test
+   (generate-term
+    L (in-hole hole 7) 0
+    #:custom (λ (pat sz i-h acc env att rec def)
+               (match pat
+                 [`(in-hole hole 7)
+                  (rec 'hole #:contractum 7)]
+                 [_ (def acc)])))
+   7)
+  
+  (test
+   (let/ec k
+     (generate-term 
+      L any 10
+      #:attempt 42
+      #:custom (λ (pat sz i-h acc env att rec def) (k (list sz att)))))
+   '(10 42))
+  
+  (test
+   (let/ec k
+     (generate-term 
+      L x 10
+      #:custom (λ (pat sz i-h acc env att rec def) 
+                 (match pat
+                   ['x (rec 7 #:size 0)]
+                   [7 (k sz)]
+                   [_ (def att)]))))
+   0)
+  
+  (test
+   (generate-term
+    L (q 7) 0
+    #:custom (λ (pat sz i-h acc env att rec def) 
+               (match pat
+                 ['q (rec '(7 7) #:acc 8)]
+                 [7 (values (or acc 7) env)]
+                 [_ (def att)])))
+   '((8 8) 7)))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
