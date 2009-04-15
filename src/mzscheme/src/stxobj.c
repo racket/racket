@@ -4063,10 +4063,14 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
               phase = scheme_bin_plus(phase, SCHEME_VEC_ELS(orig)[1]);
             if (get_names)
               get_names[1] = NULL;
-            result = resolve_env(NULL, SCHEME_CAR(result_free_rename), phase,
-                                 w_mod, get_names,
-                                 NULL, _binding_marks_skipped,
-                                 &rib_dep, depth + 1, free_id_recur);
+            result = SCHEME_CAR(result_free_rename);
+            if (!scheme_hash_get(free_id_recur, result)) {
+              scheme_hash_set(free_id_recur, result, scheme_true);
+              result = resolve_env(NULL, result, phase,
+                                   w_mod, get_names,
+                                   NULL, _binding_marks_skipped,
+                                   &rib_dep, depth + 1, free_id_recur);
+            }
             if (get_names && !get_names[1])
               if (SCHEME_FALSEP(result) || SAME_OBJ(scheme_undefined, get_names[0]))
                 get_names[1] = SCHEME_STX_VAL(SCHEME_CAR(result_free_rename));
