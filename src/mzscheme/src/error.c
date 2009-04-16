@@ -191,6 +191,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %Q = truncated-to-256 Scheme string
   %V = scheme_value
   %D = scheme value to display
+  %_ = skip
 
   %L = line number, -1 means no line
   %e = error number for strerror()
@@ -258,6 +259,7 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
       case 'D':
       case 'T':
       case 'Q':
+      case '_':
 	ptrs[pp++] = mzVA_ARG(args, Scheme_Object*);
 	break;
       default:
@@ -446,6 +448,13 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
             tlen = dlen;
 	  }
 	  break;
+        case '_':
+          {
+            pp++;
+            t = "";
+            tlen = 0;
+          }
+          break;
 	case 'T':
 	case 'Q':
 	  {
@@ -1904,7 +1913,7 @@ void scheme_unbound_global(Scheme_Bucket *b)
     if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC)))
       errmsg = "reference to an identifier before its definition: %S in module: %D%s";
     else
-      errmsg = "reference to an identifier before its definition: %S%s";
+      errmsg = "reference to an identifier before its definition: %S%_%s";
 
     if (SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase)) {
       sprintf(phase_buf, " phase: %ld", SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase));
