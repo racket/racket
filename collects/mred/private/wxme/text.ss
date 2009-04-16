@@ -384,7 +384,7 @@
                                                             (not (zero? how-close))
                                                             ((abs how-close) . > . between-threshold))])
                                             (let ([snip (and onit?
-                                                             (find-snip pos 'after))])
+                                                             (do-find-snip pos 'after))])
                                               (and snip
                                                    (let-boxes ([x 0.0] [y 0.0])
                                                        (get-snip-position-and-location snip #f x y)
@@ -428,7 +428,7 @@
                                      ((abs how-close) . > . between-threshold))])
                      (if onit?
                          ;; we're in the snip's horizontal region...
-                         (let ([snip (find-snip now 'after)])
+                         (let ([snip (do-find-snip now 'after)])
                            ;; ... but maybe the mouse is above or below it.
                            (let-boxes ([top 0.0]
                                        [bottom 0.0]
@@ -1332,7 +1332,7 @@
                                           (let* ([gsnip (if (not did-one?)
                                                             (begin
                                                               (make-snipset start start)
-                                                              (find-snip start 'after-or-none))
+                                                              (do-find-snip start 'after-or-none))
                                                             before-snip)]
                                                  [before-snip (or before-snip gsnip)]
                                                  [inserted-new-line?
@@ -1534,7 +1534,7 @@
                            [(or (equal? c #\newline) (equal? c #\tab))
                             (let ([newline? (equal? c #\newline)])
                               (make-snipset (+ i start) (+ i start 1))
-                              (let ([snip (find-snip (+ i start) 'after)])
+                              (let ([snip (do-find-snip (+ i start) 'after)])
                                 (if newline?
 
                                     ;; forced return - split the snip
@@ -1611,7 +1611,7 @@
                                         (when (eq? (mline-last-snip (snip->line snip)) snip)
                                           (set-mline-last-snip! (snip->line tabsnip) tabsnip))))))
 
-                              (let ([snip (find-snip (+ i start 1) 'after)])
+                              (let ([snip (do-find-snip (+ i start 1) 'after)])
                                 (let ([i (add1 i)])
                                   (loop (+ i start)
                                         (if (= i addlen) #f (string-snip-buffer snip))
@@ -1623,7 +1623,7 @@
                            [(cnt . > . MAX-COUNT-FOR-SNIP)
                             ;; divide up snip, because it's too large:
                             (make-snipset (+ i start) (+ i start))
-                            (let ([snip (find-snip (+ i start) 'after)])
+                            (let ([snip (do-find-snip (+ i start) 'after)])
                               (loop (+ i start)
                                     (string-snip-buffer snip)
                                     (add1 (string-snip-dtext snip))
@@ -1711,8 +1711,8 @@
                   (make-snipset start end)
                   (set! revision-count (add1 revision-count))
 
-                  (let* ([start-snip (find-snip start 'before-or-none)]
-                         [end-snip (find-snip end 'before)]
+                  (let* ([start-snip (do-find-snip start 'before-or-none)]
+                         [end-snip (do-find-snip end 'before)]
                          [with-undo? (and with-undo?
                                           (zero? s-noundomode))]
                          [rec (if with-undo?
@@ -1956,8 +1956,8 @@
                       s-style-list)])
           (set-common-copy-region-data! (get-region-data startp endp))
 
-          (let ([start (find-snip startp 'after)]
-                [end (find-snip endp 'after-or-none)]
+          (let ([start (do-find-snip startp 'after)]
+                [end (do-find-snip endp 'after-or-none)]
                 [wl? write-locked?]
                 [fl? flow-locked?])
 
@@ -2050,7 +2050,7 @@
     (let ([addpos (snip->count snip)])
       (insert snip read-insert)
       (when data
-        (let ([snip (find-snip read-insert 'after)])
+        (let ([snip (do-find-snip read-insert 'after)])
           (set-snip-data snip data)))
       (set! read-insert (+ read-insert addpos))))
 
@@ -2300,8 +2300,8 @@
                   ((clickback-end c) . > . start)
                   ;; we're in the right horizontal region, but maybe the mouse
                   ;; is above or below the clickback
-                  (let ([start (find-snip (clickback-start c) 'after)]
-                        [end (find-snip (clickback-end c) 'before)])
+                  (let ([start (do-find-snip (clickback-start c) 'after)]
+                        [end (do-find-snip (clickback-end c) 'before)])
                     (and start
                          end
                          (let-boxes ([top 0.0]
@@ -2510,18 +2510,20 @@
                                  (send s-style-list new-named-style "Standard" (send s-style-list basic-style))
                                  (send mf ok?))))))]
               [(or (eq? format 'text) (eq? format 'text-force-cr))
-               (let loop ([saved-cr? #f])
-                 (let ([l (read-string 256 f)])
-                   (unless (eof-object? l)
-                     (let ([l2 (if (equal? l "")
-                                   l
-                                   (if (equal? #\return (string-ref l (sub1 (string-length l))))
-                                       (substring l 0 (sub1 (string-length l)))
-                                       l))])
-                       (insert (regexp-replace* #rx"\r\n" 
-                                                (if saved-cr? (string-append "\r" l2) l2)
-                                                "\n"))
-                       (loop (not (eq? l l2)))))))
+               (let ([s (make-string 1024)])
+                 (let loop ([saved-cr? #f])
+                   (let ([len (read-string! s f)])
+                     (unless (eof-object? len)
+                       (let* ([s1 (if (= len (string-length s))
+                                      s
+                                      (substring s 0 len))]
+                              [s2 (if (equal? #\return (string-ref s1 (sub1 len)))
+                                      (substring s1 0 (sub1 len))
+                                      s1)])
+                         (insert (regexp-replace* #rx"\r\n" 
+                                                  (if saved-cr? (string-append "\r" s2) s2)
+                                                  "\n"))
+                         (loop (not (eq? s1 s2))))))))
                #f])])
         
         (when fileerr?
@@ -2605,8 +2607,8 @@
                             len
                             end)
                         start)])
-          (let ([start-snip (if (zero? len) #f (find-snip start 'after))]
-                [end-snip (if (zero? len) #f (find-snip end 'after-or-none))])
+          (let ([start-snip (if (zero? len) #f (do-find-snip start 'after))]
+                [end-snip (if (zero? len) #f (do-find-snip end 'after-or-none))])
             (and (do-write-headers-footers f #t)
                  (write-snips-to-file f s-style-list #f start-snip end-snip #f this)
                  (do-write-headers-footers f #f))))))
@@ -3524,7 +3526,7 @@
                       (cond
                        [new-style new-style]
                        [caret-style (send s-style-list find-or-create-style caret-style delta)]
-                       [else (let ([gsnip (find-snip start 'before)])
+                       [else (let ([gsnip (do-find-snip start 'before)])
                                (send s-style-list find-or-create-style (snip->style gsnip) delta))])))]
              [else
               (set! write-locked? #t)
@@ -3544,7 +3546,7 @@
                                       (begin
                                         (set! initial-style-needed? #f)
                                         (values snips #f))
-                                      (values (find-snip start 'after) (find-snip end 'after-or-none)))]
+                                      (values (do-find-snip start 'after) (do-find-snip end 'after-or-none)))]
                                  [(rec)
                                   (and (zero? s-noundomode)
                                        (make-object style-change-record% start end 
@@ -4007,8 +4009,6 @@
         (set! write-locked? #t)
         (set! flow-locked? #t)      
 
-        (set-box! a-ptr #f)
-        (set-box! b-ptr #f)
         (send snip split pos a-ptr b-ptr)
 
         (set! read-locked? #f)
@@ -4071,7 +4071,8 @@
             (splice-snip snip prev next)
             (set! snip-count (add1 snip-count))
             (insert-snip snip ins-snip)
-            (extra snip)
+            (when extra
+              (extra snip))
                   
             (snip-set-admin snip snip-admin)
             (snip-set-admin ins-snip snip-admin)
@@ -4084,11 +4085,11 @@
       (let-values ([(snip s-pos) (find-snip/pos start 'after-or-none)])
         (when snip
           (unless (= s-pos start)
-            (split-one start s-pos snip void)))))
+            (split-one start s-pos snip #f)))))
     (when (positive? end)
       (let-values ([(snip s-pos) (find-snip/pos end 'before)])
         (unless (= (+ s-pos (snip->count snip)) end)
-          (split-one end s-pos snip void)))))
+          (split-one end s-pos snip #f)))))
 
   (define/private (insert-text-snip start style)
     (let* ([snip (on-new-string-snip)]
@@ -4257,6 +4258,11 @@
         #f
         snips))
   
+  (define/private (do-find-snip p direction)
+    ;; BEWARE: `len' may not be up-to-date
+    (let-values ([(snip pos) (find-snip/pos p direction)])
+      snip))
+
   (def/public (find-snip [exact-nonnegative-integer? p]
                          [(symbol-in before-or-none before after after-or-none) direction]
                          [maybe-box? [s-pos #f]])
@@ -4270,48 +4276,49 @@
     (cond
      [(and (eq? direction 'before-or-none) (zero? p))
       (values #f 0)]
-     [(and (eq? direction 'after-or-none) (p . >= . (let ([l (mline-last (unbox line-root-box))])
-                                                      (+ (mline-get-position l)
-                                                         (mline-len l)))))
-      (values #f 0)]
      [else
       (let* ([line (mline-find-position (unbox line-root-box) p)]
              [pos (mline-get-position line)]
              [p (- p pos)])
+        (if (and (eq? direction 'after-or-none) 
+                 (not (mline-next line))
+                 (p . >= . (mline-len line)))
+            ;; past the end:
+            (values #f 0)
+            ;; within the line:
+            (let-values ([(snip pos p)
+                          (let ([snip (mline-snip line)])
+                            (if (and (zero? p) (snip->prev snip))
+                                ;; back up one:
+                                (let ([snip (snip->prev snip)])
+                                  (values snip
+                                          (- pos (snip->count snip))
+                                          (+ p (snip->count snip))))
+                                (values snip pos p)))])
 
-        (let-values ([(snip pos p)
-                      (let ([snip (mline-snip line)])
-                        (if (and (zero? p) (snip->prev snip))
-                            ;; back up one:
-                            (let ([snip (snip->prev snip)])
-                              (values snip
-                                      (- pos (snip->count snip))
-                                      (+ p (snip->count snip))))
-                            (values snip pos p)))])
-
-          (let loop ([snip snip]
-                     [pos pos]
-                     [p p])
-            (if snip
-                (let ([p (- p (snip->count snip))])
-                  (cond
-                   [(or (and (eq? direction 'on)
-                             (zero? p))
-                        (and (or (eq? direction 'before)
-                                 (eq? direction 'before-or-none))
-                             (p . <= . 0))
-                        (and (or (eq? direction 'after)
-                                 (eq? direction 'after-or-none))
-                             (p . < . 0)))
-                    (values snip pos)]
-                   [(and (eq? direction 'on)
-                         (p . < . 0))
-                    (values #f 0)]
-                   [else
-                    (loop (snip->next snip) (+ pos (snip->count snip)) p)]))
-                (if (not (eq? direction 'after-or-none))
-                    (values last-snip (- pos (snip->count last-snip)))
-                    (values #f 0))))))]))
+              (let loop ([snip snip]
+                         [pos pos]
+                         [p p])
+                (if snip
+                    (let ([p (- p (snip->count snip))])
+                      (cond
+                       [(or (and (eq? direction 'on)
+                                 (zero? p))
+                            (and (or (eq? direction 'before)
+                                     (eq? direction 'before-or-none))
+                                 (p . <= . 0))
+                            (and (or (eq? direction 'after)
+                                     (eq? direction 'after-or-none))
+                                 (p . < . 0)))
+                        (values snip pos)]
+                       [(and (eq? direction 'on)
+                             (p . < . 0))
+                        (values #f 0)]
+                       [else
+                        (loop (snip->next snip) (+ pos (snip->count snip)) p)]))
+                    (if (not (eq? direction 'after-or-none))
+                        (values last-snip (- pos (snip->count last-snip)))
+                        (values #f 0)))))))]))
 
   (def/public (find-next-non-string-snip [(make-or-false snip%) snip])
     (if (or (and snip

@@ -1131,6 +1131,8 @@
 							       (if (null? l)
 								   null
 								   (cons pos (loop (add1 pos) (cdr l)))))]
+                                      [(local-field-accessor ...) (generate-temporaries (append field-names private-field-names))]
+                                      [(local-field-mutator ...) (generate-temporaries (append field-names private-field-names))]
 				      [(plain-init-name ...) (definify plain-init-names)]
                                       [(plain-init-name-localized ...) (map lookup-localize plain-init-names)]
 				      [(local-plain-init-name ...) (generate-temporaries plain-init-names)])
@@ -1164,9 +1166,9 @@
 						       (quote the-obj)
 						       (quote-syntax local-field)
 						       (quote-syntax local-field-localized)
-						       (quote-syntax local-accessor)
-						       (quote-syntax local-mutator)
-						       '(local-field-pos))
+						       (quote-syntax local-field-accessor)
+						       (quote-syntax local-field-mutator)
+						       '())
 				       ...
 				       (make-rename-super-map (quote-syntax the-finder)
 							      (quote the-obj)
@@ -1324,126 +1326,130 @@
 						rename-super-temp ... rename-super-extra-temp ...
 						rename-inner-temp ... rename-inner-extra-temp ...
 						method-accessor ...) ; for a local call that needs a dynamic lookup
-					 (syntax-parameterize
-					  ([this-param (make-this-map (quote-syntax this-id)
-								      (quote-syntax the-finder)
-								      (quote the-obj))])
-					  (let-syntaxes
-					   mappings
-					   (syntax-parameterize 
-					    ([super-param
-					      (lambda (stx)
-						(syntax-case stx (rename-super-extra-orig ...)
-						  [(_ rename-super-extra-orig . args) 
-						   (generate-super-call 
-						    stx
-						    (quote-syntax the-finder)
-						    (quote the-obj)
-						    (quote-syntax rename-super-extra-temp)
-						    (syntax args))]
-						  ...
-						  [(_ id . args)
-						   (identifier? #'id)
-						   (raise-syntax-error
-						    #f
-						    (string-append
-						     "identifier for super call does not have an override, "
-						     "override-final, overment, or inherit/super declaration")
-						    stx
-						    #'id)]
-						  [_else
-						   (raise-syntax-error
-						    #f
-						    "expected an identifier after the keyword"
-						    stx)]))]
-					     [inner-param
-					      (lambda (stx)
-						(syntax-case stx (rename-inner-extra-orig ...)
-						  [(_ default-expr rename-inner-extra-orig . args)
-						   (generate-inner-call 
-						    stx
-						    (quote-syntax the-finder)
-						    (quote the-obj)
-						    (syntax default-expr)
-						    (quote-syntax rename-inner-extra-temp)
-						    (syntax args))]
-						  ...
-						  [(_ default-expr id . args)
-						   (identifier? #'id)
-						   (raise-syntax-error
-						    #f
-						    (string-append
-						     "identifier for inner call does not have a pubment, augment, "
-						     "overment, or inherit/inner declaration")
-						    stx
-						    #'id)]
-						  [(_)
-						   (raise-syntax-error
-						    #f
-						    "expected a default-value expression after the keyword"
-						    stx
-						    #'id)]
-						  [_else
-						   (raise-syntax-error
-						    #f
-						    "expected an identifier after the keyword and default-value expression"
-						    stx)]))])
-					    stx-def ...
-					    (letrec ([private-temp private-method]
-						     ...
-						     [pubment-temp pubment-method]
-						     ...
-						     [public-final-temp public-final-method]
-						     ...)
-					      (values
-					       (list pubment-temp ... public-final-temp ... . public-methods)
-					       (list . override-methods)
-					       (list . augride-methods)
-					       ;; Initialization
-					       #, ;; Attach srcloc (useful for profiling)
-					       (quasisyntax/loc stx
-						 (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
-						   (let-syntax ([the-finder (quote-syntax the-obj)])
-						     (syntax-parameterize
-						      ([super-instantiate-param
-							(lambda (stx)
-							  (syntax-case stx () 
-							    [(_ (arg (... ...)) (kw kwarg) (... ...))
-							     (with-syntax ([stx stx])
-							       (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
-													   si_leftovers)
-										     (list arg (... ...)) 
-										     (kw kwarg) (... ...))))]))]
-						       [super-new-param
-							(lambda (stx)
-							  (syntax-case stx () 
-							    [(_ (kw kwarg) (... ...))
-							     (with-syntax ([stx stx])
-							       (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
-													   si_leftovers)
-										     null
-										     (kw kwarg) (... ...))))]))]
-						       [super-make-object-param
-							(lambda (stx)
-							  (let ([code 
-								 (quote-syntax
-								  (lambda args
-								    (super-go the-obj si_c si_inited? si_leftovers args null)))])
-							    (if (identifier? stx)
-								code
-								(datum->syntax
-								 code
-								 (cons code
-								       (cdr (syntax-e stx)))))))])
-						      (letrec-syntaxes+values
-                                                          ([(plain-init-name) (make-init-redirect 
-                                                                               (quote-syntax set!)
-                                                                               (quote-syntax #%plain-app)
-                                                                               (quote-syntax local-plain-init-name)
-                                                                               (quote-syntax plain-init-name-localized))] ...)
-                                                          ([(local-plain-init-name) undefined] ...)
-                                                          (void) ; in case the body is empty
-                                                          . exprs))))))))))))
+                                         (let ([local-field-accessor (make-struct-field-accessor local-accessor local-field-pos)]
+                                               ...
+                                               [local-field-mutator (make-struct-field-mutator local-mutator local-field-pos)]
+                                               ...)
+                                           (syntax-parameterize
+                                               ([this-param (make-this-map (quote-syntax this-id)
+                                                                           (quote-syntax the-finder)
+                                                                           (quote the-obj))])
+                                             (let-syntaxes
+                                              mappings
+                                              (syntax-parameterize 
+                                                  ([super-param
+                                                    (lambda (stx)
+                                                      (syntax-case stx (rename-super-extra-orig ...)
+                                                        [(_ rename-super-extra-orig . args) 
+                                                         (generate-super-call 
+                                                          stx
+                                                          (quote-syntax the-finder)
+                                                          (quote the-obj)
+                                                          (quote-syntax rename-super-extra-temp)
+                                                          (syntax args))]
+                                                        ...
+                                                        [(_ id . args)
+                                                         (identifier? #'id)
+                                                         (raise-syntax-error
+                                                          #f
+                                                          (string-append
+                                                           "identifier for super call does not have an override, "
+                                                           "override-final, overment, or inherit/super declaration")
+                                                          stx
+                                                          #'id)]
+                                                        [_else
+                                                         (raise-syntax-error
+                                                          #f
+                                                          "expected an identifier after the keyword"
+                                                          stx)]))]
+                                                   [inner-param
+                                                    (lambda (stx)
+                                                      (syntax-case stx (rename-inner-extra-orig ...)
+                                                        [(_ default-expr rename-inner-extra-orig . args)
+                                                         (generate-inner-call 
+                                                          stx
+                                                          (quote-syntax the-finder)
+                                                          (quote the-obj)
+                                                          (syntax default-expr)
+                                                          (quote-syntax rename-inner-extra-temp)
+                                                          (syntax args))]
+                                                        ...
+                                                        [(_ default-expr id . args)
+                                                         (identifier? #'id)
+                                                         (raise-syntax-error
+                                                          #f
+                                                          (string-append
+                                                           "identifier for inner call does not have a pubment, augment, "
+                                                           "overment, or inherit/inner declaration")
+                                                          stx
+                                                          #'id)]
+                                                        [(_)
+                                                         (raise-syntax-error
+                                                          #f
+                                                          "expected a default-value expression after the keyword"
+                                                          stx
+                                                          #'id)]
+                                                        [_else
+                                                         (raise-syntax-error
+                                                          #f
+                                                          "expected an identifier after the keyword and default-value expression"
+                                                          stx)]))])
+                                                stx-def ...
+                                                (letrec ([private-temp private-method]
+                                                         ...
+                                                         [pubment-temp pubment-method]
+                                                         ...
+                                                         [public-final-temp public-final-method]
+                                                         ...)
+                                                  (values
+                                                   (list pubment-temp ... public-final-temp ... . public-methods)
+                                                   (list . override-methods)
+                                                   (list . augride-methods)
+                                                   ;; Initialization
+                                                   #, ;; Attach srcloc (useful for profiling)
+                                                   (quasisyntax/loc stx
+                                                     (lambda (the-obj super-go si_c si_inited? si_leftovers init-args)
+                                                       (let-syntax ([the-finder (quote-syntax the-obj)])
+                                                         (syntax-parameterize
+                                                             ([super-instantiate-param
+                                                               (lambda (stx)
+                                                                 (syntax-case stx () 
+                                                                   [(_ (arg (... ...)) (kw kwarg) (... ...))
+                                                                    (with-syntax ([stx stx])
+                                                                      (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
+                                                                                                                  si_leftovers)
+                                                                                            (list arg (... ...)) 
+                                                                                            (kw kwarg) (... ...))))]))]
+                                                              [super-new-param
+                                                               (lambda (stx)
+                                                                 (syntax-case stx () 
+                                                                   [(_ (kw kwarg) (... ...))
+                                                                    (with-syntax ([stx stx])
+                                                                      (syntax (-instantiate super-go stx (the-obj si_c si_inited? 
+                                                                                                                  si_leftovers)
+                                                                                            null
+                                                                                            (kw kwarg) (... ...))))]))]
+                                                              [super-make-object-param
+                                                               (lambda (stx)
+                                                                 (let ([code 
+                                                                        (quote-syntax
+                                                                         (lambda args
+                                                                           (super-go the-obj si_c si_inited? si_leftovers args null)))])
+                                                                   (if (identifier? stx)
+                                                                       code
+                                                                       (datum->syntax
+                                                                        code
+                                                                        (cons code
+                                                                              (cdr (syntax-e stx)))))))])
+                                                           (letrec-syntaxes+values
+                                                               ([(plain-init-name) (make-init-redirect 
+                                                                                    (quote-syntax set!)
+                                                                                    (quote-syntax #%plain-app)
+                                                                                    (quote-syntax local-plain-init-name)
+                                                                                    (quote-syntax plain-init-name-localized))] ...)
+                                                               ([(local-plain-init-name) undefined] ...)
+                                                             (void) ; in case the body is empty
+                                                             . exprs)))))))))))))
 				     ;; Not primitive:
 				     #f))))))))))))))))
 
