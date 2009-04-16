@@ -170,7 +170,9 @@ typedef struct {
   int local1_busy;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
-  int self_to_closure_delta;
+  int self_to_closure_delta, closure_to_args_delta;
+  int example_argc;
+  Scheme_Object **example_argv;
   void *self_restart_code;
   void *self_nontail_code;
   Scheme_Native_Closure *nc; /* for extract_globals and extract_closure_local, only */
@@ -1489,7 +1491,15 @@ Scheme_Object *extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, i
   if (pos >= jitter->self_pos - jitter->self_to_closure_delta) {
     pos -= (jitter->self_pos - jitter->self_to_closure_delta);
     if (pos < jitter->nc->code->u2.orig_code->closure_size) {
+      /* in the closure */
       return jitter->nc->vals[pos];
+    } else {
+      /* maybe an example argument... which is useful when
+         the enclosing function has been lifted, converting
+         a closure element into an argument */
+      pos -= jitter->closure_to_args_delta;
+      if (pos < jitter->example_argc)
+        return jitter->example_argv[pos];
     }
   }
 
@@ -7773,6 +7783,8 @@ typedef struct {
   void *arity_code, *code, *tail_code, *code_end, **patch_depth;
   int max_extra, max_depth;
   Scheme_Native_Closure *nc;
+  int argc;
+  Scheme_Object **argv;
 } Generate_Closure_Data;
 
 static int do_generate_closure(mz_jit_state *jitter, void *_data)
@@ -7780,11 +7792,15 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
   Scheme_Closure_Data *data = gdata->data;
   void *code, *tail_code, *code_end, *arity_code;
-  int i, r, cnt, has_rest, is_method, num_params;
+  int i, r, cnt, has_rest, is_method, num_params, to_args, argc;
+  Scheme_Object **argv;
 
   code = jit_get_ip().ptr;
 
   jitter->nc = gdata->nc;
+
+  argc = gdata->argc;
+  argv = gdata->argv;
 
   generate_function_prolog(jitter, code, 
 			   /* max_extra_pushed may be wrong the first time around,
@@ -7891,18 +7907,31 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     __END_SHORT_JUMPS__(cnt < 100);
 
     has_rest = 1;
-  } else
+    if (argc < (data->num_params - 1)) {
+      argv = NULL;
+      argc = 0;
+    }
+  } else {
     has_rest = 0;
+    if (argc != data->num_params) {
+      argv = NULL;
+      argc = 0;
+    }
+  }
 
 #ifdef JIT_PRECISE_GC
   /* Keeping the native-closure pointer on the runstack
      ensures that the code won't be GCed while we're running
      it. */
   mz_pushr_p(JIT_R0);  /* no sync */
+  to_args = 0;
+#else
+  to_args = 0;
 #endif
 
   /* Extract closure to runstack: */
   cnt = data->closure_size;
+  to_args += cnt;
   if (cnt) {
     mz_rs_dec(cnt);
     CHECK_RUNSTACK_OVERFLOW();
@@ -7970,6 +7999,9 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jitter->self_nontail_code = tail_code;
 
   jitter->self_to_closure_delta = jitter->self_pos;
+  jitter->closure_to_args_delta = to_args;
+  jitter->example_argc = argc;
+  jitter->example_argv = argv;
   
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
@@ -8000,7 +8032,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
-static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
+static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
 {
   Scheme_Native_Closure_Data *ndata = nc->code;
   Scheme_Closure_Data *data;
@@ -8012,6 +8044,8 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
   
   gdata.data = data;
   gdata.nc = nc;
+  gdata.argc = argc;
+  gdata.argv = argv;
 
   scheme_delay_load_closure(data);
 
@@ -8079,7 +8113,7 @@ static void on_demand()
   argc = MZ_RUNSTACK[1];
   argv = (Scheme_Object **)MZ_RUNSTACK[2];
 
-  on_demand_generate_lambda((Scheme_Native_Closure *)c);
+  on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
 }
 
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
