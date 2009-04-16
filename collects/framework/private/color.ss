@@ -260,7 +260,11 @@ added get-regions
     
     (define/private (re-tokenize ls in in-start-pos enable-suspend)
       (let-values ([(lexeme type data new-token-start new-token-end) 
-                    (get-token in)])
+                    (begin
+                      (enable-suspend #f)
+                      (begin0
+                       (get-token in)
+                       (enable-suspend #t)))])
         (unless (eq? 'eof type)
           (enable-suspend #f)
           #; (printf "~a at ~a to ~a~n" lexeme (+ in-start-pos (sub1 new-token-start))
@@ -365,10 +369,14 @@ added get-regions
                       (for-each
                        (lambda (ls)
                          (re-tokenize ls
-                                      (open-input-text-editor this 
-                                                              (lexer-state-current-pos ls)
-                                                              (lexer-state-end-pos ls)
-                                                              (λ (x) #f))
+                                      (begin
+                                        (enable-suspend #f)
+                                        (begin0
+                                         (open-input-text-editor this 
+                                                                 (lexer-state-current-pos ls)
+                                                                 (lexer-state-end-pos ls)
+                                                                 (λ (x) #f))
+                                         (enable-suspend #t)))
                                       (lexer-state-current-pos ls)
                                       enable-suspend))
                        lexer-states)))))
