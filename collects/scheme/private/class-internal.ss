@@ -2777,8 +2777,10 @@
 	  ;; All unconsumed named-args must have #f
 	  ;;  "name"s, otherwise an error is raised in
 	  ;;  the leftovers checking.
-	  (append (map (lambda (x) (cons #f x)) al)
-		  named-args)]
+          (if (null? al)
+              named-args
+              (append (map (lambda (x) (cons #f x)) al)
+                      named-args))]
 	 [else
 	  (obj-error 'instantiate 
 		     "too many initialization arguments:~a~a" 
