@@ -226,6 +226,7 @@
  null
  list?)
 
+
 (drscheme:font:setup-preferences)
 (color-prefs:add-background-preferences-panel)
 (scheme:add-preferences-panel)
@@ -233,6 +234,7 @@
 (preferences:add-editor-checkbox-panel)
 (preferences:add-warnings-checkbox-panel)
 (preferences:add-scheme-checkbox-panel)
+(preferences:add-general-checkbox-panel)
 
 (let ([make-check-box
        (λ (pref-sym string parent)
@@ -245,7 +247,7 @@
                        (send checkbox get-value))))])
            (preferences:add-callback pref-sym (λ (p v) (send q set-value v)))
            (send q set-value (preferences:get pref-sym))))])
-  (preferences:add-to-editor-checkbox-panel
+  (preferences:add-to-general-checkbox-panel
    (λ (editor-panel)
      (make-check-box 'drscheme:open-in-tabs 
                      (string-constant open-files-in-tabs)
@@ -264,7 +266,11 @@
      
      (make-check-box 'drscheme:module-language-first-line-special?
                      (string-constant ml-always-show-#lang-line)
-                     editor-panel)
+                     editor-panel)))
+  
+  (preferences:add-to-editor-checkbox-panel
+   (λ (editor-panel)
+     (void)
      
      ;; come back to this one.
      #;

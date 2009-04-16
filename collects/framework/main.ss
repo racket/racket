@@ -199,6 +199,12 @@
          editing.})
  
  (proc-doc/names
+  preferences:add-general-checkbox-panel
+  (-> void?)
+  ()
+  @{Adds a catch-all preferences panel for options.})
+ 
+ (proc-doc/names
   preferences:add-warnings-checkbox-panel
   (-> void?)
   ()
@@ -232,7 +238,15 @@
   (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
   (proc)
   @{Saves @scheme[proc] until the preferences panel is created, when it
-          is called with the Echeme preferences panel to add new children to
+          is called with the editor preferences panel to add new children to
+          the panel.})
+ 
+ (proc-doc/names
+  preferences:add-to-general-checkbox-panel
+  (((is-a?/c vertical-panel%) . -> . void?) . -> . void?)
+  (proc)
+  @{Saves @scheme[proc] until the preferences panel is created, when it
+          is called with the general preferences panel to add new children to
           the panel.})
  
  (proc-doc/names
