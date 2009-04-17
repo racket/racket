@@ -12,6 +12,7 @@
             [intermediate-lambda-define define]
             [intermediate-define-struct define-struct]
             [intermediate-lambda lambda]
+            [intermediate-lambda λ]
             [advanced-app #%app]
             [beginner-top #%top]
             [intermediate-local local]

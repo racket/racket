@@ -16,6 +16,7 @@
             [advanced-define define]
             [advanced-define-struct define-struct]
             [advanced-lambda lambda]
+            [advanced-lambda λ]
             [advanced-app #%app]
             [beginner-top #%top]
             [intermediate-local local]
