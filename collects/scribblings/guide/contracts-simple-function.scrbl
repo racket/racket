@@ -219,7 +219,7 @@ scheme
 (define (has-decimal? str)
   (define L (string-length str))
   (and (>= L 3)
-       (char=? #\. (string-ref result (- L 3)))))
+       (char=? #\. (string-ref str (- L 3)))))
 
 (provide/contract
   (code:comment "convert a random number to a string")
@@ -253,15 +253,15 @@ scheme
 (define (has-decimal? str)
   (define L (string-length str))
   (and (>= L 3)
-       (char=? #\. (string-ref result (- L 3)))))
+       (char=? #\. (string-ref str (- L 3)))))
 
 (define (is-decimal-string? str)
   (define L (string-length str))
   (and (has-decimal? str)
        (andmap digit-char?
-               (string->list (substring result 0 (- L 3))))
+               (string->list (substring str 0 (- L 3))))
        (andmap digit-char?
-               (string->list (substring result (- L 2) L)))))
+               (string->list (substring str (- L 2) L)))))
 
 (provide/contract
   ...
