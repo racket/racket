@@ -78,7 +78,7 @@ argument and for the result. When all you have, however, is a Scheme name,
 such as @scheme[create] or @scheme[deposit], you want to tell the
 reader what the name represents (a function) and, if it is a function (or
 some other complex value) what the pieces are supposed to be. This is why
-we use a @scheme[->] to say "hey, expect this to be a function." 
+we use a @scheme[->] to say ``hey, expect this to be a function.''
 
 So @scheme[->] says ``this is a contract for a function.'' What follows
 in a function contracts are contracts (sub-contracts if you wish) that tell
@@ -93,8 +93,8 @@ number, and a boolean. Its result is an account.
 
 In short, the arrow @scheme[->] is a @italic{contract
 combinator}. Its purpose is to combine other contracts into a contract
-that says "this is a function @italic{and} its arguments and its result are
-like that."
+that says ``this is a function @italic{and} its arguments and its result
+are like that.''
 
 @ctc-section[#:tag "dots"]{Infix Contract Notation}
 
