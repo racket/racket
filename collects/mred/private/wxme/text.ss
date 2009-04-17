@@ -2581,9 +2581,9 @@
   (define/override (read-from-file . args)
     (case-args
      args
-     [([editor-stream-in% f] [exact-nonnegative-integer? start] [any? [overwritestyle? #t]])
+     [([editor-stream-in% f] [exact-nonnegative-integer? start] [any? [overwritestyle? #f]])
       (do-read-from-file f start overwritestyle?)]
-     [([editor-stream-in% f] [any? [overwritestyle? #t]])
+     [([editor-stream-in% f] [any? [overwritestyle? #f]])
       (do-read-from-file f 'start overwritestyle?)]
      (method-name 'text% 'read-from-file)))
 

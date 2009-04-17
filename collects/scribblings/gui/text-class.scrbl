@@ -1698,7 +1698,7 @@ Returns the paragraph number of the paragraph containing a given @techlink{posit
 @defmethod[#:mode extend
            (read-from-file [stream (is-a?/c editor-stream-in%)]
                            [start (or/c exact-nonnegative-integer? (one/of 'start))]
-                           [overwrite-styles? any/c #t])
+                           [overwrite-styles? any/c #f])
            boolean?]{
 
 New data is inserted at the @techlink{position} indicated by @scheme[start], or at

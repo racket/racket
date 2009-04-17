@@ -11,6 +11,7 @@
                        syntax/name
                        syntax/context
                        syntax/define
+                       syntax/flatten-begin
                        syntax/private/boundmap
                        mzlib/stxparam
                        "classidmap.ss"))
@@ -245,9 +246,9 @@
 		null
 		(let ([e (expand (car l))])
 		  (syntax-case e (begin define-syntaxes define-values)
-		    [(begin expr ...)
+		    [(begin . _)
 		     (loop (append
-			    (syntax->list (syntax (expr ...)))
+                            (flatten-begin e)
 			    (cdr l)))]
 		    [(define-syntaxes (id ...) rhs)
 		     (andmap identifier? (syntax->list #'(id ...)))

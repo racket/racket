@@ -2,7 +2,8 @@
 (require (for-syntax scheme/base
                      syntax/kerncase
                      syntax/boundmap
-                     syntax/define))
+                     syntax/define
+                     syntax/flatten-begin))
 
 (provide define-package
          package-begin
@@ -92,6 +93,12 @@
                      (generate-hidden id)))
               hidden)
        id)))
+
+(define-for-syntax (move-props orig new)
+  (datum->syntax new
+                 (syntax-e new)
+                 orig
+                 orig))
 
 (define-for-syntax (do-define-package stx exp-stx)
   (syntax-case exp-stx ()
@@ -293,7 +300,7 @@
                                             (car def-ctxes)))])
                    (syntax-case expr (begin)
                      [(begin . rest)
-                      (loop (append (syntax->list #'rest) (cdr exprs))
+                      (loop (append (flatten-begin expr) (cdr exprs))
                             rev-forms
                             def-ctxes)]
                      [(def (id ...) rhs)
@@ -315,7 +322,7 @@
                             (syntax-local-bind-syntaxes ids #'rhs def-ctx)
                             (register-bindings! ids)
                             (loop (cdr exprs)
-                                  (cons #`(define-syntaxes #,ids rhs)
+                                  (cons (move-props expr #`(define-syntaxes #,ids rhs))
                                         rev-forms)
                                   (if star? (cons def-ctx def-ctxes) def-ctxes)))))]
                      [(def (id ...) rhs)
@@ -333,7 +340,7 @@
                           (syntax-local-bind-syntaxes ids #f def-ctx)
                           (register-bindings! ids)
                           (loop (cdr exprs)
-                                (cons #`(define-values #,ids rhs) rev-forms)
+                                (cons (move-props expr #`(define-values #,ids rhs)) rev-forms)
                                 (if star? (cons def-ctx def-ctxes) def-ctxes))))]
                      [else
                       (loop (cdr exprs) 
