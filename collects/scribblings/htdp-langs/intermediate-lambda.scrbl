@@ -35,7 +35,7 @@
 @declare-exporting[lang/htdp-intermediate-lambda]
 
 @schemegrammar*+qq[
-#:literals (define define-struct lambda cond else if and or empty true false require lib planet
+#:literals (define define-struct lambda λ cond else if and or empty true false require lib planet
             local let let* letrec time check-expect check-within check-error)
 (check-expect check-within check-error require)
 [program (code:line def-or-expr ...)]
@@ -47,6 +47,7 @@
             (define id expr)
             (define-struct id (id ...))]
 [expr (lambda (id id ...) expr)
+      (λ (id id ...) expr)
       (local [definition ...] expr)
       (letrec ([id expr] ...) expr)
       (let ([id expr] ...) expr)
@@ -96,6 +97,10 @@ for @scheme[lambda], since a @scheme[lambda] form is an expression.}
 
 Creates a function that takes as many arguments as given @scheme[id]s,
 and whose body is @scheme[expr].}
+
+@defform[(λ (id id ...) expr)]{
+
+The Greek letter @scheme[λ] is a synonym for @scheme[lambda].}
 
 @; ----------------------------------------------------------------------
 
