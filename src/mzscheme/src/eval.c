@@ -6090,7 +6090,7 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
     if (NOT_SAME_OBJ(tl_id, SCHEME_STX_SYM(symbol))) {
       /* Since the module has a rename for this id, it's certainly defined. */
     } else {
-      modidx = scheme_stx_module_name(0, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
+      modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
                                       NULL, NULL, NULL, NULL);
       if (modidx) {
 	/* If it's an access path, resolve it: */
