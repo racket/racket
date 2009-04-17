@@ -1119,7 +1119,7 @@
 
     (define/override (render-blockquote t part ri)
       `((blockquote ,(if (string? (blockquote-style t))
-                       `([class ,(blockquote-style t)])
+                       `([class ,(regexp-replace #rx"^[\\]" (blockquote-style t) "")])
                        `())
           ,@(append-map (lambda (i) (render-block i part ri #f))
                         (blockquote-paragraphs t)))))

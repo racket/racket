@@ -403,10 +403,14 @@
 
     (define/override (render-blockquote t part ri)
       (let ([kind (or (blockquote-style t) "quote")])
-        (printf "\\begin{~a}" kind)
+        (if (regexp-match #rx"^[\\]" kind)
+            (printf "~a{" kind)
+            (printf "\\begin{~a}" kind))
         (parameterize ([current-table-mode (list "blockquote" t)])
           (render-flow (make-flow (blockquote-paragraphs t)) part ri #f))
-        (printf "\\end{~a}" kind)
+        (if (regexp-match #rx"^[\\]" kind)
+            (printf "}")
+            (printf "\\end{~a}" kind))
         null))
 
     (define/override (render-other i part ri)

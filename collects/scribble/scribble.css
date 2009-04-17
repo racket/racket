@@ -152,9 +152,16 @@ table td {
   width: 13em;
   font-size: 85%;
   border: 0.5em solid #F5F5DC;
+  margin: 0 0 0 0;
 }
 
 .refcontent {
+  margin: 0 0 0 0;
+}
+
+.refcontent p {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 /* ---------------------------------------- */

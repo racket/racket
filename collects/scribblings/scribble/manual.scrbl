@@ -1141,7 +1141,7 @@ centered table with the @scheme[pre-flow] parsed by
 an inset command-line example (e.g., in typewriter font).}
 
 @defproc[(margin-note [pre-content any/c] ...) paragraph?]{Produces
-a paragraph to be typeset in the margin instead of inlined.}
+a @tech{blockquote} to be typeset in the margin instead of inlined.}
 
 @; ------------------------------------------------------------------------
 @section[#:tag "index-entries"]{Index-Entry Descriptions}

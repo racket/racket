@@ -199,10 +199,15 @@
    `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl") "hash-lang"))))
 
 (define (margin-note . c)
-  (make-styled-paragraph
-   (list (make-element "refcolumn"
-                       (list (make-element "refcontent" (decode-content c)))))
-   "refpara"))
+  (make-blockquote
+   "\\refpara"
+   (list
+    (make-blockquote
+     "refcolumn"
+     (list
+      (make-blockquote
+       "refcontent"
+       (flow-paragraphs (decode-flow c))))))))
 
 (define void-const
   (schemeresultfont "#<void>"))

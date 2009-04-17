@@ -42,8 +42,6 @@
 \newcommand{\schemeopt}[1]{#1}
 \newcommand{\textsub}[1]{$_{\hbox{\textsmaller{#1}}}$}
 \newcommand{\textsuper}[1]{$^{\hbox{\textsmaller{#1}}}$}
-\newcommand{\refcolumn}[1]{#1}
-\newcommand{\refcontent}[1]{#1}
 \newcommand{\intextcolor}[2]{\textcolor{#1}{#2}}
 \newcommand{\intextrgbcolor}[2]{\textcolor[rgb]{#1}{#2}}
 \newcommand{\incolorbox}[2]{{\fboxrule=0pt\fboxsep=0pt\colorbox{#1}{#2}}}
@@ -58,8 +56,11 @@
 \newcommand{\noborder}[1]{#1}
 \newcommand{\imageleft}[1]{} % drop it
 \renewcommand{\smaller}[1]{\textsmaller{#1}}
-\newcommand{\refpara}[1]{\marginpar{\raggedright \footnotesize #1}}
 \newcommand{\planetName}[1]{PLane\hspace{-0.1ex}T}
+
+\newcommand{\refpara}[1]{\marginpar{\raggedright \footnotesize #1}}
+\newenvironment{refcolumn}{}{}
+\newenvironment{refcontent}{}{}
 
 \newcommand{\titleAndEmptyVersion}[2]{\title{#1}\maketitle}
 \newcommand{\titleAndVersion}[2]{\title{#1\\{\normalsize Version #2}}\maketitle}

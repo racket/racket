@@ -476,7 +476,8 @@ The @scheme[style] can be
 
 A @techlink{blockquote} has a style and a list of @tech{blocks}.  The
 @scheme[style] field is normally a string that corresponds to a CSS
-class for HTML output or Latex environment for Latex output (see
+class for HTML output or Latex environment for Latex output where a
+leading @litchar{\} in the style name is treated specially (see
 @secref["extra-style"]).
 
 }
