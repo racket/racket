@@ -325,7 +325,7 @@
                       (let ([star? (free-identifier=? #'def #'-define*-values)]
                             [ids (syntax->list #'(id ...))])
                         (let* ([def-ctx (if star?
-                                            (syntax-local-make-definition-context)
+                                            (syntax-local-make-definition-context (car def-ctxes))
                                             (car def-ctxes))]
                                [ids (if star? 
                                         (map (add-package-context (list def-ctx)) ids)
