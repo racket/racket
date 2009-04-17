@@ -54,11 +54,17 @@ Returns the next integer value in the stream.
 @defmethod[(get-fixed [v (box/c (and/c exact? integer?))])
            (is-a?/c editor-stream-in%)]{
 
+@boxisfill[(scheme v) @elem{a fixed-size integer from the stream obtained through 
+           @method[editor-stream-in% get-fixed-exact]}]
+
+}
+
+@defmethod[(get-fixed-exact)
+           (and/c exact? integer?)]{
+
 Gets a fixed-sized integer from the stream. See
 @method[editor-stream-out% put-fixed] for more information.
 Reading from a bad stream always gives @scheme[0].
-
-@boxisfill[(scheme v) @elem{the fixed-size integer from the stream}]
 
 }
 
