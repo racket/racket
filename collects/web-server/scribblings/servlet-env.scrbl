@@ -120,7 +120,7 @@ and if @scheme[serve/servlet] is run in another module.
                                             (regexp-quote servlet-path)))]
                         [#:stateless? stateless? boolean? #f]
                         [#:stuffer stuffer (stuffer/c serializable? bytes?) default-stuffer]
-                        [#:manager manager manager? (make-threshold-LRU-manager #f (* 1024 1024 64))]
+                        [#:manager manager manager? (make-threshold-LRU-manager #f (* 128 1024 1024))]
                         [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                         [#:server-root-path server-root-path path-string? default-server-root-path]
                         [#:extra-files-paths extra-files-paths (listof path-string?) (list (build-path server-root-path "htdocs"))]
