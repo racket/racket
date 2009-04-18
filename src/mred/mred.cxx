@@ -2222,11 +2222,6 @@ static HANDLE waiting_sema;
 
 typedef HWND (WINAPI* gcw_proc)();
 
-static void HideConsole()
-{
-  
-}
-
 static BOOL WINAPI ConsoleHandler(DWORD op)
 {
   if (stdio_kills_prog) {
@@ -2234,9 +2229,6 @@ static BOOL WINAPI ConsoleHandler(DWORD op)
   } else {
     scheme_break_main_thread();
     scheme_signal_received();
-    if ((op != CTRL_C_EVENT)
-	&& (op != CTRL_BREAK_EVENT))
-      HideConsole();
   }
   return TRUE;
 }
@@ -2256,8 +2248,8 @@ static void WaitOnConsole()
 		 RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
   }
 
-  WriteConsole(console_out, "\n[Exited]", 9, &wrote, NULL);
-  
+  WriteConsole(console_out, "\n[Exited. Close box or Ctrl-C closes the console.]\n", 51, &wrote, NULL);
+
   WaitForSingleObject(waiting_sema, INFINITE);
 }
 
@@ -3670,13 +3662,6 @@ void wxDrop_Runtime(char **argv, int argc)
 #if defined(wx_mac) || defined(wx_msw)
 void wxDrop_Quit()
 {
-#if WCONSOLE_STDIO
-  if (has_stdio) {
-    has_stdio = 0;
-    HideConsole();
-  }
-#endif
-
   wxDo(wxs_app_quit_proc, 0, NULL);
 }
 #endif
