@@ -535,7 +535,6 @@ library.}
         Extends the given @scheme[text%] class with implementations of the 
         @scheme[html-text<%>] methods. Hyperlinks are attached to clickbacks 
         that use @net-send-url from @schememodname[net/sendurl].
-        }
 }
 
 @defproc[(render-html-to-text [in input-port?] 
