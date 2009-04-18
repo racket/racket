@@ -150,7 +150,7 @@
      [(dict-struct? d)
       ((get-dict-ref (dict-struct-ref d)) d key)]
      [else
-      (raise-type-error 'dict-ref 'dict 0 d key)])]
+      (raise-type-error 'dict-ref "dict" 0 d key)])]
    [(d key default)
     (cond
      [(hash? d) (hash-ref d key default)]
@@ -170,7 +170,7 @@
      [(dict-struct? d)
       ((get-dict-ref (dict-struct-ref d)) d key default)]
      [else
-      (raise-type-error 'dict-ref 'dict 0 d key default)])]))
+      (raise-type-error 'dict-ref "dict" 0 d key default)])]))
 
 (define (dict-set! d key val)
   (cond
