@@ -2560,7 +2560,6 @@
         (when fileerr?
           (error (method-name 'text% 'save-port) "error writing editor content"))
         #t)))
-
   
   (define/private (do-read-from-file f start overwritestyle?)
     (if write-locked?
@@ -4722,9 +4721,9 @@
 
                   (cond
                    [(not (= delayedscroll -1))
-                    (scroll-to-position/refresh delayedscroll delayedscrollateol? #f
-                                                delayedscrollend delayedscrollbias)
-                    (set! refresh-all? #t)]
+                    (when (scroll-to-position/refresh delayedscroll delayedscrollateol? #f
+                                                      delayedscrollend delayedscrollbias)
+                      (set! refresh-all? #t))]
                    [delayedscrollbox?
                     (set! delayedscrollbox? #f)
                     (when (do-scroll-to delayedscrollsnip delayedscroll-x delayedscroll-y
@@ -4735,7 +4734,7 @@
                       (send s-admin get-dc x y)
                     (when (or (not (= origx x)) (not (= origy y)))
                       (set! refresh-all? #t)))
-                  
+
                   (let-boxes ([x 0.0] [y 0.0] [w 0.0] [h 0.0])
                       (send s-admin get-max-view x y w h)
                     (let ([top y]
