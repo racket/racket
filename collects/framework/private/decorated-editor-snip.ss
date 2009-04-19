@@ -22,6 +22,9 @@
 (define editor-snip:decorated-mixin
   (mixin ((class->interface editor-snip%)) (editor-snip:decorated<%>)
     
+    (init [with-border? #t])
+    (define draw-border? with-border?)
+    
     ;; get-corner-bitmap : -> (union #f (is-a?/c bitmap%))
     ;; returns the bitmap to be shown in the top right corner.
     (define/public (get-corner-bitmap) #f)
@@ -152,13 +155,14 @@
                        (+ x (unbox bil) 2)
                        (+ y (unbox bmt)))])))
           
-          (send dc set-pen (get-pen))
-          (send dc set-brush (get-brush))
-          (send dc draw-rectangle
-                (+ x (unbox bil))
-                (+ y (unbox bit))
-                (max 0 (- (unbox bw) (unbox bil) (unbox bir)))
-                (max 0 (- (unbox bh) (unbox bit) (unbox bib))))
+          (when draw-border?
+            (send dc set-pen (get-pen))
+            (send dc set-brush (get-brush))
+            (send dc draw-rectangle
+                  (+ x (unbox bil))
+                  (+ y (unbox bit))
+                  (max 0 (- (unbox bw) (unbox bil) (unbox bir)))
+                  (max 0 (- (unbox bh) (unbox bit) (unbox bib)))))
           
           (send dc set-pen old-pen)
           (send dc set-brush old-brush))))
