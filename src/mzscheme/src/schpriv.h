@@ -1140,7 +1140,7 @@ typedef struct Scheme_Cont_Mark_Set {
   Scheme_Object *native_stack_trace;
 } Scheme_Cont_Mark_Set;
 
-#define SCHEME_LOG_MARK_SEGMENT_SIZE 8
+#define SCHEME_LOG_MARK_SEGMENT_SIZE 6
 #define SCHEME_MARK_SEGMENT_SIZE (1 << SCHEME_LOG_MARK_SEGMENT_SIZE)
 #define SCHEME_MARK_SEGMENT_MASK (SCHEME_MARK_SEGMENT_SIZE - 1)
 
