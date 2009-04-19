@@ -5,18 +5,17 @@
 
 (define-language lang
   (e (lambda (x) e)
-     (let (x e) e)
-     (app e e)
+     (e e)
      (+ e e)
      number
      x)
-  (e-ctxt (lambda (x) e-ctxt)
-          a-ctxt)
-  (a-ctxt (let (x a-ctxt) e)
-          (app a-ctxt e)
-          (app x a-ctxt)
+  (ctxt (ctxt e)
+          (v ctxt)
+          (+ ctxt e)
+          (+ v ctxt)
           hole)
   (v (lambda (x) e)
+     number
      x)
   (x variable))
 
@@ -47,11 +46,4 @@
       (subst (x_1 e_1 e_3)))]
   [(subst (x_1 e_1 number_1)) number_1])
 
-(traces reductions
-        '(let (plus (lambda (m) 
-                      (lambda (n) 
-                        (lambda (s)
-                          (lambda (z)
-                            (app (app m s) (app (app n s) z)))))))
-           (let (two (lambda (s) (lambda (z) (app s (app s z)))))
-             (app (app plus two) two))))
+(apply-reduction-relation reductions `(app (lambda (x) x) (lambda (x) x)))
