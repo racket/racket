@@ -210,7 +210,7 @@
 @defmixin[color:text-mode-mixin (mode:surrogate-text<%>) (color:text-mode<%>)]{
   This mixin adds coloring functionality to the mode.
 
-  @defconstructor[((get-token lexer default-lexer) (token-sym->style (token $rightarrow$ string) @scheme[(λ (x) "Standard")])|) (matches (listof (list/c symbol? symbol?)) null))]{
+  @defconstructor[((get-token lexer default-lexer) (token-sym->style (token $rightarrow$ string) |@scheme[(λ (x) "Standard")])|) (matches (listof (list/c symbol? symbol?)) null))]{
 
     The arguments are passed to 
     @method[color:text<%> start-colorer].
