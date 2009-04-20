@@ -71,7 +71,7 @@
     closing parenthesis, each closing symbol in pairs will be converted to
     a string and tried as a closing parenthesis.
   }
-  @defmethod*[(((stop-colorer (clear-colors boolean |#t|)) void))]{
+  @defmethod*[(((stop-colorer (clear-colors boolean #t)) void))]{
     Stops coloring and paren matching the buffer.
 
 
@@ -106,7 +106,7 @@
     entire text is brought up-to-date.  It must not be called on a locked
     text.
   }
-  @defmethod*[(((thaw-colorer (recolor boolean |#t|) (retokenize boolean |#f|)) void))]{
+  @defmethod*[(((thaw-colorer (recolor boolean #t) (retokenize boolean #f)) void))]{
     Start coloring a frozen buffer again.
 
 
