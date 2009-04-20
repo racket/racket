@@ -237,7 +237,8 @@ The result of @scheme[make-struct-type] is five values:
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessot-procedure?]
                                      [field-pos exact-nonnegative-integer?]
-                                     [field-name symbol?])
+                                     [field-name (or/c symbol? #f) 
+                                                 (symbol->string (format "field~a" field-pos))])
          procedure?]{
 
 Returns a field accessor that is equivalent to @scheme[(lambda (s)
@@ -245,13 +246,14 @@ Returns a field accessor that is equivalent to @scheme[(lambda (s)
 an @tech{accessor} returned by @scheme[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
 @scheme[field-name] and the name of @scheme[accessor-proc]'s
-structure type.
+structure type if @scheme[field-name] is a symbol.
 
 For examples, see @scheme[make-struct-type].}
 
 @defproc[(make-struct-field-mutator [mutator-proc struct-mutator-procedure?]
                                     [field-pos exact-nonnegative-integer?]
-                                    [field-name symbol?])
+                                    [field-name (or/c symbol? #f)
+                                                (symbol->string (format "field~a" field-pos))])
          procedure?]{
 
 Returns a field mutator that is equivalent to @scheme[(lambda (s v)
@@ -259,7 +261,7 @@ Returns a field mutator that is equivalent to @scheme[(lambda (s v)
 a @tech{mutator} returned by @scheme[make-struct-type]. The name of the
 resulting procedure for debugging purposes is derived from
 @scheme[field-name] and the name of @scheme[mutator-proc]'s
-structure type.
+structure type if @scheme[field-name] is a symbol.
 
 For examples, see @scheme[make-struct-type].}
 

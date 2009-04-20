@@ -2863,12 +2863,13 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   if (reorder_ok) {
     if (no_call < 2) {
-      generate(rator, jitter, 0, 0, JIT_V1); /* sync'd below */
+      generate(rator, jitter, 0, 0, JIT_V1); /* sync'd below, or not */
     }
     CHECK_LIMIT();
   }
 
-  mz_rs_sync();
+  if (!no_call)
+    mz_rs_sync();
 
   END_JIT_DATA(20);
 

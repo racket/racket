@@ -1327,9 +1327,9 @@
 						rename-super-temp ... rename-super-extra-temp ...
 						rename-inner-temp ... rename-inner-extra-temp ...
 						method-accessor ...) ; for a local call that needs a dynamic lookup
-                                         (let ([local-field-accessor (make-struct-field-accessor local-accessor local-field-pos)]
+                                         (let ([local-field-accessor (make-struct-field-accessor local-accessor local-field-pos #f)]
                                                ...
-                                               [local-field-mutator (make-struct-field-mutator local-mutator local-field-pos)]
+                                               [local-field-mutator (make-struct-field-mutator local-mutator local-field-pos #f)]
                                                ...)
                                            (syntax-parameterize
                                                ([this-param (make-this-map (quote-syntax this-id)
@@ -2102,9 +2102,9 @@
 		;;  Use public field names to name the accessors and mutators
 		(let-values ([(inh-accessors inh-mutators)
 			      (values
-			       (map (lambda (id) (make-class-field-accessor super id))
+			       (map (lambda (id) (make-class-field-accessor super id #f))
 				    inherit-field-names)
-			       (map (lambda (id) (make-class-field-mutator super id))
+			       (map (lambda (id) (make-class-field-mutator super id #f))
 				    inherit-field-names))])
 		  ;; -- Reset field table to register accessor and mutator info --
 		  ;;  There are more accessors and mutators than public fields...
@@ -2959,7 +2959,7 @@
           (loop (wrapper-object-wrapped loop-object)))))))
   
 
-  (define (class-field-X who which cwhich class name)
+  (define (class-field-X who which cwhich class name proc-field-name)
     (unless (class? class)
       (raise-type-error who "class" class))
     (unless (symbol? name)
@@ -2969,17 +2969,17 @@
 			       (obj-error who "no such field: ~a~a"
 					  name
 					  (for-class (class-name class)))))])
-      (which (cwhich (car p)) (cdr p) name)))
+      (which (cwhich (car p)) (cdr p) proc-field-name)))
   
-  (define (make-class-field-accessor class name)
+  (define (make-class-field-accessor class name keep-name?)
     (class-field-X 'class-field-accessor
 		   make-struct-field-accessor class-field-ref
-		   class name))
+		   class name (and keep-name? name)))
   
-  (define (make-class-field-mutator class name)
+  (define (make-class-field-mutator class name keep-name?)
     (class-field-X 'class-field-mutator 
 		   make-struct-field-mutator class-field-set!
-		   class name))
+		   class name (and keep-name? name)))
 
   (define-struct generic (name applicable))
 
@@ -3060,7 +3060,7 @@
 
   (define-syntaxes (class-field-accessor class-field-mutator generic/form)
     (let ([mk
-	   (lambda (make targets)
+	   (lambda (make targets extra-args)
 	     (lambda (stx)
 	       (syntax-case stx ()
 		 [(_ class-expr name)
@@ -3072,8 +3072,9 @@
 		       stx
 		       name))
 		    (with-syntax ([name (localize name)]
-				  [make make])
-		      (syntax/loc stx (make class-expr `name))))]
+				  [make make]
+                                  [extra-args extra-args])
+		      (syntax/loc stx (make class-expr `name . extra-args))))]
 		 [(_ class-expr)
 		  (raise-syntax-error
 		   #f
@@ -3081,9 +3082,9 @@
 			   targets)
 		   stx)])))])
       (values
-       (mk (quote-syntax make-class-field-accessor) "class")
-       (mk (quote-syntax make-class-field-mutator) "class")
-       (mk (quote-syntax make-generic/proc) "class or interface"))))
+       (mk (quote-syntax make-class-field-accessor) "class" (list #'#t))
+       (mk (quote-syntax make-class-field-mutator) "class" (list #'#t))
+       (mk (quote-syntax make-generic/proc) "class or interface" null))))
 
   (define-syntax (class-field-accessor-traced stx)
     (syntax-case stx ()
