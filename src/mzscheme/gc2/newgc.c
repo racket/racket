@@ -563,9 +563,6 @@ static void *allocate_medium(size_t sizeb, int type)
   struct mpage *page;
   struct objhead *info;
 
-  /* TEMPORARILY DISABLE MEDIUM PAGES */
-  return allocate_big(sizeb, type);
-
   if (sizeb > (1 << (LOG_APAGE_SIZE - 1)))
     return allocate_big(sizeb, type);
  
@@ -583,7 +580,7 @@ static void *allocate_medium(size_t sizeb, int type)
     page = gc->med_freelist_pages[pos];
     if (page) {
       n = page->previous_size;
-      while (n < APAGE_SIZE) {
+      while (n <= (APAGE_SIZE - sz)) {
         info = (struct objhead *)PTR(NUM(page->addr) + n);
         if (info->dead) {
           info->dead = 0;
@@ -2367,7 +2364,7 @@ static void mark_backpointers(NewGC *gc)
             struct objhead *info = (struct objhead *)start;
             if(!info->dead) {
               info->mark = 1;
-              /* This must be a push_ptr (see below) */
+              /* This must be a push_ptr (see above) */
               push_ptr(start + 1);
             }
             start += info->size;
@@ -2616,7 +2613,7 @@ static void repair_heap(NewGC *gc)
         void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
         void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
         
-        while(start < end) {
+        while(start <= end) {
           struct objhead *info = (struct objhead *)start;
           if(info->mark) {
             switch(info->type) {
@@ -2746,7 +2743,6 @@ static void clean_up_heap(NewGC *gc)
           /* free the page */
           if(prev) prev->next = next; else gc->med_pages[i] = next;
           if(next) work->next->prev = prev;
-          if (work->mprotected)  *(long *)0x0 = 1;
           gen1_free_mpage(pagemap, work);
         }
       } else if (gc->gc_full || !work->generation) {
@@ -2755,7 +2751,6 @@ static void clean_up_heap(NewGC *gc)
         next = work->next;
         if(prev) prev->next = next; else gc->med_pages[i] = next;
         if(next) work->next->prev = prev;
-        if (work->mprotected)  *(long *)0x0 = 1;
         gen1_free_mpage(pagemap, work);
       } else {
         /* not touched during minor gc */
@@ -2795,7 +2790,7 @@ static void protect_old_pages(NewGC *gc)
     for (page = gc->med_pages[i]; page; page = page->next) {
       if (!page->mprotected) {
         page->mprotected = 1;
-        add_protect_page_range(protect_range, page->addr, page->size, APAGE_SIZE, 0);
+        add_protect_page_range(protect_range, page->addr, APAGE_SIZE, APAGE_SIZE, 0);
       }
     }
   }
