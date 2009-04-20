@@ -563,6 +563,9 @@ static void *allocate_medium(size_t sizeb, int type)
   struct mpage *page;
   struct objhead *info;
 
+  /* TEMPORARILY DISABLE MEDIUM PAGES */
+  return allocate_big(sizeb, type);
+
   if (sizeb > (1 << (LOG_APAGE_SIZE - 1)))
     return allocate_big(sizeb, type);
  
