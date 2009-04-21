@@ -811,7 +811,12 @@
        (ret expected))]
     ;; special case when argument needs inference
     [_
-     (let ([ts (map (compose generalize tc-expr/t) (syntax->list actuals))])
+     (let ([ts (for/list ([ac (syntax->list actuals)]
+                          [f (syntax->list args)])
+                 (or 
+                  (type-annotation f #:infer #t)
+                  (generalize (tc-expr/t ac))))])
+       (printf "case 2 ~a~n" ts)
        (tc/rec-lambda/check form args body lp ts expected)
        (ret expected))]))
 
