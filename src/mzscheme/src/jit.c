@@ -1557,7 +1557,7 @@ static int inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_sta
 {
   return ((SCHEME_PRIMP(o)
            && (SCHEME_PRIM_PROC_FLAGS(o) & SCHEME_PRIM_IS_BINARY_INLINED))
-          || inlineable_struct_prim(o, jitter, 1, 2));
+          || inlineable_struct_prim(o, jitter, 2, 2));
 }
 
 static int inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app)
@@ -4626,7 +4626,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   Scheme_Object *rator = app->rator;
 
   if (!for_branch
-      && inlineable_struct_prim(rator, jitter, 1, 2)) {
+      && inlineable_struct_prim(rator, jitter, 2, 2)) {
     generate_inlined_struct_op(3, jitter, rator, app->rand1, app->rand2, for_branch, branch_short, multi_ok);
     scheme_direct_call_count++;
     return 1;
