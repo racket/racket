@@ -1020,9 +1020,12 @@ static void backtrace_new_page(NewGC *gc, mpage *page)
   page->backtrace = (void **)malloc_pages(gc, APAGE_SIZE, APAGE_SIZE);
 }
 
+# define backtrace_new_page_if_needed(gc, page) if (!page->backtrace) backtrace_new_page(gc, page)
+
 static void free_backtrace(struct mpage *page)
 {
-  free_pages(GC, page->backtrace, APAGE_SIZE);
+  if (page->backtrace)
+    free_pages(GC, page->backtrace, APAGE_SIZE);
 }
 
 static void *bt_source;
@@ -1082,6 +1085,7 @@ static void *get_backtrace(struct mpage *page, void *ptr)
 
 #else
 # define backtrace_new_page(gc, page) /* */
+# define backtrace_new_page_if_needed(gc, page) /* */
 # define free_backtrace(page) /* */
 # define set_backtrace_source(ptr, type) /* */
 # define record_backtrace(page, ptr) /* */
@@ -1792,6 +1796,7 @@ void GC_mark(const void *const_p)
       info->mark = 1;
       page->marked_on = 1;
       p = PTR(NUM(info) + WORD_SIZE);
+      backtrace_new_page_if_needed(gc, page);
       record_backtrace(page, p);
       push_ptr(p);
     }
@@ -2144,6 +2149,31 @@ void GC_dump_with_traces(int flags,
       }
     }
   }
+  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+    for (page = gc->med_pages[i]; page; page = page->next) {
+      void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+      void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+      
+      while(start <= end) {
+        struct objhead *info = (struct objhead *)start;
+        if (!info->dead) {
+          if (info->type == PAGE_TAGGED) {
+            unsigned short tag = *(unsigned short *)(start + 1);
+            if (tag < MAX_DUMP_TAG) {
+              counts[tag]++;
+              sizes[tag] += info->size;
+            }
+            if (tag == trace_for_tag) {
+              register_traced_object(start + 1);
+              if (for_each_found)
+                for_each_found(start + 1);
+            }
+          }
+        }
+        start += info->size;
+      }
+    }
+  }
 
   GCPRINT(GCOUTF, "Begin MzScheme3m\n");
   for (i = 0; i < MAX_DUMP_TAG; i++) {
@@ -2174,6 +2204,30 @@ void GC_dump_with_traces(int flags,
     GCWARN((GCOUTF, "Generation 1 [%s]: %li bytes used in %li pages\n", 
             type_name[i], total_use, count));
   }
+
+  GCWARN((GCOUTF, "Generation 1 [medium]:"));
+  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+    if (gc->med_pages[i]) {
+      long count = 0, page_count = 0;
+      for (page = gc->med_pages[i]; page; page = page->next) {
+        void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+        void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->size);
+        
+        page_count++;
+        
+        while(start <= end) {
+          struct objhead *info = (struct objhead *)start;
+          if (!info->dead) {
+            count += info->size;
+          }
+          start += info->size;
+        }
+      }
+      GCWARN((GCOUTF, " %li [%li/%li]", count, page_count, gc->med_pages[i]->size));
+    }
+  }
+  GCWARN((GCOUTF, "\n"));
+
 
   GCWARN((GCOUTF,"\n"));
   GCWARN((GCOUTF,"Current memory use: %li\n", GC_get_memory_use(NULL)));
