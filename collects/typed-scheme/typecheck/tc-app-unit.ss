@@ -816,7 +816,6 @@
                  (or 
                   (type-annotation f #:infer #t)
                   (generalize (tc-expr/t ac))))])
-       (printf "case 2 ~a~n" ts)
        (tc/rec-lambda/check form args body lp ts expected)
        (ret expected))]))
 
