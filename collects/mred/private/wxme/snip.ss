@@ -26,6 +26,11 @@
          get-the-snip-class-list
          get-the-editor-data-class-list
          the-editor-snip-class
+
+         the-snip-class-list ;; parameter
+         make-the-snip-class-list
+         the-editor-data-class-list ;; parameter
+         make-the-editor-data-class-list
          
          (struct-out snip-class-link)
          (struct-out editor-data-class-link)
@@ -1321,9 +1326,10 @@
 (define (make-the-snip-class-list)
   (new standard-snip-class-list%))
 
-(define the-snip-class-list (make-the-snip-class-list))
+(define the-snip-class-list (make-parameter (make-the-snip-class-list)))
+
 (define (get-the-snip-class-list)
-  the-snip-class-list)
+  (the-snip-class-list))
 
 ;; ------------------------------------------------------------
 
@@ -1463,9 +1469,9 @@
 (define (make-the-editor-data-class-list)
   (new editor-data-class-list%))
 
-(define the-editor-data-class-list (make-the-editor-data-class-list))
+(define the-editor-data-class-list (make-parameter (make-the-editor-data-class-list)))
 (define (get-the-editor-data-class-list)
-  the-editor-data-class-list)
+  (the-editor-data-class-list))
 
 ;; ------------------------------------------------------------
 
