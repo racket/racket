@@ -571,6 +571,9 @@
         (cl->*
          ((-lst a) . -> . (-lst a))
          ((-lst a) (a a . -> . Univ) . -> . (-lst a))))]
+[append-map
+ (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
+                     ((-lst b) b) . ->... .(-lst c)))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]
