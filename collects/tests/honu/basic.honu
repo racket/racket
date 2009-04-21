@@ -13,7 +13,41 @@ obj test(t, a, b){
   }
 }
 
-var x = 3;
-const y = 2;
-test("x = 3", x, 3);
-test("y = 2", y, 2);
+obj test1(){
+  var x = 3;
+  const y = 2;
+  test("x = 3", x, 3);
+  test("y = 2", y, 2);
+}
+
+obj test2(){
+  obj foo(){
+    1;
+  }
+
+  obj x1(){
+    obj x(){
+      2;
+    }
+  }
+
+  (-> obj) x2(){
+    obj x(){
+      3;
+    }
+  }
+  
+  /*
+  var anonymous_foo = obj x(){
+    2;
+  };
+  */
+
+  var anonymous_foo = x2();
+
+  test("foo() = 1", foo(), 1);
+  test("anonymous_foo = 2", anonymous_foo(), 2);
+}
+
+test1();
+test2();
