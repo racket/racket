@@ -8,14 +8,20 @@
   This interface describes how coloring is stopped and started for text
   that knows how to color itself.  It also describes how to query the
   lexical and s-expression structure of the text.
-  @defmethod*[(((start-colorer (token-sym-style (-> symbol? string?)) (get-token (-> input-port? (values any? symbol? (union false? symbol?) natural-number? natural-number?))) (pairs (listof (list/p symbol? symbol?)))) void))]{
+  @defmethod*[(((start-colorer (token-sym->style (-> symbol? string?)) 
+                               (get-token (-> input-port? (values any/c 
+                                                                  symbol? 
+                                                                  (or/c false? symbol?) 
+                                                                  exact-nonnegative-integer?
+                                                                  exact-nonnegative-integer?)))
+                               (pairs (listof (list/p symbol? symbol?)))) void))]{
     Starts tokenizing the buffer for coloring and parenthesis matching.
 
 
-    @scheme[token-sym-style] will be passed the first return symbol from @scheme[get-token]
+    The @scheme[token-sym->style] argument will be passed the first return symbol from @scheme[get-token]
     and should return the style-name that the token should be colored.
 
-    get-token takes an input port and returns the next token as 5 values:
+    The @scheme[get-token] argument takes an input port and returns the next token as 5 values:
     @itemize[
     @item{
     An unused value.  This value is intended to represent the textual
@@ -36,7 +42,7 @@
     @item{
     The ending position of the token.}]
 
-    @scheme[get-token] will usually be implemented with a lexer using the 
+    The @scheme[get-token] function will usually be implemented with a lexer using the 
     @scheme[parser-tools/lex] library.
     get-token must obey the following invariants:
     @itemize[
@@ -60,12 +66,12 @@
     handle these situations, @scheme[get-token] must treat the first line as a
     single token.}]
 
-    @scheme[pairs] is a list of different kinds of matching parens.  The second
+    The @scheme[pairs] argument is a list of different kinds of matching parens.  The second
     value returned by get-token is compared to this list to see how the
     paren matcher should treat the token.  An example: Suppose pairs is
     @scheme['((|(| |)|) (|[| |]|) (begin end))].  This means that there
     are three kinds of parens.  Any token which has @scheme['begin] as its second
-    return value will act as an open for matching tokens with 'end.
+    return value will act as an open for matching tokens with @scheme['end].
     Similarly any token with @scheme['|]|] will act as a closing match for
     tokens with @scheme['|[|].  When trying to correct a mismatched
     closing parenthesis, each closing symbol in pairs will be converted to
@@ -210,7 +216,9 @@
 @defmixin[color:text-mode-mixin (mode:surrogate-text<%>) (color:text-mode<%>)]{
   This mixin adds coloring functionality to the mode.
 
-  @defconstructor[((get-token lexer default-lexer) (token-sym->style (token $rightarrow$ string) |@scheme[(λ (x) "Standard")])|) (matches (listof (list/c symbol? symbol?)) null))]{
+  @defconstructor[((get-token lexer default-lexer) 
+                   (token-sym->style (symbol? . -> . string?) (λ (x) "Standard")) 
+                   (matches (listof (list/c symbol? symbol?)) null))]{
 
     The arguments are passed to 
     @method[color:text<%> start-colorer].
