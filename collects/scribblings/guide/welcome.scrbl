@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/eval
           scribble/bnf
-          "guide-utils.ss")
+          "guide-utils.ss"
+          (for-label scheme/enter))
 
 @(define piece-eval (make-base-eval))
 
@@ -85,16 +86,16 @@ number:
 A string is also an expression that evaluates to itself. A string is
 written with double quotes at the start and end of the string:
 
-@interaction["hello world"]
+@interaction["Hello, world!"]
 
 Scheme uses parentheses to wrap larger expressions---almost any kind
 of expression, other than simple constants. For example, a function
 call is written: open parenthesis, function name, argument
 expression, and closing parenthesis. The following expression calls
 the built-in function @scheme[substring] with the arguments
-@scheme["hello world"], @scheme[0], and @scheme[5]:
+@scheme["the boy out of the country"], @scheme[4], and @scheme[7]:
 
-@interaction[(substring "hello world" 0 5)]
+@interaction[(substring "the boy out of the country" 4 7)]
 
 @; ----------------------------------------------------------------------
 @section{Definitions and Interactions}
@@ -104,9 +105,10 @@ using the @scheme[define] form, like this:
 
 @def+int[
 #:eval piece-eval
-(define (piece str)
-  (substring str 0 5))
-(piece "howdy universe")
+(define (extract str)
+  (substring str 4 7))
+(extract "the boy out of the country")
+(extract "the country out of the boy")
 ]
 
 Although you can evaluate the @scheme[define] form in the @tech{REPL},
@@ -118,29 +120,29 @@ top text area---called the @deftech{definitions area}---along with the
 @schememod[
 scheme
 code:blank
-(define (piece str)
-  (substring str 0 5))
+(define (extract str)
+  (substring str 4 7))
 ]
 
-If calling @scheme[(piece "howdy universe")] is part of the main
-action of your program, that would go in the @tech{definitions area},
-too. But if it was just an example expression that you were using to
-explore @scheme[piece], then you'd more likely leave the
-@tech{definitions area} as above, click @onscreen{Run}, and then
-evaluate @scheme[(piece "howdy universe")] in the @tech{REPL}.
+If calling @scheme[(extract "the boy")] is part of the main action of
+your program, that would go in the @tech{definitions area}, too. But
+if it was just an example expression that you were using to explore
+@scheme[extract], then you'd more likely leave the @tech{definitions
+area} as above, click @onscreen{Run}, and then evaluate
+@scheme[(extract "the boy")] in the @tech{REPL}.
 
 With @exec{mzscheme}, you'd save the above text in a file using your
-favorite editor. If you save it as @filepath{piece.ss}, then after starting
+favorite editor. If you save it as @filepath{extract.ss}, then after starting
 @exec{mzscheme} in the same directory, you'd evaluate the following
 sequence:
 
 @interaction[
 #:eval piece-eval
-(eval:alts (enter! "piece.ss") (void))
-(piece "howdy universe")
+(eval:alts (enter! "extract.ss") (void))
+(extract "the gal out of the city")
 ]
 
-The @scheme[enter!] function both loads the code and switches the
+The @scheme[enter!] form both loads the code and switches the
 evaluation context to the inside of the module, just like DrScheme's
 @onscreen{Run} button.
 
@@ -152,13 +154,13 @@ If your file (or @tech{definitions area} in DrScheme) contains
 @schememod[
 scheme
 
-(define (piece str)
-  (substring str 0 5))
+(define (extract str)
+  (substring str 4 7))
 
-(piece "howdy universe")
+(extract "the cat out of the bag")
 ]
 
-then it is a complete program that prints ``howdy'' when run. To
+then it is a complete program that prints ``cat'' when run. To
 package this program as an executable, choose one of the following
 options:
 
@@ -200,16 +202,16 @@ If you already know something about Scheme or Lisp, you might be
 tempted to put just
 
 @schemeblock[
-(define (piece str)
-  (substring str 0 5))
+(define (extract str)
+  (substring str 4 7))
 ]
 
-into @filepath{piece.scm} and run @exec{mzscheme} with
+into @filepath{extract.scm} and run @exec{mzscheme} with
 
 @interaction[
 #:eval piece-eval
-(eval:alts (load "piece.scm") (void))
-(piece "howdy universe")
+(eval:alts (load "extract.scm") (void))
+(extract "the dog out")
 ]
 
 That will work, because @exec{mzscheme} is willing to imitate a

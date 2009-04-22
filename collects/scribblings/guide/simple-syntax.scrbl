@@ -81,11 +81,11 @@ the last @nonterm{expr}.
 
 @defexamples[
 #:eval ex-eval
-(code:line (define five 5)            (code:comment #, @t{defines @scheme[five] to be @scheme[5]}))
+(code:line (define pie 3)             (code:comment #, @t{defines @scheme[pie] to be @scheme[3]}))
 (code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a function})
-             (substring str 0 five))  (code:comment #, @t{of one argument}))
-five
-(piece "hello world")
+             (substring str 0 pie))   (code:comment #, @t{ of one argument}))
+pie
+(piece "key lime")
 ]
 
 Under the hood, a function definition is really the same as a
@@ -100,8 +100,6 @@ piece
 substring
 ]
 
-@; FIXME: check that everything says "procedure" and not "primitive"
-
 A function definition can include multiple expressions for the
 function's body. In that case, only the value of the last expression
 is returned when the function is called. The other expressions are
@@ -109,30 +107,30 @@ evaluated only for some side-effect, such as printing.
 
 @defexamples[
 #:eval ex-eval
-(define (greet name)
-  (printf "returning a greeting for ~a...\n" name)
-  (string-append "hello " name))
-(greet "universe")
+(define (bake flavor)
+  (printf "pre-heating oven...\n")
+  (string-append flavor " pie"))
+(bake "apple")
 ]
 
-Scheme programmers prefer to avoid assignment statements. It's
+Scheme programmers prefer to avoid side-effects. It's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
-@scheme[nogreet] function simply returns its argument:
+@scheme[nobake] function simply returns its argument:
 
 @def+int[
 #:eval ex-eval
-(define (nogreet name)
-  string-append "hello " name)
-(nogreet "world")
+(define (nobake flavor)
+  string-append flavor "jello")
+(nobake "green")
 ]
 
-Within @scheme[nogreet], there are no parentheses around
-@scheme[string-append "hello " name], so they are three separate
+Within @scheme[nobake], there are no parentheses around
+@scheme[string-append flavor "jello"], so they are three separate
 expressions instead of one function-call expression. The expressions
-@scheme[string-append] and @scheme["hello "] are evaluated, but the
+@scheme[string-append] and @scheme[flavor] are evaluated, but the
 results are never used. Instead, the result of the function is just
-the result of the expression @scheme[name].
+the result of the final expression, @scheme["jello"].
 
 @; ----------------------------------------------------------------------
 @section[#:tag "indentation"]{An Aside on Indenting Code}
@@ -161,13 +159,14 @@ next line under the first argument, instead of under the
 @scheme[define] keyword:
 
 @schemeblock[
-(define (nogreet name
-                 (string-append "hello " name)))
+(define (halfbake flavor
+                  (string-append flavor " creme brulee")))
 ]
 
-Furthermore, when an open parenthesis has no matching close
-parenthesis in a program, both @exec{mzscheme} and DrScheme use the
-source's indentation to suggest where it might be missing.
+In this case, indentation helps highlight the mistake. In other cases,
+where the indentation may be normal while an open parenthesis has no
+matching close parenthesis; both @exec{mzscheme} and DrScheme use the
+source's indentation to suggest where a parenthesis might be missing.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @section{Identifiers}
@@ -193,11 +192,11 @@ more examples:
 
 @schemeblock[
 #, @schemeid[+]
-#, @schemeid[Apple]
+#, @schemeid[Hfuhruhurr]
 #, @schemeid[integer?]
-#, @schemeid[call/cc]
-#, @schemeid[call-with-composable-continuation]
-#, @schemeid[x-1+3i]
+#, @schemeid[pass/fail]
+#, @schemeid[john-jacob-jingleheimer-schmidt]
+#, @schemeid[a-b-c+1-2-3]
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -225,10 +224,10 @@ pre-defined names are hyperlinked to the reference manual. So, you can
 click on an identifier to get full details about its use.
 
 @interaction[
-(code:line (string-append "hello"  " "  "scheme") (code:comment #, @t{append strings}))
-(code:line (substring "hello scheme" 6 12)        (code:comment #, @t{extract a substring}))
-(code:line (string-length "scheme")               (code:comment #, @t{get a string's length}))
-(code:line (string? "hello scheme")               (code:comment #, @t{recognize strings}))
+(code:line (string-append "rope" "twine" "yarn")  (code:comment #, @t{append strings}))
+(code:line (substring "corduroys" 0 4)            (code:comment #, @t{extract a substring}))
+(code:line (string-length "shoelace")             (code:comment #, @t{get a string's length}))
+(code:line (string? "c'est ne pas une string")    (code:comment #, @t{recognize strings}))
 (string? 1)
 (code:line (sqrt 16)                              (code:comment #, @t{find a square root}))
 (sqrt -16)
@@ -236,10 +235,11 @@ click on an identifier to get full details about its use.
 (code:line (- 2 1)                                (code:comment #, @t{subtract numbers}))
 (code:line (< 2 1)                                (code:comment #, @t{compare numbers}))
 (>= 2 1)
-(code:line (number? "hello scheme")               (code:comment #, @t{recognize numbers}))
+(code:line (number? "c'est une number")           (code:comment #, @t{recognize numbers}))
 (number? 1)
-(code:line (equal? 1 "hello")                     (code:comment #, @t{compare anything}))
-(equal? 1 1)
+(code:line (equal? 6 "half dozen")                (code:comment #, @t{compare anything}))
+(equal? 6 6)
+(equal? "half dozen" "half dozen")
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -403,7 +403,7 @@ expression:
 @def+int[
 (define (double v)
   ((if (string? v) string-append +) v v))
-(double "hello")
+(double "mnah")
 (double 5)
 ]
 
@@ -581,9 +581,12 @@ each clause, the @nonterm{id} is bound to the result of the
 @nonterm{expr} for use in the body.
 
 @interaction[
-(let ([x 1]
-      [y 2])
-  (format "adding ~s and ~s produces ~s" x y (+ x y)))
+(let ([x (random 4)]
+      [o (random 4)])
+  (cond
+   [(> x o) "X wins"]
+   [(> o x) "O wins"]
+   [else "cat's game"]))
 ]
 
 The bindings of a @scheme[let] form are available only in the body of
@@ -592,10 +595,13 @@ other. The @scheme[let*] form, in contrast, allows later clauses to
 use earlier bindings:
 
 @interaction[
-(let* ([x 1]
-       [y 2]
-       [z (+ x y)])
-  (format "adding ~s and ~s produces ~s" x y z))
+(let* ([x (random 4)]
+       [o (random 4)]
+       [diff (number->string (abs (- x o)))])
+  (cond
+   [(> x o) (string-append "X wins by " diff)]
+   [(> o x) (string-append "O wins by " diff)]
+   [else "cat's game"]))
 ]
 
 @; ----------------------------------------------------------------------
