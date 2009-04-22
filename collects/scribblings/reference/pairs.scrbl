@@ -211,7 +211,7 @@ Similar to @scheme[map], except that
 
  @item{the result of the first applciation of @scheme[proc] to produces a
        value other than @scheme[#f], in which case @scheme[proc] is not
-       applied to later elements of the @scheme[lst]s; more specifically,
+       applied to later elements of the @scheme[lst]s;
        the application of @scheme[proc] to the last elements in the
        @scheme[lst]s is in tail position with respect to the
        @scheme[ormap] call.}
