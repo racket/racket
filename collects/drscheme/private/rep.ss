@@ -84,8 +84,7 @@ TODO
                 text:ports<%>
                 editor:file<%>
                 scheme:text<%>
-                color:text<%>
-                text:ports<%>)
+                color:text<%>)
       reset-highlighting
       highlight-errors
       highlight-errors/exn
