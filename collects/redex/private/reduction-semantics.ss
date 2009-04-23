@@ -1843,6 +1843,8 @@
   (values (apply-reduction-relation red arg) #f))
 
 (define (test-->>/procs red arg expected apply-red cycles-ok? srcinfo)
+  (unless (reduction-relation? red)
+    (error 'test--> "expected a reduction relation as first argument, got ~e" red))
   (let-values ([(got got-cycle?) (apply-red red arg)])
     (inc-tests)
     
