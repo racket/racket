@@ -729,7 +729,6 @@
                             [read-accept-dot #t]
                             [read-accept-infix-dot #t]
                             [read-accept-quasiquote #t])
-               (printf "~s\n" s)
                (read (open-input-bytes s))))]
           [(reference)
            (make-primval (read-compact-number cp))]
