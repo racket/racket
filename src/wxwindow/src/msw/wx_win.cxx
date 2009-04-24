@@ -2410,7 +2410,7 @@ void wxSubWnd::OnHScroll( WORD wParam, WORD pos, HWND control)
       ZeroMemory(&si, sizeof(si));
       si.cbSize = sizeof(si);
       si.fMask = SIF_TRACKPOS;
-      if (GetScrollInfo(hwnd, SB_HORZ, &si)) {
+      if (GetScrollInfo(handle, SB_HORZ, &si)) {
         pos = si.nTrackPos;
         event->pos = pos;
       }
