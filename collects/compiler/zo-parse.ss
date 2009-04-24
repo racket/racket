@@ -220,14 +220,14 @@
   (match v
     [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
-             ,prefix ,kernel-exclusion ,reprovide-kernel?
+             ,prefix
              ,indirect-provides ,num-indirect-provides 
              ,indirect-syntax-provides ,num-indirect-syntax-provides 
              ,indirect-et-provides ,num-indirect-et-provides 
              ,protects ,et-protects
              ,provide-phase-count . ,rest)
-     (let ([phase-data (take rest (* 8 provide-phase-count))])
-       (match (list-tail rest (* 8 provide-phase-count))
+     (let ([phase-data (take rest (* 9 provide-phase-count))])
+       (match (list-tail rest (* 9 provide-phase-count))
          [`(,syntax-body ,body
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
@@ -729,6 +729,7 @@
                             [read-accept-dot #t]
                             [read-accept-infix-dot #t]
                             [read-accept-quasiquote #t])
+               (printf "~s\n" s)
                (read (open-input-bytes s))))]
           [(reference)
            (make-primval (read-compact-number cp))]
