@@ -2465,6 +2465,7 @@ static int module_phase_exports_val_MARK(void *p) {
   gcMARK(m->provide_src_names);
   gcMARK(m->provide_nominal_srcs);
   gcMARK(m->provide_src_phases);
+  gcMARK(m->provide_insps);
 
   gcMARK(m->kernel_exclusion);
   gcMARK(m->kernel_exclusion2);
@@ -2487,6 +2488,7 @@ static int module_phase_exports_val_FIXUP(void *p) {
   gcFIXUP(m->provide_src_names);
   gcFIXUP(m->provide_nominal_srcs);
   gcFIXUP(m->provide_src_phases);
+  gcFIXUP(m->provide_insps);
 
   gcFIXUP(m->kernel_exclusion);
   gcFIXUP(m->kernel_exclusion2);
@@ -5043,7 +5045,6 @@ static int mark_rename_table_MARK(void *p) {
   gcMARK(rn->nomarshal_ht);
   gcMARK(rn->unmarshal_info);
   gcMARK(rn->shared_pes);
-  gcMARK(rn->plus_kernel_nominal_source);
   gcMARK(rn->set_identity);
   gcMARK(rn->marked_names);
   gcMARK(rn->free_id_renames);
@@ -5058,7 +5059,6 @@ static int mark_rename_table_FIXUP(void *p) {
   gcFIXUP(rn->nomarshal_ht);
   gcFIXUP(rn->unmarshal_info);
   gcFIXUP(rn->shared_pes);
-  gcFIXUP(rn->plus_kernel_nominal_source);
   gcFIXUP(rn->set_identity);
   gcFIXUP(rn->marked_names);
   gcFIXUP(rn->free_id_renames);
@@ -5214,6 +5214,40 @@ static int lex_rib_FIXUP(void *p) {
 
 #define lex_rib_IS_ATOMIC 0
 #define lex_rib_IS_CONST_SIZE 1
+
+
+static int mark_free_id_info_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((8 - 1) * sizeof(Scheme_Object *))));
+}
+
+static int mark_free_id_info_MARK(void *p) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+  int i;
+  for (i = 8; i--; )
+    gcMARK(vec->els[i]);
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((8 - 1) * sizeof(Scheme_Object *))));
+}
+
+static int mark_free_id_info_FIXUP(void *p) {
+  Scheme_Vector *vec = (Scheme_Vector *)p;
+  int i;
+  for (i = 8; i--; )
+    gcFIXUP(vec->els[i]);
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Vector) 
+		    + ((8 - 1) * sizeof(Scheme_Object *))));
+}
+
+#define mark_free_id_info_IS_ATOMIC 0
+#define mark_free_id_info_IS_CONST_SIZE 0
+
+
 
 
 #endif  /* STXOBJ */

@@ -1788,7 +1788,7 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 
     if (check_access && !SAME_OBJ(menv, env)) {
       varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, 
-                                                  insp, pos, 0, NULL, env);
+                                                  insp, NULL, pos, 0, NULL, NULL, env, NULL);
     }
   }
 
@@ -6091,7 +6091,7 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
       /* Since the module has a rename for this id, it's certainly defined. */
     } else {
       modidx = scheme_stx_module_name(NULL, &symbol, scheme_make_integer(env->genv->phase), NULL, NULL, NULL, 
-                                      NULL, NULL, NULL, NULL);
+                                      NULL, NULL, NULL, NULL, NULL);
       if (modidx) {
 	/* If it's an access path, resolve it: */
 	if (env->genv->module

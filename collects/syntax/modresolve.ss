@@ -7,6 +7,9 @@
   (cond [(path-string? relto)
          (if dir?
              (let-values ([(base n d?) (split-path relto)])
+               (when d?
+                 (error 'resolve-module-path-index
+                        "given a directory path instead of a file path: ~e" relto))
                (if (eq? base 'relative)
                    (or (current-load-relative-directory) (current-directory))
                    base))
