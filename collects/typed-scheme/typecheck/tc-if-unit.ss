@@ -41,7 +41,8 @@
         (syntax-rules ()
           [(check-rest f v)
            (with-update-type/lexical f v (loop (cdr effs)))]
-          [(check-rest f t v) (check-rest (type-op f t) v)]))
+          [(check-rest f t v) 
+           (check-rest (type-op f t) v)]))
       (if (null? effs)
           ;; base case
           (let* ([reachable? (not (unbox flag))])
@@ -79,7 +80,8 @@
             ;; just replace the type of v with (-val #f)
             [(Var-False-Effect: v) (check-rest (lambda (_ old) (-val #f)) v)]
             ;; v cannot have type (-val #f)
-            [(Var-True-Effect: v) (check-rest *remove (-val #f) v)])))))
+            [(Var-True-Effect: v) 
+             (check-rest *remove (-val #f) v)])))))
 
 ;; the main function
 (define (tc/if-twoarm tst thn els)

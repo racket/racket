@@ -9,7 +9,7 @@
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in string-constants/private/only-once maybe-print-message)
- (only-in scheme/match/runtime match:error)
+ (only-in scheme/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
 
 [raise (Univ . -> . (Un))]
@@ -146,6 +146,8 @@
        [(Sym B -Namespace (-> Univ)) Univ])]
 
 [match:error (Univ . -> . (Un))]
+[match-equality-test (-Param (Univ Univ . -> . Univ) (Univ Univ . -> . Univ))]
+[matchable? (make-pred-ty (Un -String -Bytes))]
 [display (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
 [write   (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
 [print   (cl-> [(Univ) -Void] [(Univ -Port) -Void])]
@@ -568,6 +570,9 @@
         (cl->*
          ((-lst a) . -> . (-lst a))
          ((-lst a) (a a . -> . Univ) . -> . (-lst a))))]
+[append-map
+ (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
+                     ((-lst b) b) . ->... .(-lst c)))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]

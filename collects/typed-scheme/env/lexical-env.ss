@@ -23,7 +23,7 @@
 
 ;; find the type of identifier i, looking first in the lexical env, then in the top-level env
 ;; identifer -> Type
-(define (lookup-type/lexical i [env (lexical-env)])
+(define (lookup-type/lexical i [env (lexical-env)] #:fail [fail #f])
   (lookup env i 
           (lambda (i) (lookup-type 
                        i (lambda () 
@@ -31,7 +31,7 @@
                                   =>
                                   (lambda (a)
                                     (-lst (substitute Univ (cdr a) (car a))))]
-                                 [else (lookup-fail i)]))))))
+                                 [else ((or fail lookup-fail) i)]))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment
@@ -41,7 +41,7 @@
   (define (update f k env)
     (parameterize
         ([current-orig-stx k])
-      (let* ([v (lookup-type/lexical k)]
+      (let* ([v (lookup-type/lexical k env #:fail (lambda _ Univ))]
              [new-v (f k v)]
              [new-env (extend env k new-v)])
         new-env)))
