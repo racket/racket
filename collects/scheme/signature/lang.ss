@@ -15,13 +15,17 @@
    (string-append (regexp-replace "-sig$" (symbol->string s) "")
                   "^")))
 
+;; Recognizes scheme require forms.
+(define-for-syntax split-scheme-requires
+  (split-requires* (list #'require #'#%require)))
+
 (define-syntax (module-begin stx)
   (parameterize ((error-syntax stx))
     (with-syntax ((name (make-name (syntax-property stx 'enclosing-module-name))))
       (syntax-case stx ()
         ((_ . x)
          (with-syntax ((((reqs ...) . (body ...))
-                        (split-requires (checked-syntax->list #'x))))
+                        (split-scheme-requires (checked-syntax->list #'x))))
            (datum->syntax
             stx
             (syntax-e #'(#%module-begin

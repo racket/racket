@@ -12,7 +12,7 @@ Scheme installs a @defterm{continuation barrier} around evaluation in
 the following contexts, preventing full-continuation jumps across the
 barrier:
 
-@itemize{
+@itemize[
 
  @item{applying an exception handler, an error escape handler, or an
  error display handler (see @secref["exns"]);}
@@ -33,7 +33,7 @@ barrier:
  @item{evaluating or loading code from the stand-alone MzScheme
  command line (see @secref["running-sa"]).}
 
-}
+]
 
 In addition, extensions of PLT Scheme may install barriers in
 additional contexts. In particular, MrEd installs a continuation
@@ -257,7 +257,7 @@ evaluation of @scheme[value-thunk], the continuation of the
 When @scheme[pre-thunk] is called due to a continuation jump, the
 continuation of @scheme[pre-thunk]
 
-@itemize{
+@itemize[
 
  @item{jumps to a more deeply nested @scheme[pre-thunk], if any, or jumps
        to the destination continuation; then}
@@ -265,7 +265,7 @@ continuation of @scheme[pre-thunk]
  @item{continues with the context of the @scheme[pre-thunk]'s
        @scheme[dynamic-wind] call.}
 
-}
+]
 
 Normally, the second part of this continuation is never reached, due
 to a jump in the first part. However, the second part is relevant

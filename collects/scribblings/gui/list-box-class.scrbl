@@ -59,7 +59,7 @@ The @scheme[callback] procedure is called when the user changes the list
 
 The @scheme[style] specification must include exactly one of the
  following:
-@itemize{
+@itemize[
 
  @item{@scheme['single] --- Creates a single-selection list.}
 
@@ -73,7 +73,7 @@ The @scheme[style] specification must include exactly one of the
  clicked item. Use this style for a list when multiple selections are
  the rule rather than the exception.}
 
-}
+]
 The @scheme['multiple] and @scheme['extended] styles determine a
  platform-independent interpretation of unmodified mouse clicks, but
  dragging, shift-clicking, control-clicking, etc. have

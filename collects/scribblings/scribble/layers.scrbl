@@ -144,7 +144,7 @@ normally packaged into higher-level functions and forms, such as
 
 Working roughly from the bottom up, the Scribble layers are:
 
-@itemize{
+@itemize[
 
  @item{@schememodname[scribble/reader]: A reader that extends the
        syntax of Scheme with @"@"-forms for conveniently embedding a
@@ -208,7 +208,7 @@ Working roughly from the bottom up, the Scribble layers are:
  @item{@schememodname[scribble/text]: A language that uses
        @schememodname[scribble/reader] preprocessing text files.}
 
-}
+]
 
 The @exec{scribble} command-line utility generates output with a
 specified renderer. More specifically, the executable installs a

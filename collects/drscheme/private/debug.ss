@@ -899,9 +899,10 @@ profile todo:
   
   (define (test-covered key)
     (let ([ht (thread-cell-ref current-test-coverage-info)])
-      (when (hash? ht) ;; as in the `when' test in `initialize-test-coverage-point'
-        (let ([v (hash-ref ht key)])
-          (set-mcar! v #t)))))
+      (and (hash? ht) ;; as in the `when' test in `initialize-test-coverage-point'
+           (let ([v (hash-ref ht key #f)])
+             (and v
+                  (λ () (set-mcar! v #t)))))))
   
   (define test-coverage-interactions-text<%>
     (interface ()

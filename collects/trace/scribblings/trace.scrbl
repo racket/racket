@@ -14,7 +14,7 @@ depth of the continuation.
 
 @section[#:tag "quick-instructions"]{Quick Instructions}
 
-@itemize{
+@itemize[
          @item{Throw away @filepath{.zo} versions of your source}
          @item{Prefix your program with 
                       @schemeblock[(require trace)]
@@ -22,7 +22,7 @@ depth of the continuation.
                   @commandline{mzscheme -l trace ...}
                before arguments to load your program.}
          @item{Run your program}
-         }
+         ]
 
 The @schememodname[trace] module is odd; don't import it
 into another module. Instead, the @schememodname[trace]

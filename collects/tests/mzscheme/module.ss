@@ -176,13 +176,13 @@
 	     (define e 1)
 	     (,here 'e)
 	     (provide e)))
-    (test '(d c b c) values l)
+    (test '(d b c) values l)
     (eval `(module f mzscheme
 	     (,here 'f)
 	     (require 'b 'e)))
-    (test '(d c b d c b c) values l)
+    (test '(d b d b c) values l)
     (eval `(require 'f))
-    (let ([finished '(f b e  a d c b  d c b d c b c)])
+    (let ([finished '(f b e  a d b  d b d b c)])
       (test finished values l)
       (namespace-attach-module n ''f)
       (test finished values l)
@@ -192,7 +192,7 @@
         (namespace-require 'scheme/base)
 	(eval `(require 'a))
 	(eval `(require 'f))
-	(test finished values l)))))
+	(test (list* 'd 'b finished) values l)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check redundant import and re-provide

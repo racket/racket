@@ -225,13 +225,10 @@
     (unless (and (procedure? fcn)
                  (procedure-arity-includes? fcn 1))
       (raise-type-error 'build-list "procedure (arity 1)" fcn))
-    (if (zero? n)
-      '()
-      (let loop ([i 0] [a null])
-        (if (= i n)
-            (reverse a)
-            (loop (add1 i)
-                  (cons (fcn i) a))))))
+    (let recr ([j 0] [i n])
+      (cond [(zero? i) null]
+            [else (cons (fcn j)
+                        (recr (add1 j) (sub1 i)))])))
 
   (define compose
     (case-lambda

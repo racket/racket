@@ -14,7 +14,7 @@
 Returns a machine-specific path for a standard type of path specified
 by @scheme[kind], which must be one of the following:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['home-dir] --- the current user's home
  directory.
@@ -72,13 +72,13 @@ by @scheme[kind], which must be one of the following:
  path is the same path as returned for @scheme['init-dir].  The file
  name is platform-specific:
 
-  @itemize{
+  @itemize[
 
   @item{@|AllUnix|: @indexed-file{.mzschemerc}}
 
   @item{Windows: @indexed-file{mzschemerc.ss}}
 
-  }}
+  ]}
 
  @item{@indexed-scheme['addon-dir] --- a directory for installing PLT Scheme
  extensions. It's the same as @scheme['pref-dir], except under Mac OS
@@ -136,7 +136,7 @@ by @scheme[kind], which must be one of the following:
  from @scheme[(find-system-path 'exec-file)] or
  @scheme[(find-system-path 'run-file)] to a complete path.}
 
- }}
+ ]}
 
 @defproc[(path-list-string->path-list [str (or/c string? bytes?)]
                                       [default-path-list (listof path?)])
@@ -451,7 +451,7 @@ empty list on platforms where the path is not needed.
 The enclosing path for a @scheme[define-runtime-path] is determined as
 follows from the @scheme[define-runtime-path] syntactic form:
 
-@itemize{
+@itemize[
 
  @item{If the form has a source module according to
        @scheme[syntax-source-module], then the source location is
@@ -469,7 +469,7 @@ follows from the @scheme[define-runtime-path] syntactic form:
        is used if it is not @scheme[#f]. Finally,
        @scheme[current-directory] is used if all else fails.}
 
-}
+]
 
 In the latter two cases, the path is normally preserved in
 (platform-specific) byte form. If it is is within the result of
@@ -680,7 +680,10 @@ following links, use the more general @scheme[fold-files] procedure.
 
 If @scheme[start-path] does not refer to an existing file or
 directory, then @scheme[predicate] will be called exactly once with
-@scheme[start-path] as the argument.}
+@scheme[start-path] as the argument.
+
+The @scheme[find-files] procedure raises and exception if it encounters 
+a directory for which @scheme[directory-list] fails.}
 
 @defproc[(pathlist-closure [path-list (listof path-string?)])
          (listof path?)]{
@@ -688,7 +691,7 @@ directory, then @scheme[predicate] will be called exactly once with
 Given a list of paths, either absolute or relative to the current
 directory, returns a list such that
 
-@itemize{
+@itemize[
 
  @item{if a nested path is given, all of its ancestors are also
        included in the result (but the same ancestor is not added
@@ -700,7 +703,7 @@ directory, returns a list such that
  @item{ancestor directories appear before their descendants in the
        result list.}
 
-}}
+]}
 
 
 @defproc[(fold-files [proc (and/c (path? (or/c 'file 'dir 'link) any/c 
@@ -721,7 +724,7 @@ Traverses the filesystem starting at @scheme[start-path], calling
 The @scheme[proc] procedure is called with three arguments for each
 file, directory, or link:
 
-@itemize{
+@itemize[
 
  @item{If @scheme[start-path] is @scheme[#f], the first argument is a
  pathname string that is relative to the current directory. Otherwise,
@@ -748,7 +751,7 @@ file, directory, or link:
  from the first call, and so on. The result of the last call to
  @scheme[proc] is the result of @scheme[fold-files].}
 
-}
+]
 
 The @scheme[proc] argument is used in an analogous way to the
 procedure argument of @scheme[foldl], where its result is used as the
@@ -758,8 +761,8 @@ the procedure may return two values, the second indicating whether the
 recursive scan should include the given directory or not.  If it
 returns a single value, the directory is scanned.
 
-An error is signaled if the @scheme[start-path] is provided but no
-such path exists, or if paths disappear during the scan.}
+If the @scheme[start-path] is provided but no such path exists, or if
+paths disappear during the scan, then an exception is raised.}
 
 
 @defproc[(make-directory* [path path-string?]) void?]{

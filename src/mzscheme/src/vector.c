@@ -350,13 +350,16 @@ scheme_list_to_vector (Scheme_Object *list)
 static Scheme_Object *
 vector_fill (int argc, Scheme_Object *argv[])
 {
-  int i;
+  int i, sz;
+  Scheme_Object *v;
   
   if (!SCHEME_MUTABLE_VECTORP(argv[0]))
     scheme_wrong_type("vector-fill!", "mutable vector", 0, argc, argv);
 
-  for (i = 0; i < SCHEME_VEC_SIZE(argv[0]); i++) {
-    SCHEME_VEC_ELS(argv[0])[i] = argv[1];
+  v = argv[1];
+  sz = SCHEME_VEC_SIZE(argv[0]);
+  for (i = 0; i < sz; i++) {
+    SCHEME_VEC_ELS(argv[0])[i] = v;
   }
 
   return argv[0];

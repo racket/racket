@@ -132,7 +132,7 @@ expected to return a list of expressions in this case.
 In addition, the two wrappers can return a different value than the
 wrapped function.  This introduces two more customization points for
 the resulting readers:
-@itemize{
+@itemize[
   @item{The thunk that is passed to a @scheme[#:wrapper1] function
     reads the file contents and returns a list of read expressions
     (either syntax values or S-expressions).  For example, the
@@ -148,7 +148,7 @@ the resulting readers:
   @item{The reader function that is passed to a @scheme[#:wrapper2]
     function returns the final reault of the reader (a module
     expression).  You can return a different value, for example,
-    making it use a different language module.}}
+    making it use a different language module.}]
 In some rare cases, it is more convenient to know whether a reader is
 invoked for a @scheme[read] or for a @scheme[read-syntax].  To
 accommodate these cases, both wrappers can accept an additional

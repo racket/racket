@@ -764,7 +764,7 @@ Returns @scheme[#t] if @scheme[v] has the
 
 A structure representing a single imported identifier:
 
-@itemize{
+@itemize[
 
  @item{@scheme[local-id] --- the identifier to be bound within the
        importing module.}
@@ -787,7 +787,7 @@ A structure representing a single imported identifier:
  @item{@scheme[orig-mode] --- the @tech{phase level} of the
        binding as exported by the exporting module.}
 
-}}
+]}
 
 
 @defstruct[import-source ([mod-path-stx (and/c syntax?
@@ -799,14 +799,14 @@ A structure representing an imported module, which must be
 @tech{instantiate}d or @tech{visit}ed even if no binding is imported
 into a module.
 
-@itemize{
+@itemize[
 
  @item{@scheme[mod-path-stx] --- a @tech{module path} (relative
        to the importing module) for the source of the imported binding.}
 
  @item{@scheme[mode] --- the @tech{phase level} shift the import.}
 
-}}
+]}
 
 
 @defproc[(syntax-local-require-certifier)
@@ -884,7 +884,7 @@ Returns @scheme[#t] if @scheme[v] has the
 
 A structure representing a single imported identifier:
 
-@itemize{
+@itemize[
 
  @item{@scheme[local-id] --- the identifier that is bound within the
        exporting module.}
@@ -900,7 +900,7 @@ A structure representing a single imported identifier:
  @item{@scheme[mode] --- the @tech{phase level} of the binding in the
        exporting module.}
 
-}}
+]}
 
 
 @defproc[(syntax-local-provide-certifier)

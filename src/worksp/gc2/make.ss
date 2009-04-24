@@ -417,19 +417,12 @@
     "wxs_glob"
     "wxs_item"
     "wxs_lbox"
-    "wxs_madm"
-    "wxs_mede"
-    "wxs_medi"
     "wxs_menu"
-    "wxs_mio"
     "wxs_misc"
-    "wxs_mpb"
     "wxs_obj"
     "wxs_panl"
     "wxs_rado"
     "wxs_slid"
-    "wxs_snip"
-    "wxs_styl"
     "wxs_tabc"
     "wxs_win"
     "wxscheme"))
@@ -437,24 +430,6 @@
 (for-each (lambda (x)
 	    (wx-try "mred/wxs" "wxs" x #t "cxx" #f))
 	  wxs-srcs)
-
-(define wxme-srcs
-  '("wx_cgrec"
-    "wx_keym"
-    "wx_mbuf"
-    "wx_medad"
-    "wx_media"
-    "wx_medio"
-    "wx_mline"
-    "wx_mpbrd"
-    "wx_mpriv"
-    "wx_msnip"
-    "wx_snip"
-    "wx_style"))
-
-(for-each (lambda (x)
-	    (wx-try "mred/wxme" "wxme" x #t "cxx" #f))
-	  wxme-srcs)
 
 (define mred-srcs
   '("mred"
@@ -482,7 +457,6 @@
 		     (append wxwin-base-srcs
 			     wxwin-msw-srcs
 			     wxs-srcs
-			     wxme-srcs
 			     mred-srcs)))]
       [libs (list
 	     "../../../lib/msvc/libmzsch3mxxxxxxx.lib"

@@ -302,29 +302,29 @@ Removes @scheme[card] from the table.}
  indicated by @scheme[which]. The @scheme[action] argument must be one
  of the following:
 
- @itemize{
+ @itemize[
 
-   @item[@scheme['drag/one]]{ --- drag only the clicked-on card.}
+   @item{@scheme['drag/one] --- drag only the clicked-on card.}
 
-   @item[@scheme['drag-raise/one]]{ --- like drag/one, but raise the
+   @item{@scheme['drag-raise/one] --- like drag/one, but raise the
                   card to the top on a click.}
 
-   @item[@scheme['drag/above]]{ --- drag the card along with any card
+   @item{@scheme['drag/above] --- drag the card along with any card
                   on top of the card (i.e., more towards the front and
                   overlapping with the card). The on-top-of relation
                   is closed transitively.}
 
-   @item[@scheme['drag-raise/above]]{ --- like @scheme['drag/above],
+   @item{@scheme['drag-raise/above] --- like @scheme['drag/above],
                   but raises.}
 
-   @item[@scheme['drag-below]]{ --- drag the card along with any card
+   @item{@scheme['drag-below] --- drag the card along with any card
                   underneath the card (i.e., more towards the back and
                   overlapping with the card). The underneath relation
                   is closed transitively.}
 
-   @item[@scheme['drag-raise/below]]{ --- like @scheme['drag/below],
+   @item{@scheme['drag-raise/below] --- like @scheme['drag/below],
                   but raises.}
- }
+ ]
 
  The initial settings are: @scheme['drag-raise/above] for
  @scheme['left], @scheme['drag/one] for @scheme['middle], and

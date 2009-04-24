@@ -191,7 +191,7 @@ and keyword arguments---may contain specifications for rest-like
 arguments and/or mode keywords.  Up to five rest-like arguments can be
 declared, each with an @scheme[_id] to bind:
 
-@itemize{
+@itemize[
 
  @item{@as-index{@scheme[#:rest]} --- The variable is bound to the
   list of ``rest'' arguments, which is the list of all values after
@@ -233,7 +233,7 @@ declared, each with an @scheme[_id] to bind:
   binding.  (When no @scheme[#:body] variables are specified, then
   @scheme[#:other-keys+body] is the same as @scheme[#:other-keys].)}
 
-}
+]
 
 In the following example, all rest-like arguments are used and have different
 bindings:
@@ -252,10 +252,10 @@ bindings:
 
 Note that the following invariants always hold:
 
-@itemize{
+@itemize[
 @item{@scheme[_rest] = @scheme[(append _all-keys _body)]}
 @item{@scheme[_other-keys+body] = @scheme[(append _other-keys _body)]}
-}
+]
 
 To write a procedure that uses a few keyword argument values, and that
 also calls another procedure with the same list of arguments
@@ -333,7 +333,7 @@ suffix:
 Finally, the argument list of a @scheme[lambda/kw] can contain
 keywords that serve as mode flags to control error reporting.
 
-@itemize{
+@itemize[
 
  @item{@as-index{@scheme[#:allow-other-keys]} --- The keyword-value
   sequence at the call site @italic{can} include keywords that are not
@@ -374,12 +374,12 @@ keywords that serve as mode flags to control error reporting.
  @item{@as-index{@scheme[#:forbid-anything]} --- Forbids all of the
   above, ensuring that calls are as restricted as possible.}
 
-}
+]
 
 These above mode markers are rarely needed, because the default modes
 are determined by the declared rest-like arguments:
 
-@itemize{
+@itemize[
 
  @item{The default is to allow other keys if a @scheme[#:rest],
   @scheme[#:other-keys+body], @scheme[#:all-keys], or
@@ -393,12 +393,12 @@ are determined by the declared rest-like arguments:
   @scheme[#:body], or @scheme[#:other-keys+body] variable is declared
   (and a @scheme[#:body] argument requires allowing them).}
 
-}
+]
 
 Here's an alternate specification, which maps rest-like arguments to
 the behavior that they imply:
 
-@itemize{
+@itemize[
 
  @item{@scheme[#:rest]: Everything is allowed (a body, other keys,
   and duplicate keys);}
@@ -421,7 +421,7 @@ the behavior that they imply:
    overridden by an explicit @scheme[#:allow-...] or a
    @scheme[#:forbid-...] mode.}
 
-}
+]
 
 @; ----------------------------------------
 

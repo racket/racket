@@ -7,4 +7,5 @@
 
 @local-table-of-contents[]
 
+@include-section["batch-io.scrbl"]
 @include-section["universe.scrbl"]

@@ -10,7 +10,8 @@ namespace.
 |#
 (module teachprims mzscheme
 
-  (require mzlib/list
+  (require mzlib/list 
+           mzlib/math
            mzlib/etc)
   
   (define-syntax (define-teach stx)
@@ -126,6 +127,10 @@ namespace.
 	    (current-continuation-marks))))
       (not a)))
 
+  (define-teach beginner random 
+    (lambda (a)
+      (random a)))
+
   (define-teach beginner +
     (lambda (a b . args)
       (apply + a b args)))
@@ -137,6 +142,15 @@ namespace.
   (define-teach beginner *
     (lambda (a b . args)
       (apply * a b args)))
+  
+  (define-teach beginner sqr
+    (lambda (a)
+      (unless (number? a)
+        (raise
+	  (make-exn:fail:contract
+	    (format "sqr: expected number; given ~e" a)
+	    (current-continuation-marks))))
+      (sqr a)))
   
   (define-teach beginner member 
     (lambda (a b)
@@ -304,9 +318,11 @@ namespace.
   (provide  
     false?
     beginner-not
+    beginner-random
     beginner-+
     beginner-/
     beginner-*
+    beginner-sqr
     beginner-list?
     beginner-member
     beginner-cons

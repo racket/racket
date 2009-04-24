@@ -12,7 +12,7 @@
 language provides everything from @scheme[scheme/base] with a few
 changes that make it suitable as a preprocessor language:
 
-@itemize{
+@itemize[
 
   @item{It uses @scheme[read-syntax-inside] to read the body of the
         module, similar to @secref["docreader"].  This means that by
@@ -23,7 +23,7 @@ changes that make it suitable as a preprocessor language:
   @item{Values of expressions are printed with a custom
         @scheme[output] function.  This function displays most values
         in a similar way to @scheme[display], except that it is more
-        convenient for a preprocessor output.}}
+        convenient for a preprocessor output.}]
 
 }
 
@@ -180,13 +180,13 @@ A better approach is to generate newlines only when needed.
 
 @example|-{#lang scribble/text
            @(require scheme/list)
-           @(define (count n str)
+           @(define (counts n str)
               (add-between
                (for/list ([i (in-range 1 (+ n 1))])
                  @list{@i @str,})
                "\n"))
            Start...
-           @count[3]{Mississippi}
+           @counts[3]{Mississippi}
            ... and I'm done.
            ---***---
            Start...
@@ -1022,7 +1022,6 @@ example, an HTML template file that is the result of an external
 editor).  For these cases, the @scheme[scribble/text] language
 provides an @scheme[include] form that includes a file in the
 preprocessor syntax (where the default parsing mode is text).
-
 
 @example|-{#lang scribble/text
            @(require scheme/list)

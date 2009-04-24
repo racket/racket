@@ -12,7 +12,7 @@
   (define (*read-syntax src [port (current-input-port)])
     (parameterize ([current-readtable (make-comment-readtable)])
       (read-syntax/recursive src port)))
-
+  
   (define (make-comment-readtable #:readtable [rt (current-readtable)])
     (make-readtable rt
                     #\; 'terminating-macro
@@ -32,16 +32,44 @@
       (when (equal? #\; (peek-char port))
         (read-char port)
         (loop)))
+    (when (equal? #\space (peek-char port))
+      (read-char port))
     `(code:comment
       (unsyntax
        (t
-        ,@(let loop ()
-            (let ([c (read-char port)])
-              (cond
-               [(or (eof-object? c)
-                    (char=? c #\newline))
-                null]
-               [(char=? c #\@)
-                (cons (recur) (loop))]
-               [else (cons (string c)
-                           (loop))]))))))))
+        ,@(append-strings
+           (let loop ()
+             (let ([c (read-char port)])
+               (cond
+                [(or (eof-object? c)
+                     (char=? c #\newline))
+                 null]
+                [(char=? c #\@)
+                 (cons (recur) (loop))]
+                [else 
+                 (cons (string c)
+                       (loop))]))))))))
+  
+  (define (append-strings l)
+    (let loop ([l l][s null])
+      (cond
+       [(null? l) (if (null? s)
+                      null
+                      (preserve-space (apply string-append (reverse s))))]
+       [(string? (car l))
+        (loop (cdr l) (cons (car l) s))]
+       [else
+        (append (loop null s)
+                (cons
+                 (car l)
+                 (loop (cdr l) null)))])))
+
+  (define (preserve-space s)
+    (let ([m (regexp-match-positions #rx"  +" s)])
+      (if m
+          (append (preserve-space (substring s 0 (caar m)))
+                  (list `(hspace ,(- (cdar m) (caar m))))
+                  (preserve-space (substring s (cdar m))))
+          (list s)))))
+
+

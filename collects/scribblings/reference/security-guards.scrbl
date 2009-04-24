@@ -45,7 +45,7 @@ Creates a new security guard as child of @scheme[parent].
 
 The @scheme[file-guard] procedure must accept three arguments:
 
-@itemize{
+@itemize[
 
   @item{a symbol for the primitive procedure that triggered the access
   check, which is useful for raising an exception to deny access.}
@@ -60,7 +60,7 @@ The @scheme[file-guard] procedure must accept three arguments:
   @item{a list containing one or more of the following
   symbols:
 
-    @itemize{
+    @itemize[
 
     @item{@indexed-scheme['read] --- read a file or directory}
 
@@ -74,18 +74,18 @@ The @scheme[file-guard] procedure must accept three arguments:
     @item{@indexed-scheme['exists] --- determine whether a file or
     directory exists, or that a path string is well-formed}
 
-    }
+    ]
 
  The @scheme['exists] symbol is never combined with other symbols in
  the last argument to @scheme[file-guard], but any other combination is
  possible. When the second argument to @scheme[file-guard] is @scheme[#f],
  the last argument always contains only @scheme['exists].}
 
-}
+]
 
 The @scheme[network-guard] procedure must accept four arguments:
 
-@itemize{
+@itemize[
 
  @item{a symbol for the primitive operation that triggered the access
  check, which is useful for raising an exception to deny access.}
@@ -109,12 +109,12 @@ The @scheme[network-guard] procedure must accept four arguments:
  explicitly binding the socket is identified as a @scheme['server]
  action.}
 
-}
+]
 
 The @scheme[link-guard] argument can be @scheme[#f] or a procedure of
 three arguments:
 
-@itemize{
+@itemize[
 
   @item{a symbol for the primitive procedure that triggered the access
   check, which is useful for raising an exception to deny access.}
@@ -126,7 +126,7 @@ three arguments:
   relative the second-argument path; this path is not expanded or
   otherwise normalized before checking access.}
 
-}
+]
 
 If @scheme[link-guard] is @scheme[#f], then a default
 procedure is used that always raises @scheme[exn:fail].

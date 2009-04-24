@@ -28,28 +28,28 @@ for a running Scheme.
 In @indexed-scheme['os] mode,
  the possible symbol results are:
 
-@itemize{
+@itemize[
 @item{@indexed-scheme['unix]}
 @item{@indexed-scheme['windows]}
 @item{@indexed-scheme['macosx]}
-}
+]
 
 In @indexed-scheme['gc] mode,
 the possible symbol results are:
 
-@itemize{
+@itemize[
 @item{@indexed-scheme['cgc]}
 @item{@indexed-scheme['3m]}
-}
+]
 
 In @indexed-scheme['link] mode, the possible symbol results are:
 
-@itemize{
+@itemize[
 @item{@indexed-scheme['static] (Unix)}
 @item{@indexed-scheme['shared] (Unix)}
 @item{@indexed-scheme['dll] (Windows)}
 @item{@indexed-scheme['framework] (Mac OS X)}
-}
+]
 
 Future ports of Scheme may expand the list of @scheme['os],
 @scheme['gc], and @scheme['link] results.
@@ -146,7 +146,7 @@ elements will be set.) If @scheme[results] has @math{n} elements where
 performance-statistics values. The reported statistics values are as
 follows, in the order that they are set within @scheme[results]:
 
- @itemize{
+ @itemize[
 
   @item{@scheme[0]: The same value as returned by
   @scheme[current-process-milliseconds].}
@@ -185,12 +185,12 @@ follows, in the order that they are set within @scheme[results]:
   @item{@scheme[10]: The number of bytes allocated for machine code
   that is not reported by @scheme[current-memory-use].}
 
- }
+ ]
 
 For thread-specific statistics, up to @math{4} elements are set in the
 vector:
 
- @itemize{
+ @itemize[
 
   @item{@scheme[0]: @scheme[#t] if the thread is running, @scheme[#f]
   otherwise (same result as @scheme[thread-running?]).}
@@ -205,5 +205,5 @@ vector:
   @item{@scheme[3]: The number of bytes currently in use for the
   thread's continuation.}
 
- }
+ ]
 }

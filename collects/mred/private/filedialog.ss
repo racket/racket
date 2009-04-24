@@ -3,6 +3,8 @@
 	   mzlib/etc
 	   mzlib/list
 	   (prefix wx: "kernel.ss")
+	   (prefix wx: "wxme/style.ss")
+	   (prefix wx: "wxme/cycle.ss")
 	   "lock.ss"
 	   "wx.ss"
 	   "cycle.ss"
@@ -105,4 +107,6 @@
       ((mk-file-selector 'get-directory #f #f #t)
        message parent directory #f #f style null)))
 
-  (set-get-file! get-file))
+  (set-get-file! get-file)
+  (wx:set-editor-get-file! get-file)
+  (wx:set-editor-put-file! put-file))

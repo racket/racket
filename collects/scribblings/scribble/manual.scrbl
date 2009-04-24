@@ -79,7 +79,7 @@ instead of @scheme[unsyntax].
 
 A few other escapes are recognized symbolically:
 
-@itemize{
+@itemize[
 
  @item{@scheme[(#,(scheme code:line) _datum ...)] typesets as the
        sequence of @scheme[_datum]s (i.e., without the
@@ -104,7 +104,7 @@ A few other escapes are recognized symbolically:
        non-terminal via @scheme[defform], a variable via
        @scheme[defproc], etc.}
 
-}
+]
 
 See also @schememodname[scribble/comment-reader].
 }
@@ -324,7 +324,7 @@ is documented by each @scheme[defform], @scheme[defproc], or similar
 form within the section that contains the @scheme[declare-exporting]
 declaration:
 
-@itemize{
+@itemize[
 
  @item{If no @scheme[#:use-sources] clause is supplied, then the
        documentation applies to the given name as exported by the first
@@ -338,7 +338,7 @@ declaration:
        as the identifier as exported by the first @scheme[mod-path] in
        the @scheme[declare-exporting] declaration.}
 
-}
+]
 
 The initial @scheme[mod-path]s sequence can be empty if
 @scheme[mod-path]s are given with @scheme[#:use-sources]. In that
@@ -855,14 +855,14 @@ typewriter font with two leading @litchar{+}s).}
 @defproc[(math [pre-content any/c] ...) element?]{The @tech{decode}d
 @scheme[pre-content] is further transformed:
 
- @itemize{
+ @itemize[
 
   @item{Any immediate @scheme['rsquo] is converted to @scheme['prime].}
 
   @item{Parentheses and sequences of decimal digits in immediate
         strings are left as-is, but any other immediate string is
         italicized.}
- }
+ ]
 
 Extensions to @scheme[math] are likely, such as recognizing @litchar{_}
 and @litchar{^} for subscripts and superscripts.}
@@ -949,7 +949,7 @@ The @scheme[content->string] result of the @tech{decode}d
 @scheme[pre-content] is used as a key for references, but normalized
 as follows:
 
-@itemize{
+@itemize[
 
  @item{A trailing ``ies'' is replaced by ``y''.}
 
@@ -958,7 +958,7 @@ as follows:
  @item{Consecutive hyphens and whitespaces are all replaced by a
        single space.}
 
-}
+]
 
 These normalization steps help support natural-language references
 that differ slightly from a defined form. For example, a definition of
@@ -1002,7 +1002,7 @@ the link.}
 A combination of @scheme[scheme] and @scheme[as-index], with the
 following special cases when a single @scheme[datum] is provided:
 
- @itemize{
+ @itemize[
 
  @item{If @scheme[datum] is a @scheme[quote] form, then the quote is
        removed from the key (so that it's sorted using its unquoted
@@ -1011,7 +1011,7 @@ following special cases when a single @scheme[datum] is provided:
  @item{If @scheme[datum] is a string, then quotes are removed from the
        key (so that it's sorted using the string content).}
 
-}}
+]}
 
 @defproc[(idefterm [pre-content any/c] ...) element?]{Combines
 @scheme[as-index] and @scheme[defterm]. The content normally should be
@@ -1082,7 +1082,7 @@ Creates a bibliography entry. The @scheme[key] is used to refer to the
 entry via @scheme[cite]. The other arguments are used as elements in
 the entry:
 
-@itemize{
+@itemize[
 
  @item{@scheme[title] is the title of the cited work. It will be
        surrounded by quotes in typeset form if @scheme[is-book?] is
@@ -1108,7 +1108,7 @@ the entry:
        bibliography using @scheme[tt] and hyperlinked, or it is
        omitted if given as @scheme[#f].}
 
-}}
+]}
 
 
 @defproc[(bib-entry? [v any/c]) boolean?]{

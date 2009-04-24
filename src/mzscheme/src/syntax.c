@@ -5558,6 +5558,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
   scheme_prepare_exp_env(env->genv);
+  scheme_prepare_compile_env(env->genv->exp_env);
 
   if (!for_stx)
     names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env->genv);
@@ -5613,6 +5614,7 @@ define_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_
   SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(erec[drec].observer);
 
   scheme_prepare_exp_env(env->genv);
+  scheme_prepare_compile_env(env->genv->exp_env);
 
   scheme_define_parse(form, &names, &code, 1, env, 0);
   
@@ -5691,7 +5693,8 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
     Scheme_Dynamic_State dyn_state;
 
     scheme_prepare_exp_env(rhs_env->genv);
-  
+    scheme_prepare_compile_env(rhs_env->genv->exp_env);
+
     config = scheme_extend_config(scheme_current_config(),
                                   MZCONFIG_ENV,
                                   (Scheme_Object *)rhs_env->genv->exp_env);
@@ -6020,6 +6023,7 @@ do_letrec_syntaxes(const char *where,
   SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
   
   scheme_prepare_exp_env(stx_env->genv);
+  scheme_prepare_compile_env(stx_env->genv->exp_env);
 
   if (!env_already) {
     i = 0;

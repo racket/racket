@@ -12,7 +12,7 @@
 #define Uses_XLib
 
 #include "wx_main.h"
-#include "wx_media.h"
+#include "wx_win.h"
 #include "wx_clipb.h"
 #include "scheme.h"
 

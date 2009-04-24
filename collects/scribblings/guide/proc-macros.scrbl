@@ -115,7 +115,7 @@ unwrapping a pair, in which case the @scheme[cdr] of the pair may be
 recursively unwrapped, depending on how the syntax object was
 constructed.
 
-The oppose of @scheme[syntax->datum] is, of course,
+The opposite of @scheme[syntax->datum] is, of course,
 @scheme[datum->syntax].  In addition to a datum like @scheme['(+ 1
 2)], @scheme[datum->syntax] needs an existing syntax object to donate
 its lexical context, and optionally another syntax object to donate
@@ -322,7 +322,7 @@ the source form are identifiers. We could use a
 ]
 
 The @scheme[check-ids] function can use the @scheme[syntax->list]
-function to convert a synatx-object wrapping a list into a list
+function to convert a syntax-object wrapping a list into a list
 of syntax objects:
 
 @schemeblock[

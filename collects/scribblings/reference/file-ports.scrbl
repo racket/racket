@@ -21,7 +21,7 @@ Opens the file specified by @scheme[path] for input. The
 @scheme[mode-flag] argument specifies how the file's bytes are
 translated on input:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['binary] --- bytes are returned from the port
  exactly as they are read from the file.}
@@ -30,7 +30,7 @@ translated on input:
  13) as read from the file are filtered by the port in a platform
  specific manner:
 
-  @itemize{
+  @itemize[
 
   @item{@|AllUnix|: no filtering occurs.}
 
@@ -38,8 +38,8 @@ translated on input:
         by the port as a single linefeed; no filtering occurs for
         return bytes that are not followed by a linefeed, or for a
         linefeed that is not preceded by a return.}
-  }}
-}
+  ]}
+]
 
 Under Windows, @scheme['text] mode works only with regular files;
 attempting to use @scheme['text] with other kinds of files triggers an
@@ -72,7 +72,7 @@ Opens the file specified by @scheme[path] for output. The
 @scheme[mode-flag] argument specifies how bytes written to the port
 are translated when written to the file:
 
-@itemize{
+@itemize[
 
  @item{@scheme['binary] --- bytes are written to the file exactly
  as written to the port.}
@@ -81,7 +81,7 @@ are translated when written to the file:
  to the port is translated to a return-linefeed combination in the
  file; no filtering occurs for returns.}
 
-}
+]
 
 Under Windows, @scheme['text] mode works only with regular files;
 attempting to use @scheme['text] with other kinds of files triggers an
@@ -90,7 +90,7 @@ attempting to use @scheme['text] with other kinds of files triggers an
 The @scheme[exists-flag] argument specifies how to handle/require
 files that already exist:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['error] --- raise @scheme[exn:fail:filesystem]
        if the file exists.}
@@ -123,7 +123,7 @@ files that already exist:
        the file is not required to exist, and the file position is
        immediately set to the end of the file after opening it.}
 
-}
+]
 
 The file specified by @scheme[path] need not be a regular file. It
 might a device that is connected through the filesystem, such as

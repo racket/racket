@@ -14,7 +14,7 @@ At the @tech{flow} level, decoding recognizes a blank line as a
 @tech{paragraph} separator. At the @tech{paragraph}-content level,
 decoding makes just a few special text conversions:
 
-@itemize{
+@itemize[
 
  @item{@litchar{---}: converted to @scheme['mdash], which the HTML render
        outputs as an en-dash surrounded by space (so don't put spaces around
@@ -28,7 +28,7 @@ decoding makes just a few special text conversions:
 
  @item{@litchar{'}: converted to @scheme['rsquo], which is a fancy apostrophe: '}
 
-}
+]
 
 Some functions @deftech{decode} a sequence of @scheme[_pre-flow] or
 @scheme[_pre-content] arguments using @scheme[decode-flow] or
@@ -71,7 +71,7 @@ parsing.
 
 }
 
-@defproc[(decode-flow [lst list?]) (listof flow-element?)]{
+@defproc[(decode-flow [lst list?]) flow?]{
 
 Decodes a flow. A sequence of two or more newlines separated only by
 whitespace counts is parsed as a paragraph separator. In @scheme[lst],

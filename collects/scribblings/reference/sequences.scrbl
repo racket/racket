@@ -22,7 +22,7 @@ syntactic forms or with the procedures returned by
 The sequence datatype overlaps with many other datatypes. Among
 built-in datatypes, the sequence datatype includes the following:
 
-@itemize{
+@itemize[
 
  @item{lists (see @secref["pairs"])}
 
@@ -36,7 +36,7 @@ built-in datatypes, the sequence datatype includes the following:
 
  @item{input ports (see @secref["ports"])}
 
-}
+]
 
 In addition, @scheme[make-do-sequence] creates a sequence given a
 thunk that returns procedures to implement a generator, and the
@@ -176,10 +176,20 @@ where each element has two values: the value produced by @scheme[seq],
 and a non-negative exact integer starting with @scheme[0]. The
 elements of @scheme[seq] must be single-valued.}
 
+@defproc[(in-sequences [seq sequence?] ...) sequence?]{Returns a
+sequence that is made of all input sequences, one after the other. The
+elements of each @scheme[seq] must all have the same number of
+values.}
+
+@defproc[(in-cycle [seq sequence?] ...) sequence?]{Similar to
+@scheme[in-sequences], but the sequences are repeated in an infinite
+cycle.}
+
 @defproc[(in-parallel [seq sequence?] ...) sequence?]{Returns a
 sequence where each element has as many values as the number of
 supplied @scheme[seq]s; the values, in order, are the values of each
-@scheme[seq]. The elements of each @scheme[seq] must be single-valued.}
+@scheme[seq]. The elements of each @scheme[seq] must be
+single-valued.}
 
 @defproc[(stop-before [seq sequence?] [pred (any/c . -> . any)])
 sequence?]{ Returns a sequence that contains the elements of
@@ -209,7 +219,7 @@ values.
 
 The @scheme[thunk] results define the generated elements as follows:
 
-@itemize{
+@itemize[
 
  @item{The first result is a @scheme[_pos->element] procedure that takes
        the current position and returns the value(s) for the current element.}
@@ -232,7 +242,7 @@ The @scheme[thunk] results define the generated elements as follows:
        determines a sequence end after the current element is already
        included in the sequence.}
 
-}
+]
 
 Each of the procedures listed above is called only once per position.
 Among the last three procedures, as soon as one of the procedures

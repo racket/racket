@@ -43,7 +43,7 @@ value for that key). See also @scheme[build-aux-from-path]. See
 stand-alone executables and launchers under Windows and Mac OS X MrEd;
 the following additional associations apply to launchers:
 
-@itemize{
+@itemize[
 
  @item{@scheme['independent?] (Windows) --- a boolean; @scheme[#t]
        creates an old-style launcher that is independent of the
@@ -60,7 +60,7 @@ the following additional associations apply to launchers:
         @scheme[#t] means that the generated launcher should find the
         base MrEd executable through a relative path.}
 
-}
+]
 
 For Unix/X, the script created by @scheme[make-mred-launcher] detects
 and handles X Windows flags specially when they appear as the initial
@@ -241,7 +241,7 @@ It builds associations by adding to @scheme[path] suffixes, such as
 
 The recognized suffixes are as follows:
 
-@itemize{
+@itemize[
 
  @item{@filepath{.icns} @'rarr @scheme['icns] file for use under Mac
        OS X}
@@ -265,7 +265,7 @@ The recognized suffixes are as follows:
        @scheme[read] content (a single S-expression); for use under
        Mac OS X}
 
-}}
+]}
 
 @defparam[current-launcher-variant variant symbol?]{
 

@@ -15,11 +15,11 @@
   (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7")))
 
 (define EVP_SHA1
-  (get-ffi-obj 'EVP_sha1 libcrypto-so
+  (get-ffi-obj 'EVP_sha1 libcrypto
                (_fun f-> _fpointer)))
 
 (define HMAC-SHA1/raw
-  (get-ffi-obj 'HMAC libcrypto-so
+  (get-ffi-obj 'HMAC libcrypto
                (_fun [EVP_MD : _fpointer = (EVP_SHA1)]
                      [key : _bytes]
                      [key_len : _int = (bytes-length key)]

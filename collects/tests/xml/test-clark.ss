@@ -1,12 +1,14 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
-         (planet schematics/schemeunit:3/base)
-         (planet schematics/schemeunit:3/test-case)
-         (planet schematics/schemeunit:3/check)
-         (planet schematics/schemeunit:3/test-suite)
-         (planet schematics/schemeunit:3/text-ui)
+(require schemeunit
+         schemeunit/base
+         schemeunit/test-case
+         schemeunit/check
+         schemeunit/test-suite
+         schemeunit/text-ui
          xml
          scheme/runtime-path)
+(require/expose schemeunit/test-suite
+                (current-seed))
 
 (define (validate-xml? xml)
   (error 'validate-xml? "Not implemented"))
@@ -19,15 +21,21 @@
 (define (dir->test-suite d name path->test-case)
   (make-schemeunit-test-suite
    name
-   (parameterize
-       ([current-test-case-around test-suite-test-case-around]
-        [current-check-around test-suite-check-around])     
-     (map (lambda (p)
-            (path->test-case (build-path d p)))
-          (filter (lambda (p)
-                    (define ext (filename-extension p))
-                    (and ext (bytes=? #"xml" ext)))
-                  (directory-list d))))
+   (lambda (fdown fup fhere seed)
+     (parameterize
+         ([current-seed seed]
+          [current-test-case-around (test-suite-test-case-around fhere)]
+          [current-check-around (test-suite-check-around fhere)])
+       (for-each (lambda (p)
+                   (define t (path->test-case (build-path d p)))
+                   (if (schemeunit-test-suite? t)
+                       (current-seed (apply-test-suite t fdown fup fhere (current-seed)))
+                       t))
+                 (filter (lambda (p)
+                           (define ext (filename-extension p))
+                           (and ext (bytes=? #"xml" ext)))
+                         (directory-list d)))) 
+     (current-seed))
    void
    void))
 
@@ -58,7 +66,7 @@
 (define (valid-dir->test-suite d)
   (define (path->test-case f)
     (test-not-false (path->string f)
-                      (validate-xml? (read-xml/file f))))
+                    (validate-xml? (read-xml/file f))))
   (test-suite
    "Valid"
    (dir->test-suite 

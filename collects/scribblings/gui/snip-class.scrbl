@@ -10,7 +10,7 @@ A direct instance of @scheme[snip%] is uninteresting. Useful snips are
 In deriving a new snip class, these methods must be overridden to
 create a useful snip:
 
-@itemize{
+@itemize[
 
  @item{@method[snip% get-extent]} 
 
@@ -37,14 +37,14 @@ create a useful snip:
        in the snip's administrator when the state changes the first
        time}
 
-}
+]
 
 If a snip can contain more than one @techlink{item}, then the snip's @techlink{count}
  must be maintained as well.
 
 To define a class of snips that can be saved or cut-and-pasted:
 
-@itemize{
+@itemize[
 
  @item{Create an instance of @scheme[snip-class%], implementing the
        @method[snip-class% read] method. Export the
@@ -59,18 +59,18 @@ To define a class of snips that can be saved or cut-and-pasted:
 
  @item{Override the @method[snip% write] method.}
 
-}
+]
 
 To define a class of snips that read specially with
 @scheme[open-input-text-editor]:
 
-@itemize{
+@itemize[
 
  @item{Make your @scheme[snip%] class implement @scheme[readable-snip<%>].}
 
  @item{Implement the @method[readable-snip<%> read-special] method.}
 
-}
+]
 
 
 
@@ -320,7 +320,7 @@ Fills in all boxes with @scheme[0.0].
 Returns flags defining the behavior of the snip, a list of the
 following symbols:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['is-text] --- this is a text snip derived from
        @scheme[string-snip%]; do not set this flag}
@@ -357,7 +357,7 @@ following symbols:
        notification is given as a redundant call to @method[snip%
        set-admin]}
 
-}}
+]}
 
 
 @defmethod[(get-num-scroll-steps)

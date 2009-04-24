@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          "configuration/all-configuration-tests.ss"
          "dispatchers/all-dispatchers-tests.ss"           
          "lang/all-lang-tests.ss"

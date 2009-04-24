@@ -11,7 +11,7 @@
 Given a @scheme[keymap%] object, the keymap is loaded with mappable
  functions that apply to all @scheme[editor<%>] objects:
 
-@itemize{ 
+@itemize[ 
 @item{@scheme["copy-clipboard"]}
 @item{@scheme["copy-append-clipboard"]}
 @item{@scheme["cut-clipboard"]}
@@ -23,7 +23,7 @@ Given a @scheme[keymap%] object, the keymap is loaded with mappable
 @item{@scheme["undo"]}
 @item{@scheme["redo"]}
 @item{@scheme["select-all"]}
-}
+]
 
 }
 
@@ -44,7 +44,7 @@ See also
 
 Given a @scheme[keymap%] object, the table is loaded with functions
  that apply to all @scheme[text%] objects:
-@itemize{ 
+@itemize[ 
 @item{@scheme["forward-character"]}
 @item{@scheme["backward-character"]}
 @item{@scheme["previous-line"]}
@@ -85,7 +85,7 @@ Given a @scheme[keymap%] object, the table is loaded with functions
 @item{@scheme["delete-line"]}
 @item{@scheme["undo"]}
 @item{@scheme["redo"]}
-}
+]
 
 See also
 @scheme[add-editor-keymap-functions].

@@ -22,7 +22,8 @@
 ;; looks-like-directory : str -> bool
 ;; to determine if is url style path looks like it refers to a directory
 (define (looks-like-directory? path)
-  (eq? #\/ (string-ref path (sub1 (string-length path)))))
+  (and (regexp-match #rx"/$" path)
+       #t))
 
 (define interface-version 'v1)
 

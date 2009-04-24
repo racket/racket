@@ -12,10 +12,10 @@ The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
 program on top of the @scheme[scheme/gui] library.
 
-@itemize{
+@itemize[
 @item{@bold{Entire Framework}
 
-@itemize{
+@itemize[
 
 @item{@scheme[(require #, @schememodname[framework])]
 
@@ -41,7 +41,7 @@ program on top of the @scheme[scheme/gui] library.
   @scheme[framework^]. It imports the @scheme[mred^] signature.
 
 }
-}}
+]}
 @item{
  @bold{Test Suite Engine}
 
@@ -85,7 +85,7 @@ This library is here for backwards compatibility. The
 functionality in it has moved into the framework proper, in
 the @secref["editor-snip"] section.
 }
-}
+]
 
 @bold{Thanks}
 

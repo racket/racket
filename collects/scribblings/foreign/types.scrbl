@@ -482,7 +482,7 @@ of known keys.  Each key interacts with generated wrapper functions in
 a different way, which affects how its corresponding argument is
 treated:
 
-@itemize{
+@itemize[
 
  @item{@scheme[type:] specifies the foreign type that should be used, if it is
    @scheme[#f] then this argument does not participate in the foreign call.}
@@ -506,7 +506,7 @@ treated:
    argument's value.}
 
  @item{@scheme[post:] a similar post-foreign code chunk.}
-}
+]
 
 The @scheme[pre:] and @scheme[post:] bindings can be of the form
 @scheme[(_id => _expr)] to use the existing value.  Note that if the
@@ -551,7 +551,7 @@ Creates a C pointer type, where @scheme[mode] indicates input or
 output pointers (or both).  The @scheme[mode] can be one of the
 following:
 
-@itemize{
+@itemize[
 
  @item{@scheme[i] --- indicates an @italic{input} pointer argument:
   the wrapper arranges for the function call to receive a value that
@@ -576,7 +576,7 @@ following:
   function, and a copy of the return value is made too---which is
   inefficient, but ensures that structs are not modified by C code.)}
 
-}
+]
 
 For example, the @scheme[_ptr] type can be used in output mode to create a
 foreign function wrapper that returns more than a single argument.  The
@@ -684,7 +684,7 @@ must start with @litchar{_}.
 
 The resulting bindings are as follows:
 
-@itemize{
+@itemize[
 
  @item{@scheme[_id] : the new C type for this struct.}
 
@@ -705,7 +705,7 @@ The resulting bindings are as follows:
  @item{@schemeidfont{set-}@schemevarfont{id}@schemeidfont{-}@scheme[field-id]@schemeidfont{!}
   : a mutator function for each @scheme[field-id].}
 
-}
+]
 
 Objects of the new type are actually C pointers, with a type tag that
 is a list that contains the string form of @schemevarfont{id}.  Since

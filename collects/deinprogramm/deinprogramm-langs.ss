@@ -212,13 +212,18 @@
 	    ;; DeinProgramm addition, copied from language.ss
 	    (run-in-user-thread
 	     (lambda ()
-               (global-port-print-handler
+	       (global-port-print-handler
 		(lambda (value port)
-                  (parameterize ([pretty-print-columns 'infinity])
-                    (pretty-print value port)))))))
-          
+		  (let ([converted-value (simple-module-based-language-convert-value value settings)])
+		    (setup-printing-parameters 
+		     (lambda ()
+		       (parameterize ([pretty-print-columns 'infinity])
+			 (pretty-print converted-value port)))
+		     settings
+		     'infinity)))))))
+
 	  ;; set-printing-parameters : settings ( -> TST) -> TST
-          ;; is implicitly exposed to the stepper.  watch out!  --  john
+	  ;; is implicitly exposed to the stepper.  watch out!  --  john
           (define/public (set-printing-parameters settings thunk)
             (parameterize ([pc:booleans-as-true/false #f]
                            [pc:abbreviate-cons-as-list (get-abbreviate-cons-as-list)]
@@ -236,12 +241,16 @@
               (thunk)))
           
           (define/override (render-value/format value settings port width)
-            (parameterize ([pretty-print-columns width])
-              (pretty-print value port)))
+            (set-printing-parameters
+             settings
+             (lambda ()
+	       (simple-module-based-language-render-value/format value settings port width))))
           
           (define/override (render-value value settings port)
-            (parameterize ([pretty-print-columns 'infinity])
-              (pretty-print value port)))
+            (set-printing-parameters
+             settings
+             (lambda ()
+               (simple-module-based-language-render-value/format value settings port 'infinity))))
           
           (super-new)))
 
@@ -1273,9 +1282,11 @@
       
       (define (test-covered key)
         (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (when ht
-            (let ([v (hash-ref ht key)])
-              (set-mcar! v #t)))))
+          (and ht
+               (let ([v (hash-ref ht key)])
+                 (and v
+                      (with-syntax ([v v])
+                        #'(set-mcar! v #t)))))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))

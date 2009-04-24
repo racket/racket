@@ -8,13 +8,13 @@ A @scheme[keymap%] object is used by @scheme[editor<%>] objects to
  extensible way. Keymaps can be used without editors, as well.  A
  @scheme[keymap%] object contains
 
-@itemize{
+@itemize[
 
  @item{a mapping from function names to event-handling procedures; and}
 
  @item{a mapping from key and mouse sequences to function names.}
 
-}
+]
 
 A handler procedure in a keymap is invoked with a @scheme[key-event%]
  object or a @scheme[mouse-event%] object. It is also given another
@@ -163,7 +163,7 @@ Maps an input state sequence to a function name using a string-encoded
 
 The modifier identifiers are:
 
-@itemize{
+@itemize[
 
  @item{@litchar{s:} --- All platforms: Shift}
 
@@ -181,7 +181,7 @@ The modifier identifiers are:
  @item{@litchar{?:} --- All platforms: allow match to character produced by opposite 
                   use of Shift, AltGr/Option, and/or Caps Lock, when available; see
 @xmethod[key-event% get-other-shift-key-code]} 
-}
+]
 
 If a particular modifier is not mentioned in a state string, it
  matches states whether that modifier is pressed or not pressed. A
@@ -195,7 +195,7 @@ A key identifier can be either a character on the keyboard (e.g.,
  @litchar{a}, @litchar{2}, @litchar{?}) or a special name. The
  special names are as follows:
 
-@itemize{
+@itemize[
 @item{@litchar{leftbutton} (button down)}
 @item{@litchar{rightbutton}}
 @item{@litchar{middlebutton}}
@@ -270,7 +270,7 @@ A key identifier can be either a character on the keyboard (e.g.,
 @item{@litchar{f22}}
 @item{@litchar{f23}}
 @item{@litchar{f24}}
-}
+]
 
 For a special keyword, the capitalization does not matter. However,
  capitalization is important for single-letter keynames. Furthermore,
@@ -297,7 +297,7 @@ A state can match multiple state strings mapped in a keymap (or keymap
 
 Examples:
 
-@itemize{
+@itemize[
  
  @item{@scheme["space"] --- matches whenever the space bar is pressed,
  regardless of the state of modifiers keys.}
@@ -322,7 +322,7 @@ Examples:
   that produces @litchar{+}, even if producing @litchar{+} normally requires
   pressing Shift.}
 
-}
+]
 
 A call to @method[keymap% map-function] that would map a particular
  key sequence both as a prefix and as a complete sequence raises an

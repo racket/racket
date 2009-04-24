@@ -279,7 +279,7 @@ port read handler is not used for @scheme[read/recursive] or
 A port read handler is applied to either one argument or two
 arguments:
 
-@itemize{
+@itemize[
 
  @item{A single argument is supplied when the port is used
  with @scheme[read]; the argument is the port being read. The return
@@ -290,7 +290,7 @@ arguments:
  the second argument is a value indicating the source. The return
  value is a syntax object that was read from the port (or end-of-file).}
 
-}
+]
 
 The default port read handler reads standard Scheme expressions with
 Scheme's built-in parser (see @secref["reader"]). It handles a

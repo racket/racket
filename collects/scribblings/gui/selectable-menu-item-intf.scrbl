@@ -45,14 +45,14 @@ For a list of allowed key symbols, see @xmethod[key-event%
 Returns a list of symbols that indicates the keyboard prefix used for the menu
  item's keyboard shortcut. The allowed symbols for the list are the following:
 
-@itemize{
+@itemize[
 @item{@scheme['alt] --- Meta (Windows and X only)}
 @item{@scheme['cmd] --- Command (Mac OS X only)}
 @item{@scheme['meta] --- Meta (X only)}
 @item{@scheme['ctl] --- Control}
 @item{@scheme['shift] --- Shift}
 @item{@scheme['option] --- Option (Mac OS X only)}
-}
+]
 
 Under X, at most one of @scheme['alt] and @scheme['meta] can be
  supplied; the only difference between @scheme['alt] and

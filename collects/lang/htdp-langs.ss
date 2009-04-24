@@ -1102,10 +1102,13 @@
             (hash-set! ht key (mcons #f expr)))))
       
       (define (test-covered key)
-        (let ([ht (thread-cell-ref current-test-coverage-info)])
-          (when ht
-            (let ([v (hash-ref ht key)])
-              (set-mcar! v #t)))))
+        (let* ([ht (thread-cell-ref current-test-coverage-info)]
+               [v (and ht (hash-ref ht key #f))])
+          (with-syntax ([v v])
+            #'(set-mcar! v #t))
+          #;
+          (and v
+               (λ () (set-mcar! v #t)))))
       
       (define-values/invoke-unit et:stacktrace@
         (import et:stacktrace-imports^) (export (prefix et: et:stacktrace^)))

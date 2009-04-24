@@ -186,7 +186,7 @@
     (src? input-type show-options max-depth max-choice-depth))
   
   (define-signature ranking-parameters^ 
-    (rank-misspell rank-caps rank-class rank-wrong rank-end rank-choice))
+    (rank-misspell rank-caps rank-class rank-wrong rank-end rank-choice rank-repeat))
   
   (define-signature updating-rank^
     (blamed-terminal failed-last-parse))

@@ -83,5 +83,3 @@ transformations of the program into continuation or store passing style.
                   "+")))))))
 ]
 }
-
-@include-section["lang-web-cells.scrbl"]

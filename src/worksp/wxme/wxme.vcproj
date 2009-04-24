@@ -162,54 +162,6 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\mred\Wxme\WX_CGREC.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_KEYM.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MBUF.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDAD.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDIA.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MEDIO.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MLINE.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MPBRD.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MPRIV.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_MSNIP.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_SNIP.cxx"
-				>
-			</File>
-			<File
-				RelativePath="..\..\mred\Wxme\WX_STYLE.cxx"
-				>
-			</File>
-			<File
 				RelativePath="..\..\wxcommon\wxGC.cxx"
 				>
 			</File>

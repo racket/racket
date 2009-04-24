@@ -310,12 +310,12 @@ editor it is mixed onto.
 Calls the super method and adds in a keymap with the
 drscheme-specific keybindings:
 
-@itemize{
+@itemize[
 @item{f5 - Run}
 
 @item{c:x;o - toggles the focus between the definition and
 interactions windows.}
-}
+]
 
 
 

@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/private/connection-manager
          web-server/private/timer
          web-server/http/request

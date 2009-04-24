@@ -12,7 +12,7 @@ arrow that the user can click to hide or show the sub-list's items.
 
 The list control supports the following default keystrokes:
 
-@itemize{
+@itemize[
  
  @item{Down: move to the next entry at the current level (skipping lower levels).}
 
@@ -24,7 +24,7 @@ The list control supports the following default keystrokes:
 
  @item{Return:  open/close the current selected level (only valid for lists).}
 
-}
+]
 
 
 @local-table-of-contents[]

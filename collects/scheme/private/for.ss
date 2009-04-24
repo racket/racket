@@ -38,6 +38,8 @@
              in-hash-values
              in-hash-pairs
              
+             in-sequences
+             in-cycle
              in-parallel
              stop-before
              stop-after
@@ -356,8 +358,8 @@
                                  (if (step . >= . 0)
                                      (lambda (x) (< x b))
                                      (lambda (x) (> x b)))
-                                 (lambda (x) #t)
-                                 (lambda (x y) #t))))]))
+                                 void
+                                 void)))]))
 
   (define in-naturals
     (case-lambda
@@ -369,20 +371,14 @@
         (raise-type-error 'in-naturals
                           "exact non-negative integer"
                           n))
-      (make-do-sequence (lambda ()
-                          (values values
-                                  add1
-                                  n
-                                  (lambda (x) #t)
-                                  (lambda (x) #t)
-                                  (lambda (x y) #t))))]))
+      (make-do-sequence (lambda () (values values add1 n void void void)))]))
 
   (define (in-list l)
     ; (unless (list? l) (raise-type-error 'in-list "list" l))
     (make-do-sequence (lambda () (:list-gen l))))
   
   (define (:list-gen l)
-    (values car cdr l pair? (lambda (x) #t) (lambda (p x) #t)))
+    (values car cdr l pair? void void))
 
 
   (define (check-ranges who start stop step)
@@ -423,8 +419,8 @@
      (if (> step 0)
          (lambda (i) (< i stop))
          (lambda (i) (> i stop)))
-     (lambda (x) #t)
-     (lambda (x y) #t)))
+     void
+     void))
 
   (define in-string
     (case-lambda
@@ -438,13 +434,12 @@
         (make-do-sequence (lambda () (:string-gen l start stop step))))]))
 
   (define (:string-gen v start stop step)
-    (values (lambda (i)
-              (string-ref v i))
+    (values (lambda (i) (string-ref v i))
             (if (= step 1) add1 (lambda (x) (+ x step)))
             start
             (lambda (i) (< i stop))
-            (lambda (x) #t)
-            (lambda (x y) #t)))
+            void
+            void))
 
   (define in-bytes
     (case-lambda
@@ -458,36 +453,35 @@
         (make-do-sequence (lambda () (:bytes-gen l start stop step))))]))
 
   (define (:bytes-gen v start stop step)
-    (values (lambda (i)
-              (bytes-ref v i))
+    (values (lambda (i) (bytes-ref v i))
             (if (= step 1) add1 (lambda (x) (+ x step)))
             start
             (lambda (i) (< i stop))
-            (lambda (x) #t)
-            (lambda (x y) #t)))
-  
+            void
+            void))
+
   (define (in-input-port-bytes l)
-    (unless (input-port? l) (raise-type-error 'in-input-port-bytes "input-port" l))
+    (unless (input-port? l)
+      (raise-type-error 'in-input-port-bytes "input-port" l))
     (make-do-sequence (lambda () (:input-port-gen l))))
 
   (define (:input-port-gen v)
-    (values (lambda (v) (read-byte v))
-            (lambda (v) v)
+    (values read-byte
+            values
             v
-            (lambda (v) #t)
+            void
             (lambda (x) (not (eof-object? x)))
-            (lambda (x v) #t)))
+            void))
 
   (define (in-input-port-chars v)
-    (unless (input-port? v) (raise-type-error 'in-input-port-chars "input-port" v))
-    (make-do-sequence (lambda ()
-                             (values (lambda (v) (read-char v))
-                                     (lambda (v) v)
-                                     v
-                                     (lambda (v) #t)
-                                     (lambda (x) (not (eof-object? x)))
-                                     (lambda (x v) #t)))))
-  
+    (unless (input-port? v)
+      (raise-type-error 'in-input-port-chars "input-port" v))
+    (make-do-sequence
+     (lambda ()
+       (values read-char values v void
+               (lambda (x) (not (eof-object? x)))
+               void))))
+
   (define in-lines
     (case-lambda
      [() (in-lines (current-input-port))]
@@ -498,50 +492,41 @@
         (raise-type-error 'in-lines "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one)" mode))
       (make-do-sequence (lambda ()
                           (values (lambda (v) (read-line v mode))
-                                  (lambda (v) v)
+                                  values
                                   v
-                                  (lambda (v) #t)
+                                  void
                                   (lambda (x) (not (eof-object? x)))
-                                  (lambda (x v) #t))))]))
-  
+                                  void)))]))
+
   (define (in-hash ht)
     (unless (hash? ht) (raise-type-error 'in-hash "hash" ht))
     (make-do-sequence (lambda () (:hash-key+val-gen ht))))
 
   (define (:hash-key+val-gen ht)
     (:hash-gen ht (lambda (ht pos)
-                    (values
-                     (hash-iterate-key ht pos)
-                     (hash-iterate-value ht pos)))
-               (lambda (k v) #t)
-               (lambda (p k v) #t)))
+                    (values (hash-iterate-key ht pos)
+                            (hash-iterate-value ht pos)))))
 
   (define (in-hash-keys ht)
     (unless (hash? ht) (raise-type-error 'in-hash-keys "hash" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key
-                                            (lambda (k) #t)
-                                            (lambda (p k) #t)))))
+    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key))))
   (define (in-hash-values ht)
     (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value
-                                            (lambda (v) #t)
-                                            (lambda (p v) #t)))))
+    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value))))
   (define (in-hash-pairs ht)
     (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
-    (make-do-sequence (lambda () (:hash-gen ht (lambda (ht pos)
-                                                 (cons
-                                                  (hash-iterate-key ht pos)
-                                                  (hash-iterate-value ht pos)))
-                                            (lambda (k+v) #t)
-                                            (lambda (p k+v) #t)))))
+    (make-do-sequence (lambda ()
+                        (:hash-gen ht (lambda (ht pos)
+                                        (cons (hash-iterate-key ht pos)
+                                              (hash-iterate-value ht pos)))))))
 
-  (define (:hash-gen ht sel val-true pos+val-true)
+  (define (:hash-gen ht sel)
     (values (lambda (pos) (sel ht pos))
             (lambda (pos) (hash-iterate-next ht pos))
             (hash-iterate-first ht)
             (lambda (pos) pos) ; #f position means stop
-            val-true
-            pos+val-true))
+            void
+            void))
 
   (define (stop-before g pred)
     (unless (sequence? g) (raise-type-error 'stop-before "sequence" g))
@@ -599,16 +584,47 @@
                                 (lambda (pos) #f)
                                 #t
                                 (lambda (pos) pos)
-                                (lambda (val) #t)
-                                (lambda (pos val) #t)))))
+                                void
+                                void))))
 
   ;; ----------------------------------------
 
-  (define (in-parallel . sequences)
+  (define (append-sequences sequences cyclic?)
+    (define (seqs->m+g+r seqs)
+      (if (pair? seqs)
+        (let-values ([(more? get) (sequence-generate (car seqs))]
+                     [(seqs) (cdr seqs)])
+          (if (more?) (list* more? get seqs) (seqs->m+g+r seqs)))
+        (and cyclic? (seqs->m+g+r sequences))))
+    (make-do-sequence
+     (lambda ()
+       ;; place is (cur-more? cur-get rest-seqs ...) or #f
+       (values (lambda (m+g+r) ((cadr m+g+r)))
+               (lambda (m+g+r)
+                 (if (and (pair? m+g+r) (not ((car m+g+r))))
+                   (seqs->m+g+r (cddr m+g+r))
+                   m+g+r))
+               (seqs->m+g+r sequences)
+               values
+               void
+               void))))
+
+  (define (check-sequences who sequences)
     (for-each (lambda (g)
-                (unless (sequence? g)
-                  (raise-type-error 'in-parallel "sequence" g)))
-              sequences)
+                (unless (sequence? g) (raise-type-error who "sequence" g)))
+              sequences))
+
+  (define (in-sequences sequence . sequences)
+    (let ([all (cons sequence sequences)])
+      (check-sequences 'in-sequences all)
+      (if (null? sequences) sequence (append-sequences all #f))))
+  (define (in-cycle sequence . sequences)
+    (let ([all (cons sequence sequences)])
+      (check-sequences 'in-cycle all)
+      (append-sequences all #t)))
+
+  (define (in-parallel . sequences)
+    (check-sequences 'in-parallel sequences)
     (if (= 1 (length sequences))
         (car sequences)
         (make-do-sequence
@@ -636,7 +652,7 @@
                                              vals))))))))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;  runnign sequences outside of a loop:
+  ;;  running sequences outside of a loop:
 
   (define (sequence-generate g)
     (unless (sequence? g)

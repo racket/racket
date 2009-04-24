@@ -4,6 +4,8 @@
 	   mzlib/port
 	   syntax/moddep
 	   (prefix wx: "kernel.ss")
+	   (prefix wx: "wxme/snip.ss")
+	   (prefix wx: "wxme/cycle.ss")
 	   "check.ss"
 	   "editor.ss")
 		
@@ -50,10 +52,10 @@
                          (error 'load-class "not a ~a% instance" id))))
 		 #f)))])
     ;; install the getters:
-    (wx:set-snip-class-getter 
+    (wx:set-get-snip-class!
      (lambda (name)
        (load-one name 'snip-class wx:snip-class%)))
-    (wx:set-editor-data-class-getter 
+    (wx:set-get-editor-data-class!
      (lambda (name)
        (load-one name 'editor-data-class wx:editor-data-class%))))
 

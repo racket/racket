@@ -16,7 +16,7 @@ packaging tasks.
 The main action of @|mzc| is determined through one of the following
 command-line flags:
 
-@itemize{
+@itemize[
 
  @item{@as-index{@DFlag{make}} (the default), @as-index{@Flag{k}}
        or @as-index{@DFlag{make-collection}} :
@@ -60,7 +60,7 @@ command-line flags:
        Scheme code to a native-code extension via C. See
        @secref["ext"]. @|rare|}
 
-}
+]
 
 @include-section["make.scrbl"]
 @include-section["sa.scrbl"]

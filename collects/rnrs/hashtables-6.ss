@@ -19,7 +19,7 @@
          hashtable-equivalence-function
          hashtable-hash-function
          hashtable-mutable?
-         (rename-out [equal-hash-code equal-hash])
+         equal-hash
          string-hash
          string-ci-hash
          symbol-hash)
@@ -143,17 +143,20 @@
     (values (list->vector (map (lambda (p) (unwrap (car p))) ps))
             (list->vector (map cdr ps)))))
 
+(define (equal-hash v)
+  (abs (equal-hash-code v)))
+
 (define (string-hash s)
   (unless (string? s)
     (raise-type-error 'string-hash "string" s))
-  (equal-hash-code s))
+  (abs (equal-hash-code s)))
 
 (define (string-ci-hash s)
   (unless (string? s)
     (raise-type-error 'string-ci-hash "string" s))
-  (equal-hash-code (string-foldcase s)))
+  (abs (equal-hash-code (string-foldcase s))))
 
 (define (symbol-hash s)
   (unless (symbol? s)
     (raise-type-error 'symbol-hash "symbol" s))
-  (eq-hash-code s))
+  (abs (eq-hash-code s)))

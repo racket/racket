@@ -208,13 +208,13 @@ Returns @|void-const|.
 The following rules determine, in order, whether and how @scheme[event]
 is handled:
 
-@itemize{
+@itemize[
 
 @item{
 If the window that currently owns the focus specifically handles the
  event, then @scheme[#f] is returned. The following describes window
  types and the keyboard events they specifically handle:
-@itemize{
+@itemize[
 
  @item{@scheme[editor-canvas%] --- tab-exit is disabled (see
 @method[editor-canvas% allow-tab-exit]): all keyboard events, except alphanumeric key events when the Meta
@@ -242,7 +242,7 @@ If the window that currently owns the focus specifically handles the
  @item{@scheme[list-box%] --- arrow key events and alphanumeric key
  events when the Meta (X) or Alt (Windows) key is not pressed}
 
-}}
+]}
 
 @item{
 If @scheme[event] is a Tab or arrow key event, the keyboard focus is
@@ -288,7 +288,7 @@ If @scheme[event] is an alphanumeric key event and the current top-level
 @item{
 Otherwise, @scheme[#f] is returned.}
 
-}
+]
 }}
 
 @defmethod[(on-system-menu-char [event (is-a?/c key-event%)])

@@ -52,7 +52,7 @@ example @schemeidfont{foo^4_ok} is displayed as the identifier
 Further, uses of certain identifiers in @scheme[stx] typeset
 specially:
 
-@itemize{
+@itemize[
 
  @item{@as-index{@schemeidfont{code:blank}} --- produces a space.}
 
@@ -76,7 +76,7 @@ specially:
  @item{@schemeidfont{$} --- typesets as a vertical bar (for no
  particularly good reason).}
 
-}}
+]}
 
 
 @defform[(code datum ...)]{

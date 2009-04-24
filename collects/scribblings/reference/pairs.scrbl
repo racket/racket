@@ -176,7 +176,7 @@ Applies @scheme[proc] to the elements of the @scheme[lst]s from the
 
 Similar to @scheme[map], except that
 
-@itemize{
+@itemize[
 
  @item{the result is @scheme[#f] if any application of @scheme[proc] produces
        @scheme[#f], in which case @scheme[proc] is not applied to later
@@ -187,7 +187,7 @@ Similar to @scheme[map], except that
        @scheme[proc] to the last elements in the @scheme[lst]s is in tail
        position with respect to the @scheme[andmap] call.}
 
-}
+]
 
 If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
 
@@ -204,7 +204,7 @@ If the @scheme[lst]s are empty, then @scheme[#t] is returned.}
 
 Similar to @scheme[map], except that
 
-@itemize{
+@itemize[
 
  @item{the result is @scheme[#f] if every application of @scheme[proc] produces
        @scheme[#f]; or}
@@ -216,7 +216,7 @@ Similar to @scheme[map], except that
        @scheme[lst]s is in tail position with respect to the
        @scheme[andmap] call.}
 
-}
+]
 
 If the @scheme[lst]s are empty, then @scheme[#f] is returned.}
 
@@ -236,7 +236,7 @@ Similar to @scheme[map], but @scheme[proc] is called only for its
 
 
 @defproc[(foldl [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
+         any/c]{
 
 Like @scheme[map], @scheme[foldl] applies a procedure to the
  elements of one or more lists. Whereas @scheme[map] combines the return
@@ -263,7 +263,7 @@ Unlike @scheme[foldr], @scheme[foldl] processes the @scheme[lst]s in
 ]}
 
 @defproc[(foldr [proc procedure?] [init any/c] [lst list?] ...+)
-         list?]{
+         any/c]{
 
 Like @scheme[foldl], but the lists are traversed from right to left.
  Unlike @scheme[foldl], @scheme[foldr] processes the @scheme[lst]s in
@@ -723,7 +723,7 @@ immutable pairs, vectors, boxes, and hash tables.
 Only the following kinds of values are copied and traversed to detect
 placeholders:
 
-@itemize{
+@itemize[
 
  @item{pairs}
 
@@ -738,7 +738,7 @@ placeholders:
  @item{placeholders created by @scheme[make-placeholder] and
        @scheme[make-hash-placeholder]}
 
-}
+]
 
 Due to these restrictions, @scheme[make-reader-graph] creates exactly
 the same sort of cyclic values as @scheme[read].

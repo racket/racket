@@ -1,6 +1,6 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
-         (planet schematics/schemeunit:3/text-ui)
+(require schemeunit
+         schemeunit/text-ui
          net/url
          (prefix-in h: html)
          (prefix-in x: xml))

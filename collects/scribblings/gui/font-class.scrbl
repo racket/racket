@@ -7,7 +7,7 @@ A @defterm{font} is an object which determines the appearance of text,
  primarily when drawing text to a device context. A font is determined
  by seven properties:
 
-@itemize{
+@itemize[
 
  @item{size --- The size of the text, either in points (the default)
                 or logical drawing units, depending on the
@@ -16,7 +16,7 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{family --- A platform- and device-independent font
                   designation. The families are:
 
- @itemize{
+ @itemize[
  @item{@indexed-scheme['default]}
  @item{@indexed-scheme['decorative]}
  @item{@indexed-scheme['roman]}
@@ -25,7 +25,7 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-scheme['modern] (fixed width)}
  @item{@indexed-scheme['symbol] (Greek letters and more)}
  @item{@indexed-scheme['system] (used to draw control labels)}
- }
+ ]
 
  The @scheme['modern] designation is special under Mac OS X and X with
  fontconfig/Xft; characters in the ASCII range 0-255 are converted to
@@ -47,23 +47,23 @@ A @defterm{font} is an object which determines the appearance of text,
                 drawing text.}
 
 @item{style --- The slant style of the font, one of:
- @itemize{
+ @itemize[
  @item{@indexed-scheme['normal]}
  @item{@indexed-scheme['slant] (Windows, Mac OS X: same as @scheme['italic]; X: tries @scheme['italic] if @scheme['slant] font does not exist)}
  @item{@indexed-scheme['italic] (X: tries @scheme['slant] if @scheme['italic] font does not exist)}
- }}
+ ]}
 
 @item{weight --- The weight of the font, one of:
- @itemize{
+ @itemize[
  @item{@indexed-scheme['normal]}
  @item{@indexed-scheme['light]}
  @item{@indexed-scheme['bold]}
- }}
+ ]}
 
 @item{underline? --- @scheme[#t] for underlined, @scheme[#f] for plain.}
 
 @item{smoothing --- Amount of anti-alias smoothing, one of:
- @itemize{
+ @itemize[
  @item{@indexed-scheme['default] (platform-specific, sometimes user-configurable)}
  @item{@indexed-scheme['partly-smoothed] (Windows: TrueType when available; 
                                       Mac OS X: 4-bit, pixel-aligned smoothing;
@@ -72,7 +72,7 @@ A @defterm{font} is an object which determines the appearance of text,
                                Mac OS X: Quartz smoothing;
                                X: fontconfig/Xft when available)}
  @item{@indexed-scheme['unsmoothed]}
- }
+ ]
  Special case: @scheme['default] corresponds to
  @scheme['partly-smoothed] when used with the @scheme['modern] family
  and a font size between 9 and 13 (inclusive).}
@@ -82,7 +82,7 @@ A @defterm{font} is an object which determines the appearance of text,
  bitmap drawing context), @scheme[#f] if the size of the font is in
  points (which can depend on screen resolution).}
 
-}
+]
 
 To avoid creating multiple fonts with the same characteristics, use
  the global @scheme[font-list%] object @indexed-scheme[the-font-list].

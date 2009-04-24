@@ -26,7 +26,7 @@ The italicized meta-variables in this specification, such as
 identifiers, so @scheme[_an-expr] is one meta-variable. A naming
 convention implicitly defines the meaning of many meta-variables:
 
-@itemize{
+@itemize[
 
  @item{A meta-variable that ends in @scheme[_id] stands for an
        identifier, such as @schemeidfont{x} or
@@ -44,7 +44,7 @@ convention implicitly defines the meaning of many meta-variables:
        it is not preceded by any expression, and the last
        @scheme[_body] must be an expression; see also @secref["intdefs"].}
 
-}
+]
 
 Square brackets in the grammar indicate a parenthesized sequence of
 forms, where square brackets are normally used (by convention). That

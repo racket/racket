@@ -20,7 +20,7 @@ Inlines the syntax in the designated file in place of the
 @scheme[include] expression. The @scheme[path-spec] can be any of the
 following:
 
-@itemize{
+@itemize[
 
  @item{A literal string that specifies a path to include, parsed
        according to the platform's conventions (which means that it is
@@ -45,7 +45,7 @@ following:
        directory using @scheme[build-path] to obtain the path to
        include.}
 
-}
+]
 
 If @scheme[path-spec] specifies a relative path to include, the path
 is resolved relative to the source for the @scheme[include]

@@ -26,7 +26,7 @@ parameter, the reader's behavior can be extended.
 
 A readtable is consulted at specific times by the reader:
 
-@itemize{
+@itemize[
 
  @item{when looking for the start of a datum;}
 
@@ -42,7 +42,7 @@ A readtable is consulted at specific times by the reader:
  @item{when looking for an opener after @litchar{#}@nonterm{n} in a
    vector of specified length @nonterm{n}.}
 
-}
+]
 
 The readtable is ignored at other times.  In particular, after parsing
 a character that is mapped to the default behavior of @litchar{;}, the
@@ -90,7 +90,7 @@ must be @math{1} modulo @math{3}.
 The possible combinations for @scheme[key], @scheme[mode], and
 @scheme[action] are as follows:
 
-@itemize{
+@itemize[
 
  @item{@scheme[(code:line _char (unsyntax @indexed-scheme['terminating-macro]) _proc)] --- causes
  @scheme[_char] to be parsed as a delimiter, and an
@@ -133,7 +133,7 @@ The possible combinations for @scheme[key], @scheme[mode], and
  i.e., characters (other than @litchar{#} or @litchar{|}) that can
  start a symbol or number with the default readtable.}
 
-}
+]
 
 If multiple @scheme['dispatch-macro] mappings are provided for a
 single @scheme[_char], all but the last one are ignored. Similarly, if
@@ -169,7 +169,7 @@ character to be treated as whitespace, and it might use
 Produces information about the mappings in @scheme[readtable] for
 @scheme[char]. The result is three values:
 
-@itemize{
+@itemize[
 
  @item{either a character (mapping is to same behavior as the
  character in the default readtable), @scheme['terminating-macro], or
@@ -186,7 +186,7 @@ Produces information about the mappings in @scheme[readtable] for
  procedure when the character has a @scheme['dispatch-macro] mapping in
  @scheme[readtable] to override the default dispatch behavior.}
 
-}
+]
 
 Note that reader-macro procedures for the default readtable are not
 directly accessible. To invoke default behaviors, use

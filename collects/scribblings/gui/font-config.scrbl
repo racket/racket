@@ -24,7 +24,7 @@ To find a font name for a family, MrEd looks for a preference name by
  concatenating @litchar{MrEd:}, a @nonterm{dest}, a @nonterm{type},
  a @nonterm{weight}, and a @nonterm{style}, where
 
-@itemize{
+@itemize[
 
   @item{@nonterm{dest} is either @litchar{Screen} or @litchar{PostScript}.}
 
@@ -37,7 +37,7 @@ To find a font name for a family, MrEd looks for a preference name by
 
   @item{@nonterm{style} is either @litchar{Straight}, @litchar{Italic}, or @litchar{Slant}.}
 
-}
+]
 
 Furthermore, any of the latter three parts can be wildcarded with
  @litchar{_}, as described below. The concatenated string is converted
@@ -345,7 +345,7 @@ Depending on whether the font is CID-based (typically for the Chinese,
  Japanese, Korean, and Vietnamese language families, and as indicated
  in the AFM file), MrEd must find additional files:
 
- @itemize{
+ @itemize[
 
  @item{@italic{Non-CID:} In addition to an AFM file
  @filepath{@nonterm{x}.afm}, MrEd looks for a
@@ -375,7 +375,7 @@ Depending on whether the font is CID-based (typically for the Chinese,
  Unicode. MrEd automatically adds the font's character set to the font
  name when producing PostScript with a CID-based font.}
 
- }
+ ]
 
 When drawing or measuring text using a particular PostScript font, if
  the font does not contain a glyph for a character (or if a relevant

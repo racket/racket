@@ -44,13 +44,13 @@ running DrScheme.}
 
 To add string constants to DrScheme, see the files:
 
-@itemize{
+@itemize[
   @item{@filepath{english-string-constants.ss}}
   @item{@filepath{french-string-constants.ss}}
   @item{@filepath{spanish-string-constants.ss}}
   @item{@filepath{german-string-constants.ss}}
   @item{@filepath{danish-string-constants.ss}}
-  @item{@filepath{italian-string-constants.ss}}}
+  @item{@filepath{italian-string-constants.ss}}]
   
 Each file has the same format. They are each modules in the
 @schememodname[string-constants/string-constant-lang] language. The
@@ -68,9 +68,9 @@ the context of the strings whose symbol name might not be clear.
 
 @section{Language Environment Variables}
 
-@itemize{
+@itemize[
   @item{@indexed-envvar{PLTSTRINGCONSTANTS}}
-  @item{@indexed-envvar{STRINGCONSTANTS}}}
+  @item{@indexed-envvar{STRINGCONSTANTS}}]
 
 If either of these environment variables are set, DrScheme
 shows you, during startup, which string constants are not

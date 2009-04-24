@@ -10,7 +10,7 @@ To draw onto a canvas, get its device context (see
 @method[canvas<%> get-dc]).
 
 The @scheme[canvas<%>] interface is implemented by two classes:
-@itemize{
+@itemize[
 
  @item{@scheme[canvas%] --- a canvas for arbitrary drawing and
   event handling}
@@ -18,7 +18,7 @@ The @scheme[canvas<%>] interface is implemented by two classes:
  @item{@scheme[editor-canvas%] --- a canvas for displaying
   @scheme[editor<%>] objects}
 
-}
+]
 
 
 @defmethod[(get-canvas-background)

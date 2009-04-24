@@ -13,7 +13,7 @@
 
 @section{@onscreen{File}}
 
-@itemize{
+@itemize[
   
  @item{@defmenuitem{New} Creates a new DrScheme window.}
 
@@ -40,7 +40,7 @@
   window. Subsequent saves write to the newly-selected file.}
   
  @item{@defmenuitem{Save Other} Contains these sub-items
- @itemize{
+ @itemize[
 
  @item{@defmenuitem{Save Definitions As Text...} Like @onscreen{Save
   Definitions As...}, but the file is saved in plain-text format (see
@@ -60,7 +60,7 @@
   @secref["drscheme-file-formats"]). Subsequent saves are write in
   plain-text format.}
   
- }}
+ ]}
  
 @item{@defmenuitem{Log Definitions and Interactions...} Starts a
   running of log of the text in the interactions and definitions
@@ -87,7 +87,7 @@
  @item{{@onscreen{Quit} or @onscreen{Exit}} Exits DrScheme. (Under Mac
   OS X, this menu item is in the Apple menu.)}
 
-}
+]
 
 @; ----------------------------------------
 
@@ -97,7 +97,7 @@ All @onscreen{Edit} menu items operate on either the definitions or
 interactions window, depending on the location of the selection or
 blinking caret. Each window maintains its own Undo and Redo history.
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Undo} Reverses an editing action. Each window
   maintains a history of actions, so multiple @onscreen{Undo}
@@ -126,11 +126,9 @@ blinking caret. Each window maintains its own Undo and Redo history.
  @item{@defmenuitem{Find...} Opens an interactive search
  window at the bottom of the frame and moves the insertion
  point to the search string editor (or out of it, if the
- insertion point is already there.
+ insertion point is already there).
 
- See also @secref["Searching"].
-
-}
+ See also @secref["Searching"].}
 
  @item{@defmenuitem{Find Again} Finds the next occurrence of the text 
  in the search window.}
@@ -153,7 +151,7 @@ the search string with the replace string.}
 case-sensitive and case-insensitive search.}
   
 @item{@defmenuitem{Keybindings} 
-@itemize{
+@itemize[
 
 @item{@defmenuitem{Show Active Keybindings} Shows all of the
   keybindings available in the current window.}
@@ -163,14 +161,14 @@ case-sensitive and case-insensitive search.}
   Scheme-definitions of keybindings. See @secref["defining-shortcuts"]
   for more information.}
 
-}}
+]}
 
 @item{@defmenuitem{Complete Word} Completes the word at the
 insertion point, using the manuals as a source of completions.}
 
  @item{@defmenuitem{Preferences...} Opens the preferences dialog. See
   @secref["prefs-explanation"]. (Under Mac OS X, this menu item is in
-  the Apple menu.)}  }
+  the Apple menu.)}  ]
 
 @; ----------------------------------------
 
@@ -179,7 +177,7 @@ insertion point, using the manuals as a source of completions.}
 One each of the following show/hide pairs of menu items
 appears at any time.
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Show Definitions} Shows the definitions window.}
 
@@ -202,11 +200,11 @@ appears at any time.
  @item{@defmenuitem{Hide Module Browser} Hides the module browser.}
 
  @item{@defmenuitem{Toolbar} 
-@itemize{
+@itemize[
 @item{@defmenuitem{Toolbar on Left} Moves the tool bar (defaultly on the top of DrScheme's window) to the left-hand side, organized vertically.}
 @item{@defmenuitem{Toolbar on Top} Moves the toolbar to the top of the DrScheme window.}
 @item{@defmenuitem{Toolbar on Right} Moves the tool bar to the right-hand side, organized vertically.}
-@item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}}}
+@item{@defmenuitem{Toolbar Hidden} Hides the toolbar entirely.}]}
 
  @item{@defmenuitem{Show Log} Shows the current log messages.}
  @item{@defmenuitem{Hide Log} Hides the current log messages.}
@@ -241,7 +239,7 @@ appears at any time.
    menu item becomes enabled, allowing you to collapse the split
    window.}
 
-}
+]
 
 Note: whenever a program is run, the interactions window is made
  visible if it is hidden.
@@ -250,7 +248,7 @@ Note: whenever a program is run, the interactions window is made
 
 @section{@onscreen{Language}}
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Choose Language...} Opens a dialog for selecting
   the current evaluation language. Click @onscreen{Run} to make the
@@ -269,7 +267,7 @@ Note: whenever a program is run, the interactions window is made
   teachpacks.  Click @onscreen{Run} to clear the teachpack from the
   interactions window.}
 
-}
+]
 
 In addition to the above items, a menu item for each teachpack that
 clears only the corresponding teachpack.
@@ -278,7 +276,7 @@ clears only the corresponding teachpack.
 
 @section[#:tag "menu:scheme"]{@onscreen{Scheme}}
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Run} Resets the interactions window and runs the
   program in the definitions window.}
@@ -348,11 +346,11 @@ background that signals the source location of an error.}
   the @onscreen{Disable Tests} menu item.
   }
 
-}
+]
 
 @section{@onscreen{Insert}}
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Insert Comment Box} Inserts a box that is ignored
   by DrScheme; use it to write comments for people who read your
@@ -399,13 +397,13 @@ background that signals the source location of an error.}
    Slideshow picture. Inside the pict box, insert and arrange Scheme
    boxes that produce picture values.}
 
-}  
+]  
  
 @; ----------------------------------------
 
 @section{@onscreen{Windows}}
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Bring Frame to Front...}  Opens a window that lists
    all of the opened DrScheme frames. Selecting one of them brings the
@@ -414,7 +412,7 @@ background that signals the source location of an error.}
  @item{@defmenuitem{Most Recent Window} Toggles between the currently
    focused window and the one that most recently had the focus.}
 
-}
+]
 
 Additionally, after the above menu items, this menu contains
 an entry for each window in DrScheme. Selecting a menu item
@@ -424,7 +422,7 @@ brings the corresponding window to the front.
 
 @section{@onscreen{Help}}
 
-@itemize{
+@itemize[
 
  @item{@defmenuitem{Help Desk} Opens the Help Desk. This is the clearing 
  house for all documentation about DrScheme and its language.}
@@ -441,5 +439,5 @@ brings the corresponding window to the front.
    current language is not English. Additional menu items switch
    DrScheme to other languages.}
 
-}
+]
 

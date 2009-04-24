@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          (only-in mzlib/file make-temporary-file)
          web-server/http
          web-server/private/mime-types)

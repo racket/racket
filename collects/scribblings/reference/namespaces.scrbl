@@ -131,7 +131,7 @@ Returns a value for @scheme[sym] in @scheme[namespace], using
 @scheme[namespace]'s @tech{base phase}. The returned value depends on
 @scheme[use-mapping?]:
 
- @itemize{
+ @itemize[
 
    @item{If @scheme[use-mapping?] is true (the default), and if
    @scheme[sym] maps to a top-level variable or an imported variable
@@ -149,7 +149,7 @@ Returns a value for @scheme[sym] in @scheme[namespace], using
    the variable is undefined, then @scheme[failure-thunk] is called or
    the @exnraise[exn:fail:contract:variable].}
 
- }
+ ]
 
 If @scheme[failure-thunk] is not @scheme[#f],
 @scheme[namespace-variable-value] calls @scheme[failure-thunk] to
@@ -252,17 +252,17 @@ path, but no module is loaded; the resolved form of @scheme[modname]
 is used as the module name in @scheme[dest-namespace]. In addition to
 @scheme[modname], every module that it imports (directly or
 indirectly) is also recorded in the current namespace's @tech{module
-registry}. The inspector of the module invocation in
-@scheme[dest-namespace] is the same as inspector of the invocation in
-@scheme[src-namespace].
+registry}, and instances at the same @tech{phase} or lower are also
+attached to @scheme[dest-namespace] (while @tech{visits} at the
+module's phase and instances at higher phases are not attached, nor
+even made @tech{available} for on-demand @tech{visits}). The inspector
+of the module invocation in @scheme[dest-namespace] is the same as
+inspector of the invocation in @scheme[src-namespace].
 
 If @scheme[modname] does not refer to an @tech{instantiate}d module in
 @scheme[src-namespace], or if the name of any module to be attached
-already has a different declaration or instance in
-@scheme[dest-namespace], then the @exnraise[exn:fail:contract].  If
-the module to attach has not been @tech{visit}ed (see
-@secref["mod-parse"]), then it is @tech{visit}ed in the original
-namespace before being attached.
+already has a different declaration or same-@tech{phase} instance in
+@scheme[dest-namespace], then the @exnraise[exn:fail:contract].
 
 If @scheme[src-namespace] and @scheme[dest-namespace] do not have the
 same @tech{base phase}, then the @exnraise[exn:fail:contract].}
@@ -292,10 +292,12 @@ is useful only for identification via @scheme[eq?].}
 
 Returns a namespace that corresponds to the body of an instantiated
 module in the current namespace's @tech{module registry} and in the
-current namespace's @tech{base phase}. The returned namespace has the
-same @tech{module registry} as the current namespace. Modifying a
-binding in the namespace changes the binding seen in modules that
-require the namespace's module.
+current namespace's @tech{base phase}, making the module at the
+@tech{available} for on-demand @tech{visits} at the namespace's
+@tech{base phase}. The returned namespace has the same @tech{module
+registry} as the current namespace. Modifying a binding in the
+namespace changes the binding seen in modules that require the
+namespace's module.
 
 Module paths in a top-level @scheme[require] expression are resolved
 with respect to the namespace's module. New @scheme[provide]

@@ -57,7 +57,7 @@ A delimited sequence that starts with any other character is typically
 parsed as either a symbol or number, but a few non-delimiter
 characters play special roles:
 
-@itemize{
+@itemize[
 
  @item{@litchar{#} has a special meaning as an initial character in a
        delimited sequence; its meaning depends on the characters that
@@ -74,7 +74,7 @@ characters play special roles:
        the folowing character to be included verbatim in a delimited
        sequence.}
 
-}
+]
 
 More precisely, after skipping whitespace, the reader dispatches based
 on the next character or characters in the input stream as follows:
@@ -384,7 +384,7 @@ terminated by another @litchar{"} (that is not escaped by
 Within a string sequence, the following escape sequences are
  recognized:
 
-@itemize{
+@itemize[
 
  @item{@as-index{@litchar{\a}}: alarm (ASCII 7)}
  @item{@as-index{@litchar{\b}}: backspace (ASCII 8)}
@@ -438,7 +438,7 @@ Within a string sequence, the following escape sequences are
        carriage return--linefeed combination. This convetion allows
        single-line strings to span multiple lines in the source.}
 
-}
+]
 
 If the reader encounteres any other use of a backslash in a string
 constant, the @exnraise[exn:fail:read].
@@ -656,7 +656,7 @@ content is also wraped as a syntax object, and the box is immutable.
 A @as-index{@litchar{#\}} starts a character constant, which has
 one of the following forms:
 
-@itemize{
+@itemize[
 
  @item{ @litchar{#\nul} or @litchar{#\null}: NUL (ASCII 0)@nonalpha[]}
  @item{ @litchar{#\backspace}: backspace  (ASCII 8)@nonalpha[]}
@@ -690,7 +690,7 @@ one of the following forms:
        character after @nonterm{c} is not
        @schemelink[char-alphabetic?]{alphabetic}.}
 
-}
+]
 
 @reader-examples[
 "#\\newline"

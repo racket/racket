@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          net/url
          web-server/private/util
          web-server/dispatchers/filesystem-map)

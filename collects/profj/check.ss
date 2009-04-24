@@ -2047,6 +2047,7 @@
            (name-string (when (id? name) (id-string name)))
            (expr (call-expr call))
            (exp-type #f)
+           (test-method? #f)
            (handle-call-error 
             (lambda (exn)
               (when (not (access? expr)) (raise exn))
@@ -2168,7 +2169,13 @@
                           ((null? rec) null)
                           (else (get-method-records name-string rec type-recs)))))))))))
       
-      (when (null? methods)
+      (when (and (inspect-test?) (null? methods)
+                 (or (equal? name-string "old")
+                     (equal? name-string "modifies")
+                     (equal? name-string "modifiesOnly")))
+        (set! test-method? #t))
+      
+      (when (and (null? methods) (not test-method?))
         (let* ((rec (if exp-type 
                         (send type-recs get-class-record exp-type)
                         (if static? (send type-recs get-class-record c-class) this)))
@@ -2193,16 +2200,17 @@
                   (interaction-call-error name src level)))
              (else
               (no-method-error 'this sub-kind exp-type name src)))))))
-      
-      (unless (method-contract? (car methods))
-        (when (and (not ctor?)
-                   (eq? (method-record-rtype (car methods)) 'ctor))
-          (ctor-called-error exp-type name src)))
+      (unless test-method?
+        (unless (method-contract? (car methods))
+          (when (and (not ctor?)
+                     (eq? (method-record-rtype (car methods)) 'ctor))
+            (ctor-called-error exp-type name src))))
       
       (let* ((args/env (check-args arg-exps check-sub env))
              (args (car args/env))
              (method-record
               (cond
+                [test-method? #f]
                 ((method-contract? (car methods))
                  (set-method-contract-args! (car methods) args)
                  (set-method-contract-return! (car methods) (make-dynamic-val #f))
@@ -2233,6 +2241,21 @@
              (mods (when (method-record? method-record) (method-record-modifiers method-record))))
         
         (cond 
+          [test-method?
+           (cond
+             [(equal? name-string "old") 
+              ;SKIPPING CHECKS
+              (snaps (cons (make-snap (id-string (local-access-name (access-name (car arg-exps))))
+                                      (car args)
+                                      (expr-src (car arg-exps))) (snaps)))
+              (set-call-method-record! call 'test-method-old)
+              (set-id-string! (local-access-name (access-name (car arg-exps)))
+                              (string-append (id-string (local-access-name (access-name (car arg-exps))))
+                                             "@old"))
+              (make-type/env (car args) (cadr args/env))
+              ]
+             [(equal? name-string "modifies") '...]
+             [(equal? name-string "modifiesOnly") '...])]
           ((method-record? method-record)        
            (when (and static? (not (memq 'static mods)) (not expr))
              (non-static-called-error name c-class src level))
@@ -2800,14 +2823,15 @@
                           env
                           (expr-src exp)
                           type-recs))
-      ((check-effect? exp)
-       (check-test-effect (check-effect-vars exp)
-                          (check-effect-conds exp)
-                          (check-effect-test exp)
-                          check-sub-expr
-                          env
-                          (expr-src exp)
-                          type-recs))
+      ((check-inspect? exp)
+       (check-test-inspect (check-inspect-val exp)
+                           (check-inspect-post exp)
+                           (check-inspect-range exp)
+                           exp
+                           check-sub-expr
+                           env
+                           (expr-src exp)
+                           type-recs))
       (else (error 'internal-error (format "Unknown check expression ~a" exp)))))
   
   ;check-test-expr: exp exp (U #f exp) (exp env -> type/env) env symbol src src type-records-> type/env
@@ -2985,6 +3009,38 @@
         (check-mutate-check-error (type/env-t checker-type) (expr-src check)))
       (make-type/env 'boolean (type/env-e checker-type))))
   
+  ;Parameters for conducting inspection tests
+  (define inspect-test? (make-parameter #f))
+  (define snaps (make-parameter null))
+  
+  ;check-test-inspect: exp exp (U exp #f) exp (exp env -> type/env) env src type-records -> type/env
+  (define (check-test-inspect val posts range exp check-e env src type-recs)
+    (let* ([command/te (check-e val env)]
+           [command-type (type/env-t command/te)]
+           [env-p (type/env-e command/te)]
+           ;NOT ACCOUNTING FOR VOID ON RESULT
+           [env-posts (add-set-to-env 
+                       "result"
+                       (add-var-to-env "result" command-type final-method-var env-p))])
+      (parameterize ([inspect-test? #t] [snaps null])
+        (let ([posts/te (check-e posts env-posts)])
+          (set-check-inspect-snaps! exp (remove-dup-snaps (snaps)))
+          (unless (eq? 'boolean (type/env-t posts/te))
+            (check-inspect-post-error (type/env-t posts/te) (expr-src posts)))
+          ;SKIPS RANGE FOR NOW
+          (make-type/env 'boolean (remove-var-from-env "result" (type/env-e posts/te)))))))
+  
+  (define (remove-dup-snaps snaps)
+    (cond
+      [(null? snaps) snaps]
+      [(snap-member? (car snaps) (cdr snaps)) (remove-dup-snaps (cdr snaps))]
+      [else (cons (car snaps) (remove-dup-snaps (cdr snaps)))]))
+  (define (snap-member? snap snaps)
+    (cond
+      [(null? snaps) #f]
+      [(equal? (snap-name snap) (snap-name (car snaps))) #t]
+      [else (snap-member? snap (cdr snaps))]))
+      
     
   ;check-test-effect: (list access) (list exp) (list exp) (exp env -> type/env) env src type-records -> type/env
   (define (check-test-effect vars conds test check-e env src type-recs)
@@ -3865,6 +3921,15 @@
      (format "The expression following -> in a mutation test must return a boolean; found expresstion returning ~a."
              (type->ext-name type))
      '-> src))
+  
+  ;check-inspect-post-error: type src -> void
+  (define (check-inspect-post-error type src)
+    (raise-error
+     'inspect
+     (format "The post-conditions for an 'inspect' test must return a boolean; found expression returning ~a."
+             (type->ext-name type))
+     'check
+     src))
 
   
   (define check-location (make-parameter #f))

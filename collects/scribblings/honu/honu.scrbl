@@ -44,7 +44,7 @@ processes the result as a module in the Honu language.
 
 Ignoring whitespace, an H-expression is either
 
-@itemize{
+@itemize[
 
  @item{a number (see @secref["honu:numbers"]);}
 
@@ -69,7 +69,7 @@ Ignoring whitespace, an H-expression is either
  @item{@litchar{#sx} followed by an S-expression (see @secref[#:doc
 '(lib "scribblings/reference/reference.scrbl") "reader"]).}
 
-}
+]
 
 Within a sequence of H-expressions, a sub-sequence between angle
 brackets is represented specially (see @secref["honu:parens"]).
@@ -186,7 +186,7 @@ Scheme's printer produces Scheme or Honu output.
 
 The values with H-expression forms are as follows:
 
-@itemize{
+@itemize[
 
  @item{Every real number has an H-expression form, although the
        representation for an exact, non-integer rational number is
@@ -233,4 +233,4 @@ The values with H-expression forms are as follows:
 
  @item{False is represented as the H-expression @litchar{false}.}
 
-}
+]

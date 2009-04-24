@@ -188,7 +188,7 @@ error reporting (e.g., with @cpp{scheme_wrong_type}).
 Each @scheme[argument-type] must be one of the following, which are
 recognized symbolically:
 
-@itemize{
+@itemize[
 
   @argtype[@scheme[bool] "any value" @cpp{int}
            @toC{@scheme[#f] @|goesto| 0, anything else @|goesto| 1}
@@ -249,7 +249,7 @@ recognized symbolically:
            @toScheme{@cpp{NULL} @|goesto| @scheme[#f], anything else @|goesto| new c-pointer containing the pointer 
                      and identified as type @scheme[_bstr]}]
 
-}
+]
 
 The @scheme[return-type] must be @schemeidfont{void} or one of the
 @scheme[arg-type] keywords.}

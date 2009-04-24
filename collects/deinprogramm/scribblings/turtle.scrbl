@@ -21,11 +21,11 @@ Zeichnen wird dabei durch das Bewegen einer virtuellen Schildkröte
 über den Zeichenbereich modelliert. Eine Schildkröte kann durch drei
 Befehle bewegt werden:
 
-@itemize{
+@itemize[
  @item{@scheme[(move n)] Bewegt die Schildkröte um @scheme[n] Pixel ohne zu zeichnen.}
  @item{@scheme[(draw n)] Bewegt die Schildkröte um @scheme[n] Pixel und zeichnet dabei.}
  @item{@scheme[(turn n)] Dreht die Schildkröte um n Grad im Uhrzeigersinn.}
-}
+]
 
 Wir stellen jetzt ein Teachpack für DrScheme vor, mit dessen Hilfe
 solche Turtle-Grafiken erstellt werden können. 

@@ -16,7 +16,7 @@ generic @scheme[ports->ssl-ports] interface.
 To use this library, you will need OpenSSL installed on your machine,
 but
 
-@itemize{
+@itemize[
   @item{for Windows, the PLT Scheme distribution for Windows includes
   the necessary DLLs.}
 
@@ -26,7 +26,7 @@ but
   @item{for Unix, @filepath{libssl.so} and @filepath{libcrypto.so} are
   likely to be installed on your machine, already.}
 
-}
+]
 
 
 @defthing[ssl-available? boolean?]{
@@ -67,6 +67,9 @@ details (including the meanings of the protocol symbols).
 Closing the resulting output port does not send a shutdown message to
 the server. See also @scheme[ports->ssl-ports].
 
+@;{
+See `enforce-retry?' in "mzssl.ss", currently set to #f so that this
+paragraph does not apply:
 Beware that the SSL protocol allows reading or writing in only one
 direction at a time. If you request data from the input port, then
 data cannot be written to the output port (i.e., attempting to write
@@ -76,15 +79,17 @@ read. Even merely checking for input data --- using
 reading, and the other end must respond with a (possibly zero-length)
 answer. Protocols that work with SSL, such as IMAP, have a
 well-defined communication pattern, where theres no question of
-whether the other end is supposed to be sending or reading data.}
+whether the other end is supposed to be sending or reading data.
+}
 
+}
 
 @defproc[(ssl-connect/enable-break
           (hostname string?)
 	  (port-no (integer-in 1 65535))
 	  (client-protocol
 	   (or/c ssl-client-context? symbol?) 'sslv2-or-v3))
-         (values input-port? output-port?)])]{
+         (values input-port? output-port?)]{
 
 Like @scheme[ssl-connect], but breaking is enabled while trying to
 connect.}
@@ -101,13 +106,13 @@ section @secref["cert-procs"] below for more information on
 certificates.
 
 The @scheme[protocol] must be one of the following:
-@itemize{
+@itemize[
   @item{@scheme['sslv2-or-v3] : SSL protocol versions 2 or 3, as
   appropriate (this is the default)}
   @item{@scheme['sslv2] : SSL protocol version 2}
   @item{@scheme['sslv3] : SSL protocol version 3}
   @item{@scheme['tls] : the TLS protocol version 1}
-}
+]
 
 By default, the context returned by @scheme[ssl-make-client-context] does not
 request verification of a server's certificate. Use @scheme[ssl-set-verify!]
@@ -224,12 +229,11 @@ protocol symbols).  This argument is ignored if a @scheme[context]
 argument is supplied.
 
 If @scheme[close-original?] is true, then when both SSL ports are
-closed, the given input and output ports are automatically closed. The
-default is #f.
+closed, the given input and output ports are automatically closed.
 
 If @scheme[shutdown-on-close?] is true, then when the output SSL port
 is closed, it sends a shutdown message to the other end of the SSL
-connection. The default is #f. When shutdown is enabled, closing the
+connection. When shutdown is enabled, closing the
 output port can fail if the given output port becomes unwritable
 (e.g., because the other end of the given port has been closed by
 another process).
@@ -281,8 +285,7 @@ the client or server.
 
 If @scheme[rsa?] is @scheme[#t] (the default), the first RSA key is
 read (i.e., non-RSA keys are skipped). If @scheme[asn1?] is
-@scheme[#t] (the default is @scheme[#f]), the file is parsed as ASN1
-format instead of PEM.
+@scheme[#t], the file is parsed as ASN1 format instead of PEM.
 
 You can use the file @filepath{test.pem} of the @filepath{openssl}
 collection for testing purposes. Since @filepath{test.pem} is public,

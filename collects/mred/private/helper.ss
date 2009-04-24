@@ -1,6 +1,7 @@
 (module helper mzscheme
   (require mzlib/class
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/style.ss")
 	   "lock.ss")
 
   (provide (protect (struct child-info (x-min y-min x-margin y-margin x-stretch y-stretch))

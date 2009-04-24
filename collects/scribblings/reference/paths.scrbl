@@ -428,26 +428,26 @@ This procedure does not access the filesystem.}
 Deconstructs @scheme[path] into a smaller path and an immediate
 directory or file name.  Three values are returned:
 
-@itemize{
+@itemize[
 
  @item{@scheme[base] is either
 
-  @itemize{
+  @itemize[
    @item{a path,} 
    @item{@indexed-scheme['relative] if @scheme[path] is an immediate
     relative directory or filename, or}
    @item{@scheme[#f] if @scheme[path] is a root directory.}
- }}
+ ]}
 
  @item{@scheme[name] is either 
-  @itemize{
+  @itemize[
    @item{a directory-name path,} 
    @item{a filename,}
    @item{@scheme['up] if the last part of @scheme[path] specifies the parent
     directory of the preceding path (e.g., @litchar{..} under Unix), or}
    @item{@scheme['same] if the last part of @scheme[path] specifies the 
      same directory as the  preceding path (e.g., @litchar{.} under Unix).}
-  }}
+  ]}
 
  @item{@scheme[must-be-dir?] is @scheme[#t] if @scheme[path] explicitly
  specifies a directory (e.g., with a trailing separator), @scheme[#f]
@@ -455,7 +455,7 @@ directory or file name.  Three values are returned:
  @scheme[name] is actually a directory or not, but whether @scheme[path]
  syntactically specifies a directory.}
 
- }
+ ]
 
 Compared to @scheme[path], redundant separators (if any) are removed
 in the result @scheme[base] and @scheme[name].  If @scheme[base] is

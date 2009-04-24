@@ -30,7 +30,7 @@ relative to its top-left corner.
 The second case creates a cursor using a stock cursor, specified
 as one of the following:
 
-@itemize{
+@itemize[
 
  @item{@scheme['arrow] --- the default cursor}
 
@@ -60,7 +60,7 @@ as one of the following:
 
  @item{@scheme['size-nw/se] --- arrows up-left and down-right}
 
-}
+]
 
 If the cursor is created successfully, @method[cursor% ok?]
 returns @scheme[#t], otherwise the cursor object cannot be

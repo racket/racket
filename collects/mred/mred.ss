@@ -6,6 +6,17 @@
            scheme/class
            mzlib/etc
 	   (prefix wx: "private/kernel.ss")
+	   (prefix wx: "private/wxme/style.ss")
+	   (prefix wx: "private/wxme/editor.ss")
+	   (prefix wx: "private/wxme/text.ss")
+	   (prefix wx: "private/wxme/pasteboard.ss")
+	   (prefix wx: "private/wxme/snip.ss")
+	   (prefix wx: "private/wxme/keymap.ss")
+	   (prefix wx: "private/wxme/editor-admin.ss")
+	   (prefix wx: "private/wxme/editor-snip.ss")
+	   (prefix wx: "private/wxme/stream.ss")
+	   (prefix wx: "private/wxme/wordbreak.ss")
+	   (prefix wx: "private/wxme/snip-admin.ss")
 	   "private/wxtop.ss"
 	   "private/app.ss"
 	   "private/misc.ss"
@@ -182,8 +193,8 @@
   (define the-font-list (wx:get-the-font-list))
   (define the-pen-list (wx:get-the-pen-list))
   (define the-brush-list (wx:get-the-brush-list))
-  (define the-style-list (wx:get-the-style-list))
-  (define the-editor-wordbreak-map (wx:get-the-editor-wordbreak-map))
+  (define the-style-list wx:the-style-list)
+  (define the-editor-wordbreak-map wx:the-editor-wordbreak-map)
 
   (provide button%
 	   canvas%

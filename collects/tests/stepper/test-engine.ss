@@ -90,7 +90,13 @@
 ;; the steps lists the desired steps.  The easiest way to understand these is probably just to 
 ;; read the code for the comparison given in "compare-steps", below.
 
-;; run the named test, return #t if a failure occurred during the test
+;; run the named test, return #t if a failure occurred during the test.
+
+;; WARNING: evaluating code expanded using run-teaching-program causes mutation of the
+;; current namespace.  Unfortunately, wrapping a parameterize around each test (i.e., in this
+;; file) causes unacceptable slowdown and severe weirdness.  I tried saving and restoring 
+;; the namespace through mutation, and got severe weirdness again.
+
 (define (run-one-test name models exp-str expected-steps)
   (unless (display-only-errors)
     (printf "running test: ~v\n" name))

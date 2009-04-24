@@ -5,8 +5,7 @@
 
 @(define xexpr @tech[#:doc '(lib "xml/xml.scrbl")]{X-expression})
 
-@title[#:tag "formlets"
-       #:style 'toc]{Formlets}
+@title[#:tag "formlets"]{Formlets: Functional Form Abstraction}
 
 @defmodule[web-server/formlets]
 
@@ -14,8 +13,6 @@ The @web-server provides a kind of Web form abstraction called a @tech{formlet}.
 
 @margin-note{@tech{Formlet}s originate in the work of the @link["http://groups.inf.ed.ac.uk/links/"]{Links} research group in
 their paper @link["http://groups.inf.ed.ac.uk/links/formlets/"]{The Essence of Form Abstraction}.}
-
-@local-table-of-contents[]
 
 @section{Basic Formlet Usage}
 

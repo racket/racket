@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/lang/anormal
          web-server/lang/util)
 (provide anormal-tests)

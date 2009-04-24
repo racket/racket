@@ -290,7 +290,7 @@
     (lambda (s sfx)
       (let-values ([(base name) (check-suffix-call s sfx 'path-replace-suffix)])
         (let ([new-name (bytes->path-element
-                         (regexp-replace #rx#"([.][^.]*|)$"
+                         (regexp-replace #rx#"(?:[.][^.]*|)$"
                                          (path-element->bytes name)
                                          (if (string? sfx)
                                              (string->bytes/locale sfx (char->integer #\?))
@@ -773,6 +773,7 @@
                         ;; If a `lib' path, cache pathname manipulations
                         (when (and (not (vector? s-parsed))
                                    (or (string? s)
+                                       (symbol? s)
                                        (and (pair? s)
                                             (eq? (car s) 'lib))))
                           (hash-set! -path-cache

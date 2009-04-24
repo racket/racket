@@ -264,11 +264,11 @@ If @scheme[refresh?] is not @scheme[#f], then the editor is requesting
  to be updated immediately.
 
 The @scheme[bias] argument is one of:
-@itemize{
+@itemize[
 @item{@scheme['start] --- if the range doesn't fit in the visible area, show the top-left region}
 @item{@scheme['none] --- no special scrolling instructions}
 @item{@scheme['end] --- if the range doesn't fit in the visible area, show the bottom-right region}
-}
+]
 
 The return value is @scheme[#t] if the @techlink{display} is scrolled,
  @scheme[#f] if not (either because the requested region is already

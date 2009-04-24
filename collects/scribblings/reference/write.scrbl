@@ -66,7 +66,7 @@ Prints formatted output to @scheme[out], where @scheme[form] is a string
 that is printed directly, except for special formatting
 escapes:
 
-@itemize{
+@itemize[
 
   @item{@FmtMark{n} or @FmtMark{%} prints a newline, the same as @litchar{\n}}
 
@@ -108,7 +108,7 @@ escapes:
   @scheme[#\newline], or @scheme[#\return] followed immediately by
   @scheme[#\newline].}
 
-}
+]
 
 The @scheme[form] string must not contain any @litchar{~} that is
 not one of the above escapes, otherwise the

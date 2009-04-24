@@ -151,7 +151,7 @@ element of the pair is a key symbol and the second element is the
 value for that key). See also @scheme[build-aux-from-path]. The
 currently supported keys are as follows:
 
-@itemize{
+@itemize[
 
   @item{@scheme['icns] (Mac OS X) : An icon file path (suffix
         @filepath{.icns}) to use for the executable's desktop icon.}
@@ -233,7 +233,7 @@ currently supported keys are as follows:
         executable, instead of a wrapper binary that execs the
         original; the default is @scheme[#f].}
 
-}
+]
 
 If the @scheme[#:collects-path] argument is @scheme[#f], then the
 created executable maintains its built-in (relative) path to the main

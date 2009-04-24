@@ -386,7 +386,8 @@
                                                         #`[core 
                                                            #,(annotate-method
                                                               (syntax-property
-                                                               #`(lambda #,(syntax-property
+                                                               (quasisyntax/loc stx
+                                                                 (lambda #,(syntax-property
                                                                             #`(given-kws given-args
                                                                                          new-plain-id ... 
                                                                                          opt-arg ...
@@ -402,7 +403,7 @@
                                                                                        (opt-arg ...) (opt-arg? ...)
                                                                                        (new-plain-id ... . new-rest)
                                                                                        ;; the original body, finally:
-                                                                                       body1 body ...)))
+                                                                                       body1 body ...))))
                                                                'certify-mode
                                                                'transparent))]
                                                         'certify-mode
@@ -747,89 +748,75 @@
              (procedure-arity-includes? (keyword-procedure-proc p) n)
              (let-values ([(missing-kw extra-kw) (check-kw-args p kws)])
                (and (not missing-kw) (not extra-kw))))
-        ;; Ok:
-        (keyword-procedure-proc p)
-        ;; Not ok, so far:
-        (let ([p2 (if (keyword-procedure? p)
-                      #f
-                      (if (procedure? p)
-                          (or (procedure-extract-target p)
-                              (and (new-procedure? p)
-                                   'method))
-                          #f))])
-          (if p2
-              ;; Maybe the target is ok:
-              (if (eq? p2 'method)
-                  ;; Build wrapper method:
-                  (let ([p3 (keyword-procedure-extract/method kws (add1 n)
-                                                              (new-procedure-ref p)
-                                                              (add1 method-n))])
-                    (lambda (kws kw-args . args)
-                      (apply p3 kws kw-args (cons p args))))
-                  ;; Recur:
-                  (keyword-procedure-extract/method kws n p2 method-n))
-              ;; Not ok, period:
+      ;; Ok:
+      (keyword-procedure-proc p)
+      ;; Not ok, so far:
+      (let ([p2 (and (not (keyword-procedure? p))
+                     (procedure? p)
+                     (or (procedure-extract-target p)
+                         (and (new-procedure? p) 'method)))])
+        (if p2
+          ;; Maybe the target is ok:
+          (if (eq? p2 'method)
+            ;; Build wrapper method:
+            (let ([p3 (keyword-procedure-extract/method
+                       kws (add1 n) (new-procedure-ref p) (add1 method-n))])
               (lambda (kws kw-args . args)
-                (let-values ([(missing-kw extra-kw)
-                              (if (keyword-procedure? p)
-                                  (check-kw-args p kws)
-                                  (values #f (car kws)))]
-                             [(n) (let ([method-n (+ method-n
-                                                     (if (or (keyword-method? p)
-                                                             (okm? p))
-                                                         1
-                                                         0))])
-                                    (if (n . >= . method-n)
-                                        (- n method-n)
-                                        n))])
-                  (let ([args-str
-                         (if (and (null? args)
-                                  (null? kws))
-                             "no arguments supplied"
-                             ;; Hack to format arguments:
-                             (with-handlers ([exn:fail?
-                                              (lambda (exn)
-                                                (format "arguments were: ~a"
-                                                        (cadr (regexp-match 
-                                                               #rx"other arguments were: (.*)$"
-                                                               (exn-message exn)))))])
-                               (apply raise-type-error 'x "x" 0 'x
-                                      (append args
-                                              (apply append (map list kws kw-args))))))])
-                    (raise
-                     (make-exn:fail:contract
-                      (if extra-kw
-                          (if (keyword-procedure? p)
-                              (format 
-                               (string-append
-                                "procedure application: procedure: ~e;"
-                                " does not expect an argument with keyword ~a; ~a")
-                               p
-                               extra-kw
-                               args-str)
-                              (format 
-                               (string-append
-                                "procedure application: expected a procedure that"
-                                " accepts keyword arguments, given ~e; ~a")
-                               p
-                               args-str))
-                          (if missing-kw
-                              (format 
-                               (string-append
-                                "procedure application: procedure: ~e; requires"
-                                " an argument with keyword ~a, not supplied; ~a")
-                               p
-                               missing-kw
-                               args-str)
-                              (format 
-                               (string-append
-                                "procedure application: no case matching ~a non-keyword"
-                                " argument~a for: ~e; ~a")
-                               (- n 2)
-                               (if (= 1 (- n 2)) "" "s")
-                               p
-                               args-str)))
-                      (current-continuation-marks))))))))))
+                (apply p3 kws kw-args (cons p args))))
+            ;; Recur:
+            (keyword-procedure-extract/method kws n p2 method-n))
+          ;; Not ok, period:
+          (lambda (kws kw-args . args)
+            (define-values (missing-kw extra-kw)
+              (if (keyword-procedure? p)
+                (check-kw-args p kws)
+                (values #f (car kws))))
+            (let ([n (let ([method-n
+                            (+ method-n
+                               (if (or (keyword-method? p) (okm? p)) 1 0))])
+                       (if (n . >= . method-n) (- n method-n) n))]
+                  [args-str
+                   (if (and (null? args) (null? kws))
+                     "no arguments supplied"
+                     ;; Hack to format arguments:
+                     (with-handlers
+                         ([exn:fail?
+                           (lambda (exn)
+                             ;; the message can end with:
+                             ;; ..., given: x; given 117 arguments total
+                             ;; ..., given: x; other arguments were: 1 2 3
+                             (regexp-replace #rx"^.*? given: x; (other )?"
+                                             (exn-message exn)
+                                             ""))])
+                       (apply
+                        raise-type-error 'x "x" 0 'x
+                        (append args (apply append (map list kws kw-args))))))])
+              (raise
+               (make-exn:fail:contract
+                (if extra-kw
+                  (if (keyword-procedure? p)
+                    (format
+                     (string-append
+                      "procedure application: procedure: ~e;"
+                      " does not expect an argument with keyword ~a; ~a")
+                     p extra-kw args-str)
+                    (format
+                     (string-append
+                      "procedure application: expected a procedure that"
+                      " accepts keyword arguments, given ~e; ~a")
+                     p args-str))
+                  (if missing-kw
+                    (format
+                     (string-append
+                      "procedure application: procedure: ~e; requires"
+                      " an argument with keyword ~a, not supplied; ~a")
+                     p missing-kw args-str)
+                    (format
+                     (string-append
+                      "procedure application: no case matching ~a non-keyword"
+                      " argument~a for: ~e; ~a")
+                     (- n 2) (if (= 1 (- n 2)) "" "s") p args-str)))
+                (current-continuation-marks)))))))))
   (define (keyword-procedure-extract kws n p)
     (keyword-procedure-extract/method kws n p 0))
 

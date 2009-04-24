@@ -36,7 +36,7 @@ embedding application can extend the set of primitive events --- in
 particular, an eventspace in MrEd is an event --- and new structure
 types can generate events (see @scheme[prop:evt]).
 
-@itemize{
+@itemize[
 
  @item{@scheme[_semaphore] --- a semaphore is ready when
  @scheme[semaphore-wait] would not block.  @ResultItself{semaphore}.}
@@ -181,7 +181,7 @@ types can generate events (see @scheme[prop:evt]).
    or blocked on events with timeouts that have not yet expired. The
    event's result is @|void-const|.}
 
- }
+ ]
 
 @;------------------------------------------------------------------------
 
@@ -322,7 +322,7 @@ A @tech{structure type property} that identifies structure types whose
  instances can serve as synchronizable events. The property value can
  be any of the following:
 
-@itemize{
+@itemize[
  
  @item{An event @scheme[evt]: In this case, using the structure as an
  event is equivalent to using @scheme[evt].}
@@ -342,7 +342,7 @@ A @tech{structure type property} that identifies structure types whose
  above. Otherwise, the structure acts as an event that is never
  ready.}
 
-}
+]
 
 Instances of a structure type with the @scheme[prop:input-port] or
 @scheme[prop:output-port] property are also synchronizable by virtue

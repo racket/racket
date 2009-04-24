@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          net/url
          web-server/servlet/web)
 (require/expose web-server/servlet/web

@@ -30,7 +30,7 @@ exactly one module.
 DrScheme supports several historically useful variants of Scheme
 without a @hash-lang[] prefix:
 
-@itemize{
+@itemize[
 
  @item{The @as-index{@drlang{R5RS} language} contains those
   primitives and syntax defined in the R@superscript{5}RS Scheme
@@ -53,7 +53,7 @@ without a @hash-lang[] prefix:
   bindings as @schememodname[swindle], and evaluates the program like
   @scheme[load].}
 
-}
+]
 
 @; ----------------------------------------
 
@@ -61,7 +61,7 @@ without a @hash-lang[] prefix:
 
 Five of DrScheme's languages are specifically designed for teaching:
 
-@itemize{
+@itemize[
 
  @item{The @as-index{@drlang{Beginning Student} language} is a small
        version of Scheme that is tailored for beginning computer
@@ -81,12 +81,12 @@ Five of DrScheme's languages are specifically designed for teaching:
  @item{The @as-index{@drlang{Advanced Student} language} adds mutable
        state.}
 
-}
+]
 
 The teaching languages are different from conventional Scheme in a number
 of ways:
 
-@itemize{
+@itemize[
 
  @item{@defterm{Case-sensitive identifiers and symbols} --- In a
        case-sensitive language, the variable names @scheme[x] and
@@ -232,13 +232,13 @@ of ways:
        languages, function definitions are not allowed in the
        interactions window.}
 
-}
+]
 
 The teaching languages also deviate from traditional Scheme in
 printing values. Different printing formats can be selected for any
 language through the detail section of language-selection dialog.
 
-@itemize{
+@itemize[
 
  @item{@defterm{Constructor-style output} --- See
        @secref["output-syntax"].}
@@ -281,7 +281,7 @@ language through the detail section of language-selection dialog.
 ]
 }
 
-}
+]
 
 A program in the teaching languages should be tested using the check forms ---
  @scheme[(check-expect value value)], @scheme[(check-within value value value)], or
@@ -300,7 +300,7 @@ A program in the teaching languages should be tested using the check forms ---
 The ProfessorJ languages are Java based languages designed for teaching and
  experimentation. There are four teaching based languages:
 
-@itemize{
+@itemize[
 
  @item{The @as-index{@drlang{ProfessorJ Beginner} language} is a small
        subset of Java, designed for novice computer science students. 
@@ -318,18 +318,18 @@ The ProfessorJ languages are Java based languages designed for teaching and
  @item{The @as-index{@drlang{ProfessorJ Advanced} language} adds arrays, loop
        constructs, and package specifications.}
 
-}
+]
 
 The remaining two languages support language extensions and experimentations:
 
-@itemize{
+@itemize[
  @item{The @as-index{@drlang{ProfessorJ Full} language} supports most of Java 1.1
        features, as well as a set of constructs designed for the development of 
        unit tests}
  @item{The @as-index{@drlang{ProfessorJ Java + dynamic} language} extends the
        ProfessorJ Full language with a dynamic type and the ability to import Scheme
        libraries directly, for developing programs that use both languages.}
- }
+ ]
 
 Value printing can be either @defterm{Class} or @defterm{Class + Field}, selectable
  in the show details section of the language selection window. The Class printing style

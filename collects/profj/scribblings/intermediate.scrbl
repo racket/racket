@@ -109,7 +109,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
 @section[#:tag "intermed:import"]{@scheme[import]}
 
 @elemtag['(int "import")]
-@itemize{
+@itemize[
 @item{@(scheme import Name (code:comment ""))
        
        Imports a specified class to use within the program.}
@@ -117,12 +117,12 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
        
        Imports a group of classes that can all be used within the program.}
 
-}
+]
 
 @section[#:tag "intermed:class"]{@scheme[class]}
 
 @elemtag['(int "class")]
-@itemize{
+@itemize[
  @item{@(scheme class Id { Member ...})
         
         Creates a class named Id. If no constructor is present, one is generated that takes no arguments.
@@ -167,13 +167,13 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
         the listed interfaces.
         }
 
- }
+ ]
 
 @section[#:tag "intermed:iface"]{@scheme[interface]}
 
 @elemtag['(int "iface")]
 
-@itemize{
+@itemize[
 
 @item{@(scheme interface Id { Signature ... })
 
@@ -184,7 +184,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
        Creates an interface named Id that specifies a set of method signatures for classes to implement, and
        inherits the method signatures of the interfaces specified in the extends list.
        }
-}
+]
 
 @elemtag['(int "sig")]
 
@@ -204,7 +204,7 @@ all signatures are by default abstract.
 
 @elemtag['(int "field")]
 
-@itemize{
+@itemize[
   @item{@(scheme Type Id (code:comment "")) 
          
          Creates a field, bound to Id, that can be used within the current class, or on instances of the 
@@ -217,7 +217,7 @@ all signatures are by default abstract.
          current class using an @elemref['(int "acc")]{expression}.
          This field will have the declared type and the value of the evaluated @(scheme Expression). 
   }
-  }
+  ]
 
 @section[#:tag "intermed:method"]{@scheme[Method]}
 
@@ -247,7 +247,7 @@ parameters, then the first statement in the constructor must be a @elemref['(int
 @section[#:tag "intermed:stmt"]{@scheme[Statement]}
 
 @elemtag['(int "stmt")]
-@itemize{
+@itemize[
  @item{@elemtag['(int "if")] @(scheme if (Expression) { Statement ... } else { Statement  ...})
                
        In this statement the expression should have a boolean type. It is evaluated first. 
@@ -289,7 +289,7 @@ parameters, then the first statement in the constructor must be a @elemref['(int
           This set of expressions can be used in a statement position, provided they
           are followed by ';'.
           }
-   }
+   ]
 
   
 
@@ -297,7 +297,7 @@ parameters, then the first statement in the constructor must be a @elemref['(int
 
 @section[#:tag "intermed:expr"]{@scheme[Expression]}
 
-@itemize{
+@itemize[
  
    @item{@elemtag['(int "op")]@(scheme Expression Op Expression)
                  
@@ -400,4 +400,4 @@ parameters, then the first statement in the constructor must be a @elemref['(int
    @item{@(scheme false)}
    
    
-   }
+   ]

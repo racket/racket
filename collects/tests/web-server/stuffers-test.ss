@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          web-server/stuffers
          web-server/private/servlet
          web-server/http
@@ -127,6 +127,6 @@
                              (check-not-false (is-url-too-big? (make-bytes 3000 65)))))))))
 
 #|
-(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2)))
-(test/graphical-ui all-stuffers-tests)
+(require (planet schematics/schemeunit:3/text-ui))
+(run-tests all-stuffers-tests)
 |#

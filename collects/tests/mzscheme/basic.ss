@@ -1920,188 +1920,181 @@
 
 (define (hash-tests make-hash make-hasheq make-hasheqv
                     make-weak-hash make-weak-hasheq make-weak-hasheqv
-                    hash-ref hash-set! hash-update! 
+                    hash-ref hash-set! hash-ref! hash-update! hash-has-key?
                     hash-remove! hash-count
                     hash-map hash-for-each
                     hash-iterate-first hash-iterate-next
                     hash-iterate-value hash-iterate-key
                     hash-copy)
-  (let ()
-    (define-struct ax (b c)) ; opaque
-    (define-struct a (b c) #:inspector (make-inspector))
+  (define-struct ax (b c)) ; opaque
+  (define-struct a (b c) #:inspector (make-inspector))
 
-    (define save (let ([x null])
-                   (case-lambda 
-                    [() x]
-                    [(a) (set! x (cons a x)) a])))
-    
-    (define an-ax (make-ax 1 2))
+  (define save
+    (let ([x null]) (case-lambda [() x] [(a) (set! x (cons a x)) a])))
+  (define an-ax (make-ax 1 2))
 
-    (let ([check-hash-tables
-           (lambda (weak? reorder?)
-             (let ([h1 (if weak?
-                           (make-weak-hasheq)
-                           (make-hasheq))]
-                   [l (list 1 2 3)])
-               (test #t eq? (eq-hash-code l) (eq-hash-code l))
-               (test #t eq? (eqv-hash-code l) (eqv-hash-code l))
-               (test #t eq? (equal-hash-code l) (equal-hash-code l))
-               (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
-               (hash-set! h1 l 'ok)
-               (test 'ok hash-ref h1 l)
-               (hash-update! h1 l (curry cons 'more))
-               (test '(more . ok) hash-ref h1 l)
-               (hash-update! h1 l cdr)
-               (test 'nope hash-ref h1 (list 1 2 3) (lambda () 'nope))
-               (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)))
-               (hash-remove! h1 l)
-               (test 'nope hash-ref h1 l (lambda () 'nope))
-               (err/rt-test (hash-update! h1 l add1))
-               (hash-update! h1 l add1 0)
-               (test 1 hash-ref h1 l)
-               (hash-remove! h1 l))
-             
-             (let ([h1 (if weak?
-                           (make-weak-hasheqv)
-                           (make-hasheqv))]
-                   [n (expt 2 500)]
-                   [q (/ 1 2)]
-                   [s (make-string 2 #\q)])
-               (hash-set! h1 n 'power)
-               (hash-set! h1 q 'half)
-               (hash-set! h1 s 'string)
-               (test 'power hash-ref h1 (expt (read (open-input-string "2")) 500))
-               (test 'half hash-ref h1 (/ 1 (read (open-input-string "2"))))
-               (test #f hash-ref h1 (make-string (read (open-input-string "2")) #\q) #f))
+  (define (check-hash-tables weak? reorder?)
+    (let ([h1 (if weak? (make-weak-hasheq) (make-hasheq))]
+          [l (list 1 2 3)])
+      (test #t eq? (eq-hash-code l) (eq-hash-code l))
+      (test #t eq? (eqv-hash-code l) (eqv-hash-code l))
+      (test #t eq? (equal-hash-code l) (equal-hash-code l))
+      (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
+      (hash-set! h1 l 'ok)
+      (test 'ok hash-ref h1 l)
+      (test #t hash-has-key? h1 l)
+      (test #f hash-has-key? h1 (cdr l))
+      (when hash-ref!
+        (test 'ok hash-ref! h1 l 'blah)
+        (test 'blah hash-ref! h1 (cdr l) 'blah)
+        (test #t hash-has-key? h1 (cdr l))
+        (test 'blah hash-ref h1 (cdr l))
+        (hash-remove! h1 (cdr l)))
+      (hash-update! h1 l (curry cons 'more))
+      (test '(more . ok) hash-ref h1 l)
+      (hash-update! h1 l cdr)
+      (test 'nope hash-ref h1 (list 1 2 3) (lambda () 'nope))
+      (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)))
+      (hash-remove! h1 l)
+      (test 'nope hash-ref h1 l (lambda () 'nope))
+      (err/rt-test (hash-update! h1 l add1))
+      (hash-update! h1 l add1 0)
+      (test 1 hash-ref h1 l)
+      (hash-remove! h1 l))
 
-             (let ([h1 (if weak?
-                           (make-weak-hash)
-                           (make-hash))]
-                   [l (list 1 2 3)]
-                   [v (vector 5 6 7)]
-                   [a (make-a 1 (make-a 2 3))]
-                   [b (box (list 1 2 3))])
+    (let ([h1 (if weak? (make-weak-hasheqv) (make-hasheqv))]
+          [n (expt 2 500)]
+          [q (/ 1 2)]
+          [s (make-string 2 #\q)])
+      (hash-set! h1 n 'power)
+      (hash-set! h1 q 'half)
+      (hash-set! h1 s 'string)
+      (test 'power hash-ref h1 (expt (read (open-input-string "2")) 500))
+      (test 'half hash-ref h1 (/ 1 (read (open-input-string "2"))))
+      (test #f hash-ref h1 (make-string (read (open-input-string "2")) #\q) #f))
 
-               (test 0 hash-count h1)
+    (let ([h1 (if weak? (make-weak-hash) (make-hash))]
+          [l (list 1 2 3)]
+          [v (vector 5 6 7)]
+          [a (make-a 1 (make-a 2 3))]
+          [b (box (list 1 2 3))])
 
-               ;; Fill in table. Use `puts1' and `puts2' so we can
-               ;; vary the order of additions.
-               (let ([puts1 (lambda ()
-                              (hash-set! h1 (save l) 'list)
-                              (hash-set! h1 (save "Hello World!") 'string)
-                              (hash-set! h1 (save 123456789123456789123456789) 'bignum)
-                              (hash-set! h1 (save 3.45) 'flonum)
-                              (hash-set! h1 (save 3/45) 'rational)
-                              (hash-set! h1 (save 3+45i) 'complex)
-                              (hash-set! h1 (save (integer->char 955)) 'char))]
-                     [puts2 (lambda ()
-                              (hash-set! h1 (save (list 5 7)) 'another-list)
-                              (hash-set! h1 (save 3+0.0i) 'izi-complex)
-                              (hash-set! h1 (save v) 'vector)
-                              (hash-set! h1 (save a) 'struct)
-                              (hash-set! h1 (save an-ax) 'structx)
-                              (hash-set! h1 (save b) 'box))])
-                 (if reorder?
-                     (begin 
-                       (puts2) 
-                       (test 6 hash-count h1)
-                       (puts1))
-                     (begin 
-                       (puts1) 
-                       (test 7 hash-count h1)
-                       (puts2))))
+      (test 0 hash-count h1)
 
-               (when reorder?
-                 ;; Add 1000 things and take them back out in an effort to 
-                 ;; trigger GCs that somehow affect hashing:
-                 (let loop ([i 0.0])
-                   (unless (= i 1000.0)
-                     (hash-set! h1 i #t)
-                     (loop (add1 i))
-                     (hash-remove! h1 i))))
+      ;; Fill in table. Use `puts1' and `puts2' so we can
+      ;; vary the order of additions.
+      (let ([puts1 (lambda ()
+                     (hash-set! h1 (save l) 'list)
+                     (hash-set! h1 (save "Hello World!") 'string)
+                     (hash-set! h1 (save 123456789123456789123456789) 'bignum)
+                     (hash-set! h1 (save 3.45) 'flonum)
+                     (hash-set! h1 (save 3/45) 'rational)
+                     (hash-set! h1 (save 3+45i) 'complex)
+                     (hash-set! h1 (save (integer->char 955)) 'char))]
+            [puts2 (lambda ()
+                     (hash-set! h1 (save (list 5 7)) 'another-list)
+                     (hash-set! h1 (save 3+0.0i) 'izi-complex)
+                     (hash-set! h1 (save v) 'vector)
+                     (hash-set! h1 (save a) 'struct)
+                     (hash-set! h1 (save an-ax) 'structx)
+                     (hash-set! h1 (save b) 'box))])
+        (if reorder?
+          (begin
+            (puts2)
+            (test 6 hash-count h1)
+            (puts1))
+          (begin
+            (puts1)
+            (test 7 hash-count h1)
+            (puts2))))
 
-               (test 13 hash-count h1)
-               (test 'list hash-ref h1 l)
-               (test 'list hash-ref h1 (list 1 2 3))
-               (test 'another-list hash-ref h1 (list 5 7))
-               (test 'string hash-ref h1 "Hello World!")
-               (test 'bignum hash-ref h1 123456789123456789123456789)
-               (test 'flonum hash-ref h1 3.45)
-               (test 'rational hash-ref h1 3/45)
-               (test 'complex hash-ref h1 3+45i)
-               (test 'izi-complex hash-ref h1 3+0.0i)
-               (test 'vector hash-ref h1 v)
-               (test 'vector hash-ref h1 #(5 6 7))
-               (test 'struct hash-ref h1 a)
-               (test 'struct hash-ref h1 (make-a 1 (make-a 2 3)))
-               (test 'structx hash-ref h1 an-ax)
-               (test #f hash-ref h1 (make-ax 1 2) (lambda () #f))
-               (test 'box hash-ref h1 b)
-               (test 'box hash-ref h1 #&(1 2 3))
-               (test 'char hash-ref h1 (integer->char 955))
-               (test #t
-                     andmap
-                     (lambda (i)
-                       (and (member i 
-                                    (hash-map h1 (lambda (k v) (cons k v))))
-                            #t))
-                     `(((1 2 3) . list)
-                       ((5 7) . another-list)
-                       ("Hello World!" . string)
-                       (123456789123456789123456789 . bignum)
-                       (3.45 . flonum)
-                       (3/45 . rational)
-                       (3+45i . complex)
-                       (3+0.0i . izi-complex)
-                       (#(5 6 7) . vector)
-                       (,(make-a 1 (make-a 2 3)) . struct)
-                       (,an-ax . structx)
-                       (#\u3BB . char)
-                       (#&(1 2 3) . box)))
-               (hash-remove! h1 (list 1 2 3))
-               (test 12 hash-count h1)
-               (test 'not-there hash-ref h1 l (lambda () 'not-there))
-               (let ([c 0])
-                 (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
-                 (test 12 'count c))
-               ;; return the hash table:
-               h1))])
+      (when reorder?
+        ;; Add 1000 things and take them back out in an effort to
+        ;; trigger GCs that somehow affect hashing:
+        (let loop ([i 0.0])
+          (unless (= i 1000.0)
+            (hash-set! h1 i #t)
+            (loop (add1 i))
+            (hash-remove! h1 i))))
 
-      (let ([check-tables-equal
-             (lambda (mode t1 t2 weak?)
-               (test #t equal? t1 t2)
-               (test (equal-hash-code t1) equal-hash-code t2)
-               (test #t equal? t1 (hash-copy t1))
-               (let ([again (if weak?
-                                (make-weak-hash)
-                                (make-hash))])
-                 (let loop ([i (hash-iterate-first t1)])
-                   (when i
-                     (hash-set! again
-                                (hash-iterate-key t1 i)
-                                (hash-iterate-value t1 i))
-                     (loop (hash-iterate-next t1 i))))
-                 (test #t equal? t1 again))
-               (let ([meta-ht (make-hash)])
-                 (hash-set! meta-ht t1 mode)
-                 (test mode hash-ref meta-ht t2 (lambda () #f)))
-               (test (hash-count t1) hash-count t2))])
+      (test 13 hash-count h1)
+      (test 'list hash-ref h1 l)
+      (test 'list hash-ref h1 (list 1 2 3))
+      (test 'another-list hash-ref h1 (list 5 7))
+      (test 'string hash-ref h1 "Hello World!")
+      (test 'bignum hash-ref h1 123456789123456789123456789)
+      (test 'flonum hash-ref h1 3.45)
+      (test 'rational hash-ref h1 3/45)
+      (test 'complex hash-ref h1 3+45i)
+      (test 'izi-complex hash-ref h1 3+0.0i)
+      (test 'vector hash-ref h1 v)
+      (test 'vector hash-ref h1 #(5 6 7))
+      (test 'struct hash-ref h1 a)
+      (test 'struct hash-ref h1 (make-a 1 (make-a 2 3)))
+      (test 'structx hash-ref h1 an-ax)
+      (test #f hash-ref h1 (make-ax 1 2) (lambda () #f))
+      (test 'box hash-ref h1 b)
+      (test 'box hash-ref h1 #&(1 2 3))
+      (test 'char hash-ref h1 (integer->char 955))
+      (test #t
+            andmap
+            (lambda (i)
+              (and (member i (hash-map h1 (lambda (k v) (cons k v))))
+                   #t))
+            `(((1 2 3) . list)
+              ((5 7) . another-list)
+              ("Hello World!" . string)
+              (123456789123456789123456789 . bignum)
+              (3.45 . flonum)
+              (3/45 . rational)
+              (3+45i . complex)
+              (3+0.0i . izi-complex)
+              (#(5 6 7) . vector)
+              (,(make-a 1 (make-a 2 3)) . struct)
+              (,an-ax . structx)
+              (#\u3BB . char)
+              (#&(1 2 3) . box)))
+      (hash-remove! h1 (list 1 2 3))
+      (test 12 hash-count h1)
+      (test 'not-there hash-ref h1 l (lambda () 'not-there))
+      (let ([c 0])
+        (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
+        (test 12 'count c))
+      ;; return the hash table:
+      h1))
 
-        (check-tables-equal 'the-norm-table
-                            (check-hash-tables #f #f)
-                            (check-hash-tables #f #t)
-                            #f)
-        (when make-weak-hash
-          (check-tables-equal 'the-weak-table
-                              (check-hash-tables #t #f)
-                              (check-hash-tables #t #t)
-                              #t)))
+  (define (check-tables-equal mode t1 t2 weak?)
+    (test #t equal? t1 t2)
+    (test (equal-hash-code t1) equal-hash-code t2)
+    (test #t equal? t1 (hash-copy t1))
+    (let ([again (if weak? (make-weak-hash) (make-hash))])
+      (let loop ([i (hash-iterate-first t1)])
+        (when i
+          (hash-set! again
+                     (hash-iterate-key t1 i)
+                     (hash-iterate-value t1 i))
+          (loop (hash-iterate-next t1 i))))
+      (test #t equal? t1 again))
+    (let ([meta-ht (make-hash)])
+      (hash-set! meta-ht t1 mode)
+      (test mode hash-ref meta-ht t2 (lambda () #f)))
+    (test (hash-count t1) hash-count t2))
 
-      (save)))) ; prevents gcing of the ht-registered values
+  (check-tables-equal 'the-norm-table
+                      (check-hash-tables #f #f)
+                      (check-hash-tables #f #t)
+                      #f)
+  (when make-weak-hash
+    (check-tables-equal 'the-weak-table
+                        (check-hash-tables #t #f)
+                        (check-hash-tables #t #t)
+                        #t))
+
+  (save)) ; prevents gcing of the ht-registered values
 
 (hash-tests make-hash make-hasheq make-hasheqv
             make-weak-hash make-weak-hasheq make-weak-hasheqv
-            hash-ref hash-set! hash-update!
+            hash-ref hash-set! hash-ref! hash-update! hash-has-key?
             hash-remove! hash-count
             hash-map hash-for-each
             hash-iterate-first hash-iterate-next
@@ -2116,9 +2109,11 @@
               #f #f #f
               (ub-wrap hash-ref)
               (lambda (ht k v) (set-box! ht (hash-set (unbox ht) k v)))
-              (case-lambda 
+              #f
+              (case-lambda
                [(ht k u) (set-box! ht (hash-update (unbox ht) k u))]
                [(ht k u def) (set-box! ht (hash-update (unbox ht) k u def))])
+              (ub-wrap hash-has-key?)
               (lambda (ht k) (set-box! ht (hash-remove (unbox ht) k)))
               (ub-wrap hash-count)
               (ub-wrap hash-map)

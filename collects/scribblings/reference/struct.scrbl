@@ -168,7 +168,7 @@ values produced by the subtype's guard procedure become the first
 
 The result of @scheme[make-struct-type] is five values:
 
-@itemize{
+@itemize[
 
  @item{a @tech{structure type descriptor},}
 
@@ -184,7 +184,7 @@ The result of @scheme[make-struct-type] is five values:
  @item{a @tech{mutator} procedure, which consumes a structure, a field
  index, and a field value.}
 
-}
+]
 
 @examples[
 #:eval struct-eval
@@ -288,7 +288,7 @@ A @deftech{structure type property} allows per-type information to be
 
 Creates a new structure type property and returns three values:
 
-@itemize{
+@itemize[
 
  @item{a @deftech{structure type property descriptor}, for use with
        @scheme[make-struct-type] and @scheme[define-struct];}
@@ -304,7 +304,7 @@ Creates a new structure type property and returns three values:
        value for the property, or if any other kind of value is
        provided, the @exnraise[exn:fail:contract].}
 
-}
+]
 
 If the optional @scheme[guard] is supplied as a procedure, it is
 called by @scheme[make-struct-type] before attaching the property to a
@@ -468,7 +468,7 @@ Creates an instance of a @tech{prefab} structure type, using the
 A @scheme[key] identifies a structure type based on a list with the
 following items:
 
-@itemize{
+@itemize[
 
  @item{A symbol for the structure type's name.}
 
@@ -491,7 +491,7 @@ following items:
        supertype. Otherwise, the rest of the list matches is the key
        for the supertype.}
 
-}
+]
 
 An empty vector and an auto-field list that starts with @scheme[0] can
 be omitted. Furthermore, the first integer (which indicates the number
@@ -547,7 +547,7 @@ The expansion-time information for a structure type can be represented
 directly as a list of six elements (of the same sort that the
 encapsulated procedure must return):
 
-@itemize{
+@itemize[
 
  @item{an identifier that is bound to the structure type's descriptor,
  or @scheme[#f] it none is known;}
@@ -581,7 +581,7 @@ encapsulated procedure must return):
  the identifier is also bound to structure-type expansion-time
  information.}
 
-}
+]
 
 Instead of this direct representation, the representation can
 be a structure created by @scheme[make-struct-info] (or an instance of

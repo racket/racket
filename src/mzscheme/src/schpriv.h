@@ -107,7 +107,7 @@ int scheme_num_types(void);
 #if MZ_USE_NOINLINE
 # define MZ_DO_NOT_INLINE(decl) decl __attribute__ ((noinline));
 #else
-# define MZ_DO_NOT_INLINE()
+# define MZ_DO_NOT_INLINE(decl)
 #endif
 
 
@@ -2560,7 +2560,9 @@ struct Scheme_Env {
   Scheme_Object *link_midx;
   Scheme_Object *require_names, *et_require_names, *tt_require_names, *dt_require_names; /* resolved */
   Scheme_Hash_Table *other_require_names;
-  char running, et_running, did_eval_exp, did_eval_run, did_compute, lazy_syntax, attached, ran, et_ran;
+  char running, et_running, attached, ran;
+  Scheme_Object *did_starts;
+  Scheme_Object *available_next[2];
 
   Scheme_Bucket_Table *toplevel;
   Scheme_Object *modchain; /* Vector of:
@@ -2599,7 +2601,7 @@ typedef struct Scheme_Module
   Scheme_Object *body;        /* or data, if prim_body */
   Scheme_Object *et_body;     /* list of (vector list-of-names expr depth-int resolve-prefix) */
 
-  char functional, et_functional, tt_functional, no_cert;
+  char no_cert;
   
   struct Scheme_Module_Exports *me;
 
@@ -2751,7 +2753,7 @@ int scheme_is_kernel_env();
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
 
-Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain);
+Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain, int clone);
 
 void scheme_clean_dead_env(Scheme_Env *env);
 
@@ -2767,8 +2769,7 @@ Scheme_Object *scheme_module_imported_list(Scheme_Env *genv, Scheme_Object *bind
                                            Scheme_Object *mode);
 Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *genv);
 
-void scheme_run_module(Scheme_Env *menv, int set_ns);
-void scheme_run_module_exptime(Scheme_Env *menv, int set_ns);
+void scheme_prepare_compile_env(Scheme_Env *env);
 
 Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env);
 void scheme_prep_namespace_rename(Scheme_Env *menv);

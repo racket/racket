@@ -499,7 +499,8 @@ Deletes @scheme[snip] when provided, or deletes the currently selected
 }
 
 
-@defmethod[(do-copy [time (and/c exact? integer?)]
+@defmethod[#:mode override 
+           (do-copy [time (and/c exact? integer?)]
                     [extend? any/c])
            void?]{
 
@@ -523,7 +524,8 @@ Copies the current selection, extending the current clipboard contexts
 }}
 
 
-@defmethod[(do-paste [time (and/c exact? integer?)])
+@defmethod[#:mode override
+           (do-paste [time (and/c exact? integer?)])
            void?]{
 @methspec{
 
@@ -544,7 +546,8 @@ Pastes.
 }}
 
 
-@defmethod[(do-paste-x-selection [time (and/c exact? integer?)])
+@defmethod[#:mode override
+           (do-paste-x-selection [time (and/c exact? integer?)])
            void?]{
 @methspec{
 
@@ -667,7 +670,7 @@ Returns whether selection dots are drawn around the edge of selected
 
 Inserts @scheme[snip] at @techlink{location} @math{(@scheme[x],
  @scheme[y])} just in front of
- @scheme[before]. (@|seesniporderdiscuss|) If @scheme[before] is nor
+ @scheme[before]. (@|seesniporderdiscuss|) If @scheme[before] is not
  provided or is @scheme[#f], then @scheme[snip] is inserted behind all
  other snips. If @scheme[x] and @scheme[y] are not provided, the snip
  is added at @math{(0, 0)}.
@@ -806,13 +809,13 @@ Deselects all selected snips in the editor.
 }
 
 
-@defmethod[#:mode override 
+@defmethod[#:mode override
            (on-default-event [event (is-a?/c mouse-event%)])
            void?]{
 
 Selects, drags, and resizes snips:
 
-@itemize{
+@itemize[
 
 @item{Clicking on a snip selects the snip. Shift-clicking extends
 the current selection with the snip.}
@@ -831,7 +834,7 @@ with the new snips.}
 @item{Clicking on a hiliting tab for a selected object resizes the
 object.}
 
-}
+]
 }
 
 

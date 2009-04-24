@@ -21,7 +21,9 @@
       add-parent
       remove-parent
       has-self-loop?
-      
+
+      set-parent-link-label
+
       find-shortest-path))
   
   (define-local-member-name get-parent-links)
@@ -83,7 +85,18 @@
                        number?
                        (or/c false/c string?)
                        . -> .
-		       void?)))
+		       void?))
+                    (remove-links
+                     ((is-a?/c graph-snip<%>)
+                      (is-a?/c graph-snip<%>)
+                      . -> .
+                      void?))
+                    (set-link-label
+                     ((is-a?/c graph-snip<%>)
+                      (is-a?/c graph-snip<%>)
+                      (or/c false/c string?)
+                      . -> .
+                      void?)))
 
   (define self-offset 10)
   
@@ -140,7 +153,14 @@
                                  label)
     (send parent add-child child)
     (send child add-parent parent dark-pen light-pen dark-brush light-brush dark-text light-text dx dy label))
-  
+
+  (define (remove-links parent child)
+    (send parent remove-child child)
+    (send child remove-parent parent))
+
+  (define (set-link-label parent child label)
+    (send child set-parent-link-label parent label))
+
   (define graph-snip-mixin
     (mixin ((class->interface snip%)) (graph-snip<%>)
       (field (children null))
@@ -185,6 +205,15 @@
                  parent
                  parent-links
                  (lambda (parent parent-link) (eq? (link-snip parent-link) parent))))))
+      (define/public (set-parent-link-label parent label)
+        (let ([parent-link
+               (cond [(memf (lambda (parent-link)
+                              (eq? (link-snip parent-link) parent))
+                            parent-links)
+                      => car]
+                     [else #f])])
+          (when parent-link
+            (set-link-label! parent-link label))))
       
       (define/public (has-self-loop?)
         (memq this (get-children)))
@@ -223,6 +252,7 @@
       set-arrowhead-params
       get-arrowhead-params
       set-draw-arrow-heads?
+      set-flip-labels?
       draw-edges))
   
   (define-struct rect (left top right bottom))
@@ -235,23 +265,21 @@
                   [edge-labels? #t])
       
       (define draw-arrow-heads? #t)
+      (define flip-labels?      #t)
       (inherit refresh get-admin)
-      (define/public (set-draw-arrow-heads? x)
-        (set! draw-arrow-heads? x)
+      (define (refresh*)
         (let ([admin (get-admin)])
           (when admin
-            (let ([xb (box 0)]
-                  [yb (box 0)]
-                  [wb (box 0)]
-                  [hb (box 0)])
+            (let ([xb (box 0)] [yb (box 0)] [wb (box 0)] [hb (box 0)])
               (send admin get-view xb yb wb hb)
               (send admin needs-update
-                    (unbox xb)
-                    (unbox yb)
-                    (unbox wb)
-                    (unbox hb))))))
-      
-      
+                    (unbox xb) (unbox yb) (unbox wb) (unbox hb))))))
+      (define/public (set-draw-arrow-heads? x)
+        (set! draw-arrow-heads? x)
+        (refresh*))
+      (define/public (set-flip-labels? x)
+        (set! flip-labels? x)
+        (refresh*))
       
       (define arrowhead-angle-width (* 1/4 pi))
       (define arrowhead-short-side 8)
@@ -614,9 +642,13 @@
                                       [arrow-end-y (send point3 get-y)]
                                       [arrowhead-end (make-rectangular arrow-end-x arrow-end-y)]
                                       [vec (- arrowhead-end from-pt)]
+                                      [angle (- (angle vec))]
+                                      [flip? (and flip-labels?
+                                                  (not (< (/ pi -2) angle (/ pi 2))))]
+                                      [angle (if flip? (+ angle pi) angle)]
                                       [middle (+ from-pt
                                                  (- (* 1/2 vec)
-                                                    (make-polar (/ text-len 2) (angle vec))))])
+                                                    (make-polar (/ text-len 2) (- angle))))])
                                  (when (> (sqrt (+ (sqr (- arrow-end-x from-x))
                                                         (sqr (- arrow-end-y from-y))))
                                                text-len)
@@ -625,7 +657,7 @@
                                          (+ dy (imag-part middle))
                                          #f
                                          0
-                                         (- (angle vec)))))))]))))))))
+                                         angle)))))]))))))))
           
           (define (set-pen/brush from-link dark-lines?)
             (send dc set-brush 

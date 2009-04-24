@@ -56,7 +56,7 @@ pipe is created and the corresponding returned value is @scheme[#f].
 
 The @scheme[subprocess] procedure returns four values:
 
-@itemize{
+@itemize[
 
  @item{a subprocess value representing the created process;}
 
@@ -69,11 +69,15 @@ The @scheme[subprocess] procedure returns four values:
  @item{an input port piped from the process's standard error, or
  @scheme[#f] if @scheme[stderr-output-port] was a port.}
 
-}
+]
 
 @bold{Important:} All ports returned from @scheme[subprocess] must be
 explicitly closed with @scheme[close-input-port] or
-@scheme[close-output-port].
+@scheme[close-output-port]. Similarly, waiting on the subprocess value
+(using @scheme[subprocess-wait] or @scheme[sync]) ensures that the
+operating system can release the subprocess; for example,
+exiting without waiting on a subprocess under Unix risks leaving the
+subprocess as a zombie.
 
 The returned ports are @tech{file-stream ports} (see
 @secref["file-ports"]), and they are placed into the management of
@@ -85,7 +89,9 @@ communication.}
 
 @defproc[(subprocess-wait [subproc subprocess?]) void?]{
 
-Blocks until the process represented by @scheme[subproc] terminates.}
+Blocks until the process represented by @scheme[subproc]
+terminates. The @scheme[subproc] value also can be used with
+@scheme[sync] and @scheme[sync/timeout].}
 
 
 @defproc[(subprocess-status [subproc subprocess?]) 
@@ -162,7 +168,7 @@ The @scheme[show-mode] sets the display mode for a Window affected by
 the action. It must be one of the following symbols; the description
 of each symbol's meaning is taken from the Windows API documentation.
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['sw_hide] or @indexed-scheme['SW_HIDE] ---
  Hides the window and activates another window.}
@@ -210,7 +216,7 @@ of each symbol's meaning is taken from the Windows API documentation.
  window. If the window is minimized or maximized, Windows restores it
  to its original size and position.}
 
- }
+ ]
 
 If the action fails, the @exnraise[exn:fail]. If the action succeeds,
 the result is @scheme[#f].
@@ -271,7 +277,7 @@ Like @scheme[system*], but returns the exit code like
 
 Executes a shell command asynchronously. The result is a list of five values:
 
-@itemize{
+@itemize[
 
  @item{an input port piped from the subprocess's standard output,}
 
@@ -285,7 +291,7 @@ Executes a shell command asynchronously. The result is a list of five values:
  @item{a procedure of one argument, either @scheme['status],
  @scheme['wait], @scheme['interrupt], or @scheme['kill]:
 
-   @itemize{
+   @itemize[
 
    @item{@scheme['status] returns the status of the subprocess as one
     of @scheme['running], @scheme['done-ok], or
@@ -307,9 +313,9 @@ Executes a shell command asynchronously. The result is a list of five values:
      terminating the shell process may not terminate processes that
      the shell starts, particularly under Windows.}
 
-   }}
+   ]}
 
-}
+]
 
 @bold{Important:} All three ports returned from @scheme[process] must
 be explicitly closed with @scheme[close-input-port] or

@@ -22,10 +22,6 @@
   (provide      ;; forall(World):
    big-bang	;; Number Number Number World -> true 
    end-of-time	;; String u Symbol -> World
-   
-   place-image  ;; Image Number Number Scence -> Scene
-   empty-scene  ;; Number Number -> Scene 
-   run-movie    ;; (Listof Image) -> true 
    )
   
   (provide-higher-order-primitive
@@ -71,55 +67,6 @@
   ;; Symbol Any String -> Void
   (define (check-pos tag c rank)
     (check-arg tag (and (number? c) (integer? c) (>= c 0)) "positive integer" rank c))
-  
-  ;; Symbol Any String [String] -> Void
-  (define (check-image tag i rank . other-message)
-    (if (and (pair? other-message) (string? (car other-message)))
-        (check-arg tag (beg:image? i) (car other-message) rank i)
-        (check-arg tag (beg:image? i) "image" rank i)))
-  
-  ;; Symbol Any String -> Void
-  (define (check-color tag width rank)
-    (check-arg tag (or (symbol? width) (string? width)) "color symbol or string" rank width))
-  
-  (define (check-mode tag s rank)
-    (check-arg tag (or (eq? s 'solid)
-		       (eq? s 'outline)
-		       (string=? "solid" s)
-		       (string=? "outline" s)) "mode (solid or outline)" rank s))
-  
-  (define (place-image image x y scene)
-    (check-image 'place-image image "first")
-    (check-arg 'place-image (and (number? x) (real? x)) 'number "second" x)
-    (check-arg 'place-image (and (number? y) (real? x)) 'number "third" y)
-    (check-image 'place-image scene "fourth" "scene")
-    (let ()
-      (define sw (image-width scene))
-      (define sh (image-height scene))
-      (define ns (overlay scene image x y))
-      (define nw (image-width ns))
-      (define nh (image-height ns))
-      (if (and (= sw nw) (= sh nh)) 
-	  ns
-	  (clip ns 0 0 sw sh))))
-  
-  (define (empty-scene width height)
-    (check-pos 'empty-scene width "first")
-    (check-pos 'empty-scene height "second")    
-    (rectangle width height 'outline 'black)
-    )
-  
-  ;; display all images in list in the canvas
-  (define (run-movie movie)
-    (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
-    (for-each (lambda (cand) (check-image 'run-movie cand "first" "list of images"))
-              movie)
-    (let run-movie ([movie movie])
-      (cond [(null? movie) #t]
-            [(pair? movie)
-             (update-frame (car movie))
-             (sleep/yield .05)
-             (run-movie (cdr movie))])))
   
   ;; ---------------------------------------------------------------------------
   

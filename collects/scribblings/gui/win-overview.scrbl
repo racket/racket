@@ -134,12 +134,12 @@ The fundamental graphical element in the windowing toolbox is an
  @deftech{area}. The following classes implement the different types
  of areas in the windowing toolbox:
 
-@itemize{
+@itemize[
 
  @item{@deftech{Containers} --- areas that can
  contain other areas:
 
- @itemize{
+ @itemize[
 
  @item{@scheme[frame%] --- a @deftech{frame} is a top-level window
  that the user can move and resize.}
@@ -159,12 +159,12 @@ The fundamental graphical element in the windowing toolbox is an
  @scheme[vertical-pane%], @scheme[horizontal-pane%], and
  @scheme[grow-box-spacer-pane%].}
 
- }}
+ ]}
 
  @item{@deftech{Containees} --- areas that must be
  contained within other areas:
 
- @itemize{
+ @itemize[
 
  @item{@scheme[panel%] --- a panel is a containee as well as
  a container.}
@@ -182,7 +182,7 @@ The fundamental graphical element in the windowing toolbox is an
 
  @item{@deftech{Controls} --- containees that the user can manipulate:
 
- @itemize{
+ @itemize[
 
    @item{@scheme[message%] --- a @deftech{message} is a static
    text field or bitmap with no user interaction.}
@@ -219,11 +219,11 @@ The fundamental graphical element in the windowing toolbox is an
    control (the user cannot change the value) for reporting an integer
    value within a fixed range.}
 
-  }}
+  ]}
 
- }}
+ ]}
 
-}
+]
 
 As suggested by the above listing, certain @tech{areas}, called
  @tech{containers}, manage certain other areas, called
@@ -268,11 +268,11 @@ Menu bars, menus, and menu items are graphical elements, but not areas
  areas, such as an adjustable graphical size).  Instead, the menu
  classes form a separate container--containee hierarchy:
 
-@itemize{
+@itemize[
 
  @item{@deftech{Menu Item Containers}
 
-  @itemize{
+  @itemize[
 
   @item{@scheme[menu-bar%] --- a @deftech{menu bar} is a top-level
   collection of menus that are associated with a frame.}
@@ -285,11 +285,11 @@ Menu bars, menus, and menu items are graphical elements, but not areas
   top-level menu that is dynamically displayed in a canvas or
   editor canvas.}
 
-  }}
+  ]}
   
  @item{@deftech{Menu Items}
 
-  @itemize{
+  @itemize[
   
   @item{@scheme[separator-menu-item%] --- a @deftech{separator} is
   an unselectable line in a menu or popup menu.}
@@ -305,9 +305,9 @@ Menu bars, menus, and menu items are graphical elements, but not areas
   @item{@scheme[menu%] --- a menu is a menu item as well as a menu
   item container.}
 
-  }}
+  ]}
 
-}
+]
 
 The following diagram shows the complete type hierarchy for the menu
 system:
@@ -395,7 +395,7 @@ The following subsections describe the container system in detail,
 
 Each @tech{containee}, or child, has the following properties:
 
-@itemize{
+@itemize[
  
  @item{a @deftech{graphical minimum width} and a @deftech{graphical minimum height};}
 
@@ -405,7 +405,7 @@ Each @tech{containee}, or child, has the following properties:
 
  @item{horizontal and vertical @tech{margins}.}
 
-}
+]
 
 A @tech{container} arranges its children based on these four
  properties of each @tech{containee}. A @tech{containee}'s parent
@@ -464,7 +464,7 @@ In practice, the @tech{requested minimum size} and @tech{margin} of a
 
 A container has the following properties:
 
-@itemize{
+@itemize[
  
  @item{a list of (non-deleted) children containees;}
 
@@ -478,7 +478,7 @@ A container has the following properties:
 
  @item{an alignment setting for positioning leftover space.}
 
-}
+]
 
 These properties are factored into the container's calculation of its
  own size and the arrangement of its children. For a container that is
@@ -491,7 +491,7 @@ A containee's parent container is specified when the containee is
  container (but a non-window containee cannot be @tech{hidden} or
  @tech{deleted}):
 
-@itemize{
+@itemize[
 
  @item{A @deftech{hidden} child is invisible to the user, but space is
  still allocated for each hidden child within a container. To hide or
@@ -504,7 +504,7 @@ A containee's parent container is specified when the containee is
  delete-child] or @method[area-container<%> add-child] method (which
  calls the child's @method[window<%> show] method).}
 
-}
+]
 
 When a child is created, it is initially shown and non-deleted. A
  deleted child is subject to garbage collection when no external
@@ -588,22 +588,22 @@ Although nested horizontal and vertical containers can express most
 
 An input size specification is a list of four values:
 
-@itemize{
+@itemize[
  @item{the child's minimum width;}
  @item{the child's minimum height;}
  @item{the child's horizontal stretchability (@scheme[#t] means stretchable, @scheme[#f] means not stretchable); and}
  @item{the child's vertical stretchability.}
-}
+]
 
 For @method[area-container<%> place-children], an output
  position and size specification is a list of four values:
 
-@itemize{
+@itemize[
  @item{the child's new horizontal position (relative to the parent);}
  @item{the child's new vertical position;}
  @item{the child's new actual width;}
  @item{the child's new actual height.}
-}
+]
 
 The widths and heights for both the input and output include the
  children's margins. The returned position for each child is
@@ -618,7 +618,7 @@ Whenever the user moves the mouse, clicks or releases a mouse button,
  window. The window that receives the event depends on the current
  state of the graphic display:
 
-@itemize{
+@itemize[
 
  @item{@index['("mouse events" "overview")]{The} receiving window of a
  mouse event is usually the window under the cursor when the mouse is
@@ -665,7 +665,7 @@ Whenever the user moves the mouse, clicks or releases a mouse button,
  event, however, key-release events sometimes get dropped (e.g., due
  to the appearance of a modal dialog).}
 
-}
+]
 
 Controls, such as buttons and list boxes, handle keyboard and mouse
  events automatically, eventually invoking the callback procedure that
@@ -715,7 +715,7 @@ Despite the programming convenience provided by a purely sequential
  event queue, certain situations require a less rigid dialog with
  the user:
 
-@itemize{
+@itemize[
 
  @item{@italic{Nested event handling:} In the process of handling an
  event, it may be necessary to obtain further information from the
@@ -738,7 +738,7 @@ Despite the programming convenience provided by a purely sequential
  the application needs a separate event queue for each window, and a
  separate event-handling thread for each event queue.}
 
-}
+]
 
 An @deftech{eventspace} is a context for processing GUI
  events. Each eventspace maintains its own queue of events, and events
@@ -795,7 +795,7 @@ An eventspace's event queue is actually a priority queue with events
  sorted according to their kind, from highest-priority (dispatched
  first) to lowest-priority (dispatched last):
 
-@itemize{
+@itemize[
 
  @item{The highest-priority events are high-priority events installed
    with @scheme[queue-callback].}
@@ -808,7 +808,7 @@ An eventspace's event queue is actually a priority queue with events
  @item{The lowest-priority events are low-priority events installed
    with @scheme[queue-callback].}
 
-}
+]
 
 Although a programmer has no direct control over the order in which
  events are dispatched, a programmer can control the timing of

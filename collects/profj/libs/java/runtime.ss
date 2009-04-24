@@ -14,7 +14,7 @@
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
            check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by
-           compare-rand check-effect)
+           compare-rand check-effect check-inspect)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -345,6 +345,39 @@
               (report-results (cdr checks)))))
         result-value)))
   
+  ;check-inspect: (-> val) (-> bool) info src test-obj -> boolean
+  (define (check-inspect test check info src test-obj)
+    (let ((fail? #f))
+      (set! test 
+            (with-handlers ([exn? 
+                             (lambda (e) 
+                               (set! fail? #t)
+                               (list exception #t e "eval"))])
+              (test)))
+      (let ([res (if fail? (list #f 'exn-fail test) (check test))])
+        (cond
+          [(eq? 'oror (cadr res))
+           (cond 
+             [(car res)
+               (report-check-result (car res) 'check-inspect info (list 'or (caddr res)) src test-obj)
+               (car res)]
+             [else
+              (let ([right-res ((cadddr res))])
+                (report-check-result (car right-res) 'check-inspect info (list 'or (caddr res) (caddr right-res)) src test-obj)
+                (car right-res))])] 
+          [(eq? '&& (cadr res))
+           (cond 
+             [(car res)
+              (let ([right-res ((cadddr res))])
+                (report-check-result (car right-res) 'check-inspect info (list 'and (caddr res) (caddr right-res)) src test-obj)
+                (car right-res))]
+             [else
+              (report-check-result (car res) 'check-inspect info (list 'and (caddr res)) src test-obj)
+              (car res)])]
+          [else
+           (report-check-result (car res) 'check-inspect info (cdr res) src test-obj)
+           (car res)]))))
+  
   ;check-effects: (-> (listof val)) (-> (listof val)) (list string) src object -> boolean
   (define (check-effect tests checks info src test-obj)
     (let ([app (lambda (thunk) (thunk))])
@@ -360,28 +393,54 @@
               (compose-message test-obj check-kind info values #f)
               src #f))))
 
+  ;compose-message: object symbol (list symbol strings) (listof value) boolean -> (listof string)
   (define (compose-message test-obj check-kind info values mutate-message)
     (letrec ([test-format (construct-info-msg info)]
              [eval-exception-raised? #f]
              [comp-exception-raised? #f]
              [exception-not-error? #f]
-             [formatted-values (map (lambda (v) 
-                                      (cond
-                                        [(and (pair? v) (eq? (car v) exception))
-                                         (if (equal? (cadddr v) "eval")
-                                             (set! eval-exception-raised? #t)
-                                             (set! comp-exception-raised? #t))
-                                         (set! exception-not-error? (cadr v))
-                                         (send test-obj format-value (caddr v))]
-                                        [(pair? v)
-                                         (map (lambda (v) (send test-obj format-value v)) v)]
-                                        [else (send test-obj format-value v)])) values)]
+             [formater (lambda (v) 
+                         (cond
+                           [(and (pair? v) (eq? (car v) exception))
+                            (if (equal? (cadddr v) "eval")
+                                (set! eval-exception-raised? #t)
+                                (set! comp-exception-raised? #t))
+                            (set! exception-not-error? (cadr v))
+                            (send test-obj format-value (caddr v))]
+                           [(pair? v)
+                            (map (lambda (v) (send test-obj format-value v)) v)]
+                           [else (send test-obj format-value v)]))]
+             [formatted-values (unless (eq? 'check-inspect check-kind) (map formater values))]
              [expected-format
               (case check-kind
                 ((check-expect check-by) "to produce ")
                 ((check-rand) "to produce one of ")
+                ((check-inspect) "to satisfy the post-conditions given ")
                 ((check-catch) "to throw an instance of "))])
       (cond 
+        [(eq? 'check-inspect check-kind)
+         (append (list "check expected "
+                       test-format
+                       "to satisfy the given post-condition.\n ")
+               (case (car values)
+                 [(< <= > >= ==) 
+                  (append (cons "The comparison of " (construct-value-message (cadr values) formater))
+                          (cons " with " (construct-value-message (caddr values) formater))
+                          (list (format " by ~a failed." (car values))))]
+                 [(and) 
+                  (cond 
+                    [(> (length (cdr values)) 1) 
+                     (append 
+                      (cons "Both conditions were false because " 
+                            (construct-value-message (cadr values) formater))
+                      (cons " and "
+                            (construct-value-message (caddr values) formater)))]
+                    [else (cons "The first condition was false because " (construct-value-message (cadr values) formater))])]
+                 [(or)
+                  (cons "Neither condition was true because "
+                        (append (construct-value-message (cadr values) formater)
+                                (construct-value-message (caddr values) formater)))]
+                 [else (list "")]))]                    
         [(not (eq? 'check-by check-kind))
          (append (list (if mutate-message mutate-message "check expected ")
                        test-format
@@ -464,6 +523,25 @@
       ((unary) (format "the unary operation ~a " (second info)))
       ((assignment) (format "the assignment of ~a" (construct-info-msg (cdr info))))
       ((value) "value ")))
+  
+  (define (construct-value-message val-list format-v)
+    (case (first val-list)
+      [(local) (list "local variable " (format-v (cadr val-list)) " was " 
+                     (format-v (caddr val-list)))]
+      [(lit) (list (format-v (cadr val-list)))]
+      [(field-old) 
+       (list "old value of field " (format-v (caddr val-list)) " in " (format-v (cadr val-list)))]
+      [(field-access)
+       (append (list "value of field " (format-v (caddr val-list)) " in " )
+               (construct-value-message (cadr val-list) format-v))]
+      [(< > <= >= ==)
+       (append (list "comparison of ")
+               (construct-value-message (cadr val-list) format-v)
+               (list " with ")
+               (construct-value-message (caddr val-list) format-v)
+               (list (format "by ~a failed" (first val-list))))]
+      [else "unimplemented support"]))
+        
   
   ;array->list: java-array -> (list 'a)
   (define (array->list v)

@@ -1,8 +1,7 @@
 #lang scribble/doc
 @(require "web-server.ss")
 
-@title[#:tag "web-server-unit.ss"
-             #:style 'toc]{Web Server Unit}
+@title[#:tag "web-server-unit.ss"]{Server Units}
 @(require (for-label web-server/web-server-sig
                      web-server/web-server-unit
                      net/tcp-sig
@@ -10,11 +9,7 @@
                      web-server/web-config-sig
                      web-server/web-config-unit))
 
-The @web-server offers a unit-based approach to running the server.
-
-@local-table-of-contents[]
-
-@section{Signature}
+@section[#:tag "ws-sig" #:style 'hidden]{Signature}
 
 @defmodule[web-server/web-server-sig]{
 
@@ -34,7 +29,7 @@ The @web-server offers a unit-based approach to running the server.
 
 }
 
-@section{Unit}
+@section[#:tag "ws-unit" #:style 'hidden]{Unit}
 
 @defmodule[web-server/web-server-unit]{
 

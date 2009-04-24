@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          "configuration-table-test.ss")
 (provide all-configuration-tests)
 

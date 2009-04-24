@@ -69,7 +69,7 @@ is initialized in @exec{mzscheme} to the result of
 
 Produces a list of paths as follows:
 
-@itemize{
+@itemize[
 
 @item{The path produced by @scheme[(build-path (find-system-path
     'addon-dir) (version) "collects")] is the first element of the
@@ -103,7 +103,7 @@ Produces a list of paths as follows:
   @tt{"`pwd`"} to specify search the current directory after, before,
   or instead of the default paths respectively.}
 
-}}
+]}
 
 
 @defproc[(collection-path [collection string?] ...+) path?]{

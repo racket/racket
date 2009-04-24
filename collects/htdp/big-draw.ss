@@ -12,10 +12,9 @@
          graphics/graphics-sig
          graphics/graphics-posn-less-unit)
 
-(define-unit-from-context p@ graphics:posn^)
-(define-compound-unit/infer g@ (import) (export graphics^)
-  (link standard-mred@ p@ graphics-posn-less@))
-(define-values/invoke-unit/infer g@)
+(define-values/invoke-unit/infer
+  (export graphics^) 
+  (link graphics-posn-less@ standard-mred@))
 
 (provide-signature-elements graphics^)
 

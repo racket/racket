@@ -81,19 +81,19 @@ Finds a platform-specific (and possibly user- or machine-specific)
 The result depends on @scheme[what], and a @scheme[#f] result is only
  possible when @scheme[what] is @scheme['x-display]:
 
-@itemize{
+@itemize[
 
  @item{@scheme['init-file] returns the path to the user-specific
  initialization file (containing Scheme code). The directory part of
  the path is the same path as returned for @scheme['init-dir] by
  MzScheme's @scheme[find-system-path].  The file name is
  platform-specific:
-  @itemize{
+  @itemize[
 
   @item{@|AllUnix|: @indexed-file{.mredrc}}
   @item{Windows: @indexed-file{mredrc.ss}}
 
-  }}
+  ]}
 
  @item{@scheme['setup-file] returns the path to the file
  containing resources used by @scheme[get-resource]; obsolete.}
@@ -104,7 +104,7 @@ The result depends on @scheme[what], and a @scheme[#f] result is only
  other platforms, or when neither @Flag{display} nor @envvar{DISPLAY}
  was specified, the result is @scheme[#f].}
 
-}
+]
 
 
 
@@ -161,7 +161,7 @@ The format of a resource entry depends on the platform. Windows
  @scheme[section] is one of the following strings, then @scheme[file]
  is ignored, and @scheme[entry] is used as a resource path:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme["HKEY_CLASSES_ROOT"]}
  @item{@indexed-scheme["HKEY_CURRENT_CONFIG"]}
@@ -169,7 +169,7 @@ The format of a resource entry depends on the platform. Windows
  @item{@indexed-scheme["HKEY_LOCAL_MACHINE"]}
  @item{@indexed-scheme["HKEY_USERS"]}
 
-}
+]
 
 In that case, the @scheme[entry] argument is parsed as a resource entry
 path, followed by a backslash, followed by a value name. To get the
@@ -222,13 +222,13 @@ If no eventspace is provided, or if @scheme[#f] is provided, an
 
 When @scheme[redirect-ports?] is true, the following parameters are
  initialized in the created eventspace's handler thread:
-@itemize{
+@itemize[
 
  @item{@scheme[current-output-port] --- writes to the frame}
  @item{@scheme[current-error-port] --- writes to the frame}
  @item{@scheme[current-input-port] --- always returns @scheme[eof]}
 
-}
+]
 
 The keymap for the read-eval-print loop's editor is initialized by
  calling the current keymap initializer procedure, which is determined

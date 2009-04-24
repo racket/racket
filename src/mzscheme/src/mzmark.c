@@ -1677,6 +1677,7 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->private_kill_next);
   
   gcMARK(pr->user_tls);
+  gcMARK(pr->gmp_tls_data);
   
   gcMARK(pr->mr_hop);
   gcMARK(pr->mref);
@@ -1788,6 +1789,7 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->private_kill_next);
   
   gcFIXUP(pr->user_tls);
+  gcFIXUP(pr->gmp_tls_data);
   
   gcFIXUP(pr->mr_hop);
   gcFIXUP(pr->mref);
@@ -2102,6 +2104,9 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->tt_require_names);
   gcMARK(e->dt_require_names);
   gcMARK(e->other_require_names);
+  gcMARK(e->did_starts);
+  gcMARK(e->available_next[0]);
+  gcMARK(e->available_next[1]);
 
   gcMARK(e->toplevel);
   gcMARK(e->modchain);
@@ -2137,6 +2142,9 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->tt_require_names);
   gcFIXUP(e->dt_require_names);
   gcFIXUP(e->other_require_names);
+  gcFIXUP(e->did_starts);
+  gcFIXUP(e->available_next[0]);
+  gcFIXUP(e->available_next[1]);
 
   gcFIXUP(e->toplevel);
   gcFIXUP(e->modchain);

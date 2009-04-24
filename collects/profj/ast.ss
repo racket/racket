@@ -310,6 +310,12 @@
   ;(make-check-mutate (U #f type) src Expression Expression src)
   (p-define-struct (check-mutate check) (mutate check op-src))
   
+  ;(make-check-inspect (U #f type) src Expression Expression Expression (list snap))
+  (p-define-struct (check-inspect check) (val post range snaps))
+  
+  ;(make-snap string type src)
+  (p-define-struct snap (name type src))
+  
   ;(make-check-effect (U #f type) src (listof access) (listof Expression) (U Expression (listof Expression)))
   (p-define-struct (check-effect check) (vars conds test))
   

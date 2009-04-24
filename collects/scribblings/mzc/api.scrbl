@@ -79,7 +79,7 @@ The collection compiler reads the collection's @filepath{info.ss} file
 "info.ss"]) to obtain further instructions for compiling the
 collection.  The following fields are used:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme[name] : The name of the collection as a string, used
        only for status and error reporting.}
@@ -108,7 +108,7 @@ collection.  The following fields are used:
        files that they require) are compiled in the same way as
        @filepath{.ss} and @filepath{.scm} files.}
 
-}
+]
 
 The compilation process for an individual file is driven by
 @scheme[managed-compile-zo] from @schememodname[compiler/cm].}
@@ -255,7 +255,7 @@ A parameter that allow obvious non-syntactic errors, such as
 A parameter that controls how closures are compiled via C.  The
 possible values are: 
 
-@itemize{
+@itemize[
 
  @item{@scheme['vehicles:automatic] : automatic grouping}
 
@@ -263,7 +263,7 @@ possible values are:
 
  @item{@scheme['vehicles:monolithic] : groups randomly}
 
-}}
+]}
 
 @defparam[vehicles:monoliths count exact-nonnegative-integer?]{
 

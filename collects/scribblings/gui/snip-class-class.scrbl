@@ -13,7 +13,7 @@ In deriving a new @scheme[snip-class%] class, override the
  derived class (where each instance corresponds to a single snip
  class):
 
-@itemize{
+@itemize[
 
  @item{Set the classname using @method[snip-class% set-classname].}
 
@@ -26,7 +26,7 @@ In deriving a new @scheme[snip-class%] class, override the
        name is inserted into the same class list multiple times, all
        but the first insertion is ignored.}
 
-}
+]
 
 See also @|snipclassdiscuss|.
 

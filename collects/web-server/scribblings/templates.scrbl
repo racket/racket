@@ -10,7 +10,7 @@
 @(define at-reader-ref @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl")]{reader})
 @(define text-ref @secref[#:doc '(lib "scribblings/scribble/scribble.scrbl")]{preprocessor})
 
-@title[#:tag "templates"]{Templates}
+@title[#:tag "templates"]{Templates: Separation of View}
 
 @defmodule[web-server/templates]
 
@@ -19,8 +19,6 @@ and enabling non-programmers to contribute to PLT-based Web applications.
 
 @margin-note{Although all the examples here generate HTML, the template language and the @text-ref it is based on can
              be used to generate any text-based format: C, SQL, form emails, reports, etc.} 
-
-@local-table-of-contents[]
 
 @section{Static}
 
@@ -104,7 +102,7 @@ However, Scheme values that are ultimately returned must be printable by the @te
 For example, consider the following outputs of the 
 title line of different calls to @scheme[fast-template]:
 
-@itemize{
+@itemize[
 
 @item{
 @schemeblock[
@@ -150,7 +148,7 @@ title line of different calls to @scheme[fast-template]:
   <head><title>Fastest Laziness in the West!</title></head>
 }|
 }
-}
+]
 
 @section{Gotchas}
 

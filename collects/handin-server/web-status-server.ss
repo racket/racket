@@ -251,14 +251,13 @@
          (body ,msg "; " (a ([href "/"]) "restarting") " in 3 seconds.")))
 
 (define ((run-servlet port))
-  (define dir (string->path server-dir))
   (serve/servlet
    (lambda (request)
      (parameterize ([current-session (web-counter)])
        (login-page (aget (request-bindings request) 'handin) #f)))
    #:port port #:listen-ip #f #:ssl? #t #:command-line? #t
    #:servlet-path "/" #:servlet-regexp #rx""
-   #:server-root-path dir #:servlets-root dir
+   #:server-root-path server-dir #:servlets-root server-dir
    #:file-not-found-responder (send-error "File not found")
    #:servlet-namespace '(handin-server/private/md5
                          handin-server/private/logger

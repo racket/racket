@@ -14,6 +14,8 @@ Scheme_Object *objscheme_bundle_wxFontList(class wxFontList *realobj);
 class wxFontList *objscheme_unbundle_wxFontList(Scheme_Object *obj, const char *where, int nullOK);
 extern class wxColour *objscheme_unbundle_wxColour(Scheme_Object *, const char *, int);
 extern Scheme_Object *objscheme_bundle_wxColour(class wxColour *);
+extern int objscheme_istype_wxColour(Scheme_Object *, const char *, int);
+extern class wxColour *objscheme_unbundle_wxColour(Scheme_Object *, const char *, int);
 #endif
 void objscheme_setup_wxColour(Scheme_Env *env);
 #ifndef WXS_SETUP_ONLY

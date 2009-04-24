@@ -41,6 +41,9 @@
   (match/count d
     [(Wrap deriv (e1 e2))
      (R [#:pattern ?form]
+        [#:let transparent-stx (hash-ref opaque-table (syntax-e #'?form) #f)]
+        [#:when transparent-stx
+                [#:set-syntax transparent-stx]]
         [#:expect-syntax e1 (list d)]
         [#:when (base? d)
                 [#:learn (or (base-resolves d) null)]]
@@ -366,20 +369,16 @@
 (define (LocalAction local)
   (match/count local
     [(struct local-expansion (e1 e2 for-stx? me1 inner #f me2 opaque))
-     (R [#:do (when opaque
-                (fprintf (current-error-port)
-                         "LocalAction: local-expand-expr\n"))]
-        [#:parameterize ((phase (if for-stx? (add1 (phase)) (phase))))
+     (R [#:parameterize ((phase (if for-stx? (add1 (phase)) (phase))))
          [#:set-syntax e1]
          [#:pattern ?form]
          [#:rename/mark ?form e1 me1]
          [Expr ?form inner]
-         [#:rename/mark ?form me2 e2]])]
+         [#:rename/mark ?form me2 e2]
+         [#:do (when opaque
+                 (hash-set! opaque-table (syntax-e opaque) e2))]])]
     [(struct local-expansion (e1 e2 for-stx? me1 inner lifted me2 opaque))
-     (R [#:do (when opaque
-                (fprintf (current-error-port)
-                         "LocalAction: not handling opaque val\n"))]
-        [#:let begin-stx (stx-car lifted)]
+     (R [#:let begin-stx (stx-car lifted)]
         [#:let lift-stxs (cdr (reverse (stx->list (stx-cdr lifted))))]
         [#:parameterize ((phase (if for-stx? (add1 (phase)) (phase)))
                          (available-lift-stxs lift-stxs)
@@ -400,7 +399,9 @@
           [#:step 'splice-lifts visible-lifts]]
          [#:pass2]
          [#:set-syntax lifted]
-         [#:rename/mark ?form me2 e2]])]
+         [#:rename/mark ?form me2 e2]
+         [#:do (when opaque
+                 (hash-set! opaque-table (syntax-e opaque) e2))]])]
     [(struct local-lift (expr id))
      ;; FIXME: add action
      (R [#:do (unless (pair? (available-lift-stxs))
@@ -613,3 +614,10 @@
   (apply fprintf (current-error-port) args)
   (when #t
     (apply error sym args)))
+
+;; opaque-table
+;; Weakly remembers assoc between opaque values and
+;; actual syntax, so that actual can be substituted in
+;; for destructuring.
+;; FIXME: perhaps add event for opaque-stx unwrapping?
+(define opaque-table (make-weak-hasheq))

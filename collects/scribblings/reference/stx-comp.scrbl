@@ -75,7 +75,7 @@ Returns one of three kinds of values, depending on the binding of
 @scheme[phase-level] (where a @scheme[#f] value for
 @scheme[phase-level] corresponds to the @tech{label phase level}):
 
-@itemize{ 
+@itemize[ 
 
       @item{The result is @indexed-scheme['lexical] if @scheme[id-stx]
       has a @tech{local binding}. If @scheme['lexical] is produced for
@@ -87,7 +87,7 @@ Returns one of three kinds of values, depending on the binding of
       _nominal-source-mod _nominal-source-id _source-phase _import-phase 
       _nominal-export-phase)].
 
-        @itemize{
+        @itemize[
 
         @item{@scheme[_source-mod] is a module path index (see
         @secref["modpathidx"]) that indicates the defining module.}
@@ -127,13 +127,13 @@ Returns one of three kinds of values, depending on the binding of
         @item{@scheme[_nominal-export-phase] is the @tech{phase level}
         of the export from @scheme[_nominal-source-mod].}
 
-        }}
+        ]}
 
       @item{The result is @scheme[#f] if @scheme[id-stx] has a
             @tech{top-level binding} (or, equivalently, if it is
             @tech{unbound}).}
 
-      }
+      ]
 
 If @scheme[id-stx] is bound to a @tech{rename-transformer}, the result
 from @scheme[identifier] binding is for the identifier in the

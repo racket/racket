@@ -31,12 +31,7 @@
 ;;   (make-mrule <Base(Stx)> ?Stx (listof LocalAction) ?exn ?Stx ?Deriv)
 (define-struct (mrule base) (me1 locals me2 ?2 etx next) #:transparent)
 
-;; A LocalAction is one of
-;;   (make-local-expansion <Node(Stx)> Stx ?Stx Boolean Deriv)
-;;   (make-local-expansion/expr <Node(Stx)> Stx ?Stx Boolean ?Opaque Deriv)
-;;   (make-local-lift Stx Identifier)
-;;   (make-local-lift-end Stx)
-;;   (make-local-bind BindSyntaxes)
+;; A LocalAction is one of ???
 (define-struct (local-expansion node) (for-stx? me1 inner lifted me2 opaque)
   #:transparent)
 (define-struct local-lift (expr id) #:transparent)

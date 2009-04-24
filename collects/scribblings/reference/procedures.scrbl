@@ -103,7 +103,7 @@ by @scheme[proc]. See also @scheme[procedure-arity?].}
 
 A valid arity @scheme[_a] is one of the following:
 
-@itemize{
+@itemize[
 
   @item{An exact non-negative integer, which means that the procedure
         accepts @scheme[_a] arguments, only.}
@@ -116,7 +116,7 @@ A valid arity @scheme[_a] is one of the following:
        instances, which means that the procedure accepts any number of
        arguments that can match one of the elements of @scheme[_a].}
 
-}
+]
 
 @mz-examples[
 (procedure-arity cons)

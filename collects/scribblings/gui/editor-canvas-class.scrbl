@@ -34,7 +34,7 @@ If a canvas is initialized with @scheme[#f] for @scheme[editor],
 
 The @scheme[style] list can contain the following flags:
 
-@itemize{
+@itemize[
 
  @item{@scheme['no-border] --- omits a border around the canvas}
 
@@ -73,7 +73,7 @@ The @scheme[style] list can contain the following flags:
  @item{@scheme['transparent] --- the canvas is ``erased'' before an
                              update using it's parent window's background}
 
-}
+]
 
 While vertical scrolling of text editors is based on lines,
  horizontal scrolling and pasteboard vertical scrolling is based on a
@@ -276,7 +276,7 @@ If @scheme[refresh?] is not @scheme[#f], then the editor is updated
  immediately after a successful scroll.
 
 The @scheme[bias] argument is one of:
-@itemize{
+@itemize[
 
  @item{@scheme['start] --- if the range doesn't fit in the visible
  area, show the top-left region}
@@ -286,7 +286,7 @@ The @scheme[bias] argument is one of:
  @item{@scheme['end] --- if the range doesn't fit in the visible area,
  show the bottom-right region}
 
-}
+]
 
 The return value is @scheme[#t] if the @techlink{display} is scrolled, @scheme[#f]
  if not (either because the requested region is already visible,

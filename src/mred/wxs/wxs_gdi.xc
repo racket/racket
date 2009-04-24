@@ -88,6 +88,7 @@
 @CREATOR (); <> no argument
 @CREATOR (ubyte,ubyte,ubyte); <> rgb values
 @CREATOR (string); <> color name
+@CREATOR (wxColour^); <> color object
 
 @ "copy-from" : wxColour! CopyFrom(wxColour!);  : : /CHECKMUT[wxColour."color".METHODNAME("color%","copy-from")]
 // @ "get" : void Get(ubyte*,ubyte*,ubyte*);

@@ -2178,7 +2178,7 @@
                 (when found-pos
                   (unless (hash-ref ht found-txt #f)
                     (hash-set! ht found-txt #t)
-                    (send txt begin-edit-sequence))
+                    (send found-txt begin-edit-sequence))
                   (let ([start (- found-pos (send find-edit last-position))])
                     (send found-txt delete start found-pos)
                     (copy-over replace-edit 0 (send replace-edit last-position) found-txt start)

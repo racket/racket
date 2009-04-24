@@ -1366,45 +1366,6 @@
     [(_ lang-id (name rhs ...) ...)
      (let ()
        
-       ;; collect-binds-clauses : syntax syntax (cons syntax (listof syntax)) -> (values syntax (listof syntax))
-       ;; extracts the #:binds part of a production and returns them (if any) as well as returning the
-       ;; list of syntax objects that follow the binds clause.
-       ;; production is the original production that this #:binds clause is modifying,
-       ;; and lang is the name of the language
-       (define (collect-binds-clauses production lang rhss)
-         (let loop ([binds '()]
-                    [rhss rhss])
-           (cond
-             [(or (null? (cdr rhss))
-                  (not (equal? (syntax-e (cadr rhss)) '#:binds)))
-              (values #`(list #,@(reverse binds)) (cdr rhss))]
-             [else
-              (unless (>= (length rhss) 3)
-                (raise-syntax-error #f 
-                                    "found a #:binds clause without two following expressions"
-                                    stx
-                                    (cadr rhss)))
-              (let ([binds-keyword (list-ref rhss 1)]
-                    [var (list-ref rhss 2)]
-                    [nt (list-ref rhss 3)])
-                (unless (identifier? var)
-                  (raise-syntax-error #f 
-                                      "the first argument to #:binds must be a non-terminal occurring in this right-hand side"
-                                      stx
-                                      var))
-                (unless (identifier? nt)
-                  (raise-syntax-error #f 
-                                      "the second argument to #:binds must be a non-terminal occurring in this right-hand side"
-                                      stx
-                                      nt))
-                (loop (cons #`(make-binds 
-                               ;; thunking like this means that the pattern is compiled each time the fn
-                               ;; runs, ie inefficient
-                               '#,var
-                               '#,nt)
-                            binds)
-                      (cdddr rhss)))])))
-       
        ;; verify `name' part has the right shape
        (for-each
         (λ (name)
@@ -1450,21 +1411,15 @@
                                     name))))
           all-names)
          
-         (with-syntax ([(((r-rhs var-info) ...) ...) 
+         (with-syntax ([((r-rhs ...) ...) 
                         (map (lambda (rhss) 
-                               (let loop ([rhss (syntax->list rhss)])
-                                 (cond
-                                   [(null? rhss) '()]
-                                   [else 
-                                    (let ([x (car rhss)])
-                                      (let-values ([(var-info rest) (collect-binds-clauses x #'lang rhss)])
-                                        (cons (list (rewrite-side-conditions/check-errs
-                                                     (map syntax-e all-names)
-                                                     'language
-                                                     #f
-                                                     x)
-                                                    var-info)
-                                              (loop rest))))])))
+                               (map (lambda (rhs)
+                                      (rewrite-side-conditions/check-errs
+                                       (map syntax-e all-names)
+                                       'language
+                                       #f
+                                       rhs)) 
+                                    (syntax->list rhss)))
                              (syntax->list (syntax ((rhs ...) ...))))]
                        [(refs ...)
                         (let loop ([stx (syntax ((rhs ...) ...))])
@@ -1510,8 +1465,8 @@
                  (let ([all-names 1] ...)
                    (begin (void) refs ...))
                  (compile-language (list (list '(uniform-names ...) (to-lw rhs) ...) ...)
-                                   (list (make-nt 'first-names (list (make-rhs `r-rhs var-info) ...)) ...
-                                         (make-nt 'new-name (list (make-rhs 'orig-name '()))) ...)
+                                   (list (make-nt 'first-names (list (make-rhs `r-rhs) ...)) ...
+                                         (make-nt 'new-name (list (make-rhs 'orig-name))) ...)
                                    '((uniform-names ...) ...))))))))]
     [(_ (name rhs ...) ...)
      (for-each
@@ -1596,7 +1551,7 @@
                           (syntax->list #'(name ...))))])
        (syntax/loc stx
          (do-extend-language lang 
-                             (list (make-nt '(uniform-names ...) (list (make-rhs `r-rhs '()) ...)) ...)
+                             (list (make-nt '(uniform-names ...) (list (make-rhs `r-rhs) ...)) ...)
                              (list (list '(uniform-names ...) (to-lw rhs) ...) ...))))]
     [(_ lang (name rhs ...) ...)
      (begin
@@ -1699,7 +1654,7 @@
                     (for-each (λ (shortcut-name)
                                 (hash-set! new-ht 
                                            shortcut-name 
-                                           (make-nt shortcut-name (list (make-rhs (car names) '())))))
+                                           (make-nt shortcut-name (list (make-rhs (car names))))))
                               (cdr names)))))
                   
               new-nts)

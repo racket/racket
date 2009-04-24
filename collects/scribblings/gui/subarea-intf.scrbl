@@ -7,7 +7,7 @@ A @scheme[subarea<%>] is a containee @scheme[area<%>].
 
 All @scheme[subarea<%>] classes accept the following named
  instantiation arguments:
-@itemize{
+@itemize[
 
  @item{@indexed-scheme[horiz-margin] --- default is @scheme[2] for
  @scheme[control<%>] classes and @scheme[group-box-panel%], 
@@ -17,7 +17,7 @@ All @scheme[subarea<%>] classes accept the following named
  @scheme[control<%>] classes and @scheme[group-box-panel%], 
  @scheme[0] for others; passed to
 @method[subarea<%> vert-margin]} 
-}
+]
 
 
 

@@ -78,7 +78,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
 @section{@scheme[import]}
 
 @elemtag['(beg "import")]
-@itemize{
+@itemize[
 @item{@(scheme import Name (code:comment ""))
        
        Imports a specified class to use within the program.}
@@ -86,12 +86,12 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
        
        Imports a group of classes that can all be used within the program.}
 
-}
+]
 
 @section{@scheme[class]}
 
 @elemtag['(beg "class")]
-@itemize{
+@itemize[
  @item{@(scheme class Id { Member Member ...})
         
         Creates a class named Id. One member is required and must be a @elemref['(beg "ctor")]{constructor.}
@@ -102,7 +102,7 @@ An @(scheme Id) is a sequence of alphanumeric characters, _, and $.
         named by (scheme implements). One member must be a @elemref['(beg "ctor")]{constructor}. 
         Any @elemref['(beg "sig")]{method} defined by the interface must be a member of this class.
         }
- }
+ ]
 
 @section{@scheme[interface]}
 
@@ -124,7 +124,7 @@ return type, and argument types.
 
 @elemtag['(beg "field")]
 
-@itemize{
+@itemize[
   @item{@(scheme Type Id (code:comment "")) 
          
          Creates a field, bound to Id, that can be used within the current class, or on instances of the 
@@ -139,7 +139,7 @@ return type, and argument types.
          This field will have the declared type and the value of the evaluated @(scheme Expression). 
          @(scheme Expression) may not refer to other fields in the current class.   
   }
-  }
+  ]
 
 @section{@scheme[Method]}
 
@@ -167,7 +167,7 @@ The initialization statements pass the value provided to the constructor to the 
 @section{@scheme[Statement]}
 
 @elemtag['(beg "stmt")]
-@itemize{
+@itemize[
  @item{@elemtag['(beg "if")] @(scheme if (Expression) { Statement } else { Statement })
                
        In this statement the expression should have a boolean type. It is evaluated first. 
@@ -180,11 +180,11 @@ The initialization statements pass the value provided to the constructor to the 
                as the result of the @elemref['(beg "method")]{method} in which it is contained. 
                }
 
-}
+]
 
 @section{@scheme[Expression]}
 
-@itemize{
+@itemize[
  
    @item{@elemtag['(beg "op")]@(scheme Expression Op Expression)
                  
@@ -252,4 +252,4 @@ The initialization statements pass the value provided to the constructor to the 
           }
    @item{@(scheme true)}
    @item{@(scheme false)}
-   }
+   ]

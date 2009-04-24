@@ -37,13 +37,13 @@ scheme
 ]
 
 It exports two functions: 
-@itemize{
+@itemize[
 
 @item{@scheme[create]: The function's contract says that it consumes two
 arguments, a string and a number, and it promises nothing about the return value. }
 
 @item{@scheme[deposit]: The function's contract demands from the client modules
-that they apply it to numbers.  It promises nothing about the return value. }}
+that they apply it to numbers.  It promises nothing about the return value. }]
 
 If a ``client'' module were to apply @scheme[deposit] to
 @scheme['silly], it would violate the contract.  The
@@ -278,7 +278,7 @@ scheme
 
 @ctc-section[#:tag "coercion"]{Contracts Coerced from Other Values}
 
-The contract library treates a number of Scheme values as if they are
+The contract library treats a number of Scheme values as if they are
 contracts directly. We've already seen one main use of that: predicates. Every
 function that accepts one argument can be treated as a predicate
 and thus used as a contract.

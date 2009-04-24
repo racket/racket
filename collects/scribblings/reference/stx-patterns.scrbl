@@ -241,7 +241,7 @@ Template forms produce a syntax object as follows:
  A @scheme[template-elem] is a sub-@scheme[template] replicated by any
  number of @scheme[ellipses]es:
 
- @itemize{
+ @itemize[
 
   @item{If the sub-@scheme[template] is replicated by no
    @scheme[ellipses]es, then it generates a single syntax object to
@@ -269,7 +269,7 @@ Template forms produce a syntax object as follows:
    element (with earlier replicating @scheme[ellipses]s) is
    conceptually wrapped with parentheses for generating output, and
    then the wrapping parentheses are removed in the resulting syntax
-   object.}}}
+   object.}]}
 
  @specsubform[(template-elem ... . template)]{
 

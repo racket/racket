@@ -2,6 +2,8 @@
   (require mzlib/class
 	   mzlib/class100
 	   (prefix wx: "kernel.ss")
+           (prefix wx: "wxme/text.ss")
+           (prefix wx: "wxme/editor-canvas.ss")
 	   "lock.ss"
 	   "const.ss"
 	   "check.ss"

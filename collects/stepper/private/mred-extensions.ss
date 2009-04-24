@@ -3,10 +3,8 @@
            mred
            (prefix f: framework)
            mzlib/pretty
-           "testing-shared.ss"
-           "shared.ss"
-	   string-constants
-           mrlib/bitmap-label)
+           #;"testing-shared.ss"
+           "shared.ss")
 
   (provide
    foot-img/horizontal
@@ -528,12 +526,6 @@
   ;; the bitmap to use in a vertical toolbar:
   (define foot-img/vertical (make-object bitmap% (build-path (collection-path
                                                               "icons") "foot-up.png") 'png/mask))
-  
-  ;; stepper-bitmap : the image used for the stepper button
-  #;(define stepper-bitmap
-    (bitmap-label-maker
-     (string-constant stepper-button-label)
-     (build-path (collection-path "icons") "foot.png")))
                                                                      
 
   ;; testing code

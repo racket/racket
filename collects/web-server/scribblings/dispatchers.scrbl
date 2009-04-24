@@ -10,31 +10,14 @@
                      web-server/private/connection-manager)
           (for-syntax scheme/base))
 
-@(define-syntax (a-dispatcher stx)
-  (syntax-case stx ()
-   [(_ lib-name lib-desc . rest)
-    ;; This macro plays a standard trick for limiting the scope of
-    ;; `require'd bindings: it puts the require and the scope of the
-    ;; require into a macro, which introduces both together
-    #'(begin
-       (define-syntax-rule (intro)
-         ((... ...)
-          (begin
-            (require (for-label lib-name))
-            (defmodule lib-name
-                       "The " (schememodname lib-name) " module " lib-desc)
-            . rest)))
-       (intro))]))
-
 @title[#:tag "dispatchers"
        #:style 'toc]{Dispatchers}
 
-The @web-server is really just a particular configuration of a
-dispatching server. There are a number of dispatchers that are defined
-to support the @web-server . Other dispatching servers, or variants
-of the @web-server , may find these useful. In particular, if you want
-a peculiar processing pipeline for your @web-server installation, this
-documentation will be useful.
+Since the @web-server is really just a particular configuration of a
+dispatching server, there are several dispatchers that are defined
+to support the @|web-server|. Other dispatching servers may find these useful. In particular, if you want
+a peculiar processing pipeline for your @web-server installation, refer to this
+documentation.
 
 @local-table-of-contents[]
 
@@ -343,39 +326,7 @@ a URL that refreshes the password file, servlet cache, etc.}
  This dispatcher supports HTTP Range GET requests and HEAD requests.}}
 
 @; ------------------------------------------------------------
-@section[#:tag "dispatch-servlets.ss"]{Serving Servlets}
-@a-dispatcher[web-server/dispatchers/dispatch-servlets
-              @elem{defines a dispatcher constructor
-                    that runs servlets.}]{
-          
-@defthing[url->servlet/c contract?]{Equivalent to @scheme[(url? . -> . servlet?)]}
-
-@defproc[(make-cached-url->servlet
-          [url->path url->path/c]
-          [path->serlvet path->servlet/c])         
-         (values (-> void)
-                 url->servlet/c)]{
- The first return value flushes the cache. 
- The second is a procedure that uses @scheme[url->path] to resolve the URL to a path, then uses @scheme[path->servlet] to resolve
- that path to a servlet, caching the results in an internal table.
-}
-                        
-@defproc[(make [url->servlet url->servlet/c]
-               [#:responders-servlet-loading
-                responders-servlet-loading
-                (url? exn? . -> . response/c)
-                servlet-loading-responder]
-               [#:responders-servlet
-                responders-servlet
-                (url? exn? . -> . response/c)
-                servlet-error-responder])
-         dispatcher/c]{
- This dispatcher runs Scheme servlets, using @scheme[url->servlet] to resolve URLs to the underlying servlets.
- If servlets have errors loading, then @scheme[responders-servlet-loading] is used. Other errors are handled with
- @scheme[responders-servlet]. If a servlet raises calls @scheme[next-dispatcher], then the signal is propagated by this dispatcher.
-}
-                      
-}
+@include-section["dispatch-servlets.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "dispatch-stat.ss"]{Statistics}

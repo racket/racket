@@ -104,7 +104,7 @@ point here is the formulation of the contract for the
 
 
 The contract combinator @scheme[->*], demands several groups of contracts: 
-@itemize{
+@itemize[
 @item{The first one is a parenthesized group of contracts for all required
 arguments. In this example, we see two: @scheme[string?] and
 @scheme[natural-number/c]. }
@@ -113,7 +113,7 @@ arguments. In this example, we see two: @scheme[string?] and
 arguments: @scheme[char?]. }
 
 @item{The last one is a single contract: the result of the function.}
-}
+]
 
  Note if a default value does not satisfy a contract, you
  won't get a contract error for this interface. In contrast
@@ -358,7 +358,7 @@ scheme
   acc)
 ]
 
-The second section is the export interface: @itemize{
+The second section is the export interface: @itemize[
 @item{@scheme[create] consumes an initial deposit and
 produces an account. This kind of contract is just like a
 type in a statically typed language, except that statically
@@ -383,7 +383,7 @@ format string). The result is a contract.
 
 @item{@scheme[deposit]'s contract has been reformulated using the
 @scheme[->d] combinator. }
-}
+]
 
 The code in the first section defines all those pieces that
 are needed for the formulation of the export contracts:
@@ -467,13 +467,13 @@ others):
     [(s start end) (substring s start end)]))
 ]
  This version of @scheme[substring] has one of the following signature:
-@itemize{
+@itemize[
 @item{just a string, in which case it copies the string;}
 @item{a string and an index into the string, in which case it extracts the
  suffix of the string starting at the index; or }
 @item{a string a start index and an end index, in which case it extracts the
  fragment of the string between the two indices. }
-}
+]
 
 The contract for such a function is formed with the @scheme[case->]
  combinator, which combines as many functional contracts as needed: 

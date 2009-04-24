@@ -8,12 +8,14 @@
 
 #define Uses_XLib // Xt
 #include "common.h" // wxWindows
-#include "wx_media.h"
 #include "wx_win.h"
 #include "wxscheme.h"
 #include "wx_main.h"
 #include "wx_dcps.h"
+#include "wx_canvs.h"
 #include "wx_clipb.h"
+#include "wx_print.h"
+#include "wx_dcmem.h"
 #include "mrdispatch.h"
 #include "wxsmred.h"
 
@@ -27,9 +29,6 @@
 #include "wxs_chce.h"
 #include "wxs_evnt.h"
 #include "wxs_panl.h"
-#include "wxs_madm.h"
-#include "wxs_mio.h"
-#include "wxs_styl.h"
 #include "wxs_menu.h"
 #include "wxs_bmap.h"
 #include "wxs_misc.h"
@@ -46,10 +45,6 @@
 #include "wxs_dc.h"
 #include "wxs_cnvs.h"
 #include "wxs_misc.h"
-#include "wxs_medi.h"
-#include "wxs_mede.h"
-#include "wxs_mpb.h"
-#include "wxs_snip.h"
 
 #ifdef wx_msw
 # include "wx_pdf.h"
@@ -123,8 +118,6 @@ static Scheme_Object *setup_file_symbol, *init_file_symbol, *x_display_symbol;
 static Scheme_Object *get_file, *put_file, *get_ps_setup_from_user, *message_box;
 
 static Scheme_Object *executer;
-
-static Scheme_Object *make_media_edit, *make_media_pasteboard, *make_media_snip, *none_symbol;
 
 static Scheme_Object *wait_symbol;
 
@@ -1669,82 +1662,6 @@ static Scheme_Object *wxPlaySound(int argc, Scheme_Object **argv)
 /*                         constructor hooks                           */
 /***********************************************************************/
 
-wxMediaSnip *wxsMakeMediaSnip(wxMediaBuffer *useme,
-			      Bool border,
-			      int lm, int tm, int rm, int bm,
-			      int li, int ti, int ri, int bi,
-			      double w, double W, double h, double H)
-{
-  if (make_media_snip) {
-    Scheme_Object *a[20], *r;
-
-    a[0] = (useme ? objscheme_bundle_wxMediaBuffer(useme) : scheme_false);
-    a[1] = (border ? scheme_true : scheme_false);
-    a[2] = scheme_make_integer(lm);
-    a[3] = scheme_make_integer(tm);
-    a[4] = scheme_make_integer(rm);
-    a[5] = scheme_make_integer(bm);
-    a[6] = scheme_make_integer(li);
-    a[7] = scheme_make_integer(ti);
-    a[8] = scheme_make_integer(ri);
-    a[9] = scheme_make_integer(bi);
-    a[10] = ((w > 0) ? scheme_make_double(w) : none_symbol);
-    a[11] = ((W > 0) ? scheme_make_double(W) : none_symbol);
-    a[12] = ((h > 0) ? scheme_make_double(h) : none_symbol);
-    a[13] = ((H > 0) ? scheme_make_double(H) : none_symbol);
-
-    r = scheme_apply(make_media_snip, 14, a);
-
-    return objscheme_unbundle_wxMediaSnip(r, NULL, 0);
-  } else {
-    return new WXGC_PTRS wxMediaSnip(useme, border,
-				     lm, tm, rm, bm,
-				     li, ti, ri, bi,
-				     w, W, h, H);
-  }
-}
-
-wxMediaEdit *wxsMakeMediaEdit()
-{
-  if (make_media_edit) {
-    return objscheme_unbundle_wxMediaEdit(scheme_apply(make_media_edit, 0, NULL), 
-					  NULL, 0);
-  } else
-    return new WXGC_PTRS wxMediaEdit();
-}
-
-wxMediaPasteboard *wxsMakeMediaPasteboard()
-{
-  if (make_media_pasteboard) {
-    return objscheme_unbundle_wxMediaPasteboard(scheme_apply(make_media_pasteboard, 0, NULL), 
-						NULL, 0);
-  } else
-    return new WXGC_PTRS wxMediaPasteboard();
-}
-
-static Scheme_Object *SetMediaSnipMaker(int, Scheme_Object *a[])
-{
-  wxREGGLOB(make_media_snip);
-  wxREGGLOB(none_symbol);
-  make_media_snip = a[0];
-  none_symbol = scheme_intern_symbol("none");
-  return scheme_void;
-}
-
-static Scheme_Object *SetMediaEditMaker(int, Scheme_Object *a[])
-{
-  wxREGGLOB(make_media_edit);
-  make_media_edit = a[0];
-  return scheme_void;
-}
-
-static Scheme_Object *SetMediaPasteboardMaker(int, Scheme_Object *a[])
-{
-  wxREGGLOB(make_media_pasteboard);
-  make_media_pasteboard = a[0];
-  return scheme_void;
-}
-
 static Scheme_Object *is_menu;
 
 Bool wxsCheckIsPopupMenu(void *m)
@@ -1770,44 +1687,6 @@ static Scheme_Object *SetDialogs(int, Scheme_Object *a[])
   get_ps_setup_from_user = a[2];
   message_box = a[3];
   return scheme_void;
-}
-
-static Scheme_Object *snip_class_getter, *editor_data_class_getter;
-
-static Scheme_Object *SetSnipClassGetter(int, Scheme_Object *a[])
-{
-  wxREGGLOB(snip_class_getter);
-  snip_class_getter = a[0];
-  return scheme_void;
-}
-
-static Scheme_Object *SetEditorDataClassGetter(int, Scheme_Object *a[])
-{
-  wxREGGLOB(editor_data_class_getter);
-  editor_data_class_getter = a[0];
-  return scheme_void;
-}
-
-wxSnipClass *wxGetSnipClass(const char *name)
-{
-  if (!snip_class_getter)
-    return NULL;
-  else {
-    Scheme_Object *a[1];
-    a[0] = scheme_make_utf8_string(name);
-    return objscheme_unbundle_wxSnipClass(_scheme_apply(snip_class_getter, 1, a), NULL, 1);
-  }
-}
-
-wxBufferDataClass *wxGetEditorDataClass(const char *name)
-{
-  if (!editor_data_class_getter)
-    return NULL;
-  else {
-    Scheme_Object *a[1];
-    a[0] = scheme_make_utf8_string(name);
-    return objscheme_unbundle_wxBufferDataClass(_scheme_apply(editor_data_class_getter, 1, a), NULL, 1);
-  }
 }
 
 /***********************************************************************/
@@ -1871,30 +1750,6 @@ static Scheme_Object *SpecialOptionKey(int c, Scheme_Object *SCK_ARG[])
     return scheme_false;
 #endif
 }
-
-#ifdef wx_mac
-extern int wxMapCommandAsMeta;
-#endif
-
-static Scheme_Object *MapCommandAsMetaKey(int c, Scheme_Object *SCK_ARG[])
-{
-#ifdef wx_mac
-  if (c) {
-    wxMapCommandAsMeta = SCHEME_TRUEP(p[0]);
-    return scheme_void;
-  } else {
-    return (wxMapCommandAsMeta
-            ? scheme_true
-            : scheme_false);
-  }
-#else
-  if (c)
-    return scheme_void;
-  else
-    return scheme_false;
-#endif
-}
-
 
 static Scheme_Object *DefaultAppFileProc(int n, Scheme_Object *p[])
 {
@@ -2107,6 +1962,27 @@ static Scheme_Object *file_type_and_creator(int argc, Scheme_Object **argv)
   return NULL;
 }
 
+
+#ifdef wx_mac
+extern void wxStartRefreshSequence(void);
+extern void wxEndRefreshSequence(void);
+#else
+# define wxStartRefreshSequence() /* empty */
+# define wxEndRefreshSequence() /* empty */
+#endif
+
+static Scheme_Object *BeginRefreshSeq(int, Scheme_Object **)
+{
+  wxStartRefreshSequence();
+  return scheme_void;
+}
+
+static Scheme_Object *EndRefreshSeq(int, Scheme_Object **)
+{
+  wxEndRefreshSequence();
+  return scheme_void;
+}
+
 /***********************************************************************/
 /*                             ps-setup                                */
 /***********************************************************************/
@@ -2140,6 +2016,130 @@ static Scheme_Object *wxSchemeCurrentPSSetup(int argc, Scheme_Object **argv)
 			     scheme_make_integer(mred_ps_setup_param),
 			     argc, argv,
 			     -1, CAST_SP PS_Setup_p, "ps-setup% instance", 0);
+}
+
+/***********************************************************************/
+/*                         platform-printing                           */
+/***********************************************************************/
+
+#ifndef wx_xt
+
+class wxMediaPrintout : public wxPrintout
+{
+private:
+  void *data;
+
+  Bool fitToPage;
+
+  Scheme_Object *begin_doc;
+  Scheme_Object *has_page;
+  Scheme_Object *print_page;
+  Scheme_Object *end_doc;
+    
+public:
+  wxMediaPrintout(Bool fit,
+                  Scheme_Object *_begin_doc,
+                  Scheme_Object *_has_page,
+                  Scheme_Object *_print_page,
+                  Scheme_Object *_end_doc);
+
+  Bool HasPage(int page);
+  Bool OnPrintPage(int page);
+  Bool OnBeginDocument(int startPage, int endPage);
+  void OnEndDocument();
+};
+
+wxMediaPrintout::wxMediaPrintout(Bool fit, 
+                                 Scheme_Object *_begin_doc,
+                                 Scheme_Object *_has_page,
+                                 Scheme_Object *_print_page,
+                                 Scheme_Object *_end_doc)
+: wxPrintout()
+{
+  fitToPage = fit;
+  begin_doc = _begin_doc;
+  has_page = _has_page;
+  print_page = _print_page;
+  end_doc = _end_doc;
+}
+
+Bool wxMediaPrintout::HasPage(int page)
+{
+  Scheme_Object *v, *a[2];
+  basePrinterDC *dc;
+
+  dc = (basePrinterDC*)GetDC();
+  a[0] = objscheme_bundle_basePrinterDC(dc);
+  a[1] = scheme_make_integer(page);
+
+  v = scheme_apply(has_page, 2, a);
+
+  return SCHEME_TRUEP(v);
+}
+
+Bool wxMediaPrintout::OnPrintPage(int page)
+{
+  Scheme_Object *a[2];
+  basePrinterDC *dc;
+
+  dc = (basePrinterDC*)GetDC();
+
+  a[0] = objscheme_bundle_basePrinterDC(dc);
+  a[1] = scheme_make_integer(page);
+
+  scheme_apply(print_page, 2, a);
+
+  return TRUE;
+}
+
+Bool wxMediaPrintout::OnBeginDocument(int startPage, int endPage)
+{
+  if (wxPrintout::OnBeginDocument(startPage, endPage)) {
+    basePrinterDC *dc;
+    Scheme_Object *a[1];
+    dc = (basePrinterDC*)GetDC();
+    a[0] = objscheme_bundle_basePrinterDC(dc);
+    data = scheme_apply(begin_doc, 1, a);
+    return TRUE;
+  } else
+    return FALSE;
+}
+
+void wxMediaPrintout::OnEndDocument()
+{
+  scheme_apply(end_doc, 0, NULL);
+}
+
+#endif
+
+static Scheme_Object *run_printout(int argc, Scheme_Object **argv)
+{
+#ifndef wx_xt
+  wxWindow *parent;
+  wxPrinter *p;
+  wxPrintout *o;
+  int interactive, fitToPage;
+  
+  parent = (SCHEME_TRUEP(argv[0])
+            ? objscheme_unbundle_wxWindow(argv[0], "run-printout", 1)
+            : NULL);
+  interactive = SCHEME_TRUEP(argv[1]);
+  fitToPage = SCHEME_TRUEP(argv[2]);
+
+  p = new WXGC_PTRS wxPrinter();
+  o = new WXGC_PTRS wxMediaPrintout(fitToPage,
+                                    argv[3],
+                                    argv[4],
+                                    argv[5],
+                                    argv[6]);
+  
+  p->Print(parent, o, interactive);
+
+  DELETE_OBJ o;
+  DELETE_OBJ p;
+#endif
+
+  return scheme_void;
 }
 
 /***********************************************************************/
@@ -2981,6 +2981,13 @@ int wxGetBoolPreference(const char *name, int *res)
   return 0;
 }
 
+extern int wxMrEdGetDoubleTime(void);
+static Scheme_Object *get_double_time(int, Scheme_Object **) {
+  int t;
+  t = wxMrEdGetDoubleTime();
+  return scheme_make_integer(t);
+}
+
 /***********************************************************************/
 /*                         strip menu codes                            */
 /***********************************************************************/
@@ -3081,11 +3088,6 @@ static void wxScheme_Install(Scheme_Env *global_env)
   scheme_install_xc_global("special-option-key", 
 			   scheme_make_prim_w_arity(CAST_SP SpecialOptionKey, 
 						    "special-option-key", 
-						    0, 1), 
-			   global_env);
-  scheme_install_xc_global("map-command-as-meta-key", 
-			   scheme_make_prim_w_arity(CAST_SP MapCommandAsMetaKey, 
-						    "map-command-as-meta-key", 
 						    0, 1), 
 			   global_env);
   
@@ -3245,38 +3247,9 @@ static void wxScheme_Install(Scheme_Env *global_env)
 						    "set-executer",
 						    1, 1),
 			   global_env);
-
-  scheme_install_xc_global("set-editor-snip-maker",
-			   scheme_make_prim_w_arity(CAST_SP SetMediaSnipMaker,
-						    "set-editor-snip-maker",
-						    1, 1),
-			   global_env);
-  
-  scheme_install_xc_global("set-text-editor-maker",
-			   scheme_make_prim_w_arity(CAST_SP SetMediaEditMaker,
-						    "set-text-editor-maker",
-						    1, 1),
-			   global_env);
-  
-  scheme_install_xc_global("set-pasteboard-editor-maker",
-			   scheme_make_prim_w_arity(CAST_SP SetMediaPasteboardMaker,
-						    "set-pasteboard-editor-maker",
-						    1, 1),
-			   global_env);
   scheme_install_xc_global("set-menu-tester",
 			   scheme_make_prim_w_arity(CAST_SP SetIsMenu,
 						    "set-menu-tester",
-						    1, 1),
-			   global_env);
-
-  scheme_install_xc_global("set-snip-class-getter",
-			   scheme_make_prim_w_arity(CAST_SP SetSnipClassGetter,
-						    "set-snip-class-getter",
-						    1, 1),
-			   global_env);
-  scheme_install_xc_global("set-editor-data-class-getter",
-			   scheme_make_prim_w_arity(CAST_SP SetEditorDataClassGetter,
-						    "set-editor-data-class-getter",
 						    1, 1),
 			   global_env);
   
@@ -3310,6 +3283,26 @@ static void wxScheme_Install(Scheme_Env *global_env)
 						    6, 6),
 			   global_env);
 
+  scheme_install_xc_global("begin-refresh-sequence",
+			   scheme_make_prim_w_arity(CAST_SP BeginRefreshSeq,
+						    "begin-refresh-sequence",
+						    0, 0),
+			   global_env);
+  scheme_install_xc_global("end-refresh-sequence",
+			   scheme_make_prim_w_arity(CAST_SP EndRefreshSeq,
+						    "end-refresh-sequence",
+						    0, 0),
+			   global_env);
+  scheme_install_xc_global("run-printout",
+                           scheme_make_prim_w_arity(CAST_SP run_printout,
+                                                    "run-printout",
+                                                    7, 7),
+                           global_env);
+  scheme_install_xc_global("get-double-click-time",
+                           scheme_make_prim_w_arity(CAST_SP get_double_time,
+                                                    "get-double-click-time",
+                                                    0, 0),
+                           global_env);
 
 #ifdef USE_GL
   init_gl_mgr();
@@ -3366,40 +3359,6 @@ static void wxScheme_Install(Scheme_Env *global_env)
   objscheme_setup_wxCanvas(global_env);
   objscheme_setup_wxPanel(global_env);
   objscheme_setup_wxDialogBox(global_env);
-  objscheme_setup_wxMediaGlobal(global_env);
-  objscheme_setup_wxMediaCanvas(global_env);
-  objscheme_setup_wxMediaBuffer(global_env);
-  objscheme_setup_wxMediaEdit(global_env);
-  objscheme_setup_wxMediaPasteboard(global_env);
-  objscheme_setup_wxSnipClass(global_env);
-  objscheme_setup_wxSnipClassList(global_env);
-  objscheme_setup_wxSnip(global_env);
-  objscheme_setup_wxTextSnip(global_env);
-  objscheme_setup_wxTabSnip(global_env);
-  objscheme_setup_wxImageSnip(global_env);
-  objscheme_setup_wxMediaSnip(global_env);
-  objscheme_setup_wxSnipAdmin(global_env);
-  objscheme_setup_wxMediaAdmin(global_env);
-  // objscheme_setup_wxCanvasMediaAdmin(global_env);
-  objscheme_setup_wxMediaSnipMediaAdmin(global_env);
-  objscheme_setup_wxBufferData(global_env);
-  objscheme_setup_wxBufferDataClass(global_env);
-  objscheme_setup_wxBufferDataClassList(global_env);
-  objscheme_setup_wxKeymap(global_env);
-  objscheme_setup_wxMediaStreamInBase(global_env);
-  objscheme_setup_wxMediaStreamOutBase(global_env);
-  objscheme_setup_wxMediaStreamInStringBase(global_env);
-  objscheme_setup_wxMediaStreamOutStringBase(global_env);
-  objscheme_setup_wxMediaStreamIn(global_env);
-  objscheme_setup_wxMediaStreamOut(global_env);
-  objscheme_setup_wxMediaWordbreakMap(global_env);
-  objscheme_setup_wxGlobalMediaWordbreakMap(global_env);
-  objscheme_setup_wxAddColour(global_env);
-  objscheme_setup_wxMultColour(global_env);
-  objscheme_setup_wxStyleDelta(global_env);
-  objscheme_setup_wxStyle(global_env);
-  objscheme_setup_wxStyleList(global_env);
-  objscheme_setup_wxGlobalStyleList(global_env);
 #if 0
   objscheme_setup_baseMetaFile(global_env);
   objscheme_setup_baseMetaFileDC(global_env);

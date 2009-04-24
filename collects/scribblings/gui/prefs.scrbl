@@ -14,7 +14,7 @@ MrEd supports a number of preferences for global configuration. The
 
 The following are the (case-sensitive) preference names used by MrEd:
 
-@itemize{
+@itemize[
 
  @item{@ResourceFirst{default-font-size} --- sets the default font size
  the basic style in a style list, and thus the default font size for
@@ -79,7 +79,7 @@ The following are the (case-sensitive) preference names used by MrEd:
  @scheme[clipboard<%>].}
 
 
-}
+]
 
 In addition, preference names built from font face names can provide
  or override default entries for the @scheme[font-name-directory<%>];

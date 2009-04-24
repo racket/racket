@@ -12,7 +12,7 @@
 # include "wx.h"
 #endif
 #include "wx_main.h"
-#include "wx_media.h"
+#include "wx_utils.h"
 #include "scheme.h"
 #include "wx_dialg.h"
 
@@ -931,6 +931,8 @@ void MrEdMSWSleep(float secs, void *fds)
       if (rps[result])
         ReleaseSemaphore(handles[result], 1, NULL);
     }
+
+    scheme_collapse_win_fd(fds); /* cleans up */
   } else if (wxTheApp->keep_going) {
     MsgWaitForMultipleObjects(0, NULL, FALSE,
 			      secs ? msecs : INFINITE,

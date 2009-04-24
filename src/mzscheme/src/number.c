@@ -178,6 +178,15 @@ scheme_init_number (Scheme_Env *env)
     ieee_set_fp_control(flags);
   }
 #endif
+#ifdef ASM_DBLPREC_CONTROL_87
+  {
+    /* Make x87 computations double-precision instead of 
+       extended-precision, so that if/when the JIT generates
+       x87 instructions, it's consistent with everything else. */
+    int _dblprec = 0x27F;
+    asm ("fldcw %0" : : "m" (_dblprec));
+  }
+#endif
   END_XFORM_SKIP;
 
 #if defined(HUGE_VAL) && !defined(USE_DIVIDE_MAKE_INFINITY)

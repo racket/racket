@@ -12,7 +12,7 @@ and output ports, respectively.
 
 Each property value can be either of the following:
 
-@itemize{
+@itemize[
  
  @item{An input port (for @scheme[prop:input-port]) or output port
   (for @scheme[prop:input-port]): In this case, using the structure
@@ -27,7 +27,7 @@ Each property value can be either of the following:
   Otherwise, an empty string input port is used for @scheme[prop:input-port],
   and a port that discards all data is used for @scheme[prop:output-port].}
 
-}
+]
 
 Some procedures, such as @scheme[file-position], work on both input
 and output ports. When given an instance of a structure type with both

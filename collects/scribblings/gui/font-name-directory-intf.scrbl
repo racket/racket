@@ -49,7 +49,7 @@ Under Windows and Mac OS X, a face name is interpreted simply as a
  Serif"] maps to the font that is typically used for button
  labels. Under X, a face name has a more complex interpretation:
 
-@itemize{
+@itemize[
 
  @item{If the string begins with a space, then the remainder of the
        string is interpreted as a fontconfig/Xft font name, but only
@@ -89,7 +89,7 @@ Under Windows and Mac OS X, a face name is interpreted simply as a
  @item{A string of any other format is interpreted as an X font name,
        optionally parameterized with @litchar{%d}.}
 
-}
+]
 
 The mapping for face names can be overridden (on all platforms)
  through the user's preferences, as described in

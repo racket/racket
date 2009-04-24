@@ -199,7 +199,7 @@ slide.
 The @scheme[...] above applies to all three arguments together.  Each
 trio of arguments defines a section for the outline:
 
-@itemize{
+@itemize[
 
  @item{The section @scheme[name] is either a symbol or a list of symbols. When
         the outline function is called later to make an outline, the
@@ -215,7 +215,7 @@ trio of arguments defines a section for the outline:
        should be a function that takes a symbol (the same one passed
        to the outline maker) and produces a pict.}
 
-}}
+]}
 
 @defproc[(comment [text (or/c string? pict?)] ...)
          comment?]{
@@ -505,7 +505,7 @@ form.
 Within the @scheme[body]s, several keywords are bound non-hygienically
 (using the first @scheme[body]'s lexical context):
 
-@itemize{
+@itemize[
 
  @item{@scheme[(only? id)] --- returns @scheme[#t] during the
     @scheme[id] step (i.e., during the evaluation of the
@@ -554,7 +554,7 @@ Within the @scheme[body]s, several keywords are bound non-hygienically
     _a-id _b-id _then-expr)], or @scheme[(between-excl _a-id _b-id
     _then-expr _else-expr)] --- analogous to @scheme[vonly] and
     @scheme[only].}
-}}
+]}
 
 
 @defform[(with-steps~ (id ...) body ...)]{

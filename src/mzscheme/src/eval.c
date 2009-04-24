@@ -4976,6 +4976,8 @@ static void *compile_k(void)
   }
 
   while (1) {
+    scheme_prepare_compile_env(genv);
+
     rec.comp = 1;
     rec.dont_mark_local_use = 0;
     rec.resolve_module_ids = !writeable && !genv->module;
@@ -6548,6 +6550,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */
 	    scheme_prepare_exp_env(new_env->genv);
+            scheme_prepare_compile_env(new_env->genv->exp_env);
 	    pos = 0;
 	    expr = scheme_add_rename_rib(expr, rib);
 	    scheme_bind_syntaxes("local syntax definition", 
@@ -8949,6 +8952,8 @@ static void *expand_k(void)
   }  else
     ip = NULL;
 
+  scheme_prepare_compile_env(env->genv);
+
   /* Loop for lifted expressions: */
   while (1) {
     erec1.comp = 0;
@@ -9289,6 +9294,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     env = scheme_new_comp_env(env->genv->exp_env, env->insp, 0);
     scheme_propagate_require_lift_capture(orig_env, env);
   }
+  scheme_prepare_compile_env(env->genv);
 
   if (for_expr)
     kind = 0; /* expression */
@@ -9848,6 +9854,7 @@ local_eval(int argc, Scheme_Object **argv)
     expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);
 
     scheme_prepare_exp_env(stx_env->genv);
+    scheme_prepare_compile_env(stx_env->genv->exp_env);
     pos = 0;
     expr = scheme_add_rename_rib(expr, rib);
     scheme_bind_syntaxes("local syntax definition", names, expr,

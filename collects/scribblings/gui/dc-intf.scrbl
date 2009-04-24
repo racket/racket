@@ -13,6 +13,21 @@ when the drawing coordinates are in the range @scheme[-16383] to
 @scheme[16383]. This restriction applies to the coordinates both
 before and after offsets and scaling factors are applied.
 
+
+@defmethod[(cache-font-metrics-key)
+           exact-integer?]{
+
+Returns an integer that, if not @scheme[0], corresponds to a
+particular kind of device and scaling factor, such that text-extent
+information (from @method[dc<%> get-text-extent], @method[dc<%>
+get-char-height], etc.) is the same. The key is valid across all
+@scheme[dc<%>] instances, even among different classes.
+
+A @scheme[0] result indicates that the current configuration of
+@this-obj[] does not fit into a common category, and so no key is
+available for caching text-extent information.}
+
+
 @defmethod[(clear)
            void?]{
 
@@ -576,7 +591,7 @@ Returns the size of @scheme[str] at it would be drawn in the drawing
 
 The result is four real numbers:
 
-@itemize{
+@itemize[
 
  @item{the total width of the text (depends on both the font and the
  text);}
@@ -589,7 +604,7 @@ The result is four real numbers:
  @item{extra vertical space added to the font by the font designer
  (included in the height, and often zero; depends only on the font).}
 
-}
+]
 
 The returned width and height define a rectangle is that guaranteed to
  contain the text string when it is drawn, but the fit is not
@@ -657,7 +672,7 @@ Returns @scheme[#t] if the drawing context is usable.
 
 Determines the opacity of drawing, under certain conditions:
 
-@itemize{
+@itemize[
 
  @item{pen- and brush-based drawing when @method[dc<%> get-smoothing]
        produces @scheme['smoothed] or @scheme['aligned], and when the
@@ -669,7 +684,7 @@ Determines the opacity of drawing, under certain conditions:
        fading the drawing color), and when the drawing context is not
        an instance of @scheme[post-script-dc].}
 
-}
+]
 
 A value of @scheme[0.0] corresponds to completely transparent (i.e.,
 invisible) drawing, and @scheme[1.0] corresponds to completely opaque
@@ -884,7 +899,7 @@ For monochrome drawing, all non-black colors are treated as
 
 Determines how text is drawn:
 
-@itemize{
+@itemize[
 
  @item{@scheme['solid] --- Before text is drawn, the destination area
        is filled with the text background color (see @method[dc<%>
@@ -894,7 +909,7 @@ Determines how text is drawn:
        existing image in the destination, as if overlaying text
        written on transparent film.}
 
-}
+]
 
 }
 

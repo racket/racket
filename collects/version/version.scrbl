@@ -39,7 +39,7 @@ Checks the currently available version on the PLT website
 (@selflink["http://download.plt-scheme.org"]) and returns a value that
 indicates the current state of the curent installation:
 
-  @itemize{
+  @itemize[
 
     @item{@scheme[`ok] --- You're fine.}
 
@@ -66,7 +66,7 @@ indicates the current state of the curent installation:
        @scheme[(string-append message " " additional-info)] is a
        verbose one.}
 
-  }
+  ]
 
 }
 
@@ -78,7 +78,7 @@ indicates the current state of the curent installation:
 
 The @scheme[version/tool] library implements a DrScheme tool that
 
-@itemize{
+@itemize[
 
   @item{makes the patchlevel display as a version @tt{p}@nonterm{N}
   suffix in DrScheme (though the base verion reported by
@@ -87,7 +87,7 @@ The @scheme[version/tool] library implements a DrScheme tool that
   @item{if enabled by the user, periodically checks whether a
   new PLT Scheme distribution is available for download.}
 
-}
+]
 
 @; ----------------------------------------------------------------------
 

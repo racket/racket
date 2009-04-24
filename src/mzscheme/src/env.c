@@ -721,7 +721,7 @@ Scheme_Env *make_empty_inited_env(int toplevel_size)
 
   env = make_env(NULL, toplevel_size);
 
-  vector = scheme_make_vector(3, scheme_false);
+  vector = scheme_make_vector(5, scheme_false);
   hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
   SCHEME_VEC_ELS(vector)[0] = (Scheme_Object *)hash_table;
   env->modchain = vector;
@@ -793,9 +793,15 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
     Scheme_Hash_Table *modules;
 
     modules = scheme_make_hash_table(SCHEME_hash_ptr);
-    p = scheme_make_vector(3, scheme_false);
+    p = scheme_make_vector(5, scheme_false);
     SCHEME_VEC_ELS(p)[0] = (Scheme_Object *)modules;
     menv->modchain = p;
+  }
+
+  if (SAME_OBJ(env, env->exp_env)) {
+    /* label phase */
+    menv->exp_env = menv;
+    menv->template_env = menv;
   }
 
   return menv;
@@ -823,7 +829,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
       Scheme_Hash_Table *next_modules;
 
       next_modules = scheme_make_hash_table(SCHEME_hash_ptr);
-      modchain = scheme_make_vector(3, scheme_false);
+      modchain = scheme_make_vector(5, scheme_false);
       SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)next_modules;
       SCHEME_VEC_ELS(env->modchain)[1] = modchain;
       SCHEME_VEC_ELS(modchain)[2] = env->modchain;
@@ -864,7 +870,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
       Scheme_Hash_Table *prev_modules;
 
       prev_modules = scheme_make_hash_table(SCHEME_hash_ptr);
-      modchain = scheme_make_vector(3, scheme_false);
+      modchain = scheme_make_vector(5, scheme_false);
       SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)prev_modules;
       SCHEME_VEC_ELS(env->modchain)[2] = modchain;
       SCHEME_VEC_ELS(modchain)[1] = env->modchain;
@@ -899,7 +905,7 @@ void scheme_prepare_label_env(Scheme_Env *env)
     lenv->export_registry = env->export_registry;
     lenv->insp = env->insp;
 
-    modchain = scheme_make_vector(3, scheme_false);    
+    modchain = scheme_make_vector(5, scheme_false);    
     prev_modules = scheme_make_hash_table(SCHEME_hash_ptr);
     SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)prev_modules;
     SCHEME_VEC_ELS(modchain)[2] = modchain;
@@ -914,11 +920,12 @@ void scheme_prepare_label_env(Scheme_Env *env)
   }
 }
 
-Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain)
+Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain, int clone_phase)
 {
   /* New env should have the same syntax and globals table, but it lives in
      a different namespace. */
   Scheme_Env *menv2;
+  Scheme_Bucket_Table *bucket_table;
 
   scheme_prepare_label_env(ns);
 
@@ -930,43 +937,62 @@ Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obj
   menv2->export_registry = ns->export_registry;
   menv2->insp = menv->insp;
 
-  menv2->syntax = menv->syntax;
+  if (menv->phase < clone_phase)
+    menv2->syntax = menv->syntax;
+  else {
+    bucket_table = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+    menv2->syntax = bucket_table;
+  }
 
   menv2->phase = menv->phase;
   menv2->mod_phase = menv->mod_phase;
   menv2->link_midx = menv->link_midx;
-  menv2->running = menv->running;
-  menv2->et_running = menv->et_running;
-  menv2->et_ran = menv->et_ran;
-  menv2->ran = menv->ran;
+  if (menv->phase <= clone_phase) {
+    menv2->running = menv->running;
+    menv2->ran = menv->ran;
+  }
+  if (menv->phase < clone_phase)
+    menv2->et_running = menv->et_running;
 
   menv2->require_names = menv->require_names;
   menv2->et_require_names = menv->et_require_names;
 
-  menv2->toplevel = menv->toplevel;
+  if (menv->phase <= clone_phase) {
+    menv2->toplevel = menv->toplevel;
+  } else {
+    bucket_table = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+    menv2->toplevel = bucket_table;
+    menv2->toplevel->with_home = 1;
+  }
   
   menv2->modchain = modchain;
 
-  if (!SCHEME_NULLP(menv2->module->et_requires)) {
-    /* We'll need the next link in the modchain: */
-    modchain = SCHEME_VEC_ELS(modchain)[1];
-    if (SCHEME_FALSEP(modchain)) {
-      Scheme_Hash_Table *next_modules;
+  if (SAME_OBJ(menv->exp_env, menv)) {
+    /* label phase */
+    menv2->exp_env = menv2;
+    menv2->template_env = menv2;
+  } else if (menv->phase < clone_phase) {
+    if (!SCHEME_NULLP(menv2->module->et_requires)) {
+      /* We'll need the next link in the modchain: */
+      modchain = SCHEME_VEC_ELS(modchain)[1];
+      if (SCHEME_FALSEP(modchain)) {
+        Scheme_Hash_Table *next_modules;
       
-      next_modules = scheme_make_hash_table(SCHEME_hash_ptr);
-      modchain = scheme_make_vector(3, scheme_false);
-      SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)next_modules;
-      SCHEME_VEC_ELS(menv2->modchain)[1] = modchain;
-      SCHEME_VEC_ELS(modchain)[2] = menv2->modchain;
+        next_modules = scheme_make_hash_table(SCHEME_hash_ptr);
+        modchain = scheme_make_vector(5, scheme_false);
+        SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)next_modules;
+        SCHEME_VEC_ELS(menv2->modchain)[1] = modchain;
+        SCHEME_VEC_ELS(modchain)[2] = menv2->modchain;
+      }
+    }
+
+    if (menv->exp_env) {
+      /* Share for-syntax bindings, too: */
+      scheme_prepare_exp_env(menv2);
+      menv2->exp_env->toplevel = menv->exp_env->toplevel;
     }
   }
-
-  if (menv->exp_env) {
-    /* Share for-syntax bindings, too: */
-    scheme_prepare_exp_env(menv2);
-    menv2->exp_env->toplevel = menv->exp_env->toplevel;
-  }
-
+   
   scheme_prepare_label_env(ns);
   menv2->label_env = ns->label_env;
 
@@ -3930,6 +3956,7 @@ namespace_variable_value(int argc, Scheme_Object *argv[])
     Scheme_Full_Comp_Env inlined_e;
 
     scheme_prepare_env_renames(genv, mzMOD_RENAME_TOPLEVEL);
+    scheme_prepare_compile_env(genv);
 
     id = scheme_make_renamed_stx(argv[0], genv->rename_set);
 

@@ -1123,6 +1123,7 @@ static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 
 
 
+
 class os_wxDC : public wxDC {
  public:
 
@@ -1148,6 +1149,27 @@ static Scheme_Object *os_wxDC_interface;
 os_wxDC::~os_wxDC()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxDCCacheFontMetricsKey(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  int r;
+  objscheme_check_valid(os_wxDC_class, "cache-font-metrics-key in dc<%>", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  r = WITH_VAR_STACK(((wxDC *)((Scheme_Class_Object *)p[0])->primdata)->CacheFontMetricsKey());
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_make_integer(r);
 }
 
 static Scheme_Object *os_wxDCGetAlpha(int n,  Scheme_Object *p[])
@@ -2572,8 +2594,9 @@ void objscheme_setup_wxDC(Scheme_Env *env)
   wxREGGLOB(os_wxDC_class);
   wxREGGLOB(os_wxDC_interface);
 
-  os_wxDC_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "dc%", "object%", NULL, 51));
+  os_wxDC_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "dc%", "object%", NULL, 52));
 
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxDC_class, "cache-font-metrics-key" " method", (Scheme_Method_Prim *)os_wxDCCacheFontMetricsKey, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxDC_class, "get-alpha" " method", (Scheme_Method_Prim *)os_wxDCGetAlpha, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxDC_class, "set-alpha" " method", (Scheme_Method_Prim *)os_wxDCSetAlpha, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxDC_class, "glyph-exists?" " method", (Scheme_Method_Prim *)os_wxDCGlyphAvailable, 1, 2));

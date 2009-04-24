@@ -71,6 +71,18 @@ Scheme_Object *GetTypes(wxClipboardClient *c)
   return first;
 }
 
+typedef Scheme_Object *Scheme_Object_Ptr;
+static int SameClipboardClientEventspace(wxClipboardClient *c, Scheme_Object *es)
+{
+  return (c->context == es);
+}
+
+static int SameClipboardClient(wxClipboard *cb, wxClipboardClient *cc)
+{
+  return (cb->GetClipboardClient() == cc);
+}
+
+
 @MACRO makeSizedString[i] = (r ? scheme_make_sized_byte_string(r, _x<i>, 1) : XC_SCHEME_NULL)
 
 @CLASSBASE wxClipboard "clipboard" : "object"
@@ -84,6 +96,8 @@ Scheme_Object *GetTypes(wxClipboardClient *c)
 
 @ "set-clipboard-bitmap" : void SetClipboardBitmap(wxBitmap!,ExactLong);
 @ "get-clipboard-bitmap" : wxBitmap^ GetClipboardBitmap(ExactLong);
+
+@ m "same-clipboard-client?" : bool SameClipboardClient(wxClipboardClient!)
 
 @END
 
@@ -122,6 +136,8 @@ static wxClipboard* wxGetTheXSelection()
 
 @ m "add-type" : void AddType(string);
 @ m "get-types" : Scheme_Object*/identity//sbString GetTypes();
+
+@ m "same-eventspace?" : bool SameClipboardClientEventspace(Scheme_Object_Ptr/identity/identity////push)
 
 @END
 

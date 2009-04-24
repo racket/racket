@@ -35,7 +35,7 @@ returned.
 The @scheme[mode] argument determines the line separator(s). It
 must be one of the following symbols:
 
- @itemize{
+ @itemize[
 
   @item{@indexed-scheme['linefeed] breaks lines on linefeed characters.}
 
@@ -56,7 +56,7 @@ must be one of the following symbols:
   linefeed character, without recognizing return-linefeed
   combinations.}
 
-}
+]
 
 Return and linefeed characters are detected after the conversions that
 are automatically performed when reading a file in text mode. For

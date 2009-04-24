@@ -327,7 +327,7 @@ exception.}
 A parameter that determines a mapping of proxy servers used for
 connections. Each mapping is a list of three elements:
 
-@itemize{
+@itemize[
 
  @item{the URL scheme, such as @scheme["http"];}
 
@@ -335,7 +335,7 @@ connections. Each mapping is a list of three elements:
 
  @item{the proxy server port number.}
 
-}
+]
 
 Currently, the only proxiable scheme is @scheme["http"]. The default
 mapping is the empty list (i.e., no proxies).}

@@ -1,5 +1,5 @@
 #lang scheme
-(require (planet schematics/schemeunit:3)
+(require schemeunit
          (only-in mzlib/file
                   file-name-from-path
                   make-temporary-file)
@@ -11,6 +11,8 @@
          web-server/dispatchers/dispatch
          (prefix-in files: web-server/dispatchers/dispatch-files)
          "../util.ss")
+(require/expose web-server/dispatchers/dispatch-files
+                (looks-like-directory?))
 (provide dispatch-files-tests)
 
 (define tmp-file (make-temporary-file))
@@ -41,6 +43,14 @@
 (define dispatch-files-tests
   (test-suite
    "Files"
+   
+   (local [(define (yes s) (test-not-false s (looks-like-directory? s)))
+           (define (no s) (test-false s (looks-like-directory? s)))]
+   (test-suite
+    "Looks like directory"
+
+    (no "") (no "foo") (no "/foo") (no "/foo/bar")
+    (yes "/") (yes "/foo/") (yes "foo/" )(yes "/bar/zog/trog/")))
    
    (test-case
     "read-range-header: missing and badly formed headers"
@@ -109,3 +119,6 @@
    (test-exn "dir, not exists, head"
              exn:dispatcher?
              (lambda () (collect (dispatch #f a-dir) (req #t #"HEAD" empty))))))
+
+#;(require (planet schematics/schemeunit:3/text-ui))
+#;(run-tests dispatch-files-tests)

@@ -1133,10 +1133,10 @@ based on the state of the key event.
 
 The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
-@itemize{
+@itemize[
 @item{block the clicked cell (@scheme[block-cell/world]),}
 @item{move the cat (@scheme[move-cat]), and}
-@item{update the black dot as the mouse moves around (@scheme[update-world-posn]).}}
+@item{update the black dot as the mouse moves around (@scheme[update-world-posn]).}]
 The helper functions are combined in the body of @scheme[clack],
 first checking to see if the mouse event corresponds to a 
 player's move (via the @scheme[player-moved?] function.

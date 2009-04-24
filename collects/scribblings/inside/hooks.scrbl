@@ -6,7 +6,7 @@
 The following flags and hooks are available when PLT Scheme is
 embedded:
 
-@itemize{
+@itemize[
 
  @item{@cppdef{scheme_exit} --- This pointer can be set to a function
  that takes an integer argument and returns @cpp{void}; the function
@@ -48,7 +48,7 @@ embedded:
  left for backward compatibility.  The default builds a string and
  calls @cppi{scheme_console_output}.}
 
-}
+]
 
 @function[(void scheme_set_collects_path
            [Scheme_Object* path])]{

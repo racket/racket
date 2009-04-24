@@ -16,7 +16,7 @@ In addition to its color and style, a brush can have a stipple bitmap.
 
 A brush's style is one of the following:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['transparent] --- Draws with no effect (on the
        interior of the drawn shape).}
@@ -40,7 +40,7 @@ A brush's style is one of the following:
        values. The @scheme['xor] mapping is unspecified for arbitrary
        color combinations, but the mapping provides two guarantees:
 
-       @itemize{
+       @itemize[
 
        @item{Black-and-white drawing to a color or monochrome
        destination always works as expected: black xor white = black,
@@ -50,7 +50,7 @@ A brush's style is one of the following:
        @item{Performing the same drawing operation twice in a row with
        @scheme['xor] is equivalent to a no-op.}
 
-       }}
+       ]}
 
  @item{@indexed-scheme['hilite] --- In unsmoothed mode, existing
        destination pixels are ``highlighted'' in a platform-specific
@@ -84,21 +84,21 @@ A brush's style is one of the following:
  @item{The following modes correspond to built-in stipples drawn in
        @scheme['solid] mode:
 
-  @itemize{
+  @itemize[
   @item{@indexed-scheme['bdiagonal-hatch] --- diagonal lines, top-left to bottom-right}
   @item{@indexed-scheme['crossdiag-hatch] --- crossed diagonal lines}
   @item{@indexed-scheme['fdiagonal-hatch] --- diagonal lines, top-right to bottom-left}
   @item{@indexed-scheme['cross-hatch] --- crossed horizontal and vertical lines}
   @item{@indexed-scheme['horizontal-hatch] --- horizontal lines}
   @item{@indexed-scheme['vertical-hatch] --- vertical lines}
-  }
+  ]
 
         However, when a specific stipple is installed into the brush
         for when drawing with a smoothing mode into a non-PostScript
         context, the above modes are ignored and @scheme['solid] is
         used, instead.}
 
-}
+]
 
 @index['("drawing" "outlines")]{To} draw outline shapes (such as
  unfilled boxes and ellipses), use the @scheme['transparent] brush

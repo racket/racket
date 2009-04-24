@@ -6,7 +6,7 @@
 For documentation purposes, the graphics toolbox is organized into
  three parts:
 
-@itemize{
+@itemize[
 
  @item{The @deftech{windowing toolbox}, for implementing form-filling
  GUI programs (such as a database query window) using buttons, menus,
@@ -24,7 +24,7 @@ For documentation purposes, the graphics toolbox is organized into
  browser).  The editor toolbox is described in
  @secref["editor-overview"].}
 
-}
+]
 
 These three parts roughly represent layers of increasing
  sophistication. Simple GUI programs access only the windowing toolbox

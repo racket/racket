@@ -46,7 +46,7 @@ form:
 
 Within such specifications,
 
-@itemize{
+@itemize[
 
  @item{@scheme[...] indicates zero or more
        repetitions of the preceding datum.}
@@ -57,7 +57,7 @@ Within such specifications,
  @item{Italic meta-identifiers play the role of non-terminals. Some
        meta-identifier names imply syntactic constraints:
 
-      @itemize{
+      @itemize[
 
         @item{A meta-identifier that ends in @scheme[_id] stands for an
               identifier.}
@@ -74,11 +74,11 @@ Within such specifications,
               internal-definition context (see
               @secref["intdef-body"]).}
 
-              }} 
+              ]} 
 
  @item{Contracts indicate constraints on sub-expression results. For
        example, @scheme[_thing-expr #, @elem{:} number?] indicates that
-       the expression @scheme[_thing-expr] must produce a number.}}
+       the expression @scheme[_thing-expr] must produce a number.}]
 
 @;------------------------------------------------------------------------
 @section[#:tag "module"]{Modules: @scheme[module], ...}
@@ -125,7 +125,7 @@ Each @scheme[form] is partially expanded (see
 @secref["partial-expansion"]) in a @tech{module context}. Further
 action depends on the shape of the form:
 
-@itemize{
+@itemize[
 
  @item{If it is a @scheme[begin] form, the sub-forms are flattened
   out into the module's body and immediately processed in place of the
@@ -152,7 +152,7 @@ action depends on the shape of the form:
  @item{Similarly, if the form is an expression, it is
    not expanded further.}
 
-}
+]
 
 After all @scheme[form]s have been partially expanded this way, then
 the remaining expression forms (including those on the right-hand side
@@ -272,12 +272,13 @@ Legal only in a @tech{module begin context}, and handled by the
                            ((unsyntax (schemeidfont "+")) nat)
                            ((unsyntax (schemeidfont "-")) nat)])]{
 
-In a @tech{top-level context}, @scheme[require] instantiates modules
-(see @secref["module-eval-model"]). In a @tech{module context},
-@scheme[require] @tech{visits} modules (see @secref["mod-parse"]). In
-both contexts, @scheme[require] introduces bindings into a
-@tech{namespace} or a module (see @secref["intro-binding"]). 
-A @scheme[require] form in a @tech{expression context} or
+In a @tech{top-level context}, @scheme[require] @tech{instantiates}
+modules (see @secref["module-eval-model"]). In a @tech{top-level
+context} or @tech{module context}, expansion of @scheme[require]
+@tech{visits} modules (see @secref["mod-parse"]). In both contexts and
+both evaluation and expansion, @scheme[require] introduces bindings
+into a @tech{namespace} or a module (see @secref["intro-binding"]).  A
+@scheme[require] form in a @tech{expression context} or
 @tech{internal-definition context} is a syntax error.
 
 A @scheme[require-spec] designates a particular set of identifiers to
@@ -493,7 +494,7 @@ corresponds to the default @tech{module name resolver}.
  The specific interpretation of the path depends on the number and
  shape of the @scheme[rel-string]s:
 
- @itemize{
+ @itemize[
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element (i.e., no @litchar{/}) with no file
@@ -535,7 +536,7 @@ corresponds to the default @tech{module name resolver}.
     Example: require the tar module from mzlib
     @defexamples[#:eval require-eval
       (eval:alts (require (lib "tar.ss" "mzlib")) (void))]}
-  }}
+  ]}
 
  @specsubform[id]{A shorthand for a @scheme[lib] form with a single
  @scheme[_rel-string] whose characters are the same as in the symbolic
@@ -2002,7 +2003,7 @@ Each @scheme[form] is partially expanded (see
 @secref["partial-expansion"]) to determine one of the following
 classifications:
 
-@itemize{
+@itemize[
 
  @item{@scheme[define] or @scheme[define-values] form: converted to
        a @scheme[define-for-syntax] form.}
@@ -2016,7 +2017,7 @@ classifications:
        the case of a @tech{module context}, preserves the expression
        for future @tech{visit}s of the module.}
 
-}
+]
 
 }
 

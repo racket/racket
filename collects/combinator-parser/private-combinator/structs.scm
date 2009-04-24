@@ -37,6 +37,33 @@
   (define-struct lazy-opts ((matches #:mutable) errors (thunks #:mutable)) #:transparent)
   ;(make-lazy-choice (listof res) fail-type (listof (_ -> res)) string)
   (define-struct (lazy-choice lazy-opts) (name) #:transparent)
+
+  ;(make-count string int)
+  (define-struct occurs (terminal count))
+  
+  (define (consolidate-count cts)
+    (cond 
+      [(null? cts) cts]
+      [(eq? 'counting (car cts)) (consolidate-count cts)]
+      [(pair? (car cts)) (consolidate-count (append (car cts) (cdr cts)))]
+      [else
+       (let-values ([(front back) (augment-count (car cts) (cdr cts))])
+         (cons front (consolidate-count back)))]))
+  (define (augment-count count rst)
+    (cond
+      [(null? rst) (values count rst)]
+      [(eq? 'counting (car rst)) (augment-count count (cdr rst))]
+      [(pair? (car rst)) (augment-count count (append (car rst) (cdr rst)))]
+      [else
+       (let-values ([(current back) (augment-count count (cdr rst))])
+         (cond 
+           [(equal? (occurs-terminal count) (occurs-terminal (car rst)))
+            (values (make-occurs (occurs-terminal count) (+ (occurs-count count)
+                                                            (occurs-count current)
+                                                            (occurs-count (car rst))))
+                    back)]
+           [else (values current (cons (car rst) back))]))])) 
+         
   
   ;parse-build = answer | none
   ;(make-answer 'b)

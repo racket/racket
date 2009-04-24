@@ -3,7 +3,6 @@
   (define-functions
     special-control-key
     special-option-key
-    map-command-as-meta-key
     application-file-handler
     application-quit-handler
     application-about-handler
@@ -28,20 +27,19 @@
     shortcut-visible-in-label?
     eventspace-shutdown?
     in-atomic-region
-    set-editor-snip-maker
-    set-text-editor-maker
-    set-pasteboard-editor-maker
     set-menu-tester
     location->window
     set-dialogs
     set-executer
     send-event
     file-creator-and-type
-    set-snip-class-getter
-    set-editor-data-class-getter
     set-ps-procs
     main-eventspace?
-    eventspace-handler-thread)
+    eventspace-handler-thread
+    begin-refresh-sequence
+    end-refresh-sequence
+    run-printout
+    get-double-click-time)
 
 )
 ;; end

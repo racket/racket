@@ -74,3 +74,18 @@ used.}
 
 Like @scheme[add-links], but with extra @scheme[dark-text] and
 @scheme[light-text] arguments to set the colors of the label.}
+
+@defproc[(remove-links [parent (is-a?/c graph-snip<%>)]
+                       [child (is-a?/c graph-snip<%>)])
+          void?]{
+
+Disconnects a parent snip from a child snip within a pasteboard.}
+
+@defproc[(set-link-label [parent (is-a?/c graph-snip<%>)]
+                         [child (is-a?/c graph-snip<%>)]
+                         [label (or/c string? false/c)])
+          void?]{
+
+Changes the label on the edge going from @scheme[child] to
+@scheme[parent] to be @scheme[label].  If there is no existing edge
+between the two nodes, then nothing happens.}

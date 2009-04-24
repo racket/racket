@@ -14,7 +14,7 @@ general information about continuation marks.
 The list of continuation marks for a key @scheme[_k] and a continuation
 @scheme[_C] that extends @cont[0] is defined as follows:
 
-@itemize{
+@itemize[
 
  @item{If @scheme[_C] is an empty continuation, then the mark list is
  @scheme[null].}
@@ -27,7 +27,7 @@ The list of continuation marks for a key @scheme[_k] and a continuation
  @scheme[_k], then the mark list for @scheme[_C] is the mark list for
  @cont[0].}
 
-}
+]
 
 The @scheme[with-continuation-mark] form installs a mark on the first
 frame of the current continuation (see @secref["wcm"]).  Procedures

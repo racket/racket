@@ -51,7 +51,7 @@ Raises the exception @scheme[exn:fail], which contains an error
 string. The different forms produce the error string in different
 ways:
 
-@itemize{
+@itemize[
 
  @item{@scheme[(error sym)] creates a message string by concatenating
   @scheme["error: "] with the string form of @scheme[sym].}
@@ -69,7 +69,7 @@ ways:
   (format (string-append "~s: " format) src v ...)
   ]}
 
-}
+]
 
 In all cases, the constructed message string is passed to
 @scheme[make-exn:fail], and the resulting exception is raised.}
@@ -173,7 +173,7 @@ The form name used in the generated error message is determined
 through a combination of the @scheme[name], @scheme[expr], and
 @scheme[sub-expr] arguments:
 
-@itemize{
+@itemize[
 
   @item{When @scheme[name] is @scheme[#f], and when @scheme[expr] is
   either an identifier or a syntax pair containing an identifier as
@@ -188,7 +188,7 @@ through a combination of the @scheme[name], @scheme[expr], and
  @item{@scheme[symbol]: When @scheme[name] is a symbol, then the symbol
   is used as the form name in the generated error message.}
 
-}}
+]}
 
 @;------------------------------------------------------------------------
 @section{Handling Exceptions}
@@ -544,7 +544,7 @@ Returns the @scheme[srcloc]-getting procedure associated with @scheme[v].}
 
 The fields of an @scheme[srcloc] instance are as follows:
 
-@itemize{
+@itemize[
 
  @item{@scheme[source] --- An arbitrary value identifying the source,
  often a path (see @secref["pathutils"]).}
@@ -561,4 +561,4 @@ The fields of an @scheme[srcloc] instance are as follows:
  @item{@scheme[span] --- The number of covered positions (counts from
  0) or @scheme[#f] (unknown).}
 
-}}
+]}

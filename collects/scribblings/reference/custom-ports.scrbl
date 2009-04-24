@@ -48,14 +48,14 @@ be explicitly closed. See also @scheme[make-input-port/peek-to-read].
 
 The arguments implement the port as follows:
 
-@itemize{
+@itemize[
 
   @item{@scheme[name] --- the name for the input port.}
 
   @item{@scheme[read-in] --- a procedure that takes a single argument:
     a mutable byte string to receive read bytes. The procedure's
     result is one of the following:
-    @itemize{
+    @itemize[
 
       @item{the number of bytes read, as an exact, non-negative integer;}
 
@@ -78,7 +78,7 @@ The arguments implement the port as follows:
       reading process loops with @scheme[sync] until it gets a
       non-event result.}
 
-    }
+    ]
 
     The @scheme[read-in] procedure must not block indefinitely. If no
     bytes are immediately available for reading, the @scheme[read-in]
@@ -152,7 +152,7 @@ The arguments implement the port as follows:
   @item{@scheme[peek] --- either @scheme[#f] or a procedure
    that takes three arguments:
 
-     @itemize{
+     @itemize[
 
      @item{a mutable byte string to receive peeked bytes;}
 
@@ -162,7 +162,7 @@ The arguments implement the port as follows:
      @item{either @scheme[#f] or a progress event produced by
      @scheme[get-progress-evt].}
 
-     }
+     ]
 
     The results and conventions for @scheme[peek] are
     mostly the same as for @scheme[read-in]. The main difference is in
@@ -233,7 +233,7 @@ The arguments implement the port as follows:
   @item{@scheme[commit] --- either @scheme[#f] (the
     default), or a procedure that takes three arguments: 
 
-     @itemize{
+     @itemize[
 
      @item{an exact, positive integer @math{k_r};}
 
@@ -243,7 +243,7 @@ The arguments implement the port as follows:
            event, channel, semaphore, semaphore-peek event, always
            event, or never event.}
 
-     }
+     ]
 
      A @defterm{commit} corresponds to removing data from the stream
      that was previously peeked, but only if no other process removed
@@ -254,7 +254,7 @@ The arguments implement the port as follows:
      stream, @scheme[commit] must satisfy the following
      constraints:
 
-     @itemize{
+     @itemize[
 
      @item{It must return only when the commit is complete or when the
      given progress event becomes ready.}
@@ -290,7 +290,7 @@ The arguments implement the port as follows:
      stream, or if it would have to block indefinitely to wait for the
      given progress event to become ready.}
 
-     }
+     ]
 
     A call to @scheme[commit] is @scheme[parameterize-break]ed to
     disable breaks.}
@@ -331,7 +331,7 @@ The arguments implement the port as follows:
     (unknown). See @secref["port-buffers"] for more information on
     buffer modes.}
 
- }
+ ]
 
  When @scheme[read-in] or @scheme[peek] (or an event produced by one
  of these) returns a procedure, and the procedure is used to obtain a
@@ -341,7 +341,7 @@ The arguments implement the port as follows:
  if the procedure produces a byte.) A special-result procedure must
  accept four arguments, and it can optionally accept zero arguments:
 
- @itemize{
+ @itemize[
 
   @item{When the special read is triggered by @scheme[read-syntax],
   @scheme[read-honu-syntax], or @scheme[read-syntax/recursive], the
@@ -355,7 +355,7 @@ The arguments implement the port as follows:
   if it accepts zero arguments, otherwise it is passed four arguments
   that are all @scheme[#f].}
 
- }
+ ]
 
  The special-value procedure can return an arbitrary value, and it
  will be called zero or one times (not necessarily before further
@@ -703,7 +703,7 @@ the port need not be explicitly closed. The port can buffer data
 within its @scheme[write-out] and @scheme[write-out-special]
 procedures.
 
- @itemize{
+ @itemize[
 
    @item{@scheme[name] --- the name for the output port.}
 
@@ -721,7 +721,7 @@ procedures.
 
    @item{@scheme[write-out] --- a procedure of five arguments:
 
-     @itemize{
+     @itemize[
 
      @item{an immutable byte string containing bytes to write;}
 
@@ -743,11 +743,11 @@ procedures.
      using @scheme[sync/enable-break]); this argument is always
      @scheme[#f] if the fourth argument is @scheme[#t].}
 
-     }
+     ]
 
     The procedure returns one of the following:
 
-     @itemize{
+     @itemize[
 
      @item{a non-negative exact integer representing the number of
      bytes written or buffered;}
@@ -764,7 +764,7 @@ procedures.
      pipe output port that acts like the result of
      @scheme[write-bytes-avail-evt] to complete the write.}
 
-     }
+     ]
 
     Since @scheme[write-out] can produce an event, an acceptable
     implementation of @scheme[write-out] is to pass its first three
@@ -844,7 +844,7 @@ procedures.
     that is @scheme[#t] if the procedure should enable breaks while
     blocking. The result is one of the following:
 
-     @itemize{
+     @itemize[
 
      @item{a non-event true value, which indicates that the special is
       written;}
@@ -855,7 +855,7 @@ procedures.
      @item{a synchronizable event (see @secref["sync"]) that acts like
      the result of @scheme[get-write-special-evt] to complete the write.}
 
-     }
+     ]
 
     Since @scheme[write-out-special] can return an event,
     passing the first argument to an implementation of
@@ -873,7 +873,7 @@ procedures.
    @item{@scheme[get-write-evt] --- either @scheme[#f] (the
    default) or a procedure of three arguments:
 
-     @itemize{
+     @itemize[
 
      @item{an immutable byte string containing bytes to write;}
 
@@ -883,7 +883,7 @@ procedures.
      @item{a non-negative exact integer for an ending offset
      (exclusive) into the byte string.}
 
-     }
+     ]
 
     The result is a synchronizable event (see @secref["sync"]) to act as
     the result of @scheme[write-bytes-avail-evt] for the port (i.e.,
@@ -969,7 +969,7 @@ procedures.
     @scheme['none], or @scheme[#f] (unknown). See @secref["port-buffers"]
     for more information on buffer modes.}
 
- }
+ ]
 }
 
 @(begin

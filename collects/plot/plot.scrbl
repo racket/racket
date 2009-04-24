@@ -62,7 +62,7 @@ argument/value pairs after the data.
 Besides plotting lines from functions in 2-D, the plotter can also
 render a variety of other data in several ways:
 
-@itemize{
+@itemize[
          
  @item{Discrete data, such as
       
@@ -73,13 +73,13 @@ render a variety of other data in several ways:
    
    can be interpreted in several ways:
    
-   @itemize{
+   @itemize[
             
      @item{As points: @scheme[(plot (points _data))]}
           
      @item{As error data: @scheme[(plot (error-bars _data))]}
      
-     }
+     ]
    }
    
   @item{A function of two variables, such as
@@ -90,7 +90,7 @@ render a variety of other data in several ways:
     
     can be plotted on a 2d graph
     
-    @itemize{
+    @itemize[
              
       @item{Using contours to represent height (z)
                   
@@ -112,11 +112,11 @@ render a variety of other data in several ways:
           (plot (vector-field (gradient 3dfun)))
           ]
         }
-      }
+      ]
     
     or in a 3d box
     
-    @itemize{
+    @itemize[
              
       @item{Displaying only the top of the surface
                        
@@ -124,10 +124,10 @@ render a variety of other data in several ways:
           (plot3d (surface 3dfun))
           ]
         }
-      }
+      ]
     }
    
-   }
+   ]
 
 @subsection[#:tag "ex-curve-fit"]{Curve Fitting}
 
@@ -136,7 +136,7 @@ algorithm to fit parameterized functions to given data.
 
 To fit a particular function to a curve:
 
-@itemize{
+@itemize[
          
   @item{Set up the independent and dependent variable data.  The first
   item in each vector is the independent variable, the second is the
@@ -196,7 +196,7 @@ To fit a particular function to a curve:
             #:y-max 15)
       ]
     }
-  }
+  ]
 
 A more realistic example can be found in
 @filepath{demos/fit-demo-2.ss} in the @filepath{plot} collection.

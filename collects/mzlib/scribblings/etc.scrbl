@@ -138,7 +138,7 @@ an additional keyword tag before the binding variables.
 
 Each @scheme[clause] has one of the following forms:
 
-@itemize{
+@itemize[
 
  @item{@scheme[(val target expr)] : Binds @scheme[target]
  non-recursively to @scheme[expr].}
@@ -157,7 +157,7 @@ Each @scheme[clause] has one of the following forms:
  @item{@scheme[(_ expr ...)] : Evaluates the @scheme[expr]s without
  binding any variables.}
 
-}
+]
 
 The clauses bind left-to-right. When a @scheme[target] is
 @scheme[(values id ...)], multiple values returned by the

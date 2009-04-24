@@ -16,7 +16,7 @@ In addition to its color, width, and style, a pen can have a stipple
 
 A pen's style is one of the following:
 
-@itemize{
+@itemize[
 
  @item{@indexed-scheme['transparent] --- Draws with no effect (on the
        outline of the drawn shape).}
@@ -31,7 +31,7 @@ A pen's style is one of the following:
        or colored stipple is xor-ed with existing destination pixel
        values. The @scheme['xor] mapping is unspecified for arbitrary
        color combinations, but the mapping provides two guarantees:
-       @itemize{
+       @itemize[
 
        @item{Black-and-white drawing to a color or monochrome
        destination always works as expected: black xor white = black,
@@ -41,7 +41,7 @@ A pen's style is one of the following:
        @item{Performing the same drawing operation twice in a row with
        @scheme['xor] is equivalent to a no-op.}
 
-       }
+       ]
        In a smoothing mode, @scheme['xor] is equivalent to @scheme['solid].}
 
  @item{@indexed-scheme['hilite] --- In unsmoothed mode, existing
@@ -60,7 +60,7 @@ A pen's style is one of the following:
 
  @item{The following special pen modes use the pen's color, and they only
        apply when a stipple is not used:
-    @itemize{
+    @itemize[
   @item{@indexed-scheme['dot]}
   @item{@indexed-scheme['long-dash]}
   @item{@indexed-scheme['short-dash]}
@@ -69,9 +69,9 @@ A pen's style is one of the following:
   @item{@indexed-scheme['xor-long-dash]}
   @item{@indexed-scheme['xor-short-dash]}
   @item{@indexed-scheme['xor-dot-dash]}
-  }}
+  ]}
 
-}
+]
 
 To avoid creating multiple pens with the same characteristics, use the
  global @scheme[pen-list%] object @indexed-scheme[the-pen-list], or

@@ -60,7 +60,7 @@ style lexer and parser generators.
 
      An @scheme[re] is matched as follows:
 
-   @itemize{
+   @itemize[
     @item{@scheme[id] --- expands to the named @deftech{lexer abbreviation};
           abbreviations are defined via @scheme[define-lex-abbrev] or supplied by modules
           like @schememodname[parser-tools/lex-sre].}
@@ -78,7 +78,7 @@ style lexer and parser generators.
           The sub-expression must be a set of characters @scheme[re].}
     @item{@scheme[(id datum ...)] --- expands the @deftech{lexer macro} named @scheme[id]; macros
           are defined via @scheme[define-lex-trans].}
-   }
+   ]
 
 Note that both @scheme[(concatenation)] and @scheme[""] match the
 empty string, @scheme[(union)] matches nothing,
@@ -106,7 +106,7 @@ The suggested prefix is @scheme[:], so that @scheme[:*] and
 Since negation is not a common operator on regular expressions, here
 are a few examples, using @scheme[:] prefixed SRE syntax:
 
-@itemize{
+@itemize[
 
 @item{@schemeblock0[(complement "1")]
 
@@ -150,13 +150,13 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
  words, @scheme[(:* (complement "xx"))] = @scheme[any-string].  It is
  usually not correct to place a @scheme[:*] around a
  @scheme[complement].}
-}
+]
 
 
      The following binding have special meaning inside of a lexer
      action:
 
-     @itemize{
+     @itemize[
        @item{@scheme[start-pos] --- a @scheme[position] struct for the first character matched.}
        @item{@scheme[end-pos] --- a @scheme[position] struct for the character after the last character in the match.}
        @item{@scheme[lexeme] --- the matched string.}
@@ -181,7 +181,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
 	@scheme[((comment) (return-without-pos (get-token input-port)))] 
 	will cause the value of the recursive call to be returned without
 	wrapping position around it.}
-     }
+     ]
 
      The lexer raises an exception @scheme[(exn:read)] if none of the
      regular expressions match the input.  Hint: If @scheme[(any-char
@@ -197,7 +197,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
      special). The non-@scheme[re] @scheme[trigger] forms handle these
      cases:
 
-     @itemize{
+     @itemize[
 
        @item{The @scheme[(eof)] rule is matched when the input port
        returns an @scheme[eof-object] value.  If no @scheme[(eof)]
@@ -214,7 +214,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
        port returns a value other than a character,
        @scheme[eof-object], or @scheme[special-comment] structure.  If
        no @scheme[(special)] rule is present, the lexer returns
-       @scheme[(void)].}}
+       @scheme[(void)].}]
 
     End-of-files, specials, special-comments and special-errors can
     never be part of a lexeme with surrounding characters.
@@ -508,7 +508,7 @@ the right choice when using @scheme[lexer] in other situations.
     are no duplicates and all non-@italic{OPTIONAL} declarations are
     present:
 
-    @itemize{
+    @itemize[
 
       @item{@schemeblock0[(grammar (non-terminal-id 
                                     ((grammar-id ...) maybe-prec expr)
@@ -642,7 +642,7 @@ the right choice when using @scheme[lexer] in other situations.
       Causes the parser generator not to report shift/reduce or
       reduce/reduce conflicts.}
 
-    }
+    ]
 
     The result of a @scheme[parser] expression with one @scheme[start]
     non-terminal is a function, @scheme[_parse], that takes one

@@ -115,7 +115,7 @@ given term, Redex assumes that it will always match that term.
      (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
-@itemize{
+@itemize[
 
 @item{The @defpattech[any] @pattern matches any sepxression.
 This @pattern may also be suffixed with an underscore and another
@@ -319,7 +319,7 @@ two matches occur, one where @tt{x} is bound to @scheme['()] and
 bound to @scheme['()].
 
 }
-}
+]
 
 @defform*[[(redex-match lang #, @|ttpattern| any)
            (redex-match lang #, @|ttpattern|)]]{
@@ -410,7 +410,7 @@ stands for repetition unless otherwise indicated):
      ,@scheme-expression
      (code:line ... (code:comment "literal ellipsis"))])
 
-@itemize{
+@itemize[
 
 @item{A term written @scheme[_identifier] is equivalent to the
 corresponding symbol, unless the identifier is bound by
@@ -437,7 +437,7 @@ them.}
 
 @item{A term written as a literal boolean or a string
 produces the boolean or the string.}
-}
+]
 
 @defform[(term #, @|tttterm|)]{
 
@@ -1101,11 +1101,12 @@ argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times
                            [relation-expr reduction-relation?]
                            [retries-expr natural-number/c])]{
 Searches for a counterexample to @scheme[property-expr], interpreted
-as a predicate universally quantified over its free
-@pattech[term]-variables. @scheme[redex-check] chooses substitutions for 
-these free @pattech[term]-variables by generating random terms matching
-@scheme[pattern] and extracting the sub-terms bound by the
-@pattech[names] and non-terminals in @scheme[pattern].
+as a predicate universally quantified over the pattern variables
+bound by @scheme[pattern]. @scheme[redex-check] constructs and tests 
+a candidate counterexample by choosing a random term @math{t} that 
+matches @scheme[pattern] then evaluating @scheme[property-expr]
+using the @scheme[match-bindings] produced by @scheme[match]ing
+@math{t} against @scheme[pattern].
 
 @scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[1000])
 random terms in its search. The size and complexity of terms it generates
@@ -1156,22 +1157,22 @@ term that does not match @scheme[pattern].}
           #:attempts 3
           #:source R))]
 
-@defproc[(check-reduction-relation 
-          [relation reduction-relation?]
-          [property (-> any/c any/c)]
-          [#:attempts attempts natural-number/c 1000]
-          [#:retries retries natural-number/c 100])
-         void?]{
+@defform/subs[(check-reduction-relation relation property kw-args ...)
+              ([kw-arg (code:line #:attempts attempts-expr)
+                       (code:line #:retries retries-expr)])
+              #:contracts ([property (-> any/c any/c)]
+                           [attempts-expr natural-number/c]
+                           [retries-expr natural-number/c])]{
 Tests @scheme[relation] as follows: for each case of @scheme[relation],
 @scheme[check-reduction-relation] generates @scheme[attempts] random
 terms that match that case's left-hand side and applies @scheme[property] 
 to each random term.
 
-This function provides a more convenient notation for
+This form provides a more convenient notation for
 @schemeblock[(redex-check L any (property (term any)) 
                           #:attempts (* n attempts)
                           #:source relation)]
-when @scheme[relation] is a relation on @scheme[L] and has @scheme[n] rules.}
+when @scheme[relation] is a relation on @scheme[L] with @scheme[n] rules.}
 
 @defform/subs[(check-metafunction metafunction property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1881,7 +1882,7 @@ lw structs for each of the non-lws in the
 list (see the description of lw below for an
 explanation of logical-space):
 
-@itemize{
+@itemize[
 @item{
     If there are two adjacent lws, then the logical
     space between them is filled with whitespace.}
@@ -1902,7 +1903,7 @@ explanation of logical-space):
     the logical space between the two lws is
     absorbed by a new lw that renders using no
     actual space in the typeset version.
-}}
+}]
 }
 
 

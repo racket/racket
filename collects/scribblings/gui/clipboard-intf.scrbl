@@ -80,6 +80,14 @@ See @|timediscuss| for a discussion of the @scheme[time] argument.  If
 
 }
 
+
+@defmethod[(same-clipboard-client? [owner (is-a?/c clipboard-client%)])
+           boolean?]{
+
+Returns @scheme[#t] if @scheme[owner] currently owns the clipboard,
+@scheme[#f] otherwise.}
+
+
 @defmethod[(set-clipboard-bitmap [new-bitmap (is-a?/c bitmap%)]
                                  [time (and/c exact? integer?)])
            void?]{

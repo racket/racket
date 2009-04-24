@@ -179,12 +179,12 @@ simple-settings structure, this mixin's @scheme[settings] type.
            settings]{
 
 The defaults for the settings are
-@itemize{
+@itemize[
 @item{@scheme[case-sensitive] is @scheme[#f]}
 @item{@scheme[printing-style] is @scheme['write]}
 @item{@scheme[show-sharing] is @scheme[#f]}
 @item{@scheme[insert-newlines] is @scheme[#t]}
-}
+]
 
 See also
 @scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
@@ -924,16 +924,16 @@ for the user. When
 this function is called, the user's thread has already been
 created, as has its custodian. These parameters have been
 changed from the defaults in MzScheme:
-@itemize{
+@itemize[
 @item{@scheme[current-custodian] is set to a new custodian.}
 @item{@scheme[current-namespace] has been set to a newly
   created empty namespace.This namespace has the following modules 
   copied (with @scheme[namespace-attach-module])
   from DrScheme's original namespace:
-  @itemize{
+  @itemize[
   @item{@scheme['mzscheme]}
   @item{@scheme['(lib "mred.ss" "mred")]}
-  }}
+  ]}
 @item{
   @scheme[read-curly-brace-as-paren]
   is @scheme[#t],}
@@ -991,7 +991,7 @@ is set to a handler that creates an error message from the
 exception record, with font and color information and inserts
 that error message into the definitions window.}
 
-}
+]
 
 The @scheme[run-in-user-thread] arguments accepts thunks and
 runs them on the user's eventspace's main thread. These

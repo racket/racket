@@ -1036,7 +1036,12 @@
         (make-check-by #f (build-src 6) $2 $4 '==)]
        [(check ConditionalExpression expect ConditionalExpression by IDENTIFIER)
         (make-check-by #f (build-src 6) $2 $4 $6)]
-       [(checkEffect O_PAREN EffectVars SEMI_COLON EffectConds C_PAREN O_BRACE EffectExpression C_BRACE)
+       [(check ConditionalExpression inspect ConditionalExpression)
+        (make-check-inspect #f (build-src 4) $2 $4 #f null)]
+       [(check ConditionalExpression inspect ConditionalExpression within ConditionalExpression)
+        (make-check-inspect #f (build-src 6) $2 $4 $6 null)]
+       
+       #;[(checkEffect O_PAREN EffectVars SEMI_COLON EffectConds C_PAREN O_BRACE EffectExpression C_BRACE)
         (make-check-effect #f (build-src 9) $3 $5 $8)]
        )
       
@@ -1068,13 +1073,13 @@
        [(StatementExpression SEMI_COLON) (list $1)]
        [(StmtExpressionList StatementExpression SEMI_COLON) (cons $2 $1)])       
        
-      (MutateExpression
+      #;(MutateExpression
        [(CheckExpression) $1]
        [(CheckExpression -> CheckExpression) 
         (make-check-mutate #f (build-src 3) $1 $3 (build-src 2 2))])
       
       (AssignmentExpression
-       [#;(ConditionalExpression) #;(CheckExpression) (MutateExpression) $1]
+       [#;(ConditionalExpression) #;(CheckExpression) (CheckExpression) $1]
        [(Assignment) $1])
       
       (Assignment

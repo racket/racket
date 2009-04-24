@@ -1249,6 +1249,7 @@ please adhere to these guidelines:
  (stepper-next "Step >")
  (stepper-next-application "Application >|")
  (stepper-jump-to-end "End")
+ (stepper-jump "Jump To ...")
  
  (debug-tool-button-name "Debug")
 

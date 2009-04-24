@@ -22,7 +22,7 @@ Parameter values for built-in parameters are obtained and modified
 @cpp{Scheme_Object *} value, and the built-in parameters are accessed
 through the following indices:
 
-@itemize{
+@itemize[
 @item{@cppdef{MZCONFIG_ENV} --- @scheme[current-namespace] (use @cpp{scheme_get_env})}
 @item{@cppdef{MZCONFIG_INPUT_PORT} --- @scheme[current-input-port]}
 @item{@cppdef{MZCONFIG_OUTPUT_PORT} ---  @scheme[current-output-port]}
@@ -70,7 +70,7 @@ through the following indices:
 
 @item{@cppdef{MZCONFIG_LOAD_EXTENSION_HANDLER} --- @scheme[current-load-extension]}
 
-}
+]
 
 To get or set a parameter value for a thread other than the current
 one, use @cppi{scheme_get_thread_param} and
@@ -184,7 +184,7 @@ Call this procedure in a primitive parameter procedure to implement
  Argument-checking is performed within @cpp{scheme_param_config}
  using @var{arity}, @var{check}, @var{expected}, and @var{isbool}:
 
-@itemize{
+@itemize[
 
  @item{If @var{arity} is non-negative, potential parameter values must
  be able to accept the specified number of arguments. The @var{check}
@@ -203,7 +203,7 @@ Call this procedure in a primitive parameter procedure to implement
  @item{Otherwise, @var{isbool} should be 1. A potential procedure
  argument is then treated as a Boolean value.}
 
-}
+]
 
  This function is only available to embedding applications (i.e., not
  extensions).}

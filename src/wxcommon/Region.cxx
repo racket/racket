@@ -1114,6 +1114,8 @@ void wxRegion::InstallPS(wxPostScriptDC *dc, wxPSStream *s)
 {
   Bool oe;
 
+  if (!prgn) return; /* shouldn't happen */
+
   s->Out("newpath\n");
 
   oe = prgn->InstallPS(dc, s);

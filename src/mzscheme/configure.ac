@@ -1452,7 +1452,7 @@ if test "${enable_mred}" = "yes" ; then
 
   makefiles="$makefiles
              mred/Makefile
-               mred/wxs/Makefile mred/wxme/Makefile
+               mred/wxs/Makefile
                mred/gc2/Makefile"
 
   if test "${enable_libpng}" != "yes" ; then

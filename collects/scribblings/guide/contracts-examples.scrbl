@@ -19,7 +19,7 @@ Mitchell and McKim's principles for design by contract DbC are derived
   we use a mostly applicative, we
   retain their terminology of ``classes'' and ``objects'':
 
-@itemize{
+@itemize[
 @item{@bold{Separate queries from commands.}
 
     A @italic{query} returns a result but does not change the observable
@@ -40,7 +40,7 @@ Mitchell and McKim's principles for design by contract DbC are derived
     changes to the observable properties in terms of the basic queries.}}
 
 @item{@bold{For each query and command, decide on suitable
-pre-condition contract.}}}
+pre-condition contract.}}]
 
 Each of the following sections corresponds to a chapter in
  Mitchell and McKim's book (but not all chapters show up

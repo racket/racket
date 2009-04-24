@@ -40,8 +40,8 @@
     [require "scribble/main.ss"]
     [require "net/main.ss"]
     [require "file/main.ss"]
+    [require "profile/main.ss"]
     ))
-
 
 (require scheme/runtime-path)
 

@@ -647,6 +647,7 @@ todo:
                          (move-to dot-snip (* n dot-spacing) y)  ;; also do the move to
                          (loop (cdr nodes) (+ y dot-spacing)))])))
                 (loop (+ n 1)))))))
+      (send this set-flip-labels? #f)
       (super-new)
       (inherit set-draw-arrow-heads?)
       (set-draw-arrow-heads? #f)))
