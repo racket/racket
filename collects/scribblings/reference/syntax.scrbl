@@ -976,11 +976,51 @@ sets of imported identifiers.
 @defform[(matching-identifiers-in regexp require-spec)]{ Like
   @scheme[require-spec], but including only imports whose names match
   @scheme[regexp].  The @scheme[regexp] must be a literal regular
-  expression (see @secref["regexp"]).}
+  expression (see @secref["regexp"]).
+
+@defexamples[#:eval (syntax-eval)
+(module zoo scheme/base
+  (provide tunafish swordfish blowfish
+           monkey lizard ant)
+  (define tunafish 1)
+  (define swordfish 2)
+  (define blowfish 3)
+  (define monkey 4)
+  (define lizard 5)
+  (define ant 6))
+(require scheme/require)
+(require (matching-identifiers-in #rx"\\w*fish" 'zoo))
+tunafish
+swordfish
+blowfish
+monkey
+]}
 
 @defform[(subtract-in require-spec subtracted-spec ...)]{ Like
   @scheme[require-spec], but omitting those imports that would be
-  imported by one of the @scheme[subtracted-spec]s.}
+  imported by one of the @scheme[subtracted-spec]s.
+
+@defexamples[#:eval (syntax-eval)
+(module earth scheme
+  (provide land sea air)
+  (define land 1)
+  (define sea 2)
+  (define air 3))
+
+(module mars scheme
+  (provide aliens)
+  (define aliens 4))
+
+(module solar-system scheme
+  (require 'earth 'mars)
+  (provide (all-from-out 'earth)
+           (all-from-out 'mars)))
+
+(require scheme/require)
+(require (subtract-in 'solar-system 'earth))
+land
+aliens
+]}
 
 @defform[(filtered-in proc-expr require-spec)]{ The @scheme[proc-expr]
   should evaluate to a single-argument procedure, which is applied on

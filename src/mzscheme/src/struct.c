@@ -2164,19 +2164,29 @@ static Scheme_Object *make_struct_field_xxor(const char *who, int getter,
   pos = parse_pos(who, i, argv, argc);
   
   if (argc > 2) {
-    if (!SCHEME_SYMBOLP(argv[2])) {
-      scheme_wrong_type(who, "symbol", 2, argc, argv);
-      return NULL;
+    if (SCHEME_FALSEP(argv[2])) {
+      fieldstr = NULL;
+      fieldstrlen = 0;
+    } else {
+      if (!SCHEME_SYMBOLP(argv[2])) {
+        scheme_wrong_type(who, "symbol or #f", 2, argc, argv);
+        return NULL;
+      }
+      fieldstr = scheme_symbol_val(argv[2]);
+      fieldstrlen = SCHEME_SYM_LEN(argv[2]);
     }
-    fieldstr = scheme_symbol_val(argv[2]);
-    fieldstrlen = SCHEME_SYM_LEN(argv[2]);
   } else {
     sprintf(digitbuf, "field%d", (int)SCHEME_INT_VAL(argv[1]));
     fieldstr = digitbuf;
     fieldstrlen = strlen(fieldstr);
   }
 
-  if (getter) {
+  if (!fieldstr) {
+    if (getter)
+      name = "accessor";
+    else
+      name = "mutator";
+  } else if (getter) {
     name = (char *)GET_NAME((char *)i->struct_type->name, -1,
 			    fieldstr, fieldstrlen, 0);
   } else {

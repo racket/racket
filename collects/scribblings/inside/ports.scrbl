@@ -463,9 +463,9 @@ The functions are as follows.
     Called to obtain a progress event for the port, such as for
     @scheme[port-progress-evt]. This function can be @cpp{NULL} if the
     port does not support progress events. Use
-    @cpp{progress_evt_via_get} to obtain a default implementation, in
+    @cpp{scheme_progress_evt_via_get} to obtain a default implementation, in
     which case @var{peeked_read_fun} should be
-    @cpp{peeked_read_via_get}, and @var{get_bytes_fun} and
+    @cpp{scheme_peeked_read_via_get}, and @var{get_bytes_fun} and
     @var{peek_bytes_fun} should handle @var{unless} as described
     above.}
 
@@ -477,9 +477,9 @@ The functions are as follows.
 
     Called to commit previously peeked bytes, just like the sixth
     argument to @scheme[make-input-port]. Use
-    @cpp{peeked_read_via_get} for the default implementation of
+    @cpp{scheme_peeked_read_via_get} for the default implementation of
     commits when @var{progress_evt_fun} is
-    @cpp{progress_evt_via_get}.}
+    @cpp{scheme_progress_evt_via_get}.}
 
  @subfunction[(int char_ready_fun
                [Scheme_Input_Port* port])]{

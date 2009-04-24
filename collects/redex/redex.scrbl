@@ -857,7 +857,7 @@ terminate (it does terminate if the only infinite reduction paths are cyclic).
   error elsewhere.  }
 
 @defidform[fresh]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[-->] form is an
+  @scheme[reduction-relation]. A @scheme[fresh] form is an
   error elsewhere.  }
 
 @defidform[with]{ Recognized specially within

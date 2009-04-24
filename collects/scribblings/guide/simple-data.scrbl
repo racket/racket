@@ -15,10 +15,9 @@ and imaginary numbers:
 @moreguide["numbers"]{numbers}
 
 @schemeblock[
-1                        1.0
-1/2                      0.5
-9999999999999999999999   1e+22
-1+2i                     1.0+2.0i
+1       3.14
+1/2     6.02e+23
+1+2i    9999999999999999999999
 ]
 
 @defterm{Booleans} are @scheme[#t] for true and @scheme[#f] for
@@ -36,8 +35,8 @@ appear in a string constant.
 @moreguide["strings"]{strings}
 
 @schemeblock[
-"hello world"
-"A \"fancy\" string"
+"Hello, world!"
+"Benjamin \"Bugsy\" Siegel"
 "\u03BBx:(\u03BC\u03B1.\u03B1\u2192\u03B1).xx"
 ]
 
@@ -49,5 +48,5 @@ difference between an input expression and a printed result.
 
 @examples[
 (eval:alts (unsyntax (schemevalfont "1.0000")) 1.0000)
-(eval:alts (unsyntax (schemevalfont "\"A \\u0022fancy\\u0022 string\"")) "A \u0022fancy\u0022 string")
+(eval:alts (unsyntax (schemevalfont "\"Bugs \\u0022Figaro\\u0022 Bunny\"")) "Bugs \u0022Figaro\u0022 Bunny")
 ]

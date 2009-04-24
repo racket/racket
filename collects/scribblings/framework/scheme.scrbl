@@ -57,7 +57,7 @@
     The result of this method is used to determine if the return key
     automatically tabs over to the correct position.
 
-    Override it to change it's behavior.
+    Override it to change its behavior.
 
 
   }
@@ -199,7 +199,7 @@
   }
   @defmethod*[(((mark-matching-parenthesis (pos exact-positive-integer)) void))]{
     If the paren after @scheme[pos] is matched, this method
-    highlights it and it's matching counterpart in dark green.
+    highlights it and its matching counterpart in dark green.
 
   }
   @defmethod*[(((get-tab-size) exact-integer))]{

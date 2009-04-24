@@ -87,7 +87,7 @@ improve method arity mismatch contract violation error messages?
                          define-stx)]
     [(_ name contract-expr)
      (raise-syntax-error 'define/contract
-                         "no body after contract"
+                         "expected a contract expression and a definition body, but found only one expression"
                          define-stx)]
     [(_ name+arg-list contract #:freevars args . body)
      (identifier? #'args)

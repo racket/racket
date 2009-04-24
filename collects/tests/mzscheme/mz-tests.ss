@@ -23,6 +23,7 @@
 (load-relative "prompt.ss")
 (load-relative "will.ss")
 (load-relative "namespac.ss")
+(load-relative "modprot.ss")
 (unless (or building-flat-tests? in-drscheme?)
   (load-relative "param.ss"))
 (load-relative "port.ss")

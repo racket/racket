@@ -37,6 +37,14 @@ Reads bytes to fill the supplied byte string. The return value is the
  next call to @method[editor-stream-in-base% bad?] must return
  @scheme[#t].}
 
+@defmethod[(read-byte) (or/c byte? #f)]{
+
+Reads a single byte and return it, or returns @scheme[#f] if no more
+bytes are available. The default implementation of this method uses
+@method[editor-stream-in-base% read-bytes].
+
+}
+
 @defmethod[(seek [pos exact-nonnegative-integer?])
            void?]{
 

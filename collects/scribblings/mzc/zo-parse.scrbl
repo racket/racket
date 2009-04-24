@@ -14,7 +14,7 @@
 @defproc[(zo-parse [in input-port?]) compilation-top?]{
 
 Parses a port (typically the result of opening a @filepath{.zo} file)
-containing byte. Beware that the structure types used to represent the
+containing bytecode. Beware that the structure types used to represent the
 bytecode are subject to frequent changes across PLT Scheme versons.
 
 The parsed bytecode is returned in a @scheme[compilation-top]
@@ -23,7 +23,7 @@ structure will contain a @scheme[mod] structure. For a top-level
 sequence, it will normally contain a @scheme[seq] or @scheme[splice]
 structure with a list of top-level declarations and expressions.
 
-The bytecode representation f an expression is closer to an
+The bytecode representation of an expression is closer to an
 S-expression than a traditional, flat control string. For example, an
 @scheme[if] form is represented by a @scheme[branch] structure that
 has three fields: a test expression, a ``then'' expression, and an

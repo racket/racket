@@ -360,6 +360,11 @@ several known ways:
        instead of @|r6rs| bindings. In particular, @scheme[=>], @scheme[else],
        @scheme[_], and @scheme[...] are not bound.}
 
+ @item{Bindings for @schemeidfont{#%datum}, @schemeidfont{#%app},
+       @schemeidfont{#%top}, and @schemeidfont{#%top-interaction} are
+       imported into every library and program, and at every phase
+       level for which the library or program has imports.}
+
 ]
 
 

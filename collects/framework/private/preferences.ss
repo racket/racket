@@ -227,8 +227,9 @@ the state transitions / contracts are:
                   (super show on?))
                 (super-new))]
              [frame 
-              (make-object frame-stashed-prefs%
-                (string-constant preferences))]
+              (new frame-stashed-prefs%
+                   [label (string-constant preferences)]
+                   [height 200])]
              [build-ppanel-tree
               (λ (ppanel tab-panel single-panel)
                 (send tab-panel append (ppanel-name ppanel))
@@ -310,6 +311,11 @@ the state transitions / contracts are:
           (let ([old editor-panel-procs])
             (λ (parent) (old parent) (f parent)))))
   
+  (define (add-to-general-checkbox-panel f)
+    (set! general-panel-procs 
+          (let ([old general-panel-procs])
+            (λ (parent) (old parent) (f parent)))))
+  
   (define (add-to-warnings-checkbox-panel f)
     (set! warnings-panel-procs 
           (let ([old warnings-panel-procs])
@@ -317,6 +323,7 @@ the state transitions / contracts are:
   
   (define scheme-panel-procs void)
   (define editor-panel-procs void)
+  (define general-panel-procs void)
   (define warnings-panel-procs void)
   
   (define (add-checkbox-panel label proc)
@@ -394,21 +401,8 @@ the state transitions / contracts are:
                  (list (string-constant editor-prefs-panel-label) 
                        (string-constant general-prefs-panel-label))
                  (λ (editor-panel)
-                   (make-recent-items-slider editor-panel)
-                   (make-check editor-panel
-                               'framework:autosaving-on? 
-                               (string-constant auto-save-files)
-                               values values)
-                   (make-check editor-panel  'framework:backup-files? (string-constant backup-files) values values)
                    (make-check editor-panel  'framework:delete-forward? (string-constant map-delete-to-backspace)
                                not not)
-                   (make-check editor-panel 'framework:show-status-line (string-constant show-status-line) values values)
-                   (make-check editor-panel 'framework:col-offsets (string-constant count-columns-from-one) values values)
-                   (make-check editor-panel 
-                               'framework:display-line-numbers
-                               (string-constant display-line-numbers)
-                               values values)
-                   
                    (make-check editor-panel 
                                'framework:auto-set-wrap?
                                (string-constant wrap-words-in-editor-buffers)
@@ -432,13 +426,7 @@ the state transitions / contracts are:
                                'framework:coloring-active
                                (string-constant online-coloring-active)
                                values values)
-                   (unless (eq? (system-type) 'unix) 
-                     (make-check editor-panel 
-                                 'framework:print-output-mode 
-                                 (string-constant automatically-to-ps)
-                                 (λ (b) 
-                                   (if b 'postscript 'standard))
-                                 (λ (n) (eq? 'postscript n))))
+                   
                    (make-check editor-panel
                                'framework:anchored-search
                                (string-constant find-anchor-based)
@@ -453,6 +441,34 @@ the state transitions / contracts are:
                                values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
+  
+  (define (add-general-checkbox-panel)
+    (letrec ([add-general-checkbox-panel
+              (λ ()
+                (set! add-general-checkbox-panel void)
+                (add-checkbox-panel 
+                 (list (string-constant general-prefs-panel-label))
+                 (λ (editor-panel)
+                   (make-recent-items-slider editor-panel)
+                   (make-check editor-panel
+                               'framework:autosaving-on? 
+                               (string-constant auto-save-files)
+                               values values)
+                   (make-check editor-panel  'framework:backup-files? (string-constant backup-files) values values)
+                   (make-check editor-panel 'framework:show-status-line (string-constant show-status-line) values values)
+                   (make-check editor-panel 'framework:col-offsets (string-constant count-columns-from-one) values values)
+                   (make-check editor-panel 
+                               'framework:display-line-numbers
+                               (string-constant display-line-numbers)
+                               values values)
+                   (unless (eq? (system-type) 'unix) 
+                     (make-check editor-panel 
+                                 'framework:print-output-mode 
+                                 (string-constant automatically-to-ps)
+                                 (λ (b) 
+                                   (if b 'postscript 'standard))
+                                 (λ (n) (eq? 'postscript n)))))))])
+      (add-general-checkbox-panel)))
   
   (define (add-warnings-checkbox-panel)
     (letrec ([add-warnings-checkbox-panel

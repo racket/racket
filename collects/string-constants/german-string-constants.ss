@@ -1152,6 +1152,7 @@
  (stepper-next "Schritt >")
  (stepper-next-application "Applikation >|")
  (stepper-jump-to-end "Ende")
+ (stepper-jump "Springen zu ...")
  
  (debug-tool-button-name "Debugger")
 

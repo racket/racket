@@ -779,14 +779,14 @@ Scheme_Object* scheme_extend_module_rename(Scheme_Object *rn, Scheme_Object *mod
                                            Scheme_Object *locname, Scheme_Object *exname,
                                            Scheme_Object *nominal_src, Scheme_Object *nominal_ex,
                                            int mod_phase, Scheme_Object *src_phase_index, 
-                                           Scheme_Object *nom_export_phase, int drop_for_marshal);
+                                           Scheme_Object *nom_export_phase, Scheme_Object *insp,
+                                           int mode);
 void scheme_extend_module_rename_with_shared(Scheme_Object *rn, Scheme_Object *modidx, 
                                              struct Scheme_Module_Phase_Exports *pt, 
                                              Scheme_Object *unmarshal_phase_index,
                                              Scheme_Object *src_phase_index, 
                                              Scheme_Object *marks,
                                              int save_unmarshal);
-void scheme_extend_module_rename_with_kernel(Scheme_Object *rn, Scheme_Object *nominal_src);
 void scheme_save_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info);
 void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
 				       Scheme_Object *modidx_shift_from, Scheme_Object *modidx_shift_to,
@@ -809,7 +809,7 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist);
 int scheme_stx_module_eq(Scheme_Object *a, Scheme_Object *b, long phase);
 int scheme_stx_module_eq2(Scheme_Object *a, Scheme_Object *b, Scheme_Object *phase, Scheme_Object *asym);
 Scheme_Object *scheme_stx_get_module_eq_sym(Scheme_Object *a, Scheme_Object *phase);
-Scheme_Object *scheme_stx_module_name(int recur,
+Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *recur,
                                       Scheme_Object **name, Scheme_Object *phase,
 				      Scheme_Object **nominal_modidx,
 				      Scheme_Object **nominal_name,
@@ -817,7 +817,8 @@ Scheme_Object *scheme_stx_module_name(int recur,
                                       Scheme_Object **src_phase_index, 
                                       Scheme_Object **nominal_src_phase,
                                       Scheme_Object **lex_env,
-                                      int *_sealed);
+                                      int *_sealed,
+                                      Scheme_Object **rename_insp);
 Scheme_Object *scheme_stx_moduleless_env(Scheme_Object *a);
 int scheme_stx_parallel_is_used(Scheme_Object *sym, Scheme_Object *stx);
 
@@ -1140,7 +1141,7 @@ typedef struct Scheme_Cont_Mark_Set {
   Scheme_Object *native_stack_trace;
 } Scheme_Cont_Mark_Set;
 
-#define SCHEME_LOG_MARK_SEGMENT_SIZE 8
+#define SCHEME_LOG_MARK_SEGMENT_SIZE 6
 #define SCHEME_MARK_SEGMENT_SIZE (1 << SCHEME_LOG_MARK_SEGMENT_SIZE)
 #define SCHEME_MARK_SEGMENT_MASK (SCHEME_MARK_SEGMENT_SIZE - 1)
 
@@ -2653,10 +2654,10 @@ typedef struct Scheme_Module_Phase_Exports
   Scheme_Object **provide_src_names; /* symbols (original internal names) */
   Scheme_Object **provide_nominal_srcs; /* import source if re-exported; NULL or array of lists */
   char *provide_src_phases;          /* NULL, or src phase for for-syntax import */
+  Scheme_Object **provide_insps;     /* inspectors for re-provided protected/unexported */
   int num_provides;
   int num_var_provides;              /* non-syntax listed first in provides */
 
-  int reprovide_kernel;              /* if true, extend provides with kernel's */
   Scheme_Object *kernel_exclusion;   /* we allow up to two exns, but they must be shadowed */
   Scheme_Object *kernel_exclusion2;
 
@@ -2729,9 +2730,11 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 
 Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *prot_insp, Scheme_Object *in_modidx,
 						 Scheme_Object *symbol, Scheme_Object *stx, 
-						 Scheme_Object *certs, Scheme_Object *unexp_insp,
+						 Scheme_Object *certs, Scheme_Object *unexp_insp, 
+                                                 Scheme_Object *rename_insp,
 						 int position, int want_pos,
-						 int *_protected, Scheme_Env *from_env);
+						 int *_protected, int *_unexported, 
+                                                 Scheme_Env *from_env, int *_would_complain);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,

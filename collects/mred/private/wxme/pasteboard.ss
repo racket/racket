@@ -1913,7 +1913,7 @@
          (do-write-headers-footers f #f)))
 
   (def/override (read-from-file [editor-stream-in% f]
-                                [bool? [overwritestyle? #t]])
+                                [bool? [overwritestyle? #f]])
     (if (or s-user-locked? 
             (not (zero? write-locked)))
         #f

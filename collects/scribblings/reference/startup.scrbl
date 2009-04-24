@@ -138,7 +138,11 @@ flags:
 
   @item{@FlagFirst{p} @nonterm{file} @nonterm{u} @nonterm{path} :
        @scheme[require]s @scheme[(planet #, @nontermstr{file}
-       #, @nontermstr{user} #, @nontermstr{pkg})].}
+       #, @nontermstr{user} #, @nontermstr{pkg})].
+
+       @margin-note{Despite its name, @DFlag{script} is not usually
+       used for Unix scripts. See @guidesecref["scripts"] for more
+       information on scripts.}}
 
   @item{@FlagFirst{r} @nonterm{file} or @DFlagFirst{script}
         @nonterm{file} : @scheme[load]s @nonterm{file} as a

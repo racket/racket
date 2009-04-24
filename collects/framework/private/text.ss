@@ -1170,7 +1170,11 @@ WARNING: printf is rebound in the body of the unit to always
               (set! clear-yellow void)
               (when (and searching-str (= (string-length searching-str) (- end start)))
                 (when (do-search searching-str start end)
-                  (set! clear-yellow (highlight-range start end "khaki" #f 'low 'ellipse))))
+                  (set! clear-yellow (highlight-range start end
+                                                      (if (preferences:get 'framework:white-on-black?)
+                                                          (make-object color% 50 50 5)
+                                                          "khaki")
+                                                      #f 'low 'ellipse))))
               (end-edit-sequence)]))]
         [else
          (clear-yellow)

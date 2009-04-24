@@ -1826,7 +1826,7 @@ See @method[editor<%> read-header-from-file].
 
 
 @defmethod[(read-from-file [stream (is-a?/c editor-stream-in%)]
-                           [overwrite-styles? any/c #t])
+                           [overwrite-styles? any/c #f])
            boolean?]{
 
 Reads new contents for the editor from a stream. The return value is

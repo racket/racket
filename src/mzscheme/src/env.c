@@ -1180,6 +1180,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo)
                                     env->mod_phase,
                                     NULL,
                                     NULL,
+                                    NULL,
                                     0);
       }
     }
@@ -2003,8 +2004,8 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
        existing rename. */
     if (!SCHEME_HASHTP((Scheme_Object *)env) && env->module && (mode < 2)) {
       Scheme_Object *mod, *nm = id;
-      mod = scheme_stx_module_name(0, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
-                                   NULL, NULL, NULL, NULL);
+      mod = scheme_stx_module_name(NULL, &nm, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+                                   NULL, NULL, NULL, NULL, NULL);
       if (mod /* must refer to env->module, otherwise there would
 		 have been an error before getting here */
 	  && NOT_SAME_OBJ(nm, sym))
@@ -2527,7 +2528,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   int j = 0, p = 0, modpos, skip_stops = 0, module_self_reference = 0;
   Scheme_Bucket *b;
   Scheme_Object *val, *modidx, *modname, *src_find_id, *find_global_id, *mod_defn_phase;
-  Scheme_Object *find_id_sym = NULL;
+  Scheme_Object *find_id_sym = NULL, *rename_insp = NULL;
   Scheme_Env *genv;
   long phase;
 
@@ -2679,8 +2680,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
 
   src_find_id = find_id;
-  modidx = scheme_stx_module_name(0, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
-                                  NULL, NULL, NULL, NULL);
+  modidx = scheme_stx_module_name(NULL, &find_id, scheme_make_integer(phase), NULL, NULL, &mod_defn_phase, 
+                                  NULL, NULL, NULL, NULL, &rename_insp);
 
   /* Used out of context? */
   if (SAME_OBJ(modidx, scheme_undefined)) {
@@ -2765,9 +2766,10 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     val = scheme_module_syntax(modname, env->genv, find_id);
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
       scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					find_id, src_find_id, certs, NULL, -2, 0, 
-					NULL,
-                                        env->genv);
+					find_id, src_find_id, certs, NULL, rename_insp,
+                                        -2, 0, 
+					NULL, NULL,
+                                        env->genv, NULL);
   } else {
     /* Only try syntax table if there's not an explicit (later)
        variable mapping: */
@@ -2790,8 +2792,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       pos = 0;
     else
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
-					      find_id, src_find_id, certs, NULL, -1, 1,
-					      _protected, env->genv);
+					      find_id, src_find_id, certs, NULL, rename_insp, -1, 1,
+					      _protected, NULL, env->genv, NULL);
     modpos = SCHEME_INT_VAL(pos);
   } else
     modpos = -1;
@@ -2957,8 +2959,8 @@ int scheme_check_context(Scheme_Env *env, Scheme_Object *name, Scheme_Object *ok
   if (mod && SCHEME_TRUEP(mod) && NOT_SAME_OBJ(ok_modidx, mod)) {
     return 1;
   } else {
-    mod = scheme_stx_module_name(0, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
-                                 NULL, NULL, NULL, NULL);
+    mod = scheme_stx_module_name(NULL, &id, scheme_make_integer(env->phase), NULL, NULL, NULL, 
+                                 NULL, NULL, NULL, NULL, NULL);
     if (SAME_OBJ(mod, scheme_undefined))
       return 1;
   }

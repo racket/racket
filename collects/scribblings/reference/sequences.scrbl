@@ -147,7 +147,7 @@ opposed to using @scheme[in] directly as a sequence to get bytes).}
          sequence?]{
 
 Returns a sequence whose elements are the result of @scheme[(read-line
-in mode)] until an end-of-line is encountered. Note that the default
+in mode)] until an end-of-file is encountered. Note that the default
 mode is @scheme['any], whereas the default mode of @scheme[read-line]
 is @scheme['linefeed].}
 

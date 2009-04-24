@@ -74,6 +74,11 @@
         (namespace-require 'scheme/class))
       ns))
 
+  (define (make-eventspace)
+    (parameterize ([wx:the-snip-class-list (wx:make-the-snip-class-list)]
+                   [wx:the-editor-data-class-list (wx:make-the-editor-data-class-list)])
+      (wx:make-eventspace)))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define-syntax propagate
@@ -139,7 +144,6 @@
 	     is-color-display?
 	     key-event%
 	     keymap%
-	     make-eventspace
 	     editor-admin%
 	     editor-set-x-selection-mode
 	     editor-snip-editor-admin<%>
@@ -307,6 +311,7 @@
 	   current-eventspace-has-standard-menus?
 	   current-eventspace-has-menu-root?
 	   eventspace-handler-thread
+           make-eventspace
 	   make-gui-namespace
 	   make-gui-empty-namespace
 	   file-creator-and-type

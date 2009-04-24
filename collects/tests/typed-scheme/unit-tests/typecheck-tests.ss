@@ -87,7 +87,7 @@
                    (+ 1 (car x))
                    5))
          N]
-        
+        (tc-e (if (let ([y 12]) y) 3 4) -Integer)
         (tc-e 3 -Integer)
         (tc-e "foo" -String)
         (tc-e (+ 3 4) -Integer)
@@ -496,10 +496,10 @@
         [tc-e (raise-type-error 'foo "bar" 7 (list 5)) (Un)]
         
         #;[tc-e
-           (let ((x '(1 3 5 7 9)))
-             (do: : Number ((x : (list-of Number) x (cdr x))
-                            (sum : Number 0 (+ sum (car x))))
-                  ((null? x) sum)))
+           (let ((x '(1 3 5 7 9)))
+             (do: : Number ((x : (list-of Number) x (cdr x))
+                            (sum : Number 0 (+ sum (car x))))
+                  ((null? x) sum)))
            N]
         
         
@@ -541,10 +541,10 @@
         [tc-e `(4 ,@'(3)) (-pair N (-lst N))]
         
         [tc-e
-         (let ((x '(1 3 5 7 9)))
-           (do: : Number ((x : (Listof Number) x (cdr x))
-                          (sum : Number 0 (+ sum (car x))))
-                ((null? x) sum)))
+         (let ((x '(1 3 5 7 9)))
+           (do: : Number ((x : (Listof Number) x (cdr x))
+                          (sum : Number 0 (+ sum (car x))))
+                ((null? x) sum)))
          N]
         
         [tc-e (if #f 1 'foo) (-val 'foo)]

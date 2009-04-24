@@ -146,7 +146,7 @@ must merely start with a chain of at least @scheme[pos] pairs.}
 @defproc*[([(append [lst list?] ...) list?]
            [(append [lst list?] ... [v any/c]) any/c])]{
 
-When given all list arguments, the result is a lists that contains all
+When given all list arguments, the result is a list that contains all
 of the elements of the given lists in order. The last argument is used
 directly in the tail of the result.
 
@@ -211,10 +211,10 @@ Similar to @scheme[map], except that
 
  @item{the result of the first applciation of @scheme[proc] to produces a
        value other than @scheme[#f], in which case @scheme[proc] is not
-       applied to later elements of the @scheme[lst]s; more specifically,
+       applied to later elements of the @scheme[lst]s;
        the application of @scheme[proc] to the last elements in the
        @scheme[lst]s is in tail position with respect to the
-       @scheme[andmap] call.}
+       @scheme[ormap] call.}
 
 ]
 

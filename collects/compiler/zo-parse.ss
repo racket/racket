@@ -220,14 +220,14 @@
   (match v
     [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
-             ,prefix ,kernel-exclusion ,reprovide-kernel?
+             ,prefix
              ,indirect-provides ,num-indirect-provides 
              ,indirect-syntax-provides ,num-indirect-syntax-provides 
              ,indirect-et-provides ,num-indirect-et-provides 
              ,protects ,et-protects
              ,provide-phase-count . ,rest)
-     (let ([phase-data (take rest (* 8 provide-phase-count))])
-       (match (list-tail rest (* 8 provide-phase-count))
+     (let ([phase-data (take rest (* 9 provide-phase-count))])
+       (match (list-tail rest (* 9 provide-phase-count))
          [`(,syntax-body ,body
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
@@ -729,7 +729,7 @@
                             [read-accept-dot #t]
                             [read-accept-infix-dot #t]
                             [read-accept-quasiquote #t])
-               (read (open-input-bytes s))))]
+               (read/recursive (open-input-bytes s))))]
           [(reference)
            (make-primval (read-compact-number cp))]
           [(small-list small-proper-list)
@@ -837,7 +837,17 @@
           [(box)
            (box (read-compact cp))]
           [(quote)
-           (make-reader-graph (read-compact cp))]
+           (make-reader-graph 
+            ;; Nested escapes need to share graph references. So get inside the
+            ;;  read where `read/recursive' can be used:
+            (let ([rt (current-readtable)])
+              (parameterize ([current-readtable (make-readtable
+                                                 #f
+                                                 #\x 'terminating-macro
+                                                 (lambda args
+                                                   (parameterize ([current-readtable rt])
+                                                     (read-compact cp))))])
+                (read (open-input-bytes #"x")))))]
           [(symref)
            (let* ([l (read-compact-number cp)]
                   [v (vector-ref (cport-symtab cp) l)])

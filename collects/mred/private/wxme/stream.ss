@@ -99,7 +99,11 @@
   (def/public (read-bytes [bytes? v]
                           [exact-nonnegative-integer? [start 0]]
                           [exact-nonnegative-integer? [end (bytes-length v)]]) 
-    0))
+    0)
+  (def/public (read-byte)
+    (let ([s (make-bytes 1)])
+      (and (= 1 (read-bytes s 0 1))
+           (bytes-ref s 0)))))
 
 (defclass editor-stream-out-base% object%
   (super-new)
@@ -115,6 +119,8 @@
     (void)))
 
 ;; ----------------------------------------
+
+(define mz:read-byte read-byte)
 
 (defclass editor-stream-in-port-base% editor-stream-in-base%
   (init-field port)
@@ -137,7 +143,11 @@
     (let ([r (read-bytes! v port start end)])
       (if (eof-object? r)
           0
-          r))))
+          r)))
+
+  (def/override (read-byte)
+    (let ([v (mz:read-byte port)])
+      (if (eof-object? v) #f v))))
 
 (defclass editor-stream-in-file-base% editor-stream-in-port-base%
   (super-new))
@@ -182,6 +192,8 @@
 
 ;; ----------------------------------------
 
+(define in-read-byte (generic editor-stream-in-base% read-byte))
+
 (defclass editor-stream-in% editor-stream%
   (init-rest args)
 
@@ -216,48 +228,50 @@
     (define (bad!) (set! is-bad? #t) 0)
     (if is-bad?
         0
-        (let ([s (make-bytes 1)])
-          (let loop ([prev-byte 0])
-            (if (not (= 1 (send f read-bytes s)))
+        (let loop ([prev-byte 0])
+          (let ([b (send-generic f in-read-byte)])
+            (if (not b)
                 (bad!)
-                (let ([b (bytes-ref s 0)])
-                  (case (integer->char b)
-                    [(#\#)
-                     (let ([pos (send f tell)])
-                       (if (and (= 1 (send f read-bytes s))
-                                (= (bytes-ref s 0) (char->integer #\|)))
-                           ;; skip to end of comment
-                           (let cloop ([saw-bar? #f]
-                                       [saw-hash? #f]
-                                       [nesting 0])
-                             (if (not (= 1 (send f read-bytes s)))
+                (case (integer->char b)
+                  [(#\#)
+                   (let ([pos (send f tell)]
+                         [b (send-generic f in-read-byte)])
+                     (if (and b
+                              (= b (char->integer #\|)))
+                         ;; skip to end of comment
+                         (let cloop ([saw-bar? #f]
+                                     [saw-hash? #f]
+                                     [nesting 0])
+                           (let ([b (send-generic f in-read-byte)])
+                             (if (not b)
                                  (bad!)
                                  (cond
-                                  [(and saw-bar? (= (bytes-ref s 0) (char->integer #\#)))
+                                  [(and saw-bar? (= b (char->integer #\#)))
                                    (if (zero? nesting)
                                        (loop (char->integer #\space))
                                        (cloop #f #f (sub1 nesting)))]
-                                  [(and saw-hash? (= (bytes-ref s 0) (char->integer #\|)))
+                                  [(and saw-hash? (= b (char->integer #\|)))
                                    (cloop #t #f (add1 nesting))]
-                                  [else (cloop (= (bytes-ref s 0) (char->integer #\|))
-                                               (= (bytes-ref s 0) (char->integer #\#))
-                                               nesting)])))
-                           (begin
-                             (send f seek pos)
-                             (char->integer #\#))))]
-                    [(#\;)
-                     ;; skip to end of comment
-                     (let cloop ()
-                       (if (not (= 1 (send f read-bytes s)))
+                                  [else (cloop (= b (char->integer #\|))
+                                               (= b (char->integer #\#))
+                                               nesting)]))))
+                         (begin
+                           (send f seek pos)
+                           (char->integer #\#))))]
+                  [(#\;)
+                   ;; skip to end of comment
+                   (let cloop ()
+                     (let ([b (send-generic f in-read-byte)])
+                       (if (not b)
                            (bad!)
-                           (if (or (= (bytes-ref s 0) (char->integer #\newline))
-                                   (= (bytes-ref s 0) (char->integer #\return)))
+                           (if (or (= b (char->integer #\newline))
+                                   (= b (char->integer #\return)))
                                (loop (char->integer #\space))
-                               (cloop))))]
-                    [else
-                     (if (char-whitespace? (integer->char b))
-                         (loop b)
-                         b)])))))))
+                               (cloop)))))]
+                  [else
+                   (if (char-whitespace? (integer->char b))
+                       (loop b)
+                       b)]))))))
 
   (define/private (skip-whitespace [buf #f])
     (let ([c (do-skip-whitespace)])
@@ -270,9 +284,8 @@
      [(char-whitespace? (integer->char b)) #t]
      [(= b (char->integer #\#))
       (let ([pos (send f tell)]
-            [s (make-bytes 1)])
-        (send f read-bytes s)
-        (let ([d? (= (bytes-ref s 0) (char->integer #\|))])
+            [b (send-generic f in-read-byte)])
+        (let ([d? (= b (char->integer #\|))])
           (send f seek (if d? (sub1 pos) pos))
           d?))]
      [(= b (char->integer #\;))
@@ -284,36 +297,43 @@
     (let ([c0 (skip-whitespace)])
       (if (check-boundary)
           (if get-exact? 0 0.0)
-          (let* ([s (make-bytes 1)]
-                 [l (cons (integer->char c0)
-                          (let loop ([counter 50])
-                            (if (zero? counter)
-                                null
-                                (if (= 1 (send f read-bytes s))
-                                    (let ([s (bytes-ref s 0)])
-                                      (if (is-delim? s)
-                                          null
-                                          (cons (integer->char s)
-                                                (loop (sub1 counter)))))
-                                    null))))])
+          (let* ([l 
+                  ;; As fast path, accum integer result
+                  (let loop ([counter 50][c c0][v 0])
+                    (if (zero? counter)
+                        null
+                        (if (or (not c) 
+                                (is-delim? c))
+                            (or v null)
+                            (let ([rest (loop (sub1 counter) 
+                                              (send-generic f in-read-byte)
+                                              (and v
+                                                   (c . >= . (char->integer #\0))
+                                                   (c . <= . (char->integer #\9))
+                                                   (+ (* v 10) (- c (char->integer #\0)))))])
+                              (if (exact-integer? rest)
+                                  rest
+                                  (cons (integer->char c) rest))))))])
             (inc-item-count)
-            (let ([n (string->number (list->string l))])
+            (let ([n (if (exact-integer? l)
+                         l
+                         (string->number (list->string l)))])
               (cond
-               [(or (not n) 
-                    (not (real? n))
-                    (and get-exact? (not (exact-integer? n))))
-                (set! is-bad? #t)
-                (if get-exact? 0 0.0)]
-               [get-exact? n]
+               [(and get-exact? (exact-integer? n)) n]
+               [(real? n) (exact->inexact n)]
                [else
-                (exact->inexact n)]))))))
+                (set! is-bad? #t)
+                (if get-exact? 0 0.0)]))))))
 
   (define/private (get-a-string limit recur?)
     (let* ([orig-len (if recur?
                          (if (limit . < . 16)
                              limit
                              16)
-                         (get-exact))]
+                         (let ([v (get-exact)])
+                           (if (check-boundary)
+                               0
+                               v)))]
            [buf (make-bytes 32)]
            [fail (lambda ()
                    (set! is-bad? #t)
@@ -447,20 +467,22 @@
                     (success)
                     (loop))))]))))
 
+  (def/public (get-fixed-exact)
+    (if (check-boundary)
+        0
+        (if (read-version . < . 8)
+            (let ([buf (make-bytes 4)])
+              (send f read-bytes buf)
+              (integer-bytes->integer
+               buf
+               #t
+               (if (= read-version 1)
+                   (system-big-endian?)
+                   #t)))
+            (get-exact))))
+
   (def/public (get-fixed [box? vb])
-    (let ([v (if (check-boundary)
-                 0
-                 (if (read-version . < . 8)
-                     (let ([buf (make-bytes 4)])
-                       (send f read-bytes buf)
-                       (integer-bytes->integer
-                        buf
-                        #t
-                        (if (= read-version 1)
-                            (system-big-endian?)
-                            #t)))
-                     (get-exact)))])
-      (set-box! vb v)))
+    (set-box! vb (get-fixed-exact)))
 
   #|
    integer format specified by first byte:
@@ -569,7 +591,7 @@
         #t
         (cond
          [(and (pair? boundaries)
-               (items . > . (car boundaries)))
+               (items . >= . (car boundaries)))
           (set! is-bad? #t)
           (error 'editor-stream-in%
                  "overread (caused by file corruption?; ~a vs ~a)" items (car boundaries))]
@@ -647,6 +669,7 @@
               (bytes-append spc
                             (make-bytes (- 11 (string-length s)) (char->integer #\space))
                             (string->bytes/latin-1 s))))
+      (set! col new-col)
       (set! items (add1 items)))
     this)
 

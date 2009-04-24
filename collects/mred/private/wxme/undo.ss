@@ -4,7 +4,8 @@
          "snip.ss"
          "snip-flags.ss")
 
-(provide proc-record%
+(provide change-record%
+         proc-record%
          unmodify-record%
          insert-record%
          insert-snip-record%

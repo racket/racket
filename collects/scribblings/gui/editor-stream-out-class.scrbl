@@ -86,7 +86,8 @@ Puts a fixed-sized integer into the stream. This method is needed
  fixed-size number.
 
 Numbers written to a stream with @method[editor-stream-out% put-fixed]
- must be read with @method[editor-stream-in% get-fixed].}
+ must be read with @method[editor-stream-in% get-fixed-exact]
+ or @method[editor-stream-in% get-fixed].}
 
 
 @defmethod[(put-unterminated [v bytes?]) (is-a?/c editor-stream-out%)]{

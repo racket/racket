@@ -54,17 +54,17 @@ MzScheme adds properties to expanded syntax (often using
 
  @item{When an internal @scheme[define-values] or
  @scheme[define-syntaxes] form is converted into a
- @scheme[letrec-values+syntaxes] form (see @secref["intdef-body"]),
+ @scheme[letrec-syntaxes+values] form (see @secref["intdef-body"]),
  @scheme[syntax-track-origin] is applied to each generated binding
  clause.  The second argument to @scheme[syntax-track-origin] is the
  converted form, and the third argument is the @scheme[define-values]
  or @scheme[define-syntaxes] keyword form the converted form.}
 
- @item{When a @scheme[letrec-values+syntaxes] expression is fully
+ @item{When a @scheme[letrec-syntaxes+values] expression is fully
  expanded, syntax bindings disappear, and the result is either a
  @scheme[letrec-values] form (if the unexpanded form contained
  non-syntax bindings), or only the body of the
- @scheme[letrec-values+syntaxes] form (wrapped with @scheme[begin] if
+ @scheme[letrec-syntaxes+values] form (wrapped with @scheme[begin] if
  the body contained multiple expressions). To record the disappeared
  syntax bindings, a property is added to the expansion result: an
  immutable list of identifiers from the disappeared bindings, as a
