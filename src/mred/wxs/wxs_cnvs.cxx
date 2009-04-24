@@ -874,7 +874,7 @@ static Scheme_Object *os_wxCanvasSetScrollPage(int n,  Scheme_Object *p[])
 
   
   x0 = WITH_VAR_STACK(unbundle_symset_orientation(p[POFFSET+0], "set-scroll-page in canvas%"));
-  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 1, 10000, "set-scroll-page in canvas%"));
+  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 1, 1000000000, "set-scroll-page in canvas%"));
 
   
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->SetScrollPage(x0, x1));
@@ -898,7 +898,7 @@ static Scheme_Object *os_wxCanvasSetScrollRange(int n,  Scheme_Object *p[])
 
   
   x0 = WITH_VAR_STACK(unbundle_symset_orientation(p[POFFSET+0], "set-scroll-range in canvas%"));
-  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 10000, "set-scroll-range in canvas%"));
+  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 1000000000, "set-scroll-range in canvas%"));
 
   
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->SetScrollRange(x0, x1));
@@ -922,7 +922,7 @@ static Scheme_Object *os_wxCanvasSetScrollPos(int n,  Scheme_Object *p[])
 
   
   x0 = WITH_VAR_STACK(unbundle_symset_orientation(p[POFFSET+0], "set-scroll-pos in canvas%"));
-  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 10000, "set-scroll-pos in canvas%"));
+  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 1000000000, "set-scroll-pos in canvas%"));
 
   
   WITH_VAR_STACK(((wxCanvas *)((Scheme_Class_Object *)p[0])->primdata)->SetScrollPos(x0, x1));
@@ -1146,18 +1146,18 @@ static Scheme_Object *os_wxCanvasSetScrollbars(int n,  Scheme_Object *p[])
   VAR_STACK_PUSH(0, p);
 
   
-  x0 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+0], 0, 10000, "set-scrollbars in canvas%"));
-  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 10000, "set-scrollbars in canvas%"));
-  x2 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+2], 0, 10000, "set-scrollbars in canvas%"));
-  x3 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+3], 0, 10000, "set-scrollbars in canvas%"));
-  x4 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+4], 1, 10000, "set-scrollbars in canvas%"));
-  x5 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+5], 1, 10000, "set-scrollbars in canvas%"));
+  x0 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+0], 0, 1000000000, "set-scrollbars in canvas%"));
+  x1 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+1], 0, 1000000000, "set-scrollbars in canvas%"));
+  x2 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+2], 0, 1000000000, "set-scrollbars in canvas%"));
+  x3 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+3], 0, 1000000000, "set-scrollbars in canvas%"));
+  x4 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+4], 1, 1000000000, "set-scrollbars in canvas%"));
+  x5 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+5], 1, 1000000000, "set-scrollbars in canvas%"));
   if (n > (POFFSET+6)) {
-    x6 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+6], 0, 10000, "set-scrollbars in canvas%"));
+    x6 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+6], 0, 1000000000, "set-scrollbars in canvas%"));
   } else
     x6 = 0;
   if (n > (POFFSET+7)) {
-    x7 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+7], 0, 10000, "set-scrollbars in canvas%"));
+    x7 = WITH_VAR_STACK(objscheme_unbundle_integer_in(p[POFFSET+7], 0, 1000000000, "set-scrollbars in canvas%"));
   } else
     x7 = 0;
   if (n > (POFFSET+8)) {

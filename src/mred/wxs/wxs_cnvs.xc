@@ -80,7 +80,7 @@ static void wxSetResizeCorner(wxCanvas *c, Bool v)
 
 // @ "get-scroll-units" : void GetScrollUnitsPerPage(int*,int*); : : / PANELREDIRECT[ FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
 @ "get-virtual-size" : void GetVirtualSize(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
-@ "set-scrollbars" : void SetScrollbars(rint[0|10000],rint[0|10000],rint[0|10000],rint[0|10000],rint[1|10000],rint[1|10000],rint[0|10000]=0,rint[0|10000]=0,bool=TRUE);  : : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
+@ "set-scrollbars" : void SetScrollbars(rint[0|1000000000],rint[0|1000000000],rint[0|1000000000],rint[0|1000000000],rint[1|1000000000],rint[1|1000000000],rint[0|1000000000]=0,rint[0|1000000000]=0,bool=TRUE);  : : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
 @ "show-scrollbars" : void EnableScrolling(bool,bool)
 @ m "set-resize-corner" : void wxSetResizeCorner(bool)
 @ "view-start" : void ViewStart(int*,int*); : : / PANELREDIRECT[FillZero(x0,x1); READY_TO_RETURN; return scheme_void]
@@ -91,9 +91,9 @@ static void wxSetResizeCorner(wxCanvas *c, Bool v)
 @ "get-scroll-range" : int GetScrollRange(SYM[orientation]);
 @ "get-scroll-page" : int GetScrollPage(SYM[orientation]);
 
-@ "set-scroll-pos" : void SetScrollPos(SYM[orientation], rint[0|10000]);
-@ "set-scroll-range" : void SetScrollRange(SYM[orientation], rint[0|10000]);
-@ "set-scroll-page" : void SetScrollPage(SYM[orientation], rint[1|10000]);
+@ "set-scroll-pos" : void SetScrollPos(SYM[orientation], rint[0|1000000000]);
+@ "set-scroll-range" : void SetScrollRange(SYM[orientation], rint[0|1000000000]);
+@ "set-scroll-page" : void SetScrollPage(SYM[orientation], rint[1|1000000000]);
 
 @ v "on-scroll" : void OnScroll(wxScrollEvent!); : JMPDECL/SETJMP/RESETJMP : / PANELREDIRECT[READY_TO_RETURN; return scheme_void]
 

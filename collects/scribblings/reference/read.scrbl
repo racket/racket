@@ -29,7 +29,7 @@ See @secref["reader"] for information on the default reader in
 @defproc[(read/recursive [in input-port? (current-input-port)]
                          [start (or/c char? #f) #f]
                          [readtable (or/c readtable? #f) (current-readtable)]
-                         [graph? any/c #f])
+                         [graph? any/c #t])
           any]{
 
 Similar to calling @scheme[read], but normally used during the dynamic
@@ -77,7 +77,7 @@ See @secref["readtables"] for an extended example that uses
                                 [in input-port? (current-input-port)]
                                 [start (or/c char? #f) #f]
                                 [readtable (or/c readtable? #f) (current-readtable)]
-                                [graph? any/c #f])
+                                [graph? any/c #t])
           any]{
 
 Analogous to calling @scheme[read/recursive], but the resulting value
@@ -317,7 +317,7 @@ Like @scheme[read-syntax], but for Honu mode (see
 @defproc[(read-honu/recursive [in input-port? (current-input-port)]
                               [start (or/c char? #f) #f]
                               [readtable (or/c readtable? #f) (current-readtable)]
-                              [graph? any/c #f])
+                              [graph? any/c #t])
           any]{
 
 Like @scheme[read/recursive], but for Honu mode (see
