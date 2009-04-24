@@ -976,7 +976,25 @@ sets of imported identifiers.
 @defform[(matching-identifiers-in regexp require-spec)]{ Like
   @scheme[require-spec], but including only imports whose names match
   @scheme[regexp].  The @scheme[regexp] must be a literal regular
-  expression (see @secref["regexp"]).}
+  expression (see @secref["regexp"]).
+
+@defexamples[#:eval (syntax-eval)
+(module zoo scheme/base
+  (provide tunafish swordfish blowfish
+           monkey lizard ant)
+  (define tunafish 1)
+  (define swordfish 2)
+  (define blowfish 3)
+  (define monkey 4)
+  (define lizard 5)
+  (define ant 6))
+(require scheme/require)
+(require (matching-identifiers-in #rx"\\w*fish" 'zoo))
+tunafish
+swordfish
+blowfish
+monkey
+]}
 
 @defform[(subtract-in require-spec subtracted-spec ...)]{ Like
   @scheme[require-spec], but omitting those imports that would be
