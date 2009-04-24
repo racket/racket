@@ -5,7 +5,7 @@
          syntax/kerncase syntax/boundmap
          (env type-name-env type-alias-env)
          mzlib/trace
-         (private type-contract)
+         (private type-contract typed-renaming)
          (rep type-rep)
 	 (utils tc-utils)
          "def-binding.ss")
@@ -13,7 +13,8 @@
 (require (for-template scheme/base
                        scheme/contract))
 
-(provide remove-provides provide? generate-prov)
+(provide remove-provides provide? generate-prov
+         get-alternate)
 
 (define (provide? form)    
   (kernel-syntax-case form #f
@@ -23,6 +24,12 @@
 
 (define (remove-provides forms)
   (filter (lambda (e) (not (provide? e))) (syntax->list forms)))
+
+
+(define (renamer id #:alt [alt #f])
+  (if alt
+      (make-typed-renaming (syntax-property id 'not-free-identifier=? #t) alt)
+      (make-rename-transformer (syntax-property id 'not-free-identifier=? #t))))
 
 (define (generate-prov stx-defs val-defs)
   (define mapping (make-free-identifier-mapping))
@@ -54,35 +61,35 @@
                             (define/contract cnt-id #,cnt id)
                             (define-syntax export-id
                               (if (unbox typed-context?)
-                                  (make-rename-transformer (syntax-property #'id 
-                                                                            'not-free-identifier=? #t))
-                                  (make-rename-transformer (syntax-property #'cnt-id
-                                                                            'not-free-identifier=? #t))))
+                                  (renamer #'id #:alt #'cnt-id)
+                                  (renamer #'cnt-id)))
                             (#%provide (rename export-id out-id)))))]
                    [else 
-                    (with-syntax ([(export-id) (generate-temporaries #'(id))])
-                      #`(begin                             
+                    (with-syntax ([(export-id error-id) (generate-temporaries #'(id id))])
+                      #`(begin        
+                          (define-syntax error-id
+                            (lambda (stx) (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id))))
                           (define-syntax export-id
                             (if (unbox typed-context?)
-                                (make-rename-transformer (syntax-property #'id 
-                                                                          'not-free-identifier=? #t))
-                                (lambda (stx) (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
+                                (renamer #'id #:alt #'error-id)
+                                (renamer #'error-id)))
                           (provide (rename-out [export-id out-id]))))])))]
         [(mem? internal-id stx-defs) 
          =>
          (lambda (b)
            (with-syntax ([id internal-id]
                          [out-id external-id])
-             (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))])
-               #`(begin                    
+             (with-syntax ([(export-id error-id) (generate-temporaries #'(id id))])
+               #`(begin  
+                   (define-syntax error-id
+                     (lambda (stx)
+                       (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'out-id))))
                    (define-syntax export-id
                      (if (unbox typed-context?)
-                         (begin
+                         (begin                           
                            (add-alias #'export-id #'id)
-                           (make-rename-transformer (syntax-property #'id 
-                                                                     'not-free-identifier=? #t)))
-                         (lambda (stx)
-                           (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'out-id)))))
+                           (renamer #'id #:alt #'error-id))
+                         (renamer #'error-id)))
                    (provide (rename-out [export-id out-id]))))))]
         [(eq? (syntax-e internal-id) (syntax-e external-id))
          #`(provide #,internal-id)]

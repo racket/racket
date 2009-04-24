@@ -576,7 +576,7 @@
       [c:lv-clause
        #:with (#%plain-app reverse n:id) #'c.e
        #:with (v) #'(c.v ...) 
-       #:when (free-identifier=? name #'v)
+       #:when (free-identifier=? name #'n)
        (type-annotation #'v)]
       [_ #f]))
   (syntax-parse stx
@@ -757,8 +757,8 @@
      (match (tc-expr #'fn)
        [(tc-result: (Function: arities)) 
         (tc-keywords form arities (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected)]
-       [t (tc-error/expr #:return (ret (Un))
-                         "Cannot apply expression of type ~a, since it is not a function type" t)])]
+       [(tc-result: t) (tc-error/expr #:return (ret (Un))
+                                      "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
      (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*))

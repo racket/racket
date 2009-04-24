@@ -8,7 +8,7 @@
          (utils tc-utils stxclass-util)
          syntax/stx
          stxclass stxclass/util
-         (env type-environments type-name-env type-alias-env)
+         (env type-environments type-name-env type-alias-env lexical-env)
          (prefix-in t: "base-types-extra.ss")
          scheme/match 
          (for-template scheme/base "base-types-extra.ss"))
@@ -296,6 +296,13 @@
         (map list
              (map syntax-e (syntax->list #'(mname ...)))
              (map parse-type (syntax->list #'(mty ...)))))]
+      [(Refinement p?)
+       (and (eq? (syntax-e #'Refinement) 'Refinement)
+            (identifier? #'p?))
+       (match (lookup-type/lexical #'p?)
+              [(and t (Function: (list (arr: (list dom) rng #f #f '() _ _))))
+               (make-Refinement dom #'p? (syntax-local-certifier))]
+              [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       [(Instance t)
        (eq? (syntax-e #'Instance) 'Instance)
        (let ([v (parse-type #'t)])

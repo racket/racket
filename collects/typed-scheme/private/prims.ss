@@ -343,7 +343,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                             (list #'struct-info
                                                   #'maker
                                                   #'pred
-                                                  (list #'sel ...)
+                                                  (reverse (list #'sel ...))
                                                   (list mut ...)
                                                   #f))))
                        #,(internal #'(define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
@@ -408,3 +408,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax/loc stx
        (begin (: i t) ...
               (provide i ...)))]))
+
+(define-syntax (declare-refinement stx)
+  (syntax-parse stx
+    [(_ p:id)
+     (quasisyntax/loc stx #,(internal #'(declare-refinement-internal p)))]))

@@ -418,11 +418,12 @@
 [symbol->string (Sym . -> . -String)]
 [vector-length (-poly (a) ((-vec a) . -> . -Integer))]
 
-[call-with-input-file (-poly (a) (cl-> [(-String (-Port . -> . a))  a]
-                                       [(-String (-Port . -> . a) Sym)  a]))]
+[call-with-input-file (-poly (a) (-String (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
+[call-with-output-file (-poly (a) (-String (-Output-Port . -> . a)
+                                   #:exists (one-of/c error 'append 'update 'replace 'truncate 'truncate/replace) #f
+                                   #:mode (Un (-val 'binary) (-val 'text)) #f 
+                                   . ->key .  a))]
 
-[call-with-output-file (-poly (a) (cl-> [(-String (-Port . -> . a))  a]
-                                        [(-String (-Port . -> . a) Sym)  a]))]
 [current-output-port (-Param -Output-Port -Output-Port)]
 [current-error-port (-Param -Output-Port -Output-Port)]
 [current-input-port (-Param -Input-Port -Input-Port)]
@@ -544,11 +545,29 @@
 [list->string ((-lst -Char) . -> . -String)]
 [string->list (-String . -> . (-lst -Char))]
 [sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
+[find-system-path (Sym . -> . -Path)]
+
+;; scheme/cmdline
+
+[parse-command-line
+ (let ([mode-sym (one-of/c 'once-each 'once-any 'multi 'final 'help-labels)])
+   (-polydots (b a)
+              (cl->* (-Pathlike 
+                      (Un (-lst -String) (-vec -String))
+                      (-lst (-pair mode-sym (-lst (-lst Univ))))
+                      ((list Univ) [a a] . ->... . b)
+                      (-lst -String)
+                      . -> . b))))]
 
 ;; scheme/list
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> . 
                        (Un (-pair a a) (-pair a (-val '())))))]
+[remove-duplicates
+ (-poly (a)
+        (cl->*
+         ((-lst a) . -> . (-lst a))
+         ((-lst a) (a a . -> . Univ) . -> . (-lst a))))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]

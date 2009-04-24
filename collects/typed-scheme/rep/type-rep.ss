@@ -201,7 +201,7 @@
                          poly?
                          pred-id
                          cert)]
-    [#:key (gensym)])
+    [#:key #f #;(gensym)])
 
 
 ;; v : Scheme Value
@@ -242,6 +242,17 @@
 ;; key : Type
 ;; value : Type
 (dt Hashtable ([key Type/c] [value Type/c]) [#:key 'hash])
+
+;; parent : Type
+;; pred : Identifier
+;; cert : Certifier
+(dt Refinement (parent pred cert)
+    [#:key (Type-key parent)]
+    [#:intern (list parent (hash-id pred))]
+    [#:fold-rhs (*Refinement (type-rec-id parent) pred cert)]
+    [#:frees (free-vars* parent)
+             (free-idxs* parent)])
+    
 
 ;; t : Type
 (dt Syntax ([t Type/c]) [#:key 'syntax])
@@ -400,7 +411,7 @@
                     (map sb kws))]
        [#:ValuesDots rs dty dbound
                      (*ValuesDots (map sb rs)
-                                  (sb dty)                                  
+                                  (sb dty)
                                   (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 

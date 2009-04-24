@@ -136,7 +136,7 @@
      (ret expected)]
     [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
-       (tc-error/expr"Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]))
 
 (define (tc-expr/check form expected)

@@ -87,7 +87,7 @@ The following base types are parameteric in their type arguments.
 types @scheme[t ...].  This can only appear as the return type of a
 function.}
 @defform/none[v]{where @scheme[v] is a number, boolean or string, is the singleton type containing only that value}
-@defform/none['sym]{where @scheme[sym] is a symbol, is the singleton type containing only that symbol}
+@defform/none['val]{where @scheme[val] is a Scheme value, is the singleton type containing only that value}
 @defform/none[i]{where @scheme[i] is an identifier can be a reference to a type
 name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @scheme[n] is bound to the
@@ -294,3 +294,18 @@ Other libraries can be used with Typed Scheme via
                [check-version (-> (U Symbol (Listof Any)))])
 (check-version)
 ]
+
+@section{Typed Scheme Syntax Without Type Checking}
+
+@defmodulelang[typed-scheme/no-check]
+
+On occasions where the Typed Scheme syntax is useful, but actual
+typechecking is not desired, the @schememodname[typed-scheme/no-check]
+language is useful.  It provides the same bindings and syntax as Typed
+Scheme, but does no type checking.
+
+Examples:
+
+@schememod[typed-scheme/no-check
+(: x Number)
+(define x "not-a-number")]
