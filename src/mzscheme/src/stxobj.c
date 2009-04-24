@@ -4888,7 +4888,7 @@ Scheme_Object *scheme_stx_module_name(Scheme_Hash_Table *free_id_recur,
            and nominal_name is NULL or a free_id=? renamed id. */
 {
   if (SCHEME_STXP(*a)) {
-    Scheme_Object *modname, *names[6];
+    Scheme_Object *modname, *names[7];
     int rib_dep;
 
     names[0] = NULL;
