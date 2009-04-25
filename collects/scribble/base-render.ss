@@ -234,9 +234,12 @@
 
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])
-        (hash-set! (collect-info-ht ci)
-                   (generate-tag t ci)
-                   (list (or (part-title-content d) '("???")) number))))
+        (let ([t (generate-tag t ci)])
+          (hash-set! (collect-info-ht ci)
+                     t
+                     (list (or (part-title-content d) '("???")) 
+                           number
+                           (add-current-tag-prefix t))))))
 
     (define/public (collect-content c ci)
       (for ([i c]) (collect-element i ci)))
@@ -281,7 +284,8 @@
                  (for ([e (element-content i)]) (collect-element e ci))))))
 
     (define/public (collect-target-element i ci)
-      (collect-put! ci (generate-tag (target-element-tag i) ci) (list i)))
+      (let ([t (generate-tag (target-element-tag i) ci)])
+        (collect-put! ci t (list i (add-current-tag-prefix t)))))
 
     (define/public (collect-index-element i ci)
       (collect-put! ci

@@ -2,6 +2,7 @@
 (require "../decode.ss"
          "../struct.ss"
          "../basic.ss"
+         "manual-utils.ss"
          scheme/list
          scheme/string)
 
@@ -175,14 +176,11 @@
 (define (elemref #:underline? [u? #t] t . body)
   (make-link-element (if u? #f "plainlink") (decode-content body) `(elem ,t)))
 
-(define (doc-prefix doc s)
-  (if doc (list (module-path-prefix->string doc) s) s))
-
-(define (secref s #:underline? [u? #t] #:doc [doc #f])
-  (make-link-element (if u? #f "plainlink") null `(part ,(doc-prefix doc s))))
-(define (seclink tag #:underline? [u? #t] #:doc [doc #f] . s)
+(define (secref s #:underline? [u? #t] #:doc [doc #f] #:tag-prefixes [prefix #f])
+  (make-link-element (if u? #f "plainlink") null `(part ,(doc-prefix doc prefix s))))
+(define (seclink tag #:underline? [u? #t] #:doc [doc #f] #:tag-prefixes [prefix #f] . s)
   (make-link-element (if u? #f "plainlink") (decode-content s)
-                     `(part ,(doc-prefix doc tag))))
+                     `(part ,(doc-prefix doc prefix tag))))
 
 (define (other-manual #:underline? [u? #t] doc)
   (secref #:doc doc #:underline? u? "top"))
