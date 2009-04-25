@@ -189,7 +189,7 @@ added to a list value using @scheme[cons]; a prefix is not added to a
 outside the part, including the use of tags in the part's
 @scheme[tags] field. Typically, a document's main part has a tag
 prefix that applies to the whole document; references to sections and
-defined terms within the document from other documents must include,
+defined terms within the document from other documents must include the prefix,
 while references within the same document omit the prefix. Part
 prefixes can be used within a document as well, to help disambiguate
 references within the document.

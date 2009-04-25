@@ -33,6 +33,7 @@
 
     (inherit render-block
              render-content
+             render-part
              install-file
              format-number
              extract-part-style-files)
@@ -69,7 +70,7 @@
         (render-part d ri)
         (printf "\n\n\\postDoc\n\\end{document}\n")))
 
-    (define/override (render-part d ri)
+    (define/override (render-part-content d ri)
       (let ([number (collected-info-number (part-collected-info d ri))])
         (when (and (part-title-content d) (pair? number))
           (when (part-style? d 'index)
