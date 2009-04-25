@@ -2227,7 +2227,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       SCHEME_VEC_ELS(vec)[6] = mark_src;
       SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[8] = exets ? scheme_make_integer(exets[i]) : scheme_false;
-      SCHEME_VEC_ELS(vec)[9] = exets ? exinsps[i] : scheme_false;
+      SCHEME_VEC_ELS(vec)[9] = exinsps ? exinsps[i] : scheme_false;
       scheme_hash_set(required, exs[i], vec);
     }
   }
