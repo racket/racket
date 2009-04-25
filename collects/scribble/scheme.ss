@@ -606,8 +606,24 @@
     (typeset c #t pfx1 pfx sfx #t))
 
   (begin-for-syntax 
-   (define-struct variable-id (sym) #:omit-define-syntaxes)
-   (define-struct element-id-transformer (proc) #:omit-define-syntaxes))
+   (define-struct variable-id (sym) 
+     #:omit-define-syntaxes
+     #:property prop:procedure (lambda (self stx)
+                                 (raise-syntax-error
+                                  #f
+                                  (string-append
+                                   "misuse of an identifier (not in `scheme', etc.) that is"
+                                   " bound as a code-typesetting variable")
+                                  stx)))
+   (define-struct element-id-transformer (proc) 
+     #:omit-define-syntaxes
+     #:property prop:procedure (lambda (self stx)
+                                 (raise-syntax-error
+                                  #f
+                                  (string-append
+                                   "misuse of an identifier (not in `scheme', etc.) that is"
+                                   " bound as an code-typesetting element transformer")
+                                  stx))))
 
   (define-syntax (define-code stx)
     (syntax-case stx ()
