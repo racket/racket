@@ -4187,16 +4187,16 @@
                               (let ([at-start? (eq? (mline-snip line) snip1)]
                                     [at-end? (eq? (mline-last-snip line) snip2)]
                                     [wl? write-locked?]
-                                    [fl flow-locked?])
+                                    [fl? flow-locked?])
                                 (set! read-locked? #t)
                                 (set! write-locked? #t)
                                 (set! flow-locked? #t)
 
                                 (set-snip-flags! snip2 (add-flag (snip->flags snip2) CAN-SPLIT))
                                 (let ([naya (send snip2 merge-with snip1)])
-                                  (set! read-locked? #t)
+                                  (set! read-locked? #f)
                                   (set! write-locked? wl?)
-                                  (set! flow-locked? wl?)
+                                  (set! flow-locked? fl?)
                                   
                                   (if naya
                                       (begin
