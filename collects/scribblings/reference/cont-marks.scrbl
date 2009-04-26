@@ -166,7 +166,7 @@ for programmatic use.
 
 A stack trace is extracted from an exception and displayed by the
 default error display handler (see
-@scheme[current-error-display-handler]) for exceptions other than
+@scheme[error-display-handler]) for exceptions other than
 @scheme[exn:fail:user] (see @scheme[raise-user-error] in
 @secref["errorproc"]).}
 
