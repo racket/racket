@@ -6478,7 +6478,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	e = scheme_expand_expr(e, nenv, &erec1, 0);
       }
 
-      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(xenv), lifted_reqs);
+      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(cenv), lifted_reqs);
       
       l = scheme_frame_get_lifts(cenv);
       if (SCHEME_NULLP(l)) {
