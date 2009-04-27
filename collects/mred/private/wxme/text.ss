@@ -1700,9 +1700,7 @@
             (set! write-locked? #t)
 
             (if (not (can-delete? start (- end start)))
-                (begin
-                  (set! write-locked? #f)
-                  (set! flow-locked? #f))
+                (set! write-locked? #f)
                 (begin
                   (on-delete start (- end start))
 
@@ -1917,11 +1915,11 @@
      [([(make-alts exact-nonnegative-integer? (symbol-in start)) start]
        [(make-alts exact-nonnegative-integer? (symbol-in back)) [end 'back]]
        [any? [scroll-ok? #t]])
-      (do-delete (if (symbol? start) startpos start) end scroll-ok?)]
+      (do-delete (if (symbol? start) startpos start) end #t scroll-ok?)]
      (method-name 'text% 'delete)))
 
   (def/public (erase)
-    (do-delete 0 len #t))
+    (do-delete 0 len #t #t))
   
   (def/override (clear)
     (delete startpos endpos #t))
