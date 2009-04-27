@@ -126,7 +126,8 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs]) (get-type/infer name e (tc-expr-t/maybe-expected expected) tc-expr/check/t))]
+         [types (for/list ([name names] [e exprs]) (get-type/infer name e (tc-expr-t/maybe-expected expected) 
+                                                                   (lambda (e t) (tc-expr/check/t e (ret t)))))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     (do-check void names types form types body clauses expected)))

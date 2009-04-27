@@ -126,7 +126,7 @@
 
 (define (tc-expr/check/t e t)
   (match (tc-expr/check e t)
-    [(tc-result: t) t]))
+    [(tc-result1: t) t]))
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
@@ -145,6 +145,10 @@
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]))
+
+(define (tc-expr/check/type form expected)
+  #;(syntax? Type/c . -> . tc-results?)
+  (tc-expr/check form (ret expected)))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check form expected)
@@ -194,8 +198,8 @@
            (check-below (tc-id #'x) expected)]
         ;; w-c-m
         [(with-continuation-mark e1 e2 e3)
-         (begin (tc-expr/check #'e1 Univ)
-                (tc-expr/check #'e2 Univ)
+         (begin (tc-expr/check/type #'e1 Univ)
+                (tc-expr/check/type #'e2 Univ)
                 (tc-expr/check #'e3 expected))]  
         ;; application        
         [(#%plain-app . _) (tc/app/check form expected)]
@@ -264,8 +268,8 @@
       [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
-       (begin (tc-expr/check #'e1 Univ)
-              (tc-expr/check #'e2 Univ)
+       (begin (tc-expr/check/type #'e1 Univ)
+              (tc-expr/check/type #'e2 Univ)
               (tc-expr #'e3))]
       ;; lambda
       [(#%plain-lambda formals . body)
@@ -326,7 +330,7 @@
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
     (let ([ty (cond [(type-ascription form) => (lambda (ann)
-                                                 (tc-expr/check form ann))]
+                                                 (tc-expr/check/type form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
         [(tc-results: ts fs os)
@@ -353,11 +357,11 @@
 (define (tc-exprs exprs)
   (cond [(null? exprs) (ret -Void)]
         [(null? (cdr exprs)) (tc-expr (car exprs))]
-        [else (tc-expr/check (car exprs) Univ)
+        [else (tc-expr/check/type (car exprs) Univ)
               (tc-exprs (cdr exprs))]))
 
 (define (tc-exprs/check exprs expected)
   (cond [(null? exprs) (check-below (ret -Void) expected)]
         [(null? (cdr exprs)) (tc-expr/check (car exprs) expected)]
-        [else (tc-expr/check (car exprs) Univ)
+        [else (tc-expr/check/type (car exprs) Univ)
               (tc-exprs/check (cdr exprs) expected)]))
