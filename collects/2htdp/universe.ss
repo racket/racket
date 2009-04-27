@@ -117,7 +117,7 @@
               (lambda (p)
                 (syntax-case p ()
                   [(host) #`(ip> #,tag host)]
-                  [_ (err tag p)])))]
+                  [_ (err tag p "expected a host (ip address)")])))]
   [name (lambda (tag)
           (lambda (p)
             (syntax-case p ()
