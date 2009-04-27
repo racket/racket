@@ -13,5 +13,5 @@
 
 (provide-signature-elements typechecker^ tc-expr^)
 
-(define-values/link-units/infer
-  tc-toplevel@ tc-new-if@ tc-lambda@ tc-dots@ tc-new-app@ tc-let@ tc-expr@ check-subforms@)
+(define-values/invoke-unit/infer
+  (link tc-toplevel@ tc-new-if@ tc-lambda@ tc-dots@ tc-new-app@ tc-let@ tc-expr@ check-subforms@))

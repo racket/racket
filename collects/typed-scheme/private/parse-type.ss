@@ -300,7 +300,7 @@
        (and (eq? (syntax-e #'Refinement) 'Refinement)
             (identifier? #'p?))
        (match (lookup-type/lexical #'p?)
-              [(and t (Function: (list (arr: (list dom) rng #f #f '() _ _))))
+              [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
                (make-Refinement dom #'p? (syntax-local-certifier))]
               [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       [(Instance t)

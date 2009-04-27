@@ -10,9 +10,9 @@
          (rep type-rep)
          (types utils convenience)
          (private parse-type type-annotation type-contract)
-	 (env type-env init-envs type-name-env type-alias-env lexical-env)
-	 (utils tc-utils mutated-vars)
-	 "provide-handling.ss"
+         (env type-env init-envs type-name-env type-alias-env lexical-env)
+         (utils tc-utils mutated-vars)
+         "provide-handling.ss"
          "def-binding.ss"
          (for-template
           "internal-forms.ss"
@@ -41,9 +41,10 @@
        (list)]
 
       ;; declare-refinement
+      ;; FIXME - this sucks and should die
       [(define-values () (begin (quote-syntax (declare-refinement-internal pred)) (#%plain-app values)))
        (match (lookup-type/lexical #'pred)
-              [(and t (Function: (list (arr: (list dom) rng #f #f '() _ _))))
+              [(and t (Function: (list (arr: (list dom) rng #f #f '()))))
                (register-type #'pred 
                               (make-pred-ty (list dom)
                                             rng

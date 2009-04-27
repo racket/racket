@@ -29,7 +29,8 @@
          (struct-out DottedBoth)
          just-Dotted?
          tc-error/expr
-         lookup-fail)
+         lookup-fail
+         lookup-type-fail)
 
 
 ;; substitute : Type Name Type -> Type
@@ -38,7 +39,7 @@
   (if (hash-ref (free-vars* target) name #f)
       (type-case (#:Type sb #:LatentFilter (sub-lf sb))
                  target
-		 [#:Union tys (Un (map sb tys))]
+                 [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
                  [#:arr dom rng rest drest kws
                         (begin
@@ -83,7 +84,7 @@
                                        (map sb dom)
                                        ;; We need to recur first, just to expand out any dotted usages of this.
                                        (let ([expanded (sb (car drest))])
-					 (map (lambda (img) (substitute img name expanded)) images)))
+                                         (map (lambda (img) (substitute img name expanded)) images)))
                                       (sb rng)
                                       rimage
                                       #f
@@ -190,25 +191,25 @@
 ;; convenience function for returning the result of typechecking an expression
 (define ret
   (case-lambda [(t) 
-		(make-tc-results
-		 (if (Type? t)
-		     (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
-		     (for/list ([i t])
-			       (make-tc-result i (make-FilterSet null null) (make-Empty))))
-		 #f)]
-	       [(t f)
-		(make-tc-results
-		 (if (Type? t)
-		     (list (make-tc-result t f (make-Empty)))
-		     (for/list ([i t] [f f])
-			       (make-tc-result i f (make-Empty))))
-		 #f)]
-	       [(t f o)
-		(make-tc-results
-		 (if (and (list? t) (list? f) (list? o))
-		     (map make-tc-result t f o)
-		     (list (make-tc-result t f o)))
-		 #f)]))
+                (make-tc-results
+                 (if (Type? t)
+                     (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
+                     (for/list ([i t])
+                               (make-tc-result i (make-FilterSet null null) (make-Empty))))
+                 #f)]
+               [(t f)
+                (make-tc-results
+                 (if (Type? t)
+                     (list (make-tc-result t f (make-Empty)))
+                     (for/list ([i t] [f f])
+                               (make-tc-result i f (make-Empty))))
+                 #f)]
+               [(t f o)
+                (make-tc-results
+                 (if (and (list? t) (list? f) (list? o))
+                     (map make-tc-result t f o)
+                     (list (make-tc-result t f o)))
+                 #f)]))
 
 (p/c
  [ret    
@@ -254,4 +255,16 @@
   return)
 
 ;; error for unbound variables
-(define (lookup-fail e) (tc-error/expr "unbound identifier ~a" e))
+(define (lookup-fail e) 
+  (match (identifier-binding e)
+    ['lexical (int-err "untyped lexical variable ~a" (syntax-e e))]
+    [#f (int-err "untyped top-level variable ~a" (syntax-e e))]
+    [(list _ _ nominal-source-mod nominal-source-id _ _ _)
+     (let-values ([(x y) (module-path-index-split nominal-source-mod)])
+       (cond [(and (not x) (not y))
+              (tc-error/expr "untyped identifier ~a" (syntax-e e))]
+             [else 
+              (tc-error/expr "untyped identifier ~a imported from module <~a>" (syntax-e e) x)]))]))
+
+(define (lookup-type-fail i)
+  (tc-error/expr "~a is not bound as a type" (syntax-e i)))

@@ -19,9 +19,6 @@
          env-keys+vals
          with-dotted-env/extend)
 
-(provide/contract [make-empty-env ((-> any/c any/c any/c) . -> . env?)]
-                  [])
-
 ;; eq? has the type of equal?, and l is an alist (with conses!)
 (define-struct env (eq? l))
 
@@ -76,7 +73,7 @@
 ;; elements are not lists, or all at once, if the elements are lists
 (define (extend/values kss vss env)
   (foldr (lambda (ks vs env) 
-           (cond [(and (list? ks) (list? vs))                                      
+           (cond [(and (list? ks) (list? vs))
                   (extend-env ks vs env)]
                  [(or (list? ks) (list? vs))
                   (int-err "not both lists in extend/values: ~a ~a" ks vs)]
@@ -87,3 +84,5 @@
 (define-syntax with-dotted-env/extend
   (syntax-rules ()
     [(_ i t v . b) (parameterize ([dotted-env (extend/values (list i) (list (cons t v)) (dotted-env))]) . b)]))
+
+(provide/contract [make-empty-env ((-> any/c any/c any/c) . -> . env?)])
