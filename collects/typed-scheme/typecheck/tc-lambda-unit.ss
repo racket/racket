@@ -204,12 +204,15 @@
                  (cons (car bodies) bodies*)
                  (cons (syntax-len (car formals)) nums-seen))]))))
 
+(define (tc/mono-lambda/type formals bodies expected)
+  (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
+
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define (tc/plambda form formals bodies expected)
   (define (maybe-loop form formals bodies expected)
     (match expected
-      [(Function: _) (tc/mono-lambda formals bodies expected)]
+      [(Function: _) (tc/mono-lambda/type formals bodies expected)]
       [(or (Poly: _ _) (PolyDots: _ _))
        (tc/plambda form formals bodies expected)]))
   (match expected
@@ -224,7 +227,7 @@
             [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
                   (maybe-loop form formals bodies expected*))])
        ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
-       (ret expected))]
+       expected)]
     [(PolyDots-names: (list ns ... dvar) expected*)
      (let-values 
          ([(tvars dotted)
@@ -242,7 +245,7 @@
                                                                   new-tvars)
                                                             (current-tvars))])
                     (maybe-loop form formals bodies expected*))])
-         (ret expected)))]
+         expected))]
     [#f
      (match (map syntax-e (syntax->list (syntax-property form 'typechecker:plambda)))
        [(list tvars ... dotted-var '...)
@@ -251,26 +254,26 @@
                [ty (parameterize ([current-tvars (extend-env (cons dotted-var literal-tvars)
                                                              (cons (make-Dotted (make-F dotted-var)) new-tvars)
                                                              (current-tvars))])
-                     (tc/mono-lambda formals bodies #f))])
-          (ret (make-PolyDots (append literal-tvars (list dotted-var)) ty)))]
+                     (tc/mono-lambda/type formals bodies #f))])
+          (make-PolyDots (append literal-tvars (list dotted-var)) ty))]
        [tvars
         (let* ([literal-tvars tvars]
                [new-tvars (map make-F literal-tvars)]
                [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
-                     (tc/mono-lambda formals bodies #f))])
+                     (tc/mono-lambda/type formals bodies #f))])
           ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
-          (ret (make-Poly literal-tvars ty)))])]
+          (make-Poly literal-tvars ty))])]
     [_ 
      (unless (check-below (tc/plambda form formals bodies #f) expected)
-       (tc-error/expr #:return (ret expected) "Expected a value of type ~a, but got a polymorphic function." expected))
-     (ret expected)]))
+       (tc-error/expr #:return expected "Expected a value of type ~a, but got a polymorphic function." expected))
+     expected]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result
 (define (tc/lambda/internal form formals bodies expected)
   (if (or (syntax-property form 'typechecker:plambda) (Poly? expected) (PolyDots? expected))
-      (tc/plambda form formals bodies expected)
-      (ret (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))))
+      (ret (tc/plambda form formals bodies expected))
+      (ret (tc/mono-lambda/type formals bodies expected))))
 
 ;; tc/lambda : syntax syntax-list syntax-list -> tc-result
 (define (tc/lambda form formals bodies)
