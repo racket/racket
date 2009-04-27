@@ -20,7 +20,7 @@
          with-dotted-env/extend)
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
-(define-struct env (eq? l))
+(r:d-s/c env ([eq? (any/c any/c . -> . boolean?)] [l (listof pair?)]))
 
 (define (env-vals e)
   (map cdr (env-l e)))
@@ -45,7 +45,8 @@
 ;; the environment for types of ... variables
 (define dotted-env (make-parameter (make-empty-env free-identifier=?)))
 
-(define (env-map f env)
+(define/contract (env-map f env)
+  ((pair? . -> . pair?) env? . -> . env?)
   (make-env (env-eq? env) (map f (env-l env))))
 
 ;; extend that works on single arguments

@@ -50,6 +50,6 @@
   (env? (listof Filter/c) . -> . env?)
   (for/fold ([Γ env]) ([f fs])
     (match f
-      [(Bot:) (env-map (lambda (_) (Un)) Γ)]
+      [(Bot:) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
        (update-type/lexical (lambda (x t) (update t f)) x Γ)])))
