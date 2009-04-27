@@ -4,6 +4,7 @@
 
 (require (private base-types)
          (for-syntax 
+          (except-in stxclass id)
           scheme/base
           (private type-contract)
           (types utils convenience)
@@ -117,28 +118,28 @@
                          [expanded-module-stx body2])]
           ;; typecheck the body, and produce syntax-time code that registers types
           [let ([type (tc-toplevel-form body2)])])
-       (kernel-syntax-case body2 #f
-         [(head . _)
-          (or (free-identifier=? #'head #'define-values)
-              (free-identifier=? #'head #'define-syntaxes)
-              (free-identifier=? #'head #'require)
-              (free-identifier=? #'head #'provide)
-              (free-identifier=? #'head #'begin)
-              (void? type)
-              (type-equal? -Void (tc-result-t type)))
+         (define-syntax-class invis-kw
+           #:literals (define-values define-syntaxes require provide begin)
+           (pattern define-values)
+           (pattern define-syntaxes)
+           (pattern require)
+           (pattern provide)
+           (pattern begin))
+       (syntax-parse body2
+         [(head:invis-kw . _) 
           body2]
-         ;; construct code to print the type
-         [_           
-          (nest
-              ([with-syntax ([b body2]
-                             [ty-str (match type
-                                       [(tc-result: t)
-                                        (format "- : ~a\n" t)]
-                                       [x (int-err "bad type result: ~a" x)])])])
-            #`(let ([v b] [type 'ty-str])
-                (begin0 
-                  v
-                  (printf type))))]))]))
+         [_ (let ([ty-str (match type
+                            [(tc-result1: t)
+                             (if (type-equal? t -Void) 
+                                 #f
+                                 (format "- : ~a\n" t))]
+                            [x (int-err "bad type result: ~a" x)])])
+              (if #'ty-str                  
+                  #`(let ([v #,body2] [type '#,ty-str])
+                      (begin0 
+                        v
+                        (printf type)))
+                  body2))]))]))
 
 
 

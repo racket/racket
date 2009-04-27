@@ -158,8 +158,8 @@
                 #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                 #:filters [filters -no-lfilter] #:object [obj -no-lobj])
   (c:->* ((listof Type/c) (or/c Values? ValuesDots? Type/c))
-         (#:rest Type/c 
-          #:drest (cons/c Type/c symbol?)
+         (#:rest (or/c #f Type/c) 
+          #:drest (or/c #f (cons/c Type/c symbol?))
           #:kws (listof Keyword?)
           #:filters LFilterSet?
           #:object LatentObject?)
