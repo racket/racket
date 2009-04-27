@@ -40,7 +40,7 @@
 @defidform[Namespace]
 @defidform[EOF]
 @defidform[Char])]{
-These types represent primitive Scheme data.}
+These types represent primitive Scheme data.  Note that @scheme[Integer] represents exact integers.}
 
 @defidform[Any]{Any Scheme value. All other types are subtypes of @scheme[Any].}
 

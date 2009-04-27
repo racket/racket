@@ -181,6 +181,8 @@
     [(Result: t (LFilterSet: (list) (list)) (LEmpty:)) (fp "~a" t)]
     [(Result: t fs (LEmpty:)) (fp "(~a : ~a)" t fs)]
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
+    [(Refinement: parent p? _)
+     (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [else (fp "Unknown Type: ~a" (struct->vector c))]
     ))
 

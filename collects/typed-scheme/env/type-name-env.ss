@@ -46,6 +46,6 @@
 (define (type-name-env-map f)
   (module-identifier-mapping-map the-mapping f))
 
-(define (add-alias from to)  
+(define (add-alias from to)
   (when (lookup-type-name to (lambda () #f))
     (register-resolved-type-alias from (make-Name to))))

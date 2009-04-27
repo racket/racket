@@ -242,10 +242,10 @@
             (S T)
           [(a a) empty]
           [(_ (Univ:)) empty]
-          
+
           [((Refinement: S _ _) T)
            (cg S T)]
-          
+
           [((F: (? (lambda (e) (memq e X)) v)) S)
            (when (match S
                    [(F: v*)
@@ -260,7 +260,7 @@
                    [_ #f])
              (fail! S T))
            (singleton (var-promote S V) v Univ)]
-          
+
           ;; two unions with the same number of elements, so we just try to unify them pairwise
           #;[((Union: l1) (Union: l2))
              (=> unmatch)

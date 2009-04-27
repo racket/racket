@@ -226,6 +226,8 @@
 		       (unmatch))
 					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
 	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
+	      [(list (Refinement: par _ _) t)
+               (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here
 	      [(list (Poly: vs b) s)
 	       (=> unmatch)
