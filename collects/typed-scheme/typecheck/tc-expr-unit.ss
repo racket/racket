@@ -129,7 +129,7 @@
     [((tc-results: t1) (tc-results: t2))
      (unless (andmap subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     (ret expected)]
+     expected]
     [((tc-result1: t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
@@ -139,6 +139,7 @@
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]))
 
+;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check form expected)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a~n" (syntax-object->datum form))
@@ -149,8 +150,7 @@
           [ret 
            (lambda args
              (define te (apply ret args))
-             (check-below te expected)
-             (ret expected))])
+             (check-below te expected))])
       (kernel-syntax-case* form #f 
         (letrec-syntaxes+values find-method/who) ;; letrec-syntaxes+values is not in kernel-syntax-case literals
         [stx
