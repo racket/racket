@@ -110,6 +110,22 @@
            (mobile-root? (car p))))
 
     ;; ----------------------------------------
+
+    (define/public (fresh-tag-collect-context? d ci)
+      #f)
+    (define/public (fresh-tag-resolve-context? d ri)
+      #f)
+    (define/public (fresh-tag-render-context? d ri)
+      #f)
+
+    (define/private (extend-prefix d fresh?)
+      (cond
+       [fresh? null]
+       [(part-tag-prefix d)
+        (cons (part-tag-prefix d) (current-tag-prefixes))]
+       [else (current-tag-prefixes)]))
+
+    ;; ----------------------------------------
     ;; marshal info
 
     (define/public (get-serialize-version)
@@ -174,26 +190,28 @@
                    (make-collected-info number
                                         parent
                                         (collect-info-ht p-ci)))
-        (when (part-title-content d)
-          (collect-content (part-title-content d) p-ci))
-        (collect-part-tags d p-ci number)
-        (collect-content (part-to-collect d) p-ci)
-        (collect-flow (part-flow d) p-ci)
-        (let loop ([parts (part-parts d)]
-                   [pos 1])
-          (unless (null? parts)
-            (let ([s (car parts)])
-              (collect-part s d p-ci
-                            (cons (if (or (unnumbered-part? s) 
-                                          (part-style? s 'unnumbered))
-                                      #f 
-                                      pos)
-                                  number))
-              (loop (cdr parts)
-                    (if (or (unnumbered-part? s) 
-                            (part-style? s 'unnumbered))
-                        pos
-                        (add1 pos))))))
+        (parameterize ([current-tag-prefixes
+                        (extend-prefix d (fresh-tag-collect-context? d p-ci))])
+          (when (part-title-content d)
+            (collect-content (part-title-content d) p-ci))
+          (collect-part-tags d p-ci number)
+          (collect-content (part-to-collect d) p-ci)
+          (collect-flow (part-flow d) p-ci)
+          (let loop ([parts (part-parts d)]
+                     [pos 1])
+            (unless (null? parts)
+              (let ([s (car parts)])
+                (collect-part s d p-ci
+                              (cons (if (or (unnumbered-part? s) 
+                                            (part-style? s 'unnumbered))
+                                        #f 
+                                        pos)
+                                    number))
+                (loop (cdr parts)
+                      (if (or (unnumbered-part? s) 
+                              (part-style? s 'unnumbered))
+                          pos
+                          (add1 pos)))))))
         (let ([prefix (part-tag-prefix d)])
           (for ([(k v) (collect-info-ht p-ci)])
             (when (cadr k)
@@ -216,9 +234,12 @@
 
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])
-        (hash-set! (collect-info-ht ci)
-                   (generate-tag t ci)
-                   (list (or (part-title-content d) '("???")) number))))
+        (let ([t (generate-tag t ci)])
+          (hash-set! (collect-info-ht ci)
+                     t
+                     (list (or (part-title-content d) '("???")) 
+                           number
+                           (add-current-tag-prefix t))))))
 
     (define/public (collect-content c ci)
       (for ([i c]) (collect-element i ci)))
@@ -263,7 +284,8 @@
                  (for ([e (element-content i)]) (collect-element e ci))))))
 
     (define/public (collect-target-element i ci)
-      (collect-put! ci (generate-tag (target-element-tag i) ci) (list i)))
+      (let ([t (generate-tag (target-element-tag i) ci)])
+        (collect-put! ci t (list i (add-current-tag-prefix t)))))
 
     (define/public (collect-index-element i ci)
       (collect-put! ci
@@ -284,11 +306,13 @@
       (map (lambda (d) (resolve-part d ri)) ds))
 
     (define/public (resolve-part d ri)
-      (when (part-title-content d)
-        (resolve-content (part-title-content d) d ri))
-      (resolve-flow (part-flow d) d ri)
-      (for ([p (part-parts d)])
-        (resolve-part p ri)))
+      (parameterize ([current-tag-prefixes
+                      (extend-prefix d (fresh-tag-resolve-context? d ri))])
+        (when (part-title-content d)
+          (resolve-content (part-title-content d) d ri))
+        (resolve-flow (part-flow d) d ri)
+        (for ([p (part-parts d)])
+          (resolve-part p ri))))
 
     (define/public (resolve-content c d ri)
       (for ([i c])
@@ -373,6 +397,11 @@
       (render-part d ri))
 
     (define/public (render-part d ri)
+      (parameterize ([current-tag-prefixes
+                      (extend-prefix d (fresh-tag-render-context? d ri))])
+        (render-part-content d ri)))
+
+    (define/public (render-part-content d ri)
       (list
        (when (part-title-content d)
          (render-content (part-title-content d) d ri))

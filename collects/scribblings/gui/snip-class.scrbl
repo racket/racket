@@ -834,7 +834,7 @@ The snip's editor is usually internally locked for reading when this
 
 @methimpl{
 
-Creates a new @scheme[snip%] instance while @scheme[position]
+Creates a new @scheme[snip%] instance with @scheme[position]
 elements, and modifies @this-obj[] to decrement its count by
 @scheme[position]. The nest snip is installed into @scheme[first] and
 @this-obj[] is installed into @scheme[second].

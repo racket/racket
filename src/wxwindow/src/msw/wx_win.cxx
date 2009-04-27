@@ -2404,6 +2404,18 @@ void wxSubWnd::OnHScroll( WORD wParam, WORD pos, HWND control)
     
   case SB_THUMBTRACK:
     event->moveType = wxEVENT_TYPE_SCROLL_THUMBTRACK;
+    {
+      /* Work-around for 16-bit limit on incoming `pos' */
+      SCROLLINFO si;
+      ZeroMemory(&si, sizeof(si));
+      si.cbSize = sizeof(si);
+      si.fMask = SIF_TRACKPOS;
+      if (GetScrollInfo(handle, SB_HORZ, &si)) {
+        pos = si.nTrackPos;
+        event->pos = pos;
+      }
+    }
+    
     break;
     
   default:

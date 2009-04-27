@@ -872,6 +872,7 @@ and @litchar{^} for subscripts and superscripts.}
 
 @defproc[(secref [tag string?]
                  [#:doc module-path (or/c module-path? false/c) #f]
+                 [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]
                  [#:underline? underline? any/c #t])
          element?]{
 
@@ -879,13 +880,21 @@ Inserts the hyperlinked title of the section tagged @scheme[tag], but
 @schemeidfont{aux-element} items in the title content are omitted in the
 hyperlink label.
 
-If @scheme[module-path] is provided, the @scheme[tag] refers to a tag
-with a prefix determined by @scheme[module-path]. When
+If @scheme[#:doc module-path] is provided, the @scheme[tag] refers to
+a tag with a prefix determined by @scheme[module-path]. When
 @exec{setup-plt} renders documentation, it automatically adds a tag
 prefix to the document based on the source module. Thus, for example,
 to refer to a section of the PLT Scheme reference,
 @scheme[module-path] would be @scheme['(lib
 "scribblings/reference/reference.scrbl")].
+
+The @scheme[#:tag-prefixes prefixes] argument similarly supports
+selecting a particular section as determined by a path of tag
+prefixes. When a @scheme[#:doc] argument is provided, then
+@scheme[prefixes] should trace a path of tag-prefixed subsections to
+reach the @scheme[tag] section. When @scheme[#:doc] is not provided,
+the @scheme[prefixes] path is relative to any enclosing section (i.e.,
+the youngest ancestor that produces a match).
 
 If @scheme[underline?] is @scheme[#f], then the hyperlink is rendered
 in HTML without an underline.}
@@ -893,6 +902,7 @@ in HTML without an underline.}
 
 @defproc[(seclink [tag string?] 
                   [#:doc module-path (or/c module-path? false/c) #f]
+                  [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]
                   [#:underline? underline? any/c #t]
                   [pre-content any/c] ...) element?]{
 
@@ -968,17 +978,21 @@ If @scheme[style?] is true, then @scheme[defterm] is used on
 @scheme[pre-content].}
 
 @defproc[(tech [pre-content any/c] ...
-               [#:doc module-path (or/c module-path? false/c) #f])
+               [#:doc module-path (or/c module-path? false/c) #f]
+               [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f])
          element?]{
 
 Produces an element for the @tech{decode}d @scheme[pre-content], and
 hyperlinks it to the definition of the content as established by
 @scheme[deftech]. The content's string form is normalized in the same
-way as for @scheme[deftech]. The @scheme[#:doc] argument supports
-cross-document references, like in @scheme[secref].
+way as for @scheme[deftech]. The @scheme[#:doc] and
+@scheme[#:tag-prefixes] arguments support cross-document and
+section-specific references, like in @scheme[secref].
 
-The hyperlink is relatively quiet, in that underlining in HTML output
-appears only when the mouse is moved over the term.
+With the default style files, the hyperlink created by @scheme[tech]
+is somewhat quieter than most hyperlinks: the underline in HTML output
+is gray, instead of blue, and the term and underline turn blue only
+when the mouse is moved over the term.
 
 In some cases, combining both natural-language uses of a term and
 proper linking can require some creativity, even with the
@@ -987,7 +1001,8 @@ defined, but a sentence uses the term ``binding,'' the latter can be
 linked to the former using @schemefont["@tech{bind}ing"].}
 
 @defproc[(techlink [pre-content any/c] ...
-                   [#:doc module-path (or/c module-path? false/c) #f]) 
+                   [#:doc module-path (or/c module-path? false/c) #f]
+                   [#:tag-prefixes prefixes (or/c (listof string?) false/c) #f]) 
          element?]{
 
 Like @scheme[tech], but the link is not a quiet. For example, in HTML

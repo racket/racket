@@ -58,6 +58,7 @@
                            ("cond" 0)
                            ("field" 0)
                            ("provide/contract" 0)
+                           ("match" 1)
                            ("new" 1)
                            ("case" 1)
                            ("syntax-rules" 1)

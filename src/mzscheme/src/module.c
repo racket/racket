@@ -2227,7 +2227,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       SCHEME_VEC_ELS(vec)[6] = mark_src;
       SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
       SCHEME_VEC_ELS(vec)[8] = exets ? scheme_make_integer(exets[i]) : scheme_false;
-      SCHEME_VEC_ELS(vec)[9] = exets ? exinsps[i] : scheme_false;
+      SCHEME_VEC_ELS(vec)[9] = exinsps ? exinsps[i] : scheme_false;
       scheme_hash_set(required, exs[i], vec);
     }
   }
@@ -6478,7 +6478,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	e = scheme_expand_expr(e, nenv, &erec1, 0);
       }
 
-      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(xenv), lifted_reqs);
+      lifted_reqs = scheme_append(scheme_frame_get_require_lifts(cenv), lifted_reqs);
       
       l = scheme_frame_get_lifts(cenv);
       if (SCHEME_NULLP(l)) {

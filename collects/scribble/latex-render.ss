@@ -6,6 +6,7 @@
          scheme/port
          scheme/path
          scheme/string
+         scheme/list
          setup/main-collects)
 (provide render-mixin)
 
@@ -33,6 +34,7 @@
 
     (inherit render-block
              render-content
+             render-part
              install-file
              format-number
              extract-part-style-files)
@@ -69,7 +71,7 @@
         (render-part d ri)
         (printf "\n\n\\postDoc\n\\end{document}\n")))
 
-    (define/override (render-part d ri)
+    (define/override (render-part-content d ri)
       (let ([number (collected-info-number (part-collected-info d ri))])
         (when (and (part-title-content d) (pair? number))
           (when (part-style? d 'index)
@@ -96,7 +98,7 @@
           (printf "}")
           (when (part-style? d 'index) (printf "\n\n")))
         (for ([t (part-tags d)])
-          (printf "\\label{t:~a}\n\n" (t-encode (tag-key t ri))))
+          (printf "\\label{t:~a}\n\n" (t-encode (add-current-tag-prefix (tag-key t ri)))))
         (render-flow (part-flow d) d ri #f)
         (for ([sec (part-parts d)]) (render-part sec ri))
         (when (part-style? d 'index) (printf "\\onecolumn\n\n"))
@@ -139,7 +141,7 @@
                                                    (link-element? e))])
           (when (target-element? e)
             (printf "\\label{t:~a}"
-                    (t-encode (tag-key (target-element-tag e) ri))))
+                    (t-encode (add-current-tag-prefix (tag-key (target-element-tag e) ri)))))
           (when part-label?
             (printf "\\SecRef{")
             (render-content
@@ -216,7 +218,9 @@
                    (show-link-page-numbers)
                    (not (done-link-page-numbers)))
           (printf ", \\pageref{t:~a}"
-                  (t-encode (tag-key (link-element-tag e) ri))))
+                  (t-encode 
+                   (let ([v (resolve-get part ri (link-element-tag e))])
+                     (and v (last v))))))
         null))
 
     (define/private (t-encode s)

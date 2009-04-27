@@ -230,6 +230,7 @@
   (class %
     (inherit render-content
              render-block
+             render-part
              collect-part
              install-file
              get-dest-directory
@@ -295,6 +296,13 @@
     (define/public (current-part-whole-page? d)
       (eq? d (current-top-part)))
 
+    (define/override (fresh-tag-collect-context? d ci)
+      (current-part-whole-page? d))
+    (define/override (fresh-tag-resolve-context? d ri)
+      (part-whole-page? d ri))
+    (define/override (fresh-tag-render-context? d ri)
+      (part-whole-page? d ri))
+
     (define/override (collect-part-tags d ci number)
       (for ([t (part-tags d)])
         (let ([key (generate-tag t ci)])
@@ -303,7 +311,7 @@
                                      (path->relative (current-output-file)))
                                 (or (part-title-content d) '("???"))
                                 (current-part-whole-page? d)
-                                key)))))
+                                (add-current-tag-prefix key))))))
 
     (define/override (collect-target-element i ci)
       (let ([key (generate-tag (target-element-tag i) ci)])
@@ -320,7 +328,7 @@
                    (if (redirect-target-element? i)
                      (make-literal-anchor
                       (redirect-target-element-alt-anchor i))
-                     key)))))
+                     (add-current-tag-prefix key))))))
 
     (define (dest-path dest)
       (if (vector? dest) ; temporary
@@ -556,10 +564,11 @@
                                            ,(format
                                              "#~a"
                                              (anchor-name
-                                              (tag-key (if (part? p)
-                                                         (car (part-tags p))
-                                                         (target-element-tag p))
-                                                       ri)))]
+                                              (add-current-tag-prefix
+                                               (tag-key (if (part? p)
+                                                            (car (part-tags p))
+                                                            (target-element-tag p))
+                                                        ri))))]
                                           [class
                                            ,(cond
                                               [(part? p) "tocsubseclink"]
@@ -795,13 +804,15 @@
                       d
                       ri))))))
 
-    (define/override (render-part d ri)
+    (define/override (render-part-content d ri)
       (let ([number (collected-info-number (part-collected-info d ri))])
         `(,@(cond
               [(and (not (part-title-content d)) (null? number)) null]
               [(part-style? d 'hidden)
                (map (lambda (t)
-                      `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
+                      `(a ((name ,(format "~a" (anchor-name 
+                                                (add-current-tag-prefix
+                                                 (tag-key t ri))))))))
                     (part-tags d))]
               [else `((,(case (length number)
                           [(0) 'h2]
@@ -811,7 +822,8 @@
                        ,@(format-number number '((tt nbsp)))
                        ,@(map (lambda (t)
                                 `(a ([name ,(format "~a" (anchor-name
-                                                          (tag-key t ri)))])))
+                                                          (add-current-tag-prefix
+                                                           (tag-key t ri))))])))
                               (part-tags d))
                        ,@(if (part-title-content d)
                            (render-content (part-title-content d) d ri)
@@ -875,8 +887,9 @@
                  ;; (commented) hack in scribble-common.js)
                  `(noscript ,@(render-plain-element e part ri))))]
         [(target-element? e)
-         `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
-                                                         ri)))]))
+         `((a ([name ,(format "~a" (anchor-name (add-current-tag-prefix
+                                                 (tag-key (target-element-tag e)
+                                                          ri))))]))
            ,@(render-plain-element e part ri))]
         [(and (link-element? e) (not (current-no-links)))
          (parameterize ([current-no-links #t])

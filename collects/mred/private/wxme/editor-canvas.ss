@@ -204,7 +204,7 @@
                                  '(transparent)
                                  '(no-autoclear))
                              (keep-style style 'control-border)
-                             (keep-style style 'combo-side)
+                             (keep-style style 'combo)
                              (keep-style style 'resize-corner))
                      name
                      gl-config)
