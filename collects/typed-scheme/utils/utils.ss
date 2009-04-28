@@ -190,7 +190,7 @@ at least theoretically.
       [(_ val)
        #'(? (lambda (x) (equal? val x)))])))
 
-(define-for-syntax printing? #t)
+(define-for-syntax printing? #f)
 
 (define-syntax-rule (defprinter t ...)
   (begin

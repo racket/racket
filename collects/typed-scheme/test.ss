@@ -19,4 +19,23 @@
 #{(let: ([x : Integer 1] [y : Integer 2]) x) :: Integer}
 
 #{(let*: ([x : Number 1] [x : Integer 2]) x) :: Integer}
+#{(let*: ([x : Number 1] [x : Integer 2]) #{x :: Integer}) :: Integer}
+
+#{(letrec: ([x : Integer 1] [y : Integer 2]) #{x :: Integer}) :: Integer}
+(letrec: ([x : Integer 1] [y : Integer 2]) #{x :: Integer})
+(let ()
+  (define x 1)
+  (define y 2)
+  x)
+(letrec: ([z : (-> Any) (lambda () z)]) 1)
+(letrec: ([z : (-> Any) (lambda () w)]
+          [w : (-> Any) (lambda () z)]) z)
+(let ()
+  (define: (z) : Any w)
+  (define: (w) : Any z)
+  z)
+(let ()
+  (define: (z [x : Number]) : Any w)
+  (define: (w) : Any z)
+  z)
 

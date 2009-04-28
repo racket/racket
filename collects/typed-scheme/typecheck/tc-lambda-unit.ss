@@ -175,6 +175,19 @@
                     [(pair? (syntax-e s))
                      (+ 1 (loop (cdr (syntax-e s))))]
                     [else 1]))]))
+  (define (go formals bodies formals* bodies* nums-seen)
+    (cond 
+      [(null? formals)
+       (map tc/lambda-clause (reverse formals*) (reverse bodies*))]
+      [(memv (syntax-len (car formals)) nums-seen)
+       ;; we check this clause, but it doesn't contribute to the overall type
+       (tc/lambda-clause (car formals) (car bodies))
+       (go (cdr formals) (cdr bodies) formals* bodies* nums-seen)]
+      [else
+       (go (cdr formals) (cdr bodies) 
+           (cons (car formals) formals*)
+           (cons (car bodies) bodies*)
+           (cons (syntax-len (car formals)) nums-seen))]))
   (if (and expected
            (= 1 (length (syntax->list formals))))
       ;; special case for not-case-lambda
@@ -184,25 +197,9 @@
           [(Function: (list (arr: argss rets rests drests '()) ...))
            (for/list ([args argss] [ret rets] [rest rests] [drest drests])
              (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest drest))]
-          [t (let ([t (tc/mono-lambda formals bodies #f)])               
-               (check-below t expected))]))
-      (let loop ([formals (syntax->list formals)] 
-                 [bodies (syntax->list bodies)]
-                 [formals* null]
-                 [bodies* null]
-                 [nums-seen null])
-        (cond 
-          [(null? formals)
-           (map tc/lambda-clause (reverse formals*) (reverse bodies*))]
-          [(memv (syntax-len (car formals)) nums-seen)
-           ;; we check this clause, but it doesn't contribute to the overall type
-           (tc/lambda-clause (car formals) (car bodies))
-           (loop (cdr formals) (cdr bodies) formals* bodies* nums-seen)]
-          [else
-           (loop (cdr formals) (cdr bodies) 
-                 (cons (car formals) formals*)
-                 (cons (car bodies) bodies*)
-                 (cons (syntax-len (car formals)) nums-seen))]))))
+          ;; FIXME - is this right?
+          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))
+      (go (syntax->list formals) (syntax->list bodies) null null null)))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))

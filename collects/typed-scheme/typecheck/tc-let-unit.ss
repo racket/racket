@@ -29,7 +29,7 @@
    (for-each expr->type
              clauses
              exprs 
-             (map -values types))
+             (map ret types))
    (if expected 
        (tc-exprs/check (syntax->list body) expected)
        (tc-exprs (syntax->list body)))))
@@ -73,7 +73,7 @@
      (tc-expr/check e (mk expecteds))
      (tc-expr e)))
   (match tcr
-    [(tc-result: t) t]))
+    [(tc-result1: t) t]))
 
 (define (tc/letrec-values/internal namess exprs body form expected)
   (let* ([names (map syntax->list (syntax->list namess))]
@@ -100,7 +100,8 @@
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
-          (list (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) tc-expr/check/t))
+          (list (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) 
+                                (lambda (e t) (tc-expr/check/t e (ret t)))))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
