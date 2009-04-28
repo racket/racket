@@ -3,7 +3,7 @@
           "common.ss"
           (for-label scheme/base
                      compiler/decompile
-                     (only-in compiler/zo-parse compilation-top?)
+                     (only-in compiler/zo-parse compilation-top? req)
                      compiler/zo-marshal))
 
 @title[#:tag "decompile"]{Decompiling Bytecode}
@@ -112,5 +112,6 @@ Consumes the result of parsing bytecode and returns an S-expression
 @defproc[(zo-marshal [top compilation-top?]) bytes?]{
 
 Consumes a representation of bytecode and generates a byte string for
-the marshaled bytecode. Currently, modules and quoted syntax objects
-with @scheme[top] are not supported.}
+the marshaled bytecode. Currently, syntax objects are not supported,
+including in @scheme[req] for a top-level @scheme[#%require].}
+

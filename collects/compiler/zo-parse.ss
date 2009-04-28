@@ -34,7 +34,8 @@
 (define-form-struct form ())
 (define-form-struct (expr form) ())
 
-(define-form-struct (mod form) (name self-modidx prefix provides requires body syntax-body max-let-depth))
+(define-form-struct (mod form) (name self-modidx prefix provides requires body syntax-body unexported 
+                                     max-let-depth dummy lang-info internal-context))
 
 (define-form-struct (lam expr) (name flags num-params param-types rest? closure-map max-let-depth body)) ; `lambda'
 (define-form-struct (closure expr) (code gen-id)) ; a static closure (nothing to close over)
@@ -73,6 +74,9 @@
 ;; A static closure can refer directly to itself, creating a cycle
 (define-struct indirect ([v #:mutable]) #:prefab)
 (provide (struct-out indirect))
+
+;; A provided identifier
+(define-form-struct provided (name src src-name nom-src src-phase protected? insp))
 
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
@@ -232,7 +236,37 @@
                          ,requires ,syntax-requires ,template-requires ,label-requires
                          ,more-requires-count . ,more-requires)
           (make-mod name self-modidx
-                    prefix phase-data
+                    prefix (let loop ([l phase-data])
+                             (if (null? l)
+                                 null
+                                 (let ([num-vars (list-ref l 7)]
+                                       [ps (for/list ([name (in-vector (list-ref l 6))]
+                                                      [src (in-vector (list-ref l 5))]
+                                                      [src-name (in-vector (list-ref l 4))]
+                                                      [nom-src (or (list-ref l 3)
+                                                                   (in-cycle (in-value #f)))]
+                                                      [src-phase (or (list-ref l 2)
+                                                                     (in-cycle (in-value #f)))]
+                                                      [protected? (or (case (car l)
+                                                                        [(0) protects]
+                                                                        [(1) et-protects]
+                                                                        [else #f])
+                                                                      (in-cycle (in-value #f)))]
+                                                      [insp (or (list-ref l 1)
+                                                                (in-cycle (in-value #f)))])
+                                             (make-provided name src src-name 
+                                                            (or nom-src src)
+                                                            (if src-phase 1 0)
+                                                            protected?
+                                                            insp))])
+                                   (if (null? ps)
+                                       (loop (list-tail l 9))
+                                       (cons
+                                        (list
+                                         (car l)
+                                         (take ps num-vars)
+                                         (drop ps num-vars))
+                                        (loop (list-tail l 9)))))))
                     (list*
                      (cons 0 requires)
                      (cons 1 syntax-requires)
@@ -248,7 +282,13 @@
                                    make-def-syntaxes)
                                ids expr prefix max-let-depth)]))
                          (vector->list syntax-body))
-                    max-let-depth)]))]))
+                    (list (vector->list indirect-provides)
+                          (vector->list indirect-syntax-provides)
+                          (vector->list indirect-et-provides))
+                    max-let-depth
+                    dummy
+                    lang-info
+                    rename)]))]))
 (define (read-module-wrap v)
   v)
 
