@@ -125,6 +125,12 @@
     (match* (s t)
       ;; top for functions is above everything
       [(_ (top-arr:)) A0]
+      ;; the really simple case
+      [((arr: s1 s2 #f #f '())
+        (arr: t1 t2 #f #f '()))
+       (subtype-seq A0
+                    (subtypes* t1 s1)
+                    (subtype* s2 t2))]
       [((arr: s1 s2 #f #f s-kws)
         (arr: t1 t2 #f #f t-kws))
        (subtype-seq A0
@@ -300,6 +306,9 @@
 	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result
               [(list (Result: t f o) (Result: t* f o))
+               (subtype* A0 t t*)]
+              ;; we can ignore interesting results
+              [(list (Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
                (subtype* A0 t t*)]
 	      ;; single values shouldn't actually happen, but they're just like the type
 	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]

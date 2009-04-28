@@ -136,24 +136,24 @@
   (match* (tr1 expected)
     [((tc-results: t1) (tc-results: t2))
      (unless (andmap subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "1 Expected ~a, but got ~a" t2 t1))
      expected]
     [((tc-result1: t1 f o) (? Type? t2))
      (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "1 Expected ~a, but got ~a" t2 t1))
      (ret t2 f o)]
     [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
      (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "3 Expected ~a, but got ~a" t2 t1))
      t1]
     [((? Type? t1) (tc-result1: t2 f o))
      (if (subtype t1 t2)
          (tc-error/expr "Expected result with filter ~a and object ~a, got ~a" f o t1)
-         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+         (tc-error/expr "4 Expected ~a, but got ~a" t2 t1))
      t1]
     [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
-       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "5 Expected ~a, but got ~a" t2 t1))
      expected]))
 
 (define (tc-expr/check/type form expected)

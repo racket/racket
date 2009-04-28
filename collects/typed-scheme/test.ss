@@ -43,4 +43,9 @@
 ;; Error
 #;#{(case-lambda: [() 1]
                 [([x : Number]) x]) :: String}
+#{(lambda: ([x : Number]) 1) :: (Number -> Number)}
+#{(lambda: ([x : Number]) 1) :: Any}
+#{(lambda: ([x : Number]) 1) :: (Integer -> Any)}
+#{(lambda: ([x : Number]) x) :: (Number -> Number)}
+#{(lambda: ([x : Number]) x) :: (Integer -> Any)}
 
