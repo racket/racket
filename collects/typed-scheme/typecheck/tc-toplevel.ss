@@ -114,7 +114,7 @@
                    (begin0 (tc-expr #'expr)
                            (restore-errors!))))
             => (match-lambda 
-                 [(tc-result: t)
+                 [(tc-result1: t)
                   (register-type (car vars) t)
                   (list (make-def-binding (car vars) t))]
                  [t (int-err "~a is not a tc-result" t)])]

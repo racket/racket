@@ -48,4 +48,8 @@
 #{(lambda: ([x : Number]) 1) :: (Integer -> Any)}
 #{(lambda: ([x : Number]) x) :: (Number -> Number)}
 #{(lambda: ([x : Number]) x) :: (Integer -> Any)}
+(define zzz 1)
+(set! zzz 2)
+
+(define-struct: xxx ())
 
