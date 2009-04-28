@@ -38,4 +38,9 @@
   (define: (z [x : Number]) : Any w)
   (define: (w) : Any z)
   z)
+(case-lambda: [() 1]
+              [([x : Number]) x])
+;; Error
+#;#{(case-lambda: [() 1]
+                [([x : Number]) x]) :: String}
 

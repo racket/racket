@@ -150,7 +150,8 @@
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
     [(F: nm) (fp "~a" nm)]   
-    [(Values: (list v)) (fp "~a" v)]
+    ;; FIXME
+    ;[(Values: (list v)) (fp "~a" v)]
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 

@@ -130,6 +130,7 @@
 
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
+;;                   (Type Results -> Type)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
   (match* (tr1 expected)
@@ -137,10 +138,19 @@
      (unless (andmap subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]
-    [((tc-result1: t1) (? Type? t2))
+    [((tc-result1: t1 f o) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     (ret expected)]
+     (ret t2 f o)]
+    [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
+     (unless (subtype t1 t2)
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+     t1]
+    [((? Type? t1) (tc-result1: t2 f o))
+     (if (subtype t1 t2)
+         (tc-error/expr "Expected result with filter ~a and object ~a, got ~a" f o t1)
+         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+     t1]
     [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))

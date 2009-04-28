@@ -202,7 +202,10 @@
       (go (syntax->list formals) (syntax->list bodies) null null null)))
 
 (define (tc/mono-lambda/type formals bodies expected)
-  (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
+  (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
+  (if expected 
+      (check-below t expected)
+      t))
 
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
