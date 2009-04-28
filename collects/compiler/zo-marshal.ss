@@ -5,7 +5,7 @@
 (provide zo-marshal)
 
 ;; Doesn't write as compactly as MzScheme, since list and pair sequences
-;; are not compated, and symbols are not written in short form
+;; are not compacted, and symbols are not written in short form
 
 (define (zo-marshal top)
   (match top
@@ -82,8 +82,8 @@
      (traverse-data self-modidx visit)
      (traverse-prefix prefix visit)
      (for-each (lambda (f) (map (lambda (v) (traverse-data v visit)) (cdr f))) requires)
-     (for-each (lambda (f) (traverse-form f prefix)) body)
-     (for-each (lambda (f) (traverse-form f prefix)) syntax-body)
+     (for-each (lambda (f) (traverse-form f visit)) body)
+     (for-each (lambda (f) (traverse-form f visit)) syntax-body)
      (traverse-data lang-info visit)
      (traverse-data internal-context visit)]))
 
