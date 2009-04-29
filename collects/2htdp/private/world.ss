@@ -170,7 +170,7 @@
                  (super-new)
                  ;; deal with keyboard events 
                  (define/override (on-char e) 
-                   (when live (pkey (send e get-key-code))))
+                   (when live (pkey (key-event->parts e))))
                  ;; deal with mouse events if live and within range 
                  (define/override (on-event e)
                    (define-values (x y me) (mouse-event->parts e))
