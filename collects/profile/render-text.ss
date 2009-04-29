@@ -49,8 +49,8 @@
             [(pair? x) (loop (car x)) (loop (cdr x))]
             [else (display x)]))
     (newline))
-  (define total-time    (profile-total-time    profile))
-  (define cpu-time      (profile-cpu-time      profile))
+  (define total-time    (profile-total-time    profile)) ;!! are these two
+  (define cpu-time      (profile-cpu-time      profile)) ;!! swapped?
   (define sample-number (profile-sample-number profile))
   (define granularity   (if (zero? sample-number) 0
                             (/ total-time sample-number)))
