@@ -1345,7 +1345,8 @@
    '((contract (->d ([x number?]) () #:rest rst number? any)
                (λ (x . rst) (values 4 5))
                'pos
-               'neg)))
+               'neg)
+     #f))
   
   (test/pos-blame
    '->d-arity1
