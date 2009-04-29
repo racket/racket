@@ -35,9 +35,11 @@
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
-    [(? (lambda (e) (or (Type? e)
-                        (LatentFilter? e)
+    [(? (lambda (e) (or (LatentFilter? e)
                         (LatentObject? e)))
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
+     `(,(gen-constructor tag) ,@(map sub vals))]
+    [(? (lambda (e) (or (Type? e)))
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
      `(,(gen-constructor tag) ,@(map sub vals))]
     [_ (basic v)]))
