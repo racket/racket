@@ -209,7 +209,15 @@
                  (if (and (list? t) (list? f) (list? o))
                      (map make-tc-result t f o)
                      (list (make-tc-result t f o)))
-                 #f)]))
+                 #f)]
+               [(t f o dty)
+                (int-err "ret used with dty without dbound")]
+               [(t f o dty dbound)
+                (make-tc-results
+                 (if (and (list? t) (list? f) (list? o))
+                     (map make-tc-result t f o)
+                     (list (make-tc-result t f o)))
+                 (cons dty dbound))]))
 
 (p/c
  [ret    
@@ -219,7 +227,9 @@
                FilterSet?)]
         [o (if (list? t)
                (listof Object?)
-               Object?)])                
+               Object?)]
+        [dty Type/c]
+        [dbound symbol?])
        [_ tc-results?])])
 
 (define (subst v t e) (substitute t v e))

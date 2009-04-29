@@ -73,3 +73,17 @@ xxx6-y
 (begin 1 1 1)
 (#%expression (begin 1 1 1))
 
+(values 1)
+(values 1 1)
+(values)
+
+(: ff (Number -> Number))
+(define (ff x) x)
+
+(lambda: ([y : String][x : Number]) (values 1 x 1))
+(lambda: ([x : Number]) (values 1 x 1))
+(lambda () (values 1 1))
+(lambda () 1)
+#{(lambda (x) x) :: (Number -> Number)}
+;; BUG - this should work
+{ann (values (lambda (x) x) (lambda (x) x)) (values (Number -> Number) (String -> String))}

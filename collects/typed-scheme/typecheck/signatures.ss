@@ -14,10 +14,10 @@
    [cnt tc-expr/check (syntax? tc-results? . -> . tc-results?)]
    [cnt tc-expr/check/t (syntax? tc-results? . -> . Type/c)]
    [cnt check-below (->d ([s (or/c Type/c tc-results?)] [t (or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])]
-   ;[cnt tc-literal (any/c . -> . Type/c)]
    [cnt tc-exprs ((listof syntax?) . -> . tc-results?)]
    [cnt tc-exprs/check ((listof syntax?) tc-results? . -> . tc-results?)]
-   [cnt tc-expr/t (syntax? . -> . Type/c)]))
+   [cnt tc-expr/t (syntax? . -> . Type/c)]
+   [cnt single-value ((syntax?) ((or/c tc-results? #f)) . ->* . tc-results?)]))
 
 (define-signature check-subforms^
   ([cnt check-subforms/ignore (syntax? . -> . any)]
@@ -36,7 +36,7 @@
 (define-signature tc-app^
   ([cnt tc/app (syntax? . -> . tc-results?)] 
    [cnt tc/app/check (syntax? tc-results? . -> . tc-results?)]
-   [cnt tc/funapp (syntax? syntax? tc-result? (listof tc-results?) (or/c #f Type/c) . -> . tc-results?)]))
+   [cnt tc/funapp (syntax? syntax? tc-result? (listof tc-results?) (or/c #f tc-results?) . -> . tc-results?)]))
 
 (define-signature tc-let^
   ([cnt tc/let-values (syntax? syntax? syntax? syntax? . -> . tc-results?)]

@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require (rename-in "../utils/utils.ss" [infer r:infer] [extend r:extend]))
-(require "signatures.ss"
+(require (rename-in "../utils/utils.ss" [infer r:infer] [extend r:extend])
+         "signatures.ss"
          "tc-metafunctions.ss"
          mzlib/trace
          scheme/list
@@ -11,6 +11,7 @@
          (rename-in (types convenience utils union)
                     [make-arr* make-arr])
          (private type-annotation)
+         (types abbrev)
 	 (env type-environments lexical-env)
 	 (utils tc-utils)
          mzlib/plt-match)
@@ -29,13 +30,14 @@
 (define (lam-result->type lr)
   (match lr
     [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
-     (make-arr arg-tys
-               (abstract-filters (append (for/list ([i (in-naturals)] [_ arg-ids]) i) kw)
-                                 (append arg-ids kw-id)
-                                 body)
-               #:kws (map make-Keyword kw kw-ty req?)
-               #:rest rest
-               #:drest drest)]))
+     (make-arr/values 
+      arg-tys
+      (abstract-filters (append (for/list ([i (in-naturals)] [_ arg-ids]) i) kw)
+                        (append arg-ids kw-id)
+                        body)
+      #:kws (map make-Keyword kw kw-ty req?)
+      #:rest rest
+      #:drest drest)]))
 
 (define (expected-str tys-len rest-ty drest arg-len rest)
   (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
@@ -49,7 +51,7 @@
           (if (= arg-len 1) "" "s")
           (if rest " and a rest arg" "")))
 
-;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] type -> lam-result
+;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] tc-result -> lam-result
 (define (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
   (let* ([arg-len (length arg-list)]
          [tys-len (length arg-tys)]
@@ -60,12 +62,13 @@
                           [(< arg-len tys-len) (take arg-tys arg-len)]
                           [(> arg-len tys-len) (append arg-tys
                                                        (map (lambda _ (or rest-ty (Un)))
-                                                            (drop arg-list tys-len)))]))])
+                                                            (drop arg-list tys-len)))]))])    
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
        (make lam-result (map list arg-list arg-types) null rest-ty drest 
              (tc-exprs/check (syntax->list body) ret-ty))))
+    (printf "arg-types old new: ~a ~a~n"  arg-tys arg-types)
     (when (or (not (= arg-len tys-len))
               (and rest (and (not rest-ty)
                              (not drest))))
@@ -96,7 +99,7 @@
 
 ;; typecheck a single lambda, with argument list and body
 ;; drest-ty and drest-bound are both false or not false
-;; syntax-list[id] block listof[type] type option[type] option[(cons type var)] -> lam-result
+;; syntax-list[id] block listof[type] tc-result option[type] option[(cons type var)] -> lam-result
 (define (tc/lambda-clause/check args body arg-tys ret-ty rest-ty drest)
     (syntax-case args ()
       [(args* ...)
@@ -188,18 +191,20 @@
            (cons (car formals) formals*)
            (cons (car bodies) bodies*)
            (cons (syntax-len (car formals)) nums-seen))]))
-  (if (and expected
-           (= 1 (length (syntax->list formals))))
-      ;; special case for not-case-lambda
-      (let loop ([expected expected])        
-        (match expected          
-          [(Mu: _ _) (loop (unfold expected))]
-          [(Function: (list (arr: argss rets rests drests '()) ...))
-           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
-             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest drest))]
-          ;; FIXME - is this right?
-          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))
-      (go (syntax->list formals) (syntax->list bodies) null null null)))
+  (cond 
+    ;; special case for not-case-lambda
+    [(and expected
+          (= 1 (length (syntax->list formals))))
+     (let loop ([expected expected])        
+       (match expected          
+         [(tc-result1: (Mu: _ _)) (loop (unfold expected))]
+         [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
+          (printf "expe: ~a~n" expected)
+          (for/list ([args argss] [ret rets] [rest rests] [drest drests])
+            (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args (values->tc-results ret) rest drest))]
+         [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
+    ;; otherwise
+    [else (go (syntax->list formals) (syntax->list bodies) null null null)]))
 
 (define (tc/mono-lambda/type formals bodies expected)
   (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))

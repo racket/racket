@@ -266,7 +266,7 @@ at least theoretically.
 (define (extend s t extra)
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
-(define-for-syntax enable-contracts? #f)
+(define-for-syntax enable-contracts? #t)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 (define-syntax p/c

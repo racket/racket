@@ -310,9 +310,6 @@
               ;; we can ignore interesting results
               [(list (Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
                (subtype* A0 t t*)]
-	      ;; single values shouldn't actually happen, but they're just like the type
-	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
-	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]
 	      ;; subtyping on other stuff
 	      [(list (Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]

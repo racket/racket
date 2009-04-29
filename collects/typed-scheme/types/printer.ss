@@ -90,12 +90,14 @@
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
        (match rng
+         #|
          [(Values: (list (Result: t (LFilterSet: (list) (list)) (LEmpty:))))
           (fp "-> ~a" t)]
          [(Values: (list (Result: t fs (LEmpty:)))) 
           (fp "-> ~a : ~a" t fs)]
          [(Values: (list (Result: t lf lo)))
           (fp "-> ~a : ~a ~a" t lf lo)]
+|#
          [_
           (fp "-> ~a" rng)])
        (fp ")")]))

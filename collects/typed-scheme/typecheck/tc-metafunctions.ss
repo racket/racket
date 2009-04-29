@@ -28,7 +28,7 @@
         [else (make-FilterSet l1 l2)]))
 
 (d/c (abstract-filters keys ids results)
-     (-> (listof index/c) (listof identifier?) tc-results? (or/c Values? ValuesDots?))
+     ((listof index/c) (listof identifier?) tc-results? . -> . (or/c Values? ValuesDots?))
      (define (mk l [drest #f])
        (if drest (make-ValuesDots l (car drest) (cdr drest)) (make-Values l)))
      (match results

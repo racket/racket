@@ -3,7 +3,7 @@
 (require "../utils/utils.ss")
 
 (require (rep type-rep object-rep filter-rep)
-	 "printer.ss"
+	 "printer.ss" "utils.ss"
          (utils tc-utils)
          scheme/list
          scheme/match         
@@ -173,8 +173,8 @@
                       #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
                       #:filters [filters -no-lfilter] #:object [obj -no-lobj])
      (c:->* ((listof Type/c) (or/c ValuesDots? Values?))
-            (#:rest Type/c 
-             #:drest (cons/c Type/c symbol?)
+            (#:rest (or/c Type/c #f) 
+             #:drest (or/c (cons/c Type/c symbol?) #f)
              #:kws (listof Keyword?)
              #:filters LFilterSet?
              #:object LatentObject?)
@@ -263,3 +263,18 @@
 
 (define-syntax-rule (->opt args ... [opt ...] res)
   (opt-fn (list args ...) (list opt ...) res))
+
+(define (tc-results->values tc)
+  (match tc
+    [(tc-results: ts fs os dty dbound)
+     (make-ValuesDots (map -result ts fs os) dty dbound)]
+    [(tc-results: ts fs os)
+     (make-Values (map -result ts fs os))]))
+
+;; FIXME - this should really be a new metafunction like abstract-filter
+(define (values->tc-results tc)
+  (match tc
+    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
+     (int-err "values->tc-results NYI for Dots")]
+    [(Values: (list (Result: ts fs os)))
+     (ret ts)]))

@@ -129,15 +129,15 @@
          [(head:invis-kw . _) 
           body2]
          [_ (let ([ty-str (match type
+                            [(tc-result1: (? (lambda (t) (type-equal? t -Void)))) #f]
                             [(tc-result1: t)
-                             (if (type-equal? t -Void) 
-                                 #f
-                                 (format "- : ~a\n" t))]
+                             (format "- : ~a\n" t)]
+                            [(tc-results: ts) (format "- : ~a\n" (cons 'values ts))]
                             [x (int-err "bad type result: ~a" x)])])
               (if #'ty-str                  
-                  #`(let ([v #,body2] [type '#,ty-str])
+                  #`(let ([type '#,ty-str])
                       (begin0 
-                        v
+                        #,body2
                         (printf type)))
                   body2))]))]))
 
