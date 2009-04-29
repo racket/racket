@@ -836,9 +836,22 @@ v4 todo:
 (define ->d-tail-key (gensym '->d-tail-key))
 
 (define (->d-proj ->d-stct)
-  (let ([non-kwd-ctc-count (+ (length (->d-mandatory-dom-ctcs ->d-stct))
-                              (length (->d-optional-dom-ctcs ->d-stct))
-                              (if (->d-mtd? ->d-stct) 1 0))])
+  (let* ([opt-count (length (->d-optional-dom-ctcs ->d-stct))]
+         [mandatory-count (length (->d-mandatory-dom-ctcs ->d-stct))]
+         [non-kwd-ctc-count (+ mandatory-count 
+                               opt-count
+                               (if (->d-mtd? ->d-stct) 1 0))]
+         [arity 
+          (cond
+            [(->d-rest-ctc ->d-stct)
+             (make-arity-at-least mandatory-count)]
+            [else
+             (let loop ([i 0])
+               (cond
+                 [(= i opt-count)
+                  (list (+ mandatory-count i))]
+                 [else
+                  (cons (+ mandatory-count i) (loop (+ i 1)))]))])])
     (λ (pos-blame neg-blame src-info orig-str)
       (let ([this->d-id (gensym '->d-tail-key)])
         (λ (val)
@@ -967,10 +980,15 @@ v4 todo:
                                        (loop (cdr results) (cdr result-contracts)))]))))))]
                           [else
                            (thunk)])))))])
-            (make-keyword-procedure kwd-proc
-                                    ((->d-name-wrapper ->d-stct)
-                                     (λ args
-                                       (apply kwd-proc '() '() args))))))))))
+            (procedure-reduce-keyword-arity
+             (make-keyword-procedure kwd-proc
+                                     ((->d-name-wrapper ->d-stct)
+                                      (λ args
+                                        (apply kwd-proc '() '() args))))
+             
+             arity 
+             (->d-mandatory-keywords ->d-stct)
+             (->d-optional-keywords ->d-stct))))))))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
 (define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str)
