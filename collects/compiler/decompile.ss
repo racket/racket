@@ -90,7 +90,8 @@
 
 (define (decompile-module mod-form stack)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body max-let-depth))
+    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+                       max-let-depth dummy lang-info internal-context))
      (let-values ([(globs defns) (decompile-prefix prefix)]
                   [(stack) (append '(#%modvars) stack)]
                   [(closed) (make-hasheq)])
@@ -135,6 +136,8 @@
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack closed))
                     forms))]
+    [(struct req (reqs dummy))
+     `(#%require . (#%decode-syntax ,reqs))]
     [else
      (decompile-expr form globs stack closed)]))
 

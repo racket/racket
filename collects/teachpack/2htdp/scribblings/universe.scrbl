@@ -217,20 +217,89 @@ current world. The clock ticks at the rate of @scheme[rate-expr].}}
 
 @deftech{KeyEvent} : @scheme[(or/c char? symbol?)]
 
-A character is used to signal that the user has hit an alphanumeric
- key. A symbol denotes arrow keys or special events:
-
+A single-character string is used to signal that the user has hit an alphanumeric
+ key. Some of these one-character strings may look unusual: 
 @itemize[
+@item{@scheme[" "] stands for the space bar (@scheme[#\space]);}
+@item{@scheme["\r"] stands for the return key (@scheme[#\return]);}
+@item{@scheme["\t"] stands for the tab key (@scheme[#\tab]); and}
+@item{@scheme["\b"] stands for the backspace key (@scheme[#\backspace]).}
+]
+On rare occasions you may also encounter @scheme["\u007F"], which is the
+ string representing the delete key (aka rubout). 
 
-@item{@scheme['left] is the left arrow,}
-
-@item{@scheme['right] is the right arrow,}
-
-@item{@scheme['up] is the up arrow,}
-
-@item{@scheme['down] is the down arrow, and}
-
-@item{@scheme['release] is the event of releasing a key.}
+A string with more than one character denotes arrow keys or other special events,
+ starting with the most important: 
+@itemize[
+@item{@scheme["left"] is the left arrow;}
+@item{@scheme["right"] is the right arrow;}
+@item{@scheme["up"] is the up arrow;}
+@item{@scheme["down"] is the down arrow;}
+@item{@scheme["release"] is the event of releasing a key;}
+@item{@scheme["start"]}
+@item{@scheme["cancel"]}
+@item{@scheme["clear"]}
+@item{@scheme["shift"]}
+@item{@scheme["control"]}
+@item{@scheme["menu"]}
+@item{@scheme["pause"]}
+@item{@scheme["capital"]}
+@item{@scheme["prior"]}
+@item{@scheme["next"]}
+@item{@scheme["end"]}
+@item{@scheme["home"]}
+@item{@scheme["escape"]}
+@item{@scheme["select"]}
+@item{@scheme["print"]}
+@item{@scheme["execute"]}
+@item{@scheme["snapshot"]}
+@item{@scheme["insert"]}
+@item{@scheme["help"]}
+@item{@scheme["numpad0"], 
+ @scheme["numpad1"], 
+ @scheme["numpad2"], 
+ @scheme["numpad3"],
+ @scheme["numpad4"],
+ @scheme["numpad5"],
+ @scheme["numpad6"],
+ @scheme["numpad7"],
+ @scheme["numpad8"],
+ @scheme["numpad9"],
+ @scheme["numpad-enter"],
+ @scheme["multiply"],
+ @scheme["add"],
+ @scheme["separator"],
+ @scheme["subtract"],
+ @scheme["decimal"],
+ @scheme["divide"]}
+@item{@scheme["'f1"],
+ @scheme["f2"],
+ @scheme["f3"],
+ @scheme["f4"],
+ @scheme["f5"],
+ @scheme["f6"],
+ @scheme["f7"],
+ @scheme["f8"],
+ @scheme["f9"],
+ @scheme["f10"],
+ @scheme["f11"],
+ @scheme["f12"],
+ @scheme["f13"],
+ @scheme["f14"],
+ @scheme["f15"],
+ @scheme["f16"],
+ @scheme["f17"],
+ @scheme["f18"],
+ @scheme["f19"],
+ @scheme["f20"],
+ @scheme["f21"],
+ @scheme["f22"],
+ @scheme["f23"],
+ @scheme["f24"]}
+@item{@scheme["numlock"]}
+@item{@scheme["scroll"]}
+@item{@scheme["wheel-up"]}
+@item{@scheme["wheel-down"]}
 ]
 
 @defproc[(key-event? [x any]) boolean?]{

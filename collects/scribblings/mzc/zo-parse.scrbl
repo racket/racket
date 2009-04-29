@@ -180,34 +180,13 @@ values. The @scheme[max-let-depth] field indicates the maximum size of
 the stack that will be created by @scheme[rhs] (not counting
 @scheme[prefix]).}
 
-@defstruct+[(req form) ([reqs (listof module-path?)]
+@defstruct+[(req form) ([reqs syntax?]
                         [dummy toplevel?])]{
 
-Represents a top-level @scheme[require] form (but not one in a
-@scheme[module] form). The @scheme[dummy] variable is used to access
-to the top-level namespace.}
-
-
-@defstruct+[(mod form) ([name symbol?]
-                        [self-modidx module-path-index?]
-                        [prefix prefix?]
-                        [provides (listof symbol?)]
-                        [requires (listof (cons/c (or/c exact-integer? #f) 
-                                                  (listof module-path-index?)))]
-                        [body (listof (or/c form? indirect? any/c))]
-                        [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))]
-                        [max-let-depth exact-nonnegative-integer?])]{
-
-Represents a @scheme[module] declaration. The @scheme[body] forms use
-@scheme[prefix], rather than any prefix in place for the module
-declaration itself (and each @scheme[syntax-body] has its own
-prefix). The @scheme[body] field contains the module's run-time code,
-and @scheme[syntax-body] contains the module's compile-time code. The
-@scheme[max-let-depth] field indicates the maximum stack depth created
-by @scheme[body] forms (not counting the @scheme[prefix] array).
-
-After each form in @scheme[body] is evaluated, the stack is restored
-to its depth from before evaluating the form.}
+Represents a top-level @scheme[#%require] form (but not one in a
+@scheme[module] form) with a sequence of specifications
+@scheme[reqs]. The @scheme[dummy] variable is used to access to the
+top-level namespace.}
 
 
 @defstruct+[(seq form) ([forms (listof (or/c form? indirect? any/c))])]{
@@ -229,6 +208,69 @@ wrapped with a continuation prompt.
 After each form in @scheme[forms] is evaluated, the stack is restored
 to its depth from before evaluating the form.}
 
+
+@defstruct+[(mod form) ([name symbol?]
+                        [self-modidx module-path-index?]
+                        [prefix prefix?]
+                        [provides (listof (list/c (or/c exact-integer? #f)
+                                                  (listof provided?)
+                                                  (listof provided?)))]
+                        [requires (listof (cons/c (or/c exact-integer? #f) 
+                                                  (listof module-path-index?)))]
+                        [body (listof (or/c form? indirect? any/c))]
+                        [syntax-body (listof (or/c def-syntaxes? def-for-syntax?))]
+                        [unexported (list/c (listof symbol?) (listof symbol?) 
+                                            (listof symbol?))]
+                        [max-let-depth exact-nonnegative-integer?]
+                        [dummy toplevel?]
+                        [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
+                        [internal-context (or/c #f #t syntax?)])]{
+
+Represents a @scheme[module] declaration. The @scheme[body] forms use
+@scheme[prefix], rather than any prefix in place for the module
+declaration itself (and each @scheme[syntax-body] has its own
+prefix).
+
+The @scheme[provides] and @scheme[requires] lists are each an
+association list from phases to exports or imports. In the case of
+@scheme[provides], each phase maps to two lists: one for exported
+variables, and another for exported syntax. In the case of
+@scheme[requires], each phase maps to a list of imported module paths.
+
+The @scheme[body] field contains the module's run-time code, and
+@scheme[syntax-body] contains the module's compile-time code.  After
+each form in @scheme[body] or @scheme[syntax-body] is evaluated, the
+stack is restored to its depth from before evaluating the form.
+
+The @scheme[unexported] list contains lists of symbols for unexported
+definitions that can be accessed through macro expansion. The first
+list is phase-0 variables, the second is phase-0 syntax, and the last
+is phase-1 variables.
+
+The @scheme[max-let-depth] field indicates the maximum stack depth
+created by @scheme[body] forms (not counting the @scheme[prefix]
+array).  The @scheme[dummy] variable is used to access to the
+top-level namespace.
+
+The @scheme[lang-info] value specifies an optional module path that
+provides information about the module's implementation language.
+
+The @scheme[internal-module-context] value describes the lexical
+context of the body of the module. This value is used by
+@scheme[module->namespace]. A @scheme[#f] value means that the context
+is unavailable or empty. A @scheme[#t] value means that the context is
+computed by re-importing all required modules. A syntax-object value
+embeds an arbitrary lexical context.}
+
+@defstruct+[provided ([name symbol?]
+                      [src (or/c module-path-index? #f)]
+                      [src-name symbol?]
+                      [nom-mod (or/c module-path-index? #f)]
+                      [src-phase (or/c 0 1)]
+                      [protected? boolean?]
+                      [insp (or #t #f (void))])]{
+
+Describes an individual provided identifier within a @scheme[mod] instance.}
 
 @; --------------------------------------------------
 @section{Expressions}

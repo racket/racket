@@ -117,17 +117,17 @@
               (lambda (p)
                 (syntax-case p ()
                   [(host) #`(ip> #,tag host)]
-                  [_ (err tag p)])))]
+                  [_ (err tag p "expected a host (ip address)")])))]
   [name (lambda (tag)
           (lambda (p)
             (syntax-case p ()
               [(n) #`(symbol> #,tag n)]
-              [_ (err tag p)])))]
+              [_ (err tag p "expected a string for the current world")])))]
   [record? (lambda (tag)
              (lambda (p)
                (syntax-case p ()
                  [(b) #`(bool> #,tag b)]
-                 [_ (err tag p)])))])
+                 [_ (err tag p "expected a boolean (to record or not to record?")])))])
 
 (define-syntax (big-bang stx)
   (syntax-case stx ()
@@ -195,21 +195,21 @@
      (on-draw (lambda (m) (if (empty? m) (text "The End" 22 'red) (first m))))
      (stop-when empty?))))
 
-(define (mouse-event? a)
-  (pair? (member a '(button-down button-up drag move enter leave))))
+(define ME (map symbol->string '(button-down button-up drag move enter leave)))
+
+(define (mouse-event? a) (and (string? a) (pair? (member a ME))))
 
 (define (mouse=? k m)
   (check-arg 'mouse=? (mouse-event? k) 'MouseEvent "first" k)
   (check-arg 'mouse=? (mouse-event? m) 'MouseEvent "second" m)
-  (eq? k m))
+  (string=? k m))
 
-(define (key-event? k)
-  (or (char? k) (symbol? k)))
+(define (key-event? k) (string? k))
 
 (define (key=? k m)
   (check-arg 'key=? (key-event? k) 'KeyEvent "first" k)
   (check-arg 'key=? (key-event? m) 'KeyEvent "second" m)
-  (eqv? k m))
+  (string=? k m))
 
 (define LOCALHOST "127.0.0.1")
 

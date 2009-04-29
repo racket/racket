@@ -1843,8 +1843,8 @@ evaluates expression. If that expression computes any picts,
 the unquote rewriter specified is used to remap them.
 
 The @scheme[proc] should be a function of one argument. It receives
-a lw struct as an argument and should return
-another lw that contains a rewritten version of the
+a @scheme[lw] struct as an argument and should return
+another @scheme[lw] that contains a rewritten version of the
 code.
 }
 
@@ -1867,41 +1867,40 @@ new one that rewrites the value of name-symbol via proc,
 during the evaluation of expression.
 
 @scheme[name-symbol] is expected to evaluate to a symbol. The value
-of proc is called with a (listof lw) -- see below
-for details on the shape of lw, and is expected to
-return a new (listof (union lw string pict)),
+of proc is called with a @scheme[(listof lw)], and is expected to
+return a new @scheme[(listof (or/c lw? string? pict?))],
 rewritten appropriately. 
 
 The list passed to the rewriter corresponds to the
-lw for the sequence that has name-symbol's value at
+@scheme[lw] for the sequence that has name-symbol's value at
 its head.
 
 The result list is constrained to have at most 2 adjacent
-non-lws. That list is then transformed by adding
-lw structs for each of the non-lws in the
-list (see the description of lw below for an
+non-@scheme[lw]s. That list is then transformed by adding
+@scheme[lw] structs for each of the non-@scheme[lw]s in the
+list (see the description of @scheme[lw] below for an
 explanation of logical-space):
 
 @itemize[
 @item{
-    If there are two adjacent lws, then the logical
+    If there are two adjacent @scheme[lw]s, then the logical
     space between them is filled with whitespace.}
 
 @item{
-    If there is a pair of lws with just a single
-    non-lw between them, a lw will be
-    created (containing the non-lw) that uses all
-    of the available logical space between the lws.
+    If there is a pair of @scheme[lw]s with just a single
+    non-@scheme[lw] between them, a @scheme[lw] will be
+    created (containing the non-@scheme[lw]) that uses all
+    of the available logical space between the @scheme[lw]s.
 }
 
 @item{
-    If there are two adjacent non-lws between two
-    lws, the first non-lw is rendered
-    right after the first lw with a logical space
+    If there are two adjacent non-@scheme[lw]s between two
+    @scheme[lw]s, the first non-@scheme[lw] is rendered
+    right after the first @scheme[lw] with a logical space
     of zero, and the second is rendered right before the
-    last lw also with a logical space of zero, and
-    the logical space between the two lws is
-    absorbed by a new lw that renders using no
+    last @scheme[lw] also with a logical space of zero, and
+    the logical space between the two @scheme[lw]s is
+    absorbed by a new @scheme[lw] that renders using no
     actual space in the typeset version.
 }]
 }

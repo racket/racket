@@ -5,7 +5,7 @@
 (provide zo-marshal)
 
 ;; Doesn't write as compactly as MzScheme, since list and pair sequences
-;; are not compated, and symbols are not written in short form
+;; are not compacted, and symbols are not written in short form
 
 (define (zo-marshal top)
   (match top
@@ -71,23 +71,26 @@
 (define (traverse-prefix a-prefix visit)
   (match a-prefix
     [(struct prefix (num-lifts toplevels stxs))
-     (for-each (lambda (stx) (traverse-toplevel stx visit)) stxs)
+     (for-each (lambda (stx) (traverse-toplevel stx visit)) toplevels)
      (for-each (lambda (stx) (traverse-stx stx visit)) stxs)]))
 
 (define (traverse-module mod-form visit)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body max-let-depth))
-     (error "cannot handle modules, yet")
+    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+                       max-let-depth dummy lang-info internal-context))
      (traverse-data name visit)
      (traverse-data self-modidx visit)
      (traverse-prefix prefix visit)
-     (for-each (lambda (f) (traverse-form f prefix)) body)
-     (for-each (lambda (f) (traverse-form f prefix)) syntax-body)]))
+     (for-each (lambda (f) (map (lambda (v) (traverse-data v visit)) (cdr f))) requires)
+     (for-each (lambda (f) (traverse-form f visit)) body)
+     (for-each (lambda (f) (traverse-form f visit)) syntax-body)
+     (traverse-data lang-info visit)
+     (traverse-data internal-context visit)]))
 
 (define (traverse-toplevel tl visit)
   (match tl
     [#f (void)]
-    [(? symbol?) (visit tl)]
+    [(? symbol?) (traverse-data tl visit)]
     [(struct global-bucket (name)) 
      (void)]
     [(struct module-variable (modidx sym pos phase))
@@ -180,9 +183,13 @@
         (keyword? expr)
         (string? expr)
         (bytes? expr)
-        (path? expr)
-        (module-path-index? expr))
+        (path? expr))
     (visit expr)]
+   [(module-path-index? expr)
+    (visit expr)
+    (let-values ([(name base) (module-path-index-split expr)])
+      (traverse-data name visit)
+      (traverse-data base visit))]
    [(pair? expr)
     (traverse-data (car expr) visit)
     (traverse-data (cdr expr) visit)]
@@ -213,6 +220,7 @@
 (define top-type-num 87)
 (define case-lambda-sequence-type-num 96)
 (define begin0-sequence-type-num 97)
+(define module-type-num 100)
 (define prefix-type-num 103)
 
 (define-syntax define-enum
@@ -363,10 +371,80 @@
                   (list->vector stxs)))
       out)]))
 
+(define-struct module-decl (content))
+
 (define (out-module mod-form out)
   (match mod-form
-    [(struct mod (name self-modidx prefix provides requires body syntax-body max-let-depth))
-     (error "cannot write modules, yet")]))
+    [(struct mod (name self-modidx prefix provides requires body syntax-body unexported 
+                       max-let-depth dummy lang-info internal-context))
+     (out-syntax MODULE_EXPD
+                 (let* ([lookup-req (lambda (phase)
+                                      (let ([a (assq phase requires)])
+                                        (if a
+                                            (cdr a)
+                                            null)))]
+                        [other-requires (filter (lambda (l)
+                                                  (not (memq (car l) '(#f -1 0 1))))
+                                                requires)]
+                        [extract-protects
+                         (lambda (phase)
+                           (let ([a (assq phase provides)])
+                             (and a
+                                  (let ([p (map provided-protected? (append (cadr a)
+                                                                            (caddr a)))])
+                                    (if (ormap values p)
+                                        (list->vector p)
+                                        #f)))))]
+                        [list->vector/#f (lambda (default l)
+                                           (if (andmap (lambda (x) (equal? x default)) l)
+                                               #f
+                                               (list->vector l)))]
+                        [l (map cdr other-requires)]
+                        [l (cons (length other-requires) l)]
+                        [l (cons (lookup-req #f) l)] ; dt-requires
+                        [l (cons (lookup-req -1) l)] ; tt-requires
+                        [l (cons (lookup-req 1) l)] ; et-requires
+                        [l (cons (lookup-req 0) l)] ; requires
+                        [l (cons (list->vector body) l)]
+                        [l (cons (list->vector syntax-body) l)]
+                        [l (append (apply
+                                    append
+                                    (map (lambda (l)
+                                           (let ([phase (car l)]
+                                                 [all (append (cadr l) (caddr l))])
+                                             (list phase
+                                                   (list->vector/#f #f (map provided-insp all))
+                                                   (list->vector/#f 0 (map (lambda (p) (= 1 (provided-src-phase p))) 
+                                                                           all))
+                                                   (list->vector/#f #f (map (lambda (p)
+                                                                              (if (eq? (provided-nom-src p)
+                                                                                       (provided-src p))
+                                                                                  #f ; #f means "same as src"
+                                                                                  (provided-nom-src p)))
+                                                                            all))
+                                                   (list->vector (map provided-src-name all))
+                                                   (list->vector (map provided-src all))
+                                                   (list->vector (map provided-name all))
+                                                   (length (cadr l))
+                                                   (length all))))
+                                         provides))
+                                   l)]
+                        [l (cons (length provides) l)] ; number of provide sets
+                        [l (cons (extract-protects 0) l)] ; protects
+                        [l (cons (extract-protects 1) l)] ; et protects
+                        [l (list* (list->vector (car unexported)) (length (car unexported)) l)] ; indirect-provides
+                        [l (list* (list->vector (cadr unexported)) (length (cadr unexported)) l)] ; indirect-syntax-provides
+                        [l (list* (list->vector (caddr unexported)) (length (caddr unexported)) l)] ; indirect-et-provides
+                        [l (cons prefix l)]
+                        [l (cons dummy l)]
+                        [l (cons max-let-depth l)]
+                        [l (cons internal-context l)] ; module->namespace syntax
+                        [l (list* #f #f l)] ; obsolete `functional?' info
+                        [l (cons lang-info l)] ; lang-info
+                        [l (cons self-modidx l)]
+                        [l (cons name l)])
+                   (make-module-decl l))
+                 out)]))
 
 (define (out-toplevel tl out)
   (match tl
@@ -422,6 +500,9 @@
      (out-marshaled sequence-type-num (map protect-quote forms) out)]
     [(struct splice (forms))
      (out-syntax SPLICE_EXPD (make-seq forms) out)]
+    [(struct req (reqs dummy))
+     (error "cannot handle top-level `require', yet")
+     (out-syntax REQUIRE_EXPD (cons dummy reqs) out)]
     [else
      (out-expr form out)]))
 
@@ -605,11 +686,12 @@
                        l)
                       out))]))
 
-(define (out-as-bytes expr ->bytes CPT out)
+(define (out-as-bytes expr ->bytes CPT len2 out)
   (out-shared expr out (lambda ()
                          (let ([s (->bytes expr)])
                            (out-byte CPT out)
                            (out-number (bytes-length s) out)
+                           (when len2 (out-number len2 out))
                            (out-bytes s out)))))
 
 (define (out-data expr out)
@@ -625,26 +707,31 @@
     (out-as-bytes expr 
                   (compose string->bytes/utf-8 symbol->string) 
                   CPT_SYMBOL
+                  #f
                   out)]
    [(keyword? expr)
     (out-as-bytes expr 
                   (compose string->bytes/utf-8 keyword->string) 
                   CPT_KEYWORD
+                  #f
                   out)]
    [(string? expr)
     (out-as-bytes expr 
                   string->bytes/utf-8
                   CPT_CHAR_STRING
+                  (string-length expr)
                   out)]
    [(bytes? expr)
     (out-as-bytes expr 
                   values
                   CPT_BYTE_STRING
+                  #f
                   out)]
    [(path? expr)
     (out-as-bytes expr 
                   path->bytes
                   CPT_PATH
+                  #f
                   out)]
    [(char? expr)
     (out-byte CPT_CHAR out)
@@ -690,10 +777,16 @@
       (for ([n (in-range (sub1 (vector-length vec)) -1 -1)])
         (out-number (vector-ref vec n) out)))]
    [(module-path-index? expr)
-    (out-byte CPT_MODULE_INDEX out)
-    (let-values ([(name base) (module-path-index-split expr)])
-      (out-data name out)
-      (out-data base out))]
+    (out-shared expr out 
+                (lambda ()
+                  (out-byte CPT_MODULE_INDEX out)
+                  (let-values ([(name base) (module-path-index-split expr)])
+                    (out-data name out)
+                    (out-data base out))))]
+   [(module-decl? expr)
+    (out-marshaled module-type-num
+                   (module-decl-content expr)
+                   out)]
    [else
     (out-byte CPT_QUOTE out)
     (let ([s (open-output-bytes)])

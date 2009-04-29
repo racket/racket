@@ -32,8 +32,12 @@
            extra
            [_ (err tag p)])))]))
 
-(define (err spec p)
-  (raise-syntax-error #f "illegal specification" #`(#,spec . #,p) p))
+(define (err spec p . extra-spec)
+  (raise-syntax-error (cadr spec)
+    (if (null? extra-spec)
+	"illegal specification"
+	(string-append "illegal specification: " (car extra-spec)))
+    #`(#,spec . #,p) p))
 
 ;; Symbol (Symbol X -> X) -> (X -> X)
 (define (check-flat-spec tag coerce>)

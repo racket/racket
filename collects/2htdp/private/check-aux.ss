@@ -54,22 +54,29 @@
 
 ;; -----------------------------------------------------------------------------
 
-;; MouseEvent -> [List Nat Nat MouseEventType]
+;; MouseEvent% -> [List Nat Nat MouseEventType]
 ;; turn a mouse event into its pieces 
 (define (mouse-event->parts e)
   (define x (- (send e get-x) INSET))
   (define y (- (send e get-y) INSET))
-  (values x y (cond [(send e button-down?) 'button-down]
-                  [(send e button-up?)   'button-up]
-                  [(send e dragging?)    'drag]
-                  [(send e moving?)      'move]
-                  [(send e entering?)    'enter]
-                  [(send e leaving?)     'leave]
-                  [else ; (send e get-event-type)
-                   (error 'on-mouse-event
-                          (format 
-                           "Unknown event type: ~a"
-                           (send e get-event-type)))])))
+  (values x y 
+          (cond [(send e button-down?) "button-down"]
+                [(send e button-up?)   "button-up"]
+                [(send e dragging?)    "drag"]
+                [(send e moving?)      "move"]
+                [(send e entering?)    "enter"]
+                [(send e leaving?)     "leave"]
+                [else ; (send e get-event-type)
+                 (let ([m (send e get-event-type)])
+                   (error 'on-mouse (format "Unknown event: ~a" m)))])))
+
+;; KeyEvent% -> String
+(define (key-event->parts e)
+  (define x (send e get-key-code))
+  (cond
+    [(char? x) (string x)]
+    [(symbol? x) (symbol->string x)]
+    [else (error 'on-key (format "Unknown event: ~a" x))]))
 
 ;; -----------------------------------------------------------------------------
 ;; Any -> Symbol 
