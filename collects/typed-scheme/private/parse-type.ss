@@ -2,7 +2,7 @@
 
 (provide parse-type parse-type/id parse-type*)
 
-(require (except-in "../utils/utils.ss" extend id))
+(require (except-in "../utils/utils.ss" extend))
 (require (except-in (rep type-rep) make-arr)
          (rename-in (types convenience union utils) [make-arr* make-arr])
          (utils tc-utils stxclass-util)

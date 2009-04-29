@@ -17,7 +17,7 @@
           syntax/struct
           syntax/stx
           scheme/contract
-	  (rename-in (utils utils) [id mk-id])))
+          (utils utils)))
 
 (provide == defintern hash-id (for-syntax fold-target))
 

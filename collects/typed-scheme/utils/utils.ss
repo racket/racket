@@ -13,7 +13,7 @@ at least theoretically.
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
          define-struct/printer
-         id
+         (rename-out [id mk-id])
          filter-multiple
          hash-union
          in-pairs
