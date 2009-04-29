@@ -52,8 +52,8 @@
   (define total-time    (profile-total-time    profile)) ;!! are these two
   (define cpu-time      (profile-cpu-time      profile)) ;!! swapped?
   (define sample-number (profile-sample-number profile))
-  (define granularity   (if (zero? sample-number) 0
-                            (/ total-time sample-number)))
+  (define granularity   (if (zero? sample-number) 0        ;!! this might
+                            (/ total-time sample-number))) ;!! be wrong
   (define threads+times (profile-thread-times  profile))
   (define *-node        (profile-*-node profile))
   (define hidden        (get-hidden profile hide-self% hide-subs%))
