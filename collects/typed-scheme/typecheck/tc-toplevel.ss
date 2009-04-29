@@ -161,6 +161,7 @@
       [(define-syntaxes . _) (void)]
       [(define-values-for-syntax . _) (void)]
       
+      ;; FIXME - we no longer need these special cases
       ;; these forms are handled in pass1
       [(define-values () (begin (quote-syntax (require/typed-internal . rest)) (#%plain-app values)))
        (void)]

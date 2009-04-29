@@ -52,4 +52,24 @@
 (set! zzz 2)
 
 (define-struct: xxx ())
+(define-struct: xxx2 ([y : Number]))
+(define-struct: xxx3 ([y : Number] [z : Number]))
+(define-struct: xxx4 ([y : Number] [z : xxx4]))
+(define-struct: xxx5 ([y : Number] [z : xxx4]))
+(define-struct: (A) xxx6 ([y : A] [z : xxx4]))
+xxx6-y
+(with-continuation-mark 1 1 1)
+'foo
+'(foo foo foo)
+(define-type-alias NNN Number)
+(define-type-alias (NNN2 A) (Listof Number))
+(define-type-alias (NNN3 A) (Listof A))
+(define-syntax-rule (m x) 1)
+(m 2)
+#{1 :: 1}
+(lambda: ([x : String]) (lambda () (set! x "foo")))
+#'(x y z)
+(begin0 1 1 1)
+(begin 1 1 1)
+(#%expression (begin 1 1 1))
 
