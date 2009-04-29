@@ -95,23 +95,26 @@
 	   date->string string->date
 	   )
   
-  ;; SRFI-29: Localization initialization:
-  (re-read-locale)
-  (or (load-bundle! (list* 'srfi-19
-			  (current-language)
-			  (current-country)
-			  (current-locale-details)))
-      ;; A little bit less specific
-      (load-bundle! (list 'srfi-19
-			  (current-language)
-			  (current-country)))
-      ;; less specific
-      (load-bundle! (list 'srfi-19 (current-language)))
-      ;; the least specific one (this one *do* exists!, it comes with this srfi) don't worry:
-      (load-bundle! (list 'srfi-19)))
-  
+  (define localized? #f)
   (define localized-message
     (lambda (message-name)
+      (unless localized?
+        ;; SRFI-29: Localization initialization:
+        (re-read-locale)
+        (or (load-bundle! (list* 'srfi-19
+                                 (current-language)
+                                 (current-country)
+                                 (current-locale-details)))
+            ;; A little bit less specific
+            (load-bundle! (list 'srfi-19
+                                (current-language)
+                                (current-country)))
+            ;; less specific
+            (load-bundle! (list 'srfi-19 (current-language)))
+            ;; the least specific one (this one *do* exists!, it comes with this srfi) don't worry:
+            (load-bundle! (list 'srfi-19)))
+        (set! localized? #t))
+      
       (localized-template 'srfi-19 message-name)))
   
   ;; Constants
