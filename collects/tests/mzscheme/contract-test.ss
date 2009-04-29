@@ -6560,6 +6560,18 @@ so that propagation occurs.
      (and (exn? x)
           (regexp-match #rx"cannot set!" (exn-message x)))))
   
+  (contract-error-test
+   #'(begin
+       (eval '(module pce8-bug1 scheme/base
+                (require scheme/contract)
+                (define (f x) x)
+                (provide/contract [f (-> integer? integer? integer?)])))
+       (eval '(require 'pce8-bug1)))
+   (λ (x)
+     (printf ">> ~s\n" (exn-message x))
+     (and (exn? x)
+          (regexp-match #rx"pce8-bug" (exn-message x)))))
+  
   (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)

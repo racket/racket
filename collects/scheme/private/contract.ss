@@ -1217,6 +1217,12 @@ improve method arity mismatch contract violation error messages?
                             [ctrct (syntax-property ctrct 'inferred-name id)]
                             [external-name (or user-rename-id id)]
                             [where-stx stx])
+                (with-syntax ([extra-test 
+                               (syntax-case #'ctrct (->)
+                                 [(-> dom ... arg)
+                                  #`(and (procedure? id)
+                                         (procedure-arity-includes? id #,(length (syntax->list #'(dom ...)))))]
+                                 [_ #f])])
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
@@ -1234,10 +1240,11 @@ improve method arity mismatch contract violation error messages?
                   
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
-                       (-contract contract-id id pos-module-source 'ignored #,(id->contract-src-info #'id))
+                       (unless extra-test
+                         (-contract contract-id id pos-module-source 'ignored #,(id->contract-src-info #'id)))
                        (void)))
                   
-                  (syntax (code id-rename)))))]))
+                  (syntax (code id-rename))))))]))
        
        (with-syntax ([(bodies ...) (code-for-each-clause (syntax->list (syntax (p/c-ele ...))))])
          (signal-dup-syntax-error)
