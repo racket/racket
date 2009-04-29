@@ -411,3 +411,16 @@ The @scheme[_] transformer binding prohibits @scheme[_] from being
 used as an expression. This binding useful only in syntax patterns,
 where it indicates a pattern that matches any syntax object. See
 @scheme[syntax-case].}
+
+
+@defproc[(syntax-pattern-variable? [v any/c]) boolean?]{
+
+Return @scheme[#t] if @scheme[v] is a value that, as a
+transformer-binding value, makes the bound variable as pattern
+variable in @scheme[syntax] and other forms. To check whether an
+identifier is a pattern variable, use @scheme[syntax-local-value] to
+get the identifier's transformer value, and then test the value with
+@scheme[syntax-pattern-variable?].
+
+The @scheme[syntax-pattern-variable?] procedure is provided
+@scheme[for-syntax] by @schememodname[scheme/base].}

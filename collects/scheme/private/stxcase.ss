@@ -491,7 +491,7 @@
 		  (map
 		   (lambda (var)
 		     (and (let ([v (syntax-local-value var (lambda () #f))])
-			    (and (syntax-mapping? v)
+			    (and (syntax-pattern-variable? v)
 				 v))))
 		   unique-vars)])
 	     (if (and (or (null? var-bindings)
@@ -556,4 +556,5 @@
 				   (cons (quote-syntax list*) r)]))))))))))
        x)))
 
-  (#%provide (all-from "ellipses.ss") syntax-case** syntax))
+  (#%provide (all-from "ellipses.ss") syntax-case** syntax 
+             (for-syntax syntax-pattern-variable?)))

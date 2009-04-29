@@ -9,3 +9,4 @@
 @include-section["flatten-begin.scrbl"]
 @include-section["struct.scrbl"]
 @include-section["path-spec.scrbl"]
+@include-section["template.scrbl"]

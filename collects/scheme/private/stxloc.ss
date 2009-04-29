@@ -38,7 +38,7 @@
       (syntax-case** #f #t stx () free-identifier=?
 	[(_ loc pattern)
 	 (if (if (symbol? (syntax-e #'pattern))
-		 (syntax-mapping? (syntax-local-value #'pattern (lambda () #f)))
+		 (syntax-pattern-variable? (syntax-local-value #'pattern (lambda () #f)))
 		 #f)
 	     (syntax (syntax pattern))
 	     (syntax (relocate loc (syntax pattern))))])))

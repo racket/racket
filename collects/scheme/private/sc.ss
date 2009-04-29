@@ -507,7 +507,7 @@
                                    (set! cnt (add1 cnt))
                                    (string->symbol (format "~a~a" prefix cnt)))))
            ;; The pattern expander:
-           (-define (expander p proto-r local-top use-ellipses? use-tail-pos hash!)
+           (-define (expander p proto-r local-top use-ellipses? use-tail-pos hash! need-list?)
                     (cond
                      [(and use-ellipses? (ellipsis? p))
                       (let*-values ([(p-head) (stx-car p)]
@@ -559,8 +559,9 @@
                                         (pick-specificity
                                          top
                                          last-el))))]
-                               [rest (expander rest-p proto-r local-top #t use-tail-pos hash!)]
-                               [ehead (expander p-head (and proto-r (append proto-rr-shallow proto-rr-deep)) p-head #t #f hash!)])
+                               [rest (expander rest-p proto-r local-top #t use-tail-pos hash! need-list?)]
+                               [ehead (expander p-head (and proto-r (append proto-rr-shallow proto-rr-deep)) p-head #t #f hash! 
+                                                (or need-list? (positive? el-count)))])
                           (if proto-r
                               `(lambda (r)
                                  ,(let ([pre (let ([deeps
@@ -597,10 +598,11 @@
                                                                                    (sub1 el-count))))])
                                                           (wrap
                                                            `(map 
-                                                             (lambda vals (,ehead 
-                                                                           ,(if (null? proto-rr-shallow)
-                                                                                'vals
-                                                                                '(append shallows vals))))
+                                                             (lambda vals
+                                                               (,ehead 
+                                                                ,(if (null? proto-rr-shallow)
+                                                                     'vals
+                                                                     '(append shallows vals))))
                                                              ,@valses)
                                                            el-count))]))])
                                                (if (null? proto-rr-shallow)
@@ -611,9 +613,17 @@
                                                                         proto-rr-shallow))])
                                                       ,deeps)))]
                                         [post (apply-to-r rest)])
-                                    (if (eq? post 'null)
-                                        pre
-                                        `(append ,pre ,post))))
+                                    (let ([v (if (eq? post 'null)
+                                                 pre
+                                                 `(append ,pre ,post))])
+                                      (if (and (not need-list?) (syntax? p))
+                                          ;; Keep srcloc, properties, etc.:
+                                          (let ([small-dest (datum->syntax p
+                                                                           'dest
+                                                                           p
+                                                                           p)])
+                                            `(datum->syntax/shape (quote-syntax ,small-dest) ,v))
+                                          v))))
                               ;; variables were hashed
                               (void))))]
                      [(stx-pair? p)
@@ -623,21 +633,21 @@
                             (if (and (stx-pair? (stx-cdr p))
                                      (stx-null? (stx-cdr (stx-cdr p))))
                                 (let ([dp (stx-car (stx-cdr p))])
-                                  (expander dp proto-r dp #f use-tail-pos hash!))
+                                  (expander dp proto-r dp #f use-tail-pos hash! need-list?))
                                 (raise-syntax-error 
                                  'syntax
                                  "misplaced ellipses in template"
                                  top
                                  hd))
-                            (let ([ehd (expander hd proto-r hd use-ellipses? use-tail-pos hash!)]
-                                  [etl (expander (stx-cdr p) proto-r local-top use-ellipses? use-tail-pos hash!)])
+                            (let ([ehd (expander hd proto-r hd use-ellipses? use-tail-pos hash! #f)]
+                                  [etl (expander (stx-cdr p) proto-r local-top use-ellipses? use-tail-pos hash! need-list?)])
                               (if proto-r
                                   `(lambda (r)
                                      ,(apply-cons p (apply-to-r ehd) (apply-to-r etl) p sub-gensym))
                                   ;; variables were hashed
                                   (void)))))]
                      [(stx-vector? p #f)
-                      (let ([e (expander (vector->list (syntax-e p)) proto-r p use-ellipses? use-tail-pos hash!)])
+                      (let ([e (expander (vector->list (syntax-e p)) proto-r p use-ellipses? use-tail-pos hash! #t)])
                         (if proto-r
                             `(lambda (r)
                                (list->vector (stx->list ,(apply-to-r e))))
@@ -646,7 +656,7 @@
                      [(and (syntax? p)
                            (struct? (syntax-e p))
                            (prefab-struct-key (syntax-e p)))
-                      (let ([e (expander (cdr (vector->list (struct->vector (syntax-e p)))) proto-r p use-ellipses? use-tail-pos hash!)])
+                      (let ([e (expander (cdr (vector->list (struct->vector (syntax-e p)))) proto-r p use-ellipses? use-tail-pos hash! #t)])
                         (if proto-r
                             `(lambda (r)
                                (apply make-prefab-struct ',(prefab-struct-key (syntax-e p)) (stx->list ,(apply-to-r e))))
@@ -697,7 +707,8 @@
                                                              l))])
                                          (if pr
                                              (set-mcdr! pr (cons r (mcdr pr)))
-                                             (hash-set! ht (syntax-e r) (cons (mcons r (list r)) l))))))))])
+                                             (hash-set! ht (syntax-e r) (cons (mcons r (list r)) l)))))))
+                               #f)])
              (if proto-r
                  `(lambda (r)
                     ,(let ([main (let ([build (apply-to-r l)])
@@ -808,9 +819,10 @@
                          `(pattern-substitute (quote-syntax ()))
                          p
                          sub-gensym)]
+            
             [(and (pair? t)
                   (eq? (car t) 'quote-syntax)
-                  (stx-smaller-than? (car t) 10))
+                  (stx-smaller-than? (cdr t) 10))
              ;; Shift into `pattern-substitute' mode with an intitial constant.
              ;; (Only do this for small constants, so we don't traverse
              ;; big constants when looking for substitutions.)
@@ -1028,7 +1040,7 @@
                                  (stx-car stx)))))))
   (-define (make-syntax-mapping depth valvar)
            (make-set!-transformer (-make-syntax-mapping depth valvar)))
-  (-define (syntax-mapping? v)
+  (-define (syntax-pattern-variable? v)
            (and (set!-transformer? v)
                 (-syntax-mapping? (set!-transformer-procedure v))))
   (-define (syntax-mapping-depth v)
@@ -1038,6 +1050,6 @@
 
   (#%provide (protect make-match&env get-match-vars make-interp-match 
                       make-pexpand
-                      make-syntax-mapping syntax-mapping?
+                      make-syntax-mapping syntax-pattern-variable?
                       syntax-mapping-depth syntax-mapping-valvar
                       stx-memq-pos no-ellipses?)))

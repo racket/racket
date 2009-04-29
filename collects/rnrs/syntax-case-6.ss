@@ -2,10 +2,10 @@
 
 (require (for-syntax scheme/base)
          r6rs/private/qq-gen
-         scheme/stxparam
          scheme/mpair
          r6rs/private/exns
-         (for-syntax r6rs/private/check-pattern))
+         (for-syntax syntax/template
+                     r6rs/private/check-pattern))
 
 (provide make-variable-transformer
          (rename-out [r6rs:syntax-case syntax-case]
@@ -138,35 +138,6 @@
 ;; Also, R6RS doesn't have (... <tmpl>) quoting in patterns --- only
 ;; in templates. <<<< FIXME
 
-(define-syntax-parameter pattern-vars null)
-
-(provide pattern-vars)
-
-(define-for-syntax (add-pattern-vars ids)
-  (append (syntax->list ids)
-          (syntax-parameter-value (quote-syntax pattern-vars))))
-
-;; ----------------------------------------
-
-(define-for-syntax (extract-pattern-ids stx lits)
-  (syntax-case stx ()
-    [(a . b) (append (extract-pattern-ids #'a lits)
-                     (extract-pattern-ids #'b lits))]
-    [#(a ...) (apply append
-                     (map (lambda (a)
-                            (extract-pattern-ids a lits))
-                          (syntax->list #'(a ...))))]
-    [a
-     (identifier? #'a)
-     (if (or (ormap (lambda (lit)
-                      (free-identifier=? lit #'a))
-                    lits)
-             (free-identifier=? #'a #'(... ...))
-             (free-identifier=? #'a #'_))
-         null
-         (list #'a))]
-    [_ null]))
-
 (define-syntax (r6rs:syntax-case stx)
   (syntax-case stx ()
     [(_ expr (lit ...) clause ...)
@@ -194,186 +165,58 @@
            . #,(map (lambda (clause)
                       (syntax-case clause ()
                         [(pat val)
-                         (with-syntax ([pat-ids (extract-pattern-ids #'pat lits)])
+                         (begin
                            ((check-pat-ellipses stx) #'pat)
-                           #`(pat (syntax-parameterize ([pattern-vars
-                                                         (add-pattern-vars #'pat-ids)])
-                                    val)))]
+                           #`(pat val))]
                         [(pat fender val)
-                         (with-syntax ([pat-ids (extract-pattern-ids #'pat lits)])
+                         (begin
                            ((check-pat-ellipses stx) #'pat)
-                           #`(pat (syntax-parameterize ([pattern-vars
-                                                         (add-pattern-vars #'pat-ids)])
-                                    fender)
-                                  (syntax-parameterize ([pattern-vars
-                                                         (add-pattern-vars #'pat-ids)])
-                                    val)))]
+                           #`(pat fender val))]
                         [else clause]))
                     (syntax->list #'(clause ...))))))]
     [(_ . rest) (syntax/loc stx (syntax-case . rest))]))
 
 ;; ----------------------------------------
 
-(define-for-syntax (make-unwrap-map tmpl pattern-vars)
-  (let loop ([tmpl tmpl]
-             [in-ellipses? #f]
-             [counting? #f])
-    (syntax-case tmpl ()
-      [(ellipses expr)
-       (and (not in-ellipses?)
-            (identifier? #'ellipses)
-            (free-identifier=? #'ellipses #'(... ...)))
-       (loop #'expr #t #f)]
-      [(expr ellipses . rest)
-       (and (not in-ellipses?)
-            (identifier? #'ellipses)
-            (free-identifier=? #'ellipses #'(... ...)))
-       (box (cons (loop #'expr #f #f)
-                  (let rloop ([rest #'rest])
-                    (syntax-case rest ()
-                      [(ellipses . rest)
-                       (and (identifier? #'ellipses)
-                            (free-identifier=? #'ellipses #'(... ...)))
-                       ;; keep going:
-                       (rloop #'rest)]
-                      [else (loop rest #f #t)]))))]
-      [(a . b) (let ([a (loop #'a in-ellipses? #f)]
-                     [b (loop #'b in-ellipses? counting?)])
-                 (if (or a b counting?)
-                     (cons a b)
-                     #f))]
-      [#(a ...) (let ([as (loop (syntax->list #'(a ...))
-                                in-ellipses?
-                                #f)])
-                  (and as (vector as)))]
-      [a
-       (identifier? #'a)
-       (ormap (lambda (pat-var)
-                (free-identifier=? #'a pat-var))
-              pattern-vars)]
-      [_ #f])))
+(define (unwrap-reconstructed data stx datum)
+  datum)
 
-(define-for-syntax (group-ellipses tmpl umap)
-  (define (stx-cdr s) (if (syntax? s) (cdr (syntax-e s)) (cdr s)))
-  (let loop ([tmpl tmpl][umap umap])
-    (if (not umap)
-        tmpl
-        (syntax-case tmpl ()
-          [(ellipses expr)
-           (and (identifier? #'ellipses)
-                (free-identifier=? #'ellipses #'(... ...)))
-           tmpl]
-          [(expr ellipses . rest)
-           (and (identifier? #'ellipses)
-                (free-identifier=? #'ellipses #'(... ...)))
-           (let rloop ([rest (stx-cdr (stx-cdr tmpl))]
-                       [accum (list #'ellipses (loop #'expr
-                                                     (car (unbox umap))))])
-             (syntax-case rest ()
-               [(ellipses . _)
-                (and (identifier? #'ellipses)
-                     (free-identifier=? #'ellipses #'(... ...)))
-                ;; keep going:
-                (rloop (stx-cdr rest) (cons #'ellipses accum))]
-               [_ (cons (datum->syntax #f (reverse accum))
-                        (loop rest (cdr (unbox umap))))]))]
-          [(a . b) (let ([n (cons (loop #'a (car umap))
-                                  (loop (cdr (if (syntax? tmpl)
-                                                 (syntax-e tmpl)
-                                                 tmpl))
-                                        (cdr umap)))])
-                     (if (syntax? tmpl)
-                         (datum->syntax tmpl n tmpl tmpl tmpl)
-                         n))]
-          [#(a ...) (datum->syntax 
-                     tmpl
-                     (list->vector (loop (syntax->list #'(a ...))
-                                         (vector-ref umap 0)))
-                     tmpl
-                     tmpl
-                     tmpl)]
-          [_ tmpl]))))
+(define (unwrap-pvar data stx)
+  ;; unwrap based on srcloc:
+  (let loop ([v stx])
+    (cond
+     [(syntax? v)
+      (if (eq? (syntax-source v) unwrapped-tag)
+          (loop (syntax-e v))
+          v)]
+     [(pair? v) (mcons (loop (car v))
+                       (loop (cdr v)))]
+     [(vector? v) (list->vector
+                   (map loop (vector->list v)))]
+     [else v])))
 
-(define (unwrap stx mapping)
-  (cond
-   [(not mapping)
-    ;; In case stx is a pair, explicitly convert
-    (datum->syntax #f (convert-mpairs stx))]
-   [(eq? mapping #t)
-    ;; was a pattern var; unwrap based on srcloc:
-    (let loop ([v stx])
-      (cond
-       [(syntax? v)
-        (if (eq? (syntax-source v) unwrapped-tag)
-            (loop (syntax-e v))
-            v)]
-       [(pair? v) (mcons (loop (car v))
-                         (loop (cdr v)))]
-       [(vector? v) (list->vector
-                     (map loop (vector->list v)))]
-       [else v]))]
-   [(pair? mapping)
-    (let ([p (if (syntax? stx)
-                 (syntax-e stx)
-                 stx)])
-      (mcons (unwrap (car p) (car mapping))
-             (unwrap (cdr p) (cdr mapping))))]
-   [(vector? mapping)
-    (list->vector (let loop ([v (unwrap (vector->list (syntax-e stx))
-                                        (vector-ref mapping 0))])
-                    (cond
-                     [(null? v) null]
-                     [(mpair? v) (cons (mcar v) (loop (mcdr v)))]
-                     [(syntax? v) (syntax->list v)])))]
-   [(null? mapping) null]
-   [(box? mapping)
-    ;; ellipses
-    (let* ([mapping (unbox mapping)]
-           [rest-mapping (cdr mapping)]
-           [p (if (syntax? stx) (syntax-e stx) stx)]
-           [repeat-stx (car p)]
-           [rest-stx (cdr p)])
-      (let ([repeats (list->mlist
-                      (map (lambda (rep)
-                             (unwrap rep (car mapping)))
-                           (syntax->list repeat-stx)))]
-            [rest-mapping 
-             ;; collapse #fs to single #f:
-             (if (let loop ([rest-mapping rest-mapping])
-                   (if (pair? rest-mapping)
-                       (if (not (car rest-mapping))
-                           (loop (cdr rest-mapping))
-                           #f)
-                       (not rest-mapping)))
-                 #f
-                 rest-mapping)])
-                                        
-        (if (and (not rest-mapping)
-                 (or (null? rest-stx)
-                     (and (syntax? rest-stx)
-                          (null? (syntax-e rest-stx)))))
-            repeats
-            (mappend repeats
-                     (unwrap rest-stx rest-mapping)))))]
-   [else (error 'unwrap "strange unwrap mapping: ~e" mapping)]))
+(define (leaf-to-syntax datum)
+  (datum->syntax #f datum))
+
+(define (ellipses-end stx)
+  ;; R6RS says that (x ...) must be a list, so we need a special rule
+  (if (and (syntax? stx) (null? (syntax-e stx)))
+      null
+      stx))
+
+(define-for-syntax (no-data x) #f)
 
 (define-syntax (r6rs:syntax stx)
   (syntax-case stx ()
-    [(_ tmpl)
-     (let ([umap (make-unwrap-map #'tmpl
-                                  (syntax-parameter-value #'pattern-vars))])
-       (quasisyntax/loc stx
-         (unwrap (if #f
-                     ;; Process tmpl first, so that syntax errors are reported
-                     ;; usinf the original source.
-                     #,(syntax/loc stx (syntax tmpl))
-                     ;; Convert tmpl to group ...-created repetitions together,
-                     ;;  so that `unwrap' can tell which result came from which
-                     ;;  template:
-                     #,(with-syntax ([tmpl (group-ellipses #'tmpl umap)])
-                         (syntax/loc stx (syntax tmpl))))
-                 '#,umap)))]
-    [(_ . rest) (syntax/loc stx (syntax . rest))]))
+    [(_ template)
+     (transform-template #'template
+                         #:constant-as-leaf? #t
+                         #:save (lambda (x) #f)
+                         #:restore-stx #'unwrap-reconstructed
+                         #:leaf-datum-stx #'leaf-to-syntax
+                         #:pvar-restore-stx #'unwrap-pvar
+                         #:cons-stx #'mcons
+                         #:ellipses-end-stx #'ellipses-end)]))
 
 ;; ----------------------------------------
 
