@@ -266,7 +266,7 @@ at least theoretically.
 (define (extend s t extra)
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
-(define-for-syntax enable-contracts? #t)
+(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 (define-syntax p/c
@@ -274,11 +274,12 @@ at least theoretically.
       (make-rename-transformer #'provide/contract)
       (lambda (stx)
         (define-syntax-class clause
-          #:literals (rename)
+          #:literals ()
           #:attributes (i)
-          (pattern [rename out:id in:id]
-                   #:with i #'(rename-out out in))
-          (pattern [i:id c]))
+          (pattern [rename out:id in:id cnt:expr]
+                   #:when (eq? (syntax-e #'rename) 'rename)
+                   #:with i #'(rename-out [out in]))
+          (pattern [i:id cnt:expr]))
         (syntax-parse stx
           [(_ c:clause ...)
            #'(provide c.i ...)]))))
