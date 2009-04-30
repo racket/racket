@@ -1292,7 +1292,8 @@ please adhere to these guidelines:
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java mode")
-
+  (profj-java-coverage "Java Coverage") ;; shows up in the preferences dialog under 'Color'
+  
   (profj-beginner-lang "Beginner")
   (profj-beginner-lang-one-line-summary "Java-like Beginner teaching language")
   (profj-full-lang "Full")

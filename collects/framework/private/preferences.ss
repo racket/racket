@@ -467,7 +467,8 @@ the state transitions / contracts are:
                                  (string-constant automatically-to-ps)
                                  (λ (b) 
                                    (if b 'postscript 'standard))
-                                 (λ (n) (eq? 'postscript n)))))))])
+                                 (λ (n) (eq? 'postscript n))))
+                   (general-panel-procs editor-panel))))])
       (add-general-checkbox-panel)))
   
   (define (add-warnings-checkbox-panel)
