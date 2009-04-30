@@ -619,6 +619,8 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_log_reader_type, mark_log_reader);
 
   GC_REG_TRAV(scheme_rt_runstack, runstack_val);
+
+  GC_REG_TRAV(scheme_rib_delimiter_type, small_object);
 }
 
 END_XFORM_SKIP;

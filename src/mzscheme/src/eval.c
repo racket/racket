@@ -9274,13 +9274,31 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Ob
   return scheme_datum_to_syntax(l, scheme_false, scheme_false, 0, 0);
 }
 
+static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *renaming)
+{
+  Scheme_Object *rl = renaming;
+
+  if (SCHEME_PAIRP(renaming)) {
+    l = scheme_add_rib_delimiter(l, scheme_null);
+    while (!SCHEME_NULLP(rl)) {
+      l = scheme_add_rename(l, SCHEME_CAR(rl));
+      rl = SCHEME_CDR(rl);
+    }
+    l = scheme_add_rib_delimiter(l, renaming);
+  } else {
+    l = scheme_add_rename(l, renaming);
+  }
+
+  return l;
+}
+
 static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind;
-  int bad_sub_env = 0;
+  int bad_sub_env = 0, bad_intdef = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
   env = scheme_current_thread->current_local_env;
@@ -9324,7 +9342,36 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 	if (!scheme_is_sub_env(stx_env, env))
 	  bad_sub_env = 1;
 	env = stx_env;
-      }
+      } else if (SCHEME_PAIRP(argv[3])) {
+        Scheme_Object *rl = argv[3];
+        while (SCHEME_PAIRP(rl)) {
+          if (SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(SCHEME_CAR(rl)))) {
+            Scheme_Comp_Env *stx_env;
+            stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(SCHEME_CAR(rl));
+            if (!scheme_is_sub_env(stx_env, env))
+              bad_sub_env = 1;
+          } else
+            break;
+          rl = SCHEME_CDR(rl);
+        }
+        if (!SCHEME_NULLP(rl))
+          bad_intdef = 1;
+        else {
+          rl = argv[3];
+          env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(SCHEME_CAR(rl));
+          if (SCHEME_NULLP(SCHEME_CDR(rl)))
+            renaming = SCHEME_PTR2_VAL(SCHEME_CAR(rl));
+          else {
+            /* reverse and extract: */
+            renaming = scheme_null;
+            while (!SCHEME_NULLP(rl)) {
+              renaming = cons(SCHEME_PTR2_VAL(SCHEME_CAR(rl)), renaming);
+              rl = SCHEME_CDR(rl);
+            }
+          }
+        }
+      } else
+        bad_intdef = 1;
     }
 
     if (argc > 4) {
@@ -9385,18 +9432,13 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   /* Report errors related to 3rd argument, finally */
   if (argc > 3) {
-    if (SCHEME_TRUEP(argv[3])) {
-      if (SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[3]))) {
-	if (bad_sub_env) {
-	  scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: transforming context does "
-			   "not match internal-definition context at the front of the context list",
-			   name);
-	  return NULL;
-	}
-      } else {
-	scheme_wrong_type(name, "internal-definition context or #f", 3, argc, argv);
-	return NULL;
-      }
+    if (bad_intdef) {
+      scheme_wrong_type(name, "internal-definition context, non-empty list of internal-definition contexts, or #f", 3, argc, argv);
+      return NULL;
+    } else if (bad_sub_env) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: transforming context does not match internal-definition context",
+                       name);
+      return NULL;
     }
   }
 
@@ -9424,7 +9466,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   l = scheme_stx_activate_certs(l);
 
   if (renaming)
-    l = scheme_add_rename(l, renaming);
+    l = add_intdef_renamings(l, renaming);
 
   SCHEME_EXPAND_OBSERVE_LOCAL_PRE(observer, l);
 
@@ -9479,7 +9521,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
 
   if (renaming)
-    l = scheme_add_rename(l, renaming);
+    l = add_intdef_renamings(l, renaming);
 
   if (for_expr) {
     /* Package up expanded expr with the environment. */

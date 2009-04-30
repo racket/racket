@@ -744,6 +744,7 @@ int *scheme_stx_get_rib_sealed(Scheme_Object *rib);
 
 Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename);
 Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib);
+Scheme_Object *scheme_add_rib_delimiter(Scheme_Object *o, Scheme_Object *ribs);
 
 Scheme_Object *scheme_stx_remove_extra_marks(Scheme_Object *o, Scheme_Object *relative_to,
                                              Scheme_Object *uid);
