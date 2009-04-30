@@ -1267,6 +1267,65 @@
   (test-engine-enable-tests "Test aktivieren")
   (test-engine-disable-tests "Tests deaktivieren Tests")
   
+  (test-engine-ran-1-test "1 Test gelaufen.")
+  (test-engine-ran-1-check "1 Check gelaufen.")
+  ;; ditto, only plural
+  (test-engine-ran-n-tests "~a Tests gelaufen.")
+  (test-engine-ran-n-checks "~a Checks gelaufen.")
+  (test-engine-1-test-passed "Der eine Test ist bestanden!")
+  (test-engine-1-check-passed "Der eine Check ist bestanden!")
+  (test-engine-both-tests-passed "Beide Tests bestanden!")
+  (test-engine-both-checks-passed "Beide Checks bestanden!")
+  (test-engine-all-tests-passed "Alle Tests bestanden!")
+  (test-engine-all-checks-passed "Alle Checks bestanden!")
+  (test-engine-all-n-tests-passed "Alle ~a Tests bestanden!")
+  (test-engine-all-n-checks-passed "Alle ~a Checks bestanden!")
+  (test-engine-0-tests-passed "0 Tests bestanden.")
+  (test-engine-0-checks-passed "0 Checks bestanden.")
+  (test-engine-m-of-n-tests-failed "~a der ~a Tests fehlgeschlagen.")
+  (test-engine-m-of-n-checks-failed "~a der ~a Checks fehlgeschlagen.")
+  (test-engine-must-be-tested "Dieses Programm muss noch getestet werden!")
+  (test-engine-is-unchecked "Dieses Programm hat keine Checks!")
+  (test-engine-tests-disabled "Tests deaktiviert.")
+  (test-engine-zero-tests-passed "Keine Tests waren erfolgreich!")
+  (test-engine-the-only-test-passed "Der einzige Test war erfolgreich.")
+  (test-engine-both-tests-passed "Beide Tests waren erfolgreich.")
+  ; ~a is replaced by count
+  (test-engine-all-tests-passed "Alle ~a Tests waren erfolgreich!")
+  (test-engine-should-be-tested "Dieses Programm sollte getestet werden.")
+  (test-engine-at-line-column "in Zeile ~a, Spalte ~a")
+  (test-engine-in-at-line-column "in ~a, Zeile ~a, Spalte ~a")
+  ; as in "column (unknown)"
+  (test-engine-unknown "(unbekannt)")
+  (test-engine-trace-error "Trace-Fehler")
+
+  (test-engine-check-encountered-error
+   "check-expect bekam den folgenden Fehler statt des erwarteten Werts, ~F. ~n   :: ~a")
+  (test-engine-actual-value-differs-error
+   "Der tatsächliche Wert ~F ist nicht der erwartete Wert ~F.")
+  (test-engine-actual-value-not-within-error
+   "Der tatsächliche Wert ~F ist nicht innerhalb von ~v des erwarteten Werts ~F.")
+  (test-engine-encountered-error-error
+   "check-error bekam den folgenden Fehler anstatt des erwarteten ~a~n   :: ~a")
+  (test-engine-expected-error-error
+   "check-error erwartete den folgenden Fehler, bekam aber den Wert ~F.~n ~a")
+
+  ; section header
+  (test-engine-check-failures "Check-Fehler:")
+  ; section header
+  (test-engine-contract-violations "Vertragsverletzungen:")
+
+  ; part of one phrase "contract <at line ...> to blame: procedure <at line ...>
+  (test-engine-contract "Vertrag")
+  (test-engine-to-blame "verantwortlich: Prozedur")
+
+  (test-engine-no-contract-violations "Keine Vertragsverletzungen.")
+  (test-engine-1-contract-violation "1 Vertragsverletzung.")
+  (test-engine-n-contract-violations "~a Vertragsverletzungen.")
+
+  ; as in got <value>, contract <at ...>
+  (test-engine-got "bekam")
+
   (profjWizward-insert-java-class "Java-Klasse einfügen")
   (profjWizard-insert-java-union "Java-Vereinigung einfügen")
 

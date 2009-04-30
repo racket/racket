@@ -12,6 +12,7 @@
          string-constants
          (lib "test-engine/test-info.scm")
          (lib "test-engine/test-engine.scm")
+	 (lib "test-engine/print.ss")
 	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-test-engine)
 
@@ -54,6 +55,25 @@
 		(send drscheme-frame display-test-panel content)
 		(send curr-win show #f)))))))
 
+    (define/public (display-success-summary port count)
+      (unless (test-silence)
+	(display (case count
+		   [(0) (string-constant test-engine-0-tests-passed)]
+		   [(1) (string-constant test-engine-1-test-passed)]
+		   [(2) (string-constant test-engine-both-tests-passed)]
+		   [else (format (string-constant test-engine-all-n-tests-passed)
+				 count)]) 
+		 port)))
+
+    (define/public (display-untested-summary port)
+      (unless (test-silence)
+        (fprintf port (string-constant test-engine-should-be-tested))
+	(display "\n" port)))
+
+    (define/public (display-disabled-summary port)
+      (display (string-constant test-engine-tests-disabled) port)
+      (display "\n" port))
+
     (define/public (display-results)
       (let* ([curr-win (and current-tab (send current-tab get-test-window))]
              [window (or curr-win (make-object test-window%))]
@@ -90,28 +110,34 @@
                 (send editor insert
                       (cond
                         [(zero? total-checks) zero-message]
-                        [(= 1 total-checks) "Ran 1 check.\n"]
-                        [else (format "Ran ~a checks.\n" total-checks)]))
+                        [(= 1 total-checks) 
+			 (string-append (string-constant test-engine-ran-1-check) "\n")]
+                        [else (format (string-append (string-constant test-engine-ran-n-checks) "\n")
+				      total-checks)]))
                 (when (> total-checks 0)
                   (send editor insert
                         (cond
                           [(and (zero? failed-checks) (= 1 total-checks))
-                           "Check passed!\n\n"]
-                          [(zero? failed-checks) "All checks passed!\n\n"]
-                          [(= failed-checks total-checks) "0 checks passed.\n"]
-                          [else (format "~a of the ~a checks failed.\n\n"
+			   (string-append (string-constant test-engine-1-check-passed) "\n\n")]
+                          [(zero? failed-checks) 
+			   (string-append (string-constant test-engine-all-checks-passed) "\n\n")]
+                          [(= failed-checks total-checks)
+			   (string-append (string-constant test-engine-0-checks-passed) "\n")]
+                          [else (format (string-append (string-constant test-engine-m-of-n-checks-failed) "\n\n")
                                         failed-checks total-checks)])))
 		(send editor insert
 		      (cond
 		       ((null? violated-contracts)
-			"No contract violations!\n\n")
+			(string-append (string-constant test-engine-no-contract-violations) "\n\n"))
+		       ((null? (cdr violated-contracts))
+			(string-append (string-constant test-engine-1-contract-violation) "\n\n"))
 		       (else
-			(format "~a contract violations.\n\n"
+			(format (string-append (string-constant test-engine-n-contract-violations) "\n\n")
 				(length violated-contracts)))))
 		)])
         (case style
           [(check-require)
-           (check-outcomes "This program is unchecked!\n")]
+           (check-outcomes (string-append (string-constant test-engine-is-unchecked) "\n"))]
           [else (check-outcomes "")])
 
         (unless (and (zero? total-checks)
@@ -126,24 +152,24 @@
 
     (define/public (display-check-failures checks editor test-info src-editor)
       (when (pair? checks)
-	(send editor insert "Check failures:\n"))
+	(send editor insert (string-append (string-constant test-engine-check-failures) "\n")))
       (for ([failed-check (reverse checks)])
         (send editor insert "\t")
         (if (failed-check-exn? failed-check)
             (make-error-link editor
-                             (failed-check-msg failed-check)
+                             (failed-check-reason failed-check)
                              (failed-check-exn? failed-check)
-                             (failed-check-src failed-check)
+                             (check-fail-src (failed-check-reason failed-check))
                              src-editor)
             (make-link editor
-                       (failed-check-msg failed-check)
-                       (failed-check-src failed-check)
+                       (failed-check-reason failed-check)
+                       (check-fail-src (failed-check-reason failed-check))
                        src-editor))
         (send editor insert "\n")))
 
     (define/public (display-contract-violations violations editor test-info src-editor)
       (when (pair? violations)
-	(send editor insert "Contract violations:\n"))
+	(send editor insert (string-append (string-constant test-engine-contract-violations) "\n")))
       (for-each (lambda (violation)
 		  (send editor insert "\t")
 		  (make-contract-link editor violation src-editor)
@@ -154,9 +180,9 @@
     ;Inserts a newline and a tab into editor
     (define/public (next-line editor) (send editor insert "\n\t"))
 
-    ;; make-link: text% (listof (U string snip%)) src editor -> void
-    (define (make-link text msg dest src-editor)
-      (insert-messages text msg)
+    ;; make-link: text% check-fail src editor -> void
+    (define (make-link text reason dest src-editor)
+      (display-reason text reason)
       (let ((start (send text get-end-position)))
         (send text insert (format-src dest))
         (when (and src-editor current-rep)
@@ -165,12 +191,53 @@
                 (lambda (t s e) (highlight-check-error dest src-editor))
                 #f #f)
 	  (set-clickback-style text start "royalblue"))))
-    
-    ;; make-error-link: text% (listof (U string snip%)) exn src editor -> void
-    (define (make-error-link text msg exn dest src-editor)
-      (make-link text msg dest src-editor)
+
+    (define (display-reason text fail)
+      (let* ((print-string
+	      (lambda (m)
+		(send text insert m)))
+	     (print-formatted
+	      (lambda (m)
+		(when (is-a? m snip%)
+		  (send m set-style (send (send text get-style-list)
+					  find-named-style "Standard")))
+		(send text insert m)))
+	     (print
+	      (lambda (fstring . vals)
+		(apply print-with-values fstring print-string print-formatted vals)))
+	     (formatter (check-fail-format fail)))
+	(cond
+	 [(unexpected-error? fail)
+	  (print (string-constant test-engine-check-encountered-error)
+		 (formatter (unexpected-error-expected fail))
+		 (unexpected-error-message fail))]
+	 [(unequal? fail)
+	  (print (string-constant test-engine-actual-value-differs-error)
+		 (formatter (unequal-test fail))
+		 (formatter (unequal-actual fail)))]
+	 [(outofrange? fail)
+	  (print (string-constant test-engine-actual-value-not-within-error)
+		 (formatter (outofrange-test fail))
+		 (outofrange-range fail)
+		 (formatter (outofrange-actual fail)))]
+	 [(incorrect-error? fail)
+	  (print (string-constant test-engine-encountered-error-error)
+		 (incorrect-error-expected fail)
+		 (incorrect-error-message fail))]
+	 [(expected-error? fail)
+	  (print (string-constant test-engine-expected-error-error)
+		 (formatter (expected-error-value fail))
+		 (expected-error-message fail))]
+	 [(message-error? fail)
+	  (for-each print-formatted (message-error-strings fail))])
+	(print-string "\n")))
+
+    ;; make-error-link: text% check-fail exn src editor -> void
+    (define (make-error-link text reason exn dest src-editor)
+      (make-link text reason dest src-editor)
       (let ((start (send text get-end-position)))
-        (send text insert "Trace error ")
+        (send text insert (string-constant test-engine-trace-error))
+	(send text insert " ")
         (when (and src-editor current-rep)
           (send text set-clickback
                 start (send text get-end-position)
@@ -188,8 +255,16 @@
     (define (make-contract-link text violation src-editor)
       (let* ((contract (contract-violation-contract violation))
 	     (stx (contract-syntax contract))
-	     (srcloc (contract-violation-srcloc violation)))
-	(insert-messages text (contract-violation-messages violation))
+	     (srcloc (contract-violation-srcloc violation))
+	     (message (contract-violation-message violation)))
+	(cond
+	 ((string? message)
+	  (send text insert message))
+	 ((contract-got? message)
+	  (insert-messages text (list (string-constant test-engine-got)
+				      " "
+				      ((contract-got-format message)
+				       (contract-got-value message))))))
 	(when srcloc
 	  (send text insert " ")
 	  (let ((source (srcloc-source srcloc))
@@ -205,13 +280,16 @@
 		    (highlight-error line column pos span src-editor))
 		  #f #f)
 	    (set-clickback-style text start "blue")))
-	(send text insert ", contract ")
+	(send text insert ", ")
+	(send text insert (string-constant test-engine-contract))
+	(send text insert " ")
 	(format-clickable-syntax-src text stx src-editor)
 	(cond
 	 ((contract-violation-blame violation)
 	  => (lambda (blame)
 	       (next-line text)
-	       (send text insert "to blame: procedure ")
+	       (send text insert (string-constant test-engine-to-blame))
+	       (send text insert " ")
 	       (format-clickable-syntax-src text blame src-editor))))))
 	
     (define (format-clickable-syntax-src text stx src-editor)
@@ -243,18 +321,23 @@
       (format-position (car src) (cadr src) (caddr src)))
 
     (define (format-position file line column)
-      (string-append
-       (if (path? file)
-	   (let-values (((base name must-be-dir?)
-			 (split-path file)))
-	     (if (path? name)
-		 (string-append " in " (path->string name) " at ")
-		 ""))
-	   "")
-       "at line " (cond [line => number->string]
-		     [else "(unknown)"])
-       " column " (cond [column => number->string]
-			[else "(unknown)"])))
+      (let ([line (cond [line => number->string]
+			[else 
+			 (string-constant test-engine-unknown)])]
+	    [col
+	     (cond [column => number->string]
+		   [else (string-constant test-engine-unknown)])])  
+	  
+	(if (path? file)
+	    (let-values (((base name must-be-dir?)
+			  (split-path file)))
+	      (if (path? name)
+		  (format (string-constant test-engine-in-at-line-column)
+			  (path->string name) line col)
+		  (format (string-constant test-engine-at-line-column)
+			  line col)))
+	    (format (string-constant test-engine-at-line-column)
+		    line col))))
 
     (define (highlight-error line column position span src-editor)
       (when (and current-rep src-editor)

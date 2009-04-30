@@ -6,7 +6,8 @@
          framework
          string-constants
          "test-info.scm"
-         "test-engine.scm")
+         "test-engine.scm"
+	 "print.ss")
 
 (define test-display%
   (class* object% ()
@@ -45,8 +46,26 @@
           (when current-tab (send current-tab current-test-editor content))
           (when (and curr-win (docked?))
             (send drscheme-frame display-test-panel content)
-            #;(send curr-win show #f))
-          )))
+            #;(send curr-win show #f)))))
+
+    (define/public (display-success-summary port count)
+      (unless (test-silence)
+	(display (case count
+		   [(0) (string-constant test-engine-0-tests-passed)]
+		   [(1) (string-constant test-engine-1-test-passed)]
+		   [(2) (string-constant test-engine-both-tests-passed)]
+		   [else (format (string-constant test-engine-all-n-tests-passed)
+				 count)])
+		 port)))
+
+    (define/public (display-untested-summary port)
+      (unless (test-silence)
+        (display (string-constant test-engine-should-be-tested) port)
+	(display "\n" port)))
+
+    (define/public (display-disabled-summary port)
+      (display (string-constant test-engine-tests-disabled) port)
+      (display "\n" port))
     
     (define/public (display-results)
       (let* ([curr-win (and current-tab (send current-tab get-test-window))]
@@ -80,49 +99,78 @@
              [failed-tests (send test-info tests-failed)]
              [total-checks (send test-info checks-run)]
              [failed-checks (send test-info checks-failed)]
-             [test-outcomes
-              (lambda (zero-message)
+             [outcomes
+              (lambda (total failed zero-message ck?)
                 (send editor insert
                       (cond
-                        [(zero? total-tests) zero-message]
-                        [(= 1 total-tests) "Ran 1 test.\n"]
-                        [else (format "Ran ~a tests.\n" total-tests)]))
-                (when (> total-tests 0)
+                        [(zero? total) zero-message]
+                        [(= 1 total)
+			 (string-append 
+			  (if ck?
+			      (string-constant test-engine-ran-1-check)
+			      (string-constant test-engine-ran-1-test))
+			  "\n")]
+                        [else 
+			 (format (string-append
+				  (if ck?
+				      (string-constant test-engine-ran-n-checks)
+				      (string-constant test-engine-ran-n-tests))
+				  "\n")
+				 total)]))
+                (when (> total 0)
                   (send editor insert
                         (cond
-                          [(and (zero? failed-tests) (= 1 total-tests))
-                           "Test passed!\n\n"]
-                          [(zero? failed-tests) "All tests passed!\n\n"]
-                          [(= failed-tests total-tests) "0 tests passed.\n"]
-                          [else (format "~a of the ~a tests failed.\n\n" failed-tests total-tests)]))))]
-             [check-outcomes
-              (lambda (zero-message ck)
-                (send editor insert
-                      (cond
-                        [(zero? total-checks) zero-message]
-                        [(= 1 total-checks) (format "Ran 1 ~a.\n" ck)]
-                        [else (format "Ran ~a ~as.\n" total-checks ck)]))
-                (when (> total-checks 0)
-                  (send editor insert
-                        (cond
-                          [(and (zero? failed-checks) (= 1 total-checks))
-                           (format "The ~a passed!\n\n" ck)]
-                          [(zero? failed-checks) (format "All ~as passed!\n\n" ck)]
-                          [(= failed-checks total-checks) (format "0 ~as passed.\n" ck)]
-                          [else (format "~a of the ~a ~as failed.\n\n"
-                                        failed-checks total-checks ck)]))))])
+                          [(and (zero? failed) (= 1 total))
+			   (string-append (if ck?
+					      (string-constant test-engine-1-check-passed)
+					      (string-constant test-engine-1-test-passed))
+					  "\n\n")]
+                          [(zero? failed)
+			   (string-append (if ck?
+					      (string-constant test-engine-all-checks-passed)
+					      (string-constant test-engine-all-tests-passed))
+					  "\n\n")]
+                          [(= failed total)
+			   (string-append (if ck?
+					      (string-constant test-engine-0-checks-passed)
+					      (string-constant test-engine-0-tests-passed))
+					  "\n")]
+                          [else 
+			   (format
+			    (string-append (if ck?
+					       (string-constant test-engine-m-of-n-checks-failed)
+					       (string-constant test-engine-m-of-n-tests-failed))
+					   "\n\n")
+			    failed total)]))))]
+	     [check-outcomes/check
+	      (lambda (zero-message)
+		(outcomes total-checks failed-checks
+			  zero-message #t))]
+	     [check-outcomes/test
+	      (lambda (zero-message)
+		(outcomes total-checks failed-checks
+			  zero-message #f))]
+	     [test-outcomes 
+	      (lambda (zero-message)
+		(outcomes total-tests failed-tests
+			  zero-message #f))])
         (case style
           [(test-require)
-           (test-outcomes "This program must be tested!\n")
-           (check-outcomes "This program is unchecked!\n" "check")]
+           (test-outcomes
+	    (string-append (string-constant test-engine-must-be-tested) "\n"))
+           (check-outcomes/check
+	    (string-append (string-constant test-engine-is-unchecked) "\n"))]
           [(check-require)
-           (check-outcomes "This program is unchecked!\n" "check")]
+           (check-outcomes/check
+	    (string-append (string-constant test-engine-is-unchecked) "\n"))]
           [(test-basic)
            (test-outcomes "")
-           (check-outcomes "" "check")]
+           (check-outcomes/check "")]
           [(test-check)
-           (check-outcomes "This program must be tested.\n" "test")]
-          [else (check-outcomes "" "check")])
+           (check-outcomes/test
+	    (string-append (string-constant test-engine-must-be-tested)
+			   "\n"))]
+          [else (check-outcomes/check "")])
 
         (unless (and (zero? total-checks) (zero? total-tests))
           (inner (display-check-failures (send test-info failed-checks) 
@@ -134,13 +182,13 @@
         (send editor insert "\t")
         (if (failed-check-exn? failed-check)
             (make-error-link editor
-                             (failed-check-msg failed-check)
+                             (failed-check-reason failed-check)
                              (failed-check-exn? failed-check)
-                             (failed-check-src failed-check)
+                             (check-fail-src (failed-check-reason failed-check))
                              src-editor)
             (make-link editor
-                       (failed-check-msg failed-check)
-                       (failed-check-src failed-check)
+                       (failed-check-reason failed-check)
+                       (check-fail-src (failed-check-reason failed-check))
                        src-editor))
         (send editor insert "\n")))
 
@@ -148,13 +196,9 @@
     ;Inserts a newline and a tab into editor
     (define/public (next-line editor) (send editor insert "\n\t"))
 
-    ;; make-link: text% (listof (U string snip%)) src editor -> void
-    (define (make-link text msg dest src-editor)
-      (for ([m msg])
-        (when (is-a? m snip%)
-          (send m set-style (send (send text get-style-list)
-                                  find-named-style "Standard")))
-        (send text insert m))
+    ;; make-link: text% check-fail src editor -> void
+    (define (make-link text reason dest src-editor)
+      (display-reason text reason)
       (let ((start (send text get-end-position)))
         (send text insert (format-src dest))
         (when (and src-editor current-rep)
@@ -170,12 +214,57 @@
                   start end #f)
             (send c set-delta-foreground "royalblue")
             (send text change-style c start end #f)))))
+
+    (define (display-reason text fail)
+      (write (list 'display-reason fail (check-fail? fail) (message-error? fail))
+	     (current-error-port))
+      (newline (current-error-port))
+		   
+      (let* ((print-string
+	      (lambda (m)
+		(send text insert m)))
+	     (print-formatted
+	      (lambda (m)
+		(when (is-a? m snip%)
+		  (send m set-style (send (send text get-style-list)
+					  find-named-style "Standard")))
+		(send text insert m)))
+	     (print
+	      (lambda (fstring . vals)
+		(apply print-with-values fstring print-string print-formatted vals)))
+	     (formatter (check-fail-format fail)))
+	(cond
+	 [(unexpected-error? fail)
+	  (print (string-constant test-engine-check-encountered-error)
+		 (formatter (unexpected-error-expected fail))
+		 (unexpected-error-message fail))]
+	 [(unequal? fail)
+	  (print (string-constant test-engine-actual-value-differs-error)
+		 (formatter (unequal-test fail))
+		 (formatter (unequal-actual fail)))]
+	 [(outofrange? fail)
+	  (print (string-constant test-engine-actual-value-not-within-error)
+		 (formatter (outofrange-test fail))
+		 (outofrange-range fail)
+		 (formatter (outofrange-actual fail)))]
+	 [(incorrect-error? fail)
+	  (print (string-constant test-engine-encountered-error-error)
+		 (incorrect-error-expected fail)
+		 (incorrect-error-message fail))]
+	 [(expected-error? fail)
+	  (print (string-constant test-engine-expected-error-error)
+		 (formatter (expected-error-value fail))
+		 (expected-error-message fail))]
+	 [(message-error? fail)
+	  (for-each print-formatted (message-error-strings fail))])
+	(print-string "\n")))
     
-    ;; make-error-link: text% (listof (U string snip%)) exn src editor -> void
-    (define (make-error-link text msg exn dest src-editor)
-      (make-link text msg dest src-editor)
+    ;; make-error-link: text% check-fail exn src editor -> void
+    (define (make-error-link text reason exn dest src-editor)
+      (make-link text reason dest src-editor)
       (let ((start (send text get-end-position)))
-        (send text insert "Trace error ")
+        (send text insert (string-constant test-engine-trace-error))
+	(send text insert " ")
         (when (and src-editor current-rep)
           (send text set-clickback
                 start (send text get-end-position)
@@ -195,15 +284,22 @@
       (let ([src-file car]
             [src-line cadr]
             [src-col caddr])
-        (string-append
-         (cond
-           [(symbol? (src-file src)) (string-append " At ")]
-           [(path? (src-file src)) (string-append " In " (path->string (src-file src)) " at ")]
-           [(is-a? (src-file src) editor<%>) " At "])
-         "line " (cond [(src-line src) => number->string]
-                       [else "(unknown)"])
-         " column " (cond [(src-col src) => number->string]
-                          [else "(unknown)"]))))
+	(let ([line (cond [(src-line src) => number->string]
+			  [else 
+			   (string-constant test-engine-unknown)])]
+	      [col
+	       (cond [(src-col src) => number->string]
+		     [else (string-constant test-engine-unknown)])])  
+	  (string-append
+	   " "
+	   (cond
+	    [(or (symbol? (src-file src))
+		 (is-a? (src-file src) editor<%>))
+	     (format (string-constant test-engine-at-line-column) line col)]
+	    [(path? (src-file src)) 
+	     (format (string-constant test-engine-in-at-line-column)
+		     (path->string (src-file src))
+		     line col)])))))
 
     (define (highlight-check-error srcloc src-editor)
       (let* ([src-pos cadddr]

@@ -5,6 +5,7 @@
          scheme/match
          (only scheme/base for)
          "test-engine.scm"
+	 "test-info.scm"
          )
 
 (require-for-syntax stepper/private/shared)
@@ -39,19 +40,6 @@
   CHECK-EXPECT-DEFN-STR)
 (define-for-syntax CHECK-ERROR-DEFN-STR
   CHECK-EXPECT-DEFN-STR)
-
-(define-struct check-fail (src))
-
-;; (make-unexpected-error src string exn)
-(define-struct (unexpected-error check-fail) (expected message exn))
-;; (make-unequal src scheme-val scheme-val)
-(define-struct (unequal check-fail) (test actual))
-;; (make-outofrange src scheme-val scheme-val inexact)
-(define-struct (outofrange check-fail) (test actual range))
-;; (make-incorrect-error src string exn)
-(define-struct (incorrect-error check-fail) (expected message exn))
-;; (make-expected-error src string scheme-val)
-(define-struct (expected-error check-fail) (message value))
 
 ;; check-expect-maker : syntax? syntax? (listof syntax?) symbol? -> syntax?
 ;; the common part of all three test forms.
@@ -121,7 +109,7 @@
   (error-check (lambda (v) (not (procedure? v))) actual FUNCTION-FMT #f)
   (send (send test-info get-info) add-check)
   (run-and-check (lambda (v1 v2 _) (beginner-equal? v1 v2))
-                 (lambda (src v1 v2 _) (make-unequal src v1 v2))
+                 (lambda (src format v1 v2 _) (make-unequal src format v1 v2))
                  test actual #f src test-info 'check-expect))
 
 
@@ -158,14 +146,14 @@
   (let ([result (with-handlers ([exn?
                                  (lambda (e)
                                    (or (equal? (exn-message e) error)
-                                       (make-incorrect-error src error
+                                       (make-incorrect-error src (test-format) error
                                                              (exn-message e) e)))])
                   (let ([test-val (test)])
-                    (make-expected-error src error test-val)))])
+                    (make-expected-error src (test-format) error test-val)))])
     (if (check-fail? result)
         (begin
           (send (send test-info get-info) check-failed
-                (check->message result) (check-fail-src result)
+                result (check-fail-src result)
                 (and (incorrect-error? result) (incorrect-error-exn result)))
           #f)
         #t)))
@@ -180,14 +168,14 @@
 
 
 ;; run-and-check: (scheme-val scheme-val scheme-val -> boolean)
-;;                (scheme-val scheme-val scheme-val -> check-fail)
+;;                (src format scheme-val scheme-val scheme-val -> check-fail)
 ;;                ( -> scheme-val) scheme-val scheme-val object symbol? -> void
 (define (run-and-check check maker test expect range src test-info kind)
   (match-let ([(list result result-val exn?)
                (with-handlers ([exn? (lambda (e) (raise e)
                                        (let ([display (error-display-handler)])
                                          #;((error-display-handler) (exn-message e) e)
-                                         (list (make-unexpected-error src expect
+                                         (list (make-unexpected-error src (test-format) expect
                                                                       (exn-message e) 
                                                                       e) 'error (lambda () 
                                                                                   (printf "~a~n" e)
@@ -195,41 +183,12 @@
                  (let ([test-val (test)])
                    (cond [(check expect test-val range) (list #t test-val #f)]
                          [else 
-                          (list (maker src test-val expect range) test-val #f)])))])
+                          (list (maker src (test-format) test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
-           (send (send test-info get-info) check-failed (check->message result) (check-fail-src result) exn?)
+           (send (send test-info get-info) check-failed result (check-fail-src result) exn?)
            #f]
           [else
            #t])))
-
-
-(define (check->message fail)
-  (cond
-    [(unexpected-error? fail)
-     (list "check encountered the following error instead of the expected value, "
-           ((test-format) (unexpected-error-expected fail))
-           (format ". ~n   :: ~a~n" (unexpected-error-message fail)))]
-    [(unequal? fail)
-     (list "Actual value "
-           ((test-format) (unequal-test fail))
-           " differs from "
-           ((test-format) (unequal-actual fail))
-           ", the expected value.\n")]
-    [(outofrange? fail)
-     (list "Actual value "
-           ((test-format) (outofrange-test fail))
-           (format " is not within ~v of expected value " (outofrange-range fail))
-           ((test-format) (outofrange-actual fail))
-           ".\n")]
-    [(incorrect-error? fail)
-     (list (format "check-error encountered the following error instead of the expected ~a~n   :: ~a ~n"
-                   (incorrect-error-expected fail)
-                   (incorrect-error-message fail)))]
-    [(expected-error? fail)
-     (list "check-error expected the following error, but instead received the value "
-           ((test-format) (expected-error-value fail))
-           (format ".~n ~a~n" (expected-error-message fail)))]))
-
 
 (define (builder)
   (let ([te (build-test-engine)])
