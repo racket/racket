@@ -766,41 +766,43 @@ system looks for certain names in that file:
 
 @itemize[
 
-@item{The @scheme['blurb] field: If present, the blurb field should contain a list of XHTML fragments 
-encoded as x-expressions (see the xml collection for details) that
-PLaneT will use as a short description of your project.}
+@item{The @indexed-scheme['blurb] field: If present, the blurb field
+should contain a list of XHTML fragments encoded as x-expressions (see
+the xml collection for details) that PLaneT will use as a short
+description of your project.}
 
-@item{The @scheme['release-notes] field: If present, the release-notes field should contain a list of XHTML
-fragments encoded as x-expressions (see the xml collection for 
-details) that PLaneT will use as a short description of what's new
-in this release of your package.}
+@item{The @indexed-scheme['release-notes] field: If present, the
+release-notes field should contain a list of XHTML fragments encoded
+as x-expressions (see the xml collection for details) that PLaneT will
+use as a short description of what's new in this release of your
+package.}
 
-@item{The @scheme['categories] field:
-If present, the categories field should be a list of symbols 
-corresponding to the categories under which this package should be listed.
+@item{The @indexed-scheme['categories] field: If present, the categories
+field should be a list of symbols corresponding to the categories
+under which this package should be listed.
 
 The valid categories are:
 
 @itemize[
-  @item{@scheme['devtools]:         Development Tools}
-  @item{@scheme['net]:              Networking and Protocols}
-  @item{@scheme['media]:            Graphics and Audio}
-  @item{@scheme['xml]:              XML-Related}
-  @item{@scheme['datastructures]:   Data Structures and Algorithms}
-  @item{@scheme['io]:               Input/Output and Filesystem}
-  @item{@scheme['scientific]:       Mathematical and Scientific}
-  @item{@scheme['system]:           Hardware/Operating System-Specific Tools}
-  @item{@scheme['ui]:               Textual and Graphical User Interface}
-  @item{@scheme['metaprogramming]:  Metaprogramming Tools}
-  @item{@scheme['planet]:           PLaneT-Related}
-  @item{@scheme['misc]:             Miscellaneous}]
+  @item{@indexed-scheme['devtools]:         Development Tools}
+  @item{@indexed-scheme['net]:              Networking and Protocols}
+  @item{@indexed-scheme['media]:            Graphics and Audio}
+  @item{@indexed-scheme['xml]:              XML-Related}
+  @item{@indexed-scheme['datastructures]:   Data Structures and Algorithms}
+  @item{@indexed-scheme['io]:               Input/Output and Filesystem}
+  @item{@indexed-scheme['scientific]:       Mathematical and Scientific}
+  @item{@indexed-scheme['system]:           Hardware/Operating System-Specific Tools}
+  @item{@indexed-scheme['ui]:               Textual and Graphical User Interface}
+  @item{@indexed-scheme['metaprogramming]:  Metaprogramming Tools}
+  @item{@indexed-scheme['planet]:           PLaneT-Related}
+  @item{@indexed-scheme['misc]:             Miscellaneous}]
 
 If you put symbols other than these the categories field, they will be
 ignored. If you put no legal symbols in the categories field or do not
 include this field in your info.ss file, your package will be
 categorized as "Miscellaneous."}
 
-@item{The @scheme['can-be-loaded-with] field:
+@item{The @indexed-scheme['can-be-loaded-with] field:
 If present, the can-be-loaded-with field should be a quoted datum of
 one of the following forms:
 
@@ -819,13 +821,13 @@ particular file and assumes that nothing else writes to that same
 file, then multiple versions of the same package being loaded
 simultaneously may be a problem. This field allows you to specify
 whether your package can be loaded simultaneously with older versions
-of itself. If its value is @scheme['all], then the package may be loaded with
-any older version. If it is @scheme['none], then it may not be loaded with
-older versions at all. If it is @scheme[(list 'all-except VER-SPEC ...)] then
-any package except those that match one of the given VER-SPEC forms
-may be loaded with this package; if it is @scheme[(list 'only VER-SPEC ...)]
-then only packages that match one of the given VER-SPEC forms may be
-loaded with this package.
+of itself. If its value is @indexed-scheme['all], then the package may be
+loaded with any older version. If it is @indexed-scheme['none], then it
+may not be loaded with older versions at all. If it is @scheme[(list
+'all-except VER-SPEC ...)] then any package except those that match
+one of the given VER-SPEC forms may be loaded with this package; if it
+is @scheme[(list 'only VER-SPEC ...)]  then only packages that match
+one of the given VER-SPEC forms may be loaded with this package.
 
 When checking to see if a package may be loaded, PLaneT compares it to
 all other currently-loaded instances of the same package with any
@@ -834,16 +836,16 @@ can-be-loaded-with field allows the older package to be loaded. If all
 such comparisons succeed then the new package may be loaded; otherwise
 PLaneT signals an error.
 
-The default for this field is @scheme['none] as a conservative protection
-measure. For many packages it is safe to set this field to
-@scheme['any].}
+The default for this field is @indexed-scheme['none] as a conservative
+protection measure. For many packages it is safe to set this field to
+@indexed-scheme['any].}
 
-@item{The @scheme['homepage] field:
+@item{The @indexed-scheme['homepage] field:
 If present, the URL field should be a string corresponding to a URL
 for the package. PLaneT provides this link with the description of your
 package on the main PLaneT web page.}
 
-@item{The @scheme['primary-file] field:
+@item{The @indexed-scheme['primary-file] field:
 If present, the primary-file field should be a either a string
 corresponding to the name (without path) of the main Scheme source
 file of your package, or a list of such strings. The PLaneT web page
@@ -856,7 +858,7 @@ If you include only a single string, it will be used as the require
 line printed on your package's page. If you include a list of strings,
 then the first legal file string in the list will be used.}
 
-@item{The @scheme['required-core-version] field: If present, the
+@item{The @indexed-scheme['required-core-version] field: If present, the
 required-core-version field should be a string with the same syntax as
 the output of the @scheme[version] function. Defining this field
 indicates that PLaneT should only allow users of a version of mzscheme
@@ -866,14 +868,14 @@ requirements than its inclusion in a particular repository; for
 instance, setting this field to @scheme["300.2"] would cause the PLaneT server
 not to serve it to MzScheme v300.1 or older clients.}
 
-@item{The @scheme['version] field:
+@item{The @indexed-scheme['version] field:
 If present, the version field should be a string that describes the 
 version number of this code that should be presented to users (e.g., 
 @scheme["0.15 alpha"]). This field does not override or in any way interact 
 with your package's package version number, which is assigned by 
 PLaneT, but may be useful to users.}
 
-@item{The @scheme['repositories] field: If present, the repositories
+@item{The @indexed-scheme['repositories] field: If present, the repositories
 field should be a list consisting of some subset of the strings
 @scheme["4.x"] and @scheme["3xx"]. The string @scheme["4.x"] indicates
 that this package should be included in the v4.x repository (which
@@ -886,9 +888,9 @@ multiple repositories with the same PLaneT version number.}]
 
 In addition, PLaneT uses the setup-plt installer to install packages
 on client machines, so most fields it looks for can be included with
-their usual effects. In particular, adding a @scheme['name] field indicates that
-the Scheme files in the package should be compiled during
-installation; it is a good idea to add it.
+their usual effects. In particular, adding a @indexed-scheme['name]
+field indicates that the Scheme files in the package should be
+compiled during installation; it is a good idea to add it.
 
 An example info.ss file looks like this:
 
