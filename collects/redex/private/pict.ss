@@ -454,6 +454,7 @@
   (let ([ps-setup (make-object ps-setup%)])
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
+    (send ps-setup set-mode 'file)
     (parameterize ([current-ps-setup ps-setup])
       (make-object post-script-dc% #f #f))))
 
