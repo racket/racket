@@ -219,8 +219,8 @@ but it will not work properly unless --enable-pthread is specified.
 
 MzScheme and MrEd have two variants: CGC and 3m. The CGC variant is
 older, and it cooperates more easily with extensions written in C.
-The 3m variant is now the default, and it usually provides better
-overall performance.
+The 3m variant is the default, and it usually provides better overall
+performance.
 
 The default build mode creates 3m binaries only. To create CGC
 binaries in addition, run `make cgc' in addition to `make', or run
@@ -245,10 +245,10 @@ case the first path is the main "collects" path, and additional paths
 are placed before the main path (but after a user-specific "collects"
 path) in the default collection path list.
 
-The paths are embedded in the binary immediately after a "coLLECTs
-dIRECTORy:" tag. Each path must be NUL terminated, the entire list of
-paths must end with an additional NUL terminator, and the overall list
-must be less than 1024 bytes long.
+The paths are embedded in the binary immediately after a special
+"coLLECTs dIRECTORy:" tag. Each path must be NUL terminated, the
+entire list of paths must end with an additional NUL terminator, and
+the overall list must be less than 1024 bytes long.
 
 As an alternative to editing an exeuctable directly, the
 `create-embedding-executable' procedure from `compiler/embed' can be
