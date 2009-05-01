@@ -74,7 +74,7 @@
               (set! alignment child))))
       
       #;((is-a?/c alignment<%>) . -> . void?)
-      ;; Deletes a child from the the alignments
+      ;; Deletes a child from the alignments
       (define/public (delete-child child)
         (if alignment
             (if (eq? child alignment)

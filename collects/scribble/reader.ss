@@ -213,13 +213,13 @@
   ;; sorts things out (remove prefix and suffix newlines, adds indentation if
   ;; needed)
   (define (done-items xs)
-    ;; a column marker is either a non-negative integer N (saying the the
-    ;; following code came from at column N), or a negative integer -N (saying
-    ;; that the following code came from column N but no need to add
-    ;; indentation at this point because it is at the openning of a {...});
-    ;; `get-lines*' is careful not to include column markers before a newline
-    ;; or the end of the text, and a -N marker can only come from the beginning
-    ;; of the text (and it's never there if the text began with a newline)
+    ;; a column marker is either a non-negative integer N (saying the following
+    ;; code came from at column N), or a negative integer -N (saying that the
+    ;; following code came from column N but no need to add indentation at this
+    ;; point because it is at the openning of a {...}); `get-lines*' is careful
+    ;; not to include column markers before a newline or the end of the text,
+    ;; and a -N marker can only come from the beginning of the text (and it's
+    ;; never there if the text began with a newline)
     (if (andmap eol-syntax? xs)
       ;; nothing to do
       (reverse xs)

@@ -106,7 +106,7 @@
         (build-list 12 create-number)))
 
 ;; Define the hour hand of the clock.
-;; The hour hand is based on the the-hour and the-minute in order to
+;; The hour hand is based on the-hour and the-minute in order to
 ;; make it move smoothly around the clock.
 (define hour-hand
   (make-line clock-center

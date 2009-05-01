@@ -38,7 +38,7 @@ The drawing area should have the following features:
     pattern; the third shape should be a semi-circle with no outline
     on the bottom edge.
 
-  Further right (to the the right of the columns) should appear an
+  Further right (to the right of the columns) should appear an
     X, a cross, and an narrow X tilted NW. Each should be drawn in
     green (5 pixels wide) with a thin black line centered along each
     green line.  Scaling the picture should make the green line thicker,
@@ -208,7 +208,7 @@ Clipping should slip the drawing to a particular shape:
 
    wedge - pi/4 to 3pi/4 of circle
 
-   round rectangle - a rounded rect inscribed in the the blue box for
+   round rectangle - a rounded rect inscribed in the blue box for
      testing stipples
 
    unions, intersects, subtracts - hopefully obvious

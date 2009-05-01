@@ -778,7 +778,7 @@ where the @tt{==>} relation is defined by reducing in the context
 
 This form extends the reduction relation in its first
 argument with the rules specified in @scheme[more]. They should
-have the same shape as the the rules (including the `with'
+have the same shape as the rules (including the `with'
 clause) in an ordinary @scheme[reduction-relation].
 
 If the original reduction-relation has a rule with the same

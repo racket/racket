@@ -276,7 +276,7 @@ part of the result or on any @litchar{\\?\REL\} or
 @litchar{\\?\RED\} or @scheme[_sub-path].  If a
 @litchar{\\?\REL\} or @litchar{\\?\RED\}
 @scheme[_sub-path] is added to a non-@litchar{\\?\}
-@scheme[_base-path], the the @scheme[_base-path] (with any additions up
+@scheme[_base-path], the @scheme[_base-path] (with any additions up
 to the @litchar{\\?\REL\} or @litchar{\\?\RED\}
 @scheme[_sub-path]) is simplified and converted to a
 @litchar{\\?\} path.  In other cases, a @litchar{\} may be

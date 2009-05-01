@@ -35,7 +35,7 @@
   @scheme[make-evaluator], the @scheme[language] argument can be a
   list that begins with @scheme['module].  In this case,
   @scheme[make-module-language] is used to create an evaluator, and
-  the module code must be using the the specified language in its
+  the module code must be using the specified language in its
   language position.  In this case, the @scheme[requires-paths]
   argument is used only for paths that are allowed to be accessed (the
   @scheme[_allow-read] argument to @scheme[make-evaluator], since the

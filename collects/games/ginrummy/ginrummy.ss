@@ -200,7 +200,7 @@
                        (3loop (cons (car group) pre)
                               (list (cadr group) (caddr group) (car post))
                               (cdr post))))))])
-      ;; Try the value-sorted list, the the suit-sorted list, then...
+      ;; Try the value-sorted list, the suit-sorted list, then...
       (max (find-set value-sorted)
            (find-set suit-sorted)
            ;; the suit-sorted list with with Aces at the end instead of the

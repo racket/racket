@@ -22,7 +22,7 @@ _MysterX_
 
  Two Windows DLLs support low-level operations in MysterX:
  "myspage.dll" and "myssink.dll".  Both are installed in the registry
- (using `REGSVR32 <name-of-DLL>') when Setup PLT runs the the MysterX
+ (using `REGSVR32 <name-of-DLL>') when Setup PLT runs the MysterX
  post-installer. If you move the location of your PLT installation,
  you may need to re-run Setup PLT to make MysterX work. Neither of
  these DLLs is specific to a PLT Scheme version, so it's ok for one

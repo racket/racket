@@ -98,7 +98,7 @@ destination snip's bounding box where a straight line
 between the centers of the snip would intersect.
 
 The @scheme[arrow-point-ok?] function returns @scheme[#t]
-when the point specified by its arguments is inside the the
+when the point specified by its arguments is inside the
 smallest rectangle that covers both the source and
 destination snips, but is outside of both of the rectangles
 that surround the source and destination snips themselves.

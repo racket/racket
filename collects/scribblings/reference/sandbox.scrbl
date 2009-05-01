@@ -566,7 +566,7 @@ is charged back to the sandbox, you should remove references to such
 values when the code is done inspecting it.
 
 This policy has an impact on how the sandbox memory limit interacts
-with the the per-expression limit specified by
+with the per-expression limit specified by
 @scheme[sandbox-eval-limits]: values that are reachable from the
 sandbox, as well as from the interaction will count against the
 sandbox limit.  For example, in the last interaction of this code,

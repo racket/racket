@@ -1004,7 +1004,7 @@ Creates a balloon, much like `wrap-balloon' except that the balloon's
 width is `w' and its height is `h'. The `corner-radius' argument
 specifies the radius for the balloon's rounded corners; if the radius
 is positive, the value is used as the radius of the rounded corner,
-but if radius is negative, the absolute value is used as the the
+but if radius is negative, the absolute value is used as the
 proportion of the smallest dimension of the balloon.
 
 > (make-balloon pict num num) -> balloon

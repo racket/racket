@@ -2,7 +2,7 @@
 ;; (c) 1996-1997 Sebastian Good
 ;; (c) 1997-2001 PLT
 
-;; Sets the the real annotation for zodiac:binding AST nodes,
+;; Sets the real annotation for zodiac:binding AST nodes,
 ;; setting the known? and known-val fields as possible.
 
 ;; Known-value analysis is used for constant propagation, but

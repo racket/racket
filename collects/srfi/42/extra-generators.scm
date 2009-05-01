@@ -191,7 +191,7 @@
   ; (list-ec (:do ((x 0)) (<= x 5) ((+ x 1))) x)
   ;    => '(0 1 2 3 4 5)
   
-  ; If only the the termination test were done *after* and
+  ; If only the termination test were done *after* and
   ; not before the loop payload ...  This leads to the
   ; idea of an :do-until.
   

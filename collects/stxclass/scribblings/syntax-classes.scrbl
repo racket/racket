@@ -172,7 +172,7 @@ name, an ellipsis depth, and a set of nested attributes. When an
 instance of the syntax class is parsed and bound to a pattern
 variable, additional pattern variables are bound for each of the
 syntax class's attributes. The name of these additional pattern
-variables is the dotted concatenation of the the primary pattern
+variables is the dotted concatenation of the primary pattern
 variable with the name of the attribute.
 
 For example, if pattern variable @scheme[p] is bound to an instance of

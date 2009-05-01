@@ -532,7 +532,7 @@ is represented by @scheme[#f]
 @tech{Submatch}es can be used in the insert string argument of the
 procedures @scheme[regexp-replace] and @scheme[regexp-replace*].  The
 insert string can use @litchar{\}@math{n} as a @deftech{backreference}
-to refer back to the @math{n}th submatch, which is the the substring
+to refer back to the @math{n}th submatch, which is the substring
 that matched the @math{n}th subpattern.  A @litchar{\0} refers to the
 entire match, and it can also be specified as @litchar{\&}.
 

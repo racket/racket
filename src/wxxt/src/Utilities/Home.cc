@@ -44,7 +44,7 @@ char *wxGetUserHome(const char *user)
 	|| (ptr = getenv("LOGNAME")) != NULL) {
 	    who = getpwnam(ptr);
 	}
-	// We now make sure the the user exists!
+	// We now make sure the user exists!
 	if (who == NULL)
 	    who = getpwuid(getuid());
     } else

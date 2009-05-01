@@ -128,7 +128,7 @@ Move all scrolls to 1 step beyond the smallest setting.
 Check "swap". Now, the top canvas is managed and the bottom canvas is
  unmanaged. But the top canvas's area is so small that its scrollbars
  are always disabled. (It may also be clipped to the tiny 10x10 box.)
- The bottom canvas's scrollbars should now act the the top ones used
+ The bottom canvas's scrollbars should now act the top ones used
  to: there are 20 steps in each direction and the `V:' and `H:' values
  change as the scrolls are moved.
 

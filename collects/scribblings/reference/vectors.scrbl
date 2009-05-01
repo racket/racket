@@ -10,7 +10,7 @@ and update of the vector slots, which are numbered from @scheme[0] to
 one less than the number of slots in the vector.
 
 Two vectors are @scheme[equal?] if they have the same length, and if
-the values in corresponding slots of the the vectors are
+the values in corresponding slots of the vectors are
 @scheme[equal?].
 
 A vector can be @defterm{mutable} or @defterm{immutable}. When an

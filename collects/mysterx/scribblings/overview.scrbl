@@ -13,7 +13,7 @@ Recent versions of Windows come with DCOM; DCOM packages for Windows
 Two Windows DLLs support low-level operations in MysterX:
 @filepath{myspage.dll} and @filepath{myssink.dll}.  Both are installed
 in the registry (using @exec{regsvr32.exe}) when Setup PLT runs the
-the MysterX post-installer. If you move the location of your PLT
+MysterX post-installer. If you move the location of your PLT
 installation, you may need to re-run Setup PLT to make MysterX
 work. Neither of these DLLs is specific to a PLT Scheme version, so
 it's ok for one version of PLT Scheme to use the DLLs registered by

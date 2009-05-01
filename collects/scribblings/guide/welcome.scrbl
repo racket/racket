@@ -65,7 +65,7 @@ If you've used DrScheme before with something other than a program
 that starts @hash-lang[], DrScheme will remember the last language
 that you used, instead of inferring the language from the @hash-lang[]
 line. In that case, use the @menuitem["Language" "Choose Language..."]
-menu item.  In the the dialog that appears, select the first item,
+menu item.  In the dialog that appears, select the first item,
 which is @onscreen{Module}. Put the @hash-lang[] line above in the top
 text area, still.
 

@@ -5289,7 +5289,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
 			 top->prefix->num_stxes,
 			 top->prefix->num_lifts,
                          0);
-    /* If no exception, the the resulting code is ok. */
+    /* If no exception, the resulting code is ok. */
   } else
     scheme_ill_formed_code(rp);
 

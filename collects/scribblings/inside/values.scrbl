@@ -598,7 +598,7 @@ Finds (or creates) the symbol matching the given nul-terminated, ASCII
            [int len])]{
 
 Creates or finds a symbol given the symbol's length in UTF-8-encoding
- bytes. The the case of @var{name} is not normalized.}
+ bytes. The case of @var{name} is not normalized.}
 
 @function[(Scheme_Object* scheme_intern_exact_char_symbol
            [mzchar* name]
@@ -625,7 +625,7 @@ Creates an uninterned symbol given the symbol's length in
            [int len])]{
 
 Creates or finds a keyword given the keywords length in UTF-8-encoding
- bytes. The the case of @var{name} is not normalized, and it should
+ bytes. The case of @var{name} is not normalized, and it should
  not include the leading hash and colon of the keyword's printed form.}
 
 @function[(Scheme_Object* scheme_intern_exact_char_keyword

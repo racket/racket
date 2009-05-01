@@ -66,7 +66,7 @@
       add-child
       
       #;((is-a?/c alignment<%>) . -> . void?)
-      ;; Deletes a child from the the alignments
+      ;; Deletes a child from the alignments
       delete-child
       
       #;(-> boolean?)

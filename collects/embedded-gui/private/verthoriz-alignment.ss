@@ -137,7 +137,7 @@
               (link (send tail prev) child tail))))
       
       #;((is-a?/c alignment<%>) . -> . void?)
-      ;; Deletes a child from the the alignments
+      ;; Deletes a child from the alignments
       (define/public (delete-child child)
         (send child show/hide false)
         (let ([p (send child prev)]

@@ -77,7 +77,7 @@ shape and properties of the result:
 
 ]
 
-The the expander attaches a new active certificate to a syntax object,
+The expander attaches a new active certificate to a syntax object,
 it also removes any @tech{inactive certificates} attached to any
 @tech{syntax object} within the one where the certificate is attached,
 and it re-attaches the formerly @tech{inactive certificates} as

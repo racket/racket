@@ -145,7 +145,7 @@ public final class Boolean implements Serializable
 
   /**
    * Returns the Boolean <code>TRUE</code> if and only if the given
-   * String is equal, ignoring case, to the the String "true", otherwise
+   * String is equal, ignoring case, to the String "true", otherwise
    * it will return the Boolean <code>FALSE</code>.
    *
    * @param s the string to convert

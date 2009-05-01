@@ -341,7 +341,7 @@ This directory contains the following files and sub-directories:
   Multiple submissions for a particular user in different groups will
   be rejected.
 
-  Inactive assignment directories are used by the the HTTPS status web
+  Inactive assignment directories are used by the HTTPS status web
   server.}
 
 @item{@filepath{<active-assignment>/checker.ss} (optional): a module

@@ -540,7 +540,7 @@ c.
 
 This form extends the reduction relation in its first
 argument with the rules specified in <more>. They should
-have the same shape as the the rules (including the `with'
+have the same shape as the rules (including the `with'
 clause) in an ordinary reduction-relation.
 
 If the original reduction-relation has a rule with the same

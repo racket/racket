@@ -63,7 +63,7 @@ Returns @scheme[#t] if @scheme[v] is a namespace-anchor value,
 @defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
 
 Returns an empty namespace that shares a @tech{module registry} with
-the source of the anchor, and whose @tech{base phase} the the
+the source of the anchor, and whose @tech{base phase} the
 @tech{phase} in which the anchor was created.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a

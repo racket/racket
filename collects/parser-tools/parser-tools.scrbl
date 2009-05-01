@@ -272,7 +272,7 @@ error.}
 
 @defparam[file-path source any/c]{
 
- A parameter that the the lexer uses as the source location if it
+ A parameter that the lexer uses as the source location if it
  raises a @scheme[exn:fail:rad] error.  Setting this parameter allows
  DrScheme, for example, to open the file containing the error.}
 
