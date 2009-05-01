@@ -238,7 +238,7 @@
          (tc/send #'rcvr #'meth #'(args ...) expected)]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
-         (tc/let-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]
+         (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name ...) expr] ...) . body)
          (tc/letrec-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]
         ;; other
@@ -340,7 +340,7 @@
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
     (let ([ty (cond [(type-ascription form) => (lambda (ann)
-                                                 (tc-expr/check/type form ann))]
+                                                 (tc-expr/check form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
         [(tc-results: ts fs os)

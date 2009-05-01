@@ -10,7 +10,8 @@
          stxclass/util
          (for-syntax scheme/base))
 
-(provide combine-filter apply-filter abstract-filter abstract-filters)
+(provide combine-filter apply-filter abstract-filter abstract-filters
+         split-lfilters merge-filter-sets)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
 (define (lcombine l1 l2)
@@ -57,7 +58,7 @@
     [(Path: p (lookup: idx)) (make-LPath p idx)]
     [_ (make-LEmpty)]))
 
-(define/contract (abstract-filter ids keys fs)
+(d/c (abstract-filter ids keys fs)
   (-> (listof identifier?) (listof index/c) FilterSet? LFilterSet?)
   (match fs
     [(FilterSet: f+ f-)
@@ -65,7 +66,7 @@
       (apply append (for/list ([f f+]) (abo ids keys f)))
       (apply append (for/list ([f f-]) (abo ids keys f))))]))
 
-(define/contract (abo xs idxs f)
+(d/c (abo xs idxs f)
   (-> (listof identifier?) (listof index/c) Filter/c (or/c '() (list/c LatentFilter/c)))
   (define (lookup y)
     (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i)) 
@@ -78,7 +79,12 @@
     [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
     [_ null]))
 
-(define/contract (apply-filter lfs t o)
+(define (merge-filter-sets fs)
+  (match fs
+    [(list (FilterSet: f+ f-) ...)
+     (make-FilterSet (apply append f+) (apply append f-))]))
+
+(d/c (apply-filter lfs t o)
   (-> LFilterSet? Type/c Object? FilterSet?)
   (match lfs
     [(LFilterSet: lf+ lf-)
@@ -86,7 +92,7 @@
       (apply append (for/list ([lf lf+]) (apo lf t o)))
       (apply append (for/list ([lf lf-]) (apo lf t o))))]))
 
-(define/contract (apo lf s o)
+(d/c (apo lf s o)
   (-> LatentFilter/c Type/c Object? (or/c '() (list/c Filter/c)))
   (match* (lf s o)
     [((LBot:) _ _) (list (make-Bot))]
@@ -96,12 +102,23 @@
     [((LTypeFilter: t pi* _) _ (Path: pi x)) (list (make-TypeFilter t (append pi* pi) x))]
     [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (list (make-NotTypeFilter t (append pi* pi) x))]))
 
+(define/contract (split-lfilters lf idx)  
+  (LFilterSet? index/c . -> . LFilterSet?)
+  (define (idx= lf)
+    (match lf
+      [(LBot:) #t]
+      [(LNotTypeFilter: _ _ idx*) (type-equal? idx* idx)]
+      [(LTypeFilter: _ _ idx*) (type-equal? idx* idx)]))
+  (match lf
+    [(LFilterSet: lf+ lf-)
+     (make-LFilterSet (filter idx= lf+) (filter idx= lf-))]))
+
 (define-match-expander T-FS:
   (lambda (stx) #'(FilterSet: _ (list (Bot:)))))
 (define-match-expander F-FS:
   (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
 
-(define/contract (combine-filter f1 f2 f3)
+(d/c (combine-filter f1 f2 f3)
   (FilterSet? FilterSet? FilterSet? . -> . FilterSet?)
   (match* (f1 f2 f3)
     [(f (T-FS:) (F-FS:)) f] ;; the student expansion

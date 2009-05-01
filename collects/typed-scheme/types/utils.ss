@@ -30,7 +30,9 @@
          just-Dotted?
          tc-error/expr
          lookup-fail
-         lookup-type-fail)
+         lookup-type-fail
+         values->tc-results
+         tc-results->values)
 
 
 ;; substitute : Type Name Type -> Type
@@ -192,10 +194,13 @@
 (define ret
   (case-lambda [(t) 
                 (make-tc-results
-                 (if (Type? t)
-                     (list (make-tc-result t (make-FilterSet null null) (make-Empty)))
-                     (for/list ([i t])
-                               (make-tc-result i (make-FilterSet null null) (make-Empty))))
+                 (cond [(Type? t)
+                        (list (make-tc-result t (make-FilterSet null null) (make-Empty)))]
+                       [(or (Values? t) (ValuesDots? t))
+                        (values->tc-results t)]
+                       [else
+                        (for/list ([i t])
+                          (make-tc-result i (make-FilterSet null null) (make-Empty)))])
                  #f)]
                [(t f)
                 (make-tc-results
@@ -221,7 +226,7 @@
 
 (p/c
  [ret    
-  (->d ([t (or/c Type/c (listof Type/c))])
+  (->d ([t (or/c Type/c (listof Type/c) Values? ValuesDots?)])
        ([f (if (list? t)
                (listof FilterSet?)
                FilterSet?)]
@@ -278,3 +283,18 @@
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
+
+(define (tc-results->values tc)
+  (match tc
+    [(tc-results: ts fs os dty dbound)
+     (make-ValuesDots (map make-Result ts fs os) dty dbound)]
+    [(tc-results: ts fs os)
+     (make-Values (map make-Result ts fs os))]))
+
+;; FIXME - this should really be a new metafunction like abstract-filter
+(define (values->tc-results tc)
+  (match tc
+    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
+     (int-err "values->tc-results NYI for Dots")]
+    [(Values: (list (Result: ts fs os) ...))
+     (ret ts)]))

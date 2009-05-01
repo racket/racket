@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.ss" (for-syntax scheme/base stxclass) scheme/match)
+(require "syntax-traversal.ss" stxclass (for-syntax scheme/base stxclass) scheme/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -169,3 +169,16 @@ don't depend on any other portion of the system
   (syntax-parse stx
     [(_ e:spec ...)
      #'(list (list e.id e.ty) ...)]))
+
+;; id: identifier
+;; sym: a symbol
+;; mod: a quoted require spec like 'scheme/base
+;; is id the name sym defined in mod?
+(define (id-from? id sym mod)
+  (and (eq? (syntax-e id) sym)
+       (eq? (module-path-index-resolve (syntax-source-module id))
+            ((current-module-name-resolver) mod #f #f #f))))
+
+(define-syntax-class (id-from sym mod)
+  (pattern i:id
+           #:when (id-from? #'i sym mod)))

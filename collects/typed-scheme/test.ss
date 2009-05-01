@@ -79,6 +79,7 @@ xxx6-y
 
 (: ff (Number -> Number))
 (define (ff x) x)
+(ff 1)
 
 (lambda: ([y : String][x : Number]) (values 1 x 1))
 (lambda: ([x : Number]) (values 1 x 1))
@@ -87,3 +88,14 @@ xxx6-y
 #{(lambda (x) x) :: (Number -> Number)}
 ;; BUG - this should work
 {ann (values (lambda (x) x) (lambda (x) x)) (values (Number -> Number) (String -> String))}
+
+(list 1 2 3)
+(ann (list 1 2 3) (Pair Number (Listof Integer)))
+(ann (list 1 2 3) (Listof Integer))
+(ann (list 1 2 3) (Listof Number))
+
+(list* 1 2 3)
+(ann (list* 1 2 3 (list)) (Pair Number (Listof Integer)))
+
+((lambda (x) 1) 1) 
+((lambda (x y) 1) 1 2)

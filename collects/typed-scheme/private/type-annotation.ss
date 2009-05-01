@@ -58,8 +58,8 @@
   (define (pt prop)
     #;(print-size prop)
     (if (syntax? prop)
-        (parse-type prop)
-        (parse-type/id stx prop)))
+        (parse-tc-results prop)
+        (parse-tc-results/id stx prop)))
   (cond
     [(syntax-property stx type-ascrip-symbol) => pt]
     [else #f]))

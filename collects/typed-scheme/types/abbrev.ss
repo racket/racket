@@ -263,18 +263,3 @@
 
 (define-syntax-rule (->opt args ... [opt ...] res)
   (opt-fn (list args ...) (list opt ...) res))
-
-(define (tc-results->values tc)
-  (match tc
-    [(tc-results: ts fs os dty dbound)
-     (make-ValuesDots (map -result ts fs os) dty dbound)]
-    [(tc-results: ts fs os)
-     (make-Values (map -result ts fs os))]))
-
-;; FIXME - this should really be a new metafunction like abstract-filter
-(define (values->tc-results tc)
-  (match tc
-    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
-     (int-err "values->tc-results NYI for Dots")]
-    [(Values: (list (Result: ts fs os)))
-     (ret ts)]))

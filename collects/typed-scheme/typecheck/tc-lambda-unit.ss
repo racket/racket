@@ -11,7 +11,7 @@
          (rename-in (types convenience utils union)
                     [make-arr* make-arr])
          (private type-annotation)
-         (types abbrev)
+         (types abbrev utils)
 	 (env type-environments lexical-env)
 	 (utils tc-utils)
          mzlib/plt-match)
@@ -68,7 +68,6 @@
        arg-list arg-types
        (make lam-result (map list arg-list arg-types) null rest-ty drest 
              (tc-exprs/check (syntax->list body) ret-ty))))
-    (printf "arg-types old new: ~a ~a~n"  arg-tys arg-types)
     (when (or (not (= arg-len tys-len))
               (and rest (and (not rest-ty)
                              (not drest))))
@@ -199,7 +198,6 @@
        (match expected          
          [(tc-result1: (Mu: _ _)) (loop (unfold expected))]
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
-          (printf "expe: ~a~n" expected)
           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args (values->tc-results ret) rest drest))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]

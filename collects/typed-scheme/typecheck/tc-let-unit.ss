@@ -119,7 +119,7 @@
        (-> expected))]
     [_ (tc-expr/t e)]))
 
-(define (tc/let-values/internal namess exprs body form expected)
+(define (tc/let-values namess exprs body form [expected #f])
   (let* (;; a list of each name clause
          [names (map syntax->list (syntax->list namess))]
          ;; all the trailing expressions - the ones actually bound to the names
@@ -132,13 +132,5 @@
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     (do-check void names types form types body clauses expected)))
-
-(define (tc/let-values/check namess exprs body form expected)
-  (tc/let-values/internal namess exprs body form expected))
-
-(define (tc/let-values namess exprs body form)
-  (tc/let-values/internal namess exprs body form #f))
-
-;(trace tc/letrec-values/internal)
 
 
