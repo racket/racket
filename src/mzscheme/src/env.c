@@ -4508,15 +4508,8 @@ local_module_introduce(int argc, Scheme_Object *argv[])
 
   v = scheme_stx_source_module(s, 0);
   if (SCHEME_FALSEP(v)) {
-    if (env->genv->module) {
-      if (env->genv->module->rn_stx && !SAME_OBJ(scheme_true, env->genv->module->rn_stx)) {
-	v = scheme_stx_to_rename(env->genv->module->rn_stx);
-	s = scheme_add_rename(s, v);
-      }
-    } else {
-      if (env->genv->rename_set)
-	s = scheme_add_rename(s, env->genv->rename_set);
-    }
+    if (env->genv->rename_set)
+      s = scheme_add_rename(s, env->genv->rename_set);
   }
 
   return s;

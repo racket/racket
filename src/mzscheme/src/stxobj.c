@@ -3442,7 +3442,7 @@ static Scheme_Object *check_floating_id(Scheme_Object *stx)
   return scheme_false;
 }
 
-#define EXPLAIN_RESOLVE 1
+#define EXPLAIN_RESOLVE 0
 #if EXPLAIN_RESOLVE
 int scheme_explain_resolves = 0;
 # define EXPLAIN(x) if (scheme_explain_resolves) { x; }
@@ -8349,14 +8349,6 @@ static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv)
 
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_type("syntax-property-symbol-keys", "syntax", 0, argc, argv);
-
-  // REMOVEME
-  {
-    scheme_explain_resolves++;
-    resolve_env(NULL, argv[0], scheme_make_integer(0),
-                1, NULL, NULL, NULL, NULL, 0, NULL);
-    --scheme_explain_resolves;
-  }
 
   stx = (Scheme_Stx *)argv[0];
 
