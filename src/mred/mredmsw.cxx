@@ -842,8 +842,6 @@ int MrEdCheckForBreak(void)
 
 void MrEdMSWSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
 {
-  DWORD msecs;
-
   if (fds && ((win_extended_fd_set *)fds)->no_sleep)
     return;
 
