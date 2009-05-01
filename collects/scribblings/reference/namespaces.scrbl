@@ -369,13 +369,13 @@ result is the namespace in which the referenced variable is defined.}
 
 
 @defproc[(variable-reference->resolved-module-path [varref variable-reference?])
-         resolved-module-path?]{
+         (or/c resolved-module-path? #f)]{
 
 If @scheme[varref] refers to a @tech{module-level variable}, the
 result is a @tech{resolved module path} naming the module.
 
 If @scheme[varref] refers to a @tech{top-level variable}, then the
-@exnraise[exn:fail:contract].}
+result is @scheme[#f].}
 
 @defproc[(variable-reference->phase [varref variable-reference?])
          exact-nonnegative-integer?]{

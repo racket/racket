@@ -152,7 +152,9 @@ paths. Parts of @scheme[str] that do not form a valid path are not
 included in the returned list.}
 
 
-@defproc[(find-executable-path [program-sub path-string?][related-sub path-string?][deepest? any/c #f]) 
+@defproc[(find-executable-path [program-sub path-string?]
+                               [related-sub (or/c path-string? #f) #f]
+                               [deepest? any/c #f]) 
          (or/c path? #f)]{
 
 Finds a path for the executable @scheme[program-sub], returning
