@@ -118,6 +118,7 @@ extern void *scheme_gmp_tls_load(long *s);
 extern void scheme_gmp_tls_unload(long *s, void *p);
 extern void scheme_gmp_tls_snapshot(long *s, long *save);
 extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free);
+extern void scheme_notify_sleep_progres();
 
 static void check_ready_break();
 
@@ -3491,17 +3492,21 @@ static int check_sleep(int need_activity, int sleep_now)
   
   p2 = scheme_first_thread;
   while (p2) {
-    p2->ran_some = 0;
+    if (p2->ran_some) {
+      scheme_notify_sleep_progres();
+      p2->ran_some = 0;
+    }
     p2 = p2->next;
   }
   
   end_with_act = thread_ended_with_activity;
   thread_ended_with_activity = 0;
   
-  if (need_activity && !end_with_act && 
-      (do_atomic 
-       || (!p && ((!sleep_now && scheme_wakeup_on_input)
-		  || (sleep_now && scheme_sleep))))) {
+  if (need_activity 
+      && !end_with_act 
+      && (do_atomic 
+	  || (!p && ((!sleep_now && scheme_wakeup_on_input)
+		     || (sleep_now && scheme_sleep))))) {
     double max_sleep_time = 0;
 
     /* Poll from top-level process, and all subprocesses are blocked. */

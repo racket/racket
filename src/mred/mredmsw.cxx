@@ -44,9 +44,6 @@ extern "C" {
   void scheme_forget_thread(struct Scheme_Thread_Memory *);
 };
 
-static int found_nothing;
-static DWORD max_sleep_time;
-
 static volatile int need_quit;
 
 extern void wxDoPreGM(void);
@@ -183,7 +180,6 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
                     info->remove ? PM_REMOVE : PM_NOREMOVE)) {
       info->wnd = wnd;
       info->c_return = c;
-      found_nothing = 0;
       return FALSE;
     }
   }
@@ -219,7 +215,6 @@ int FindReady(MrEdContext *c, MSG *msg, int remove, MrEdContext **c_return)
   {
     MSG pmsg;
     while (PeekMessage(&pmsg, NULL, 0x4000, 0xFFFF, PM_REMOVE)) {
-      found_nothing = 0;
       wxTranslateMessage(&pmsg);
       DispatchMessage(&pmsg);
     }
@@ -855,67 +850,8 @@ void MrEdMSWSleep(float secs, void *fds, SLEEP_PROC_PTR mzsleep)
   if (wxCheckMousePosition())
     return;
 
-  /* If the event queue is empty (as reported by GetQueueStatus),
-     everything's ok.
-
-     Otherwise, we have trouble sleeping until an event is ready. We
-     sometimes leave events on th queue because, say, an eventspace is
-     not ready. The problem is that MsgWait... only unbocks when a new
-     event appears. Since we check the queue using a seuqence of
-     PeekMessages, it's possible that an event is added during the
-     middle of our sequence, but doesn't get handled.
-
-     We try to avoid this problem by going through the sequence
-     twice. But that still doesn't always work. For the general case,
-     then, we don't actually sleep indefinitely. Instead, we slep 10
-     ms, then 20 ms, etc. This exponential backoff ensures that we
-     eventually handle a pending event, but we don't spin and eat CPU
-     cycles. */
-
-  if (GetQueueStatus(QS_ALLINPUT)) {
-    /* Maybe the events are new since we last checked, or maybe
-       they're not going to be dispatched until something else
-       unblocks. Go into exponential-back-off mode. */
-    if (found_nothing) {
-      /* Ok, we gone around at least once. */
-      if (max_sleep_time < 0x20000000)
-	max_sleep_time *= 2;
-    } else {
-      /* Starting back-off mode */
-      found_nothing = 1;
-      max_sleep_time = 10;
-      return;
-    }
-  } else {
-    /* Disable back-off mode */
-    found_nothing = 0;
-    max_sleep_time = 0;
-  }
-
-  if (secs > 0) {
-    if (secs > 100000)
-      msecs = 100000000;
-    else
-      msecs = (DWORD)(secs * 1000);
-    if (max_sleep_time && (msecs > max_sleep_time))
-      msecs = max_sleep_time;
-  } else {
-    if (max_sleep_time) {
-      msecs = max_sleep_time;
-      /* Avoid infinite sleep: */
-      secs = 1.0;
-    } else
-      msecs = 0;
-  }
-
-  if (fds) {
-    scheme_add_fd_eventmask(fds, QS_ALLINPUT);
-    mzsleep(secs, fds);
-  } else if (wxTheApp->keep_going) {
-    MsgWaitForMultipleObjects(0, NULL, FALSE,
-			      secs ? msecs : INFINITE,
-			      QS_ALLINPUT);
-  }
+  scheme_add_fd_eventmask(fds, QS_ALLINPUT);
+  mzsleep(secs, fds);
 }
 
 void wxQueueLeaveEvent(void *ctx, wxWindow *wnd, int x, int y, int flags)
