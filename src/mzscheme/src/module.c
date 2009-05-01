@@ -8449,10 +8449,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                   ? scheme_modidx_shift(exss[j], me->src_modidx, idx)
                   : idx);
       
-        if (!iname)
-          iname = exs[j];
-
-        if (SCHEME_SYM_WEIRDP(iname)) {
+        if (SCHEME_SYM_WEIRDP(exs[j])) {
           /* This shouldn't happen. In case it does, don't import a
              gensym or parallel symbol. The former is useless. The
              latter is supposed to be module-specific, and it could
@@ -8460,6 +8457,9 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           iname = NULL;
           continue;
         }
+
+        if (!iname)
+          iname = exs[j];
 
         if (prefix)
           iname = scheme_symbol_append(prefix, iname);
