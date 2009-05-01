@@ -80,8 +80,9 @@ the Unix instructions below, but note the following:
     try using GNU `make'.
 
  1. Run the script `configure' (which is in the same directory as this
-    README), usually with a --prefix=TARGETDIR command-line argument
-    and optionally with --enable-shared.
+    README), possibly with a --prefix=TARGETDIR command-line argument
+    and optionally with --enable-shared.  It is better to run the
+    build in a different directory rather then use this directory.
 
     For example, if you want to install into /usr/local/plt using
     dynamic libraries, then run
@@ -90,7 +91,21 @@ the Unix instructions below, but note the following:
 
     where "[here]" is the directory path containing the `configure'
     script (possibly unnecessary, or possibly just "./", depending on
-    your shell and PATH setting).
+    your shell and PATH setting).  To use a different directory for
+    the build (which is recommended), for example a subdirectory named
+    "build":
+
+        cd [here]
+        mkdir build
+        cd build
+        ../configure --prefix=/usr/local/plt --enable-shared
+
+    (This is especially more convenient if you plan to update your
+    source tree from the plt repository.  Such updates might involve
+    changes in the structure, which will leave your source tree in an
+    inconsistent state (eg, old Makefiles referring to inexistent
+    files).  In such cases it is convenient to just remove the "build"
+    directory and start a fresh build.)
 
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the parent of the directory
@@ -106,8 +121,8 @@ the Unix instructions below, but note the following:
     executables (independent of --prefix). This build directory does
     not have to be in the source tree, even for an "in-place"
     build. It's ok to run `configure' from its own directory (as in
-    the example above), but it's often better to pick a separate build
-    directory that is otherwise empty.
+    the first example above), but it's better to pick a separate build
+    directory that is otherwise empty (as in the second example).
 
     The `configure' script accepts many other flags that adjust the
     build process. Run `configure --help' for more information. In
