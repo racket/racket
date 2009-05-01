@@ -196,4 +196,19 @@
 
 ;; ----------------------------------------
 
+(test-pack-seq
+ 10
+ (define-package p5 (q)
+   (define* x 10)
+   (define-syntax (y stx) 
+     (syntax-case stx ()
+       [(_ z) #'(begin (define z x))]))
+   (define* x 12)
+   (define* z 13)
+   (y q))
+ (open-package p5)
+ q)
+
+;; ----------------------------------------
+
 (report-errs)

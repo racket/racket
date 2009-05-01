@@ -837,10 +837,9 @@ v4 todo:
 
 (define (->d-proj ->d-stct)
   (let* ([opt-count (length (->d-optional-dom-ctcs ->d-stct))]
-         [mandatory-count (length (->d-mandatory-dom-ctcs ->d-stct))]
-         [non-kwd-ctc-count (+ mandatory-count 
-                               opt-count
-                               (if (->d-mtd? ->d-stct) 1 0))]
+         [mandatory-count (+ (length (->d-mandatory-dom-ctcs ->d-stct)) 
+                             (if (->d-mtd? ->d-stct) 1 0))]
+         [non-kwd-ctc-count (+ mandatory-count opt-count)]
          [arity 
           (cond
             [(->d-rest-ctc ->d-stct)
@@ -988,7 +987,7 @@ v4 todo:
              
              arity 
              (->d-mandatory-keywords ->d-stct)
-             (->d-optional-keywords ->d-stct))))))))
+             (->d-keywords ->d-stct))))))))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
 (define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str)

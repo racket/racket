@@ -56,7 +56,7 @@
                               (cadddr (cdr stx/binding)))))])])
       (and 
        (pair? b)
-       (let ([seen (make-hasheq)]
+       (let ([seen (make-hash)]
              [search-key #f])
          (let loop ([queue (list (list (caddr b) (cadddr b) (list-ref b 4) (list-ref b 5) (list-ref b 6)))]
                     [rqueue null]
@@ -99,7 +99,7 @@
                                 (loop queue rqueue need-result?)
                                 ;; Check parents, if we can get the source:
                                 (if (and (path? (resolved-module-path-name rmp))
-                                         (not (hash-ref seen rmp #f)))
+                                         (not (hash-ref seen (cons export-phase rmp) #f)))
                                     (let ([exports
                                            (hash-ref
                                             module-info-cache
@@ -130,7 +130,7 @@
                                                                       (cdr stxess))]))])
                                                   (hash-set! module-info-cache rmp t)
                                                   t))))])
-                                      (hash-set! seen rmp #t)
+                                      (hash-set! seen (cons export-phase rmp) #t)
                                       (let ([a (assq id (let ([a (assoc export-phase exports)])
                                                           (if a
                                                               (cdr a) 
@@ -149,7 +149,7 @@
                                                                            0
                                                                            0
                                                                            0)))
-                                                               (cadr a))
+                                                               (reverse (cadr a)))
                                                           rqueue)
                                                   need-result?)
                                             (begin
@@ -158,9 +158,9 @@
                                               ;; for now.
                                               #;
                                               (error 'find-scheme-tag
-                                              "dead end when looking for binding source: ~e"
-                                              id)
-                                              #f))))
+                                                     "dead end when looking for binding source: ~e"
+                                                     id)
+                                              (loop queue rqueue need-result?)))))
                                     ;; Can't get the module source, so continue with queue:
                                     (loop queue rqueue need-result?)))])
                        (or here-result

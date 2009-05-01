@@ -2,8 +2,9 @@
 
 (provide build-contract-test-engine
 	 contract-violation?
-	 contract-violation-obj contract-violation-contract contract-violation-messages
-	 contract-violation-blame contract-violation-srcloc)
+	 contract-violation-obj contract-violation-contract contract-violation-message
+	 contract-violation-blame contract-violation-srcloc
+	 contract-got? contract-got-value contract-got-format)
 
 (require scheme/class
 	 (lib "test-engine/test-engine.scm")
@@ -18,7 +19,7 @@
   (class* test-engine% ()
     (super-instantiate ())
     (inherit-field test-info test-display)
-    (inherit setup-info display-untested)
+    (inherit setup-info display-untested display-disabled)
 
     (define display-rep #f)
     (define display-event-space #f)
@@ -72,18 +73,11 @@
 		[(mixed-results)
 		 (display-results display-rep display-event-space)]))))
        (else
-	(fprintf port "Tests disabled.\n"))))
+	(display-disabled port))))
 
     (define/private (display-success port event-space count)
       (clear-results event-space)
-      (unless (test-silence)
-        (fprintf port "~a test~a passed!\n"
-                 (case count
-                   [(0) "Zero"]
-                   [(1) "The only"]
-                   [(2) "Both"]
-                   [else (format "All ~a" count)])
-                 (if (= count 1) "" "s"))))
+      (send test-display display-success-summary port count))
 
     (define/override (display-results rep event-space)
       (cond
@@ -98,7 +92,9 @@
 
 ))
 
-(define-struct contract-violation (obj contract messages srcloc blame))
+(define-struct contract-got (value format))
+
+(define-struct contract-violation (obj contract message srcloc blame))
 
 (define contract-test-info%
   (class* test-info-base% ()
@@ -123,13 +119,12 @@
 			      (make-srcloc source line col pos span))
 			    mark)))
 	       (else #f)))
-	     (messages
-	      (if message
-		  (list message)
-		  (list "got " ((test-format) obj)))))
+	     (message
+	      (or message
+		  (make-contract-got obj (test-format)))))
 		  
 	(set! contract-violations
-	      (cons (make-contract-violation obj contract messages srcloc blame)
+	      (cons (make-contract-violation obj contract message srcloc blame)
 		    contract-violations)))
       (inner (void) contract-failed obj contract message))
 

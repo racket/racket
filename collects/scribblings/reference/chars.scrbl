@@ -7,10 +7,12 @@
 
 @guideintro["characters"]{characters}
 
-@deftech{Characters} range over Unicode scalar values, which includes
+@deftech{Characters} range over Unicode
+@index['("scalar value")]{scalar values}, which includes
 characters whose values range from @schemevalfont{#x0} to
 @schemevalfont{#x10FFFF}, but not including @schemevalfont{#xD800} to
-@schemevalfont{#xDFFF}.
+@schemevalfont{#xDFFF}. The scalar values are a subset of the Unicode
+@index['("code point")]{code points}.
 
 Two characters are @scheme[eqv?] if they correspond to the same scalar
 value. For each scalar value less than 256, character values that are

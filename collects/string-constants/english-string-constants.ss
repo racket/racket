@@ -1292,7 +1292,8 @@ please adhere to these guidelines:
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "Java mode")
-
+  (profj-java-coverage "Java Coverage") ;; shows up in the preferences dialog under 'Color'
+  
   (profj-beginner-lang "Beginner")
   (profj-beginner-lang-one-line-summary "Java-like Beginner teaching language")
   (profj-full-lang "Full")
@@ -1363,7 +1364,63 @@ please adhere to these guidelines:
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Enable Tests")
   (test-engine-disable-tests "Disable Tests")
-  
+
+  (test-engine-ran-1-test "Ran 1 test.")
+  (test-engine-ran-1-check "Ran 1 check.")
+  ;; ditto, only plural
+  (test-engine-ran-n-tests "Ran ~a tests.")
+  (test-engine-ran-n-checks "Ran ~a checks.")
+  (test-engine-1-test-passed "The test passed!")
+  (test-engine-1-check-passed "The check passed!")
+  (test-engine-both-tests-passed "Both tests passed!")
+  (test-engine-both-checks-passed "Both checks passed!")
+  (test-engine-all-tests-passed "All tests passed!")
+  (test-engine-all-checks-passed "All checks passed!")
+  (test-engine-all-n-tests-passed "All ~a tests passed!")
+  (test-engine-all-n-checks-passed "All ~a checks passed!")
+  (test-engine-0-tests-passed "0 tests passed.")
+  (test-engine-0-checks-passed "0 checks passed.")
+  (test-engine-m-of-n-tests-failed "~a of the ~a tests failed.")
+  (test-engine-m-of-n-checks-failed "~a of the ~a checks failed.")
+  (test-engine-must-be-tested "This program must be tested!")
+  (test-engine-is-unchecked "This program is unchecked!")
+  (test-engine-tests-disabled "Tests disabled.")
+  (test-engine-should-be-tested "This program should be tested.")
+  (test-engine-at-line-column "at line ~a, column ~a")
+  (test-engine-in-at-line-column "in ~a, line ~a, column ~a")
+  ; as in "column (unknown)"
+  (test-engine-unknown "(unknown)")
+  (test-engine-trace-error "Trace error")
+
+  ; The ~F is special marker for the offending values, which may be
+  ; printed specially in DrScheme.
+  (test-engine-check-encountered-error
+   "check-expect encountered the following error instead of the expected value, ~F. ~n   :: ~a")
+  (test-engine-actual-value-differs-error
+   "Actual value ~F differs from ~F, the expected value.")
+  (test-engine-actual-value-not-within-error
+   "Actual value ~F is not within ~v of expected value ~F.")
+  (test-engine-encountered-error-error
+   "check-error encountered the following error instead of the expected ~a~n   :: ~a")
+  (test-engine-expected-error-error
+   "check-error expected the following error, but instead received the value ~F.~n ~a")
+
+  ; section header
+  (test-engine-check-failures "Check failures:")
+  ; section header
+  (test-engine-contract-violations "Contract violations:")
+
+  ; part of one phrase "contract <at line ...> to blame: procedure <...>
+  (test-engine-contract "contract")
+  (test-engine-to-blame "to blame: procedure")
+
+  (test-engine-no-contract-violations "No contract violations.")
+  (test-engine-1-contract-violation "1 contract violation.")
+  (test-engine-n-contract-violations "~a contract violations.")
+
+  ; as in got <value>, contract <at ...>
+  (test-engine-got "got")
+
   (profjWizward-insert-java-class "Insert Java Class")
   (profjWizard-insert-java-union "Insert Java Union")
   

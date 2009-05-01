@@ -220,6 +220,7 @@ static Module_Renames *krn;
 #define SCHEME_RENAMES_SETP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_rename_table_set_type))
 
 #define SCHEME_MODIDXP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
+#define SCHEME_RIB_DELIMP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_rib_delimiter_type))
 
 static int is_rename_inspector_info(Scheme_Object *v)
 {
@@ -266,6 +267,15 @@ static int is_rename_inspector_info(Scheme_Object *v)
          having the vectors inline in place of the rib, except that
          new vectors can be added imperatively; simplification turns this
 	 into a vector
+
+   - A wrap-elem (make-rib-delimiter <list-of-rib>)
+         appears in pairs around rib elements; the deeper is just a
+         bracket, while the shallow one contains a non-empty list of
+         ribs; for each environment name defined within the set of
+         ribs, no rib within the set can build on a binding to that
+         environment past the end delimiter; this is used by `local-expand'
+         when given a list of ribs, and simplifcation eliminates
+         rib delimiters
 
    - A wrap-elem <rename-table> is a module rename set
          the hash table maps renamed syms to modname-srcname pairs
@@ -1940,6 +1950,34 @@ Scheme_Object *scheme_add_rename_rib(Scheme_Object *o, Scheme_Object *rib)
 #endif
 
   return scheme_add_rename(o, rib);
+}
+
+Scheme_Object *scheme_add_rib_delimiter(Scheme_Object *o, Scheme_Object *ribs)
+{
+  Scheme_Object *s;
+
+  s = scheme_alloc_small_object();
+  s->type = scheme_rib_delimiter_type;
+  SCHEME_BOX_VAL(s) = ribs;
+
+  return scheme_add_rename(o, s);
+}
+
+static int is_in_rib_delim(Scheme_Object *envname, Scheme_Object *rib_delim)
+{
+  Scheme_Object *l = SCHEME_BOX_VAL(rib_delim);
+  Scheme_Lexical_Rib *rib;
+
+  while (!SCHEME_NULLP(l)) {
+    rib = (Scheme_Lexical_Rib *)SCHEME_CAR(l);
+    while (rib) {
+      if (rib->rename && SAME_OBJ(envname, SCHEME_VEC_ELS(rib->rename)[0]))
+        return 1;
+      rib = rib->next;
+    }
+    l = SCHEME_CDR(l);
+  }
+  return 0;
 }
 
 static Scheme_Hash_Table *make_recur_table()
@@ -3940,8 +3978,8 @@ static Scheme_Object *extend_cached_env(Scheme_Object *orig, Scheme_Object *othe
   return orig;
 }
 
-/* This needs to be a multiple of 3: */
-#define QUICK_STACK_SIZE 12
+/* This needs to be a multiple of 4: */
+#define QUICK_STACK_SIZE 16
 
 /* Although resolve_env may call itself recursively, the recursion
    depth is bounded (by the fact that modules can't be nested,
@@ -3970,7 +4008,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *o_rename_stack = scheme_null, *recur_skip_ribs = skip_ribs;
   Scheme_Object *mresult = scheme_false, *mresult_insp;
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
-  Scheme_Object *rename_stack[QUICK_STACK_SIZE];
+  Scheme_Object *rename_stack[QUICK_STACK_SIZE], *rib_delim = scheme_false;
   int stack_pos = 0, no_lexical = 0;
   int is_in_module = 0, skip_other_mods = 0, floating_checked = 0;
   Scheme_Lexical_Rib *rib = NULL, *did_rib = NULL;
@@ -3992,21 +4030,27 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   while (1) {
     if (WRAP_POS_END_P(wraps)) {
       /* See rename case for info on rename_stack: */
-      Scheme_Object *result, *result_free_rename, *key;
+      Scheme_Object *result, *result_free_rename, *key, *rd;
       int did_lexical = 0;
 
       EXPLAIN(fprintf(stderr, "%d Rename...\n", depth));
 
       result = scheme_false;
       result_free_rename = scheme_false;
+      rib_delim = scheme_null;
       while (!SCHEME_NULLP(o_rename_stack)) {
-	key = SCHEME_CAAR(o_rename_stack);
+	key = SCHEME_VEC_ELS(SCHEME_CAR(o_rename_stack))[0];
 	if (SAME_OBJ(key, result)) {
           EXPLAIN(fprintf(stderr, "%d Match %s\n", depth, scheme_write_to_string(key, 0)));
 	  did_lexical = 1;
-	  result = SCHEME_CDR(SCHEME_CAR(o_rename_stack));
-          result_free_rename = SCHEME_CDR(result);
-          result = SCHEME_CAR(result);
+          rd = SCHEME_VEC_ELS(SCHEME_CAR(o_rename_stack))[3];
+          if (SCHEME_TRUEP(rd) && !SAME_OBJ(rd, rib_delim) && is_in_rib_delim(result, rd)) {
+            /* not a match, due to rib delimiter */
+          } else {
+            result = SCHEME_VEC_ELS(SCHEME_CAR(o_rename_stack))[1];
+            result_free_rename = SCHEME_VEC_ELS(SCHEME_CAR(o_rename_stack))[2];
+            rib_delim = rd;
+          }
 	} else {
           EXPLAIN(fprintf(stderr, "%d No match %s\n", depth, scheme_write_to_string(key, 0)));
           if (SAME_OBJ(key, scheme_true)) {
@@ -4020,9 +4064,15 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	key = rename_stack[stack_pos - 1];
 	if (SAME_OBJ(key, result)) {
           EXPLAIN(fprintf(stderr, "%d Match %s\n", depth, scheme_write_to_string(key, 0)));
-	  result = rename_stack[stack_pos - 2];
-          result_free_rename = rename_stack[stack_pos - 3];
-	  did_lexical = 1;
+          rd = rename_stack[stack_pos - 4];
+          if (SCHEME_TRUEP(rd) && !SAME_OBJ(rd, rib_delim) && is_in_rib_delim(result, rd)) {
+            /* not a match, due to rib delimiter */
+          } else {
+            result = rename_stack[stack_pos - 2];
+            result_free_rename = rename_stack[stack_pos - 3];
+            rib_delim = rd;
+            did_lexical = 1;
+          }
 	} else {
           EXPLAIN(fprintf(stderr, "%d No match %s\n", depth, scheme_write_to_string(key, 0)));
           if (SAME_OBJ(key, scheme_true)) {
@@ -4030,7 +4080,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             did_lexical = 0;
           }
         }
-	stack_pos -= 3;
+	stack_pos -= 4;
       }
       if (!did_lexical) {
 	result = mresult;
@@ -4485,12 +4535,18 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
                 free_id_rename = vec;
               }
 	      if (stack_pos < QUICK_STACK_SIZE) {
+		rename_stack[stack_pos++] = rib_delim;
 		rename_stack[stack_pos++] = free_id_rename;
 		rename_stack[stack_pos++] = envname;
 		rename_stack[stack_pos++] = other_env;
 	      } else {
-		o_rename_stack = CONS(CONS(other_env, CONS(envname, free_id_rename)),
-				      o_rename_stack);
+                Scheme_Object *vec;
+                vec = scheme_make_vector(4, NULL);
+                SCHEME_VEC_ELS(vec)[0] = other_env;
+                SCHEME_VEC_ELS(vec)[1] = envname;
+                SCHEME_VEC_ELS(vec)[2] = free_id_rename;
+                SCHEME_VEC_ELS(vec)[3] = rib_delim;
+		o_rename_stack = CONS(vec, o_rename_stack);
 	      }
               if (is_rib) {
                 /* skip future instances of the same rib;
@@ -4531,6 +4587,10 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
         } else
           rib = NULL;
       }
+    } else if (SCHEME_RIB_DELIMP(WRAP_POS_FIRST(wraps))) {
+      rib_delim = WRAP_POS_FIRST(wraps);
+      if (SCHEME_NULLP(SCHEME_BOX_VAL(rib_delim)))
+        rib_delim = scheme_false;
     } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(wraps))) {
       EXPLAIN(fprintf(stderr, "%d mark %p\n", depth, WRAP_POS_FIRST(wraps)));
       did_rib = NULL;
@@ -5465,8 +5525,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 {
   WRAP_POS w, prev, w2;
   Scheme_Object *stack = scheme_null, *key, *old_key, *prec_ribs = NULL, *prev_prec_ribs;
-  Scheme_Object *ribs_stack = scheme_null;
-  Scheme_Object *v, *v2, *v2l, *stx, *name, *svl, *end_mutable = NULL;
+  Scheme_Object *ribs_stack = scheme_null, *rib_delim = scheme_false;
+  Scheme_Object *v, *v2, *v2l, *v2rdl, *stx, *name, *svl, *end_mutable = NULL, **v2_rib_delims = NULL, *svrdl;
   Scheme_Lexical_Rib *did_rib = NULL;
   Scheme_Hash_Table *skip_ribs_ht = NULL, *prev_skip_ribs_ht;
   int copy_on_write, no_rib_mutation = 1;
@@ -5509,6 +5569,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
   old_key = NULL;
 
   v2l = scheme_null;
+  v2rdl = NULL;
 
   EXPLAIN_S(fprintf(stderr, "[in simplify]\n"));
 
@@ -5625,7 +5686,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
             ribs_stack = scheme_make_pair(scheme_false, ribs_stack);
           } else {
             ribs_stack = scheme_make_pair(scheme_make_pair(prec_ribs, 
-                                                           (Scheme_Object *)prev_skip_ribs_ht),
+                                                           scheme_make_pair((Scheme_Object *)prev_skip_ribs_ht,
+                                                                            rib_delim)),
                                           ribs_stack);
           }
           
@@ -5643,6 +5705,10 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	  break;
 	}
       }
+    } else if (SCHEME_RIB_DELIMP(WRAP_POS_FIRST(w))) {
+      rib_delim = WRAP_POS_FIRST(w);
+      if (SCHEME_NULLP(SCHEME_BOX_VAL(rib_delim)))
+        rib_delim = scheme_false;
     }
     
     WRAP_POS_INC(w);
@@ -5667,6 +5733,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
         Scheme_Object *local_ribs;
 	int ii, vvsize, done_rib_pos = 0;
 
+        rib_delim = scheme_false;
+
         if (SCHEME_FALSEP(SCHEME_CAR(ribs_stack))) {
           EXPLAIN_S(fprintf(stderr, " skip rib %p=%s\n", v, 
                             scheme_write_to_string(((Scheme_Lexical_Rib *)v)->timestamp, NULL)));
@@ -5674,8 +5742,11 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
           vsize = 0;
           local_ribs = NULL;
         } else {
-          prec_ribs = SCHEME_CAR(SCHEME_CAR(ribs_stack));
-          skip_ribs_ht = (Scheme_Hash_Table *)SCHEME_CDR(SCHEME_CAR(ribs_stack));
+          rib_delim = SCHEME_CAR(ribs_stack);
+          prec_ribs = SCHEME_CAR(rib_delim);
+          rib_delim = SCHEME_CDR(rib_delim);
+          skip_ribs_ht = (Scheme_Hash_Table *)SCHEME_CAR(rib_delim);
+          rib_delim = SCHEME_CDR(rib_delim);
           ribs_stack = SCHEME_CDR(ribs_stack);
 
           if (SCHEME_RIBP(v)) {
@@ -5707,6 +5778,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	size = vsize;
 
 	v2 = scheme_make_vector(2 + (2 * size), NULL);
+        v2_rib_delims = MALLOC_N(Scheme_Object *, size);
 
 	pos = 0; /* counter for used slots */
 
@@ -5737,8 +5809,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	    /* Either this name is in prev, in which case the answer
 	       must match this rename's target, or this rename's
 	       answer applies. */
-	    Scheme_Object *ok = NULL, *ok_replace = NULL;
-            int ok_replace_index = 0;
+	    Scheme_Object *ok = NULL, *ok_replace = NULL, **ok_replace_rd = NULL;
+            int ok_replace_index = 0, ok_replace_rd_index = 0;
             Scheme_Object *other_env, *free_id_rename, *prev_env, *orig_prev_env;
 
             if (rib) {
@@ -5774,7 +5846,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	    if (!WRAP_POS_END_P(prev)
                 || SCHEME_PAIRP(v2l)) {
 	      WRAP_POS w3;
-	      Scheme_Object *vp;
+	      Scheme_Object *vp, **vrdp;
 
 	      /* Check marks (now that we have the correct barriers). */
 	      WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
@@ -5799,11 +5871,16 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                       orig_prev_env = prev_env;
                       if (SCHEME_PAIRP(prev_env)) prev_env = SCHEME_CAR(prev_env);
                       if (SAME_OBJ(prev_env, other_env)) {
-                        ok = SCHEME_VEC_ELS(v)[0];
-                        ok_replace = v2;
-                        ok_replace_index = 2 + size + j;
-                        if (!free_id_rename && SCHEME_PAIRP(orig_prev_env))
-                          free_id_rename = SCHEME_CDR(orig_prev_env);
+                        if (SCHEME_FALSEP(rib_delim) 
+                            || SAME_OBJ(v2_rib_delims[j], rib_delim) 
+                            || !is_in_rib_delim(prev_env, rib_delim)) {
+                          ok = SCHEME_VEC_ELS(v)[0];
+                          ok_replace = v2;
+                          ok_replace_index = 2 + size + j;
+                          ok_replace_rd = v2_rib_delims;
+                          if (!free_id_rename && SCHEME_PAIRP(orig_prev_env))
+                            free_id_rename = SCHEME_CDR(orig_prev_env);
+                        }
                       } else {
                         EXPLAIN_S(fprintf(stderr, "    not matching prev rib\n"));
                         ok = NULL;
@@ -5816,12 +5893,19 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                   int passed_mutable = 0;
                   WRAP_POS_COPY(w3, prev);
                   svl = v2l;
+                  svrdl = v2rdl;
                   for (; SCHEME_PAIRP(svl) || !WRAP_POS_END_P(w3); ) {
                     if (SAME_OBJ(svl, end_mutable)) passed_mutable = 1;
-                    if (SCHEME_PAIRP(svl))
+                    if (SCHEME_PAIRP(svl)) {
                       vp = SCHEME_CAR(svl);
-                    else
+                      if (svrdl)
+                        vrdp = (Scheme_Object **)SCHEME_CAR(svrdl);
+                      else
+                        vrdp = NULL;
+                    } else {
                       vp = WRAP_POS_FIRST(w3);
+                      vrdp = NULL;
+                    }
                     if (SCHEME_VECTORP(vp)) {
                       psize = SCHEME_RENAME_LEN(vp);
                       for (j = 0; j < psize; j++) {
@@ -5829,7 +5913,10 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                           prev_env = SCHEME_VEC_ELS(vp)[2+psize+j];
                           orig_prev_env = prev_env;
                           if (SCHEME_PAIRP(prev_env)) prev_env = SCHEME_CAR(prev_env);
-                          if (SAME_OBJ(prev_env, other_env)) {
+                          if (SAME_OBJ(prev_env, other_env)
+                              && (SCHEME_FALSEP(rib_delim) 
+                                  || (vrdp && (SAME_OBJ(vrdp[j], rib_delim)))
+                                  || !is_in_rib_delim(prev_env, rib_delim))) {
                             ok = SCHEME_VEC_ELS(v)[0];
                             if (!free_id_rename && SCHEME_PAIRP(orig_prev_env))
                               free_id_rename = SCHEME_CDR(orig_prev_env);
@@ -5839,14 +5926,17 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                                               scheme_write_to_string(other_env, NULL)));
                             ok = NULL; 
                             /* Alternate time/space tradeoff: could be
-                               SCHEME_VEC_ELS(vp)[2+psize+j],
-                               which is the value from prev */
+                                 SCHEME_VEC_ELS(vp)[2+psize+j],
+                                 which is the value from prev */
                           }
-                          if (ok && SCHEME_PAIRP(svl) && !passed_mutable) {
+                          if (ok && SCHEME_PAIRP(svl) && !passed_mutable
+                              && (SCHEME_FALSEP(rib_delim) || vrdp)) {
                             /* Can overwrite old map, instead
                                of adding a new one. */
                             ok_replace = vp;
                             ok_replace_index = 2 + psize + j;
+                            ok_replace_rd = vrdp;
+                            ok_replace_rd_index = j;
                           }
                           break;
                         }
@@ -5854,9 +5944,10 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                       if (j < psize)
                         break;
                     }
-                    if (SCHEME_PAIRP(svl))
+                    if (SCHEME_PAIRP(svl)) {
                       svl = SCHEME_CDR(svl);
-                    else {
+                      if (svrdl) svrdl = SCHEME_CDR(svrdl);
+                    } else {
                       WRAP_POS_INC(w3);
                     }
                   }
@@ -5887,10 +5978,12 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                 EXPLAIN_S(fprintf(stderr, "   replace mapping %s\n", 
                                   scheme_write_to_string(ok, NULL)));
                 SCHEME_VEC_ELS(ok_replace)[ok_replace_index] = ok;
+                ok_replace_rd[ok_replace_rd_index] = rib_delim;
               } else {
                 EXPLAIN_S(fprintf(stderr, "   add mapping %s\n", 
                                   scheme_write_to_string(ok, NULL)));
                 SCHEME_VEC_ELS(v2)[2+size+pos] = ok;
+                v2_rib_delims[pos] = rib_delim;
                 pos++;
               }
 	    } else {
@@ -5945,6 +6038,7 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
         }
 
 	v2l = CONS(v2, v2l);
+	v2rdl = scheme_make_raw_pair((Scheme_Object *)v2_rib_delims, v2rdl);
       }
 
       WRAP_POS_DEC(w);
@@ -6062,6 +6156,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 	}
       }
       /* else empty simplified vector, which we drop */
+    } else if (SCHEME_RIB_DELIMP(a)) {
+      /* simpliciation eliminates the need for rib delimiters */
     } else if (SCHEME_RENAMESP(a)
                || SCHEME_RENAMES_SETP(a)) {
       int which = 0;
@@ -8252,7 +8348,7 @@ static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv)
   Scheme_Stx *stx;
 
   if (!SCHEME_STXP(argv[0]))
-    scheme_wrong_type("syntax-property", "syntax", 0, argc, argv);
+    scheme_wrong_type("syntax-property-symbol-keys", "syntax", 0, argc, argv);
 
   stx = (Scheme_Stx *)argv[0];
 

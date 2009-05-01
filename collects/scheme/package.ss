@@ -219,14 +219,12 @@
                               ids))]
                  [add-package-context (lambda (def-ctxes)
                                         (lambda (stx)
-                                          (for/fold ([stx stx]) 
-                                              ([def-ctx (in-list (reverse def-ctxes))])
-                                            (let ([q (local-expand #`(quote #,stx)
-                                                                   ctx
-                                                                   (list #'quote)
-                                                                   def-ctx)])
-                                              (syntax-case q ()
-                                                [(_ stx) #'stx])))))])
+                                          (let ([q (local-expand #`(quote #,stx)
+                                                                 ctx
+                                                                 (list #'quote)
+                                                                 def-ctxes)])
+                                            (syntax-case q ()
+                                              [(_ stx) #'stx]))))])
              (let loop ([exprs init-exprs]
                         [rev-forms null]
                         [def-ctxes (list def-ctx)])
@@ -293,11 +291,10 @@
                                     (lambda ()
                                       (list (quote-syntax hidden) ...)))))))))))]
                 [else
-                 (let ([expr ((add-package-context (cdr def-ctxes))
-                              (local-expand ((add-package-context (cdr def-ctxes)) (car exprs))
-                                            ctx
-                                            kernel-forms 
-                                            (car def-ctxes)))])
+                 (let ([expr (local-expand (car exprs)
+                                           ctx
+                                           kernel-forms 
+                                           def-ctxes)])
                    (syntax-case expr (begin)
                      [(begin . rest)
                       (loop (append (flatten-begin expr) (cdr exprs))

@@ -53,6 +53,8 @@ The following API is provided to customize the server instance:
                      web-server/web-config-unit
                      web-server/web-server-unit))
 
+@section-index{plt-web-server}
+
 One command-line utility is provided with the @|web-server|:
 
 @commandline{plt-web-server [-f <file-name> -p <port> -a <ip-address> --ssl]}

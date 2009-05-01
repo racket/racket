@@ -60,4 +60,5 @@
 
   (#%provide syntax (all-from "with-stx.ss") (all-from "stxloc.ss") 
              check-duplicate-identifier
-             syntax-rules syntax-id-rules))
+             syntax-rules syntax-id-rules
+             (for-syntax syntax-pattern-variable?)))

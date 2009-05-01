@@ -96,23 +96,17 @@
       
       ;; extend-preferences-panel : vertical-panel -> void
       ;; adds in the configuration for the Java colors to the prefs panel
-      (define (extend-preferences-panel parent)
-        (let ((standard-color-prefs 
-               (make-object group-box-panel% (string-constant profj-java-mode-color-heading) parent))
-              (coverage-color-panel
-               (make-object group-box-panel% (string-constant profj-coverage-color-heading) parent))
-              (put 
-               (lambda (p)
-                 (lambda (line)
-                   (let ([sym (car line)]
-                         [str (caddr line)])
-                     (color-prefs:build-color-selection-panel 
-                      p
-                      (short-sym->pref-name sym)
-                      (short-sym->style-name sym)
-                      str))))))
-          (for-each (put standard-color-prefs) color-prefs-table)
-          (for-each (put coverage-color-panel) coverage-color-prefs)))
+      (define ((extend-preferences-panel color-table) parent)
+        (let ((put 
+               (lambda (line)
+                 (let ([sym (car line)]
+                       [str (caddr line)])
+                   (color-prefs:build-color-selection-panel 
+                    parent
+                    (short-sym->pref-name sym)
+                    (short-sym->style-name sym)
+                    str)))))
+          (for-each put color-table)))
       
       (define mode-surrogate% 
         (class color:text-mode%
@@ -1230,7 +1224,10 @@
       ;;
       
       (drscheme:modes:add-mode (string-constant profj-java-mode) mode-surrogate repl-submit matches-language)
-      (color-prefs:add-to-preferences-panel (string-constant profj-java) extend-preferences-panel)
+      (color-prefs:add-to-preferences-panel (string-constant profj-java) 
+                                            (extend-preferences-panel color-prefs-table))
+      (color-prefs:add-to-preferences-panel (string-constant profj-java-coverage)
+                                            (extend-preferences-panel coverage-color-prefs))
       
       (define (register line)
         (let ([sym (car line)]

@@ -71,17 +71,34 @@
     (define/public (display-check-failures checks test-info)
       (for ([failed-check (reverse checks)])
         (printf "~a" "\t")
-        (make-link (failed-check-msg failed-check)
-                   (failed-check-src failed-check))
+        (make-link (failed-check-reason failed-check)
+                   (check-fail-src (failed-check-reason failed-check)))
         (printf "~a" "\n")))
 
     (define/public (report-success) (void))
+
+    (define/public (display-success-summary port count)
+      (unless (test-silence)
+        (fprintf port "~a test~a passed!\n"
+                 (case count
+                   [(0) "Zero"]
+                   [(1) "The only"]
+                   [(2) "Both"]
+                   [else (format "All ~a" count)])
+                 (if (= count 1) "" "s"))))
     
+    (define (display-untested-summary port)
+      (unless (test-silence)
+        (fprintf port "This program should be tested.~n")))
+
+    (define (display-disabled-summary port)
+      (fprintf port "Tests disabled.\n"))
+
     (define/public (next-line) (printf "~a" "\n\t"))
 
-    ;; make-link: (listof (U string snip%)) src -> void
-    (define (make-link msg dest)
-      (for-each printf msg)
+    ;; make-link: (listof (U check-fail (U string snip%))) src -> void
+    (define (make-link reason dest)
+      (print-reason display display reason)
       (printf (format-src dest)))
 
     (define (format-src src)
@@ -142,24 +159,21 @@
              [(mixed-results)
               (display-results display-rep display-event-space)]))]
         [else
-         (fprintf port "Tests disabled.\n")]))
+	 (display-disabled port)]))
 
     (define/private (display-success port event count)
       (when event
         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event])
           ((dynamic-require 'scheme/gui 'queue-callback)
             (lambda () (send test-display report-success)))))
-      (unless (test-silence)
-        (fprintf port "~a test~a passed!\n"
-                 (case count
-                   [(0) "Zero"]
-                   [(1) "The only"]
-                   [(2) "Both"]
-                   [else (format "All ~a" count)])
-                 (if (= count 1) "" "s"))))
+      (send test-display display-success-summary port count))
+
     (define/public (display-untested port)
-      (unless (test-silence)
-        (fprintf port "This program should be tested.~n")))
+      (send test-display display-untested-summary port))
+
+    (define/public (display-disabled port)
+      (send test-display display-disabled-summary port))
+
     (define/public (display-results rep event-space)
       (cond
         [(and rep event-space)

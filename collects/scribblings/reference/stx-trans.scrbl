@@ -156,7 +156,11 @@ with an empty context is used, instead.}
 @defproc[(local-expand [stx syntax?]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
-                       [intdef-ctx (or/c internal-definition-context? #f) #f])
+                       [intdef-ctx (or/c internal-definition-context? 
+                                         (and/c pair? 
+                                                (listof internal-definition-context?))
+                                         #f)
+                                   #f])
          syntax?]{
 
 Expands @scheme[stx] in the lexical context of the expression
@@ -176,12 +180,13 @@ instead of a list, then @scheme[stx] is expanded only as long as the
 outermost form of @scheme[stx] is a macro (i.e., expansion does not
 proceed to sub-expressions).
 
-The optional @scheme[intdef-ctx] argument must be either @scheme[#f]
-or the result of @scheme[syntax-local-make-definition-context]. In the
-latter case, lexical information for internal definitions is added to
-@scheme[stx] before it is expanded. The lexical information is also
-added to the expansion result (because the expansion might introduce
-bindings or references to internal-definition bindings).
+The optional @scheme[intdef-ctx] argument must be either @scheme[#f],
+the result of @scheme[syntax-local-make-definition-context], or a list
+of such results. In the latter two cases, lexical information for
+internal definitions is added to @scheme[stx] before it is expanded
+(in reverse order relative to the list). The lexical information is
+also added to the expansion result (because the expansion might
+introduce bindings or references to internal-definition bindings).
 
 Expansion of @scheme[stx] can use certificates for the expression
 already being expanded (see @secref["stxcerts"]) , and @tech{inactive

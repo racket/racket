@@ -299,7 +299,7 @@
       [(attribute name)
        (identifier? #'name)
        (let ([mapping (syntax-local-value #'name (lambda () #f))])
-         (unless (syntax-mapping? mapping)
+         (unless (syntax-pattern-variable? mapping)
            (wrong-syntax #'name "not bound as a pattern variable"))
          (let ([var (syntax-mapping-valvar mapping)])
            (let ([attr (syntax-local-value var (lambda () #f))])

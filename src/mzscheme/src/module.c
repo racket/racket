@@ -3823,30 +3823,44 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
 
   menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
   if (!menv || restart) {
-    if (!menv) {
-      Scheme_Object *insp;
+    Scheme_Object *insp;
 
+    if (!menv) {
       /* printf("new %ld %s\n", env->phase, SCHEME_SYM_VAL(m->modname)); */
       menv = scheme_new_module_env(env, m, 0);
       scheme_hash_set(MODCHAIN_TABLE(env->modchain), m->modname, (Scheme_Object *)menv);
       
-      /* These three should be set by various "finish"es, but
-         we initialize them in case there's an error runing a "finish". */
-      menv->require_names = scheme_null;
-      menv->et_require_names = scheme_null;
-      menv->tt_require_names = scheme_null;
-      menv->dt_require_names = scheme_null;
-
       menv->phase = env->phase;
       menv->link_midx = syntax_idx;
-      insp = scheme_make_inspector(m->insp);
-      menv->insp = insp;
     } else {
+      Scheme_Env *env2;
+
       menv->module = m;
       menv->running = 0;
       menv->et_running = 0;
       menv->ran = 0;
+      menv->did_starts = NULL;
+
+      for (env2 = menv->exp_env; env2; env2 = env2->exp_env) {
+        env2->module = m;
+      }
+      for (env2 = menv->template_env; env2; env2 = env2->template_env) {
+        env2->module = m;
+      }
+      env2 = menv->label_env;
+      if (env2)
+        env2->module = m;
     }
+
+    insp = scheme_make_inspector(m->insp);
+    menv->insp = insp;
+
+    /* These three should be set by various "finish"es, but
+       we initialize them in case there's an error runing a "finish". */
+    menv->require_names = scheme_null;
+    menv->et_require_names = scheme_null;
+    menv->tt_require_names = scheme_null;
+    menv->dt_require_names = scheme_null;
 
     if (env->label_env != env) {
       setup_accessible_table(m);
@@ -3965,9 +3979,6 @@ static void do_start_module(Scheme_Module *m, Scheme_Env *menv, Scheme_Env *env,
     return;
   }
 
-  if (restart)
-    menv->running = 0;
-
   if (menv->running > 0) {
     return;
   }
@@ -4001,6 +4012,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 {
   Scheme_Env *menv;
   Scheme_Object *l, *new_cycle_list;
+  int prep_namespace = 0;
 
   if (SAME_OBJ(m, kernel))
     return;
@@ -4019,15 +4031,6 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 
   check_phase(menv, env, 0);
 
-  if (restart) {
-    menv->did_starts = NULL;
-    menv->require_names = NULL;
-    menv->et_require_names = NULL;
-    menv->tt_require_names = NULL;
-    menv->dt_require_names = NULL;
-    menv->other_require_names = NULL;
-  }
-
   show("chck", menv, eval_exp, eval_run, base_phase);
 
   if (did_start(menv->did_starts, base_phase, eval_exp, eval_run))
@@ -4043,6 +4046,13 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
   }
 
   chain_start_module(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
+
+  if (restart) {
+    if (menv->rename_set_ready) {
+      menv->rename_set_ready = 0;
+      prep_namespace = 1;
+    }
+  }
 
   if (env->phase == base_phase) {
     if (eval_exp) {
@@ -4079,6 +4089,9 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 
   show_indent(-1);
   show_done("done", menv, eval_exp, eval_run, base_phase);
+
+  if (prep_namespace)
+    scheme_prep_namespace_rename(menv);
 }
 
 static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
@@ -4677,7 +4690,7 @@ module_execute(Scheme_Object *data)
       if (!SCHEME_SYMBOLP(m->self_modidx)) {
 	Scheme_Modidx *midx = (Scheme_Modidx *)m->self_modidx;
 	Scheme_Object *nmidx;
-	
+
 	nmidx = scheme_make_modidx(midx->path, midx->base, m->modname);
 	m->self_modidx = nmidx;
 
@@ -4749,7 +4762,7 @@ module_execute(Scheme_Object *data)
 
   /* Replacing an already-running or already-syntaxing module? */
   if (old_menv) {
-    start_module(m, env, 1, NULL, 0, (old_menv->running > 0) ? 1 : 0, env->phase, scheme_null);
+    start_module(m, env, 1, NULL, old_menv->et_running, old_menv->running, env->phase, scheme_null);
   }
 
   return scheme_void;
@@ -8436,10 +8449,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                   ? scheme_modidx_shift(exss[j], me->src_modidx, idx)
                   : idx);
       
-        if (!iname)
-          iname = exs[j];
-
-        if (SCHEME_SYM_WEIRDP(iname)) {
+        if (SCHEME_SYM_WEIRDP(exs[j])) {
           /* This shouldn't happen. In case it does, don't import a
              gensym or parallel symbol. The former is useless. The
              latter is supposed to be module-specific, and it could
@@ -8447,6 +8457,9 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           iname = NULL;
           continue;
         }
+
+        if (!iname)
+          iname = exs[j];
 
         if (prefix)
           iname = scheme_symbol_append(prefix, iname);

@@ -21,8 +21,11 @@ A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
 via @scheme[equal?], @scheme[eqv?], or @scheme[eq?], and keys are
 retained either strongly or weakly (see @secref["weakbox"]). A hash
-table is also either mutable or immutable; immutable tables support
-constant-time functional update.
+table is also either mutable or immutable. Immutable tables support
+constant-time access and update, just like mutable hash tables; the
+the constant on immutable operations is usually larger, but the
+functional nature of immutable hash tables can pay off in certain
+algorithms.
 
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
