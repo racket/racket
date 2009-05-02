@@ -165,7 +165,7 @@
 
 ;(trace tc-args)
 
-;; tc/mono-lambda : syntax-list syntax-list -> (listof lam-result)
+;; tc/mono-lambda : syntax-list syntax-list (or/c #f tc-results) -> (listof lam-result)
 ;; typecheck a sequence of case-lambda clauses
 (define (tc/mono-lambda formals bodies expected)
   (define (syntax-len s)

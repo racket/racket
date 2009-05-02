@@ -11,7 +11,7 @@
          (for-syntax scheme/base))
 
 (provide combine-filter apply-filter abstract-filter abstract-filters
-         split-lfilters merge-filter-sets)
+         split-lfilters merge-filter-sets values->tc-results)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
 (define (lcombine l1 l2)
@@ -139,3 +139,21 @@
     [(_ _ _)
      ;; could intersect f2 and f3 here
      (make-FilterSet null null)]))
+
+
+;; FIXME - this should really be a new metafunction like abstract-filter
+;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
+(define (values->tc-results tc formals)
+  (match tc
+    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
+     (int-err "values->tc-results NYI for Dots")]
+    [(Values: (list (Result: ts lfs los) ...))
+     (ret ts
+          (for/list ([lf lfs]) 
+            (for/list ([x formals] [i (in-naturals)])
+              (apply-filter (split-lfilters lf i) Univ (make-Path null x))))
+          (for/list ([lo los])
+            (for/list ([x formals] [i (in-naturals)])
+              (match lo
+                [(LEmpty:) (make-Empty)]
+                [(LPath: p (== i)) (make-Path p x)]))))]))

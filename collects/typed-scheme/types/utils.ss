@@ -290,11 +290,3 @@
      (make-ValuesDots (map make-Result ts fs os) dty dbound)]
     [(tc-results: ts fs os)
      (make-Values (map make-Result ts fs os))]))
-
-;; FIXME - this should really be a new metafunction like abstract-filter
-(define (values->tc-results tc)
-  (match tc
-    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
-     (int-err "values->tc-results NYI for Dots")]
-    [(Values: (list (Result: ts fs os) ...))
-     (ret ts)]))
