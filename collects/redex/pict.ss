@@ -12,6 +12,7 @@
   (symbols 'compact-vertical
            'vertical 
            'vertical-overlapping-side-conditions
+           'horizontal-left-align
            'horizontal))
 
 (provide reduction-rule-style/c)

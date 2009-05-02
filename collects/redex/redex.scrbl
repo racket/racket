@@ -1672,14 +1672,17 @@ multi-line right-hand sides.
 
 This parameter controls the style used by default for the reduction
 relation. It can be @scheme['horizontal], where the left and
-right-hand sides of the reduction rule are beside each other
-or @scheme['vertical], where the left and right-hand sides of the
-reduction rule are above each other. 
-The @scheme['compact-vertical] style moves the reduction arrow
-to the second line and uses less space between lines.
-Finally, in the @scheme['vertical-overlapping-side-conditions] variant, the side-conditions don't contribute to
-the width of the pict, but are just overlaid on the second
-line of each rule.
+right-hand sides of the reduction rule are beside each other or
+@scheme['vertical], where the left and right-hand sides of the
+reduction rule are above each other.  The @scheme['compact-vertical]
+style moves the reduction arrow to the second line and uses less space
+between lines.  The @scheme['vertical-overlapping-side-conditions]
+variant, the side-conditions don't contribute to the width of the
+pict, but are just overlaid on the second line of each rule.  The
+@scheme['horizontal-left-align] style is like the @scheme['horizontal]
+style, but the left-hand sides of the rules are aligned on the left,
+instead of on the right.
+
 }
 
 @defthing[reduction-rule-style/c flat-contract?]{
