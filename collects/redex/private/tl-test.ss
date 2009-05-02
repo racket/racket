@@ -1131,6 +1131,58 @@
     (test (apply-reduction-relation red2 (term (X q))) (list (term (X z)) 
                                                              (term (X w)))))
   
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a)))
+        '(a))
+  
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a)
+          (--> y z b)
+          (--> z w c)))
+        '(a b c))
+  
+  (test (reduction-relation->rule-names
+         (reduction-relation
+          empty-language
+          (--> x y a)
+          (--> y z b)
+          (--> z w c)
+          (--> p q z)
+          (--> q r y)
+          (--> r p x)))
+        '(a b c z y x))
+  
+  (test (reduction-relation->rule-names
+         (extend-reduction-relation
+          (reduction-relation
+           empty-language
+           (--> x y a)
+           (--> y z b)
+           (--> z w c))
+          empty-language
+          (--> p q z)
+          (--> q r y)
+          (--> r p x)))
+        '(a b c z y x))
+  
+    (test (reduction-relation->rule-names
+           (union-reduction-relations
+            (reduction-relation
+             empty-language
+             (--> x y a)
+             (--> y z b)
+             (--> z w c))
+            (reduction-relation
+             empty-language
+             (--> p q z)
+             (--> q r y)
+             (--> r p x))))
+        '(a b c z y x))
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; examples from doc.txt

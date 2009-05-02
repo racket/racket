@@ -8,7 +8,7 @@
                      scheme/pretty
                      scheme/contract
 		     mrlib/graph
-                     (only-in slideshow/pict pict? text dc-for-text-size)
+                     (only-in slideshow/pict pict? text dc-for-text-size text-style/c)
                      redex))
 
 @(define-syntax (defpattech stx)
@@ -887,9 +887,7 @@ The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
-the rhs-expressions is implicitly wrapped in @|tttterm|. In
-addition, recursive calls in the right-hand side of the
-metafunction clauses should appear inside @|tttterm|. 
+the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
 If specified, the side-conditions are collected with 
 @scheme[and] and used as guards on the case being matched. The

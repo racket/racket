@@ -453,12 +453,18 @@
                         (for-each loop nexts)))))
                 all-top-levels)
       
-      (let ([name-ht (make-hasheq)]
+      (let ([name-table (make-hasheq)]
             [lang-nts (language-id-nts lang-id orig-name)])
+        (hash-set! name-table #f 0)
+        ;; name table maps symbols for the rule names to their syntax objects and to a counter indicating what
+        ;; order the names were encountered in. The current value of the counter is stored in the table at key '#f'.
         (with-syntax ([lang-id lang-id]
                       [(top-level ...) (get-choices stx orig-name ht lang-id main-arrow
-                                                    name-ht lang-id allow-zero-rules?)]
-                      [(rule-names ...) (hash-map name-ht (λ (k v) k))]
+                                                    name-table lang-id allow-zero-rules?)]
+                      [(rule-names ...) 
+                       (begin
+                         (hash-remove! name-table #f)
+                         (map car (sort (hash-map name-table (λ (k v) (list k (list-ref v 1)))) < #:key cadr)))]
                       [lws lws]
                       
                       [domain-pattern-side-conditions-rewritten
@@ -660,9 +666,11 @@
                     (raise-syntax-errors orig-name 
                                          "same name on multiple rules"
                                          stx
-                                         (list (hash-ref name-table name-sym)
+                                         (list (car (hash-ref name-table name-sym))
                                                (syntax name))))
-                  (hash-set! name-table name-sym (syntax name))
+                  (let ([num (hash-ref name-table #f)])
+                    (hash-set! name-table #f (+ num 1))
+                    (hash-set! name-table name-sym (list (syntax name) num)))
                   
                   (when the-name
                     (raise-syntax-errors orig-name
@@ -773,6 +781,7 @@
 
 (define (union-reduction-relations fst snd . rst)
   (let ([name-ht (make-hasheq)]
+        [counter 0]
         [lst (list* fst snd rst)]
         [first-lang (reduction-relation-lang fst)])
     (for-each
@@ -783,14 +792,15 @@
        (for-each (λ (name)
                    (when (hash-ref name-ht name #f)
                      (error 'union-reduction-relations "multiple rules with the name ~s" name))
-                   (hash-set! name-ht name #t))
+                   (hash-set! name-ht name counter)
+                   (set! counter (+ counter 1)))
                  (reduction-relation-rule-names red)))
-     lst)
+     (reverse lst)) ;; reverse here so the names get put into the hash in the proper (backwards) order
     (build-reduction-relation
      #f
      first-lang
      (reverse (apply append (map reduction-relation-make-procs lst)))
-     (hash-map name-ht (λ (k v) k))
+     (map car (sort (hash-map name-ht list) < #:key cadr))
      (apply append (map reduction-relation-lws lst))
      `any)))
 
@@ -1772,10 +1782,7 @@
        (equal? str1 (substring str2 0 (string-length str1)))))
 
 
-;; The struct selector extracts the reduction relation rules, which 
-;; are in reverse order compared to the way the reduction relation was written
-;; in the program text. So reverse them. 
-(define (reduction-relation->rule-names x)
+(define (reduction-relation->rule-names x) 
   (reverse (reduction-relation-rule-names x)))
 
 
