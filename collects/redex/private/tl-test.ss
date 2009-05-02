@@ -546,6 +546,20 @@
     (test (term (f ((((x))))))
           (term x)))
   
+  (let ()
+    (define-language lamv
+      (z variable hole))
+
+    (define-metafunction lamv
+      foo : z  -> any
+      [(foo hole) dontcare]
+      [(foo variable) docare])
+
+    (test (term (foo hole))
+          (term dontcare))
+    (test (term (foo y))
+          (term docare)))
+  
   ;; test that tracing works properly
   ;; note that caching comes into play here (which is why we don't see the recursive calls)
   (let ()

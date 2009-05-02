@@ -33,7 +33,7 @@
     (define (expected-arguments name stx)
       (raise-syntax-error what (format "~a expected to have arguments" name) orig-stx stx))
     (let loop ([term orig-stx])
-      (syntax-case term (side-condition variable-except variable-prefix hole name in-hole in-named-hole hide-hole side-condition cross)
+      (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole side-condition cross)
         [(side-condition pre-pat (and))
          ;; rewriting metafunctions (and possibly other things) that have no where, etc clauses
          ;; end up with side-conditions that are empty 'and' expressions, so we just toss them here.
@@ -58,20 +58,15 @@
         [(variable-prefix a ...) (expected-exact 'variable-prefix 1 term)]
         [variable-prefix (expected-arguments 'variable-prefix term)]
         [hole term]
-        [(hole a) #`(hole #,(loop #'a))]
-        [(hole a ...) (raise-syntax-error what "hole expected to stand alone or to have one argument")]
         [(name x y) #`(name #,(loop #'x) #,(loop #'y))]
         [(name x ...) (expected-exact 'name 2 term)]
         [name (expected-arguments 'name term)]
         [(in-hole a b) #`(in-hole #,(loop #'a) #,(loop #'b))]
         [(in-hole a ...) (expected-exact 'in-hole 2 term)]
         [in-hole (expected-arguments 'in-hole term)]
-        [(in-named-hole a b c) #`(in-named-hole #,(loop #'a) #,(loop #'b) #,(loop #'c))]
-        [(in-named-hole a ...) (expected-exact 'in-named-hole 3 term)]
-        [in-named-hole (expected-arguments 'in-named-hole term)]
         [(hide-hole a) #`(hide-hole #,(loop #'a))]
-        [(in-named-hole a ...) (expected-exact 'hide-hole 1 term)]
-        [in-named-hole (expected-arguments 'hide-hole term)]
+        [(hide-hole a ...) (expected-exact 'hide-hole 1 term)]
+        [hide-hole (expected-arguments 'hide-hole term)]
         [(cross a) #`(cross #,(loop #'a))]
         [(cross a ...) (expected-exact 'cross 1 term)]
         [cross (expected-arguments 'cross term)]
@@ -96,16 +91,11 @@
             (let loop ([stx orig-stx]
                        [names null]
                        [depth 0])
-              (syntax-case stx (name in-hole in-named-hole side-condition)
+              (syntax-case stx (name in-hole side-condition)
                 [(name sym pat)
                  (identifier? (syntax sym))
                  (loop (syntax pat) 
                        (cons (make-id/depth (syntax sym) depth) names)
-                       depth)]
-                [(in-named-hole hlnm sym pat1 pat2)
-                 (identifier? (syntax sym))
-                 (loop (syntax pat1)
-                       (loop (syntax pat2) names depth)
                        depth)]
                 [(in-hole pat1 pat2)
                  (loop (syntax pat1)

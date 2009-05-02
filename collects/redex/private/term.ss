@@ -34,7 +34,7 @@
   (define (rewrite/has-term-let-bound-id? stx)
     (let loop ([stx stx]
                [depth 0])
-      (syntax-case stx (unquote unquote-splicing in-hole in-named-hole hole)
+      (syntax-case stx (unquote unquote-splicing in-hole hole)
         [(metafunc-name arg ...)
          (and (identifier? (syntax metafunc-name))
               (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))

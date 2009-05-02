@@ -1008,8 +1008,8 @@
                    (with-syntax ([(side-conditions-rewritten ...) 
                                   (map (λ (x) (rewrite-side-conditions/check-errs
                                                lang-nts
-                                               #t
                                                'define-metafunction
+                                               #t
                                                x))
                                        (syntax->list (syntax ((side-condition lhs (and tl-side-conds ...)) ...))))]
                                  [dom-side-conditions-rewritten
@@ -1398,7 +1398,7 @@
          (for-each 
           (λ (name) 
             (let ([x (syntax->datum name)])
-              (when (memq x '(any number string variable natural integer real variable-except variable-prefix hole name in-hole in-named-hole hide-hole side-condition cross ...))
+              (when (memq x '(any number string variable natural integer real variable-except variable-prefix hole name in-hole hide-hole side-condition cross ...))
                 (raise-syntax-error 'language 
                                     (format "cannot use pattern language keyword ~a as non-terminal"
                                             x)
