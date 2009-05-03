@@ -29,7 +29,7 @@ A @as-index{module}'s set of top-level bindings is implemented using
 the same machinery as a namespace. Use @cppi{scheme_primitive_module}
 to create a new @cpp{Scheme_Env*} that represents a primitive
 module. The name provided to @cppi{scheme_primitive_module} is subject
-to prefixing through the @scheme[current-module-name-prefix] parameter
+to change through the @scheme[current-module-declare-name] parameter
 (which is normally set by the module name resolver when auto-loading
 module files). After installing variables into the module with
 @cppi{scheme_add_global}, etc., call
@@ -129,8 +129,8 @@ available as @cppi{scheme_config}.}
            [Scheme_Object* name]
            [Scheme_Env* for_env])]{
 
-Prepares a new primitive module whose name is the symbol @var{name} (plus any
- prefix that is active via @scheme[current-module-name-prefix]). The
+Prepares a new primitive module whose name is the symbol @var{name} (or an
+ alternative that is active via @scheme[current-module-declare-name]). The
  module will be declared within the namespace @var{for_env}. The
  result is a @cpp{Scheme_Env *} value that can be used with
  @cpp{scheme_add_global}, etc., but it represents a module instead
