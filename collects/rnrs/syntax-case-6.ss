@@ -2,6 +2,7 @@
 
 (require (for-syntax scheme/base)
          r6rs/private/qq-gen
+         r6rs/private/reconstruct
          scheme/mpair
          r6rs/private/exns
          (for-syntax syntax/template
@@ -179,6 +180,8 @@
 ;; ----------------------------------------
 
 (define (unwrap-reconstructed data stx datum)
+  (when (mpair? datum)
+    (hash-set! reconstruction-memory datum (datum->syntax stx 'memory stx)))
   datum)
 
 (define (unwrap-pvar data stx)
@@ -187,7 +190,10 @@
     (cond
      [(syntax? v)
       (if (eq? (syntax-source v) unwrapped-tag)
-          (loop (syntax-e v))
+          (let ([r (loop (syntax-e v))])
+            (when (mpair? r)
+              (hash-set! reconstruction-memory r (datum->syntax v 'memory v)))
+            r)
           v)]
      [(pair? v) (mcons (loop (car v))
                        (loop (cdr v)))]

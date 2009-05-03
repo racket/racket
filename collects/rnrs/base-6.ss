@@ -7,6 +7,7 @@
          scheme/splicing
          r6rs/private/qq-gen
          r6rs/private/exns
+         (for-syntax r6rs/private/reconstruct)
          (prefix-in r5rs: r5rs)
          (only-in r6rs/private/readtable rx:number)
          scheme/bool)
@@ -561,11 +562,14 @@
    [(symbol? r) (error 'macro
                        "transformer result included a raw symbol: ~e"
                        r)]
-   [(mpair? r) (datum->syntax
-                stx
-                (cons (wrap (mcar r) stx)
-                      (wrap (mcdr r) stx))
-                stx)]
+   [(mpair? r) 
+    (let ([istx (or (hash-ref reconstruction-memory r #f)
+                    stx)])
+      (datum->syntax
+       istx
+       (cons (wrap (mcar r) stx)
+             (wrap (mcdr r) stx))
+       istx))]
    [(vector? r) (datum->syntax
                  stx
                  (list->vector
