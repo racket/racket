@@ -34,12 +34,12 @@
 
 #lang scheme/base
 
-(require srfi/optional "selector.ss")
+(require srfi/optional "selector.ss" (only-in scheme/list make-list))
 
 (provide xcons
          make-list
          list-tabulate
-         cons*
+         (rename-out [list* cons*])
          list-copy
          circular-list
          iota)
@@ -50,9 +50,10 @@
 
 ;; Make a list of length LEN.
 
-(define (make-list len [elt #f])
-  (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'make-list)
-  (for/list ([i (in-range len)]) elt))
+;; reprovided from mzscheme
+;; (define (make-list len [elt #f])
+;;   (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'make-list)
+;;   (for/list ([i (in-range len)]) elt))
 
 ;; Make a list of length LEN. Elt i is (PROC i) for 0 <= i < LEN.
 
@@ -66,7 +67,7 @@
 ;;
 ;; (cons first (unfold not-pair? car cdr rest values))
 
-(define cons* list*) ; same in mzscheme
+;; reprovided as mzscheme's list*
 ;; (define (cons* first . rest)
 ;;   (let recur ((x first) (rest rest))
 ;;     (if (pair? rest)

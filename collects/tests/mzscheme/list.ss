@@ -145,6 +145,13 @@
     (test '(1 2 3 4) sort '(4 2 3 1) < #:key getkey #:cache-keys? #t)
     (test #t = c 10)))
 
+;; ---------- make-list ----------
+(let ()
+  (test '()    make-list 0 'x)
+  (test '(x)   make-list 1 'x)
+  (test '(x x) make-list 2 'x)
+  (err/rt-test (make-list -3 'x)))
+
 ;; ---------- take/drop[-right] ----------
 (let ()
   (define-syntax-rule (vals-list expr)

@@ -422,6 +422,15 @@ applied.}
 @(define fun-eval (make-base-eval))
 @(interaction-eval #:eval fun-eval (require scheme/function))
 
+@defproc[(const [v any]) procedure?]{
+
+Returns a procedure that accepts any arguments and returns @scheme[v].
+
+@mz-examples[#:eval fun-eval
+((const 'foo) 1 2 3)
+((const 'foo))
+]}
+
 @defproc[(negate [proc procedure?]) procedure?]{
 
 Returns a procedure that is just like @scheme[proc], except that it

@@ -8,6 +8,8 @@
          empty
          empty?
 
+         make-list
+
          drop
          take
          split-at
@@ -80,6 +82,12 @@
 (define cons? (lambda (l) (pair? l)))
 (define empty? (lambda (l) (null? l)))
 (define empty '())
+
+(define (make-list n x)
+  (unless (exact-nonnegative-integer? n)
+    (raise-type-error 'make-list "non-negative exact integer" n))
+  (let loop ([n n] [r '()])
+    (if (zero? n) r (loop (sub1 n) (cons x r)))))
 
 ;; internal use below
 (define (drop* list n) ; no error checking, returns #f if index is too large

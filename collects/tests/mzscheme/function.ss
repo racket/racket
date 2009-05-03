@@ -42,6 +42,12 @@
   (test 'f object-name (rec  f (lambda (x) x)))
   (test (list 2) (rec (f . x) (if (= (car x) 3) (f 2) x)) 3))
 
+;; ---------- const ----------
+(let ()
+  (test 'foo (const 'foo))
+  (test 'foo (const 'foo) 1)
+  (test 'foo (const 'foo) 1 2 3 4 5))
+
 ;; ---------- negate ----------
 (let ()
   (define *not  (negate not))
