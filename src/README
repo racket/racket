@@ -61,6 +61,13 @@ the Unix instructions below, but note the following:
  Compiling for supported Unix variants (including Linux) or Cygwin
 ========================================================================
 
+Quick instructions:
+
+ The usual `./configure', `make', and `make install' sequence
+ typically works fine.
+
+Detailed instructions:
+
  0. If you have an old PLT installation in the target directory,
     remove it (unless you are using Subversion with an "in-place"
     build as described below).
@@ -81,8 +88,7 @@ the Unix instructions below, but note the following:
 
  1. Run the script `configure' (which is in the same directory as this
     README), possibly with a --prefix=TARGETDIR command-line argument
-    and optionally with --enable-shared.  It is better to run the
-    build in a different directory rather then use this directory.
+    and optionally with --enable-shared.
 
     For example, if you want to install into /usr/local/plt using
     dynamic libraries, then run
@@ -91,21 +97,24 @@ the Unix instructions below, but note the following:
 
     where "[here]" is the directory path containing the `configure'
     script (possibly unnecessary, or possibly just "./", depending on
-    your shell and PATH setting).  To use a different directory for
-    the build (which is recommended), for example a subdirectory named
-    "build":
+    your shell and PATH setting).
+
+    It's better to run the build in a directory other than the one
+    contianing `configure', especially if you're getting sources via
+    Subversion.  Also, `svn update' ignores a subdirectory next to
+    `configure' called "build", so a better and more common way to
+    configure a Subversion-based build is as follows:
 
         cd [here]
         mkdir build
         cd build
-        ../configure --prefix=/usr/local/plt --enable-shared
+        ../configure
 
-    (This is especially more convenient if you plan to update your
-    source tree from the plt repository.  Such updates might involve
-    changes in the structure, which will leave your source tree in an
-    inconsistent state (eg, old Makefiles referring to inexistent
-    files).  In such cases it is convenient to just remove the "build"
-    directory and start a fresh build.)
+    A separate build directory is better in case the Makefile
+    organization changes, or in case the Makefiles lack some
+    dependencies. In those cases, when using a "build" subdirectory,
+    you can just delete and re-create "build" without mangling your
+    source tree.
 
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the parent of the directory
