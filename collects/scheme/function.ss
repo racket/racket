@@ -4,7 +4,7 @@
 
 (define (const c)
   (define (const . _) c)
-  const)
+  (make-keyword-procedure const const))
 
 (define (negate f)
   (unless (procedure? f) (raise-type-error 'negate "procedure" f))
