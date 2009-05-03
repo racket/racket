@@ -232,7 +232,7 @@
 
   (define compose
     (case-lambda
-      [(f) (if (procedure? f) 
+      [(f) (if (procedure? f)
                f
                (raise-type-error 'compose "procedure" f))]
       [(f g)
@@ -247,6 +247,7 @@
                    (call-with-values (lambda () (g a)) f))
                  (lambda args
                    (call-with-values (lambda () (apply g args)) f)))))]
+      [() values]
       [(f . more)
        (if (procedure? f)
            (let ([m (apply compose more)])

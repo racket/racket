@@ -38,7 +38,8 @@ Returns a procedure that composes the given functions, applying the
 last @scheme[proc] first and the first @scheme[proc] last. The
 composed functions can consume and produce any number of values, as
 long as each function produces as many values as the preceding
-function consumes.
+function consumes.  When no @scheme[proc] arguments are given, the
+result is @scheme[values].
 
 @mz-examples[
 ((compose - sqrt) 10)

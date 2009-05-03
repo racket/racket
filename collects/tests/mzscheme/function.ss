@@ -14,6 +14,7 @@
 (test 'hi (compose (case-lambda [(x) 'bye][(y z) 'hi]) (lambda () (values 1 2))))
 (test 'ok (compose (lambda () 'ok) (lambda () (values))))
 (test 'ok (compose (lambda () 'ok) (lambda (w) (values))) 5)
+(test 0 (compose) 0)
 (test-values '(1 2 3) (lambda () ((compose (lambda (x) (values x (add1 x) (+ x 2))) (lambda (y) y)) 1)))
 
 (err/rt-test (compose 5))
