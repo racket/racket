@@ -41,7 +41,7 @@ expressions within the body (and, in particular, the definitions can
 refer to each other). However, @scheme[define-package] handles
 @scheme[define*], @scheme[define*-syntax], @scheme[define*-values],
 @scheme[define*-syntaxes], and
-@scheme[open*-syntaxes] specially: the bindings introduced by those
+@scheme[open*-package] specially: the bindings introduced by those
 forms within a @scheme[define-package] body are visible only to
 @scheme[form]s that appear later in the body, and they can shadow any
 binding from preceding @scheme[form]s (even if the preceding binding

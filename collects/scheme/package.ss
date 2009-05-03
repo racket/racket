@@ -1,5 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base
+                     scheme/list
                      syntax/kerncase
                      syntax/boundmap
                      syntax/define
@@ -312,7 +313,7 @@
                               [ids (syntax->list #'(id ...))])
                           (let* ([def-ctx (if star?
                                               (syntax-local-make-definition-context (car def-ctxes))
-                                              (car def-ctxes))]
+                                              (last def-ctxes))]
                                  [ids (if star? 
                                           (map (add-package-context (list def-ctx)) ids)
                                           ids)])
@@ -330,7 +331,7 @@
                             [ids (syntax->list #'(id ...))])
                         (let* ([def-ctx (if star?
                                             (syntax-local-make-definition-context (car def-ctxes))
-                                            (car def-ctxes))]
+                                            (last def-ctxes))]
                                [ids (if star? 
                                         (map (add-package-context (list def-ctx)) ids)
                                         ids)])

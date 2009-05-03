@@ -213,7 +213,7 @@ for a table using @scheme[equal?], @scheme[eqv?], or @scheme[eq?] key comparison
 respectively. After this prefix, each key--value mapping is shown as
 @litchar{(}, the printed form of a key, a space, @litchar{.}, a space,
 the printed form the corresponding value, and @litchar{)}, with an
-additional space if the key--value pairs is not the last to be printed.
+additional space if the key--value pair is not the last to be printed.
 After all key-value pairs, the printed form completes with
 @litchar{)}.
 

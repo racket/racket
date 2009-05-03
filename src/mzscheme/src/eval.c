@@ -6339,6 +6339,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
    before deciding what we have. */
 {
   Scheme_Object *first, *rib, *ctx, *ectx, *orig = forms;
+  void **d;
   Scheme_Comp_Env *xenv = NULL;
   Scheme_Compile_Info recs[2];
   DupCheckRecord r;
@@ -6364,7 +6365,9 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   rib = scheme_make_rename_rib();
   ctx = scheme_alloc_object();
   ctx->type = scheme_intdef_context_type;
-  SCHEME_PTR1_VAL(ctx) = env;
+  d = MALLOC_N(void*, 3);
+  d[0] = env;
+  SCHEME_PTR1_VAL(ctx) = d;
   SCHEME_PTR2_VAL(ctx) = rib;
   ectx = scheme_make_pair(ctx, scheme_null);
   scheme_begin_dup_symbol_check(&r, env);
@@ -6561,7 +6564,7 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  }
 
 	  /* Remember extended environment */
-	  SCHEME_PTR1_VAL(ctx) = new_env;
+	  ((void **)SCHEME_PTR1_VAL(ctx))[0] = new_env;
 	  env = new_env;
 	  xenv = NULL;
 	}
@@ -9292,6 +9295,31 @@ static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *rena
   return l;
 }
 
+static void update_intdef_chain(Scheme_Object *intdef)
+{
+  Scheme_Comp_Env *orig, *current_next;
+  Scheme_Object *base;
+
+  /* If this intdef chains to another, and if the other has been
+     extended, then fix up the chain. */
+
+  while (1) {
+    base = (Scheme_Object *)((void **)SCHEME_PTR1_VAL(intdef))[1];
+    if (base) {
+      current_next = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(base))[0];
+      orig = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(intdef))[2];
+      if (orig) {
+        orig->next = current_next;
+      } else {
+        ((void **)SCHEME_PTR1_VAL(base))[0] = current_next;
+      }
+      intdef = base;
+    } else {
+      break;
+    }
+  }
+}
+
 static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
@@ -9337,7 +9365,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     if (SCHEME_TRUEP(argv[3])) {
       if (SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[3]))) {
 	Scheme_Comp_Env *stx_env;
-	stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[3]);
+        update_intdef_chain(argv[3]);
+	stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[3]))[0];
 	renaming = SCHEME_PTR2_VAL(argv[3]);
 	if (!scheme_is_sub_env(stx_env, env))
 	  bad_sub_env = 1;
@@ -9347,7 +9376,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
         while (SCHEME_PAIRP(rl)) {
           if (SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(SCHEME_CAR(rl)))) {
             Scheme_Comp_Env *stx_env;
-            stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(SCHEME_CAR(rl));
+            stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(SCHEME_CAR(rl)))[0];
             if (!scheme_is_sub_env(stx_env, env))
               bad_sub_env = 1;
           } else
@@ -9358,7 +9387,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
           bad_intdef = 1;
         else {
           rl = argv[3];
-          env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(SCHEME_CAR(rl));
+          update_intdef_chain(SCHEME_CAR(rl));
+          env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(SCHEME_CAR(rl)))[0];
           if (SCHEME_NULLP(SCHEME_CDR(rl)))
             renaming = SCHEME_PTR2_VAL(SCHEME_CAR(rl));
           else {
@@ -9837,7 +9867,7 @@ local_eval(int argc, Scheme_Object **argv)
     cnt++;
   }
   if (!SCHEME_NULLP(l))
-    scheme_wrong_type("syntax-local-bind-syntaxes", "list of syntax identifieres", 0, argc, argv);
+    scheme_wrong_type("syntax-local-bind-syntaxes", "list of syntax identifiers", 0, argc, argv);
 
   expr = argv[1];
   if (!SCHEME_FALSEP(expr) && !SCHEME_STXP(expr))
@@ -9849,7 +9879,8 @@ local_eval(int argc, Scheme_Object **argv)
   if (!env)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-bind-syntaxes: not currently transforming");
 
-  stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
+  update_intdef_chain(argv[2]);
+  stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
   rib = SCHEME_PTR2_VAL(argv[2]);
 
   if (*scheme_stx_get_rib_sealed(rib)) {
@@ -9909,7 +9940,9 @@ local_eval(int argc, Scheme_Object **argv)
   scheme_add_env_renames(rib, stx_env, old_stx_env);
 
   /* Remember extended environment */
-  SCHEME_PTR1_VAL(argv[2]) = stx_env;
+  ((void **)SCHEME_PTR1_VAL(argv[2]))[0] = stx_env;
+  if (!((void **)SCHEME_PTR1_VAL(argv[2]))[2])
+    ((void **)SCHEME_PTR1_VAL(argv[2]))[2] = stx_env;
 
   return scheme_void;
 }
