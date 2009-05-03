@@ -47,6 +47,10 @@ Turns the turtle @scheme[theta] radians counter-clockwise.}
 
 Erases the turtles window.}
 
+@defproc[(home) void?]{
+
+Leaves only one turtle, in the start position.}
+
 @defform[(split expr ...)]{
 
 Spawns a new turtle where the turtle is currently located. In order to
