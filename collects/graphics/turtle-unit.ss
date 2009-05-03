@@ -227,6 +227,13 @@
     (set! lines-in-drawing null)
     (clear-window)))
 
+(define home
+  (lambda ()
+    (flip-icons)
+    (set! turtles-cache empty-cache)
+    (set! turtles-state (list clear-turtle))
+    (flip-icons)))
+
 ;; cache elements:
 (define-struct c-forward (distance))
 (define-struct c-turn (angle))
