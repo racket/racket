@@ -6,7 +6,9 @@
          scheme/mpair
          r6rs/private/exns
          (for-syntax syntax/template
-                     r6rs/private/check-pattern))
+                     r6rs/private/check-pattern)
+         (for-template (only-in scheme/base set!)
+                       r6rs/private/no-set))
 
 (provide make-variable-transformer
          (rename-out [r6rs:syntax-case syntax-case]
@@ -105,7 +107,12 @@
                               l)])))))
 
 (define (make-variable-transformer proc)
-  (make-set!-transformer proc))
+  (make-set!-transformer
+   (lambda (stx)
+     (syntax-case* stx (set!) free-template-identifier=?
+       [(set! . rest)
+        (proc (syntax/loc stx (r6rs:set! . rest)))]
+       [else (proc stx)]))))
 
 (define unwrapped-tag (gensym))
 

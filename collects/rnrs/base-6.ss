@@ -7,6 +7,7 @@
          scheme/splicing
          r6rs/private/qq-gen
          r6rs/private/exns
+         r6rs/private/no-set
          (for-syntax r6rs/private/reconstruct)
          (prefix-in r5rs: r5rs)
          (only-in r6rs/private/readtable rx:number)
@@ -28,7 +29,7 @@
  (rename-out [r5rs:if if])
 
  ;; 11.4.4
- set!
+ (rename-out [r6rs:set! set!])
 
  ;; 11.4.5
  cond else => case
@@ -269,8 +270,8 @@
    (lambda (stx)
      (if (identifier? stx)
          (syntax/loc stx r6rs-/)
-         (syntax-case stx (set!)
-           [(set! . _)
+         (syntax-case stx (r6rs:set!)
+           [(r6rs:set! . _)
             (raise-syntax-error #f
                                 "cannot mutate imported identifier"
                                 stx)]

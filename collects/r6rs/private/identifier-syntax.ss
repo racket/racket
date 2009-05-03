@@ -1,26 +1,27 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-template (only-in scheme/base set! #%app)))
+         (for-template "no-set.ss"
+                       (only-in scheme/base #%app set!)))
 
 (provide identifier-syntax)
 
 (define-syntax (identifier-syntax stx)
-  (syntax-case* stx (set!) (lambda (a b)
-                             (free-template-identifier=? a b))
+  (syntax-case* stx (r6rs:set!) (lambda (a b)
+                                  (free-template-identifier=? a b))
     [(identifier-syntax template)
      #'(...
         (make-set!-transformer
          (lambda (stx)
            (syntax-case stx (set!)
              [(set! . _) (raise-syntax-error
-                          #f
-                          "cannot assign to identifier macro"
-                          stx)]
+                               #f
+                               "cannot assign to identifier macro"
+                               stx)]
              [(_ arg ...) #'(template arg ...)]
              [_ #'template]))))]
     [(identifier-syntax
       [id1 template1]
-      [(set! id2 pat) template2])
+      [(r6rs:set! id2 pat) template2])
      (and (identifier? #'id1)
           (identifier? #'id2))
      #'(...
