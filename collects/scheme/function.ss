@@ -1,6 +1,10 @@
 #lang scheme/base
 
-(provide negate curry curryr)
+(provide const negate curry curryr)
+
+(define (const c)
+  (define (const . _) c)
+  (make-keyword-procedure const const))
 
 (define (negate f)
   (unless (procedure? f) (raise-type-error 'negate "procedure" f))

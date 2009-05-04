@@ -93,8 +93,8 @@ Add the given alignment as a child after the existing child
 > (send an-alignment-parent delete-child child) -> void
   child : (is-a?/c alignment<%>)
 
-Deletes a child from the the alignments
-      
+Deletes a child from the alignments
+
 > (send an-alignment-parent is-shown?) -> boolean?
 
 True if the alignment is being shown (accounting for its parent being shown)

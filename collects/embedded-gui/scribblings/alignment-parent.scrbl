@@ -13,7 +13,7 @@ Add the given alignment as a child after the existing child.}
 
 @defmethod[(delete-child [child (is-a?/c alignment<%>)]) void?]{
 
-Deletes a child from the the alignments.}
+Deletes a child from the alignments.}
 
 @defmethod[(is-shown?) boolean?]{
 

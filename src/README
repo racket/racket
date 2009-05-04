@@ -61,6 +61,13 @@ the Unix instructions below, but note the following:
  Compiling for supported Unix variants (including Linux) or Cygwin
 ========================================================================
 
+Quick instructions:
+
+ The usual `./configure', `make', and `make install' sequence
+ typically works fine.
+
+Detailed instructions:
+
  0. If you have an old PLT installation in the target directory,
     remove it (unless you are using Subversion with an "in-place"
     build as described below).
@@ -80,7 +87,7 @@ the Unix instructions below, but note the following:
     try using GNU `make'.
 
  1. Run the script `configure' (which is in the same directory as this
-    README), usually with a --prefix=TARGETDIR command-line argument
+    README), possibly with a --prefix=TARGETDIR command-line argument
     and optionally with --enable-shared.
 
     For example, if you want to install into /usr/local/plt using
@@ -91,6 +98,23 @@ the Unix instructions below, but note the following:
     where "[here]" is the directory path containing the `configure'
     script (possibly unnecessary, or possibly just "./", depending on
     your shell and PATH setting).
+
+    It's better to run the build in a directory other than the one
+    contianing `configure', especially if you're getting sources via
+    Subversion.  Also, `svn update' ignores a subdirectory next to
+    `configure' called "build", so a better and more common way to
+    configure a Subversion-based build is as follows:
+
+        cd [here]
+        mkdir build
+        cd build
+        ../configure
+
+    A separate build directory is better in case the Makefile
+    organization changes, or in case the Makefiles lack some
+    dependencies. In those cases, when using a "build" subdirectory,
+    you can just delete and re-create "build" without mangling your
+    source tree.
 
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the parent of the directory
@@ -106,8 +130,8 @@ the Unix instructions below, but note the following:
     executables (independent of --prefix). This build directory does
     not have to be in the source tree, even for an "in-place"
     build. It's ok to run `configure' from its own directory (as in
-    the example above), but it's often better to pick a separate build
-    directory that is otherwise empty.
+    the first example above), but it's better to pick a separate build
+    directory that is otherwise empty (as in the second example).
 
     The `configure' script accepts many other flags that adjust the
     build process. Run `configure --help' for more information. In
@@ -219,8 +243,8 @@ but it will not work properly unless --enable-pthread is specified.
 
 MzScheme and MrEd have two variants: CGC and 3m. The CGC variant is
 older, and it cooperates more easily with extensions written in C.
-The 3m variant is now the default, and it usually provides better
-overall performance.
+The 3m variant is the default, and it usually provides better overall
+performance.
 
 The default build mode creates 3m binaries only. To create CGC
 binaries in addition, run `make cgc' in addition to `make', or run
@@ -245,10 +269,10 @@ case the first path is the main "collects" path, and additional paths
 are placed before the main path (but after a user-specific "collects"
 path) in the default collection path list.
 
-The paths are embedded in the binary immediately after a "coLLECTs
-dIRECTORy:" tag. Each path must be NUL terminated, the entire list of
-paths must end with an additional NUL terminator, and the overall list
-must be less than 1024 bytes long.
+The paths are embedded in the binary immediately after a special
+"coLLECTs dIRECTORy:" tag. Each path must be NUL terminated, the
+entire list of paths must end with an additional NUL terminator, and
+the overall list must be less than 1024 bytes long.
 
 As an alternative to editing an exeuctable directly, the
 `create-embedding-executable' procedure from `compiler/embed' can be

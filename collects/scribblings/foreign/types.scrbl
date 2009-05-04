@@ -365,7 +365,7 @@ values: @itemize[
   on to the original function, for example, have a binding for it.
   Note that each function can hold onto one callback value (it is
   stored in a weak hash table), so if you need to use a function in
-  multiple callbacks you will need to use one of the the last two
+  multiple callbacks you will need to use one of the last two
   options below.  (This is the default, as it is fine in most cases.)}
 
 @item{@scheme[#f] means that the callback value is not held.  This may

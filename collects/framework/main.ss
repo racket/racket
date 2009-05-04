@@ -1428,7 +1428,7 @@
          
          This function is not symmetric in red, green, and blue, so it is
          important to pass red, green, and blue components of the colors in
-         the the proper order.  The first three arguments are red, green and
+         the proper order.  The first three arguments are red, green and
          blue for the first color, respectively, and the second three
          arguments are red green and blue for the second color,
          respectively.})

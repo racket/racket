@@ -648,7 +648,7 @@
 		 (lambda (len non-block? enable-break?)
 		   (let ([out-blocked? (pump-output mzssl)])
 		     (if (zero? len)
-			 ;; Flush request; all data is in the the SSL
+			 ;; Flush request; all data is in the SSL
 			 ;;  stream, but make sure it's gone
 			 ;;  through the ports:
 			 (begin

@@ -151,12 +151,38 @@
         (list last)
         (cons (f (car l)) (loop (cdr l))))))
 
+  (define (check-fold name proc init l more)
+    (unless (procedure? proc)
+      (apply raise-type-error name "procedure" 0 proc init l more))
+    (unless (list? l)
+      (apply raise-type-error name "list" 2 proc init l more))
+    (if (null? more)
+        (unless (procedure-arity-includes? proc 2)
+          (raise-mismatch-error name "arity mismatch, does not accept 1 argument: " proc))
+        (let ([len (length l)])
+          (let loop ([more more][n 3])
+            (unless (null? more)
+              (unless (list? (car more))
+                (apply raise-type-error name "list" n proc init l more))
+              (unless (= len (length (car more)))
+                (raise-mismatch-error name 
+                                      "given list does not have the same size as the first list: "
+                                      (car more)))
+              (loop (cdr more) (add1 n))))
+          (unless (procedure-arity-includes? proc (+ 2 (length more)))
+            (raise-mismatch-error name 
+                                  (format "arity mismatch, does not accept ~a arguments: " 
+                                          (add1 (length more)))
+                                  proc)))))
+
   (define foldl
     (case-lambda
       [(f init l)
+       (check-fold 'foldl f init l null)
        (let loop ([init init] [l l])
          (if (null? l) init (loop (f (car l) init) (cdr l))))]
       [(f init l . ls)
+       (check-fold 'foldl f init l ls)
        (let loop ([init init] [ls (cons l ls)])
          (cond [(andmap pair? ls)
                 (loop (apply f (mapadd car ls init)) (map cdr ls))]
@@ -167,11 +193,13 @@
   (define foldr
     (case-lambda
       [(f init l)
+       (check-fold 'foldr f init l null)
        (let loop ([init init] [l l])
          (if (null? l)
            init
            (f (car l) (loop init (cdr l)))))]
       [(f init l . ls)
+       (check-fold 'foldr f init l ls)
        (let loop ([ls (cons l ls)])
          (cond [(andmap pair? ls)
                 (apply f (mapadd car ls (loop (map cdr ls))))]
@@ -232,7 +260,7 @@
 
   (define compose
     (case-lambda
-      [(f) (if (procedure? f) 
+      [(f) (if (procedure? f)
                f
                (raise-type-error 'compose "procedure" f))]
       [(f g)
@@ -247,6 +275,7 @@
                    (call-with-values (lambda () (g a)) f))
                  (lambda args
                    (call-with-values (lambda () (apply g args)) f)))))]
+      [() values]
       [(f . more)
        (if (procedure? f)
            (let ([m (apply compose more)])

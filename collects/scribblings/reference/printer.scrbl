@@ -208,12 +208,12 @@ unreadable values.
 @section[#:tag "print-hashtable"]{Printing Hash Tables}
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#t], a
-hash table prints starting with @litchar{#hash(} or @litchar{#hasheq(}
-for a table using @scheme[equal?] or @scheme[eq?] key comparisons,
+hash table prints starting with @litchar{#hash(}, @litchar{#hasheqv(}, or @litchar{#hasheq(}
+for a table using @scheme[equal?], @scheme[eqv?], or @scheme[eq?] key comparisons,
 respectively. After this prefix, each key--value mapping is shown as
 @litchar{(}, the printed form of a key, a space, @litchar{.}, a space,
 the printed form the corresponding value, and @litchar{)}, with an
-addition space if the key--value pairs is not the last to be printed.
+additional space if the key--value pair is not the last to be printed.
 After all key-value pairs, the printed form completes with
 @litchar{)}.
 

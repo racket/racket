@@ -28,7 +28,7 @@ is invoked {\em after} the CW is moved.
 
 	@var highlightThickness = 0
 
-@ Decide, if the the scrolled window should be included in the
+@ Decide, if the scrolled window should be included in the
 keyboard traversal.
 
 	@var Boolean traverseToChild = TRUE

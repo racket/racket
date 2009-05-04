@@ -2046,13 +2046,13 @@ classifications:
 @itemize[
 
  @item{@scheme[define] or @scheme[define-values] form: converted to
-       a @scheme[define-for-syntax] form.}
+       a @scheme[define-values-for-syntax] form.}
 
  @item{@scheme[require] form: content is wrapped with
        @scheme[for-syntax].}
 
  @item{expression form @scheme[_expr]: converted to
-       @scheme[(define-values () (begin _expr (values)))], which
+       @scheme[(define-values-for-syntax () (begin _expr (values)))], which
        effectively evaluates the expression at expansion time and, in
        the case of a @tech{module context}, preserves the expression
        for future @tech{visit}s of the module.}

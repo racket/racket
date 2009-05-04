@@ -67,7 +67,7 @@ saying that there is no file name until the file is saved.}
 @defmethod[(get-background-color) (or/c false/c (is-a/c color%) string?)]{
 
 The result of this method is used for the background color
-when redrawing the the name message. If it is @scheme[#f], the
+when redrawing the name message. If it is @scheme[#f], the
 OS's default panel background is used.
 
 }

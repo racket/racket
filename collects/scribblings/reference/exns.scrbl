@@ -87,7 +87,7 @@ for end users.}
 
 
 @defproc*[([(raise-type-error [name symbol?][expected string?][v any/c]) any]
-           [(raise-type-error [name symbol?][expected string?][bad-pos exact-nonnegative-integer?][v any/c]) any])]{
+           [(raise-type-error [name symbol?][expected string?][bad-pos exact-nonnegative-integer?][v any/c] ...) any])]{
 
 Creates an @scheme[exn:fail:contract] value and @scheme[raise]s it as
 an exception.  The @scheme[name] argument is used as the source

@@ -107,10 +107,8 @@
         [(< zo-sec ss-sec) (error 'compile-zo
                                   "date for newly created .zo file (~a @ ~a) ~
                                    is before source-file date (~a @ ~a)~a"
-                                  zo-name
-                                  (format-time (seconds->date zo-sec))
-                                  ss-name
-                                  (format-time (seconds->date ss-sec))
+                                  zo-name (format-time zo-sec)
+                                  ss-name (format-time ss-sec)
                                   (if (> ss-sec (current-seconds))
                                     ", which appears to be in the future"
                                     ""))]))

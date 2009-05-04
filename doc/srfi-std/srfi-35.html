@@ -145,7 +145,7 @@ returns a condition of condition type <var>condition-type</var>
  is a compound condition, <code>extract-condition</code>
  extracts the field values from  the subcondition belonging to <var>condition-type</var>
  that appeared first in the call to <code>make-compound-condition</code>
- that created the the condition. The returned condition may be newly created; it is possible for</p><pre>(let* ((&amp;c (make-condition-type 'c &amp;condition '()))
+ that created the condition. The returned condition may be newly created; it is possible for</p><pre>(let* ((&amp;c (make-condition-type 'c &amp;condition '()))
        (c0 (make-condition &amp;c))
        (c1 (make-compound-condition c0)))
   (eq? c0 (extract-condition c1 &amp;c)))

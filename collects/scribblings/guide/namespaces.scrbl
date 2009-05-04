@@ -376,7 +376,7 @@ scheme/base
       (dynamic-require file 'plug-in%))))
 ]
 
-The anchor bound by @scheme[namespace-attach-module] connects the the
+The anchor bound by @scheme[namespace-attach-module] connects the
 run time of a module with the namespace in which a module is loaded
 (which might differ from the current namespace).  In the above
 example, since the enclosing module requires

@@ -127,7 +127,7 @@
 (define current-label-extra-space (make-parameter 0))
 (define reduction-relation-rule-separation (make-parameter 4))
 
-(define (rule-picts->pict/horizontal rps)
+(define ((rule-picts->pict/horizontal left-column-align) rps)
   (let* ([sep 2]
          [max-rhs (apply max
                          0
@@ -160,8 +160,8 @@
                            (blank)
                            sep (blank) (blank) (blank))))
                  rps))
-           (list* rtl-superimpose ctl-superimpose ltl-superimpose)
-           (list* rtl-superimpose ctl-superimpose ltl-superimpose)
+           (list* left-column-align ctl-superimpose ltl-superimpose)
+           (list* left-column-align ctl-superimpose ltl-superimpose)
            (list* sep sep (+ sep (current-label-extra-space))) 2)))
 
 (define arrow-space (make-parameter 0))
@@ -326,7 +326,10 @@
     [(compact-vertical) rule-picts->pict/compact-vertical]
     [(vertical-overlapping-side-conditions)
      rule-picts->pict/vertical-overlapping-side-conditions]
-    [else rule-picts->pict/horizontal]))
+    [(horizontal-left-align)
+     (rule-picts->pict/horizontal ltl-superimpose)]
+    [else ;; horizontal
+     (rule-picts->pict/horizontal rtl-superimpose)]))
 
 (define (mk-arrow-pict sz style)
   (let ([cache (make-hash)])
@@ -454,6 +457,7 @@
   (let ([ps-setup (make-object ps-setup%)])
     (send ps-setup copy-from (current-ps-setup))
     (send ps-setup set-file filename)
+    (send ps-setup set-mode 'file)
     (parameterize ([current-ps-setup ps-setup])
       (make-object post-script-dc% #f #f))))
 

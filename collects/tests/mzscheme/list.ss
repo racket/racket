@@ -21,6 +21,23 @@
 (arity-test foldl 3 -1)
 (arity-test foldr 3 -1)
 
+(err/rt-test (foldl 'list 0 10))
+(err/rt-test (foldl list 0 10))
+(err/rt-test (foldl add1 0 '()))
+(err/rt-test (foldl cons 0 '() '()))
+(err/rt-test (foldl list 0 '() 10))
+(err/rt-test (foldl list 0 '() '() 10))
+(err/rt-test (let/ec k (foldl k 0 '(1 2) '(1 2 3))))
+(err/rt-test (let/ec k (foldl k 0 '(1 2) '(1 2) '(1 2 3))))
+(err/rt-test (foldr 'list 0 10))
+(err/rt-test (foldr list 0 10))
+(err/rt-test (foldr add1 0 '()))
+(err/rt-test (foldr cons 0 '() '()))
+(err/rt-test (foldr list 0 '() 10))
+(err/rt-test (foldr list 0 '() '() 10))
+(err/rt-test (let/ec k (foldr k 0 '(1 2) '(1 2 3))))
+(err/rt-test (let/ec k (foldr k 0 '(1 2) '(1 2) '(1 2 3))))
+
 (test '(0 1 2) memf add1 '(0 1 2))
 (test '(2 (c 17)) memf number? '((a 1) (0 x) (1 w) 2 (c 17)))
 (test '("ok" (2 .7) c) memf string? '((a 0) (0 a) (1 w) "ok" (2 .7) c))
@@ -144,6 +161,13 @@
     (test '(1 2 3) sort '(2 3 1) < #:key getkey #:cache-keys? #t)
     (test '(1 2 3 4) sort '(4 2 3 1) < #:key getkey #:cache-keys? #t)
     (test #t = c 10)))
+
+;; ---------- make-list ----------
+(let ()
+  (test '()    make-list 0 'x)
+  (test '(x)   make-list 1 'x)
+  (test '(x x) make-list 2 'x)
+  (err/rt-test (make-list -3 'x)))
 
 ;; ---------- take/drop[-right] ----------
 (let ()

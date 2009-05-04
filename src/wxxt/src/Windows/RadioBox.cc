@@ -132,7 +132,7 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
     else
       XtRealizeWidget(wgt);
     X->frame = wgt;
-    // create group widget, which holds the the toggles
+    // create group widget, which holds the toggles
     wgt = XtVaCreateManagedWidget("radiobox", xfwfGroupWidgetClass, X->frame,
 				  XtNselectionStyle, (style & wxAT_MOST_ONE) ?
 				  XfwfSingleSelection : XfwfOneSelection,
@@ -263,7 +263,7 @@ Bool wxRadioBox::Create(wxPanel *panel, wxFunction func, char *label,
       XtRealizeWidget(wgt);
     X->frame = wgt;
 
-    // create group widget, which holds the the toggles
+    // create group widget, which holds the toggles
     wgt = XtVaCreateManagedWidget("radiobox", xfwfGroupWidgetClass, X->frame,
 				  XtNselectionStyle, (style & wxAT_MOST_ONE) ?
 				  XfwfSingleSelection : XfwfOneSelection,

@@ -1,7 +1,7 @@
 #lang scheme/signature
 
 turtles
-clear
+clear home
 turn turn/radians
 move move-offset
 draw draw-offset

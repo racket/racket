@@ -82,8 +82,8 @@
                 make-procs/check-domain)])
          (make-reduction-relation lang 
                                   all-make-procs
-                                  (append (reduction-relation-rule-names orig-reduction-relation)
-                                          rule-names)
+                                  (append rule-names
+                                          (reduction-relation-rule-names orig-reduction-relation))
                                   lws ;; only keep new lws for typesetting
                                   (map (λ (make-proc) (make-proc lang)) all-make-procs)))]
       [else

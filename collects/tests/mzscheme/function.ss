@@ -14,6 +14,7 @@
 (test 'hi (compose (case-lambda [(x) 'bye][(y z) 'hi]) (lambda () (values 1 2))))
 (test 'ok (compose (lambda () 'ok) (lambda () (values))))
 (test 'ok (compose (lambda () 'ok) (lambda (w) (values))) 5)
+(test 0 (compose) 0)
 (test-values '(1 2 3) (lambda () ((compose (lambda (x) (values x (add1 x) (+ x 2))) (lambda (y) y)) 1)))
 
 (err/rt-test (compose 5))
@@ -24,7 +25,7 @@
 (err/rt-test ((compose add1 sub1)) exn:application:arity?)
 (err/rt-test ((compose (lambda () 1) add1) 8) exn:application:arity?)
 
-(arity-test compose 1 -1)
+(arity-test compose 0 -1)
 
 ;; ---------- rec (from mzlib/etc) ----------
 (let ()
@@ -41,6 +42,12 @@
   (test 'f object-name (rec (f x . y) x))
   (test 'f object-name (rec  f (lambda (x) x)))
   (test (list 2) (rec (f . x) (if (= (car x) 3) (f 2) x)) 3))
+
+;; ---------- const ----------
+(let ()
+  (test 'foo (const 'foo))
+  (test 'foo (const 'foo) 1)
+  (test 'foo (const 'foo) 1 2 3 4 5))
 
 ;; ---------- negate ----------
 (let ()

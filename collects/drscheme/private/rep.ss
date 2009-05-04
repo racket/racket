@@ -1254,8 +1254,8 @@ TODO
                  
                  (thread
                   (λ ()
-                    ;; forward system events the the user's logger,
-                    ;; and record any events that happen on the user's logger to show in the GUI
+                    ;; forward system events the user's logger, and record any
+                    ;; events that happen on the user's logger to show in the GUI
                     (let ([sys-evt (make-log-receiver drscheme:init:system-logger 'debug)]
                           [user-evt (make-log-receiver user-logger 'debug)])
                       (let loop ()

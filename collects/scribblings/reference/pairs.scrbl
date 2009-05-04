@@ -513,6 +513,12 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(last-pair [p pair?]) pair?]{
 Returns the last pair of a (possibly improper) list.}
 
+@defproc[(make-list [k exact-nonnegative-integer?] [v any?]) list?]{
+Returns a newly constructed list of length @scheme[k], holding
+@scheme[v] in all positions.
+
+@mz-examples[(make-list 7 'foo)]}
+
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?]) list?]{
 Returns a fresh list whose elements are the first @scheme[pos] elements of
 @scheme[lst].  If @scheme[lst] has fewer than

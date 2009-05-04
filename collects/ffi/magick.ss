@@ -1123,7 +1123,7 @@
 (defmagick* MagickGetReleaseDate :
   -> _string)
 
-;; MagickGetResourceLimit returns the the specified resource in megabytes.
+;; MagickGetResourceLimit returns the specified resource in megabytes.
 (defmagick* MagickGetResourceLimit :
   _ResourceType -> _ulong)
 

@@ -8,7 +8,7 @@
                      scheme/pretty
                      scheme/contract
 		     mrlib/graph
-                     (only-in slideshow/pict pict? text dc-for-text-size)
+                     (only-in slideshow/pict pict? text dc-for-text-size text-style/c)
                      redex))
 
 @(define-syntax (defpattech stx)
@@ -778,7 +778,7 @@ where the @tt{==>} relation is defined by reducing in the context
 
 This form extends the reduction relation in its first
 argument with the rules specified in @scheme[more]. They should
-have the same shape as the the rules (including the `with'
+have the same shape as the rules (including the `with'
 clause) in an ordinary @scheme[reduction-relation].
 
 If the original reduction-relation has a rule with the same
@@ -887,9 +887,7 @@ The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
-the rhs-expressions is implicitly wrapped in @|tttterm|. In
-addition, recursive calls in the right-hand side of the
-metafunction clauses should appear inside @|tttterm|. 
+the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
 If specified, the side-conditions are collected with 
 @scheme[and] and used as guards on the case being matched. The
@@ -1672,14 +1670,17 @@ multi-line right-hand sides.
 
 This parameter controls the style used by default for the reduction
 relation. It can be @scheme['horizontal], where the left and
-right-hand sides of the reduction rule are beside each other
-or @scheme['vertical], where the left and right-hand sides of the
-reduction rule are above each other. 
-The @scheme['compact-vertical] style moves the reduction arrow
-to the second line and uses less space between lines.
-Finally, in the @scheme['vertical-overlapping-side-conditions] variant, the side-conditions don't contribute to
-the width of the pict, but are just overlaid on the second
-line of each rule.
+right-hand sides of the reduction rule are beside each other or
+@scheme['vertical], where the left and right-hand sides of the
+reduction rule are above each other.  The @scheme['compact-vertical]
+style moves the reduction arrow to the second line and uses less space
+between lines.  The @scheme['vertical-overlapping-side-conditions]
+variant, the side-conditions don't contribute to the width of the
+pict, but are just overlaid on the second line of each rule.  The
+@scheme['horizontal-left-align] style is like the @scheme['horizontal]
+style, but the left-hand sides of the rules are aligned on the left,
+instead of on the right.
+
 }
 
 @defthing[reduction-rule-style/c flat-contract?]{

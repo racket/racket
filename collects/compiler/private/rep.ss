@@ -1,4 +1,4 @@
-;; Representation choosing phase of the the compiler
+;; Representation choosing phase of the compiler
 ;; (c) 1996-1997 Sebastian Good
 ;; (c) 1997-201 PLT
 

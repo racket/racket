@@ -1442,7 +1442,7 @@
   ;; make-symbol, make-number, and make-string are supported
   ;; alternates, but are deprecated.
 
-  ;; the classname becomes the the name of token.
+  ;; the classname becomes the name of token.
 
   ;; if multiple actions are possible, do the one that appears here
   ;; first.  make-string is first, so literal strings trump identifiers.

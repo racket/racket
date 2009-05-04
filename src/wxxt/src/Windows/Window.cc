@@ -1019,7 +1019,7 @@ _XFUNCPROTOEND
 // I've used the following way to intercept the incomming events:
 // - first Xt calls the expose method of the widget
 // - second it calls all event handlers installed by XtAddEventHandler
-// - third it evaluates the the widget's translation table
+// - third it evaluates the widget's translation table
 // --> I forbid the evaluation of the translation table and call
 // 	_XtTranslateEvent by myself. 
 //

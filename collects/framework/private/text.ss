@@ -382,7 +382,7 @@ WARNING: printf is rebound in the body of the unit to always
                   (and (string? color)
                        (send the-color-database find-color color)))
         (error 'highlight-range
-               "expected a color or a string in the the-color-database for the third argument, got ~e" color))
+               "expected a color or a string in the-color-database for the third argument, got ~e" color))
       (unless (memq style '(rectangle hollow-ellipse ellipse dot))
         (error 'highlight-range
                "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))

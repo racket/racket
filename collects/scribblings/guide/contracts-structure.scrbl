@@ -135,7 +135,7 @@ check the fields of the data structure, but sometimes this
 can have disastrous effects on the performance of a program
 that does not, itself, inspect the entire data structure.
 
-As an example, consider the the binary search tree
+As an example, consider the binary search tree
 search algorithm. A binary search tree is like a binary
 tree, except that the numbers are organized in the tree to
 make searching the tree fast. In particular, for each

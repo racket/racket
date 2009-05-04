@@ -61,7 +61,7 @@ Combines @scheme[schememod] and @scheme[interaction-eval].}
 @defform*[[(def+int defn-datum expr-datum ...)
            (def+int #:eval eval-expr defn-datum expr-datum ...)]]{
 
-Like @scheme[interaction], except the the @scheme[defn-datum] is
+Like @scheme[interaction], except the @scheme[defn-datum] is
 typeset as for @scheme[schemeblock] (i.e., no prompt) and a line of
 space is inserted before the @scheme[expr-datum]s.}
 

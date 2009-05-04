@@ -184,7 +184,7 @@ Analogous to @scheme[call-with-input-file], but passing @scheme[path],
                                 [#:mode mode-flag (or/c 'binary 'text) 'binary])
          any]{
 Like @scheme[call-with-input-file], but the newly opened port is
-closed whenever control escapes the the dynamic extent of the
+closed whenever control escapes the dynamic extent of the
 @scheme[call-with-input-file*] call, whether through @scheme[proc]'s
 return, a continuation application, or a prompt-based abort.}
 
@@ -195,7 +195,7 @@ return, a continuation application, or a prompt-based abort.}
                                                              'replace 'truncate 'truncate/replace) 'error])
          any]{
 Like @scheme[call-with-output-file], but the newly opened port is
-closed whenever control escapes the the dynamic extent of the
+closed whenever control escapes the dynamic extent of the
 @scheme[call-with-output-file*] call, whether through @scheme[proc]'s
 return, a continuation application, or a prompt-based abort.}
 

@@ -23,7 +23,7 @@
 ;;     start at 0, since threads are likely to run before a sample is
 ;;     collected.
 ;;   - Finally, the <stack> part is a snapshot of the thread's stack, as
-;;     grabbed by `continuation-mark-set->context'.  The the values in these
+;;     grabbed by `continuation-mark-set->context'.  The values in these
 ;;     snapshots are interned to reduce memory load.
 ;;   The results are collected sequentially, so they're always sorted from the
 ;;   newest to the oldest.  Remember that these results should be considered

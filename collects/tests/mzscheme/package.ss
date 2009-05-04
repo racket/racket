@@ -151,6 +151,27 @@
  x)
 
 (test-pack-seq
+ 14
+ (define-package p (z)
+   (define* x (lambda () y))
+   (define z x)
+   (define* x 2)
+   (define y 14))
+ (open-package p)
+ (z))
+
+(test-pack-seq
+ 21
+ (define-package p (x)
+   (define* x (lambda () y))
+   (define* x2 0)
+   (define* x3 1)
+   (define* x4 1)
+   (define y 21))
+ (open-package p)
+ (x))
+
+(test-pack-seq
  '(2 1)
  (define-package p (x y)
    (define* x 1)

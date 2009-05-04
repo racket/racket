@@ -48,7 +48,7 @@
 
 ;; Supply file for stdout
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (let ([p (process*/ports f #f #f cat)])
     (test #f car p)
 
@@ -67,7 +67,7 @@
 
 ;; Supply file for stdout & stderr, only stdout writes
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (let ([p (process*/ports f #f f cat)])
     (test #f car p)
     (test #f cadddr p)
@@ -84,7 +84,7 @@
 
 ;; Supply file for stderr
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (let ([p (process*/ports #f #f f cat "nosuchfile")])
     (test #f cadddr p)
 
@@ -104,7 +104,7 @@
 
 ;; Supply file for stdout & stderr, only stderr writes
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (let ([p (process*/ports f #f f cat "nosuchfile")])
     (test #f car p)
     (test #f cadddr p)
@@ -121,7 +121,7 @@
 
 ;; Supply file for stdout & stderr, both write
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (let ([p (process*/ports f #f f cat "-" "nosuchfile")])
     (test #f car p)
     (test #f cadddr p)
@@ -141,8 +141,8 @@
 
 ;; Supply separate files for stdout & stderr
 
-(let ([f (open-output-file tmpfile 'truncate/replace)]
-      [f2 (open-output-file tmpfile2 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)]
+      [f2 (open-output-file tmpfile2 #:exists 'truncate/replace)])
   (let ([p (process*/ports f #f f2 cat "-" "nosuchfile")])
     (test #f car p)
     (test #f cadddr p)
@@ -168,7 +168,7 @@
 
 ;; Supply file for stdin
 
-(let ([f (open-output-file tmpfile 'truncate/replace)])
+(let ([f (open-output-file tmpfile #:exists 'truncate/replace)])
   (fprintf f "Howdy~n")
   (close-output-port f))
 (let ([f (open-input-file tmpfile)])
@@ -187,7 +187,7 @@
 ;; Files for everyone
 
 (let ([f (open-input-file tmpfile)]
-      [f2 (open-output-file tmpfile2 'truncate/replace)])
+      [f2 (open-output-file tmpfile2 #:exists 'truncate/replace)])
   (let ([p (process*/ports f2 f f2 cat "-" "nosuchfile")])
     (test #f car p)
     (test #f cadr p)
@@ -227,7 +227,7 @@
 ;; Check error cases
 
 (let ([f (open-input-file tmpfile)]
-      [f2 (open-output-file tmpfile2 'truncate/replace)])
+      [f2 (open-output-file tmpfile2 #:exists 'truncate/replace)])
 
   (let ([test
 	 (lambda (o i e)
@@ -245,16 +245,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-values (r w id e f)
-  (apply values (process* self "-mvq" 
+  (apply values (process* self
 			  "-e" 
 			  "(let loop () (unless (eof-object? (eval (read))) (loop)))")))
 
 (define (test-line out in)
   (fprintf w "~a~n" in)
+  (flush-output w)
   (when out
     (test out (lambda (ignored) (read-line r)) in)))
 
-(test-line "17" "(display 17) (newline)")
+(test-line "17" "(display 17) (newline) (flush-output)")
 
 (close-input-port r)
 (close-input-port e)

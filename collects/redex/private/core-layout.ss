@@ -75,16 +75,6 @@
                               (equal? (lw-e thing-in-hole) 'hole))
                          (list (blank) context (blank))
                          (list (blank) context "" "[" thing-in-hole "]")))))
-       (in-named-hole ,(λ (args)
-                         (let ([name (lw-e (list-ref args 2))]
-                               [context (list-ref args 3)]
-                               [thing-in-hole (list-ref args 4)])
-                           (if (and (lw? thing-in-hole)
-                                    (equal? (lw-e thing-in-hole) 'hole))
-                               (list (blank) context "[]" 
-                                     (basic-text (format "~a" name) (non-terminal-subscript-style)))
-                               (list (blank) context "" "[" thing-in-hole "]" 
-                                     (basic-text (format "~a" name) (non-terminal-subscript-style)))))))
        (hide-hole ,(λ (args)
                      (list (blank)
                            (list-ref args 2)

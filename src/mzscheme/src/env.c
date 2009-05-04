@@ -4381,6 +4381,9 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *senv;
   Scheme_Object *c, *rib;
+  void **d;
+
+  d = MALLOC_N(void*, 3);
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -4389,19 +4392,21 @@ local_make_intdef_context(int argc, Scheme_Object *argv[])
   if (argc && SCHEME_TRUEP(argv[0])) {
     if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[0])))
       scheme_wrong_type("syntax-local-bind-syntaxes", "internal-definition context or #f", 0, argc, argv);
-    senv = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[0]);
+    senv = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[0]))[0];
     if (!scheme_is_sub_env(senv, env)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT, "syntax-local-make-definition-context: transforming context does "
                        "not match given internal-definition context");
     }
     env = senv;
+    d[1] = argv[0];
   }
+  d[0] = env;
 
   rib = scheme_make_rename_rib();
 
   c = scheme_alloc_object();
   c->type = scheme_intdef_context_type;
-  SCHEME_PTR1_VAL(c) = env;
+  SCHEME_PTR1_VAL(c) = d;
   SCHEME_PTR2_VAL(c) = rib;
 
   return c;

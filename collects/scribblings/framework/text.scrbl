@@ -387,7 +387,7 @@
   @method[text:searching<%> set-replace-start]) and the
   closest search hit following @tt{replace-start} does not
   collapse with an adjacent bubble,the result will include
-  that bubble. If the the closest search hit after
+  that bubble. If the closest search hit after
   @tt{replace-start} is collpased with another bubble, then
   the search hit is not reflected in the result.
 
