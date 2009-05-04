@@ -820,11 +820,13 @@
 ; check-metafunction
 (let ()
   (define-language empty)
+  
   (define-metafunction empty
     [(m 1) whatever]
     [(m 2) whatever])
   (define-metafunction empty
     [(n (side-condition any #f)) any])
+  
   (let ([generated null])
     (test (begin
             (output 
@@ -832,6 +834,20 @@
                (check-metafunction m (λ (t) (set! generated (cons t generated))) #:attempts 1)))
             generated) 
           (reverse '((1) (2)))))
+  
+  (test
+   (let/ec k
+     (define-language L (n 2))
+     (define-metafunction L
+       [(f n)
+        n
+        (where number_2 ,(add1 (term n)))
+        (where number_3 ,(add1 (term number_2)))
+        (side-condition (k (term number_3)))]
+       [(f any) 0])
+     (check-metafunction f (λ (_) #t)))
+   4)
+  
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
         #rx"check-metafunction:.*counterexample found after 1 attempt with clause #1")
