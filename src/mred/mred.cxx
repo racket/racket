@@ -2276,32 +2276,35 @@ static void MrEdSchemeMessages(char *msg, ...)
   if (!console_out) {
     AllocConsole();
     console_out = GetStdHandle(STD_OUTPUT_HANDLE);
-    console_in = GetStdHandle(STD_INPUT_HANDLE);
-    has_stdio = 1;
-    waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
-    SetConsoleCtrlHandler(ConsoleHandler, TRUE);
+
+    if (!wx_in_terminal) {
+      console_in = GetStdHandle(STD_INPUT_HANDLE);
+      has_stdio = 1;
+      waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
+      SetConsoleCtrlHandler(ConsoleHandler, TRUE);
+
+      wxREGGLOB(console_inport);
+      console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+
+      {
+	HMODULE hm;
+	gcw_proc gcw;
+
+	hm = LoadLibrary("kernel32.dll");
+	if (hm)
+	  gcw = (gcw_proc)GetProcAddress(hm, "GetConsoleWindow");
+	else
+	  gcw = NULL;
     
-    wxREGGLOB(console_inport);
-    console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+	if (gcw)
+	  console_hwnd = gcw();
+      }
 
-    {
-      HMODULE hm;
-      gcw_proc gcw;
-
-      hm = LoadLibrary("kernel32.dll");
-      if (hm)
-	gcw = (gcw_proc)GetProcAddress(hm, "GetConsoleWindow");
-      else
-	gcw = NULL;
-    
-      if (gcw)
-	console_hwnd = gcw();
-    }
-
-    if (console_hwnd) {
-      EnableMenuItem(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE,
-		     MF_BYCOMMAND | MF_GRAYED);
-      RemoveMenu(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE, MF_BYCOMMAND);
+      if (console_hwnd) {
+	EnableMenuItem(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE,
+		       MF_BYCOMMAND | MF_GRAYED);
+	RemoveMenu(GetSystemMenu(console_hwnd, FALSE), SC_CLOSE, MF_BYCOMMAND);
+      }
     }
   }
 #endif
