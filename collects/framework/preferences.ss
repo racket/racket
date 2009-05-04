@@ -67,11 +67,11 @@ the state transitions / contracts are:
 (define defaults (make-hasheq))
 
 ;; these four functions determine the state of a preference
-(define (pref-un/marshall-set? pref) (hash-table-bound? marshall-unmarshall pref))
-(define (pref-default-set? pref) (hash-table-bound? defaults pref))
-(define (pref-can-init? pref) 
+(define (pref-un/marshall-set? pref) (hash-has-key? marshall-unmarshall pref))
+(define (pref-default-set? pref) (hash-has-key? defaults pref))
+(define (pref-can-init? pref)
   (and (not snapshot-grabbed?)
-       (not (hash-table-bound? preferences pref))))
+       (not (hash-has-key? preferences pref))))
 
 ;; type un/marshall = (make-un/marshall (any -> prinable) (printable -> any))
 (define-struct un/marshall (marshall unmarshall))
@@ -94,24 +94,24 @@ the state transitions / contracts are:
     [(pref-default-set? p)
      
      ;; unmarshall, if required
-     (when (hash-table-bound? marshalled p)
+     (when (hash-has-key? marshalled p)
        ;; if `preferences' is already bound, that means the unmarshalled value isn't useful.
-       (unless (hash-table-bound? preferences p)
+       (unless (hash-has-key? preferences p)
          (hash-set! preferences p (unmarshall-pref p (hash-ref marshalled p))))
        (hash-remove! marshalled p))
      
      ;; if there is no value in the preferences table, but there is one
      ;; in the old version preferences file, take that:
-     (unless (hash-table-bound? preferences p)
-       (when (hash-table-bound? old-preferences p)
+     (unless (hash-has-key? preferences p)
+       (when (hash-has-key? old-preferences p)
          (hash-set! preferences p (unmarshall-pref p (hash-ref old-preferences p)))))
      
      ;; clear the pref from the old table (just in case it was taking space -- we don't need it anymore)
-     (when (hash-table-bound? old-preferences p)
+     (when (hash-has-key? old-preferences p)
        (hash-remove! old-preferences p))
      
      ;; if it still isn't set, take the default value
-     (unless (hash-table-bound? preferences p)
+     (unless (hash-has-key? preferences p)
        (hash-set! preferences p (default-value (hash-ref defaults p))))
      
      (hash-ref preferences p)]
@@ -228,11 +228,6 @@ the state transitions / contracts are:
             p)]
     [(not (pref-can-init? p))
      (error 'preferences:set-un/marshall "the preference ~e cannot be configured any more" p)]))
-
-(define (hash-table-bound? ht s)
-  (let/ec k
-    (hash-ref ht s (λ () (k #f)))
-    #t))
 
 (define (preferences:restore-defaults)
   (hash-for-each
