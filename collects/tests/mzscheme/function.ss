@@ -25,7 +25,7 @@
 (err/rt-test ((compose add1 sub1)) exn:application:arity?)
 (err/rt-test ((compose (lambda () 1) add1) 8) exn:application:arity?)
 
-(arity-test compose 1 -1)
+(arity-test compose 0 -1)
 
 ;; ---------- rec (from mzlib/etc) ----------
 (let ()
