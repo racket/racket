@@ -71,7 +71,11 @@
 
   (define (streamify-out cout out get-thread?)
     (if (and cout (not (file-stream-port? cout)))
-	(let ([t (thread (lambda () (copy-port out cout)))])
+	(let ([t (thread (lambda () 
+                           (dynamic-wind
+                               void
+                               (lambda () (copy-port out cout))
+                               (lambda () (close-input-port out)))))])
 	  (and get-thread? t))
 	out))
 
