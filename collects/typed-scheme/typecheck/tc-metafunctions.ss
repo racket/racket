@@ -134,26 +134,40 @@
     ;; or
     [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (combine null (append f1- f3-))]
     ;; and
-    [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) (combine (append f1+ f2+) null)]
+    [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
+     (combine (append f1+ f2+) null)]
     [(f f* f*) f*]
     [(_ _ _)
      ;; could intersect f2 and f3 here
      (make-FilterSet null null)]))
 
-
-;; FIXME - this should really be a new metafunction like abstract-filter
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (define (values->tc-results tc formals)
   (match tc
-    [(ValuesDots: (list (Result: ts fs os)) dty dbound)
-     (int-err "values->tc-results NYI for Dots")]
+    [(ValuesDots: (list (Result: ts lfs los)) dty dbound)
+     (ret ts
+          (for/list ([lf lfs]) 
+            (merge-filter-sets
+             (for/list ([x formals] [i (in-naturals)])
+               (apply-filter (split-lfilters lf i) Univ (make-Path null x)))))
+          (for/list ([lo los])
+            (or 
+             (for/or ([x formals] [i (in-naturals)])
+               (match lo
+                 [(LEmpty:) #f]
+                 [(LPath: p (== i)) (make-Path p x)]))
+             (make-Empty)))
+          dty dbound)]
     [(Values: (list (Result: ts lfs los) ...))
      (ret ts
           (for/list ([lf lfs]) 
-            (for/list ([x formals] [i (in-naturals)])
-              (apply-filter (split-lfilters lf i) Univ (make-Path null x))))
+            (merge-filter-sets
+             (for/list ([x formals] [i (in-naturals)])
+               (apply-filter (split-lfilters lf i) Univ (make-Path null x)))))
           (for/list ([lo los])
-            (for/list ([x formals] [i (in-naturals)])
-              (match lo
-                [(LEmpty:) (make-Empty)]
-                [(LPath: p (== i)) (make-Path p x)]))))]))
+            (or 
+             (for/or ([x formals] [i (in-naturals)])
+               (match lo
+                 [(LEmpty:) #f]
+                 [(LPath: p (== i)) (make-Path p x)]))
+             (make-Empty))))]))

@@ -199,7 +199,8 @@
          [(tc-result1: (Mu: _ _)) (loop (unfold expected))]
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
-            (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args (values->tc-results ret) rest drest))]
+            (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies))
+                                    args (values->tc-results ret (syntax->list (car (syntax->list formals)))) rest drest))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
     ;; otherwise
     [else (go (syntax->list formals) (syntax->list bodies) null null null)]))

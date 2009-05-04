@@ -30,9 +30,7 @@
          just-Dotted?
          tc-error/expr
          lookup-fail
-         lookup-type-fail
-         values->tc-results
-         tc-results->values)
+         lookup-type-fail)
 
 
 ;; substitute : Type Name Type -> Type
@@ -197,7 +195,8 @@
                  (cond [(Type? t)
                         (list (make-tc-result t (make-FilterSet null null) (make-Empty)))]
                        [(or (Values? t) (ValuesDots? t))
-                        (values->tc-results t)]
+                        (int-err "Values in ret: ~a" t)
+                        #;(values->tc-results t)]
                        [else
                         (for/list ([i t])
                           (make-tc-result i (make-FilterSet null null) (make-Empty)))])
@@ -283,10 +282,3 @@
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
-
-(define (tc-results->values tc)
-  (match tc
-    [(tc-results: ts fs os dty dbound)
-     (make-ValuesDots (map make-Result ts fs os) dty dbound)]
-    [(tc-results: ts fs os)
-     (make-Values (map make-Result ts fs os))]))

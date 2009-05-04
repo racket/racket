@@ -28,7 +28,7 @@
        (cond [(= (length ts) (length us))
               (ret (for/list ([t ts] [u us]) (Un t u))
                    (for/list ([f2 fs2] [f3 fs3])
-                             (combine-filter f1 f2 f2)))]
+                             (combine-filter f1 f2 f3)))]
              [else
               (tc-error/expr #:return (ret Err)
                              "Expected the same number of values from both branches of if expression, but got ~a and ~a"

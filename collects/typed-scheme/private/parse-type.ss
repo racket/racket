@@ -566,7 +566,11 @@
        (-values (list (parse-type #'t)))])))
 
 (define (parse-tc-results stx)
-  (values->tc-results (parse-values-type stx)))
+  (syntax-parse stx
+    [(values t ...)
+     #:when (eq? 'values (syntax-e #'values))
+     (ret (map parse-type (syntax->list #'(t ...))))]
+    [t (parse-type #'t)]))
 
 (define parse-tc-results/id (parse/id parse-tc-results))
 
