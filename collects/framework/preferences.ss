@@ -355,7 +355,7 @@ the state transitions / contracts are:
   ((p f)
    ((weak? #f)))
   @{This function adds a callback which is called with a symbol naming a
-         preference and it's value, when the preference changes.
+         preference and its value, when the preference changes.
          @scheme[preferences:add-callback] returns a thunk, which when
          invoked, removes the callback from this preference.
          
@@ -406,7 +406,7 @@ the state transitions / contracts are:
            preferences to turn the preference value for @scheme[symbol] into a
            printable value. @scheme[unmarshall] will be called when the user's
            preferences are read from the file to transform the printable value
-           into it's internal representation. If @scheme[preference:set-un/marshall]
+           into its internal representation. If @scheme[preference:set-un/marshall]
            is never called for a particular preference, the values of that
            preference are assumed to be printable.
            
@@ -450,7 +450,7 @@ the state transitions / contracts are:
   (parameter/c (-> (listof symbol?) (listof any/c) any))
   put-preference
   @{This parameter's value
-         is called when to save preference the preferences. Its interface should 
+         is called to save preference the preferences. Its interface should 
          be just like mzlib's @scheme[put-preference].})
  
  (proc-doc/names
@@ -477,7 +477,7 @@ the state transitions / contracts are:
   @{Caches all of the current values of the preferences and returns them.
     For any preference that has marshalling and unmarshalling set
     (see @scheme[preferences:set-un/marshall]), the preference value is
-    copied by passing it thru the marshalling and unmarshalling process.
+    copied by passing it through the marshalling and unmarshalling process.
     Other values are not copied, but references to them are instead saved.
 
     See also @scheme[preferences:restore-prefs-snapshot].}))
