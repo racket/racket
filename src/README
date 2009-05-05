@@ -193,7 +193,7 @@ Detailed instructions:
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you
-    wanted, then you can try repeating step 3 after runing `configure'
+    want, then you can try repeating step 3 after running `configure'
     again with a new --prefix value. That is, sometimes it is not
     necessary to repeat step 2 (so try it and find out). On other
     platforms and configurations, it is necessary to start with a
