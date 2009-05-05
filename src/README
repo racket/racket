@@ -195,9 +195,9 @@ Detailed instructions:
     created, or because the target directory is not the one you
     wanted, then you can try repeating step 3 after runing `configure'
     again with a new --prefix value. That is, sometimes it is not
-    necessary to repeat steps 1 or 2 (so try it and find out). On
-    other platforms and configurations, it is necessary to start with
-    a clean build directory when changing the --prefix value, because
+    necessary to repeat step 2 (so try it and find out). On other
+    platforms and configurations, it is necessary to start with a
+    clean build directory when changing the --prefix value, because
     the path gets wired into shared objects.
 
     If you build frequently from the Subversion-based sources, beware
