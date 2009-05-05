@@ -1,7 +1,7 @@
 #lang mzscheme
 
 (require mzlib/etc
-         mzlib/contract
+         scheme/contract
          mzlib/list
          "private/port.ss")
 

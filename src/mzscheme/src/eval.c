@@ -2564,6 +2564,39 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   return (Scheme_Object *)app;
 }
 
+static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand)
+{
+  Scheme_Object *c = NULL;
+
+  if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(rand)))
+    c = rand;
+  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+    int offset;
+    Scheme_Object *expr;
+    expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0);
+    c = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL);
+  }
+  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_toplevel_type)) {
+    if (info->top_level_consts) {
+      int pos;
+      
+      while (1) {
+        pos = SCHEME_TOPLEVEL_POS(rand);
+        c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
+          rand = c;
+        else
+          break;
+      }
+    }
+  }
+
+  if (c && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(c)))
+    return c;
+
+  return NULL;
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info)
 {
   Scheme_App2_Rec *app;
@@ -2598,20 +2631,10 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   }
 
   if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
-    if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(app->rand))) {
+    if (lookup_constant_proc(info, app->rand)) {
       info->preserves_marks = 1;
       info->single_result = 1;
       return scheme_true;
-    }
-    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
-      int offset;
-      Scheme_Object *expr;
-      expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(app->rand), 0);
-      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL)) {
-        info->preserves_marks = 1;
-        info->single_result = 1;
-        return scheme_true;
-      }
     }
   }
 
@@ -2701,6 +2724,24 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
       }
     }
   }
+
+  if (SAME_OBJ(scheme_procedure_arity_includes_proc, app->rator)) {
+    if (SCHEME_INTP(app->rand2)) {
+      Scheme_Closure_Data *data;
+      data = (Scheme_Closure_Data *)lookup_constant_proc(info, app->rand1);
+      if (data) {
+        int n = SCHEME_INT_VAL(app->rand2);
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+          return ((data->num_params - 1) <= n) ? scheme_true : scheme_false;
+        } else {
+          return (data->num_params == n) ? scheme_true : scheme_false;
+        }
+      }
+    }
+  }
+
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);

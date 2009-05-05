@@ -694,6 +694,26 @@
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
+(test-comp '(module m mzscheme
+              (define (f x) x)
+              (procedure? f))
+           '(module m mzscheme
+              (define (f x) x)
+              #t))
+
+(test-comp '(module m mzscheme
+              (define (f x) x)
+              (procedure-arity-includes? f 1))
+           '(module m mzscheme
+              (define (f x) x)
+              #t))
+(test-comp '(module m mzscheme
+              (define (f x) x)
+              (procedure-arity-includes? f 2))
+           '(module m mzscheme
+              (define (f x) x)
+              #f))
+
 (let ([test-dropped
        (lambda (cons-name . args)
          (test-comp `(let ([x 5])

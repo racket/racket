@@ -267,6 +267,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
+extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
